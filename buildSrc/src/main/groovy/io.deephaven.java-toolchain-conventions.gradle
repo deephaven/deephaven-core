@@ -204,7 +204,7 @@ def parseJvmArgumentsFromProperty = { String propertyName, List<String> orElse -
 //
 // From the perspective of our application distribution, these options will be used as defaults for JAVA_OPTS
 // (if the user already has JAVA_OPTS set, these VM options will _not_ apply).
-def JAVA_OPTS_11 = parseJvmArgumentsFromProperty("deephaven.javaOpts", parseJvmArgumentsFromEnv('JAVA_OPTS', [
+def JAVA_OPTS = parseJvmArgumentsFromProperty("deephaven.javaOpts", parseJvmArgumentsFromEnv('JAVA_OPTS', [
   '-XX:+UseG1GC',
   '-XX:MaxGCPauseMillis=100',
   '-XX:+UseStringDeduplication',
@@ -213,7 +213,7 @@ def JAVA_OPTS_11 = parseJvmArgumentsFromProperty("deephaven.javaOpts", parseJvmA
   '-XX:GCLockerRetryAllocationCount=128',
 ]))
 
-def JAVA_OPTS_25 = parseJvmArgumentsFromProperty("deephaven.javaOpts", parseJvmArgumentsFromEnv('JAVA_OPTS', [
+def JAVA_OPTS_25 = parseJvmArgumentsFromProperty("deephaven.javaOpts25", parseJvmArgumentsFromEnv('JAVA_OPTS_25', [
     '-XX:+UseG1GC',
     '-XX:MaxGCPauseMillis=100',
     '-XX:+UseStringDeduplication',
@@ -226,9 +226,29 @@ def START_OPTS = parseJvmArgumentsFromProperty("deephaven.startOpts", parseJvmAr
 //  '-XX:+PrintCompilation',          // this optional line shows jit operations as they happen
 ]))
 
-def createVmOptions11 = tasks.register('createVmOptions11') {
-  def vmOptionsFile = project.layout.buildDirectory.file('dh-default-11.vmoptions')
-  def vmOptionsText = JAVA_OPTS_11.join('\n')
+// Startup notes
+// We currently use -XX:VMOptionsFile to specify the vm options file. While there technically is a way to comment out
+// vm options from this file, `-XX:#'this is a comment'` (see https://github.com/openjdk/jdk/blob/jdk-11%2B28/src/hotspot/share/runtime/arguments.cpp#L1342-L1343),
+// it comes with the drawback that the JVM complains about it on startup:
+//
+// Unrecognized VM option '#this is a comment'
+//
+// The JVM has another mechanism to specify arguments by sourcing files via `@`, and files sourced this way does
+// explicitly allow comments. That said, the JVM startup logic is different between VMOptionsFile and `@`, and changing
+// to `@` would require more testing to make sure we understand the semantic differences between the two approaches. It
+// would also suggest that we should change the file-type away from `.vmoptions` (which implies compatibility with
+// -XX:VMOptionsFile).
+//
+// As such, the `comment` variable in the tasks below are currently for our internal reference and not actually added to
+// the vm options file.
+
+def createVmOptions = tasks.register('createVmOptions') {
+  //noinspection GroovyUnusedAssignment
+  def comment = 'These VM options are expected to be compatible with JDKs 11, 17, and 21; it may be compatible with non LTS JDKs <= 24. It is known to be incompatible with JDK 25.'
+  def vmOptionsFile = project.layout.buildDirectory.file('dh-default.vmoptions')
+  // See startup notes above why we are not using this
+  //def vmOptionsText = "-XX:#'${comment}'\n${JAVA_OPTS.join('\n')}"
+  def vmOptionsText = JAVA_OPTS.join('\n')
   it.inputs.property('vmOptionsText', vmOptionsText)
   it.outputs.file(vmOptionsFile)
   doFirst {
@@ -237,7 +257,11 @@ def createVmOptions11 = tasks.register('createVmOptions11') {
 }
 
 def createVmOptions25 = tasks.register('createVmOptions25') {
+    //noinspection GroovyUnusedAssignment
+    def comment = '# These VM options are expected to be compatible with JDK 25.'
     def vmOptionsFile = project.layout.buildDirectory.file('dh-default-25.vmoptions')
+    // See startup notes above why we are not using this
+    //def vmOptionsText = "-XX:#'${comment}'\n${JAVA_OPTS_25.join('\n')}"
     def vmOptionsText = JAVA_OPTS_25.join('\n')
     it.inputs.property('vmOptionsText', vmOptionsText)
     it.outputs.file(vmOptionsFile)
@@ -248,7 +272,7 @@ def createVmOptions25 = tasks.register('createVmOptions25') {
 
 tasks.withType(JavaExec).configureEach {
   def compilerDirectivesFile = createCompilerDirectives.get().outputs.files
-  def vmOptionsFile = (runtimeVersion < 25 ? createVmOptions11 : createVmOptions25).get().outputs.files
+  def vmOptionsFile = (runtimeVersion < 25 ? createVmOptions : createVmOptions25).get().outputs.files
   inputs.files compilerDirectivesFile
   inputs.files vmOptionsFile
   javaLauncher.set runtimeLauncher
@@ -259,7 +283,7 @@ tasks.withType(JavaExec).configureEach {
 
 tasks.withType(Test).configureEach {
   def compilerDirectivesFile = createCompilerDirectives.get().outputs.files
-  def vmOptionsFile = (testRuntimeVersion < 25 ? createVmOptions11 : createVmOptions25).get().outputs.files
+  def vmOptionsFile = (testRuntimeVersion < 25 ? createVmOptions : createVmOptions25).get().outputs.files
   inputs.files compilerDirectivesFile
   inputs.files vmOptionsFile
   javaLauncher.set testRuntimeLauncher
@@ -272,7 +296,7 @@ JavaApplication application = extensions.findByType(JavaApplication)
 if (application) {
   application.applicationDistribution.into('etc') {
     from(createCompilerDirectives.get().outputs.files)
-    from(createVmOptions11.get().outputs.files)
+    from(createVmOptions.get().outputs.files)
     from(createVmOptions25.get().outputs.files)
   }
 }
