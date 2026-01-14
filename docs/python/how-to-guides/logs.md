@@ -112,7 +112,7 @@ To send the browser logs to support, right-click within the **Console** to save 
 
 You can also get help by asking questions in our [GitHub Discussions](https://github.com/deephaven/deephaven-core/discussions/categories/q-a) forum or join our [Slack Community](/slack).
 
-# Related documentation
+## Related documentation
 
 - [Create a new table](./new-and-empty-table.md#new_table)
 - [Filters in query strings](./filters.md)

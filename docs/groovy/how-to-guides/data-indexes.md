@@ -158,10 +158,12 @@ sourceRightDistinct = sourceRight.selectDistinct("Key1", "Key2")
 
 ### Filter
 
-The engine will use single and multi-column indexes to accelerate exact match filtering. Range filtering does not benefit from an index.
+The engine will use single and multi-column indexes to accelerate filtering operations through the [predicate pushdown](./predicate-pushdown.md) framework. When a materialized (in-memory) data index exists, the engine can use it to quickly identify matching rows for various filter types. Deferred (disk-based) data indexes will not be materialized by `where` operations.
 
 > [!NOTE]
 > The Deephaven engine only uses a `DataIndex` when the keys exactly match what is needed for an operation. For example, if a data index is present for the columns `X` and `Y`, it will not be used if the engine only needs an index for column `X`.
+
+Support for using data indexes with most filter types (beyond exact matches) was introduced in Deephaven v0.40.0 through the predicate pushdown framework.
 
 The following filters can use the index created atop the code block:
 

@@ -4,6 +4,14 @@ plugins {
   id 'java'
 }
 
+// Projects' settings.gradle may declare a languageLevel (and testLanguageLevel), but are not expected to set other
+// toolchain properties. The other toolchain properties are meant for local development and testing purposes.
+// testRuntimeVersion specifically is to support the matrix of java testing for nightly CI.
+//
+// In particular, we would like deephaven-core to be buildable with minimal Java prerequisites - ideally, the default
+// build should only require the default toolchain (compilerVersion / compilerVendor).
+//
+// Note: if / when compilerVersion default is changed from 21, we should match that in version in buildSrc/build.gradle.
 def compilerVersion = Integer.parseInt((String)project.findProperty('compilerVersion') ?: '21')
 def compilerVendor = project.hasProperty('compilerVendor') ?  JvmVendorSpec.matching((String)project.property('compilerVendor')): null
 
@@ -72,6 +80,13 @@ def groovyCompilerLauncher = javaToolchains.launcherFor {
   }
 } as Provider<JavaLauncher>
 
+def javadocTool_ = javaToolchains.javadocToolFor {
+    languageVersion = JavaLanguageVersion.of(compilerVersion)
+    if (compilerVendor != null) {
+        vendor = compilerVendor
+    }
+} as Provider<JavadocTool>
+
 tasks.withType(JavaCompile).configureEach {
   javaCompiler.set compiler
 
@@ -124,6 +139,9 @@ tasks.withType(GroovyCompile).configureEach {
   }
 }
 
+tasks.withType(Javadoc).configureEach {
+    javadocTool.set javadocTool_
+}
 
 def createCompilerDirectives = tasks.register('createCompilerDirectives') {
   def compilerDirectivesFile = project.layout.buildDirectory.file('dh-compiler-directives.txt')

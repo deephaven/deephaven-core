@@ -14,19 +14,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Setup JDK 11
-        id: setup-java-11
+      - name: Setup JDKs
         uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
-          java-version: '11'
-
-      - name: Set JAVA_HOME
-        run: echo "JAVA_HOME=${{ steps.setup-java-11.outputs.path }}" >> $GITHUB_ENV
+          java-version: |
+            21
 
       - name: Setup gradle properties
         run: |
-          .github/scripts/gradle-properties.sh >> gradle.properties
+          .github/scripts/gradle-properties.sh 21 >> gradle.properties
           cat gradle.properties
 
       - name: Generate and submit dependency graph

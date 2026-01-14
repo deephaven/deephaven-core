@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.extensions.barrage.util;
 
@@ -659,6 +659,10 @@ public class BarrageUtil {
                 }
                 if (inputTableUpdater.getValueNames().contains(name)) {
                     putMetadata(metadata, "inputtable.isValue", TRUE_STRING);
+                }
+                final String columnRestrictions = inputTableUpdater.getColumnRestrictions(name);
+                if (columnRestrictions != null) {
+                    putMetadata(metadata, "inputtable.restrictions", columnRestrictions);
                 }
             }
 

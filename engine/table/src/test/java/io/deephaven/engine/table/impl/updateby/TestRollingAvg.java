@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.updateby;
 
@@ -33,7 +33,6 @@ import java.math.MathContext;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 import java.util.Random;
 
 import static io.deephaven.engine.testutil.GenerateTableUpdates.generateAppends;
@@ -82,15 +81,6 @@ public class TestRollingAvg extends BaseUpdateByTest {
                 .toArray(String[]::new);
     }
 
-    // For verification, we will upcast some columns and use already-defined Numeric class functions.
-    private String[] getCastingFormulas(String[] columns) {
-        return Arrays.stream(columns)
-                .map(c -> c.equals("charCol")
-                        ? String.format("%s=(short)%s", c, c)
-                        : null)
-                .filter(Objects::nonNull)
-                .toArray(String[]::new);
-    }
 
     // region Object Helper functions
 
@@ -383,8 +373,7 @@ public class TestRollingAvg extends BaseUpdateByTest {
                 new TestDataGenerator[] {new CharGenerator('A', 'z', 0.1)}).t;
 
         final Table actual = t.updateBy(UpdateByOperation.RollingAvg(prevTicks, postTicks, primitiveColumns));
-        final Table expected = t.update(getCastingFormulas(primitiveColumns))
-                .updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, primitiveColumns))
+        final Table expected = t.updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, primitiveColumns))
                 .update(getFormulas(primitiveColumns));
         TstUtils.assertTableEquals(expected, actual, TableDiff.DiffItems.DoublesExact);
 
@@ -399,8 +388,7 @@ public class TestRollingAvg extends BaseUpdateByTest {
                         new CharGenerator('A', 'z', 0.1)}).t;
 
         final Table actual = t.updateBy(UpdateByOperation.RollingAvg("ts", prevTime, postTime, primitiveColumns));
-        final Table expected = t.update(getCastingFormulas(primitiveColumns))
-                .updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, primitiveColumns))
+        final Table expected = t.updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, primitiveColumns))
                 .update(getFormulas(primitiveColumns));
         TstUtils.assertTableEquals(expected, actual, TableDiff.DiffItems.DoublesExact);
 
@@ -505,8 +493,7 @@ public class TestRollingAvg extends BaseUpdateByTest {
                 new TestDataGenerator[] {new CharGenerator('A', 'z', 0.1)}).t;
 
         final Table actual = t.updateBy(UpdateByOperation.RollingAvg(prevTicks, postTicks, primitiveColumns));
-        final Table expected = t.update(getCastingFormulas(primitiveColumns))
-                .updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, primitiveColumns))
+        final Table expected = t.updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, primitiveColumns))
                 .update(getFormulas(primitiveColumns));
         TstUtils.assertTableEquals(expected, actual, TableDiff.DiffItems.DoublesExact);
 
@@ -523,8 +510,7 @@ public class TestRollingAvg extends BaseUpdateByTest {
         final Table actual =
                 t.updateBy(UpdateByOperation.RollingAvg("ts", prevTime, postTime, primitiveColumns), "Sym");
         final Table expected =
-                t.update(getCastingFormulas(primitiveColumns))
-                        .updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, primitiveColumns), "Sym")
+                t.updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, primitiveColumns), "Sym")
                         .update(getFormulas(primitiveColumns));
         TstUtils.assertTableEquals(expected, actual, TableDiff.DiffItems.DoublesExact);
 

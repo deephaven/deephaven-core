@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.replicators;
 
@@ -594,6 +594,22 @@ public class GenerateQueryLanguageFunctions {
                 operatorName,
                 classA.getSimpleName(),
                 classB.getSimpleName()));
+
+        // We need to enforce the IEE NaN comparison rules: any comparison with NaN is false
+        if (isFPNumber(classA)) {
+            sb.append(MessageFormat.format("" +
+                    "        if ({0}.isNaN(a)) '{'\n" +
+                    "            return false; // follows IEEE 754   \n" +
+                    "        '}'\n",
+                    TypeUtils.getBoxedType(classA).getSimpleName()));
+        }
+        if (isFPNumber(classB)) {
+            sb.append(MessageFormat.format("" +
+                    "        if ({0}.isNaN(b)) '{'\n" +
+                    "            return false; // follows IEEE 754   \n" +
+                    "        '}'\n",
+                    TypeUtils.getBoxedType(classB).getSimpleName()));
+        }
 
         switch (op) {
             case LESS:

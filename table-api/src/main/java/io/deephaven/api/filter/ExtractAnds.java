@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.api.filter;
 
@@ -22,6 +22,11 @@ enum ExtractAnds implements Visitor<Collection<Filter>> {
     @Override
     public Collection<Filter> visit(FilterIsNull isNull) {
         return Collections.singleton(isNull);
+    }
+
+    @Override
+    public Collection<Filter> visit(FilterIsNaN isNaN) {
+        return Collections.singleton(isNaN);
     }
 
     @Override

@@ -23,6 +23,10 @@
             "label": "A Crash Course in Deephaven",
             "items": [
               {
+                "label": "Overview",
+                "path": "tutorials/crash-course/overview.md"
+              },
+              {
                 "label": "Get Started",
                 "path": "tutorials/crash-course/get-started.md"
               },
@@ -388,6 +392,10 @@
                     "path": "how-to-guides/filters.md"
                   },
                   {
+                    "label": "Synchronize multiple tables",
+                    "path": "how-to-guides/synchronizing-tables.md"
+                  },
+                  {
                     "label": "Operators",
                     "path": "how-to-guides/operators.md"
                   },
@@ -732,15 +740,6 @@
               {
                 "label": "Flight SQL",
                 "path": "how-to-guides/flight-sql.md"
-              },
-              {
-                "label": "Excel",
-                "items": [
-                  {
-                    "label": "Excel Client",
-                    "path": "how-to-guides/excel/excel-client.md"
-                  }
-                ]
               },
               {
                 "label": "Protobuf",
@@ -1251,18 +1250,6 @@
                   {
                     "label": "removeBlink",
                     "path": "reference/table-operations/create/remove-blink.md"
-                  },
-                  {
-                    "label": "assertAddOnly",
-                    "path": "reference/table-operations/create/assert-add-only.md"
-                  },
-                  {
-                    "label": "assertAppendOnly",
-                    "path": "reference/table-operations/create/assert-append-only.md"
-                  },
-                  {
-                    "label": "assertBlink",
-                    "path": "reference/table-operations/create/assert-blink.md"
                   }
                 ]
               },
@@ -1528,6 +1515,10 @@
                   {
                     "label": "tailPct",
                     "path": "reference/table-operations/filter/tail-pct.md"
+                  },
+                  {
+                    "label": "TailInitializationFilter",
+                    "path": "reference/table-operations/filter/TailInitializationFilter.md"
                   },
                   {
                     "label": "where",

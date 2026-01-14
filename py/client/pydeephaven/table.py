@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 #
 """This module implements the Table and InputTable classes which are the main instruments to work with Deephaven
 data."""
@@ -22,6 +22,7 @@ from pydeephaven._table_ops import (
 from pydeephaven._utils import to_list
 from pydeephaven.agg import Aggregation
 from pydeephaven.dherror import DHError
+from pydeephaven.filters import Filter
 from pydeephaven.ticket import ServerObject, Ticket
 from pydeephaven.updateby import UpdateByOperation
 
@@ -262,12 +263,12 @@ class Table(TableInterface["Table"], ServerObject):
         order = SortDirection.DESCENDING
         return super().sort(order_by, order)
 
-    def where(self, filters: Union[str, list[str]]) -> Table:
+    def where(self, filters: Union[str, list[str], Filter, list[Filter]]) -> Table:
         """The where method creates a new table with only the rows meeting the filter criteria in the column(s) of
         the table.
 
         Args:
-            filters (Union[str, list[str]]): the filter condition expression(s)
+            filters (Union[str, list[str], Filter, list[Filter]]): the filter condition expression(s)
 
         Returns:
             a Table object
