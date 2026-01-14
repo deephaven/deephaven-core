@@ -159,10 +159,20 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
 
     /**
      * Sets the execution context with the active message stream and resource paths.
-     * This should be called when a script execution begins.
      *
-     * @param messageStream the message stream to set as active
-     * @param resourcePaths list of resource paths to resolve from remote source
+     * <p>This static method establishes which message stream instance should be considered "active" for
+     * resource requests, and which resource paths should be resolved from that remote source. Only one
+     * execution context can be active at a time across all instances.
+     *
+     * <p>In multi-client scenarios (Community Core), this ensures that only the
+     * message stream for the currently executing script is active, preventing resource requests from
+     * being serviced by the wrong client connection.
+     *
+     * <p><b>Typical Usage:</b> Called at the beginning of script execution to establish which .groovy
+     * files should be sourced from the remote client rather than the local classpath.
+     *
+     * @param messageStream the message stream to set as active (must not be null)
+     * @param resourcePaths list of resource paths (e.g., "package/MyScript.groovy") to resolve from remote source
      * @throws IllegalArgumentException if messageStream is null
      */
     public static void setExecutionContext(RemoteFileSourceMessageStream messageStream, List<String> resourcePaths) {
