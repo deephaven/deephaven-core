@@ -61,7 +61,10 @@ public class RemoteFileSourceClassLoader extends ClassLoader {
     /**
      * Returns the singleton instance of the RemoteFileSourceClassLoader.
      *
-     * @return the singleton instance, or null if not yet initialized
+     * <p>This method requires that {@link #initialize(ClassLoader)} has been called first.
+     *
+     * @return the singleton instance
+     * @throws IllegalStateException if the instance has not yet been initialized via {@link #initialize(ClassLoader)}
      */
     public static RemoteFileSourceClassLoader getInstance() {
         if (instance == null) {
