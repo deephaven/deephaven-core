@@ -202,10 +202,10 @@ result = builder.build()
 
 Requirements:
 
-- All partitioned tables must have the same number of key columns.
-- Key columns must have compatible types.
+- All partitioned tables have the same number of key columns.
+- Key columns have compatible types.
 - Key columns are joined in order.
-- Constituent tables within each partition must be add-only.
+- Constituent tables within each partition are add-only.
 
 ## Related documentation
 
