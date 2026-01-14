@@ -206,7 +206,7 @@ def parseJvmArgumentsFromProperty = { String propertyName, List<String> orElse -
 // (if the user already has JAVA_OPTS set, these VM options will _not_ apply).
 
 //noinspection GroovyUnusedAssignment
-def JAVA_OPTS_COMMENT = 'These VM options are expected to be compatible with JDKs 11, 17, and 21; it may be compatible with non LTS JDKs <= 24. It is known to be incompatible with JDK 25.'
+def JAVA_OPTS_COMMENT = 'These VM options are expected to be compatible with JDKs 11, 17, and 21; they may be compatible with non LTS JDKs <= 24. They are known to be incompatible with JDK 25.'
 def JAVA_OPTS = parseJvmArgumentsFromProperty("deephaven.javaOpts", parseJvmArgumentsFromEnv('JAVA_OPTS', [
   '-XX:+UseG1GC',
   '-XX:MaxGCPauseMillis=100',
@@ -259,7 +259,6 @@ def createVmOptions = tasks.register('createVmOptions') {
 }
 
 def createVmOptions25 = tasks.register('createVmOptions25') {
-    def comment = '# These VM options are expected to be compatible with JDK 25.'
     def vmOptionsFile = project.layout.buildDirectory.file('dh-default-25.vmoptions')
     // See startup notes above why we are not using this
     // def vmOptionsText = "-XX:#'${JAVA_OPTS_25_COMMENT}'\n${JAVA_OPTS_25.join('\n')}"
