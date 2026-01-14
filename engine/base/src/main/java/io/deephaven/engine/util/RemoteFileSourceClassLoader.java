@@ -35,9 +35,27 @@ public class RemoteFileSourceClassLoader extends ClassLoader {
      *
      * @param parent the parent class loader for delegation
      */
-    public RemoteFileSourceClassLoader(ClassLoader parent) {
+    private RemoteFileSourceClassLoader(ClassLoader parent) {
         super(parent);
-        instance = this;
+    }
+
+    /**
+     * Initializes the singleton RemoteFileSourceClassLoader instance with the specified parent class loader.
+     *
+     * <p>This method must be called exactly once before any calls to {@link #getInstance()}. The method is
+     * synchronized to prevent race conditions when multiple threads attempt initialization.
+     *
+     * @param parent the parent class loader for delegation
+     * @return the newly created singleton instance
+     * @throws IllegalStateException if the instance has already been initialized
+     */
+    public static synchronized RemoteFileSourceClassLoader initialize(ClassLoader parent) {
+        if (instance != null) {
+            throw new IllegalStateException("RemoteFileSourceClassLoader is already initialized");
+        }
+
+        instance = new RemoteFileSourceClassLoader(parent);
+        return instance;
     }
 
     /**
@@ -46,6 +64,9 @@ public class RemoteFileSourceClassLoader extends ClassLoader {
      * @return the singleton instance, or null if not yet initialized
      */
     public static RemoteFileSourceClassLoader getInstance() {
+        if (instance == null) {
+            throw new IllegalStateException("RemoteFileSourceClassLoader is not yet initialized");
+        }
         return instance;
     }
 
