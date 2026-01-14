@@ -47,16 +47,11 @@ import java.util.Map;
  * <p>
  * Events:
  * <ul>
- *   <li>{@link #EVENT_MESSAGE}: Fired for unrecognized messages from the server</li>
  *   <li>{@link #EVENT_REQUEST_SOURCE}: Fired when the server requests a resource from the client</li>
  * </ul>
  */
 @JsType(namespace = "dh.remotefilesource", name = "RemoteFileSourceService")
 public class JsRemoteFileSourceService extends HasEventHandling {
-    /** Event name for generic messages from the server */
-    @JsProperty(namespace = "dh.remotefilesource.RemoteFileSourceService")
-    public static final String EVENT_MESSAGE = "message";
-
     /** Event name for resource request events from the server */
     @JsProperty(namespace = "dh.remotefilesource.RemoteFileSourceService")
     public static final String EVENT_REQUEST_SOURCE = "requestsource";
@@ -155,7 +150,7 @@ public class JsRemoteFileSourceService extends HasEventHandling {
      * @return a promise that resolves to this service instance when the connection is established
      */
     private Promise<JsRemoteFileSourceService> connect() {
-        widget.addEventListener("message", this::handleMessage);
+        widget.addEventListener(JsWidget.EVENT_MESSAGE, this::handleMessage);
         return widget.refetch().then(w -> Promise.resolve(this));
     }
 
@@ -171,9 +166,8 @@ public class JsRemoteFileSourceService extends HasEventHandling {
         try {
             message = RemoteFileSourceServerRequest.deserializeBinary(payload);
         } catch (Exception e) {
-            // Failed to parse as proto, fire generic message event
-            handleUnknownMessage(event);
-            return;
+            // Failed to parse as proto
+            throw new IllegalStateException("Received unparseable message from server", e);
         }
 
         // Route the parsed message to the appropriate handler
@@ -182,7 +176,7 @@ public class JsRemoteFileSourceService extends HasEventHandling {
         } else if (message.hasSetExecutionContextResponse()) {
             handleSetExecutionContextResponse(message);
         } else {
-            handleUnknownMessage(event);
+            throw new IllegalStateException("Received unknown message type from server");
         }
     }
 
@@ -211,14 +205,6 @@ public class JsRemoteFileSourceService extends HasEventHandling {
         }
     }
 
-    /**
-     * Handles an unknown or unparseable message from the server.
-     *
-     * @param event the message event
-     */
-    private void handleUnknownMessage(Event<WidgetMessageDetails> event) {
-        DomGlobal.setTimeout(ignore -> fireEvent(EVENT_MESSAGE, event.getDetail()), 0);
-    }
 
     /**
      * Sets the execution context on the server to identify this message stream as active
