@@ -214,8 +214,7 @@ public class JsRemoteFileSourceService extends HasEventHandling {
                             + "A listener must be registered to handle resource requests.");
         }
         RemoteFileSourceMetaRequest request = message.getMetaRequest();
-        DomGlobal.setTimeout(ignore -> fireEvent(EVENT_REQUEST_SOURCE,
-                new ResourceRequestEvent(message.getRequestId(), request)), 0);
+        fireEvent(EVENT_REQUEST_SOURCE, new ResourceRequestEvent(message.getRequestId(), request));
     }
 
     /**
