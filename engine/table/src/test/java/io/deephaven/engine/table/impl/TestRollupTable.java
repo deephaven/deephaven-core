@@ -458,8 +458,8 @@ public class TestRollupTable extends RefreshingTableTestCase {
 
     @Test
     public void testRollupFormulaStatic3() {
-        testRollupFormulaStatic3(true);
         testRollupFormulaStatic3(false);
+        testRollupFormulaStatic3(true);
     }
 
     private void testRollupFormulaStatic3(boolean hasGroup) {

@@ -760,10 +760,21 @@ public class AggregationProcessor implements AggregationContextFactory {
             return -1;
         }
 
+        /**
+         * Ensures that the existing GroupByChunkedOperator has the required input/output columns
+         * 
+         * @param createExtraPairs When true, create all of the pairs for the group by operator. When false, if there
+         *        are any inputs that match the pairs we'll pass the operator through. The AggGroup aggregation can't
+         *        just tack pairs onto an existing operator, because the order would be incorrect. Formulas in a rollup
+         *        don't expose the results of the shared grouping, so just tacking them on is fine.
+         * @param hideExtras true if the extra pairs should be hidden from results, false otherwise
+         */
         GroupByChunkedOperator ensureGroupByOperator(final QueryTable table,
                 final int existingOperatorIndex,
                 final String exposeRowSetAs,
-                final MatchPair[] matchPairs) {
+                final MatchPair[] matchPairs,
+                final boolean createExtraPairs,
+                final boolean hideExtras) {
             boolean recreate = false;
             final GroupByChunkedOperator existing = (GroupByChunkedOperator) operators.get(existingOperatorIndex);
             if (exposeRowSetAs != null) {
@@ -783,8 +794,16 @@ public class AggregationProcessor implements AggregationContextFactory {
             for (MatchPair matchPair : matchPairs) {
                 final String input = matchPair.input().name();
                 if (Arrays.stream(existing.getAggregatedColumnPairs()).noneMatch(p -> p.input().name().equals(input))) {
+                    // we didn't have this in the input at all
                     newPairs.add(matchPair);
                     hiddenResults.add(matchPair.output().name());
+                    recreate = true;
+                } else if (createExtraPairs
+                        && Arrays.stream(existing.getAggregatedColumnPairs()).noneMatch(p -> p.equals(matchPair))) {
+                    newPairs.add(matchPair);
+                    if (hideExtras) {
+                        hiddenResults.add(matchPair.output().name());
+                    }
                     recreate = true;
                 }
             }
@@ -952,9 +971,11 @@ public class AggregationProcessor implements AggregationContextFactory {
             final int existingGroupByOperatorIndex = existingGroupByOperatorIndex();
             if (existingGroupByOperatorIndex >= 0) {
                 // if we have an existing group by operator, then use it (or update it to reflect our input columns)
-                groupByChunkedOperator = ensureGroupByOperator(table, existingGroupByOperatorIndex, null, makeSymmetricMatchPairs(inputNonKeyColumns));
+                groupByChunkedOperator = ensureGroupByOperator(table, existingGroupByOperatorIndex, null,
+                        makeSymmetricMatchPairs(inputNonKeyColumns), false, false);
             } else {
-                groupByChunkedOperator = makeGroupByOperatorForFormula(makeSymmetricMatchPairs(inputNonKeyColumns), table, null);
+                groupByChunkedOperator =
+                        makeGroupByOperatorForFormula(makeSymmetricMatchPairs(inputNonKeyColumns), table, null);
             }
 
             final FormulaMultiColumnChunkedOperator op = new FormulaMultiColumnChunkedOperator(table,
@@ -1024,7 +1045,8 @@ public class AggregationProcessor implements AggregationContextFactory {
             if (existingOperator >= 0) {
                 // Reuse the operator, adding a result extractor for the new result pairs
                 GroupByChunkedOperator existing =
-                        ensureGroupByOperator(table, existingOperator, null, MatchPair.fromPairs(resultPairs));
+                        ensureGroupByOperator(table, existingOperator, null, MatchPair.fromPairs(resultPairs), false,
+                                false);
                 addNoInputOperator(existing.resultExtractor(resultPairs));
             } else {
                 addNoInputOperator(
@@ -1152,7 +1174,7 @@ public class AggregationProcessor implements AggregationContextFactory {
 
     /**
      * Convert the array of column names to MatchPairs of the form {@code Col_GRP__ROLLUP__}
-     * 
+     *
      * @param cols the columns to convert
      * @return the mangled name matchpairs
      */
@@ -1164,7 +1186,7 @@ public class AggregationProcessor implements AggregationContextFactory {
 
     /**
      * Convert the array of strings to MatchPairs of the form Col=Col
-     * 
+     *
      * @param columns the columns to convert to MatchPairs
      * @return an array of MatchPairs
      */
@@ -1313,7 +1335,7 @@ public class AggregationProcessor implements AggregationContextFactory {
             if (indexOfExistingOperator >= 0) {
                 // share the existing operator for groupBy in a rollup base
                 final GroupByChunkedOperator existing = ensureGroupByOperator(table, indexOfExistingOperator,
-                        EXPOSED_GROUP_ROW_SETS.name(), MatchPair.fromPairs(resultPairs));
+                        EXPOSED_GROUP_ROW_SETS.name(), MatchPair.fromPairs(resultPairs), false, false);
                 addNoInputOperator(existing.resultExtractor(resultPairs));
             } else {
                 addNoInputOperator(new GroupByChunkedOperator(table, true, EXPOSED_GROUP_ROW_SETS.name(),
@@ -1355,8 +1377,9 @@ public class AggregationProcessor implements AggregationContextFactory {
 
             if (formula.reaggregateAggregatedValues()) {
                 if (existingGroupByOperatorIndex >= 0) {
-                    groupByChunkedOperator = ensureGroupByOperator(table, existingGroupByOperatorIndex, null, mangledMatchPairs);
-                    // TODO: do this better with an existing reaggregated op
+                    groupByChunkedOperator =
+                            ensureGroupByOperator(table, existingGroupByOperatorIndex, null, mangledMatchPairs, true,
+                                    true);
                     delegate = false;
                 } else {
                     // When we are reaggregating, we do not expose the rowsets, because the next level creates a
@@ -1367,14 +1390,13 @@ public class AggregationProcessor implements AggregationContextFactory {
                 }
             } else {
                 if (existingGroupByOperatorIndex >= 0) {
-                    groupByChunkedOperator = ensureGroupByOperator(table, existingGroupByOperatorIndex, EXPOSED_GROUP_ROW_SETS.name(), mangledMatchPairs);
-                    // TODO: do this better
-                    List<Pair> asPairs = Arrays.stream(mangledMatchPairs).map(mp -> Pair.of(mp.input(), mp.output())).collect(Collectors.toList());
-                    addNoInputOperator(groupByChunkedOperator.resultExtractor(asPairs));
+                    groupByChunkedOperator = ensureGroupByOperator(table, existingGroupByOperatorIndex,
+                            EXPOSED_GROUP_ROW_SETS.name(), mangledMatchPairs, true, false);
                     delegate = false;
                 } else {
                     // When we do not reaggregate, the next level needs access to our exposed group row sets
-                    groupByChunkedOperator = makeGroupByOperatorForFormula(mangledMatchPairs, table, EXPOSED_GROUP_ROW_SETS.name());
+                    groupByChunkedOperator =
+                            makeGroupByOperatorForFormula(mangledMatchPairs, table, EXPOSED_GROUP_ROW_SETS.name());
                     addNoInputOperator(groupByChunkedOperator);
                     // we added the operator, so we cannot delegate
                     delegate = false;
@@ -1625,7 +1647,7 @@ public class AggregationProcessor implements AggregationContextFactory {
 
                 final int existingIndex = existingGroupByOperatorIndex();
                 if (existingIndex >= 0) {
-                    groupByOperator = ensureGroupByOperator(table, existingIndex, null, groupPairs);
+                    groupByOperator = ensureGroupByOperator(table, existingIndex, null, groupPairs, true, true);
                 } else {
                     final List<String> hiddenPairs =
                             Arrays.stream(groupPairs).map(mp -> mp.left().name()).collect(Collectors.toList());
@@ -1635,7 +1657,7 @@ public class AggregationProcessor implements AggregationContextFactory {
                 // everything gets hidden
                 final FormulaMultiColumnChunkedOperator op =
                         new FormulaMultiColumnChunkedOperator(table, groupByOperator,
-                                true, selectColumn, inputKeyColumns, null, depthSource);
+                                true, selectColumn, inputKeyColumns, renames, depthSource);
 
                 addOperator(op, null, inputNonKeyColumns);
             } else {

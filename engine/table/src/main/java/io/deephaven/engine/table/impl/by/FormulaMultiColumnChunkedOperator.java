@@ -24,8 +24,10 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.UnaryOperator;
+import java.util.stream.Collectors;
 
 import static io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource.BLOCK_SIZE;
 
@@ -252,6 +254,13 @@ class FormulaMultiColumnChunkedOperator implements IterativeChunkedAggregationOp
             Arrays.stream(inputKeyColumns).forEach(col -> sourceColumns.put(col, columnSourceMap.get(col)));
             sourceColumns.put(AggregationProcessor.ROLLUP_FORMULA_DEPTH.name(), formulaDepthSource);
         }
+        final List<String> missingColumns = selectColumn.getColumns().stream()
+                .filter(column -> !sourceColumns.containsKey(column)).collect(Collectors.toList());
+        if (!missingColumns.isEmpty()) {
+            throw new IllegalStateException(
+                    "Columns " + missingColumns + " not found, available columns are: " + sourceColumns.keySet());
+        }
+
         selectColumn.initInputs(resultTable.getRowSet(), sourceColumns);
         formulaDataSource = selectColumn.getDataView();
 
