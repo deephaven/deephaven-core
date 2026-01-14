@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl.by;
 
+import gnu.trove.map.hash.TObjectIntHashMap;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.WritableLongChunk;
@@ -20,8 +21,6 @@ import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.mutable.MutableInt;
 
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 
 public class StaticSymbolTableChunkedOperatorAggregationStateManager implements OperatorAggregationStateManager {
     private static final int CHUNK_SIZE = ChunkedOperatorAggregationHelper.CHUNK_SIZE;
@@ -36,7 +35,7 @@ public class StaticSymbolTableChunkedOperatorAggregationStateManager implements 
     private final int[] keyPositions;
     private int nextPosition = 0;
 
-    volatile private Map<Object, Integer> keyToPosition;
+    private volatile TObjectIntHashMap<String> keyToPosition;
 
     StaticSymbolTableChunkedOperatorAggregationStateManager(final ColumnSource<?> keySource, final Table symbolTable) {
         this.symbolTable = symbolTable;
@@ -143,11 +142,14 @@ public class StaticSymbolTableChunkedOperatorAggregationStateManager implements 
         if (keyToPosition == null) {
             synchronized (this) {
                 if (keyToPosition == null) {
+                    final int length = nextPosition;
                     // build the map under the lock
-                    keyToPosition = new HashMap<>(nextPosition, 0.75f); // HashMap.DEFAULT_LOAD_FACTOR
-                    for (int ii = 0; ii < nextPosition; ii++) {
-                        keyToPosition.put(keyColumn.get(ii), ii);
+                    final TObjectIntHashMap<String> tmpMap = new TObjectIntHashMap<>(length, 0.75f, UNKNOWN_ROW);
+                    for (int ii = 0; ii < length; ii++) {
+                        tmpMap.put(keyColumn.get(ii), ii);
                     }
+                    // Map is complete, we can safely assign it to the volatile variable.
+                    keyToPosition = tmpMap;
                 }
             }
         }

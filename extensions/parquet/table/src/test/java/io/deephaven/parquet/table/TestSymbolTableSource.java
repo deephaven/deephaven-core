@@ -67,7 +67,8 @@ public class TestSymbolTableSource {
 
     @Test
     public void testSymbolTableDataIndexLookup() {
-        final Table t = TableTools.emptyTable(100).update("TheBestColumn=`S`+ (k % 10)", "Sentinel=k");
+        final Table t = TableTools.emptyTable(100)
+                .update("TheBestColumn=i==9?(String)null:`S`+(i%10)", "Sentinel=i");
         final File toWrite = new File(dataDirectory, "table.parquet");
         ParquetTools.writeTable(t, toWrite.getPath());
 
@@ -81,16 +82,24 @@ public class TestSymbolTableSource {
         Assert.assertTrue("index instanceof TableBackedDataIndex", index instanceof TableBackedDataIndex);
         final DataIndex.RowKeyLookup rkl = index.rowKeyLookup();
 
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 9; i++) {
             final String key = "S" + i;
             final long rowKey = rkl.apply(key, false);
             Assert.assertEquals(i, rowKey);
         }
+        // Assert null lookup is correct.
+        final long rowKey = rkl.apply(null, false);
+        Assert.assertEquals(9, rowKey);
     }
 
+    /**
+     * This won't fail after 41.0 due to the table-level filtering replacing AbstractColumnSource#match. Used to test
+     * bugfix against 0.40.x.
+     */
     @Test
     public void testFilterIndexedSymbolTable() {
-        final Table t = TableTools.emptyTable(100).update("TheBestColumn=`S`+ (k % 10)", "Sentinel=k");
+        final Table t = TableTools.emptyTable(100)
+                .update("TheBestColumn=i==9?(String)null:`S`+(i%10)", "Sentinel=i");
         final File toWrite = new File(dataDirectory, "table.parquet");
         ParquetTools.writeTable(t, toWrite.getPath());
 
@@ -105,9 +114,16 @@ public class TestSymbolTableSource {
         // materialize the index table
         final Table indexTable = index.table();
 
-        final Table filtered = readBack.where("TheBestColumn in `S0`");
-        final Table expected = TableTools.emptyTable(10).update("TheBestColumn=`S0`", "Sentinel=k*10");
+        Table filtered;
+        Table expected;
 
+        filtered = readBack.where("TheBestColumn in `S0`");
+        expected = TableTools.emptyTable(10).update("TheBestColumn=`S0`", "Sentinel=i*10");
+        assertTableEquals(expected, filtered);
+
+        // Assert null filtering is correct.
+        filtered = readBack.where("TheBestColumn in null");
+        expected = TableTools.emptyTable(1).update("TheBestColumn=(String)null", "Sentinel=9");
         assertTableEquals(expected, filtered);
     }
 }
