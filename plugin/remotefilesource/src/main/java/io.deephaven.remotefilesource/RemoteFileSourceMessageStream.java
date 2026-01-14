@@ -216,7 +216,8 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
             } else if (message.hasSetExecutionContext()) {
                 handleSetExecutionContext(message.getRequestId(), message.getSetExecutionContext().getResourcePathsList());
             } else {
-                log.warn().append("Received unknown message type from client").endl();
+                log.error().append("Received unknown message type from client").endl();
+                throw new ObjectCommunicationException("Received unknown message type from client");
             }
         } catch (InvalidProtocolBufferException e) {
             log.error().append("Failed to parse RemoteFileSourceClientRequest: ").append(e).endl();
@@ -311,13 +312,8 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
      */
     private void registerWithClassLoader() {
         RemoteFileSourceClassLoader classLoader = RemoteFileSourceClassLoader.getInstance();
-
-        if (classLoader != null) {
-            classLoader.registerProvider(this);
-            log.info().append("Registered RemoteFileSourceMessageStream provider with RemoteFileSourceClassLoader").endl();
-        } else {
-            log.warn().append("RemoteFileSourceClassLoader not available").endl();
-        }
+        classLoader.registerProvider(this);
+        log.info().append("Registered RemoteFileSourceMessageStream provider with RemoteFileSourceClassLoader").endl();
     }
 
     /**
@@ -325,11 +321,8 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
      */
     private void unregisterFromClassLoader() {
         RemoteFileSourceClassLoader classLoader = RemoteFileSourceClassLoader.getInstance();
-
-        if (classLoader != null) {
-            classLoader.unregisterProvider(this);
-            log.info().append("Unregistered RemoteFileSourceMessageStream provider from RemoteFileSourceClassLoader").endl();
-        }
+        classLoader.unregisterProvider(this);
+        log.info().append("Unregistered RemoteFileSourceMessageStream provider from RemoteFileSourceClassLoader").endl();
     }
 
 
