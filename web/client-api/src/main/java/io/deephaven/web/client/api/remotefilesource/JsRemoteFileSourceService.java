@@ -23,9 +23,11 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.ticket_p
 import io.deephaven.web.client.api.Callbacks;
 import io.deephaven.web.client.api.JsProtobufUtils;
 import io.deephaven.web.client.api.event.Event;
+import io.deephaven.web.client.api.event.EventFn;
 import io.deephaven.web.client.api.WorkerConnection;
 import io.deephaven.web.client.api.event.HasEventHandling;
 import io.deephaven.web.client.api.widget.JsWidget;
+import io.deephaven.web.shared.fu.RemoverFn;
 import io.deephaven.web.client.api.widget.WidgetMessageDetails;
 import io.deephaven.web.client.fu.LazyPromise;
 import jsinterop.annotations.JsIgnore;
@@ -47,7 +49,10 @@ import java.util.Map;
  * <p>
  * Events:
  * <ul>
- *   <li>{@link #EVENT_REQUEST_SOURCE}: Fired when the server requests a resource from the client</li>
+ *   <li>{@link #EVENT_REQUEST_SOURCE}: Fired when the server requests a resource from the client.
+ *       This event MUST have exactly one listener registered. Attempting to register more than one listener
+ *       will throw an IllegalStateException. Receiving a resource request without a registered listener
+ *       will also throw an IllegalStateException.</li>
  * </ul>
  */
 @JsType(namespace = "dh.remotefilesource", name = "RemoteFileSourceService")
@@ -70,6 +75,23 @@ public class JsRemoteFileSourceService extends HasEventHandling {
 
     private JsRemoteFileSourceService(JsWidget widget) {
         this.widget = widget;
+    }
+
+    /**
+     * Overrides addEventListener to enforce that EVENT_REQUEST_SOURCE can only have one listener.
+     *
+     * @param name the name of the event to listen for
+     * @param callback a function to call when the event occurs
+     * @return Returns a cleanup function.
+     * @param <T> the type of the data that the event will provide
+     */
+    @Override
+    public <T> RemoverFn addEventListener(String name, EventFn<T> callback) {
+        if (EVENT_REQUEST_SOURCE.equals(name) && hasListeners(EVENT_REQUEST_SOURCE)) {
+            throw new IllegalStateException(
+                    "EVENT_REQUEST_SOURCE already has a listener. Only one listener is allowed for this event.");
+        }
+        return super.addEventListener(name, callback);
     }
 
     /**
@@ -186,6 +208,11 @@ public class JsRemoteFileSourceService extends HasEventHandling {
      * @param message the server request message
      */
     private void handleMetaRequest(RemoteFileSourceServerRequest message) {
+        if (!hasListeners(EVENT_REQUEST_SOURCE)) {
+            throw new IllegalStateException(
+                    "Received resource request from server but no listener is registered for EVENT_REQUEST_SOURCE. "
+                            + "A listener must be registered to handle resource requests.");
+        }
         RemoteFileSourceMetaRequest request = message.getMetaRequest();
         DomGlobal.setTimeout(ignore -> fireEvent(EVENT_REQUEST_SOURCE,
                 new ResourceRequestEvent(message.getRequestId(), request)), 0);
