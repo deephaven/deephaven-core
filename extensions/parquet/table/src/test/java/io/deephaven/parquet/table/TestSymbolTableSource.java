@@ -4,7 +4,10 @@
 package io.deephaven.parquet.table;
 
 import io.deephaven.base.FileUtils;
+import io.deephaven.engine.table.DataIndex;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.dataindex.TableBackedDataIndex;
+import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.sources.regioned.SymbolTableSource;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
@@ -60,5 +63,51 @@ public class TestSymbolTableSource {
         final Table syms = source.getStaticSymbolTable(t.getRowSet(), false);
 
         assertTableEquals(expected, syms);
+    }
+
+    @Test
+    public void testSymbolTableDataIndexLookup() {
+        final Table t = TableTools.emptyTable(100).update("TheBestColumn=`S`+ (k % 10)", "Sentinel=k");
+        final File toWrite = new File(dataDirectory, "table.parquet");
+        ParquetTools.writeTable(t, toWrite.getPath());
+
+        // Make sure we have the expected symbol table (or not)
+        final Table readBack = ParquetTools.readTable(toWrite.getPath());
+        final SymbolTableSource<String> source =
+                (SymbolTableSource<String>) readBack.getColumnSource("TheBestColumn", String.class);
+        Assert.assertTrue(source.hasSymbolTable(readBack.getRowSet()));
+
+        final DataIndex index = DataIndexer.getOrCreateDataIndex(readBack, "TheBestColumn");
+        Assert.assertTrue("index instanceof TableBackedDataIndex", index instanceof TableBackedDataIndex);
+        final DataIndex.RowKeyLookup rkl = index.rowKeyLookup();
+
+        for (int i = 0; i < 10; i++) {
+            final String key = "S" + i;
+            final long rowKey = rkl.apply(key, false);
+            Assert.assertEquals(i, rowKey);
+        }
+    }
+
+    @Test
+    public void testFilterIndexedSymbolTable() {
+        final Table t = TableTools.emptyTable(100).update("TheBestColumn=`S`+ (k % 10)", "Sentinel=k");
+        final File toWrite = new File(dataDirectory, "table.parquet");
+        ParquetTools.writeTable(t, toWrite.getPath());
+
+        // Make sure we have the expected symbol table (or not)
+        final Table readBack = ParquetTools.readTable(toWrite.getPath());
+        final SymbolTableSource<String> source =
+                (SymbolTableSource<String>) readBack.getColumnSource("TheBestColumn", String.class);
+        Assert.assertTrue(source.hasSymbolTable(readBack.getRowSet()));
+
+        final DataIndex index = DataIndexer.getOrCreateDataIndex(readBack, "TheBestColumn");
+        Assert.assertTrue("index instanceof TableBackedDataIndex", index instanceof TableBackedDataIndex);
+        // materialize the index table
+        final Table indexTable = index.table();
+
+        final Table filtered = readBack.where("TheBestColumn in `S0`");
+        final Table expected = TableTools.emptyTable(10).update("TheBestColumn=`S0`", "Sentinel=k*10");
+
+        assertTableEquals(expected, filtered);
     }
 }

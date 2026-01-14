@@ -20,6 +20,8 @@ import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.mutable.MutableInt;
 
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 public class StaticSymbolTableChunkedOperatorAggregationStateManager implements OperatorAggregationStateManager {
     private static final int CHUNK_SIZE = ChunkedOperatorAggregationHelper.CHUNK_SIZE;
@@ -33,6 +35,8 @@ public class StaticSymbolTableChunkedOperatorAggregationStateManager implements 
     private int nullPosition = -1;
     private final int[] keyPositions;
     private int nextPosition = 0;
+
+    volatile private Map<Object, Integer> keyToPosition;
 
     StaticSymbolTableChunkedOperatorAggregationStateManager(final ColumnSource<?> keySource, final Table symbolTable) {
         this.symbolTable = symbolTable;
@@ -135,8 +139,19 @@ public class StaticSymbolTableChunkedOperatorAggregationStateManager implements 
 
     @Override
     public int findPositionForKey(final Object key) {
-        // shouldn't be able to get here; rollup/treeview will call this when we're 2+ levels deep in out view. since
-        // we're limited to a single keySource, we cannot be more than 1 level deep
-        throw new UnsupportedOperationException("StaticSymbolTable StateManager must be used with a single keySource");
+        // Build the map if it doesn't exist
+        if (keyToPosition == null) {
+            synchronized (this) {
+                if (keyToPosition == null) {
+                    // build the map under the lock
+                    keyToPosition = new HashMap<>(nextPosition, 0.75f); // HashMap.DEFAULT_LOAD_FACTOR
+                    for (int ii = 0; ii < nextPosition; ii++) {
+                        keyToPosition.put(keyColumn.get(ii), ii);
+                    }
+                }
+            }
+        }
+        // Use the map to find the position
+        return keyToPosition.get(key);
     }
 }
