@@ -47,6 +47,7 @@ public class CoreClient extends HasEventHandling {
             LOGIN_TYPE_ANONYMOUS = "anonymous";
 
     private final IdeConnection ideConnection;
+    private Promise<JsRemoteFileSourceService> remoteFileSourceServicePromise;
 
     public CoreClient(String serverUrl, @TsTypeRef(ConnectOptions.class) @JsOptional Object connectOptions) {
         ideConnection = new IdeConnection(serverUrl, connectOptions);
@@ -143,7 +144,11 @@ public class CoreClient extends HasEventHandling {
     }
 
     public Promise<JsRemoteFileSourceService> getRemoteFileSourceService() {
-        return JsRemoteFileSourceService.fetchPlugin(ideConnection.connection.get());
+        if (remoteFileSourceServicePromise == null) {
+            remoteFileSourceServicePromise = JsRemoteFileSourceService.fetchPlugin(ideConnection.connection.get());
+        }
+
+        return remoteFileSourceServicePromise;
     }
 
     public Promise<String[][]> getServerConfigValues() {
