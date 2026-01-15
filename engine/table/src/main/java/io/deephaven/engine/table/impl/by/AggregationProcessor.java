@@ -949,6 +949,7 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final Formula formula) {
+            unsupportedForBlinkTables("Formula");
             validateFormulaIsNotReaggregating(formula);
             final SelectColumn selectColumn = SelectColumn.of(formula.selectable());
 
@@ -1645,14 +1646,14 @@ public class AggregationProcessor implements AggregationContextFactory {
             if (formula.reaggregateAggregatedValues()) {
                 GroupByChunkedOperator groupByOperator;
 
-                final int existingIndex = existingGroupByOperatorIndex();
-                if (existingIndex >= 0) {
-                    groupByOperator = ensureGroupByOperator(table, existingIndex, null, groupPairs, true, true);
-                } else {
-                    final List<String> hiddenPairs =
-                            Arrays.stream(groupPairs).map(mp -> mp.left().name()).collect(Collectors.toList());
-                    groupByOperator = new GroupByChunkedOperator(table, false, null, hiddenPairs, groupPairs);
-                }
+                /*
+                 * There is no point looking for an existing {@link GroupByChunkedOperator}. Because we are
+                 * reaggregating; an existing AggGroup would use the {@link GroupByReaggregateOperator}, and any
+                 * formulas would have a delegated operator that is not exposed.
+                 */
+                final List<String> hiddenPairs =
+                        Arrays.stream(groupPairs).map(mp -> mp.left().name()).collect(Collectors.toList());
+                groupByOperator = new GroupByChunkedOperator(table, false, null, hiddenPairs, groupPairs);
 
                 // everything gets hidden
                 final FormulaMultiColumnChunkedOperator op =
