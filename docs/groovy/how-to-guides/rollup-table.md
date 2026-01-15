@@ -113,6 +113,33 @@ result = source.rollup(aggList, "Group", "Subgroup")
 
 ![Creating a rollup table](../assets/how-to/new-rollup.gif)
 
+Note that rollup tables can only be created from String or primitive columns. Attempting to use a non-primitive type such as `LocalDate` or a Timestamp as a rollup column results in an error:
+
+```groovy skip-test
+import io.deephaven.api.agg.Aggregation
+
+t = newTable(
+    stringCol("Sym", "AAPL", "AAPL", "GOOGL", "GOOGL", "AAPL"),
+    doubleCol("Last", 150.25, 151.50, 920.75, 922.10, 152.00),
+    intCol("Size", 100, 200, 50, 150, 300),
+    instantCol("ExchangeTimestamp",
+        parseInstant("2017-08-25T09:30:00 UTC"),
+        parseInstant("2017-08-25T10:15:00 UTC"),
+        parseInstant("2017-08-25T11:45:00 UTC"),
+        parseInstant("2017-08-25T14:20:00 UTC"),
+        parseInstant("2017-08-25T15:50:00 UTC")
+    )
+)
+
+t = t.update("LocalExchangeTimestampDate=toLocalDate(ExchangeTimestamp, timeZone(`UTC`))")
+
+aggList = [Aggregation.AggAvg("Last", "Size")]
+
+tRollup = t.rollup(aggList, "LocalExchangeTimestampDate")
+```
+
+![An error message stating that Deephaven can't parse the LOCAL_DATE data type](../assets/how-to/cant-parse-local-date.png)
+
 ## Related documentation
 
 - [How to create a hierarchical tree table](./tree-table.md)
