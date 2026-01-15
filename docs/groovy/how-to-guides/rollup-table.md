@@ -113,7 +113,7 @@ result = source.rollup(aggList, "Group", "Subgroup")
 
 ![Creating a rollup table](../assets/how-to/new-rollup.gif)
 
-Note that rollup tables can only be created from String or primitive columns. Attempting to use a Timestamp as a rollup column results in an error:
+Note that rollup tables can only be created from String or primitive columns. Attempting to use a non-primitive type such as `LocalDate` or a Timestamp as a rollup column results in an error:
 
 ```groovy skip-test
 import io.deephaven.api.agg.Aggregation
