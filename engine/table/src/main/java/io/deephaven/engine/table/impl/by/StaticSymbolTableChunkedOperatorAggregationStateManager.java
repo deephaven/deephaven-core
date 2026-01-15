@@ -4,11 +4,14 @@
 package io.deephaven.engine.table.impl.by;
 
 import gnu.trove.map.hash.TObjectIntHashMap;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
@@ -16,6 +19,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.SymbolTableToUniqueIdSource;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import io.deephaven.engine.table.impl.sources.regioned.SymbolTableSource;
+import io.deephaven.engine.table.iterators.ChunkedObjectColumnIterator;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.mutable.MutableInt;
@@ -113,6 +117,7 @@ public class StaticSymbolTableChunkedOperatorAggregationStateManager implements 
     private void updateKeyHashTableSources(final WritableLongChunk<RowKeys> symbolTableValues,
             final int firstNewPosition) {
         keyColumn.ensureCapacity(nextPosition);
+        Assert.eqNull(keyToPosition, "keyToPosition");
 
         final ColumnSource<?> symbolColumnSource = symbolTable.getColumnSource(SymbolTableSource.SYMBOL_COLUMN_NAME);
 
@@ -145,8 +150,11 @@ public class StaticSymbolTableChunkedOperatorAggregationStateManager implements 
                 if ((localKeyToPosition = keyToPosition) == null) {
                     final int length = nextPosition;
                     localKeyToPosition = new TObjectIntHashMap<>(length, 0.75f, UNKNOWN_ROW);
-                    for (int ii = 0; ii < length; ii++) {
-                        localKeyToPosition.put(keyColumn.get(ii), ii);
+                    try (final CloseableIterator<String> keyIterator = new ChunkedObjectColumnIterator<>(
+                            keyColumn, RowSequenceFactory.forRange(0, length - 1))) {
+                        for (int ii = 0; ii < length; ii++) {
+                            localKeyToPosition.put(keyIterator.next(), ii);
+                        }
                     }
                     keyToPosition = localKeyToPosition;
                 }
