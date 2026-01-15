@@ -1,21 +1,21 @@
 ---
 title: Query Parallelization
-sidebar_label: Parallelization
 ---
 
-Deephaven automatically parallelizes queries, using multiple CPU cores to dramatically improve performance. Understanding how parallelization works helps you write efficient, high-performance queries.
+Deephaven automatically uses multiple CPU cores to speed up your queries through parallelization. A calculation that takes 10 seconds on one core might finish in 2-3 seconds when spread across 4 cores.
 
-When you run a query on a multi-core system, Deephaven splits the work across available CPU cores and processes data chunks simultaneously. A query that takes 10 seconds on a single core might complete in 2-3 seconds when parallelized across 4 cores.
+> [!TIP] > **Most queries need no changes to benefit from parallelization.** Deephaven parallelizes by default. The techniques in this guide are only needed for rare cases where you must control or limit parallelization - such as when using counters or accessing external resources that require sequential processing.
 
-This guide shows you how to write queries that leverage parallelization effectively.
+## How parallelization works
 
-## How Deephaven parallelizes queries
+Deephaven parallelizes at two levels:
 
-Deephaven parallelizes at two levels: across multiple table operations and within individual operations.
+1. **Between tables**: When multiple tables need to update, Deephaven calculates them simultaneously on different cores.
+2. **Within a table**: When calculating a single table's cells, Deephaven spreads the rows across multiple cores.
 
-### Multiple operations run simultaneously
+### Between tables
 
-When you have independent operations, Deephaven processes them in parallel. Consider this query that performs three independent calculations:
+When you have independent tables, Deephaven computes them in parallel. In this example, three tables all derive from `trades`:
 
 ```groovy test-set=parallel order=trades,highValue,bySymbol,recent
 import static io.deephaven.api.agg.Aggregation.*
@@ -27,19 +27,17 @@ trades = timeTable("PT1s").update(
     "Volume = randomInt(100, 10000)"
 )
 
-// These three operations run simultaneously
+// These three tables compute simultaneously
 highValue = trades.where("Price * Volume > 500000")
 bySymbol = trades.aggBy([AggSum("TotalVolume = Volume")], "Symbol")
 recent = trades.tail(100)
 ```
 
-When new data arrives, Deephaven processes all three operations at the same time on different CPU cores. The operations are independent, so they don't need to wait for each other.
+When new data arrives in `trades`, Deephaven computes all three derived tables at the same time on different CPU cores.
 
-Methods used: [`timeTable`](../../reference/table-operations/create/timeTable.md), [`update`](../../reference/table-operations/select/update.md), [`where`](../../reference/table-operations/filter/where.md), [`aggBy`](../../reference/table-operations/group-and-aggregate/aggBy.md), [`tail`](../../reference/table-operations/filter/tail.md).
+### Within a table
 
-### Individual operations split work across cores
-
-Within a single operation, Deephaven splits the data into chunks and processes them in parallel:
+Within a single table, Deephaven splits the data into chunks and processes the chunks in parallel:
 
 ```groovy test-set=parallel order=largeTable
 // Calculate prices for 1 million rows
@@ -50,21 +48,13 @@ largeTable = emptyTable(1_000_000).update(
 )
 ```
 
-For this operation:
+With 1 million rows and 4 CPU cores, each core calculates ~250,000 rows. The work finishes roughly 4x faster than if one core did everything.
 
-1. Deephaven splits the 1 million rows into chunks (typically 4,096 rows each).
-2. Each CPU core processes different chunks simultaneously.
-3. Results are combined into the final table.
+## Most queries just work
 
-On a 4-core system, this can be ~4x faster than processing all rows sequentially.
+Most queries parallelize correctly without any changes. The key requirement: **each row's calculation must not depend on other rows or external variables that change**.
 
-## Writing thread-safe queries
-
-Deephaven parallelizes operations automatically when they are **thread-safe**. A thread-safe operation produces correct results regardless of which CPU core processes which rows or in what order.
-
-### Thread-safe patterns
-
-These patterns are always thread-safe and parallelize automatically:
+These common patterns always parallelize correctly:
 
 **Column arithmetic** with [`update`](../../reference/table-operations/select/update.md):
 
@@ -109,16 +99,36 @@ result = source.update(
 )
 ```
 
-These operations are thread-safe because:
+These work because each row's result depends only on that row's values. It doesn't matter which core calculates which row, or in what order - the answer is the same.
 
-- They only use values from the current row.
-- They don't modify shared state.
-- They don't depend on processing order.
-- They produce the same result regardless of which core processes them.
+## When parallel execution causes problems
 
-### Operations requiring serial execution
+Some code produces incorrect results when run in parallel. This happens when:
 
-Some operations need rows to be processed in a specific order or access shared state. These require [`.withSerial()`](../../conceptual/query-engine/parallelization.md#using-withserial-for-selectables) to force sequential, single-threaded execution:
+- **The code modifies external variables.** If multiple cores read and write the same variable simultaneously, they interfere with each other.
+- **The result depends on processing order.** If row 5's result depends on row 4 being processed first, parallel execution breaks this assumption.
+
+### Example: A counter that breaks
+
+This counter function modifies an external variable:
+
+```groovy syntax
+counter = 0
+
+getNextId = {
+    counter += 1
+    return counter
+}
+
+// This will produce INCORRECT results
+result = emptyTable(100).update("ID = getNextId()")
+```
+
+With parallel execution, multiple cores call `getNextId()` simultaneously. Two cores might both read `counter = 5`, both increment to `6`, and both return `6` - skipping numbers and producing duplicates.
+
+### How to fix it: Use `.withSerial()`
+
+The [`.withSerial()`](../../conceptual/query-engine/parallelization.md#serialization) method forces a formula to run on one core, processing rows one at a time in order:
 
 ```groovy
 import io.deephaven.api.Selectable
@@ -126,107 +136,17 @@ import io.deephaven.api.ColumnName
 import io.deephaven.api.RawString
 import java.util.concurrent.atomic.AtomicInteger
 
-// This counter needs sequential processing
 counter = new AtomicInteger(0)
 
-// Use .withSerial() for ordered execution
+// .withSerial() ensures correct sequential execution
 col = Selectable.of(ColumnName.of("ID"), RawString.of("counter.getAndIncrement()")).withSerial()
 result = emptyTable(100).update([col])
 ```
 
-Without [`.withSerial()`](../../conceptual/query-engine/parallelization.md#using-withserial-for-selectables), multiple cores might read and update `counter` simultaneously, producing incorrect results.
-
-**When to use `.withSerial()`**:
-
-- Sequential numbering or counters.
-- Operations that depend on row order.
-- Accessing non-thread-safe external resources.
-- File I/O or logging operations.
-
-**Performance trade-off**: Serial execution is slower because it uses only one core, but correctness comes first. Use serial execution when needed for correctness, and parallelization everywhere else for speed.
-
-## Performance tips
-
-### Prefer stateless operations
-
-Stateless operations parallelize automatically and run faster:
-
-```groovy test-set=perf order=source,result
-source = emptyTable(100).update("Price = i * 10.0", "Quantity = i")
-
-// ✓ Stateless - parallelizes automatically
-result = source.update("Value = Price * Quantity")
-
-// ✗ Stateful - requires .withSerial()
-counter = 0
-def increment() {
-    return counter++
-}
-```
-
-### Use Deephaven's built-in operations
-
-Built-in operations are optimized for parallel execution:
-
-```groovy test-set=perf order=source,result
-import static io.deephaven.api.agg.Aggregation.*
-
-source = emptyTable(100).update("Symbol = `ABC`", "Value = i")
-
-// ✓ Built-in aggregation - highly optimized
-result = source.aggBy([AggSum("Total = Value")], "Symbol")
-
-// ✗ Custom aggregation - harder to parallelize efficiently
-```
-
-### Choose the right table operation
-
-Different operations have different performance characteristics:
-
-- [`update`](../../reference/table-operations/select/update.md): Creates in-memory columns, best for frequently accessed data.
-- [`updateView`](../../reference/table-operations/select/update-view.md): Computes on demand, best for large tables where only subsets are accessed.
-- [`lazyUpdate`](../../reference/table-operations/select/lazy-update.md): Memoizes calculations, best when many rows share the same input values.
-
-```groovy test-set=perf order=source,result1,result2,result3
-source = emptyTable(1_000_000).update("Group = i % 100")
-
-// update: Fast access, uses more memory
-result1 = source.update("Squared = Group * Group")
-
-// updateView: Uses less memory, computes on demand
-result2 = source.updateView("Squared = Group * Group")
-
-// lazyUpdate: Efficient for repeated values (100 unique Groups)
-result3 = source.lazyUpdate("Squared = Group * Group")
-```
-
-### Leverage the Directed Acyclic Graph (DAG)
-
-Structure queries so independent operations can run in parallel:
-
-```groovy test-set=dag order=marketData,summary,highVolume,recent
-import static io.deephaven.api.agg.Aggregation.*
-
-marketData = timeTable("PT1s").update(
-    "Symbol = `SYM` + (int)(i % 5)",
-    "Price = 100 + randomGaussian(0, 10)",
-    "Volume = randomInt(100, 10000)"
-)
-
-// These operations run simultaneously
-summary = marketData.aggBy([
-    AggAvg("AvgPrice = Price"),
-    AggSum("TotalVolume = Volume")
-], "Symbol")
-
-highVolume = marketData.where("Volume > 5000")
-recent = marketData.tail(1000)
-```
-
-All three derived tables (`summary`, `highVolume`, `recent`) update simultaneously when `marketData` receives new data.
+**Trade-off**: Serial execution uses only one core, so it's slower. Use it only when correctness requires it.
 
 ## Next steps
 
-- [Comprehensive parallelization guide](../../conceptual/query-engine/parallelization.md) - Deep dive into parallelization concepts, thread pools, and advanced control
-- [Directed Acyclic Graph (DAG)](../../conceptual/dag.md) - Understanding how Deephaven tracks dependencies
-- [Table operations](../../reference/table-operations/) - Complete reference for all table operations
+- [Parallelization in depth](../../conceptual/query-engine/parallelization.md) - Advanced control over parallelization, including barriers and thread pool configuration
+- [How Deephaven tracks dependencies](../../conceptual/dag.md) - Understanding which operations can run in parallel
+- [Table operations reference](../../reference/table-operations/) - Complete reference for all table operations
