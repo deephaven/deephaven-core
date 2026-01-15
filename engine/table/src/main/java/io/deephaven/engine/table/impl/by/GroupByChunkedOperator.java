@@ -677,49 +677,10 @@ public final class GroupByChunkedOperator implements GroupByOperator {
         return hiddenResults;
     }
 
-    private class ResultExtractor implements IterativeChunkedAggregationOperator {
-        final Map<String, ? extends ColumnSource<?>> resultColumns;
-        final String[] inputColumnNames;
-
+    private class ResultExtractor extends GroupByResultExtractor {
         private ResultExtractor(Map<String, ? extends ColumnSource<?>> resultColumns, String[] inputColumnNames) {
-            this.resultColumns = resultColumns;
-            this.inputColumnNames = inputColumnNames;
+            super(resultColumns, inputColumnNames);
         }
-
-        @Override
-        public Map<String, ? extends ColumnSource<?>> getResultColumns() {
-            return resultColumns;
-        }
-
-        @Override
-        public void addChunk(BucketedContext context, Chunk<? extends Values> values,
-                LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
-                IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
-                WritableBooleanChunk<Values> stateModified) {}
-
-        @Override
-        public void removeChunk(BucketedContext context, Chunk<? extends Values> values,
-                LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
-                IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
-                WritableBooleanChunk<Values> stateModified) {}
-
-        @Override
-        public boolean addChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values,
-                LongChunk<? extends RowKeys> inputRowKeys, long destination) {
-            return false;
-        }
-
-        @Override
-        public boolean removeChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values,
-                LongChunk<? extends RowKeys> inputRowKeys, long destination) {
-            return false;
-        }
-
-        @Override
-        public void ensureCapacity(long tableSize) {}
-
-        @Override
-        public void startTrackingPrevValues() {}
 
         @Override
         public UnaryOperator<ModifiedColumnSet> initializeRefreshing(@NotNull QueryTable resultTable,
