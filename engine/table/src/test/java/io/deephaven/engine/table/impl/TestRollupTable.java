@@ -623,6 +623,31 @@ public class TestRollupTable extends RefreshingTableTestCase {
         TableTools.showWithRowSet(expected2);
         assertTableEquals(expected2, snapshot2);
         freeSnapshotTableChunks(snapshot2);
+
+        TableTools.showWithRowSet(source);
+        // remove a key from source, so that reaggregate has to do some removals
+        cug.runWithinUnitTestCycle(() -> {
+            removeRows(source, i(0));
+            source.notifyListeners(
+                    new TableUpdateImpl(i(), i(0), i(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
+        });
+        TableTools.showWithRowSet(source);
+
+        final Table snapshot3 =
+                snapshotToTable(rollup1, ss1, keyTable, ColumnName.of("Action"), null, RowSetFactory.flat(30));
+        TableTools.showWithRowSet(snapshot2);
+        Table expected3 = TableTools.newTable(intCol(rollup1.getRowDepthColumn().name(), 1, 2, 3, 2, 3, 3, 2, 3),
+                booleanCol(rollup1.getRowExpandedColumn().name(), true, true, null, true, null, null,
+                        true, null),
+                col("Key1", null, "Alpha", "Alpha", "Bravo", "Bravo", "Bravo", "Charlie", "Charlie"),
+                col("Key2", null, null, "Echo", null, "Delta", "Echo", null, "Echo"),
+                col("Sentinel", iv(2, 3, 4, 5, 7, 8, 9), iv(3, 8), iv(3, 8), iv(2, 7), iv(2), iv(7),
+                        iv(4, 5, 9), iv(4, 5, 9)))
+                .update("Sum=sum(Sentinel)");
+
+        TableTools.showWithRowSet(expected3);
+        assertTableEquals(expected3, snapshot3);
+        freeSnapshotTableChunks(snapshot3);
     }
 
     @Test

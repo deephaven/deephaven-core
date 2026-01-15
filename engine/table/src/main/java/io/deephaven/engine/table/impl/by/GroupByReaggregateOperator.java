@@ -231,7 +231,7 @@ public final class GroupByReaggregateOperator implements GroupByOperator {
         if (length == 0) {
             return;
         }
-        accumulateToBuilderRandom(removedBuilders, rowSets, start, length, destination, false);
+        accumulateToBuilderRandom(removedBuilders, rowSets, start, length, destination, true);
         stepDestinationsModified.addKey(destination);
     }
 
