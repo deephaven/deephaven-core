@@ -29,13 +29,17 @@ and is not safe to refresh. Note that some usages, such as on an append-only tab
 
 The following table summarizes when each variable is safe to use:
 
-| Variable                        | Safe on                    | Throws error on                                |
-| ------------------------------- | -------------------------- | ---------------------------------------------- |
-| `i`, `ii`                       | static, append-only, blink | other refreshing tables (add-only, ticking)    |
-| `k`                             | static, add-only, blink    | other refreshing tables (append-only, ticking) |
-| Column arrays (`Column_[ii-1]`) | static, blink              | any refreshing table (including append-only)   |
+| Variable                                     | Safe on                    | Throws error on      |
+| -------------------------------------------- | -------------------------- | -------------------- |
+| `i`, `ii`                                    | static, append-only, blink | add-only, ticking    |
+| `k`                                          | static, add-only, blink    | append-only, ticking |
+| Simple constant offset (`Column_[i-1]`)      | all tables                 | —                    |
+| Complex array expressions (`Column_[(i)-1]`) | static, blink              | any refreshing table |
 
-For refreshing tables where you need to reference preceding or following values, see [Alternatives for refreshing tables](../../../how-to-guides/built-in-variables.md#alternatives-for-refreshing-tables).
+> [!NOTE]
+> The engine detects simple constant offset array access patterns like `Column_[i-1]` and handles them correctly on all table types. However, semantically equivalent but syntactically different expressions like `Column_[(i)-1]` are not recognized and will throw an error on refreshing tables.
+
+For refreshing tables where you need more complex positional access, see [Alternatives for refreshing tables](../../../how-to-guides/built-in-variables.md#alternatives-for-refreshing-tables).
 
 Row numbers `i` and `ii` are frequently used with the [`_` and `[]`](../../query-language/types/arrays.md) operators to retrieve values from prior or future rows in the table. For example, `Column_[ii-1]` references the value in `Column` one row before the current row.
 

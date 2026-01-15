@@ -11,8 +11,7 @@ There are three special built-in query language variables worth noting. They cor
 
 `i` and `ii` can be used to access the current, previous, and subsequent rows in a table.
 
-> [!WARNING]
-> `k` is a Deephaven engine index and does not correspond to traditional row indices. It should only be used in limited circumstances, such as debugging or advanced query operations.
+> [!WARNING] > `k` is a Deephaven engine index and does not correspond to traditional row indices. It should only be used in limited circumstances, such as debugging or advanced query operations.
 
 ### Refreshing table restrictions
 
@@ -25,13 +24,17 @@ and is not safe to refresh. Note that some usages, such as on an append-only tab
 
 The following table summarizes when each variable is safe to use:
 
-| Variable                        | Safe on                    | Throws error on                                |
-| ------------------------------- | -------------------------- | ---------------------------------------------- |
-| `i`, `ii`                       | static, append-only, blink | other refreshing tables (add-only, ticking)    |
-| `k`                             | static, add-only, blink    | other refreshing tables (append-only, ticking) |
-| Column arrays (`Column_[ii-1]`) | static, blink              | any refreshing table (including append-only)   |
+| Variable                                     | Safe on                    | Throws error on      |
+| -------------------------------------------- | -------------------------- | -------------------- |
+| `i`, `ii`                                    | static, append-only, blink | add-only, ticking    |
+| `k`                                          | static, add-only, blink    | append-only, ticking |
+| Simple constant offset (`Column_[i-1]`)      | all tables                 | —                    |
+| Complex array expressions (`Column_[(i)-1]`) | static, blink              | any refreshing table |
 
-For refreshing tables where you need to reference preceding or following values, see [Alternatives for refreshing tables](#alternatives-for-refreshing-tables) below.
+> [!NOTE]
+> The engine detects simple constant offset array access patterns like `Column_[i-1]` and handles them correctly on all table types. However, semantically equivalent but syntactically different expressions like `Column_[(i)-1]` are not recognized and will throw an error on refreshing tables.
+
+For refreshing tables where you need more complex positional access, see [Alternatives for refreshing tables](#alternatives-for-refreshing-tables) below.
 
 ## Usage
 

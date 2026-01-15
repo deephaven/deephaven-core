@@ -15,8 +15,7 @@ Special variables inside the query language allow access to the row index of a t
 > [!NOTE]
 > The variables `i` and `ii` both represent row numbers. Integers are limited to values up to 2^31-1 (2,147,483,647), while longs can represent values up to 2^63-1. In other words, to avoid precision problems, use the `ii` variable, unless an `int` needs to be passed to another function. Using the `i` variable in a table with more than 2 billion rows will result in an error.
 
-> [!WARNING]
-> `k` does not correspond to traditional row numbers and should only be used in limited circumstances, such as debugging or advanced query operations.
+> [!WARNING] > `k` does not correspond to traditional row numbers and should only be used in limited circumstances, such as debugging or advanced query operations.
 
 ### Refreshing table restrictions
 
@@ -28,13 +27,17 @@ IllegalArgumentException: Formula '<formula>' uses i, ii, k, or column array var
 
 The following table summarizes when each variable is safe to use:
 
-| Variable                        | Safe on                    | Throws error on                                |
-| ------------------------------- | -------------------------- | ---------------------------------------------- |
-| `i`, `ii`                       | static, append-only, blink | other refreshing tables (add-only, ticking)    |
-| `k`                             | static, add-only, blink    | other refreshing tables (append-only, ticking) |
-| Column arrays (`Column_[ii-1]`) | static, blink              | any refreshing table (including append-only)   |
+| Variable                                     | Safe on                    | Throws error on      |
+| -------------------------------------------- | -------------------------- | -------------------- |
+| `i`, `ii`                                    | static, append-only, blink | add-only, ticking    |
+| `k`                                          | static, add-only, blink    | append-only, ticking |
+| Simple constant offset (`Column_[i-1]`)      | all tables                 | —                    |
+| Complex array expressions (`Column_[(i)-1]`) | static, blink              | any refreshing table |
 
-For refreshing tables where you need to reference preceding or following values, see [Alternatives for refreshing tables](../../../how-to-guides/built-in-variables.md#alternatives-for-refreshing-tables).
+> [!NOTE]
+> The engine detects simple constant offset array access patterns like `Column_[i-1]` and handles them correctly on all table types. However, semantically equivalent but syntactically different expressions like `Column_[(i)-1]` are not recognized and will throw an error on refreshing tables.
+
+For refreshing tables where you need more complex positional access, see [Alternatives for refreshing tables](../../../how-to-guides/built-in-variables.md#alternatives-for-refreshing-tables).
 
 Row numbers `i` and `ii` are frequently used with the [`_` and `[]`](../../query-language/types/arrays.md) operators to retrieve values from prior or future rows in the table. For example, `Column_[ii-1]` references the value in `Column` one row prior to the current row.
 
