@@ -15,7 +15,8 @@ Special variables inside the query language allow access to the row index of a t
 > [!NOTE]
 > The variables `i` and `ii` both represent row numbers. Integers are limited to values up to 2^31-1 (2,147,483,647), while longs can represent values up to 2^63-1. In other words, to avoid precision problems, use the `ii` variable, unless an `int` needs to be passed to another function. Using the `i` variable in a table with more than 2 billion rows will result in an error.
 
-> [!NOTE] > `k` does not correspond to traditional row numbers and should only be used in limited circumstances, such as debugging or advanced query operations.
+> [!WARNING]
+> `k` does not correspond to traditional row numbers and should only be used in limited circumstances, such as debugging or advanced query operations.
 
 ### Refreshing table restrictions
 
@@ -34,7 +35,7 @@ The following table summarizes when each variable is safe to use:
 | `k`                             | static, add-only, blink    | other refreshing tables (append-only, ticking) |
 | Column arrays (`Column_[ii-1]`) | static, blink              | any refreshing table (including append-only)   |
 
-For add-only tables where you need to reference preceding or following values, see [Alternatives for add-only tables](../../../how-to-guides/built-in-variables.md#alternatives-for-add-only-tables).
+For refreshing tables where you need to reference preceding or following values, see [Alternatives for refreshing tables](../../../how-to-guides/built-in-variables.md#alternatives-for-refreshing-tables).
 
 Row numbers `i` and `ii` are frequently used with the [`_` and `[]`](../../query-language/types/arrays.md) operators to retrieve values from prior or future rows in the table. For example, `Column_[ii-1]` references the value in `Column` one row before the current row.
 

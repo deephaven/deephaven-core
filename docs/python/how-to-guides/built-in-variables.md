@@ -11,7 +11,8 @@ There are three special built-in query language variables worth noting. They cor
 
 `i` and `ii` can be used to access the current, previous, and subsequent rows in a table.
 
-> [!NOTE] > `k` is a Deephaven engine index and does not correspond to traditional row indices. It should only be used in limited circumstances, such as debugging or advanced query operations.
+> [!WARNING]
+> `k` is a Deephaven engine index and does not correspond to traditional row indices. It should only be used in limited circumstances, such as debugging or advanced query operations.
 
 ### Refreshing table restrictions
 
@@ -30,7 +31,7 @@ The following table summarizes when each variable is safe to use:
 | `k`                             | static, add-only, blink    | other refreshing tables (append-only, ticking) |
 | Column arrays (`Column_[ii-1]`) | static, blink              | any refreshing table (including append-only)   |
 
-For add-only tables where you need to reference preceding or following values, see [Alternatives for add-only tables](#alternatives-for-add-only-tables) below.
+For refreshing tables where you need to reference preceding or following values, see [Alternatives for refreshing tables](#alternatives-for-refreshing-tables) below.
 
 ## Usage
 
@@ -44,9 +45,9 @@ source = empty_table(10).update(
 )
 ```
 
-## Alternatives for add-only tables
+## Alternatives for refreshing tables
 
-When working with add-only tables where you need to reference preceding or following column values, avoid using `i` and `ii` with array notation. Instead, use one of the following approaches:
+When working with refreshing tables where you need to reference preceding or following column values, avoid using column array notation (e.g., `Column_[ii-1]`). Instead, use one of the following approaches:
 
 The examples below use Iceberg tables with auto-refresh mode, which creates add-only tables in Deephaven. For information on setting up Iceberg, see the [Iceberg guide](./data-import-export/iceberg.md).
 
