@@ -11,7 +11,8 @@ There are three special built-in query language variables worth noting. They cor
 
 `i` and `ii` can be used to access the current, previous, and subsequent rows in a table.
 
-> [!WARNING] > `k` is a Deephaven engine index and does not correspond to traditional row indices. It should only be used in limited circumstances, such as debugging or advanced query operations.
+> [!WARNING]
+> `k` is a Deephaven engine index and does not correspond to traditional row indices. It should only be used in limited circumstances, such as debugging or advanced query operations.
 
 ### Refreshing table restrictions
 

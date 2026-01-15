@@ -11,7 +11,8 @@ There are three special built-in query language variables worth noting. They cor
 
 `i` and `ii` can be used to access the current, previous, and subsequent rows in a table.
 
-> [!WARNING] > `k` is a Deephaven engine index and does not correspond to traditional row indices. It should only be used in limited circumstances, such as debugging or advanced query operations.
+> [!WARNING]
+> `k` is a Deephaven engine index and does not correspond to traditional row indices. It should only be used in limited circumstances, such as debugging or advanced query operations.
 
 ### Refreshing table restrictions
 
@@ -52,7 +53,8 @@ source = empty_table(10).update(
 
 When working with refreshing tables where you need to reference preceding or following column values, avoid using column array notation (e.g., `Column_[ii-1]`). Instead, use one of the following approaches:
 
-The examples below use Iceberg tables with auto-refresh mode, which creates add-only tables in Deephaven. For information on setting up Iceberg, see the [Iceberg guide](./data-import-export/iceberg.md).
+> [!NOTE]
+> The examples below use Iceberg tables with auto-refresh mode, which creates add-only tables in Deephaven. For information on setting up Iceberg, see the [Iceberg guide](./data-import-export/iceberg.md).
 
 ### 1. Source partitioned tables
 
