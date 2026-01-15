@@ -11,16 +11,26 @@ There are three special built-in query language variables worth noting. They cor
 
 `i` and `ii` can be used to access the current, previous, and subsequent rows in a table.
 
-> [!WARNING]
-> `k` is a Deephaven engine index and does not correspond to traditional row indices. It is used for Deephaven engine development and should _only_ be used in limited circumstances, such as debugging or advanced query operations.
+> [!NOTE] > `k` is a Deephaven engine index and does not correspond to traditional row indices. It should only be used in limited circumstances, such as debugging or advanced query operations.
 
-> [!WARNING]
-> These built-in variables are not reliable in ticking tables. They should only be used in static cases.
+### Refreshing table restrictions
 
-> [!WARNING]
-> Do not use `i` and `ii` in add-only tables to access preceding or following column values using array notation (e.g., `ColA_[ii-1]`). In add-only tables, rows can be inserted at any position, causing row indices to shift and previously computed values to reference different rows than originally intended. See [Alternatives for add-only tables](#alternatives-for-add-only-tables) below.
->
-> Note: Append-only tables, which only add rows at the end, do not have this issue since existing row positions remain stable.
+The engine validates usage of these variables and throws an `IllegalArgumentException` if used unsafely on refreshing tables:
+
+```
+IllegalArgumentException: Formula '<formula>' uses i, ii, k, or column array variables,
+and is not safe to refresh. Note that some usages, such as on an append-only table are safe.
+```
+
+The following table summarizes when each variable is safe to use:
+
+| Variable                        | Safe on                    | Throws error on                                |
+| ------------------------------- | -------------------------- | ---------------------------------------------- |
+| `i`, `ii`                       | static, append-only, blink | other refreshing tables (add-only, ticking)    |
+| `k`                             | static, add-only, blink    | other refreshing tables (append-only, ticking) |
+| Column arrays (`Column_[ii-1]`) | static, blink              | any refreshing table (including append-only)   |
+
+For add-only tables where you need to reference preceding or following values, see [Alternatives for add-only tables](#alternatives-for-add-only-tables) below.
 
 ## Usage
 
