@@ -139,21 +139,19 @@ public class StaticSymbolTableChunkedOperatorAggregationStateManager implements 
     @Override
     public int findPositionForKey(final Object key) {
         // Build the map if it doesn't exist
-        if (keyToPosition == null) {
+        TObjectIntHashMap<String> localKeyToPosition;
+        if ((localKeyToPosition = keyToPosition) == null) {
             synchronized (this) {
-                if (keyToPosition == null) {
+                if ((localKeyToPosition = keyToPosition) == null) {
                     final int length = nextPosition;
-                    // build the map under the lock
-                    final TObjectIntHashMap<String> tmpMap = new TObjectIntHashMap<>(length, 0.75f, UNKNOWN_ROW);
+                    localKeyToPosition = new TObjectIntHashMap<>(length, 0.75f, UNKNOWN_ROW);
                     for (int ii = 0; ii < length; ii++) {
-                        tmpMap.put(keyColumn.get(ii), ii);
+                        localKeyToPosition.put(keyColumn.get(ii), ii);
                     }
-                    // Map is complete, we can safely assign it to the volatile variable.
-                    keyToPosition = tmpMap;
+                    keyToPosition = localKeyToPosition;
                 }
             }
         }
-        // Use the map to find the position
-        return keyToPosition.get(key);
+        return localKeyToPosition.get(key);
     }
 }
