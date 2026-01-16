@@ -5,18 +5,15 @@ package io.deephaven.engine.pmt;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.context.QueryCompilerImpl;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableUpdateValidator;
-import io.deephaven.engine.table.impl.util.AsyncClientErrorNotifier;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.TstUtils;
-import io.deephaven.engine.updategraph.OperationInitializer;
-import io.deephaven.engine.updategraph.impl.BaseUpdateGraph;
-import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.PrintListener;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.qst.column.header.ColumnHeader;
@@ -24,13 +21,9 @@ import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.IOException;
-import java.nio.file.Files;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
@@ -69,52 +62,12 @@ public class TestArrayBackedPositionalTable {
             ColumnHeader.of("Ask", double.class),
             ColumnHeader.of("Time", Instant.class)));
 
-    ExecutionContext executionContext = null;
-    SafeCloseable contextCloseable = null;
-    PeriodicUpdateGraph updateGraph = null;
-
-    @BeforeClass
-    public static void setupGlobal() {
-        AsyncClientErrorNotifier.setReporter(t -> {
-            t.printStackTrace(System.err);
-            TestCase.fail(t.getMessage());
-        });
-    }
-
-    @Before
-    public void setup() {
-        // TODO: ?? can't reuse graph name?
-        // updateGraph = PeriodicUpdateGraph.newBuilder("testUpdateGraph").build();
-        updateGraph = PeriodicUpdateGraph.newBuilder("testUpdateGraph").existingOrBuild();
-        updateGraph.enableUnitTestMode();
-        updateGraph.resetForUnitTests(false);
-        try {
-            executionContext = ExecutionContext.newBuilder()
-                    .newQueryScope()
-                    .newQueryLibrary()
-                    .setUpdateGraph(updateGraph)
-                    .setQueryCompiler(QueryCompilerImpl.create(
-                            Files.createTempDirectory("CommandLineDriver").resolve("cache").toFile(),
-                            ClassLoader.getSystemClassLoader()))
-                    .setOperationInitializer(OperationInitializer.NON_PARALLELIZABLE)
-                    .build();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        contextCloseable = executionContext.open();
-    }
-
-    @After
-    public void cleanup() {
-        updateGraph.resetForUnitTests(true);
-        contextCloseable.close();
-
-        // TODO: ??? test hangs if I have this here. but if I don't, then I get 'duplicate updategraph' exceptions
-        BaseUpdateGraph.removeInstance(updateGraph.getName());
-    }
+    @Rule
+    public final EngineCleanup base = new EngineCleanup();
 
     @Test
     public void testSimple() throws InterruptedException, ExecutionException {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
 
         updateGraph.sharedLock().lock();
         final ArrayBackedPositionalMutableTable table;
@@ -182,6 +135,8 @@ public class TestArrayBackedPositionalTable {
 
     @Test
     public void testDelete1() {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
         final ArrayBackedPositionalMutableTable table = makeDefaultDef();
 
         final PrintListener listener = new PrintListener("table", table, 10);
@@ -219,6 +174,8 @@ public class TestArrayBackedPositionalTable {
     }
 
     public void testDeleteSimple(int start, int end, String filter) {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
         final ArrayBackedPositionalMutableTable table = makeDefaultDef();
 
         final PrintListener listener = new PrintListener("table", table, 10);
@@ -252,6 +209,8 @@ public class TestArrayBackedPositionalTable {
     }
 
     public void test2(boolean case1) {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
         final ArrayBackedPositionalMutableTable table = makeDefaultDef();
 
         final PrintListener listener = new PrintListener("table", table, 10);
@@ -300,6 +259,8 @@ public class TestArrayBackedPositionalTable {
     }
 
     private void initTable(ArrayBackedPositionalMutableTable table, int tableSize) {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
         table.startTransaction();
         table.addRows(0, tableSize);
 
@@ -322,6 +283,8 @@ public class TestArrayBackedPositionalTable {
     }
 
     private void testInsert(final boolean allInOne) {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
         final ArrayBackedPositionalMutableTable table = makeDefaultDef();
 
         final PrintListener listener = new PrintListener("table", table, 10);
@@ -377,6 +340,8 @@ public class TestArrayBackedPositionalTable {
     }
 
     private void testAddAtEnd(final boolean allInOne) {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
         final ArrayBackedPositionalMutableTable table = makeDefaultDef();
 
         final PrintListener listener = new PrintListener("table", table, 10);
@@ -421,6 +386,8 @@ public class TestArrayBackedPositionalTable {
 
     @Test
     public void testJoiningTables() throws ExecutionException, InterruptedException, TimeoutException {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
         final ArrayBackedPositionalMutableTable positions;
         final ArrayBackedPositionalMutableTable prices;
         final Table decorated;
@@ -637,6 +604,7 @@ public class TestArrayBackedPositionalTable {
 
     @Test
     public void testIllegalStartTransaction() throws InterruptedException, ExecutionException {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
 
         updateGraph.sharedLock().lock();
         final ArrayBackedPositionalMutableTable table;
