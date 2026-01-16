@@ -34,18 +34,18 @@ import java.util.ServiceLoader;
  * </p>
  *
  * <pre>{@code
- *     private Table doIterativeMultiJoin(String [] keyColumns, List<? extends Table> inputTables) {
- *         final List<Table> keyTables = inputTables.stream().map(t -> t.view(keyColumns)).collect(Collectors.toList());
- *         final Table base = TableTools.merge(keyTables).selectDistinct(keyColumns);
+ * private Table doIterativeMultiJoin(String[] keyColumns, List<? extends Table> inputTables) {
+ *     final List<Table> keyTables = inputTables.stream().map(t -> t.view(keyColumns)).collect(Collectors.toList());
+ *     final Table base = TableTools.merge(keyTables).selectDistinct(keyColumns);
  *
- *         Table result = base;
- *         for (int ii = 0; ii < inputTables.size(); ++ii) {
- *             result = result.naturalJoin(inputTables.get(ii), Arrays.asList(keyColumns));
- *         }
+ *     Table result = base;
+ *     for (int ii = 0; ii < inputTables.size(); ++ii) {
+ *         result = result.naturalJoin(inputTables.get(ii), Arrays.asList(keyColumns));
+ *     }
  *
- *         return result;
- *     }
- *     }
+ *     return result;
+ * }
+ * }
  * </pre>
  */
 
