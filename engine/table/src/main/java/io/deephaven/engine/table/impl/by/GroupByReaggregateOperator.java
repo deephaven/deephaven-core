@@ -338,6 +338,7 @@ public final class GroupByReaggregateOperator implements GroupByOperator {
     private class InputToResultModifiedColumnSetFactory implements UnaryOperator<ModifiedColumnSet> {
 
         private final ModifiedColumnSet updateModifiedColumnSet;
+        private final ModifiedColumnSet allOutputColumns;
         private final ModifiedColumnSet.Transformer aggregatedColumnsTransformer;
 
         private InputToResultModifiedColumnSetFactory(
@@ -352,13 +353,16 @@ public final class GroupByReaggregateOperator implements GroupByOperator {
             for (int ci = 0; ci < inputColumnNames.length; ++ci) {
                 affectedColumns[ci] = resultTable.newModifiedColumnSet(resultAggregatedColumnNames[ci]);
             }
-            affectedColumns[allInputs.length - 1] = resultTable.newModifiedColumnSet(allInputs);
+            affectedColumns[allInputs.length - 1] = allOutputColumns = resultTable.newModifiedColumnSet(allInputs);
 
             aggregatedColumnsTransformer = inputTable.newModifiedColumnSetTransformer(allInputs, affectedColumns);
         }
 
         @Override
         public ModifiedColumnSet apply(@NotNull final ModifiedColumnSet upstreamModifiedColumnSet) {
+            if (rowsetsModified) {
+                return allOutputColumns;
+            }
             aggregatedColumnsTransformer.clearAndTransform(upstreamModifiedColumnSet, updateModifiedColumnSet);
             return updateModifiedColumnSet;
         }

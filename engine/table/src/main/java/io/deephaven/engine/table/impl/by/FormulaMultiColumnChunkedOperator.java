@@ -22,10 +22,7 @@ import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
@@ -291,7 +288,13 @@ class FormulaMultiColumnChunkedOperator implements IterativeChunkedAggregationOp
             return inputToResultModifiedColumnSetFactory = input -> ModifiedColumnSet.EMPTY;
         }
         final ModifiedColumnSet resultMCS = resultTable.newModifiedColumnSet(selectColumn.getName());
-        final String[] inputColumnNames = selectColumn.getColumns().toArray(String[]::new);
+        final Map<String, String> inverseRenames = new HashMap<>();
+        if (renames != null) {
+            renames.forEach((k, v) -> inverseRenames.put(v, k));
+        }
+        final String[] inputColumnNames = selectColumn.getColumns().stream()
+                .filter(c -> !c.equals(AggregationProcessor.ROLLUP_FORMULA_DEPTH.name()))
+                .map(c -> inverseRenames.getOrDefault(c, c)).toArray(String[]::new);
         final ModifiedColumnSet inputMCS = inputTable.newModifiedColumnSet(inputColumnNames);
         return inputToResultModifiedColumnSetFactory = input -> {
             if (groupBy.hasModifications(input.containsAny(inputMCS))) {
