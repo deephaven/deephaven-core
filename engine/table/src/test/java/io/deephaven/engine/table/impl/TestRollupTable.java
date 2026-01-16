@@ -7,8 +7,7 @@ import io.deephaven.api.ColumnName;
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.engine.context.QueryScope;
-import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.rowset.RowSetShiftData;
+import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.hierarchical.HierarchicalTable;
@@ -620,22 +619,18 @@ public class TestRollupTable extends RefreshingTableTestCase {
                 snapshotToTable(rollup1, ss1, keyTable, ColumnName.of("Action"), null, RowSetFactory.flat(30));
         TableTools.showWithRowSet(snapshot2);
         Table expected2 = secondExpectedGrouped(rollup1);
-        TableTools.showWithRowSet(expected2);
         assertTableEquals(expected2, snapshot2);
         freeSnapshotTableChunks(snapshot2);
 
-        TableTools.showWithRowSet(source);
         // remove a key from source, so that reaggregate has to do some removals
         cug.runWithinUnitTestCycle(() -> {
             removeRows(source, i(0));
             source.notifyListeners(
                     new TableUpdateImpl(i(), i(0), i(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
         });
-        TableTools.showWithRowSet(source);
 
         final Table snapshot3 =
                 snapshotToTable(rollup1, ss1, keyTable, ColumnName.of("Action"), null, RowSetFactory.flat(30));
-        TableTools.showWithRowSet(snapshot2);
         Table expected3 = TableTools.newTable(intCol(rollup1.getRowDepthColumn().name(), 1, 2, 3, 2, 3, 3, 2, 3),
                 booleanCol(rollup1.getRowExpandedColumn().name(), true, true, null, true, null, null,
                         true, null),
@@ -645,9 +640,48 @@ public class TestRollupTable extends RefreshingTableTestCase {
                         iv(4, 5, 9), iv(4, 5, 9)))
                 .update("Sum=sum(Sentinel)");
 
-        TableTools.showWithRowSet(expected3);
         assertTableEquals(expected3, snapshot3);
         freeSnapshotTableChunks(snapshot3);
+
+        // remove everything, we want to validate the zero key removals for the operator
+        cug.runWithinUnitTestCycle(() -> {
+            final RowSet toRemove = source.getRowSet().copy();
+            System.out.println("To Remove: " + toRemove);
+            removeRows(source, toRemove);
+            source.notifyListeners(
+                    new TableUpdateImpl(i(), toRemove, i(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
+        });
+
+        final Table snapshot4 =
+                snapshotToTable(rollup1, ss1, keyTable, ColumnName.of("Action"), null, RowSetFactory.flat(30));
+        final Table expected4 = TableTools.newTable(intCol(rollup1.getRowDepthColumn().name()),
+                booleanCol(rollup1.getRowExpandedColumn().name()),
+                stringCol("Key1"),
+                stringCol("Key2"),
+                col("Sentinel", new IntVector[0]),
+                longCol("Sum")).where("false");
+
+        assertTableEquals(expected4, snapshot4);
+        TableTools.showWithRowSet(snapshot4);
+        freeSnapshotTableChunks(snapshot4);
+
+        // we should make sure there are some additions in reaggregation, let's just add the whole original back
+        cug.runWithinUnitTestCycle(() -> {
+            final WritableRowSet toAdd = RowSetFactory.flat(7);
+            TstUtils.addToTable(source, toAdd,
+                    stringCol("Key1", "Alpha", "Bravo", "Alpha", "Charlie", "Charlie", "Bravo", "Bravo"),
+                    stringCol("Key2", "Delta", "Delta", "Echo", "Echo", "Echo", "Echo", "Echo"),
+                    intCol("Sentinel", 1, 2, 3, 4, 5, 6, 7));
+
+            source.notifyListeners(
+                    new TableUpdateImpl(toAdd, i(), i(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
+        });
+
+        final Table snapshot5 =
+                snapshotToTable(rollup1, ss1, keyTable, ColumnName.of("Action"), null, RowSetFactory.flat(30));
+
+        assertTableEquals(expected, snapshot5);
+        freeSnapshotTableChunks(snapshot5);
     }
 
     @Test
