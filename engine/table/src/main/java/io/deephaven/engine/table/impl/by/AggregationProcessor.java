@@ -103,6 +103,7 @@ import io.deephaven.vector.VectorFactory;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.NonNull;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -264,7 +265,16 @@ public class AggregationProcessor implements AggregationContextFactory {
 
     public static final ColumnName EXPOSED_GROUP_ROW_SETS = ColumnName.of("__EXPOSED_GROUP_ROW_SETS__");
 
+    /**
+     * The name of the column we inject into AggFormula to permit the user to vary the formula based on which level of
+     * the rollup is being evaluated.
+     */
     public static final ColumnName ROLLUP_FORMULA_DEPTH = ColumnName.of("__FORMULA_DEPTH__");
+    /**
+     * The definition of the formula depth column in a rollup.
+     */
+    private static final Map<String, ColumnDefinition<?>> FORMULA_DEPTH_DEFINITION = Map.of(ROLLUP_FORMULA_DEPTH.name(),
+            ColumnDefinition.of(ROLLUP_FORMULA_DEPTH.name(), IntType.of()));
 
     /**
      * Create a trivial {@link AggregationContextFactory} to {@link Aggregation#AggGroup(String...) group} the input
@@ -349,6 +359,7 @@ public class AggregationProcessor implements AggregationContextFactory {
         final List<String[]> inputColumnNames = new ArrayList<>();
         final List<ChunkSource.WithPrev<Values>> inputSources = new ArrayList<>();
         final List<AggregationContextTransformer> transformers = new ArrayList<>();
+        final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor = QueryCompilerRequestProcessor.batch();
 
         List<Pair> resultPairs = List.of();
         int freezeByCountIndex = -1;
@@ -369,7 +380,9 @@ public class AggregationProcessor implements AggregationContextFactory {
         AggregationContext build() {
             walkAllAggregations();
             transformers.add(new RowLookupAttributeSetter());
-            return makeAggregationContext();
+            AggregationContext aggregationContext = makeAggregationContext();
+            compilationProcessor.compile();
+            return aggregationContext;
         }
 
         final void walkAllAggregations() {
@@ -883,6 +896,30 @@ public class AggregationProcessor implements AggregationContextFactory {
             operators.set(existingOperatorIndex, newOperator);
             return newOperator;
         }
+
+        @NonNull
+        PrepareFormulaResult prepareFormula(SelectColumn selectColumn, final TableDefinition tableDefinition,
+                final Map<String, ColumnDefinition<?>> extraColumns) {
+            // Get or create a column definition map composed of vectors of the original column types (or scalars when
+            // part of the key columns).
+            final Set<String> groupByColumnSet = Set.of(groupByColumnNames);
+
+            maybeInitializeVectorColumns(groupByColumnSet, tableDefinition, extraColumns);
+
+            // Get the input column names from the formula and provide them to the groupBy operator
+            final String[] allInputColumns =
+                    selectColumn.initDef(vectorColumnDefinitions, compilationProcessor).toArray(String[]::new);
+
+            final Map<Boolean, List<String>> partitioned = Arrays.stream(allInputColumns)
+                    .collect(Collectors.partitioningBy(
+                            o -> groupByColumnSet.contains(o) || ROLLUP_FORMULA_DEPTH.name().equals(o)));
+            final String[] inputKeyColumns = partitioned.get(true).toArray(String[]::new);
+            final String[] inputNonKeyColumns = partitioned.get(false).toArray(String[]::new);
+
+            validateSelectColumnForFormula(selectColumn);
+
+            return new PrepareFormulaResult(inputKeyColumns, inputNonKeyColumns);
+        }
     }
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -894,21 +931,11 @@ public class AggregationProcessor implements AggregationContextFactory {
      * {@link AggregationContext} for standard aggregations. Accumulates state by visiting each aggregation.
      */
     private final class NormalConverter extends Converter {
-        private final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor;
-
         private NormalConverter(
                 @NotNull final Table table,
                 final boolean requireStateChangeRecorder,
                 @NotNull final String... groupByColumnNames) {
             super(table, requireStateChangeRecorder, groupByColumnNames);
-            this.compilationProcessor = QueryCompilerRequestProcessor.batch();
-        }
-
-        @Override
-        AggregationContext build() {
-            final AggregationContext resultContext = super.build();
-            compilationProcessor.compile();
-            return resultContext;
         }
 
         // -------------------------------------------------------------------------------------------------------------
@@ -953,34 +980,23 @@ public class AggregationProcessor implements AggregationContextFactory {
             validateFormulaIsNotReaggregating(formula);
             final SelectColumn selectColumn = SelectColumn.of(formula.selectable());
 
-            // Get or create a column definition map composed of vectors of the original column types (or scalars when
-            // part of the key columns).
-            final Set<String> groupByColumnSet = Set.of(groupByColumnNames);
-            maybeInitializeVectorColumns(groupByColumnSet, table.getDefinition(), Map.of());
+            final PrepareFormulaResult prepareFormula = prepareFormula(selectColumn, table.getDefinition(), Map.of());
 
-            // Get the input column names from the formula and provide them to the groupBy operator
-            final String[] allInputColumns =
-                    selectColumn.initDef(vectorColumnDefinitions, compilationProcessor).toArray(String[]::new);
-
-            final Map<Boolean, List<String>> partitioned = Arrays.stream(allInputColumns)
-                    .collect(Collectors.partitioningBy(groupByColumnSet::contains));
-            final String[] inputKeyColumns = partitioned.get(true).toArray(String[]::new);
-            final String[] inputNonKeyColumns = partitioned.get(false).toArray(String[]::new);
-
-            validateSelectColumnForFormula(selectColumn);
             final GroupByChunkedOperator groupByChunkedOperator;
             final int existingGroupByOperatorIndex = existingGroupByOperatorIndex();
             if (existingGroupByOperatorIndex >= 0) {
                 // if we have an existing group by operator, then use it (or update it to reflect our input columns)
                 groupByChunkedOperator = ensureGroupByOperator(table, existingGroupByOperatorIndex, null,
-                        makeSymmetricMatchPairs(inputNonKeyColumns), false, false);
+                        makeSymmetricMatchPairs(prepareFormula.inputNonKeyColumns), false, false);
             } else {
                 groupByChunkedOperator =
-                        makeGroupByOperatorForFormula(makeSymmetricMatchPairs(inputNonKeyColumns), table, null);
+                        makeGroupByOperatorForFormula(makeSymmetricMatchPairs(prepareFormula.inputNonKeyColumns), table,
+                                null);
             }
 
             final FormulaMultiColumnChunkedOperator op = new FormulaMultiColumnChunkedOperator(table,
-                    groupByChunkedOperator, existingGroupByOperatorIndex < 0, selectColumn, inputKeyColumns, null,
+                    groupByChunkedOperator, existingGroupByOperatorIndex < 0, selectColumn,
+                    prepareFormula.inputKeyColumns, null,
                     null);
             addNoInputOperator(op);
         }
@@ -1129,6 +1145,9 @@ public class AggregationProcessor implements AggregationContextFactory {
         }
     }
 
+    /**
+     * AggFormula SelectColumns are not permitted to use column arrays or virtual row variables; verify that.
+     */
     private static void validateSelectColumnForFormula(SelectColumn selectColumn) {
         if (!selectColumn.getColumnArrays().isEmpty()) {
             throw new IllegalArgumentException("AggFormula does not support column arrays ("
@@ -1139,12 +1158,22 @@ public class AggregationProcessor implements AggregationContextFactory {
         }
     }
 
+    /**
+     * Don't let AggFormula formulas reaggregate except in a rollup.
+     */
     private static void validateFormulaIsNotReaggregating(Formula formula) {
         if (formula.reaggregateAggregatedValues()) {
             throw new IllegalArgumentException("AggFormula does not support reaggregating except in a rollup.");
         }
     }
 
+    /**
+     * Setup the column definitions for a formula.
+     * 
+     * @param groupByColumnSet group by columns are passed through unchanged (as scalars)
+     * @param definition the definition of our source table
+     * @param extraColumns extra columns to add (for formula depth)
+     */
     private void maybeInitializeVectorColumns(Set<String> groupByColumnSet, final TableDefinition definition,
             Map<String, ColumnDefinition<?>> extraColumns) {
         if (vectorColumnDefinitions != null) {
@@ -1277,7 +1306,6 @@ public class AggregationProcessor implements AggregationContextFactory {
      */
     private final class RollupBaseConverter extends Converter
             implements RollupAggregation.Visitor, UnsupportedRollupAggregations {
-        private final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor;
 
         private int nextColumnIdentifier = 0;
 
@@ -1286,13 +1314,11 @@ public class AggregationProcessor implements AggregationContextFactory {
                 final boolean requireStateChangeRecorder,
                 @NotNull final String... groupByColumnNames) {
             super(table, requireStateChangeRecorder, groupByColumnNames);
-            this.compilationProcessor = QueryCompilerRequestProcessor.batch();
         }
 
         @Override
         AggregationContext build() {
             final AggregationContext resultContext = super.build();
-            compilationProcessor.compile();
             return resultContext;
         }
 
@@ -1351,30 +1377,14 @@ public class AggregationProcessor implements AggregationContextFactory {
 
             final SelectColumn selectColumn = SelectColumn.of(formula.selectable());
 
-            // Get or create a column definition map composed of vectors of the original column types (or scalars when
-            // part of the key columns).
-            final Set<String> groupByColumnSet = Set.of(groupByColumnNames);
-            // For the base of a rollup, we use the original table definition, but tack on a rollup depth column
-            maybeInitializeVectorColumns(groupByColumnSet, table.getDefinition(), Map.of(ROLLUP_FORMULA_DEPTH.name(),
-                    ColumnDefinition.of(ROLLUP_FORMULA_DEPTH.name(), IntType.of())));
-
-            // Get the input column names from the formula and provide them to the groupBy operator
-            final String[] allInputColumns =
-                    selectColumn.initDef(vectorColumnDefinitions, compilationProcessor).toArray(String[]::new);
-
-            final Map<Boolean, List<String>> partitioned = Arrays.stream(allInputColumns)
-                    .collect(Collectors.partitioningBy(
-                            o -> groupByColumnSet.contains(o) || ROLLUP_FORMULA_DEPTH.name().equals(o)));
-            final String[] inputKeyColumns = partitioned.get(true).toArray(String[]::new);
-            final String[] inputNonKeyColumns = partitioned.get(false).toArray(String[]::new);
-
-            validateSelectColumnForFormula(selectColumn);
+            final PrepareFormulaResult prepareFormula =
+                    prepareFormula(selectColumn, table.getDefinition(), FORMULA_DEPTH_DEFINITION);
 
             final GroupByChunkedOperator groupByChunkedOperator;
             final boolean delegate;
 
             final int existingGroupByOperatorIndex = existingGroupByOperatorIndex();
-            final MatchPair[] mangledMatchPairs = makeMangledMatchPairs(inputNonKeyColumns);
+            final MatchPair[] mangledMatchPairs = makeMangledMatchPairs(prepareFormula.inputNonKeyColumns);
 
             if (formula.reaggregateAggregatedValues()) {
                 if (existingGroupByOperatorIndex >= 0) {
@@ -1408,7 +1418,7 @@ public class AggregationProcessor implements AggregationContextFactory {
             depthSource.set(groupByColumnNames.length);
 
             final FormulaMultiColumnChunkedOperator op = new FormulaMultiColumnChunkedOperator(table,
-                    groupByChunkedOperator, delegate, selectColumn, inputKeyColumns, null, depthSource);
+                    groupByChunkedOperator, delegate, selectColumn, prepareFormula.inputKeyColumns, null, depthSource);
             addNoInputOperator(op);
         }
 
@@ -1519,7 +1529,6 @@ public class AggregationProcessor implements AggregationContextFactory {
     private final class RollupReaggregatedConverter extends Converter
             implements RollupAggregation.Visitor, UnsupportedRollupAggregations {
 
-        private final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor;
         private int nextColumnIdentifier = 0;
 
         private RollupReaggregatedConverter(
@@ -1527,14 +1536,6 @@ public class AggregationProcessor implements AggregationContextFactory {
                 final boolean requireStateChangeRecorder,
                 @NotNull final String... groupByColumnNames) {
             super(table, requireStateChangeRecorder, groupByColumnNames);
-            this.compilationProcessor = QueryCompilerRequestProcessor.batch();
-        }
-
-        @Override
-        AggregationContext build() {
-            final AggregationContext resultContext = super.build();
-            compilationProcessor.compile();
-            return resultContext;
         }
 
         // -------------------------------------------------------------------------------------------------------------
@@ -1601,42 +1602,23 @@ public class AggregationProcessor implements AggregationContextFactory {
         public void visit(Formula formula) {
             final SelectColumn selectColumn = SelectColumn.of(formula.selectable());
 
-            // Get or create a column definition map composed of vectors of the original column types (or scalars when
-            // part of the key columns).
-            final Set<String> groupByColumnSet = Set.of(groupByColumnNames);
-
-            // for a reaggregated formula, we can't use the input definition as is; we want to use the definition from
-            // the source table; but tack on our rollup depth column
-            AggregationProcessor thisProcessor = AggregationProcessor.this;
-            final TableDefinition sourceDefinition = ((WithSource) thisProcessor).source.getDefinition();
-            maybeInitializeVectorColumns(groupByColumnSet, sourceDefinition, Map.of(ROLLUP_FORMULA_DEPTH.name(),
-                    ColumnDefinition.of(ROLLUP_FORMULA_DEPTH.name(), IntType.of())));
-
-            // Get the input column names from the formula and provide them to the groupBy operator
-            final String[] allInputColumns =
-                    selectColumn.initDef(vectorColumnDefinitions, compilationProcessor).toArray(String[]::new);
-
-            final Map<Boolean, List<String>> partitioned = Arrays.stream(allInputColumns)
-                    .collect(Collectors.partitioningBy(
-                            o -> groupByColumnSet.contains(o) || ROLLUP_FORMULA_DEPTH.name().equals(o)));
-            final String[] inputKeyColumns = partitioned.get(true).toArray(String[]::new);
-            final String[] inputNonKeyColumns = partitioned.get(false).toArray(String[]::new);
-
-            validateSelectColumnForFormula(selectColumn);
+            final PrepareFormulaResult prepareFormula = prepareFormula(selectColumn,
+                    ((WithSource) AggregationProcessor.this).source.getDefinition(), FORMULA_DEPTH_DEFINITION);
 
             final Map<String, String> renames = new HashMap<>();
-            final MatchPair[] groupPairs = new MatchPair[inputNonKeyColumns.length];
+            final MatchPair[] groupPairs = new MatchPair[prepareFormula.inputNonKeyColumns.length];
 
-            for (int ii = 0; ii < inputNonKeyColumns.length; ++ii) {
-                final String mangledColumn = inputNonKeyColumns[ii] + ROLLUP_GRP_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;
+            for (int ii = 0; ii < prepareFormula.inputNonKeyColumns.length; ++ii) {
+                final String mangledColumn =
+                        prepareFormula.inputNonKeyColumns[ii] + ROLLUP_GRP_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;
                 if (table.hasColumns(mangledColumn)) {
                     groupPairs[ii] = new MatchPair(mangledColumn, mangledColumn);
-                    renames.put(mangledColumn, inputNonKeyColumns[ii]);
+                    renames.put(mangledColumn, prepareFormula.inputNonKeyColumns[ii]);
                 } else {
                     // reagg uses the output name
-                    groupPairs[ii] = new MatchPair(mangledColumn, inputNonKeyColumns[ii]);
+                    groupPairs[ii] = new MatchPair(mangledColumn, prepareFormula.inputNonKeyColumns[ii]);
                     // we are not changing the input column name, so don't need the rename
-                    renames.put(inputNonKeyColumns[ii], inputNonKeyColumns[ii]);
+                    renames.put(prepareFormula.inputNonKeyColumns[ii], prepareFormula.inputNonKeyColumns[ii]);
                 }
             }
 
@@ -1658,9 +1640,9 @@ public class AggregationProcessor implements AggregationContextFactory {
                 // everything gets hidden
                 final FormulaMultiColumnChunkedOperator op =
                         new FormulaMultiColumnChunkedOperator(table, groupByOperator,
-                                true, selectColumn, inputKeyColumns, renames, depthSource);
+                                true, selectColumn, prepareFormula.inputKeyColumns, renames, depthSource);
 
-                addOperator(op, null, inputNonKeyColumns);
+                addOperator(op, null, prepareFormula.inputNonKeyColumns);
             } else {
                 final ColumnSource<?> groupRowSet = table.getColumnSource(EXPOSED_GROUP_ROW_SETS.name());
                 GroupByReaggregateOperator groupByOperator;
@@ -1678,10 +1660,11 @@ public class AggregationProcessor implements AggregationContextFactory {
 
                 final FormulaMultiColumnChunkedOperator op =
                         new FormulaMultiColumnChunkedOperator(table, groupByOperator,
-                                false, selectColumn, inputKeyColumns, renames, depthSource);
+                                false, selectColumn, prepareFormula.inputKeyColumns, renames, depthSource);
                 addOperator(op, groupRowSet, EXPOSED_GROUP_ROW_SETS.name());
             }
         }
+
 
         // -------------------------------------------------------------------------------------------------------------
         // AggSpec.Visitor
@@ -2585,6 +2568,16 @@ public class AggregationProcessor implements AggregationContextFactory {
                 @NotNull Table source) {
             super(aggregations, type);
             this.source = source;
+        }
+    }
+
+    private static class PrepareFormulaResult {
+        public final String[] inputKeyColumns;
+        public final String[] inputNonKeyColumns;
+
+        public PrepareFormulaResult(String[] inputKeyColumns, String[] inputNonKeyColumns) {
+            this.inputKeyColumns = inputKeyColumns;
+            this.inputNonKeyColumns = inputNonKeyColumns;
         }
     }
 }
