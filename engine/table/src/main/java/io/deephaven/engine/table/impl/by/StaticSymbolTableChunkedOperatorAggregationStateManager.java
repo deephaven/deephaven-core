@@ -3,11 +3,15 @@
 //
 package io.deephaven.engine.table.impl.by;
 
+import gnu.trove.map.hash.TObjectIntHashMap;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
@@ -15,6 +19,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.SymbolTableToUniqueIdSource;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import io.deephaven.engine.table.impl.sources.regioned.SymbolTableSource;
+import io.deephaven.engine.table.iterators.ChunkedObjectColumnIterator;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.mutable.MutableInt;
@@ -33,6 +38,8 @@ public class StaticSymbolTableChunkedOperatorAggregationStateManager implements 
     private int nullPosition = -1;
     private final int[] keyPositions;
     private int nextPosition = 0;
+
+    private volatile TObjectIntHashMap<String> keyToPosition;
 
     StaticSymbolTableChunkedOperatorAggregationStateManager(final ColumnSource<?> keySource, final Table symbolTable) {
         this.symbolTable = symbolTable;
@@ -110,6 +117,7 @@ public class StaticSymbolTableChunkedOperatorAggregationStateManager implements 
     private void updateKeyHashTableSources(final WritableLongChunk<RowKeys> symbolTableValues,
             final int firstNewPosition) {
         keyColumn.ensureCapacity(nextPosition);
+        Assert.eqNull(keyToPosition, "keyToPosition");
 
         final ColumnSource<?> symbolColumnSource = symbolTable.getColumnSource(SymbolTableSource.SYMBOL_COLUMN_NAME);
 
@@ -135,8 +143,23 @@ public class StaticSymbolTableChunkedOperatorAggregationStateManager implements 
 
     @Override
     public int findPositionForKey(final Object key) {
-        // shouldn't be able to get here; rollup/treeview will call this when we're 2+ levels deep in out view. since
-        // we're limited to a single keySource, we cannot be more than 1 level deep
-        throw new UnsupportedOperationException("StaticSymbolTable StateManager must be used with a single keySource");
+        // Build the map if it doesn't exist
+        TObjectIntHashMap<String> localKeyToPosition;
+        if ((localKeyToPosition = keyToPosition) == null) {
+            synchronized (this) {
+                if ((localKeyToPosition = keyToPosition) == null) {
+                    final int length = nextPosition;
+                    localKeyToPosition = new TObjectIntHashMap<>(length, 0.75f, UNKNOWN_ROW);
+                    try (final CloseableIterator<String> keyIterator = new ChunkedObjectColumnIterator<>(
+                            keyColumn, RowSequenceFactory.forRange(0, length - 1))) {
+                        for (int ii = 0; ii < length; ii++) {
+                            localKeyToPosition.put(keyIterator.next(), ii);
+                        }
+                    }
+                    keyToPosition = localKeyToPosition;
+                }
+            }
+        }
+        return localKeyToPosition.get(key);
     }
 }
