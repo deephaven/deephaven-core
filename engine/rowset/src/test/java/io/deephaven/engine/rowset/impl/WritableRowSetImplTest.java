@@ -1894,6 +1894,7 @@ public class WritableRowSetImplTest extends TestCase {
     // RowSet modified = readIndices.get("modifiedIndices");
     //
     //// Assert.eq(saveModified2, "saveModified2", modified, "modified");
+
     //
     //
     //

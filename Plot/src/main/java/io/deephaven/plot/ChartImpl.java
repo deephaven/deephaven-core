@@ -378,6 +378,7 @@ public class ChartImpl implements Chart, PlotExceptionCause {
     public ChartTitle getChartTitle() {
         return chartTitle;
     }
+
     ////////////////////////// convenience //////////////////////////
 
 
