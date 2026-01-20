@@ -94,7 +94,7 @@ Any ADBC client that has a Flight SQL driver should work with Deephaven Flight S
 
 ### Flight SQL JDBC Driver
 
-The [Flight SQL JDBC Driver](https://arrow.apache.org/docs/java/flight_sql_jdbc_driver.html) can be used directly from Java,
+The [Flight SQL JDBC Driver](https://arrow.apache.org/java/current/flight_sql_jdbc_driver.html) can be used directly from Java,
 or from other applications that support [Java Database Connectivity (JDBC)](https://docs.oracle.com/javase/tutorial/jdbc/overview/index.html).
 When already working in the context of JDBC, the Flight SQL JDBC Driver can be used to access the Deephaven Flight SQL server.
 When the client is not required to use JDBC, it is advisable to use ADBC or the Flight SQL client directly.
@@ -114,7 +114,7 @@ try (Connection connection = DriverManager.getConnection(url)) {
 
 ### Flight SQL Client (Java)
 
-The [Flight SQL Client](https://arrow.apache.org/docs/java/index.html) can be used directly from Java.
+The [Flight SQL Client](https://arrow.apache.org/java/current/index.html) can be used directly from Java.
 This is a good choice when the user needs explicit control over Flight SQL RPCs or needs direct access to Flight APIs.
 
 ```java skip-test
