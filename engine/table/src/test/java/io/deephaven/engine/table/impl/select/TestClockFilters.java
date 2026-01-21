@@ -3,12 +3,17 @@
 //
 package io.deephaven.engine.table.impl.select;
 
+import io.deephaven.api.ColumnName;
+import io.deephaven.api.filter.Filter;
+import io.deephaven.api.filter.FilterComparison;
+import io.deephaven.api.literal.Literal;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 
+import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.time.DateTimeUtils.epochNanosToInstant;
 import static org.junit.Assert.assertArrayEquals;
@@ -16,9 +21,13 @@ import static org.junit.Assert.assertEquals;
 
 import io.deephaven.engine.testutil.StepClock;
 import io.deephaven.engine.util.TableTools;
+import io.deephaven.time.DateTimeUtils;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.time.Instant;
+import java.util.stream.LongStream;
 
 /**
  * Test for Sorted and Unsorted ClockFilter implementations.
@@ -227,4 +236,32 @@ public class TestClockFilters {
         });
         assertEquals(0, result.size());
     }
+
+    @Test
+    public void testSecondFilter() {
+        clock.reset();
+
+        final UnsortedClockFilter filter = new UnsortedClockFilter("Timestamp", clock, true);
+
+        final Table input = newTable(
+                instantCol("Timestamp",
+                        LongStream.of(1000, 2000, 3000, 4000, 5000, 1000, 2000, 3000, 4000, 5000)
+                                .mapToObj(DateTimeUtils::epochNanosToInstant).toArray(Instant[]::new)),
+                intCol("Int", 10, 20, 30, 40, 50, 100, 200, 300, 400, 500));
+
+        final Table result =
+                input.where(Filter.and(filter, FilterComparison.lt(ColumnName.of("Int"), Literal.of(100))));
+        assertTableEquals(input.head(1), result);
+        TableTools.showWithRowSet(result);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            clock.run();
+            filter.run();
+        });
+
+        assertTableEquals(input.head(2), result);
+        TableTools.showWithRowSet(result);
+    }
+
 }

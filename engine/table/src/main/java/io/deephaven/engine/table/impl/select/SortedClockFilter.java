@@ -12,6 +12,10 @@ import io.deephaven.engine.rowset.RowSetBuilderRandom;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Comparator;
+import java.util.LinkedList;
+import java.util.List;
+
 /**
  * This will filter a table on an Instant column for all rows greater than "now" according to a supplied clock. It
  * requires sorting of the input table according to the specified timestamp column, leveraging this for a very efficient
@@ -21,7 +25,17 @@ import org.jetbrains.annotations.Nullable;
 public class SortedClockFilter extends ClockFilter {
 
     private boolean sortingDone;
+    /**
+     * the currently active range we are working on; this must be the first range in the table (because we are
+     * guaranteed to be sorted).
+     **/
     private Range range;
+    /**
+     * A list of ranges that were not immediately mergeable with the first range. They are ordered according to key, and
+     * we pop one off at a time until all the rows are consumed. We can expect at most one range per initialization
+     * thread to be in this list.
+     */
+    private final List<Range> pendingRanges = new LinkedList<>();
 
     public SortedClockFilter(@NotNull final String columnName,
             @NotNull final Clock clock,
@@ -59,31 +73,44 @@ public class SortedClockFilter extends ClockFilter {
         // because the input table must be historical, and the historical sort implementation uses a
         // ContiguousRowRedirection.
         Require.requirement(table.isFlat(), "table.isFlat()");
-        // This must be the first filter in a where-clause of its own, again because of the sort, hence selection must
-        // be equal to fullSet.
-        // This test as implemented only works because the table is flat.
-        Require.requirement(selection.size() == fullSet.size()
-                && selection.size() == selection.lastRowKey() - selection.firstRowKey() + 1
-                && fullSet.size() == fullSet.lastRowKey() - fullSet.firstRowKey() + 1,
-                "selection.size() == fullSet.size() && selection.size() == selection.lastRowKey() - selection.firstRowKey() + 1 && fullSet.size() == fullSet.lastRowKey() - fullSet.firstRowKey() + 1");
 
-        range = new Range(selection.firstRowKey(), selection.lastRowKey());
-        return updateAndGetAddedIndex();
+        // we must have a contiguous region in our rowset, there may be multiple ranges that are created; but they
+        // should all merge together, with only the first range actually producing any useful result
+        Require.requirement(selection.isContiguous(), "selection.isContiguous()");
+
+        synchronized (this) {
+            if (range == null) {
+                range = new Range(selection.firstRowKey(), selection.lastRowKey());
+            } else if (!range.merge(selection.firstRowKey(), selection.lastRowKey())) {
+                if (range.isBefore(selection.firstRowKey())) {
+                    pendingRanges.add(new Range(selection.firstRowKey(), selection.lastRowKey()));
+                } else {
+                    pendingRanges.add(range);
+                    range = new Range(selection.firstRowKey(), selection.lastRowKey());
+                }
+            }
+            System.out.println(Thread.currentThread() + ": pending ranges size: " + pendingRanges.size());
+            return updateAndGetAddedIndex();
+        }
     }
 
     @Override
     @Nullable
-    protected WritableRowSet updateAndGetAddedIndex() {
+    protected synchronized WritableRowSet updateAndGetAddedIndex() {
         if (range == null || range.isEmpty()) {
             return null;
         }
         final RowSetBuilderRandom addedBuilder =
                 range.consumeKeysAndAppendAdded(nanosColumnSource, clock.currentTimeNanos(), null);
+        if (range.isEmpty()) {
+            System.out.println(Thread.currentThread()
+                    + ": pending ranges size after consuing complete range in update: " + pendingRanges.size());
+            pendingRanges.sort(Comparator.comparingLong(Range::firstKey));
+            while (range.isEmpty() && !pendingRanges.isEmpty()) {
+                range = pendingRanges.remove(0);
+                range.consumeKeysAndAppendAdded(nanosColumnSource, clock.currentTimeNanos(), addedBuilder);
+            }
+        }
         return addedBuilder == null ? null : addedBuilder.build();
-    }
-
-    @Override
-    public boolean permitParallelization() {
-        return false;
     }
 }

@@ -80,6 +80,19 @@ public abstract class ClockFilter extends WhereFilterLivenessArtifactImpl
         return initial == null ? RowSetFactory.empty() : initial;
     }
 
+    /**
+     * This method is called from the {@link ClockFilter#filter(RowSet, RowSet, Table, boolean)} method to initialize
+     * the filter's internal data structures.
+     *
+     * <p>
+     * The filter permits parallelization, so it may be called from many initialization threads concurrently.
+     * </p>
+     *
+     * @param selection the selection to be filtered
+     * @param fullSet the full set of rows in the source table
+     * @param table the table that is being filtered
+     * @return the rowset that matches the filter at initialization time
+     */
     @Nullable
     protected abstract WritableRowSet initializeAndGetInitialIndex(@NotNull final RowSet selection,
             @NotNull final RowSet fullSet, @NotNull final Table table);
@@ -131,6 +144,13 @@ public abstract class ClockFilter extends WhereFilterLivenessArtifactImpl
         }
     }
 
+    /**
+     * This method is called from the {@link ClockFilter#run()} method as part of the update graph source refresh.
+     *
+     * <p>
+     * This method is not called concurrently, because there are no updates from the source table.
+     * </p>
+     */
     @Nullable
     protected abstract WritableRowSet updateAndGetAddedIndex();
 
@@ -140,7 +160,7 @@ public abstract class ClockFilter extends WhereFilterLivenessArtifactImpl
     protected final static class Range {
 
         long nextKey;
-        private final long lastKey;
+        private long lastKey;
 
         protected Range(final long firstKey, final long lastKey) {
             nextKey = Require.leq(firstKey, "firstRowKey", lastKey, "lastRowKey");
@@ -169,6 +189,40 @@ public abstract class ClockFilter extends WhereFilterLivenessArtifactImpl
             }
             addedBuilder.addRange(firstKeyAdded, lastKeyAdded);
             return addedBuilder;
+        }
+
+        /**
+         * Returns true if this range is before the given key.
+         */
+        boolean isBefore(final long key) {
+            return lastKey < key;
+        }
+
+        /**
+         * Merges range if contiguous; returns true if the range was merged into this range
+         */
+        boolean merge(final long firstKey, final long lastKey) {
+            if (isEmpty()) {
+                this.nextKey = firstKey;
+                this.lastKey = lastKey;
+                return true;
+            }
+            if (firstKey == this.lastKey + 1) {
+                this.lastKey = lastKey;
+                return true;
+            }
+            if (lastKey == this.nextKey - 1) {
+                this.nextKey = firstKey;
+                return true;
+            }
+            return false;
+        }
+
+        /**
+         * @return the first key in this range
+         */
+        long firstKey() {
+            return nextKey;
         }
     }
 }
