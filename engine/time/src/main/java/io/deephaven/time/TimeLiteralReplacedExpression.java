@@ -71,7 +71,8 @@ public class TimeLiteralReplacedExpression {
         final StringBuilder convertedFormula = new StringBuilder();
 
         int localDateIndex = 0;
-        int dateTimeIndex = 0;
+        int instantIndex = 0;
+        int zdtIndex = 0;
         int nanosIndex = 0;
         int periodIndex = 0;
         int durationIndex = 0;
@@ -88,13 +89,21 @@ public class TimeLiteralReplacedExpression {
             }
 
             if (DateTimeUtils.parseInstantQuiet(s) != null) {
-                matcher.appendReplacement(convertedFormula, "_instant" + dateTimeIndex);
-                instanceVariablesString.append("        private Instant _instant").append(dateTimeIndex)
+                // Instant is handled when the date time does not have a 'Z' or 'z' prefix
+                matcher.appendReplacement(convertedFormula, "_instant" + instantIndex);
+                instanceVariablesString.append("        private Instant _instant").append(instantIndex)
                         .append("=DateTimeUtils.parseInstant(\"")
                         .append(expression, matcher.start() + 1, matcher.end() - 1).append("\");\n");
-                newVariables.put("_instant" + dateTimeIndex, Instant.class);
-
-                dateTimeIndex++;
+                newVariables.put("_instant" + instantIndex, Instant.class);
+                instantIndex++;
+            } else if (DateTimeUtils.parseZonedDateTimeQuiet(s) != null) {
+                // ZonedDateTime is handled when the date time has a 'Z' or 'z' prefix
+                matcher.appendReplacement(convertedFormula, "_zdt" + zdtIndex);
+                instanceVariablesString.append("        private ZonedDateTime _zdt").append(zdtIndex)
+                        .append("=DateTimeUtils.parseZonedDateTime(\"")
+                        .append(expression, matcher.start() + 1, matcher.end() - 1).append("\");\n");
+                newVariables.put("_zdt" + zdtIndex, ZonedDateTime.class);
+                zdtIndex++;
             } else if (DateTimeUtils.parsePeriodQuiet(s) != null) {
                 matcher.appendReplacement(convertedFormula, "_period" + periodIndex);
                 instanceVariablesString.append("        private java.time.Period _period").append(periodIndex)
@@ -102,7 +111,6 @@ public class TimeLiteralReplacedExpression {
                         .append(expression, matcher.start() + 1, matcher.end() - 1)
                         .append("\");\n");
                 newVariables.put("_period" + periodIndex, Period.class);
-
                 periodIndex++;
             } else if (DateTimeUtils.parseDurationQuiet(s) != null) {
                 matcher.appendReplacement(convertedFormula, "_duration" + durationIndex);
@@ -111,7 +119,6 @@ public class TimeLiteralReplacedExpression {
                         .append(expression, matcher.start() + 1, matcher.end() - 1)
                         .append("\");\n");
                 newVariables.put("_duration" + durationIndex, Duration.class);
-
                 durationIndex++;
             } else if (DateTimeUtils.parseLocalDateQuiet(s) != null) {
                 matcher.appendReplacement(convertedFormula, "_localDate" + localDateIndex);
