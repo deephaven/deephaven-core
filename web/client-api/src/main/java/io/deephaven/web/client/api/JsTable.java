@@ -538,7 +538,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
      */
     @JsMethod
     @SuppressWarnings("unusable-by-js")
-    public JsArray<Sort> applySort(@TsTypeRef(Sort[].class) @TsName("ReadonlyArray") Sort[] sort) {
+    public JsArray<Sort> applySort(@TsTypeDef(tsType = "readonly Sort[]") final Sort[] sort) {
         List<Sort> newSort = Arrays.asList(sort);
         // when replacing sorts, just blindly remove all sorts,
         // condensing any orphaned filter / custom columns, and adding the given sorts.
@@ -564,6 +564,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
 
         return JsItr.slice(currentSort);
     }
+
     /**
      * Replace the currently set filters on the table. Returns the previously set value. Note that the filter property
      * will immediately return the new value, but you may receive update events using the old filter before the new one
@@ -576,7 +577,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
      */
     @JsMethod
     @SuppressWarnings("unusable-by-js")
-    public JsArray<FilterCondition> applyFilter(@TsTypeRef(FilterCondition[].class) @TsName("ReadonlyArray") FilterCondition[] filter) {
+    public JsArray<FilterCondition> applyFilter(@TsTypeDef(tsType = "readonly FilterCondition[]") FilterCondition[] filter) {
         final List<FilterCondition> newFilter = Arrays.asList(filter);
         // take a look at the current filter so we can return it
         final ClientTableState current = state();
