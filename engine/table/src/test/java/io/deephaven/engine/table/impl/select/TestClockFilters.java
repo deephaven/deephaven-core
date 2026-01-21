@@ -7,7 +7,7 @@ import io.deephaven.api.ColumnName;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.filter.FilterComparison;
 import io.deephaven.api.literal.Literal;
-import io.deephaven.api.filter.Filter;
+
 import io.deephaven.base.Factory;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;

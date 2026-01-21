@@ -441,7 +441,7 @@ public class TestPartitionAwareSourceTableNoMocks {
 
         TableTools.show(res0);
 
-        // ensure the inner filter sees only the one partitions' data
+        // ensure the inner filter sees only the two partitions' data
         Assert.eq(filter0.numRowsProcessed(), "filter0.numRowsProcessed()", partitionSize * 2);
         // ensure we see the barrier partition filter as filtering only the partitioned rows
         Assert.eq(filter1.numRowsProcessed(), "filter1.numRowsProcessed()", 4);

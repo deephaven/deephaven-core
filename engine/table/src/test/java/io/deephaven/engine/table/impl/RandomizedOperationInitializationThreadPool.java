@@ -14,8 +14,8 @@ import java.util.concurrent.Future;
  * coverage.
  */
 public class RandomizedOperationInitializationThreadPool extends OperationInitializationThreadPool {
-    final Random random = new Random();
-    final int sleepMillis;
+    private final Random random = new Random();
+    private final int sleepMillis;
 
     /**
      * Create the thread pool.

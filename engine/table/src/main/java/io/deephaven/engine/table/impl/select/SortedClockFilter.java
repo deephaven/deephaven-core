@@ -28,7 +28,7 @@ public class SortedClockFilter extends ClockFilter {
     /**
      * the currently active range we are working on; this must be the first range in the table (because we are
      * guaranteed to be sorted).
-     **/
+     */
     private Range range;
     /**
      * A list of ranges that were not immediately mergeable with the first range. They are ordered according to key, and
