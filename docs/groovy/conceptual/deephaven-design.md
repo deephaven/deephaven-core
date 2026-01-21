@@ -90,7 +90,7 @@ The Chunk type hierarchy is designed such that cellular data access is never per
 
 Chunks are pooled to allow re-use as temporary data buffers without significant impact on garbage generation, thus reducing garbage collection frequency and duration.
 
-Chunks are currently implemented as regions of native Java arrays, with implementations for each primitive type as well as an additional one for Object references. We’ve long contemplated switching to use [Apache Arrow](https://arrow.apache.org/docs/index.html) [ValueVectors](https://arrow.apache.org/docs/java/vector.html) (called Arrays in the C++ implementation), but haven’t yet invested sufficient development resources to build a proof of concept.
+Chunks are currently implemented as regions of native Java arrays, with implementations for each primitive type as well as an additional one for Object references. We’ve long contemplated switching to use [Apache Arrow](https://arrow.apache.org/docs/index.html) [ValueVectors](https://arrow.apache.org/java/current/vector.html) (called Arrays in the C++ implementation), but haven’t yet invested sufficient development resources to build a proof of concept.
 
 ### Columnar Hash Tables
 

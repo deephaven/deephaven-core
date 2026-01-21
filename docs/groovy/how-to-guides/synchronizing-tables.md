@@ -31,7 +31,7 @@ Both utilities require:
 
 - **Add-only tables**: Tables must not modify, shift, or remove rows. If you filter an add-only source table, the result remains add-only.
 - **Monotonically increasing IDs**: ID values must increase for each key. IDs cannot decrease or repeat.
-- **Atomic updates**: All rows for a given ID must appear in the table at once (requires transactions).
+- **Atomic updates**: All rows for a given ID of a given table must appear in the same update.
 - **Shared keys**: Tables must have common key columns for grouping.
 
 ## `SyncTableFilter`
@@ -202,10 +202,10 @@ result = builder.build()
 
 Requirements:
 
-- All partitioned tables must have the same number of key columns.
-- Key columns must have compatible types.
+- All partitioned tables have the same number of key columns.
+- Key columns have compatible types.
 - Key columns are joined in order.
-- Constituent tables within each partition must be add-only.
+- Constituent tables within each partition are add-only.
 
 ## Related documentation
 

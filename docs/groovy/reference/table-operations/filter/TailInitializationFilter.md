@@ -86,9 +86,12 @@ For each partition, the filter uses the last row's timestamp as the reference po
 The filter makes these assumptions:
 
 - The source table is add-only (no modifications, shifts, or removals).
-- Each contiguous range of row keys is a partition. If this assumption is violated, the `TailInitializationFilter` itself is inefficient as it must independently examine each range of row keys. Furthermore, because the end of each range is used as the timestamp, fewer rows are likely to be filtered before being passed to downstream operations. One common way to violate this assumption is to filter the table (e.g., via automatic ACL application) before the `TailInitializationFilter` is applied.
+- Each contiguous range of row keys is a partition. If this assumption is violated, the `TailInitializationFilter` itself is inefficient as it must independently examine each range of row keys. Furthermore, because the end of each range is used as the timestamp, fewer rows are likely to be filtered before being passed to downstream operations. One common way to violate this assumption is to filter the table before the `TailInitializationFilter` is applied.
 - Each partition is sorted by timestamp.
 - Null timestamps are not permitted.
+
+> [!WARNING]
+> If you suspect you might not have full access to a given table, consider comparing initialization time with and without the `TailInitializationFilter`. Implicit ACL application may reduce the operation's effectiveness.
 
 ## Examples
 

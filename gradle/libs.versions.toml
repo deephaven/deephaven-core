@@ -47,7 +47,7 @@ gwtJetty = "9.4.44.v20210927"
 hadoop = "3.4.1"
 hdrhistogram = "2.2.2"
 iceberg = "1.10.1"
-immutables = "2.12.0"
+immutables = "2.12.1"
 jackson = "2.20.1"
 jakarta-servlet = "6.0.0"
 jakarta-websocket = "2.1.1"
@@ -297,6 +297,7 @@ picocli = { module = "info.picocli:picocli", version.ref = "picocli" }
 postgresql = { module = "org.postgresql:postgresql", version.ref = "postgresql" }
 
 protobuf-java = { module = "com.google.protobuf:protobuf-java", version.ref = "protobuf" }
+protobuf-java-util = { module = "com.google.protobuf:protobuf-java-util", version.ref = "protobuf" }
 
 randelshofer-fastdoubleparser = { module = "ch.randelshofer:fastdoubleparser", version.ref = "randelshofer" }
 

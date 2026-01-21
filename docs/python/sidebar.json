@@ -388,6 +388,10 @@
                 "path": "how-to-guides/partitioned-tables.md"
               },
               {
+                "label": "Synchronize tables",
+                "path": "how-to-guides/synchronizing-tables.md"
+              },
+              {
                 "label": "Snapshot",
                 "path": "how-to-guides/capture-table-history.md"
               },
