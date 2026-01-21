@@ -813,7 +813,7 @@ public class TestClockFilters {
     }
 
     @Test
-    public void testSecondFilter() {
+    public void testSubsequentFilter() {
         clock.reset();
 
         final UnsortedClockFilter filter = new UnsortedClockFilter("Timestamp", clock, true);
