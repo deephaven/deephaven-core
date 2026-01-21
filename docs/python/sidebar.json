@@ -889,6 +889,10 @@
               {
                 "label": "Create your own plugin",
                 "path": "how-to-guides/create-plugins.md"
+              },
+              {
+                "label": "Create a JavaScript plugin",
+                "path": "how-to-guides/create-js-plugins.md"
               }
             ]
           },
