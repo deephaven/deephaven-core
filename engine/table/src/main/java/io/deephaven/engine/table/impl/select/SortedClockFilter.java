@@ -89,7 +89,6 @@ public class SortedClockFilter extends ClockFilter {
                     range = new Range(selection.firstRowKey(), selection.lastRowKey());
                 }
             }
-            System.out.println(Thread.currentThread() + ": pending ranges size: " + pendingRanges.size());
             return updateAndGetAddedIndex();
         }
     }
@@ -103,8 +102,6 @@ public class SortedClockFilter extends ClockFilter {
         final RowSetBuilderRandom addedBuilder =
                 range.consumeKeysAndAppendAdded(nanosColumnSource, clock.currentTimeNanos(), null);
         if (range.isEmpty()) {
-            System.out.println(Thread.currentThread()
-                    + ": pending ranges size after consuing complete range in update: " + pendingRanges.size());
             pendingRanges.sort(Comparator.comparingLong(Range::firstKey));
             while (range.isEmpty() && !pendingRanges.isEmpty()) {
                 range = pendingRanges.remove(0);

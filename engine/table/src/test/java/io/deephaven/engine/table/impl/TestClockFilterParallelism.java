@@ -79,9 +79,6 @@ public class TestClockFilterParallelism {
                             "Timestamp = StartTime + ii * 'PT0.001s'",
                             "Sentinel=ii");
 
-            TableTools.show(input);
-            TableTools.show(input.tail(10));
-
             final Table result = input.where(filter);
 
             assertTableEquals(

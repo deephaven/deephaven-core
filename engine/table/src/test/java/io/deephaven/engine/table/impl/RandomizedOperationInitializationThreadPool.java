@@ -18,7 +18,7 @@ public class RandomizedOperationInitializationThreadPool extends OperationInitia
     final int sleepMillis;
 
     /**
-     * Crate the thread pool.
+     * Create the thread pool.
      * 
      * @param factory the thread initialization factory
      * @param sleepMillis the maximum number of milliseconds to sleep before executing the operation initializer. Values
