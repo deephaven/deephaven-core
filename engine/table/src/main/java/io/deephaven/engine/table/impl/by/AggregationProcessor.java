@@ -103,7 +103,6 @@ import io.deephaven.vector.VectorFactory;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jspecify.annotations.NonNull;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -844,6 +843,11 @@ public class AggregationProcessor implements AggregationContextFactory {
             return newOperator;
         }
 
+        /**
+         * Make sure the group by reaggregate operator at existingOperatorIndex has the needed outputs.
+         * 
+         * @return the existing operator; or a new one that has suitable outputs.
+         */
         GroupByReaggregateOperator ensureGroupByReaggregateOperator(final QueryTable table,
                 final int existingOperatorIndex,
                 final String exposeRowSetAs,
@@ -897,7 +901,7 @@ public class AggregationProcessor implements AggregationContextFactory {
             return newOperator;
         }
 
-        @NonNull
+        @NotNull
         PrepareFormulaResult prepareFormula(SelectColumn selectColumn, final TableDefinition tableDefinition,
                 final Map<String, ColumnDefinition<?>> extraColumns) {
             // Get or create a column definition map composed of vectors of the original column types (or scalars when

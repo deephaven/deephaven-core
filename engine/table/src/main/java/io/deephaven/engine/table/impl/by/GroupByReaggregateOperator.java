@@ -95,7 +95,7 @@ public final class GroupByReaggregateOperator implements GroupByOperator {
             if (!(source instanceof AggregateColumnSource)) {
                 throw new IllegalStateException("Expect to reaggregate AggregateColumnSources for a group operation.");
             }
-            @SuppressWarnings("rawtypes")
+            // noinspection rawtypes
             final ColumnSource<?> realSource = ((AggregateColumnSource) source).getAggregatedSource();
             final AggregateColumnSource<?, ?> aggregateColumnSource = AggregateColumnSource.make(realSource, rowSets);
             if (hiddenResults == null || !hiddenResults.contains(pair.output().name())) {
