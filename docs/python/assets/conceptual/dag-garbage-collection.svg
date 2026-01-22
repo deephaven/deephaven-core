@@ -1,0 +1,139 @@
+<svg viewBox="0 0 900 550" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      .title { font: bold 16px sans-serif; fill: #1f2937; }
+      .label { font: 14px sans-serif; fill: #374151; }
+      .code { font: 12px 'Courier New', monospace; fill: #1f2937; }
+      .description { font: 11px sans-serif; fill: #6b7280; }
+      .table-box { fill: #dbeafe; stroke: #3b82f6; stroke-width: 2.5; }
+      .removed { fill: #fee2e2; stroke: #ef4444; stroke-width: 2.5; stroke-dasharray: 5,5; opacity: 0.5; }
+      .arrow { stroke: #6b7280; stroke-width: 2.5; fill: none; marker-end: url(#arrowhead); }
+      .removed-arrow { stroke: #ef4444; stroke-width: 2.5; fill: none; marker-end: url(#removed-arrow); stroke-dasharray: 5,5; opacity: 0.5; }
+      .shadow { filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1)); }
+      .action { fill: #fef3c7; stroke: #f59e0b; stroke-width: 2; }
+    </style>
+    
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#6b7280" />
+    </marker>
+    
+    <marker id="removed-arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#ef4444" />
+    </marker>
+  </defs>
+  
+  <!-- Title -->
+  <text class="title" x="450" y="30" text-anchor="middle">DAG Garbage Collection: Automatic Memory Management</text>
+  <text class="description" x="450" y="50" text-anchor="middle">Tables without references are automatically removed from the DAG</text>
+  
+  <!-- BEFORE: Original DAG -->
+  <g transform="translate(0, 80)">
+    <text class="label" x="180" y="0" text-anchor="middle" font-weight="bold">BEFORE: Original DAG</text>
+    
+    <!-- t1 -->
+    <g class="shadow">
+      <rect class="table-box" x="80" y="20" width="200" height="60" rx="8"/>
+      <text class="code" x="180" y="45" text-anchor="middle" font-weight="bold">t1</text>
+      <text class="description" x="180" y="65" text-anchor="middle">time_table + update</text>
+    </g>
+    
+    <!-- t2 -->
+    <g class="shadow">
+      <rect class="table-box" x="20" y="130" width="140" height="60" rx="8"/>
+      <text class="code" x="90" y="155" text-anchor="middle" font-weight="bold">t2</text>
+      <text class="description" x="90" y="175" text-anchor="middle">last_by</text>
+    </g>
+    
+    <!-- t3 -->
+    <g class="shadow">
+      <rect class="table-box" x="200" y="130" width="140" height="60" rx="8"/>
+      <text class="code" x="270" y="155" text-anchor="middle" font-weight="bold">t3</text>
+      <text class="description" x="270" y="175" text-anchor="middle">natural_join</text>
+    </g>
+    
+    <!-- Arrows -->
+    <path class="arrow" d="M 130 80 L 90 130"/>
+    <path class="arrow" d="M 230 80 L 270 130"/>
+    <path class="arrow" d="M 160 160 L 200 160"/>
+    
+    <!-- Reference indicators -->
+    <g transform="translate(20, 220)">
+      <text class="description" x="0" y="0">✓ Variable reference: t1</text>
+      <text class="description" x="0" y="18">✓ Variable reference: t2</text>
+      <text class="description" x="0" y="36">✓ Variable reference: t3</text>
+      <text class="description" x="0" y="60" font-weight="bold">All 3 tables active in DAG</text>
+    </g>
+  </g>
+  
+  <!-- Action: t3 = None -->
+  <g class="shadow" transform="translate(380, 170)">
+    <rect class="action" x="0" y="0" width="140" height="80" rx="8"/>
+    <text class="label" x="70" y="25" text-anchor="middle" font-weight="bold">Action</text>
+    <text class="code" x="70" y="50" text-anchor="middle">t3 = None</text>
+    <text class="description" x="70" y="70" text-anchor="middle">Remove reference</text>
+  </g>
+  
+  <!-- Arrow indicating action -->
+  <path d="M 360 210 L 380 210" stroke="#f59e0b" stroke-width="3" marker-end="url(#arrowhead)"/>
+  <path d="M 520 210 L 540 210" stroke="#f59e0b" stroke-width="3" marker-end="url(#arrowhead)"/>
+  
+  <!-- AFTER: Modified DAG -->
+  <g transform="translate(540, 80)">
+    <text class="label" x="180" y="0" text-anchor="middle" font-weight="bold">AFTER: Garbage Collection</text>
+    
+    <!-- t1 (still active) -->
+    <g class="shadow">
+      <rect class="table-box" x="80" y="20" width="200" height="60" rx="8"/>
+      <text class="code" x="180" y="45" text-anchor="middle" font-weight="bold">t1</text>
+      <text class="description" x="180" y="65" text-anchor="middle">time_table + update</text>
+    </g>
+    
+    <!-- t2 (still active) -->
+    <g class="shadow">
+      <rect class="table-box" x="20" y="130" width="140" height="60" rx="8"/>
+      <text class="code" x="90" y="155" text-anchor="middle" font-weight="bold">t2</text>
+      <text class="description" x="90" y="175" text-anchor="middle">last_by</text>
+    </g>
+    
+    <!-- t3 (removed) -->
+    <g>
+      <rect class="removed" x="200" y="130" width="140" height="60" rx="8"/>
+      <text class="code" x="270" y="155" text-anchor="middle" font-weight="bold" fill="#ef4444">t3</text>
+      <text class="description" x="270" y="175" text-anchor="middle" fill="#ef4444">REMOVED</text>
+      <line x1="210" y1="140" x2="330" y2="180" stroke="#ef4444" stroke-width="3"/>
+      <line x1="330" y1="140" x2="210" y2="180" stroke="#ef4444" stroke-width="3"/>
+    </g>
+    
+    <!-- Arrows -->
+    <path class="arrow" d="M 130 80 L 90 130"/>
+    <path class="removed-arrow" d="M 230 80 L 270 130"/>
+    <path class="removed-arrow" d="M 160 160 L 200 160"/>
+    
+    <!-- Reference indicators -->
+    <g transform="translate(20, 220)">
+      <text class="description" x="0" y="0">✓ Variable reference: t1</text>
+      <text class="description" x="0" y="18">✓ Variable reference: t2</text>
+      <text class="description" x="0" y="36" fill="#ef4444">✗ No reference to t3</text>
+      <text class="description" x="0" y="60" font-weight="bold">Only 2 tables in DAG</text>
+    </g>
+  </g>
+  
+  <!-- Key points -->
+  <g transform="translate(50, 420)">
+    <rect fill="#f9fafb" stroke="#d1d5db" stroke-width="2" x="0" y="0" width="800" height="110" rx="8"/>
+    <text class="label" x="20" y="25" font-weight="bold">🔑 How Garbage Collection Works:</text>
+    
+    <text class="description" x="30" y="50">• When a variable is set to None or goes out of scope, its reference to the table is removed</text>
+    <text class="description" x="30" y="68">• If no variables reference a table AND no other tables depend on it, it's garbage collected</text>
+    <text class="description" x="30" y="86">• t1 and t2 remain because they still have variable references</text>
+    <text class="description" x="30" y="104">• Memory is freed automatically - no manual cleanup needed</text>
+  </g>
+  
+  <!-- Restoration note -->
+  <g transform="translate(470, 440)">
+    <rect fill="#f0f9ff" stroke="#3b82f6" stroke-width="2" x="0" y="0" width="380" height="70" rx="8"/>
+    <text class="label" x="15" y="22" font-weight="bold">💡 Easy to Restore:</text>
+    <text class="code" x="15" y="42">t3 = t1.natural_join(...</text>
+    <text class="description" x="15" y="60">Recreating t3 adds it back to the DAG</text>
+  </g>
+</svg>
