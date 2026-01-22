@@ -11,7 +11,16 @@ from typing import Literal, Optional, Union
 import jpy
 import numpy
 import pandas
-import pytz
+
+try:
+    import pytz
+except ImportError:
+    pytz = None  # type: ignore[assignment]
+
+try:
+    import zoneinfo
+except ImportError:
+    zoneinfo = None  # type: ignore[assignment]
 
 from deephaven import DHError
 from deephaven.dtypes import (
@@ -287,15 +296,12 @@ def _tzinfo_to_j_time_zone(tzi: Optional[datetime.tzinfo] = None) -> TimeZone:
         return None
 
     # Handle pytz time zones
-
-    if isinstance(tzi, pytz.tzinfo.BaseTzInfo):
+    if pytz and isinstance(tzi, pytz.tzinfo.BaseTzInfo):
         return _JDateTimeUtils.parseTimeZone(tzi.zone)
 
     # Handle zoneinfo time zones
     # novermin
-    import zoneinfo
-
-    if isinstance(tzi, zoneinfo.ZoneInfo):
+    if zoneinfo and isinstance(tzi, zoneinfo.ZoneInfo):
         return _JDateTimeUtils.parseTimeZone(tzi.key)
 
     # Handle constant UTC offset time zones (datetime.timezone)
