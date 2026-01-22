@@ -39,6 +39,7 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.object_p
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.partitionedtable_pb_service.PartitionedTableServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.session_pb.ExportRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.session_pb.ExportResponse;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.session_pb.HandshakeRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.session_pb.PublishRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.session_pb.ReleaseRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.session_pb.TerminationNotificationRequest;
@@ -618,6 +619,14 @@ public class WorkerConnection {
             DomGlobal.clearTimeout(scheduledAuthUpdate);
             scheduledAuthUpdate = null;
         }
+
+        // Allow this to be disabled in case races are possible that break this.
+        // Flag is temporary, as long as we're sure there are no ill effects from the feature.
+        ConfigValue closeOnDisconnect = getServerConfigValue("web.disableCloseSessionOnDisconnect");
+        if (closeOnDisconnect == null || !closeOnDisconnect.hasStringValue()) {
+            sessionServiceClient.closeSession(new HandshakeRequest(), metadata());
+        }
+        metadata().delete(FLIGHT_AUTH_HEADER_NAME);
     }
 
     public void setSessionTimeoutMs(double sessionTimeoutMs) {
