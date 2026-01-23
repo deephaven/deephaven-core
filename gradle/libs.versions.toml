@@ -39,7 +39,7 @@ groovy = "3.0.25"
 
 # Only bump this in concert with netty (which will update boringssl). See the dependency matrix
 # for particular gRPC versions at https://github.com/grpc/grpc-java/blob/master/SECURITY.md#netty
-grpc = "1.76.2"
+grpc = "1.78.0"
 netty = "4.1.127.Final"
 
 guava = "33.4.8-jre"
