@@ -6,8 +6,6 @@ autoservice = "1.1.1"
 avro = "1.12.1"
 awssdk = "2.29.52"
 aws-s3-tables-catalog-for-iceberg = "0.1.8"
-# See dependency matrix for particular gRPC versions at https://github.com/grpc/grpc-java/blob/master/SECURITY.md#netty
-boringssl = "2.0.61.Final"
 
 # Note: when bumping Calcite version, see if we still need the version constraint for json-smart
 calcite = "1.41.0"
@@ -38,8 +36,12 @@ google-java-allocation-instrumenter = "3.3.4"
 google-rpc-protos="2.63.2"
 graalvm = "24.2.1"
 groovy = "3.0.25"
-# Only bump this in concert with boringssl
+
+# Only bump this in concert with netty (which will update boringssl). See the dependency matrix
+# for particular gRPC versions at https://github.com/grpc/grpc-java/blob/master/SECURITY.md#netty
 grpc = "1.76.2"
+netty = "4.1.127.Final"
+
 guava = "33.4.8-jre"
 gwt = "2.12.2"
 # used by GwtTools
@@ -133,8 +135,6 @@ awssdk-netty-nio = { module = "software.amazon.awssdk:netty-nio-client" }
 
 s3-tables-catalog-for-iceberg = { module = "software.amazon.s3tables:s3-tables-catalog-for-iceberg", version.ref = "aws-s3-tables-catalog-for-iceberg" }
 
-boringssl = { module = "io.netty:netty-tcnative-boringssl-static", version.ref = "boringssl" }
-
 calcite-core = { module = "org.apache.calcite:calcite-core", version.ref = "calcite" }
 json-smart = { module = "net.minidev:json-smart", version.ref = "json-smart" }
 
@@ -198,6 +198,8 @@ grpc-stub = { module = "io.grpc:grpc-stub" }
 grpc-testing = { module = "io.grpc:grpc-testing" }
 grpc-inprocess = { module = "io.grpc:grpc-inprocess" }
 grpc-util = { module = "io.grpc:grpc-util" }
+
+netty-bom = { module = "io.netty:netty-bom", version.ref = "netty" }
 
 google-rpc-protos = { module="com.google.api.grpc:proto-google-common-protos", version.ref="google-rpc-protos" }
 
