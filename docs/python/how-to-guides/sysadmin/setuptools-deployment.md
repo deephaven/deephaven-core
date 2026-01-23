@@ -114,6 +114,7 @@ my_dh_cli/
 ```python
 # CLI functions are used within a Python session
 from my_dh_cli.cli import my_dh_query
+
 result = my_dh_query("data.csv", verbose=True)
 ```
 
@@ -208,7 +209,11 @@ Create `src/my_dh_library/__init__.py`:
 
 __version__ = "0.1.0"
 
-from my_dh_library.queries import filter_by_threshold, add_computed_columns, summarize_by_group
+from my_dh_library.queries import (
+    filter_by_threshold,
+    add_computed_columns,
+    summarize_by_group,
+)
 
 __all__ = ["filter_by_threshold", "add_computed_columns", "summarize_by_group"]
 ```
@@ -228,19 +233,24 @@ def filter_by_threshold(table: Table, column: str, threshold: float) -> Table:
 
 def add_computed_columns(table: Table) -> Table:
     """Add commonly used computed columns to a table."""
-    return table.update([
-        "DoubleValue = Value * 2",
-        "IsHigh = Value > 100",
-    ])
+    return table.update(
+        [
+            "DoubleValue = Value * 2",
+            "IsHigh = Value > 100",
+        ]
+    )
 
 
 def summarize_by_group(table: Table, group_col: str, value_col: str) -> Table:
     """Create summary statistics grouped by a column."""
-    return table.agg_by([
-        f"Sum = sum({value_col})",
-        f"Avg = avg({value_col})",
-        f"Count = count()",
-    ], by=[group_col])
+    return table.agg_by(
+        [
+            f"Sum = sum({value_col})",
+            f"Avg = avg({value_col})",
+            f"Count = count()",
+        ],
+        by=[group_col],
+    )
 ```
 
 Create `src/my_dh_library/utils.py`:
@@ -428,7 +438,7 @@ from pathlib import Path
 def batch_process(directory: str, output_dir: str, verbose: bool = False) -> None:
     """Process multiple CSV files from a directory."""
     from deephaven import read_csv
-    
+
     input_path = Path(directory)
     output_path = Path(output_dir)
     output_path.mkdir(exist_ok=True)
@@ -580,6 +590,7 @@ After installation, import and use the library functions:
 ```python
 # Start the Deephaven server
 from deephaven_server import Server
+
 server = Server(port=10000, jvm_args=["-Xmx4g"])
 server.start()
 
@@ -601,11 +612,13 @@ CLI functions must be used within the same Python session as the server:
 ```python
 # Start the Deephaven server
 from deephaven_server import Server
+
 server = Server(port=10000, jvm_args=["-Xmx4g"])
 server.start()
 
 # Use CLI functions
 from my_dh_cli.cli import my_dh_query
+
 result = my_dh_query("data.csv", verbose=True)
 ```
 
@@ -668,6 +681,7 @@ server.start()
 
 # Now you can import and use Deephaven
 from deephaven import read_csv
+
 data = read_csv("data.csv")
 ```
 
