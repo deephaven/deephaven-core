@@ -8,21 +8,23 @@ import com.google.rpc.Code;
 import com.google.rpc.Status;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.client.impl.*;
+import io.deephaven.proto.backplane.grpc.InputTableColumnInfo;
+import io.deephaven.proto.backplane.grpc.InputTableMetadata;
 import io.deephaven.proto.backplane.grpc.InputTableValidationErrorList;
-import io.deephaven.proto.util.ScopeTicketHelper;
+import io.deephaven.proto.flight.util.SchemaHelper;
 import io.deephaven.qst.column.header.ColumnHeader;
 import io.deephaven.qst.table.*;
 import io.grpc.protobuf.StatusProto;
+import org.apache.arrow.flatbuf.KeyValue;
+import org.apache.arrow.flatbuf.Schema;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 
 import java.time.Instant;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
+import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @Command(name = "add-to-input-table", mixinStandardHelpOptions = true,
         description = "Add to Input Table", version = "0.1.0")
@@ -59,6 +61,42 @@ class AddToInputTable extends FlightExampleBase {
                     "tsv = io.deephaven.server.table.inputtables.RangeValidatingInputTable.make(timestamp, \"Int\", 0, 30)");
 
             final TableHandle tsv = flight.session().ticket(TicketTable.fromQueryScopeField("tsv").ticket());
+
+            Schema schema = SchemaHelper.flatbufSchema(tsv.response());
+            KeyValue.Vector mdv = schema.customMetadataVector();
+            for (int ii = 0; ii < mdv.length(); ++ii) {
+                final KeyValue keyValue = mdv.get(ii);
+                if (keyValue.key().equals("deephaven:inputTableMetadata")) {
+                    final String encoded = keyValue.value();
+                    final byte[] decoded = Base64.getDecoder().decode(encoded);
+                    final InputTableMetadata metadata = InputTableMetadata.parseFrom(decoded);
+                    for (Map.Entry<String, InputTableColumnInfo> columnInfoEntry : metadata.getColumnInfoMap()
+                            .entrySet()) {
+                        final StringBuilder infoString = new StringBuilder();
+                        switch (columnInfoEntry.getValue().getKind()) {
+                            case KIND_UNKNOWN:
+                                throw new IllegalArgumentException(
+                                        "Unknown column kind encountered: " + columnInfoEntry.getValue().getKind());
+                            case KIND_KEY:
+                                infoString.append("Key");
+                                break;
+                            case KIND_VALUE:
+                                infoString.append("Value");
+                                break;
+                            case UNRECOGNIZED:
+                                throw new IllegalArgumentException("Unrecognized column kind encountered: "
+                                        + columnInfoEntry.getValue().getKind().getNumber());
+                        }
+                        if (columnInfoEntry.getValue().getRestrictionsCount() > 0) {
+                            final List<Any> restrictionsList = columnInfoEntry.getValue().getRestrictionsList();
+                            infoString.append("; (").append(
+                                    restrictionsList.stream().map(Any::getTypeUrl).collect(Collectors.joining(", ")))
+                                    .append(")");
+                        }
+                        System.out.println(columnInfoEntry.getKey() + " -> " + infoString);
+                    }
+                }
+            }
 
             int rowCount = 0;
 

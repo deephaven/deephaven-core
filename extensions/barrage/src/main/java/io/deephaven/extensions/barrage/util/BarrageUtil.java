@@ -5,6 +5,7 @@ package io.deephaven.extensions.barrage.util;
 
 import com.google.flatbuffers.Constants;
 import com.google.flatbuffers.FlatBufferBuilder;
+import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.ByteStringAccess;
 import com.google.rpc.Code;
@@ -52,6 +53,8 @@ import io.deephaven.extensions.barrage.chunk.vector.VectorExpansionKernel;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
+import io.deephaven.proto.backplane.grpc.InputTableMetadata;
+import io.deephaven.proto.backplane.grpc.InputTableColumnInfo;
 import io.deephaven.proto.flight.util.MessageHelper;
 import io.deephaven.proto.flight.util.SchemaHelper;
 import io.deephaven.proto.util.Exceptions;
@@ -86,18 +89,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.Period;
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.BitSet;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -177,6 +169,11 @@ public class BarrageUtil {
      * The deephaven metadata tag to indicate the deephaven column component type.
      */
     public static final String ATTR_COMPONENT_TYPE_TAG = "componentType";
+
+    /**
+     * The deephaven metadata tag to indicate the input table information.
+     */
+    public static final String ATTR_INPUT_TABLE_TAG = "inputTableMetadata";
 
     private static final boolean ENFORCE_FLATBUFFER_VERSION_CHECK =
             Configuration.getInstance().getBooleanWithDefault("barrage.version.check", true);
@@ -504,12 +501,47 @@ public class BarrageUtil {
         final Map<String, String> schemaMetadata = attributesToMetadata(attributes, isFlat);
         final Map<String, String> descriptions = GridAttributes.getColumnDescriptions(attributes);
         final InputTableUpdater inputTableUpdater = (InputTableUpdater) attributes.get(Table.INPUT_TABLE_ATTRIBUTE);
+        maybeAddInputTableMetadata(tableDefinition, schemaMetadata, inputTableUpdater);
         final List<Field> fields = columnDefinitionsToFields(
                 descriptions, inputTableUpdater, tableDefinition, tableDefinition.getColumns(),
                 ignored -> new HashMap<>(),
                 attributes, options.columnsAsList())
                 .collect(Collectors.toList());
         return new Schema(fields, schemaMetadata);
+    }
+
+    private static void maybeAddInputTableMetadata(@NotNull TableDefinition tableDefinition,
+            Map<String, String> schemaMetadata, InputTableUpdater inputTableUpdater) {
+        if (inputTableUpdater == null) {
+            return;
+        }
+
+        final InputTableMetadata.Builder builder = InputTableMetadata.newBuilder();
+
+        for (final ColumnDefinition<?> columnDefinition : tableDefinition.getColumns()) {
+            final String name = columnDefinition.getName();
+
+            final InputTableColumnInfo.Builder columnBuilder = InputTableColumnInfo.newBuilder();
+
+            if (inputTableUpdater.getKeyNames().contains(name)) {
+                columnBuilder.setKind(InputTableColumnInfo.Kind.KIND_KEY);
+            } else if (inputTableUpdater.getValueNames().contains(name)) {
+                columnBuilder.setKind(InputTableColumnInfo.Kind.KIND_VALUE);
+            } else {
+                continue;
+            }
+
+            final List<Any> columnRestrictions = inputTableUpdater.getColumnRestrictions(name);
+            if (columnRestrictions != null) {
+                columnBuilder.addAllRestrictions(columnRestrictions);
+            }
+
+            builder.putColumnInfo(name, columnBuilder.build());
+        }
+
+        final byte[] bytes = builder.build().toByteArray();
+        final String base64 = Base64.getEncoder().encodeToString(bytes);
+        putMetadata(schemaMetadata, ATTR_INPUT_TABLE_TAG, base64);
     }
 
     @NotNull
@@ -659,10 +691,6 @@ public class BarrageUtil {
                 }
                 if (inputTableUpdater.getValueNames().contains(name)) {
                     putMetadata(metadata, "inputtable.isValue", TRUE_STRING);
-                }
-                final String columnRestrictions = inputTableUpdater.getColumnRestrictions(name);
-                if (columnRestrictions != null) {
-                    putMetadata(metadata, "inputtable.restrictions", columnRestrictions);
                 }
             }
 

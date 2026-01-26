@@ -10,6 +10,7 @@ option optimize_for = SPEED;
 option go_package = "github.com/deephaven/deephaven-core/go/internal/proto/inputtable";
 
 import "deephaven_core/proto/ticket.proto";
+import "google/protobuf/any.proto";
 
 /*
  * This service offers methods to manipulate the contents of input tables.
@@ -69,4 +70,31 @@ message DeleteTableRequest {
 
 message DeleteTableResponse {
 
+}
+
+// information about a column in an input table
+message InputTableColumnInfo {
+    // whether this column is a key or value column
+    enum Kind {
+        KIND_UNKNOWN = 0;
+        KIND_KEY = 1;       // this column is a key column
+        KIND_VALUE = 2;     // this column is a value column
+    }
+    Kind kind = 1;
+    // Any restrictions on the column's values, which are implementation specific.  The server enforces these
+    // constraints, but they are included in the metadata so that the UI can display them to the user.
+    repeated google.protobuf.Any restrictions = 2;
+}
+
+// metadata for the input table, encoded into the Barrage meta-data as a base64 encoded protobuf
+message InputTableMetadata {
+    // a map from column name to column info, each column that participates in input table updates is included in the
+    // map.  Additional columns are not part of the input table update
+    map <string, InputTableColumnInfo> column_info = 1;
+}
+
+// an example restriction indicating that integer values must be within the given range (inclusive)
+message IntegerRangeRestriction {
+    int64 min_inclusive = 1;
+    int64 max_inclusive = 2;
 }
