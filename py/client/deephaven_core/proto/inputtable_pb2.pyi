@@ -200,6 +200,34 @@ class InputTableColumnInfo(google.protobuf.message.Message):
 Global___InputTableColumnInfo: typing_extensions.TypeAlias = InputTableColumnInfo
 
 @typing.final
+class DeephavenTableMetadata(google.protobuf.message.Message):
+    """wrapper around the InputTableMetadata, so that we can include more non-input table information later if desired.  At
+    that point, this message definition would need to move.
+    """
+
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    INPUT_TABLE_METADATA_FIELD_NUMBER: builtins.int
+    @property
+    def input_table_metadata(self) -> Global___InputTableMetadata:
+        """Input table metadata, if this table is an input table"""
+
+    def __init__(
+        self,
+        *,
+        input_table_metadata: Global___InputTableMetadata | None = ...,
+    ) -> None: ...
+    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["_input_table_metadata", b"_input_table_metadata", "input_table_metadata", b"input_table_metadata"]
+    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
+    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["_input_table_metadata", b"_input_table_metadata", "input_table_metadata", b"input_table_metadata"]
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    _WhichOneofReturnType__input_table_metadata: typing_extensions.TypeAlias = typing.Literal["input_table_metadata"]
+    _WhichOneofArgType__input_table_metadata: typing_extensions.TypeAlias = typing.Literal["_input_table_metadata", b"_input_table_metadata"]
+    def WhichOneof(self, oneof_group: _WhichOneofArgType__input_table_metadata) -> _WhichOneofReturnType__input_table_metadata | None: ...
+
+Global___DeephavenTableMetadata: typing_extensions.TypeAlias = DeephavenTableMetadata
+
+@typing.final
 class InputTableMetadata(google.protobuf.message.Message):
     """metadata for the input table, encoded into the Barrage meta-data as a base64 encoded protobuf"""
 

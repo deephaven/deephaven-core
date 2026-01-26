@@ -8,6 +8,7 @@ import com.google.rpc.Code;
 import com.google.rpc.Status;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.client.impl.*;
+import io.deephaven.proto.backplane.grpc.DeephavenTableMetadata;
 import io.deephaven.proto.backplane.grpc.InputTableColumnInfo;
 import io.deephaven.proto.backplane.grpc.InputTableMetadata;
 import io.deephaven.proto.backplane.grpc.InputTableValidationErrorList;
@@ -66,11 +67,15 @@ class AddToInputTable extends FlightExampleBase {
             KeyValue.Vector mdv = schema.customMetadataVector();
             for (int ii = 0; ii < mdv.length(); ++ii) {
                 final KeyValue keyValue = mdv.get(ii);
-                if (keyValue.key().equals("deephaven:inputTableMetadata")) {
+                if (keyValue.key().equals("deephaven:tableMetadata")) {
                     final String encoded = keyValue.value();
                     final byte[] decoded = Base64.getDecoder().decode(encoded);
-                    final InputTableMetadata metadata = InputTableMetadata.parseFrom(decoded);
-                    for (Map.Entry<String, InputTableColumnInfo> columnInfoEntry : metadata.getColumnInfoMap()
+                    final DeephavenTableMetadata metadata = DeephavenTableMetadata.parseFrom(decoded);
+                    if (!metadata.hasInputTableMetadata()) {
+                        throw new IllegalStateException("No input table metadata found");
+                    }
+                    final InputTableMetadata inputTableMetadata = metadata.getInputTableMetadata();
+                    for (Map.Entry<String, InputTableColumnInfo> columnInfoEntry : inputTableMetadata.getColumnInfoMap()
                             .entrySet()) {
                         final StringBuilder infoString = new StringBuilder();
                         switch (columnInfoEntry.getValue().getKind()) {

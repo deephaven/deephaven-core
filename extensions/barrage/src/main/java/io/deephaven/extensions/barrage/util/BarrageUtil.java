@@ -52,6 +52,7 @@ import io.deephaven.extensions.barrage.chunk.ChunkReader;
 import io.deephaven.extensions.barrage.chunk.vector.VectorExpansionKernel;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.proto.backplane.grpc.DeephavenTableMetadata;
 import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
 import io.deephaven.proto.backplane.grpc.InputTableMetadata;
 import io.deephaven.proto.backplane.grpc.InputTableColumnInfo;
@@ -185,7 +186,7 @@ public class BarrageUtil {
     /**
      * The deephaven metadata tag to indicate the input table information.
      */
-    public static final String ATTR_INPUT_TABLE_TAG = "inputTableMetadata";
+    public static final String ATTR_PROTO_METADATA_TAG = "tableMetadata";
 
     private static final boolean ENFORCE_FLATBUFFER_VERSION_CHECK =
             Configuration.getInstance().getBooleanWithDefault("barrage.version.check", true);
@@ -551,9 +552,12 @@ public class BarrageUtil {
             builder.putColumnInfo(name, columnBuilder.build());
         }
 
-        final byte[] bytes = builder.build().toByteArray();
+        final DeephavenTableMetadata metadata =
+                DeephavenTableMetadata.newBuilder().setInputTableMetadata(builder).build();
+
+        final byte[] bytes = metadata.toByteArray();
         final String base64 = Base64.getEncoder().encodeToString(bytes);
-        putMetadata(schemaMetadata, ATTR_INPUT_TABLE_TAG, base64);
+        putMetadata(schemaMetadata, ATTR_PROTO_METADATA_TAG, base64);
     }
 
     @NotNull
