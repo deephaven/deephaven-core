@@ -63,6 +63,9 @@ Deephaven also parallelizes calculations within a single table. When you run `so
 - Operations marked with `.with_serial()` (you control this).
 - Operations waiting for dependencies (automatic in the update graph).
 
+> [!CAUTION]
+> In Python builds that use the GIL (global interpreter lock), parallelizing filters and selectables can negatively impact query performance. To prevent performance regressions, even stateless filters and selectables that use Python objects are not parallelized unless the Python build is free-threaded.
+
 ## Controlling parallelization
 
 Most queries work correctly with automatic parallelization. However, some code requires sequential processing - for example, code that uses a counter or modifies shared state.
