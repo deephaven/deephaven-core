@@ -17,7 +17,7 @@ Here, the query string `NewColumn = 1` defines a formula for the engine to execu
 
 ## Literals
 
-Query strings often use [literals](<https://en.wikipedia.org/wiki/Literal_(computer_programming)>). How the engine interprets a literal depends on how it's written in the query string.
+Query strings often use [literals](https://en.wikipedia.org/wiki/Literal_(computer_programming)). How the engine interprets a literal depends on how it's written in the query string.
 
 - Literals not encapsulated by any special characters are interpreted as booleans, numeric values, column names, or variables.
 - Literals encapsulated in backticks (`` ` ``) are interpreted as strings.
@@ -234,7 +234,7 @@ stringMeta = stringDateTimes.meta()
 convertedMeta = convertedDateTimes.meta()
 ```
 
-[`upperBin`](<https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#upperBin(java.time.Instant,long)>) and [`lowerBin`](<https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#lowerBin(java.time.Instant,long)>) bin timestamps into buckets. They are particularly useful in aggregation operations, as aggregated statistics are commonly computed over temporal buckets.
+[`upperBin`](https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#upperBin(java.time.Instant,long)) and [`lowerBin`](https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#lowerBin(java.time.Instant,long)) bin timestamps into buckets. They are particularly useful in aggregation operations, as aggregated statistics are commonly computed over temporal buckets.
 
 ```groovy test-set=1 order=binnedTimestamps,lastByBin
 binnedTimestamps = emptyTable(60).update(
@@ -251,7 +251,7 @@ lastByBin = binnedTimestamps.lastBy("Last5Mins")
 
 The [time user guide](../../conceptual/time-in-deephaven.md) provides a comprehensive overview of working with date-time data in Deephaven.
 
-These functions provide only a glimpse of what the built-in library offers. There are modules for [sorting](/core/javadoc/io/deephaven/function/Sort.html), [searching](/core/javadoc/io/deephaven/function/BinSearch.html), [string parsing](/core/javadoc/io/deephaven/function/Parse.html), [null handling](<https://deephaven.io/core/javadoc/io/deephaven/function/Basic.html#isNull(byte)>), and much more. See the document on [auto-imported functions](../../reference/query-language/query-library/auto-imported-functions.md) for a comprehensive list of what's available or the [module summary page](/core/javadoc/io/deephaven/function/package-summary.html) for a high-level overview of what's offered.
+These functions provide only a glimpse of what the built-in library offers. There are modules for [sorting](/core/javadoc/io/deephaven/function/Sort.html), [searching](/core/javadoc/io/deephaven/function/BinSearch.html), [string parsing](/core/javadoc/io/deephaven/function/Parse.html), [null handling](https://deephaven.io/core/javadoc/io/deephaven/function/Basic.html#isNull(byte)), and much more. See the document on [auto-imported functions](../../reference/query-language/query-library/auto-imported-functions.md) for a comprehensive list of what's available or the [module summary page](/core/javadoc/io/deephaven/function/package-summary.html) for a high-level overview of what's offered.
 
 ## Java methods
 
@@ -525,7 +525,7 @@ getNextElement = {
 
 // Use .withSerial() to ensure sequential execution
 col = Selectable.parse("X = getNextElement()").withSerial()
-t = emptyTable(10).update(col)
+t = emptyTable(10).update([col])
 ```
 
 Print `idx` to verify it's been changed.
