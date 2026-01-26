@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl;
 
@@ -1062,7 +1062,8 @@ public abstract class QueryTableWhereTest {
                     called.setValue(true);
                     return (ConditionFilter) ConditionFilter.createConditionFilter("var1 != var2");
                 }),
-                MatchFilter.CaseSensitivity.IgnoreCase, MatchFilter.MatchType.Inverted, "var1", "var2");
+                MatchOptions.builder().caseInsensitive(true).inverted(true).build(),
+                "var1", new String[] {"var2"}, null);
 
         final Table result = table.where(filter);
         assertTableEquals(table, result);

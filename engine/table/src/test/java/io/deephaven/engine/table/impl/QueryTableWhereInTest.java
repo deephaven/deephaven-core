@@ -1,15 +1,17 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.Selectable;
+import io.deephaven.chunk.ChunkType;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.select.*;
+import io.deephaven.engine.table.impl.select.setinclusion.SetInclusionKernel;
 import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.*;
@@ -28,6 +30,8 @@ import java.util.stream.IntStream;
 
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
+import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
+import static io.deephaven.util.QueryConstants.NULL_FLOAT;
 import static org.junit.Assert.*;
 import static org.junit.Assert.assertEquals;
 
@@ -636,5 +640,140 @@ public class QueryTableWhereInTest {
         assertEquals(i(), listener.update.modified());
 
         assertTableEquals(source.where("FV in `A`, `B`"), result);
+    }
+
+    @Test
+    public void testNanNegZero() {
+        final Table table = TableTools.newTable(
+                floatCol("floatCol",
+                        NULL_FLOAT,
+                        Float.NEGATIVE_INFINITY,
+                        -1.0f,
+                        -0.0f,
+                        0.0f,
+                        1.0f,
+                        Float.POSITIVE_INFINITY,
+                        Float.NaN),
+                doubleCol("doubleCol",
+                        NULL_DOUBLE,
+                        Double.NEGATIVE_INFINITY,
+                        -1.0,
+                        -0.0,
+                        0.0,
+                        1.0,
+                        Double.POSITIVE_INFINITY,
+                        Double.NaN));
+
+        final Table expected = TableTools.newTable(
+                floatCol("floatCol",
+                        -0.0f,
+                        0.0f,
+                        Float.NaN),
+                doubleCol("doubleCol",
+                        -0.0,
+                        0.0,
+                        Double.NaN));
+
+        Table setTable;
+        // NaN should be included and -0.0 should match both -0.0 and 0.0
+        setTable = TableTools.newTable(
+                floatCol("F", Float.NaN, -0.0f),
+                doubleCol("D", Double.NaN, -0.0));
+
+        assertTableEquals(expected, table.whereIn(setTable, "floatCol=F"));
+        assertTableEquals(expected, table.whereIn(setTable, "doubleCol=D"));
+    }
+
+    @Test
+    public void testTupleTables() {
+        Table table;
+
+        // verify that a table whereIn itself returns itself for interesting tables.
+        table = TableTools.newTable(
+                doubleCol("doubleCol", Double.NaN),
+                floatCol("floatCol", Float.NaN));
+        assertTableEquals(table, table.whereIn(table, "doubleCol", "floatCol"));
+
+        table = TableTools.newTable(
+                doubleCol("doubleCol", Double.NaN),
+                floatCol("floatCol", -0.0f));
+        assertTableEquals(table, table.whereIn(table, "doubleCol", "floatCol"));
+
+        table = TableTools.newTable(
+                doubleCol("doubleCol", Double.NaN),
+                floatCol("floatCol", 0.0f));
+        assertTableEquals(table, table.whereIn(table, "doubleCol", "floatCol"));
+
+        table = TableTools.newTable(
+                doubleCol("doubleCol", -0.0),
+                floatCol("floatCol", 0.0f));
+        assertTableEquals(table, table.whereIn(table, "doubleCol", "floatCol"));
+
+        table = TableTools.newTable(
+                doubleCol("doubleCol", NULL_DOUBLE),
+                floatCol("floatCol", NULL_FLOAT));
+        assertTableEquals(table, table.whereIn(table, "doubleCol", "floatCol"));
+
+        table = TableTools.newTable(
+                doubleCol("doubleCol", NULL_DOUBLE),
+                floatCol("floatCol", Float.NaN));
+        assertTableEquals(table, table.whereIn(table, "doubleCol", "floatCol"));
+
+        table = TableTools.newTable(
+                doubleCol("doubleCol", -0.0, 0.0),
+                floatCol("floatCol", 0.0f, -0.0f));
+        assertTableEquals(table, table.whereIn(table, "doubleCol", "floatCol"));
+    }
+
+    @Test
+    public void testFloatSetInclusionKernel() {
+        // Create a valid collection with a null object
+        final List<Object> list = new ArrayList<>();
+        list.add(null);
+        list.add(Float.NEGATIVE_INFINITY);
+        list.add(-1.0f);
+        list.add(-0.0f);
+        list.add(0.0f);
+        list.add(1.0f);
+        list.add(Float.POSITIVE_INFINITY);
+        list.add(Float.NaN);
+
+        final SetInclusionKernel floatKernel = SetInclusionKernel.makeKernel(ChunkType.Float, list, true);
+
+        // should all return false because all values are already present
+        assertFalse(floatKernel.add(null));
+        assertFalse(floatKernel.add(Float.NEGATIVE_INFINITY));
+        assertFalse(floatKernel.add(-1.0f));
+        assertFalse(floatKernel.add(-0.0f));
+        assertFalse(floatKernel.add(0.0f));
+        assertFalse(floatKernel.add(1.0f));
+        assertFalse(floatKernel.add(Float.POSITIVE_INFINITY));
+        assertFalse(floatKernel.add(Float.NaN));
+    }
+
+    @Test
+    public void testDoubleSetInclusionKernel() {
+        // Create a valid collection with a null object
+        final List<Object> list = new ArrayList<>();
+        list.add(null);
+        list.add(Double.NEGATIVE_INFINITY);
+        list.add(-1.0);
+        list.add(-0.0);
+        list.add(0.0);
+        list.add(1.0);
+        list.add(Double.POSITIVE_INFINITY);
+        list.add(Double.NaN);
+
+        final SetInclusionKernel doubleKernel = SetInclusionKernel.makeKernel(ChunkType.Double, list, true);
+
+        // should all return false because all values are already present
+        assertFalse(doubleKernel.add(null));
+        assertFalse(doubleKernel.add(Double.NEGATIVE_INFINITY));
+        assertFalse(doubleKernel.add(-1.0));
+        assertFalse(doubleKernel.add(-0.0));
+        assertFalse(doubleKernel.add(0.0));
+        assertFalse(doubleKernel.add(1.0));
+        assertFalse(doubleKernel.add(Double.POSITIVE_INFINITY));
+        assertFalse(doubleKernel.add(Double.NaN));
     }
 }

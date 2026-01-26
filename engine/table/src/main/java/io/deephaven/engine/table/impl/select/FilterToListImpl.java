@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.select;
 
@@ -35,6 +35,11 @@ enum FilterToListImpl implements Filter.Visitor<List<Filter>> {
     @Override
     public List<Filter> visit(FilterIsNull isNull) {
         return List.of(isNull);
+    }
+
+    @Override
+    public List<Filter> visit(FilterIsNaN isNaN) {
+        return List.of(isNaN);
     }
 
     @Override

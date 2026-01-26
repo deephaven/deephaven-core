@@ -392,6 +392,10 @@
                 "path": "how-to-guides/partitioned-tables.md"
               },
               {
+                "label": "Synchronize tables",
+                "path": "how-to-guides/synchronizing-tables.md"
+              },
+              {
                 "label": "Snapshot",
                 "path": "how-to-guides/capture-table-history.md"
               },
@@ -867,15 +871,6 @@
               {
                 "label": "Flight SQL",
                 "path": "how-to-guides/flight-sql.md"
-              },
-              {
-                "label": "Excel",
-                "items": [
-                  {
-                    "label": "Excel Client",
-                    "path": "how-to-guides/excel/excel-client.md"
-                  }
-                ]
               },
               {
                 "label": "Protobuf",

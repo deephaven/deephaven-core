@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.api;
 
@@ -60,6 +60,12 @@ public class StringsTest {
         @Override
         public Void visit(FilterIsNull isNull) {
             ensureExplicitStringOf(FilterIsNull.class);
+            return null;
+        }
+
+        @Override
+        public Void visit(FilterIsNaN isNaN) {
+            ensureExplicitStringOf(FilterIsNaN.class);
             return null;
         }
 

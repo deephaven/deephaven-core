@@ -1,5 +1,5 @@
 ﻿//
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 global using BooleanChunk = Deephaven.Dh_NetClient.Chunk<bool>;
 global using StringChunk = Deephaven.Dh_NetClient.Chunk<string>;

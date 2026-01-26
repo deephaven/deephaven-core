@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.rowset.impl;
 
@@ -1894,6 +1894,7 @@ public class WritableRowSetImplTest extends TestCase {
     // RowSet modified = readIndices.get("modifiedIndices");
     //
     //// Assert.eq(saveModified2, "saveModified2", modified, "modified");
+
     //
     //
     //

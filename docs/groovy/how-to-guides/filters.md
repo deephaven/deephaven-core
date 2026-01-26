@@ -77,6 +77,11 @@ resultIn = source.where("X in 2,4,6")
 resultNotIn = source.where("X not in 2,4,6")
 ```
 
+> [!NOTE]
+> Match filters created using the equality operators (`=`, `==` or `!=`) follow standard IEEE 754 rules for handling `NaN` values. Any comparison involving `NaN` returns `false`, except for `!=`, which returns `true` for all values.
+>
+> In contrast, match filters created with set inclusion syntax (`in`, `not in`) _will_ match `NaN` values. For example: `value in NaN, 10.0` will return `true` if `value` is `NaN` or `10.0`. Alternatively, you can use the `isNaN(value)` function to explicitly test for NaN values such as `isNaN(value) || value < 10.0`.
+
 ### Range filters
 
 Range filters evaluate to true if the column value is within a specified range. This type of filter is typically applied to numeric columns but can be applied to any column that supports comparison operators.
@@ -88,6 +93,12 @@ resultLessThan = source.where("X < 5")
 resultRange = source.where("X >= 2 && X < 6")
 resultInRange = source.where("inRange(X, 2, 6)")
 ```
+
+> [!NOTE]
+> Null values are considered less than any non-null value for sorting and comparison purposes. Therefore, `<` and `<=` comparisons will always include `null`. To prevent this behavior, you can add an explicit null check; for example: `!isNull(value) && value < 10`.
+
+> [!NOTE]
+> Comparison operators on floating-point values follow standard IEEE 754 rules for handling `NaN` values. Any comparison involving `NaN` returns `false`, except for `!=`, which returns `true` for all values. To include `NaN` values in your comparisons, use the `isNaN(value)` function to explicitly test for NaN values, such as `isNaN(value) || value < 10.0`.
 
 Both `resultRange` and `resultInRange` can instead be implemented by [conjunctively](#conjunctive) combining two separate range filters:
 
@@ -166,13 +177,27 @@ Conjunctive filters return only rows that match _all_ of the specified filters. 
 
 ### Disjunctive
 
-Disjunctive filters return only rows that match _any_ of the specified filters. There are two ways to disjunctively combine filters:
+Disjunctive filters return only rows that match _any_ of the specified filters. To disjunctively combine filters, pass a single query string with multiple filters separated by the `||` operator into one of the following table operations:
 
-- Pass a single query string with multiple filters separated by the `||` operator into one of the following table operations:
-  - [`where`](../reference/table-operations/filter/where.md)
-  - [`whereIn`](../reference/table-operations/filter/where-in.md)
-  - [`whereNotIn`](../reference/table-operations/filter/where-not-in.md)
-- Pass multiple query strings into the following table operation:
+- [`where`](../reference/table-operations/filter/where.md)
+- [`whereIn`](../reference/table-operations/filter/where-in.md)
+- [`whereNotIn`](../reference/table-operations/filter/where-not-in.md)
+
+## Filter utilities
+
+Deephaven provides several advanced filter utilities that can improve performance in specific scenarios:
+
+### `TailInitializationFilter`
+
+[`TailInitializationFilter`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/util/TailInitializationFilter.html) reduces the input size for downstream operations by limiting initialization to only the most recent rows. This is particularly useful when working with large historical datasets where you're primarily interested in the tail of the data. See the [`TailInitializationFilter`](../reference/table-operations/filter/TailInitializationFilter.md) reference page for usage examples.
+
+### `SyncTableFilter` and `LeaderTableFilter`
+
+[`SyncTableFilter`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/util/SyncTableFilter.html) and [`LeaderTableFilter`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/util/LeaderTableFilter.html) help synchronize table updates across multiple dependent tables. These utilities ensure that filtered results stay consistent when dealing with related tables that update at different rates. See [Synchronize multiple tables](./synchronizing-tables.md) for usage examples and guidance on choosing between these utilities.
+
+### `WindowCheck`
+
+[`WindowCheck`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/util/WindowCheck.html) provides time-window filtering capabilities. For practical usage, see the [`addTimeWindow`](../reference/time/add-time-window.md) reference page, which demonstrates how to add Boolean columns that indicate whether rows fall within a specified time window.
 
 ## Related documentation
 
@@ -181,6 +206,5 @@ Disjunctive filters return only rows that match _any_ of the specified filters. 
 - [Built-in functions](./built-in-functions.md)
 - [Query strings](./query-string-overview.md)
 - [Formulas](./formulas.md)
-- [How to filter table data](./filters.md)
 - [`emptyTable`](../reference/table-operations/create/emptyTable.md)
 - [`newTable`](../reference/table-operations/create/newTable.md)

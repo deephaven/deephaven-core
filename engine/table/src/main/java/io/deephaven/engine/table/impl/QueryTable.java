@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl;
 
@@ -31,10 +31,7 @@ import io.deephaven.engine.table.hierarchical.RollupTable;
 import io.deephaven.engine.table.hierarchical.TreeTable;
 import io.deephaven.engine.table.impl.MemoizedOperationKey.SelectUpdateViewOrUpdateView.Flavor;
 import io.deephaven.engine.table.impl.by.*;
-import io.deephaven.engine.table.impl.filter.ExtractBarriers;
-import io.deephaven.engine.table.impl.filter.ExtractInnerConjunctiveFilters;
-import io.deephaven.engine.table.impl.filter.ExtractShiftedColumnDefinitions;
-import io.deephaven.engine.table.impl.filter.ExtractRespectedBarriers;
+import io.deephaven.engine.table.impl.filter.*;
 import io.deephaven.engine.table.impl.hierarchical.RollupTableImpl;
 import io.deephaven.engine.table.impl.hierarchical.TreeTableImpl;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
@@ -1332,6 +1329,21 @@ public class QueryTable extends BaseTable<QueryTable> {
         compilationProcessor.compile();
     }
 
+    /**
+     * Create a copy of the array of filters, introducing the declared barriers into the first filter if any are
+     * provided.
+     */
+    private WhereFilter[] cloneFiltersForReindexing(final WhereFilter[] filters,
+            final Collection<Object> declaredBarriers) {
+        if (filters.length == 0 || declaredBarriers.isEmpty()) {
+            return filters;
+        }
+        final WhereFilter[] toUse = filters.clone();
+        // Force the first filter to declare all the barriers we have already processed.
+        toUse[0] = toUse[0].withDeclaredBarriers(declaredBarriers.toArray());
+        return toUse;
+    }
+
     private QueryTable whereInternal(final WhereFilter... filters) {
         if (filters.length == 0) {
             return (QueryTable) prepareReturnThis();
@@ -1346,32 +1358,66 @@ public class QueryTable extends BaseTable<QueryTable> {
                 () -> {
                     initializeFilters(extractedFilters);
 
-                    for (int fi = 0; fi < extractedFilters.length; ++fi) {
-                        if (!(extractedFilters[fi] instanceof ReindexingFilter)) {
-                            continue;
+                    final boolean hasReindexingFilter = Arrays.stream(extractedFilters)
+                            .anyMatch(filter -> !ExtractReindexingFilters.of(filter).isEmpty());
+                    if (hasReindexingFilter) {
+                        // Filters will be processed in subsets of the provided list. Need to track all the
+                        // declared barriers that we have encountered.
+                        final Set<Object> declaredBarriers = new HashSet<>();
+
+                        for (int fi = 0; fi < extractedFilters.length; ++fi) {
+                            final WhereFilter filter = extractedFilters[fi];
+                            final Collection<ReindexingFilter> reindexingFilters = ExtractReindexingFilters.of(filter);
+                            if (reindexingFilters.isEmpty()) {
+                                continue;
+                            }
+                            if (reindexingFilters.size() > 1) {
+                                throw new IllegalStateException(
+                                        "Expected at most one reindexing filter per component filter: " + filter);
+                            }
+                            final ReindexingFilter reindexingFilter = reindexingFilters.iterator().next();
+                            final boolean first = fi == 0;
+                            final boolean last = fi == extractedFilters.length - 1;
+                            if (last && !reindexingFilter.requiresSorting()) {
+                                // If this is the last (or only) filter, we can just run it as normal unless it requires
+                                // sorting.
+                                break;
+                            }
+                            QueryTable result = this;
+                            if (!first) {
+                                final WhereFilter[] subset = Arrays.copyOf(extractedFilters, fi);
+                                final WhereFilter[] toUse = cloneFiltersForReindexing(subset, declaredBarriers);
+                                result = result.whereInternal(toUse);
+                                // collect all the newly declared barriers
+                                for (final WhereFilter priorFilter : subset) {
+                                    declaredBarriers.addAll(ExtractBarriers.of(priorFilter));
+                                }
+                            }
+                            if (reindexingFilter.requiresSorting()) {
+                                result = (QueryTable) result.sort(reindexingFilter.getSortColumns());
+                                reindexingFilter.sortingDone();
+                            }
+                            // Execute the current filter (which is or wraps a reindexing filter)
+                            // adding all previous encountered barriers as declared barriers.
+                            if (!declaredBarriers.isEmpty()) {
+                                result = result.whereInternal(filter.withDeclaredBarriers(declaredBarriers.toArray()));
+                            } else {
+                                result = result.whereInternal(filter);
+                            }
+                            // Add the barriers from the current filter.
+                            declaredBarriers.addAll(ExtractBarriers.of(filter));
+                            if (!last) {
+                                final WhereFilter[] subset =
+                                        Arrays.copyOfRange(extractedFilters, fi + 1, extractedFilters.length);
+                                final WhereFilter[] toUse = cloneFiltersForReindexing(subset, declaredBarriers);
+                                result = result.whereInternal(toUse);
+                                // collect all the new barriers that may have been processed
+                                for (final WhereFilter priorFilter : subset) {
+                                    declaredBarriers.addAll(ExtractBarriers.of(priorFilter));
+                                }
+                            }
+                            return result;
                         }
-                        final ReindexingFilter reindexingFilter = (ReindexingFilter) extractedFilters[fi];
-                        final boolean first = fi == 0;
-                        final boolean last = fi == extractedFilters.length - 1;
-                        if (last && !reindexingFilter.requiresSorting()) {
-                            // If this is the last (or only) filter, we can just run it as normal unless it requires
-                            // sorting.
-                            break;
-                        }
-                        QueryTable result = this;
-                        if (!first) {
-                            result = result.whereInternal(Arrays.copyOf(extractedFilters, fi));
-                        }
-                        if (reindexingFilter.requiresSorting()) {
-                            result = (QueryTable) result.sort(reindexingFilter.getSortColumns());
-                            reindexingFilter.sortingDone();
-                        }
-                        result = result.whereInternal(reindexingFilter);
-                        if (!last) {
-                            result = result.whereInternal(
-                                    Arrays.copyOfRange(extractedFilters, fi + 1, extractedFilters.length));
-                        }
-                        return result;
                     }
 
                     boolean hasConstArrayOffsetFilter = false;

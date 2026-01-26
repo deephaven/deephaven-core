@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table;
 
@@ -42,19 +42,17 @@ public interface ColumnSource<T>
     /**
      * Return a {@link RowSet row set} where the values in the column source match the given keys.
      *
-     * @param invertMatch Whether to invert the match, i.e. return the rows where the values do not match the given keys
      * @param usePrev Whether to use the previous values for the ColumnSource
-     * @param caseInsensitive Whether to perform a case insensitive match
-     * @param mapper Restrict results to this row set
+     * @param matchOptions How the match should be performed; whether should be inverted, case sensitive, etc.
+     * @param selection Restrict results to this row set
      * @param keys The keys to match in the column
      *
      * @return The rows that match the given keys
      */
     WritableRowSet match(
-            boolean invertMatch,
             boolean usePrev,
-            boolean caseInsensitive,
-            @NotNull RowSet mapper,
+            MatchOptions matchOptions,
+            @NotNull RowSet selection,
             Object... keys);
 
     /**
