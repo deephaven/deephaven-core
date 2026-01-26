@@ -199,7 +199,7 @@ Marking an operation as serial tells Deephaven:
 - Don't parallelize this operation across CPU cores.
 - Ensure thread-safe execution for stateful code.
 
-The [`ConcurrencyControl`](https://docs.deephaven.io/core/javadoc/io/deephaven/api/ConcurrencyControl.html) interface provides the `.withSerial()` method for [`Filter`](https://docs.deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html) ([`where`](../../reference/table-operations/filter/where.md) clause) and [`Selectable`](https://docs.deephaven.io/core/javadoc/io/deephaven/api/Selectable.html) ([`update`](../../reference/table-operations/select/update.md) and [`select`](../../reference/table-operations/select/select.md) operations).
+The [`ConcurrencyControl`](https://docs.deephaven.io/core/javadoc/io/deephaven/api/ConcurrencyControl.html) interface provides the [`.withSerial()`](../../reference/table-operations/select/update.md#serial-execution) method for [`Filter`](https://docs.deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html) ([`where`](../../reference/table-operations/filter/where.md#serial-execution)) and [`Selectable`](https://docs.deephaven.io/core/javadoc/io/deephaven/api/Selectable.html) ([`update`](../../reference/table-operations/select/update.md#serial-execution) and [`select`](../../reference/table-operations/select/select.md)).
 
 > [!IMPORTANT]
 > `.withSerial()` cannot be used with `view` or `updateView`. These operations compute values on-demand (when cells are accessed), so they cannot guarantee processing order. Use `select` or `update` instead when you need serial execution.
@@ -465,14 +465,12 @@ result = source.update([colA, colB])
 | Multiple operations sharing state    | Barriers or implicit barriers | Coordinates access to shared state  |
 | Non-thread-safe library              | `.withSerial()`               | Forces single-threaded access       |
 
-## Summary
+## Key takeaways
 
 Deephaven automatically parallelizes queries across all available CPU cores. Most code works correctly without changes.
 
-**Key points**:
-
-- **Deephaven 0.41+** assumes all formulas can run in parallel by default.
-- Use **`.withSerial()`** when your code uses global variables, depends on row order, or calls functions that aren't safe to run from multiple threads.
+- Deephaven assumes all formulas can run in parallel by default.
+- Use [`.withSerial()`](../../reference/table-operations/select/update.md#serial-execution) when your code uses global variables, depends on row order, or calls functions that aren't safe to run from multiple threads.
 - Use **barriers** when one operation must complete before another starts.
 - Both thread pools use all CPU cores by default.
 

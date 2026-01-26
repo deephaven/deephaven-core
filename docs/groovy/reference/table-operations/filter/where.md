@@ -107,10 +107,25 @@ result_filtered = source.where("(boolean)my_filter(IntegerColumn)")
 result_not_filtered = source.where("!((boolean)my_filter(IntegerColumn))")
 ```
 
+## Serial execution
+
+By default, Deephaven parallelizes filter evaluation across multiple CPU cores. If your filter has side effects or depends on row order, use `.withSerial()` to force sequential processing.
+
+```groovy order=source,result
+import io.deephaven.api.filter.Filter
+
+source = emptyTable(10).update("X = i")
+f = Filter.from("X > 5")[0].withSerial()
+result = source.where(f)
+```
+
+For more information, see [Parallelization](../../../conceptual/query-engine/parallelization.md).
+
 ## Related documentation
 
 - [Create a new table](../../../how-to-guides/new-and-empty-table.md#newtable)
 - [How to use filters](../../../how-to-guides/filters.md)
+- [Parallelization](../../../conceptual/query-engine/parallelization.md)
 - [equals](../../query-language/match-filters/equals.md)
 - [not equals](../../query-language/match-filters/not-equals.md)
 - [icase in](../..//query-language/match-filters/icase-in.md)

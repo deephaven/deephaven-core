@@ -205,7 +205,7 @@ Marking an operation as serial tells Deephaven:
 - Don't parallelize this operation across CPU cores.
 - Ensure thread-safe execution for stateful code.
 
-The [`ConcurrencyControl`](https://docs.deephaven.io/core/pydoc/code/deephaven.concurrency_control.html#deephaven.concurrency_control.ConcurrencyControl) interface provides the `.with_serial()` method for [`Filter`](https://docs.deephaven.io/core/pydoc/code/deephaven.filters.html) ([`where`](../../reference/table-operations/filter/where.md) clause) and [`Selectable`](https://docs.deephaven.io/core/pydoc/code/deephaven.table.html#deephaven.table.Selectable) ([`update`](../../reference/table-operations/select/update.md) and [`select`](../../reference/table-operations/select/select.md) operations).
+The [`ConcurrencyControl`](https://docs.deephaven.io/core/pydoc/code/deephaven.concurrency_control.html#deephaven.concurrency_control.ConcurrencyControl) interface provides the [`.with_serial()`](../../reference/table-operations/select/update.md#serial-execution) method for [`Filter`](https://docs.deephaven.io/core/pydoc/code/deephaven.filters.html) ([`where`](../../reference/table-operations/filter/where.md#serial-execution)) and [`Selectable`](https://docs.deephaven.io/core/pydoc/code/deephaven.table.html#deephaven.table.Selectable) ([`update`](../../reference/table-operations/select/update.md#serial-execution) and [`select`](../../reference/table-operations/select/select.md)).
 
 > [!IMPORTANT]
 > `.with_serial()` cannot be used with [`view`](../../reference/table-operations/select/view.md) or [`update_view`](../../reference/table-operations/select/update-view.md). These operations compute values on-demand (when cells are accessed), so they cannot guarantee processing order. Use [`select`](../../reference/table-operations/select/select.md) or [`update`](../../reference/table-operations/select/update.md) instead when you need serial execution.
@@ -527,14 +527,12 @@ result = source.update([col_a, col_b])
 | Multiple operations sharing state    | Barriers or implicit barriers | Coordinates access to shared state  |
 | Non-thread-safe library              | `.with_serial()`              | Forces single-threaded access       |
 
-## Summary
+## Key takeaways
 
 Deephaven automatically parallelizes queries across all available CPU cores. Most code works correctly without changes.
 
-**Key points**:
-
-- **Deephaven 0.41+** assumes all formulas can run in parallel by default.
-- Use **`.with_serial()`** when your code uses global variables, depends on row order, or calls functions that aren't safe to run from multiple threads.
+- Deephaven assumes all formulas can run in parallel by default.
+- Use [`.with_serial()`](../../reference/table-operations/select/update.md#serial-execution) when your code uses global variables, depends on row order, or calls functions that aren't safe to run from multiple threads.
 - Use **barriers** when one operation must complete before another starts.
 - Both thread pools use all CPU cores by default.
 
