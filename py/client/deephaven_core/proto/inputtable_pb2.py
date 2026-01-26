@@ -23,9 +23,10 @@ _sym_db = _symbol_database.Default()
 
 
 from deephaven_core.proto import ticket_pb2 as deephaven__core_dot_proto_dot_ticket__pb2
+from google.protobuf import any_pb2 as google_dot_protobuf_dot_any__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n%deephaven_core/proto/inputtable.proto\x12!io.deephaven.proto.backplane.grpc\x1a!deephaven_core/proto/ticket.proto\"\x92\x01\n\x0f\x41\x64\x64TableRequest\x12>\n\x0binput_table\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12?\n\x0ctable_to_add\x18\x02 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\"f\n\x19InputTableValidationError\x12\x0f\n\x07message\x18\x01 \x01(\t\x12\x10\n\x03row\x18\x02 \x01(\x03H\x00\x88\x01\x01\x12\x13\n\x06\x63olumn\x18\x03 \x01(\tH\x01\x88\x01\x01\x42\x06\n\x04_rowB\t\n\x07_column\"x\n\x1dInputTableValidationErrorList\x12W\n\x11validation_errors\x18\x01 \x03(\x0b\x32<.io.deephaven.proto.backplane.grpc.InputTableValidationError\"\x12\n\x10\x41\x64\x64TableResponse\"\x98\x01\n\x12\x44\x65leteTableRequest\x12>\n\x0binput_table\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x42\n\x0ftable_to_remove\x18\x02 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\"\x15\n\x13\x44\x65leteTableResponse2\xa6\x02\n\x11InputTableService\x12\x81\x01\n\x14\x41\x64\x64TableToInputTable\x12\x32.io.deephaven.proto.backplane.grpc.AddTableRequest\x1a\x33.io.deephaven.proto.backplane.grpc.AddTableResponse\"\x00\x12\x8c\x01\n\x19\x44\x65leteTableFromInputTable\x12\x35.io.deephaven.proto.backplane.grpc.DeleteTableRequest\x1a\x36.io.deephaven.proto.backplane.grpc.DeleteTableResponse\"\x00\x42\x46H\x01P\x01Z@github.com/deephaven/deephaven-core/go/internal/proto/inputtableb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n%deephaven_core/proto/inputtable.proto\x12!io.deephaven.proto.backplane.grpc\x1a!deephaven_core/proto/ticket.proto\x1a\x19google/protobuf/any.proto\"\x92\x01\n\x0f\x41\x64\x64TableRequest\x12>\n\x0binput_table\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12?\n\x0ctable_to_add\x18\x02 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\"f\n\x19InputTableValidationError\x12\x0f\n\x07message\x18\x01 \x01(\t\x12\x10\n\x03row\x18\x02 \x01(\x03H\x00\x88\x01\x01\x12\x13\n\x06\x63olumn\x18\x03 \x01(\tH\x01\x88\x01\x01\x42\x06\n\x04_rowB\t\n\x07_column\"x\n\x1dInputTableValidationErrorList\x12W\n\x11validation_errors\x18\x01 \x03(\x0b\x32<.io.deephaven.proto.backplane.grpc.InputTableValidationError\"\x12\n\x10\x41\x64\x64TableResponse\"\x98\x01\n\x12\x44\x65leteTableRequest\x12>\n\x0binput_table\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x42\n\x0ftable_to_remove\x18\x02 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\"\x15\n\x13\x44\x65leteTableResponse\"\xc6\x01\n\x14InputTableColumnInfo\x12J\n\x04kind\x18\x01 \x01(\x0e\x32<.io.deephaven.proto.backplane.grpc.InputTableColumnInfo.Kind\x12*\n\x0crestrictions\x18\x02 \x03(\x0b\x32\x14.google.protobuf.Any\"6\n\x04Kind\x12\x10\n\x0cKIND_UNKNOWN\x10\x00\x12\x0c\n\x08KIND_KEY\x10\x01\x12\x0e\n\nKIND_VALUE\x10\x02\"\xdc\x01\n\x12InputTableMetadata\x12Z\n\x0b\x63olumn_info\x18\x01 \x03(\x0b\x32\x45.io.deephaven.proto.backplane.grpc.InputTableMetadata.ColumnInfoEntry\x1aj\n\x0f\x43olumnInfoEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x46\n\x05value\x18\x02 \x01(\x0b\x32\x37.io.deephaven.proto.backplane.grpc.InputTableColumnInfo:\x02\x38\x01\"G\n\x17IntegerRangeRestriction\x12\x15\n\rmin_inclusive\x18\x01 \x01(\x03\x12\x15\n\rmax_inclusive\x18\x02 \x01(\x03\x32\xa6\x02\n\x11InputTableService\x12\x81\x01\n\x14\x41\x64\x64TableToInputTable\x12\x32.io.deephaven.proto.backplane.grpc.AddTableRequest\x1a\x33.io.deephaven.proto.backplane.grpc.AddTableResponse\"\x00\x12\x8c\x01\n\x19\x44\x65leteTableFromInputTable\x12\x35.io.deephaven.proto.backplane.grpc.DeleteTableRequest\x1a\x36.io.deephaven.proto.backplane.grpc.DeleteTableResponse\"\x00\x42\x46H\x01P\x01Z@github.com/deephaven/deephaven-core/go/internal/proto/inputtableb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -33,18 +34,30 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'deephaven_core.proto.inputt
 if not _descriptor._USE_C_DESCRIPTORS:
   _globals['DESCRIPTOR']._loaded_options = None
   _globals['DESCRIPTOR']._serialized_options = b'H\001P\001Z@github.com/deephaven/deephaven-core/go/internal/proto/inputtable'
-  _globals['_ADDTABLEREQUEST']._serialized_start=112
-  _globals['_ADDTABLEREQUEST']._serialized_end=258
-  _globals['_INPUTTABLEVALIDATIONERROR']._serialized_start=260
-  _globals['_INPUTTABLEVALIDATIONERROR']._serialized_end=362
-  _globals['_INPUTTABLEVALIDATIONERRORLIST']._serialized_start=364
-  _globals['_INPUTTABLEVALIDATIONERRORLIST']._serialized_end=484
-  _globals['_ADDTABLERESPONSE']._serialized_start=486
-  _globals['_ADDTABLERESPONSE']._serialized_end=504
-  _globals['_DELETETABLEREQUEST']._serialized_start=507
-  _globals['_DELETETABLEREQUEST']._serialized_end=659
-  _globals['_DELETETABLERESPONSE']._serialized_start=661
-  _globals['_DELETETABLERESPONSE']._serialized_end=682
-  _globals['_INPUTTABLESERVICE']._serialized_start=685
-  _globals['_INPUTTABLESERVICE']._serialized_end=979
+  _globals['_INPUTTABLEMETADATA_COLUMNINFOENTRY']._loaded_options = None
+  _globals['_INPUTTABLEMETADATA_COLUMNINFOENTRY']._serialized_options = b'8\001'
+  _globals['_ADDTABLEREQUEST']._serialized_start=139
+  _globals['_ADDTABLEREQUEST']._serialized_end=285
+  _globals['_INPUTTABLEVALIDATIONERROR']._serialized_start=287
+  _globals['_INPUTTABLEVALIDATIONERROR']._serialized_end=389
+  _globals['_INPUTTABLEVALIDATIONERRORLIST']._serialized_start=391
+  _globals['_INPUTTABLEVALIDATIONERRORLIST']._serialized_end=511
+  _globals['_ADDTABLERESPONSE']._serialized_start=513
+  _globals['_ADDTABLERESPONSE']._serialized_end=531
+  _globals['_DELETETABLEREQUEST']._serialized_start=534
+  _globals['_DELETETABLEREQUEST']._serialized_end=686
+  _globals['_DELETETABLERESPONSE']._serialized_start=688
+  _globals['_DELETETABLERESPONSE']._serialized_end=709
+  _globals['_INPUTTABLECOLUMNINFO']._serialized_start=712
+  _globals['_INPUTTABLECOLUMNINFO']._serialized_end=910
+  _globals['_INPUTTABLECOLUMNINFO_KIND']._serialized_start=856
+  _globals['_INPUTTABLECOLUMNINFO_KIND']._serialized_end=910
+  _globals['_INPUTTABLEMETADATA']._serialized_start=913
+  _globals['_INPUTTABLEMETADATA']._serialized_end=1133
+  _globals['_INPUTTABLEMETADATA_COLUMNINFOENTRY']._serialized_start=1027
+  _globals['_INPUTTABLEMETADATA_COLUMNINFOENTRY']._serialized_end=1133
+  _globals['_INTEGERRANGERESTRICTION']._serialized_start=1135
+  _globals['_INTEGERRANGERESTRICTION']._serialized_end=1206
+  _globals['_INPUTTABLESERVICE']._serialized_start=1209
+  _globals['_INPUTTABLESERVICE']._serialized_end=1503
 # @@protoc_insertion_point(module_scope)

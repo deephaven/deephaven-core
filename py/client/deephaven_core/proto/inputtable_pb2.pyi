@@ -8,8 +8,10 @@ Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 import builtins
 import collections.abc
 import deephaven_core.proto.ticket_pb2
+import google.protobuf.any_pb2
 import google.protobuf.descriptor
 import google.protobuf.internal.containers
+import google.protobuf.internal.enum_type_wrapper
 import google.protobuf.message
 import sys
 import typing
@@ -149,3 +151,114 @@ class DeleteTableResponse(google.protobuf.message.Message):
     ) -> None: ...
 
 Global___DeleteTableResponse: typing_extensions.TypeAlias = DeleteTableResponse
+
+@typing.final
+class InputTableColumnInfo(google.protobuf.message.Message):
+    """information about a column in an input table"""
+
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    class _Kind:
+        ValueType = typing.NewType("ValueType", builtins.int)
+        V: typing_extensions.TypeAlias = ValueType
+
+    class _KindEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[InputTableColumnInfo._Kind.ValueType], builtins.type):
+        DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
+        KIND_UNKNOWN: InputTableColumnInfo._Kind.ValueType  # 0
+        KIND_KEY: InputTableColumnInfo._Kind.ValueType  # 1
+        """this column is a key column"""
+        KIND_VALUE: InputTableColumnInfo._Kind.ValueType  # 2
+        """this column is a value column"""
+
+    class Kind(_Kind, metaclass=_KindEnumTypeWrapper):
+        """whether this column is a key or value column"""
+
+    KIND_UNKNOWN: InputTableColumnInfo.Kind.ValueType  # 0
+    KIND_KEY: InputTableColumnInfo.Kind.ValueType  # 1
+    """this column is a key column"""
+    KIND_VALUE: InputTableColumnInfo.Kind.ValueType  # 2
+    """this column is a value column"""
+
+    KIND_FIELD_NUMBER: builtins.int
+    RESTRICTIONS_FIELD_NUMBER: builtins.int
+    kind: Global___InputTableColumnInfo.Kind.ValueType
+    @property
+    def restrictions(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[google.protobuf.any_pb2.Any]:
+        """Any restrictions on the column's values, which are implementation specific.  The server enforces these
+        constraints, but they are included in the metadata so that the UI can display them to the user.
+        """
+
+    def __init__(
+        self,
+        *,
+        kind: Global___InputTableColumnInfo.Kind.ValueType = ...,
+        restrictions: collections.abc.Iterable[google.protobuf.any_pb2.Any] | None = ...,
+    ) -> None: ...
+    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["kind", b"kind", "restrictions", b"restrictions"]
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+
+Global___InputTableColumnInfo: typing_extensions.TypeAlias = InputTableColumnInfo
+
+@typing.final
+class InputTableMetadata(google.protobuf.message.Message):
+    """metadata for the input table, encoded into the Barrage meta-data as a base64 encoded protobuf"""
+
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    @typing.final
+    class ColumnInfoEntry(google.protobuf.message.Message):
+        DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+        KEY_FIELD_NUMBER: builtins.int
+        VALUE_FIELD_NUMBER: builtins.int
+        key: builtins.str
+        @property
+        def value(self) -> Global___InputTableColumnInfo: ...
+        def __init__(
+            self,
+            *,
+            key: builtins.str = ...,
+            value: Global___InputTableColumnInfo | None = ...,
+        ) -> None: ...
+        _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["value", b"value"]
+        def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
+        _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["key", b"key", "value", b"value"]
+        def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+
+    COLUMN_INFO_FIELD_NUMBER: builtins.int
+    @property
+    def column_info(self) -> google.protobuf.internal.containers.MessageMap[builtins.str, Global___InputTableColumnInfo]:
+        """a map from column name to column info, each column that participates in input table updates is included in the
+        map.  Additional columns are not part of the input table update
+        """
+
+    def __init__(
+        self,
+        *,
+        column_info: collections.abc.Mapping[builtins.str, Global___InputTableColumnInfo] | None = ...,
+    ) -> None: ...
+    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["column_info", b"column_info"]
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+
+Global___InputTableMetadata: typing_extensions.TypeAlias = InputTableMetadata
+
+@typing.final
+class IntegerRangeRestriction(google.protobuf.message.Message):
+    """an example restriction indicating that integer values must be within the given range (inclusive)"""
+
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    MIN_INCLUSIVE_FIELD_NUMBER: builtins.int
+    MAX_INCLUSIVE_FIELD_NUMBER: builtins.int
+    min_inclusive: builtins.int
+    max_inclusive: builtins.int
+    def __init__(
+        self,
+        *,
+        min_inclusive: builtins.int = ...,
+        max_inclusive: builtins.int = ...,
+    ) -> None: ...
+    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["max_inclusive", b"max_inclusive", "min_inclusive", b"min_inclusive"]
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+
+Global___IntegerRangeRestriction: typing_extensions.TypeAlias = IntegerRangeRestriction
