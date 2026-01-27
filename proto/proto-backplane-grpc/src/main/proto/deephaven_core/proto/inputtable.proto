@@ -86,11 +86,11 @@ message InputTableColumnInfo {
     repeated google.protobuf.Any restrictions = 2;
 }
 
-// wrapper around the InputTableMetadata, so that we can include more non-input table information later if desired.  At
+// Wrapper around the InputTableMetadata, so that we can include more non-input table information later if desired.  At
 // that point, this message definition would need to move.
 message DeephavenTableMetadata {
     // Input table metadata, if this table is an input table
-    optional InputTableMetadata input_table_metadata = 1;
+    InputTableMetadata input_table_metadata = 1;
 }
 
 // metadata for the input table, encoded into the Barrage meta-data as a base64 encoded protobuf

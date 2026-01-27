@@ -99,7 +99,7 @@ public class RangeValidatingInputTable implements InputTableUpdater {
         }
         final IntegerRangeRestriction rangeRestriction =
                 IntegerRangeRestriction.newBuilder().setMinInclusive(min).setMaxInclusive(max).build();
-        result.add(Any.pack(rangeRestriction));
+        result.add(Any.pack(rangeRestriction, "docs.deephaven.io"));
         return result;
     }
 
