@@ -51,8 +51,8 @@ Deephaven also parallelizes calculations within a single table. When you run `so
 
 - Column calculations in [`update`](../../reference/table-operations/select/update.md), [`select`](../../reference/table-operations/select/select.md), [`view`](../../reference/table-operations/select/view.md), and [`updateView`](../../reference/table-operations/select/update-view.md).
 - Filters in [`where`](../../reference/table-operations/filter/where.md) clauses.
-- Aggregations and group-by operations.
-- Join operations.
+- [Aggregations](../../reference/table-operations/group-and-aggregate/aggBy.md) and [group-by](../../reference/table-operations/group-and-aggregate/groupBy.md) operations.
+- [Join](../../reference/table-operations/join/join.md) operations.
 
 **What doesn't get parallelized**:
 
@@ -121,7 +121,7 @@ This pool processes live table updates. When source data changes, this pool comp
 - Propagating changes through dependent tables.
 - Running independent tables simultaneously.
 
-Both thread pools default to using all CPU cores, determined by [Runtime.availableProcessors()](https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/Runtime.html#availableProcessors()) at startup.
+Both thread pools default to using all CPU cores, determined by [`Runtime.availableProcessors()`](<https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/Runtime.html#availableProcessors()>) at startup.
 
 ## Controlling concurrency
 
@@ -130,7 +130,7 @@ This section explains when and how to override automatic parallelization for cod
 **Key concepts**:
 
 - **[`Selectable`](https://deephaven.io/core/javadoc/io/deephaven/api/Selectable.html)**: An object representing a column expression, used in `select` or `update` operations.
-- **Serial execution**: Forces rows to be processed one at a time, in order, using `.withSerial()`.
+- **Serial execution**: Forces Deephaven to process rows one at a time, in order, using `.withSerial()`.
 - **[`Barrier`](https://docs.deephaven.io/core/javadoc/io/deephaven/api/ConcurrencyControl.Barrier.html)**: Ensures one operation completes before another starts.
 
 ### Parallelization (default)
@@ -179,7 +179,7 @@ You can change the default behavior using configuration properties:
 
 ### Serialization
 
-Serialization forces rows to be processed one at a time, in order, on a single thread. Use it when your code cannot safely run in parallel.
+Serialization forces Deephaven to process rows one at a time, in order, on a single thread. Use it when your code cannot safely run in parallel.
 
 **When serialization is required**:
 
@@ -202,7 +202,7 @@ Marking an operation as serial tells Deephaven:
 The [`ConcurrencyControl`](https://docs.deephaven.io/core/javadoc/io/deephaven/api/ConcurrencyControl.html) interface provides the [`.withSerial()`](../../reference/table-operations/select/update.md#serial-execution) method for [`Filter`](https://docs.deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html) ([`where`](../../reference/table-operations/filter/where.md#serial-execution)) and [`Selectable`](https://docs.deephaven.io/core/javadoc/io/deephaven/api/Selectable.html) ([`update`](../../reference/table-operations/select/update.md#serial-execution) and [`select`](../../reference/table-operations/select/select.md)).
 
 > [!IMPORTANT]
-> `.withSerial()` cannot be used with `view` or `updateView`. These operations compute values on-demand (when cells are accessed), so they cannot guarantee processing order. Use `select` or `update` instead when you need serial execution.
+> You cannot use `.withSerial()` with [`view`](../../reference/table-operations/select/view.md) or [`updateView`](../../reference/table-operations/select/update-view.md). These operations compute values on-demand (when cells are accessed), so they cannot guarantee processing order. Use [`select`](../../reference/table-operations/select/select.md) or [`update`](../../reference/table-operations/select/update.md) instead when you need serial execution.
 
 #### Example: Global state requires serialization
 
@@ -215,7 +215,7 @@ counter = new AtomicInteger(0)
 t = emptyTable(1_000_000).update("A = counter.getAndIncrement()", "B = counter.getAndIncrement()")
 ```
 
-Without serialization, parallel execution causes race conditions where multiple threads read and update `counter` simultaneously. This produces incorrect results:
+Without serialization, parallel execution causes race conditions where multiple threads read and update `counter` simultaneously. This doesn't throw an error — it silently produces wrong values:
 
 ```groovy should-fail
 import java.util.concurrent.atomic.AtomicInteger
@@ -224,7 +224,17 @@ counter = new AtomicInteger(0)
 bad_result = emptyTable(10).update("A = counter.getAndIncrement()", "B = counter.getAndIncrement()")
 ```
 
-Parallel execution causes inconsistent values because multiple threads increment `counter` concurrently. You may see gaps in the sequence or values that don't follow the expected pattern where `B = A + 1`.
+Parallel execution causes inconsistent values because multiple threads increment `counter` concurrently. You may see results like:
+
+| A   | B   |
+| --- | --- |
+| 0   | 2   |
+| 1   | 1   |
+| 3   | 5   |
+| 4   | 4   |
+| 6   | 7   |
+
+Notice the duplicates (1 appears twice), gaps (no 8 or 9), and `B` not following `A + 1`.
 
 #### Using `.withSerial()` for Selectables
 
@@ -240,7 +250,7 @@ counter = new AtomicInteger(0)
 
 // Force serial execution - rows processed one at a time, in order
 col = Selectable.of(ColumnName.of("ID"), RawString.of("counter.getAndIncrement()")).withSerial()
-result = emptyTable(1_000_000).update([col])
+result = emptyTable(10).update([col])
 ```
 
 When a Selectable is serial:
@@ -251,7 +261,7 @@ When a Selectable is serial:
 
 #### Using `.withSerial()` for Filters
 
-Serial filters are needed when filter evaluation has stateful side effects. String-based filters in [`where()`](../../reference/table-operations/filter/where.md) are parallelized by default, so construct Filter objects explicitly:
+Serial filters are needed when filter evaluation has stateful side effects. Deephaven parallelizes string-based filters in [`where()`](../../reference/table-operations/filter/where.md) by default, so construct Filter objects explicitly:
 
 ```groovy order=result
 import io.deephaven.api.filter.Filter
@@ -262,7 +272,7 @@ filter1 = Filter.isNull(ColumnName.of("X")).withSerial()
 filter2 = Filter.isNotNull(ColumnName.of("Y")).withSerial()
 
 result = emptyTable(1000)
-    .update("X = i % 10 == 0 ? null : i", "Y = i % 5 == 0 ? null : i")
+    .update("X = i % 5 == 0 ? null : i", "Y = i % 7 == 0 ? null : i")
     .where(Filter.and(filter1, filter2))
 ```
 
@@ -286,9 +296,9 @@ When a [`Filter`](https://docs.deephaven.io/core/javadoc/io/deephaven/api/filter
 
 A [`Barrier`](https://docs.deephaven.io/core/javadoc/io/deephaven/api/ConcurrencyControl.Barrier.html) creates an ordering dependency between two operations:
 
-1. One operation **declares** the barrier (marks itself as the one that must finish first)
-2. Another operation **respects** the barrier (waits for the declaring operation to finish)
-3. Deephaven guarantees the declaring operation completes before the respecting operation starts
+1. One operation **declares** the barrier (marks itself as the one that must finish first).
+2. Another operation **respects** the barrier (waits for the declaring operation to finish).
+3. Deephaven guarantees the declaring operation completes before the respecting operation starts.
 
 #### Barriers for Selectables
 

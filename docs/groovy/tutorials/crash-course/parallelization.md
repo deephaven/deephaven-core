@@ -146,8 +146,10 @@ result = emptyTable(100).update([col])
 
 **Trade-off**: Sequential processing uses only one core, so it's slower than parallel processing. Only use `.withSerial()` when your formula requires it for correctness.
 
-## Next steps
+## Key takeaways
 
-- [Parallelization in depth](../../conceptual/query-engine/parallelization.md) - More techniques for controlling when formulas run in parallel vs. sequentially
-- [How Deephaven tracks table relationships](../../conceptual/dag.md) - How Deephaven determines which tables can update simultaneously
-- [Table operations reference](../../reference/table-operations/) - Complete reference for all table operations
+- Deephaven runs formulas in parallel by default — this is fast but requires stateless code.
+- Shared state or row-order dependencies cause silent errors with parallelization.
+- Use `.withSerial()` to force sequential execution when your formula needs it.
+
+Most queries just work. If your formulas use only column values and built-in functions, parallelization handles everything automatically — no extra code required.

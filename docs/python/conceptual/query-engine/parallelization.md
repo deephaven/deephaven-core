@@ -128,7 +128,7 @@ This pool processes live table updates. When source data changes, this pool comp
 - Propagating changes through dependent tables.
 - Running independent tables simultaneously.
 
-Both thread pools default to using all CPU cores, determined by [Runtime.availableProcessors()](https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/Runtime.html#availableProcessors()) at startup.
+Both thread pools default to using all CPU cores, determined by [`Runtime.availableProcessors()](<https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/Runtime.html#availableProcessors()>) at startup.
 
 ## Controlling concurrency
 
@@ -188,7 +188,7 @@ You can change the default behavior using configuration properties:
 
 ### Serialization
 
-Serialization forces rows to be processed one at a time, in order, on a single thread. Use it when your code cannot safely run in parallel.
+Serialization processes rows one at a time, in order, on a single thread. Use it when your code cannot safely run in parallel.
 
 **When serialization is required**:
 
@@ -255,7 +255,17 @@ bad_result = empty_table(10).update(
 )
 ```
 
-Parallel execution causes inconsistent values because multiple threads increment `counter` concurrently. You may see gaps in the sequence or values that don't follow the expected pattern where `B = A + 1`.
+Parallel execution causes inconsistent values because multiple threads increment `counter` concurrently. You may see results like:
+
+| A   | B   |
+| --- | --- |
+| 0   | 2   |
+| 1   | 1   |
+| 3   | 5   |
+| 4   | 4   |
+| 6   | 7   |
+
+Notice the duplicates (1 appears twice), gaps (no 8 or 9), and `B` not following `A + 1`.
 
 #### Using `.with_serial()` for Selectables
 
@@ -287,7 +297,7 @@ When a Selectable is serial:
 
 #### Using `.with_serial()` for Filters
 
-Serial filters are needed when filter evaluation has stateful side effects. String-based filters in [`where()`](../../reference/table-operations/filter/where.md) are parallelized by default, so construct Filter objects explicitly:
+Serial filters are needed when filter evaluation has stateful side effects. Deephaven parallelizes string-based filters in [`where()`](../../reference/table-operations/filter/where.md) by default, so construct Filter objects explicitly:
 
 ```python order=result
 from deephaven import empty_table
@@ -299,7 +309,7 @@ filter2 = not_(is_null("Y")).with_serial()
 
 result = (
     empty_table(1000)
-    .update(["X = i % 10 == 0 ? null : i", "Y = i % 5 == 0 ? null : i"])
+    .update(["X = i % 5 == 0 ? null : i", "Y = i % 7 == 0 ? null : i"])
     .where([filter1, filter2])
 )
 ```

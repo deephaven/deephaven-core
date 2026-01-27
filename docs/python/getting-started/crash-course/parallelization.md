@@ -140,7 +140,19 @@ def get_next_id():
 result = empty_table(100).update("ID = get_next_id()")
 ```
 
-The intent is for each row to get a unique ID: 1, 2, 3, and so on. But with parallelization, multiple cores call `get_next_id()` at the same time. Two cores might both read `counter = 5`, both add 1 to get 6, and both return 6. The result: duplicate IDs and skipped numbers.
+The intent is for each row to get a unique ID: 1, 2, 3, and so on. But with parallelization, multiple cores call `get_next_id()` at the same time. This doesn't throw an error — it silently produces wrong values like:
+
+| ID  |
+| --- |
+| 1   |
+| 2   |
+| 2   |
+| 4   |
+| 5   |
+| 5   |
+| 7   |
+
+Two cores might both read `counter = 5`, both add 1 to get 6, and both return 6. The result: duplicate IDs and skipped numbers.
 
 ### The fix: force sequential processing with `.with_serial()`
 
@@ -166,8 +178,10 @@ result = empty_table(100).update(col)
 
 **Trade-off**: Sequential processing uses only one core, so it's slower than parallel processing. Only use `.with_serial()` when your formula requires it for correctness.
 
-## Next steps
+## Key takeaways
 
-- [Parallelization in depth](../../conceptual/query-engine/parallelization.md) - More techniques for controlling when formulas run in parallel vs. sequentially
-- [How Deephaven tracks table relationships](../../conceptual/dag.md) - How Deephaven determines which tables can update simultaneously
-- [Table operations reference](../../reference/table-operations/) - Complete reference for all table operations
+- Deephaven runs formulas in parallel by default — this is fast but requires stateless code.
+- Shared state or row-order dependencies cause silent errors with parallelization.
+- Use `.with_serial()` to force sequential execution when your formula needs it.
+
+Most queries just work. If your formulas use only column values and built-in functions, parallelization handles everything automatically — no extra code required.
