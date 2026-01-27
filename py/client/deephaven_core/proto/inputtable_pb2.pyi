@@ -269,7 +269,7 @@ Global___InputTableMetadata: typing_extensions.TypeAlias = InputTableMetadata
 
 @typing.final
 class IntegerRangeRestriction(google.protobuf.message.Message):
-    """an example restriction indicating that integer values must be within the given range (inclusive)"""
+    """An example restriction indicating that integer values must be within the given range (inclusive)"""
 
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -287,3 +287,69 @@ class IntegerRangeRestriction(google.protobuf.message.Message):
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
 
 Global___IntegerRangeRestriction: typing_extensions.TypeAlias = IntegerRangeRestriction
+
+@typing.final
+class DoubleRangeRestriction(google.protobuf.message.Message):
+    """An example restriction indicating that double values must be within the given range (inclusive)"""
+
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    MIN_INCLUSIVE_FIELD_NUMBER: builtins.int
+    MAX_INCLUSIVE_FIELD_NUMBER: builtins.int
+    min_inclusive: builtins.float
+    max_inclusive: builtins.float
+    def __init__(
+        self,
+        *,
+        min_inclusive: builtins.float = ...,
+        max_inclusive: builtins.float = ...,
+    ) -> None: ...
+    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["max_inclusive", b"max_inclusive", "min_inclusive", b"min_inclusive"]
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+
+Global___DoubleRangeRestriction: typing_extensions.TypeAlias = DoubleRangeRestriction
+
+@typing.final
+class NotNullRestriction(google.protobuf.message.Message):
+    """An example restriction indicating that the value must not be null"""
+
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    def __init__(
+        self,
+    ) -> None: ...
+
+Global___NotNullRestriction: typing_extensions.TypeAlias = NotNullRestriction
+
+@typing.final
+class NonEmptyRestriction(google.protobuf.message.Message):
+    """An example restriction indicating that the value must not be empty"""
+
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    def __init__(
+        self,
+    ) -> None: ...
+
+Global___NonEmptyRestriction: typing_extensions.TypeAlias = NonEmptyRestriction
+
+@typing.final
+class StringListRestriction(google.protobuf.message.Message):
+    """An example restriction indicating that the string value must belong to the provided set of values (or Null), to
+    forbid null values, include both a StringListRestriction and NotNullRestriction.
+    """
+
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    ALLOWED_VALUES_FIELD_NUMBER: builtins.int
+    @property
+    def allowed_values(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
+    def __init__(
+        self,
+        *,
+        allowed_values: collections.abc.Iterable[builtins.str] | None = ...,
+    ) -> None: ...
+    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["allowed_values", b"allowed_values"]
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+
+Global___StringListRestriction: typing_extensions.TypeAlias = StringListRestriction
