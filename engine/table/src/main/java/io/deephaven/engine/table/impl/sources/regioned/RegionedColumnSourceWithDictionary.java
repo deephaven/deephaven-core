@@ -308,11 +308,13 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
 
             try (final RowSet.SearchIterator keysToVisit = upstream.added().searchIterator();
                     final RowSequence.Iterator knownKeys = symbolTable.getRowSet().getRowSequenceIterator()) {
+                boolean remaining = true;
                 keysToVisit.nextLong(); // Safe, since sourceIndex must be non-empty
-                do {
-                    dictionaryColumn.lookupRegion(keysToVisit.currentValue()).gatherDictionaryValuesRowSet(keysToVisit,
-                            knownKeys, symbolTableAddedBuilder);
-                } while (keysToVisit.hasNext());
+                while (remaining) {
+                    ColumnRegionObject<DATA_TYPE, Values> region =
+                            dictionaryColumn.lookupRegion(keysToVisit.currentValue());
+                    remaining = region.gatherDictionaryValuesRowSet(keysToVisit, knownKeys, symbolTableAddedBuilder);
+                }
             }
 
             final RowSet symbolTableAdded = symbolTableAddedBuilder.build();
