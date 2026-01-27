@@ -195,7 +195,7 @@ source = newTable(
 firstThenSum = source.updateView("Value=(long)Value").rollup(List.of(AggFormula("Value = __FORMULA_DEPTH__ == 0 ? sum(Value) : first(Value)").asReaggregating()), "Key")
 ```
 
-Another simple example of reaggration is a capped sum. In this example, the sums below the root level are capped at 40:
+Another simple example of reaggregation is a capped sum. In this example, the sums below the root level are capped at 40:
 
 ```groovy order=cappedSum,source
 source = newTable(
