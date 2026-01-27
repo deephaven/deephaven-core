@@ -280,11 +280,21 @@ class IntegerRangeRestriction(google.protobuf.message.Message):
     def __init__(
         self,
         *,
-        min_inclusive: builtins.int = ...,
-        max_inclusive: builtins.int = ...,
+        min_inclusive: builtins.int | None = ...,
+        max_inclusive: builtins.int | None = ...,
     ) -> None: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["max_inclusive", b"max_inclusive", "min_inclusive", b"min_inclusive"]
+    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["_max_inclusive", b"_max_inclusive", "_min_inclusive", b"_min_inclusive", "max_inclusive", b"max_inclusive", "min_inclusive", b"min_inclusive"]
+    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
+    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["_max_inclusive", b"_max_inclusive", "_min_inclusive", b"_min_inclusive", "max_inclusive", b"max_inclusive", "min_inclusive", b"min_inclusive"]
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    _WhichOneofReturnType__max_inclusive: typing_extensions.TypeAlias = typing.Literal["max_inclusive"]
+    _WhichOneofArgType__max_inclusive: typing_extensions.TypeAlias = typing.Literal["_max_inclusive", b"_max_inclusive"]
+    _WhichOneofReturnType__min_inclusive: typing_extensions.TypeAlias = typing.Literal["min_inclusive"]
+    _WhichOneofArgType__min_inclusive: typing_extensions.TypeAlias = typing.Literal["_min_inclusive", b"_min_inclusive"]
+    @typing.overload
+    def WhichOneof(self, oneof_group: _WhichOneofArgType__max_inclusive) -> _WhichOneofReturnType__max_inclusive | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: _WhichOneofArgType__min_inclusive) -> _WhichOneofReturnType__min_inclusive | None: ...
 
 Global___IntegerRangeRestriction: typing_extensions.TypeAlias = IntegerRangeRestriction
 
@@ -301,11 +311,21 @@ class DoubleRangeRestriction(google.protobuf.message.Message):
     def __init__(
         self,
         *,
-        min_inclusive: builtins.float = ...,
-        max_inclusive: builtins.float = ...,
+        min_inclusive: builtins.float | None = ...,
+        max_inclusive: builtins.float | None = ...,
     ) -> None: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["max_inclusive", b"max_inclusive", "min_inclusive", b"min_inclusive"]
+    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["_max_inclusive", b"_max_inclusive", "_min_inclusive", b"_min_inclusive", "max_inclusive", b"max_inclusive", "min_inclusive", b"min_inclusive"]
+    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
+    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["_max_inclusive", b"_max_inclusive", "_min_inclusive", b"_min_inclusive", "max_inclusive", b"max_inclusive", "min_inclusive", b"min_inclusive"]
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    _WhichOneofReturnType__max_inclusive: typing_extensions.TypeAlias = typing.Literal["max_inclusive"]
+    _WhichOneofArgType__max_inclusive: typing_extensions.TypeAlias = typing.Literal["_max_inclusive", b"_max_inclusive"]
+    _WhichOneofReturnType__min_inclusive: typing_extensions.TypeAlias = typing.Literal["min_inclusive"]
+    _WhichOneofArgType__min_inclusive: typing_extensions.TypeAlias = typing.Literal["_min_inclusive", b"_min_inclusive"]
+    @typing.overload
+    def WhichOneof(self, oneof_group: _WhichOneofArgType__max_inclusive) -> _WhichOneofReturnType__max_inclusive | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: _WhichOneofArgType__min_inclusive) -> _WhichOneofReturnType__min_inclusive | None: ...
 
 Global___DoubleRangeRestriction: typing_extensions.TypeAlias = DoubleRangeRestriction
 
