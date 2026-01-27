@@ -139,7 +139,7 @@ source = newTable(
 simpleSum = source.rollup(List.of(AggGroup("Value"), AggFormula("Sum = sum(Value)")), "Key")
 ```
 
-To calculate the sum for the root row, every row in the source table is read. The Deephaven engine provides no mechanism to provide detailed update information for a vector. Thus, every time the table ticks, the formula is completely re-evaluated.
+To calculate the sum for the root row, every row in the source table is read. The Deephaven engine provides detailed update information for rows in the table (i.e. which rows are added, removed, modified, or shifted). Even though a vector contains many values, it is contained within a single row; so the Deephaven engine does not provide detailed update information for a vector. Thus, every time the table ticks, the formula is completely re-evaluated.
 
 ### Formula Reaggregation
 
