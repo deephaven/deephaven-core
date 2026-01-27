@@ -133,10 +133,26 @@ result_filtered = source.where(filters=["(boolean)my_filter(IntegerColumn)"])
 result_not_filtered = source.where(filters=["!((boolean)my_filter(IntegerColumn))"])
 ```
 
+## Serial execution
+
+By default, Deephaven parallelizes filter evaluation across multiple CPU cores. If your filter has side effects or depends on row order, use `.with_serial()` to force sequential processing.
+
+```python order=source,result
+from deephaven.filters import Filter
+from deephaven import empty_table
+
+source = empty_table(10).update("X = i")
+f = Filter.from_("X > 5").with_serial()
+result = source.where(f)
+```
+
+For more information, see [Parallelization](../../../conceptual/query-engine/parallelization.md).
+
 ## Related documentation
 
 - [How to create static tables](../../../how-to-guides/new-and-empty-table.md)
 - [How to use filters](../../../how-to-guides/use-filters.md)
+- [Parallelization](../../../conceptual/query-engine/parallelization.md)
 - [equals](../../query-language/match-filters/equals.md)
 - [not equals (`!=`)](../../query-language/match-filters/not-equals.md)
 - [`icase in`](../..//query-language/match-filters/icase-in.md)
