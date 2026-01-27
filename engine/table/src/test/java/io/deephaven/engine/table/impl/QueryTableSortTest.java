@@ -1197,6 +1197,30 @@ public class QueryTableSortTest extends QueryTableTestBase {
         }
     }
 
+    public void testOneValuePerPartition() throws IOException {
+        final TemporaryFolder tempFolder = new TemporaryFolder();
+        tempFolder.create();
+        try {
+            final String [] syms = new String[] {"Apple", "Cantaloupe", "Banana"};
+
+            final List<Table> constituents = new ArrayList<>();
+
+            for (int ss = 0; ss < syms.length; ++ss) {
+                final Table t = emptyTable(1).update("Row=i", "Sym=`" + syms[ss] + "`");
+                constituents.add(t);
+                final String fileName = tempFolder.getRoot().toPath().resolve("part" + ss + ".parquet").toString();
+                ParquetTools.writeTable(t, fileName, ParquetInstructions.EMPTY);
+            }
+            final Table readback = ParquetTools.readTable(tempFolder.getRoot().toPath().toString());
+            TableTools.show(readback);
+
+            final Table dictionarySorted = readback.sort("Sym");
+            assertTableEquals(TableTools.merge(constituents).sort("Sym"), dictionarySorted);
+        } finally {
+            tempFolder.delete();
+        }
+    }
+
     public static ZonedDateTime[] toZdtLondon(Instant[] instants) {
         return Arrays.stream(instants).map(vv -> vv.atZone(ZoneId.of("Europe/London"))).toArray(ZonedDateTime[]::new);
     }

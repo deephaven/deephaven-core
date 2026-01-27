@@ -223,11 +223,12 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
         } else {
             final RowSetBuilderSequential symbolTableIndexBuilder = RowSetFactory.builderSequential();
             try (final RowSet.SearchIterator keysToVisit = sourceIndex.searchIterator()) {
+                boolean remaining = true;
                 keysToVisit.nextLong(); // Safe, since sourceIndex must be non-empty
-                do {
-                    dictionaryColumn.lookupRegion(keysToVisit.currentValue()).gatherDictionaryValuesRowSet(keysToVisit,
-                            RowSequenceFactory.EMPTY_ITERATOR, symbolTableIndexBuilder);
-                } while (keysToVisit.hasNext());
+                while (remaining) {
+                    final ColumnRegionObject<DATA_TYPE, Values> region = dictionaryColumn.lookupRegion(keysToVisit.currentValue());
+                    remaining = region.gatherDictionaryValuesRowSet(keysToVisit, RowSequenceFactory.EMPTY_ITERATOR, symbolTableIndexBuilder);
+                }
             }
             // noinspection resource
             symbolTableRowSet = symbolTableIndexBuilder.build().toTracking();
