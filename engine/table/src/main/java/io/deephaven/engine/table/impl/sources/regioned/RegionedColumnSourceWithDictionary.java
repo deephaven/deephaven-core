@@ -226,8 +226,10 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
                 boolean remaining = true;
                 keysToVisit.nextLong(); // Safe, since sourceIndex must be non-empty
                 while (remaining) {
-                    final ColumnRegionObject<DATA_TYPE, Values> region = dictionaryColumn.lookupRegion(keysToVisit.currentValue());
-                    remaining = region.gatherDictionaryValuesRowSet(keysToVisit, RowSequenceFactory.EMPTY_ITERATOR, symbolTableIndexBuilder);
+                    final ColumnRegionObject<DATA_TYPE, Values> region =
+                            dictionaryColumn.lookupRegion(keysToVisit.currentValue());
+                    remaining = region.gatherDictionaryValuesRowSet(keysToVisit, RowSequenceFactory.EMPTY_ITERATOR,
+                            symbolTableIndexBuilder);
                 }
             }
             // noinspection resource

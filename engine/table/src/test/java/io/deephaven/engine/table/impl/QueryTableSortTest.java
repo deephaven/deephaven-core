@@ -1201,7 +1201,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
         final TemporaryFolder tempFolder = new TemporaryFolder();
         tempFolder.create();
         try {
-            final String [] syms = new String[] {"Apple", "Cantaloupe", "Banana"};
+            final String[] syms = new String[] {"Apple", "Cantaloupe", "Banana"};
 
             final List<Table> constituents = new ArrayList<>();
 
