@@ -102,14 +102,14 @@ message InputTableMetadata {
 
 // An example restriction indicating that integer values must be within the given range (inclusive)
 message IntegerRangeRestriction {
-    int64 min_inclusive = 1;
-    int64 max_inclusive = 2;
+    optional int64 min_inclusive = 1;
+    optional int64 max_inclusive = 2;
 }
 
 // An example restriction indicating that double values must be within the given range (inclusive)
 message DoubleRangeRestriction {
-    double min_inclusive = 1;
-    double max_inclusive = 2;
+    optional double min_inclusive = 1;
+    optional double max_inclusive = 2;
 }
 
 // An example restriction indicating that the value must not be null
