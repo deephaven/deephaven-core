@@ -154,7 +154,7 @@ Global___DeleteTableResponse: typing_extensions.TypeAlias = DeleteTableResponse
 
 @typing.final
 class InputTableColumnInfo(google.protobuf.message.Message):
-    """information about a column in an input table"""
+    """Information about a column in an input table"""
 
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 

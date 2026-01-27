@@ -380,7 +380,7 @@ func (*DeleteTableResponse) Descriptor() ([]byte, []int) {
 	return file_deephaven_core_proto_inputtable_proto_rawDescGZIP(), []int{5}
 }
 
-// information about a column in an input table
+// Information about a column in an input table
 type InputTableColumnInfo struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
