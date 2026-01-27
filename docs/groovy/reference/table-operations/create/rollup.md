@@ -156,7 +156,11 @@ reaggregatedSum = source.updateView("Sum=(long)Value").rollup(List.of(AggFormula
 
 If a new row with the key `Delta` is added to the source, `simpleSum` will read all eight rows again to recalculate the sums. However, `reaggregatedSum` will only recalculate the sum for `Delta` and then read the intermediate sums for `Alpha`, `Bravo`, `Charlie`, and `Delta`, not all rows. As the number of keys and the size of the data grow, this difference can significantly impact performance.
 
-In the previous example, the `Sum` column evaluated the [`sum(IntVector)`](https://docs.deephaven.io/core/javadoc/io/deephaven/function/Numeric.html#sum(io.deephaven.vector.IntVector)) function at every level of the rollup and produced a `long`. If the original table with an `int` column was used, then the lowest-level rollup would provide an `IntVector` as input to the `sum` and the next-level would provide `LongVector`. Similarly, the source table had a column named `Value`; whereas the aggregation produces a result named `Sum`. To address both these issues, before passing `source` to rollup, we called `updateView` to cast the `Value` column to `long` as `Sum`. If we ran the same example without the cast:
+In the previous example, the `Sum` column evaluated the [`sum(IntVector)`](https://docs.deephaven.io/core/javadoc/io/deephaven/function/Numeric.html#sum(io.deephaven.vector.IntVector)) function at every level of the rollup and produced a `long`. Since the original table contains an `int` column, the lowest-level rollup provides an `IntVector` to `sum`, while subsequent levels use a `LongVector`. 
+
+Similarly, the original table has a column called `Value`, but after aggregation, the result is labeled as `Sum`. To resolve these discrepancies, the `updateView` method is used before the rollup to convert the `Value` column to a `long` type and rename it to `Sum`. If this casting step were omitted and the original data was used directly, it could lead to inconsistencies in the results at different rollup levels.
+
+If we ran the same example without the cast:
 
 ```groovy syntax
 source = newTable(
