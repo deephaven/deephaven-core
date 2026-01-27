@@ -94,9 +94,9 @@ class AddToInputTable extends FlightExampleBase {
                         }
                         if (columnInfoEntry.getValue().getRestrictionsCount() > 0) {
                             final List<Any> restrictionsList = columnInfoEntry.getValue().getRestrictionsList();
-                            infoString.append("; (").append(
-                                    restrictionsList.stream().map(Any::getTypeUrl).collect(Collectors.joining(", ")))
-                                    .append(")");
+                            infoString.append(
+                                    restrictionsList.stream().map(Any::getTypeUrl).collect(Collectors.joining(", ", "; (", ")"))
+                            );
                         }
                         System.out.println(columnInfoEntry.getKey() + " -> " + infoString);
                     }
