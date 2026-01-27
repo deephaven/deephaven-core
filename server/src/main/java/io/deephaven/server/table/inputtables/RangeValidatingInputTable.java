@@ -3,6 +3,7 @@
 //
 package io.deephaven.server.table.inputtables;
 
+import com.google.protobuf.Any;
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfInt;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
@@ -11,6 +12,7 @@ import io.deephaven.engine.util.input.InputTableStatusListener;
 import io.deephaven.engine.util.input.InputTableUpdater;
 import io.deephaven.engine.util.input.InputTableValidationException;
 import io.deephaven.engine.util.input.StructuredErrorImpl;
+import io.deephaven.proto.backplane.grpc.IntegerRangeRestriction;
 import io.deephaven.util.annotations.TestUseOnly;
 import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.Nullable;
@@ -85,8 +87,20 @@ public class RangeValidatingInputTable implements InputTableUpdater {
     }
 
     @Override
-    public @Nullable String getColumnRestrictions(String columnName) {
-        return wrapped.getColumnRestrictions(columnName);
+    public @Nullable List<Any> getColumnRestrictions(String columnName) {
+        final List<Any> columnRestrictions = wrapped.getColumnRestrictions(columnName);
+        if (!columnName.equals(column)) {
+            return columnRestrictions;
+        }
+
+        final List<Any> result = new ArrayList<>();
+        if (columnRestrictions != null) {
+            result.addAll(columnRestrictions);
+        }
+        final IntegerRangeRestriction rangeRestriction =
+                IntegerRangeRestriction.newBuilder().setMinInclusive(min).setMaxInclusive(max).build();
+        result.add(Any.pack(rangeRestriction, "docs.deephaven.io"));
+        return result;
     }
 
     @Override
