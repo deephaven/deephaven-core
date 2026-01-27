@@ -143,7 +143,7 @@ To calculate the sum for the root row, every row in the source table is read. Th
 
 ### Formula Reaggregation
 
-Formula reaggregation can be used to limit the size of input vectors while evaluating changes to a rollup. Each level of the rollup must have the same constituent types and names, which can make formulating your query more complicated.
+Formula reaggregation can be used to limit the size of input vectors while evaluating changes to a rollup. When writing your query, be mindful of the requirement that each level of the rollup must have consistent constituent types and names. This ensures that your query accurately reflects the intended parameters and yields the desired outcomes.
 
 ```groovy order=reaggregatedSum,source
 source = newTable(
