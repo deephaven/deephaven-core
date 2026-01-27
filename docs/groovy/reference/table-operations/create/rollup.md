@@ -132,7 +132,7 @@ When a rollup includes a formula aggregation, care should be taken with the func
 
 By default, the formula aggregation operates on a group of all the values as they appeared in the source table. In this example, the `Value` column contains the same vector that is used as input to the formula:
 
-```groovy
+```groovy order=simpleSum,source
 source = newTable(
         stringCol("Key", "Alpha", "Alpha", "Alpha", "Bravo", "Bravo", "Charlie", "Charlie"),
         intCol("Value", 10, 10, 10, 20, 20, 30, 30))
@@ -145,7 +145,7 @@ To calculate the sum for the root row, every row in the source table is read. Th
 
 Formula reaggregation can be used to limit the size of input vectors while evaluating changes to a rollup. Each level of the rollup must have the same constituent types and names, which can make formulating your query more complicated.
 
-```groovy
+```groovy order=reaggregatedSum,source
 source = newTable(
         stringCol("Key", "Alpha", "Alpha", "Alpha", "Bravo", "Bravo", "Charlie", "Charlie"),
         intCol("Value", 10, 10, 10, 20, 20, 30, 30))
@@ -179,7 +179,7 @@ java.lang.ClassCastException: class io.deephaven.engine.table.vectors.LongVector
 
 Formula aggregations may include the constant `__FORMULA_DEPTH__` column, which is the depth of the formula aggregation in the rollup tree. The root node of the rollup has a depth of 0, the next level is 1, and so on. This can be used to implement distinct aggregations at each level of the rollup. For example:
 
-```groovy
+```groovy order=firstThenSum,source
 source = newTable(
         stringCol("Key", "Alpha", "Alpha", "Alpha", "Bravo", "Bravo", "Charlie", "Charlie"),
         intCol("Value", 10, 10, 10, 20, 20, 30, 30))
@@ -188,7 +188,7 @@ firstThenSum = source.rollup(List.of(AggFormula("Value = __FORMULA_DEPTH__ == 0 
 
 In this case, for each value of `Key`, the aggregation returns the first value. For the root level, the aggregation returns the sum of all values. When combined with a reaggregating formula, even more interesting semantics are possible. For example, rather than summing all of the values, we can sum the values from the prior level:
 
-```groovy
+```groovy order=firstThenSum,source
 source = newTable(
         stringCol("Key", "Alpha", "Alpha", "Alpha", "Bravo", "Bravo", "Charlie", "Charlie"),
         intCol("Value", 10, 10, 10, 20, 20, 30, 30))
@@ -197,7 +197,7 @@ firstThenSum = source.updateView("Value=(long)Value").rollup(List.of(AggFormula(
 
 Another simple example of reaggration is a capped sum. In this example, the sums below the root level are capped at 40:
 
-```groovy
+```groovy order=cappedSum,source
 source = newTable(
         stringCol("Key", "Alpha", "Alpha", "Alpha", "Bravo", "Bravo", "Charlie", "Charlie"),
         intCol("Value", 10, 20, 15, 20, 15, 25, 35))
