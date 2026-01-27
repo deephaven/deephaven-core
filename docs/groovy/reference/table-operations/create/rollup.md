@@ -128,7 +128,7 @@ result = source.rollup(aggList, false, "N", "M")
 
 ## Formula Aggregations in Rollups
 
-When a rollup includes a formula aggregation, care should be taken with the function being applied. On each tick, the formula is evaluated for every changed row in the output table. Since the aggregated rows include numerous source rows, the input vectors for a formula aggregation can become very large — potentially encompassing the entire source table at the root level. If the formula is inefficient when handling large input vectors, it may negatively impact the rollup's performance.
+When a rollup includes a formula aggregation, care should be taken with the function being applied. On each tick, the formula is evaluated for every changed row in the output table. Since the aggregated rows include numerous source rows, the input vectors for a formula aggregation can become very large — encompassing the entire source table at the root level. If the formula is inefficient when handling large input vectors, it may negatively impact the rollup's performance.
 
 By default, the formula aggregation operates on a group of all the values as they appeared in the source table. In this example, the `Value` column contains the same vector that is used as input to the formula:
 
@@ -156,7 +156,7 @@ reaggregatedSum = source.updateView("Sum=(long)Value").rollup(List.of(AggFormula
 
 If a new row with the key `Delta` is added to the source, `simpleSum` will read all eight rows again to recalculate the sums. However, `reaggregatedSum` will only recalculate the sum for `Delta` and then read the intermediate sums for `Alpha`, `Bravo`, `Charlie`, and `Delta`, not all rows. As the number of keys and the size of the data grow, this difference can significantly impact performance.
 
-In the previous example, the `Sum` column evaluated the [`sum(IntVector)`](https://docs.deephaven.io/core/javadoc/io/deephaven/function/Numeric.html#sum(io.deephaven.vector.IntVector)) function at every level of the rollup and produced a `long`. Since the original table contains an `int` column, the lowest-level rollup provides an `IntVector` to `sum`, while subsequent levels use a `LongVector`. 
+In the previous example, the `Sum` column evaluated the [`sum(IntVector)`](https://docs.deephaven.io/core/javadoc/io/deephaven/function/Numeric.html#sum(io.deephaven.vector.IntVector)) function at every level of the rollup and produced a `long`. Since the original table contains an `int` column, the lowest-level rollup provides an `IntVector` to `sum`, while subsequent levels use a `LongVector`.
 
 Similarly, the original table has a column called `Value`, but after aggregation, the result is labeled as `Sum`. To resolve these discrepancies, the `updateView` method is used before the rollup to convert the `Value` column to a `long` type and rename it to `Sum`. If this casting step were omitted and the original data was used directly, it could lead to inconsistencies in the results at different rollup levels.
 
