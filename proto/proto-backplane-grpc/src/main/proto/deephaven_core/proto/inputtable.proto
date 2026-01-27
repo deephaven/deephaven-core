@@ -72,7 +72,7 @@ message DeleteTableResponse {
 
 }
 
-// information about a column in an input table
+// Information about a column in an input table
 message InputTableColumnInfo {
     // whether this column is a key or value column
     enum Kind {
