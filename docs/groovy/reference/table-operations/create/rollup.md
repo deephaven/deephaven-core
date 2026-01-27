@@ -128,7 +128,7 @@ result = source.rollup(aggList, false, "N", "M")
 
 ## Formula Aggregations in Rollups
 
-When a rollups includes a formula aggregation, care should be taken with the function being applied. On each tick, the formula is evaluated for each changed row in the output table. Because the aggregated rows include many source rows, the input vectors to a formula aggregation can be very large (at the root level, they are the entire source table). If the formula is not efficient with large input vectors, the performance of the rollup can be poor.
+When a rollup includes a formula aggregation, care should be taken with the function being applied. On each tick, the formula is evaluated for every changed row in the output table. Since the aggregated rows include numerous source rows, the input vectors for a formula aggregation can become very large — potentially encompassing the entire source table at the root level. If the formula is inefficient when handling large input vectors, it may negatively impact the rollup's performance.
 
 By default, the formula aggregation operates on a group of all the values as they appeared in the source table. In this example, the `Value` column contains the same vector that is used as input to the formula:
 
