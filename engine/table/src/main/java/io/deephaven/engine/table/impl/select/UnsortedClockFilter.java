@@ -69,10 +69,14 @@ public class UnsortedClockFilter extends ClockFilter {
     protected WritableRowSet initializeAndGetInitialIndex(@NotNull final RowSet selection,
             @NotNull final RowSet fullSet,
             @NotNull final Table table) {
-        rangesByNextTime = new PriorityQueue<>(INITIAL_RANGE_QUEUE_CAPACITY, new RangeComparator());
-
         if (selection.isEmpty()) {
             return null;
+        }
+
+        synchronized (this) {
+            if (rangesByNextTime == null) {
+                rangesByNextTime = new PriorityQueue<>(INITIAL_RANGE_QUEUE_CAPACITY, new RangeComparator());
+            }
         }
 
         final RowSetBuilderSequential addedBuilder = RowSetFactory.builderSequential();
@@ -98,7 +102,9 @@ public class UnsortedClockFilter extends ClockFilter {
                     || QueryLanguageFunctionUtils.less(currentValue, previousValue)) {
                 // Add the current range, as appropriate
                 if (activeRangeIsDeferred) {
-                    rangesByNextTime.add(new Range(activeRangeFirstKey, activeRangeLastKey));
+                    synchronized (this) {
+                        rangesByNextTime.add(new Range(activeRangeFirstKey, activeRangeLastKey));
+                    }
                 } else {
                     addedBuilder.appendRange(activeRangeFirstKey, activeRangeLastKey);
                 }
@@ -113,7 +119,9 @@ public class UnsortedClockFilter extends ClockFilter {
 
         // Add the final range, as appropriate
         if (activeRangeIsDeferred) {
-            rangesByNextTime.add(new Range(activeRangeFirstKey, activeRangeLastKey));
+            synchronized (this) {
+                rangesByNextTime.add(new Range(activeRangeFirstKey, activeRangeLastKey));
+            }
         } else {
             addedBuilder.appendRange(activeRangeFirstKey, activeRangeLastKey);
         }
@@ -140,10 +148,5 @@ public class UnsortedClockFilter extends ClockFilter {
             }
         }
         return addedBuilder == null ? null : addedBuilder.build();
-    }
-
-    @Override
-    public boolean permitParallelization() {
-        return false;
     }
 }
