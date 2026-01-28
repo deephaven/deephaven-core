@@ -842,11 +842,12 @@ public class TestClockFilters {
 
     @Test
     public void testPriorFilter() {
-        testPriorFilter(false);
-        testPriorFilter(true);
+        testPriorFilter(false, false);
+        testPriorFilter(true, false);
+        testPriorFilter(true, true);
     }
 
-    private void testPriorFilter(boolean sorted) {
+    private void testPriorFilter(final boolean sorted, final boolean presortInput) {
         clock.reset();
 
         final ClockFilter filter;
@@ -856,11 +857,14 @@ public class TestClockFilters {
             filter = new UnsortedClockFilter("Timestamp", clock, true);
         }
 
-        final Table input = newTable(
+        Table input = newTable(
                 instantCol("Timestamp",
                         LongStream.of(1000, 1000, 2000, 2000, 5000, 1000, 1000, 2000, 4000, 5000)
                                 .mapToObj(DateTimeUtils::epochNanosToInstant).toArray(Instant[]::new)),
                 intCol("Int", 10, 20, 30, 40, 50, 100, 200, 300, 400, 500));
+        if (presortInput) {
+            input = input.sort("Timestamp");
+        }
 
         final Table result =
                 input.where(Filter.and(RawString.of("ii % 2 == 0"), filter));
