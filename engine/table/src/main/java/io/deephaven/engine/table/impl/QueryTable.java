@@ -1364,6 +1364,14 @@ public class QueryTable extends BaseTable<QueryTable> {
                         }
                         if (reindexingFilter.requiresSorting()) {
                             result = (QueryTable) result.sort(reindexingFilter.getSortColumns());
+                                if (!result.isFlat()) {
+                                    // The only reindexing filters are ClockFilters; and the SortedClockFilter is the
+                                    // only one that requires sorting. It makes the assumption that sort flattens the
+                                    // table, which is generally true for a historical sort - but if the input was
+                                    // already sorted, we don't create a new table but rather just return a copy of the
+                                    // table with the sorted columns set.
+                                    result = (QueryTable) result.flatten();
+                                }
                             reindexingFilter.sortingDone();
                         }
                         result = result.whereInternal(reindexingFilter);
