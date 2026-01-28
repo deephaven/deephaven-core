@@ -868,7 +868,6 @@ public class TestClockFilters {
 
         final Table result =
                 input.where(Filter.and(RawString.of("ii % 2 == 0"), filter));
-        TableTools.showWithRowSet(result);
         assertTableEquals(input.where("epochNanos(Timestamp) <= 1000 && ii % 2 == 0"), result);
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
@@ -882,6 +881,5 @@ public class TestClockFilters {
             expected = expected.sort("Timestamp");
         }
         assertTableEquals(expected, result);
-        TableTools.showWithRowSet(result);
     }
 }
