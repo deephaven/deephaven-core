@@ -197,7 +197,7 @@ If you want to try out any of our work-in-progress client libraries:
 
 If you have an existing Flight Client:
 
-- `ListFlights` will describe Tables bound to variables in the REPL and bound via [Application Mode](../how-to-guides/app-mode.md).
+- `ListFlights` will describe Tables bound to variables in the REPL and bound via [Application Mode](../how-to-guides/application-mode.md).
 - `DoGet` will fetch a snapshot of the entire Table (unsupported columns will be stringified).
 - `DoPut` can be used to upload your own static content.
 - `DoExchange` can be used to subscribe to incremental updates.
@@ -224,4 +224,4 @@ The Deephaven Community Core team has engaged with the Arrow team to improve inc
 - [Deephaven Overview](./deephaven-overview.md)
 - [Table update model](./table-update-model.md)
 - [Deephaven Barrage](/barrage/docs)
-- [How to run scripts before launch with Application Mode](../how-to-guides/app-mode.md)
+- [How to run scripts before launch with Application Mode](../how-to-guides/application-mode.md)

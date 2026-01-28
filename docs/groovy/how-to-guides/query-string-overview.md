@@ -204,7 +204,7 @@ For full coverage on arrays in tables, see [Arrays in Deephaven](./work-with-arr
 - [Groovy closures in query strings](./groovy-closures.md)
 - [Java objects in query strings](./java-classes.md)
 - [Work with arrays](./work-with-arrays.md)
-- [Work with strings](./strings.md)
+- [Work with strings](./work-with-strings.md)
 - [Select and update columns](./use-select-view-update.md)
 - [Filter table data](./filters.md)
 - [`emptyTable`](../reference/table-operations/create/emptyTable.md)

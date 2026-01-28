@@ -4,7 +4,6 @@
 
 # Example redirects - replace these with actual redirect rules
 /python/conceptual/kafka-in-deephaven.md /python/conceptual/kafka-basic-terms.md 301
-
 /groovy/tutorials/crash-course/architecture-overview.md /groovy/getting-started/crash-course/architecture-overview.md 301
 /groovy/tutorials/crash-course/configure.md /groovy/getting-started/crash-course/configure.md 301
 /groovy/tutorials/crash-course/crash-course-wrap-up.md /groovy/getting-started/crash-course/crash-course-wrap-up.md 301
@@ -20,3 +19,8 @@
 /groovy/tutorials/production-application.md /groovy/getting-started/production-application.md 301
 /groovy/tutorials/docker-install.md /groovy/getting-started/docker-install.md 301
 /groovy/how-to-guides/launch-build.md /groovy/how-to-guides/getting-started/launch-build.md 301
+/groovy/how-to-guides/csv-export.md /groovy/how-to-guides/data-import-export/csv-export.md 301
+/groovy/how-to-guides/csv-import.md /groovy/how-to-guides/data-import-export/csv-import.md 301
+/groovy/how-to-guides/app-mode.md /groovy/how-to-guides/application-mode.md 301
+/groovy/how-to-guides/strings.md /groovy/how-to-guides/work-with-strings.md 301
+/groovy/how-to-guides/dynamic-table-writer.md /groovy/how-to-guides/table-publisher.md 301

@@ -148,7 +148,7 @@
                   },
                   {
                     "label": "Write data to a real-time table",
-                    "path": "how-to-guides/dynamic-table-writer.md"
+                    "path": "how-to-guides/table-publisher.md"
                   },
                   {
                     "label": "Generate tables with Groovy functions",
@@ -161,11 +161,11 @@
                 "items": [
                   {
                     "label": "Import CSV files",
-                    "path": "how-to-guides/csv-import.md"
+                    "path": "how-to-guides/data-import-export/csv-import.md"
                   },
                   {
                     "label": "Export CSV files",
-                    "path": "how-to-guides/csv-export.md"
+                    "path": "how-to-guides/data-import-export/csv-export.md"
                   },
                   {
                     "label": "The Deephaven CSV library",
@@ -461,7 +461,7 @@
               },
               {
                 "label": "Strings",
-                "path": "how-to-guides/strings.md"
+                "path": "how-to-guides/work-with-strings.md"
               },
               {
                 "label": "Java classes & objects",
@@ -930,7 +930,7 @@
                     "items": [
                       {
                         "label": "Application Mode",
-                        "path": "how-to-guides/app-mode.md"
+                        "path": "how-to-guides/application-mode.md"
                       },
                       {
                         "label": "Application Mode libraries",

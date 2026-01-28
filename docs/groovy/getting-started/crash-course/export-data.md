@@ -19,7 +19,7 @@ employees = newTable(
 
 ## CSV
 
-Deephaven can read and [write CSV](../../how-to-guides/csv-export.md) files to and from local and remote locations. This example writes a table to a local CSV file.
+Deephaven can read and [write CSV](../../how-to-guides/data-import-export/csv-export.md) files to and from local and remote locations. This example writes a table to a local CSV file.
 
 ```groovy test-set=1
 import static io.deephaven.csv.CsvTools.writeCsv
@@ -27,7 +27,7 @@ import static io.deephaven.csv.CsvTools.writeCsv
 writeCsv(employees, "/data/employees.csv")
 ```
 
-We can show that the file is there by [importing the CSV](../../how-to-guides/csv-import.md):
+We can show that the file is there by [importing the CSV](../../how-to-guides/data-import-export/csv-import.md):
 
 ```groovy test-set=1
 import static io.deephaven.csv.CsvTools.readCsv

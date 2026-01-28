@@ -90,7 +90,7 @@ The following examples show how to use the Deephaven GitHub Copilot extension ef
 
 ### Knowledge reference
 
-Copilot is a great tool for learning about core concepts. For example, ask Deephaven about the difference between a [Dynamic Table Writer](./dynamic-table-writer.md) and a [Table Publisher](./dynamic-table-writer.md#table-publisher):
+Copilot is a great tool for learning about core concepts. For example, ask Deephaven about the difference between a [Dynamic Table Writer](./table-publisher.md) and a [Table Publisher](./table-publisher.md#table-publisher):
 
 ![Knowledge reference](../assets/how-to/copilot/knowledge_reference.png)
 
