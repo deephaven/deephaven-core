@@ -6,12 +6,21 @@
 
 import datetime
 import sys
-import pytz
 from typing import Union, Optional, Literal
 
 import jpy
 import numpy
 import pandas
+
+try:
+    import pytz
+except ImportError:
+    pytz = None  # type: ignore[assignment]
+
+try:
+    import zoneinfo # novermin
+except ImportError:
+    zoneinfo = None  # type: ignore[assignment]
 
 from deephaven import DHError
 from deephaven.dtypes import Instant, LocalDate, LocalTime, ZonedDateTime, Duration, Period, TimeZone
@@ -226,15 +235,12 @@ def _tzinfo_to_j_time_zone(tzi: datetime.tzinfo) -> TimeZone:
 
     # Handle pytz time zones
 
-    if isinstance(tzi, pytz.tzinfo.BaseTzInfo):
+    if pytz and isinstance(tzi, pytz.tzinfo.BaseTzInfo):
         return _JDateTimeUtils.parseTimeZone(tzi.zone)
 
     # Handle zoneinfo time zones
-    if sys.version_info >= (3, 9):
-        # novermin
-        import zoneinfo
-        if isinstance(tzi, zoneinfo.ZoneInfo):
-            return _JDateTimeUtils.parseTimeZone(tzi.key)
+    if zoneinfo and isinstance(tzi, zoneinfo.ZoneInfo):
+        return _JDateTimeUtils.parseTimeZone(tzi.key)
 
     # Handle constant UTC offset time zones (datetime.timezone)
 
