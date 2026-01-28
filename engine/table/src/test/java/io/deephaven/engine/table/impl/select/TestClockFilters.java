@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.api.ColumnName;
+import io.deephaven.api.RawString;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.filter.FilterComparison;
 import io.deephaven.api.literal.Literal;
@@ -836,6 +837,47 @@ public class TestClockFilters {
         });
 
         assertTableEquals(input.head(2), result);
+        TableTools.showWithRowSet(result);
+    }
+
+    @Test
+    public void testPriorFilter() {
+        testPriorFilter(false);
+        testPriorFilter(true);
+    }
+
+    private void testPriorFilter(boolean sorted) {
+        clock.reset();
+
+        final ClockFilter filter;
+        if (sorted) {
+            filter = new SortedClockFilter("Timestamp", clock, true);
+        } else {
+            filter = new UnsortedClockFilter("Timestamp", clock, true);
+        }
+
+        final Table input = newTable(
+                instantCol("Timestamp",
+                        LongStream.of(1000, 1000, 2000, 2000, 5000, 1000, 1000, 2000, 4000, 5000)
+                                .mapToObj(DateTimeUtils::epochNanosToInstant).toArray(Instant[]::new)),
+                intCol("Int", 10, 20, 30, 40, 50, 100, 200, 300, 400, 500));
+
+        final Table result =
+                input.where(Filter.and(RawString.of("ii % 2 == 0"), filter));
+        TableTools.showWithRowSet(result);
+        assertTableEquals(input.where("epochNanos(Timestamp) <= 1000 && ii % 2 == 0"), result);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            clock.run();
+            filter.run();
+        });
+
+        Table expected = input.where("epochNanos(Timestamp) <= 2000 && ii % 2 == 0");
+        if (sorted) {
+            expected = expected.sort("Timestamp");
+        }
+        assertTableEquals(expected, result);
         TableTools.showWithRowSet(result);
     }
 }
