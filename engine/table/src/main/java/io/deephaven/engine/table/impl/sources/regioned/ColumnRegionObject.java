@@ -83,7 +83,7 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
      * @param sequentialBuilder Output builder; implementations should append ranges for row keys not found in
      *        {@code knownKeys}
      * @throws UnsupportedOperationException If this region is incapable of gathering its dictionary values RowSet
-     * @return Whether {@code keysToVisit} has been exhausted
+     * @return Whether there are any remaining {@code keysToVisit}
      */
     default boolean gatherDictionaryValuesRowSet(@NotNull final RowSet.SearchIterator keysToVisit,
             @NotNull final RowSequence.Iterator knownKeys,
