@@ -622,8 +622,8 @@ public class WorkerConnection {
 
         // Allow this to be disabled in case races are possible that break this.
         // Flag is temporary, as long as we're sure there are no ill effects from the feature.
-        ConfigValue closeOnDisconnect = getServerConfigValue("web.disableCloseSessionOnDisconnect");
-        if (closeOnDisconnect == null || !closeOnDisconnect.hasStringValue()) {
+        ConfigValue disableCloseOnDisconnect = getServerConfigValue("web.disableCloseSessionOnDisconnect");
+        if (disableCloseOnDisconnect == null || !disableCloseOnDisconnect.hasStringValue()) {
             sessionServiceClient.closeSession(new HandshakeRequest(), metadata());
         }
         metadata().delete(FLIGHT_AUTH_HEADER_NAME);
