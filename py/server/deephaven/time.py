@@ -18,7 +18,7 @@ except ImportError:
     pytz = None  # type: ignore[assignment]
 
 try:
-    import zoneinfo
+    import zoneinfo # novermin
 except ImportError:
     zoneinfo = None  # type: ignore[assignment]
 
@@ -239,10 +239,8 @@ def _tzinfo_to_j_time_zone(tzi: datetime.tzinfo) -> TimeZone:
         return _JDateTimeUtils.parseTimeZone(tzi.zone)
 
     # Handle zoneinfo time zones
-    if sys.version_info >= (3, 9):
-        # novermin
-        if zoneinfo and isinstance(tzi, zoneinfo.ZoneInfo):
-            return _JDateTimeUtils.parseTimeZone(tzi.key)
+    if zoneinfo and isinstance(tzi, zoneinfo.ZoneInfo):
+        return _JDateTimeUtils.parseTimeZone(tzi.key)
 
     # Handle constant UTC offset time zones (datetime.timezone)
 
