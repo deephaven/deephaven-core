@@ -17,50 +17,50 @@
         "items": [
           {
             "label": "Quickstart",
-            "path": "tutorials/quickstart.md"
+            "path": "getting-started/quickstart.md"
           },
           {
             "label": "A Crash Course in Deephaven",
             "items": [
               {
                 "label": "Overview",
-                "path": "tutorials/crash-course/overview.md"
+                "path": "getting-started/crash-course/overview.md"
               },
               {
                 "label": "Get Started",
-                "path": "tutorials/crash-course/get-started.md"
+                "path": "getting-started/crash-course/get-started.md"
               },
               {
                 "label": "Architecture Overview",
-                "path": "tutorials/crash-course/architecture-overview.md"
+                "path": "getting-started/crash-course/architecture-overview.md"
               },
               {
                 "label": "Create Tables",
-                "path": "tutorials/crash-course/create-tables.md"
+                "path": "getting-started/crash-course/create-tables.md"
               },
               {
                 "label": "Table Operations",
-                "path": "tutorials/crash-course/table-ops.md"
+                "path": "getting-started/crash-course/table-ops.md"
               },
               {
                 "label": "Query Strings",
-                "path": "tutorials/crash-course/query-strings.md"
+                "path": "getting-started/crash-course/query-strings.md"
               },
               {
                 "label": "Real-time Plots",
-                "path": "tutorials/crash-course/plots.md"
+                "path": "getting-started/crash-course/plots.md"
               },
               {
                 "label": "Data I/O",
-                "path": "tutorials/crash-course/export-data.md"
+                "path": "getting-started/crash-course/export-data.md"
               },
               {
                 "label": "Configure your Instance",
-                "path": "tutorials/crash-course/configure.md"
+                "path": "getting-started/crash-course/configure.md"
               },
               {
                 "label": "Wrapping Up",
-                "path": "tutorials/crash-course/crash-course-wrap-up.md"
+                "path": "getting-started/crash-course/crash-course-wrap-up.md"
               }
             ]
           },
@@ -69,15 +69,15 @@
             "items": [
               {
                 "label": "Docker",
-                "path": "tutorials/docker-install.md"
+                "path": "getting-started/docker-install.md"
               },
               {
                 "label": "Source code",
-                "path": "how-to-guides/launch-build.md"
+                "path": "how-to-guides/getting-started/launch-build.md"
               },
               {
                 "label": "Production application",
-                "path": "tutorials/production-application.md"
+                "path": "getting-started/production-application.md"
               }
             ]
           }
@@ -431,7 +431,7 @@
                 "items": [
                   {
                     "label": "Query Scope",
-                    "path": "how-to-guides/queryscope.md"
+                    "path": "how-to-guides/query-scope.md"
                   },
                   {
                     "label": "Variables",

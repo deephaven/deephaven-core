@@ -322,7 +322,7 @@ All table updates emanate from the [Periodic Update Graph](/core/docs/conceptual
 - [DynamicTableWriter](../reference/table-operations/create/DynamicTableWriter.md)
 - [Execution Context](../conceptual/execution-context.md)
 - [How to use Java packages in query strings](./install-and-use-java-packages.md#use-java-packages-in-query-strings)
-- [Query Scope](./queryscope.md)
+- [Query Scope](./query-scope.md)
 - [`TablePublisher`](../reference/table-operations/create/TablePublisher.md)
 - [`DynamicTableWriter` Javadoc](/core/javadoc/io/deephaven/engine/table/impl/util/DynamicTableWriter.html)
 - [`TablePublisher` Javadoc](https://docs.deephaven.io/core/javadoc/io/deephaven/stream/TablePublisher.html)

@@ -9,7 +9,7 @@ experiment with code changes. These instructions show how to build on multiple o
 systems, including Linux, Windows, and Mac.
 
 > [!TIP]
-> Launching from source code is recommended for users who wish to tinker with and modify source code. For an easier installation method, see [Launch Deephaven from pre-built images](../tutorials/docker-install.md).
+> Launching from source code is recommended for users who wish to tinker with and modify source code. For an easier installation method, see [Launch Deephaven from pre-built images](../getting-started/docker-install.md).
 
 ## Supported operating systems
 

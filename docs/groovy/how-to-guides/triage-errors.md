@@ -284,7 +284,7 @@ Below is the most common example an Out Of Heap failure:
 
 There are many ways to approach this problem and, in practice, resolution will require some combination of all of the techniques mentioned below.
 
-The first, and simplest, action to take is to increase the heap allocated to your Java Virtual Machine. Using the Docker-based example provided by Deephaven in the [Docker install guide](../tutorials/docker-install.md), you could simply increase the amount of memory allocated to Docker, up to certain limits. If you are using the Docker-based example and want to adjust the memory allocation, please see the file `docker-compose-common.yml` in your Deephaven Core base directory.
+The first, and simplest, action to take is to increase the heap allocated to your Java Virtual Machine. Using the Docker-based example provided by Deephaven in the [Docker install guide](../getting-started/docker-install.md), you could simply increase the amount of memory allocated to Docker, up to certain limits. If you are using the Docker-based example and want to adjust the memory allocation, please see the file `docker-compose-common.yml` in your Deephaven Core base directory.
 
 For many workloads this will be enough. However, users must be aware that you may not get the results you expect when you increase memory across the 32GB boundary. Java uses address compression techniques to optimize memory usage when maximum heap size is smaller than 32GB. Once you request 32GB or more, this feature is disabled so that the program can access its entire memory space. This means that if you start with 30GB of heap and then increase the size to 32GB, you will have less heap available to your query.
 

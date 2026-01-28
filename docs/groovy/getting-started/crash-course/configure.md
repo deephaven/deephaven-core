@@ -11,7 +11,7 @@ Keeping your real-time data secure is one of Deephaven's top priorities. As such
 
 ![Docker logs showing the PSK](../../assets/how-to/docker-logs.png)
 
-It is advised that you change the password from a randomly generated string to your own password for enhanced security. For the [Docker one-liner installation](../../tutorials/quickstart.md#1-install-and-launch-deephaven), you can set your password with the `-Dauthentication.psk` flag:
+It is advised that you change the password from a randomly generated string to your own password for enhanced security. For the [Docker one-liner installation](../../getting-started/quickstart.md#1-install-and-launch-deephaven), you can set your password with the `-Dauthentication.psk` flag:
 
 ```bash skip-test
 docker run --rm --name deephaven -p 10000:10000 -v data:/data  --env START_OPTS=-Dauthentication.psk=YOUR_PASSWORD_HERE ghcr.io/deephaven/server-slim:latest
@@ -28,14 +28,14 @@ In addition to PSK authentication, Deephaven supports the following types of aut
 
 ## Deployments
 
-Deephaven provides [multiple Docker images](../../tutorials/docker-install.md#image-versions). Each of these images, called deployments, comes pre-installed with different Python packages. You also have the option of including [Deephaven's example data](https://github.com/deephaven/examples) in any of these images.
+Deephaven provides [multiple Docker images](../../getting-started/docker-install.md#image-versions). Each of these images, called deployments, comes pre-installed with different Python packages. You also have the option of including [Deephaven's example data](https://github.com/deephaven/examples) in any of these images.
 Many of these images integrate with popular Python libraries. For example, the [`server-all-ai`](https://github.com/deephaven/deephaven-core/pkgs/container/server-all-ai) image comes pre-installed with [PyTorch](https://pytorch.org), [Tensorflow](https://www.tensorflow.org), [scikit-learn](https://scikit-learn.org/stable/), and [nltk](https://www.nltk.org). You can use this image with this Docker command:
 
 ```bash skip-test
 docker run --rm --name deephaven -p 10000:10000 ghcr.io/deephaven/server-all-ai:latest
 ```
 
-To learn more about deployments, check out the guide for [installing Deephaven with Docker](../../tutorials/docker-install.md).
+To learn more about deployments, check out the guide for [installing Deephaven with Docker](../../getting-started/docker-install.md).
 
 ## Installing Java packages
 

@@ -54,9 +54,9 @@ For Python:
 
 For Java/Groovy:
 
-- [Docker](../tutorials/docker-install.md)
-- [Build from source](./launch-build.md)
-- [Production application](../tutorials/production-application.md)
+- [Docker](../getting-started/docker-install.md)
+- [Build from source](../getting-started/launch-build.md)
+- [Production application](../getting-started/production-application.md)
 
 3. Install the Deephaven GitHub Copilot extension
 
@@ -124,6 +124,6 @@ You may find that the Deephaven GitHub Copilot extension does not work as expect
 
 ## Related documentation
 
-- [Docker](../tutorials/docker-install.md)
-- [Build from source](./launch-build.md)
-- [Production application](../tutorials/production-application.md)
+- [Docker](../getting-started/docker-install.md)
+- [Build from source](../getting-started/launch-build.md)
+- [Production application](../getting-started/production-application.md)

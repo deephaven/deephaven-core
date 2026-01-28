@@ -72,6 +72,6 @@ You can also set environment variables in a `.env` file in the same directory as
 
 ## Related documentation
 
-- [Install guide for Docker](../../tutorials/docker-install.md)
+- [Install guide for Docker](../../getting-started/docker-install.md)
 - [How to disable authentication](./auth-anon.md)
 - [How to configure the Docker application](../configuration/docker-application.md)

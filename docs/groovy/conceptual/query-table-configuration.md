@@ -7,7 +7,7 @@ This guide discusses how to control various `QueryTable` features that affect yo
 
 # QueryTable
 
-[`QueryTable`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/QueryTable.html) is Deephaven's primary implementation of our [Table API](../tutorials/crash-course/table-ops.md).
+[`QueryTable`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/QueryTable.html) is Deephaven's primary implementation of our [Table API](../getting-started/crash-course/table-ops.md).
 
 The `QueryTable` has the following user-configurable properties:
 
@@ -124,7 +124,7 @@ In a future release of Deephaven, the flags in this category will change from a 
 ## Related documentation
 
 - [QueryTable JavaDocs](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/QueryTable.html)
-- [Table API](../tutorials/crash-course/table-ops.md)
+- [Table API](../getting-started/crash-course/table-ops.md)
 - [Incremental update model](./table-update-model.md)
 - [Query Memoization](../reference/community-questions/query-memoization.md)
 - [Data indexes](../how-to-guides/data-indexes.md)

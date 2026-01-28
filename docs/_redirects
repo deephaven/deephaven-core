@@ -1,0 +1,22 @@
+# Deephaven Documentation Redirects
+# Format: /old-path /new-path [status-code]
+# Status codes: 301 (permanent), 302 (temporary)
+
+# Example redirects - replace these with actual redirect rules
+/python/conceptual/kafka-in-deephaven.md /python/conceptual/kafka-basic-terms.md 301
+
+/groovy/tutorials/crash-course/architecture-overview.md /groovy/getting-started/crash-course/architecture-overview.md 301
+/groovy/tutorials/crash-course/configure.md /groovy/getting-started/crash-course/configure.md 301
+/groovy/tutorials/crash-course/crash-course-wrap-up.md /groovy/getting-started/crash-course/crash-course-wrap-up.md 301
+/groovy/tutorials/crash-course/create-tables.md /groovy/getting-started/crash-course/create-tables.md 301
+/groovy/tutorials/crash-course/export-data.md /groovy/getting-started/crash-course/export-data.md 301
+/groovy/tutorials/crash-course/get-started.md /groovy/getting-started/crash-course/get-started.md 301
+/groovy/tutorials/crash-course/overview.md /groovy/getting-started/crash-course/overview.md 301
+/groovy/tutorials/crash-course/plots.md /groovy/getting-started/crash-course/plots.md 301
+/groovy/tutorials/crash-course/query-strings.md /groovy/getting-started/crash-course/query-strings.md 301
+/groovy/tutorials/crash-course/table-ops.md /groovy/getting-started/crash-course/table-ops.md 301
+/groovy/how-to-guides/queryscope.md /groovy/how-to-guides/query-scope.md 301
+/groovy/tutorials/crash-course/quickstart.md /groovy/getting-started/quickstart.md 301
+/groovy/tutorials/production-application.md /groovy/getting-started/production-application.md 301
+/groovy/tutorials/docker-install.md /groovy/getting-started/docker-install.md 301
+/groovy/how-to-guides/launch-build.md /groovy/how-to-guides/getting-started/launch-build.md 301
