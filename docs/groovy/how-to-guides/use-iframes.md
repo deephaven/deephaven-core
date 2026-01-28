@@ -3,7 +3,7 @@ title: How to display tables in an Inline Frame
 sidebar_label: Use IFrames
 ---
 
-In this guide, you'll learn how to create a basic web page with embedded tables and charts from Deephaven using Inline Frames (IFrames). In addition to the Deephaven Web UI, the Deephaven server also provides endpoints for fetching individual tables or charts. Add the following script using [Application Mode](../application-mode.md) to run through the examples below:
+In this guide, you'll learn how to create a basic web page with embedded tables and charts from Deephaven using Inline Frames (IFrames). In addition to the Deephaven Web UI, the Deephaven server also provides endpoints for fetching individual tables or charts. Add the following script using [Application Mode](./application-mode.md) to run through the examples below:
 
 ```groovy ticking-table order=null
 // Create a ticking table with x and y values showing a sin wave
@@ -38,7 +38,7 @@ Here is a basic HTML page embedding an IFrame:
 </html>
 ```
 
-![The `sin_table` from the code above, embedded in an IFrame](../../assets/how-to/iframe-table-basic.gif)
+![The `sin_table` from the code above, embedded in an IFrame](../assets/how-to/iframe-table-basic.gif)
 
 ## Display charts in an IFrame
 
@@ -65,7 +65,7 @@ Here is a basic HTML page embedding an IFrame:
 </html>
 ```
 
-![The `sin_chart` from the code above embedded in an IFrame](../../assets/how-to/iframe-chart-basic.gif)
+![The `sin_chart` from the code above embedded in an IFrame](../assets/how-to/iframe-chart-basic.gif)
 
 ## Authentication
 
@@ -155,8 +155,8 @@ When embedding in IFrames, you may want to provide authentication details from t
 
 </details>
 
-![The embedded IFrame waits for login credentials from the parent window before generating the above table and chart](../../assets/how-to/iframe-authentication.gif)
+![The embedded IFrame waits for login credentials from the parent window before generating the above table and chart](../assets/how-to/iframe-authentication.gif)
 
 ## Related documentation
 
-- [Application Mode](../application-mode.md)
+- [Application Mode](./application-mode.md)

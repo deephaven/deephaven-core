@@ -309,7 +309,7 @@ GC timeouts are another type of heap-related problem. These occur when you have 
 This behavior is characterized by periodic long pauses as the JVM frees up memory. When this happens, look for ways to reduce your tick frequency.
 
 > [!NOTE]
-> See [How to reduce the update frequency of ticking tables](./reduce-update-frequency.md)
+> See [How to reduce the update frequency of ticking tables](./performance/reduce-update-frequency.md)
 
 ## Get help
 

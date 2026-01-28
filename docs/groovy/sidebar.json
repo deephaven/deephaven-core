@@ -207,7 +207,7 @@
                 "items": [
                   {
                     "label": "Supported Parquet formats",
-                    "path": "conceptual/parquet-formats.md"
+                    "path": "how-to-guides/data-import-export/parquet-formats.md"
                   },
                   {
                     "label": "Import Parquet files",
@@ -569,7 +569,7 @@
                       },
                       {
                         "label": "Use IFrames",
-                        "path": "how-to-guides/user-interface/use-iframes.md"
+                        "path": "how-to-guides/use-iframes.md"
                       }
                     ]
                   }
@@ -777,11 +777,11 @@
                 "items": [
                   {
                     "label": "Use performance tables",
-                    "path": "how-to-guides/performance-tables.md"
+                    "path": "how-to-guides/performance/performance-tables.md"
                   },
                   {
                     "label": "Dial down the update frequency of ticking tables",
-                    "path": "how-to-guides/reduce-update-frequency.md"
+                    "path": "how-to-guides/performance/reduce-update-frequency.md"
                   },
                   {
                     "label": "Data Indexes",
