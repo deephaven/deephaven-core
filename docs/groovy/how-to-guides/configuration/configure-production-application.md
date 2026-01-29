@@ -7,7 +7,7 @@ This guide provides low-level details about the Deephaven production application
 
 The production application offers a greater degree of control and performance than other methods, but requires more setup and consideration of low-level details. Users who wish to get up and running without needing to worry about these details should consider [Deephaven's Docker images](./docker-application.md).
 
-This guide assumes familiarity with installing and running the Deephaven production application. For an introductory guide on installing and running, see [Install and run Deephaven with pre-built artifacts](../../tutorials/production-application.md).
+This guide assumes familiarity with installing and running the Deephaven production application. For an introductory guide on installing and running, see [Install and run Deephaven with pre-built artifacts](../../getting-started/production-application.md).
 
 ## Prerequisites
 
@@ -19,13 +19,13 @@ The production application also requires Linux or Mac OS. Running on Windows req
 
 The inner structure of the application is a root directory of the form `server-jetty-<version>/` with further subdirectories:
 
-- `bin/`: Contains a [`start` script](../../tutorials/production-application.md#run-the-server) used to launch the server.
+- `bin/`: Contains a [`start` script](../../getting-started/production-application.md#run-the-server) used to launch the server.
 - `lib/`: Contains all of the JAR files that form the application classpath.
 - `etc/` [<sup>[2]</sup>](#footnotes): Contains extra files that may be useful for configuring the server JVM.
 
 ### Environment variables
 
-The [`start` script](../../tutorials/production-application.md#run-the-server) contains the logic to collect the arguments, assemble the classpath, and execute the `java` command to run the server. There are several environment variables that influence the [`start` script](../../tutorials/production-application.md#run-the-server):
+The [`start` script](../../getting-started/production-application.md#run-the-server) contains the logic to collect the arguments, assemble the classpath, and execute the `java` command to run the server. There are several environment variables that influence the [`start` script](../../getting-started/production-application.md#run-the-server):
 
 | Environment Variable | Description                                                                                    | Default Value                                             | Example                                                                           |
 | -------------------- | ---------------------------------------------------------------------------------------------- | --------------------------------------------------------- | --------------------------------------------------------------------------------- |
@@ -35,7 +35,7 @@ The [`start` script](../../tutorials/production-application.md#run-the-server) c
 
 ## What the start script does
 
-The end result of the [`start` script](../../tutorials/production-application.md#run-the-server) is a command that looks something like:
+The end result of the [`start` script](../../getting-started/production-application.md#run-the-server) is a command that looks something like:
 
 ```shell
 java <required-opts> $JAVA_OPTS $START_OPTS -classpath <classpath> io.deephaven.server.jetty.JettyMain [optional-bootstrap-file]
@@ -87,5 +87,5 @@ For more information, see the [Docker application documentation](./docker-applic
 
 - [How to configure the Docker application](./docker-application.md)
 - [How to create a Deephaven configuration file](./config-file.md)
-- [Build from source](../launch-build.md)
-- [Install and run the Deephaven production application](../../tutorials/production-application.md)
+- [Build from source](../../getting-started/launch-build.md)
+- [Install and run the Deephaven production application](../../getting-started/production-application.md)

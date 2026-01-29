@@ -288,5 +288,5 @@ It's unlikely that you'll need to do all of the above setup yourself. Organizati
 
 ## Related documentation
 
-- [Install guide for Docker](../../tutorials/docker-install.md)
+- [Install guide for Docker](../../getting-started/docker-install.md)
 - [How to configure the Docker application](../configuration/docker-application.md)

@@ -57,4 +57,4 @@ Right-clicking within the body of the Notebook panel opens a context menu with f
 
 ## Related documentation
 
-- [Quickstart](../../tutorials/quickstart.md)
+- [Quickstart](../../getting-started/quickstart.md)

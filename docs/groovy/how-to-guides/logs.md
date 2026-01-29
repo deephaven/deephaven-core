@@ -120,6 +120,6 @@ You can also get help by asking questions in our [GitHub Discussions](https://gi
 - [Joins: Exact and Relational](./joins-exact-relational.md)
 - [Joins: Time-series and Range](./joins-timeseries-range.md)
 - [How to select, view, and update data in tables](./use-select-view-update.md)
-- [How to work with strings](./strings.md)
+- [How to work with strings](./work-with-strings.md)
 - [Formulas](../how-to-guides/formulas.md)
 - [Special variables](../reference/query-language/variables/special-variables.md)

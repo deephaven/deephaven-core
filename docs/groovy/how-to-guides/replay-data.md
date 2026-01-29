@@ -107,5 +107,5 @@ replayer.start()
 
 ## Related documentation
 
-- [How to write data to a real-time in-memory table](./dynamic-table-writer.md)
+- [How to write data to a real-time in-memory table](./table-publisher.md)
 - [Replayer](../reference/table-operations/create/Replayer.md)

@@ -21,7 +21,7 @@ AWS offers a variety of [operating systems](https://docs.aws.amazon.com/systems-
 
 We recommend using Docker to install and run Deephaven from the cloud:
 
-- [From pre-built Docker images](../tutorials/docker-install.md)
+- [From pre-built Docker images](../getting-started/docker-install.md)
 
 Follow the instructions in the linked guides above to install Deephaven on your AWS EC2 instance.
 
@@ -52,9 +52,9 @@ With Deephaven running on your AWS instance, all that's left to do is to connect
 
 ## Related documentation
 
-- [Docker quickstart](../tutorials/docker-install.md)
-- [Deephaven production application](../tutorials/production-application.md)
-- [How to build from source](../how-to-guides/launch-build.md)
+- [Docker quickstart](../getting-started/docker-install.md)
+- [Deephaven production application](../getting-started/production-application.md)
+- [How to build from source](../getting-started/launch-build.md)
 
 <!-- - [How to use AWS ECS with Deephaven] -->
 
