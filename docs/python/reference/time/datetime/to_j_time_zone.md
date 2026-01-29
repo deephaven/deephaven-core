@@ -33,7 +33,7 @@ Returns a `TimeZone`.
 
 ## Examples
 
-```python order=:log
+```python
 from deephaven.time import to_j_time_zone
 import datetime
 import pandas as pd

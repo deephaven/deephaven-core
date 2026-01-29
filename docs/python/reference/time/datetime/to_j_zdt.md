@@ -35,7 +35,7 @@ Returns a `ZonedDateTime` representation of the date-time string.
 
 ## Examples
 
-```python order=:log
+```python
 from deephaven.time import to_j_zdt
 import numpy as np
 import pandas as pd
