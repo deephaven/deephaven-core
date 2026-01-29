@@ -2,7 +2,6 @@
 # Format: /old-path /new-path [status-code]
 # Status codes: 301 (permanent), 302 (temporary)
 
-# Example redirects - replace these with actual redirect rules
 /python/conceptual/kafka-in-deephaven.md /python/conceptual/kafka-basic-terms.md 301
 /groovy/tutorials/crash-course/architecture-overview.md /groovy/getting-started/crash-course/architecture-overview.md 301
 /groovy/tutorials/crash-course/configure.md /groovy/getting-started/crash-course/configure.md 301
