@@ -33,11 +33,18 @@ public abstract class Formula implements Aggregation {
     }
 
     public static Formula of(Selectable selectable) {
-        return ImmutableFormula.of(selectable);
+        return ImmutableFormula.of(selectable, false);
+    }
+
+    public Formula asReaggregating() {
+        return ImmutableFormula.of(selectable(), true);
     }
 
     @Parameter
     public abstract Selectable selectable();
+
+    @Parameter
+    public abstract boolean reaggregateAggregatedValues();
 
     public ColumnName column() {
         return selectable().newColumn();

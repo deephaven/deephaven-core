@@ -57,11 +57,12 @@ public class IntBlinkSortedFirstOrLastChunkedOperator extends CopyingPermutedBli
     }
 
     @Override
-    public void resetForStep(@NotNull final TableUpdate upstream, final int startingDestinationsCount) {
-        super.resetForStep(upstream, startingDestinationsCount);
+    public boolean resetForStep(@NotNull final TableUpdate upstream, final int startingDestinationsCount) {
+        final boolean modified = super.resetForStep(upstream, startingDestinationsCount);
         if (isCombo) {
             changedDestinationsBuilder = RowSetFactory.builderRandom();
         }
+        return modified;
     }
 
     @Override

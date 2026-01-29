@@ -93,9 +93,9 @@ class TableTestCase(BaseTestCase):
             abs_sum(["aggAbsSum=var"]),
             var(["aggVar=var"]),
             weighted_avg("var", ["weights"]),
+            group(["aggGroup=var"]),
         ]
         self.aggs_not_for_rollup = [
-            group(["aggGroup=var"]),
             partition("aggPartition"),
             median(["aggMed=var"]),
             pct(0.20, ["aggPct=var"]),
