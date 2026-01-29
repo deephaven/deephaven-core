@@ -33,13 +33,13 @@ Returns a `TimeZone`.
 
 ## Examples
 
-```python order=null
+```python order=:log
 from deephaven.time import to_j_time_zone
 import datetime
 import pandas as pd
 
 dt_tz = datetime.timezone(datetime.timedelta(0, 0, 0, 0, 0, 3), "Tzone")
-pd_timestamp = pd.Timestamp(1513393355, unit="s", tz="US/Pacific")
+pd_timestamp = pd.Timestamp(1513393355, unit="s", tz="America/New_York")
 tz_str = "UTC"
 
 tz_from_dt_tz = to_j_time_zone(dt_tz)
