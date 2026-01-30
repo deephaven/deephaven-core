@@ -12,21 +12,21 @@ An `ExecutionContext` can be shared across multiple threads. Typical use pattern
 
 There are a few key benefits that the `ExecutionContext` brings to Deephaven:
 
-- Each `ExecutionContext` can have its own update graph, libraries, and query scope. This allows users to compartmentalize different units of code to work completely independently of one another.
-- The compartmentalization minimizes resource conflicts. For instance, an operation with a high computational cost can be isolated as to not slow down other critical processes.
+- Each `ExecutionContext` can have its own update graph, libraries, and query scope. This allows users to compartmentalize different units of code to work independently of one another.
+- The compartmentalization minimizes resource conflicts. For instance, an operation with a high computational cost can be isolated so as not to slow down other critical processes.
 - Multiple `ExecutionContext`s can run in parallel, enabling Deephaven to better leverage multi-core processor architectures.
-- In multi-user environments, each `ExecutionContext` can have specific authentication and authorization settings so that sensitive data and operations are securely encapsulated.
+- In multi-user environments, each `ExecutionContext` can have specific authentication and authorization settings to securely encapsulate sensitive data and operations.
 
 ## When an `ExecutionContext` is needed
 
 An `ExecutionContext` must be used if:
 
 - A table operation takes place in a separate thread or context.
-- A table operation may cause downstream operations to take place at a future point in time after the query scope has had the chance to change.
+- A table operation may cause downstream operations to occur at a future point in time after the query scope has had the chance to change.
 
 ### Table operations in a separate thread
 
-Take, for instance, the following code, which attempts to use a [`TablePublisher`](../reference/table-operations/create/TablePublisher.md) to write data to a blink table in a separate thread once per second:
+Take, for instance, the following code, which attempts to use a [`TablePublisher`](../reference/table-operations/create/TablePublisher.md) to write data to a [blink table](../conceptual/table-types.md#specialization-3-blink) in a separate thread once per second:
 
 ```groovy ticking-table should-fail
 import io.deephaven.csv.util.MutableBoolean

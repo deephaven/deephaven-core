@@ -7,7 +7,7 @@ title: Think like a Deephaven ninja
 The Deephaven Query Language (DQL) uses three types of quotes:
 
 - ‘ (single quote)
-- “ (double quote)
+- " (double quote)
 - ` (backtick)
 
 Choosing the right quote can be confusing. Let’s explore where each should be used.
@@ -28,7 +28,7 @@ result2 = readCsv("https://media.githubusercontent.com/media/deephaven/examples/
     .where("Instrument in `BTC/USD`,`DOGE/USD`")
 ```
 
-In table `result1`, column X is created and set equal to the string “A”, and column Y is set equal to either the string “P” or the string “Q”. In table `result2`, the Cryptocurrency table is filtered to only include the rows where the Instrument column is equal to the strings “BTC/USD” or “DOGE/USD”.
+In table `result1`, column X is created and set equal to the string "A", and column Y is set equal to either the string "P" or the string "Q". In table `result2`, the Cryptocurrency table is filtered to only include the rows where the Instrument column is equal to the strings "BTC/USD" or "DOGE/USD".
 
 Times, time periods, and characters are the most complex quoting case. Similar to [strings](../reference/query-language/types/strings.md), single quotes surround [times](../reference/query-language/types/date-time.md), [time periods](../reference/query-language/types/periods.md), or characters within a query [string](../reference/query-language/types/strings.md).
 
