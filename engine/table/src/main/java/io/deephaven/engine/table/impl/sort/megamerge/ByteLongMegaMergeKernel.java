@@ -179,14 +179,18 @@ public class ByteLongMegaMergeKernel {
     }
 
     // region comparison functions
-    private static int doComparison(byte lhs, byte rhs) {
-        return ByteComparisons.compare(lhs, rhs);
+    private static boolean lt(byte lhs, byte rhs) {
+        return ByteComparisons.lt(lhs, rhs);
     }
-    // endregion comparison functions
+
+    private static boolean leq(byte lhs, byte rhs) {
+        return ByteComparisons.leq(lhs, rhs);
+    }
 
     private static boolean geq(byte lhs, byte rhs) {
-        return doComparison(lhs, rhs) >= 0;
+        return ByteComparisons.geq(lhs, rhs);
     }
+    // endregion comparison functions
 
     // when we binary search in 1, we must identify a position for search value that is *after* our test values;
     // because the values from run 2 may never be inserted before an equal value from run 1
@@ -199,13 +203,11 @@ public class ByteLongMegaMergeKernel {
     }
 
     private static long bound(ByteArraySource valuesToSort, long lo, long hi, byte searchValue,
-            @SuppressWarnings("SameParameterValue") final boolean lower) {
-        final int compareLimit = lower ? -1 : 0; // lt or leq
-
+            @SuppressWarnings("SameParameterValue") final boolean strict) {
         while (lo < hi) {
             final long mid = (lo + hi) >>> 1;
             final byte testValue = valuesToSort.getUnsafe(mid);
-            final boolean moveLo = doComparison(testValue, searchValue) <= compareLimit;
+            final boolean moveLo = strict ? lt(testValue, searchValue) : leq(testValue, searchValue);
             if (moveLo) {
                 // For bound, (testValue OP searchValue) means that the result somewhere later than 'mid' [OP=lt or leq]
                 lo = mid + 1;
@@ -225,13 +227,11 @@ public class ByteLongMegaMergeKernel {
     }
 
     private static int bound(ByteChunk<?> valuesToSort, int lo, int hi, byte searchValue,
-            @SuppressWarnings("SameParameterValue") final boolean lower) {
-        final int compareLimit = lower ? -1 : 0; // lt or leq
-
+            @SuppressWarnings("SameParameterValue") final boolean strict) {
         while (lo < hi) {
             final int mid = (lo + hi) >>> 1;
             final byte testValue = valuesToSort.get(mid);
-            final boolean moveLo = doComparison(testValue, searchValue) <= compareLimit;
+            final boolean moveLo = strict ? lt(testValue, searchValue) : leq(testValue, searchValue);
             if (moveLo) {
                 // For bound, (testValue OP searchValue) means that the result somewhere later than 'mid' [OP=lt or leq]
                 lo = mid + 1;
