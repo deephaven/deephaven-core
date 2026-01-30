@@ -43,7 +43,7 @@ jobs:
       JETTY_FLAG: ${{ matrix.jetty-version == '11' && '-Pjetty11' || '' }}
     steps:
       - name: Free Disk Space
-        uses: endersonmenezes/free-disk-space@v2
+        uses: endersonmenezes/free-disk-space@v3
         with:
           remove_haskell: true
           remove_folders: "/usr/share/swift /usr/share/miniconda /usr/share/az* /usr/local/share/chromium /usr/local/share/powershell /usr/local/julia /usr/local/aws-cli /usr/share/gradle"
