@@ -89,7 +89,7 @@ jobs:
 
       - name: Upload Artifacts
         if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: artifacts
           path: |
