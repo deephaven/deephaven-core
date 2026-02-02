@@ -11,8 +11,8 @@ plugins {
 // In particular, we would like deephaven-core to be buildable with minimal Java prerequisites - ideally, the default
 // build should only require the default toolchain (compilerVersion / compilerVendor).
 //
-// Note: if / when compilerVersion default is changed from 21, we should match that in version in buildSrc/build.gradle.
-def compilerVersion = Integer.parseInt((String)project.findProperty('compilerVersion') ?: '21')
+// Note: if / when compilerVersion default is changed from 25, we should match that in version in buildSrc/build.gradle.
+def compilerVersion = Integer.parseInt((String)project.findProperty('compilerVersion') ?: '25')
 def compilerVendor = project.hasProperty('compilerVendor') ?  JvmVendorSpec.matching((String)project.property('compilerVendor')): null
 
 def languageLevel = Integer.parseInt((String)project.findProperty('languageLevel') ?: '11')
