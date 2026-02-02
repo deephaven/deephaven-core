@@ -46,9 +46,6 @@ You can download a ZIP file of the repository from GitHub. However, this is not 
 
 The following instructions are a condensed version of instructions found in the [deephaven-core repository](https://github.com/deephaven/deephaven-core). For the full instructions with explanations of configuration parameters, SSL, and more, see the [README](https://github.com/deephaven/deephaven-core/blob/main/server/jetty-app/README.md).
 
-> [!NOTE]
-> The following steps show how to build and run Deephaven with Groovy from source. For Python, see [here](/core/docs/getting-started/launch-build/).
-
 ### Clone the deephaven-core repository
 
 Once all of the required dependencies are installed and functioning, clone [https://github.com/deephaven/deephaven-core](https://github.com/deephaven/deephaven-core). If you use `git`, clone it like this:
