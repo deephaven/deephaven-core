@@ -1,19 +1,27 @@
 #
-# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 #
 
 import unittest
 
-from deephaven import DHError, new_table, read_csv
+from deephaven import DHError, empty_table, new_table, read_csv
 from deephaven.column import string_col
 from deephaven.concurrency_control import Barrier
 from deephaven.filters import (
+    ColumnName,
     Filter,
     PatternMode,
     and_,
+    eq,
+    ge,
+    gt,
+    in_,
     incremental_release,
     is_not_null,
     is_null,
+    le,
+    lt,
+    ne,
     not_,
     or_,
     pattern,
@@ -98,6 +106,75 @@ class FilterTestCase(BaseTestCase):
         filter_and.with_serial()
         filtered_table_and = self.test_table.where(filter_and)
         self.assert_table_equals(filtered_table, filtered_table_and)
+
+    def test_filter_in(self):
+        t = empty_table(100).update(["A = i", "B = String.valueOf(i)"])
+        with self.subTest("integer values"):
+            var_2 = 2
+            filter_in = in_("A", [1, var_2, 3])
+
+            rt = t.where(filter_in)
+            self.assertEqual(3, rt.size)
+
+            rt = t.where(not_(filter_in))
+            self.assertEqual(97, rt.size)
+
+        with self.subTest("string values"):
+            filter_in = in_("B", ["2", "3"])
+            rt = t.where(filter_in)
+            self.assertEqual(2, rt.size)
+
+        with self.subTest("mixed values"):
+            with self.assertRaises(DHError) as cm:
+                filter_in = in_("A", [2, "3"])
+                t.where(filter_in)
+
+            # inconsistent behavior observed, should fail with https://deephaven.atlassian.net/browse/DH-21232 fixed
+            filter_in = in_("B", [2, "3"])
+            rt = t.where(filter_in)
+            self.assertEqual(1, rt.size)
+
+        t1 = t.update(["C = (java.lang.Object)B"]).update("C = C == `2`? 2: C")
+        with self.subTest("object values"):
+            filter_in = in_("C", [2, "3"])
+            rt = t1.where(filter_in)
+            self.assertEqual(2, rt.size)
+
+    def test_filter_comparison(self):
+        t = empty_table(100).update(["A = i", "B = String.valueOf(i)", "C = i * 2"])
+
+        with self.subTest("eq/ne"):
+            filter_eq = eq(ColumnName("A"), 10)
+            rt = t.where(filter_eq)
+            self.assertEqual(1, rt.size)
+            filter_neq = ne(ColumnName("A"), 10)
+            rt = t.where(filter_neq)
+            self.assertEqual(99, rt.size)
+            filter_neq = not_(filter_eq)
+            rt = t.where(filter_neq)
+            self.assertEqual(99, rt.size)
+
+        with self.subTest("lt/ge"):
+            filter_lt = lt(ColumnName("A"), 10)
+            rt = t.where(filter_lt)
+            self.assertEqual(10, rt.size)
+            filter_ge = ge(ColumnName("A"), 10)
+            rt = t.where(filter_ge)
+            self.assertEqual(90, rt.size)
+            filter_ge = not_(filter_lt)
+            rt = t.where(filter_ge)
+            self.assertEqual(90, rt.size)
+
+        with self.subTest("gt/le"):
+            filter_gt = gt(ColumnName("A"), 10)
+            rt = t.where(filter_gt)
+            self.assertEqual(89, rt.size)
+            filter_le = le(ColumnName("A"), 10)
+            rt = t.where(filter_le)
+            self.assertEqual(11, rt.size)
+            filter_le = not_(filter_gt)
+            rt = t.where(filter_le)
+            self.assertEqual(11, rt.size)
 
 
 if __name__ == "__main__":

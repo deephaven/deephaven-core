@@ -22,7 +22,7 @@ t = (
 ```
 
 > [!NOTE]
-> To learn more about the details of the DQL syntax and exactly what these commands do, refer to the DQL section in our User Guide, which includes guides on [writing basic formulas](../how-to-guides/formulas.md), [working with strings](../how-to-guides/strings.md), [using built-in functions](../how-to-guides/built-in-functions.md), and more.
+> To learn more about the details of the DQL syntax and exactly what these commands do, refer to the DQL section in our User Guide, which includes guides on [writing basic formulas](../how-to-guides/formulas.md), [working with strings](../how-to-guides/work-with-strings.md), [using built-in functions](../how-to-guides/built-in-functions.md), and more.
 
 There are four important tools provided by DQL that are relevant to the discussion on date-time types.
 
@@ -91,7 +91,7 @@ t = emptyTable(5).update(
 ```
 
 > [!NOTE]
-> This example uses backticks to represent strings. For more info, see the guide on [working with strings](../how-to-guides/strings.md).
+> This example uses backticks to represent strings. For more info, see the guide on [working with strings](../how-to-guides/work-with-strings.md).
 
 ### 4. Date-times using DQL
 
@@ -426,7 +426,7 @@ eventsMiddleDay2 = events.where("inRange(EventDateTime, '2020-04-01T10:00 ET', '
 ## Related documentation
 
 - [How to use filters](../how-to-guides/filters.md)
-- [How to work with strings](../how-to-guides/strings.md)
+- [How to work with strings](../how-to-guides/work-with-strings.md)
 - [date-time](../reference/query-language/types/date-time.md)
 - [`update`](../reference/table-operations/select/update.md)
 - [`where`](../reference/table-operations/filter/where.md)

@@ -15,7 +15,7 @@ We will show you how to construct a simple system that: monitors weather data (s
 ## Prerequisites
 
 - Clone the [Deephaven Community repository](https://github.com/deephaven/deephaven-core).
-- [Build and run Deephaven](../tutorials/docker-install.md).
+- [Build and run Deephaven](../getting-started/docker-install.md).
 - Create a valid [Google Geolocation API key](https://developers.google.com/maps/documentation/geolocation/overview).
 
 ## The application
@@ -35,7 +35,7 @@ At this point, you should have a running Deephaven IDE. You first need to config
 > [!NOTE]
 > Note that the 'requests' library, which is used to do simple GET calls, is not part of the default Deephaven Python image, so it is imported directly into the running session. See [How to install Python packages](../how-to-guides/install-packages.md) for more details.
 
-2. Create the [DynamicTableWriter](../how-to-guides/dynamic-table-writer.md) that will be used to ingest ticking data.
+2. Create the [DynamicTableWriter](../how-to-guides/table-publisher.md) that will be used to ingest ticking data.
 
 This simply creates a table with five columns to which the application will record weather measurements.
 

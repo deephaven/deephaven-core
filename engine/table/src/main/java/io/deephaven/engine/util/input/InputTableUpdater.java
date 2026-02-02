@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.util.input;
 
@@ -8,6 +8,7 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import org.jetbrains.annotations.Nullable;
+import com.google.protobuf.Any;
 
 import java.io.IOException;
 import java.util.List;
@@ -64,9 +65,9 @@ public interface InputTableUpdater {
      *         supplied for this column
      */
     @Nullable
-    default String getColumnRestrictions(final String columnName) {
+    default List<Any> getColumnRestrictions(final String columnName) {
         return null;
-    };
+    }
 
     /**
      * Get the underlying Table definition (which includes the names and types of all of the columns).

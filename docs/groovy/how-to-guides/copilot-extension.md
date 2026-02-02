@@ -43,20 +43,11 @@ Head to [github.com/features/copilot](https://github.com/features/copilot) and g
 
 2. Install Deephaven
 
-If you do not yet have Deephaven installed, there are several ways to get started.
+If you do not yet have Deephaven installed, there are several ways to get started:
 
-For Python:
-
-- [Docker](/core/docs/getting-started/docker-install/)
-- [pip](/core/docs/getting-started/pip-install/)
-- [Build from source](/core/docs/getting-started/launch-build/)
-- [Production application](/core/docs/getting-started/production-application/)
-
-For Java/Groovy:
-
-- [Docker](../tutorials/docker-install.md)
-- [Build from source](./launch-build.md)
-- [Production application](../tutorials/production-application.md)
+- [Docker](../getting-started/docker-install.md)
+- [Build from source](../getting-started/launch-build.md)
+- [Production application](../getting-started/production-application.md)
 
 3. Install the Deephaven GitHub Copilot extension
 
@@ -90,7 +81,7 @@ The following examples show how to use the Deephaven GitHub Copilot extension ef
 
 ### Knowledge reference
 
-Copilot is a great tool for learning about core concepts. For example, ask Deephaven about the difference between a [Dynamic Table Writer](./dynamic-table-writer.md) and a [Table Publisher](./dynamic-table-writer.md#table-publisher):
+Copilot is a great tool for learning about core concepts. For example, ask Deephaven about the difference between a [Dynamic Table Writer](./table-publisher.md) and a [Table Publisher](./table-publisher.md#table-publisher):
 
 ![Knowledge reference](../assets/how-to/copilot/knowledge_reference.png)
 
@@ -124,6 +115,6 @@ You may find that the Deephaven GitHub Copilot extension does not work as expect
 
 ## Related documentation
 
-- [Docker](../tutorials/docker-install.md)
-- [Build from source](./launch-build.md)
-- [Production application](../tutorials/production-application.md)
+- [Docker](../getting-started/docker-install.md)
+- [Build from source](../getting-started/launch-build.md)
+- [Production application](../getting-started/production-application.md)

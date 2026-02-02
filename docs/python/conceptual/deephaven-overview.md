@@ -90,7 +90,7 @@ Unstructured data can be stored as blobs within Deephaven tables. Modern machine
 
 <div className="text--success padding-top--xl">
 
-## Isn’t Deephaven like………?
+## Isn’t Deephaven like...?
 
 </div>
 

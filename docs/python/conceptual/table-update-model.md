@@ -265,7 +265,7 @@ None of these consistent data access mechanisms obviates the need to use good en
 
 ### Multi-process data pipelines
 
-Deephaven also provides mechanisms for consistently replicating table data to other processes. Our Apache Arrow Flight implementation uses custom metadata to implement a protocol we call [Barrage](https://github.com/deephaven/barrage), which communicates table updates in the same way as we described [previously](#describing-table-updates) via a language agnostic gRPC API. Our [Apache Kafka](./kafka-in-deephaven.md) integration allows for streaming data ingestion and publication via one of the most popular distributed event streaming platforms in the world.
+Deephaven also provides mechanisms for consistently replicating table data to other processes. Our Apache Arrow Flight implementation uses custom metadata to implement a protocol we call [Barrage](https://github.com/deephaven/barrage), which communicates table updates in the same way as we described [previously](#describing-table-updates) via a language agnostic gRPC API. Our [Apache Kafka](./kafka-basic-terms.md) integration allows for streaming data ingestion (and soon publication) via one of the most popular distributed event streaming platforms in the world.
 
 When coupled with the Deephaven query engine or with external publishers and subscribers that understand Apache Arrow Flight and Barrage or Apache Kafka, this allows for the creation of a multi-process DAG with remote links from publisher to subscriber. This simple primitive allows for consistent, asynchronous processing of data without inherent limitations on data size or resources. The Deephaven team intends to grow the toolset for this kind of data backplane system substantially over the coming months, but the building blocks are already in place for a huge variety of real-time data driven applications.
 
@@ -275,10 +275,8 @@ The update model described above serves as a cornerstone enabler of Deephaven’
 
 ## Related documentation
 
-- [Initialization and updates](../how-to-guides/initialization-and-updates.md) — Practical guide to safely working with ticking data
-- [Table listeners](../how-to-guides/table-listeners-python.md) — React to table updates in Python
-- [Synchronization and locking](./query-engine/engine-locking.md) — Advanced locking mechanisms
-- [Deephaven's Directed-Acyclic-Graph (DAG)](./dag.md)
-- [Kafka introduction](./kafka-in-deephaven.md)
+- [Core API design](./deephaven-core-api.md)
+- [Deephaven’s Directed-Acyclic-Graph (DAG)](./dag.md)
+- [Kafka basic terminology](./kafka-basic-terms.md)
 - [Deephaven Barrage](/barrage/docs)
 - [Core API design](./deephaven-core-api.md)

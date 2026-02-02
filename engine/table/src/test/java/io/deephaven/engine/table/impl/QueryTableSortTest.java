@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl;
 
@@ -1192,6 +1192,30 @@ public class QueryTableSortTest extends QueryTableTestBase {
                     List.of(ColumnName.of("Sym")));
             TableTools.show(resultRowsComparator);
             checkMixed(resultRowsComparator, true);
+        } finally {
+            tempFolder.delete();
+        }
+    }
+
+    public void testOneValuePerPartition() throws IOException {
+        final TemporaryFolder tempFolder = new TemporaryFolder();
+        tempFolder.create();
+        try {
+            final String[] syms = new String[] {"Apple", "Cantaloupe", "Banana"};
+
+            final List<Table> constituents = new ArrayList<>();
+
+            for (int ss = 0; ss < syms.length; ++ss) {
+                final Table t = emptyTable(1).update("Row=i", "Sym=`" + syms[ss] + "`");
+                constituents.add(t);
+                final String fileName = tempFolder.getRoot().toPath().resolve("part" + ss + ".parquet").toString();
+                ParquetTools.writeTable(t, fileName, ParquetInstructions.EMPTY);
+            }
+            final Table readback = ParquetTools.readTable(tempFolder.getRoot().toPath().toString());
+            TableTools.show(readback);
+
+            final Table dictionarySorted = readback.sort("Sym");
+            assertTableEquals(TableTools.merge(constituents).sort("Sym"), dictionarySorted);
         } finally {
             tempFolder.delete();
         }

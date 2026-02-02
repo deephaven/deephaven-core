@@ -232,7 +232,7 @@
                   },
                   {
                     "label": "Basic terms",
-                    "path": "conceptual/kafka-in-deephaven.md"
+                    "path": "conceptual/kafka-basic-terms.md"
                   },
                   {
                     "label": "Connect to a Kafka stream",
@@ -390,6 +390,10 @@
               {
                 "label": "Partition",
                 "path": "how-to-guides/partitioned-tables.md"
+              },
+              {
+                "label": "Synchronize tables",
+                "path": "how-to-guides/synchronizing-tables.md"
               },
               {
                 "label": "Snapshot",

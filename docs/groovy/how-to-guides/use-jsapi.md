@@ -204,5 +204,5 @@ remoteTable = emptyTable(10).updateView("I=i", "J=I*I", "K=i%2==0?\`Hello\`:\`Wo
 
 ## Related documentation
 
-- [Launch Deephaven from pre-built images](../tutorials/docker-install.md)
+- [Launch Deephaven from pre-built images](../getting-started/docker-install.md)
 - [Create an empty table](./new-and-empty-table.md#emptytable)

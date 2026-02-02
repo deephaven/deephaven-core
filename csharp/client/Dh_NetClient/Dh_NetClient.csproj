@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <RootNamespace>Deephaven.Dh_NetClient</RootNamespace>
@@ -12,7 +12,7 @@
     <RepositoryUrl>https://github.com/deephaven/deephaven-core</RepositoryUrl>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <Description>A .NET library for accessing data from Deephaven Community Core servers.</Description>
-    <Copyright>Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending</Copyright>
+    <Copyright>Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending</Copyright>
     <PackageProjectUrl>https://deephaven.io/</PackageProjectUrl>
     <RepositoryType>git</RepositoryType>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
