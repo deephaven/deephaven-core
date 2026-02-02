@@ -19,7 +19,9 @@ import io.deephaven.engine.table.impl.locations.TableKey;
 import io.deephaven.engine.table.impl.select.SortedClockFilter;
 import io.deephaven.engine.table.impl.select.UnsortedClockFilter;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedTableComponentFactoryImpl;
+import io.deephaven.engine.testutil.StepClock;
 import io.deephaven.engine.testutil.TstUtils;
+import io.deephaven.engine.testutil.filters.ReindexingRowSetCapturingFilter;
 import io.deephaven.engine.testutil.filters.RowSetCapturingFilter;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
@@ -33,6 +35,7 @@ import org.junit.Test;
 
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.Collections;
 
 public class TestPartitionAwareSourceTableNoMocks {
     @Rule
@@ -449,4 +452,58 @@ public class TestPartitionAwareSourceTableNoMocks {
         Assert.eq(res0.size(), "res0.size()", partitionSize * 2);
     }
 
+
+    @Test
+    public void testSortedClockFilterReorderingWithAttribute() {
+        final long partitionSize = 128;
+
+        final PartitionAwareSourceTableTestUtils.TestTDS tds =
+                new PartitionAwareSourceTableTestUtils.TestTDS();
+
+        final TableKey tableKey = new PartitionAwareSourceTableTestUtils.TableKeyImpl();
+        final PartitionAwareSourceTableTestUtils.TableLocationProviderImpl tableLocationProvider =
+                (PartitionAwareSourceTableTestUtils.TableLocationProviderImpl) tds
+                        .getTableLocationProvider(tableKey);
+
+        // create 4 partitions;
+        for (char partition = 'A'; partition <= 'D'; partition++) {
+            tableLocationProvider.appendLocation(
+                    new PartitionAwareSourceTableTestUtils.TableLocationKeyImpl(String.valueOf(partition)));
+        }
+        tableLocationProvider.locations.values().forEach(location -> location.setSize(partitionSize));
+
+        final RowSetCapturingFilter partFilter = new RowSetCapturingFilter(FilterIn.of(
+                ColumnName.of("partition"), Literal.of("B"), Literal.of("D")));
+        final StepClock stepClock = new StepClock(0, 1, 2);
+        final ReindexingRowSetCapturingFilter clockFilter = new ReindexingRowSetCapturingFilter(new SortedClockFilter("Timestamp", stepClock, true));
+
+        final Table source = new PartitionAwareSourceTable(
+                TableDefinition.of(
+                        ColumnDefinition.ofString("partition").withPartitioning(),
+                        ColumnDefinition.ofLong("II"),
+                        ColumnDefinition.of("Timestamp", Type.find(Instant.class))),
+                tableKey.toString(),
+                RegionedTableComponentFactoryImpl.INSTANCE,
+                tableLocationProvider,
+                null);
+
+        // note that first filter is always a non-partitioning filter
+        final Table clockFiltered = source.where(clockFilter);
+        Assert.eqTrue(clockFiltered instanceof DeferredViewTable,
+                "withAttribute instanceof DeferredViewTable");
+        final Table withAttribute = clockFiltered.withAttributes(Collections.singletonMap(Table.ADD_ONLY_TABLE_ATTRIBUTE, true));
+        Assert.eqTrue(withAttribute instanceof DeferredViewTable,
+                "withAttribute instanceof DeferredViewTable");
+
+        final Table partitionFiltered = withAttribute.where(partFilter);
+
+        Assert.eqTrue(partitionFiltered instanceof QueryTable, "partitionFiltered instanceof QueryTable");
+
+        // ensure the inner filter sees two partitions' data
+        Assert.eq(clockFilter.numRowsProcessed(), "clockFilter.numRowsProcessed()", 2 * partitionSize);
+        // ensure we see the barrier partition filter as filtering only the partitioned rows
+        Assert.eq(partFilter.numRowsProcessed(), "partFilter.numRowsProcessed()", 4);
+
+        TableTools.show(partitionFiltered);
+    }
 }

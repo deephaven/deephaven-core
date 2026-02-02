@@ -386,7 +386,7 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
 
     @Override
     protected DeferredViewTable copy() {
-        final DeferredViewTable result = new DeferredViewTable(definition, getDescription(), new TableReference(this),
+        final DeferredViewTable result = new DeferredViewTable(definition, getDescription(), new CopiedTableReference(this, tableReference),
                 null, null, null);
         LiveAttributeMap.copyAttributes(this, result, ak -> true);
         return result;
@@ -399,6 +399,7 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
         for (int cdi = 0; cdi < newView.length; ++cdi) {
             newView[cdi] = new SourceColumn(cDefs.get(cdi).getName());
         }
+        // TODO: copied table reference?
         return new DeferredViewTable(newDefinition, getDescription() + "-redefined",
                 new TableReference(this), null, newView, null);
     }
@@ -406,6 +407,7 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
     @Override
     protected Table redefine(TableDefinition newDefinitionExternal, TableDefinition newDefinitionInternal,
             SelectColumn[] viewColumns) {
+        // TODO: copied table reference?
         return new DeferredViewTable(newDefinitionExternal, getDescription() + "-redefined",
                 new TableReference(this), null, viewColumns, null);
     }
@@ -489,6 +491,26 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
          */
         public Table selectDistinctInternal(Collection<? extends Selectable> columns) {
             return null;
+        }
+    }
+
+    private class CopiedTableReference extends TableReference {
+        private final TableReference tableReference;
+
+        CopiedTableReference(Table table, final TableReference tableReference) {
+            super(table);
+            this.tableReference = tableReference;
+        }
+
+        @Override
+        protected TableAndRemainingFilters getWithWhere(WhereFilter... whereFilters) {
+            if (deferredFilters.length == 0) {
+                return tableReference.getWithWhere(whereFilters);
+            } else {
+                final WhereFilter [] allFilters = Arrays.copyOf(deferredFilters, deferredFilters.length + whereFilters.length);
+                System.arraycopy(whereFilters, 0, allFilters, deferredFilters.length, whereFilters.length);
+                return tableReference.getWithWhere(allFilters);
+            }
         }
     }
 }
