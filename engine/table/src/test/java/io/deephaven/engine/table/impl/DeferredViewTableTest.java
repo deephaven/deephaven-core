@@ -27,11 +27,13 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.gui.table.filters.Condition;
 import io.deephaven.util.type.ArrayTypeUtils;
+import org.assertj.core.api.Assertions;
 import org.junit.Rule;
 import org.junit.Test;
 
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.Collections;
 
 public class DeferredViewTableTest {
     @Rule
@@ -350,6 +352,78 @@ public class DeferredViewTableTest {
         final WhereFilter filter0 = new MatchFilter(MatchOptions.REGULAR, "Y", "A");
         final WhereFilter filter1 = new MatchFilter(MatchOptions.REGULAR, "Y2", "A");
         verifyFilterIsPrioritized(DisjunctiveFilter.of(filter0, filter1));
+    }
+
+    /**
+     * Tests that a DVT without any deferred filters can copy() itself correctly. Also tosses in a selectDistinct(), to
+     * cover the case where it returns null instead of having special logic.
+     */
+    @Test
+    public void testNoDeferredFiltersCopy() {
+        final String[] values = new String[] {"A", "B", "C", "D"};
+        ExecutionContext.getContext().getQueryScope().putParam("values", values);
+
+        final TableDefinition resultDef = TableDefinition.of(
+                ColumnDefinition.ofString("X"),
+                ColumnDefinition.ofLong("I"));
+        final Table sourceTable = TableTools.emptyTable(100_000)
+                .update("X = values[i % 4]", "I = ii");
+
+        final RowSetCapturingFilter filter1 =
+                new RowSetCapturingFilter(new RangeFilter("I", Condition.LESS_THAN, "25000"));
+
+        // here we expect that filter0 can jump over filter1 w/a rename
+        final Table source = new DeferredViewTable(
+                resultDef,
+                "test",
+                new DeferredViewTable.TableReference(sourceTable),
+                ArrayTypeUtils.EMPTY_STRING_ARRAY,
+                SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY,
+                WhereFilter.ZERO_LENGTH_WHERE_FILTER_ARRAY)
+                .updateView("Y = X", "Y2 = Y", "I = I + 0");
+
+        final Table deferredTable = source
+                .withAttributes(Collections.singletonMap("Key", "Value"))
+                .where(filter1)
+                .coalesce();
+
+        Assert.eq(deferredTable.size(), "deferredTable.size()", 25000);
+
+        final Table selectDistinct = source.selectDistinct("X");
+        Assert.eq(selectDistinct.size(), "selectDistinct.size()", values.length);
+    }
+
+    @Test
+    public void testViewSimpleRetain() {
+        final String[] values = new String[] {"A", "B", "C", "D"};
+        ExecutionContext.getContext().getQueryScope().putParam("values", values);
+
+        final TableDefinition resultDef = TableDefinition.of(
+                ColumnDefinition.ofString("X"),
+                ColumnDefinition.ofLong("I"));
+        final Table sourceTable = TableTools.emptyTable(100_000)
+                .update("X = values[i % 4]", "I = ii");
+
+        final Table source = new DeferredViewTable(
+                resultDef,
+                "test",
+                new DeferredViewTable.TableReference(sourceTable),
+                ArrayTypeUtils.EMPTY_STRING_ARRAY,
+                SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY,
+                WhereFilter.ZERO_LENGTH_WHERE_FILTER_ARRAY);
+
+        final Table view1 = source.view("I", "X");
+
+        Assertions.assertThat(view1).isInstanceOf(DeferredViewTable.class);
+
+        final Table coalesced = view1.coalesce();
+        TstUtils.assertTableEquals(sourceTable.view("I", "X"), coalesced);
+
+        final Table view2 = view1.view("X", "K=I * 2");
+        final Table view3 = view2.where("K > 10000");
+
+        final Table coalesced3 = view3.coalesce();
+        TstUtils.assertTableEquals(sourceTable.view("X", "K=I*2").where("K > 10000"), coalesced3);
     }
 
     private void verifyFilterIsPrioritized(final Filter filterToTest) {

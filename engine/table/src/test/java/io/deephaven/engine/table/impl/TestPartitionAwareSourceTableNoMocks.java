@@ -475,7 +475,8 @@ public class TestPartitionAwareSourceTableNoMocks {
         final RowSetCapturingFilter partFilter = new RowSetCapturingFilter(FilterIn.of(
                 ColumnName.of("partition"), Literal.of("B"), Literal.of("D")));
         final StepClock stepClock = new StepClock(0, 1, 2);
-        final ReindexingRowSetCapturingFilter clockFilter = new ReindexingRowSetCapturingFilter(new SortedClockFilter("Timestamp", stepClock, true));
+        final ReindexingRowSetCapturingFilter clockFilter =
+                new ReindexingRowSetCapturingFilter(new SortedClockFilter("Timestamp", stepClock, true));
 
         final Table source = new PartitionAwareSourceTable(
                 TableDefinition.of(
@@ -491,7 +492,8 @@ public class TestPartitionAwareSourceTableNoMocks {
         final Table clockFiltered = source.where(clockFilter);
         Assert.eqTrue(clockFiltered instanceof DeferredViewTable,
                 "withAttribute instanceof DeferredViewTable");
-        final Table withAttribute = clockFiltered.withAttributes(Collections.singletonMap(Table.ADD_ONLY_TABLE_ATTRIBUTE, true));
+        final Table withAttribute =
+                clockFiltered.withAttributes(Collections.singletonMap(Table.ADD_ONLY_TABLE_ATTRIBUTE, true));
         Assert.eqTrue(withAttribute instanceof DeferredViewTable,
                 "withAttribute instanceof DeferredViewTable");
 

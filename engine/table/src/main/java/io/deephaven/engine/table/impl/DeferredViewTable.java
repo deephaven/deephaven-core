@@ -386,8 +386,9 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
 
     @Override
     protected DeferredViewTable copy() {
-        final DeferredViewTable result = new DeferredViewTable(definition, getDescription(), new CopiedTableReference(this, tableReference),
-                null, null, null);
+        final DeferredViewTable result =
+                new DeferredViewTable(definition, getDescription(), new CopiedTableReference(this, tableReference),
+                        null, null, null);
         LiveAttributeMap.copyAttributes(this, result, ak -> true);
         return result;
     }
@@ -399,17 +400,15 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
         for (int cdi = 0; cdi < newView.length; ++cdi) {
             newView[cdi] = new SourceColumn(cDefs.get(cdi).getName());
         }
-        // TODO: copied table reference?
         return new DeferredViewTable(newDefinition, getDescription() + "-redefined",
-                new TableReference(this), null, newView, null);
+                new CopiedTableReference(this, tableReference), null, newView, null);
     }
 
     @Override
     protected Table redefine(TableDefinition newDefinitionExternal, TableDefinition newDefinitionInternal,
             SelectColumn[] viewColumns) {
-        // TODO: copied table reference?
         return new DeferredViewTable(newDefinitionExternal, getDescription() + "-redefined",
-                new TableReference(this), null, viewColumns, null);
+                new CopiedTableReference(this, tableReference), null, viewColumns, null);
     }
 
     /**
@@ -507,7 +506,8 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
             if (deferredFilters.length == 0) {
                 return tableReference.getWithWhere(whereFilters);
             } else {
-                final WhereFilter [] allFilters = Arrays.copyOf(deferredFilters, deferredFilters.length + whereFilters.length);
+                final WhereFilter[] allFilters =
+                        Arrays.copyOf(deferredFilters, deferredFilters.length + whereFilters.length);
                 System.arraycopy(whereFilters, 0, allFilters, deferredFilters.length, whereFilters.length);
                 return tableReference.getWithWhere(allFilters);
             }
