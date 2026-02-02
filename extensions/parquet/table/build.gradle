@@ -37,7 +37,9 @@ dependencies {
     implementation project(':codec-builtin')
     implementation project(':codec-cache')
 
-    implementation libs.commons.lang3
+    api (libs.commons.lang3) {
+        because 'org.apache.commons.lang3.mutable.MutableObject is exposed in public API of ParquetTools'
+    }
     implementation libs.commons.text
     implementation libs.commons.compress
 
