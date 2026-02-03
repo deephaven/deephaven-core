@@ -111,18 +111,11 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
             return result;
         }
 
-        final PreAndPostFilters preAndPostFilters = applyFilterRenamings(allFilters);
-        final TableReference.TableAndRemainingFilters tableAndRemainingFilters =
-                tableReference.getWithWhere(preAndPostFilters.preViewFilters);
+        final SplitAndApply splitAndApply = splitAndApplyFilters(allFilters, tableReference);
+        Table localResult = splitAndApply.result;
 
-        Table localResult = tableAndRemainingFilters.table;
-        if (tableAndRemainingFilters.remainingFilters.length != 0) {
-            localResult = localResult.where(Filter.and(tableAndRemainingFilters.remainingFilters));
-        }
-
-        localResult = applyDeferredViews(localResult);
-        if (preAndPostFilters.postViewFilters.length > 0) {
-            localResult = localResult.where(Filter.and(preAndPostFilters.postViewFilters));
+        if (splitAndApply.postViewFilters.length > 0) {
+            localResult = localResult.where(Filter.and(splitAndApply.postViewFilters));
         }
 
         if (whereFilters.length == 0) {
@@ -333,20 +326,35 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
                 postViewFilters.toArray(WhereFilter.ZERO_LENGTH_WHERE_FILTER_ARRAY));
     }
 
+    private SplitAndApply splitAndApplyFilters(WhereFilter[] allFilters, final TableReference tableReference) {
+        final PreAndPostFilters preAndPostFilters = applyFilterRenamings(WhereFilter.copyFrom(allFilters));
+        final TableReference.TableAndRemainingFilters tarf = tableReference.getWithWhere(preAndPostFilters.preViewFilters);
+        Table result = tarf.table;
+        if (tarf.remainingFilters.length != 0) {
+            result = result.where(Filter.and(tarf.remainingFilters));
+        }
+        result = applyDeferredViews(result);
+        return new SplitAndApply(preAndPostFilters.postViewFilters, result);
+    }
+
+    private static class SplitAndApply {
+        public final WhereFilter [] postViewFilters;
+        public final Table result;
+
+        public SplitAndApply(WhereFilter [] postViewFilters, Table result) {
+            this.postViewFilters = postViewFilters;
+            this.result = result;
+        }
+    }
+
     @Override
     protected Table doCoalesce() {
         Table result;
         if (deferredFilters.length > 0) {
-            final PreAndPostFilters preAndPostFilters = applyFilterRenamings(WhereFilter.copyFrom(deferredFilters));
-            final TableReference.TableAndRemainingFilters tarf =
-                    tableReference.getWithWhere(preAndPostFilters.preViewFilters);
-            result = tarf.table;
-            if (tarf.remainingFilters.length != 0) {
-                result = result.where(Filter.and(tarf.remainingFilters));
-            }
-            result = applyDeferredViews(result);
-            if (preAndPostFilters.postViewFilters.length > 0) {
-                result = result.where(Filter.and(preAndPostFilters.postViewFilters));
+            SplitAndApply splitAndApply = splitAndApplyFilters(deferredFilters, tableReference);
+            result = splitAndApply.result;
+            if (splitAndApply.postViewFilters.length > 0) {
+                result = result.where(Filter.and(splitAndApply.postViewFilters));
             }
         } else {
             result = tableReference.get();
@@ -511,16 +519,9 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
                 System.arraycopy(whereFilters, 0, allFilters, deferredFilters.length, whereFilters.length);
             }
 
-            final PreAndPostFilters preAndPostFilters = applyFilterRenamings(WhereFilter.copyFrom(allFilters));
-            final TableAndRemainingFilters tarf = tableReference.getWithWhere(preAndPostFilters.preViewFilters);
+            SplitAndApply splitAndApply = splitAndApplyFilters(allFilters, tableReference);
 
-            Table result = tarf.table;
-            if (tarf.remainingFilters.length != 0) {
-                result = result.where(Filter.and(tarf.remainingFilters));
-            }
-            result = applyDeferredViews(result);
-
-            return new TableAndRemainingFilters(result, preAndPostFilters.postViewFilters);
+            return new TableAndRemainingFilters(splitAndApply.result, splitAndApply.postViewFilters);
         }
     }
 }
