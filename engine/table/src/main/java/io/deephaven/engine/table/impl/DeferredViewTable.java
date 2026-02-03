@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.Selectable;
 import io.deephaven.api.filter.Filter;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.liveness.Liveness;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.filter.ExtractBarriers;
@@ -81,49 +82,16 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
     @Override
     public Table where(Filter filter) {
         final WhereFilter[] whereFilters = WhereFilter.fromInternal(filter);
-        final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor = QueryCompilerRequestProcessor.batch();
-        for (WhereFilter f : whereFilters) {
-            f.init(definition, compilationProcessor);
-        }
-        compilationProcessor.compile();
-        return getResultTableWithWhere(whereFilters);
-    }
 
-    private Table getResultTableWithWhere(WhereFilter... whereFilters) {
-        {
-            final Table coalesced = getCoalesced();
-            if (Liveness.verifyCachedObjectForReuse(coalesced)) {
-                return coalesced.where(Filter.and(whereFilters));
-            }
-        }
-
-        final WhereFilter[] allFilters = Stream.concat(
-                Arrays.stream(deferredFilters).map(WhereFilter::copy),
-                Arrays.stream(whereFilters))
+        final WhereFilter[] innerFilters = Arrays.stream(whereFilters)
                 .flatMap(ExtractInnerConjunctiveFilters::stream)
                 .toArray(WhereFilter[]::new);
 
-        if (allFilters.length == 0) {
-            Table result = tableReference.get();
-            result = applyDeferredViews(result);
-            copyAttributes((BaseTable<?>) result, CopyAttributeOperation.Coalesce);
-            setCoalesced(result);
-            return result;
+        if (innerFilters.length == 0) {
+            return coalesce();
         }
-
-        final SplitAndApply splitAndApply = splitAndApplyFilters(allFilters, tableReference);
-        Table localResult = splitAndApply.result;
-
-        if (splitAndApply.postViewFilters.length > 0) {
-            localResult = localResult.where(Filter.and(splitAndApply.postViewFilters));
-        }
-
-        if (whereFilters.length == 0) {
-            // The result is effectively the same as if we called doCoalesce()
-            copyAttributes((BaseTable<?>) localResult, CopyAttributeOperation.Coalesce);
-            setCoalesced(localResult);
-        }
-        return localResult;
+        return new DeferredViewTable(getDefinition(), getDescription() + "-filtered",
+                new CopiedTableReference(this, tableReference), null, null, innerFilters);
     }
 
     private Table applyDeferredViews(Table result) {
@@ -328,7 +296,8 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
 
     private SplitAndApply splitAndApplyFilters(WhereFilter[] allFilters, final TableReference tableReference) {
         final PreAndPostFilters preAndPostFilters = applyFilterRenamings(WhereFilter.copyFrom(allFilters));
-        final TableReference.TableAndRemainingFilters tarf = tableReference.getWithWhere(preAndPostFilters.preViewFilters);
+        final TableReference.TableAndRemainingFilters tarf =
+                tableReference.getWithWhere(preAndPostFilters.preViewFilters);
         Table result = tarf.table;
         if (tarf.remainingFilters.length != 0) {
             result = result.where(Filter.and(tarf.remainingFilters));
@@ -338,10 +307,10 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
     }
 
     private static class SplitAndApply {
-        public final WhereFilter [] postViewFilters;
+        public final WhereFilter[] postViewFilters;
         public final Table result;
 
-        public SplitAndApply(WhereFilter [] postViewFilters, Table result) {
+        public SplitAndApply(WhereFilter[] postViewFilters, Table result) {
             this.postViewFilters = postViewFilters;
             this.result = result;
         }
@@ -353,9 +322,9 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
         if (deferredFilters.length > 0) {
             SplitAndApply splitAndApply = splitAndApplyFilters(deferredFilters, tableReference);
             result = splitAndApply.result;
-            if (splitAndApply.postViewFilters.length > 0) {
-                result = result.where(Filter.and(splitAndApply.postViewFilters));
-            }
+            // we cannot have a deferred filter that uses a view on this level, because we prohibit
+            // the view and filter from being present on the save DVT in the constructor
+            Assert.eqZero(splitAndApply.postViewFilters.length, "splitAndApply.postViewFilters.length");
         } else {
             result = tableReference.get();
             result = applyDeferredViews(result);
@@ -379,12 +348,21 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
             return coalesce().selectDistinct(columns);
         }
 
-        /* If we have changed the partitioning columns, we should perform the selectDistinct on the coalesced table. */
-        if (deferredViewColumns.length > 0) {
-            if (tableReference.getDefinition().getPartitioningColumns().stream().anyMatch(
-                    cd -> Arrays.stream(deferredViewColumns).anyMatch(dvc -> dvc.getName().equals(cd.getName())))) {
-                return coalesce().selectDistinct(columns);
-            }
+        /* Determine if we are using any of the deferred views in this selectDistinct. */
+        final List<SelectColumn> selectColumns = Arrays.asList(SelectColumn.from(columns));
+        try {
+            SelectAndViewAnalyzer.initializeSelectColumns(getDefinition().getColumnNameMap(),
+                    selectColumns.toArray(SelectColumn[]::new));
+        } catch (Exception e) {
+            return coalesce().selectDistinct(columns);
+        }
+
+        final Set<String> outputColumnNames = Arrays.stream(deferredViewColumns)
+                .filter(sc -> !sc.isRetain())
+                .map(SelectColumn::getName)
+                .collect(Collectors.toSet());
+        if (selectColumns.stream().anyMatch(sc -> !sc.getColumnArrays().isEmpty() || sc.getColumns().stream().anyMatch(outputColumnNames::contains))) {
+            return coalesce().selectDistinct(columns);
         }
 
         /* If the cachedResult is not yet created, we first ask for a selectDistinct cachedResult. */

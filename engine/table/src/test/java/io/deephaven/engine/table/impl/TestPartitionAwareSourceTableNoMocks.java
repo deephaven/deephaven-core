@@ -29,6 +29,7 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.util.TestClock;
 import io.deephaven.qst.type.Type;
 import io.deephaven.util.SafeCloseable;
+import org.assertj.core.api.Assertions;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -38,6 +39,8 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
 
+import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
+import static io.deephaven.engine.util.TableTools.stringCol;
 import static org.junit.Assert.assertEquals;
 
 public class TestPartitionAwareSourceTableNoMocks {
@@ -148,7 +151,7 @@ public class TestPartitionAwareSourceTableNoMocks {
         // ensure the partitioning filter sees only the rows from the partition column data index
         Assert.eq(filter1.numRowsProcessed(), "filter1.numRowsProcessed()", 4);
 
-        TstUtils.assertTableEquals(res0, res1);
+        assertTableEquals(res0, res1);
         Assert.eq(res0.size(), "res0.size()", 2 * (partitionSize / 2));
     }
 
@@ -178,7 +181,7 @@ public class TestPartitionAwareSourceTableNoMocks {
         // ensure the partitioning filter sees only the rows from the partition column data index
         Assert.eq(filter1.numRowsProcessed(), "filter1.numRowsProcessed()", 4);
 
-        TstUtils.assertTableEquals(res0, res1);
+        assertTableEquals(res0, res1);
         Assert.eq(res0.size(), "res0.size()", 2 * (partitionSize / 2));
     }
 
@@ -283,7 +286,7 @@ public class TestPartitionAwareSourceTableNoMocks {
         // ensure the partitioning filter sees only the rows from the partition column data index
         Assert.eq(filter1.numRowsProcessed(), "filter1.numRowsProcessed()", 4);
 
-        TstUtils.assertTableEquals(res0, res1);
+        assertTableEquals(res0, res1);
         Assert.eq(res0.size(), "res0.size()", 2 * (partitionSize / 2));
     }
 
@@ -313,7 +316,7 @@ public class TestPartitionAwareSourceTableNoMocks {
         // ensure the partitioning filter sees only the rows from the partition column data index
         Assert.eq(filter1.numRowsProcessed(), "filter1.numRowsProcessed()", 4);
 
-        TstUtils.assertTableEquals(res0, res1);
+        assertTableEquals(res0, res1);
         Assert.eq(res0.size(), "res0.size()", 2 * (partitionSize / 2));
     }
 
@@ -445,14 +448,16 @@ public class TestPartitionAwareSourceTableNoMocks {
                 ColumnName.of("partition"), Literal.of("A"), Literal.of("B")));
         final Table res0 = testStaticFilterSplit(partitionSize, filter0, filter1);
 
-        TableTools.show(res0);
+        final Table coalesced = res0.coalesce();
+
+        TableTools.show(coalesced);
 
         // ensure the inner filter sees only the two partitions' data
         Assert.eq(filter0.numRowsProcessed(), "filter0.numRowsProcessed()", partitionSize * 2);
         // ensure we see the barrier partition filter as filtering only the partitioned rows
         Assert.eq(filter1.numRowsProcessed(), "filter1.numRowsProcessed()", 4);
 
-        Assert.eq(res0.size(), "res0.size()", partitionSize * 2);
+        Assert.eq(coalesced.size(), "res0.size()", partitionSize * 2);
     }
 
 
@@ -501,8 +506,10 @@ public class TestPartitionAwareSourceTableNoMocks {
                 "withAttribute instanceof DeferredViewTable");
 
         final Table partitionFiltered = withAttribute.where(partFilter);
+        Assertions.assertThat(partitionFiltered).isInstanceOf(DeferredViewTable.class);
 
-        Assert.eqTrue(partitionFiltered instanceof QueryTable, "partitionFiltered instanceof QueryTable");
+        final Table coalesced = partitionFiltered.coalesce();
+        Assertions.assertThat(coalesced).isInstanceOf(QueryTable.class);
 
         // ensure the inner filter sees two partitions' data
         Assert.eq(clockFilter.numRowsProcessed(), "clockFilter.numRowsProcessed()", 2 * partitionSize);
@@ -598,5 +605,134 @@ public class TestPartitionAwareSourceTableNoMocks {
         Assert.eq(iiFilter.numRowsProcessed(), "iiFilter.numRowsProcessed()", 4 * partitionSize);
 
         assertEquals(4, coalesced.size());
+    }
+
+    @Test
+    public void testPostViewFilterInCoalesce() {
+        final long partitionSize = 128;
+
+        final PartitionAwareSourceTableTestUtils.TestTDS tds =
+                new PartitionAwareSourceTableTestUtils.TestTDS();
+
+        final TableKey tableKey = new PartitionAwareSourceTableTestUtils.TableKeyImpl();
+        final PartitionAwareSourceTableTestUtils.TableLocationProviderImpl tableLocationProvider =
+                (PartitionAwareSourceTableTestUtils.TableLocationProviderImpl) tds
+                        .getTableLocationProvider(tableKey);
+
+        // create 4 partitions;
+        for (char partition = 'A'; partition <= 'D'; partition++) {
+            tableLocationProvider.appendLocation(
+                    new PartitionAwareSourceTableTestUtils.TableLocationKeyImpl(String.valueOf(partition)));
+        }
+        tableLocationProvider.locations.values().forEach(location -> location.setSize(partitionSize));
+
+        final RowSetCapturingFilter kkFilter =
+                new RowSetCapturingFilter(FilterComparison.eq(ColumnName.of("KK"), Literal.of(20L)));
+
+        final Table source = new PartitionAwareSourceTable(
+                TableDefinition.of(
+                        ColumnDefinition.ofString("partition").withPartitioning(),
+                        ColumnDefinition.ofLong("II"),
+                        ColumnDefinition.of("Timestamp", Type.find(Instant.class))),
+                tableKey.toString(),
+                RegionedTableComponentFactoryImpl.INSTANCE,
+                tableLocationProvider,
+                null);
+
+        final Table deferredView = source.updateView("KK=II * 2");
+
+        final Table filtered = deferredView.where(kkFilter);
+        final Table coalesced = filtered.coalesce();
+
+        // ensure the inner filter sees two partitions' data
+        Assert.eq(kkFilter.numRowsProcessed(), "iiFilter.numRowsProcessed()", 4 * partitionSize);
+
+        assertEquals(4, coalesced.size());
+
+        TableTools.show(coalesced);
+    }
+
+    @Test
+    public void testSelectDistinctSimple() {
+        final long partitionSize = 128;
+
+        final PartitionAwareSourceTableTestUtils.TestTDS tds =
+                new PartitionAwareSourceTableTestUtils.TestTDS();
+
+        final TableKey tableKey = new PartitionAwareSourceTableTestUtils.TableKeyImpl();
+        final PartitionAwareSourceTableTestUtils.TableLocationProviderImpl tableLocationProvider =
+                (PartitionAwareSourceTableTestUtils.TableLocationProviderImpl) tds
+                        .getTableLocationProvider(tableKey);
+
+        // create 4 partitions;
+        for (char partition = 'A'; partition <= 'D'; partition++) {
+            tableLocationProvider.appendLocation(
+                    new PartitionAwareSourceTableTestUtils.TableLocationKeyImpl(String.valueOf(partition)));
+        }
+        tableLocationProvider.locations.values().forEach(location -> location.setSize(partitionSize));
+
+        final Table source = new PartitionAwareSourceTable(
+                TableDefinition.of(
+                        ColumnDefinition.ofString("partition").withPartitioning(),
+                        ColumnDefinition.ofLong("II")),
+                tableKey.toString(),
+                RegionedTableComponentFactoryImpl.INSTANCE,
+                tableLocationProvider,
+                null);
+
+        final Table selectDistinct1 = source.selectDistinct("partition");
+        final Table selectDistinct1a = source.selectDistinct("x=partition + `_x`");
+
+        final Table deferredView = source.updateView("K = II * 2");
+        final Table selectDistinct2 = deferredView.selectDistinct("partition");
+        final Table selectDistinct2a = deferredView.selectDistinct("x=partition + `_x`");
+
+        Table expectedNoChanges = TableTools.newTable(stringCol("partition", "A", "B", "C", "D"));
+        Table expectedWithX = TableTools.newTable(stringCol("x", "A_x", "B_x", "C_x", "D_x"));
+        assertTableEquals(expectedNoChanges, selectDistinct1);
+        assertTableEquals(expectedWithX, selectDistinct1a);
+        assertTableEquals(expectedNoChanges, selectDistinct2);
+        assertTableEquals(expectedWithX, selectDistinct2a);
+
+        final Table selectDistinct3 = source.selectDistinct("II");
+        final Table selectDistinct3a = deferredView.selectDistinct("K");
+        assertTableEquals(TableTools.emptyTable(partitionSize).updateView("II=ii"), selectDistinct3);
+        assertTableEquals(TableTools.emptyTable(partitionSize).updateView("K=ii * 2"), selectDistinct3a);
+    }
+
+    @Test
+    public void testSelectDistinctWithChangedPartition() {
+        final long partitionSize = 128;
+
+        final PartitionAwareSourceTableTestUtils.TestTDS tds =
+                new PartitionAwareSourceTableTestUtils.TestTDS();
+
+        final TableKey tableKey = new PartitionAwareSourceTableTestUtils.TableKeyImpl();
+        final PartitionAwareSourceTableTestUtils.TableLocationProviderImpl tableLocationProvider =
+                (PartitionAwareSourceTableTestUtils.TableLocationProviderImpl) tds
+                        .getTableLocationProvider(tableKey);
+
+        // create 4 partitions;
+        for (char partition = 'A'; partition <= 'D'; partition++) {
+            tableLocationProvider.appendLocation(
+                    new PartitionAwareSourceTableTestUtils.TableLocationKeyImpl(String.valueOf(partition)));
+        }
+        tableLocationProvider.locations.values().forEach(location -> location.setSize(partitionSize));
+
+        final Table source = new PartitionAwareSourceTable(
+                TableDefinition.of(
+                        ColumnDefinition.ofString("partition").withPartitioning(),
+                        ColumnDefinition.ofLong("II")),
+                tableKey.toString(),
+                RegionedTableComponentFactoryImpl.INSTANCE,
+                tableLocationProvider,
+                null);
+
+        final Table deferredView = source.updateView("partition = partition + `_x`");
+        final Table selectDistinct1 = deferredView.selectDistinct("partition");
+        final Table selectDistinct2 = deferredView.selectDistinct("II");
+
+        assertTableEquals(TableTools.newTable(stringCol("partition", "A_x", "B_x", "C_x", "D_x")), selectDistinct1);
+        assertTableEquals(TableTools.emptyTable(partitionSize).updateView("II=ii"), selectDistinct2);
     }
 }

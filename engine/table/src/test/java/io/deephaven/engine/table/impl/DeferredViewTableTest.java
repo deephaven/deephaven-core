@@ -19,6 +19,7 @@ import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.engine.table.impl.select.RangeFilter;
 import io.deephaven.engine.table.impl.select.IncrementalReleaseFilter;
 import io.deephaven.engine.table.impl.select.SelectColumn;
+import io.deephaven.engine.table.impl.select.SelectColumnFactory;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.select.WhereFilterFactory;
 import io.deephaven.engine.table.impl.select.WhereFilterInvertedImpl;
@@ -31,6 +32,9 @@ import io.deephaven.util.type.ArrayTypeUtils;
 import org.assertj.core.api.Assertions;
 import org.junit.Rule;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
 
 import java.time.Instant;
 import java.util.Arrays;
@@ -438,6 +442,52 @@ public class DeferredViewTableTest {
     }
 
     @Test
+    public void testSelectDistinctWithFilter() {
+        final String[] values = new String[] {"A", "B", "C", "D"};
+        ExecutionContext.getContext().getQueryScope().putParam("values", values);
+
+        final TableDefinition resultDef = TableDefinition.of(
+                ColumnDefinition.ofString("X"),
+                ColumnDefinition.ofLong("I"));
+        final Table sourceTable = TableTools.emptyTable(100_000)
+                .update("X = values[i % 4]", "I = ii");
+
+        final Table source = new DeferredViewTable(
+                resultDef,
+                "test",
+                new DeferredViewTable.TableReference(sourceTable),
+                ArrayTypeUtils.EMPTY_STRING_ARRAY,
+                SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY,
+                WhereFilter.ZERO_LENGTH_WHERE_FILTER_ARRAY);
+
+        final Table selectDistinct = source.where("X != `B`").selectDistinct("X");
+        Assert.eq(selectDistinct.size(), "selectDistinct.size()", values.length - 1);
+    }
+
+    @Test
+    public void testSelectDistinctArray() {
+        final String[] values = new String[] {"A", "B", "C", "D"};
+        ExecutionContext.getContext().getQueryScope().putParam("values", values);
+
+        final TableDefinition resultDef = TableDefinition.of(
+                ColumnDefinition.ofString("X"),
+                ColumnDefinition.ofLong("I"));
+        final Table sourceTable = TableTools.emptyTable(100_000)
+                .update("X = values[i % 4]", "I = ii");
+
+        final Table source = new DeferredViewTable(
+                resultDef,
+                "test",
+                new DeferredViewTable.TableReference(sourceTable),
+                ArrayTypeUtils.EMPTY_STRING_ARRAY,
+                SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY,
+                WhereFilter.ZERO_LENGTH_WHERE_FILTER_ARRAY);
+
+        final Table selectDistinct = source.selectDistinct("J=I_[i - 1]");
+        TstUtils.assertTableEquals(sourceTable.selectDistinct("J=I_[i - 1]"), selectDistinct);
+    }
+
+    @Test
     public void testViewSimpleRetain() {
         final String[] values = new String[] {"A", "B", "C", "D"};
         ExecutionContext.getContext().getQueryScope().putParam("values", values);
@@ -561,6 +611,36 @@ public class DeferredViewTableTest {
 
         TstUtils.assertTableEquals(sourceTable.where("X=`B`"), coalesce);
         TstUtils.assertTableEquals(sourceTable.where("X=`B`").view("K= I * 2"), coalesce2);
+    }
+
+    @Test
+    public void testBadConstructor() {
+        final String[] values = new String[] {"A", "B", "C", "D"};
+        ExecutionContext.getContext().getQueryScope().putParam("values", values);
+
+        final TableDefinition resultDef = TableDefinition.of(
+                ColumnDefinition.ofString("X"),
+                ColumnDefinition.ofLong("I"));
+        final Table sourceTable = TableTools.emptyTable(100_000)
+                .update("X = values[i % 4]", "I = ii");
+
+        final IllegalStateException ise1 = assertThrows(IllegalStateException.class, () -> new DeferredViewTable(
+                resultDef,
+                "test",
+                new DeferredViewTable.TableReference(sourceTable),
+                ArrayTypeUtils.EMPTY_STRING_ARRAY,
+                new SelectColumn[] {SelectColumnFactory.getExpression("Y=X")},
+                new WhereFilter[] {WhereFilterFactory.getExpression("X=`B`")}));
+        assertEquals("Why do we have a view and a filter all at the same time?", ise1.getMessage());
+
+        final IllegalStateException ise2 = assertThrows(IllegalStateException.class, () -> new DeferredViewTable(
+                resultDef,
+                "test",
+                new DeferredViewTable.TableReference(sourceTable),
+                new String[] {"I"},
+                SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY,
+                new WhereFilter[] {WhereFilterFactory.getExpression("X=`B`")}));
+        assertEquals("Why do we have a drop and a filter all at the same time?", ise2.getMessage());
     }
 
     private void verifyFilterIsPrioritized(final Filter filterToTest) {
