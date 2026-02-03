@@ -503,14 +503,24 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
 
         @Override
         protected TableAndRemainingFilters getWithWhere(WhereFilter... whereFilters) {
+            final WhereFilter[] allFilters;
             if (deferredFilters.length == 0) {
-                return tableReference.getWithWhere(whereFilters);
+                allFilters = whereFilters;
             } else {
-                final WhereFilter[] allFilters =
-                        Arrays.copyOf(deferredFilters, deferredFilters.length + whereFilters.length);
+                allFilters = Arrays.copyOf(deferredFilters, deferredFilters.length + whereFilters.length);
                 System.arraycopy(whereFilters, 0, allFilters, deferredFilters.length, whereFilters.length);
-                return tableReference.getWithWhere(allFilters);
             }
+
+            final PreAndPostFilters preAndPostFilters = applyFilterRenamings(WhereFilter.copyFrom(allFilters));
+            final TableAndRemainingFilters tarf = tableReference.getWithWhere(preAndPostFilters.preViewFilters);
+
+            Table result = tarf.table;
+            if (tarf.remainingFilters.length != 0) {
+                result = result.where(Filter.and(tarf.remainingFilters));
+            }
+            result = applyDeferredViews(result);
+
+            return new TableAndRemainingFilters(result, preAndPostFilters.postViewFilters);
         }
     }
 }

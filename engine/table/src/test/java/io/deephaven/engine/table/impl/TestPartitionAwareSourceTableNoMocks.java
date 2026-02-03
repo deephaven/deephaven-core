@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.RawString;
 import io.deephaven.api.filter.Filter;
+import io.deephaven.api.filter.FilterComparison;
 import io.deephaven.api.filter.FilterIn;
 import io.deephaven.api.literal.Literal;
 import io.deephaven.base.verify.Assert;
@@ -36,6 +37,8 @@ import org.junit.Test;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
+
+import static org.junit.Assert.assertEquals;
 
 public class TestPartitionAwareSourceTableNoMocks {
     @Rule
@@ -507,5 +510,93 @@ public class TestPartitionAwareSourceTableNoMocks {
         Assert.eq(partFilter.numRowsProcessed(), "partFilter.numRowsProcessed()", 4);
 
         TableTools.show(partitionFiltered);
+    }
+
+    @Test
+    public void testDeferredWhereWithEmptyWhere() {
+        final long partitionSize = 128;
+
+        final PartitionAwareSourceTableTestUtils.TestTDS tds =
+                new PartitionAwareSourceTableTestUtils.TestTDS();
+
+        final TableKey tableKey = new PartitionAwareSourceTableTestUtils.TableKeyImpl();
+        final PartitionAwareSourceTableTestUtils.TableLocationProviderImpl tableLocationProvider =
+                (PartitionAwareSourceTableTestUtils.TableLocationProviderImpl) tds
+                        .getTableLocationProvider(tableKey);
+
+        // create 4 partitions;
+        for (char partition = 'A'; partition <= 'D'; partition++) {
+            tableLocationProvider.appendLocation(
+                    new PartitionAwareSourceTableTestUtils.TableLocationKeyImpl(String.valueOf(partition)));
+        }
+        tableLocationProvider.locations.values().forEach(location -> location.setSize(partitionSize));
+
+        final RowSetCapturingFilter iiFilter =
+                new RowSetCapturingFilter(FilterComparison.eq(ColumnName.of("II"), Literal.of(10L)));
+
+        final Table source = new PartitionAwareSourceTable(
+                TableDefinition.of(
+                        ColumnDefinition.ofString("partition").withPartitioning(),
+                        ColumnDefinition.ofLong("II"),
+                        ColumnDefinition.of("Timestamp", Type.find(Instant.class))),
+                tableKey.toString(),
+                RegionedTableComponentFactoryImpl.INSTANCE,
+                tableLocationProvider,
+                null);
+
+        final Table deferredFilter = source.where(iiFilter);
+
+        Assert.eqTrue(deferredFilter instanceof DeferredViewTable,
+                "deferredFilter instanceof DeferredViewTable");
+
+        final Table emptyWhere = deferredFilter.where();
+
+        Assert.eqTrue(emptyWhere instanceof QueryTable, "partitionFiltered instanceof QueryTable");
+
+        // ensure the inner filter sees two partitions' data
+        Assert.eq(iiFilter.numRowsProcessed(), "iiFilter.numRowsProcessed()", 4 * partitionSize);
+    }
+
+    @Test
+    public void testDeferredDropPartition() {
+        final long partitionSize = 128;
+
+        final PartitionAwareSourceTableTestUtils.TestTDS tds =
+                new PartitionAwareSourceTableTestUtils.TestTDS();
+
+        final TableKey tableKey = new PartitionAwareSourceTableTestUtils.TableKeyImpl();
+        final PartitionAwareSourceTableTestUtils.TableLocationProviderImpl tableLocationProvider =
+                (PartitionAwareSourceTableTestUtils.TableLocationProviderImpl) tds
+                        .getTableLocationProvider(tableKey);
+
+        // create 4 partitions;
+        for (char partition = 'A'; partition <= 'D'; partition++) {
+            tableLocationProvider.appendLocation(
+                    new PartitionAwareSourceTableTestUtils.TableLocationKeyImpl(String.valueOf(partition)));
+        }
+        tableLocationProvider.locations.values().forEach(location -> location.setSize(partitionSize));
+
+        final RowSetCapturingFilter iiFilter =
+                new RowSetCapturingFilter(FilterComparison.eq(ColumnName.of("II"), Literal.of(10L)));
+
+        final Table source = new PartitionAwareSourceTable(
+                TableDefinition.of(
+                        ColumnDefinition.ofString("partition").withPartitioning(),
+                        ColumnDefinition.ofLong("II"),
+                        ColumnDefinition.of("Timestamp", Type.find(Instant.class))),
+                tableKey.toString(),
+                RegionedTableComponentFactoryImpl.INSTANCE,
+                tableLocationProvider,
+                null);
+
+        final Table deferredDrop = source.dropColumns("partition");
+
+        final Table filtered = deferredDrop.where(iiFilter);
+        final Table coalesced = filtered.coalesce();
+
+        // ensure the inner filter sees two partitions' data
+        Assert.eq(iiFilter.numRowsProcessed(), "iiFilter.numRowsProcessed()", 4 * partitionSize);
+
+        assertEquals(4, coalesced.size());
     }
 }
