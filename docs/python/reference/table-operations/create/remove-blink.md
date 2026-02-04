@@ -2,14 +2,14 @@
 title: remove_blink
 ---
 
-The `remove_blink` method removes the blink table attribute from a table, disabling [specialized blink table aggregation semantics](../../conceptual/table-types.md#specialized-semantics-for-blink-tables). It returns the source table itself if it is already not a blink table.
+The `remove_blink` method removes the blink table attribute from a table, disabling [specialized blink table aggregation semantics](../../../conceptual/table-types.md#specialized-semantics-for-blink-tables). It returns the source table itself if it is already not a blink table.
 
 > [!NOTE]
 > `remove_blink` only removes the blink _attribute_ — **rows will still disappear each update cycle**. If you want rows to persist, use [`blink_to_append_only`](./blink-to-append-only.md) instead.
 
 **What it does:**
 
-- Disables [specialized aggregation semantics](../../conceptual/table-types.md#specialized-semantics-for-blink-tables) for blink tables. By default, aggregations like [`sum_by`](../group-and-aggregate/sumBy.md) on blink tables accumulate results over the _entire history_ of observed rows. After calling `remove_blink`, aggregations only operate on rows present in the current update cycle.
+- Disables [specialized aggregation semantics](../../../conceptual/table-types.md#specialized-semantics-for-blink-tables) for blink tables. By default, aggregations like [`sum_by`](../group-and-aggregate/sumBy.md) on blink tables accumulate results over the _entire history_ of observed rows. After calling `remove_blink`, aggregations only operate on rows present in the current update cycle.
 
 **What it does NOT do:**
 
@@ -57,5 +57,5 @@ In this example:
 ## Related documentation
 
 - [blink_to_append_only](./blink-to-append-only.md) — Convert a blink table to append-only to preserve all rows.
-- [Table types: Specialized semantics for blink tables](../../conceptual/table-types.md#specialized-semantics-for-blink-tables) — Detailed explanation of blink table aggregation behavior.
+- [Table types: Specialized semantics for blink tables](../../../conceptual/table-types.md#specialized-semantics-for-blink-tables) — Detailed explanation of blink table aggregation behavior.
 - [`time_table`](./timeTable.md)
