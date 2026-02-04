@@ -2,9 +2,19 @@
 title: removeBlink
 ---
 
-The `removeBlink` method returns a new non-blink copy of the source table or the source table itself if it is already not a blink table. This is useful when you want to disable the default aggregation <!--TODO: link conceptual/table-types#specialized semantics when merged--> behavior of a blink table.
+The `removeBlink` method removes the blink table attribute from a table, disabling [specialized blink table aggregation semantics](../../conceptual/table-types.md#specialized-semantics-for-blink-tables). It returns the source table itself if it is already not a blink table.
 
-By default, many aggregations on blink tables will be computed over _every row_ that the table has seen since the aggregation was called. Although data in a blink table disappears every update cycle, some aggregations can still be computed as though the whole data history were available.
+> [!NOTE]
+> `removeBlink` only removes the blink _attribute_ — **rows will still disappear each update cycle**. If you want rows to persist, use [`blinkToAppendOnly`](./blink-to-append-only.md) instead.
+
+**What it does:**
+
+- Disables [specialized aggregation semantics](../../conceptual/table-types.md#specialized-semantics-for-blink-tables) for blink tables. By default, aggregations like [`sumBy`](../group-and-aggregate/sumBy.md) on blink tables accumulate results over the _entire history_ of observed rows. After calling `removeBlink`, aggregations only operate on rows present in the current update cycle.
+
+**What it does NOT do:**
+
+- It does **not** make rows persist. The resulting table still exhibits the "blink" update pattern — all rows from the previous cycle are removed, and only new rows appear each cycle.
+- It does **not** convert the table to an append-only or standard streaming table.
 
 ## Syntax
 
@@ -18,22 +28,34 @@ This method takes no arguments.
 
 ## Returns
 
-A new non-blink Table.
+A table without the blink attribute. The table still removes all rows each update cycle.
 
 ## Example
 
-The following example creates a simple blink table with the time table builder and then calls `removeBlink` to make it a non-blink table. We then demonstrate the difference in aggregation behavior between a blink table and a non-blink table by summing the `X` column in each table.
+The following example demonstrates the difference in aggregation behavior. With the blink attribute, `sumBy` accumulates over all rows ever seen. After `removeBlink`, `sumBy` only sums rows in the current cycle.
 
-```groovy order=tNoBlink,tBlink
+```groovy ticking-table order=tBlinkSum,tNoBlinkSum
 import io.deephaven.engine.table.impl.TimeTable.Builder
-import io.deephaven.engine.table.impl.BlinkTableTools
 
-builder = new Builder().period("PT2S").blinkTable(true)
+builder = new Builder().period("PT0.5s").blinkTable(true)
 
-tBlink = builder.build()
+tBlink = builder.build().update("X = ii % 5", "Group = ii % 2 == 0 ? `A` : `B`")
+
+// With blink attribute: sum accumulates over ALL rows ever seen
+tBlinkSum = tBlink.view("X", "Group").sumBy("Group")
+
+// After removeBlink: sum only includes rows in the CURRENT cycle
 tNoBlink = tBlink.removeBlink()
+tNoBlinkSum = tNoBlink.view("X", "Group").sumBy("Group")
 ```
+
+In this example:
+
+- `tBlinkSum` continuously grows as it aggregates over all historical data.
+- `tNoBlinkSum` only reflects the sum of rows present in the current update cycle (which is just one row per group per cycle in this case).
 
 ## Related documentation
 
+- [blinkToAppendOnly](./blink-to-append-only.md) — Convert a blink table to append-only to preserve all rows.
+- [Table types: Specialized semantics for blink tables](../../conceptual/table-types.md#specialized-semantics-for-blink-tables) — Detailed explanation of blink table aggregation behavior.
 - [Javadoc](https://deephaven.io/core/javadoc/io/deephaven/engine/table/Table.html#removeBlink())

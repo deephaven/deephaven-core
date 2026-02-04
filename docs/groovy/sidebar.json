@@ -2788,6 +2788,10 @@
                     "path": "reference/community-questions/blink-ring.md"
                   },
                   {
+                    "label": "How do I create a partitioned blink table?",
+                    "path": "reference/community-questions/partitioned-blink-tables-drop-attribute.md"
+                  },
+                  {
                     "label": "How do I filter by time of day across all dates?",
                     "path": "reference/community-questions/filter-time-window-all-dates.md"
                   }

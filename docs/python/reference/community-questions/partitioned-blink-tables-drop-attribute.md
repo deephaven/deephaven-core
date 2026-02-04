@@ -11,5 +11,22 @@ Aggregations on blink tables are defined to act as if you had full history from 
 
 To get around these restrictions, you can use [`remove_blink`](../table-operations/create/remove-blink.md) to opt out of special semantics. Then, you can use [`partition_by`](../table-operations/group-and-aggregate/partitionBy.md) to get a result with constituents that will blink in and out of existence.
 
+```python order=partitioned_blink_table
+from deephaven import time_table
+import jpy
+
+tOb = jpy.get_type("io.deephaven.engine.table.Table")
+
+t_blink = time_table("PT0.1s", blink_table=True).update(
+    ["X = ii", "Group = ii % 2 == 0 ? `A` : `B`"]
+)
+
+partitioned_blink_table = (
+    t_blink.remove_blink()
+    .partition_by("Group")
+    .transform(lambda t: t.with_attributes({tOb.BLINK_TABLE_ATTRIBUTE: True}))
+)
+```
+
 > [!NOTE]
 > These FAQ pages contain answers to questions about Deephaven Community Core that our users have asked in our [Community Slack](/slack). If you have a question that is not in our documentation, [join our Community](/slack) and we'll be happy to help!
