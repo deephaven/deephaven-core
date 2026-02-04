@@ -916,8 +916,8 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @NotNull
         PrepareFormulaResult prepareFormula(SelectColumn selectColumn,
-                                            final TableDefinition tableDefinition,
-                                            final Map<String, ColumnDefinition<?>> extraColumns) {
+                final TableDefinition tableDefinition,
+                final Map<String, ColumnDefinition<?>> extraColumns) {
             // Get or create a column definition map composed of vectors of the original column types (or scalars when
             // part of the key columns).
             final Set<String> groupByColumnSet = Set.of(groupByColumnNames);
@@ -1437,7 +1437,7 @@ public class AggregationProcessor implements AggregationContextFactory {
 
             // noinspection rawtypes
             final ObjectSingleValueSource<ObjectVector<String>> keyNameSource =
-                    (ObjectSingleValueSource)new ObjectSingleValueSource<>(ObjectVector.class, String.class);
+                    (ObjectSingleValueSource) new ObjectSingleValueSource<>(ObjectVector.class, String.class);
             keyNameSource.set(new ObjectVectorDirect<>(groupByColumnNames));
 
             final FormulaMultiColumnChunkedOperator op = new FormulaMultiColumnChunkedOperator(table,
@@ -1653,10 +1653,28 @@ public class AggregationProcessor implements AggregationContextFactory {
                 }
             }
 
+            // we need to make sure the returned type is consistent with the source table
+            final Class<?> returnedType = selectColumn.getReturnedType();
+            final Class<?> returnedComponentType = selectColumn.getReturnedComponentType();
+            final String name = selectColumn.getName();
+            final ColumnSource<?> parentSource = table.getColumnSource(name);
+            final Class<?> expectedType = parentSource.getType();
+            final Class<?> expectedComponentType = parentSource.getComponentType();
+            if (!expectedType.equals(returnedType)) {
+                throw new IllegalArgumentException(
+                        "Inconsistent return type in rollup for Formula column '" + name + "': previous level was "
+                                + expectedType + ", but level " + groupByColumnNames.length + " is " + returnedType);
+            }
+            if (!Objects.equals(expectedComponentType, returnedComponentType)) {
+                throw new IllegalArgumentException("Inconsistent return component type in rollup for Formula column '"
+                        + name + "': previous level was " + expectedComponentType + ", but level "
+                        + groupByColumnNames.length + " is " + returnedComponentType);
+            }
+
             final IntegerSingleValueSource depthSource = new IntegerSingleValueSource();
             depthSource.set(groupByColumnNames.length);
             final ObjectSingleValueSource<ObjectVector<String>> keyNameSource =
-                    (ObjectSingleValueSource)new ObjectSingleValueSource<>(ObjectVector.class, String.class);
+                    (ObjectSingleValueSource) new ObjectSingleValueSource<>(ObjectVector.class, String.class);
             keyNameSource.set(new ObjectVectorDirect<>(groupByColumnNames));
 
             if (formula.reaggregateAggregatedValues()) {

@@ -27,6 +27,8 @@ import io.deephaven.vector.IntVector;
 import io.deephaven.vector.IntVectorDirect;
 import io.deephaven.vector.LongVector;
 import io.deephaven.vector.LongVectorDirect;
+import io.deephaven.vector.ObjectVector;
+import io.deephaven.vector.ObjectVectorDirect;
 import org.jspecify.annotations.NonNull;
 import org.junit.Assert;
 import org.junit.Test;
@@ -415,7 +417,8 @@ public class TestRollupTable extends RefreshingTableTestCase {
 
         final Table expectedBase = initialExpectedGrouped(rollup1);
         final Table expectedSentinel = withGroup ? expectedBase : expectedBase.dropColumns("Sentinel");
-        final Table expected = expectedSentinel.update("FSum=ii == 0 ? 7 : 1 + Sum").update("KeyColumns=new io.deephaven.vector.ObjectVectorDirect(`Key1`, `Key2`).subVector(0, __DEPTH__ - 1)");
+        final Table expected = expectedSentinel.update("FSum=ii == 0 ? 7 : 1 + Sum").update(
+                "KeyColumns=new io.deephaven.vector.ObjectVectorDirect(`Key1`, `Key2`).subVector(0, __DEPTH__ - 1)");
         assertTableEquals(expected, snapshot);
         freeSnapshotTableChunks(snapshot);
     }
@@ -549,6 +552,54 @@ public class TestRollupTable extends RefreshingTableTestCase {
                 snapshot);
 
         freeSnapshotTableChunks(snapshot);
+    }
+
+    // used in testRollupFormulaInconsistentOutputTypes
+    @SuppressWarnings("unused")
+    public static long inconsistentFunction(IntVector input) {
+        return 1L;
+    }
+
+    // used in testRollupFormulaInconsistentOutputTypes
+    @SuppressWarnings("unused")
+    public static int inconsistentFunction(LongVector input) {
+        return 2;
+    }
+
+    // used in testRollupFormulaInconsistentOutputTypes
+    @SuppressWarnings("unused")
+    public static ObjectVector<Boolean> inconsistentFunction2(IntVector input) {
+        return new ObjectVectorDirect<>(true);
+    }
+
+    // used in testRollupFormulaInconsistentOutputTypes
+    @SuppressWarnings("unused")
+    public static ObjectVector<String> inconsistentFunction2(ObjectVector input) {
+        return new ObjectVectorDirect<>("Hi");
+    }
+
+    @Test
+    public void testRollupFormulaInconsistentOutputTypes() {
+        final int[] allValues = {10, 10, 10, 20, 20, 30, 30};
+        final Table source = newTable(
+                stringCol("Key", "Alpha", "Alpha", "Alpha", "Bravo", "Bravo", "Charlie", "Charlie"),
+                intCol("Value", allValues));
+        final IllegalArgumentException iae = Assert.assertThrows(IllegalArgumentException.class,
+                () -> source.rollup(
+                        List.of(AggFormula("Value = " + getClass().getCanonicalName() + ".inconsistentFunction(Value)")
+                                .asReaggregating()),
+                        "Key"));
+        assertEquals(
+                "Inconsistent return type in rollup for Formula column 'Value': previous level was long, but level 0 is int",
+                iae.getMessage());
+
+        final IllegalArgumentException iae2 = Assert.assertThrows(IllegalArgumentException.class,
+                () -> source.rollup(
+                        List.of(AggFormula("Value = " + getClass().getCanonicalName() + ".inconsistentFunction2(Value)")
+                                .asReaggregating()),
+                        "Key"));
+        assertTrue(
+                iae2.getMessage().contains("Inconsistent return component type in rollup for Formula column 'Value':"));
     }
 
     private static Table initialExpectedGrouped(RollupTable rollup1) {
