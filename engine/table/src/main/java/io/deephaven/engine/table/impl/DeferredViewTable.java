@@ -323,7 +323,7 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
             SplitAndApply splitAndApply = splitAndApplyFilters(deferredFilters, tableReference);
             result = splitAndApply.result;
             // we cannot have a deferred filter that uses a view on this level, because we prohibit
-            // the view and filter from being present on the save DVT in the constructor
+            // the view and filter from being present on the same DVT in the constructor
             Assert.eqZero(splitAndApply.postViewFilters.length, "splitAndApply.postViewFilters.length");
         } else {
             result = tableReference.get();
