@@ -1,1 +1,0 @@
-{"file":"core_versioned_docs/version-groovy/docs/reference/table-operations/create/remove-blink.md","objects":{"tBlink":{"type":"Table","data":{"columns":[{"name":"Timestamp","type":"java.time.Instant"}],"rows":[]}},"tNoBlink":{"type":"Table","data":{"columns":[{"name":"Timestamp","type":"java.time.Instant"}],"rows":[]}}}}
