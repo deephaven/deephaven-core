@@ -11,7 +11,7 @@ Aggregations on blink tables are defined to act as if you had full history from 
 
 To get around these restrictions, you can use [`remove_blink`](../table-operations/create/remove-blink.md) to opt out of special semantics. Then, you can use [`partition_by`](../table-operations/group-and-aggregate/partitionBy.md) to get a result with constituents that will blink in and out of existence.
 
-```python order=partitioned_blink_table
+```python order=null
 from deephaven import time_table
 import jpy
 

@@ -11,7 +11,7 @@ Aggregations on blink tables are defined to act as if you had full history from 
 
 To get around these restrictions, you can use [`removeBlink`](../table-operations/create/remove-blink.md) to opt out of special semantics. Then, you can use [`partitionBy`](../table-operations/group-and-aggregate/partitionBy.md) to get a result with constituents that will blink in and out of existence.
 
-```groovy order=partitionedBlinkTable
+```groovy order=null
 import io.deephaven.engine.table.impl.TimeTable.Builder
 import io.deephaven.engine.table.Table
 
