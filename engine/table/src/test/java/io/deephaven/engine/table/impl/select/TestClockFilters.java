@@ -3,7 +3,12 @@
 //
 package io.deephaven.engine.table.impl.select;
 
+import io.deephaven.api.ColumnName;
+import io.deephaven.api.RawString;
 import io.deephaven.api.filter.Filter;
+import io.deephaven.api.filter.FilterComparison;
+import io.deephaven.api.literal.Literal;
+
 import io.deephaven.base.Factory;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
@@ -12,15 +17,20 @@ import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.filters.RowSetCapturingFilter;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 
+import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.time.DateTimeUtils.epochNanosToInstant;
 import static org.junit.Assert.*;
 
 import io.deephaven.engine.testutil.StepClock;
 import io.deephaven.engine.util.TableTools;
+import io.deephaven.time.DateTimeUtils;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.time.Instant;
+import java.util.stream.LongStream;
 
 /**
  * Test for Sorted and Unsorted ClockFilter implementations.
@@ -801,5 +811,75 @@ public class TestClockFilters {
         } catch (UnsupportedOperationException e) {
             // expected
         }
+    }
+
+    @Test
+    public void testSubsequentFilter() {
+        clock.reset();
+
+        final UnsortedClockFilter filter = new UnsortedClockFilter("Timestamp", clock, true);
+
+        final Table input = newTable(
+                instantCol("Timestamp",
+                        LongStream.of(1000, 2000, 3000, 4000, 5000, 1000, 2000, 3000, 4000, 5000)
+                                .mapToObj(DateTimeUtils::epochNanosToInstant).toArray(Instant[]::new)),
+                intCol("Int", 10, 20, 30, 40, 50, 100, 200, 300, 400, 500));
+
+        final Table result =
+                input.where(Filter.and(filter, FilterComparison.lt(ColumnName.of("Int"), Literal.of(100))));
+        assertTableEquals(input.head(1), result);
+        TableTools.showWithRowSet(result);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            clock.run();
+            filter.run();
+        });
+
+        assertTableEquals(input.head(2), result);
+        TableTools.showWithRowSet(result);
+    }
+
+    @Test
+    public void testPriorFilter() {
+        testPriorFilter(false, false);
+        testPriorFilter(true, false);
+        testPriorFilter(true, true);
+    }
+
+    private void testPriorFilter(final boolean sorted, final boolean presortInput) {
+        clock.reset();
+
+        final ClockFilter filter;
+        if (sorted) {
+            filter = new SortedClockFilter("Timestamp", clock, true);
+        } else {
+            filter = new UnsortedClockFilter("Timestamp", clock, true);
+        }
+
+        Table input = newTable(
+                instantCol("Timestamp",
+                        LongStream.of(1000, 1000, 2000, 2000, 5000, 1000, 1000, 2000, 4000, 5000)
+                                .mapToObj(DateTimeUtils::epochNanosToInstant).toArray(Instant[]::new)),
+                intCol("Int", 10, 20, 30, 40, 50, 100, 200, 300, 400, 500));
+        if (presortInput) {
+            input = input.sort("Timestamp");
+        }
+
+        final Table result =
+                input.where(Filter.and(RawString.of("ii % 2 == 0"), filter));
+        assertTableEquals(input.where("epochNanos(Timestamp) <= 1000 && ii % 2 == 0"), result);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            clock.run();
+            filter.run();
+        });
+
+        Table expected = input.where("epochNanos(Timestamp) <= 2000 && ii % 2 == 0");
+        if (sorted) {
+            expected = expected.sort("Timestamp");
+        }
+        assertTableEquals(expected, result);
     }
 }

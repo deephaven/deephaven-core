@@ -52,6 +52,7 @@ dependencies {
     implementation libs.groovy
     implementation libs.groovy.json
     implementation libs.javaparser.core
+    implementation libs.google.rpc.protos
     compileOnly libs.autoservice
     annotationProcessor libs.autoservice.compiler
 

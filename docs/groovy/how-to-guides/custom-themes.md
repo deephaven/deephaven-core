@@ -13,7 +13,7 @@ In order to design and preview your theme, you will need a running Deephaven ser
 
 1. A Deephaven server.
 
-   - Start a deephaven-core server on port 10000. You can follow the instructions here in the [Quickstart](../tutorials/quickstart.md).
+   - Start a deephaven-core server on port 10000. You can follow the instructions here in the [Quickstart](../getting-started/quickstart.md).
 
 2. A plugin server. This server will proxy your plugins, which allows you to develop your theme without needing to reinstall the plugin every time you make a change.
 

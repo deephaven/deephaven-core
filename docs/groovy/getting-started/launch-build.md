@@ -9,7 +9,7 @@ experiment with code changes. These instructions show how to build on multiple o
 systems, including Linux, Windows, and Mac.
 
 > [!TIP]
-> Launching from source code is recommended for users who wish to tinker with and modify source code. For an easier installation method, see [Launch Deephaven from pre-built images](../tutorials/docker-install.md).
+> Launching from source code is recommended for users who wish to tinker with and modify source code. For an easier installation method, see [Launch Deephaven from pre-built images](../getting-started/docker-install.md).
 
 ## Supported operating systems
 
@@ -45,9 +45,6 @@ You can download a ZIP file of the repository from GitHub. However, this is not 
 ## Build and run Deephaven
 
 The following instructions are a condensed version of instructions found in the [deephaven-core repository](https://github.com/deephaven/deephaven-core). For the full instructions with explanations of configuration parameters, SSL, and more, see the [README](https://github.com/deephaven/deephaven-core/blob/main/server/jetty-app/README.md).
-
-> [!NOTE]
-> The following steps show how to build and run Deephaven with Groovy from source. For Python, see [here](/core/docs/getting-started/launch-build/).
 
 ### Clone the deephaven-core repository
 

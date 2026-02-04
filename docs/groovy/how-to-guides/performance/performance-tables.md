@@ -86,7 +86,7 @@ qup = queryUpdatePerformance(n)
 
 ### Query Operation Performance
 
-The Query Operation Performance table contains data on how long each individual operation of a query ([`where`](../reference/table-operations/filter/where.md), [`update`](../reference/table-operations/select/update.md), [`naturalJoin`](../reference/table-operations/join/natural-join.md), etc., as well as internal functions) takes to execute, and the change in resource consumption while each was executing. The `query_operation_performance` method requires an [evaluation number](#evaluation-numbers) to identify the query you want to analyze.
+The Query Operation Performance table contains data on how long each individual operation of a query ([`where`](../../reference/table-operations/filter/where.md), [`update`](../../reference/table-operations/select/update.md), [`naturalJoin`](../../reference/table-operations/join/natural-join.md), etc., as well as internal functions) takes to execute, and the change in resource consumption while each was executing. The `query_operation_performance` method requires an [evaluation number](#evaluation-numbers) to identify the query you want to analyze.
 
 ```python skip-test
 import deephaven.perfmon as pm
@@ -356,7 +356,7 @@ This table contains JVM info about memory utilization, the Periodic Update Graph
 
 This tree table contains Deephaven query performance data. It displays information that can also be found in the [Query Performance Log](#query-performance-log), in tree table form. It is similar to a traditional call graph, placing every operation with a parent operation into expandable groups. For example, we can click on the row where `EvaluationNumber = 20` to view the sub-operation with `EvaluationNumber = 21`:
 
-![img](../assets/how-to/perf-qptt.png)
+![img](../../assets/how-to/perf-qptt.png)
 
 Performance data for _individual_ sub-operations as a tree table is available from calling `query_operation_performance_tree_table`.
 
@@ -387,7 +387,7 @@ Performance data for _individual_ sub-operations as a tree table is available fr
 
 This tree table contains Deephaven performance data on how long each individual operation of a query (`where`, `update`, `natural_join`, etc., as well as internal functions) takes to execute, and the change in resource consumption while each was executing. It displays information that can also be found in the [Query Operation Performance Log](#query-operation-performance-log), in tree table form. It is similar to a traditional call graph, placing every operation with a parent operation into expandable groups.
 
-![img](../assets/how-to/perf-qoptt.png)
+![img](../../assets/how-to/perf-qoptt.png)
 
 | Column Name              | Data Type | Description                                                                                                                                                                         |
 | ------------------------ | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -501,7 +501,7 @@ There are a couple of key pieces in the above query worth noting:
 - The functions `fast` and `slow` do the same thing. `slow` is slow because it waits for 1/4 of a second to perform and return the calculation.
 - `uplUpdate` adds two columns: `IntervalDurationNanos` and `Ratio`. `Ratio` calculates the percent of the interval that was spent performing a particular operation. The table is also sorted by `Ratio` in descending order so that the operations that take the most time appear at the top.
 
-![The above `uplUpdate` table](../assets/how-to/perf-ratio.png)
+![The above `uplUpdate` table](../../assets/how-to/perf-ratio.png)
 
 In the above image, the `Update([Y])` (the `slow` function) takes a whopping 25% of the total interval time. This makes sense based on what's happening; every second, a new row is added to the ticking tables. For a quarter of that second, the Deephaven engine sits around waiting for `time.sleep(0.25)` to be finished. Clearly, `slow` is a bottleneck in this particular code. In real applications, it won't be as obvious why something causes a slowdown. Still, this example query is a simple way to identify areas where performance improvements will be more significant.
 
@@ -509,11 +509,11 @@ In the above image, the `Update([Y])` (the `slow` function) takes a whopping 25%
 
 The [Query Performance Tree Table](#query-performance-tree-table) and [Query Operation Performance Tree Table](#query-operation-performance-tree-table) can be useful tools for pinpointing the cause of unexpected slow performance in your queries. A common use case is to sort the table by the `UsageNanos` column so that the slowest operations appear at the top of the table:
 
-![img](../assets/how-to/qoptt-sorted.png)
+![img](../../assets/how-to/qoptt-sorted.png)
 
 Expanding the parent rows in the tree table displays the sub-operations that contribute to the parent operation's total time, allowing you to identify specifically which computations and sub-operations could be causing performance issues:
 
-![img](../assets/how-to/qoptt-expanded.png)
+![img](../../assets/how-to/qoptt-expanded.png)
 
 ## Get help
 
@@ -529,6 +529,6 @@ You can also get help by asking questions in our [Slack Community](/slack).
 
 ## Related documentation
 
-- [How to triage errors in queries](./triage-errors.md)
+- [How to triage errors in queries](../triage-errors.md)
 - [`TableLoggers`](/core/javadoc/io/deephaven/engine/table/impl/util/TableLoggers.html)
 - [Learning session on Performance Analysis](https://youtu.be/bz0mQasSNcg)

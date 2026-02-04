@@ -8,7 +8,7 @@ sidebar_label: Docker
 Deephaven can be run from pre-built Docker images and requires only Docker. This guide will teach you how to run Deephaven from Docker, choose a deployment, and customize it for your applications.
 
 > [!NOTE]
-> Docker isn't the only way to run Deephaven. Developers interested in tinkering with and modifying source code should [build Deephaven from source](../how-to-guides/launch-build.md). Users who wish to run from build artifacts without Docker should use the [Deephaven production application](./production-application.md)
+> Docker isn't the only way to run Deephaven. Developers interested in tinkering with and modifying source code should [build Deephaven from source](../getting-started/launch-build.md). Users who wish to run from build artifacts without Docker should use the [Deephaven production application](./production-application.md)
 
 ## Supported operating systems
 
@@ -323,4 +323,4 @@ import { TutorialCTA } from '@theme/deephaven/CTA';
 
 - [Pre-shared key authentication](../how-to-guides/authentication/auth-psk.md)
 - [Docker data volumes](../conceptual/docker-data-volumes.md)
-- [Build and launch Deephaven from source code](../how-to-guides/launch-build.md)
+- [Build and launch Deephaven from source code](../getting-started/launch-build.md)

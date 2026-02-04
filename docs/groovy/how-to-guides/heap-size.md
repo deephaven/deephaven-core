@@ -5,7 +5,7 @@ sidebar_label: Adjust heap size
 
 When launching Deephaven, you may have very specific and perhaps large data needs that require fine-tuned resource management, such as adjusting your heap size (memory).
 
-If you [launch Deephaven from pre-built images](../tutorials/docker-install.md) or [build and launch Deephaven from source code](../how-to-guides/launch-build.md), you use [Docker](https://www.docker.com/) to facilitate your containers and resource management. Depending on the applications and data you run, it may be necessary to change the amount of heap available to each of the containers in the system.
+If you [launch Deephaven from pre-built images](../getting-started/docker-install.md) or [build and launch Deephaven from source code](../getting-started/launch-build.md), you use [Docker](https://www.docker.com/) to facilitate your containers and resource management. Depending on the applications and data you run, it may be necessary to change the amount of heap available to each of the containers in the system.
 
 ## See memory settings
 
@@ -40,9 +40,9 @@ To change this setting, nagivate to your Docker-Compose YAML file located in you
 
 The Docker-Compose YAML file your installation uses depends on how you launch Deephaven:
 
-- If you [launch Deephaven from pre-built images](../tutorials/docker-install.md), your Docker Compose file is called `docker-compose.yml`.
+- If you [launch Deephaven from pre-built images](../getting-started/docker-install.md), your Docker Compose file is called `docker-compose.yml`.
 
-- If you [build and launch Deephaven from source code](../how-to-guides/launch-build.md), your Docker Compose file is called `docker-compose-common.yml`.
+- If you [build and launch Deephaven from source code](../getting-started/launch-build.md), your Docker Compose file is called `docker-compose-common.yml`.
 
 Open the Docker-Compose YAML file with the text editor of your choice. You will see several containers listed separately under `services`. Each container can be fine-tuned.
 
@@ -79,6 +79,6 @@ cpus: 4.0
 
 ## Related documentation
 
-- [Quick start](../tutorials/docker-install.md)
-- [Build and launch Deephaven from source code](../how-to-guides/launch-build.md)
+- [Quick start](../getting-started/docker-install.md)
+- [Build and launch Deephaven from source code](../getting-started/launch-build.md)
 - [Access your file system with Docker data volumes](../conceptual/docker-data-volumes.md)

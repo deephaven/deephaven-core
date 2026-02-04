@@ -3,7 +3,7 @@ title: Export data to CSV or other delimited files
 sidebar_label: Export CSV files
 ---
 
-This guide discusses how to export table data to CSV (or other delimited) files by using [`writeCsv`](../reference/data-import-export/CSV/writeCsv.md).
+This guide discusses how to export table data to CSV (or other delimited) files by using [`writeCsv`](../../reference/data-import-export/CSV/writeCsv.md).
 
 > [!TIP]
 > CSV files can also be exported via **Table Options > Download CSV** in the Deephaven UI.
@@ -19,9 +19,9 @@ writeCsv(table, "/data/outputFile.csv")
 ```
 
 > [!NOTE]
-> Deephaven writes files to locations relative to the base of its Docker container. See [Docker data volumes](../conceptual/docker-data-volumes.md) to learn more about the relation between locations in the container and the local file system.
+> Deephaven writes files to locations relative to the base of its Docker container. See [Docker data volumes](../../conceptual/docker-data-volumes.md) to learn more about the relation between locations in the container and the local file system.
 
-We'll create a table to export by using [`emptyTable`](../reference/table-operations/create/emptyTable.md) and [`update`](../reference/table-operations/select/update.md). The table contains 100 rows of trigonometric values.
+We'll create a table to export by using [`emptyTable`](../../reference/table-operations/create/emptyTable.md) and [`update`](../../reference/table-operations/select/update.md). The table contains 100 rows of trigonometric values.
 
 ```groovy test-set=1
 source = emptyTable(100).update(
@@ -34,7 +34,7 @@ source = emptyTable(100).update(
 
 ### Standard CSV files
 
-The simplest way to use [`writeCsv`](../reference/data-import-export/CSV/writeCsv.md) is to supply two input parameters:
+The simplest way to use [`writeCsv`](../../reference/data-import-export/CSV/writeCsv.md) is to supply two input parameters:
 
 - The Deephaven source table.
 - The path of the output CSV file.
@@ -45,7 +45,7 @@ import static io.deephaven.csv.CsvTools.writeCsv
 writeCsv(source, "/data/TrigFunctions.csv")
 ```
 
-![The newly written CSV file](../assets/how-to/TrigFunctions_basic.png)
+![The newly written CSV file](../../assets/how-to/TrigFunctions_basic.png)
 
 #### The `/data` mount point
 
@@ -56,7 +56,7 @@ If you are using Docker-installed Deephaven, you can find a `/data` folder insid
 
 ### Null values
 
-Null values are common in tables. How are they handled when exporting data to a CSV? This depends on how you call [`writeCsv`](../reference/data-import-export/CSV/writeCsv.md).
+Null values are common in tables. How are they handled when exporting data to a CSV? This depends on how you call [`writeCsv`](../../reference/data-import-export/CSV/writeCsv.md).
 
 First, let's create a table with null values. The example below uses a function to fill the `SinX` column with a large number of nulls.
 
@@ -77,7 +77,7 @@ import static io.deephaven.csv.CsvTools.writeCsv
 writeCsv(sourceWithNulls, "/data/TrigFunctionsWithNulls.csv")
 ```
 
-![The newly writted CSV file](../assets/how-to/TrigFunctions_basicWithNulls.png)
+![The newly writted CSV file](../../assets/how-to/TrigFunctions_basicWithNulls.png)
 
 ### Column selection
 
@@ -89,11 +89,11 @@ import static io.deephaven.csv.CsvTools.writeCsv
 writeCsv(sourceWithNulls, "/data/Cosine.csv", "X", "CosX")
 ```
 
-![The newly writted CSV file](../assets/how-to/TrigFunctions_NullsCosineOnly.png)
+![The newly writted CSV file](../../assets/how-to/TrigFunctions_NullsCosineOnly.png)
 
 ## Related documentation
 
-- [Create an empty table](../how-to-guides/new-and-empty-table.md#emptytable)
+- [Create an empty table](../../how-to-guides/new-and-empty-table.md#emptytable)
 - [How to import CSV files](./csv-import.md)
-- [Docker data volumes](../conceptual/docker-data-volumes.md)
-- [`writeCsv`](../reference/data-import-export/CSV/writeCsv.md)
+- [Docker data volumes](../../conceptual/docker-data-volumes.md)
+- [`writeCsv`](../../reference/data-import-export/CSV/writeCsv.md)
