@@ -106,6 +106,10 @@
                 "path": "conceptual/table-types.md"
               },
               {
+                "label": "Initialization and updates",
+                "path": "how-to-guides/initialization-and-updates.md"
+              },
+              {
                 "label": "Core API design",
                 "path": "conceptual/deephaven-core-api.md"
               },
