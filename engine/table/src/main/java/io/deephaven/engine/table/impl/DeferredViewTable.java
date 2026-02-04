@@ -361,7 +361,8 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
                 .filter(sc -> !sc.isRetain())
                 .map(SelectColumn::getName)
                 .collect(Collectors.toSet());
-        if (selectColumns.stream().anyMatch(sc -> !sc.getColumnArrays().isEmpty() || sc.getColumns().stream().anyMatch(outputColumnNames::contains))) {
+        if (selectColumns.stream().anyMatch(sc -> !sc.getColumnArrays().isEmpty()
+                || sc.getColumns().stream().anyMatch(outputColumnNames::contains))) {
             return coalesce().selectDistinct(columns);
         }
 
