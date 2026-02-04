@@ -300,12 +300,80 @@ public class DeferredViewTableTest {
 
     @Test
     public void testMatchFilterDoubleRename() {
-        verifyFilterIsPrioritized(new MatchFilter(MatchOptions.REGULAR, "Y", "A"), true, DeferredViewTableTest::doubleRenameUpdate);
+        verifyFilterIsPrioritized(new MatchFilter(MatchOptions.REGULAR, "Y", "A"), true,
+                DeferredViewTableTest::doubleRenameUpdate);
     }
 
     @Test
     public void testRangeFilterPostView() {
-        verifyFilterIsPrioritized(new LongRangeFilter("I", 0, 6250, true, false), false, DeferredViewTableTest::postViewSourceUpdate);
+        verifyFilterIsPrioritized(new LongRangeFilter("I", 0, 6250, true, false), false,
+                DeferredViewTableTest::postViewSourceUpdate);
+    }
+
+    /**
+     * The RangeFilter does not support renames
+     */
+    @Test
+    public void testRangeFilterWithRename() {
+        verifyFilterIsPrioritized(new LongRangeFilter("J", 0, 6250, true, false), false,
+                DeferredViewTableTest::longRenameUpdate);
+    }
+
+    /**
+     * The RangeFilter does not support renames
+     */
+    @Test
+    public void testInvertedRangeFilterWithRename() {
+        verifyFilterIsPrioritized(new LongRangeFilter("J", 6250, 1_000_0000, true, false).invert(), false,
+                DeferredViewTableTest::longRenameUpdate);
+    }
+
+    /**
+     * The RangeFilter does not support renames
+     */
+    @Test
+    public void testRangeFilterWithDeclaredBarrier() {
+        final Object barrier = new Object();
+        verifyFilterIsPrioritized(
+                ConjunctiveFilter.of(new LongRangeFilter("J", 0, 6250, true, false).withDeclaredBarriers(barrier)),
+                false, DeferredViewTableTest::longRenameUpdate);
+    }
+
+    /**
+     * The RangeFilter does not support renames
+     */
+    @Test
+    public void testRangeFilterWithRespectedBarrier() {
+        final Object barrier = new Object();
+        verifyFilterIsPrioritized(
+                DisjunctiveFilter.of(
+                        ConjunctiveFilter.of(
+                                ConditionFilter.createConditionFilter("true").withDeclaredBarriers(barrier),
+                                new LongRangeFilter("J", 0, 6250, true, false).withRespectedBarriers(barrier)),
+                        new LongRangeFilter("J", -2, -1, true, false)),
+                false, DeferredViewTableTest::longRenameUpdate);
+    }
+
+    /**
+     * The RangeFilter does not support renames
+     */
+    @Test
+    public void testDisjunctiveRangeFilter() {
+        verifyFilterIsPrioritized(
+                DisjunctiveFilter.of(new LongRangeFilter("J", 0, 3000, true, false),
+                        new LongRangeFilter("J", 3000, 6250, true, false)),
+                false, DeferredViewTableTest::longRenameUpdate);
+    }
+
+    /**
+     * The RangeFilter does not support renames
+     */
+    @Test
+    public void testConjunctiveRangeFilter() {
+        verifyFilterIsPrioritized(DisjunctiveFilter.of(
+                ConjunctiveFilter.of(new LongRangeFilter("J", 0, 25000, true, false),
+                        new LongRangeFilter("J", 0, 6250, true, false)),
+                new LongRangeFilter("J", -2, -1, true, false)), false, DeferredViewTableTest::longRenameUpdate);
     }
 
     @Test
@@ -666,17 +734,25 @@ public class DeferredViewTableTest {
     }
 
     private static Table mixedUpdate(Table table) {
-        return table.updateView(List.of(new SourceColumn("X", "Y"), SelectColumnFactory.getExpression("Y2 = Y"), SelectColumnFactory.getExpression("I = I + 0")));
+        return table.updateView(List.of(new SourceColumn("X", "Y"), SelectColumnFactory.getExpression("Y2 = Y"),
+                SelectColumnFactory.getExpression("I = I + 0")));
     }
 
     private static Table doubleRenameUpdate(Table table) {
-        return table.updateView(List.of(new SourceColumn("X", "X2"), new SourceColumn("X2", "Y"), SelectColumnFactory.getExpression("Y2 = Y"), SelectColumnFactory.getExpression("I = I + 0")));
+        return table.updateView(List.of(new SourceColumn("X", "X2"), new SourceColumn("X2", "Y"),
+                SelectColumnFactory.getExpression("Y2 = Y"), SelectColumnFactory.getExpression("I = I + 0")));
     }
+
     private static Table postViewSourceUpdate(Table table) {
         return table.updateView("Y = X", "Y2 = Y", "J = I + 0", "I=J");
     }
 
-    private void verifyFilterIsPrioritized(final Filter filterToTest, final boolean expectsJump, final Function<Table, Table> updateFunction) {
+    private static Table longRenameUpdate(Table table) {
+        return table.updateView("J = I");
+    }
+
+    private void verifyFilterIsPrioritized(final Filter filterToTest, final boolean expectsJump,
+            final Function<Table, Table> updateFunction) {
         final String[] values = new String[] {"A", "B", "C", "D"};
         ExecutionContext.getContext().getQueryScope().putParam("values", values);
 
