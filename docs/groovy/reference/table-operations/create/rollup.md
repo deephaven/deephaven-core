@@ -143,41 +143,46 @@ To calculate the sum for the root row, every row in the source table is read. Th
 
 ### Formula Reaggregation
 
-Formula reaggregation can be used to limit the size of input vectors while evaluating changes to a rollup. When writing your query, be mindful of the requirement that each level of the rollup must have consistent constituent types and names. This ensures that your query accurately reflects the intended parameters and yields the desired outcomes.
+Formula reaggregation can be used to limit the size of input vectors while evaluating changes to a rollup. When writing your query, be mindful of the requirement that your formula must be applicable to each level of the rollup and produce the same output type.
 
 ```groovy order=reaggregatedSum,source
 source = newTable(
         stringCol("Key", "Alpha", "Alpha", "Alpha", "Bravo", "Bravo", "Charlie", "Charlie"),
         intCol("Value", 10, 10, 10, 20, 20, 30, 30))
-reaggregatedSum = source.updateView("Sum=(long)Value").rollup(List.of(AggFormula("Sum = sum(Sum)").asReaggregating()), "Key")
+reaggregatedSum = source.updateView("Sum=Value").rollup(List.of(AggFormula("Sum = sum(Sum)").asReaggregating()), "Key")
 ```
 
 `reaggregatedSum` and `simpleSum` produce the same results but operate differently. `simpleSum` reads the source table twice: first to calculate individual sums and then to compute the overall total. In contrast, `reaggregatedSum` reads the source table only once to gather the individual sums and then uses those intermediate sums to get the total.
 
 If a new row with the key `Delta` is added to the source, `simpleSum` will read all eight rows again to recalculate the sums. However, `reaggregatedSum` will only recalculate the sum for `Delta` and then read the intermediate sums for `Alpha`, `Bravo`, `Charlie`, and `Delta`, not all rows. As the number of keys and the size of the data grow, this difference can significantly impact performance.
 
-In the previous example, the `Sum` column evaluated the [`sum(IntVector)`](https://docs.deephaven.io/core/javadoc/io/deephaven/function/Numeric.html#sum(io.deephaven.vector.IntVector)) function at every level of the rollup and produced a `long`. Since the original table contains an `int` column, the lowest-level rollup provides an `IntVector` to `sum`, while subsequent levels use a `LongVector`.
+In the previous example, the `Sum` column evaluated the [`sum(IntVector)`](https://docs.deephaven.io/core/javadoc/io/deephaven/function/Numeric.html#sum(io.deephaven.vector.IntVector)) function at the first level of the rollup every level of the rollup and produced a `long`. Since the original table contains an `int` column, the lowest-level rollup provides an `IntVector` to `sum`, while subsequent levels use a `LongVector`.
 
-Similarly, the original table has a column called `Value`, but after aggregation, the result is labeled as `Sum`. To resolve these discrepancies, the `updateView` method is used before the rollup to convert the `Value` column to a `long` type and rename it to `Sum`. If this casting step were omitted and the original data was used directly, it could lead to inconsistencies in the results at different rollup levels.
+Similarly, the original table has a column called `Value`, but after aggregation, the result is labeled as `Sum`. To resolve this discrepancy, the `updateView` method is used before the rollup to rename the `Value` column to `Sum`. If the rename was omitted and the original data was used directly, it would lead to inconsistencies in the results at different rollup levels.
 
-If we ran the same example without the cast:
+If we ran the same example without the rename:
 
 ```groovy syntax
 source = newTable(
         stringCol("Key", "Alpha", "Alpha", "Alpha", "Bravo", "Bravo", "Charlie", "Charlie"),
         intCol("Value", 10, 10, 10, 20, 20, 30, 30))
-reaggregatedSum = source.rollup(List.of(AggFormula("Value = sum(Value)").asReaggregating()), "Key")
+reaggregatedSum = source.rollup(List.of(AggFormula("Sum = sum(Value)").asReaggregating()), "Key")
 ```
 
-We instead get an Exception message indicating that the formula cannot be applied properly:
+We instead get an Exception message indicating that the formula cannot be applied properly, because the `Value` column does not exist in the second level of the rollup:
 
 ```text
-java.lang.ClassCastException: class io.deephaven.engine.table.vectors.LongVectorColumnWrapper cannot be cast to class io.deephaven.vector.IntVector (io.deephaven.engine.table.vectors.LongVectorColumnWrapper and io.deephaven.vector.IntVector are in unnamed module of loader 'app')
+Error running script: io.deephaven.engine.table.impl.select.FormulaCompilationException: Formula compilation error for: sum(Value)
+...
+Full expression           : sum(Value)
+Expression having trouble : 
+Exception type            : io.deephaven.engine.table.impl.lang.QueryLanguageParser$ParserResolutionFailure
+Exception message         : Cannot find variable or class Value
 ```
 
-### Formula Depth
+### Formula Depth and Keys
 
-Formula aggregations may include the constant `__FORMULA_DEPTH__` column, which is the depth of the formula aggregation in the rollup tree. The root node of the rollup has a depth of 0, the next level is 1, and so on. This can be used to implement distinct aggregations at each level of the rollup. For example:
+Formula aggregations may include the constant `__FORMULA_DEPTH__` or `__FORMULA_KEYS__` columns, which is the depth of the formula aggregation in the rollup tree. The root node of the rollup has a depth of 0, the next level is 1, and so on. This can be used to implement distinct aggregations at each level of the rollup. For example:
 
 ```groovy order=firstThenSum,source
 source = newTable(
@@ -202,6 +207,16 @@ source = newTable(
         stringCol("Key", "Alpha", "Alpha", "Alpha", "Bravo", "Bravo", "Charlie", "Charlie"),
         intCol("Value", 10, 20, 15, 20, 15, 25, 35))
 cappedSum = source.updateView("Value=(long)Value").rollup(List.of(AggFormula("Value = __FORMULA_DEPTH__ == 0 ? sum(Value) : min(sum(Value), 40)").asReaggregating()), "Key")
+```
+
+In this example, the `__FORMULA_KEYS__` column is similarly used to cap at the `Key` column (using `__FORMULA__DEPTH__ == 1` would be equivalent in this case):
+
+```groovy order=cappedSum,source
+source = newTable(
+        stringCol("Key", "Alpha", "Alpha", "Alpha", "Bravo", "Charlie", "Charlie", "Charlie"),
+        stringCol("Key2", "Apple", "Banana", "Banana", "Coconut", "Coconut", "Coconut", "Dragonfruit"),
+        intCol("Value", 10, 20, 15, 20, 15, 30, 35))
+cappedSum = source.updateView("Value=(long)Value").rollup(List.of(AggFormula("Value = __FORMULA_KEYS__.get(__FORMULA_KEYS__.size() - 1) == `Key` ?  min(sum(Value), 40) : sum(Value)").asReaggregating()), "Key", "Key2")
 ```
 
 ## Related documentation

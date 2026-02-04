@@ -391,6 +391,7 @@ public class TestRollupTable extends RefreshingTableTestCase {
         }
         aggList.add(AggSum("Sum=Sentinel"));
         aggList.add(AggFormula("FSum", "__FORMULA_DEPTH__ == 0 ? max(Sentinel) : 1 + sum(Sentinel)"));
+        aggList.add(AggFormula("KeyColumns", "__FORMULA_KEYS__"));
 
         final RollupTable rollup1 =
                 source.rollup(
@@ -414,7 +415,7 @@ public class TestRollupTable extends RefreshingTableTestCase {
 
         final Table expectedBase = initialExpectedGrouped(rollup1);
         final Table expectedSentinel = withGroup ? expectedBase : expectedBase.dropColumns("Sentinel");
-        final Table expected = expectedSentinel.update("FSum=ii == 0 ? 7 : 1 + Sum");
+        final Table expected = expectedSentinel.update("FSum=ii == 0 ? 7 : 1 + Sum").update("KeyColumns=new io.deephaven.vector.ObjectVectorDirect(`Key1`, `Key2`).subVector(0, __DEPTH__ - 1)");
         assertTableEquals(expected, snapshot);
         freeSnapshotTableChunks(snapshot);
     }
@@ -467,7 +468,7 @@ public class TestRollupTable extends RefreshingTableTestCase {
                         "Cobra", "Cobra", "Cobra", "Cobra"),
                 stringCol("Sym", "Apple", "Banana", "Apple", "Apple", "Carrot", "Carrot", "Carrot", "Apple", "Apple",
                         "Apple", "Dragonfruit"),
-                longCol("qty", 500, 100, 500, 200, 300, 300, 200, 100, 200, 300, 1500));
+                intCol("qty", 500, 100, 500, 200, 300, 300, 200, 100, 200, 300, 1500));
         TableTools.show(source);
 
         final List<Aggregation> aggList = new ArrayList<>();
@@ -506,9 +507,9 @@ public class TestRollupTable extends RefreshingTableTestCase {
                 "Cobra", "Cobra"));
         columnHolders
                 .add(stringCol("Sym", null, null, "Apple", "Banana", null, "Carrot", null, "Apple", "Dragonfruit"));
-        columnHolders.add(col("gqty", lv(500, 100, 500, 200, 300, 300, 200, 100, 200, 300, 1500),
-                /* aardvark */ lv(500, 100, 500, 200), lv(500, 500, 200), lv(100), /* badger */lv(300, 300, 200),
-                lv(300, 300, 200), /* cobra */ lv(100, 200, 300, 1500), lv(100, 200, 300), lv(1500)));
+        columnHolders.add(col("gqty", iv(500, 100, 500, 200, 300, 300, 200, 100, 200, 300, 1500),
+                /* aardvark */ iv(500, 100, 500, 200), iv(500, 500, 200), iv(100), /* badger */iv(300, 300, 200),
+                iv(300, 300, 200), /* cobra */ iv(100, 200, 300, 1500), iv(100, 200, 300), iv(1500)));
         columnHolders.add(longCol("qty", 3500, /* aardvark */ 1100, 1000, 100, /* badger */800, 800, /* cobra */ 1600,
                 600, 1000));
         final Table expected = TableTools.newTable(columnHolders.toArray(ColumnHolder[]::new))

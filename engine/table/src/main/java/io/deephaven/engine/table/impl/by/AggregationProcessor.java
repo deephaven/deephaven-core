@@ -91,14 +91,18 @@ import io.deephaven.engine.table.impl.by.ssmpercentile.SsmChunkedPercentileOpera
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.sources.IntegerSingleValueSource;
+import io.deephaven.engine.table.impl.sources.ObjectSingleValueSource;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.ssms.SegmentedSortedMultiSet;
 import io.deephaven.engine.table.impl.util.freezeby.FreezeByCountOperator;
 import io.deephaven.engine.table.impl.util.freezeby.FreezeByOperator;
 import io.deephaven.qst.type.IntType;
+import io.deephaven.qst.type.StringType;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.annotations.FinalDefault;
 import io.deephaven.util.type.ArrayTypeUtils;
+import io.deephaven.vector.ObjectVector;
+import io.deephaven.vector.ObjectVectorDirect;
 import io.deephaven.vector.VectorFactory;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.jetbrains.annotations.NotNull;
@@ -270,10 +274,19 @@ public class AggregationProcessor implements AggregationContextFactory {
      */
     public static final ColumnName ROLLUP_FORMULA_DEPTH = ColumnName.of("__FORMULA_DEPTH__");
     /**
-     * The definition of the formula depth column in a rollup.
+     * The name of the column we inject into AggFormula to permit the user to vary the formula based on the names of the
+     * key columns, by adding them as a {@link io.deephaven.vector.Vector<String>}. Use together with
+     * {@code __FORMULA_DEPTH__}.
      */
-    private static final Map<String, ColumnDefinition<?>> FORMULA_DEPTH_DEFINITION = Map.of(ROLLUP_FORMULA_DEPTH.name(),
-            ColumnDefinition.of(ROLLUP_FORMULA_DEPTH.name(), IntType.of()));
+    public static final ColumnName ROLLUP_FORMULA_KEYS = ColumnName.of("__FORMULA_KEYS__");
+
+    /**
+     * The definition of the formula depth and keys column in a rollup.
+     */
+    private static final Map<String, ColumnDefinition<?>> EXTRA_ROLLUP_FORMULA_DEFINITIONS =
+            Map.of(ROLLUP_FORMULA_DEPTH.name(),
+                    ColumnDefinition.of(ROLLUP_FORMULA_DEPTH.name(), IntType.of()), ROLLUP_FORMULA_KEYS.name(),
+                    ColumnDefinition.of(ROLLUP_FORMULA_KEYS.name(), ObjectVector.type(StringType.of())));
 
     /**
      * Create a trivial {@link AggregationContextFactory} to {@link Aggregation#AggGroup(String...) group} the input
@@ -902,8 +915,9 @@ public class AggregationProcessor implements AggregationContextFactory {
         }
 
         @NotNull
-        PrepareFormulaResult prepareFormula(SelectColumn selectColumn, final TableDefinition tableDefinition,
-                final Map<String, ColumnDefinition<?>> extraColumns) {
+        PrepareFormulaResult prepareFormula(SelectColumn selectColumn,
+                                            final TableDefinition tableDefinition,
+                                            final Map<String, ColumnDefinition<?>> extraColumns) {
             // Get or create a column definition map composed of vectors of the original column types (or scalars when
             // part of the key columns).
             final Set<String> groupByColumnSet = Set.of(groupByColumnNames);
@@ -916,7 +930,8 @@ public class AggregationProcessor implements AggregationContextFactory {
 
             final Map<Boolean, List<String>> partitioned = Arrays.stream(allInputColumns)
                     .collect(Collectors.partitioningBy(
-                            o -> groupByColumnSet.contains(o) || ROLLUP_FORMULA_DEPTH.name().equals(o)));
+                            o -> groupByColumnSet.contains(o) || ROLLUP_FORMULA_DEPTH.name().equals(o)
+                                    || ROLLUP_FORMULA_KEYS.name().equals(o)));
             final String[] inputKeyColumns = partitioned.get(true).toArray(String[]::new);
             final String[] inputNonKeyColumns = partitioned.get(false).toArray(String[]::new);
 
@@ -1000,8 +1015,7 @@ public class AggregationProcessor implements AggregationContextFactory {
 
             final FormulaMultiColumnChunkedOperator op = new FormulaMultiColumnChunkedOperator(table,
                     groupByChunkedOperator, existingGroupByOperatorIndex < 0, selectColumn,
-                    prepareFormula.inputKeyColumns, null,
-                    null);
+                    prepareFormula.inputKeyColumns, null, null, null);
             addNoInputOperator(op);
         }
 
@@ -1382,7 +1396,7 @@ public class AggregationProcessor implements AggregationContextFactory {
             final SelectColumn selectColumn = SelectColumn.of(formula.selectable());
 
             final PrepareFormulaResult prepareFormula =
-                    prepareFormula(selectColumn, table.getDefinition(), FORMULA_DEPTH_DEFINITION);
+                    prepareFormula(selectColumn, table.getDefinition(), EXTRA_ROLLUP_FORMULA_DEFINITIONS);
 
             final GroupByChunkedOperator groupByChunkedOperator;
             final boolean delegate;
@@ -1421,8 +1435,14 @@ public class AggregationProcessor implements AggregationContextFactory {
             final IntegerSingleValueSource depthSource = new IntegerSingleValueSource();
             depthSource.set(groupByColumnNames.length);
 
+            // noinspection rawtypes
+            final ObjectSingleValueSource<ObjectVector<String>> keyNameSource =
+                    (ObjectSingleValueSource)new ObjectSingleValueSource<>(ObjectVector.class, String.class);
+            keyNameSource.set(new ObjectVectorDirect<>(groupByColumnNames));
+
             final FormulaMultiColumnChunkedOperator op = new FormulaMultiColumnChunkedOperator(table,
-                    groupByChunkedOperator, delegate, selectColumn, prepareFormula.inputKeyColumns, null, depthSource);
+                    groupByChunkedOperator, delegate, selectColumn, prepareFormula.inputKeyColumns, null, depthSource,
+                    keyNameSource);
             addNoInputOperator(op);
         }
 
@@ -1606,8 +1626,15 @@ public class AggregationProcessor implements AggregationContextFactory {
         public void visit(Formula formula) {
             final SelectColumn selectColumn = SelectColumn.of(formula.selectable());
 
+            final TableDefinition sourceDefinition;
+            if (formula.reaggregateAggregatedValues()) {
+                sourceDefinition = table.getDefinition();
+            } else {
+                sourceDefinition = ((WithSource) AggregationProcessor.this).source.getDefinition();
+            }
+
             final PrepareFormulaResult prepareFormula = prepareFormula(selectColumn,
-                    ((WithSource) AggregationProcessor.this).source.getDefinition(), FORMULA_DEPTH_DEFINITION);
+                    sourceDefinition, EXTRA_ROLLUP_FORMULA_DEFINITIONS);
 
             final Map<String, String> renames = new HashMap<>();
             final MatchPair[] groupPairs = new MatchPair[prepareFormula.inputNonKeyColumns.length];
@@ -1628,6 +1655,9 @@ public class AggregationProcessor implements AggregationContextFactory {
 
             final IntegerSingleValueSource depthSource = new IntegerSingleValueSource();
             depthSource.set(groupByColumnNames.length);
+            final ObjectSingleValueSource<ObjectVector<String>> keyNameSource =
+                    (ObjectSingleValueSource)new ObjectSingleValueSource<>(ObjectVector.class, String.class);
+            keyNameSource.set(new ObjectVectorDirect<>(groupByColumnNames));
 
             if (formula.reaggregateAggregatedValues()) {
                 GroupByChunkedOperator groupByOperator;
@@ -1644,7 +1674,8 @@ public class AggregationProcessor implements AggregationContextFactory {
                 // everything gets hidden
                 final FormulaMultiColumnChunkedOperator op =
                         new FormulaMultiColumnChunkedOperator(table, groupByOperator,
-                                true, selectColumn, prepareFormula.inputKeyColumns, renames, depthSource);
+                                true, selectColumn, prepareFormula.inputKeyColumns, renames, depthSource,
+                                keyNameSource);
 
                 addOperator(op, null, prepareFormula.inputNonKeyColumns);
             } else {
@@ -1664,7 +1695,8 @@ public class AggregationProcessor implements AggregationContextFactory {
 
                 final FormulaMultiColumnChunkedOperator op =
                         new FormulaMultiColumnChunkedOperator(table, groupByOperator,
-                                false, selectColumn, prepareFormula.inputKeyColumns, renames, depthSource);
+                                false, selectColumn, prepareFormula.inputKeyColumns, renames, depthSource,
+                                keyNameSource);
                 addOperator(op, groupRowSet, EXPOSED_GROUP_ROW_SETS.name());
             }
         }
