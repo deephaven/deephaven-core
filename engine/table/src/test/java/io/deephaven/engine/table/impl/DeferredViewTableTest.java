@@ -15,11 +15,13 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.select.ConditionFilter;
 import io.deephaven.engine.table.impl.select.ConjunctiveFilter;
 import io.deephaven.engine.table.impl.select.DisjunctiveFilter;
+import io.deephaven.engine.table.impl.select.LongRangeFilter;
 import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.engine.table.impl.select.RangeFilter;
 import io.deephaven.engine.table.impl.select.IncrementalReleaseFilter;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.SelectColumnFactory;
+import io.deephaven.engine.table.impl.select.SourceColumn;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.select.WhereFilterFactory;
 import io.deephaven.engine.table.impl.select.WhereFilterInvertedImpl;
@@ -39,6 +41,8 @@ import static org.junit.Assert.assertThrows;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
+import java.util.function.Function;
 
 public class DeferredViewTableTest {
     @Rule
@@ -295,6 +299,16 @@ public class DeferredViewTableTest {
     }
 
     @Test
+    public void testMatchFilterDoubleRename() {
+        verifyFilterIsPrioritized(new MatchFilter(MatchOptions.REGULAR, "Y", "A"), true, DeferredViewTableTest::doubleRenameUpdate);
+    }
+
+    @Test
+    public void testRangeFilterPostView() {
+        verifyFilterIsPrioritized(new LongRangeFilter("I", 0, 6250, true, false), false, DeferredViewTableTest::postViewSourceUpdate);
+    }
+
+    @Test
     public void testConditionFilterRename() {
         verifyFilterIsPrioritized(ConditionFilter.createConditionFilter("Y = `A`"));
     }
@@ -309,7 +323,7 @@ public class DeferredViewTableTest {
     public void testSerialWrappedRenames() {
         // note serial filters require incoming rowsets to match as if all previous filters were applied
         final Filter filter = new MatchFilter(MatchOptions.REGULAR, "Y", "A");
-        verifyFilterIsPrioritized(filter.withSerial(), false);
+        verifyFilterIsPrioritized(filter.withSerial(), false, DeferredViewTableTest::simpleUpdate);
     }
 
     @Test
@@ -644,10 +658,25 @@ public class DeferredViewTableTest {
     }
 
     private void verifyFilterIsPrioritized(final Filter filterToTest) {
-        verifyFilterIsPrioritized(filterToTest, true);
+        verifyFilterIsPrioritized(filterToTest, true, DeferredViewTableTest::mixedUpdate);
     }
 
-    private void verifyFilterIsPrioritized(final Filter filterToTest, final boolean expectsJump) {
+    private static Table simpleUpdate(Table table) {
+        return table.updateView("Y = X", "Y2 = Y", "I = I + 0");
+    }
+
+    private static Table mixedUpdate(Table table) {
+        return table.updateView(List.of(new SourceColumn("X", "Y"), SelectColumnFactory.getExpression("Y2 = Y"), SelectColumnFactory.getExpression("I = I + 0")));
+    }
+
+    private static Table doubleRenameUpdate(Table table) {
+        return table.updateView(List.of(new SourceColumn("X", "X2"), new SourceColumn("X2", "Y"), SelectColumnFactory.getExpression("Y2 = Y"), SelectColumnFactory.getExpression("I = I + 0")));
+    }
+    private static Table postViewSourceUpdate(Table table) {
+        return table.updateView("Y = X", "Y2 = Y", "J = I + 0", "I=J");
+    }
+
+    private void verifyFilterIsPrioritized(final Filter filterToTest, final boolean expectsJump, final Function<Table, Table> updateFunction) {
         final String[] values = new String[] {"A", "B", "C", "D"};
         ExecutionContext.getContext().getQueryScope().putParam("values", values);
 
@@ -661,15 +690,15 @@ public class DeferredViewTableTest {
                 new RowSetCapturingFilter(new RangeFilter("I", Condition.LESS_THAN, "25000"));
 
         // here we expect that filter0 can jump over filter1 w/a rename
-        final Table source = new DeferredViewTable(
+        final DeferredViewTable originalDeferred = new DeferredViewTable(
                 resultDef,
                 "test",
                 new DeferredViewTable.TableReference(sourceTable),
                 ArrayTypeUtils.EMPTY_STRING_ARRAY,
                 SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY,
-                WhereFilter.ZERO_LENGTH_WHERE_FILTER_ARRAY)
-                .updateView("Y = X", "Y2 = Y", "I = I + 0");
-        final Table deferredTable = source
+                WhereFilter.ZERO_LENGTH_WHERE_FILTER_ARRAY);
+        final Table withUpdate = updateFunction.apply(originalDeferred);
+        final Table deferredTable = withUpdate
                 .where(ConjunctiveFilter.of(
                         filter1,
                         WhereFilter.of(filterToTest)))
@@ -677,7 +706,7 @@ public class DeferredViewTableTest {
 
         Assert.eq(deferredTable.size(), "deferredTable.size()", 6250);
         if (expectsJump) {
-            final Table expected = source.where(filterToTest);
+            final Table expected = withUpdate.where(filterToTest);
             Assert.eq(numRowsFiltered(filter1), "numRowsFiltered(filter1)", expected.size(), "expected.size()");
         } else {
             Assert.eq(numRowsFiltered(filter1), "numRowsFiltered(filter1)", 100_000);
