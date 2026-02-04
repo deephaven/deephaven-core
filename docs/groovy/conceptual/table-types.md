@@ -100,7 +100,7 @@ t = timeTable("PT1s")
 tSnapshot = t.snapshot()
 ```
 
-![A user creates a static snapshot of the ticking table `t`](../assets/conceptual/table-types/table-types-1.gif)
+![Two Deephaven tables side by side - 't' ticks, while 'tSnapshot' is static](../assets/conceptual/table-types/table-types-1.gif)
 
 Verify that the snapshot is static with [`isRefreshing`](../reference/table-operations/metadata/isRefreshing.md):
 
@@ -347,7 +347,7 @@ t = merge(tStatic, tDynamic)
 tRingWithInitial = RingTableTools.of(t, 10)
 ```
 
-![A ring table initializes with the rows that are already present in the source append-only table](../assets/conceptual/table-types/table-types-8.gif)
+![An append-only time table and a 5-row ring table](../assets/conceptual/table-types/table-types-8.gif)
 
 To disable this behavior, set `initialize = false`:
 

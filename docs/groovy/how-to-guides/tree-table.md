@@ -5,7 +5,7 @@ sidebar_label: Tree tables
 
 This guide will show you how to create a hierarchical tree table. A tree table is a table with an expandable [tree structure](https://en.wikipedia.org/wiki/Tree_(data_structure)), as seen in the diagram below:
 
-![Diagram of a hierarchical tree structure with parent and child nodes](../assets/how-to/new-tree2.png)
+![A diagram of a hierarchical tree structure with parent and child nodes](../assets/how-to/new-tree2.png)
 
 In computer science, trees are data structures used to represent hierarchical relationships between pieces of data. The data within the tree is stored in _nodes_, which are represented by the boxes in the diagram above.
 
@@ -28,7 +28,7 @@ Where:
 
 The resulting table is initially collapsed, only showing the root node. Clicking on that node will expand it to show its children, and so on. Rows in the initial table with a `parentCol` value equal to a row in the `idCol` column will appear as children of the parent row.
 
-![Animated GIF demonstrating expanding and collapsing rows in a tree table](../assets/how-to/treetable.gif)
+![A user expands notes in a tree table](../assets/how-to/treetable.gif)
 
 ## Examples
 

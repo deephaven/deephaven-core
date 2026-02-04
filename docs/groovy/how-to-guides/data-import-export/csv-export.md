@@ -77,7 +77,7 @@ import static io.deephaven.csv.CsvTools.writeCsv
 writeCsv(sourceWithNulls, "/data/TrigFunctionsWithNulls.csv")
 ```
 
-![The newly writted CSV file](../../assets/how-to/TrigFunctions_basicWithNulls.png)
+![The newly written CSV file](../../assets/how-to/TrigFunctions_basicWithNulls.png)
 
 ### Column selection
 
@@ -89,7 +89,7 @@ import static io.deephaven.csv.CsvTools.writeCsv
 writeCsv(sourceWithNulls, "/data/Cosine.csv", "X", "CosX")
 ```
 
-![The newly writted CSV file](../../assets/how-to/TrigFunctions_NullsCosineOnly.png)
+![The newly written CSV file](../../assets/how-to/TrigFunctions_NullsCosineOnly.png)
 
 ## Related documentation
 

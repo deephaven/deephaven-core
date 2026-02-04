@@ -377,6 +377,6 @@ t_ring_without_initial = ring_table(parent=t, capacity=10, initialize=False)
 
 ## Related documentation
 
-- [How to use a TablePublisher](../how-to-guides/table-publisher.md)
+- [How to use a TablePublisher](../how-to-guides/table-publisher.md#table-publisher)
 - [Create a time table](../how-to-guides/time-table.md)
 - [Kafka basic terminology](./kafka-basic-terms.md)

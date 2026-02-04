@@ -396,7 +396,7 @@ While the right choice among snapshots and locks depends heavily on the operatio
 from, the following guidelines can be helpful in making the choice:
 
 - When running code in the Deephaven console, it's rarely necessary to worry about any of these mechanisms — the exclusive lock is automatically held when running code in the console.
-- Use **_snapshots_** for filters and sorts in service of a user interface. (The Deephaven UI itself uses snapshotting to maximize responsiveness.) Snapshots can be processed even while the UG is updating, and in some cases they return considerably more quickly than a lock could be acquired.
+- Use **_snapshots_** for filters and sorts in service of a user interface. (The Deephaven UI itself uses snapshotting to maximize responsiveness.) Snapshots can be processed even while the Update Graph is updating, and in some cases they return considerably more quickly than a lock could be acquired.
 - Use the **_shared lock_** when running table operations from a context that does not already hold a lock (e.g. arbitrary threads). Most table operations (beyond filters and sorts) cannot be initialized within a snapshot and must be run under a lock, and the shared lock is preferable to the exclusive lock because it allows multiple threads to run concurrently.
 - Use the **_exclusive lock_** in advanced cases that must wait on processing performed by the Periodic Update Graph's refresh thread and are not served by [`Table.awaitUpdate()`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/Table.html#awaitUpdate()).
 

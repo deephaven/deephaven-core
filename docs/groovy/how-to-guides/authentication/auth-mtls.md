@@ -1,13 +1,13 @@
 ---
-title: Configure mTLS for Deephaven
+title: Authenticate with mTLS
 sidebar_label: mTLS
 ---
 
+This guide will show you how to configure Deephaven to use mTLS to authenticate users trying to gain access.
+
 Mutual Transport Layer Security (mTLS) is an authentication method that ensures data security through both parties authenticating each other simultaneously. With mTLS, authentication happens through the use of certificates, where a certificate authority determines what certificates are valid, and which are not. Once both parties are verified, the authorization is complete.
 
-Configuring Deephaven to use mTLS to guard against unauthorized access requires a custom setup with a few extra steps.
-
-## Setup
+## Configuration
 
 The majority of the setup requires configuration of the Deephaven Docker application.
 

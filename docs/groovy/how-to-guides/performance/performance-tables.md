@@ -356,7 +356,7 @@ This table contains JVM info about memory utilization, the Periodic Update Graph
 
 This tree table contains Deephaven query performance data. It displays information that can also be found in the [Query Performance Log](#query-performance-log), in tree table form. It is similar to a traditional call graph, placing every operation with a parent operation into expandable groups. For example, we can click on the row where `EvaluationNumber = 20` to view the sub-operation with `EvaluationNumber = 21`:
 
-![img](../../assets/how-to/perf-qptt.png)
+![The Query Performance Tree Table, with the row where `EvaluationNumber = 20` expanded](../../assets/how-to/perf-qptt.png)
 
 Performance data for _individual_ sub-operations as a tree table is available from calling `query_operation_performance_tree_table`.
 
@@ -387,7 +387,7 @@ Performance data for _individual_ sub-operations as a tree table is available fr
 
 This tree table contains Deephaven performance data on how long each individual operation of a query (`where`, `update`, `natural_join`, etc., as well as internal functions) takes to execute, and the change in resource consumption while each was executing. It displays information that can also be found in the [Query Operation Performance Log](#query-operation-performance-log), in tree table form. It is similar to a traditional call graph, placing every operation with a parent operation into expandable groups.
 
-![img](../../assets/how-to/perf-qoptt.png)
+![The Query Operation Performance Tree Table](../../assets/how-to/perf-qoptt.png)
 
 | Column Name              | Data Type | Description                                                                                                                                                                         |
 | ------------------------ | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -509,11 +509,11 @@ In the above image, the `Update([Y])` (the `slow` function) takes a whopping 25%
 
 The [Query Performance Tree Table](#query-performance-tree-table) and [Query Operation Performance Tree Table](#query-operation-performance-tree-table) can be useful tools for pinpointing the cause of unexpected slow performance in your queries. A common use case is to sort the table by the `UsageNanos` column so that the slowest operations appear at the top of the table:
 
-![img](../../assets/how-to/qoptt-sorted.png)
+![The Query Operation Performance Tree Table, sorted by the `UsageNanos` column](../../assets/how-to/qoptt-sorted.png)
 
 Expanding the parent rows in the tree table displays the sub-operations that contribute to the parent operation's total time, allowing you to identify specifically which computations and sub-operations could be causing performance issues:
 
-![img](../../assets/how-to/qoptt-expanded.png)
+![The sorted Query Operation Performance Tree Table, expanded to show sub-operations](../../assets/how-to/qoptt-expanded.png)
 
 ## Get help
 

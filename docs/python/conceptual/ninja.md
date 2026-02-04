@@ -169,7 +169,7 @@ t3 = t1.where_in(filter_table=t2, cols="X")
 
 ## ? Is Your Friend
 
-The [ternary conditional operator](../how-to-guides/ternary-if-how-to.md) `?` allows an if-else block to be expressed in a single line of code.
+The [ternary operator](../how-to-guides/ternary-if-how-to.md) `?` allows an if-else block to be expressed in a single line of code.
 
 ```python order=source,result default=result
 from deephaven import empty_table

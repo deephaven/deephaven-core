@@ -13,7 +13,7 @@ source = newTable(intCol("IntegerColumn", 1, 2, -2, -1))
 result = source.update("Abs = abs(IntegerColumn)")
 ```
 
-![The above `source` and `result` tables](../../../assets/reference/query-lang-demo.png)
+![The above `source` and `result` tables displayed side-by-side](../../../assets/reference/query-lang-demo.png)
 
 Here is a complete list of everything that is imported automatically into the query language when a new instance of the IDE is started:
 
