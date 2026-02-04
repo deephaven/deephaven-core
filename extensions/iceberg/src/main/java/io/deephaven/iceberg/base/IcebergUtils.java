@@ -114,17 +114,16 @@ public final class IcebergUtils {
                         " not support writing to iceberg tables with non-identity transforms");
             }
         });
+
         if (partitionFieldsFromSpec.size() != partitioningColumnNamesFromDefinition.size()) {
             throw new IllegalArgumentException("Partition spec contains " + partitionFieldsFromSpec.size() +
                     " fields, but the table definition contains " + partitioningColumnNamesFromDefinition.size()
                     + " fields, partition spec " + tablePartitionSpec + ", table definition " + tableDefinition);
         }
-        for (int colIdx = 0; colIdx < partitionFieldsFromSpec.size(); colIdx += 1) {
-            final PartitionField partitionField = partitionFieldsFromSpec.get(colIdx);
-            if (!partitioningColumnNamesFromDefinition.get(colIdx).equals(partitionField.name())) {
+        for (final PartitionField partitionField : partitionFieldsFromSpec) {
+            if (!partitioningColumnNamesFromDefinition.contains(partitionField.name())) {
                 throw new IllegalArgumentException("Partitioning column " + partitionField.name() + " is not present " +
-                        "in the table definition at idx " + colIdx + ", table definition " + tableDefinition +
-                        ", partition spec " + tablePartitionSpec);
+                        "in the table definition " + tableDefinition + ", partition spec " + tablePartitionSpec);
             }
         }
     }
