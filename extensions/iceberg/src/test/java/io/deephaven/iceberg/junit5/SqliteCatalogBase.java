@@ -1913,7 +1913,7 @@ public abstract class SqliteCatalogBase {
         final Table part3 = TableTools.emptyTable(4)
                 .update("intCol = (int) 4 * i + 30",
                         "doubleCol = (double) 4.5 * i + 30");
-        final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
+        final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.PartitionOrderingTest");
 
         final TableDefinition tableDefinition1 = TableDefinition.of(
                 ColumnDefinition.ofInt("intCol"),
@@ -1937,7 +1937,7 @@ public abstract class SqliteCatalogBase {
                 part1.update("InternalPartition = `0`", "Date = `2024-08-01`"),
                 part2.update("InternalPartition = `1`", "Date = `2024-08-02`"),
                 part3.update("InternalPartition = `2`", "Date = `2024-08-02`"));
-        assertTableEquals(expected.flatten(), fromIceberg.select().flatten());
+        assertTableEquals(expected, fromIceberg.select());
 
         // Add another partition for same date, but with the partitions ordered differently
         final TableDefinition tableDefinition2 = TableDefinition.of(
@@ -1962,7 +1962,7 @@ public abstract class SqliteCatalogBase {
                 part2.update("InternalPartition = `1`", "Date = `2024-08-02`"),
                 part3.update("InternalPartition = `2`", "Date = `2024-08-02`"),
                 part4.update("InternalPartition = `1`", "Date = `2024-08-02`"));
-        assertTableEquals(expected2.flatten(), fromIceberg2.select().flatten());
+        assertTableEquals(expected2, fromIceberg2.select());
     }
 
     @Test
@@ -2000,7 +2000,7 @@ public abstract class SqliteCatalogBase {
                 part1.update("InternalPartition = `0`", "Date = `2024-08-01`"),
                 part2.update("InternalPartition = `1`", "Date = `2024-08-02`"),
                 part3.update("InternalPartition = `2`", "Date = `2024-08-02`"));
-        assertTableEquals(expected.flatten(), fromIceberg.select().flatten());
+        assertTableEquals(expected, fromIceberg.select());
 
         // Add another partition for same date
         final Table part4 = TableTools.emptyTable(3)
@@ -2016,7 +2016,7 @@ public abstract class SqliteCatalogBase {
                 part2.update("InternalPartition = `1`", "Date = `2024-08-02`"),
                 part3.update("InternalPartition = `2`", "Date = `2024-08-02`"),
                 part4.update("InternalPartition = `1`", "Date = `2024-08-02`"));
-        assertTableEquals(expected2.flatten(), fromIceberg2.select().flatten());
+        assertTableEquals(expected2, fromIceberg2.select());
 
         // Now delete the partition for date 2024-08-02
         final Expression delExpr = Expressions.equal("Date", "2024-08-02");
@@ -2027,7 +2027,7 @@ public abstract class SqliteCatalogBase {
         final IcebergTableAdapter latestTableAdapter = catalogAdapter.loadTable(tableIdentifier);
         final Table fromIceberg3 = latestTableAdapter.table();
         final Table expected3 = part1.update("InternalPartition = `0`", "Date = `2024-08-01`");
-        assertTableEquals(expected3.flatten(), fromIceberg3.select().flatten());
+        assertTableEquals(expected3, fromIceberg3.select());
     }
 
     @Test
