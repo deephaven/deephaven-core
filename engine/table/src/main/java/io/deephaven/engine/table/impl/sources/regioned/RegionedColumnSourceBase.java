@@ -3,20 +3,25 @@
 //
 package io.deephaven.engine.table.impl.sources.regioned;
 
+import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.util.JobScheduler;
+import io.deephaven.util.SafeCloseableArray;
 import io.deephaven.util.annotations.TestUseOnly;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 
@@ -114,9 +119,49 @@ abstract class RegionedColumnSourceBase<DATA_TYPE, ATTR extends Values, REGION_T
             final JobScheduler jobScheduler,
             final LongConsumer onComplete,
             final Consumer<Exception> onError) {
-        // Delegate to the manager.
-        manager.estimatePushdownFilterCost(filter, selection, usePrev, context, jobScheduler,
-                onComplete, onError);
+        final List<RegionedColumnSourceManager.IncludedTableLocationEntry> tleList =
+                manager.includedLocationEntries();
+
+        // Sample a few regions and return the lowest cost
+        final int[] regionIndices = RegionedColumnSourceManager.regionIndices(selection,
+                RegionedColumnSourceManager.PUSHDOWN_LOCATION_SAMPLES);
+
+        final AtomicLong minCost = new AtomicLong(Long.MAX_VALUE);
+
+        jobScheduler.iterateParallel(
+                ExecutionContext.getContext(),
+                (LogOutput output) -> output.append("RegionedColumnSourceBase#estimatePushdownFilterCost"),
+                RegionedPushdownHelper.RegionThreadContext::new,
+                0,
+                regionIndices.length,
+                (ctx, idx, nec, resume) -> {
+                    ctx.reset();
+                    final int regionIndex = regionIndices[idx];
+
+                    final RegionedColumnSourceManager.IncludedTableLocationEntry tle = tleList.get(regionIndex);
+                    ctx.shiftedRowSet = tle.subsetAndShiftIntoLocationSpace(selection);
+
+                    // Create a local region pushdown context that provides the table location to the ColumnRegion
+                    // filter processing code.
+                    final RegionedPushdownHelper.LocalRegionPushdownContext regionContext =
+                            RegionedPushdownHelper.LocalRegionPushdownContext.of(context, tle.location);
+
+                    getRegion(regionIndex).estimatePushdownFilterCost(
+                            filter,
+                            ctx.shiftedRowSet,
+                            usePrev,
+                            regionContext,
+                            jobScheduler,
+                            regionCost -> {
+                                minCost.updateAndGet(old -> Math.min(old, regionCost));
+                                resume.run();
+                            },
+                            nec);
+                },
+                () -> onComplete.accept(minCost.get()),
+                () -> {
+                },
+                onError);
     }
 
     @Override
@@ -129,9 +174,53 @@ abstract class RegionedColumnSourceBase<DATA_TYPE, ATTR extends Values, REGION_T
             final JobScheduler jobScheduler,
             final Consumer<PushdownResult> onComplete,
             final Consumer<Exception> onError) {
-        // Delegate to the manager.
-        manager.pushdownFilter(filter, selection, usePrev, context, costCeiling, jobScheduler,
-                onComplete, onError);
+        final List<RegionedColumnSourceManager.IncludedTableLocationEntry> tleList =
+                manager.includedLocationEntries();
+
+        final int[] regionIndices = RegionedColumnSourceManager.regionIndices(selection, Integer.MAX_VALUE);
+
+        final WritableRowSet[] matches = new WritableRowSet[regionIndices.length];
+        final WritableRowSet[] maybeMatches = new WritableRowSet[regionIndices.length];
+
+        jobScheduler.iterateParallel(
+                ExecutionContext.getContext(),
+                (LogOutput output) -> output.append("RegionedColumnSourceBase#estimatePushdownFilterCost"),
+                RegionedPushdownHelper.RegionThreadContext::new,
+                0,
+                regionIndices.length,
+                (ctx, idx, nec, resume) -> {
+                    ctx.reset();
+                    final int regionIndex = regionIndices[idx];
+
+                    final RegionedColumnSourceManager.IncludedTableLocationEntry tle = tleList.get(regionIndex);
+                    ctx.shiftedRowSet = tle.subsetAndShiftIntoLocationSpace(selection);
+
+                    // Create a local region pushdown context that provides the table location to the ColumnRegion
+                    // filter processing code.
+                    final RegionedPushdownHelper.LocalRegionPushdownContext regionContext =
+                            RegionedPushdownHelper.LocalRegionPushdownContext.of(context, tle.location);
+
+                    getRegion(regionIndex).pushdownFilter(
+                            filter,
+                            ctx.shiftedRowSet,
+                            usePrev,
+                            regionContext,
+                            costCeiling,
+                            jobScheduler,
+                            result -> {
+                                tle.unshiftIntoRegionSpace(result);
+                                matches[idx] = result.match();
+                                maybeMatches[idx] = result.maybeMatch();
+                                resume.run();
+                            },
+                            nec);
+                },
+                () -> onComplete.accept(RegionedPushdownHelper.buildResults(matches, maybeMatches, selection)),
+                () -> {
+                    SafeCloseableArray.close(matches);
+                    SafeCloseableArray.close(maybeMatches);
+                },
+                onError);
     }
 
     @Override

@@ -4,6 +4,7 @@
 package io.deephaven.parquet.table.location;
 
 
+import io.deephaven.engine.table.impl.sources.regioned.RegionedPushdownHelper;
 import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -11,9 +12,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class ParquetTableLocationTest {
     @Test
     public void testCostSortedValues() {
-        assertThat(ParquetTableLocation.PushdownMode.costSortedValues()
+        assertThat(ParquetTableLocation.costSortedModes()
                 .stream()
-                .mapToLong(ParquetTableLocation.PushdownMode::filterCost))
+                .mapToLong(RegionedPushdownHelper.PushdownMode::filterCost))
                 .isSorted();
     }
 }

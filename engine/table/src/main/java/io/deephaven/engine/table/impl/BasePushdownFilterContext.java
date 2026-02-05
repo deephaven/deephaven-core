@@ -27,7 +27,7 @@ import java.util.Map;
 /**
  * Base class for {@link PushdownFilterContext} to help with execution cost tracking.
  */
-public class BasePushdownFilterContext implements PushdownFilterContext {
+public abstract class BasePushdownFilterContext implements PushdownFilterContext {
 
     /**
      * Enum for the behavior of a filter when applied to null values.
@@ -49,7 +49,8 @@ public class BasePushdownFilterContext implements PushdownFilterContext {
         FAILS_ON_NULLS
     }
 
-    protected final WhereFilter filter;
+    private final WhereFilter filter;
+
     private final List<ColumnSource<?>> columnSources;
 
     private final boolean isRangeFilter;
@@ -118,9 +119,16 @@ public class BasePushdownFilterContext implements PushdownFilterContext {
     }
 
     /**
+     * Gets the filter associated with this context.
+     */
+    public final WhereFilter filter() {
+        return filter;
+    }
+
+    /**
      * Get the column sources this filter will use.
      */
-    public List<ColumnSource<?>> columnSources() {
+    public final List<ColumnSource<?>> columnSources() {
         return columnSources;
     }
 
