@@ -182,7 +182,17 @@ Exception message         : Cannot find variable or class Value
 
 ### Formula Depth and Keys
 
-Formula aggregations may include the constant `__FORMULA_DEPTH__` or `__FORMULA_KEYS__` columns, which is the depth of the formula aggregation in the rollup tree. The root node of the rollup has a depth of 0, the next level is 1, and so on. This can be used to implement distinct aggregations at each level of the rollup. For example:
+Formula aggregations may include the constant `__FORMULA_DEPTH__` or `__FORMULA_KEYS__` columns. The `__FORMULA_DEPTH__` column is the depth of the formula aggregation in the rollup tree. The root node of the rollup has a depth of 0, the next level is 1, and so on. The `__FORMULA_KEYS__` column is an [`ObjectVector`](https://docs.deephaven.io/core/javadoc/io/deephaven/vector/ObjectVector.html) containing the keys of the rows at the current level of the rollup. The following formulas demonstrate the values of depth and keys:
+
+```groovy order=depthAndKeys,source
+source = newTable(
+        stringCol("Key", "Alpha", "Alpha", "Alpha", "Bravo", "Charlie", "Charlie", "Charlie"),
+        stringCol("Key2", "Apple", "Banana", "Banana", "Coconut", "Coconut", "Coconut", "Dragonfruit"),
+        intCol("Value", 10, 20, 15, 20, 15, 30, 35))
+depthAndKeys = source.rollup(List.of(AggFormula("Depth = __FORMULA_DEPTH__"), AggFormula("Keys = __FORMULA_KEYS__")), "Key", "Key2")
+```
+
+These variables can be used to implement distinct aggregations at each level of the rollup. For example:
 
 ```groovy order=firstThenSum,source
 source = newTable(
@@ -197,7 +207,7 @@ In this case, for each value of `Key`, the aggregation returns the first value. 
 source = newTable(
         stringCol("Key", "Alpha", "Alpha", "Alpha", "Bravo", "Bravo", "Charlie", "Charlie"),
         intCol("Value", 10, 10, 10, 20, 20, 30, 30))
-firstThenSum = source.updateView("Value=(long)Value").rollup(List.of(AggFormula("Value = __FORMULA_DEPTH__ == 0 ? sum(Value) : first(Value)").asReaggregating()), "Key")
+firstThenSum = source.rollup(List.of(AggFormula("Value = __FORMULA_DEPTH__ == 0 ? sum(Value) : first(Value)").asReaggregating()), "Key")
 ```
 
 Another simple example of reaggregation is a capped sum. In this example, the sums below the root level are capped at 40:
@@ -206,7 +216,7 @@ Another simple example of reaggregation is a capped sum. In this example, the su
 source = newTable(
         stringCol("Key", "Alpha", "Alpha", "Alpha", "Bravo", "Bravo", "Charlie", "Charlie"),
         intCol("Value", 10, 20, 15, 20, 15, 25, 35))
-cappedSum = source.updateView("Value=(long)Value").rollup(List.of(AggFormula("Value = __FORMULA_DEPTH__ == 0 ? sum(Value) : min(sum(Value), 40)").asReaggregating()), "Key")
+cappedSum = source.rollup(List.of(AggFormula("Value = __FORMULA_DEPTH__ == 0 ? sum(Value) : min(sum(Value), 40)").asReaggregating()), "Key")
 ```
 
 In this example, the `__FORMULA_KEYS__` column is similarly used to cap at the `Key` column (using `__FORMULA__DEPTH__ == 1` would be equivalent in this case):
@@ -216,7 +226,7 @@ source = newTable(
         stringCol("Key", "Alpha", "Alpha", "Alpha", "Bravo", "Charlie", "Charlie", "Charlie"),
         stringCol("Key2", "Apple", "Banana", "Banana", "Coconut", "Coconut", "Coconut", "Dragonfruit"),
         intCol("Value", 10, 20, 15, 20, 15, 30, 35))
-cappedSum = source.updateView("Value=(long)Value").rollup(List.of(AggFormula("Value = __FORMULA_KEYS__.get(__FORMULA_KEYS__.size() - 1) == `Key` ?  min(sum(Value), 40) : sum(Value)").asReaggregating()), "Key", "Key2")
+cappedSum = source.rollup(List.of(AggFormula("Value = __FORMULA_KEYS__.get(__FORMULA_KEYS__.size() - 1) == `Key` ?  min(sum(Value), 40) : sum(Value)").asReaggregating()), "Key", "Key2")
 ```
 
 ## Related documentation
