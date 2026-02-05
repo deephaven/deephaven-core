@@ -213,6 +213,7 @@ grpc-gwt = { module = 'com.vertispan.grpc:grpc-gwt', version.ref = 'grpc-gwt' }
 grpc-gwt-fetch = { module = 'com.vertispan.grpc:grpc-web-gwt-fetch', version.ref = 'grpc-web-gwt-fetch' }
 
 guava = { module = "com.google.guava:guava", version.ref = "guava" }
+guava-gwt = { module = "com.google.guava:guava-gwt", version.ref = "guava" }
 
 gwt-user = { module = "org.gwtproject:gwt-user", version.ref = "gwt" }
 

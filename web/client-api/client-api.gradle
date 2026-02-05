@@ -42,6 +42,7 @@ dependencies {
     api libs.protobuf.gwt
     api libs.grpc.gwt
     api libs.grpc.gwt.fetch
+    api libs.guava.gwt
 
     gwt project(':engine-chunk')
     gwt project(':extensions-barrage')
