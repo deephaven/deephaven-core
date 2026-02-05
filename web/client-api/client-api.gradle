@@ -39,8 +39,9 @@ configurations {
 
 dependencies {
     gwt libs.gwt.user
-    gwt platform(libs.grpc.bom)
-    gwt libs.grpc.api
+    api libs.protobuf.gwt
+    api libs.grpc.gwt
+    api libs.grpc.gwt.fetch
 
     gwt project(':engine-chunk')
     gwt project(':extensions-barrage')

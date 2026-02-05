@@ -12,6 +12,8 @@
   <inherits name="io.deephaven.chunk.Chunk" />
   <inherits name="io.deephaven.extensions.barrage.Barrage" />
 
+  <inherits name="com.vertispan.grpc.fetch.Fetch" />
+
   <define-property name="dh.dev" values="true, false" />
   <source path="client" />
   <source path="shared" />

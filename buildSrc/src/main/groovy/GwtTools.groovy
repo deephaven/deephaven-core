@@ -80,6 +80,8 @@ class GwtTools {
         def libs = p.getExtensions().getByType(VersionCatalogsExtension).named("libs")
         def gwtVersion = libs.findVersion("gwt").map(VersionConstraint::getRequiredVersion).orElseThrow()
         def gwtJettyVersion = libs.findVersion("gwtJetty").map(VersionConstraint::getRequiredVersion).orElseThrow()
+        def protobufVers = libs.findVersion('protobuf-gwt').get().requiredVersion
+        def grpcVers = libs.findVersion('grpc-gwt').get().requiredVersion
 
         gwt.gwtVersion = gwtVersion
         gwt.jettyVersion = gwtJettyVersion
@@ -91,6 +93,16 @@ class GwtTools {
                         .using(sub.module("org.gwtproject:gwt-user:${gwtVersion}"))
                 sub.substitute(sub.module("com.google.gwt:gwt-dev"))
                         .using(sub.module("org.gwtproject:gwt-dev:${gwtVersion}"))
+                sub.substitute(sub.module('com.google.protobuf:protobuf-java'))
+                        .using(sub.module("com.vertispan.protobuf:protobuf-gwt:${protobufVers}"))
+                sub.substitute(sub.module('io.grpc:grpc-api'))
+                        .using(sub.module("com.vertispan.grpc:grpc-gwt:${grpcVers}"))
+                sub.substitute(sub.module('io.grpc:grpc-stub'))
+                        .using(sub.module("com.vertispan.grpc:grpc-gwt:${grpcVers}"))
+                sub.substitute(sub.module('io.grpc:grpc-protobuf'))
+                        .using(sub.module("com.vertispan.grpc:grpc-gwt:${grpcVers}"))
+                sub.substitute(sub.module('io.grpc:grpc-protobuf-stub'))
+                        .using(sub.module("com.vertispan.grpc:grpc-gwt:${grpcVers}"))
             }
         }
         String warPath = new File(p.buildDir, 'gwt').absolutePath
