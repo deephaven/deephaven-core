@@ -11,6 +11,7 @@
   <inherits name="io.deephaven.io.IO" />
   <inherits name="io.deephaven.chunk.Chunk" />
   <inherits name="io.deephaven.extensions.barrage.Barrage" />
+  <inherits name="io.deephaven.proto.backplane.DeephavenCoreProto" />
 
   <inherits name="com.vertispan.grpc.fetch.Fetch" />
 

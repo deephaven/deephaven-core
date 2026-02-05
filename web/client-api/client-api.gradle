@@ -66,6 +66,7 @@ dependencies {
     gwt libs.vertispan.flatbuffers.gwt
 
     js project(path: ':proto:raw-js-openapi', configuration: 'js')
+    gwt project(':proto:proto-backplane-grpc')
 
     gwt libs.guava
 
