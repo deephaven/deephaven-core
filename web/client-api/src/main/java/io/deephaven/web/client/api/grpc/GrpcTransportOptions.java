@@ -19,8 +19,7 @@ import jsinterop.base.JsPropertyMap;
 /**
  * Options for creating a gRPC stream transport instance.
  */
-@TsInterface
-@JsType(namespace = "dh.grpc")
+@JsType(namespace = "iris.grpc")
 public class GrpcTransportOptions {
     @JsFunction
     @FunctionalInterface
@@ -71,12 +70,14 @@ public class GrpcTransportOptions {
      * Internal copy of options, to be used for fallback.
      */
     @JsIgnore
+    @Deprecated// remove before merge
     public TransportOptions originalOptions;
 
     /**
      * Convert a {@link TransportOptions} instance to a {@link GrpcTransportOptions} instance.
      */
     @JsIgnore
+    @Deprecated// remove before merge
     public static GrpcTransportOptions from(TransportOptions options) {
         GrpcTransportOptions impl = new GrpcTransportOptions();
         impl.url = new URL(options.getUrl());

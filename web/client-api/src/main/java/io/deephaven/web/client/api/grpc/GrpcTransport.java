@@ -13,21 +13,20 @@ import jsinterop.base.JsPropertyMap;
 
 /**
  * gRPC transport implementation.
- *
  */
 @JsType(namespace = "dh.grpc")
 @TsInterface
 public interface GrpcTransport {
     /**
      * Starts the stream, sending metadata to the server.
-     * 
+     *
      * @param metadata the headers to send the server when opening the connection
      */
     void start(JsPropertyMap<HeaderValueUnion> metadata);
 
     /**
      * Sends a message to the server.
-     * 
+     *
      * @param msgBytes bytes to send to the server
      */
     void sendMessage(Uint8Array msgBytes);
@@ -47,6 +46,7 @@ public interface GrpcTransport {
     /**
      * Helper to transform ts implementations to our own api.
      */
+    @Deprecated// remove before merge
     @JsIgnore
     static GrpcTransport from(Transport tsTransport) {
         return new GrpcTransport() {

@@ -22,7 +22,7 @@ import jsinterop.base.Js;
 public interface GrpcTransportFactory {
     /**
      * Create a new transport instance.
-     * 
+     *
      * @param options options for creating the transport
      * @return a transport instance to use for gRPC communication
      */
@@ -31,7 +31,7 @@ public interface GrpcTransportFactory {
     /**
      * Return true to signal that created transports may have {@link GrpcTransport#sendMessage(Uint8Array)} called on it
      * more than once before {@link GrpcTransport#finishSend()} should be called.
-     * 
+     *
      * @return true to signal that the implementation can stream multiple messages, false otherwise indicating that
      *         Open/Next gRPC calls should be used
      */
@@ -41,6 +41,7 @@ public interface GrpcTransportFactory {
     /**
      * Adapt this factory to the transport factory used by the gRPC-web library.
      */
+    @Deprecated//remove before merge
     @JsIgnore
     static TransportFactory adapt(GrpcTransportFactory instance) {
         return options -> {
