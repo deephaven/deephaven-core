@@ -161,4 +161,9 @@ public class RowSetCapturingFilter extends WhereFilterImpl implements SafeClosea
             return rowSets.stream().mapToLong(RowSet::size).sum();
         }
     }
+
+    @Override
+    public String toString() {
+        return "RowSetCapturingFilter{" + innerFilter + '}';
+    }
 }
