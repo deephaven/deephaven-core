@@ -88,6 +88,7 @@ public final class AggregationDescriptions implements Aggregation.Visitor {
 
     @Override
     public void visit(Formula formula) {
-        out.put(formula.column().name(), "from formula `" + Strings.of(formula.expression()) + "`");
+        out.put(formula.column().name(), "from formula `" + Strings.of(formula.expression()) + "`"
+                + (formula.reaggregateAggregatedValues() ? " (reaggregates values)" : ""));
     }
 }
