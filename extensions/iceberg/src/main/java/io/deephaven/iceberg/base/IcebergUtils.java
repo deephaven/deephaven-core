@@ -7,6 +7,7 @@ import io.deephaven.base.FileUtils;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.iceberg.relative.RelativeFileIO;
+import io.deephaven.iceberg.util.Resolver;
 import org.apache.iceberg.DataFile;
 import org.apache.iceberg.PartitionField;
 import org.apache.iceberg.PartitionSpec;
@@ -23,6 +24,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.net.URI;
 import java.time.LocalDate;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -93,8 +95,10 @@ public final class IcebergUtils {
      * Table Definition.
      */
     public static void verifyPartitioningColumns(
-            final PartitionSpec tablePartitionSpec,
-            final TableDefinition tableDefinition) {
+            @NotNull final Resolver resolver,
+            @NotNull final TableDefinition tableDefinition) {
+        final PartitionSpec tablePartitionSpec =
+                resolver.spec().orElseThrow(() -> new IllegalArgumentException("Resolver must include PartitionSpec"));
         final List<String> partitioningColumnNamesFromDefinition = tableDefinition.getColumnStream()
                 .filter(ColumnDefinition::isPartitioning)
                 .peek(columnDefinition -> {
@@ -120,8 +124,14 @@ public final class IcebergUtils {
                     " fields, but the table definition contains " + partitioningColumnNamesFromDefinition.size()
                     + " fields, partition spec " + tablePartitionSpec + ", table definition " + tableDefinition);
         }
+
+        final Set<String> resolvedPartitionNames = new HashSet<>();
+        for (final String partitioningColumnName : partitioningColumnNamesFromDefinition) {
+            final List<Types.NestedField> nf = resolver.resolve(partitioningColumnName).orElse(null);
+            resolvedPartitionNames.add(nf == null ? partitioningColumnName : nf.get(0).name());
+        }
         for (final PartitionField partitionField : partitionFieldsFromSpec) {
-            if (!partitioningColumnNamesFromDefinition.contains(partitionField.name())) {
+            if (!resolvedPartitionNames.contains(partitionField.name())) {
                 throw new IllegalArgumentException("Partitioning column " + partitionField.name() + " is not present " +
                         "in the table definition " + tableDefinition + ", partition spec " + tablePartitionSpec);
             }

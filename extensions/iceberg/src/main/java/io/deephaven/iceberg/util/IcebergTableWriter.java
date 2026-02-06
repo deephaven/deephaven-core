@@ -161,7 +161,7 @@ public class IcebergTableWriter {
         this.tableDefinition = tableWriterOptions.tableDefinition();
         this.nonPartitioningTableDefinition = nonPartitioningTableDefinition(tableDefinition);
         verifyRequiredFields(table.schema(), tableDefinition);
-        verifyPartitioningColumns(tableSpec, tableDefinition);
+        verifyPartitioningColumns(tableAdapter.resolver(), tableDefinition);
 
         this.userSchema = SchemaProviderInternal.of(tableWriterOptions.schemaProvider(), table);
         verifyFieldIdsInSchema(tableWriterOptions.fieldIdToColumnName().keySet(), userSchema);

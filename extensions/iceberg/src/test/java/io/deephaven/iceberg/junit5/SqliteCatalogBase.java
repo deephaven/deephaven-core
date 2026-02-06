@@ -1943,7 +1943,7 @@ public abstract class SqliteCatalogBase {
         final TableDefinition tableDefinition2 = TableDefinition.of(
                 ColumnDefinition.ofInt("intCol"),
                 ColumnDefinition.ofDouble("doubleCol"),
-                ColumnDefinition.ofString("Date").withPartitioning(),   // NOTE: opposite order here!
+                ColumnDefinition.ofString("Date").withPartitioning(), // NOTE: opposite order here!
                 ColumnDefinition.ofString("InternalPartition").withPartitioning());
         final IcebergTableWriter tableWriter2 = tableAdapter1.tableWriter(writerOptionsBuilder()
                 .tableDefinition(tableDefinition2)
