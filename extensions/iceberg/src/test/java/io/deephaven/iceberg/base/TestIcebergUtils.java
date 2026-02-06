@@ -89,17 +89,22 @@ public class TestIcebergUtils {
         return ColumnDefinition.ofDouble(NONPART_COL2_NAME);
     }
 
+    private void verifyPartitioningColumns(final Resolver resolver, final TableDefinition tableDefinition) {
+        final PartitionSpec spec = resolver.spec().orElse(getPartitionSpec());
+        IcebergUtils.verifyPartitioningColumns(resolver, spec, tableDefinition);
+    }
+
     @Test
     void testVerifyPartitioningColumns() {
         final Resolver resolver = getResolver();
 
         // match partitioning-column ordering
         final TableDefinition tDef1 = TableDefinition.of(partCol1(), partCol2(), nonPartCol1(), nonPartCol2());
-        IcebergUtils.verifyPartitioningColumns(resolver, tDef1);
+        verifyPartitioningColumns(resolver, tDef1);
 
         // flip partitioning-column ordering
         final TableDefinition tDef2 = TableDefinition.of(partCol2(), partCol1(), nonPartCol1(), nonPartCol2());
-        IcebergUtils.verifyPartitioningColumns(resolver, tDef2);
+        verifyPartitioningColumns(resolver, tDef2);
     }
 
     @Test
@@ -109,7 +114,7 @@ public class TestIcebergUtils {
         // missing "PartCol1"
         final TableDefinition tDef1 = TableDefinition.of(partCol2(), nonPartCol1(), nonPartCol2());
         try {
-            IcebergUtils.verifyPartitioningColumns(resolver, tDef1);
+            verifyPartitioningColumns(resolver, tDef1);
             failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
         } catch (final IllegalArgumentException ise) {
             assertThat(ise.getMessage()).startsWith(
@@ -119,7 +124,7 @@ public class TestIcebergUtils {
         // missing "PartCol2"
         final TableDefinition tDef2 = TableDefinition.of(partCol1(), nonPartCol1(), nonPartCol2());
         try {
-            IcebergUtils.verifyPartitioningColumns(resolver, tDef2);
+            verifyPartitioningColumns(resolver, tDef2);
             failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
         } catch (final IllegalArgumentException ise) {
             assertThat(ise.getMessage()).startsWith(
@@ -135,7 +140,7 @@ public class TestIcebergUtils {
         // do not match by name
         final TableDefinition tDef1 = TableDefinition.of(partCol1(), resolvedPartCol(), nonPartCol1(), nonPartCol2());
         try {
-            IcebergUtils.verifyPartitioningColumns(resolver, tDef1);
+            verifyPartitioningColumns(resolver, tDef1);
             failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
         } catch (final IllegalArgumentException ise) {
             assertThat(ise.getMessage())
@@ -160,9 +165,8 @@ public class TestIcebergUtils {
                 .putColumnInstructions(RESOLVED_PART_COL_NAME, ColumnInstructions.schemaFieldName(PART_COL2_NAME))
                 .putColumnInstructions(NONPART_COL1_NAME, ColumnInstructions.schemaFieldName(NONPART_COL1_NAME))
                 .putColumnInstructions(NONPART_COL2_NAME, ColumnInstructions.schemaFieldName(NONPART_COL2_NAME))
-
                 .build();
 
-        IcebergUtils.verifyPartitioningColumns(resolver, tDef1);
+        verifyPartitioningColumns(resolver, tDef1);
     }
 }

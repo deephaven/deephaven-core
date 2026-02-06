@@ -26,6 +26,7 @@ import java.net.URI;
 import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -96,9 +97,8 @@ public final class IcebergUtils {
      */
     public static void verifyPartitioningColumns(
             @NotNull final Resolver resolver,
+            @NotNull final PartitionSpec tablePartitionSpec,
             @NotNull final TableDefinition tableDefinition) {
-        final PartitionSpec tablePartitionSpec =
-                resolver.spec().orElseThrow(() -> new IllegalArgumentException("Resolver must include PartitionSpec"));
         final List<String> partitioningColumnNamesFromDefinition = tableDefinition.getColumnStream()
                 .filter(ColumnDefinition::isPartitioning)
                 .peek(columnDefinition -> {
