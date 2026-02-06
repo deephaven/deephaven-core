@@ -7,6 +7,7 @@ import io.deephaven.base.FileUtils;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.iceberg.relative.RelativeFileIO;
+import io.deephaven.iceberg.util.Resolver;
 import org.apache.iceberg.DataFile;
 import org.apache.iceberg.PartitionField;
 import org.apache.iceberg.PartitionSpec;
@@ -23,7 +24,9 @@ import org.jetbrains.annotations.NotNull;
 
 import java.net.URI;
 import java.time.LocalDate;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -93,8 +96,9 @@ public final class IcebergUtils {
      * Table Definition.
      */
     public static void verifyPartitioningColumns(
-            final PartitionSpec tablePartitionSpec,
-            final TableDefinition tableDefinition) {
+            @NotNull final Resolver resolver,
+            @NotNull final PartitionSpec tablePartitionSpec,
+            @NotNull final TableDefinition tableDefinition) {
         final List<String> partitioningColumnNamesFromDefinition = tableDefinition.getColumnStream()
                 .filter(ColumnDefinition::isPartitioning)
                 .peek(columnDefinition -> {
@@ -114,17 +118,22 @@ public final class IcebergUtils {
                         " not support writing to iceberg tables with non-identity transforms");
             }
         });
+
         if (partitionFieldsFromSpec.size() != partitioningColumnNamesFromDefinition.size()) {
             throw new IllegalArgumentException("Partition spec contains " + partitionFieldsFromSpec.size() +
                     " fields, but the table definition contains " + partitioningColumnNamesFromDefinition.size()
                     + " fields, partition spec " + tablePartitionSpec + ", table definition " + tableDefinition);
         }
-        for (int colIdx = 0; colIdx < partitionFieldsFromSpec.size(); colIdx += 1) {
-            final PartitionField partitionField = partitionFieldsFromSpec.get(colIdx);
-            if (!partitioningColumnNamesFromDefinition.get(colIdx).equals(partitionField.name())) {
+
+        final Set<String> resolvedPartitionNames = new HashSet<>();
+        for (final String partitioningColumnName : partitioningColumnNamesFromDefinition) {
+            final List<Types.NestedField> nf = resolver.resolve(partitioningColumnName).orElse(null);
+            resolvedPartitionNames.add(nf == null ? partitioningColumnName : nf.get(0).name());
+        }
+        for (final PartitionField partitionField : partitionFieldsFromSpec) {
+            if (!resolvedPartitionNames.contains(partitionField.name())) {
                 throw new IllegalArgumentException("Partitioning column " + partitionField.name() + " is not present " +
-                        "in the table definition at idx " + colIdx + ", table definition " + tableDefinition +
-                        ", partition spec " + tablePartitionSpec);
+                        "in the table definition " + tableDefinition + ", partition spec " + tablePartitionSpec);
             }
         }
     }
