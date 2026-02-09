@@ -78,6 +78,7 @@ import org.apache.commons.lang3.mutable.MutableFloat;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.parquet.column.Encoding;
 import org.apache.parquet.column.statistics.Statistics;
+import org.apache.parquet.hadoop.metadata.BlockMetaData;
 import org.apache.parquet.hadoop.metadata.ColumnChunkMetaData;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import org.apache.parquet.io.api.Binary;
@@ -3322,8 +3323,7 @@ public final class ParquetTableReadWriteTest {
     }
 
     private static void writeAndVerifyTable(final Table tableToWrite, final File targetFile, final RowGroupInfo rgi,
-            final Long[] expectedRowGroups, final ExpectedStatistics[] expectedMins,
-            final ExpectedStatistics[] expectedMaxs) {
+            final Long[] expectedRowGroups, final Long[] expectedMinRows, final Long[] expectedMaxRows) {
         final ParquetInstructions writeInstructions = new ParquetInstructions.Builder()
                 .setRowGroupInfo(rgi)
                 .build();
@@ -3339,47 +3339,39 @@ public final class ParquetTableReadWriteTest {
         // make sure we have the expected number of RowGroups, and each RowGroup is of the expected size and has the
         // expected statistics for each column
         assertEquals(expectedRowGroups.length, metadata.getBlocks().size());
-        assertEquals(expectedRowGroups.length, expectedMins.length);
-        assertEquals(expectedRowGroups.length, expectedMaxs.length);
+        assertEquals(expectedRowGroups.length, expectedMinRows.length);
+        assertEquals(expectedRowGroups.length, expectedMaxRows.length);
         for (int ii = 0; ii < expectedRowGroups.length; ii++) {
-            assertEquals((long) expectedRowGroups[ii], metadata.getBlocks().get(ii).getRowCount());
-            expectedMins[ii].assertMinStatisticsEquals(metadata.getBlocks().get(ii).getColumns());
-            expectedMaxs[ii].assertMaxStatisticsEquals(metadata.getBlocks().get(ii).getColumns());
+            final BlockMetaData metadataBlock = metadata.getBlocks().get(ii);
+            assertEquals((long) expectedRowGroups[ii], metadataBlock.getRowCount());
+            assertMinStatisticsEquals(tableToWrite, expectedMinRows[ii], metadataBlock.getColumns());
+            assertMaxStatisticsEquals(tableToWrite, expectedMaxRows[ii], metadataBlock.getColumns());
         }
     }
 
-    private static class ExpectedStatistics {
-        final int expected0;
-        final String expected1;
-        final double expected2;
-        final long expected3;
+    private static void assertMinStatisticsEquals(final Table sourceTable, final long row,
+            final List<ColumnChunkMetaData> columnMetadata) {
+        assertEquals("min(A)", sourceTable.getColumnSource("A").getInt(row),
+                columnMetadata.get(0).getStatistics().genericGetMin());
+        assertEquals("min(B)", sourceTable.getColumnSource("B").get(row),
+                columnMetadata.get(1).getStatistics().minAsString());
+        // the following allows the assertion to work when comparing `-0.0` with `0.0`
+        final double min2 = (Double) columnMetadata.get(2).getStatistics().genericGetMin();
+        assertEquals("min(C)", sourceTable.getColumnSource("C").getDouble(row), min2, 0.0);
+        assertEquals("min(D)", sourceTable.getColumnSource("D").getLong(row),
+                columnMetadata.get(3).getStatistics().genericGetMin());
+    }
 
-        private static ExpectedStatistics of(int expected0, final String expected1, double expected2, long expected3) {
-            return new ExpectedStatistics(expected0, expected1, expected2, expected3);
-        }
-
-        private ExpectedStatistics(int expected0, final String expected1, double expected2, long expected3) {
-            this.expected0 = expected0;
-            this.expected1 = expected1;
-            this.expected2 = expected2;
-            this.expected3 = expected3;
-        }
-
-        private void assertMinStatisticsEquals(final List<ColumnChunkMetaData> columnMetadata) {
-            assertEquals("min(A)", expected0, columnMetadata.get(0).getStatistics().genericGetMin());
-            assertEquals("min(B)", expected1, columnMetadata.get(1).getStatistics().minAsString());
-            // the following allows the assertion to work when comparing `-0.0` with `0.0`
-            final double min2 = (Double) columnMetadata.get(2).getStatistics().genericGetMin();
-            assertEquals("min(C)", expected2, min2, 0.0);
-            assertEquals("min(D)", expected3, columnMetadata.get(3).getStatistics().genericGetMin());
-        }
-
-        private void assertMaxStatisticsEquals(final List<ColumnChunkMetaData> columnMetadata) {
-            assertEquals("max(A)", expected0, columnMetadata.get(0).getStatistics().genericGetMax());
-            assertEquals("max(B)", expected1, columnMetadata.get(1).getStatistics().maxAsString());
-            assertEquals("max(C)", expected2, columnMetadata.get(2).getStatistics().genericGetMax());
-            assertEquals("max(D)", expected3, columnMetadata.get(3).getStatistics().genericGetMax());
-        }
+    private static void assertMaxStatisticsEquals(final Table sourceTable, final long row,
+            final List<ColumnChunkMetaData> columnMetadata) {
+        assertEquals("max(A)", sourceTable.getColumnSource("A").getInt(row),
+                columnMetadata.get(0).getStatistics().genericGetMax());
+        assertEquals("max(B)", sourceTable.getColumnSource("B").get(row),
+                columnMetadata.get(1).getStatistics().maxAsString());
+        assertEquals("max(C)", sourceTable.getColumnSource("C").getDouble(row),
+                columnMetadata.get(2).getStatistics().genericGetMax());
+        assertEquals("max(D)", sourceTable.getColumnSource("D").getLong(row),
+                columnMetadata.get(3).getStatistics().genericGetMax());
     }
 
     @Test
@@ -3388,60 +3380,53 @@ public final class ParquetTableReadWriteTest {
                 .update("A=(int)i", "B=`String ` + ii", "C=(double)i")
                 .groupBy().update("D = new Long[] {0L, 1L, 1L, 2L, 2L, 2L, 3L, 3L, 3L, 3L}").ungroup();
 
-        final ExpectedStatistics[] individualRowStatistics = new ExpectedStatistics[testTable.intSize()];
-        for (int ii = 0; ii < individualRowStatistics.length; ii++) {
-            individualRowStatistics[ii] = ExpectedStatistics.of(
-                    testTable.getColumnSource("A").getInt(ii),
-                    (String) testTable.getColumnSource("B").get(ii),
-                    testTable.getColumnSource("C").getDouble(ii),
-                    testTable.getColumnSource("D").getLong(ii));
-        }
-
         final File parentDir = new File(rootFile, "multipleRowGroups");
         parentDir.mkdir();
 
         // write a single RowGroup. Min statistics should match the 1st row, and Max statistics should match the last
         writeAndVerifyTable(testTable, new File(parentDir, "multipleRowGroups0.parquet"), RowGroupInfo.singleGroup(),
                 new Long[] {10L},
-                new ExpectedStatistics[] {individualRowStatistics[0]},
-                new ExpectedStatistics[] {individualRowStatistics[9]});
+                new Long[] {0L}, // row [0] contains min for each column
+                new Long[] {9L}); // row [9] contains max for each column
 
         // write a (very inefficient) table with a RowGroup dedicated to each row. since each RowGroup contains only a
         // single row, the Min and Max statistics should be the same for each
         writeAndVerifyTable(testTable, new File(parentDir, "multipleRowGroups1.parquet"), RowGroupInfo.maxRows(1),
-                new Long[] {1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L}, individualRowStatistics, individualRowStatistics);
+                new Long[] {1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L},
+                new Long[] {0L, 1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L}, // each row is its own min ...
+                new Long[] {0L, 1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L}); // AND max
 
         // write a table with 3 RowGroups (of sizes {4, 3, 3})
         writeAndVerifyTable(testTable, new File(parentDir, "multipleRowGroups2.parquet"), RowGroupInfo.maxGroups(3),
                 new Long[] {4L, 3L, 3L},
-                new ExpectedStatistics[] {
-                        individualRowStatistics[0], // min of rows [0, 1, 2, 3]
-                        individualRowStatistics[4], // min of rows [4, 5, 6]
-                        individualRowStatistics[7] // min of rows [7, 8, 9]
+                new Long[] {
+                        0L, // min of rows [0, 1, 2, 3]
+                        4L, // min of rows [4, 5, 6]
+                        7L // min of rows [7, 8, 9]
                 },
-                new ExpectedStatistics[] {
-                        individualRowStatistics[3], // max of rows [0, 1, 2, 3]
-                        individualRowStatistics[6], // max of rows [4, 5, 6]
-                        individualRowStatistics[9] // max of rows [7, 8, 9]
+                new Long[] {
+                        3L, // max of rows [0, 1, 2, 3]
+                        6L, // max of rows [4, 5, 6]
+                        9L // max of rows [7, 8, 9]
                 });
 
         // write a table split by column `D`, with a maximum of 3 rows per RowGroup
         writeAndVerifyTable(testTable, new File(parentDir, "multipleRowGroups3.parquet"), RowGroupInfo.byGroups(3,
                 "D"),
                 new Long[] {1L, 2L, 3L, 2L, 2L},
-                new ExpectedStatistics[] {
-                        individualRowStatistics[0], // min of rows [0]
-                        individualRowStatistics[1], // min of rows [1, 2]
-                        individualRowStatistics[3], // min of rows [3, 4, 5]
-                        individualRowStatistics[6], // min of rows [6, 7]
-                        individualRowStatistics[8] // min of rows [8, 9]
+                new Long[] {
+                        0L, // min of rows [0]
+                        1L, // min of rows [1, 2]
+                        3L, // min of rows [3, 4, 5]
+                        6L, // min of rows [6, 7]
+                        8L // min of rows [8, 9]
                 },
-                new ExpectedStatistics[] {
-                        individualRowStatistics[0], // max of rows [0]
-                        individualRowStatistics[2], // max of rows [1, 2]
-                        individualRowStatistics[5], // max of rows [3, 4, 5]
-                        individualRowStatistics[7], // max of rows [6, 7]
-                        individualRowStatistics[9] // max of rows [8, 9]
+                new Long[] {
+                        0L, // max of rows [0]
+                        2L, // max of rows [1, 2]
+                        5L, // max of rows [3, 4, 5]
+                        7L, // max of rows [6, 7]
+                        9L // max of rows [8, 9]
                 });
 
         FileUtils.deleteRecursively(parentDir);
