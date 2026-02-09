@@ -1937,7 +1937,7 @@ public abstract class SqliteCatalogBase {
                 part1.update("InternalPartition = `0`", "Date = `2024-08-01`"),
                 part2.update("InternalPartition = `1`", "Date = `2024-08-02`"),
                 part3.update("InternalPartition = `2`", "Date = `2024-08-02`"));
-        assertTableEquals(expected, fromIceberg.select());
+        assertTableEquals(expected, fromIceberg);
 
         // Add another partition for same date, but with the partitions ordered differently
         final TableDefinition tableDefinition2 = TableDefinition.of(
@@ -1962,7 +1962,7 @@ public abstract class SqliteCatalogBase {
                 part2.update("InternalPartition = `1`", "Date = `2024-08-02`"),
                 part3.update("InternalPartition = `2`", "Date = `2024-08-02`"),
                 part4.update("InternalPartition = `1`", "Date = `2024-08-02`"));
-        assertTableEquals(expected2, fromIceberg2.select());
+        assertTableEquals(expected2, fromIceberg2);
     }
 
     @Test
@@ -2000,7 +2000,7 @@ public abstract class SqliteCatalogBase {
                 part1.update("InternalPartition = `0`", "Date = `2024-08-01`"),
                 part2.update("InternalPartition = `1`", "Date = `2024-08-02`"),
                 part3.update("InternalPartition = `2`", "Date = `2024-08-02`"));
-        assertTableEquals(expected, fromIceberg.select());
+        assertTableEquals(expected, fromIceberg);
 
         // Add another partition for same date
         final Table part4 = TableTools.emptyTable(3)
@@ -2016,7 +2016,7 @@ public abstract class SqliteCatalogBase {
                 part2.update("InternalPartition = `1`", "Date = `2024-08-02`"),
                 part3.update("InternalPartition = `2`", "Date = `2024-08-02`"),
                 part4.update("InternalPartition = `1`", "Date = `2024-08-02`"));
-        assertTableEquals(expected2, fromIceberg2.select());
+        assertTableEquals(expected2, fromIceberg2);
 
         // Now delete the partition for date 2024-08-02
         final Expression delExpr = Expressions.equal("Date", "2024-08-02");
@@ -2027,7 +2027,7 @@ public abstract class SqliteCatalogBase {
         final IcebergTableAdapter latestTableAdapter = catalogAdapter.loadTable(tableIdentifier);
         final Table fromIceberg3 = latestTableAdapter.table();
         final Table expected3 = part1.update("InternalPartition = `0`", "Date = `2024-08-01`");
-        assertTableEquals(expected3, fromIceberg3.select());
+        assertTableEquals(expected3, fromIceberg3);
     }
 
     @Test

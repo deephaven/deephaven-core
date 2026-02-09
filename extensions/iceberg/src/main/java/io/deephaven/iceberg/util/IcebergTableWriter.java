@@ -156,14 +156,13 @@ public class IcebergTableWriter {
         this.tableWriterOptions = verifyWriterOptions(tableWriterOptions);
         this.table = tableAdapter.icebergTable();
 
-        this.tableSpec = table.spec();
+        final Resolver resolver = tableAdapter.resolver();
+        this.tableSpec = resolver.spec().isEmpty() ? PartitionSpec.unpartitioned() : resolver.spec().get();
 
         this.tableDefinition = tableWriterOptions.tableDefinition();
         this.nonPartitioningTableDefinition = nonPartitioningTableDefinition(tableDefinition);
         verifyRequiredFields(table.schema(), tableDefinition);
-        final Resolver resolver = tableAdapter.resolver();
-        verifyPartitioningColumns(resolver, resolver.spec().isEmpty() ? tableSpec : resolver.spec().get(),
-                tableDefinition);
+        verifyPartitioningColumns(resolver, tableSpec, tableDefinition);
 
         this.userSchema = SchemaProviderInternal.of(tableWriterOptions.schemaProvider(), table);
         verifyFieldIdsInSchema(tableWriterOptions.fieldIdToColumnName().keySet(), userSchema);
