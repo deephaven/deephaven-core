@@ -123,67 +123,67 @@ The capacity of these recyclers (how many arrays each recycler holds) can be con
 
 Array-backed column sources (dense arrays) use SoftRecyclers to manage blocks of data for each primitive type.
 
-| Property Name                    | Default Value | Description                                                                                         |
-| -------------------------------- | ------------- | --------------------------------------------------------------------------------------------------- |
-| `array.recycler.capacity.default`   | 1024          | Default recycler capacity for all array types (used if type-specific property is not set)           |
-| `array.recycler.capacity.boolean`   | 1024          | Recycler capacity for boolean array blocks                                                         |
-| `array.recycler.capacity.byte`      | 1024          | Recycler capacity for byte array blocks                                                            |
-| `array.recycler.capacity.char`      | 1024          | Recycler capacity for character array blocks                                                       |
-| `array.recycler.capacity.double`    | 1024          | Recycler capacity for double array blocks                                                          |
-| `array.recycler.capacity.float`     | 1024          | Recycler capacity for float array blocks                                                           |
-| `array.recycler.capacity.int`       | 1024          | Recycler capacity for integer array blocks                                                         |
-| `array.recycler.capacity.long`      | 1024          | Recycler capacity for long array blocks                                                            |
-| `array.recycler.capacity.short`     | 1024          | Recycler capacity for short array blocks                                                           |
-| `array.recycler.capacity.object`    | 1024          | Recycler capacity for object array blocks                                                          |
-| `array.recycler.capacity.inuse`     | 9216 (max of all types) | Recycler capacity for "in use" bitmap blocks (should be at least the maximum capacity of other types) |
+| Property Name                     | Default Value           | Description                                                                                           |
+| --------------------------------- | ----------------------- | ----------------------------------------------------------------------------------------------------- |
+| `array.recycler.capacity.default` | 1024                    | Default recycler capacity for all array types (used if type-specific property is not set)             |
+| `array.recycler.capacity.boolean` | 1024                    | Recycler capacity for boolean array blocks                                                            |
+| `array.recycler.capacity.byte`    | 1024                    | Recycler capacity for byte array blocks                                                               |
+| `array.recycler.capacity.char`    | 1024                    | Recycler capacity for character array blocks                                                          |
+| `array.recycler.capacity.double`  | 1024                    | Recycler capacity for double array blocks                                                             |
+| `array.recycler.capacity.float`   | 1024                    | Recycler capacity for float array blocks                                                              |
+| `array.recycler.capacity.int`     | 1024                    | Recycler capacity for integer array blocks                                                            |
+| `array.recycler.capacity.long`    | 1024                    | Recycler capacity for long array blocks                                                               |
+| `array.recycler.capacity.short`   | 1024                    | Recycler capacity for short array blocks                                                              |
+| `array.recycler.capacity.object`  | 1024                    | Recycler capacity for object array blocks                                                             |
+| `array.recycler.capacity.inuse`   | 9216 (max of all types) | Recycler capacity for "in use" bitmap blocks (should be at least the maximum capacity of other types) |
 
 ### Sparse array column source recyclers
 
 Sparse array column sources use a multi-level hierarchical structure and maintain separate recyclers at each level. Each level can be configured independently to optimize memory usage for your access patterns.
 
-| Property Name                               | Default Value      | Description                                                                          |
-| ------------------------------------------- | ------------------ | ------------------------------------------------------------------------------------ |
-| `sparsearray.recycler.capacity.default`       | 1024               | Default recycler capacity for all sparse array types                                 |
-| `sparsearray.recycler.capacity.boolean`       | 1024               | Base recycler capacity for boolean sparse arrays                                     |
-| `sparsearray.recycler.capacity.byte`          | 1024               | Base recycler capacity for byte sparse arrays                                        |
-| `sparsearray.recycler.capacity.char`          | 1024               | Base recycler capacity for character sparse arrays                                   |
-| `sparsearray.recycler.capacity.double`        | 1024               | Base recycler capacity for double sparse arrays                                      |
-| `sparsearray.recycler.capacity.float`         | 1024               | Base recycler capacity for float sparse arrays                                       |
-| `sparsearray.recycler.capacity.int`           | 1024               | Base recycler capacity for integer sparse arrays                                     |
-| `sparsearray.recycler.capacity.long`          | 1024               | Base recycler capacity for long sparse arrays                                        |
-| `sparsearray.recycler.capacity.short`         | 1024               | Base recycler capacity for short sparse arrays                                       |
-| `sparsearray.recycler.capacity.object`        | 1024               | Base recycler capacity for object sparse arrays                                      |
-| `sparsearray.recycler.capacity.boolean.2`     | 1024               | Level 2 recycler capacity for boolean sparse arrays                                  |
-| `sparsearray.recycler.capacity.byte.2`        | 1024               | Level 2 recycler capacity for byte sparse arrays                                     |
-| `sparsearray.recycler.capacity.char.2`        | 1024               | Level 2 recycler capacity for character sparse arrays                                |
-| `sparsearray.recycler.capacity.double.2`      | 1024               | Level 2 recycler capacity for double sparse arrays                                   |
-| `sparsearray.recycler.capacity.float.2`       | 1024               | Level 2 recycler capacity for float sparse arrays                                    |
-| `sparsearray.recycler.capacity.int.2`         | 1024               | Level 2 recycler capacity for integer sparse arrays                                  |
-| `sparsearray.recycler.capacity.long.2`        | 1024               | Level 2 recycler capacity for long sparse arrays                                     |
-| `sparsearray.recycler.capacity.short.2`       | 1024               | Level 2 recycler capacity for short sparse arrays                                    |
-| `sparsearray.recycler.capacity.object.2`      | 1024               | Level 2 recycler capacity for object sparse arrays                                   |
-| `sparsearray.recycler.capacity.boolean.1`     | 1024               | Level 1 recycler capacity for boolean sparse arrays                                  |
-| `sparsearray.recycler.capacity.byte.1`        | 1024               | Level 1 recycler capacity for byte sparse arrays                                     |
-| `sparsearray.recycler.capacity.char.1`        | 1024               | Level 1 recycler capacity for character sparse arrays                                |
-| `sparsearray.recycler.capacity.double.1`      | 1024               | Level 1 recycler capacity for double sparse arrays                                   |
-| `sparsearray.recycler.capacity.float.1`       | 1024               | Level 1 recycler capacity for float sparse arrays                                    |
-| `sparsearray.recycler.capacity.int.1`         | 1024               | Level 1 recycler capacity for integer sparse arrays                                  |
-| `sparsearray.recycler.capacity.long.1`        | 1024               | Level 1 recycler capacity for long sparse arrays                                     |
-| `sparsearray.recycler.capacity.short.1`       | 1024               | Level 1 recycler capacity for short sparse arrays                                    |
-| `sparsearray.recycler.capacity.object.1`      | 1024               | Level 1 recycler capacity for object sparse arrays                                   |
-| `sparsearray.recycler.capacity.boolean.0`     | 1024               | Level 0 (top) recycler capacity for boolean sparse arrays                            |
-| `sparsearray.recycler.capacity.byte.0`        | 1024               | Level 0 (top) recycler capacity for byte sparse arrays                               |
-| `sparsearray.recycler.capacity.char.0`        | 1024               | Level 0 (top) recycler capacity for character sparse arrays                          |
-| `sparsearray.recycler.capacity.double.0`      | 1024               | Level 0 (top) recycler capacity for double sparse arrays                             |
-| `sparsearray.recycler.capacity.float.0`       | 1024               | Level 0 (top) recycler capacity for float sparse arrays                              |
-| `sparsearray.recycler.capacity.int.0`         | 1024               | Level 0 (top) recycler capacity for integer sparse arrays                            |
-| `sparsearray.recycler.capacity.long.0`        | 1024               | Level 0 (top) recycler capacity for long sparse arrays                               |
-| `sparsearray.recycler.capacity.short.0`       | 1024               | Level 0 (top) recycler capacity for short sparse arrays                              |
-| `sparsearray.recycler.capacity.object.0`      | 1024               | Level 0 (top) recycler capacity for object sparse arrays                             |
-| `sparsearray.recycler.capacity.inuse`         | 9216 (sum of all base types) | Recycler capacity for "in use" bitmap blocks at the lowest level                     |
-| `sparsearray.recycler.capacity.inuse.2`       | 9216 (max of level 2) | Recycler capacity for "in use" bitmap blocks at level 2                              |
-| `sparsearray.recycler.capacity.inuse.1`       | 9216 (max of level 1) | Recycler capacity for "in use" bitmap blocks at level 1                              |
-| `sparsearray.recycler.capacity.inuse.0`       | 9216 (max of level 0) | Recycler capacity for "in use" bitmap blocks at level 0 (top)                        |
+| Property Name                             | Default Value                | Description                                                      |
+| ----------------------------------------- | ---------------------------- | ---------------------------------------------------------------- |
+| `sparsearray.recycler.capacity.default`   | 1024                         | Default recycler capacity for all sparse array types             |
+| `sparsearray.recycler.capacity.boolean`   | 1024                         | Base recycler capacity for boolean sparse arrays                 |
+| `sparsearray.recycler.capacity.byte`      | 1024                         | Base recycler capacity for byte sparse arrays                    |
+| `sparsearray.recycler.capacity.char`      | 1024                         | Base recycler capacity for character sparse arrays               |
+| `sparsearray.recycler.capacity.double`    | 1024                         | Base recycler capacity for double sparse arrays                  |
+| `sparsearray.recycler.capacity.float`     | 1024                         | Base recycler capacity for float sparse arrays                   |
+| `sparsearray.recycler.capacity.int`       | 1024                         | Base recycler capacity for integer sparse arrays                 |
+| `sparsearray.recycler.capacity.long`      | 1024                         | Base recycler capacity for long sparse arrays                    |
+| `sparsearray.recycler.capacity.short`     | 1024                         | Base recycler capacity for short sparse arrays                   |
+| `sparsearray.recycler.capacity.object`    | 1024                         | Base recycler capacity for object sparse arrays                  |
+| `sparsearray.recycler.capacity.boolean.2` | 1024                         | Level 2 recycler capacity for boolean sparse arrays              |
+| `sparsearray.recycler.capacity.byte.2`    | 1024                         | Level 2 recycler capacity for byte sparse arrays                 |
+| `sparsearray.recycler.capacity.char.2`    | 1024                         | Level 2 recycler capacity for character sparse arrays            |
+| `sparsearray.recycler.capacity.double.2`  | 1024                         | Level 2 recycler capacity for double sparse arrays               |
+| `sparsearray.recycler.capacity.float.2`   | 1024                         | Level 2 recycler capacity for float sparse arrays                |
+| `sparsearray.recycler.capacity.int.2`     | 1024                         | Level 2 recycler capacity for integer sparse arrays              |
+| `sparsearray.recycler.capacity.long.2`    | 1024                         | Level 2 recycler capacity for long sparse arrays                 |
+| `sparsearray.recycler.capacity.short.2`   | 1024                         | Level 2 recycler capacity for short sparse arrays                |
+| `sparsearray.recycler.capacity.object.2`  | 1024                         | Level 2 recycler capacity for object sparse arrays               |
+| `sparsearray.recycler.capacity.boolean.1` | 1024                         | Level 1 recycler capacity for boolean sparse arrays              |
+| `sparsearray.recycler.capacity.byte.1`    | 1024                         | Level 1 recycler capacity for byte sparse arrays                 |
+| `sparsearray.recycler.capacity.char.1`    | 1024                         | Level 1 recycler capacity for character sparse arrays            |
+| `sparsearray.recycler.capacity.double.1`  | 1024                         | Level 1 recycler capacity for double sparse arrays               |
+| `sparsearray.recycler.capacity.float.1`   | 1024                         | Level 1 recycler capacity for float sparse arrays                |
+| `sparsearray.recycler.capacity.int.1`     | 1024                         | Level 1 recycler capacity for integer sparse arrays              |
+| `sparsearray.recycler.capacity.long.1`    | 1024                         | Level 1 recycler capacity for long sparse arrays                 |
+| `sparsearray.recycler.capacity.short.1`   | 1024                         | Level 1 recycler capacity for short sparse arrays                |
+| `sparsearray.recycler.capacity.object.1`  | 1024                         | Level 1 recycler capacity for object sparse arrays               |
+| `sparsearray.recycler.capacity.boolean.0` | 1024                         | Level 0 (top) recycler capacity for boolean sparse arrays        |
+| `sparsearray.recycler.capacity.byte.0`    | 1024                         | Level 0 (top) recycler capacity for byte sparse arrays           |
+| `sparsearray.recycler.capacity.char.0`    | 1024                         | Level 0 (top) recycler capacity for character sparse arrays      |
+| `sparsearray.recycler.capacity.double.0`  | 1024                         | Level 0 (top) recycler capacity for double sparse arrays         |
+| `sparsearray.recycler.capacity.float.0`   | 1024                         | Level 0 (top) recycler capacity for float sparse arrays          |
+| `sparsearray.recycler.capacity.int.0`     | 1024                         | Level 0 (top) recycler capacity for integer sparse arrays        |
+| `sparsearray.recycler.capacity.long.0`    | 1024                         | Level 0 (top) recycler capacity for long sparse arrays           |
+| `sparsearray.recycler.capacity.short.0`   | 1024                         | Level 0 (top) recycler capacity for short sparse arrays          |
+| `sparsearray.recycler.capacity.object.0`  | 1024                         | Level 0 (top) recycler capacity for object sparse arrays         |
+| `sparsearray.recycler.capacity.inuse`     | 9216 (sum of all base types) | Recycler capacity for "in use" bitmap blocks at the lowest level |
+| `sparsearray.recycler.capacity.inuse.2`   | 9216 (max of level 2)        | Recycler capacity for "in use" bitmap blocks at level 2          |
+| `sparsearray.recycler.capacity.inuse.1`   | 9216 (max of level 1)        | Recycler capacity for "in use" bitmap blocks at level 1          |
+| `sparsearray.recycler.capacity.inuse.0`   | 9216 (max of level 0)        | Recycler capacity for "in use" bitmap blocks at level 0 (top)    |
 
 #### Tuning SoftRecycler capacity
 
