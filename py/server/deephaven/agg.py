@@ -254,14 +254,15 @@ def formula(
     """
     if formula_param:
         j_spec = _JAggSpec.formula(formula, formula_param)
-        if reaggregating:
-            j_spec = j_spec.asReaggregating()
         return Aggregation(j_agg_spec=j_spec, cols=cols)
     if cols:
         raise DHError(
             message="The 'cols' argument is only valid when 'formula_param' is provided."
         )
-    return Aggregation(j_aggregation=_JAggregation.AggFormula(formula))
+    j_agg = _JAggregation.AggFormula(formula)
+    if reaggregating:
+        j_agg = j_agg.asReaggregating()
+    return Aggregation(j_aggregation=j_agg)
 
 
 def last(cols: Optional[Union[str, Sequence[str]]] = None) -> Aggregation:
