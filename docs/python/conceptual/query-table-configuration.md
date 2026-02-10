@@ -115,7 +115,7 @@ Parallel snapshotting is not enabled until the snapshot size exceeds `QueryTable
 
 ## SoftRecycler configuration
 
-Deephaven uses [SoftRecycler](https://docs.deephaven.io/core/javadoc/io/deephaven/util/SoftRecycler.html) objects to manage memory for array and sparse array column sources. These recyclers maintain pools of allocated arrays that can be reused rather than constantly allocating and deallocating memory, which can improve performance and reduce garbage collection pressure.
+Deephaven uses [`SoftRecycler`](https://docs.deephaven.io/core/javadoc/io/deephaven/util/SoftRecycler.html) objects to manage memory for array and sparse array column sources. These recyclers maintain pools of allocated arrays that can be reused rather than constantly allocating and deallocating memory, which can improve performance and reduce garbage collection pressure.
 
 The capacity of these recyclers (how many arrays each recycler holds) can be configured on a per-type basis, allowing you to tune memory usage based on your workload characteristics.
 
