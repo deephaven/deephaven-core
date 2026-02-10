@@ -24,7 +24,7 @@ import java.util.Map;
 @JsType(name = "Chart", namespace = "dh.plot")
 public class JsChart extends HasEventHandling {
     /**
-     * a new series was added to this chart as part of a multi-series. The series instance is the detail for this event.
+     * A new series was added to this chart as part of a multi-series. The series instance is the detail for this event.
      */
     public static final String EVENT_SERIES_ADDED = "seriesadded";
 
@@ -73,7 +73,7 @@ public class JsChart extends HasEventHandling {
     }
 
     /**
-     * The type of this chart, see <b>ChartType</b> enum for more details.
+     * The type of this chart, see `ChartType` enum for more details.
      * 
      * @return int
      */
@@ -150,7 +150,7 @@ public class JsChart extends HasEventHandling {
     }
 
     /**
-     * The multi-series data for display in this chart
+     * The multi-series data for display in this chart.
      * 
      * @return dh.plot.MultiSeries
      */

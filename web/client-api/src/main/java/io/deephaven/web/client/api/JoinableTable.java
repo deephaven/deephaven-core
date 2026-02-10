@@ -31,13 +31,13 @@ public interface JoinableTable {
     /**
      * Joins this table to the provided table, using one of the specified join types:
      * <ul>
-     * <li><code>AJ</code>, <code>ReverseAJ</code> (or <code>RAJ</code>) - inexact timeseries joins, based on the
+     * <li><code>AJ</code>, <code>ReverseAJ</code> (or <code>RAJ</code>) - Inexact timeseries joins, based on the
      * provided matching rule.</li>
-     * <li><code>CROSS_JOIN</code> (or <code>Join</code>) - cross join of all rows that have matching values in both
+     * <li><code>CROSS_JOIN</code> (or <code>Join</code>) - Cross join of all rows that have matching values in both
      * tables.</li>
-     * <li><code>EXACT_JOIN</code> (or <code>ExactJoin</code> - matches values in exactly one row in the right table,
+     * <li><code>EXACT_JOIN</code> (or <code>ExactJoin</code>) - Matches values in exactly one row in the right table,
      * with errors if there is not exactly one.</li>
-     * <li><code>NATURAL_JOIN</code> (or <code>Natural</code> - matches values in at most one row in the right table,
+     * <li><code>NATURAL_JOIN</code> (or <code>Natural</code> - Matches values in at most one row in the right table,
      * with nulls if there is no match or errors if there are multiple matches.</li>
      * </ul>
      *
@@ -48,11 +48,11 @@ public interface JoinableTable {
      *
      * @deprecated Instead, call the specific method for the join type.
      * @param joinType The type of join to perform, see the list above.
-     * @param rightTable The table to match to values in this table
-     * @param columnsToMatch Columns that should match
-     * @param columnsToAdd Columns from the right table to add to the result - empty/null/absent to add all columns
-     * @param asOfMatchRule If joinType is AJ/RAJ/ReverseAJ, the match rule to use
-     * @return a promise that will resolve to the joined table
+     * @param rightTable The table to match to values in this table.
+     * @param columnsToMatch Columns that should match.
+     * @param columnsToAdd Columns from the right table to add to the result - empty/null/absent to add all columns.
+     * @param asOfMatchRule If joinType is AJ/RAJ/ReverseAJ, the match rule to use.
+     * @return A promise that will resolve to the joined table.
      */
     @JsMethod
     @Deprecated
@@ -71,60 +71,60 @@ public interface JoinableTable {
      * <li>GREATER_THAN</li>
      * </ul>
      *
-     * @param rightTable the table to match to values in this table
-     * @param columnsToMatch the columns that should match, according to the asOfMatchRole
-     * @param columnsToAdd columns from the right table to add to the resulting table, empty/null/absent to add all
-     *        columns
-     * @param asOfMatchRule the match rule to use, see above
-     * @return a promise that will resolve to the joined table
+     * @param rightTable The table to match to values in this table.
+     * @param columnsToMatch The columns that should match, according to the asOfMatchRole.
+     * @param columnsToAdd Columns from the right table to add to the resulting table, empty/null/absent to add all
+     *        columns.
+     * @param asOfMatchRule The match rule to use, see above.
+     * @return A promise that will resolve to the joined table.
      */
     @JsMethod
     Promise<JsTable> asOfJoin(JoinableTable rightTable, JsArray<String> columnsToMatch,
             @JsOptional @JsNullable JsArray<String> columnsToAdd, @JsOptional @JsNullable String asOfMatchRule);
 
     /**
-     * a promise that will be resolved with the newly created table holding the results of the specified cross join
-     * operation. The <b>columnsToAdd</b> parameter is optional, not specifying it will result in all columns from the
-     * right table being added to the output. The <b>reserveBits</b> optional parameter lets the client control how the
-     * key space is distributed between the rows in the two tables, see the Java <b>Table</b> class for details.
+     * A promise that will be resolved with the newly created table holding the results of the specified cross join
+     * operation. The `columnsToAdd` parameter is optional, not specifying it will result in all columns from the
+     * right table being added to the output. The `reserveBits` optional parameter lets the client control how the
+     * key space is distributed between the rows in the two tables, see the Java `Table` class for details.
      *
-     * @param rightTable the table to match to values in this table
-     * @param columnsToMatch the columns that should match exactly
-     * @param columnsToAdd columns from the right table to add to the resulting table, empty/null/absent to add all
-     *        columns
-     * @param reserveBits the number of bits of key-space to initially reserve per group, null/absent will let the
-     *        server select a value
-     * @return a promise that will resolve to the joined table
+     * @param rightTable The table to match to values in this table.
+     * @param columnsToMatch The columns that should match exactly.
+     * @param columnsToAdd Columns from the right table to add to the resulting table, empty/null/absent to add all
+     *        columns.
+     * @param reserveBits The number of bits of key-space to initially reserve per group, null/absent will let the
+     *        server select a value.
+     * @return A promise that will resolve to the joined table.
      */
     @JsMethod
     Promise<JsTable> crossJoin(JoinableTable rightTable, JsArray<String> columnsToMatch,
             @JsOptional @JsNullable JsArray<String> columnsToAdd, @JsOptional @JsNullable Double reserveBits);
 
     /**
-     * a promise that will be resolved with the newly created table holding the results of the specified exact join
+     * A promise that will be resolved with the newly created table holding the results of the specified exact join
      * operation. The `columnsToAdd` parameter is optional, not specifying it will result in all columns from the right
      * table being added to the output.
      *
-     * @param rightTable the table to match to values in this table
-     * @param columnsToMatch the columns that should match exactly
-     * @param columnsToAdd columns from the right table to add to the resulting table, empty/null/absent to add all
-     *        columns
-     * @return a promise that will resolve to the joined table
+     * @param rightTable The table to match to values in this table.
+     * @param columnsToMatch The columns that should match exactly.
+     * @param columnsToAdd Columns from the right table to add to the resulting table, empty/null/absent to add all
+     *        columns.
+     * @return A promise that will resolve to the joined table.
      */
     @JsMethod
     Promise<JsTable> exactJoin(JoinableTable rightTable, JsArray<String> columnsToMatch,
             @JsOptional @JsNullable JsArray<String> columnsToAdd);
 
     /**
-     * a promise that will be resolved with the newly created table holding the results of the specified natural join
-     * operation. The <b>columnsToAdd</b> parameter is optional, not specifying it will result in all columns from the
+     * A promise that will be resolved with the newly created table holding the results of the specified natural join
+     * operation. The `columnsToAdd` parameter is optional, not specifying it will result in all columns from the
      * right table being added to the output.
      *
-     * @param rightTable the table to match to values in this table
-     * @param columnsToMatch the columns that should match exactly
-     * @param columnsToAdd columns from the right table to add to the resulting table, empty/null/absent to add all
-     *        columns
-     * @return a promise that will resolve to the joined table
+     * @param rightTable The table to match to values in this table.
+     * @param columnsToMatch The columns that should match exactly.
+     * @param columnsToAdd Columns from the right table to add to the resulting table. Empty/null/absent to add all
+     *        columns.
+     * @return A promise that will resolve to the joined table.
      */
     @JsMethod
     Promise<JsTable> naturalJoin(JoinableTable rightTable, JsArray<String> columnsToMatch,

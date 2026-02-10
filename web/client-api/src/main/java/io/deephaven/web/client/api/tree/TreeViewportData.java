@@ -35,13 +35,13 @@ public interface TreeViewportData extends TableData {
     double getOffset();
 
     /**
-     * Row implementation that also provides additional read-only properties. represents visible rows in the table, but
+     * Row implementation that also provides additional read-only properties. Represents visible rows in the table, but
      * with additional properties to reflect the tree structure.
      */
     @JsType
     interface TreeRow extends TableData.Row {
         /**
-         * True if this node is currently expanded to show its children; false otherwise. Those children will be the
+         * `true` if this node is currently expanded to show its children; `false` otherwise. Those children will be the
          * rows below this one with a greater depth than this one.
          *
          * @return boolean
@@ -50,7 +50,7 @@ public interface TreeViewportData extends TableData {
         boolean isExpanded();
 
         /**
-         * True if this node has children and can be expanded; false otherwise. Note that this value may change when the
+         * `true` if this node has children and can be expanded; `false` otherwise. Note that this value may change when the
          * table updates, depending on the table's configuration.
          *
          * @return boolean

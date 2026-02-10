@@ -10,7 +10,7 @@ import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
 
 /**
- * Extends {@link TableData}, but only contains data in the current viewport. The only API change from TableData is that
+ * Extends {@link TableData}, but only contains data in the current viewport. The only API change from `TableData` is that
  * ViewportData also contains the offset to this data, so that the actual row number may be determined.
  * <p>
  * For viewport subscriptions, it is not necessary to read with the key, only with the position.

@@ -29,7 +29,7 @@ import jsinterop.annotations.JsProperty;
 import jsinterop.base.Js;
 
 /**
- * Behaves like a Table, but doesn't expose all of its API for changing the internal state. Instead, state is driven by
+ * Behaves like a `Table`, but doesn't expose all of its API for changing the internal state. Instead, state is driven by
  * the upstream table - when it changes handle, this listens and updates its own handle accordingly.
  *
  * Additionally, this is automatically subscribed to its one and only row, across all columns.
@@ -37,7 +37,7 @@ import jsinterop.base.Js;
  * A new config is returned any time it is accessed, to prevent accidental mutation, and to allow it to be used as a
  * template when fetching a new totals table, or changing the totals table in use.
  *
- * A simplistic Table, providing access to aggregation of the table it is sourced from. This table is always
+ * A simplistic `Table`, providing access to aggregation of the table it is sourced from. This table is always
  * automatically subscribed to its parent, and adopts changes automatically from it. This class has limited methods
  * found on Table. Instances of this type always have a size of one when no groupBy is set on the config, but may
  * potentially contain as few as zero rows, or as many as the parent table if each row gets its own group.
@@ -61,7 +61,7 @@ public class JsTotalsTable implements JoinableTable, ServerObject {
     private Double updateIntervalMs;
 
     /**
-     * Table is wrapped to let us delegate calls to it, the directive is a serialized string, and the groupBy is copied
+     * Table is wrapped to let us delegate calls to it, the directive is a serialized string, and the `groupBy` is copied
      * when passed in, as well as when it is accessed, to prevent accidental mutation of the array.
      */
     public JsTotalsTable(JsTable wrappedTable, String directive, JsArray<String> groupBy) {
@@ -195,7 +195,7 @@ public class JsTotalsTable implements JoinableTable, ServerObject {
     }
 
     /**
-     * a column by the given name. You should prefer to always retrieve a new Column instance instead of caching a
+     * A column by the given name. You should prefer to always retrieve a new `Column` instance instead of caching a
      * returned value.
      * 
      * @param key
@@ -208,7 +208,7 @@ public class JsTotalsTable implements JoinableTable, ServerObject {
     }
 
     /**
-     * multiple columns specified by the given names.
+     * Multiple columns specified by the given names.
      * 
      * @param keys
      * @return {@link Column} array
@@ -219,7 +219,7 @@ public class JsTotalsTable implements JoinableTable, ServerObject {
     }
 
     /**
-     * True if this table may receive updates from the server, including size changed events, updated events after
+     * `true` if this table may receive updates from the server, including size changed events, updated events after
      * initial snapshot.
      *
      * @return boolean
@@ -230,7 +230,7 @@ public class JsTotalsTable implements JoinableTable, ServerObject {
     }
 
     /**
-     * True if this table has been closed.
+     * `true` if this table has been closed.
      *
      * @return boolean
      */
@@ -331,7 +331,7 @@ public class JsTotalsTable implements JoinableTable, ServerObject {
     }
 
     /**
-     * An ordered list of Sorts to apply to the table. To update, call applySort(). Note that this getter will return
+     * An ordered list of Sorts to apply to the table. To update, call `applySort`. Note that this getter will return
      * the new value immediately, even though it may take a little time to update on the server. You may listen for the
      * <b>sortchanged</b> event to know when to update the UI.
      * 
@@ -343,7 +343,7 @@ public class JsTotalsTable implements JoinableTable, ServerObject {
     }
 
     /**
-     * An ordered list of Filters to apply to the table. To update, call applyFilter(). Note that this getter will
+     * An ordered list of Filters to apply to the table. To update, call `applyFilter`. Note that this getter will
      * return the new value immediately, even though it may take a little time to update on the server. You may listen
      * for the <b>filterchanged</b> event to know when to update the UI.
      * 
@@ -356,7 +356,7 @@ public class JsTotalsTable implements JoinableTable, ServerObject {
 
     /**
      * Read-only. An ordered list of custom column formulas to add to the table, either adding new columns or replacing
-     * existing ones. To update, call <b>applyCustomColumns()</b>.
+     * existing ones. To update, call `applyCustomColumns`.
      * 
      * @return {@link CustomColumn} array
      */

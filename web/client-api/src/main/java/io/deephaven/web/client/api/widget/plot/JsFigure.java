@@ -77,7 +77,7 @@ import java.util.stream.Stream;
 public class JsFigure extends HasLifecycle {
 
     /**
-     * The data within this figure was updated. <b>event.detail</b> is <b>FigureUpdateEventData</b>
+     * The data within this figure was updated. `event.detail` is `FigureUpdateEventData`
      */
     @JsProperty(namespace = "dh.plot.Figure")
     public static final String EVENT_UPDATED = "updated",
@@ -91,19 +91,19 @@ public class JsFigure extends HasLifecycle {
             EVENT_RECONNECTFAILED = JsTable.EVENT_RECONNECTFAILED,
             /**
              * The API is updating how downsampling works on this Figure, probably in response to a call to
-             * <b>Axis.range()</b> or subscribe(). The <b>event.detail</b> value is an array of <b>Series</b> instances
+             * `Axis.range()` or `subscribe()`. The `event.detail` value is an array of `Series` instances
              * which are affected by this.
              */
             EVENT_DOWNSAMPLESTARTED = "downsamplestarted",
             /**
-             * Downsampling has finished on the given <b>Series</b> instances, and data will arrive shortly. The
-             * <b>event.detail</b> value is the array of <b>Series</b> instances.
+             * Downsampling has finished on the given `Series` instances, and data will arrive shortly. The
+             * `event.detail` value is the array of `Series` instances.
              */
             EVENT_DOWNSAMPLEFINISHED = "downsamplefinished",
             /**
-             * Downsampling failed for some reason on one or more series. The <b>event.detail</b> object has three
-             * properties, the <b>message</b> string describing what went wrong, the <b>size</b> number showing the full
-             * size of the table, and the <b>series</b> property, an array of <b>Series</b> instances affected.
+             * Downsampling failed for some reason on one or more series. The `event.detail` object has three
+             * properties: the <b>message</b> string describing what went wrong, the <b>size</b> number showing the full
+             * size of the table, and the <b>series</b> property, an array of `Series` instances affected.
              */
             EVENT_DOWNSAMPLEFAILED = "downsamplefailed",
             /**

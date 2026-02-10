@@ -60,8 +60,8 @@ public final class TableSubscription extends AbstractTableSubscription {
     /**
      * Updates the subscription to use the given columns and update interval.
      * 
-     * @param columns the new columns to subscribe to
-     * @param updateIntervalMs the new update interval, or null/omit to use the default of one second
+     * @param columns the new columns to subscribe to.
+     * @param updateIntervalMs the new update interval, or `null`/omit to use the default of one second.
      */
     public void changeSubscription(JsArray<Column> columns, @JsNullable Double updateIntervalMs) {
         if (updateIntervalMs != null && !updateIntervalMs.equals(this.updateIntervalMs)) {

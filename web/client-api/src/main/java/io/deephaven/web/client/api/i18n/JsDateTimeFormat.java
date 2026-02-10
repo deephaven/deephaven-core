@@ -22,7 +22,7 @@ import java.util.*;
  * Largely an exported wrapper for the GWT DateFormat, but also includes support for formatting nanoseconds as an
  * additional 6 decimal places after the rest of the number.
  *
- * Other concerns that this handles includes accepting a js Date and ignoring the lack of nanos, accepting a js Number
+ * Other concerns that this handles includes accepting a js `Date` and ignoring the lack of nanos, accepting a js `Number`
  * and assuming it to be a lossy nano value, and parsing into a js Date.
  *
  *
@@ -66,7 +66,7 @@ public class JsDateTimeFormat {
 
     /**
      * Accepts a variety of input objects to interpret as a date, and formats them using the specified pattern. A
-     * `TimeZone` object can optionally be provided to format this date as the current date/time in that timezone.See
+     * `TimeZone` object can optionally be provided to format this date as the current date/time in that timezone. See
      * the instance method for more details on input objects.
      * 
      * @param pattern
@@ -169,9 +169,9 @@ public class JsDateTimeFormat {
 
     /**
      * Takes a variety of objects to interpret as a date, and formats them using this instance's pattern. Inputs can
-     * include a <b>String</b> value of a number expressed in nanoseconds, a <b>Number</b> value expressed in
-     * nanoseconds, a JS <b>Date</b> object (necessarily in milliseconds), or a wrapped Java <b>long</b> value,
-     * expressed in nanoseconds. A <b>TimeZone</b> object can optionally be provided to format this date as the current
+     * include a `String` value of a number expressed in nanoseconds, a `Number` value expressed in
+     * nanoseconds, a JS `Date` object (necessarily in milliseconds), or a wrapped Java `long` value,
+     * expressed in nanoseconds. A `TimeZone` object can optionally be provided to format this date as the current
      * date/time in that timezone.
      * 
      * @param date

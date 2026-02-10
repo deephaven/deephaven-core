@@ -52,8 +52,8 @@ public class JsStorageService {
      * Lists items in a given directory, with an optional filter glob to only list files that match. The empty or "root"
      * path should be specified as the empty string.
      *
-     * @param path the path of the directory to list
-     * @param glob optional glob to filter the contents of the directory
+     * @param path the path of the directory to list.
+     * @param glob optional glob to filter the contents of the directory.
      * @return a promise containing the any items that are present in the given directory that match the glob, or an
      *         error.
      */
@@ -71,8 +71,8 @@ public class JsStorageService {
     /**
      * Downloads a file at the given path, unless an etag is provided that matches the file's current contents.
      *
-     * @param path the path of the file to fetch
-     * @param etag an optional etag from the last time the client saw this file
+     * @param path the path of the file to fetch.
+     * @param etag an optional etag from the last time the client saw this file.
      * @return a promise containing details about the file's contents, or an error.
      */
     @JsMethod
@@ -96,7 +96,7 @@ public class JsStorageService {
     /**
      * Deletes the item at the given path. Directories must be empty to be deleted.
      *
-     * @param path the path of the item to delete
+     * @param path the path of the item to delete.
      * @return a promise with no value on success, or an error.
      */
     @JsMethod
@@ -109,15 +109,15 @@ public class JsStorageService {
     }
 
     /**
-     * Saves the provided contents to the given path, creating a file or replacing an existing one. The optional newFile
+     * Saves the provided contents to the given path, creating a file or replacing an existing one. The optional `newFile`
      * parameter can be passed to indicate that an existing file must not be overwritten, only a new file created.
      *
      * Note that directories must be empty to be overwritten.
      *
-     * @param path the path of the file to write
-     * @param contents the contents to write to that path
-     * @param allowOverwrite true to allow an existing file to be overwritten, false or skip to require a new file
-     * @return a promise with a FileContents, holding only the new etag (if the server emitted one), or an error
+     * @param path the path of the file to write.
+     * @param contents the contents to write to that path.
+     * @param allowOverwrite `true` to allow an existing file to be overwritten, `false` or skip to require a new file.
+     * @return a promise with a `FileContents`, holding only the new etag (if the server emitted one), or an error.
      */
     @JsMethod
     public Promise<JsFileContents> saveFile(String path, JsFileContents contents, @JsOptional Boolean allowOverwrite) {
@@ -137,13 +137,13 @@ public class JsStorageService {
     }
 
     /**
-     * Moves (and/or renames) an item from its old path to its new path. The optional newFile parameter can be passed to
+     * Moves (and/or renames) an item from its old path to its new path. The optional `newFile` parameter can be passed to
      * enforce that an existing item must not be overwritten.
      *
      * Note that directories must be empty to be overwritten.
      *
-     * @param oldPath the path of the existing item
-     * @param newPath the new path to move the item to
+     * @param oldPath the path of the existing item.
+     * @param newPath the new path to move the item to.
      * @param allowOverwrite true to allow an existing file to be overwritten, false or skip to require a new file
      * @return a promise with no value on success, or an error.
      */
@@ -164,7 +164,7 @@ public class JsStorageService {
     /**
      * Creates a new directory at the specified path.
      *
-     * @param path the path of the directory to create
+     * @param path the path of the directory to create.
      * @return a promise with no value on success, or an error.
      */
     @JsMethod

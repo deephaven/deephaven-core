@@ -35,21 +35,21 @@ public class FilterCondition {
      * a filter condition invoking a static function with the given parameters. Currently supported Deephaven static
      * functions:
      * <ul>
-     * <li><b>inRange</b>: Given three comparable values, returns true if the first is less than the second but greater
+     * <li>`inRange`: Given three comparable values, returns true if the first is less than the second but greater
      * than the third</li>
-     * <li><b>isInf</b>:Returns true if the given number is <i>infinity</i></li>
-     * <li><b>isNaN</b>:Returns true if the given number is <i>not a number</i></li>
-     * <li><b>isNormal</b>:Returns true if the given number <i>is not null</i>, <i>is not infinity</i>, and <i>is not
-     * "not a number"</i></li>
-     * <li><b>startsWith</b>:Returns true if the first string starts with the second string</li>
-     * <li><b>endsWith</b>Returns true if the first string ends with the second string</li>
-     * <li><b>matches</b>:Returns true if the first string argument matches the second string used as a Java regular
-     * expression</li>
-     * <li><b>contains</b>:Returns true if the first string argument contains the second string as a substring</li>
-     * <li><b>in</b>:Returns true if the first string argument can be found in the second array argument.
+     * <li>`isInf`: Returns `true` if the given number is <i>infinity</i>.</li>
+     * <li>`isNaN`: Returns `true` if the given number is <i>not a number</i>.</li>
+     * <li>`isNormal`: Returns `true` if the given number <i>is not null</i>, <i>is not infinity</i>, and <i>is not
+     * "not a number"</i>.</li>
+     * <li>`startsWith`: Returns `true` if the first string starts with the second string.</li>
+     * <li>`endsWith`: Returns `true` if the first string ends with the second string.</li>
+     * <li>`matches`: Returns `true` if the first string argument matches the second string used as a Java regular
+     * expression.</li>
+     * <li>`contains`: Returns `true` if the first string argument contains the second string as a substring.</li>
+     * <li>`in`: Returns `true` if the first string argument can be found in the second array argument.
      * <p>
      * Note that the array can only be specified as a column reference at this time - typically the `FilterValue.in`
-     * method should be used in other cases
+     * method should be used in other cases.
      * </p>
      * </li>
      * </ul>
@@ -71,9 +71,9 @@ public class FilterCondition {
     }
 
     /**
-     * a filter condition which will check if the given value can be found in any supported column on whatever table
-     * this FilterCondition is passed to. This FilterCondition is somewhat unique in that it need not be given a column
-     * instance, but will adapt to any table. On numeric columns, with a value passed in which can be parsed as a
+     * A filter condition which will check if the given value can be found in any supported column on whatever table
+     * this `FilterCondition` is passed to. This `FilterCondition` is somewhat unique in that it need not be given a
+     * column instance, but will adapt to any table. On numeric columns, with a value passed in which can be parsed as a
      * number, the column will be filtered to numbers which equal, or can be "rounded" effectively to this number. On
      * String columns, the given value will match any column which contains this string in a case-insensitive search. An
      * optional second argument can be passed, an array of `FilterValue` from the columns to limit this search to (see
@@ -104,7 +104,7 @@ public class FilterCondition {
     }
 
     /**
-     * the opposite of this condition
+     * The opposite of this condition.
      * 
      * @return FilterCondition
      */
@@ -126,7 +126,7 @@ public class FilterCondition {
     }
 
     /**
-     * a condition representing the current condition logically ANDed with the other parameters
+     * A condition representing the current condition logically ANDed with the other parameters.
      * 
      * @param filters
      * @return FilterCondition
@@ -144,7 +144,7 @@ public class FilterCondition {
 
 
     /**
-     * a condition representing the current condition logically ORed with the other parameters
+     * A condition representing the current condition logically ORed with the other parameters.
      * 
      * @param filters
      * @return FilterCondition.
@@ -167,7 +167,7 @@ public class FilterCondition {
     }
 
     /**
-     * a string suitable for debugging showing the details of this condition.
+     * A string suitable for debugging showing the details of this condition.
      * 
      * @return String.
      */

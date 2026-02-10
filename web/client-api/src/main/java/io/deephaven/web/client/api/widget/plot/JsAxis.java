@@ -18,7 +18,7 @@ import jsinterop.annotations.*;
 import jsinterop.base.Js;
 
 /**
- * Defines one axis used with by series. These instances will be found both on the Chart and the Series instances, and
+ * Defines one axis used by series. These instances will be found both on the Chart and the Series instances, and
  * may be shared between Series instances.
  */
 @TsInterface
@@ -67,7 +67,7 @@ public class JsAxis {
     }
 
     /**
-     * The type for this axis. See <b>AxisFormatType</b> enum for more details.
+     * The type for this axis. See `AxisFormatType` enum for more details.
      * 
      * @return int
      */
@@ -78,7 +78,7 @@ public class JsAxis {
     }
 
     /**
-     * The type for this axis, indicating how it will be drawn. See <b>AxisType</b> enum for more details.
+     * The type for this axis, indicating how it will be drawn. See `AxisType` enum for more details.
      * 
      * @return int
      */
@@ -89,7 +89,7 @@ public class JsAxis {
     }
 
     /**
-     * The position for this axis. See <b>AxisPosition</b> enum for more details.
+     * The position for this axis. See `AxisPosition` enum for more details.
      * 
      * @return int
      */

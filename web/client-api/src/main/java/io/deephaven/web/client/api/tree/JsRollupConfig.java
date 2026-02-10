@@ -45,7 +45,7 @@ import java.util.Set;
 import java.util.stream.Collector;
 
 /**
- * Describes a grouping and aggregations for a roll-up table. Pass to the <b>Table.rollup</b> function to create a
+ * Describes a grouping and aggregations for a roll-up table. Pass to the `Table.rollup` function to create a
  * roll-up table.
  */
 @JsType(name = "RollupConfig", namespace = "dh")
@@ -64,14 +64,14 @@ public class JsRollupConfig {
     /**
      * Optional parameter indicating if an extra leaf node should be added at the bottom of the hierarchy, showing the
      * rows in the underlying table which make up that grouping. Since these values might be a different type from the
-     * rest of the column, any client code must check if TreeRow.hasChildren = false, and if so, interpret those values
-     * as if they were Column.constituentType instead of Column.type. Defaults to false.
+     * rest of the column, any client code must check if `TreeRow.hasChildren` = `false`, and if so, interpret those values
+     * as if they were `Column.constituentType` instead of `Column.type`. Defaults to false.
      */
     public boolean includeConstituents = false;
     @JsNullable
     public boolean includeOriginalColumns = false;
     /**
-     * Optional parameter indicating if original column descriptions should be included. Defaults to true.
+     * Optional parameter indicating if original column descriptions should be included. Defaults to `true`.
      */
     public boolean includeDescriptions = true;
 

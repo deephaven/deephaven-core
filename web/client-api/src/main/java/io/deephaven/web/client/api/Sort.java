@@ -9,9 +9,9 @@ import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsProperty;
 
 /**
- * Describes a Sort present on the table. No visible constructor, created through the use of Column.sort(), will be tied
- * to that particular column data. Sort instances are immutable, and use a builder pattern to make modifications. All
- * methods return a new Sort instance.
+ * Describes a `Sort` present on the table. No visible constructor, created through the use of `Column.sort()`, will be tied
+ * to that particular column data. `Sort` instances are immutable, and use a builder pattern to make modifications. All
+ * methods return a new `Sort` instance.
  */
 @TsName(namespace = "dh")
 public class Sort {
@@ -48,7 +48,7 @@ public class Sort {
     }
 
     /**
-     * The direction of this sort, either <b>ASC</b>, <b>DESC</b>, or <b>REVERSE</b>.
+     * The direction of this sort, either `ASC`, `DESC`, or `REVERSE`.
      * 
      * @return String
      */
@@ -58,7 +58,7 @@ public class Sort {
     }
 
     /**
-     * True if the absolute value of the column should be used when sorting; defaults to false.
+     * Set to `true` if the absolute value of the column should be used when sorting; defaults to `false`.
      * 
      * @return boolean
      */
@@ -68,7 +68,7 @@ public class Sort {
     }
 
     /**
-     * Builds a Sort instance to sort values in ascending order.
+     * Builds a `Sort` instance to sort values in ascending order.
      * 
      * @return {@link Sort}
      */
@@ -81,7 +81,7 @@ public class Sort {
     }
 
     /**
-     * Builds a Sort instance to sort values in descending order.
+     * Builds a `Sort` instance to sort values in descending order.
      * 
      * @return {@link Sort}
      */
@@ -94,7 +94,7 @@ public class Sort {
     }
 
     /**
-     * Builds a Sort instance which takes the absolute value before applying order.
+     * Builds a `Sort` instance which takes the absolute value before applying order.
      * 
      * @return {@link Sort}
      */
