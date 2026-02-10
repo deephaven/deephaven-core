@@ -15,9 +15,9 @@ import java.util.function.Predicate;
  * logic to perform this action is not contained in this class.
  */
 public abstract class RegionedPushdownAction {
-    public static EstimateContext DEFAULT_ESTIMATE_CONTEXT = () -> {
+    public static final EstimateContext DEFAULT_ESTIMATE_CONTEXT = () -> {
     };
-    public static ActionContext DEFAULT_ACTION_CONTEXT = () -> {
+    public static final ActionContext DEFAULT_ACTION_CONTEXT = () -> {
     };
 
     /**

@@ -534,6 +534,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
         public void close() {}
     }
 
+    @Override
     public RegionedPushdownAction.EstimateContext makeEstimateContext(
             final WhereFilter filter,
             final PushdownFilterContext filterContext) {
@@ -618,6 +619,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
         public void close() {}
     }
 
+    @Override
     public RegionedPushdownAction.ActionContext makeActionContext(
             final WhereFilter filter,
             final PushdownFilterContext filterContext) {

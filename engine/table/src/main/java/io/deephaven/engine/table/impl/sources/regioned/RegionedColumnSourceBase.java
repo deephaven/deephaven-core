@@ -185,7 +185,7 @@ abstract class RegionedColumnSourceBase<DATA_TYPE, ATTR extends Values, REGION_T
 
         jobScheduler.iterateParallel(
                 ExecutionContext.getContext(),
-                (LogOutput output) -> output.append("RegionedColumnSourceBase#estimatePushdownFilterCost"),
+                (LogOutput output) -> output.append("RegionedColumnSourceBase#pushdownFilter"),
                 RegionedPushdownHelper.RegionThreadContext::new,
                 0,
                 regionIndices.length,

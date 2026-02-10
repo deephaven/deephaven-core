@@ -30,7 +30,7 @@ public interface RegionedPushdownFilterMatcher extends PushdownFilterMatcher {
 
     /**
      * Given a list of actions, estimate the cost of the next pushdown action. This is not always the first action in
-     * the list because this matcher may not support the lowest cost action.
+     * the list because this matcher may not support every allowed action.
      */
     default long estimatePushdownAction(
             final List<RegionedPushdownAction> actions,
