@@ -115,7 +115,7 @@ Parallel snapshotting is not enabled until the snapshot size exceeds `QueryTable
 
 ## SoftRecycler configuration
 
-Deephaven uses [`SoftRecycler`](https://docs.deephaven.io/core/javadoc/io/deephaven/util/SoftRecycler.html) objects to manage memory for array and sparse array column sources. These recyclers maintain pools of allocated arrays that can be reused rather than constantly allocating and deallocating memory, which can improve performance and reduce garbage collection pressure.
+Deephaven uses [`SoftRecycler`](https://docs.deephaven.io/core/javadoc/io/deephaven/util/SoftRecycler.html) objects to manage memory for array and sparse array column sources. These column sources must maintain previous values during an update graph cycle. Rather than allocating fresh memory on each cycle, when memory is needed to record previous values it is borrowed from the recycler and returned at the end of the update cycle. These pools can improve performance and reduce garbage collection pressure.
 
 The capacity of these recyclers (how many arrays each recycler holds) can be configured on a per-type basis, allowing you to tune memory usage based on your workload characteristics.
 
@@ -189,7 +189,6 @@ Sparse array column sources use a multi-level hierarchical structure and maintai
 
 The recycler capacity determines how many array blocks are kept in memory for potential reuse. Increasing capacity can improve performance if your workload uses more blocks within an update cycle than the recycler can hold, at the cost of higher baseline memory usage. Decreasing capacity reduces baseline memory requirements, but may increase garbage collection.
 
-- **Low memory environments**: Consider reducing capacities to reduce memory footprint.
 - **High throughput environments**: Consider increasing capacities to reduce allocation/deallocation overhead.
 - **Type-specific tuning**: If certain types are used more frequently, you can increase their capacity while reducing others.
 
