@@ -15,10 +15,17 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.stream.StreamToBlinkTableAdapter;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.process.ProcessEnvironment;
+import io.deephaven.util.process.ShutdownManager;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
@@ -67,11 +74,25 @@ public class ServerStateTracker {
 
     private void startThread() {
         final ExecutionContext executionContext = ExecutionContext.getContext();
-        Thread driverThread = new Thread(
-                new ServerStateTracker.Driver(executionContext),
+        final Driver driver = new Driver(executionContext);
+        final Thread driverThread = new Thread(
+                driver,
                 ServerStateTracker.class.getSimpleName() + ".Driver");
         driverThread.setDaemon(true);
         driverThread.start();
+        final ShutdownManager shutdownManager = ProcessEnvironment.getGlobalShutdownManager();
+        // TODO(DH-21651): Improve shutdown ordering constraints
+        // Expressing in what appears to be "out-of-order", because within each category, there is a stack-based
+        // execution (first-in, last-out); and we could theoretically change this first task to FIRST and it would need
+        // to be in this order.
+        shutdownManager.registerTask(ShutdownManager.OrderingCategory.MIDDLE, () -> {
+            try {
+                driverThread.join(100);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        });
+        shutdownManager.registerTask(ShutdownManager.OrderingCategory.FIRST, driver::shutdown);
     }
 
     public static synchronized void start() {
@@ -132,41 +153,70 @@ public class ServerStateTracker {
     private class Driver implements Runnable {
         private final ExecutionContext executionContext;
 
+        private final Lock lock;
+        private final Condition shutdownCondition;
+        private boolean shutdown;
+
         public Driver(@NotNull final ExecutionContext executionContext) {
             this.executionContext = executionContext;
+            this.lock = new ReentrantLock();
+            this.shutdownCondition = lock.newCondition();
         }
 
         @Override
         public void run() {
-            final RuntimeMemory.Sample memSample = new RuntimeMemory.Sample();
-            // noinspection InfiniteLoopStatement
-            while (true) {
-                final long intervalStartTimeMillis = System.currentTimeMillis();
+            try (final ServerStateLogLogger _ignored = processMemLogger) {
+                final RuntimeMemory.Sample memSample = new RuntimeMemory.Sample();
+                lock.lock();
                 try {
-                    Thread.sleep(REPORT_INTERVAL_MILLIS);
-                } catch (InterruptedException ignore) {
-                    // should log, but no logger handy
-                    // ignore
+                    while (!shutdown) {
+                        final long intervalStartTimeMillis = System.currentTimeMillis();
+                        try {
+                            shutdownCondition.await(REPORT_INTERVAL_MILLIS, TimeUnit.MILLISECONDS);
+                        } catch (InterruptedException e) {
+                            // unexpected; should not be interrutping this thread
+                        }
+                        if (!shutdown) {
+                            runOne(memSample, intervalStartTimeMillis);
+                        }
+                    }
+                } finally {
+                    lock.unlock();
                 }
-                final long prevTotalCollections = memSample.totalCollections;
-                final long prevTotalCollectionTimeMs = memSample.totalCollectionTimeMs;
-                RuntimeMemory.getInstance().read(memSample);
-                executionContext.getUpdateGraph().<PeriodicUpdateGraph>cast()
-                        .takeAccumulatedCycleStats(ugpAccumCycleStats);
-                final long endTimeMillis = System.currentTimeMillis();
-                try (final SafeCloseable ignored = executionContext.open()) {
-                    logProcessMem(
-                            intervalStartTimeMillis,
-                            endTimeMillis,
-                            memSample,
-                            prevTotalCollections,
-                            prevTotalCollectionTimeMs,
-                            ugpAccumCycleStats.cycles,
-                            ugpAccumCycleStats.cyclesOnBudget,
-                            ugpAccumCycleStats.cycleTimesMicros,
-                            ugpAccumCycleStats.safePoints,
-                            ugpAccumCycleStats.safePointPauseTimeMillis);
-                }
+            } catch (final IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        }
+
+        public void shutdown() {
+            lock.lock();
+            try {
+                shutdown = true;
+                shutdownCondition.signal();
+            } finally {
+                lock.unlock();
+            }
+        }
+
+        private void runOne(final RuntimeMemory.Sample memSample, final long intervalStartTimeMillis) {
+            final long prevTotalCollections = memSample.totalCollections;
+            final long prevTotalCollectionTimeMs = memSample.totalCollectionTimeMs;
+            RuntimeMemory.getInstance().read(memSample);
+            executionContext.getUpdateGraph().<PeriodicUpdateGraph>cast()
+                    .takeAccumulatedCycleStats(ugpAccumCycleStats);
+            final long endTimeMillis = System.currentTimeMillis();
+            try (final SafeCloseable ignored = executionContext.open()) {
+                logProcessMem(
+                        intervalStartTimeMillis,
+                        endTimeMillis,
+                        memSample,
+                        prevTotalCollections,
+                        prevTotalCollectionTimeMs,
+                        ugpAccumCycleStats.cycles,
+                        ugpAccumCycleStats.cyclesOnBudget,
+                        ugpAccumCycleStats.cycleTimesMicros,
+                        ugpAccumCycleStats.safePoints,
+                        ugpAccumCycleStats.safePointPauseTimeMillis);
             }
         }
     }
