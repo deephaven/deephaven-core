@@ -984,66 +984,38 @@ public class RegionedColumnSourceManager
         return local;
     }
 
-    /**
-     * This context is shared with the RegionedColumnSourceBase instances.
-     */
-    public static class RegionedColumnSourcePushdownFilterContext extends BasePushdownFilterContext {
-        private final List<ColumnDefinition<?>> columnDefinitions;
-        private final Map<String, String> renameMap;
-
-        public RegionedColumnSourcePushdownFilterContext(
-                final RegionedColumnSourceManager manager,
-                final WhereFilter filter,
-                final List<ColumnSource<?>> columnSources) {
-            super(filter, columnSources);
-
-            final List<String> filterColumns = filter.getColumns();
-            Require.eq(filterColumns.size(), "filterColumns.size()",
-                    columnSources.size(), "columnSources.size()");
-
-            // Map the incoming column sources to their local name and definition.
-            columnDefinitions = new ArrayList<>(columnSources.size());
-            renameMap = new HashMap<>();
-            final IdentityHashMap<ColumnSource<?>, String> columnSourceToName = manager.columnSourceToName();
-            final Map<String, ColumnDefinition<?>> columnNameToDefinition = manager.columnNameToDefinition();
-
-            for (int ii = 0; ii < filterColumns.size(); ii++) {
-                final String filterColumnName = filterColumns.get(ii);
-                final ColumnSource<?> filterSource = columnSources.get(ii);
-                final String localColumnName = columnSourceToName.get(filterSource);
-                if (localColumnName == null) {
-                    throw new IllegalArgumentException(
-                            "No associated source for '" + filterColumnName + "' found in column sources");
-                }
-                // Add the definition.
-                columnDefinitions.add(columnNameToDefinition.get(localColumnName));
-
-                // Add the rename (if needed)
-                if (localColumnName.equals(filterColumnName)) {
-                    continue;
-                }
-                renameMap.put(filterColumnName, localColumnName);
-            }
-        }
-
-        public List<ColumnDefinition<?>> columnDefinitions() {
-            return columnDefinitions;
-        }
-
-        public Map<String, String> renameMap() {
-            return renameMap;
-        }
-
-        @Override
-        public void close() {
-            super.close();
-        }
-    }
-
     @Override
     public PushdownFilterContext makePushdownFilterContext(
             final WhereFilter filter,
             final List<ColumnSource<?>> filterSources) {
-        return new RegionedColumnSourcePushdownFilterContext(this, filter, filterSources);
+        final List<String> filterColumns = filter.getColumns();
+        Require.eq(filterColumns.size(), "filterColumns.size()",
+                filterSources.size(), "filterSources.size()");
+
+        final List<ColumnDefinition<?>> columnDefinitions = new ArrayList<>(filterSources.size());
+        final Map<String, String> renameMap = new HashMap<>();
+
+        final IdentityHashMap<ColumnSource<?>, String> columnSourceToName = columnSourceToName();
+        final Map<String, ColumnDefinition<?>> columnNameToDefinition = columnNameToDefinition();
+
+        for (int ii = 0; ii < filterColumns.size(); ii++) {
+            final String filterColumnName = filterColumns.get(ii);
+            final ColumnSource<?> filterSource = filterSources.get(ii);
+            final String localColumnName = columnSourceToName.get(filterSource);
+            if (localColumnName == null) {
+                throw new IllegalArgumentException(
+                        "No associated source for '" + filterColumnName + "' found in column sources");
+            }
+            // Add the definition.
+            columnDefinitions.add(columnNameToDefinition.get(localColumnName));
+
+            // Add the rename (if needed)
+            if (localColumnName.equals(filterColumnName)) {
+                continue;
+            }
+            renameMap.put(filterColumnName, localColumnName);
+        }
+
+        return new RegionedPushdownFilterContext(filter, filterSources, columnDefinitions, renameMap);
     }
 }

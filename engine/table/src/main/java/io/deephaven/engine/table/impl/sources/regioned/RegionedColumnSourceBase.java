@@ -13,6 +13,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.table.impl.locations.impl.AbstractTableLocation;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.util.SafeCloseableArray;
@@ -119,6 +120,7 @@ abstract class RegionedColumnSourceBase<DATA_TYPE, ATTR extends Values, REGION_T
             final JobScheduler jobScheduler,
             final LongConsumer onComplete,
             final Consumer<Exception> onError) {
+        final RegionedPushdownFilterContext filterContext = (RegionedPushdownFilterContext) context;
         final List<RegionedColumnSourceManager.IncludedTableLocationEntry> tleList =
                 manager.includedLocationEntries();
 
@@ -138,19 +140,16 @@ abstract class RegionedColumnSourceBase<DATA_TYPE, ATTR extends Values, REGION_T
                     ctx.reset();
                     final int regionIndex = regionIndices[idx];
 
+                    // Create a local pushdown context that can provide the table location to the ColumnRegion
                     final RegionedColumnSourceManager.IncludedTableLocationEntry tle = tleList.get(regionIndex);
+                    final RegionedPushdownFilterLocationContext newCtx =
+                            filterContext.withTableLocation((AbstractTableLocation) tle.location);
                     ctx.shiftedRowSet = tle.subsetAndShiftIntoLocationSpace(selection);
-
-                    // Create a local region pushdown context that provides the table location to the ColumnRegion
-                    // filter processing code.
-                    final RegionedPushdownHelper.LocalRegionPushdownContext regionContext =
-                            RegionedPushdownHelper.LocalRegionPushdownContext.of(context, tle.location);
-
                     getRegion(regionIndex).estimatePushdownFilterCost(
                             filter,
                             ctx.shiftedRowSet,
                             usePrev,
-                            regionContext,
+                            newCtx,
                             jobScheduler,
                             regionCost -> {
                                 minCost.updateAndGet(old -> Math.min(old, regionCost));
@@ -174,6 +173,8 @@ abstract class RegionedColumnSourceBase<DATA_TYPE, ATTR extends Values, REGION_T
             final JobScheduler jobScheduler,
             final Consumer<PushdownResult> onComplete,
             final Consumer<Exception> onError) {
+        final RegionedPushdownFilterContext filterContext = (RegionedPushdownFilterContext) context;
+
         final List<RegionedColumnSourceManager.IncludedTableLocationEntry> tleList =
                 manager.includedLocationEntries();
 
@@ -192,19 +193,18 @@ abstract class RegionedColumnSourceBase<DATA_TYPE, ATTR extends Values, REGION_T
                     ctx.reset();
                     final int regionIndex = regionIndices[idx];
 
+                    // Create a local pushdown context that can provide the table location to the ColumnRegion
                     final RegionedColumnSourceManager.IncludedTableLocationEntry tle = tleList.get(regionIndex);
-                    ctx.shiftedRowSet = tle.subsetAndShiftIntoLocationSpace(selection);
+                    final RegionedPushdownFilterLocationContext newCtx =
+                            filterContext.withTableLocation((AbstractTableLocation) tle.location);
 
-                    // Create a local region pushdown context that provides the table location to the ColumnRegion
-                    // filter processing code.
-                    final RegionedPushdownHelper.LocalRegionPushdownContext regionContext =
-                            RegionedPushdownHelper.LocalRegionPushdownContext.of(context, tle.location);
+                    ctx.shiftedRowSet = tle.subsetAndShiftIntoLocationSpace(selection);
 
                     getRegion(regionIndex).pushdownFilter(
                             filter,
                             ctx.shiftedRowSet,
                             usePrev,
-                            regionContext,
+                            newCtx,
                             costCeiling,
                             jobScheduler,
                             result -> {

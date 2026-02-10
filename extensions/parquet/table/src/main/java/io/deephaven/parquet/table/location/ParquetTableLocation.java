@@ -3,6 +3,8 @@
 //
 package io.deephaven.parquet.table.location;
 
+import io.deephaven.api.ColumnName;
+import io.deephaven.api.Pair;
 import io.deephaven.api.SortColumn;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
@@ -10,6 +12,8 @@ import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.*;
@@ -21,14 +25,12 @@ import io.deephaven.engine.table.impl.chunkattributes.DictionaryKeys;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.engine.table.impl.chunkfilter.LongChunkMatchFilterFactory;
 import io.deephaven.engine.table.impl.dataindex.StandaloneDataIndex;
+import io.deephaven.engine.table.impl.filter.ExtractFilterWithoutBarriers;
 import io.deephaven.engine.table.impl.locations.*;
 import io.deephaven.engine.table.impl.locations.impl.AbstractTableLocation;
-import io.deephaven.engine.table.impl.sources.regioned.RegionedPushdownHelper;
+import io.deephaven.engine.table.impl.sources.regioned.*;
 import io.deephaven.engine.table.impl.select.*;
-import io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSource;
-import io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSourceManager;
-import io.deephaven.engine.table.impl.sources.regioned.RegionedPageStore;
-import io.deephaven.engine.table.impl.util.JobScheduler;
+import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.parquet.base.ParquetFileReader;
@@ -43,6 +45,7 @@ import io.deephaven.parquet.table.metadata.GroupingColumnInfo;
 import io.deephaven.parquet.table.metadata.SortColumnInfo;
 import io.deephaven.parquet.table.metadata.TableInfo;
 import io.deephaven.parquet.table.pagestore.ColumnChunkPageStore;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.mutable.MutableLong;
 import org.apache.parquet.column.statistics.Statistics;
 import org.apache.parquet.format.RowGroup;
@@ -61,8 +64,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.*;
-import java.util.function.Consumer;
-import java.util.function.LongConsumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -453,6 +454,45 @@ public class ParquetTableLocation extends AbstractTableLocation {
 
     // region Pushdown Filtering
 
+    private static final RegionedPushdownAction.Location ParquetRowGroupMetadata =
+            new RegionedPushdownAction.Location(
+                    () -> QueryTable.DISABLE_WHERE_PUSHDOWN_PARQUET_ROW_GROUP_METADATA,
+                    PushdownResult.METADATA_STATS_COST,
+                    BasePushdownFilterContext::supportsMetadataFiltering,
+                    (tl) -> ((ParquetTableLocation) tl).supportsMetadataFiltering());
+
+    private static final RegionedPushdownAction.Location InMemoryDataIndex =
+            new RegionedPushdownAction.Location(
+                    () -> QueryTable.DISABLE_WHERE_PUSHDOWN_DATA_INDEX,
+                    PushdownResult.IN_MEMORY_DATA_INDEX_COST,
+                    BasePushdownFilterContext::supportsInMemoryDataIndexFiltering,
+                    (tl) -> ((ParquetTableLocation) tl).supportsInMemoryDataIndexFiltering());
+
+    private static final RegionedPushdownAction.Location ParquetDictionary =
+            new RegionedPushdownAction.Location(
+                    () -> QueryTable.DISABLE_WHERE_PUSHDOWN_PARQUET_DICTIONARY,
+                    PushdownResult.DICTIONARY_DATA_COST,
+                    BasePushdownFilterContext::supportsDictionaryFiltering,
+                    (tl) -> ((ParquetTableLocation) tl).supportsDictionaryFiltering());
+
+    private static final RegionedPushdownAction.Location DeferredDataIndex =
+            new RegionedPushdownAction.Location(
+                    () -> QueryTable.DISABLE_WHERE_PUSHDOWN_DATA_INDEX,
+                    PushdownResult.DEFERRED_DATA_INDEX_COST,
+                    BasePushdownFilterContext::supportsDeferredDataIndexFiltering,
+                    (tl) -> ((ParquetTableLocation) tl).supportsDeferredDataIndexFiltering());
+
+    private static final List<RegionedPushdownAction> supportedActions = List.of(
+            ParquetRowGroupMetadata,
+            InMemoryDataIndex,
+            ParquetDictionary,
+            DeferredDataIndex);
+
+    @Override
+    public List<RegionedPushdownAction> supportedActions() {
+        return supportedActions;
+    }
+
     /**
      * Checks if the column has a dictionary page.
      *
@@ -475,77 +515,183 @@ public class ParquetTableLocation extends AbstractTableLocation {
                 && dictionaryChunk.size() > 0;
     }
 
-    @Override
-    public void estimatePushdownFilterCost(
-            final WhereFilter filter,
-            final RowSet selection,
-            final boolean usePrev,
-            final PushdownFilterContext context,
-            final JobScheduler jobScheduler,
-            final LongConsumer onComplete,
-            final Consumer<Exception> onError) {
-        onComplete.accept(estimatePushdownFilterCost(filter, selection, usePrev, context));
+    public static class EstimateContext implements RegionedPushdownAction.EstimateContext {
+        enum ResolveState {
+            RESOLVED, FAILED
+        }
+
+        private final ResolveState resolveState;
+        private final String[] parquetColumnNames;
+
+        private EstimateContext(
+                final ResolveState resolveState,
+                final String[] parquetColumnNames) {
+            this.resolveState = resolveState;
+            this.parquetColumnNames = parquetColumnNames;
+        }
+
+        @Override
+        public void close() {}
     }
 
-    private long estimatePushdownFilterCost(
+    public RegionedPushdownAction.EstimateContext makeEstimateContext(
             final WhereFilter filter,
-            final RowSet selection,
-            final boolean usePrev,
-            final PushdownFilterContext context) {
-        if (selection.isEmpty()) {
-            // If the selection is empty, we can skip all pushdown filtering.
-            log.warn().append("Estimate pushdown filter cost called with empty selection for table ")
-                    .append(getTableKey()).endl();
-            return Long.MAX_VALUE;
-        }
+            final PushdownFilterContext filterContext) {
+        final RegionedPushdownFilterContext filterCtx = (RegionedPushdownFilterContext) filterContext;
 
-        final RegionedColumnSourceManager.RegionedColumnSourcePushdownFilterContext ctx =
-                (RegionedColumnSourceManager.RegionedColumnSourcePushdownFilterContext) context;
-
-        final List<RegionedPushdownHelper.PushdownMode> allowedModes = costSortedModes()
-                .stream()
-                .filter(mode -> mode.allows(this, ctx))
-                .collect(Collectors.toList());
-
-        if (allowedModes.isEmpty()) {
-            return Long.MAX_VALUE;
-        }
-
+        // We must have an initialized location to create this estimate context.
         initialize();
 
-        final Optional<List<ResolvedColumnInfo>> maybeResolvedColumns = resolveColumns(filter, ctx.renameMap());
+        final Optional<List<ResolvedColumnInfo>> maybeResolvedColumns = resolveColumns(filter, filterCtx.renameMap());
         if (maybeResolvedColumns.isEmpty()) {
-            // One or more columns could not be resolved, so no benefit to pushing down.
-            return Long.MAX_VALUE;
+            return new EstimateContext(EstimateContext.ResolveState.FAILED, null);
         }
+
         final List<ResolvedColumnInfo> resolvedColumnsInfo = maybeResolvedColumns.get();
         // We have verified these columns are not nested.
         final String[] parquetColumnNames = resolvedColumnsInfo.stream()
                 .map(resolvedColumn -> resolvedColumn.columnPath.get(0))
                 .toArray(String[]::new);
+        return new EstimateContext(EstimateContext.ResolveState.RESOLVED, parquetColumnNames);
+    }
+
+    @Override
+    public long estimatePushdownAction(
+            final List<RegionedPushdownAction> actions,
+            final WhereFilter filter,
+            final RowSet selection,
+            final boolean usePrev,
+            final PushdownFilterContext filterContext,
+            final RegionedPushdownAction.EstimateContext estimateContext) {
+        final RegionedPushdownFilterContext filterCtx = (RegionedPushdownFilterContext) filterContext;
+        final EstimateContext estimateCtx = (EstimateContext) estimateContext;
+
+        if (estimateCtx.resolveState == EstimateContext.ResolveState.FAILED) {
+            // One or more columns could not be resolved, so no benefit to pushing down.
+            return Long.MAX_VALUE;
+        }
 
         // Apply a more specific check that depends on materializing parquet metadata
-        for (final RegionedPushdownHelper.PushdownMode mode : allowedModes) {
+        for (final RegionedPushdownAction action : actions) {
             final boolean isApplicable;
-            if (mode == ParquetRowGroupMetadata) {
+            if (action == ParquetRowGroupMetadata) {
                 // Note: it should be possible to check if there is any statistics
                 isApplicable = true;
-            } else if (mode == InMemoryDataIndex) {
-                isApplicable = hasCachedDataIndex(parquetColumnNames);
-            } else if (mode == ParquetDictionary) {
-                isApplicable = hasDictionaryPage(parquetColumnNames[0], ctx.columnDefinitions().get(0));
-            } else if (mode == DeferredDataIndex) {
-                isApplicable = hasDataIndex(parquetColumnNames);
+            } else if (action == InMemoryDataIndex) {
+                isApplicable = hasCachedDataIndex(estimateCtx.parquetColumnNames);
+            } else if (action == ParquetDictionary) {
+                isApplicable =
+                        hasDictionaryPage(estimateCtx.parquetColumnNames[0], filterCtx.columnDefinitions().get(0));
+            } else if (action == DeferredDataIndex) {
+                isApplicable = hasDataIndex(estimateCtx.parquetColumnNames);
             } else {
-                throw new IllegalStateException("Unexpected value: " + mode);
+                throw new IllegalStateException("Unexpected value: " + action);
             }
             if (isApplicable) {
-                return mode.filterCost();
+                return action.filterCost();
             }
         }
 
         // TODO(DH-19666): Add support for bloom filters, sortedness, etc.
         return Long.MAX_VALUE; // No benefit to pushing down.
+    }
+
+    public static class ActionContext implements RegionedPushdownAction.ActionContext {
+        enum ResolveState {
+            RESOLVED, FAILED
+        }
+
+        private final ResolveState resolveState;
+        private final String[] parquetColumnNames;
+        private final List<Integer> columnIndices;
+
+        private ActionContext(
+                final ResolveState resolveState,
+                final String[] parquetColumnNames,
+                final List<Integer> columnIndices) {
+            this.resolveState = resolveState;
+            this.parquetColumnNames = parquetColumnNames;
+            this.columnIndices = columnIndices;
+        }
+
+        @Override
+        public void close() {}
+    }
+
+    public RegionedPushdownAction.ActionContext makeActionContext(
+            final WhereFilter filter,
+            final PushdownFilterContext filterContext) {
+        final RegionedPushdownFilterContext filterCtx = (RegionedPushdownFilterContext) filterContext;
+
+        // We must have an initialized location to create this action context.
+        initialize();
+
+        final Map<String, String> renameMap = filterCtx.renameMap();
+        final Optional<List<ResolvedColumnInfo>> maybeResolvedColumns = resolveColumns(filter, renameMap);
+        if (maybeResolvedColumns.isEmpty()) {
+            return new ActionContext(ActionContext.ResolveState.FAILED, null, null);
+        }
+
+        final List<ResolvedColumnInfo> resolvedColumnsInfo = maybeResolvedColumns.get();
+
+        // We have verified these columns are not nested.
+        final int numColumns = resolvedColumnsInfo.size();
+        final String[] parquetColumnNames = new String[numColumns];
+        final List<Integer> columnIndices = new ArrayList<>(numColumns);
+
+        for (int i = 0; i < numColumns; i++) {
+            final ResolvedColumnInfo resolvedColumn = resolvedColumnsInfo.get(i);
+            parquetColumnNames[i] = resolvedColumn.columnPath.get(0);
+            columnIndices.add(resolvedColumn.columnIndex);
+        }
+        return new ActionContext(ActionContext.ResolveState.RESOLVED, parquetColumnNames, columnIndices);
+    }
+
+    @Override
+    public PushdownResult performPushdownAction(
+            final RegionedPushdownAction action,
+            final WhereFilter filter,
+            final RowSet selection,
+            final PushdownResult input,
+            final boolean usePrev,
+            final PushdownFilterContext filterContext,
+            final RegionedPushdownAction.ActionContext actionContext) {
+        final RegionedPushdownFilterContext filterCtx = (RegionedPushdownFilterContext) filterContext;
+        final ActionContext actionCtx = (ActionContext) actionContext;
+
+        if (actionCtx.resolveState == ActionContext.ResolveState.FAILED) {
+            // One or more columns could not be resolved, so return the input
+            return input.copy();
+        }
+
+        if (action == ParquetRowGroupMetadata) {
+            return pushdownRowGroupMetadata(selection, filterCtx.filterForMetadataFiltering(), actionCtx.columnIndices,
+                    input);
+        }
+        if (action == InMemoryDataIndex) {
+            final BasicDataIndex dataIndex =
+                    hasCachedDataIndex(actionCtx.parquetColumnNames) ? getDataIndex(actionCtx.parquetColumnNames)
+                            : null;
+            if (dataIndex == null) {
+                return input.copy();
+            }
+            return pushdownDataIndex(selection, filter, filterCtx.renameMap(), dataIndex, input);
+        }
+        if (action == ParquetDictionary) {
+            if (!hasDictionaryPage(actionCtx.parquetColumnNames[0], filterCtx.columnDefinitions().get(0))) {
+                return input.copy();
+            }
+            return pushdownFilterDictionary(selection, filterCtx, actionCtx.parquetColumnNames, input);
+        }
+        if (action == DeferredDataIndex) {
+            final BasicDataIndex dataIndex =
+                    hasDataIndex(actionCtx.parquetColumnNames) ? getDataIndex(actionCtx.parquetColumnNames) : null;
+            if (dataIndex == null) {
+                return input.copy();
+            }
+            return pushdownDataIndex(selection, filter, filterCtx.renameMap(), dataIndex, input);
+        }
+        throw new IllegalStateException("Unexpected value: " + action);
     }
 
     /**
@@ -654,102 +800,6 @@ public class ParquetTableLocation extends AbstractTableLocation {
         return Optional.of(resolvedColumns);
     }
 
-    @Override
-    public void pushdownFilter(
-            final WhereFilter filter,
-            final RowSet selection,
-            final boolean usePrev,
-            final PushdownFilterContext context,
-            final long costCeiling,
-            final JobScheduler jobScheduler,
-            final Consumer<PushdownResult> onComplete,
-            final Consumer<Exception> onError) {
-        if (selection.isEmpty()) {
-            log.warn().append("Pushdown filter called with empty selection for table ").append(getTableKey()).endl();
-            onComplete.accept(PushdownResult.allNoMatch(selection));
-            return;
-        }
-
-        final RegionedColumnSourceManager.RegionedColumnSourcePushdownFilterContext ctx =
-                (RegionedColumnSourceManager.RegionedColumnSourcePushdownFilterContext) context;
-
-        // Initialize the pushdown result with the selection rowset as "maybe" rows
-        PushdownResult result = PushdownResult.allMaybeMatch(selection);
-
-        final List<RegionedPushdownHelper.PushdownMode> allowedModes = costSortedModes()
-                .stream()
-                .filter(mode -> mode.allows(this, ctx, costCeiling))
-                .collect(Collectors.toList());
-
-        if (allowedModes.isEmpty()) {
-            onComplete.accept(result);
-            return;
-        }
-
-        initialize();
-
-        final Map<String, String> renameMap = ctx.renameMap();
-        final Optional<List<ResolvedColumnInfo>> maybeResolvedColumns = resolveColumns(filter, renameMap);
-        if (maybeResolvedColumns.isEmpty()) {
-            // One or more columns could not be resolved, so we return all rows as "maybe" rows.
-            onComplete.accept(result);
-            return;
-        }
-        final List<ResolvedColumnInfo> resolvedColumnsInfo = maybeResolvedColumns.get();
-
-        // We have verified these columns are not nested.
-        final int numColumns = resolvedColumnsInfo.size();
-        final String[] parquetColumnNames = new String[numColumns];
-        final List<Integer> columnIndices = new ArrayList<>(numColumns);
-
-        for (int i = 0; i < numColumns; i++) {
-            final ResolvedColumnInfo resolvedColumn = resolvedColumnsInfo.get(i);
-            parquetColumnNames[i] = resolvedColumn.columnPath.get(0);
-            columnIndices.add(resolvedColumn.columnIndex);
-        }
-
-        for (final RegionedPushdownHelper.PushdownMode mode : allowedModes) {
-            if (mode == ParquetRowGroupMetadata) {
-                try (final PushdownResult ignored = result) {
-                    result = pushdownRowGroupMetadata(selection, ctx.filterForMetadataFiltering(), columnIndices,
-                            result);
-                }
-            } else if (mode == InMemoryDataIndex) {
-                final BasicDataIndex dataIndex =
-                        hasCachedDataIndex(parquetColumnNames) ? getDataIndex(parquetColumnNames) : null;
-                if (dataIndex == null) {
-                    continue;
-                }
-                try (final PushdownResult ignored = result) {
-                    result = RegionedPushdownHelper.pushdownDataIndex(selection, filter, renameMap, dataIndex, result);
-                }
-            } else if (mode == ParquetDictionary) {
-                if (!hasDictionaryPage(parquetColumnNames[0], ctx.columnDefinitions().get(0))) {
-                    continue;
-                }
-                try (final PushdownResult ignored = result) {
-                    result = pushdownFilterDictionary(selection, ctx, parquetColumnNames, result);
-                }
-            } else if (mode == DeferredDataIndex) {
-                final BasicDataIndex dataIndex =
-                        hasDataIndex(parquetColumnNames) ? getDataIndex(parquetColumnNames) : null;
-                if (dataIndex == null) {
-                    continue;
-                }
-                try (final PushdownResult ignored = result) {
-                    result = RegionedPushdownHelper.pushdownDataIndex(selection, filter, renameMap, dataIndex, result);
-                }
-            } else {
-                throw new IllegalStateException("Unexpected value: " + mode);
-            }
-            if (result.maybeMatch().isEmpty()) {
-                // No maybe rows remaining, so no reason to continue filtering.
-                break;
-            }
-        }
-        onComplete.accept(result);
-    }
-
     // ---------------------------------------------------------------------------------------------------------------
     // The following should be _cheap_ checks that don't require materializing Parquet metadata to check.
     // ---------------------------------------------------------------------------------------------------------------
@@ -761,6 +811,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
     }
 
     private boolean supportsDictionaryFiltering() {
+
         return true;
     }
 
@@ -773,44 +824,6 @@ public class ParquetTableLocation extends AbstractTableLocation {
     }
 
     // ---------------------------------------------------------------------------------------------------------------
-
-    private static final RegionedPushdownHelper.PushdownMode ParquetRowGroupMetadata =
-            new RegionedPushdownHelper.PushdownMode(
-                    () -> QueryTable.DISABLE_WHERE_PUSHDOWN_PARQUET_ROW_GROUP_METADATA,
-                    PushdownResult.METADATA_STATS_COST,
-                    BasePushdownFilterContext::supportsMetadataFiltering,
-                    (tl) -> ((ParquetTableLocation) tl).supportsMetadataFiltering());
-
-    private static final RegionedPushdownHelper.PushdownMode InMemoryDataIndex =
-            new RegionedPushdownHelper.PushdownMode(
-                    () -> QueryTable.DISABLE_WHERE_PUSHDOWN_DATA_INDEX,
-                    PushdownResult.IN_MEMORY_DATA_INDEX_COST,
-                    BasePushdownFilterContext::supportsInMemoryDataIndexFiltering,
-                    (tl) -> ((ParquetTableLocation) tl).supportsInMemoryDataIndexFiltering());
-
-    private static final RegionedPushdownHelper.PushdownMode ParquetDictionary =
-            new RegionedPushdownHelper.PushdownMode(
-                    () -> QueryTable.DISABLE_WHERE_PUSHDOWN_PARQUET_DICTIONARY,
-                    PushdownResult.DICTIONARY_DATA_COST,
-                    BasePushdownFilterContext::supportsDictionaryFiltering,
-                    (tl) -> ((ParquetTableLocation) tl).supportsDictionaryFiltering());
-
-    private static final RegionedPushdownHelper.PushdownMode DeferredDataIndex =
-            new RegionedPushdownHelper.PushdownMode(
-                    () -> QueryTable.DISABLE_WHERE_PUSHDOWN_DATA_INDEX,
-                    PushdownResult.DEFERRED_DATA_INDEX_COST,
-                    BasePushdownFilterContext::supportsDeferredDataIndexFiltering,
-                    (tl) -> ((ParquetTableLocation) tl).supportsDeferredDataIndexFiltering());
-
-    public static List<RegionedPushdownHelper.PushdownMode> costSortedModes() {
-        // Since the costs are not currently dynamic, we'll just use the fact that the enum values are already in
-        // cost order (validated by unit test).
-        return List.of(
-                ParquetRowGroupMetadata,
-                InMemoryDataIndex,
-                ParquetDictionary,
-                DeferredDataIndex);
-    }
 
     /**
      * Consumer for row groups and row sets.
@@ -934,7 +947,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
     @NotNull
     private PushdownResult pushdownFilterDictionary(
             final RowSet selection,
-            final RegionedColumnSourceManager.RegionedColumnSourcePushdownFilterContext ctx,
+            final RegionedPushdownFilterContext ctx,
             final String[] parquetColumnNames,
             final PushdownResult result) {
 
@@ -1061,6 +1074,62 @@ public class ParquetTableLocation extends AbstractTableLocation {
                         : maybeBuilder.build()) {
             matching.insert(result.match());
             return PushdownResult.of(selection, matching, maybe);
+        }
+    }
+
+    /**
+     * Apply the filter to the data index table and return the result.
+     */
+    @NotNull
+    public static PushdownResult pushdownDataIndex(
+            final RowSet selection,
+            final WhereFilter filter,
+            final Map<String, String> renameMap,
+            final BasicDataIndex dataIndex,
+            final PushdownResult result) {
+        final RowSetBuilderRandom matchingBuilder = RowSetFactory.builderRandom();
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            final long threshold = (long) (dataIndex.table().size() / QueryTable.DATA_INDEX_FOR_WHERE_THRESHOLD);
+            if (result.maybeMatch().size() <= threshold) {
+                return result.copy();
+            }
+            // Extract the fundamental filter, ignoring barriers and serial wrappers.
+            final WhereFilter copiedFilter = ExtractFilterWithoutBarriers.of(filter).copy();
+            final Table toFilter;
+            if (!renameMap.isEmpty()) {
+                final Collection<Pair> renamePairs = renameMap.entrySet().stream()
+                        .map(entry -> io.deephaven.api.Pair.of(ColumnName.of(entry.getValue()),
+                                ColumnName.of(entry.getKey())))
+                        .collect(Collectors.toList());
+                toFilter = dataIndex.table().renameColumns(renamePairs);
+            } else {
+                toFilter = dataIndex.table();
+            }
+            // Apply the filter to the data index table
+            try {
+                final Table filteredTable = toFilter.where(copiedFilter);
+                try (final CloseableIterator<RowSet> it =
+                        ColumnVectors.ofObject(filteredTable, dataIndex.rowSetColumnName(), RowSet.class).iterator()) {
+                    it.forEachRemaining(rowSet -> {
+                        try (final RowSet matching = rowSet.intersect(result.maybeMatch())) {
+                            matchingBuilder.addRowSet(matching);
+                        }
+                    });
+                }
+            } catch (final Exception e) {
+                // TODO: Exception occurs here if we have a data type mismatch between the index and the filter.
+                // When https://deephaven.atlassian.net/browse/DH-19443 is implemented, we should be able
+                // to remove the catch block and let any exception propagate. For now, just swallow the exception
+                // and return a copy of the original input, skipping pushdown filtering.
+                return result.copy();
+            }
+        }
+        // Retain only the maybe rows and add the previously found matches.
+        try (
+                final WritableRowSet matching = matchingBuilder.build();
+                final WritableRowSet empty = RowSetFactory.empty()) {
+            matching.insert(result.match());
+            return PushdownResult.of(selection, matching, empty);
         }
     }
 
