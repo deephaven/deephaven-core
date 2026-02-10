@@ -77,6 +77,7 @@ import org.apache.commons.lang3.mutable.MutableDouble;
 import org.apache.commons.lang3.mutable.MutableFloat;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.parquet.column.Encoding;
+import org.apache.parquet.column.statistics.DoubleStatistics;
 import org.apache.parquet.column.statistics.Statistics;
 import org.apache.parquet.hadoop.metadata.BlockMetaData;
 import org.apache.parquet.hadoop.metadata.ColumnChunkMetaData;
@@ -3349,29 +3350,32 @@ public final class ParquetTableReadWriteTest {
         }
     }
 
+    @SuppressWarnings("SimplifiableAssertion")
     private static void assertMinStatisticsEquals(final Table sourceTable, final long row,
             final List<ColumnChunkMetaData> columnMetadata) {
-        assertEquals("min(A)", sourceTable.getColumnSource("A").getInt(row),
-                columnMetadata.get(0).getStatistics().genericGetMin());
+        assertEquals("min(A)", 0,
+                columnMetadata.get(0).getStatistics().compareMinToValue(sourceTable.getColumnSource("A").getInt(row)));
         assertEquals("min(B)", sourceTable.getColumnSource("B").get(row),
                 columnMetadata.get(1).getStatistics().minAsString());
-        // the following allows the assertion to work when comparing `-0.0` with `0.0`
-        final double min2 = (Double) columnMetadata.get(2).getStatistics().genericGetMin();
-        assertEquals("min(C)", sourceTable.getColumnSource("C").getDouble(row), min2, 0.0);
-        assertEquals("min(D)", sourceTable.getColumnSource("D").getLong(row),
-                columnMetadata.get(3).getStatistics().genericGetMin());
+        // leave this as `assertTrue(...)`. if you change it to `assertEquals(...)`, then we will FAIL when we expect
+        // `0.0` because the statistics will return `-0.0`. `0.0 == -0.0`, but `assertEquals(0.0, -0.0) == false`.
+        assertTrue("min(C)", sourceTable.getColumnSource("C")
+                .getDouble(row) == ((DoubleStatistics) columnMetadata.get(2).getStatistics()).getMin());
+        assertEquals("min(D)", 0L,
+                columnMetadata.get(3).getStatistics().compareMinToValue(sourceTable.getColumnSource("D").getLong(row)));
     }
 
+    @SuppressWarnings("SimplifiableAssertion")
     private static void assertMaxStatisticsEquals(final Table sourceTable, final long row,
             final List<ColumnChunkMetaData> columnMetadata) {
-        assertEquals("max(A)", sourceTable.getColumnSource("A").getInt(row),
-                columnMetadata.get(0).getStatistics().genericGetMax());
+        assertEquals("max(A)", 0,
+                columnMetadata.get(0).getStatistics().compareMaxToValue(sourceTable.getColumnSource("A").getInt(row)));
         assertEquals("max(B)", sourceTable.getColumnSource("B").get(row),
                 columnMetadata.get(1).getStatistics().maxAsString());
-        assertEquals("max(C)", sourceTable.getColumnSource("C").getDouble(row),
-                columnMetadata.get(2).getStatistics().genericGetMax());
-        assertEquals("max(D)", sourceTable.getColumnSource("D").getLong(row),
-                columnMetadata.get(3).getStatistics().genericGetMax());
+        assertTrue("max(C)", sourceTable.getColumnSource("C")
+                .getDouble(row) == ((DoubleStatistics) columnMetadata.get(2).getStatistics()).getMax());
+        assertEquals("max(D)", 0L,
+                columnMetadata.get(3).getStatistics().compareMaxToValue(sourceTable.getColumnSource("D").getLong(row)));
     }
 
     @Test
