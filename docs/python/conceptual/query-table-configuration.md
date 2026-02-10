@@ -189,9 +189,9 @@ Sparse array column sources use a multi-level hierarchical structure and maintai
 
 The recycler capacity determines how many array blocks are kept in memory for potential reuse. Increasing capacity can improve performance if your workload frequently allocates and deallocates arrays, at the cost of higher memory usage. Decreasing capacity reduces memory overhead but may increase garbage collection frequency.
 
-- **Low memory environments**: Consider reducing capacities to reduce memory footprint
-- **High throughput environments**: Consider increasing capacities to reduce allocation/deallocation overhead
-- **Type-specific tuning**: If certain types are used more frequently, you can increase their capacity while reducing others
+- **Low memory environments**: Consider reducing capacities to reduce memory footprint.
+- **High throughput environments**: Consider increasing capacities to reduce allocation/deallocation overhead.
+- **Type-specific tuning**: If certain types are used more frequently, you can increase their capacity while reducing others.
 
 ## Stateless by default (experimental)
 
