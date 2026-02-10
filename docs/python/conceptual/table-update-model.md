@@ -166,6 +166,29 @@ Sum′ = Sum
 
 For all cells, the previous value is the value as of the beginning of the current update cycle, which implies that unchanged cells have the same value for previous and current. In order to provide this capability, all Deephaven column sources are required to be able to provide the previous values of removed or modified cells, and to recognize which cells are unchanged. This requirement only holds for the duration of the update phase of a cycle; the necessary data structures are released as part of intra-cycle cleanup, and accessing previous values outside of an updating phase produces undefined results, including the possibility of exceptions or inconsistent data.
 
+In Python, you access these values through the [`TableUpdate`](../how-to-guides/table-listeners-python.md) object passed to listeners:
+
+```python syntax
+from deephaven.table_listener import listen
+
+
+def on_update(update, is_replay):
+    # Access added, removed, and modified row data
+    added_data = update.added()  # Dict of column_name -> numpy array
+    removed_data = update.removed()
+    modified_data = update.modified()
+    modified_prev_data = update.modified_prev()  # Previous values of modified cells
+
+    # Example: compute change in values
+    if modified_data and modified_prev_data:
+        current_values = modified_data.get("Value", [])
+        previous_values = modified_prev_data.get("Value", [])
+        # Now you can compare current vs previous
+
+
+handle = listen(my_table, on_update)
+```
+
 ### Modified columns
 
 <div className="comment-title">
@@ -228,15 +251,15 @@ Some tables have multiple parents (e.g., join or merge results). Ensuring a sing
 
 Reading everything above, one might reasonably wonder: if this update processing is going on all the time, when and how can we actually safely read data or create new derived tables? There are three answers to this question, depending on the use case.
 
-In the simplest case, it’s sufficient to simply block update processing. Other subsystems running in-process with a Deephaven query engine can acquire a [shared lock](https://deephaven.io/core/javadoc/io/deephaven/engine/updategraph/UpdateGraph.html#sharedLock()) for the duration of any otherwise unsafe operations they need to perform, guaranteeing that data will remain consistent across all nodes in the DAG. When you type a command for execution in the Deephaven console, this is done for you.
+In the simplest case, it's sufficient to simply block update processing. Other subsystems running in-process with a Deephaven query engine can acquire a [shared lock](https://deephaven.io/core/javadoc/io/deephaven/engine/updategraph/UpdateGraph.html#sharedLock()) (or in Python, use [`exclusive_lock`](../how-to-guides/initialization-and-updates.md#pattern-7-use-locking-for-direct-table-access-advanced)) for the duration of any otherwise unsafe operations they need to perform, guaranteeing that data will remain consistent across all nodes in the DAG. When you type a command for execution in the Deephaven console, this is done for you.
 
-Sometimes it’s preferable to perform potentially unsafe operations from _within_ the update processing system. There are two ways to accomplish this. Firstly, by performing work reactively in a table listener; this is ideal for publishing updates to external subscribers or reactive systems. Secondly, by scheduling special terminal notifications that are processed at the end of each update cycle; this is ideal for post-update maintenance.
+Sometimes it's preferable to perform potentially unsafe operations from _within_ the update processing system. There are two ways to accomplish this. Firstly, by performing work reactively in a [table listener](../how-to-guides/table-listeners-python.md); this is ideal for publishing updates to external subscribers or reactive systems. Secondly, by scheduling special terminal notifications that are processed at the end of each update cycle; this is ideal for post-update maintenance.
 
 All of the approaches described so far have liveness implications for real-time applications. The third strategy, on the other hand, trades concurrency in exchange for giving up a guarantee of success. Each update cycle has two _phases_ (_updating_ and _idle_), and also a _step_ tracked by a logical clock. This state (phase and step) can be read concurrently and atomically by external code, and is augmented by per-table tracking of the _last update step_.
 
-This allows a concurrent consumer to determine two important things. Firstly, whether it should attempt to use a source table’s current row set and current column source data, or its previous row set and previous column source data. Secondly, whether an optimistic operation cannot be proven to have succeeded consistently, and thus must be retried or abandoned.
+This allows a concurrent consumer to determine two important things. Firstly, whether it should attempt to use a source table's current row set and current column source data, or its previous row set and previous column source data. Secondly, whether an optimistic operation cannot be proven to have succeeded consistently, and thus must be retried or abandoned.
 
-This third, optimistically concurrent approach generally requires a fallback strategy of acquiring the [shared lock](https://deephaven.io/core/javadoc/io/deephaven/engine/updategraph/UpdateGraph.html#sharedLock()). Deephaven provides utilities to encapsulate all of this complexity for internal use as well as user code. This enables many table operations to be initialized concurrently with the update cycle, including all the operations that are performed automatically when rendering UI components via Deephaven’s Javascript Client. It’s also used for client-driven snapshots and table subscriptions via Deephaven’s implementation of [Apache Arrow Flight](https://arrow.apache.org/docs/format/Flight.html).
+This third, optimistically concurrent approach generally requires a fallback strategy of acquiring the [shared lock](https://deephaven.io/core/javadoc/io/deephaven/engine/updategraph/UpdateGraph.html#sharedLock()). Deephaven provides utilities to encapsulate all of this complexity for internal use as well as user code. For practical guidance on safely accessing data during initialization and updates, see [Initialization and updates](../how-to-guides/initialization-and-updates.md). This enables many table operations to be initialized concurrently with the update cycle, including all the operations that are performed automatically when rendering UI components via Deephaven’s Javascript Client. It’s also used for client-driven snapshots and table subscriptions via Deephaven’s implementation of [Apache Arrow Flight](https://arrow.apache.org/docs/format/Flight.html).
 
 None of these consistent data access mechanisms obviates the need to use good engineering sense. Developers should keep interactions with updating data as efficient and infrequent as possible. That said, together these strategies represent a toolbox with a wealth of possibilities for real-time application development when harnessed to the rest of the Deephaven query engine.
 
@@ -256,3 +279,4 @@ The update model described above serves as a cornerstone enabler of Deephaven’
 - [Deephaven’s Directed-Acyclic-Graph (DAG)](./dag.md)
 - [Kafka basic terminology](./kafka-basic-terms.md)
 - [Deephaven Barrage](/barrage/docs)
+- [Core API design](./deephaven-core-api.md)
