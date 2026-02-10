@@ -22,10 +22,8 @@ import org.jetbrains.annotations.NotNull;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Arrays;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
@@ -152,36 +150,27 @@ public class ServerStateTracker {
 
     private class Driver implements Runnable {
         private final ExecutionContext executionContext;
-
-        private final Lock lock;
-        private final Condition shutdownCondition;
-        private boolean shutdown;
+        private final CountDownLatch shutdownLatch;
 
         public Driver(@NotNull final ExecutionContext executionContext) {
             this.executionContext = executionContext;
-            this.lock = new ReentrantLock();
-            this.shutdownCondition = lock.newCondition();
+            this.shutdownLatch = new CountDownLatch(1);
         }
 
         @Override
         public void run() {
             try (final ServerStateLogLogger _ignored = processMemLogger) {
                 final RuntimeMemory.Sample memSample = new RuntimeMemory.Sample();
-                lock.lock();
-                try {
-                    while (!shutdown) {
-                        final long intervalStartTimeMillis = System.currentTimeMillis();
-                        try {
-                            shutdownCondition.await(REPORT_INTERVAL_MILLIS, TimeUnit.MILLISECONDS);
-                        } catch (InterruptedException e) {
-                            // unexpected; should not be interrutping this thread
-                        }
-                        if (!shutdown) {
-                            runOne(memSample, intervalStartTimeMillis);
-                        }
+                while (shutdownLatch.getCount() != 0) {
+                    final long intervalStartTimeMillis = System.currentTimeMillis();
+                    try {
+                        shutdownLatch.await(REPORT_INTERVAL_MILLIS, TimeUnit.MILLISECONDS);
+                    } catch (InterruptedException e) {
+                        // unexpected; should not be interrutping this thread
                     }
-                } finally {
-                    lock.unlock();
+                    if (shutdownLatch.getCount() != 0) {
+                        runOne(memSample, intervalStartTimeMillis);
+                    }
                 }
             } catch (final IOException e) {
                 throw new UncheckedIOException(e);
@@ -189,13 +178,7 @@ public class ServerStateTracker {
         }
 
         public void shutdown() {
-            lock.lock();
-            try {
-                shutdown = true;
-                shutdownCondition.signal();
-            } finally {
-                lock.unlock();
-            }
+            shutdownLatch.countDown();
         }
 
         private void runOne(final RuntimeMemory.Sample memSample, final long intervalStartTimeMillis) {
