@@ -187,7 +187,7 @@ Sparse array column sources use a multi-level hierarchical structure and maintai
 
 #### Tuning SoftRecycler capacity
 
-The recycler capacity determines how many array blocks are kept in memory for potential reuse. Increasing capacity can improve performance if your workload frequently allocates and deallocates arrays, at the cost of higher memory usage. Decreasing capacity reduces memory overhead but may increase garbage collection frequency.
+The recycler capacity determines how many array blocks are kept in memory for potential reuse. Increasing capacity can improve performance if your workload uses more blocks within an update cycle than the recycler can hold, at the cost of higher baseline memory usage. Decreasing capacity reduces baseline memory requirements, but may increase garbage collection.
 
 - **Low memory environments**: Consider reducing capacities to reduce memory footprint.
 - **High throughput environments**: Consider increasing capacities to reduce allocation/deallocation overhead.
