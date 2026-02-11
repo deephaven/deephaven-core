@@ -41,7 +41,7 @@ import static io.deephaven.util.type.TypeUtils.unbox;
  */
 public class DoubleArraySource extends ArraySourceHelper<Double, double[]>
         implements MutableColumnSourceGetDefaults.ForDouble /* MIXIN_IMPLS */ {
-    private static final SoftRecycler<double[]> recycler = new SoftRecycler<>(DEFAULT_RECYCLER_CAPACITY,
+    private static final SoftRecycler<double[]> recycler = new SoftRecycler<>(ArrayColumnSourceConfiguration.DOUBLE_RECYCLER_CAPACITY,
             () -> new double[BLOCK_SIZE], null);
 
     private double[][] blocks;
