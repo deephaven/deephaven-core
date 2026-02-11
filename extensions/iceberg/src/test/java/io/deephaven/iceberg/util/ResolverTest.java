@@ -180,24 +180,25 @@ class ResolverTest {
         final PartitionSpec partitionSpec = PartitionSpec.builderFor(schema).identity("F1").build();
         final PartitionField partitionField = partitionSpec.fields().get(0);
 
-        final ColumnDefinition<Integer> f1ColumnDef = ColumnDefinition.ofInt("F1").withPartitioning();
-        final TableDefinition td = TableDefinition.of(f1ColumnDef, ColumnDefinition.ofInt("F2"));
+        final ColumnDefinition<Integer> f1Cd = ColumnDefinition.ofInt("DH_F1").withPartitioning();
+        final ColumnDefinition<Integer> f2Cd = ColumnDefinition.ofInt("DH_F2");
+        final TableDefinition td = TableDefinition.of(f1Cd, f2Cd);
         final ColumnInstructions f2Instructions = schemaField(f2.fieldId());
 
         // There are three ways to reference a partition field - you can use schemaField, partitionField, or
         // schemaFieldName. These will all resolve to the same PartitionField.
         for (final ColumnInstructions f1Instructions : List.of(
-                schemaField(partitionField.sourceId()),
+                schemaField(f1.fieldId()),
                 partitionField(partitionField.fieldId()),
                 schemaFieldName(f1.name()))) {
             final Resolver resolver = Resolver.builder()
                     .schema(schema)
                     .spec(partitionSpec)
                     .definition(td)
-                    .putColumnInstructions("F1", f1Instructions)
-                    .putColumnInstructions("F2", f2Instructions)
+                    .putColumnInstructions(f1Cd.getName(), f1Instructions)
+                    .putColumnInstructions(f2Cd.getName(), f2Instructions)
                     .build();
-            assertThat(resolver.partitionField(f1ColumnDef)).isSameAs(partitionField);
+            assertThat(resolver.partitionField(f1Cd)).isSameAs(partitionField);
         }
     }
 
