@@ -12,7 +12,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.List;
 
 public class ReindexingRowSetCapturingFilter extends RowSetCapturingFilter implements ReindexingFilter {
-    ReindexingFilter innerReindexingFilter;
+    private final ReindexingFilter innerReindexingFilter;
 
     public ReindexingRowSetCapturingFilter(Filter filter) {
         super(filter);
