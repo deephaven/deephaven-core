@@ -343,9 +343,9 @@ def _py_sequence_component_type(t: type) -> Optional[type]:
     if sys.version_info >= (3, 9):
         import types
 
-        if isinstance(t, types.GenericAlias) and issubclass(
+        if isinstance(t, types.GenericAlias) and issubclass(  # novermin
             t.__origin__, Sequence
-        ):  # novermin
+        ):
             component_type = t.__args__[0]
 
     if not component_type:
