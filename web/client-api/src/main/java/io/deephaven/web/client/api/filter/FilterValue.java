@@ -430,7 +430,7 @@ public class FilterValue {
      * as a Java regular expression.</li>
      * <li>{@code contains}: Returns {@code true} if the current string value contains the supplied string argument.
      * <p>
-     * When invoking against a constant, this should be avoided in favor of {@code FilterValue.contains}.
+     * When invoking against a constant, this should be avoided in favor of {@link FilterValue#contains}.
      * </p>
      * </li>
      * </ul>

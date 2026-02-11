@@ -43,8 +43,8 @@ import java.util.stream.IntStream;
  *
  * Each table has one or more key columns, where each unique combination of keys will appear at most once in the table.
  *
- * To view the results of the Input Table, you should use standard table operations on the {@code InputTable}'s source
- * {@code Table} object.
+ * To view the results of the Input Table, you should use standard table operations on the {@link JsInputTable}'s source
+ * {@link JsTable} object.
  */
 @JsType(namespace = "dh", name = "InputTable")
 public class JsInputTable {
@@ -96,7 +96,7 @@ public class JsInputTable {
     }
 
     /**
-     * A list of the value {@code Column} objects.
+     * A list of the value {@link Column} objects.
      * 
      * @return {@link Column} array.
      */
@@ -157,7 +157,7 @@ public class JsInputTable {
      * Add an entire table to this Input Table. Only column names that match the definition of the input table will be
      * copied, and all key columns must have values filled in. This only copies the current state of the source table;
      * future updates to the source table will not be reflected in the Input Table. The returned promise will be
-     * resolved to the same {@code InputTable} instance this method was called upon once the server returns.
+     * resolved to the same {@link JsInputTable} instance this method was called upon once the server returns.
      *
      * @param tableToAdd
      * @return Promise of dh.InputTable
