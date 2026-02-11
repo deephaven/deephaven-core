@@ -508,18 +508,18 @@ public class DeferredViewTableTest {
                 SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY,
                 WhereFilter.ZERO_LENGTH_WHERE_FILTER_ARRAY);
 
-        final Table dummy;
+        final Table unusedCoalescedTable;
         if (coalesceFirst) {
-            dummy = source.coalesce();
+            unusedCoalescedTable = source.coalesce();
         } else {
-            dummy = null;
+            unusedCoalescedTable = null;
         }
 
         final Table selectDistinct = source.selectDistinct("X");
         Assert.eq(selectDistinct.size(), "selectDistinct.size()", values.length);
 
         if (coalesceFirst) {
-            Assertions.assertThat(dummy).isInstanceOf(QueryTable.class);
+            Assertions.assertThat(unusedCoalescedTable).isInstanceOf(QueryTable.class);
         }
     }
 

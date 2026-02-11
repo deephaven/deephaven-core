@@ -516,16 +516,16 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
     }
 
     private class CopiedTableReference extends TableReference {
-        private final TableReference tableReference;
+        private final TableReference innerTableReference;
 
         CopiedTableReference(Table table, final TableReference tableReference) {
             super(table);
-            this.tableReference = tableReference;
+            this.innerTableReference = tableReference;
         }
 
         @Override
         protected boolean shouldCoalesce(WhereFilter... whereFilters) {
-            return this.tableReference.shouldCoalesce(whereFilters);
+            return this.innerTableReference.shouldCoalesce(whereFilters);
         }
 
         @Override
@@ -537,7 +537,7 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
                 allFilters = concat(deferredFilters, whereFilters);
             }
 
-            SplitAndApply splitAndApply = splitAndApplyFilters(allFilters, tableReference);
+            SplitAndApply splitAndApply = splitAndApplyFilters(allFilters, innerTableReference);
 
             return new TableAndRemainingFilters(splitAndApply.result, splitAndApply.postViewFilters);
         }
