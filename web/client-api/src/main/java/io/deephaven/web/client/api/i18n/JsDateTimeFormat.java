@@ -66,8 +66,8 @@ public class JsDateTimeFormat {
 
     /**
      * Accepts a variety of input objects to interpret as a date, and formats them using the specified pattern. A
-     * {@link JsTimeZone} object can optionally be provided to format this date as the current date/time in that timezone.
-     * See the instance method for more details on input objects.
+     * {@link JsTimeZone} object can optionally be provided to format this date as the current date/time in that
+     * timezone. See the instance method for more details on input objects.
      * 
      * @param pattern
      * @param date
@@ -110,7 +110,8 @@ public class JsDateTimeFormat {
 
     /**
      * Creates a new date/time format instance. This generally should be avoided in favor of the static
-     * {@link #getFormat(String)} function, which will create and cache an instance so that later calls share the same instance.
+     * {@link #getFormat(String)} function, which will create and cache an instance so that later calls share the same
+     * instance.
      * 
      * @param pattern
      */
@@ -171,8 +172,8 @@ public class JsDateTimeFormat {
      * Takes a variety of objects to interpret as a date, and formats them using this instance's pattern. Inputs can
      * include a {@code String} value of a number expressed in nanoseconds, a {@code Number} value expressed in
      * nanoseconds, a JS {@code Date} object (necessarily in milliseconds), or a wrapped Java {@code long} value,
-     * expressed in nanoseconds. A {@link JsTimeZone} object can optionally be provided to format this date as the current
-     * date/time in that timezone.
+     * expressed in nanoseconds. A {@link JsTimeZone} object can optionally be provided to format this date as the
+     * current date/time in that timezone.
      * 
      * @param date
      * @param timeZone

@@ -15,8 +15,8 @@ import jsinterop.annotations.JsType;
  * <p>
  * For viewport subscriptions, it is not necessary to read with the key, only with the position.
  * <p>
- * Do not assume that the first row in {@link #getRows()} is the first visible row, because extra rows may be provided for
- * easier scrolling without going to the server.
+ * Do not assume that the first row in {@link #getRows()} is the first visible row, because extra rows may be provided
+ * for easier scrolling without going to the server.
  */
 @JsType(namespace = "dh")
 public interface ViewportData extends TableData {

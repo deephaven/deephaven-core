@@ -102,8 +102,8 @@ public class JsNumberFormat {
     }
 
     /**
-     * Formats the specified number (or {@link LongWrapper}, {@link BigIntegerWrapper}, or {@link BigDecimalWrapper} value) using the cached format
-     * matching the given pattern string.
+     * Formats the specified number (or {@link LongWrapper}, {@link BigIntegerWrapper}, or {@link BigDecimalWrapper}
+     * value) using the cached format matching the given pattern string.
      *
      * @param pattern
      * @param number
@@ -117,8 +117,9 @@ public class JsNumberFormat {
     private final NumberFormat wrapped;
 
     /**
-     * Creates a new number format instance. This generally should be avoided in favor of the static {@link #getFormat(String)}
-     * function, which will create and cache an instance so that later calls share the same instance.
+     * Creates a new number format instance. This generally should be avoided in favor of the static
+     * {@link #getFormat(String)} function, which will create and cache an instance so that later calls share the same
+     * instance.
      *
      * @param pattern
      */
@@ -148,7 +149,8 @@ public class JsNumberFormat {
     }
 
     /**
-     * Formats the specified number (or Java {@code long}, {@code BigInteger} or {@code BigDecimal} value) using this instance's pattern.
+     * Formats the specified number (or Java {@code long}, {@code BigInteger} or {@code BigDecimal} value) using this
+     * instance's pattern.
      *
      * @param number
      * @return String
