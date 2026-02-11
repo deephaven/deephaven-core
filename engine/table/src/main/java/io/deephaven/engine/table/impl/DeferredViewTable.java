@@ -90,8 +90,33 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
         if (innerFilters.length == 0) {
             return coalesce();
         }
+
+        // only the pre-view filters are passed down to the coalesce check and enable automatic coalescing
+        final PreAndPostFilters preAndPostFilters = applyFilterRenamings(WhereFilter.copyFrom(innerFilters));
+        if (tableReference.shouldCoalesce(preAndPostFilters.preViewFilters)) {
+            final WhereFilter[] allFilters = concat(deferredFilters, innerFilters);
+            SplitAndApply splitAndApply = splitAndApplyFilters(allFilters, tableReference);
+            Table result = splitAndApply.result;
+            if (splitAndApply.postViewFilters.length != 0) {
+                result = result.where(Filter.and(splitAndApply.postViewFilters));
+            }
+            return result;
+        }
         return new DeferredViewTable(getDefinition(), getDescription() + "-filtered",
                 new CopiedTableReference(this, tableReference), null, null, innerFilters);
+    }
+
+    @NotNull
+    private static WhereFilter[] concat(WhereFilter[] filters1, WhereFilter[] filters2) {
+        if (filters1.length == 0) {
+            return filters2;
+        }
+        if (filters2.length == 0) {
+            return filters1;
+        }
+        final WhereFilter[] allFilters = Arrays.copyOf(filters1, filters1.length + filters2.length);
+        System.arraycopy(filters2, 0, allFilters, filters1.length, filters2.length);
+        return allFilters;
     }
 
     private Table applyDeferredViews(Table result) {
@@ -444,6 +469,16 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
             return table.getDefinition();
         }
 
+        /**
+         * Should this set of filter force a coalescing of the table?
+         * 
+         * @param whereFilters the filters that are to be applied
+         * @return true if this set of filters should force a coalescing of the table, false otherwise.
+         */
+        protected boolean shouldCoalesce(WhereFilter... whereFilters) {
+            return false;
+        }
+
         public static class TableAndRemainingFilters {
 
             public TableAndRemainingFilters(Table table, WhereFilter[] remainingFilters) {
@@ -489,13 +524,17 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
         }
 
         @Override
+        protected boolean shouldCoalesce(WhereFilter... whereFilters) {
+            return this.tableReference.shouldCoalesce(whereFilters);
+        }
+
+        @Override
         protected TableAndRemainingFilters getWithWhere(WhereFilter... whereFilters) {
             final WhereFilter[] allFilters;
             if (deferredFilters.length == 0) {
                 allFilters = whereFilters;
             } else {
-                allFilters = Arrays.copyOf(deferredFilters, deferredFilters.length + whereFilters.length);
-                System.arraycopy(whereFilters, 0, allFilters, deferredFilters.length, whereFilters.length);
+                allFilters = concat(deferredFilters, whereFilters);
             }
 
             SplitAndApply splitAndApply = splitAndApplyFilters(allFilters, tableReference);

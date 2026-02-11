@@ -496,7 +496,7 @@ public class TestPartitionAwareSourceTableNoMocks {
                 tableLocationProvider,
                 null);
 
-        // note that first filter is always a non-partitioning filter
+        // note that the first filter is always a non-partitioning filter
         final Table clockFiltered = source.where(clockFilter);
         Assert.eqTrue(clockFiltered instanceof DeferredViewTable,
                 "withAttribute instanceof DeferredViewTable");
@@ -506,10 +506,7 @@ public class TestPartitionAwareSourceTableNoMocks {
                 "withAttribute instanceof DeferredViewTable");
 
         final Table partitionFiltered = withAttribute.where(partFilter);
-        Assertions.assertThat(partitionFiltered).isInstanceOf(DeferredViewTable.class);
-
-        final Table coalesced = partitionFiltered.coalesce();
-        Assertions.assertThat(coalesced).isInstanceOf(QueryTable.class);
+        Assertions.assertThat(partitionFiltered).isInstanceOf(QueryTable.class);
 
         // ensure the inner filter sees two partitions' data
         Assert.eq(clockFilter.numRowsProcessed(), "clockFilter.numRowsProcessed()", 2 * partitionSize);
@@ -650,6 +647,70 @@ public class TestPartitionAwareSourceTableNoMocks {
         assertEquals(4, coalesced.size());
 
         TableTools.show(coalesced);
+    }
+
+    @Test
+    public void testForceCoalesceWithPartitionFilter() {
+        final long partitionSize = 128;
+
+        final PartitionAwareSourceTableTestUtils.TestTDS tds =
+                new PartitionAwareSourceTableTestUtils.TestTDS();
+
+        final TableKey tableKey = new PartitionAwareSourceTableTestUtils.TableKeyImpl();
+        final PartitionAwareSourceTableTestUtils.TableLocationProviderImpl tableLocationProvider =
+                (PartitionAwareSourceTableTestUtils.TableLocationProviderImpl) tds
+                        .getTableLocationProvider(tableKey);
+
+        // create 4 partitions;
+        for (char partition = 'A'; partition <= 'D'; partition++) {
+            tableLocationProvider.appendLocation(
+                    new PartitionAwareSourceTableTestUtils.TableLocationKeyImpl(String.valueOf(partition)));
+        }
+        tableLocationProvider.locations.values().forEach(location -> location.setSize(partitionSize));
+
+        final RowSetCapturingFilter kkFilter =
+                new RowSetCapturingFilter(FilterComparison.eq(ColumnName.of("KK"), Literal.of(20L)));
+        final RowSetCapturingFilter iiFilter =
+                new RowSetCapturingFilter(FilterComparison.eq(ColumnName.of("II"), Literal.of(10L)));
+
+        final Table source = new PartitionAwareSourceTable(
+                TableDefinition.of(
+                        ColumnDefinition.ofString("partition").withPartitioning(),
+                        ColumnDefinition.ofLong("II"),
+                        ColumnDefinition.of("Timestamp", Type.find(Instant.class))),
+                tableKey.toString(),
+                RegionedTableComponentFactoryImpl.INSTANCE,
+                tableLocationProvider,
+                null);
+
+        final Table deferredView = source.updateView("KK=II * 2");
+
+        final Table filtered = deferredView.where(kkFilter);
+        Assertions.assertThat(filtered).isInstanceOf(DeferredViewTable.class);
+        final Table partFilter = filtered.where("partition in `A`");
+        Assertions.assertThat(partFilter).isInstanceOf(QueryTable.class);
+
+        // ensure the inner filter sees two partitions' data
+        Assert.eq(kkFilter.numRowsProcessed(), "kkFilter.numRowsProcessed()", partitionSize);
+
+        assertEquals(1, partFilter.size());
+
+        TableTools.show(partFilter);
+
+        final Table preViewFiltered = deferredView.where(iiFilter);
+        Assertions.assertThat(preViewFiltered).isInstanceOf(DeferredViewTable.class);
+        final Table preViewWithPart = preViewFiltered.where("partition in `B`");
+        Assertions.assertThat(preViewWithPart).isInstanceOf(QueryTable.class);
+        // ensure the inner filter sees two partitions' data
+        Assert.eq(iiFilter.numRowsProcessed(), "iiFilter.numRowsProcessed()", partitionSize);
+        assertEquals(1, preViewWithPart.size());
+
+        kkFilter.reset();
+        final Table partAndPost = deferredView.where(
+                Filter.and(Arrays.asList(kkFilter, FilterComparison.eq(ColumnName.of("partition"), Literal.of("C")))));
+        Assertions.assertThat(partAndPost).isInstanceOf(QueryTable.class);
+        Assert.eq(kkFilter.numRowsProcessed(), "kkFilter.numRowsProcessed()", partitionSize);
+        assertEquals(1, partAndPost.size());
     }
 
     @Test
