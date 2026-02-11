@@ -18,9 +18,9 @@ import jsinterop.annotations.JsProperty;
  * in some cases actually be cheaper than maintaining state separately and updating only the changes, though both
  * options should be considered.
  * <p>
- * The `RangeSet` objects allow iterating over the LongWrapper indexes in the table. Note that these "indexes" are not
+ * The {@code RangeSet} objects allow iterating over the LongWrapper indexes in the table. Note that these "indexes" are not
  * necessarily contiguous and may be negative, and represent some internal state on the server, allowing it to keep
- * track of data efficiently. Those `LongWrapper` objects can be passed to the various methods on this instance to read
+ * track of data efficiently. Those {@code LongWrapper} objects can be passed to the various methods on this instance to read
  * specific rows or cells out of the table.
  */
 @TsInterface

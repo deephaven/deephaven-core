@@ -46,11 +46,11 @@ import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 /**
- * Describes how a Totals Table will be generated from its parent table. Each table has a default (which may be `null`)
+ * Describes how a Totals Table will be generated from its parent table. Each table has a default (which may be @code null})
  * indicating how that table was configured when it was declared, and each Totals Table has a similar property
- * describing how it was created. Both the `Table.getTotalsTable` and `Table.getGrandTotalsTable` methods take
+ * describing how it was created. Both the {@code Table.getTotalsTable} and {@code Table.getGrandTotalsTable} methods take
  * this config as an optional parameter - without it, the table's default will be used, or if null, a default instance
- * of `TotalsTableConfig` will be supplied.
+ * of {@code TotalsTableConfig} will be supplied.
  *
  * This class has a no-arg constructor, allowing an instance to be made with the default values provided. However, any
  * JS object can be passed in to the methods which accept instances of this type, provided their values adhere to the
@@ -89,11 +89,11 @@ public class JsTotalsTableConfig {
             JsAggregationOperation.SKIP);
 
     /**
-     * Specifies if a Totals Table should be expanded by default in the UI. Defaults to `false`.
+     * Specifies if a Totals Table should be expanded by default in the UI. Defaults to {@code false}.
      */
     public boolean showTotalsByDefault = false;
     /**
-     * Specifies if a Grand Totals Table should be expanded by default in the UI. Defaults to `false`.
+     * Specifies if a Grand Totals Table should be expanded by default in the UI. Defaults to {@code false}.
      */
     public boolean showGrandTotalsByDefault = false;
     /**
@@ -110,7 +110,7 @@ public class JsTotalsTableConfig {
 
     /**
      * Groupings to use when generating the Totals Table. One row will exist for each unique set of values observed in
-     * these columns. See also `Table.selectDistinct`.
+     * these columns. See also {@code Table.selectDistinct}.
      */
     public JsArray<String> groupBy = new JsArray<>();
 
@@ -147,10 +147,10 @@ public class JsTotalsTableConfig {
     }
 
     /**
-     * Implementation from `TotalsTableBuilder.fromDirective`, plus changes required to make this able to act on plan JS
+     * Implementation from {@code TotalsTableBuilder.fromDirective}, plus changes required to make this able to act on plan JS
      * objects/arrays.
      *
-     * Note that this omits `groupBy` for now, until the server directive format supports it!
+     * Note that this omits {@code groupBy} for now, until the server directive format supports it!
      */
     @JsIgnore
     public static JsTotalsTableConfig parse(String configString) {
@@ -210,10 +210,10 @@ public class JsTotalsTableConfig {
     }
 
     /**
-     * Implementation from `TotalsTableBuilder.buildDirective`, plus a minor change to iterate JS arrays/objects
+     * Implementation from {@code TotalsTableBuilder.buildDirective}, plus a minor change to iterate JS arrays/objects
      * correctly.
      *
-     * Note that this omits groupBy until the server directive format supports it!
+     * Note that this omits {@code groupBy} until the server directive format supports it!
      */
     @JsIgnore
     public String serialize() {

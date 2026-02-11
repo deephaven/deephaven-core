@@ -10,12 +10,12 @@ import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
 
 /**
- * Extends {@link TableData}, but only contains data in the current viewport. The only API change from `TableData` is that
+ * Extends {@link TableData}, but only contains data in the current viewport. The only API change from {@code TableData} is that
  * ViewportData also contains the offset to this data, so that the actual row number may be determined.
  * <p>
  * For viewport subscriptions, it is not necessary to read with the key, only with the position.
  * <p>
- * Do not assume that the first row in `rows` is the first visible row, because extra rows may be provided for easier
+ * Do not assume that the first row in {@code rows} is the first visible row, because extra rows may be provided for easier
  * scrolling without going to the server.
  */
 @JsType(namespace = "dh")

@@ -22,13 +22,13 @@ public class ConnectOptions {
     public JsPropertyMap<String> headers = Js.uncheckedCast(JsPropertyMap.of());
 
     /**
-     * Set to `true` to enable debug logging. At this time, only enables logging for gRPC calls.
+     * Set to {@code true} to enable debug logging. At this time, only enables logging for gRPC calls.
      */
     @JsNullable
     public boolean debug = false;
 
     /**
-     * Set this to `true` to force the use of websockets when connecting to the deephaven instance, of `false` to force the use
+     * Set this to {@code true} to force the use of websockets when connecting to the deephaven instance, of {@code false} to force the use
      * of {@code fetch}. Ignored if {@link #transportFactory} is set.
      * <p>
      * Defaults to null, indicating that the server URL should be checked to see if we connect with fetch or websockets.

@@ -84,9 +84,9 @@ public interface JoinableTable {
 
     /**
      * A promise that will be resolved with the newly created table holding the results of the specified cross join
-     * operation. The `columnsToAdd` parameter is optional, not specifying it will result in all columns from the
-     * right table being added to the output. The `reserveBits` optional parameter lets the client control how the
-     * key space is distributed between the rows in the two tables, see the Java `Table` class for details.
+     * operation. The {@code columnsToAdd} parameter is optional, not specifying it will result in all columns from the
+     * right table being added to the output. The {@code reserveBits} optional parameter lets the client control how the
+     * key space is distributed between the rows in the two tables, see the Java {@code Table} class for details.
      *
      * @param rightTable The table to match to values in this table.
      * @param columnsToMatch The columns that should match exactly.
@@ -102,7 +102,7 @@ public interface JoinableTable {
 
     /**
      * A promise that will be resolved with the newly created table holding the results of the specified exact join
-     * operation. The `columnsToAdd` parameter is optional, not specifying it will result in all columns from the right
+     * operation. The {@code columnsToAdd} parameter is optional, not specifying it will result in all columns from the right
      * table being added to the output.
      *
      * @param rightTable The table to match to values in this table.
@@ -117,7 +117,7 @@ public interface JoinableTable {
 
     /**
      * A promise that will be resolved with the newly created table holding the results of the specified natural join
-     * operation. The `columnsToAdd` parameter is optional, not specifying it will result in all columns from the
+     * operation. The {@code columnsToAdd} parameter is optional, not specifying it will result in all columns from the
      * right table being added to the output.
      *
      * @param rightTable The table to match to values in this table.

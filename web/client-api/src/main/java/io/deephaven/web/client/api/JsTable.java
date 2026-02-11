@@ -108,7 +108,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     @JsProperty(namespace = "dh.Table")
     public static final String EVENT_SIZECHANGED = "sizechanged",
             /**
-             * `event.detail` is the currently visible window, the same as if `getViewportData()` was called and resolved.
+             * {@code event.detail} is the currently visible window, the same as if {@code getViewportData} was called and resolved.
              * Listening to this event removes the need to listen to the finer grained events below for data changes. In
              * contrast, using the finer grained events may enable only updating the specific rows which saw a change.
              */
@@ -187,7 +187,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     private static int nextSubscriptionId;
 
     /**
-     * Creates a new `Table` directly from an existing `ClientTableState` (CTS). The CTS manages all fetch operations,
+     * Creates a new {@code Table} directly from an existing {@code ClientTableState} (CTS). The CTS manages all fetch operations,
      * so this is just a simple constructor to get a table that points to the given state.
      */
     public JsTable(
@@ -219,8 +219,8 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     }
 
     /**
-     * a `Sort` than can be used to reverse a table. This can be passed into n array in applySort. Note that Tree Tables
-     * do not support `reverse`.
+     * a {@code Sort} than can be used to reverse a table. This can be passed into n array in applySort. Note that Tree Tables
+     * do not support {@code reverse}.
      * 
      * @return {@link Sort}
      */
@@ -261,7 +261,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     }
 
     /**
-     * Retrieve a column by the given name. You should prefer to always retrieve a new `Column` instance instead of
+     * Retrieve a column by the given name. You should prefer to always retrieve a new {@code Column} instance instead of
      * caching a returned value.
      *
      * @param key
@@ -322,8 +322,8 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     }
 
     /**
-     * `true` if this table represents a user Input Table (created by `InputTable.newInputTable`). When `true`, you may call
-     * `.inputTable()` to add or remove data from the underlying table.
+     * {@code true} if this table represents a user Input Table (created by {@code InputTable.newInputTable}). When {@code true}, you may call
+     * {@code .inputTable()} to add or remove data from the underlying table.
      * 
      * @return boolean
      */
@@ -338,10 +338,10 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     }
 
     /**
-     * If `.hasInputTable` is `true`, you may call this method to gain access to an `InputTable` object which can be used to
+     * If {@code .hasInputTable} is {@code true}, you may call this method to gain access to an {@code InputTable} object which can be used to
      * mutate the data within the table. If the table is not an Input Table, the promise will be immediately rejected.
      *
-     * @return Promise of `dh.InputTable`
+     * @return Promise of {@code dh.InputTable}
      */
     @JsMethod
     public Promise<JsInputTable> inputTable() {
@@ -362,7 +362,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     }
 
     /**
-     * Indicates that this `Table` instance will no longer be used, and its connection to the server can be cleaned up.
+     * Indicates that this {@code Table} instance will no longer be used, and its connection to the server can be cleaned up.
      */
     @JsMethod
     public void close() {
@@ -395,7 +395,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     }
 
     /**
-     * `null` if no property exists, a string if it is an easily serializable property, or a {@code Promise
+     * {@code null} if no property exists, a string if it is an easily serializable property, or a {@code Promise
      * &lt;Table&gt;} that will either resolve with a table or error out if the object can't be passed to JS.
      * 
      * @param attributeName
@@ -439,9 +439,9 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
 
     /**
      * The columns that are present on this table. This is always all possible columns. If you specify fewer columns in
-     * `.setViewport()`, you will get only those columns in your `ViewportData`. `size` is the total count of rows
-     * in the table. The size can and will change; see the `sizechanged` event for details. Size will be negative
-     * in exceptional cases (eg. the table is uncoalesced, see the `isUncoalesced` property for details).
+     * {@code .setViewport()}, you will get only those columns in your {@code ViewportData}. {@code size} is the total count of rows
+     * in the table. The size can and will change; see the {@code sizechanged} event for details. Size will be negative
+     * in exceptional cases (eg. the table is uncoalesced, see the {@code isUncoalesced} property for details).
      * 
      * @return {@link Column} array
      */
@@ -503,7 +503,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     }
 
     /**
-     * An ordered list of `Sort`s to apply to the table. To update, call `applySort`. Note that this getter will
+     * An ordered list of {@link Sort}s to apply to the table. To update, call {@link #applySort(Sort[])}. Note that this getter will
      * return the new value immediately, even though it may take a little time to update on the server. You may listen
      * for the <b>sortchanged</b> event to know when to update the UI.
      * 
@@ -515,9 +515,9 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     }
 
     /**
-     * An ordered list of filter conditions to apply to the table. To update, call `applyFilter`. Note that this getter will
+     * An ordered list of filter conditions to apply to the table. To update, call {@link #applyFilter(FilterCondition[])}. Note that this getter will
      * return the new value immediately, even though it may take a little time to update on the server. You may listen
-     * for the <b>filterchanged</b> event to know when to update the UI.
+     * for the {@code filterchanged} event to know when to update the UI.
      * 
      * @return {@link FilterCondition} array
      */
@@ -529,8 +529,8 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     /**
      * Replace the currently set sort on this table. Returns the previously set value. Note that the sort property will
      * immediately return the new value, but you may receive update events using the old sort before the new sort is
-     * applied, and the <b>sortchanged</b> event fires. Reusing existing, applied sorts may enable this to perform
-     * better on the server. The <b>updated</b> event will also fire, but <b>rowadded</b> and <b>rowremoved</b> will
+     * applied, and the {@code sortchanged} event fires. Reusing existing, applied sorts may enable this to perform
+     * better on the server. The {@code updated} event will also fire, but {@code rowadded} and {@code rowremoved} will
      * not.
      *
      * @param sort
@@ -568,8 +568,8 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     /**
      * Replace the currently set filters on the table. Returns the previously set value. Note that the filter property
      * will immediately return the new value, but you may receive update events using the old filter before the new one
-     * is applied, and the <b>filterchanged</b> event fires. Reusing existing, applied filters may enable this to
-     * perform better on the server. The <b>updated</b> event will also fire, but <b>rowadded</b> and <b>rowremoved</b>
+     * is applied, and the {@code filterchanged} event fires. Reusing existing, applied filters may enable this to
+     * perform better on the server. The {@code updated} event will also fire, but {@code rowadded} and {@code rowremoved}
      * will not.
      *
      * @param filter
@@ -676,7 +676,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
 
     /**
      * An ordered list of custom column formulas to add to the table, either adding new columns or replacing existing
-     * ones. To update, call `applyCustomColumns`.
+     * ones. To update, call {@link #applyCustomColumns(JsArray)}.
      * 
      * @return {@link CustomColumn} array
      *
@@ -701,10 +701,10 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     }
 
     /**
-     * If the columns parameter is not provided, all columns will be used. If the `updateIntervalMs` parameter is not
+     * If the columns parameter is not provided, all columns will be used. If the {@code updateIntervalMs} parameter is not
      * provided, a default of one second will be used. Until this is called, no data will be available. Invoking this
-     * will result in events to be fired once data becomes available, starting with an `updated` event and a
-     * <b>rowadded</b> event per row in that range. The returned object allows the viewport to be closed when no longer
+     * will result in events to be fired once data becomes available, starting with an {@code updated} event and a
+     * {@code rowadded} event per row in that range. The returned object allows the viewport to be closed when no longer
      * needed.
      *
      * @param firstRow
@@ -780,11 +780,11 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
 
     /**
      * Creates a subscription to the specified columns, across all rows in the table. The optional parameter
-     * `updateIntervalMs` may be specified to indicate how often the server should send updates, defaulting to one second
+     * {@code updateIntervalMs} may be specified to indicate how often the server should send updates, defaulting to one second
      * if omitted. Useful for charts or taking a snapshot of the table atomically. The initial snapshot will arrive in a
      * single event, but later changes will be sent as updates. However, this may still be very expensive to run from a
-     * browser for very large tables. Each call to subscribe creates a new subscription, which must have `close()`
-     * called on it to stop it, and all events are fired from the `TableSubscription` instance.
+     * browser for very large tables. Each call to subscribe creates a new subscription, which must have {@link TableSubscription#close()}
+     * called on it to stop it, and all events are fired from the {@link TableSubscription} instance.
      *
      * @param columns
      * @param updateIntervalMs
@@ -820,7 +820,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
 
     /**
      * Creates a viewport subscription to the specified columns, across the specified rows in the table. The returned
-     * `TableViewportSubscription` instance allows the viewport to be changed over time, and events are fired from it when
+     * {@link TableViewportSubscription} instance allows the viewport to be changed over time, and events are fired from it when
      * the data changes or when a viewport change has been applied. Each call to {@code createViewportSubscription} creates a
      * new subscription, which must have {@link TableViewportSubscription#close()} called on it to stop it and release
      * its resources
@@ -841,7 +841,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
 
 
     /**
-     * Returns a promise that will resolve to a `TableData` instance containing a snapshot of the current state of the table,
+     * Returns a promise that will resolve to a {@link TableData} instance containing a snapshot of the current state of the table,
      * within the bounds of the specified rows and columns.
      *
      * @param options options for the snapshot; see {@link DataOptions.SnapshotOptions} for details
@@ -1011,7 +1011,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     /**
      * A promise that will resolve to a Totals Table of this table. This table will obey the configurations provided as
      * a parameter, or will use the table's default if no parameter is provided, and be updated once per second as
-     * necessary. Note that multiple calls to this method will each produce a new `TotalsTable` which must have `close`
+     * necessary. Note that multiple calls to this method will each produce a new {@code TotalsTable} which must have {@code close}
      * called on it when not in use.
      * 
      * @param config
@@ -1027,7 +1027,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     }
 
     /**
-     * The default configuration to be used when building a `TotalsTable` for this table.
+     * The default configuration to be used when building a {@code TotalsTable} for this table.
      * 
      * @return dh.TotalsTableConfig
      */
@@ -1197,7 +1197,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     }
 
     /**
-     * A promise that will resolve to a Totals Table of this table, ignoring any filters. See `getTotalsTable()`
+     * A promise that will resolve to a Totals Table of this table, ignoring any filters. See {@code getTotalsTable}
      * above for more specifics.
      * 
      * @param config
@@ -1220,8 +1220,8 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     }
 
     /**
-     * a promise that will resolve to a new roll-up `TreeTable` of this table. Multiple calls to this method will
-     * each produce a new `TreeTable` which must have `close` called on it when not in use.
+     * a promise that will resolve to a new roll-up {@code TreeTable} of this table. Multiple calls to this method will
+     * each produce a new {@code TreeTable} which must have {@code close} called on it when not in use.
      * 
      * @param configObject
      * @return Promise of dh.TreeTable
@@ -1256,8 +1256,8 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     }
 
     /**
-     * A promise that will resolve to a new `TreeTable` of this table. Multiple calls to this method will each produce a
-     * new `TreeTable` which must have `close` called on it when not in use.
+     * A promise that will resolve to a new {@code TreeTable} of this table. Multiple calls to this method will each produce a
+     * new {@code TreeTable} which must have {@code close} called on it when not in use.
      * 
      * @param configObject
      * @return Promise dh.TreeTable
@@ -1585,10 +1585,10 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
      * @param column Column to seek for value on
      * @param valueType Type of value provided
      * @param seekValue Value to seek
-     * @param insensitive Optional value to flag a search as case-insensitive. Defaults to `false`.
+     * @param insensitive Optional value to flag a search as case-insensitive. Defaults to {@code false}.
      * @param contains Optional value to have the seek value do a contains search instead of exact equality. Defaults to
-     *        `false`.
-     * @param isBackwards Optional value to seek backwards through the table instead of forwards. Defaults to `false`.
+     *        {@code false}.
+     * @param isBackwards Optional value to seek backwards through the table instead of forwards. Defaults to {@code false}.
      * @return A promise that resolves to the row value found.
      */
     @JsMethod
@@ -1638,11 +1638,11 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     }
 
     /**
-     * Get a downsampled version of the table. Currently only supports downsampling with an Instant or long `xCol`.
+     * Get a downsampled version of the table. Currently only supports downsampling with an Instant or long {@code xCol}.
      *
-     * @param zoomRange The visible range as `[start, end]` or null to always use all data.
+     * @param zoomRange The visible range as {@code [start, end]} or {@code null} to always use all data.
      * @param pixelCount The width of the visible area in pixels.
-     * @param xCol The name of the X column to downsample. Must be an `Instant` or `long`.
+     * @param xCol The name of the X column to downsample. Must be an {@code Instant} or {@code long}.
      * @param yCols The names of the Y columns to downsample.
      * @return A promise that resolves to the downsampled table.
      */
@@ -1671,7 +1671,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     }
 
     /**
-     * `true` if this table has been closed.
+     * {@code true} if this table has been closed.
      * 
      * @return boolean
      */
@@ -1681,7 +1681,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     }
 
     /**
-     * `true` if this table may receive updates from the server, including size changed events, updated events after
+     * {@code true} if this table may receive updates from the server, including size changed events, updated events after
      * initial snapshot.
      *
      * @return boolean
@@ -1692,7 +1692,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     }
 
     /**
-     * Read-only. `true` if this table is uncoalesced, indicating that work must be done before the table can be used.
+     * Read-only. {@code true} if this table is uncoalesced, indicating that work must be done before the table can be used.
      * <p>
      * Uncoalesced tables are expensive to operate on - filter to a single partition or range of partitions before
      * subscribing to access only the desired data efficiently. A subscription can be specified without a filter, but
@@ -1700,7 +1700,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
      * have {@link Column#getIsPartitionColumn()} as {@code true}, and filter those columns. To read the possible values
      * for those columns, use {@link #selectDistinct(Column[])}.
      *
-     * @return `true` if the table is uncoaleced and should be filtered before operating on it, otherwise false.
+     * @return {@code true} if the table is uncoaleced and should be filtered before operating on it, otherwise {@code false}.
      */
     @JsProperty(name = "isUncoalesced")
     public boolean isUncoalesced() {

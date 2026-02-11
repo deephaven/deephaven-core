@@ -73,7 +73,7 @@ public class JsChart extends HasEventHandling {
     }
 
     /**
-     * The type of this chart, see `ChartType` enum for more details.
+     * The type of this chart, see {@code ChartType} enum for more details.
      * 
      * @return int
      */

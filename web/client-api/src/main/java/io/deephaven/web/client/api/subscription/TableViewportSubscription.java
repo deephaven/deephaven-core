@@ -36,10 +36,10 @@ import static io.deephaven.web.client.api.JsTable.EVENT_ROWUPDATED;
 
 /**
  * This object serves as a "handle" to a subscription, allowing it to be acted on directly or canceled outright. If you
- * retain an instance of this, you have two choices - either only use it to call `close` on it to stop the table's
+ * retain an instance of this, you have two choices - either only use it to call {@code close} on it to stop the table's
  * viewport without creating a new one, or listen directly to this object instead of the table for data events, and
- * always call `close` when finished. Calling any method on this object other than `close` will result in it
- * continuing to live on after `setViewport` is called on the original table, or after the table is modified.
+ * always call {@code close} when finished. Calling any method on this object other than {@code close} will result in it
+ * continuing to live on after {@code setViewport} is called on the original table, or after the table is modified.
  */
 @TsName(namespace = "dh")
 public class TableViewportSubscription extends AbstractTableSubscription {
@@ -55,12 +55,12 @@ public class TableViewportSubscription extends AbstractTableSubscription {
     private final ClientTableState initialState;
 
     /**
-     * `true` if the sub is set up to not close the underlying table once the original table is done with it, otherwise
-     * `false`.
+     * {@code true} if the sub is set up to not close the underlying table once the original table is done with it, otherwise
+     * {@code false}.
      */
     private boolean originalActive = true;
     /**
-     * `true` if the developer has called methods directly on the subscription, otherwise `false`.
+     * {@code true} if the developer has called methods directly on the subscription, otherwise {@code false}.
      */
     private boolean retained;
 
@@ -324,7 +324,7 @@ public class TableViewportSubscription extends AbstractTableSubscription {
     }
 
     /**
-     * Internal API method to indicate that the `Table` itself has no further use for this. The subscription should stop
+     * Internal API method to indicate that the {@code Table} itself has no further use for this. The subscription should stop
      * forwarding events and optionally close the underlying table/subscription.
      */
     public void internalClose() {

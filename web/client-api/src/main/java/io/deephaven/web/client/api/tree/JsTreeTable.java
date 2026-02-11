@@ -68,7 +68,7 @@ import java.util.*;
  * Similar to a table, a Tree Table provides access to subscribed viewport data on the current hierarchy. A different
  * Row type is used within that viewport, showing the depth of that node within the tree and indicating details about
  * whether it has children or is expanded. The Tree Table itself then provides the ability to change if a row is
- * expanded or not. Methods used to control or check if a row should be expanded or not can be invoked on a `TreeRow`
+ * expanded or not. Methods used to control or check if a row should be expanded or not can be invoked on a {@code TreeRow}
  * instance, or on the number of the row (thus allowing for expanding/collapsing rows which are not currently visible in
  * the viewport).
  * <p>
@@ -81,12 +81,12 @@ import java.util.*;
  * It is suggested that the viewport be changed to the desired position (usually the first N rows) after any filter/sort
  * change is made. Likewise, {@link #getViewportData()} will always return the most recent data, and will not wait if a
  * new operation is pending.</li>
- * <li>Custom columns are supported on Rollup tables, but not on Tree tables. If the `TreeTable` was created client-side,
- * the original `Table` can have custom columns applied, and the `TreeTable` can be recreated.</li>
- * <li>Whereas `Table` has a {@link JsTable#getTotalsTableConfig()} property, it is defined here as a method,
+ * <li>Custom columns are supported on Rollup tables, but not on Tree tables. If the {@code TreeTable} was created client-side,
+ * the original {@code Table} can have custom columns applied, and the {@code TreeTable} can be recreated.</li>
+ * <li>Whereas {@code Table} has a {@link JsTable#getTotalsTableConfig()} property, it is defined here as a method,
  * {@link #getTotalsTableConfig()}. This returns a promise so the config can be fetched asynchronously.</li>
  * <li>Totals Tables for trees vary in behavior between tree tables and roll-up tables. This behavior is based on the
- * original flat table used to produce the Tree Table - for a hierarchical table (i.e. Table.treeTable in the query
+ * original flat table used to produce the Tree Table - for a hierarchical table (i.e. {@code Table.treeTable} in the query
  * config), the totals will include non-leaf nodes (since they are themselves actual rows in the table), but in a
  * roll-up table, the totals only include leaf nodes (as non-leaf nodes are generated through grouping the contents of
  * the original table). Roll-ups also have the {@link JsRollupConfig#includeConstituents} property, indicating that a
@@ -97,7 +97,7 @@ import java.util.*;
 @JsType(namespace = "dh", name = "TreeTable")
 public class JsTreeTable extends HasLifecycle implements ServerObject {
     /**
-     * `event.detail` is the currently visible viewport data based on the active viewport configuration.
+     * {@code event.detail} is the currently visible viewport data based on the active viewport configuration.
      */
     public static final String EVENT_UPDATED = "updated",
             EVENT_DISCONNECT = "disconnect",
@@ -886,7 +886,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
     /**
      * Expands the given node, so that its children are visible when they are in the viewport. The parameter can be the
      * row index, or the row object itself. The second parameter is a boolean value, false by default, specifying if the
-     * row and all descendants should be fully expanded. Equivalent to `setExpanded(row, true)` with an optional third
+     * row and all descendants should be fully expanded. Equivalent to {@code setExpanded(row, true)} with an optional third
      * boolean parameter.
      *
      * @param row
@@ -898,7 +898,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
 
     /**
      * Collapses the given node, so that its children and descendants are not visible in the size or the viewport. The
-     * parameter can be the row index, or the row object itself. Equivalent to `setExpanded(row, false, false)`.
+     * parameter can be the row index, or the row object itself. Equivalent to {@code setExpanded(row, false, false)}.
      *
      * @param row
      */
@@ -939,13 +939,13 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
 
     /**
      * Specifies if the given node should be expanded or collapsed. If this node has children, and the value is changed,
-     * the size of the table will change. If node is to be expanded and the third parameter, `expandDescendants`,
-     * is `true`, then its children will also be expanded.
+     * the size of the table will change. If node is to be expanded and the third parameter, {@code expandDescendants},
+     * is {@code true}, then its children will also be expanded.
      *
      * @param row The row to expand or collapse - either the absolute row index or the row object.
-     * @param isExpanded `true` to expand the row, `false` to collapse.
-     * @param expandDescendants `true` to expand the row and all descendants, `false` to expand only the row. Defaults to
-     *        `false`.
+     * @param isExpanded {@code true} to expand the row, {@code false} to collapse.
+     * @param expandDescendants {@code true} to expand the row and all descendants, {@code false} to expand only the 
+     * row. Defaults to {@code false}.
      */
     public void setExpanded(RowReferenceUnion row, boolean isExpanded, @JsOptional Boolean expandDescendants) {
         // TODO check row number is within bounds
@@ -984,7 +984,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
      * Tests if the specified row is expanded.
      *
      * @param row The row to test - either the absolute row index or the row object.
-     * @return `true` if the row is expanded, `false` otherwise.
+     * @return {@code true} if the row is expanded, {@code false} otherwise.
      */
     public boolean isExpanded(RowReferenceUnion row) {
         final TreeSubscription.TreeRowImpl r;
@@ -1026,7 +1026,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
     }
 
     /**
-     * `true` if this table has been closed.
+     * {@code true} if this table has been closed.
      *
      * @return boolean
      */
@@ -1036,7 +1036,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
     }
 
     /**
-     * `true` if this table may receive updates from the server, including size changed events, updated events after
+     * {@code true} if this table may receive updates from the server, including size changed events, updated events after
      * initial snapshot.
      *
      * @return boolean
@@ -1138,7 +1138,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
     }
 
     /**
-     * Adding new columns to the table based on other columns using updateView() mechanics. Rollup tables are supported
+     * Adding new columns to the table based on other columns using {@code updateView} mechanics. Rollup tables are supported
      * but Tree tables will throw an {@link UnsupportedOperationException} if this function is called.
      *
      * @param customColumns
@@ -1195,7 +1195,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
 
     /**
      * The current number of rows given the table's contents and the various expand/collapse states of each node. (No
-     * `totalSize` is provided at this time; its definition becomes unclear between roll-up and tree tables, especially
+     * {@code totalSize} is provided at this time; its definition becomes unclear between roll-up and tree tables, especially
      * when considering collapse/expand states).
      *
      * @return double
@@ -1264,7 +1264,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
     }
 
     /**
-     * `true` if this is a roll-up and will provide the original rows that make up each grouping.
+     * {@code true} if this is a roll-up and will provide the original rows that make up each grouping.
      * 
      * @return boolean
      */
@@ -1303,7 +1303,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
     }
 
     /**
-     * Provides Table-like `selectDistinct` functionality, but with a few quirks, since it is only fetching the distinct
+     * Provides Table-like {@code selectDistinct} functionality, but with a few quirks, since it is only fetching the distinct
      * values for the given columns in the source table:
      * <ul>
      * <li>Rollups may make no sense, since values are aggregated.</li>

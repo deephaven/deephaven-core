@@ -422,13 +422,13 @@ public class FilterValue {
      * A filter condition invoking the given method on the current value, with the given parameters. Currently supported
      * functions that can be invoked on a String:
      * <ul>
-     * <li>`startsWith`: Returns `true` if the current string value starts with the supplied string argument.</li>
-     * <li>`endsWith`: Returns `true` if the current string value ends with the supplied string argument.</li>
-     * <li>`matches`: Returns `true` if the current string value matches the supplied string argument used as a Java
+     * <li>{@code startsWith}: Returns {@code true} if the current string value starts with the supplied string argument.</li>
+     * <li>{@code endsWith}: Returns {@code true} if the current string value ends with the supplied string argument.</li>
+     * <li>{@code matches}: Returns {@code true} if the current string value matches the supplied string argument used as a Java
      * regular expression.</li>
-     * <li>`contains`: Returns `true` if the current string value contains the supplied string argument.
+     * <li>{@code contains}: Returns {@code true} if the current string value contains the supplied string argument.
      * <p>
-     * When invoking against a constant, this should be avoided in favor of `FilterValue.contains`.
+     * When invoking against a constant, this should be avoided in favor of {@code FilterValue.contains}.
      * </p>
      * </li>
      * </ul>

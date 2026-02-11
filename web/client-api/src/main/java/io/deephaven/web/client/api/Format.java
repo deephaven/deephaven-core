@@ -87,7 +87,7 @@ public final class Format {
 
 
     /**
-     * @deprecated Prefer `formatString`. Number format string to apply to the value in this cell.
+     * @deprecated Prefer {@code formatString}. Number format string to apply to the value in this cell.
      */
     @Deprecated
     @JsNullable

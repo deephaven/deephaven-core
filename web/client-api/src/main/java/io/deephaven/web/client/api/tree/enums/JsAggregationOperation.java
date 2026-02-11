@@ -8,7 +8,7 @@ import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsType;
 
 /**
- * This enum describes the name of each supported operation/aggregation type when creating a `TreeTable`.
+ * This enum describes the name of each supported operation/aggregation type when creating a {@code TreeTable}.
  */
 @JsType(name = "AggregationOperation", namespace = "dh")
 @TsTypeDef(tsType = "string")

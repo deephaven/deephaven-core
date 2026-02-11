@@ -46,7 +46,7 @@ public class GrpcTransportOptions {
     public URL url;
 
     /**
-     * `true` to enable debug logging for this stream.
+     * {@code true} to enable debug logging for this stream.
      */
     public boolean debug;
 

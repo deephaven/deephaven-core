@@ -50,7 +50,7 @@ public class SeriesDataSource {
     }
 
     /**
-     * The feature of this series represented by this source. See the `SourceType` enum for more details.
+     * The feature of this series represented by this source. See the {@code SourceType} enum for more details.
      * 
      * @return int
      */

@@ -109,15 +109,16 @@ public class JsStorageService {
     }
 
     /**
-     * Saves the provided contents to the given path, creating a file or replacing an existing one. The optional `newFile`
-     * parameter can be passed to indicate that an existing file must not be overwritten, only a new file created.
-     *
+     * Saves the provided contents to the given path, creating a file or replacing an existing one. The optional
+     * {@code newFile} parameter can be passed to indicate that an existing file must not be overwritten, only a 
+     * new file created.
+     * 
      * Note that directories must be empty to be overwritten.
      *
      * @param path the path of the file to write.
      * @param contents the contents to write to that path.
-     * @param allowOverwrite `true` to allow an existing file to be overwritten, `false` or skip to require a new file.
-     * @return a promise with a `FileContents`, holding only the new etag (if the server emitted one), or an error.
+     * @param allowOverwrite {@code true} to allow an existing file to be overwritten, {@code false} or skip to require a new file.
+     * @return a promise with a {@code FileContents}, holding only the new etag (if the server emitted one), or an error.
      */
     @JsMethod
     public Promise<JsFileContents> saveFile(String path, JsFileContents contents, @JsOptional Boolean allowOverwrite) {
@@ -137,7 +138,7 @@ public class JsStorageService {
     }
 
     /**
-     * Moves (and/or renames) an item from its old path to its new path. The optional `newFile` parameter can be passed to
+     * Moves (and/or renames) an item from its old path to its new path. The optional {@code newFile} parameter can be passed to
      * enforce that an existing item must not be overwritten.
      *
      * Note that directories must be empty to be overwritten.

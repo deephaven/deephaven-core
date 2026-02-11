@@ -23,7 +23,7 @@ import java.util.Objects;
  * Exported wrapper of the GWT NumberFormat, plus LongWrapper support
  *
  * Utility class to parse and format numbers, using the same format patterns as are supported by the standard Java
- * implementation used in the Deephaven server and swing client. Works for numeric types including `BigInteger` and
+ * implementation used in the Deephaven server and swing client. Works for numeric types including {@code BigInteger} and
  * `BigDecimal`.
  */
 @JsType(namespace = "dh.i18n", name = "NumberFormat")

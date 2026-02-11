@@ -39,7 +39,7 @@ public class Column {
     private final int jsIndex;
 
     /**
-     * Specific to rollup tables when constituent columns are enabled. Used in `toString()`, but ignored for
+     * Specific to rollup tables when constituent columns are enabled. Used in {@code toString()}, but ignored for
      * equals/hashcode, since it might be helpful for debugging, but could potentially confuse some comparisons between
      * instances since this is set after the CTS is created, ready for use.
      */
@@ -50,8 +50,8 @@ public class Column {
     private final boolean isInputTableValueColumn;
 
     /**
-     * Format entire rows colors using the expression specified. Returns a `CustomColumn` object to apply to a
-     * table using `applyCustomColumns` with the parameters specified.
+     * Format entire rows colors using the expression specified. Returns a {@code CustomColumn} object to apply to a
+     * table using {@code applyCustomColumns} with the parameters specified.
      *
      * @param expression
      * @param options
@@ -64,7 +64,7 @@ public class Column {
     }
 
     /**
-     * A `CustomColumn` object to apply using `applyCustomColumns` with the expression specified.
+     * A {@code CustomColumn} object to apply using {@code applyCustomColumns} with the expression specified.
      *
      * @param name
      * @param expression
@@ -166,7 +166,7 @@ public class Column {
 
     /**
      * If this column is part of a roll-up tree table, represents the type of the row data that can be found in this
-     * column for leaf nodes if `includeConstituents` is enabled. Otherwise, it is `null`.
+     * column for leaf nodes if {@code includeConstituents} is enabled. Otherwise, it is {@code null}.
      *
      * @return String
      */
@@ -189,10 +189,10 @@ public class Column {
     }
 
     /**
-     * `true` if this column is a partition column. Partition columns are used for filtering uncoalesced tables - see
+     * {@code true} if this column is a partition column. Partition columns are used for filtering uncoalesced tables - see
      * {@link JsTable#isUncoalesced()}.
      *
-     * @return `true` if the column is a partition column.
+     * @return {@code true} if the column is a partition column.
      */
     @JsProperty
     public boolean getIsPartitionColumn() {
@@ -234,7 +234,7 @@ public class Column {
     }
 
     /**
-     * A `CustomColumn` object to apply using `applyCustomColumns` with the expression specified.
+     * A {@code CustomColumn} object to apply using {@code applyCustomColumns} with the expression specified.
      *
      * @param expression
      * @return {@link CustomColumn}
@@ -246,7 +246,7 @@ public class Column {
     }
 
     /**
-     * A `CustomColumn` object to apply using `applyCustomColumns` with the expression specified.
+     * A {@code CustomColumn} object to apply using {@code applyCustomColumns} with the expression specified.
      *
      * @param expression
      * @return {@link CustomColumn}
@@ -258,7 +258,7 @@ public class Column {
     }
 
     /**
-     * A `CustomColumn` object to apply using `applyCustomColumns` with the expression specified.
+     * A {@code CustomColumn} object to apply using {@code applyCustomColumns} with the expression specified.
      *
      * @param expression
      * @return {@link CustomColumn}

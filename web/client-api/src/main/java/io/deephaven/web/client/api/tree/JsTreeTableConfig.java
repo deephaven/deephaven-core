@@ -9,9 +9,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 /**
- * Configuration object for running `Table.treeTable` to produce a hierarchical view of a given "flat" table.
+ * Configuration object for running {@code Table.treeTable} to produce a hierarchical view of a given "flat" table.
  *
- * Like `TotalsTableConfig`, `TreeTableConfig` supports an operation map indicating how to aggregate the data, as well as
+ * Like {@code TotalsTableConfig}, {@code TreeTableConfig} supports an operation map indicating how to aggregate the data, as well as
  * an array of column names which will be the layers in the roll-up tree, grouped at each level. An additional optional
  * value can be provided describing the strategy the engine should use when grouping the rows.
  */

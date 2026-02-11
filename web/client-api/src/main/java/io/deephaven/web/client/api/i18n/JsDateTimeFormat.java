@@ -22,7 +22,7 @@ import java.util.*;
  * Largely an exported wrapper for the GWT DateFormat, but also includes support for formatting nanoseconds as an
  * additional 6 decimal places after the rest of the number.
  *
- * Other concerns that this handles includes accepting a js `Date` and ignoring the lack of nanos, accepting a js `Number`
+ * Other concerns that this handles includes accepting a js {@code Date} and ignoring the lack of nanos, accepting a js {@code Number}
  * and assuming it to be a lossy nano value, and parsing into a js Date.
  *
  *
@@ -30,19 +30,19 @@ import java.util.*;
  * standard Java implementation used in the Deephaven server and swing client.
  *
  * As Deephaven internally uses nanosecond precision to record dates, this API expects nanoseconds in most use cases,
- * with the one exception of the JS `Date` type, which is not capable of more precision than milliseconds. Note,
- * however, that when passing nanoseconds as a JS `Number` there is likely to be some loss of precision, though this is
- * still supported for easier interoperability with other JS code. The values returned by `parse()` will be an opaque
- * object wrapping the full precision of the specified date, However, this object supports `toString()` and `valueOf()`
- * to return a string representation of that value, as well as a `asNumber()` to return a JS `Number` value and a
- * `asDate()` to return a JS `Date` value.
+ * with the one exception of the JS {@code Date} type, which is not capable of more precision than milliseconds. Note,
+ * however, that when passing nanoseconds as a JS {@code Number} there is likely to be some loss of precision, though this is
+ * still supported for easier interoperability with other JS code. The values returned by {@code parse} will be an opaque
+ * object wrapping the full precision of the specified date, However, this object supports {@code toString} and {@code valueOf}
+ * to return a string representation of that value, as well as a {@code asNumber} to return a JS {@code Number} value and a
+ * {@code asDate} to return a JS {@code Date} value.
  *
  *
  * Caveats:
  *
  *
- * - The `D` format (for "day of year") is not supported by this implementation at this time. - The `%t` format for
- * short timezone code is not supported by this implementation at this time, though `z` will work as expected in the
+ * - The {@code D} format (for "day of year") is not supported by this implementation at this time. - The {@code %t} format for
+ * short timezone code is not supported by this implementation at this time, though {@code z} will work as expected in the
  * browser to emit the user's own timezone.
  *
  */
@@ -66,7 +66,7 @@ public class JsDateTimeFormat {
 
     /**
      * Accepts a variety of input objects to interpret as a date, and formats them using the specified pattern. A
-     * `TimeZone` object can optionally be provided to format this date as the current date/time in that timezone. See
+     * {@code TimeZone} object can optionally be provided to format this date as the current date/time in that timezone. See
      * the instance method for more details on input objects.
      * 
      * @param pattern
@@ -79,7 +79,7 @@ public class JsDateTimeFormat {
     }
 
     /**
-     * Parses the given input string using the provided pattern, and returns a JS `Date` object in milliseconds.
+     * Parses the given input string using the provided pattern, and returns a JS {@code Date} object in milliseconds.
      * 
      * @param pattern
      * @param text
@@ -90,8 +90,8 @@ public class JsDateTimeFormat {
     }
 
     /**
-     * Parses the given input string using the provided pattern, and returns a wrapped Java `long` value in nanoseconds.
-     * A `TimeZone` object can optionally be provided to parse to a desired timezone.
+     * Parses the given input string using the provided pattern, and returns a wrapped Java {@code long} value in nanoseconds.
+     * A {@code TimeZone} object can optionally be provided to parse to a desired timezone.
      * 
      * @param pattern
      * @param text
@@ -109,7 +109,7 @@ public class JsDateTimeFormat {
     private final int nanoCount;
 
     /**
-     * Creates a new date/time format instance. This generally should be avoided in favor of the static `getFormat`
+     * Creates a new date/time format instance. This generally should be avoided in favor of the static {@code getFormat}
      * function, which will create and cache an instance so that later calls share the same instance.
      * 
      * @param pattern
@@ -169,9 +169,9 @@ public class JsDateTimeFormat {
 
     /**
      * Takes a variety of objects to interpret as a date, and formats them using this instance's pattern. Inputs can
-     * include a `String` value of a number expressed in nanoseconds, a `Number` value expressed in
-     * nanoseconds, a JS `Date` object (necessarily in milliseconds), or a wrapped Java `long` value,
-     * expressed in nanoseconds. A `TimeZone` object can optionally be provided to format this date as the current
+     * include a {@code String} value of a number expressed in nanoseconds, a {@code Number} value expressed in
+     * nanoseconds, a JS {@code Date} object (necessarily in milliseconds), or a wrapped Java {@code long} value,
+     * expressed in nanoseconds. A {@code TimeZone} object can optionally be provided to format this date as the current
      * date/time in that timezone.
      * 
      * @param date
@@ -251,8 +251,8 @@ public class JsDateTimeFormat {
     }
 
     /**
-     * Parses the given string using this instance's pattern, and returns a wrapped Java <b>long</b> value in
-     * nanoseconds. A <b>TimeZone</b> object can optionally be provided to parse to a desired timezone.
+     * Parses the given string using this instance's pattern, and returns a wrapped Java {@code long} value in
+     * nanoseconds. A {@code TimeZone} object can optionally be provided to parse to a desired timezone.
      * 
      * @param text
      * @param tz
@@ -309,7 +309,7 @@ public class JsDateTimeFormat {
     }
 
     /**
-     * Parses the given string using this instance's pattern, and returns a JS <b>Date</b> object in milliseconds.
+     * Parses the given string using this instance's pattern, and returns a JS {@code Date} object in milliseconds.
      * 
      * @param text
      * @return

@@ -118,7 +118,7 @@ public interface TableData {
      * 
      * @param index The row to read.
      * @param column The column to read.
-     * @return A `Format` instance with any server-specified details.
+     * @return A {@link Format} instance with any server-specified details.
      */
     @JsMethod
     default Format getFormat(RowPositionUnion index, Column column) {

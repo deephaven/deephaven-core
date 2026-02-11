@@ -15,7 +15,7 @@ import java.util.Map;
 /**
  * Represents the timezones supported by Deephaven. Can be used to format dates, taking into account the offset changing
  * throughout the year (potentially changing each year). These instances mostly are useful at this time to pass to the
- * `DateTimeFormat.format()` methods, though also support a few properties at this time to see details about each
+ * {@code DateTimeFormat.format} methods, though also support a few properties at this time to see details about each
  * instance.
  *
  *
@@ -689,7 +689,7 @@ public class JsTimeZone {
     }
 
     /**
-     * The timezone code that represents this `TimeZone`, usually the same key as was use to create this instance.
+     * The timezone code that represents this {@code TimeZone}, usually the same key as was use to create this instance.
      * 
      * @return String
      */

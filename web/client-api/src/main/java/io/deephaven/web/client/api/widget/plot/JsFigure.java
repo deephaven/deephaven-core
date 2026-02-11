@@ -77,7 +77,7 @@ import java.util.stream.Stream;
 public class JsFigure extends HasLifecycle {
 
     /**
-     * The data within this figure was updated. `event.detail` is `FigureUpdateEventData`
+     * The data within this figure was updated. {@code event.detail} is {@code FigureUpdateEventData}.
      */
     @JsProperty(namespace = "dh.plot.Figure")
     public static final String EVENT_UPDATED = "updated",
@@ -91,19 +91,19 @@ public class JsFigure extends HasLifecycle {
             EVENT_RECONNECTFAILED = JsTable.EVENT_RECONNECTFAILED,
             /**
              * The API is updating how downsampling works on this Figure, probably in response to a call to
-             * `Axis.range()` or `subscribe()`. The `event.detail` value is an array of `Series` instances
+             * {@code Axis.range} or {@code subscribe}. The {@code event.detail} value is an array of {@code Series} instances
              * which are affected by this.
              */
             EVENT_DOWNSAMPLESTARTED = "downsamplestarted",
             /**
-             * Downsampling has finished on the given `Series` instances, and data will arrive shortly. The
-             * `event.detail` value is the array of `Series` instances.
+             * Downsampling has finished on the given {@code Series} instances, and data will arrive shortly. The
+             * {@code event.detail} value is the array of {@code Series} instances.
              */
             EVENT_DOWNSAMPLEFINISHED = "downsamplefinished",
             /**
-             * Downsampling failed for some reason on one or more series. The `event.detail` object has three
+             * Downsampling failed for some reason on one or more series. The {@code event.detail} object has three
              * properties: the <b>message</b> string describing what went wrong, the <b>size</b> number showing the full
-             * size of the table, and the <b>series</b> property, an array of `Series` instances affected.
+             * size of the table, and the <b>series</b> property, an array of {@code Series} instances affected.
              */
             EVENT_DOWNSAMPLEFAILED = "downsamplefailed",
             /**
