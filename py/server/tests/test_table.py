@@ -1140,7 +1140,8 @@ class TableTestCase(BaseTestCase):
         self.assertIsNotNone(rollup_table)
 
         rollup_reagg = test_table.rollup(
-            formula("S=sum(var)", reaggregating=True), by="grp_id"
+            formula("var=sum(var)", reaggregating=True),
+            by="grp_id",
         )
         self.assertIsNotNone(rollup_reagg)
 
