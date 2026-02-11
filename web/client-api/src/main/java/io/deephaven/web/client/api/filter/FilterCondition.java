@@ -39,17 +39,18 @@ public class FilterCondition {
      * than the third</li>
      * <li>{@code isInf}: Returns {@code true} if the given number is <i>infinity</i>.</li>
      * <li>{@code isNaN}: Returns {@code true} if the given number is <i>not a number</i>.</li>
-     * <li>{@code isNormal}: Returns {@code true} if the given number <i>is not null</i>, <i>is not infinity</i>, and <i>is not
-     * "not a number"</i>.</li>
+     * <li>{@code isNormal}: Returns {@code true} if the given number <i>is not null</i>, <i>is not infinity</i>, and
+     * <i>is not "not a number"</i>.</li>
      * <li>{@code startsWith}: Returns {@code true} if the first string starts with the second string.</li>
      * <li>{@code endsWith}: Returns {@code true} if the first string ends with the second string.</li>
-     * <li>{@code matches}: Returns {@code true} if the first string argument matches the second string used as a Java regular
-     * expression.</li>
-     * <li>{@code contains}: Returns {@code true} if the first string argument contains the second string as a substring.</li>
+     * <li>{@code matches}: Returns {@code true} if the first string argument matches the second string used as a Java
+     * regular expression.</li>
+     * <li>{@code contains}: Returns {@code true} if the first string argument contains the second string as a
+     * substring.</li>
      * <li>{@code in}: Returns {@code true} if the first string argument can be found in the second array argument.
      * <p>
-     * Note that the array can only be specified as a column reference at this time - typically the {@code FilterValue.in}
-     * method should be used in other cases.
+     * Note that the array can only be specified as a column reference at this time - typically the
+     * {@code FilterValue.in} method should be used in other cases.
      * </p>
      * </li>
      * </ul>
@@ -72,12 +73,12 @@ public class FilterCondition {
 
     /**
      * A filter condition which will check if the given value can be found in any supported column on whatever table
-     * this {@code FilterCondition} is passed to. This {@code FilterCondition} is somewhat unique in that it need not be given a
-     * column instance, but will adapt to any table. On numeric columns, with a value passed in which can be parsed as a
-     * number, the column will be filtered to numbers which equal, or can be "rounded" effectively to this number. On
-     * String columns, the given value will match any column which contains this string in a case-insensitive search. An
-     * optional second argument can be passed, an array of {@code FilterValue} from the columns to limit this search to (see
-     * {@link Column#filter}).
+     * this {@code FilterCondition} is passed to. This {@code FilterCondition} is somewhat unique in that it need not be
+     * given a column instance, but will adapt to any table. On numeric columns, with a value passed in which can be
+     * parsed as a number, the column will be filtered to numbers which equal, or can be "rounded" effectively to this
+     * number. On String columns, the given value will match any column which contains this string in a case-insensitive
+     * search. An optional second argument can be passed, an array of {@code FilterValue} from the columns to limit this
+     * search to (see {@link Column#filter}).
      * 
      * @param value
      * @param columns

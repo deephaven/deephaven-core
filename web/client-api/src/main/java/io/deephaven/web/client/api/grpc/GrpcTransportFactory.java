@@ -29,11 +29,11 @@ public interface GrpcTransportFactory {
     GrpcTransport create(GrpcTransportOptions options);
 
     /**
-     * Return {@code true} to signal that created transports may have {@link GrpcTransport#sendMessage(Uint8Array)} called on it
-     * more than once before {@link GrpcTransport#finishSend()} should be called.
+     * Return {@code true} to signal that created transports may have {@link GrpcTransport#sendMessage(Uint8Array)}
+     * called on it more than once before {@link GrpcTransport#finishSend()} should be called.
      * 
-     * @return {@code true} to signal that the implementation can stream multiple messages, or {@code false} to indicate that
-     *         Open/Next gRPC calls should be used.
+     * @return {@code true} to signal that the implementation can stream multiple messages, or {@code false} to indicate
+     *         that Open/Next gRPC calls should be used.
      */
     @JsProperty
     boolean getSupportsClientStreaming();

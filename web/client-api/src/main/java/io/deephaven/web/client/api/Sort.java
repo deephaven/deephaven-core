@@ -9,9 +9,9 @@ import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsProperty;
 
 /**
- * Describes a {@link Sort} present on the table. No visible constructor, created through the use of {@link Column#sort()}, will be tied
- * to that particular column data. {@link Sort} instances are immutable, and use a builder pattern to make modifications. All
- * methods return a new {@link Sort} instance.
+ * Describes a {@link Sort} present on the table. No visible constructor, created through the use of
+ * {@link Column#sort()}, will be tied to that particular column data. {@link Sort} instances are immutable, and use a
+ * builder pattern to make modifications. All methods return a new {@link Sort} instance.
  */
 @TsName(namespace = "dh")
 public class Sort {

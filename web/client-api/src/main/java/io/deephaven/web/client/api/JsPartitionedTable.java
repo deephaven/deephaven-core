@@ -32,8 +32,8 @@ import jsinterop.base.Js;
 import java.util.*;
 
 /**
- * Represents a set of {@code Table}s each corresponding to some key. The keys are available locally, but a call must be made to
- * the server to get each {@code Table}. All tables will have the same structure.
+ * Represents a set of {@code Table}s each corresponding to some key. The keys are available locally, but a call must be
+ * made to the server to get each {@code Table}. All tables will have the same structure.
  */
 @JsType(namespace = "dh", name = "PartitionedTable")
 public class JsPartitionedTable extends HasLifecycle implements ServerObject {

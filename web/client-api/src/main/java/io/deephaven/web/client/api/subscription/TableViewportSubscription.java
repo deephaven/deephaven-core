@@ -55,8 +55,8 @@ public class TableViewportSubscription extends AbstractTableSubscription {
     private final ClientTableState initialState;
 
     /**
-     * {@code true} if the sub is set up to not close the underlying table once the original table is done with it, otherwise
-     * {@code false}.
+     * {@code true} if the sub is set up to not close the underlying table once the original table is done with it,
+     * otherwise {@code false}.
      */
     private boolean originalActive = true;
     /**
@@ -324,8 +324,8 @@ public class TableViewportSubscription extends AbstractTableSubscription {
     }
 
     /**
-     * Internal API method to indicate that the {@code Table} itself has no further use for this. The subscription should stop
-     * forwarding events and optionally close the underlying table/subscription.
+     * Internal API method to indicate that the {@code Table} itself has no further use for this. The subscription
+     * should stop forwarding events and optionally close the underlying table/subscription.
      */
     public void internalClose() {
         // indicate that the base table shouldn't get events anymore, even if it is still retained elsewhere

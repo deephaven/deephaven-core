@@ -8,9 +8,9 @@ import jsinterop.annotations.JsType;
 @JsType(namespace = "dh.plot")
 public class DownsampleOptions {
     /**
-     * Max number of items in the series before {@code DEFAULT} will not attempt to load the series without downsampling. Above
-     * this size if downsample fails or is not applicable, the series won't be loaded unless {@code DISABLE} is passed to
-     * {@code series.subscribe()}.
+     * Max number of items in the series before {@code DEFAULT} will not attempt to load the series without
+     * downsampling. Above this size if downsample fails or is not applicable, the series won't be loaded unless
+     * {@code DISABLE} is passed to {@code series.subscribe()}.
      */
     public static int MAX_SERIES_SIZE = 30_000;
 

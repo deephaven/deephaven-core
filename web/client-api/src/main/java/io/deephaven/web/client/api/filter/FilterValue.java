@@ -35,11 +35,11 @@ import java.util.Arrays;
 import java.util.Objects;
 
 /**
- * Describes data that can be filtered - either a column reference or a literal value. Used this way, the type of a value
- * can be specified so that values which are ambiguous or not well supported in JS will not be confused with Strings or
- * imprecise numbers (e.g., nanosecond-precision date values). Additionally, once wrapped in this way, methods can be
- * called on these value literal instances. These instances are immutable - any method called on them returns a new
- * instance.
+ * Describes data that can be filtered - either a column reference or a literal value. Used this way, the type of a
+ * value can be specified so that values which are ambiguous or not well supported in JS will not be confused with
+ * Strings or imprecise numbers (e.g., nanosecond-precision date values). Additionally, once wrapped in this way,
+ * methods can be called on these value literal instances. These instances are immutable - any method called on them
+ * returns a new instance.
  */
 @JsType(namespace = "dh")
 public class FilterValue {
@@ -422,10 +422,12 @@ public class FilterValue {
      * A filter condition invoking the given method on the current value, with the given parameters. Currently supported
      * functions that can be invoked on a String:
      * <ul>
-     * <li>{@code startsWith}: Returns {@code true} if the current string value starts with the supplied string argument.</li>
-     * <li>{@code endsWith}: Returns {@code true} if the current string value ends with the supplied string argument.</li>
-     * <li>{@code matches}: Returns {@code true} if the current string value matches the supplied string argument used as a Java
-     * regular expression.</li>
+     * <li>{@code startsWith}: Returns {@code true} if the current string value starts with the supplied string
+     * argument.</li>
+     * <li>{@code endsWith}: Returns {@code true} if the current string value ends with the supplied string
+     * argument.</li>
+     * <li>{@code matches}: Returns {@code true} if the current string value matches the supplied string argument used
+     * as a Java regular expression.</li>
      * <li>{@code contains}: Returns {@code true} if the current string value contains the supplied string argument.
      * <p>
      * When invoking against a constant, this should be avoided in favor of {@code FilterValue.contains}.

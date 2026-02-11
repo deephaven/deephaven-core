@@ -102,8 +102,8 @@ public interface JoinableTable {
 
     /**
      * A promise that will be resolved with the newly created table holding the results of the specified exact join
-     * operation. The {@code columnsToAdd} parameter is optional, not specifying it will result in all columns from the right
-     * table being added to the output.
+     * operation. The {@code columnsToAdd} parameter is optional, not specifying it will result in all columns from the
+     * right table being added to the output.
      *
      * @param rightTable The table to match to values in this table.
      * @param columnsToMatch The columns that should match exactly.

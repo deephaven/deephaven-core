@@ -189,8 +189,8 @@ public class Column {
     }
 
     /**
-     * {@code true} if this column is a partition column. Partition columns are used for filtering uncoalesced tables - see
-     * {@link JsTable#isUncoalesced()}.
+     * {@code true} if this column is a partition column. Partition columns are used for filtering uncoalesced tables -
+     * see {@link JsTable#isUncoalesced()}.
      *
      * @return {@code true} if the column is a partition column.
      */

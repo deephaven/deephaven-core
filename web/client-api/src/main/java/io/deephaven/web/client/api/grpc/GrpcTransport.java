@@ -33,14 +33,14 @@ public interface GrpcTransport {
     void sendMessage(Uint8Array msgBytes);
 
     /**
-     * "Half-close" the stream. This signals to the server that no more messages will be sent, but that the client is still
-     * open to receiving messages.
+     * "Half-close" the stream. This signals to the server that no more messages will be sent, but that the client is
+     * still open to receiving messages.
      */
     void finishSend();
 
     /**
-     * End the stream. This notifies the server that no more messages will be sent or received, and prevents the
-     * client from receiving any more events.
+     * End the stream. This notifies the server that no more messages will be sent or received, and prevents the client
+     * from receiving any more events.
      */
     void cancel();
 

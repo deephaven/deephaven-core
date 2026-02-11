@@ -29,8 +29,8 @@ import jsinterop.annotations.JsProperty;
 import jsinterop.base.Js;
 
 /**
- * Behaves like a {@code Table}, but doesn't expose all of its API for changing the internal state. Instead, state is driven by
- * the upstream table - when it changes handle, this listens and updates its own handle accordingly.
+ * Behaves like a {@code Table}, but doesn't expose all of its API for changing the internal state. Instead, state is
+ * driven by the upstream table - when it changes handle, this listens and updates its own handle accordingly.
  *
  * Additionally, this is automatically subscribed to its one and only row, across all columns.
  *
@@ -42,8 +42,8 @@ import jsinterop.base.Js;
  * found on Table. Instances of this type always have a size of one when no groupBy is set on the config, but may
  * potentially contain as few as zero rows, or as many as the parent table if each row gets its own group.
  *
- * When using the {@code groupBy} feature, it may be desireable to also provide a row to the user with all values across all
- * rows. To achieve this, request the same Totals Table again, but remove the {@code groupBy} setting.
+ * When using the {@code groupBy} feature, it may be desireable to also provide a row to the user with all values across
+ * all rows. To achieve this, request the same Totals Table again, but remove the {@code groupBy} setting.
  */
 @TsInterface
 @TsName(namespace = "dh", name = "TotalsTable")
@@ -61,8 +61,8 @@ public class JsTotalsTable implements JoinableTable, ServerObject {
     private Double updateIntervalMs;
 
     /**
-     * Table is wrapped to let us delegate calls to it, the directive is a serialized string, and the {@code groupBy} is copied
-     * when passed in, as well as when it is accessed, to prevent accidental mutation of the array.
+     * Table is wrapped to let us delegate calls to it, the directive is a serialized string, and the {@code groupBy} is
+     * copied when passed in, as well as when it is accessed, to prevent accidental mutation of the array.
      */
     public JsTotalsTable(JsTable wrappedTable, String directive, JsArray<String> groupBy) {
         this.wrappedTable = wrappedTable;
@@ -195,8 +195,8 @@ public class JsTotalsTable implements JoinableTable, ServerObject {
     }
 
     /**
-     * A column by the given name. You should prefer to always retrieve a new {@code Column} instance instead of caching a
-     * returned value.
+     * A column by the given name. You should prefer to always retrieve a new {@code Column} instance instead of caching
+     * a returned value.
      * 
      * @param key
      * @return {@link Column}
@@ -219,8 +219,8 @@ public class JsTotalsTable implements JoinableTable, ServerObject {
     }
 
     /**
-     * {@code true} if this table may receive updates from the server, including size changed events, updated events after
-     * initial snapshot.
+     * {@code true} if this table may receive updates from the server, including size changed events, updated events
+     * after initial snapshot.
      *
      * @return boolean
      */
@@ -331,9 +331,9 @@ public class JsTotalsTable implements JoinableTable, ServerObject {
     }
 
     /**
-     * An ordered list of Sorts to apply to the table. To update, call {@code applySort}. Note that this getter will return
-     * the new value immediately, even though it may take a little time to update on the server. You may listen for the
-     * <b>sortchanged</b> event to know when to update the UI.
+     * An ordered list of Sorts to apply to the table. To update, call {@code applySort}. Note that this getter will
+     * return the new value immediately, even though it may take a little time to update on the server. You may listen
+     * for the <b>sortchanged</b> event to know when to update the UI.
      * 
      * @return {@link Sort} array
      */

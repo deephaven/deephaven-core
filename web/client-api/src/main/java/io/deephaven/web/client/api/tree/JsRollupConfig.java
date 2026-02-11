@@ -64,8 +64,9 @@ public class JsRollupConfig {
     /**
      * Optional parameter indicating if an extra leaf node should be added at the bottom of the hierarchy, showing the
      * rows in the underlying table which make up that grouping. Since these values might be a different type from the
-     * rest of the column, any client code must check if {@code TreeRow.hasChildren} = {@code false}, and if so, interpret those values
-     * as if they were {@code Column.constituentType} instead of {@code Column.type}. Defaults to {@code false}.
+     * rest of the column, any client code must check if {@code TreeRow.hasChildren} = {@code false}, and if so,
+     * interpret those values as if they were {@code Column.constituentType} instead of {@code Column.type}. Defaults to
+     * {@code false}.
      */
     public boolean includeConstituents = false;
     @JsNullable

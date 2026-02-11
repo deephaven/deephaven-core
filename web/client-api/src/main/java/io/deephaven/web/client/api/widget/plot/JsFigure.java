@@ -91,8 +91,8 @@ public class JsFigure extends HasLifecycle {
             EVENT_RECONNECTFAILED = JsTable.EVENT_RECONNECTFAILED,
             /**
              * The API is updating how downsampling works on this Figure, probably in response to a call to
-             * {@code Axis.range} or {@code subscribe}. The {@code event.detail} value is an array of {@code Series} instances
-             * which are affected by this.
+             * {@code Axis.range} or {@code subscribe}. The {@code event.detail} value is an array of {@code Series}
+             * instances which are affected by this.
              */
             EVENT_DOWNSAMPLESTARTED = "downsamplestarted",
             /**

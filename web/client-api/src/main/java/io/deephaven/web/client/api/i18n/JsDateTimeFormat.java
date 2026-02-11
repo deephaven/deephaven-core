@@ -22,8 +22,8 @@ import java.util.*;
  * Largely an exported wrapper for the GWT DateFormat, but also includes support for formatting nanoseconds as an
  * additional 6 decimal places after the rest of the number.
  *
- * Other concerns that this handles includes accepting a js {@code Date} and ignoring the lack of nanos, accepting a js {@code Number}
- * and assuming it to be a lossy nano value, and parsing into a js Date.
+ * Other concerns that this handles includes accepting a js {@code Date} and ignoring the lack of nanos, accepting a js
+ * {@code Number} and assuming it to be a lossy nano value, and parsing into a js Date.
  *
  *
  * Utility class to parse and format various date/time values, using the same format patterns as are supported by the
@@ -31,19 +31,19 @@ import java.util.*;
  *
  * As Deephaven internally uses nanosecond precision to record dates, this API expects nanoseconds in most use cases,
  * with the one exception of the JS {@code Date} type, which is not capable of more precision than milliseconds. Note,
- * however, that when passing nanoseconds as a JS {@code Number} there is likely to be some loss of precision, though this is
- * still supported for easier interoperability with other JS code. The values returned by {@code parse} will be an opaque
- * object wrapping the full precision of the specified date, However, this object supports {@code toString} and {@code valueOf}
- * to return a string representation of that value, as well as a {@code asNumber} to return a JS {@code Number} value and a
- * {@code asDate} to return a JS {@code Date} value.
+ * however, that when passing nanoseconds as a JS {@code Number} there is likely to be some loss of precision, though
+ * this is still supported for easier interoperability with other JS code. The values returned by {@code parse} will be
+ * an opaque object wrapping the full precision of the specified date, However, this object supports {@code toString}
+ * and {@code valueOf} to return a string representation of that value, as well as a {@code asNumber} to return a JS
+ * {@code Number} value and a {@code asDate} to return a JS {@code Date} value.
  *
  *
  * Caveats:
  *
  *
- * - The {@code D} format (for "day of year") is not supported by this implementation at this time. - The {@code %t} format for
- * short timezone code is not supported by this implementation at this time, though {@code z} will work as expected in the
- * browser to emit the user's own timezone.
+ * - The {@code D} format (for "day of year") is not supported by this implementation at this time. - The {@code %t}
+ * format for short timezone code is not supported by this implementation at this time, though {@code z} will work as
+ * expected in the browser to emit the user's own timezone.
  *
  */
 @JsType(namespace = "dh.i18n", name = "DateTimeFormat")
@@ -66,8 +66,8 @@ public class JsDateTimeFormat {
 
     /**
      * Accepts a variety of input objects to interpret as a date, and formats them using the specified pattern. A
-     * {@code TimeZone} object can optionally be provided to format this date as the current date/time in that timezone. See
-     * the instance method for more details on input objects.
+     * {@code TimeZone} object can optionally be provided to format this date as the current date/time in that timezone.
+     * See the instance method for more details on input objects.
      * 
      * @param pattern
      * @param date
@@ -90,8 +90,8 @@ public class JsDateTimeFormat {
     }
 
     /**
-     * Parses the given input string using the provided pattern, and returns a wrapped Java {@code long} value in nanoseconds.
-     * A {@code TimeZone} object can optionally be provided to parse to a desired timezone.
+     * Parses the given input string using the provided pattern, and returns a wrapped Java {@code long} value in
+     * nanoseconds. A {@code TimeZone} object can optionally be provided to parse to a desired timezone.
      * 
      * @param pattern
      * @param text
@@ -109,8 +109,8 @@ public class JsDateTimeFormat {
     private final int nanoCount;
 
     /**
-     * Creates a new date/time format instance. This generally should be avoided in favor of the static {@code getFormat}
-     * function, which will create and cache an instance so that later calls share the same instance.
+     * Creates a new date/time format instance. This generally should be avoided in favor of the static
+     * {@code getFormat} function, which will create and cache an instance so that later calls share the same instance.
      * 
      * @param pattern
      */

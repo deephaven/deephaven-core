@@ -43,7 +43,7 @@ import java.util.stream.IntStream;
  *
  * Each table has one or more key columns, where each unique combination of keys will appear at most once in the table.
  *
- * To view the results of the Input Table, you should use standard table operations on the {@code InputTable}'s source 
+ * To view the results of the Input Table, you should use standard table operations on the {@code InputTable}'s source
  * {@code Table} object.
  */
 @JsType(namespace = "dh", name = "InputTable")

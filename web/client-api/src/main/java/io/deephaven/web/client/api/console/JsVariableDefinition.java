@@ -14,7 +14,8 @@ import jsinterop.annotations.JsProperty;
  * A format to describe a variable available to be read from the server. Application fields are optional, and only
  * populated when a variable is provided by application mode.
  * <p>
- * APIs which take a {@code VariableDefinition} must at least be provided an object with a {@code type} and {@code id} field.
+ * APIs which take a {@code VariableDefinition} must at least be provided an object with a {@code type} and {@code id}
+ * field.
  */
 @TsInterface
 @TsName(namespace = "dh.ide", name = "VariableDefinition")

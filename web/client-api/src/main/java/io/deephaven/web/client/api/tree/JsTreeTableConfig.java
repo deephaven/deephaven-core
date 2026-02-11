@@ -11,9 +11,9 @@ import jsinterop.base.JsPropertyMap;
 /**
  * Configuration object for running {@code Table.treeTable} to produce a hierarchical view of a given "flat" table.
  *
- * Like {@code TotalsTableConfig}, {@code TreeTableConfig} supports an operation map indicating how to aggregate the data, as well as
- * an array of column names which will be the layers in the roll-up tree, grouped at each level. An additional optional
- * value can be provided describing the strategy the engine should use when grouping the rows.
+ * Like {@code TotalsTableConfig}, {@code TreeTableConfig} supports an operation map indicating how to aggregate the
+ * data, as well as an array of column names which will be the layers in the roll-up tree, grouped at each level. An
+ * additional optional value can be provided describing the strategy the engine should use when grouping the rows.
  */
 @JsType(name = "TreeTableConfig", namespace = "dh")
 public class JsTreeTableConfig {

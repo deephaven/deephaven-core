@@ -41,8 +41,8 @@ public interface TreeViewportData extends TableData {
     @JsType
     interface TreeRow extends TableData.Row {
         /**
-         * {@code true} if this node is currently expanded to show its children; {@code false} otherwise. Those children will be the
-         * rows below this one with a greater depth than this one.
+         * {@code true} if this node is currently expanded to show its children; {@code false} otherwise. Those children
+         * will be the rows below this one with a greater depth than this one.
          *
          * @return boolean
          */
@@ -50,8 +50,8 @@ public interface TreeViewportData extends TableData {
         boolean isExpanded();
 
         /**
-         * {@code true} if this node has children and can be expanded; {@code false} otherwise. Note that this value may change when the
-         * table updates, depending on the table's configuration.
+         * {@code true} if this node has children and can be expanded; {@code false} otherwise. Note that this value may
+         * change when the table updates, depending on the table's configuration.
          *
          * @return boolean
          */
