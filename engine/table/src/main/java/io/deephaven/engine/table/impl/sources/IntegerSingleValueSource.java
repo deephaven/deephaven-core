@@ -170,31 +170,13 @@ public class IntegerSingleValueSource extends SingleValueColumnSource<Integer>
     }
 
     @Override
-    public void estimatePushdownFilterCost(
-            final WhereFilter filter,
-            final RowSet selection,
-            final boolean usePrev,
-            final PushdownFilterContext context,
-            final JobScheduler jobScheduler,
-            final LongConsumer onComplete,
-            final Consumer<Exception> onError) {
-        // Delegate to the shared code for RowKeyAgnosticChunkSource
-        RowKeyAgnosticChunkSource.estimatePushdownFilterCostHelper(
-                filter, selection, usePrev, context, jobScheduler, onComplete, onError);
+    public Chunk<Values> getValueChunk() {
+        return SingleValuePushdownHelper.makeChunk(getInt(0));
     }
 
     @Override
-    public void pushdownFilter(
-            final WhereFilter filter,
-            final RowSet selection,
-            final boolean usePrev,
-            final PushdownFilterContext context,
-            final long costCeiling,
-            final JobScheduler jobScheduler,
-            final Consumer<PushdownResult> onComplete,
-            final Consumer<Exception> onError) {
-        // Delegate to the shared code for RowKeyAgnosticChunkSource
-        RowKeyAgnosticChunkSource.pushdownFilterHelper(this, filter, selection, usePrev, context, costCeiling,
-                jobScheduler, onComplete, onError);
+    public Chunk<Values> getPrevValueChunk() {
+        // avoid duplicating the current vs prev logic in getPrevInt
+        return SingleValuePushdownHelper.makeChunk(getPrevInt(0));
     }
 }

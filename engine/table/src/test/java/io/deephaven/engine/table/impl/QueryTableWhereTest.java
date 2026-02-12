@@ -2665,6 +2665,10 @@ public abstract class QueryTableWhereTest {
         preFilter.reset();
         postFilter.reset();
 
+        // The rowset capturing filters ignore some optimization opportunities (like chunk filtering) so run these
+        // again without wrappers and compare the results.
+        assertTableEquals(res0, source.where(filterAllPass));
+
         final RowSetCapturingFilter filter1 = new ParallelizedRowSetCapturingFilter(RawString.of(filterNonePass));
 
         // force pre and post filters to run when expected using barriers
@@ -2677,6 +2681,8 @@ public abstract class QueryTableWhereTest {
         assertEquals(0, postFilter.numRowsProcessed()); // No rows passed
 
         assertEquals(0, res1.size());
+
+        assertTableEquals(res1, source.where(filterNonePass));
     }
 
     @Test

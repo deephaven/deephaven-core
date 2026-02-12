@@ -472,7 +472,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
             new RegionedPushdownAction.Location(
                     () -> QueryTable.DISABLE_WHERE_PUSHDOWN_PARQUET_DICTIONARY,
                     PushdownResult.DICTIONARY_DATA_COST,
-                    BasePushdownFilterContext::supportsDictionaryFiltering,
+                    BasePushdownFilterContext::supportsChunkFiltering,
                     (tl) -> ((ParquetTableLocation) tl).supportsDictionaryFiltering());
 
     private static final RegionedPushdownAction.Location DeferredDataIndex =

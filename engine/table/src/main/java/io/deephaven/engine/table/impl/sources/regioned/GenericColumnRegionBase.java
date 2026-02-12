@@ -12,8 +12,11 @@ import io.deephaven.engine.table.impl.locations.InvalidatedRegionException;
 import io.deephaven.engine.table.impl.locations.impl.AbstractTableLocation;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.util.JobScheduler;
+import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.SafeCloseableArray;
 
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
@@ -76,29 +79,33 @@ public abstract class GenericColumnRegionBase<ATTR extends Any> implements Colum
                 .sorted(Comparator.comparingLong(RegionedPushdownAction::filterCost))
                 .collect(Collectors.toList());
 
+        final long regionCost;
+        if (!sortedRegion.isEmpty()) {
+            try (final RegionedPushdownAction.EstimateContext estimateCtx = makeEstimateContext(filter, filterCtx)) {
+                regionCost = estimatePushdownAction(sortedRegion, filter, selection, usePrev, filterCtx, estimateCtx);
+            }
+        } else {
+            regionCost = Long.MAX_VALUE;
+        }
+
+        // Consider the location actions that are less expensive than the lowest cost region action.
         final List<RegionedPushdownAction> sortedLocation = tableLocation.supportedActions()
                 .stream()
                 .filter(action -> action.allows(tableLocation, filterCtx))
+                .filter(action -> action.filterCost() < regionCost)
                 .sorted(Comparator.comparingLong(RegionedPushdownAction::filterCost))
                 .collect(Collectors.toList());
 
-        if (sortedRegion.isEmpty() && sortedLocation.isEmpty()) {
-            onComplete.accept(Long.MAX_VALUE);
-            return;
-        }
-
-        // Get the lowest cost for the region actions.
-        final long regionCost;
-        try (final RegionedPushdownAction.EstimateContext estimateCtx = makeEstimateContext(filter, filterCtx)) {
-            regionCost = estimatePushdownAction(sortedRegion, filter, selection, usePrev, filterCtx, estimateCtx);
-        }
-
-        // Get the lowest cost for the location actions.
         final long locationCost;
-        try (final RegionedPushdownAction.EstimateContext estimateCtx =
-                tableLocation.makeEstimateContext(filter, filterCtx)) {
-            locationCost = tableLocation.estimatePushdownAction(sortedLocation, filter, selection, usePrev, filterCtx,
-                    estimateCtx);
+        if (!sortedLocation.isEmpty()) {
+            try (final RegionedPushdownAction.EstimateContext estimateCtx =
+                    tableLocation.makeEstimateContext(filter, filterCtx)) {
+                locationCost =
+                        tableLocation.estimatePushdownAction(sortedLocation, filter, selection, usePrev, filterCtx,
+                                estimateCtx);
+            }
+        } else {
+            locationCost = Long.MAX_VALUE;
         }
 
         // Return the lowest cost operation.
@@ -128,26 +135,16 @@ public abstract class GenericColumnRegionBase<ATTR extends Any> implements Colum
 
         // We must consider all the actions from this region and from the AbstractTableLocation and execute them in
         // minimal cost order
-        final List<RegionedPushdownAction> sortedRegion = supportedActions()
-                .stream()
-                .filter(action -> ((RegionedPushdownAction.Region) action).allows(tableLocation, this, filterCtx,
-                        costCeiling))
-                .sorted(Comparator.comparingLong(RegionedPushdownAction::filterCost))
-                .collect(Collectors.toList());
-
-        final List<RegionedPushdownAction> sortedLocation = tableLocation.supportedActions()
-                .stream()
-                .filter(action -> action.allows(tableLocation, filterCtx, costCeiling))
-                .sorted(Comparator.comparingLong(RegionedPushdownAction::filterCost))
-                .collect(Collectors.toList());
-
-        // combine the two lists and sort by filterCost()
-        final List<RegionedPushdownAction> sorted = Stream.concat(sortedRegion.stream(), sortedLocation.stream())
-                .sorted(Comparator.comparingLong(RegionedPushdownAction::filterCost))
-                .collect(Collectors.toList());
+        final Stream<RegionedPushdownAction> sorted =
+                Stream.concat(supportedActions().stream(), tableLocation.supportedActions().stream())
+                        .filter(action -> action instanceof RegionedPushdownAction.Region
+                                ? ((RegionedPushdownAction.Region) action).allows(tableLocation, this, filterCtx,
+                                        costCeiling)
+                                : action.allows(tableLocation, filterCtx, costCeiling))
+                        .sorted(Comparator.comparingLong(RegionedPushdownAction::filterCost));
 
         // If no modes are allowed, we can skip all pushdown filtering.
-        if (sorted.isEmpty()) {
+        if (sorted.findAny().isEmpty()) {
             onComplete.accept(PushdownResult.allMaybeMatch(selection));
             return;
         }
@@ -155,25 +152,38 @@ public abstract class GenericColumnRegionBase<ATTR extends Any> implements Colum
         // Initialize the pushdown result with the selection rowset as "maybe" rows
         PushdownResult result = PushdownResult.allMaybeMatch(selection);
 
-        // Delegate to TableLocation to determine which of the supported actions applies to this particular location.
-        try (final RegionedPushdownAction.ActionContext regionCtx = makeActionContext(filter, filterCtx);
-                final RegionedPushdownAction.ActionContext locationCtx =
-                        tableLocation.makeActionContext(filter, filterCtx)) {
-            for (RegionedPushdownAction action : sorted) {
-                try (final PushdownResult ignored = result) {
-                    // Execute either the
-                    result = action instanceof RegionedPushdownAction.Location
-                            ? tableLocation.performPushdownAction(action, filter, selection, result, usePrev, filterCtx,
-                                    locationCtx)
-                            : performPushdownAction(action, filter, selection, result, usePrev, filterCtx, regionCtx);
-                }
-                if (result.maybeMatch().isEmpty()) {
-                    // No maybe rows remaining, so no reason to continue filtering.
-                    break;
+        // Deferred contexts, to be created only when needed.
+        RegionedPushdownAction.ActionContext regionCtx = null;
+        RegionedPushdownAction.ActionContext locationCtx = null;
+
+        // Iterate through the sorted actions
+        final Iterator<RegionedPushdownAction> it = sorted.iterator();
+        while (it.hasNext()) {
+            final RegionedPushdownAction action = it.next();
+            try (final PushdownResult ignored = result) {
+                if (action instanceof RegionedPushdownAction.Location) {
+                    result = tableLocation.performPushdownAction(action, filter, selection, result, usePrev, filterCtx,
+                            locationCtx == null
+                                    ? (locationCtx = tableLocation.makeActionContext(filter, filterCtx))
+                                    : locationCtx);
+                } else {
+                    result = performPushdownAction(action, filter, selection, result, usePrev, filterCtx,
+                            regionCtx == null
+                                    ? (regionCtx = makeActionContext(filter, filterCtx))
+                                    : regionCtx);
+
                 }
             }
-            // Return the final result
-            onComplete.accept(result);
+            if (result.maybeMatch().isEmpty()) {
+                // No maybe rows remaining, so no reason to continue filtering.
+                break;
+            }
         }
+
+        // noinspection ConstantConditions
+        SafeCloseable.closeAll(regionCtx, locationCtx);
+
+        // Return the final result
+        onComplete.accept(result);
     }
 }

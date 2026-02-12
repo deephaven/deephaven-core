@@ -16,6 +16,7 @@ import java.time.ZoneId;
 
 import io.deephaven.engine.table.ColumnSource;
 
+import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.WritableChunk;
@@ -29,8 +30,10 @@ import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
+import java.util.function.Supplier;
 
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
 
@@ -107,6 +110,13 @@ public class ImmutableConstantLongSource
     }
 
     @Override
+    public PushdownFilterContext makePushdownFilterContext(
+            final WhereFilter filter,
+            final List<ColumnSource<?>> filterSources) {
+        return new SingleValuePushdownHelper.FilterContext(filter, filterSources);
+    }
+
+    @Override
     public void estimatePushdownFilterCost(
             final WhereFilter filter,
             final RowSet selection,
@@ -115,9 +125,7 @@ public class ImmutableConstantLongSource
             final JobScheduler jobScheduler,
             final LongConsumer onComplete,
             final Consumer<Exception> onError) {
-        // Delegate to the shared code for RowKeyAgnosticChunkSource
-        RowKeyAgnosticChunkSource.estimatePushdownFilterCostHelper(
-                filter, selection, usePrev, context, jobScheduler, onComplete, onError);
+        onComplete.accept(PushdownResult.SINGLE_VALUE_COLUMN_COST);
     }
 
     @Override
@@ -130,9 +138,28 @@ public class ImmutableConstantLongSource
             final JobScheduler jobScheduler,
             final Consumer<PushdownResult> onComplete,
             final Consumer<Exception> onError) {
-        // Delegate to the shared code for RowKeyAgnosticChunkSource
-        RowKeyAgnosticChunkSource.pushdownFilterHelper(this, filter, selection, usePrev, context, costCeiling,
-                jobScheduler, onComplete, onError);
+        if (selection.isEmpty()) {
+            onComplete.accept(PushdownResult.allNoMatch(selection));
+            return;
+        }
+
+        final SingleValuePushdownHelper.FilterContext filterCtx = (SingleValuePushdownHelper.FilterContext) context;
+
+        // Chunk filtering has lower overhead than creating a dummy table.
+        if (filterCtx.supportsChunkFiltering()) {
+            final Supplier<Chunk<Values>> chunkSupplier = this::getValueChunk;
+            final PushdownResult result = SingleValuePushdownHelper.pushdownChunkFilter(selection, filterCtx, chunkSupplier);
+            onComplete.accept(result);
+            return;
+        }
+
+        // Chunk filtering is not supported, so test against a dummy table.
+        final PushdownResult result = SingleValuePushdownHelper.pushdownTableFilter(filter, selection, usePrev, this);
+        onComplete.accept(result);
+    }
+
+    private Chunk<Values> getValueChunk() {
+        return SingleValuePushdownHelper.makeChunk(getLong(0));
     }
 
     // region reinterpretation

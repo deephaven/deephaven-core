@@ -380,7 +380,7 @@ public abstract class AbstractTableLocation
 
         // Delegate to TableLocation and perform each supported action..
         try (final RegionedPushdownAction.ActionContext actionCtx = makeActionContext(filter, filterCtx)) {
-            for (RegionedPushdownAction action : sorted) {
+            for (final RegionedPushdownAction action : sorted) {
                 try (final PushdownResult ignored = result) {
                     result = performPushdownAction(action, filter, selection, result, usePrev, filterCtx, actionCtx);
                 }
