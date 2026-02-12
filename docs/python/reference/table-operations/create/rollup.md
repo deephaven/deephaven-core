@@ -337,7 +337,7 @@ capped_sum = source.rollup(
 )
 ```
 
-In this example, the `__FORMULA_KEYS__` column is similarly used to cap at the `Key` column (using `__FORMULA__DEPTH__ == 1` would be equivalent in this case):
+In this example, the `__FORMULA_KEYS__` column is similarly used to cap at the `Key` column (using `__FORMULA_DEPTH__ == 1` would be equivalent in this case):
 
 ```python order=capped_sum,source
 from deephaven import new_table
