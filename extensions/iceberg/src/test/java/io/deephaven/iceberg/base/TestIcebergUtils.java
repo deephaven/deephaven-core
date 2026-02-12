@@ -144,8 +144,8 @@ public class TestIcebergUtils {
             failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
         } catch (final IllegalArgumentException ise) {
             assertThat(ise.getMessage())
-                    .startsWith("Partitioning column " + PART_COL2_NAME
-                            + " is not present in the table definition TableDefinition");
+                    .startsWith("Partitioning column " + RESOLVED_PART_COL_NAME
+                            + " is not resolved in the partition spec ");
         }
     }
 

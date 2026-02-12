@@ -1990,16 +1990,21 @@ public abstract class SqliteCatalogBase {
         final IcebergTableAdapter tableAdapter3 = catalogAdapter.loadTable(LoadTableOptions.builder()
                 .id(tableIdentifier)
                 .resolver(Resolver.builder()
-                        // NOTE: this `TableDefinition` has NO partitioning columns
+                        // NOTE: this `TableDefinition` has no partitioning columns
                         .definition(TableDefinition.of(ColumnDefinition.ofInt("intCol"),
-                                ColumnDefinition.ofDouble("doubleCol")))
+                                ColumnDefinition.ofDouble("doubleCol"),
+                                ColumnDefinition.ofString("InternalPartition"),
+                                ColumnDefinition.ofString("Date")))
                         .schema(schema)
                         .putColumnInstructions("intCol", schemaField(schema.findField("intCol").fieldId()))
                         .putColumnInstructions("doubleCol", schemaField(schema.findField("doubleCol").fieldId()))
+                        .putColumnInstructions("InternalPartition",
+                                schemaField(schema.findField("InternalPartition").fieldId()))
+                        .putColumnInstructions("Date", schemaField(schema.findField("Date").fieldId()))
                         .build())
                 .build());
         final Table fromIceberg4 = tableAdapter3.table();
-        assertTableEquals(expected2.view("intCol", "doubleCol"), fromIceberg4);
+        assertTableEquals(expected2, fromIceberg4);
     }
 
     @Test

@@ -7,6 +7,7 @@ import io.deephaven.base.FileUtils;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.iceberg.relative.RelativeFileIO;
+import io.deephaven.iceberg.util.ColumnInstructions;
 import io.deephaven.iceberg.util.Resolver;
 import org.apache.iceberg.DataFile;
 import org.apache.iceberg.PartitionField;
@@ -24,9 +25,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.net.URI;
 import java.time.LocalDate;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -125,16 +124,21 @@ public final class IcebergUtils {
                     + " fields, partition spec " + tablePartitionSpec + ", table definition " + tableDefinition);
         }
 
-        final Set<String> resolvedPartitionNames = new HashSet<>();
-        for (final String partitioningColumnName : partitioningColumnNamesFromDefinition) {
-            final List<Types.NestedField> nf = resolver.resolve(partitioningColumnName).orElse(null);
-            resolvedPartitionNames.add(nf == null ? partitioningColumnName : nf.get(0).name());
-        }
-        for (final PartitionField partitionField : partitionFieldsFromSpec) {
-            if (!resolvedPartitionNames.contains(partitionField.name())) {
-                throw new IllegalArgumentException("Partitioning column " + partitionField.name() + " is not present " +
-                        "in the table definition " + tableDefinition + ", partition spec " + tablePartitionSpec);
+        for (final String colName : partitioningColumnNamesFromDefinition) {
+            // make sure we're able to resolve the column name. if not, `resolver.partitionField(...)` below would NPE
+            final ColumnInstructions ci = resolver.columnInstructions().get(colName);
+            Throwable maybeReason = null;
+            if (ci != null) {
+                try {
+                    resolver.partitionField(tableDefinition.getColumn(colName));
+                    continue;
+                } catch (final RuntimeException reason) {
+                    maybeReason = reason;
+                }
             }
+
+            throw new IllegalArgumentException("Partitioning column " + colName + " is not resolved " +
+                    "in the partition spec " + tablePartitionSpec, maybeReason);
         }
     }
 }
