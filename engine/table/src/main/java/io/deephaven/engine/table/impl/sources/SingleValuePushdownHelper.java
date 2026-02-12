@@ -23,8 +23,8 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 public class SingleValuePushdownHelper {
-    private static long[] singleRowKeyArray = new long[] {0};
-    private static LongChunk<OrderedRowKeys> singleRowKeyChunk = LongChunk.chunkWrap(singleRowKeyArray);
+    private static final long[] singleRowKeyArray = new long[] {0};
+    private static final LongChunk<OrderedRowKeys> singleRowKeyChunk = LongChunk.chunkWrap(singleRowKeyArray);
 
     public static LongChunk<OrderedRowKeys> singleRowKeyChunk() {
         return singleRowKeyChunk;

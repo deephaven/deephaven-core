@@ -12,20 +12,12 @@ import io.deephaven.chunk.WritableObjectChunk;
 
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.table.impl.PushdownFilterContext;
-import io.deephaven.engine.table.impl.PushdownResult;
-import io.deephaven.engine.table.impl.select.WhereFilter;
-import io.deephaven.engine.table.impl.util.JobScheduler;
 import org.jetbrains.annotations.NotNull;
-
-import java.util.function.Consumer;
-import java.util.function.LongConsumer;
 
 import static io.deephaven.util.QueryConstants.NULL_BOOLEAN;
 

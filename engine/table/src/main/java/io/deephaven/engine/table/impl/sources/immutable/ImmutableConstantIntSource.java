@@ -25,7 +25,6 @@ import org.jetbrains.annotations.NotNull;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
-import java.util.function.Supplier;
 
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
 
@@ -139,8 +138,8 @@ public class ImmutableConstantIntSource
 
         // Chunk filtering has lower overhead than creating a dummy table.
         if (filterCtx.supportsChunkFiltering()) {
-            final Supplier<Chunk<Values>> chunkSupplier = this::getValueChunk;
-            final PushdownResult result = SingleValuePushdownHelper.pushdownChunkFilter(selection, filterCtx, chunkSupplier);
+            final PushdownResult result =
+                    SingleValuePushdownHelper.pushdownChunkFilter(selection, filterCtx, this::getValueChunk);
             onComplete.accept(result);
             return;
         }

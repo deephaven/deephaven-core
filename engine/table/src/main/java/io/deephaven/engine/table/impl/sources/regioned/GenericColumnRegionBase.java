@@ -13,7 +13,6 @@ import io.deephaven.engine.table.impl.locations.impl.AbstractTableLocation;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.util.SafeCloseable;
-import io.deephaven.util.SafeCloseableArray;
 
 import java.util.Comparator;
 import java.util.Iterator;
