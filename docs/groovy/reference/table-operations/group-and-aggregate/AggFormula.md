@@ -7,6 +7,7 @@ title: AggFormula
 ## Syntax
 
 ```
+AggFormula(formula)
 AggFormula(formula, paramToken, columnNames...)
 ```
 
@@ -21,19 +22,21 @@ The user-defined formula to apply to each group. This formula can contain:
 - Mathematical operations such as `*`, `+`, `/`, etc.
 - [User-defined closures](../../../how-to-guides/groovy-closures.md)
 
-If `paramToken` is not `null`, the formula can only be applied to one column at a time, and it is applied to the specified `paramToken`. If `paramToken` is `null`, the formula is applied to any column or literal value present in the formula. The use of `paramToken` is deprecated.
+The formula is typically specified as `OutputColumn = Expression` (when `paramToken` is `null`). The formula is applied to any column or literal value present in the formula. For example, `Out = KeyColumn * max(ValueColumn)`, produces an output column with the name `Out` and uses `KeyColumn` and `ValueColumn` as inputs.
+
+If `paramToken` is not `null`, the formula can only be applied to one column at a time, and it is applied to the specified `paramToken`. In this case, the formula does not supply an output column, but rather it is derived from the `columnNames` parameter. The use of `paramToken` is deprecated.
 
 Key column(s) can be used as input to the formula. When this happens, key values are treated as scalars.
 
 </Param>
 <Param name="paramToken" type="String">
 
-The parameter name within the formula. If `paramToken` is `each`, then `formula` must contain `each`. For example, `max(each)`, `min(each)`, etc. Use of this parameter is deprecated.
+The parameter name within the formula. If `paramToken` is `each`, then `formula` must contain `each`. For example, `max(each)`, `min(each)`, etc. Use of this parameter is deprecated. A non-null value is not permitted in [rollups](../create/rollup.md).
 
 </Param>
 <Param name="columnNames" type="String...">
 
-The source column(s) for the calculations.
+The source column(s) for the calculations. The source column names are only used when `paramToken` is not `null`, and are thus similarly deprecated.
 
 - `"X"` applies the formula to each value in the `X` column for each group.
 - `"Y = X"` applies the formula to each value in the `X` column for each group and renames it to `Y`.
