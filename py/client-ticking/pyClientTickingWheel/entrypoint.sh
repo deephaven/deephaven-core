@@ -18,6 +18,7 @@ MAKEFLAGS="-j${NCPUS}" \
   DEEPHAVEN_VERSION="${DEEPHAVEN_VERSION}" \
   python setup.py build_ext -i
 
+pip install packaging
 DEEPHAVEN_VERSION="${DEEPHAVEN_VERSION}" \
   python setup.py bdist_wheel
 
