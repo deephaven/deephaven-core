@@ -139,7 +139,7 @@ source = newTable(
 simpleSum = source.rollup(List.of(AggGroup("Value"), AggFormula("Sum = sum(Value)")), "Key")
 ```
 
-To calculate the sum for the root row, every row in the source table is read. The Deephaven engine provides detailed update information for rows in the table (i.e. which rows are added, removed, modified, or shifted). Even though a vector contains many values, it is contained within a single row; so the Deephaven engine does not provide detailed update information for a vector. Thus, every time the table ticks, the formula is completely re-evaluated.
+To calculate the sum for the root row, every row in the source table is read. The Deephaven engine provides detailed update information for rows in the table (i.e., which rows are added, removed, modified, or shifted). Even though a vector contains many values, it is contained within a single row; therefore, the Deephaven engine does not provide detailed update information for a vector. Every time the table ticks, the formula is completely re-evaluated.
 
 ### Formula Reaggregation
 
@@ -158,7 +158,7 @@ If a new row with the key `Delta` is added to the source, `simpleSum` will read 
 
 In the previous example, the `Sum` column evaluated the [`sum(IntVector)`](https://docs.deephaven.io/core/javadoc/io/deephaven/function/Numeric.html#sum(io.deephaven.vector.IntVector)) function at the first level of the rollup every level of the rollup and produced a `long`. Since the original table contains an `int` column, the lowest-level rollup provides an `IntVector` to `sum`, while subsequent levels use a `LongVector`.
 
-Similarly, the original table has a column called `Value`, but after aggregation, the result is labeled as `Sum`. To resolve this discrepancy, the `updateView` method is used before the rollup to rename the `Value` column to `Sum`. If the rename was omitted and the original data was used directly, it would lead to inconsistencies in the results at different rollup levels.
+Similarly, the original table has a column called `Value`, but after aggregation, the result is labeled as `Sum`. To resolve this discrepancy, the `updateView` method is used before the rollup to rename the `Value` column to `Sum`. If the rename was omitted and the original data was used directly, it would lead to inconsistent results across different rollup levels.
 
 If we ran the same example without the rename:
 
