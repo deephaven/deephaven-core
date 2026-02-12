@@ -202,8 +202,9 @@ public class TDigestPercentileOperator implements IterativeChunkedAggregationOpe
     }
 
     @Override
-    public void resetForStep(@NotNull final TableUpdate upstream, final int startingDestinationsCount) {
+    public boolean resetForStep(@NotNull final TableUpdate upstream, final int startingDestinationsCount) {
         modifiedThisStep = false;
+        return false;
     }
 
     @Override

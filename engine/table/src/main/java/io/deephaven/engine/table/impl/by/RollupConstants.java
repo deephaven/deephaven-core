@@ -67,4 +67,10 @@ public final class RollupConstants {
      * infinity count columns used in rollup aggregations.
      */
     static final String ROLLUP_NI_COUNT_COLUMN_ID = "_NIC_";
+
+    /**
+     * Middle column name component (between source column name and {@link #ROLLUP_COLUMN_SUFFIX suffix}) for group
+     * columns used in support of rollup formulas.
+     */
+    static final String ROLLUP_GRP_COLUMN_ID = "_GRP_";
 }

@@ -63,6 +63,27 @@ public class TestAggBy extends RefreshingTableTestCase {
     }
 
     @Test
+    public void testDoubleFormula() {
+        ColumnHolder<?> aHolder = col("A", 0, 0, 1, 1, 0, 0, 1, 1, 0, 0);
+        ColumnHolder<?> bHolder = col("B", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+        ColumnHolder<?> cHolder = col("C", 1, 1, 1, 1, 1, 1, 1, 1, 1, 1);
+        Table table = TableTools.newTable(aHolder, bHolder, cHolder);
+        show(table);
+        assertEquals(10, table.size());
+        assertEquals(2, table.groupBy("A").size());
+
+        Table minMax = table.aggBy(
+                List.of(
+                        AggFormula("f_const=6.0 + 3"),
+                        AggFormula("f_max=max(B)"),
+                        AggFormula("f_sum_two_col=sum(B) + sum(C)")),
+                "A");
+        show(minMax);
+
+        assertEquals(2, minMax.size());
+    }
+
+    @Test
     public void testBy() {
         ColumnHolder<?> aHolder = col("A", 0, 0, 1, 1, 0, 0, 1, 1, 0, 0);
         ColumnHolder<?> bHolder = col("B", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
