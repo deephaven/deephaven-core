@@ -3325,65 +3325,72 @@ public final class ParquetTableReadWriteTest {
         FileUtils.deleteRecursively(parentDir);
     }
 
-    private static Table writeAndReadTable(final Table tableToWrite, final File targetFile, final RowGroupInfo rgi) {
-        final ParquetInstructions writeInstructions = new ParquetInstructions.Builder()
-                .setRowGroupInfo(rgi)
-                .build();
-        ParquetTools.writeTable(tableToWrite, targetFile.getAbsolutePath(), writeInstructions);
-
-        final Table readTable = ParquetTools.readTable(targetFile.getAbsolutePath());
-        assertTableEquals(tableToWrite, readTable);
-        return readTable;
-    }
-
     @SuppressWarnings("SimplifiableAssertion")
     private static void assertMinStatisticsEquals(final Table sourceTable, final long row,
             final List<ColumnChunkMetaData> columnMetadata) {
-        if (columnMetadata.get(0).getStatistics().hasNonNullValue()) {
-            assertEquals("min(A)", sourceTable.getColumnSource("A").getInt(row),
-                    ((IntStatistics) columnMetadata.get(0).getStatistics()).getMin());
+        final int expectedA = sourceTable.getColumnSource("A").getInt(row);
+        if (expectedA != NULL_INT) {
+            assertEquals("min(A)", expectedA, ((IntStatistics) columnMetadata.get(0).getStatistics()).getMin());
+        } else {
+            // if we expect the Min to be `null`, then the statistic is meaningless. verify `!hasNonNullValue()` instead
+            assertFalse("hasNonNull(A)", columnMetadata.get(0).getStatistics().hasNonNullValue());
         }
 
-        if (columnMetadata.get(1).getStatistics().hasNonNullValue()) {
-            assertEquals("min(B)", sourceTable.getColumnSource("B").get(row),
-                    columnMetadata.get(1).getStatistics().minAsString());
+        final String expectedB = (String) sourceTable.getColumnSource("B").get(row);
+        if (expectedB != null) {
+            assertEquals("min(B)", expectedB, columnMetadata.get(1).getStatistics().minAsString());
+        } else {
+            assertFalse("hasNonNull(B)", columnMetadata.get(1).getStatistics().hasNonNullValue());
         }
 
-        if (columnMetadata.get(2).getStatistics().hasNonNullValue()) {
-            // leave this as `assertTrue(...)`. if you change it to `assertEquals(...)`, then we will FAIL when we
-            // expect `0.0` because the statistics will return `-0.0`. `0.0 == -0.0`, but
-            // `assertEquals(0.0, -0.0) == false`.
-            assertTrue("min(C)", sourceTable.getColumnSource("C")
-                    .getDouble(row) == ((DoubleStatistics) columnMetadata.get(2).getStatistics()).getMin());
+        final double expectedC = sourceTable.getColumnSource("C").getDouble(row);
+        if (expectedC != NULL_DOUBLE) {
+            // leave this as `assertTrue(...)`. if you change it to `assertEquals(...)`, then we will FAIL
+            // when we expect `0.0` because the "Min" statistic will return `-0.0`.
+            // `0.0 == -0.0`, but `assertEquals(0.0, -0.0) == false`.
+            assertTrue("min(C)", expectedC == ((DoubleStatistics) columnMetadata.get(2).getStatistics()).getMin());
+        } else {
+            assertFalse("hasNonNull(C)", columnMetadata.get(2).getStatistics().hasNonNullValue());
         }
 
-        if (columnMetadata.get(3).getStatistics().hasNonNullValue()) {
-            assertEquals("min(D)", sourceTable.getColumnSource("D").getLong(row),
-                    ((LongStatistics) columnMetadata.get(3).getStatistics()).getMin());
+        final long expectedD = sourceTable.getColumnSource("D").getLong(row);
+        if (expectedD != NULL_LONG) {
+            assertEquals("min(D)", expectedD, ((LongStatistics) columnMetadata.get(3).getStatistics()).getMin());
+        } else {
+            assertFalse("hasNonNull(D)", columnMetadata.get(3).getStatistics().hasNonNullValue());
         }
     }
 
     @SuppressWarnings("SimplifiableAssertion")
     private static void assertMaxStatisticsEquals(final Table sourceTable, final long row,
             final List<ColumnChunkMetaData> columnMetadata) {
-        if (columnMetadata.get(0).getStatistics().hasNonNullValue()) {
-            assertEquals("max(A)", sourceTable.getColumnSource("A").getInt(row),
-                    ((IntStatistics) columnMetadata.get(0).getStatistics()).getMax());
+        final int expectedA = sourceTable.getColumnSource("A").getInt(row);
+        if (expectedA != NULL_INT) {
+            // if we expect the Max to be `null`, then the statistic is meaningless. verify `!hasNonNullValue()` instead
+            assertEquals("max(A)", expectedA, ((IntStatistics) columnMetadata.get(0).getStatistics()).getMax());
+        } else {
+            assertFalse("hasNonNull(A)", columnMetadata.get(0).getStatistics().hasNonNullValue());
         }
 
-        if (columnMetadata.get(1).getStatistics().hasNonNullValue()) {
-            assertEquals("max(B)", sourceTable.getColumnSource("B").get(row),
-                    columnMetadata.get(1).getStatistics().maxAsString());
+        final String expectedB = (String) sourceTable.getColumnSource("B").get(row);
+        if (expectedB != null) {
+            assertEquals("max(B)", expectedB, columnMetadata.get(1).getStatistics().maxAsString());
+        } else {
+            assertFalse("hasNonNull(B)", columnMetadata.get(1).getStatistics().hasNonNullValue());
         }
 
-        if (columnMetadata.get(2).getStatistics().hasNonNullValue()) {
-            assertTrue("max(C)", sourceTable.getColumnSource("C")
-                    .getDouble(row) == ((DoubleStatistics) columnMetadata.get(2).getStatistics()).getMax());
+        final double expectedC = sourceTable.getColumnSource("C").getDouble(row);
+        if (expectedC != NULL_DOUBLE) {
+            assertTrue("max(C)", expectedC == ((DoubleStatistics) columnMetadata.get(2).getStatistics()).getMax());
+        } else {
+            assertFalse("hasNonNull(C)", columnMetadata.get(2).getStatistics().hasNonNullValue());
         }
 
-        if (columnMetadata.get(3).getStatistics().hasNonNullValue()) {
-            assertEquals("max(D)", sourceTable.getColumnSource("D").getLong(row),
-                    ((LongStatistics) columnMetadata.get(3).getStatistics()).getMax());
+        final long expectedD = sourceTable.getColumnSource("D").getLong(row);
+        if (expectedD != NULL_LONG) {
+            assertEquals("max(D)", expectedD, ((LongStatistics) columnMetadata.get(3).getStatistics()).getMax());
+        } else {
+            assertFalse("hasNonNull(D)", columnMetadata.get(3).getStatistics().hasNonNullValue());
         }
     }
 
@@ -3410,6 +3417,15 @@ public final class ParquetTableReadWriteTest {
         assertEquals("numNulls(D)", nullCntD, columnMetadata.get(3).getStatistics().getNumNulls());
     }
 
+    private static Table writeAndReadTable(final Table tableToWrite, final File targetFile, final RowGroupInfo rgi) {
+        final ParquetInstructions writeInstructions = new ParquetInstructions.Builder().setRowGroupInfo(rgi).build();
+        ParquetTools.writeTable(tableToWrite, targetFile.getAbsolutePath(), writeInstructions);
+
+        final Table readTable = ParquetTools.readTable(targetFile.getAbsolutePath());
+        assertTableEquals(tableToWrite, readTable);
+        return readTable;
+    }
+
     private static void writeAndVerifyTable(final Table tableToWrite, final File targetFile, final RowGroupInfo rgi,
             final Long[] expectedRowGroups, final Long[] expectedMinRows, final Long[] expectedMaxRows) {
         writeAndReadTable(tableToWrite, targetFile, rgi);
@@ -3430,8 +3446,8 @@ public final class ParquetTableReadWriteTest {
             assertMinStatisticsEquals(tableToWrite, expectedMinRows[ii], metadataBlock.getColumns());
             assertMaxStatisticsEquals(tableToWrite, expectedMaxRows[ii], metadataBlock.getColumns());
 
-            // determine the sub-table represented by this RowGroup ...
-            final Table subTable = tableToWrite.head(expectedRowGroups[ii] + subTableStart).tail(expectedRowGroups[ii]);
+            // find the sub-table represented by this RowGroup, and use that to determine Null statistics
+            final Table subTable = tableToWrite.slice(subTableStart, subTableStart + expectedRowGroups[ii]);
             assertNullStatistics(subTable, metadataBlock.getColumns());
 
             subTableStart += expectedRowGroups[ii];
