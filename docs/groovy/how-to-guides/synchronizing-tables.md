@@ -209,7 +209,7 @@ Requirements:
 
 ## Related documentation
 
-- [Filters](./filters.md)
+- [Filters](./use-filters.md)
 - [Partitioned tables](./partitioned-tables.md)
 - [`SyncTableFilter` Javadoc](/core/javadoc/io/deephaven/engine/table/impl/util/SyncTableFilter.html)
 - [`LeaderTableFilter` Javadoc](/core/javadoc/io/deephaven/engine/util/LeaderTableFilter.html)

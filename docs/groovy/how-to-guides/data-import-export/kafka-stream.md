@@ -6,7 +6,7 @@ Kafka is a distributed event streaming platform that lets you read, write, store
 
 Kafka topics take on many forms, such as raw input, [JSON](#read-kafka-topic-in-json-format), [AVRO](#read-kafka-topic-in-avro-format), or [Protobuf](#read-kafka-topic-in-protobuf-format) In this guide, we show you how to read each of these formats into Deephaven tables.
 
-Please see our overview, [Kafka in Deephaven: Basic terms](../../how-to-guides/data-import-export/kafka-stream.md), for a detailed discussion of Kafka topics and supported formats. See the [Apache Kafka Documentation](https://kafka.apache.org/22/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html) for full details on how to use Kafka.
+Please see our overview, [Kafka in Deephaven: Basic terms](../../conceptual/kafka-basic-terms.md), for a detailed discussion of Kafka topics and supported formats. See the [Apache Kafka Documentation](https://kafka.apache.org/22/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html) for full details on how to use Kafka.
 
 ## Standard data fields
 
