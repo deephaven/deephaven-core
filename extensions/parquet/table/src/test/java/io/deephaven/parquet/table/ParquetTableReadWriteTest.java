@@ -3366,9 +3366,9 @@ public final class ParquetTableReadWriteTest {
             final List<ColumnChunkMetaData> columnMetadata) {
         final int expectedA = sourceTable.getColumnSource("A").getInt(row);
         if (expectedA != NULL_INT) {
-            // if we expect the Max to be `null`, then the statistic is meaningless. verify `!hasNonNullValue()` instead
             assertEquals("max(A)", expectedA, ((IntStatistics) columnMetadata.get(0).getStatistics()).getMax());
         } else {
+            // if we expect the Max to be `null`, then the statistic is meaningless. verify `!hasNonNullValue()` instead
             assertFalse("hasNonNull(A)", columnMetadata.get(0).getStatistics().hasNonNullValue());
         }
 
