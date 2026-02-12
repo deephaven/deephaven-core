@@ -28,8 +28,8 @@ import java.util.List;
  * Once used, or between-uses, it is expected that the {@link #reset()} method is called to clear the captured RowSets.
  */
 public class RowSetCapturingFilter extends WhereFilterImpl implements SafeCloseable {
-    private final List<RowSet> rowSets;
-    private final WhereFilter innerFilter;
+    final List<RowSet> rowSets;
+    final WhereFilter innerFilter;
 
     /**
      * Creates a RowSetCapturingFilter that assumes an always-true filter.
@@ -54,7 +54,7 @@ public class RowSetCapturingFilter extends WhereFilterImpl implements SafeClosea
      * @param filter the filter to wrap, may be null
      *
      */
-    private RowSetCapturingFilter(final WhereFilter filter, final List<RowSet> rowSets) {
+    RowSetCapturingFilter(final WhereFilter filter, final List<RowSet> rowSets) {
         this.rowSets = rowSets;
         this.innerFilter = filter;
     }
@@ -160,5 +160,10 @@ public class RowSetCapturingFilter extends WhereFilterImpl implements SafeClosea
         synchronized (rowSets) {
             return rowSets.stream().mapToLong(RowSet::size).sum();
         }
+    }
+
+    @Override
+    public String toString() {
+        return "RowSetCapturingFilter{" + innerFilter + '}';
     }
 }
