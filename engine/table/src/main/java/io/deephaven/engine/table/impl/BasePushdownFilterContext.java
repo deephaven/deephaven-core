@@ -27,7 +27,7 @@ import java.util.Map;
 /**
  * Base class for {@link PushdownFilterContext} to help with execution cost tracking.
  */
-public class BasePushdownFilterContext implements PushdownFilterContext {
+public abstract class BasePushdownFilterContext implements PushdownFilterContext {
 
     /**
      * Enum for the behavior of a filter when applied to null values.
@@ -49,12 +49,13 @@ public class BasePushdownFilterContext implements PushdownFilterContext {
         FAILS_ON_NULLS
     }
 
-    protected final WhereFilter filter;
+    private final WhereFilter filter;
+
     private final List<ColumnSource<?>> columnSources;
 
     private final boolean isRangeFilter;
     private final boolean isMatchFilter;
-    private final boolean supportsDictionaryFiltering;
+    private final boolean supportsChunkFiltering;
 
     private long executedFilterCost;
 
@@ -99,7 +100,7 @@ public class BasePushdownFilterContext implements PushdownFilterContext {
         // TODO (DH-19666): Multi column filters are not supported yet
         // Do not use columnSources.size(), multiple logical columns may alias (rename) the same physical column,
         // yielding a single entry.
-        supportsDictionaryFiltering = (isRangeFilter || isMatchFilter
+        supportsChunkFiltering = (isRangeFilter || isMatchFilter
                 || (isConditionFilter && ((ConditionFilter) filter).getNumInputsUsed() == 1))
                 && ((filter instanceof ExposesChunkFilter && ((ExposesChunkFilter) filter).chunkFilter().isPresent())
                         || isConditionFilter);
@@ -118,19 +119,26 @@ public class BasePushdownFilterContext implements PushdownFilterContext {
     }
 
     /**
+     * Gets the filter associated with this context.
+     */
+    public final WhereFilter filter() {
+        return filter;
+    }
+
+    /**
      * Get the column sources this filter will use.
      */
-    public List<ColumnSource<?>> columnSources() {
+    public final List<ColumnSource<?>> columnSources() {
         return columnSources;
     }
 
     /**
-     * Whether this filter supports parquet dictionary filtering, which necessitates direct chunk filtering, i.e., it
-     * can be applied to a chunk of data rather than a table. This includes any filter that implements {#@link
-     * ExposesChunkFilter} or {@link ConditionFilter} with exactly one column.
+     * Whether this filter supports direct chunk filtering, i.e., it can be applied to a chunk of data rather than a
+     * table. This includes any filter that implements {#@link ExposesChunkFilter} or {@link ConditionFilter} with
+     * exactly one column.
      */
-    public final boolean supportsDictionaryFiltering() {
-        return supportsDictionaryFiltering;
+    public final boolean supportsChunkFiltering() {
+        return supportsChunkFiltering;
     }
 
     /**
@@ -205,13 +213,13 @@ public class BasePushdownFilterContext implements PushdownFilterContext {
     /**
      * Create a {@link UnifiedChunkFilter} for the {@link WhereFilter} that efficiently filters chunks of data. Every
      * thread that uses this should create its own instance and must close it after use. Can only call when
-     * {@link #supportsDictionaryFiltering()} is {@code true}
+     * {@link #supportsChunkFiltering()} is {@code true}
      *
      * @param maxChunkSize the maximum size of the chunk that will be filtered
      * @return the initialized {@link UnifiedChunkFilter}
      */
     public final UnifiedChunkFilter createChunkFilter(final int maxChunkSize) {
-        if (!supportsDictionaryFiltering) {
+        if (!supportsChunkFiltering) {
             throw new IllegalStateException("Filter does not support chunk filtering: " + Strings.of(filter));
         }
         if (filter instanceof ExposesChunkFilter) {

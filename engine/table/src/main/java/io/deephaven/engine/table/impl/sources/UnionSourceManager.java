@@ -967,16 +967,16 @@ public class UnionSourceManager implements PushdownPredicateManager {
                             ? manager.constituentTables.getPrev(slot)
                             : manager.constituentTables.get(slot);
 
-                    final List<ColumnSource<?>> filterSources = filter.getColumns().stream()
+                    final List<ColumnSource<?>> filterSources = filter().getColumns().stream()
                             .map(cn -> renameMap.getOrDefault(cn, cn))
                             .map(constituent::getColumnSource).collect(Collectors.toList());
 
                     final PushdownFilterMatcher matcher =
-                            PushdownFilterMatcher.getPushdownFilterMatcher(filter, filterSources);
+                            PushdownFilterMatcher.getPushdownFilterMatcher(filter(), filterSources);
 
                     if (matcher != null) {
                         matchers.add(matcher);
-                        contexts.add(matcher.makePushdownFilterContext(filter, filterSources));
+                        contexts.add(matcher.makePushdownFilterContext(filter(), filterSources));
                         firstRowKeys.add(firstKey);
                         lastRowKeys.add(lastKey);
                     } else {

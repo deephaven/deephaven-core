@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl.sources.immutable;
 
 import io.deephaven.base.verify.Require;
+import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableObjectChunk;
@@ -25,8 +26,10 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
+import java.util.function.Supplier;
 
 public abstract class ImmutableConstantNanosBasedTimeSource<TIME_TYPE> extends AbstractColumnSource<TIME_TYPE>
         implements InMemoryColumnSource, RowKeyAgnosticChunkSource<Values>,
@@ -171,6 +174,18 @@ public abstract class ImmutableConstantNanosBasedTimeSource<TIME_TYPE> extends A
     }
     // endregion Reinterpretation
 
+    /**
+     * Returns a chunk containing the value for this column source.
+     */
+    protected abstract Chunk<Values> getValueChunk();
+
+    @Override
+    public PushdownFilterContext makePushdownFilterContext(
+            final WhereFilter filter,
+            final List<ColumnSource<?>> filterSources) {
+        return new SingleValuePushdownHelper.FilterContext(filter, filterSources);
+    }
+
     @Override
     public void estimatePushdownFilterCost(
             final WhereFilter filter,
@@ -180,9 +195,7 @@ public abstract class ImmutableConstantNanosBasedTimeSource<TIME_TYPE> extends A
             final JobScheduler jobScheduler,
             final LongConsumer onComplete,
             final Consumer<Exception> onError) {
-        // Delegate to the shared code for RowKeyAgnosticChunkSource
-        RowKeyAgnosticChunkSource.estimatePushdownFilterCostHelper(
-                filter, selection, usePrev, context, jobScheduler, onComplete, onError);
+        onComplete.accept(PushdownResult.SINGLE_VALUE_COLUMN_COST);
     }
 
     @Override
@@ -195,8 +208,24 @@ public abstract class ImmutableConstantNanosBasedTimeSource<TIME_TYPE> extends A
             final JobScheduler jobScheduler,
             final Consumer<PushdownResult> onComplete,
             final Consumer<Exception> onError) {
-        // Delegate to the shared code for RowKeyAgnosticChunkSource
-        RowKeyAgnosticChunkSource.pushdownFilterHelper(this, filter, selection, usePrev, context, costCeiling,
-                jobScheduler, onComplete, onError);
+        if (selection.isEmpty()) {
+            onComplete.accept(PushdownResult.allNoMatch(selection));
+            return;
+        }
+
+        final SingleValuePushdownHelper.FilterContext filterCtx = (SingleValuePushdownHelper.FilterContext) context;
+
+        // Chunk filtering has lower overhead than creating a dummy table.
+        if (filterCtx.supportsChunkFiltering()) {
+            final Supplier<Chunk<Values>> chunkSupplier = this::getValueChunk;
+            final PushdownResult result =
+                    SingleValuePushdownHelper.pushdownChunkFilter(selection, filterCtx, chunkSupplier);
+            onComplete.accept(result);
+            return;
+        }
+
+        // Chunk filtering is not supported, so test against a dummy table.
+        final PushdownResult result = SingleValuePushdownHelper.pushdownTableFilter(filter, selection, usePrev, this);
+        onComplete.accept(result);
     }
 }
