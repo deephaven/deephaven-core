@@ -85,13 +85,14 @@ def testPyClient = Docker.registerDockerTask(project, 'testPyClient') {
         from(Docker.localImageName('python'))
         copyFile('project', '/project')
         workingDir('/project')
+        environmentVariable 'DEEPHAVEN_VERSION', project.version
         runCommand '''set -eux; \\
                       mkdir -p /out/report; \\
                       pip3 install --upgrade pip; \\
-                      pip3 install -r requirements-dev.txt'''
-
-        environmentVariable 'DEEPHAVEN_VERSION', project.version
-        runCommand 'pip install .'
+                      pip3 install -r requirements-dev.txt; \\
+                      python3 setup.py bdist_wheel; \\
+                      pip3 install dist/*.whl
+                      '''
         environmentVariable 'DH_HOST', deephavenDocker.containerName.get()
         environmentVariable 'DH_PORT', '10000'
     }
