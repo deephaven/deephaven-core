@@ -159,7 +159,7 @@ simple_sum = source.rollup(
 )
 ```
 
-To calculate the sum for the root row, every row in the source table is read. The Deephaven engine provides detailed update information for rows in the table (i.e. which rows are added, removed, modified, or shifted). Even though a vector contains many values, it is contained within a single row; so the Deephaven engine does not provide detailed update information for a vector. Thus, every time the table ticks, the formula is completely re-evaluated.
+To calculate the sum for the root row, every row in the source table is read. The Deephaven engine provides detailed update information for rows in the table (i.e., which rows are added, removed, modified, or shifted). Even though a vector contains many values, it is contained within a single row; therefore, the Deephaven engine does not provide detailed update information for a vector. Every time the table ticks, the formula is completely re-evaluated.
 
 ### Formula Reaggregation
 
