@@ -156,7 +156,7 @@ reaggregatedSum = source.updateView("Sum=Value").rollup(List.of(AggFormula("Sum 
 
 If a new row with the key `Delta` is added to the source, `simpleSum` will read all eight rows again to recalculate the sums. However, `reaggregatedSum` will only recalculate the sum for `Delta` and then read the intermediate sums for `Alpha`, `Bravo`, `Charlie`, and `Delta`, not all rows. As the number of keys and the size of the data grow, this difference can significantly impact performance.
 
-In the previous example, the `Sum` column evaluated the [`sum(IntVector)`](https://docs.deephaven.io/core/javadoc/io/deephaven/function/Numeric.html#sum(io.deephaven.vector.IntVector)) function at the first level of the rollup every level of the rollup and produced a `long`. Since the original table contains an `int` column, the lowest-level rollup provides an `IntVector` to `sum`, while subsequent levels use a `LongVector`.
+In the previous example, the `Sum` column evaluated the [`sum(IntVector)`](https://docs.deephaven.io/core/javadoc/io/deephaven/function/Numeric.html#sum(io.deephaven.vector.IntVector)) function at the first level of the rollup in, and produced a `long`. Since the original table contains an `int` column, the lowest-level rollup provides an `IntVector` to `sum`, while subsequent levels use a `LongVector`.
 
 Similarly, the original table has a column called `Value`, but after aggregation, the result is labeled as `Sum`. To resolve this discrepancy, the `updateView` method is used before the rollup to rename the `Value` column to `Sum`. If the rename was omitted and the original data was used directly, it would lead to inconsistent results across different rollup levels.
 
