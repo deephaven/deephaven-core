@@ -219,7 +219,7 @@ source = newTable(
 cappedSum = source.rollup(List.of(AggFormula("Value = __FORMULA_DEPTH__ == 0 ? sum(Value) : min(sum(Value), 40)").asReaggregating()), "Key")
 ```
 
-In this example, the `__FORMULA_KEYS__` column is similarly used to cap at the `Key` column (using `__FORMULA__DEPTH__ == 1` would be equivalent in this case):
+In this example, the `__FORMULA_KEYS__` column is similarly used to cap at the `Key` column (using `__FORMULA_DEPTH__ == 1` would be equivalent in this case):
 
 ```groovy order=cappedSum,source
 source = newTable(
