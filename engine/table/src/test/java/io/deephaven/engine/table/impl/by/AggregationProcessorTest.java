@@ -25,8 +25,7 @@ import java.util.*;
 
 import static io.deephaven.api.agg.Aggregation.*;
 import static io.deephaven.engine.testutil.TstUtils.*;
-import static io.deephaven.engine.util.TableTools.col;
-import static io.deephaven.engine.util.TableTools.longCol;
+import static io.deephaven.engine.util.TableTools.*;
 import static org.junit.Assert.assertEquals;
 
 public class AggregationProcessorTest {
@@ -174,5 +173,15 @@ public class AggregationProcessorTest {
         assertEquals(1, Arrays.stream(ac.operators).filter(o -> o instanceof GroupByChunkedOperator).count());
         assertEquals(2,
                 Arrays.stream(ac.operators).filter(o -> o instanceof FormulaMultiColumnChunkedOperator).count());
+    }
+
+    @Test
+    public void testInvalidFormulaReaggregating() {
+        final Table source = TableTools.newTable(intCol("X", 1, 2, 3));
+        final Table result = source.aggBy(AggFormula("XS=sum(X)"));
+        assertTableEquals(TableTools.newTable(longCol("XS", 6)), result);
+        final IllegalArgumentException iae = Assert.assertThrows(IllegalArgumentException.class,
+                () -> source.aggBy(AggFormula("XS=sum(X)").asReaggregating()));
+        assertEquals("AggFormula does not support reaggregating except in a rollup.", iae.getMessage());
     }
 }

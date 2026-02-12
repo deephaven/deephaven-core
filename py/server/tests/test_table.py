@@ -1145,6 +1145,13 @@ class TableTestCase(BaseTestCase):
         )
         self.assertIsNotNone(rollup_reagg)
 
+        with self.assertRaises(DHError) as cm:
+            test_table.agg_by(aggs=formula("var=sum(var)", reaggregating=True))
+        self.assertRegex(
+            str(cm.exception),
+            r".+AggFormula does not support reaggregating except in a rollup.",
+        )
+
     def test_tree(self):
         # column 'a' contains duplicate values
         with self.assertRaises(DHError) as cm:
