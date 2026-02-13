@@ -20,10 +20,10 @@ public class Downsample {
      * the same visual fidelity as the original table, but with fewer rows.
      *
      * @param table The table to downsample.
-     * @param xCol The name of the X column to downsample. Must be an Instant or long.
+     * @param xCol The name of the X column to downsample. Must be an {@code Instant} or {@code long}.
      * @param yCols The names of the Y columns to downsample.
      * @param width The width of the visible area in pixels.
-     * @param xRange The visible range as `[start, end]` or null to always use all data.
+     * @param xRange The visible range as {@code [start, end]} or {@code null} to always use all data.
      * 
      * @return A promise that resolves to the downsampled table.
      */
