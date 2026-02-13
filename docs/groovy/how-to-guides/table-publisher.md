@@ -126,7 +126,7 @@ myFunc = { ->
 thread = new Thread(myFunc).start()
 ```
 
-![img](../assets/how-to/publisher-threaded.gif)
+![The above table](../assets/how-to/publisher-threaded.gif)
 
 ## Data history
 

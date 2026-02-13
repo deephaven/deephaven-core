@@ -26,7 +26,7 @@ An `ExecutionContext` must be used if:
 
 ### Table operations in a separate thread
 
-Take, for instance, the following code, which attempts to use a [`TablePublisher`](../reference/table-operations/create/TablePublisher.md) to write data to a [blink table](../conceptual/table-types.md#create-a-blink-table-from-an-add-only-table) in a separate thread once per second:
+Take, for instance, the following code, which attempts to use a [`TablePublisher`](../reference/table-operations/create/TablePublisher.md) to write data to a [blink table](../conceptual/table-types.md#specialization-3-blink) in a separate thread once per second:
 
 ```python ticking-table should-fail
 from deephaven.stream.table_publisher import table_publisher
@@ -66,7 +66,7 @@ thread = threading.Thread(target=thread_func)
 thread.start()
 ```
 
-Note the following in the error message:
+This causes Deephaven to crash with the following error:
 
 ```
 No ExecutionContext registered, or current ExecutionContext has no QueryScope. If this is being run in a thread, did you specify an ExecutionContext for the thread? Please refer to the documentation on ExecutionContext for details.

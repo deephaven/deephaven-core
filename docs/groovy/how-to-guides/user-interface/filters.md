@@ -190,7 +190,7 @@ Click the gear at the top right of the Filter Set Manager to return to the edito
 
 The **Clear All Filters** option in the **Controls** menu removes all filters of any type in the active workspace at once:
 
-![Clear all filters via the controls menu](../../assets/how-to/clearall.png)
+![Clear all filters via the Controls menu](../../assets/how-to/clearall.png)
 
 ## Related documentation
 

@@ -133,7 +133,7 @@ COPY --from=js-plugins js-plugins/ /opt/deephaven/config/js-plugins/
 
 This Dockerfile installs the necessary Keycloak packages, builds the latest version of the Deephaven server, and copies the required [Deephaven OIDC JAR file](https://repo1.maven.org/maven2/io/deephaven/deephaven-oidc-authentication-provider/0.36.0/deephaven-oidc-authentication-provider-0.36.0.jar) into the `/apps/libs` directory within the Deephaven Docker container.
 
-> [!NOTE]
+> [!IMPORTANT]
 > The Deephaven version (`${VERSION:-latest}` in the Dockerfile above) _must_ be consistent between the server and JAR file. Inconsistencies between them will cause errors.
 
 ## Keycloak
@@ -256,7 +256,7 @@ To configure Keycloak with users and passwords, a `deephaven_realm.json` file mu
 
 </details>
 
-> [!NOTE]
+> [!IMPORTANT]
 > This file configures users with passwords that do not meet minimum security requirements. These are placeholders, and should _never_ be used in a production system.
 
 ### Database

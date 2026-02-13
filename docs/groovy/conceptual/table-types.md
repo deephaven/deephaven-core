@@ -77,7 +77,7 @@ Because static tables do not update, they have the following characteristics:
 2. Operations that depend on or modify external state can be used with static tables. Stateful operations can present problems for some types of streaming tables.
 3. The use of [special variables](../reference/query-language/variables/special-variables.md) is fully supported. Deephaven's special variables `i` and `ii` represent row indices of a table as `int` or `long` types, respectively. These variables are guaranteed to have consistent values in static tables.
 
-Static tables can be created by reading from a static data source, such as [CSV](../how-to-guides/data-import-export/csv-import.md), Iceberg<!--TODO: add link-->, [Parquet](../how-to-guides/data-import-export/parquet-import.md), SQL<!--TODO: add link when SQL docs exist in groovy-->. Or, they can be created with Deephaven's table creation functions, like [`newTable`](../how-to-guides/new-and-empty-table.md#newtable) or [`emptyTable`](../how-to-guides/new-and-empty-table.md#emptytable). This example uses [`emptyTable`](../how-to-guides/new-and-empty-table.md#newtable) to construct a static table:
+Static tables can be created by reading from a static data source, such as [CSV](../how-to-guides/data-import-export/csv-import.md), [Iceberg](../how-to-guides/data-import-export/iceberg.md), [Parquet](../how-to-guides/data-import-export/parquet-import.md), or [SQL](../how-to-guides/data-import-export/execute-sql-queries.md). Or, they can be created with Deephaven's table creation functions, like [`newTable`](../how-to-guides/new-and-empty-table.md#newtable) or [`emptyTable`](../how-to-guides/new-and-empty-table.md#emptytable). This example uses [`emptyTable`](../how-to-guides/new-and-empty-table.md#newtable) to construct a static table:
 
 ```groovy test-set=1 order=t
 // create a static table with 10 rows and 2 columns
@@ -100,7 +100,7 @@ t = timeTable("PT1s")
 tSnapshot = t.snapshot()
 ```
 
-![A user creates a static snapshot of the ticking table `t`](../assets/conceptual/table-types/table-types-1.gif)
+![Two Deephaven tables side by side - 't' ticks, while 'tSnapshot' is static](../assets/conceptual/table-types/table-types-1.gif)
 
 Verify that the snapshot is static with [`isRefreshing`](../reference/table-operations/metadata/isRefreshing.md):
 
@@ -347,7 +347,7 @@ t = merge(tStatic, tDynamic)
 tRingWithInitial = RingTableTools.of(t, 10)
 ```
 
-![A ring table initializes with the rows that are already present in the source append-only table](../assets/conceptual/table-types/table-types-8.gif)
+![An append-only time table and a 5-row ring table](../assets/conceptual/table-types/table-types-8.gif)
 
 To disable this behavior, set `initialize = false`:
 

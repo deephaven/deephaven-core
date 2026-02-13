@@ -9,7 +9,7 @@ The Markdown Widget is a useful tool for including text or images alongside your
 
 To create a Markdown Widget, use the **Controls** menu:
 
-![The **Controls** menu butthon highlighted in the Deephaven UI](../../assets/how-to/controls.png)
+![The **Controls** menu button highlighted in the Deephaven UI](../../assets/how-to/controls.png)
 
 ![The **Markdown Widget** button highlighted in the **Controls** drop-down](../../assets/how-to/mw1.png)
 
