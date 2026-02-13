@@ -235,7 +235,7 @@ Attempting to use the following operations on a blink table will raise an error:
 
 - [`group_by`](../reference/table-operations/group-and-aggregate/groupBy.md)
 - [`partition_by`](../reference/table-operations/group-and-aggregate/partitionBy.md) (see [below](#partition-a-blink-table) for a workaround)
-- [`partition_agg_by`](../reference/table-operations/group-and-aggregate/partitionedAggBy.md)
+- [`partitioned_agg_by`](../reference/table-operations/group-and-aggregate/partitionedAggBy.md)
 - [`head_pct`](../reference/table-operations/filter/head-pct.md)
 - [`tail_pct`](../reference/table-operations/filter/tail-pct.md)
 - [`slice`](../reference/table-operations/filter/slice.md)

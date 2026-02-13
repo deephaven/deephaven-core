@@ -47,7 +47,7 @@ This section introduces you to important vocabulary and defines our data structu
 
 In Deephaven, a **table** consists of a **row set** and zero or more named columns, each of which is backed by a **column source**:
 
-- A table’s row set is a sequence of **row keys** (non-negative 64-bit integers) in monotonically-increasing order. The row set additionally provides a mapping from each row key to its corresponding **row position** (ordinal) with the same relative order.
+- A table’s row set is a sequence of **row keys** (non-negative 64-bit integers) in monotonically increasing order. The row set additionally provides a mapping from each row key to its corresponding **row position** (ordinal) with the same relative order.
   - Row keys provide a compact way to describe each unique row of a table that is distinct from ordinal position, allowing certain [freedoms](#sparse-row-sets). That said, if row key "A" is less than row key "B", then the row identified by "A" must come before the row identified by "B".
   - Row sets are typically expressed as a set of closed ranges. This notation will be used in the explanations that follow.
 - Column sources provide a mapping from row keys to their corresponding data values, implementing the columns of a Deephaven table.

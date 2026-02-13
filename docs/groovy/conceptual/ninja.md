@@ -57,7 +57,7 @@ Common programming languages, such as Python, Java, C, C++, and Go, have instruc
 
 Because looping is so common in standard programming languages, new Deephaven users rely on loops to perform calculations. Their code often looks like:
 
-<!-- TODO: Add back in. No such method getColumn(String) ```groovy order=source,result -->
+<!--(This is a dummy code block, only intended to demonstrate the complicated syntax a user would need to write this query without DH. 'Table' has no attribute 'getColumn'). This block does not need to be fixed.-->
 
 ```groovy skip-test
 import static io.deephaven.csv.CsvTools.readCsv
@@ -100,7 +100,7 @@ Win, Win, Win.
 
 Every time you write a loop or call `getColumn` in your Deephaven code, ask yourself how you can accomplish the same goal without the loop and without directly accessing the contents of the Deephaven table. Most changes will involve using key columns in [aggregations](../how-to-guides/dedicated-aggregations.md) and join columns in [joins](../how-to-guides/joins-exact-relational.md). At first, these changes will seem foreign, but soon it will become natural.
 
-As with most rules, there are a few exceptions to the “don’t use loops” rule. Most commonly, the rule is broken to get around RAM limitations. If you are applying complex calculations to a huge dataset, your calculation may exhaust the RAM available to your job. To avoid RAM limitations, a loop can be used to break the massive dataset into smaller, more manageable datasets, which fit sequentially into RAM. Such exceptions to the rule are rare.
+As with most rules, there are a few exceptions to the "don’t use loops" rule. Most commonly, the rule is broken to get around RAM limitations. If you are applying complex calculations to a huge dataset, your calculation may exhaust the RAM available to your job. To avoid RAM limitations, a loop can be used to break the massive dataset into smaller, more manageable datasets, which fit sequentially into RAM. Such exceptions to the rule are rare.
 
 ## High performance filters
 
@@ -157,29 +157,72 @@ source = emptyTable(10).update("X=i", "Y=X*X")
 result = source.update("Z = (X%2==0) ? Y : 42")
 ```
 
-The query string `"Z = (X%2==0) ? Y : 42"` sets `Z` equal to `Y`, if `X` is even, or equal to 42 otherwise. Using the [ternary operator](../how-to-guides/ternary-if-how-to.md) results in concise queries and saves you from writing functions.
+The query string `"Z = (X%2==0) ? Y : 42"` sets `Z` equal to `Y`, if `X` is even, or equal to 42 otherwise. Using the [ternary conditional operator](../how-to-guides/ternary-if-how-to.md) results in concise queries and saves you from writing functions.
 
 ## Java Inside
 
-Most user interactions with Deephaven happen via a programming language such as Python or Groovy, yet, under the hood, the Deephaven Query Engine is written in Java. Occasionally, it is beneficial to use the “Java inside.”
+Most user interactions with Deephaven happen via a programming language such as Python or Groovy, yet, under the hood, the Deephaven Query Engine is written in Java. Occasionally, it is beneficial to use the "Java inside."
 
-In this query, Java is used twice in the query strings. First, the `sin(...)` method from the `java.lang.Math` class is used to compute column `A`. If you find a Java library that implements functionality you need, just place it on the classpath, and it is available in the query language. (See [Query Language](../how-to-guides/query-string-overview.md) for more details.) Second, Deephaven Query Language strings are `java.lang.String` objects. Here the `split(...)` method plus an array access have been used to retrieve the second token in the string. This inline use of Java String methods eliminates the need to write a custom string processing function.
+```groovy order=t1,t2
+t1 = newTable(intCol("X", 1, 2, 3), stringCol("Y", "A/B", "C/D", "E/F"))
+t2 = t1.update("A=java.lang.Math.sin(X)", "B=Y.split(`/`)[1]")
+```
 
-Because of the deep integration of Java within the Deephaven environment, it is possible to create Java objects within a Python query. This technique isn’t often used, but it is occasionally helpful when using a Java package.
+In this query, Java is used twice in the query strings. First, the `sin(...)` method from the `java.lang.Math` class is used to compute column `A`. If you find a Java library that implements functionality you need, just place it on the classpath, and it is available in the query language. (See [Install and use Java packages](../how-to-guides/install-and-use-java-packages.md) for more details.) Second, Deephaven Query Language strings are `java.lang.String` objects. Here the `split(...)` method plus an array access have been used to retrieve the second token in the string. This inline use of Java String methods eliminates the need to write a custom string processing function.
 
-In this Python example, a Java ArrayList is created and used in a query filter. You now have the power of Python, Java, and Deephaven available within a single query!
+Because of the deep integration of Java within the Deephaven environment, it is possible to create Java objects within a Groovy query. This technique isn’t often used, but it is occasionally helpful when using a Java package.
+
+```groovy order=t,t1
+import java.util.ArrayList
+
+al = new ArrayList()
+al.add(1)
+al.add(3)
+println(al)
+
+t = emptyTable(10).update("X=i", "Y=X*X")
+t1 = t.where("al.contains(X)")
+```
+
+In this Groovy example, a Java ArrayList is created and used in a query filter. You now have the power of Groovy, Java, and Deephaven available within a single query!
 
 ## Clean chained queries
 
 Query operations can be chained together to express complex ideas.
 
-```groovy skip-test
-result = emptyTable(10).update("X = i", "Y = X*X").where("Y > 3", "X < 2")
+```groovy order=result
+result = emptyTable(10).update("X = i", "Y = X*X").where("Y > 3", "X > 2")
 ```
 
 While powerful, these chained queries can quickly become difficult to read. Apply some formatting to clean things up.
 
+```groovy skip-test
+result = emptyTable(10)
+    .update(
+        "X = i", 
+        "Y = X*X"
+    )
+    .where(
+        "Y > 3", 
+        "X > 2"
+    )
+```
+
 If you want to include comments between your chained query operations or avoid trailing slashes, surround the code block with parentheses.
+
+```groovy order=result2
+result2 = (
+    emptyTable(10)
+        .update(
+            "X = i", 
+            "Y = X*X"
+        )
+        .where(
+            "Y > 3", 
+            "X > 2"
+        )
+)
+```
 
 With some practice, you will get a feeling for how to format chained query operations for maximum readability.
 
@@ -189,9 +232,10 @@ With some practice, you will get a feeling for how to format chained query opera
 - [Choose a join method](../how-to-guides/joins-exact-relational.md#which-method-should-you-use)
 - [Choose the right selection method](../how-to-guides/use-select-view-update.md#choose-the-right-column-selection-method)
 - [Handle nulls, infs, and NaNs](../how-to-guides/null-inf-nan.md)
+- [Query strings](../how-to-guides/query-string-overview.md)
 - [Work with arrays](../how-to-guides/work-with-arrays.md)
-- [Work with strings](../how-to-guides/work-with-strings.md)
 - [Work with time](./time-in-deephaven.md)
-- [Use filters](../how-to-guides/filters.md)
+- [Work with strings](../how-to-guides/work-with-strings.md)
+- [Use filters](../how-to-guides/use-filters.md)
 - [Use ternary-if](../how-to-guides/ternary-if-how-to.md)
 - [Use variables in query strings](../how-to-guides/query-scope.md)

@@ -192,7 +192,7 @@ t1 = new_table([int_col("X", [1, 2, 3]), string_col("Y", ["A/B", "C/D", "E/F"])]
 t2 = t1.update(formulas=["A=java.lang.Math.sin(X)", "B=Y.split(`/`)[1]"])
 ```
 
-In this query, Java is used twice in the query strings. First, the `sin(...)` method from the `java.lang.Math` class is used to compute column `A`. If you find a Java library that implements functionality you need, just place it on the classpath, and it is available in the query language. (See [Query Language](../how-to-guides/install-and-use-java-packages.md) for more details.) Second, Deephaven Query Language strings are `java.lang.String` objects. Here the `split(...)` method plus an array access have been used to retrieve the second token in the string. This inline use of Java String methods eliminates the need to write a custom string processing function.
+In this query, Java is used twice in the query strings. First, the `sin(...)` method from the `java.lang.Math` class is used to compute column `A`. If you find a Java library that implements functionality you need, just place it on the classpath, and it is available in the query language. (See [Install and use Java packages](../how-to-guides/install-and-use-java-packages.md) for more details.) Second, Deephaven Query Language strings are `java.lang.String` objects. Here the `split(...)` method plus an array access have been used to retrieve the second token in the string. This inline use of Java String methods eliminates the need to write a custom string processing function.
 
 Because of the deep integration of Java within the Deephaven environment, it is possible to create Java objects within a Python query. This technique isn’t often used, but it is occasionally helpful when using a Java package.
 
@@ -222,7 +222,7 @@ from deephaven import empty_table
 result = (
     empty_table(10)
     .update(formulas=["X = i", "Y = X*X"])
-    .where(filters=["Y > 3", "X < 2"])
+    .where(filters=["Y > 3", "X > 2"])
 )
 ```
 
@@ -277,11 +277,13 @@ With some practice, you will get a feeling for how to format chained query opera
 ## Related documentation
 
 - [Create an empty table](../how-to-guides/new-and-empty-table.md#empty_table)
+- [Choose a join method](../how-to-guides/joins-exact-relational.md#which-method-should-you-use)
 - [Choose the right selection method](../how-to-guides/use-select-view-update.md#choose-the-right-column-selection-method)
 - [Handle nulls, infs, and NaNs](../how-to-guides/null-inf-nan.md)
 - [Query strings](../how-to-guides/query-string-overview.md)
 - [Work with arrays](../how-to-guides/work-with-arrays.md)
-- [Work with date-times](../conceptual/time-in-deephaven.md)
+- [Work with time](./time-in-deephaven.md)
 - [Work with strings](../how-to-guides/work-with-strings.md)
 - [Use filters](../how-to-guides/use-filters.md)
 - [Use ternary-if](../how-to-guides/ternary-if-how-to.md)
+- [Use variables in query strings](../how-to-guides/query-scope.md)

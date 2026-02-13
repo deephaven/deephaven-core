@@ -12,7 +12,7 @@ This guide will show you how to disable authentication for Deephaven run from Do
 
 ### Docker compose
 
-To enable anonymous authentication, the `AuthHandlers` property must be set to `io.deephaven.auth.AnonymousAuthenticationHandler` by appending `-DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler` to the `START_OPTS` environment variable.
+To enable anonymous authentication, the `AuthHandlers` property must be set to `io.deephaven.auth.AnonymousAuthenticationHandler` by appending `-DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler` to the `START_OPTS` environment variable:
 
 ```yaml
 services:
@@ -32,6 +32,6 @@ The Docker logs will show the following message when anonymous authentication is
 
 ## Related documentation
 
-- [Quickstart for Docker](../../getting-started/docker-install.md)
+- [Install guide for Docker](../../getting-started/docker-install.md)
 - [How to configure pre-shared key authentication](./auth-psk.md)
 - [How to configure the Docker application](../configuration/docker-application.md)

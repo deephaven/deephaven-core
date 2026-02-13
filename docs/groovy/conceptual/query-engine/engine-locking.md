@@ -23,10 +23,7 @@ though this is subject to change.
 
 ### Shared lock
 
-The **shared lock** is typically held while running table operations ([`.where`](../../reference/table-operations/filter/where.md), [`.naturalJoin`](../../reference/table-operations/join/natural-join.md), etc.) from
-independent threads, outside the Deephaven console and [app mode](../../reference/app-mode/application-mode-config.md) startup
-scripts. It can also be used when reading copious amounts of data from tables, but it is usually preferable to
-use [snapshotting](#snapshotting) in these cases to avoid the need to acquire the shared lock.
+The **shared lock** is typically held while running table operations ([`where`](../../reference/table-operations/filter/where.md), [`naturalJoin`](../../reference/table-operations/join/natural-join.md), etc.) from independent threads, outside the Deephaven console and [app mode](../../reference/app-mode/application-mode-config.md) startup scripts. It can also be used when reading copious amounts of data from tables, but it is usually preferable to use [snapshotting](#snapshotting) in these cases to avoid the need to acquire the shared lock.
 
 Any threads waiting for shared lock while the Periodic Update Graph is running will acquire it once the UG completes
 its cycle and releases the exclusive lock. Any thread can immediately acquire the shared lock while the Update Graph
@@ -45,26 +42,13 @@ an [app mode](../../reference/app-mode/application-mode-config.md) startup scrip
 Users do not typically interact with this lock directly, but in certain cases it is used when waiting for changes from
 the Periodic Update Graph.
 
-Most commonly, when waiting for table updates
-(using [`awaitUpdate()`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/Table.html#awaitUpdate())), the
-exclusive lock is acquired automatically. This is required if a Periodic Update Graph cycle must occur in the middle
-of another operation — for example, if data is flushed to a [DynamicTableWriter](../../reference/table-operations/create/DynamicTableWriter.md)
-in the middle of query initialization, it will not be reflected in the output table until the Periodic Update Graph
-runs a refresh cycle.
+Most commonly, when waiting for table updates (using [`awaitUpdate()`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/Table.html#awaitUpdate())), the exclusive lock is acquired automatically. This is required if a Periodic Update Graph cycle must occur in the middle of another operation — for example, if data is flushed to a [DynamicTableWriter](../../reference/table-operations/create/DynamicTableWriter.md) in the middle of query initialization, it will not be reflected in the output table until the Periodic Update Graph runs a refresh cycle.
 
 > [!NOTE]
 > Upgrading from the shared lock to the exclusive lock is not supported and will throw an exception.
 > Accordingly, `awaitUpdate()` cannot be used while shared lock is held.
 
-In advanced cases where `awaitUpdate()` is insufficient, the exclusive lock can also be held in order to wait
-on [conditions](https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/util/concurrent/locks/Condition.html)
-from the UG. This is helpful in situations where an independent (non-UG) thread must wait for a change or notification
-propagated by the Periodic Update Graph, often in conjunction with a
-custom [listener](/core/javadoc/io/deephaven/engine/table/TableUpdateListener.html). In this
-situation, a condition can be obtained using `ExecutionContext.getContext().getUpdateGraph().exclusiveLock().newCondition()`, the
-independent thread can [`await()`](https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/util/concurrent/locks/Condition.html#await())
-the condition, and the can condition can be signaled by calling [`requestSignal()`](https://deephaven.io/core/javadoc/io/deephaven/engine/updategraph/UpdateGraph.html#requestSignal(java.util.concurrent.locks.Condition))
-from the Periodic Update Graph's refresh thread. A simple example of this pattern that can be run in Groovy is
+In advanced cases where `awaitUpdate()` is insufficient, the exclusive lock can also be held in order to wait on [conditions](https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/util/concurrent/locks/Condition.html) from the UG. This is helpful in situations where an independent (non-UG) thread must wait for a change or notification propagated by the Periodic Update Graph, often in conjunction with a custom [listener](../../how-to-guides/table-listeners-groovy.md). In this situation, a condition can be obtained using `ExecutionContext.getContext().getUpdateGraph().exclusiveLock().newCondition()`, the independent thread can [`await()`](https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/util/concurrent/locks/Condition.html#await()) the condition, and the can condition can be signaled by calling [`requestSignal()`](https://deephaven.io/core/javadoc/io/deephaven/engine/updategraph/UpdateGraph.html#requestSignal(java.util.concurrent.locks.Condition)) from the Periodic Update Graph's refresh thread. A simple example of this pattern that can be run in Groovy is
 provided below:
 
 ```groovy skip-test
@@ -196,7 +180,7 @@ safely, quickly, and without blocking the Periodic Update Graph.
 
 Snapshots are performed
 using [`ConstructSnapshot.callDataSnapshotFunction()`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/remote/ConstructSnapshot.html#callDataSnapshotFunction(java.lang.String,io.deephaven.engine.table.impl.remote.ConstructSnapshot.SnapshotControl,io.deephaven.engine.table.impl.remote.ConstructSnapshot.SnapshotFunction)),
-which will attempt the operation without acquiring a lock, then verify that the UG did not change any data
+which will attempt the operation without acquiring a lock, then verify that the Update Graph did not change any data
 while the operation was running. If data may have changed while the operation was running, the snapshotting mechanism
 will retry the operation.
 
