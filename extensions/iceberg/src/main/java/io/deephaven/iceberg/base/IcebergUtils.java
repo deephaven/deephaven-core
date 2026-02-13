@@ -7,6 +7,8 @@ import io.deephaven.base.FileUtils;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.iceberg.relative.RelativeFileIO;
+import io.deephaven.iceberg.util.ColumnInstructions;
+import io.deephaven.iceberg.util.Resolver;
 import org.apache.iceberg.DataFile;
 import org.apache.iceberg.PartitionField;
 import org.apache.iceberg.PartitionSpec;
@@ -93,8 +95,9 @@ public final class IcebergUtils {
      * Table Definition.
      */
     public static void verifyPartitioningColumns(
-            final PartitionSpec tablePartitionSpec,
-            final TableDefinition tableDefinition) {
+            @NotNull final Resolver resolver,
+            @NotNull final PartitionSpec tablePartitionSpec,
+            @NotNull final TableDefinition tableDefinition) {
         final List<String> partitioningColumnNamesFromDefinition = tableDefinition.getColumnStream()
                 .filter(ColumnDefinition::isPartitioning)
                 .peek(columnDefinition -> {
@@ -114,18 +117,28 @@ public final class IcebergUtils {
                         " not support writing to iceberg tables with non-identity transforms");
             }
         });
+
         if (partitionFieldsFromSpec.size() != partitioningColumnNamesFromDefinition.size()) {
             throw new IllegalArgumentException("Partition spec contains " + partitionFieldsFromSpec.size() +
                     " fields, but the table definition contains " + partitioningColumnNamesFromDefinition.size()
                     + " fields, partition spec " + tablePartitionSpec + ", table definition " + tableDefinition);
         }
-        for (int colIdx = 0; colIdx < partitionFieldsFromSpec.size(); colIdx += 1) {
-            final PartitionField partitionField = partitionFieldsFromSpec.get(colIdx);
-            if (!partitioningColumnNamesFromDefinition.get(colIdx).equals(partitionField.name())) {
-                throw new IllegalArgumentException("Partitioning column " + partitionField.name() + " is not present " +
-                        "in the table definition at idx " + colIdx + ", table definition " + tableDefinition +
-                        ", partition spec " + tablePartitionSpec);
+
+        for (final String colName : partitioningColumnNamesFromDefinition) {
+            // make sure we're able to resolve the column name. if not, `resolver.partitionField(...)` below would NPE
+            final ColumnInstructions ci = resolver.columnInstructions().get(colName);
+            Throwable maybeReason = null;
+            if (ci != null) {
+                try {
+                    resolver.partitionField(tableDefinition.getColumn(colName));
+                    continue;
+                } catch (final RuntimeException reason) {
+                    maybeReason = reason;
+                }
             }
+
+            throw new IllegalArgumentException("Partitioning column " + colName + " is not resolved " +
+                    "in the partition spec " + tablePartitionSpec, maybeReason);
         }
     }
 }
