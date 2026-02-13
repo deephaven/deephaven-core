@@ -15,10 +15,15 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.stream.StreamToBlinkTableAdapter;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.process.ProcessEnvironment;
+import io.deephaven.util.process.ShutdownManager;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Arrays;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
@@ -67,11 +72,25 @@ public class ServerStateTracker {
 
     private void startThread() {
         final ExecutionContext executionContext = ExecutionContext.getContext();
-        Thread driverThread = new Thread(
-                new ServerStateTracker.Driver(executionContext),
+        final Driver driver = new Driver(executionContext);
+        final Thread driverThread = new Thread(
+                driver,
                 ServerStateTracker.class.getSimpleName() + ".Driver");
         driverThread.setDaemon(true);
         driverThread.start();
+        final ShutdownManager shutdownManager = ProcessEnvironment.getGlobalShutdownManager();
+        // TODO(DH-21651): Improve shutdown ordering constraints
+        // Expressing in what appears to be "out-of-order", because within each category, there is a stack-based
+        // execution (first-in, last-out); and we could theoretically change this first task to FIRST and it would need
+        // to be in this order.
+        shutdownManager.registerTask(ShutdownManager.OrderingCategory.MIDDLE, () -> {
+            try {
+                driverThread.join(100);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        });
+        shutdownManager.registerTask(ShutdownManager.OrderingCategory.FIRST, driver::shutdown);
     }
 
     public static synchronized void start() {
@@ -131,42 +150,56 @@ public class ServerStateTracker {
 
     private class Driver implements Runnable {
         private final ExecutionContext executionContext;
+        private final CountDownLatch shutdownLatch;
 
         public Driver(@NotNull final ExecutionContext executionContext) {
             this.executionContext = executionContext;
+            this.shutdownLatch = new CountDownLatch(1);
         }
 
         @Override
         public void run() {
-            final RuntimeMemory.Sample memSample = new RuntimeMemory.Sample();
-            // noinspection InfiniteLoopStatement
-            while (true) {
-                final long intervalStartTimeMillis = System.currentTimeMillis();
-                try {
-                    Thread.sleep(REPORT_INTERVAL_MILLIS);
-                } catch (InterruptedException ignore) {
-                    // should log, but no logger handy
-                    // ignore
+            try (final ServerStateLogLogger _ignored = processMemLogger) {
+                final RuntimeMemory.Sample memSample = new RuntimeMemory.Sample();
+                while (shutdownLatch.getCount() != 0) {
+                    final long intervalStartTimeMillis = System.currentTimeMillis();
+                    try {
+                        shutdownLatch.await(REPORT_INTERVAL_MILLIS, TimeUnit.MILLISECONDS);
+                    } catch (InterruptedException e) {
+                        // unexpected; should not be interrutping this thread
+                    }
+                    if (shutdownLatch.getCount() != 0) {
+                        runOne(memSample, intervalStartTimeMillis);
+                    }
                 }
-                final long prevTotalCollections = memSample.totalCollections;
-                final long prevTotalCollectionTimeMs = memSample.totalCollectionTimeMs;
-                RuntimeMemory.getInstance().read(memSample);
-                executionContext.getUpdateGraph().<PeriodicUpdateGraph>cast()
-                        .takeAccumulatedCycleStats(ugpAccumCycleStats);
-                final long endTimeMillis = System.currentTimeMillis();
-                try (final SafeCloseable ignored = executionContext.open()) {
-                    logProcessMem(
-                            intervalStartTimeMillis,
-                            endTimeMillis,
-                            memSample,
-                            prevTotalCollections,
-                            prevTotalCollectionTimeMs,
-                            ugpAccumCycleStats.cycles,
-                            ugpAccumCycleStats.cyclesOnBudget,
-                            ugpAccumCycleStats.cycleTimesMicros,
-                            ugpAccumCycleStats.safePoints,
-                            ugpAccumCycleStats.safePointPauseTimeMillis);
-                }
+            } catch (final IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        }
+
+        public void shutdown() {
+            shutdownLatch.countDown();
+        }
+
+        private void runOne(final RuntimeMemory.Sample memSample, final long intervalStartTimeMillis) {
+            final long prevTotalCollections = memSample.totalCollections;
+            final long prevTotalCollectionTimeMs = memSample.totalCollectionTimeMs;
+            RuntimeMemory.getInstance().read(memSample);
+            executionContext.getUpdateGraph().<PeriodicUpdateGraph>cast()
+                    .takeAccumulatedCycleStats(ugpAccumCycleStats);
+            final long endTimeMillis = System.currentTimeMillis();
+            try (final SafeCloseable ignored = executionContext.open()) {
+                logProcessMem(
+                        intervalStartTimeMillis,
+                        endTimeMillis,
+                        memSample,
+                        prevTotalCollections,
+                        prevTotalCollectionTimeMs,
+                        ugpAccumCycleStats.cycles,
+                        ugpAccumCycleStats.cyclesOnBudget,
+                        ugpAccumCycleStats.cycleTimesMicros,
+                        ugpAccumCycleStats.safePoints,
+                        ugpAccumCycleStats.safePointPauseTimeMillis);
             }
         }
     }
