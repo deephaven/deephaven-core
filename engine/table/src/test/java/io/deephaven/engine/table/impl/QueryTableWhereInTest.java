@@ -165,6 +165,18 @@ public class QueryTableWhereInTest {
     }
 
     @Test
+    public void testPartialOutOfOrderDataIndex() {
+        final Table toFilter = TableTools.newTable(
+                stringCol("SC", "Alpha", "Bravo", "Charlie", "Alpha", "Bravo", "Charlie", "Delta", "Echo", "Foxtrot",
+                        "Golf", "Hotel", "India", "Lima", "Kilo"),
+                intCol("IC", 1, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3));
+        DataIndexer.getOrCreateDataIndex(toFilter, "IC");
+        final Table setTable = TableTools.newTable(stringCol("S1", "Alpha", "Bravo"), intCol("IC", 1, 2));
+        final Table result = toFilter.whereIn(setTable, "SC=S1", "IC=IC");
+        assertTableEquals(toFilter.head(2), result);
+    }
+
+    @Test
     public void testWhereDynamicIn() {
         final QueryTable setTable = testRefreshingTable(i(2, 4, 6, 8).toTracking(), col("X", "A", "B", "C", "B"));
         final QueryTable filteredTable = testRefreshingTable(i(1, 2, 3, 4, 5).toTracking(),

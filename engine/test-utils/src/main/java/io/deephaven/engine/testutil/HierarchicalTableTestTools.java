@@ -101,6 +101,8 @@ public class HierarchicalTableTestTools {
                     chunk.getChunkType(), columnDefinition.getDataType(), columnDefinition.getComponentType());
             if (snapshotSize > 0) {
                 chunkColumnSource.addChunk(chunk);
+            } else {
+                chunk.close();
             }
             final ColumnSource<?> source;
             if (columnDefinition.getDataType() == Boolean.class && chunkColumnSource.getType() == byte.class) {
