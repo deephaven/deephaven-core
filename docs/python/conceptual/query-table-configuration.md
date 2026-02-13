@@ -20,18 +20,18 @@ The `QueryTable` has the following user-configurable properties:
 | [DataIndex](#dataindex)                                             | `QueryTable.useDataIndexForWhere`                        | true       |
 | [DataIndex](#dataindex)                                             | `QueryTable.useDataIndexForAggregation`                  | true       |
 | [DataIndex](#dataindex)                                             | `QueryTable.useDataIndexForJoins`                        | true       |
-| [Pushdown Predicates with Where](#pushdown-predicates-with-where)              | `QueryTable.disableWherePushdownDataIndex`               | false      |
-| [Pushdown Predicates with Where](#pushdown-predicates-with-where)              | `QueryTable.disableWherePushdownParquetRowGroupMetadata` | false      |
-| [Parallel Processing with Where](#parallel-processing-with-where)   | `QueryTable.disableParallelWhere`                        | false      |
-| [Parallel Processing with Where](#parallel-processing-with-where)   | `QueryTable.parallelWhereRowsPerSegment`                 | `1 << 16`  |
-| [Parallel Processing with Where](#parallel-processing-with-where)   | `QueryTable.parallelWhereSegments`                       | -1         |
-| [Parallel Processing with Where](#parallel-processing-with-where)   | `QueryTable.forceParallelWhere` (test-focused)           | false      |
-| [Parallel Processing with Select](#parallel-processing-with-select) | `QueryTable.enableParallelSelectAndUpdate`               | true       |
-| [Parallel Processing with Select](#parallel-processing-with-select) | `QueryTable.minimumParallelSelectRows`                   | `1L << 22` |
-| [Parallel Processing with Select](#parallel-processing-with-select) | `QueryTable.forceParallelSelectAndUpdate` (test-focused) | false      |
+| [Pushdown predicates with Where](#pushdown-predicates-with-where)   | `QueryTable.disableWherePushdownDataIndex`               | false      |
+| [Pushdown predicates with Where](#pushdown-predicates-with-where)   | `QueryTable.disableWherePushdownParquetRowGroupMetadata` | false      |
+| [Parallel processing with Where](#parallel-processing-with-where)   | `QueryTable.disableParallelWhere`                        | false      |
+| [Parallel processing with Where](#parallel-processing-with-where)   | `QueryTable.parallelWhereRowsPerSegment`                 | `1 << 16`  |
+| [Parallel processing with Where](#parallel-processing-with-where)   | `QueryTable.parallelWhereSegments`                       | -1         |
+| [Parallel processing with Where](#parallel-processing-with-where)   | `QueryTable.forceParallelWhere` (test-focused)           | false      |
+| [Parallel processing with Select](#parallel-processing-with-select) | `QueryTable.enableParallelSelectAndUpdate`               | true       |
+| [Parallel processing with Select](#parallel-processing-with-select) | `QueryTable.minimumParallelSelectRows`                   | `1L << 22` |
+| [Parallel processing with Select](#parallel-processing-with-select) | `QueryTable.forceParallelSelectAndUpdate` (test-focused) | false      |
 | [Parallel snapshotting](#parallel-snapshotting)                     | `QueryTable.enableParallelSnapshot`                      | true       |
 | [Parallel snapshotting](#parallel-snapshotting)                     | `QueryTable.minimumParallelSnapshotRows`                 | `1L << 20` |
-| [Stateless by default](#stateless-by-default-experimental)          | `QueryTable.statelessFiltersByDefault`                   | false      |
+| [Stateless filters by default](#stateless-by-default-experimental)  | `QueryTable.statelessFiltersByDefault`                   | false      |
 
 Each property is described below, roughly categorized by similarity.
 

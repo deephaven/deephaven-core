@@ -185,7 +185,7 @@ Adding yet more value, a user who has full access to the deployment may implemen
 If you are brand new to Deephaven:
 
 - Try out the REPL experience on our hosted demo site. (Coming Soon)
-- Run a dockerized version locally by following the [quick start](../getting-started/docker-install.md) guide.
+- Run a dockerized version locally by following the [Docker install guide](../getting-started/docker-install.md) guide.
 
 If you want to try out any of our work-in-progress client libraries:
 
