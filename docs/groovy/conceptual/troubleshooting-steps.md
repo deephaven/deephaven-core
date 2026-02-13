@@ -124,6 +124,7 @@ You can typically minimize the effect of tick amplification with [partitioned ta
 
 - In grouping and ungrouping, partitioned tables group smaller sets of data, meaning parent changes affect fewer cells.
 - In cross joins, each partition can be processed in parallel. Additionally, the working size of each partition is smaller than the whole. This means that the number of cells affected by a right table change is smaller than the whole table.
+
 ### Insufficient memory
 
 Every instance of Deephaven has a predefined maximum amount of memory. When memory usage approaches the configured maximum, query performance can degrade significantly. If a query requires more memory than what's available, it will crash.

@@ -5,7 +5,7 @@ sidebar_label: Query table configuration
 
 This guide discusses how to control various `QueryTable` features that affect your Deephaven tables' latency and throughput.
 
-# Query Table
+# `QueryTable`
 
 [`QueryTable`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/QueryTable.html) is Deephaven's primary implementation of our [Table API](../getting-started/crash-course/table-ops.md).
 
@@ -20,8 +20,8 @@ The `QueryTable` has the following user-configurable properties:
 | [DataIndex](#dataindex)                                             | `QueryTable.useDataIndexForWhere`                        | true       |
 | [DataIndex](#dataindex)                                             | `QueryTable.useDataIndexForAggregation`                  | true       |
 | [DataIndex](#dataindex)                                             | `QueryTable.useDataIndexForJoins`                        | true       |
-| [Pushdown Predicates](#pushdown-predicates-with-where)              | `QueryTable.disableWherePushdownDataIndex`               | false      |
-| [Pushdown Predicates](#pushdown-predicates-with-where)              | `QueryTable.disableWherePushdownParquetRowGroupMetadata` | false      |
+| [Pushdown Predicates with Where](#pushdown-predicates-with-where)              | `QueryTable.disableWherePushdownDataIndex`               | false      |
+| [Pushdown Predicates with Where](#pushdown-predicates-with-where)              | `QueryTable.disableWherePushdownParquetRowGroupMetadata` | false      |
 | [Parallel Processing with Where](#parallel-processing-with-where)   | `QueryTable.disableParallelWhere`                        | false      |
 | [Parallel Processing with Where](#parallel-processing-with-where)   | `QueryTable.parallelWhereRowsPerSegment`                 | `1 << 16`  |
 | [Parallel Processing with Where](#parallel-processing-with-where)   | `QueryTable.parallelWhereSegments`                       | -1         |
@@ -29,9 +29,9 @@ The `QueryTable` has the following user-configurable properties:
 | [Parallel Processing with Select](#parallel-processing-with-select) | `QueryTable.enableParallelSelectAndUpdate`               | true       |
 | [Parallel Processing with Select](#parallel-processing-with-select) | `QueryTable.minimumParallelSelectRows`                   | `1L << 22` |
 | [Parallel Processing with Select](#parallel-processing-with-select) | `QueryTable.forceParallelSelectAndUpdate` (test-focused) | false      |
-| [Parallel Snapshotting](#parallel-snapshotting)                     | `QueryTable.enableParallelSnapshot`                      | true       |
-| [Parallel Snapshotting](#parallel-snapshotting)                     | `QueryTable.minimumParallelSnapshotRows`                 | `1L << 20` |
-| [Stateless by Default](#stateless-by-default-experimental)          | `QueryTable.statelessFiltersByDefault`                   | false      |
+| [Parallel snapshotting](#parallel-snapshotting)                     | `QueryTable.enableParallelSnapshot`                      | true       |
+| [Parallel snapshotting](#parallel-snapshotting)                     | `QueryTable.minimumParallelSnapshotRows`                 | `1L << 20` |
+| [Stateless by default](#stateless-by-default-experimental)          | `QueryTable.statelessFiltersByDefault`                   | false      |
 
 Each property is described below, roughly categorized by similarity.
 
@@ -113,7 +113,7 @@ Parallel snapshotting is not enabled until the snapshot size exceeds `QueryTable
 
 ## Stateless by default (experimental)
 
-Anticipated in a future release of Deephaven, the flag(s) in this category will flip from a default of false to a default of true. These flags enable the engine to assume more often that a given formula, filter, or selectable can be optimized (unless otherwise noted by the user via API usages).
+In a future release of Deephaven, the flags in this category will change from a default of false to a default of true. These flags enable the engine to assume more often that a given Filter or Selectable can be executed in parallel (unless the Filter or Selectable is [marked serial or has barriers](./query-engine/parallelization.md#controlling-concurrency-for-select-update-and-where) interface).
 
 This is experimental; more details can be learned by reading the Javadoc on io.deephaven.api.ConcurrencyControl.
 
