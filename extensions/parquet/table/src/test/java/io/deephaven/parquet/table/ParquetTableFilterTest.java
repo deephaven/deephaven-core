@@ -68,6 +68,7 @@ public final class ParquetTableFilterTest {
     private static final ParquetInstructions EMPTY = ParquetInstructions.EMPTY;
 
     private static File rootFile;
+    private static boolean pushdownDataIndexDisabled;
 
     @Rule
     public final EngineCleanup framework = new EngineCleanup();
@@ -80,11 +81,13 @@ public final class ParquetTableFilterTest {
         }
         // noinspection ResultOfMethodCallIgnored
         rootFile.mkdirs();
+        pushdownDataIndexDisabled = QueryTable.DISABLE_WHERE_PUSHDOWN_DATA_INDEX;
     }
 
     @After
     public void tearDown() {
         FileUtils.deleteRecursively(rootFile);
+        QueryTable.DISABLE_WHERE_PUSHDOWN_DATA_INDEX = pushdownDataIndexDisabled;
     }
 
     private Table[] splitTable(final Table source, int numSplits, boolean randomSizes) {
@@ -2096,9 +2099,9 @@ public final class ParquetTableFilterTest {
 
     @Test
     public void testMergedPartitioningTableColumnRegions() {
-        // We are performing a filter on a partitioning column. Because we are using a union table, the
-        // partitioning data index is not available. Instead, we should be performing a filter on the
-        // partitioning column regions (which are single value regions) and can be computed efficiently.
+        // Partitioning columns are automatically added to a data index. We have to disable use of the data index
+        // in order to test constant and null column region pushdown features.
+        QueryTable.DISABLE_WHERE_PUSHDOWN_DATA_INDEX = false;
 
         QueryScope.addParam("symList", List.of("alpha", "bravo", "charlie", "delta", "echo", "foxtrot"));
         final Table tmpTable = TableTools.emptyTable(100_000).update(
@@ -2114,10 +2117,7 @@ public final class ParquetTableFilterTest {
         writeKeyValuePartitionedTable(partitionedTable, destPath, writeInstructions);
 
         final Table diskTable = ParquetTools.readTable(destPath);
-
-        // Clone the disktable and create a merged table.
-        final Table merged = TableTools.merge(diskTable, diskTable, diskTable);
-        final Table memTable = merged.select();
+        final Table memTable = diskTable.select();
 
         final Filter filterSym = RawString.of("Sym in `alpha`, `bravo`");
         final Filter filterA = RawString.of("A < 50");
@@ -2134,59 +2134,59 @@ public final class ParquetTableFilterTest {
 
             Table result;
 
-            result = merged.where(capturingFilterSym);
+            result = diskTable.where(capturingFilterSym).coalesce();
 
-            // Expect one test per partitioning column region. Each disk table has 7 * 97 = 679, with 3x tables = 2037
-            assertEquals(2037, capturingFilterSym.numRowsProcessed());
-            assertEquals(85716, result.size());
+            // Expect one test per partitioning column region. Each disk table has 7 * 97 = 679
+            assertEquals(679, capturingFilterSym.numRowsProcessed());
+            assertEquals(28572, result.size());
 
             // Use the unwrapped filter to test other optimization paths (i.e. chunk filtering) and assert equality.
             assertTableEquals(result, memTable.where(filterSym));
-            assertTableEquals(result, merged.where(filterSym));
+            assertTableEquals(result, diskTable.where(filterSym));
 
             allFilters.forEach(RowSetCapturingFilter::reset);
 
             //////////////////////////////////////////////////////
 
-            result = merged.where(capturingFilterA);
+            result = diskTable.where(capturingFilterA).coalesce();
 
             // Expect one test per partitioning column region.
-            assertEquals(2037, capturingFilterA.numRowsProcessed());
-            assertEquals(154650, result.size());
+            assertEquals(679, capturingFilterA.numRowsProcessed());
+            assertEquals(51550, result.size());
 
             // Use the unwrapped filter to test other optimization paths (i.e. chunk filtering) and assert equality.
             assertTableEquals(result, memTable.where(filterA));
-            assertTableEquals(result, merged.where(filterA));
+            assertTableEquals(result, diskTable.where(filterA));
 
             allFilters.forEach(RowSetCapturingFilter::reset);
 
             //////////////////////////////////////////////////////
 
-            result = merged.where(capturingFilterB);
+            result = diskTable.where(capturingFilterB).coalesce();
 
             // All rows to be tested.
-            assertEquals(300000, capturingFilterB.numRowsProcessed());
-            assertEquals(136365, result.size());
+            assertEquals(100000, capturingFilterB.numRowsProcessed());
+            assertEquals(45455, result.size());
 
             // Use the unwrapped filter to test other optimization paths (i.e. chunk filtering) and assert equality.
             assertTableEquals(result, memTable.where(filterB));
-            assertTableEquals(result, merged.where(filterB));
+            assertTableEquals(result, diskTable.where(filterB));
 
             allFilters.forEach(RowSetCapturingFilter::reset);
 
             //////////////////////////////////////////////////////
 
-            result = merged.where(Filter.and(capturingFilterSym, capturingFilterA));
+            result = diskTable.where(Filter.and(capturingFilterSym, capturingFilterA)).coalesce();
 
             // All regions tested for Sym match
-            assertEquals(2037, capturingFilterSym.numRowsProcessed());
+            assertEquals(679, capturingFilterSym.numRowsProcessed());
             // A subset of regions tested for A match
-            assertEquals(582, capturingFilterA.numRowsProcessed());
-            assertEquals(44187, result.size());
+            assertEquals(194, capturingFilterA.numRowsProcessed());
+            assertEquals(14729, result.size());
 
             // Use the unwrapped filter to test other optimization paths (i.e. chunk filtering) and assert equality.
             assertTableEquals(result, memTable.where(Filter.and(filterSym, filterA)));
-            assertTableEquals(result, merged.where(Filter.and(filterSym, filterA)));
+            assertTableEquals(result, diskTable.where(Filter.and(filterSym, filterA)));
 
             allFilters.forEach(RowSetCapturingFilter::reset);
         }
