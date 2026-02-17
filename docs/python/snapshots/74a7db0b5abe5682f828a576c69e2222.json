@@ -1,1 +1,5 @@
+<<<<<<< HEAD
 {"file":"core/docs/how-to-guides/excel/excel-add-in.md","objects":{"static_table":{"type":"Table","data":{"columns":[{"name":"X","type":"int"}],"rows":[[{"value":"4"}],[{"value":"7"}],[{"value":"7"}],[{"value":"6"}],[{"value":"7"}],[{"value":"9"}],[{"value":"1"}],[{"value":"2"}],[{"value":"8"}],[{"value":"4"}]]}}}}
+=======
+{"file":"how-to-guides/excel/excel-client.md","objects":{"static_table":{"type":"Table","data":{"columns":[{"name":"X","type":"int"}],"rows":[[{"value":"4"}],[{"value":"8"}],[{"value":"0"}],[{"value":"0"}],[{"value":"8"}],[{"value":"2"}],[{"value":"7"}],[{"value":"0"}],[{"value":"9"}],[{"value":"9"}]]}}}}
+>>>>>>> 0b37045bd6... feat: DH-21100: Allow Formula in rollups (#7579)
