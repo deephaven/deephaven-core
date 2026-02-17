@@ -78,7 +78,9 @@ abstract class RegionedColumnSourceDouble<ATTR extends Values>
                         "Unexpected partitioning column value type for " + columnDefinition.getName()
                                 + ": " + partitioningColumnValue + " is not a Double at location " + locationKey);
             }
-            return new ColumnRegionDouble.Constant<>(regionMask(), unbox((Double) partitioningColumnValue));
+            return partitioningColumnValue == null
+                    ? new ColumnRegionDouble.Null<>(regionMask())
+                    : new ColumnRegionDouble.Constant<>(regionMask(), unbox((Double) partitioningColumnValue));
         }
     }
 }

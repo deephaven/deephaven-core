@@ -78,7 +78,9 @@ abstract class RegionedColumnSourceFloat<ATTR extends Values>
                         "Unexpected partitioning column value type for " + columnDefinition.getName()
                                 + ": " + partitioningColumnValue + " is not a Float at location " + locationKey);
             }
-            return new ColumnRegionFloat.Constant<>(regionMask(), unbox((Float) partitioningColumnValue));
+            return partitioningColumnValue == null
+                    ? new ColumnRegionFloat.Null<>(regionMask())
+                    : new ColumnRegionFloat.Constant<>(regionMask(), unbox((Float) partitioningColumnValue));
         }
     }
 }

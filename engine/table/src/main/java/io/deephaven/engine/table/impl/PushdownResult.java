@@ -29,6 +29,10 @@ public final class PushdownResult implements SafeCloseable {
      */
     public static final long SINGLE_VALUE_COLUMN_COST = 1_000L;
     /**
+     * The entire region contains a single value, so a single read is sufficient to determine matches.
+     */
+    public static final long SINGLE_VALUE_REGION_COST = 2_000L;
+    /**
      * Only table/row-group statistics are checked, assuming the metadata is already loaded
      */
     public static final long METADATA_STATS_COST = 10_000L;
