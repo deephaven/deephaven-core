@@ -1,0 +1,77 @@
+# Deephaven documentation style guide
+
+## Headings
+
+- Use sentence case for all headings (capitalize only the first word and proper nouns).
+- Correct: "## Serial execution"
+- Incorrect: "## Serial Execution"
+
+## Punctuation
+
+- Add periods to the end of all bullet points that are complete sentences.
+- Exception: Do NOT add periods in the "Related documentation" section.
+
+## Page structure
+
+- Every page (except landing pages or overviews) should include a "Related documentation" section at the end.
+- When a method is referenced in narrative text, link it to the appropriate page in the Reference directory if one exists.
+
+## Method names in prose
+
+When referring to methods in documentation prose, comments, headings, or callouts:
+
+- Do NOT include parentheses: `.with_serial`, `.withSerial`, `.update`, `.where`
+- Use parentheses only in actual code examples where the method is called
+
+Examples:
+
+- Correct prose: "Use `.with_serial` when your formula has side effects"
+- Correct code: `col.with_serial()`
+- Incorrect prose: "Use `.with_serial()` when your formula has side effects"
+
+## Python vs Groovy conventions
+
+Python methods use snake_case:
+
+- `.with_serial`
+- `.with_declared_barriers`
+- `.with_respected_barriers`
+- `Filter.from_`
+
+Groovy methods use camelCase:
+
+- `.withSerial`
+- `.withDeclaredBarriers`
+- `.withRespectedBarriers`
+- `Filter.from`
+
+## Documentation tools
+
+- Format docs: `./docs/format`
+- Update snapshots: `./docs/updateSnapshots`
+- Validate links: `./docs/validate`
+
+Run these from the repository root.
+
+## Code example tags
+
+- `syntax` - Show syntax without executing
+- `should-fail` - Code that should execute but fail with an error
+- `order=table1,table2` - Specify output table order
+- `skip-test` - Skip snapshot testing
+
+## File locations
+
+- Python docs: `docs/python/`
+- Groovy docs: `docs/groovy/`
+- Conceptual guides: `docs/{python,groovy}/conceptual/`
+- Reference docs: `docs/{python,groovy}/reference/`
+
+## Git workflow
+
+This is a forking workflow:
+
+- origin: your-username/deephaven-core (your fork)
+- upstream: deephaven/deephaven-core (main repo)
+- Push branches to origin, not upstream
+- PRs go from your-username:branch to deephaven:main
