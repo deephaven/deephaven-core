@@ -62,7 +62,7 @@ Alternatively, you can use other Linux distributions like Ubuntu or Debian. The 
 
 ### Startup script for Docker container
 
-A Google Cloud VM can be configured to run Docker containers on startup using a script. Since Deephaven can be [launched from pre-built Docker images](../tutorials/quickstart.md), we'll create a startup script that automatically pulls and runs the Deephaven container when the VM starts.
+A Google Cloud VM can be configured to run Docker containers on startup using a script. Since Deephaven can be [launched from pre-built Docker images](../getting-started/quickstart.md), we'll create a startup script that automatically pulls and runs the Deephaven container when the VM starts.
 
 Deephaven has several pre-built Docker images to choose from. Your choice should depend on your needs.
 
@@ -204,7 +204,7 @@ With that run, head to your web browser of choice and go to `localhost:10000/ide
 
 ## Related documentation
 
-- [Docker install guide](../tutorials/docker-install.md)
-- [Learn Deephaven](../tutorials/quickstart.md)
+- [Docker install guide](../getting-started/docker-install.md)
+- [Learn Deephaven](../getting-started/quickstart.md)
 - [How to use Deephaven with AWS EC2](../how-to-guides/aws-ec2.md)
 - [Docker data volumes](../conceptual/docker-data-volumes.md)

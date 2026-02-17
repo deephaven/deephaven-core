@@ -112,7 +112,7 @@ result = readCsv("https://raw.githubusercontent.com/deephaven/examples/main/DeNi
 
 ## Related documentation
 
-- [CSV import via query](../../../how-to-guides/csv-import.md)
-- [CSV export via query](../../../how-to-guides/csv-export.md)
+- [CSV import via query](../../../how-to-guides/data-import-export/csv-import.md)
+- [CSV export via query](../../../how-to-guides/data-import-export/csv-export.md)
 - [Docker data volumes](../../../conceptual/docker-data-volumes.md)
 - [Javadoc](https://deephaven.io/core/javadoc/io/deephaven/csv/CsvTools.html#readCsv(java.nio.file.Path))

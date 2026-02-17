@@ -70,7 +70,7 @@ For a more exhaustive introduction to Deephaven and an in-depth exploration of o
 
 ## 3. Import static and streaming data
 
-Deephaven empowers users to wrangle static and streaming data with ease. It supports ingesting data from [CSV files](../how-to-guides/csv-import.md), [Parquet files](../how-to-guides/data-import-export/parquet-import.md), and [Kafka streams](../how-to-guides/data-import-export/kafka-stream.md).
+Deephaven empowers users to wrangle static and streaming data with ease. It supports ingesting data from [CSV files](../how-to-guides/data-import-export/csv-import.md), [Parquet files](../how-to-guides/data-import-export/parquet-import.md), and [Kafka streams](../how-to-guides/data-import-export/kafka-stream.md).
 
 ### Load a CSV
 
@@ -404,7 +404,7 @@ writeTable(instrumentRollingStats, "/data/crypto_prices_stats.parquet")
 
 Now that you've imported data, created tables, and manipulated static and real-time data, we suggest heading to our user guide. There, you can explore anything from complex data aggregations to detailed performance comparisons and more.
 
-- [Import CSV files](../how-to-guides/csv-import.md)
+- [Import CSV files](../how-to-guides/data-import-export/csv-import.md)
 - [Read Parquet files](../how-to-guides/data-import-export/parquet-import.md)
 - [Write Parquet files](../how-to-guides/data-import-export/parquet-export.md)
 - [Connect to a Kafka stream](../how-to-guides/data-import-export/kafka-stream.md)

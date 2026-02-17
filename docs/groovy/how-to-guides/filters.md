@@ -118,7 +118,7 @@ resultNotInRange = source.where("!inRange(X, 2, 6)")
 
 ### String filters
 
-String filters return only rows that match the specified criteria for [string](./strings.md) columns. As such, string filters can use any [`java.lang.String`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html) methods.
+String filters return only rows that match the specified criteria for [string](./work-with-strings.md) columns. As such, string filters can use any [`java.lang.String`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html) methods.
 
 The following example shows several string filters:
 

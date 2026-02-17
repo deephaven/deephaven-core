@@ -10,11 +10,11 @@ Parquet is meant to be a standard interchange format for batch and interactive w
 
 ## Single Parquet file
 
-Deephaven supports single Parquet files. Using [a single large Parquet file](../how-to-guides/data-import-export/parquet-import.md#read-a-single-parquet-file) may be more storage efficient than many smaller files with accompanying metadata. It can be faster to read and process because there is less overhead in opening and closing files.
+Deephaven supports single Parquet files. Using [a single large Parquet file](..//data-import-export/parquet-import.md#read-a-single-parquet-file) may be more storage efficient than many smaller files with accompanying metadata. It can be faster to read and process because there is less overhead in opening and closing files.
 
 ## Parquet file directories
 
-Directories can contain multiple Parquet files. These can be [loaded as sections of a single table](../how-to-guides/data-import-export/parquet-import.md#partitioned-parquet-directories). They must be _flat_ Parquet files -- they have no partitioning columns.
+Directories can contain multiple Parquet files. These can be [loaded as sections of a single table](../data-import-export/parquet-import.md#partitioned-parquet-directories). They must be _flat_ Parquet files -- they have no partitioning columns.
 
 A flat layout may be useful if:
 
@@ -26,7 +26,7 @@ A flat layout may be useful if:
 
 ## Nested Parquet files
 
-These Parquet files are hierarchically [partitioned](../reference/data-import-export/Parquet/readTable.md#partitioned-datasets), nested in directories with names in the form of "key=value". All Parquet files are stored at the same nesting level. Choose this format if you have hierarchical partitioning and want Deephaven to determine the partitioning columns and value types automatically. Deephaven infers partitioning column names from the “keys” and parses the value type. This is useful if you do not have metadata files with information about expected types.
+These Parquet files are hierarchically [partitioned](../../reference/data-import-export/Parquet/readTable.md#partitioned-datasets), nested in directories with names in the form of "key=value". All Parquet files are stored at the same nesting level. Choose this format if you have hierarchical partitioning and want Deephaven to determine the partitioning columns and value types automatically. Deephaven infers partitioning column names from the “keys” and parses the value type. This is useful if you do not have metadata files with information about expected types.
 
 Note that if Deephaven does not know how to parse a value, it becomes a string. Support for unknown types can be accomplished with [`codecArgs`](https://deephaven.io/core/javadoc/io/deephaven/parquet/table/metadata/CodecInfo.html#codecArg()).
 
@@ -37,6 +37,6 @@ Deephaven supports optional metadata files that let you specify the types of you
 ## Related documentation
 
 - [Import Parquet into Deephaven video](https://youtu.be/k4gI6hSZ2Jc)
-- [Export Parquet files](../how-to-guides/data-import-export/parquet-export.md)
-- [Import Parquet files](../how-to-guides/data-import-export/parquet-import.md)
-- [Parquet instructions](../how-to-guides/data-import-export/parquet-instructions.md)
+- [Export Parquet files](../data-import-export/parquet-export.md)
+- [Import Parquet files](../data-import-export/parquet-import.md)
+- [Parquet instructions](../data-import-export/parquet-instructions.md)

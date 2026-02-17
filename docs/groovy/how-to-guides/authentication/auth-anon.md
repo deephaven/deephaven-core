@@ -32,6 +32,6 @@ The Docker logs will show the following message when anonymous authentication is
 
 ## Related documentation
 
-- [Quickstart for Docker](../../tutorials/docker-install.md)
+- [Quickstart for Docker](../../getting-started/docker-install.md)
 - [How to configure pre-shared key authentication](./auth-psk.md)
 - [How to configure the Docker application](../configuration/docker-application.md)

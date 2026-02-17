@@ -39,7 +39,7 @@ result = source.snapshotWhen(trigger, myOpts)
 ## Related documentation
 
 - [Create a time table](../how-to-guides/time-table.md)
-- [Reduce the update frequency of ticking tables](./reduce-update-frequency.md)
+- [Reduce the update frequency of ticking tables](./performance/reduce-update-frequency.md)
 - [`renameColumn`](../reference/table-operations/select/rename-columns.md)
 - [`snapshot`](../reference/table-operations/snapshot/snapshot.md)
 - [`snapshotWhen`](../reference/table-operations/snapshot/snapshot-when.md)

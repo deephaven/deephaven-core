@@ -346,4 +346,9 @@ public abstract class RangeAggregateColumnSource<VECTOR_TYPE extends Vector<VECT
                 && startPositionsInclusive.isImmutable()
                 && endPositionsExclusive.isImmutable();
     }
+
+    @Override
+    public ColumnSource<COMPONENT_TYPE> getAggregatedSource() {
+        return aggregated;
+    }
 }

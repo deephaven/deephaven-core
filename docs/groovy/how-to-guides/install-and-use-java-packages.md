@@ -13,7 +13,7 @@ The examples in this guide add the [Plexus Common Utilities](https://codehaus-pl
 
 ## Docker
 
-If you [Run Deephaven with Docker](../tutorials/docker-install.md), you can either build a custom Docker image or mount a volume containing the JAR into the container.
+If you [Run Deephaven with Docker](../getting-started/docker-install.md), you can either build a custom Docker image or mount a volume containing the JAR into the container.
 
 ### Build a custom Docker image
 
@@ -57,11 +57,11 @@ docker run --rm -v /home/user/java/libs:/apps/libs -p 10000:10000 ghcr.io/deepha
 
 ## Production application
 
-The [Production application](../tutorials/production-application.md) uses the environment variable `EXTRA_CLASSPATH` to include additional JARs in the classpath. See [Configure the production application](./configuration/configure-production-application.md#environment-variables) for more details, including other configuration options.
+The [Production application](../getting-started/production-application.md) uses the environment variable `EXTRA_CLASSPATH` to include additional JARs in the classpath. See [Configure the production application](./configuration/configure-production-application.md#environment-variables) for more details, including other configuration options.
 
 ## Build from source
 
-Adding Java packages to [Deephaven built from source code](./launch-build.md) is similar to the [production application](#production-application). It does, however, change how you launch Deephaven built from source.
+Adding Java packages to [Deephaven built from source code](../getting-started/launch-build.md) is similar to the [production application](#production-application). It does, however, change how you launch Deephaven built from source.
 
 Rather than run `./gradlew server-jetty-app:run`, run this instead:
 
@@ -109,7 +109,7 @@ source = empty_table(1).update(
 - [Create an empty table](./new-and-empty-table.md#emptytable)
 - [How to install packages](./install-packages.md)
 - [How to configure the Deephaven Docker application](./configuration/docker-application.md)
-- [Launch Deephaven from pre-built images](../tutorials/docker-install.md)
-- [Build and launch Deephaven from source code](./launch-build.md)
+- [Launch Deephaven from pre-built images](../getting-started/docker-install.md)
+- [Build and launch Deephaven from source code](../getting-started/launch-build.md)
 - [How to use Java packages in query strings](./install-and-use-java-packages.md#use-java-packages-in-query-strings)
 - [Access your file system with Docker data volumes](../conceptual/docker-data-volumes.md)

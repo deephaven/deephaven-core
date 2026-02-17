@@ -148,7 +148,7 @@ Append-only tables are useful when the use case needs a complete and ordered his
 
 Add-only tables are relaxed versions of append-only tables. They have the following key properties:
 
-- Rows can only be added to the table, but they may be added at _any position_ in the table.
+- Rows can only be added to the table, but they may be added at _any position_ in the table as long as they have a new row key (see [How do row keys and positional indices behave during table operations](../reference/community-questions/shifts.md#key-terms) for details). If a new row is added in a way that requires a shift, such as with [`merge`](../reference/table-operations/merge/merge.md), it is _not_ an add-only operation.
 - Existing rows cannot be deleted or modified, but may be reindexed.
 - The table's size can grow without bound.
 
@@ -379,4 +379,4 @@ t_ring_without_initial = ring_table(parent=t, capacity=10, initialize=False)
 
 - [How to use a TablePublisher](../how-to-guides/table-publisher.md)
 - [Create a time table](../how-to-guides/time-table.md)
-- [Kafka basic terminology](./kafka-in-deephaven.md)
+- [Kafka basic terminology](./kafka-basic-terms.md)

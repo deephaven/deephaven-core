@@ -553,7 +553,7 @@ def predict(timestamp) -> float:
     # here, we use deephaven.time to convert the value from DH to something that the model can use
     pd_timestamp = dhtime.to_pd_timestamp(timestamp).tz_localize("UTC")
     prediction = res.predict(start=pd_timestamp)
-    return prediction
+    return float(prediction.iloc[0])
 
 
 t_testing_eval = t_testing.update(["YPred = predict(Timestamp)"])

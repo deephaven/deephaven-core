@@ -381,4 +381,9 @@ public abstract class BaseAggregateSlicedColumnSource<VECTOR_TYPE extends Vector
                 && (startSource == null || startSource.isImmutable())
                 && (endSource == null || endSource.isImmutable());
     }
+
+    @Override
+    public ColumnSource<COMPONENT_TYPE> getAggregatedSource() {
+        return aggregatedSource;
+    }
 }

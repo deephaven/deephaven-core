@@ -53,8 +53,8 @@ deniroHeader = readCsv("https://media.githubusercontent.com/media/deephaven/exam
 
 ## Related documentation
 
-- [CSV import via query](../../how-to-guides/csv-import.md)
-- [CSV export via query](../../how-to-guides/csv-export.md)
+- [CSV import via query](../../how-to-guides/data-import-export/csv-import.md)
+- [CSV export via query](../../how-to-guides/data-import-export/csv-export.md)
 - [`readCsv`](../data-import-export/CSV/readCsv.md)
 - [`writeCsv`](../data-import-export/CSV/writeCsv.md)
 - [Docker data volumes](../../conceptual/docker-data-volumes.md)

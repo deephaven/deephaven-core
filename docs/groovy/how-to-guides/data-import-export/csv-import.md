@@ -3,7 +3,7 @@ title: Read CSV or other delimited files
 sidebar_label: Read CSV files
 ---
 
-This guide will show you how to read data from CSV (and other delimited) files into in-memory Deephaven tables by using the [`readCsv`](../reference/data-import-export/CSV/readCsv.md) method.
+This guide will show you how to read data from CSV (and other delimited) files into in-memory Deephaven tables by using the [`readCsv`](../../reference/data-import-export/CSV/readCsv.md) method.
 
 > [!TIP]
 > CSV files can also be uploaded into Deephaven with drag-and-drop in the UI.
@@ -42,7 +42,7 @@ If you are using Docker-installed Deephaven, you can find a `/data` folder insid
 > [!NOTE]
 > If the `./data` directory does not exist when Deephaven is launched, it will be created.
 
-See [Docker data volumes](../conceptual/docker-data-volumes.md) to learn more about the relation between locations in the container and the local file system.
+See [Docker data volumes](../../conceptual/docker-data-volumes.md) to learn more about the relation between locations in the container and the local file system.
 
 > [!NOTE]
 > If you're using our files, follow the directions in the [README](https://github.com/deephaven/examples/blob/main/README.md) to mount the content from [Deephaven's examples repository](https://github.com/deephaven/examples) onto `/data` in the Deephaven Docker container.
@@ -180,9 +180,9 @@ In the example above, we:
 - Set `ignoreExcessColumns` to `true` to avoid throwing an exception due to an extra column in the CSV file - 1984's _Brazil_ entry has an extra column containing a brief review that we don't need in our table.
 - Set `trim` to `true` to remove leading and trailing white space from inside quoted strings - such as our movie titles.
 
-For a complete list of optional arguments, see the [`readCsv` reference documentation](../reference/data-import-export/CSV/readCsv.md).
+For a complete list of optional arguments, see the [`readCsv` reference documentation](../../reference/data-import-export/CSV/readCsv.md).
 
 ## Related documentation
 
 - [How to export CSV files](./csv-export.md)
-- [`readCsv`](../reference/data-import-export/CSV/readCsv.md)
+- [`readCsv`](../../reference/data-import-export/CSV/readCsv.md)

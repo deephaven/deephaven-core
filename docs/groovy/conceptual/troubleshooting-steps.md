@@ -25,7 +25,7 @@ A deeper dive on these column types and the table operations that produce them c
 
 Deephaven performs calculations in update cycles. Each cycle lasts a certain amount of time, which is one second by default. During each update cycle, the engine spends a portion of that time performing various operations such as adding columns, performing aggregations, and so on. The fraction of time spent on all operations in a given update cycle is called the "ratio". So, the ratio is a measurement of the percentage of time spent doing data processing during each update cycle. For example, if the engine spends 200 ms processing data during a one-second update cycle, the ratio is 0.2 (or 20%).
 
-The ratio can be calculated from data found in Deephaven's performance tables. For an example showing the calculation, see [Performance tables](../how-to-guides/performance-tables.md).
+The ratio can be calculated from data found in Deephaven's performance tables. For an example showing the calculation, see [Performance tables](../how-to-guides/performance/performance-tables.md).
 
 ### Row change notification
 

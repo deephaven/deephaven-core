@@ -41,7 +41,7 @@ import static io.deephaven.util.type.TypeUtils.unbox;
  */
 public class ByteArraySource extends ArraySourceHelper<Byte, byte[]>
         implements MutableColumnSourceGetDefaults.ForByte /* MIXIN_IMPLS */ {
-    private static final SoftRecycler<byte[]> recycler = new SoftRecycler<>(DEFAULT_RECYCLER_CAPACITY,
+    private static final SoftRecycler<byte[]> recycler = new SoftRecycler<>(ArrayColumnSourceConfiguration.BYTE_RECYCLER_CAPACITY,
             () -> new byte[BLOCK_SIZE], null);
 
     private byte[][] blocks;

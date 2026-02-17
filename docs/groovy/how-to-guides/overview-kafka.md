@@ -182,7 +182,7 @@ useAnomalies = liveUseWithLast4weeksAvg.where("abs(PredictedPct-100) > 5")
 
 We have a clear model idea developed now. Naturally, our next step is implementation and deployment of production quality code that can give our organization a feed for the model we just created. Traditionally, this will imply change of language, tools and processes, even perhaps including handing the baton from one person to another in the organization, with all the friction and incremental costs implied. These costs are amplified by any future need to refine the model or bug fixing. Separate codebases for modeling and deployment also open the question for how to ensure they implement the same thing (although seldom any testing is done to this effect).
 
-But what if we could run the same code we developed to model the problem to actually implement the resulting feed? **We can.** The same table definitions we used as a chain of query operations can be saved as a script and executed under Deephaven’s [Application Mode](../how-to-guides/app-mode.md).
+But what if we could run the same code we developed to model the problem to actually implement the resulting feed? **We can.** The same table definitions we used as a chain of query operations can be saved as a script and executed under Deephaven’s [Application Mode](../how-to-guides/application-mode.md).
 
 ## Live table (or feed) to action
 

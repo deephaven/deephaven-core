@@ -49,7 +49,6 @@ public abstract class ArrayBackedColumnSource<T>
         implements FillUnordered<Values>, WritableColumnSource<T>, InMemoryColumnSource,
         ChunkedBackingStoreExposedWritableSource {
 
-    static final int DEFAULT_RECYCLER_CAPACITY = 1024;
     /**
      * Initial number of blocks to allocate.
      * <p>
@@ -90,9 +89,10 @@ public abstract class ArrayBackedColumnSource<T>
     private static final int IN_USE_BLOCK_SIZE = 1 << LOG_INUSE_BLOCK_SIZE;
     static final int IN_USE_MASK = (1 << LOG_INUSE_BITSET_SIZE) - 1;
 
-    static final SoftRecycler<long[]> inUseRecycler = new SoftRecycler<>(DEFAULT_RECYCLER_CAPACITY,
-            () -> new long[IN_USE_BLOCK_SIZE],
-            block -> Arrays.fill(block, 0));
+    static final SoftRecycler<long[]> inUseRecycler =
+            new SoftRecycler<>(ArrayColumnSourceConfiguration.IN_USE_RECYCLER_CAPACITY,
+                    () -> new long[IN_USE_BLOCK_SIZE],
+                    block -> Arrays.fill(block, 0));
 
     public static WritableColumnSource<?> from(Array<?> array) {
         return array.walk(new ArrayAdapter<>());

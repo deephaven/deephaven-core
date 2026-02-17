@@ -8,7 +8,7 @@ In Groovy, the Deephaven Query Language resolves variables using the [`QueryScop
 
 This guide will walk you through Groovy's scoping rules and the process for adding variables and using functions in Groovy query strings.
 
-If you'd like to learn more about query strings and the basic rationale of the query scope, see our [conceptual guide](../how-to-guides/queryscope.md).
+If you'd like to learn more about query strings and the basic rationale of the query scope, see our [conceptual guide](../how-to-guides/query-scope.md).
 
 > [!NOTE]
 > Variable names and function names are case-sensitive.
@@ -185,6 +185,6 @@ result2 = computeTax(source, 300)
 
 ## Related documentation
 
-- [Understanding the query scope](../how-to-guides/queryscope.md)
+- [Understanding the query scope](../how-to-guides/query-scope.md)
 - [Create a new table](./new-and-empty-table.md#newtable)
 - [Javadoc](/core/javadoc/io/deephaven/engine/context/QueryScope.html)
