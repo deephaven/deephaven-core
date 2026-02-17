@@ -317,6 +317,8 @@ These results can then be ungrouped with [`ungroup`](../../reference/table-opera
 tArrayFuncsUngrouped = tArrayFuncs.ungroup()
 ```
 
+> **_NOTE:_** Aggregations done with Deephaven's [Aggregations](../../how-to-guides/combined-aggregations.md) are more performant than with array functions.
+
 Deephaven provides array indexing and slicing operations.
 
 ```groovy test-set=1
@@ -493,7 +495,7 @@ result1 = compute(table, int1)
 result2 = compute(table, int2)
 ```
 
-For more information, see the [scoping reference documentation](../../reference/query-language/variables/scope.md).
+For more information, see the [scoping rules](../../how-to-guides/query-scope.md).
 
 Be mindful of whether or not Groovy functions are stateless or stateful. Generally, stateless functions have no side effects - they don't modify any objects outside of their scope. Also, they are invariant to execution order, so function calls can be evaluated in any order without affecting the result. This stateless function extracts elements from a list in a query string.
 

@@ -12,21 +12,21 @@ An `ExecutionContext` can be shared across multiple threads. Typical use pattern
 
 There are a few key benefits that the `ExecutionContext` brings to Deephaven:
 
-- Each `ExecutionContext` can have its own update graph, libraries, and query scope. This allows users to compartmentalize different units of code to work completely independently of one another.
-- The compartmentalization minimizes resource conflicts. For instance, an operation with a high computational cost can be isolated as to not slow down other critical processes.
+- Each `ExecutionContext` can have its own update graph, libraries, and query scope. This allows users to compartmentalize different units of code to work independently of one another.
+- The compartmentalization minimizes resource conflicts. For instance, an operation with a high computational cost can be isolated so as not to slow down other critical processes.
 - Multiple `ExecutionContext`s can run in parallel, enabling Deephaven to better leverage multi-core processor architectures.
-- In multi-user environments, each `ExecutionContext` can have specific authentication and authorization settings so that sensitive data and operations are securely encapsulated.
+- In multi-user environments, each `ExecutionContext` can have specific authentication and authorization settings to securely encapsulate sensitive data and operations.
 
 ## When an `ExecutionContext` is needed
 
 An `ExecutionContext` must be used if:
 
 - A table operation takes place in a separate thread or context.
-- A table operation may cause downstream operations to take place at a future point in time after the query scope has had the chance to change.
+- A table operation may cause downstream operations to occur at a future point in time after the query scope has had the chance to change.
 
 ### Table operations in a separate thread
 
-Take, for instance, the following code, which attempts to use a [`TablePublisher`](../reference/table-operations/create/TablePublisher.md) to write data to a blink table in a separate thread once per second:
+Take, for instance, the following code, which attempts to use a [`TablePublisher`](../reference/table-operations/create/TablePublisher.md) to write data to a [blink table](../conceptual/table-types.md#specialization-3-blink) in a separate thread once per second:
 
 ```groovy ticking-table should-fail
 import io.deephaven.csv.util.MutableBoolean
@@ -67,7 +67,7 @@ This causes Deephaven to crash with the following error:
 No ExecutionContext registered, or current ExecutionContext has no QueryScope. If this is being run in a thread, did you specify an ExecutionContext for the thread? Please refer to the documentation on ExecutionContext for details.
 ```
 
-This occurs because [`addTables`](../reference/table-operations/create/TablePublisher.md#methods), which is called in a separate thread, performs table operations and isn't encapsulated in an execution context. By importing `ExecutionContext` and `SafeClosable`, then putting the table operation inside a try-with-resources block, the code will run:
+This occurs because [`add`](../reference/table-operations/create/TablePublisher.md#methods), which is called in a separate thread, performs table operations and isn't encapsulated in an `ExecutionContext`. By importing `ExecutionContext` and `SafeClosable`, then putting the table operation inside a try-with-resources block, the code will run:
 
 ```groovy reset ticking-table order=null
 import io.deephaven.engine.context.ExecutionContext
@@ -110,7 +110,7 @@ thread = Thread.start(addTables)
 
 <!-- TODO: Link to transform doc(s) https://github.com/deephaven/deephaven.io/issues/3089 -->
 
-Below is a block of Groovy code that contains a table operation that can produce a deferred result. The `maxDate` closure is called in the `transform` method of a `PartitionedTable`:
+Below is a block of Groovy code that contains a table operation that can produce a deferred result. The `maxDate` closure is called in the [`transform`](../reference/table-operations/partitioned-tables/transform.md) method of a `PartitionedTable`:
 
 ```groovy skip-test
 import io.deephaven.engine.context.ExecutionContext
@@ -131,7 +131,7 @@ myPartitionedTable = consumeToPartitionedTable(
 ).transform(maxDate)
 ```
 
-A partitioned table transform can be a deferred operation. If a new partition is added to `myPartitionedTable` at a later time, `maxDate` will be re-evaluated for the new partition. The query scope may be different at that time, so the `ExecutionContext` must be explicitly specified.
+A partitioned table transform can be a deferred operation. For instance, if a new partition is added to `myPartitionedTable` at a later time, `maxDate` will be re-evaluated for the new partition. The query scope may be different at that time, so the `ExecutionContext` must be explicitly specified.
 
 ## Systemic vs Separate `ExecutionContext`
 
@@ -269,5 +269,6 @@ executionContext = ExecutionContext.newBuilder()
 ## Related documentation
 
 - [Create an empty table](../how-to-guides/new-and-empty-table.md#emptytable)
+- [`TablePublisher`](../reference/table-operations/create/TablePublisher.md)
 - [`update`](../reference/table-operations/select/update.md)
 - [Javadoc](/core/javadoc/io/deephaven/engine/context/ExecutionContext.html)

@@ -169,7 +169,7 @@ Cumulative aggregations are the simplest operations in the [`updateby`](/core/py
 
 To illustrate a cumulative statistic, consider the cumulative sum. For each row, this operation calculates the sum of all previous values in a column, including the current row's value. The following illustration shows this:
 
-![img](../assets/how-to/updateby-cum-sum.png)
+![Cumulative sum illustration](../assets/how-to/updateby-cum-sum.png)
 
 The code for the illustration above looks like this:
 
@@ -292,7 +292,7 @@ Simple moving (or rolling) aggregations are statistics computed over a finite, m
 
 To illustrate a simple moving aggregation, consider the rolling average. For each row, this operation calculates the average of all values within a specified window. The following illustration shows this:
 
-![img](../assets/how-to/updateby-rolling-avg.png)
+![Rolling average illustration](../assets/how-to/updateby-rolling-avg.png)
 
 The code for the illustration above looks like this:
 

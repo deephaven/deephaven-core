@@ -4,11 +4,11 @@ title: Application Mode
 
 <div className="comment-title">
 
-Hands-free; production-ready
+Hands-free. Production-ready.
 
 </div>
 
-When launching Deephaven, you may want to initialize the server state before any client can connect to the server. Application Mode enables users to bind tables, plots, functions, etc. to [REPL variables](https://en.wikipedia.org/wiki/Read-eval-print_loop), and read-only accessors, available during the runtime of the server process.
+When launching Deephaven, you may want to initialize the server state before any client can connect to the server. Application Mode enables users to bind tables, plots, functions, etc. to [REPL variables](https://en.wikipedia.org/wiki/Read-eval-print_loop) and read-only accessors that are available during the runtime of the server process.
 
 The variables, tables, functions, etc. that are exposed in the application are then available on the dashboard. For example, you can create scripts to instantiate helper functions to use inside the IDE. Or, you can even develop scripts for full dashboards. Application Mode allows this work to be more readily shared.
 
@@ -16,7 +16,7 @@ This guide will show you how to use Application Mode and what feature set it off
 
 ## Application types
 
-There are many different applications that you can run, from a Python or Groovy script designed to run in Deephaven, to a Dynamic application written in any [JVM-based language](https://en.wikipedia.org/wiki/List_of_JVM_languages).
+There are many different applications that you can run, from a Python or Groovy script designed to run in Deephaven, to a dynamic application written in any [JVM-based language](https://en.wikipedia.org/wiki/List_of_JVM_languages).
 
 - Script Application: Configure an application in the context of the script type of the Deephaven server.
 - Static Application: Configure an application that declares all exported variables during server initialization.

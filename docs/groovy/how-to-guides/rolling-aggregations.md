@@ -137,7 +137,7 @@ Cumulative aggregations are the simplest operations in the [`updateby`](/core/ja
 
 To illustrate a cumulative statistic, consider the cumulative sum. For each row, this operation calculates the sum of all previous values in a column, including the current row's value. The following illustration shows this:
 
-![img](../assets/how-to/updateby-cum-sum.png)
+![Cumulative sum illustration](../assets/how-to/updateby-cum-sum.png)
 
 The code for the illustration above looks like this:
 
@@ -222,7 +222,7 @@ The grouping operations collect values within the rolling window into an array. 
 
 To illustrate a simple moving aggregation, consider the rolling average. For each row, this operation calculates the average of all values within a specified window. The following illustration shows this:
 
-![img](../assets/how-to/updateby-rolling-avg.png)
+![Rolling average illustration](../assets/how-to/updateby-rolling-avg.png)
 
 The code for the illustration above looks like this:
 
@@ -343,7 +343,7 @@ Exponential moving statistics are another form of moving aggregations. Unlike si
 
 To visualize an exponential moving statistic, consider the exponential moving average (EMA). The following illustration shows this:
 
-![img](../assets/how-to/updateby-ema.png)
+![Exponential moving average illustration](../assets/how-to/updateby-ema.png)
 
 The code for the illustration above looks like this:
 

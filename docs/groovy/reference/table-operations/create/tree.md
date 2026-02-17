@@ -71,7 +71,7 @@ source = t1.join(t2, "ID = I")
 result = source.tree("ID", "Parent")
 ```
 
-![The above `source` and `result` tables](../../../assets/reference/create/tree-table-realtime.gif)
+![A user navigates between the `source` table and `result` tree table](../../../assets/reference/create/tree-table-realtime.gif)
 
 The following example contains orphan nodes. Two tree tables are created. The first omits orphan nodes, while the second promotes them such that they appear in the tree table.
 
