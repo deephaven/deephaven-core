@@ -6,6 +6,12 @@
 - Correct: "## Serial execution"
 - Incorrect: "## Serial Execution"
 
+## Voice
+
+- Avoid passive voice whenever possible.
+- Correct: "Deephaven parallelizes filter evaluation."
+- Incorrect: "Filter evaluation is parallelized by Deephaven."
+
 ## Punctuation
 
 - Add periods to the end of all bullet points that are complete sentences.
