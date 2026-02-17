@@ -25,6 +25,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.net.URI;
 import java.time.LocalDate;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -124,21 +125,16 @@ public final class IcebergUtils {
                     + " fields, partition spec " + tablePartitionSpec + ", table definition " + tableDefinition);
         }
 
-        for (final String colName : partitioningColumnNamesFromDefinition) {
-            // make sure we're able to resolve the column name. if not, `resolver.partitionField(...)` below would NPE
-            final ColumnInstructions ci = resolver.columnInstructions().get(colName);
-            Throwable maybeReason = null;
-            if (ci != null) {
-                try {
-                    resolver.partitionField(tableDefinition.getColumn(colName));
-                    continue;
-                } catch (final RuntimeException reason) {
-                    maybeReason = reason;
-                }
+        final Set<String> resolvedPartitionNames = new HashSet<>();
+        for (final String partitioningColumnName : partitioningColumnNamesFromDefinition) {
+            final List<Types.NestedField> nf = resolver.resolve(partitioningColumnName).orElse(null);
+            resolvedPartitionNames.add(nf == null ? partitioningColumnName : nf.get(0).name());
+        }
+        for (final PartitionField partitionField : partitionFieldsFromSpec) {
+            if (!resolvedPartitionNames.contains(partitionField.name())) {
+                throw new IllegalArgumentException("Partitioning column " + partitionField.name() + " is not present " +
+                        "in the table definition " + tableDefinition + ", partition spec " + tablePartitionSpec);
             }
-
-            throw new IllegalArgumentException("Partitioning column " + colName + " is not resolved " +
-                    "in the partition spec " + tablePartitionSpec, maybeReason);
         }
     }
 }
