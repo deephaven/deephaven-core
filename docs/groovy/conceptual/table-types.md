@@ -170,7 +170,7 @@ These properties have the following consequences:
 
 Blink tables are the default table type for Kafka ingestion within Deephaven because they use little memory. They are most useful for low-memory aggregations, deriving downstream tables, or using programmatic listeners to react to data.
 
-Check whether a table is a blink table with the [`isBlink`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/BlinkTableTools.html#isBlink(io.deephaven.engine.table.Table)) method:
+Check whether a table is a blink table with the [`isBlink`](../reference/table-operations)(https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/BlinkTableTools.html#isBlink(io.deephaven.engine.table.Table)) method:
 
 ```groovy test-set=3 ticking-table order=null
 import io.deephaven.engine.table.impl.BlinkTableTools

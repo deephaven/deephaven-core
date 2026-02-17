@@ -72,7 +72,7 @@ This causes Deephaven to crash with the following error:
 No ExecutionContext registered, or current ExecutionContext has no QueryScope. If this is being run in a thread, did you specify an ExecutionContext for the thread? Please refer to the documentation on ExecutionContext for details.
 ```
 
-This occurs because [`add_table`](../reference/table-operations/create/TablePublisher.md#methods), called in a separate thread, performs table operations and isn't encapsulated in an Execution Context. A fix as simple as the following will allow the code to run:
+This occurs because [`add`](../reference/table-operations/create/TablePublisher.md#methods), called in a separate thread, performs table operations and isn't encapsulated in an ExecutionContext. A fix as simple as the following will allow the code to run:
 
 ```python reset ticking-table order=null
 from deephaven.stream.table_publisher import table_publisher
@@ -233,7 +233,7 @@ In some scenarios, you may need to create an `ExecutionContext` completely from 
 
 - Working with the Java client where no default execution context exists.
 - Creating isolated environments with custom update graphs.
-- Using an `EventDrivenUpdateGraph` for specific use cases.
+- Using an [`EventDrivenUpdateGraph`](/core/javadoc/io/deephaven/engine/updategraph/impl/EventDrivenUpdateGraph.html) for specific use cases.
 - Building completely independent execution environments.
 
 The following example demonstrates how to build an `ExecutionContext` from scratch using Java interop:

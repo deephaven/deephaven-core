@@ -64,15 +64,11 @@ from deephaven import merge
 merged_tables = merge(my_table_updated, my_table_filtered1, my_table_filtered2)
 ```
 
-The three intermediate tables `my_table_updated`, `my_table_filtered1` and `my_table_filtered2` all depend on only one other table — the original `my_table`. Since they are independent of each other, when `my_table` is updated with new or
-modified rows it is possible for the query engine to process the new rows into `my_table_updated`, `my_table_filtered1`
-and `my_table_filtered2` at the same time. However, since `merged_tables` depends on those three tables, the query
-engine cannot update the result of the [`merge`](../../reference/table-operations/merge/merge.md) operation until after
-the [`update`](../../reference/table-operations/select/update.md) and [`where`](../../reference/table-operations/filter/where.md)s for those three tables have been processed.
+The three intermediate tables `my_table_updated`, `my_table_filtered1` and `my_table_filtered2` all depend on only one other table — the original `my_table`. Since they are independent of each other, when `my_table` is updated with new or modified rows it is possible for the query engine to process the new rows into `my_table_updated`, `my_table_filtered1` and `my_table_filtered2` at the same time. However, since `merged_tables` depends on those three tables, the query engine cannot update the result of the [`merge`](../../reference/table-operations/merge/merge.md) operation until after the [`update`](../../reference/table-operations/select/update.md) and [`where`](../../reference/table-operations/filter/where.md)s for those three tables have been processed.
 
 ### Controlling Concurrency for `select`, `update` and `where`
 
-The [`select`](../../reference/table-operations/select/select.md), [`update`](../../reference/table-operations/select/update.md), and [`where`](../../reference/table-operations/filter/where.md) operations can parallelize within a single where clause or column expression. This can greatly improve throughput by using multiple threads to read existing columns or compute functions. 
+The [`select`](../../reference/table-operations/select/select.md), [`update`](../../reference/table-operations/select/update.md), and [`where`](../../reference/table-operations/filter/where.md) operations can parallelize within a single where clause or column expression. This can greatly improve throughput by using multiple threads to read existing columns or compute functions.
 
 Deephaven can only parallelize an expression if it is _stateless_, meaning it does not depend on any mutable external inputs or the order in which rows are evaluated. Many operations, such as String manipulation or arithmetic on one or more input columns are always stateless. By default, the engine assumes that all user expressions are stateless and can be parallelized.
 
@@ -85,6 +81,8 @@ To change the default behavior for `select` and `update`, you can change the con
 > In Python builds that use the GIL (global interpreter lock), parallelizing filters and selectables can negatively impact query performance. To prevent performance regressions, even stateless filters and selectables that use Python objects are not parallelized unless the Python build is free-threaded.
 
 The [`ConcurrencyControl`](https://docs.deephaven.io/core/pydoc/code/deephaven.concurrency_control.html#deephaven.concurrency_control.ConcurrencyControl) interface allows you to control the behavior of [`Filter`](https://docs.deephaven.io/core/pydoc/code/deephaven.filters.html) (where clause) and [`Selectable`](https://docs.deephaven.io/core/pydoc/code/deephaven.table.html#deephaven.table.Selectable) objects (update and select table operations).
+
+ConccurencyControl cannot be applied to Selectables passed to [`view`](../../reference/table-operations/select/view.md) or [`update_view`](../../reference/table-operations/select/update-view.md). The [`view`](../../reference/table-operations/select/view.md) and [`update_view`](../../reference/table-operations/select/update-view.md) operations compute results on demand, and therefore cannot enforce ordering constraints.
 
 To explicitly mark a Selectable or Filter as stateful, use the `with_serial` method.
 
