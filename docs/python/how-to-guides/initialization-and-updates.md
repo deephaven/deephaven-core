@@ -79,17 +79,17 @@ For details on how Deephaven processes updates internally, see [Incremental upda
 
 Here's the quick reference. Details follow in the sections below.
 
-| DO                                                                                                                 | DON'T                                                                               |
-| ------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------- |
-| Use table operations — let the engine handle consistency.                                                          | Extract data to Python immediately after creating a ticking table.                  |
-| Wait for data with [`await_update()`](../reference/table-operations/await_update.md) before extracting.            | Assume data exists just because you created the table.                              |
-| Use [`snapshot()`](../reference/table-operations/snapshot/snapshot.md) to get a static copy for Python processing. | Call [`to_pandas()`](../reference/pandas/to-pandas.md) directly on a ticking table. |
-| Use [listeners](./table-listeners-python.md) for reacting to updates.                                              | Perform table operations inside listeners.                                          |
-| Initialize state with `do_replay=True`.                                                                            | Mix data from different update cycles.                                              |
+| DO                                                                                                                      | DON'T                                                                               |
+| ----------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| Use table operations — let the engine handle consistency.                                                               | Extract data to Python immediately after creating a ticking table.                  |
+| Wait for data with [`await_update()`](../reference/table-operations/table-listeners/await-update.md) before extracting. | Assume data exists just because you created the table.                              |
+| Use [`snapshot()`](../reference/table-operations/snapshot/snapshot.md) to get a static copy for Python processing.      | Call [`to_pandas()`](../reference/pandas/to-pandas.md) directly on a ticking table. |
+| Use [listeners](./table-listeners-python.md) for reacting to updates.                                                   | Perform table operations inside listeners.                                          |
+| Initialize state with `do_replay=True`.                                                                                 | Mix data from different update cycles.                                              |
 
 ## Waiting for data: the `await_update()` pattern
 
-The most common initialization problem is trying to read data before it arrives. Use [`await_update()`](../reference/table-operations/await_update.md) to pause until the table receives an update:
+The most common initialization problem is trying to read data before it arrives. Use [`await_update()`](../reference/table-operations/table-listeners/await-update.md) to pause until the table receives an update:
 
 ```python syntax
 from deephaven import kafka_consumer as ck
