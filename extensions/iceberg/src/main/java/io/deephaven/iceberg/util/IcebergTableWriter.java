@@ -157,7 +157,7 @@ public class IcebergTableWriter {
         this.table = tableAdapter.icebergTable();
 
         final Resolver resolver = tableAdapter.resolver();
-        this.tableSpec = resolver.spec().isEmpty() ? PartitionSpec.unpartitioned() : resolver.spec().get();
+        this.tableSpec = table.spec();
 
         this.tableDefinition = tableWriterOptions.tableDefinition();
         this.nonPartitioningTableDefinition = nonPartitioningTableDefinition(tableDefinition);
