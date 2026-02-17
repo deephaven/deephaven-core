@@ -49,7 +49,7 @@ public interface ColumnRegionByte<ATTR extends Any> extends ColumnRegion<ATTR> {
      * @return {@code destination}, to enable method chaining
      */
     byte[] getBytes(long firstElementIndex,
-            @NotNull byte[] destination,
+            byte[] destination,
             int destinationOffset,
             int length);
 
@@ -69,7 +69,7 @@ public interface ColumnRegionByte<ATTR extends Any> extends ColumnRegion<ATTR> {
         private static final ColumnRegionByte DEFAULT_INSTANCE =
                 new ColumnRegionByte.Null(RegionedColumnSourceBase.PARAMETERS.regionMask);
 
-        private Null(final long pageMask) {
+        public Null(final long pageMask) {
             super(pageMask);
         }
 
@@ -79,7 +79,7 @@ public interface ColumnRegionByte<ATTR extends Any> extends ColumnRegion<ATTR> {
         }
 
         @Override
-        public byte[] getBytes(final long firstElementIndex, @NotNull final byte[] destination,
+        public byte[] getBytes(final long firstElementIndex, final byte[] destination,
                 final int destinationOffset, final int length) {
             Arrays.fill(destination, destinationOffset, destinationOffset + length, QueryConstants.NULL_BYTE);
             return destination;
@@ -111,7 +111,7 @@ public interface ColumnRegionByte<ATTR extends Any> extends ColumnRegion<ATTR> {
         }
 
         @Override
-        public byte[] getBytes(final long firstElementIndex, @NotNull final byte[] destination,
+        public byte[] getBytes(final long firstElementIndex, final byte[] destination,
                 final int destinationOffset, final int length) {
             Arrays.fill(destination, destinationOffset, destinationOffset + length, value);
             return destination;
@@ -144,7 +144,7 @@ public interface ColumnRegionByte<ATTR extends Any> extends ColumnRegion<ATTR> {
         }
 
         @Override
-        public byte[] getBytes(final long firstElementIndex, @NotNull final byte[] destination,
+        public byte[] getBytes(final long firstElementIndex, final byte[] destination,
                 final int destinationOffset, final int length) {
             return lookupRegion(firstElementIndex).getBytes(firstElementIndex, destination, destinationOffset, length);
         }

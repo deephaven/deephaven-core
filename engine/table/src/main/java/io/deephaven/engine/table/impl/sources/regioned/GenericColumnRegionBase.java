@@ -15,7 +15,6 @@ import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.util.SafeCloseable;
 
 import java.util.Comparator;
-import java.util.Iterator;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
@@ -134,16 +133,17 @@ public abstract class GenericColumnRegionBase<ATTR extends Any> implements Colum
 
         // We must consider all the actions from this region and from the AbstractTableLocation and execute them in
         // minimal cost order
-        final Stream<RegionedPushdownAction> sorted =
+        final List<RegionedPushdownAction> sorted =
                 Stream.concat(supportedActions().stream(), tableLocation.supportedActions().stream())
                         .filter(action -> action instanceof RegionedPushdownAction.Region
                                 ? ((RegionedPushdownAction.Region) action).allows(tableLocation, this, filterCtx,
                                         costCeiling)
                                 : action.allows(tableLocation, filterCtx, costCeiling))
-                        .sorted(Comparator.comparingLong(RegionedPushdownAction::filterCost));
+                        .sorted(Comparator.comparingLong(RegionedPushdownAction::filterCost))
+                        .collect(Collectors.toList());
 
         // If no modes are allowed, we can skip all pushdown filtering.
-        if (sorted.findAny().isEmpty()) {
+        if (sorted.isEmpty()) {
             onComplete.accept(PushdownResult.allMaybeMatch(selection));
             return;
         }
@@ -156,9 +156,7 @@ public abstract class GenericColumnRegionBase<ATTR extends Any> implements Colum
         RegionedPushdownAction.ActionContext locationCtx = null;
 
         // Iterate through the sorted actions
-        final Iterator<RegionedPushdownAction> it = sorted.iterator();
-        while (it.hasNext()) {
-            final RegionedPushdownAction action = it.next();
+        for (final RegionedPushdownAction action : sorted) {
             try (final PushdownResult ignored = result) {
                 if (action instanceof RegionedPushdownAction.Location) {
                     result = tableLocation.performPushdownAction(action, filter, selection, result, usePrev, filterCtx,

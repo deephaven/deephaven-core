@@ -13,7 +13,6 @@ import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.BasePushdownFilterContext;
-import io.deephaven.engine.table.impl.PushdownResult;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.util.SafeCloseable;
@@ -114,10 +113,9 @@ public class SingleValuePushdownHelper {
     }
 
     /**
-     * Execute the chunk filter from the context and return either {@code selection} or the empty set depending on
-     * whether the filter matches any rows.
+     * Execute the chunk filter from the context and return {@code true} if the filter matches any rows.
      */
-    public static PushdownResult pushdownChunkFilter(
+    public static boolean chunkFilter(
             final RowSet selection,
             final BasePushdownFilterContext context,
             final Supplier<Chunk<Values>> valueChunkSupplier) {
@@ -125,18 +123,14 @@ public class SingleValuePushdownHelper {
         try (final BasePushdownFilterContext.UnifiedChunkFilter chunkFilter = context.createChunkFilter(1)) {
             final LongChunk<OrderedRowKeys> resultChunk =
                     chunkFilter.filter(valueChunkSupplier.get(), SingleValuePushdownHelper.singleRowKeyChunk());
-            if (resultChunk.size() > 0) {
-                return PushdownResult.allMatch(selection);
-            }
-            return PushdownResult.allNoMatch(selection);
+            return resultChunk.size() > 0;
         }
     }
 
     /**
-     * Execute the filter against a dummy table and return either {@code selection} or the empty set depending on
-     * whether the filter matches any rows.
+     * Execute the filter against a dummy table and return {@code true} if the filter matches any rows.
      */
-    public static PushdownResult pushdownTableFilter(
+    public static boolean tableFilter(
             final WhereFilter filter,
             final RowSet selection,
             final boolean usePrev,
@@ -153,11 +147,10 @@ public class SingleValuePushdownHelper {
 
             // Execute the filter on the dummy table.
             try (final RowSet result = filter.filter(rowSet, rowSet, dummyTable, usePrev)) {
-                if (result.isEmpty()) {
-                    // No rows match the filter, return empty selection
-                    return PushdownResult.allNoMatch(selection);
+                if (!result.isEmpty()) {
+                    return true;
                 }
-                return PushdownResult.allMatch(selection);
+                return false;
             }
         }
     }

@@ -90,7 +90,9 @@ abstract class RegionedColumnSourceByte<ATTR extends Values>
                         "Unexpected partitioning column value type for " + columnDefinition.getName()
                                 + ": " + partitioningColumnValue + " is not a Byte at location " + locationKey);
             }
-            return new ColumnRegionByte.Constant<>(regionMask(), unbox((Byte) partitioningColumnValue));
+            return partitioningColumnValue == null
+                    ? new ColumnRegionByte.Null<>(regionMask())
+                    : new ColumnRegionByte.Constant<>(regionMask(), unbox((Byte) partitioningColumnValue));
         }
     }
 }

@@ -138,15 +138,14 @@ public class ImmutableConstantShortSource
 
         // Chunk filtering has lower overhead than creating a dummy table.
         if (filterCtx.supportsChunkFiltering()) {
-            final PushdownResult result =
-                    SingleValuePushdownHelper.pushdownChunkFilter(selection, filterCtx, this::getValueChunk);
-            onComplete.accept(result);
+            final boolean matches = SingleValuePushdownHelper.chunkFilter(selection, filterCtx, this::getValueChunk);
+            onComplete.accept(matches ? PushdownResult.allMatch(selection) : PushdownResult.allNoMatch(selection));
             return;
         }
 
         // Chunk filtering is not supported, so test against a dummy table.
-        final PushdownResult result = SingleValuePushdownHelper.pushdownTableFilter(filter, selection, usePrev, this);
-        onComplete.accept(result);
+        final boolean matches = SingleValuePushdownHelper.tableFilter(filter, selection, usePrev, this);
+        onComplete.accept(matches ? PushdownResult.allMatch(selection) : PushdownResult.allNoMatch(selection));
     }
 
     private Chunk<Values> getValueChunk() {
