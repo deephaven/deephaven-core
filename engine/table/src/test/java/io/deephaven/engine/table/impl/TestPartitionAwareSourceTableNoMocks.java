@@ -21,7 +21,6 @@ import io.deephaven.engine.table.impl.select.SortedClockFilter;
 import io.deephaven.engine.table.impl.select.UnsortedClockFilter;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedTableComponentFactoryImpl;
 import io.deephaven.engine.testutil.StepClock;
-import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.filters.ReindexingRowSetCapturingFilter;
 import io.deephaven.engine.testutil.filters.RowSetCapturingFilter;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
@@ -362,8 +361,8 @@ public class TestPartitionAwareSourceTableNoMocks {
         Assert.eq(filter0.numRowsProcessed(), "filter0.numRowsProcessed()", 2 * partitionSize);
         // ensure we see the barrier partition filter as filtering only the partitioned rows
         Assert.eq(filter1.numRowsProcessed(), "filter1.numRowsProcessed()", 4);
-        // however, the respects barrier could not be lifted, so it should match result of filter0
-        Assert.eq(filter2.numRowsProcessed(), "filter2.numRowsProcessed()", 2 * (partitionSize / 2));
+        // the respects barrier could not be lifted but operates on constant column regions (vs. rows)
+        Assert.eq(filter2.numRowsProcessed(), "filter2.numRowsProcessed()", 2);
 
         Assert.eq(res0.size(), "res0.size()", partitionSize / 2);
     }
