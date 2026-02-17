@@ -2486,6 +2486,10 @@
                     "path": "reference/query-language/types/durations.md"
                   },
                   {
+                    "label": "Filter",
+                    "path": "reference/query-language/types/Filter.md"
+                  },
+                  {
                     "label": "Casting",
                     "path": "reference/query-language/control-flow/casting.md"
                   },
@@ -2504,6 +2508,10 @@
                   {
                     "label": "Periods",
                     "path": "reference/query-language/types/periods.md"
+                  },
+                  {
+                    "label": "Selectable",
+                    "path": "reference/query-language/types/Selectable.md"
                   },
                   {
                     "label": "Strings",

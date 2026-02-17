@@ -109,17 +109,30 @@ result_not_filtered = source.where("!((boolean)my_filter(IntegerColumn))")
 
 ## Serial execution
 
-By default, Deephaven parallelizes filter evaluation across multiple CPU cores. If your filter has side effects or depends on row order, use `.withSerial()` to force sequential processing.
+By default, Deephaven parallelizes filter evaluation across multiple CPU cores. For filters with side effects or order dependencies, use [`.withSerial`](../../query-language/types/Filter.md#withserial) to force sequential processing.
+
+This filter tracks how many rows it evaluates. Without serial execution, the counter may produce incorrect results due to parallel access:
 
 ```groovy order=source,result
 import io.deephaven.api.filter.Filter
+import java.util.concurrent.atomic.AtomicInteger
 
-source = emptyTable(10).update("X = i")
-f = Filter.from("X > 5")[0].withSerial()
+rowsChecked = new AtomicInteger(0)
+
+checkValue = { int x ->
+    rowsChecked.incrementAndGet()  // Side effect: modifies external state
+    return x > 5
+}
+
+source = emptyTable(100).update("X = i")
+
+// Use .withSerial because the filter has side effects
+// Filter.from() returns an array; [0] gets the single filter
+f = Filter.from("(boolean)checkValue(X)")[0].withSerial()
 result = source.where(f)
 ```
 
-For more information, see [Parallelization](../../../conceptual/query-engine/parallelization.md).
+See [Parallelization](../../../conceptual/query-engine/parallelization.md) for more details.
 
 ## Related documentation
 

@@ -259,7 +259,7 @@ When a Selectable is serial:
 - Only one thread processes the column at a time.
 - Global state updates happen sequentially without race conditions.
 
-#### Using `.withSerial()` for Filters
+#### Using [`.withSerial`](../../reference/query-language/types/Filter.md#withserial) for Filters
 
 Serial filters are needed when filter evaluation has stateful side effects. Deephaven parallelizes string-based filters in [`where()`](../../reference/table-operations/filter/where.md) by default, so construct Filter objects explicitly:
 
@@ -396,7 +396,7 @@ source4 = emptyTable(10).update("Value = i * 50")
 result4 = source4.update("Category = Value > 100 ? `High` : `Low`")
 ```
 
-#### When to use `.withSerial()`
+#### When to use `.withSerial`
 
 **Use `.withSerial()` when**:
 
@@ -480,7 +480,7 @@ result = source.update([colA, colB])
 Deephaven automatically parallelizes queries across all available CPU cores. Most code works correctly without changes.
 
 - Deephaven assumes all formulas can run in parallel by default.
-- Use [`.withSerial()`](../../reference/table-operations/select/update.md#serial-execution) when your code uses global variables, depends on row order, or calls functions that aren't safe to run from multiple threads.
+- Use [`.withSerial`](../../reference/query-language/types/Selectable.md#withserial) when your code uses global variables, depends on row order, or calls functions that aren't safe to run from multiple threads.
 - Use **barriers** when one operation must complete before another starts.
 - Both thread pools use all CPU cores by default.
 

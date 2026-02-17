@@ -135,18 +135,31 @@ result_not_filtered = source.where(filters=["!((boolean)my_filter(IntegerColumn)
 
 ## Serial execution
 
-By default, Deephaven parallelizes filter evaluation across multiple CPU cores. If your filter has side effects or depends on row order, use `.with_serial()` to force sequential processing.
+By default, Deephaven parallelizes filter evaluation across multiple CPU cores. For filters with side effects or order dependencies, use [`.with_serial`](../../query-language/types/Filter.md#with_serial) to force sequential processing.
+
+This filter tracks how many rows it evaluates. Without serial execution, the counter may produce incorrect results due to parallel access:
 
 ```python order=source,result
 from deephaven.filters import Filter
 from deephaven import empty_table
 
-source = empty_table(10).update("X = i")
-f = Filter.from_("X > 5").with_serial()
+rows_checked = 0
+
+
+def check_value(x) -> bool:
+    global rows_checked
+    rows_checked += 1  # Side effect: modifies external state
+    return x > 5
+
+
+source = empty_table(100).update("X = i")
+
+# Use .with_serial because the filter has side effects
+f = Filter.from_("(boolean)check_value(X)").with_serial()
 result = source.where(f)
 ```
 
-For more information, see [Parallelization](../../../conceptual/query-engine/parallelization.md).
+See [Parallelization](../../../conceptual/query-engine/parallelization.md) for more details.
 
 ## Related documentation
 
