@@ -85,18 +85,32 @@ To run the snapshotter tool, use the following command:
 
 Some meta tags can be used to control the behavior of the snapshotter tool. These tags are added to the code block after the language. Details about the tags are in the [snapshotter tool documentation](./snapshotter/README.md).
 
-### AI Tools
+### IDE and AI Tools
 
-Our current recommendations for AI tools are:
+We recommend [Windsurf](https://windsurf.com/) as the IDE for docs work. It integrates well with [Claude](https://www.anthropic.com/claude), which is our preferred AI model for documentation tasks.
 
-- Use [Visual Studio Code](https://code.visualstudio.com/).
-- Use [GitHub Copilot](https://copilot.github.com/).
-    - When using Copilot, manually choose the `GPT 4o` model. It has performed well in our experience, so choose this unless you have a reason to try something else. Do not use the `o1` model - it does a poor job.
-    - Select the text you want AI to work on and type `cmd+i` to bring up the Copilot chat window.
-    - A simple prompt of `improve` is often sufficient to get an acceptable result.
-    - If you write the entire body of the doc, you can go to the top of the doc and hit cmd+I and try more complex prompts like `write an introduction to this document`. Sometimes AI will do well with this; other times it will not.
+**Windsurf Setup:**
 
-The above workflow allows you to work directly with .md files without having to copy/paste things back and forth between your IDE and the AI chat panel in your browser. This is a big time saver.
+1. Install Windsurf from [windsurf.com](https://windsurf.com/).
+2. Open the Cascade panel (the AI assistant) and select Claude as your model.
+3. Use `Cmd+L` to open the Cascade chat for general questions or `Cmd+I` for inline edits.
+
+**Tips:**
+
+- Select text and use `Cmd+I` to get inline suggestions for improving specific sections.
+- A simple prompt like "improve" or "make this clearer" often works well.
+- For larger tasks, describe what you want in the Cascade panel and let it make edits across files.
+- Claude handles technical documentation and code examples well, making it a good fit for Deephaven docs.
+
+**Alternative: VS Code with GitHub Copilot**
+
+If you prefer [Visual Studio Code](https://code.visualstudio.com/), you can use [GitHub Copilot](https://copilot.github.com/):
+
+- When using Copilot, manually choose the `GPT 4o` model. It has performed well in our experience. Do not use the `o1` model.
+- Select the text you want AI to work on and type `Cmd+I` to bring up the Copilot chat window.
+- A simple prompt of "improve" is often sufficient to get an acceptable result.
+
+Both workflows let you work directly with .md files without copying between your IDE and a browser-based AI chat.
 
 ## Indexing
 
