@@ -113,6 +113,13 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
         }
 
         @Override
+        protected boolean shouldCoalesce(WhereFilter... whereFilters) {
+            return Arrays.stream(whereFilters)
+                    .anyMatch(whereFilter -> ((PartitionAwareSourceTable) table).isValidAgainstColumnPartitionTable(
+                            whereFilter.getColumns(), whereFilter.getColumnArrays()));
+        }
+
+        @Override
         protected TableAndRemainingFilters getWithWhere(WhereFilter... whereFilters) {
             final List<WhereFilter> partitionFilters = new ArrayList<>();
             final List<WhereFilter> otherFilters = new ArrayList<>();
