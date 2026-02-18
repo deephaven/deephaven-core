@@ -100,12 +100,7 @@ The [`last_by`](../reference/table-operations/group-and-aggregate/lastBy.md) ope
 
 The "last" row is defined as the row closest to the bottom of the table. It is based strictly on the order of the rows in the source table — not an aspect of the data (such as timestamps or sequence numbers) nor, for live-updating tables, the row which appeared in the dataset most recently.
 
-A related operation is [`agg.sorted_last`](../reference/table-operations/group-and-aggregate/AggSortedLast.md),
-which sorts the data within each key before finding the last row. When used with `agg_by`, `agg.sorted_last` takes
-the column name (or an array of column names) to sort the data by before performing the `last_by` operation to identify
-the last row. It is more efficient than `.sort([<sort columns>]).last_by([<key columns>])` because the data is first
-separated into groups (based on the key columns), then sorted within each group. In many cases this requires less memory
-and processing than sorting the entire table at once.
+A related operation is [`agg.sorted_last`](../reference/table-operations/group-and-aggregate/AggSortedLast.md), which sorts the data within each key before finding the last row. When used with `agg_by`, `agg.sorted_last` takes the column name (or an array of column names) to sort the data by before performing the `last_by` operation to identify the last row. It is more efficient than `.sort([<sort columns>]).last_by([<key columns>])` because the data is first separated into groups (based on the key columns), then sorted within each group. In many cases this requires less memory and processing than sorting the entire table at once.
 
 The most basic case is a [`last_by`](../reference/table-operations/group-and-aggregate/lastBy.md) with no key columns. When no key columns are specified, [`last_by`](../reference/table-operations/group-and-aggregate/lastBy.md) simply returns the last row in the table:
 
@@ -160,9 +155,7 @@ t = empty_table(100).update(
 t2 = t.last_by("MyKey")
 ```
 
-When data is out of order, it can be sorted before applying the [`last_by`](../reference/table-operations/group-and-aggregate/lastBy.md). For example, the data below is naturally
-ordered by `Timestamp1`. In order to find the latest rows based on `Timestamp2`, simply sort the data before
-running the [`last_by`](../reference/table-operations/group-and-aggregate/lastBy.md):
+When data is out of order, it can be sorted before applying the [`last_by`](../reference/table-operations/group-and-aggregate/lastBy.md). For example, the data below is naturally ordered by `Timestamp1`. In order to find the latest rows based on `Timestamp2`, simply sort the data before running the [`last_by`](../reference/table-operations/group-and-aggregate/lastBy.md):
 
 ```python test-set=2 order=t2,t_sorted,t
 from deephaven import empty_table
@@ -181,9 +174,7 @@ t_sorted = t.sort("Timestamp2")
 t2 = t_sorted.last_by("MyKey")
 ```
 
-If the sorted data is not used elsewhere in the query, a more efficient implementation is to use
-[agg.sorted_last](../reference/table-operations/group-and-aggregate/AggSortedLast.md). This produces the same
-result table (`t2`) with one method call (and more efficeint processing of the `sort` step):
+If the sorted data is not used elsewhere in the query, a more efficient implementation is to use [agg.sorted_last](../reference/table-operations/group-and-aggregate/AggSortedLast.md). This produces the same result table (`t2`) with one method call (and more efficeint processing of the `sort` step):
 
 ```python order=t2,t
 from deephaven import empty_table
@@ -206,7 +197,7 @@ t2 = t.agg_by(
 
 ### `head_by` and `tail_by`
 
-In this example, we want to know the first two and the last two test results for each student. To achieve this, we can use [`head_by`](../reference/table-operations/group-and-aggregate/headBy.md) to return the first two test values and [`tail_by`](../reference/table-operations/group-and-aggregate/tailBy.md) to return the last two test values (`num_rows=2`). The results are grouped by `Name`.
+In this example, we want to know the first two and the last two test results for each student. To achieve this, we can use [`head_by`](../reference/table-operations/group-and-aggregate/headBy.md) to return the first `n` test values and [`tail_by`](../reference/table-operations/group-and-aggregate/tailBy.md) to return the last `n` test values. The results are grouped by `Name`.
 
 ```python test-set=1 order=head,tail
 head = source.head_by(2, by=["Name"])
@@ -297,3 +288,17 @@ These aggregations can be re-ordered, edited, or deleted from the **Aggregate Co
 ## Related documentation
 
 - [How to create multiple summary statistics for groups](./combined-aggregations.md)
+- [`avg_by`](../reference/table-operations/group-and-aggregate/avgBy.md)
+- [`count_by`](../reference/table-operations/group-and-aggregate/countBy.md)
+- [`drop_columns`](../reference/table-operations/select/drop-columns.md)
+- [`first_by`](../reference/table-operations/group-and-aggregate/firstBy.md)
+- [`head_by`](../reference/table-operations/group-and-aggregate/headBy.md)
+- [`last_by`](../reference/table-operations/group-and-aggregate/lastBy.md)
+- [`max_by`](../reference/table-operations/group-and-aggregate/maxBy.md)
+- [`median_by`](../reference/table-operations/group-and-aggregate/medianBy.md)
+- [`min_by`](../reference/table-operations/group-and-aggregate/minBy.md)
+- [`std_by`](../reference/table-operations/group-and-aggregate/stdBy.md)
+- [`sum_by`](../reference/table-operations/group-and-aggregate/sumBy.md)
+- [`tail_by`](../reference/table-operations/group-and-aggregate/tailBy.md)
+- [`var_by`](../reference/table-operations/group-and-aggregate/varBy.md)
+

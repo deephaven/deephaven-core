@@ -1,6 +1,5 @@
 ---
-title: How to get version information
-sidebar_label: Get version information
+title: Get version information
 ---
 
 To find the web client version you are running, open the **Settings** menu:

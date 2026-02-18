@@ -1,6 +1,6 @@
 ---
-title: Create and use Input Tables
-sidebar_label: Input Tables
+title: Create and use input tables
+sidebar_label: Input tables
 ---
 
 Input tables allow users to enter new data into tables in two ways: programmatically, and manually through the UI.

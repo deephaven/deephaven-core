@@ -14,7 +14,7 @@ Deephaven provides many [dedicated aggregations](./dedicated-aggregations.md), s
 
 ## Syntax
 
-Aggregators are applied to data by the [`aggBy`](../reference/table-operations/group-and-aggregate/aggBy.md) method:
+Aggregators are defined in an `agg_list`, then applied to data by the [`agg_by`](../reference/table-operations/group-and-aggregate/aggBy.md) method:
 
 The general syntax follows:
 
@@ -37,8 +37,8 @@ A number of built-in aggregations are available:
 - [`AggAbsSum`](../reference/table-operations/group-and-aggregate/AggAbsSum.md) - Sum of absolute values for each group.
 - [`AggAvg`](../reference/table-operations/group-and-aggregate/AggAvg.md) - Average value for each group.
 - [`AggCount`](../reference/table-operations/group-and-aggregate/AggCount.md) - Number of rows for each group.
-- [`AggCountWhere`](../reference/table-operations/group-and-aggregate/AggCountWhere.md) - Number of values for each group that pass a set of filters.
 - [`AggCountDistinct`](../reference/table-operations/group-and-aggregate/AggCountDistinct.md) - Number of unique values for each group.
+- [`AggCountWhere`](../reference/table-operations/group-and-aggregate/AggCountWhere.md) - Number of values for each group that pass a set of filters.
 - [`AggDistinct`](../reference/table-operations/group-and-aggregate/AggDistinct.md) - Array of unique values for each group.
 - [`AggFirst`](../reference/table-operations/group-and-aggregate/AggFirst.md) - First value for each group.
 - [`AggFormula`](../reference/table-operations/group-and-aggregate/AggFormula.md) - Custom formula for each group.
