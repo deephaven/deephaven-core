@@ -31,6 +31,7 @@ The `QueryTable` has the following user-configurable properties:
 | [Parallel processing with select](#parallel-processing-with-select) | `QueryTable.forceParallelSelectAndUpdate` (test-focused) | false      |
 | [Parallel snapshotting](#parallel-snapshotting)                     | `QueryTable.enableParallelSnapshot`                      | true       |
 | [Parallel snapshotting](#parallel-snapshotting)                     | `QueryTable.minimumParallelSnapshotRows`                 | `1L << 20` |
+| [Ungroup operations](#ungroup-operations)                           | `QueryTable.minimumUngroupBase`                          | 10         |
 | [SoftRecycler configuration](#softrecycler-configuration)           | `array.recycler.capacity.*`                              | 1024       |
 | [SoftRecycler configuration](#softrecycler-configuration)           | `sparsearray.recycler.capacity.*`                        | 1024       |
 | [Stateless filters by default](#stateless-by-default)               | `QueryTable.statelessFiltersByDefault`                   | false      |
@@ -113,6 +114,18 @@ Parallel snapshotting is not enabled until the snapshot size exceeds `QueryTable
 | ---------------------------------------- | ------------- | ----------------------------------------------------------------------------------------------------- |
 | `QueryTable.enableParallelSnapshot`      | true          | Enables parallelized optimizations for snapshotting operations, such as Barrage subscription requests |
 | `QueryTable.minimumParallelSnapshotRows` | `1L << 20`    | The minimum number of rows required to enable parallel snapshotting operations                        |
+
+## Ungroup operations
+
+The `ungroup` operation expands array or vector columns into individual rows. The `minimumUngroupBase` property controls the initial rowset allocation strategy for ungrouped tables.
+
+Each row from the input table is allocated `2^minimumUngroupBase` rows in the output table at startup. If rows are added to the table, this base may need to grow. If a single row in the input has more than 2^base rows, then the base must change for all of the rows.
+
+| Property Name                   | Default Value | Description                                                                                   |
+| ------------------------------- | ------------- | --------------------------------------------------------------------------------------------- |
+| `QueryTable.minimumUngroupBase` | 10            | The minimum base (power of 2) for allocating rows in ungrouped tables (allocates 2^base rows) |
+
+The default value of 10 means each input row is initially allocated 2^10 = 1,024 rows in the output. Lowering this value can reduce initial memory usage for tables with smaller arrays, while increasing it can prevent rebase operations for tables expected to have large arrays.
 
 ## SoftRecycler configuration
 
