@@ -112,6 +112,27 @@ If you prefer [Visual Studio Code](https://code.visualstudio.com/), you can use 
 
 Both workflows let you work directly with .md files without copying between your IDE and a browser-based AI chat.
 
+**Style Guide:**
+
+Documentation style standards (headings, voice, punctuation, method naming) are defined in `~/.windsurf/global_rules.md`. These rules are automatically applied when using Windsurf with Cascade.
+
+## File Locations
+
+- **Python docs:** `docs/python/`
+- **Groovy docs:** `docs/groovy/`
+- **Conceptual guides:** `docs/{python,groovy}/conceptual/`
+- **Reference docs:** `docs/{python,groovy}/reference/`
+- **How-to guides:** `docs/{python,groovy}/how-to-guides/`
+
+## Git Workflow
+
+This is a forking workflow:
+
+- `origin`: your-username/deephaven-core (your fork)
+- `upstream`: deephaven/deephaven-core (main repo)
+- Push branches to `origin`, not `upstream`
+- PRs go from `your-username:branch` to `deephaven:main`
+
 ## Indexing
 
 The site search re-indexes nightly. If you publish a new page or change files significantly mid-day, this may affect search results. Ask in the docs channel for someone to trigger this job in Inkeep manually.
