@@ -3,6 +3,8 @@
 //
 package io.deephaven.engine.tablelogger;
 
+import io.deephaven.tablelogger.Row;
+
 import java.io.Closeable;
 import java.io.IOException;
 
@@ -15,6 +17,15 @@ public interface ServerStateLogLogger extends Closeable {
             final short intervalUGPCyclesOnBudget, final int[] intervalUGPCyclesTimeMicros,
             final short intervalUGPCyclesSafePoints, final int intervalUGPCyclesSafePointTimeMicros)
             throws IOException;
+
+    @Deprecated(forRemoval = true)
+    default void log(final Row.Flags flags, final long intervalStartTime, final int intervalDurationMicros,
+            final int totalMemoryMiB, final int freeMemoryMiB, final short intervalCollections,
+            final int intervalCollectionTimeMicros, final short intervalUGPCyclesOnBudget,
+            final int[] intervalUGPCyclesTimeMicros, final short intervalUGPCyclesSafePoints,
+            final int intervalUGPCyclesSafePointTimeMicros) throws IOException {
+        throw new UnsupportedOperationException();
+    }
 
     enum Noop implements ServerStateLogLogger {
         INSTANCE;

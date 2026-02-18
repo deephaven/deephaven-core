@@ -4,6 +4,7 @@
 package io.deephaven.engine.tablelogger;
 
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
+import io.deephaven.tablelogger.Row;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
@@ -14,6 +15,11 @@ import java.io.IOException;
  */
 public interface QueryOperationPerformanceLogLogger {
     void log(@NotNull final QueryPerformanceNugget nugget) throws IOException;
+
+    @Deprecated(forRemoval = true)
+    default void log(@NotNull Row.Flags flags, @NotNull QueryPerformanceNugget nugget) throws IOException {
+        throw new UnsupportedOperationException();
+    }
 
     enum Noop implements QueryOperationPerformanceLogLogger {
         INSTANCE;
