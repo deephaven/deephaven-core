@@ -1,0 +1,68 @@
+# Deephaven Documentation Style Guide
+
+These standards apply to all Deephaven documentation across deephaven-core, deephaven-ent, and deephaven.io.
+
+## Writing style
+
+**Voice:** Avoid passive voice whenever possible.
+
+- Correct: "Deephaven parallelizes filter evaluation."
+- Incorrect: "Filter evaluation is parallelized by Deephaven."
+
+**Headings:** Use sentence case (capitalize only the first word and proper nouns).
+
+- Correct: "## Serial execution"
+- Incorrect: "## Serial Execution"
+
+**Punctuation:** Add periods to bullet points that are complete sentences.
+
+- Exception: Do NOT add periods in the "Related documentation" section.
+
+## Examples
+
+- Shorter is better.
+- Use the same or similar tables/example sets within a topic to highlight differences between methods.
+
+## Deephaven proper nouns
+
+Capitalize these terms:
+
+- Core+
+- Enterprise
+- Persistent Query
+- Internal tables: Process Event Log, Query Operations Performance Log, etc.
+- Processes/services: Data Import Server, Log Aggregator Service, etc.
+
+## Page structure
+
+- Every page (except landing pages, overviews, or blog articles) should include a "Related documentation" section at the end.
+- When a method is referenced in narrative text, link it to the appropriate reference page if one exists.
+
+## Code conventions
+
+**Method names in prose:** Do NOT include parentheses. Use parentheses only in actual code examples.
+
+- Correct prose: "Use `.with_serial` when your formula has side effects"
+- Correct code: `col.with_serial()`
+- Incorrect prose: "Use `.with_serial()` when your formula has side effects"
+
+**Python vs Groovy:** Python uses snake_case, Groovy uses camelCase.
+
+| Python                     | Groovy                   |
+| -------------------------- | ------------------------ |
+| `.with_serial`             | `.withSerial`            |
+| `.with_declared_barriers`  | `.withDeclaredBarriers`  |
+| `.with_respected_barriers` | `.withRespectedBarriers` |
+| `Filter.from_`             | `Filter.from`            |
+
+**Code example tags (deephaven-core):**
+
+- `syntax` - Show syntax without executing
+- `should-fail` - Code that should execute but fail with an error
+- `order=table1,table2` - Specify output table order
+- `order=null` - No output to display
+- `skip-test` - Skip snapshot testing
+
+## Blog posts
+
+When writing blog posts, follow the template at `docs/python/templates/_blog-template.md`.

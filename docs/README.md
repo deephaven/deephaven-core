@@ -114,7 +114,7 @@ Both workflows let you work directly with .md files without copying between your
 
 **Style Guide:**
 
-Documentation style standards (headings, voice, punctuation, method naming) are defined in `~/.windsurf/global_rules.md`. These rules are automatically applied when using Windsurf with Cascade.
+Documentation style standards are defined in `.windsurf/rules`. When using Windsurf, Cascade automatically applies these rules to this repo.
 
 ## File Locations
 
