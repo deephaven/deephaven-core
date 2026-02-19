@@ -127,18 +127,29 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
             boolean serialFilterFound = false;
             final Set<Object> partitionBarriers = new HashSet<>();
             for (WhereFilter whereFilter : whereFilters) {
-                if (!whereFilter.permitParallelization()) {
-                    serialFilterFound = true;
-                }
+                boolean isSerial = !whereFilter.permitParallelization();
 
                 final boolean isPartitioningFilter = !(whereFilter instanceof ReindexingFilter)
                         && ((PartitionAwareSourceTable) table).isValidAgainstColumnPartitionTable(
                                 whereFilter.getColumns(), whereFilter.getColumnArrays());
 
+                if (QueryTable.STATELESS_FILTERS_BY_DEFAULT && isSerial) {
+                    // when we use stateless filters by default, we cannot reorder any stateful filters
+                    // when we are stateful by default, then we are not going to set serialFilterFound until after we've
+                    // processed this filter.  This allows the first partition filter that is stateful to be reordered
+                    // (which is more like the 0.39 behavior).  This is intended as a practical compromise so that
+                    // "Date==today()" is not always reordered with respect to other filters.
+                    serialFilterFound = true;
+                }
+
                 final boolean missingBarrier = !partitionBarriers.containsAll(ExtractRespectedBarriers.of(whereFilter));
                 if (serialFilterFound || missingBarrier) {
                     otherFilters.add(whereFilter);
                     continue;
+                }
+
+                if (isSerial) {
+                    serialFilterFound = true;
                 }
 
                 if (isPartitioningFilter) {
