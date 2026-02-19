@@ -16,6 +16,7 @@ dependencies {
     implementation project(':extensions-performance')
     implementation project(':extensions-jdbc')
     implementation project(':Util')
+    implementation project(':data-adapter')
     implementation project(':Integrations')
     implementation libs.commons.lang3
     implementation libs.commons.text

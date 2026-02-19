@@ -1,0 +1,29 @@
+plugins {
+    id 'io.deephaven.project.register'
+    id 'java-library'
+}
+
+dependencies {
+    api project(':engine-api')
+    api project(':engine-table')
+    api project(':engine-function')
+
+    api 'com.fasterxml.jackson.core:jackson-databind:2.13.4'
+
+    implementation project(':log-factory')
+    implementation libs.commons.lang3
+
+    testRuntimeOnly project(path: ':configs')
+    testRuntimeOnly project(path: ':test-configs')
+
+    testImplementation TestTools.projectDependency(project, 'engine-table')
+    testImplementation project(path: ':Base', configuration: 'tests')
+
+    testRuntimeOnly project(':log-to-slf4j')
+}
+
+repositories {
+    mavenCentral()
+}
+
+TestTools.addEngineOutOfBandTest(project)

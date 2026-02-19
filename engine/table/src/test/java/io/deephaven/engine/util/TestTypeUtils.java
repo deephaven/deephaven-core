@@ -4,6 +4,7 @@
 package io.deephaven.engine.util;
 
 import io.deephaven.base.verify.Require;
+import io.deephaven.util.QueryConstants;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.ArrayUtils;
 
@@ -12,6 +13,7 @@ import java.util.Arrays;
 import java.util.Date;
 
 import static io.deephaven.util.type.TypeUtils.*;
+import static org.junit.Assert.assertArrayEquals;
 
 public class TestTypeUtils extends TestCase {
 
@@ -145,5 +147,26 @@ public class TestTypeUtils extends TestCase {
         assertFalse(io.deephaven.util.type.TypeUtils.isBoxedChar(int.class));
         assertFalse(io.deephaven.util.type.TypeUtils.isBoxedChar(char.class));
         assertTrue(io.deephaven.util.type.TypeUtils.isBoxedChar(Character.class));
+    }
+
+    public void testBoxing() {
+        byte[] testBytes = {0, QueryConstants.MAX_BYTE, QueryConstants.MIN_BYTE, QueryConstants.NULL_BYTE};
+        char[] testChars = {0, QueryConstants.MAX_CHAR, QueryConstants.MIN_CHAR, QueryConstants.NULL_CHAR, 'A'};
+        double[] testDoubles = {0, QueryConstants.MAX_DOUBLE, QueryConstants.MIN_DOUBLE, QueryConstants.NULL_DOUBLE, -1,
+                1, 0.5, QueryConstants.POS_INFINITY_DOUBLE, QueryConstants.NEG_INFINITY_DOUBLE, Double.NaN};
+        float[] testFloats = {0, QueryConstants.MAX_FLOAT, QueryConstants.MIN_FLOAT, QueryConstants.NULL_FLOAT, -1, 1,
+                0.5f, QueryConstants.POS_INFINITY_FLOAT, QueryConstants.NEG_INFINITY_FLOAT, Float.NaN};
+        int[] testInts = {0, QueryConstants.MAX_INT, QueryConstants.MIN_INT, QueryConstants.NULL_INT, -1, 1};
+        long[] testLongs = {0, QueryConstants.MAX_LONG, QueryConstants.MIN_LONG, QueryConstants.NULL_LONG, -1, 1,
+                -10_000_000_000L, 10_000_000_000L};
+        short[] testShorts = {0, QueryConstants.MAX_SHORT, QueryConstants.MIN_SHORT, QueryConstants.NULL_SHORT};
+
+        assertArrayEquals(testBytes, unbox(box(testBytes)));
+        assertArrayEquals(testChars, unbox(box(testChars)));
+        assertArrayEquals(testDoubles, unbox(box(testDoubles)), 0);
+        assertArrayEquals(testFloats, unbox(box(testFloats)), 0);
+        assertArrayEquals(testInts, unbox(box(testInts)));
+        assertArrayEquals(testLongs, unbox(box(testLongs)));
+        assertArrayEquals(testShorts, unbox(box(testShorts)));
     }
 }
