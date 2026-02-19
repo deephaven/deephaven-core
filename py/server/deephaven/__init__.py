@@ -56,6 +56,9 @@ __all__ = [
     "read_sql",
     "DHError",
     "SortDirection",
+    "Configuration",
+    "get_configuration",
+    "get_named_configuration",
 ]
 
 # Note: this is the _distribution_ name, not the _package_ name. Until 3.10, there is not an easy way to get the
