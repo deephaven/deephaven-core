@@ -51,7 +51,7 @@ tNoBlinkSum = tNoBlink.view("X", "Group").sumBy("Group")
 
 In this example:
 
-- `tBlinkSum` continuously grows as it aggregates over all historical data.
+- `tBlinkSum` grows continuously as it aggregates over all historical data.
 - `tNoBlinkSum` only reflects the sum of rows present in the current update cycle (which is just one row per group per cycle in this case).
 
 ## Related documentation

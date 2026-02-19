@@ -51,7 +51,7 @@ t_no_blink_sum = t_no_blink.view(["X", "Group"]).sum_by("Group")
 
 In this example:
 
-- `t_blink_sum` continuously grows as it aggregates over all historical data.
+- `t_blink_sum` grows continuously as it aggregates over all historical data.
 - `t_no_blink_sum` only reflects the sum of rows present in the current update cycle (which is just one row per group per cycle in this case).
 
 ## Related documentation
