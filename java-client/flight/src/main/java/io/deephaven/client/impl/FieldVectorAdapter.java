@@ -36,6 +36,8 @@ import io.deephaven.qst.type.GenericType;
 import io.deephaven.qst.type.GenericType.Visitor;
 import io.deephaven.qst.type.GenericVectorType;
 import io.deephaven.qst.type.InstantType;
+import io.deephaven.qst.type.LocalTimeType;
+import io.deephaven.qst.type.LocalDateType;
 import io.deephaven.qst.type.IntType;
 import io.deephaven.qst.type.LongType;
 import io.deephaven.qst.type.NativeArrayType;
@@ -64,6 +66,8 @@ import org.apache.arrow.vector.types.pojo.Field;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.time.LocalTime;
+import java.time.LocalDate;
 import java.util.Collection;
 import java.util.Objects;
 
@@ -171,6 +175,16 @@ public class FieldVectorAdapter implements Array.Visitor<FieldVector>, Primitive
             }
 
             @Override
+            public FieldVector visit(LocalTimeType localTimeType) {
+                return visitLocalTimeElements(generic.cast(localTimeType).values());
+            }
+
+            @Override
+            public FieldVector visit(LocalDateType localDateType) {
+                return visitLocalDateElements(generic.cast(localDateType).values());
+            }
+
+            @Override
             public FieldVector visit(ArrayType<?, ?> arrayType) {
                 return arrayType.walk(new ArrayType.Visitor<FieldVector>() {
                     @Override
@@ -239,6 +253,18 @@ public class FieldVectorAdapter implements Array.Visitor<FieldVector>, Primitive
                                     public FieldVector visit(InstantType instantType) {
                                         return visitInstantArrayElements(
                                                 generic.cast(instantType.arrayType()).values());
+                                    }
+
+                                    @Override
+                                    public FieldVector visit(LocalTimeType localTimeType) {
+                                        return visitLocalTimeArrayElements(
+                                                generic.cast(localTimeType.arrayType()).values());
+                                    }
+
+                                    @Override
+                                    public FieldVector visit(LocalDateType localDateType) {
+                                        return visitLocalDateArrayElements(
+                                                generic.cast(localDateType.arrayType()).values());
                                     }
 
                                     @Override
@@ -405,6 +431,40 @@ public class FieldVectorAdapter implements Array.Visitor<FieldVector>, Primitive
         Field field = FieldAdapter.instantField(name);
         TimeStampNanoTZVector vector = new TimeStampNanoTZVector(field, allocator);
         VectorHelper.fill(vector, elements);
+        return vector;
+    }
+
+    private FieldVector visitLocalTimeElements(Collection<LocalTime> elements) {
+        Field field = FieldAdapter.localTimeField(name);
+        BigIntVector vector = new BigIntVector(field, allocator);
+        vector.allocateNew();
+        int index = 0;
+        for (LocalTime lt : elements) {
+            if (lt == null) {
+                vector.setNull(index);
+            } else {
+                vector.set(index, lt.toNanoOfDay());
+            }
+            index++;
+        }
+        vector.setValueCount(elements.size());
+        return vector;
+    }
+
+    private FieldVector visitLocalDateElements(Collection<LocalDate> elements) {
+        Field field = FieldAdapter.localDateField(name);
+        IntVector vector = new IntVector(field, allocator);
+        vector.allocateNew();
+        int index = 0;
+        for (LocalDate ld : elements) {
+            if (ld == null) {
+                vector.setNull(index);
+            } else {
+                vector.set(index, (int) ld.toEpochDay());
+            }
+            index++;
+        }
+        vector.setValueCount(elements.size());
         return vector;
     }
 
@@ -617,6 +677,58 @@ public class FieldVectorAdapter implements Array.Visitor<FieldVector>, Primitive
                         final int nano = x.getNano();
                         final long epochNano = Math.addExact(Math.multiplyExact(epochSecond, 1_000_000_000L), nano);
                         writer.writeTimeStampNanoTZ(epochNano);
+                    }
+                }
+                writer.endList();
+            }
+        }
+        vector.setValueCount(elements.size());
+        return vector;
+    }
+
+    private FieldVector visitLocalTimeArrayElements(Collection<LocalTime[]> elements) {
+        final Field field = FieldAdapter.of(ColumnHeader.of(name, Type.localTimeType().arrayType()));
+        final ListVector vector = new ListVector(field.getName(), allocator, field.getFieldType(), null);
+        vector.allocateNew();
+        final UnionListWriter writer = new UnionListWriter(vector);
+        for (LocalTime[] array : elements) {
+            if (array == null) {
+                writer.writeNull();
+                writer.setPosition(writer.getPosition() + 1);
+            } else {
+                writer.startList();
+                for (LocalTime x : array) {
+                    if (x == null) {
+                        writer.writeNull();
+                    } else {
+                        final long nanoOfDay = x.toNanoOfDay();
+                        writer.writeTimeNano(nanoOfDay);
+                    }
+                }
+                writer.endList();
+            }
+        }
+        vector.setValueCount(elements.size());
+        return vector;
+    }
+
+    private FieldVector visitLocalDateArrayElements(Collection<LocalDate[]> elements) {
+        final Field field = FieldAdapter.of(ColumnHeader.of(name, Type.localDateType().arrayType()));
+        final ListVector vector = new ListVector(field.getName(), allocator, field.getFieldType(), null);
+        vector.allocateNew();
+        final UnionListWriter writer = new UnionListWriter(vector);
+        for (LocalDate[] array : elements) {
+            if (array == null) {
+                writer.writeNull();
+                writer.setPosition(writer.getPosition() + 1);
+            } else {
+                writer.startList();
+                for (LocalDate x : array) {
+                    if (x == null) {
+                        writer.writeNull();
+                    } else {
+                        final int daysSinceEpoch = (int) x.toEpochDay();
+                        writer.writeDateDay(daysSinceEpoch);
                     }
                 }
                 writer.endList();
