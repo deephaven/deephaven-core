@@ -60,4 +60,4 @@ In this example:
 
 - [blinkToAppendOnly](./blink-to-append-only.md) — Convert a blink table to append-only to preserve all rows.
 - [Table types: Specialized semantics for blink tables](../../../conceptual/table-types.md#specialized-semantics-for-blink-tables) — Detailed explanation of blink table aggregation behavior.
-- [Javadoc](<https://deephaven.io/core/javadoc/io/deephaven/engine/table/Table.html#removeBlink()>)
+- [Javadoc](https://deephaven.io/core/javadoc/io/deephaven/engine/table/Table.html#removeBlink())
