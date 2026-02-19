@@ -36,7 +36,7 @@ Content contained in the widget can be styled using the Markdown syntax. Example
 Additional styling options are available in Markdown, including code blocks, tables, links, lists, horizontal lines, etc.
 
 > [!NOTE]
-> To learn more, please refer to Markdown Guide's [basic syntax](https://www.markdownguide.org/basic-syntax/) page.
+> To learn more, please refer to the [Markdown Guide's basic syntax](https://www.markdownguide.org/basic-syntax/) page.
 
 ## Manage Markdown Widgets
 
