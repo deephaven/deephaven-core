@@ -2,9 +2,9 @@
 title: publish_table
 ---
 
-The `publish_table` method publishes a table to a given [`SharedTicket`](/core/client-api/python/code/pydeephaven.ticket.html#pydeephaven.ticket.SharedTicket). The ticket can then be used by another session to fetch the table.
+The `publish_table` method publishes a table to a given [`SharedTicket`](/core/client-api/python/code/pydeephaven.ticket.html#pydeephaven.ticket.SharedTicket). Another session can then use the ticket to fetch the table.
 
-The shared ticket can be fetched by other sessions to access the table as long as the table is not released. When the table is released either through an explicit call of the `close` method on it, implicitly through garbage collection, or through the closing of the publishing session, the shared ticket will no longer be valid.
+Other sessions can use the shared ticket to access the table as long as the table is not released. When the table is released either through an explicit call of the `close` method on it, implicitly through garbage collection, or through the closing of the publishing session, the shared ticket will no longer be valid.
 
 This is a convenience method specifically for tables. For publishing other types of server objects (such as plots, pandas DataFrames, or plugin objects), use the generic [`publish`](./publish.md) method.
 

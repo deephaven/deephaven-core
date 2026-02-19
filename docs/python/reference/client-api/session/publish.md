@@ -4,7 +4,7 @@ title: publish
 
 The `publish` method publishes a source ticket to a result ticket. This is a low-level method that can be used to publish any server object (not just tables) to a shared ticket.
 
-The source ticket represents a previously fetched server object to be published, and the result ticket (typically a [`SharedTicket`](/core/client-api/python/code/pydeephaven.ticket.html#pydeephaven.ticket.SharedTicket)) is the ticket to publish to. The result ticket can then be fetched by other sessions to access the object as long as the object is not released.
+The source ticket represents a previously fetched server object to be published, and the result ticket (typically a [`SharedTicket`](/core/client-api/python/code/pydeephaven.ticket.html#pydeephaven.ticket.SharedTicket)) is the ticket to publish to. Other sessions can then fetched the result ticket to access the object as long as the object is not released.
 
 This method is used together with the [`fetch`](./fetch.md) method to share server objects between sessions.
 
@@ -12,7 +12,7 @@ This method is used together with the [`fetch`](./fetch.md) method to share serv
 > For tables specifically, use the higher-level [`publish_table`](./publish-table.md) method instead.
 
 > [!IMPORTANT]
-> Shared tickets have a life cycle tied to the source. Tickets can be fetched by other Deephaven sessions to access the object _only_ as long as the object is not released. When the object is released either through an explicit call of the `release` method, implicitly through garbage collection, or through the closing of the publishing session, the shared ticket will no longer be valid.
+> Shared tickets have a life cycle tied to the source. Other Deephaven sessions can only fetch tickets to access the object _as long as the object is not released_. When the object is released either through an explicit call of the `release` method, implicitly through garbage collection, or through the closing of the publishing session, the shared ticket is no longer valid.
 
 ## Syntax
 
@@ -43,7 +43,7 @@ This method returns `None`.
 
 ### Publishing a Figure object
 
-The following example publishes a Figure (plot) object to a shared ticket so it can be accessed by another session.
+The following example publishes a Figure (plot) object to a shared ticket so other sessions can access it.
 
 ```python skip-test
 from pydeephaven import Session
