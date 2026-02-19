@@ -136,8 +136,8 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
                 if (QueryTable.STATELESS_FILTERS_BY_DEFAULT && isSerial) {
                     // when we use stateless filters by default, we cannot reorder any stateful filters
                     // when we are stateful by default, then we are not going to set serialFilterFound until after we've
-                    // processed this filter.  This allows the first partition filter that is stateful to be reordered
-                    // (which is more like the 0.39 behavior).  This is intended as a practical compromise so that
+                    // processed this filter. This allows the first partition filter that is stateful to be reordered
+                    // (which is more like the 0.39 behavior). This is intended as a practical compromise so that
                     // "Date==today()" is not always reordered with respect to other filters.
                     serialFilterFound = true;
                 }
