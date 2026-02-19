@@ -25,7 +25,7 @@ partitionedBlinkTable = tBlink
     .transform(t -> t.withAttributes(Map.of(Table.BLINK_TABLE_ATTRIBUTE, true)))
 ```
 
-![t_blink](t_blink.png)
+![t_blink](../../assets/reference/t_blink.png)
 
 > [!NOTE]
 > These FAQ pages contain answers to questions about Deephaven Community Core that our users have asked in our [Community Slack](/slack). If you have a question that is not in our documentation, [join our Community](/slack) and we'll be happy to help!

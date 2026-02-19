@@ -49,6 +49,8 @@ t_no_blink = t_blink.remove_blink()
 t_no_blink_sum = t_no_blink.view(["X", "Group"]).sum_by("Group")
 ```
 
+![t_blink](../../../assets/reference/table-operations/t_blink.gif)
+
 In this example:
 
 - `t_blink_sum` grows continuously as it aggregates over all historical data.

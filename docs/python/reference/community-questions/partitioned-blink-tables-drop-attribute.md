@@ -26,9 +26,9 @@ partitioned_blink_table = (
     .partition_by("Group")
     .transform(lambda t: t.with_attributes({tOb.BLINK_TABLE_ATTRIBUTE: True}))
 )
+```
 
-![t_blink](t_blink.png)
+![t_blink](../../assets/reference/community-questions/t_blink.png)
 
 > [!NOTE]
 > These FAQ pages contain answers to questions about Deephaven Community Core that our users have asked in our [Community Slack](/slack). If you have a question that is not in our documentation, [join our Community](/slack) and we'll be happy to help!
-```
