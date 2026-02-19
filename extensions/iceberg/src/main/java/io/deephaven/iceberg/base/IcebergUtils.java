@@ -96,7 +96,6 @@ public final class IcebergUtils {
      * Table Definition.
      */
     public static void verifyPartitioningColumns(
-            @NotNull final Resolver resolver,
             @NotNull final PartitionSpec tablePartitionSpec,
             @NotNull final TableDefinition tableDefinition) {
         final List<String> partitioningColumnNamesFromDefinition = tableDefinition.getColumnStream()
@@ -125,13 +124,8 @@ public final class IcebergUtils {
                     + " fields, partition spec " + tablePartitionSpec + ", table definition " + tableDefinition);
         }
 
-        final Set<String> resolvedPartitionNames = new HashSet<>();
-        for (final String partitioningColumnName : partitioningColumnNamesFromDefinition) {
-            final List<Types.NestedField> nf = resolver.resolve(partitioningColumnName).orElse(null);
-            resolvedPartitionNames.add(nf == null ? partitioningColumnName : nf.get(0).name());
-        }
         for (final PartitionField partitionField : partitionFieldsFromSpec) {
-            if (!resolvedPartitionNames.contains(partitionField.name())) {
+            if (!partitioningColumnNamesFromDefinition.contains(partitionField.name())) {
                 throw new IllegalArgumentException("Partitioning column " + partitionField.name() + " is not present " +
                         "in the table definition " + tableDefinition + ", partition spec " + tablePartitionSpec);
             }

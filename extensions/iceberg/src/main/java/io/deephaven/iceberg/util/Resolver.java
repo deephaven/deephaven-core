@@ -288,7 +288,7 @@ public abstract class Resolver implements ResolverProvider {
         checkCompatible(fieldPath, type);
     }
 
-    public final PartitionField partitionField(ColumnDefinition<?> column) {
+    final PartitionField partitionField(ColumnDefinition<?> column) {
         if (!column.isPartitioning()) {
             throw new IllegalArgumentException();
         }
