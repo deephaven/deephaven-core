@@ -23,7 +23,7 @@ jobs:
 
       - name: Upload error logs
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: snapshot-error-logs
           path: docs/snapshotter/errors/
@@ -48,7 +48,7 @@ jobs:
 
     - name: Upload error logs
       if: failure()
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: validator-error-logs
         path: docs/validator-results/
