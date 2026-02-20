@@ -2,21 +2,43 @@
 
 These standards apply to all Deephaven documentation across deephaven-core, deephaven-ent, and deephaven.io.
 
+## Organization and categories
+
+The documentation consists primarily of "how-to" guides for both new and experienced users.
+
+**How-to guide:** A follow-along resource that guides a reader step-by-step. These usually show new users how to solve a specific problem. Similar to a recipe, when following along with a how-to guide, all users will learn the same information, but they can use their own ingredients, so outcomes may differ. Advice or general recommendations on how to use a feature/method may be offered.
+
+**Concept guide:** A resource to study. It is intended to broaden understanding of higher concepts and to explain how or why with contextual explanations. Overview pages may be considered concept guides.
+
+**Reference guide:** A study resource. It is purely informative; its purpose is to describe without extraneous information — very pointed, without advice or general tips. JavaDocs, PyDocs, and other API documentation are reference guides.
+
 ## Writing style
 
-**Voice:** Avoid passive voice whenever possible.
+**Voice:** Use present, active tense. Avoid passive voice whenever possible.
 
 - Correct: "Deephaven parallelizes filter evaluation."
 - Incorrect: "Filter evaluation is parallelized by Deephaven."
+- Correct: "The thing does X"
+- Incorrect: "The thing will do X"
 
-**Headings:** Use sentence case (capitalize only the first word and proper nouns).
+**Tone:**
 
-- Correct: "## Serial execution"
-- Incorrect: "## Serial Execution"
+- Tutorials and how-tos can be conversational; first-person narrative while remaining professional.
+- Reference material is dry and formal — third-person narrative without contractions.
+
+**Headings:** Use sentence case (capitalize only the first word and proper nouns). Do NOT include links in headers.
+
+- Correct: "## How to join tables"
+- Incorrect: "## How To Join Tables"
 
 **Punctuation:** Add periods to bullet points that are complete sentences.
 
 - Exception: Do NOT add periods in the "Related documentation" section.
+
+**Links:** When a method is mentioned outside its primary article, link to the appropriate reference page or API doc (excludes code snippets/blocks). Always describe what you are linking to.
+
+- Correct: "For more information, see the [Input table guide](link)."
+- Incorrect: "For more information, see [here](link)."
 
 ## Examples
 
@@ -38,7 +60,28 @@ Capitalize these terms:
 - Every page (except landing pages, overviews, or blog articles) should include a "Related documentation" section at the end.
 - When a method is referenced in narrative text, link it to the appropriate reference page if one exists.
 
-## Code conventions
+## Code formatting and conventions
+
+**Python:** Follow [PEP 8 naming conventions](https://peps.python.org/pep-0008/#naming-conventions).
+
+- `snake_case` for variables (including tables) and functions.
+- `PascalCase` for classes and type variables.
+- Avoid full imports: use `from deephaven import time_table` not `from deephaven import *`
+
+**Groovy:** Follow [Oracle naming conventions](https://www.oracle.com/java/technologies/javase/codeconventions-namingconventions.html).
+
+- `camelCase` for variables (including tables) and methods.
+- `PascalCase` for classes.
+
+**General conventions:**
+
+- Column names start with capital letters: `"NewColumn"`, `"StringColumn"`
+- Write out "column" for consistency: `"columnToMatch"`, `"sourceColumn"`
+- Use "parameter" or "argument" for function arguments; "method" or "function" for functions.
+- Varargs use ellipsis: `String...`
+- True/false conditions: `boolean`
+- Use whitespace for readability: `"A = 4"` not `"A=4"`
+- Null in prose: "will not include null values"; in parameter descriptions: `NULL`; in code: use language-appropriate null value.
 
 **Method names in prose:** Do NOT include parentheses. Use parentheses only in actual code examples.
 
@@ -46,7 +89,7 @@ Capitalize these terms:
 - Correct code: `col.with_serial()`
 - Incorrect prose: "Use `.with_serial()` when your formula has side effects"
 
-**Python vs Groovy:** Python uses snake_case, Groovy uses camelCase.
+**Python vs Groovy method names:**
 
 | Python                     | Groovy                   |
 | -------------------------- | ------------------------ |
@@ -55,7 +98,11 @@ Capitalize these terms:
 | `.with_respected_barriers` | `.withRespectedBarriers` |
 | `Filter.from_`             | `Filter.from`            |
 
-**Code example tags (deephaven-core):**
+## Backticks
+
+Enclose in backticks: method names (`naturalJoin`), classes (`SystemTableLogger`), variables (`t`), and file paths (`/tmp/etcd.snap`).
+
+## Code example tags (deephaven-core)
 
 - `syntax` - Show syntax without executing
 - `should-fail` - Code that should execute but fail with an error
