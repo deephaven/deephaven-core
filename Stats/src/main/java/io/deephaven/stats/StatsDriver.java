@@ -192,8 +192,8 @@ public class StatsDriver implements Closeable {
         }
     }
 
-    public boolean awaitSchedulerTermination(final Duration duration) throws InterruptedException {
-        return scheduler == null || scheduler.awaitTermination(duration.toNanos(), TimeUnit.NANOSECONDS);
+    public boolean awaitSchedulerTermination(final long timeout, final TimeUnit unit) throws InterruptedException {
+        return scheduler == null || scheduler.awaitTermination(timeout, unit);
     }
 
     @Override

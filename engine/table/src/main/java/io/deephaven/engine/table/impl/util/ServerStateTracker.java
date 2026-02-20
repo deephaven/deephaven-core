@@ -30,6 +30,7 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
 public class ServerStateTracker {
     private static final long REPORT_INTERVAL_MILLIS = Configuration.getInstance().getLongForClassWithDefault(
             ServerStateTracker.class, "reportIntervalMillis", 15 * 1000L);
+    private static final long SHUTDOWN_TIMEOUT_NANOS = TimeUnit.SECONDS.toNanos(1);
 
     private static volatile ServerStateTracker INSTANCE;
     private static boolean started = false;
@@ -80,17 +81,22 @@ public class ServerStateTracker {
         driverThread.start();
         final ShutdownManager shutdownManager = ProcessEnvironment.getGlobalShutdownManager();
         // TODO(DH-21651): Improve shutdown ordering constraints
-        // Expressing in what appears to be "out-of-order", because within each category, there is a stack-based
-        // execution (first-in, last-out); and we could theoretically change this first task to FIRST and it would need
-        // to be in this order.
+        final long[] deadline = new long[1];
+        shutdownManager.registerTask(ShutdownManager.OrderingCategory.FIRST, () -> {
+            deadline[0] = System.nanoTime() + SHUTDOWN_TIMEOUT_NANOS;
+            driver.shutdown();
+        });
         shutdownManager.registerTask(ShutdownManager.OrderingCategory.MIDDLE, () -> {
-            try {
-                driverThread.join(100);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
+            final long remainingNanos = deadline[0] - System.nanoTime();
+            final long remainingMillis = TimeUnit.NANOSECONDS.toMillis(remainingNanos);
+            if (remainingMillis > 0) {
+                try {
+                    driverThread.join(remainingMillis);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
             }
         });
-        shutdownManager.registerTask(ShutdownManager.OrderingCategory.FIRST, driver::shutdown);
     }
 
     public static synchronized void start() {
@@ -159,18 +165,18 @@ public class ServerStateTracker {
 
         @Override
         public void run() {
-            try (final ServerStateLogLogger _ignored = processMemLogger) {
+            try (final ServerStateLogLogger ignored = processMemLogger) {
                 final RuntimeMemory.Sample memSample = new RuntimeMemory.Sample();
                 while (shutdownLatch.getCount() != 0) {
                     final long intervalStartTimeMillis = System.currentTimeMillis();
                     try {
-                        shutdownLatch.await(REPORT_INTERVAL_MILLIS, TimeUnit.MILLISECONDS);
+                        if (shutdownLatch.await(REPORT_INTERVAL_MILLIS, TimeUnit.MILLISECONDS)) {
+                            return;
+                        }
                     } catch (InterruptedException e) {
-                        // unexpected; should not be interrutping this thread
+                        // unexpected; should not be interrupting this thread
                     }
-                    if (shutdownLatch.getCount() != 0) {
-                        runOne(memSample, intervalStartTimeMillis);
-                    }
+                    runOne(memSample, intervalStartTimeMillis);
                 }
             } catch (final IOException e) {
                 throw new UncheckedIOException(e);

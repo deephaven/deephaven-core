@@ -9,29 +9,33 @@ import io.deephaven.util.process.ShutdownManager;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 
 /**
  * A Deephaven-side shim for {@link io.deephaven.stats.StatsDriver}.
  */
 public class Driver {
+    private static final long SHUTDOWN_TIMEOUT_NANOS = TimeUnit.SECONDS.toNanos(1);
+
     public static void start(Clock clock, StatsIntradayLogger intraday, boolean getFdStats) {
         final StatsDriver statsDriver = new StatsDriver(clock, intraday, getFdStats);
         final ShutdownManager shutdownManager = ProcessEnvironment.getGlobalShutdownManager();
         // TODO(DH-21651): Improve shutdown ordering constraints
-        // Expressing in what appears to be "out-of-order", because within each category, there is a stack-based
-        // execution (first-in, last-out); and we could theoretically change this first task to FIRST and it would need
-        // to be in this order.
+        final long[] deadline = new long[1];
+        shutdownManager.registerTask(ShutdownManager.OrderingCategory.FIRST, () -> {
+            deadline[0] = System.nanoTime() + SHUTDOWN_TIMEOUT_NANOS;
+            statsDriver.shutdownScheduler();
+        });
         shutdownManager.registerTask(ShutdownManager.OrderingCategory.MIDDLE, () -> {
-            try (final StatsDriver _ignore = statsDriver) {
-                statsDriver.awaitSchedulerTermination(Duration.ofMillis(100));
+            final long remainingNanos = deadline[0] - System.nanoTime();
+            try (final StatsDriver ignored = statsDriver) {
+                statsDriver.awaitSchedulerTermination(remainingNanos, TimeUnit.NANOSECONDS);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
         });
-        shutdownManager.registerTask(ShutdownManager.OrderingCategory.FIRST, statsDriver::shutdownScheduler);
         new GcEventStats().install();
     }
 }
