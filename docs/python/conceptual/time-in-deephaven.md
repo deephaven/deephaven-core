@@ -870,7 +870,12 @@ Again, the resulting tables are identical, but the execution times are quite dif
 
 ## Related documentation
 
-- [`deephaven.time` Pydoc](/core/pydoc/code/deephaven.time.html)
+- [How to use filters](../how-to-guides/use-filters.md)
+- [How to work with strings](../how-to-guides/work-with-strings.md)
+- [date-time](../reference/query-language/types/date-time.md)
 - [Date-time literals in query strings](../how-to-guides/date-time-literals.md)
 - [Business calendars](../how-to-guides/business-calendar.md)
+- [`update`](../reference/table-operations/select/update.md)
+- [`where`](../reference/table-operations/filter/where.md)
 - [The Python-Java boundary](python-java-boundary.md)
+- [`deephaven.time` Pydoc](/core/pydoc/code/deephaven.time.html)

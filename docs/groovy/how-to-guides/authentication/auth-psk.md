@@ -3,7 +3,7 @@ title: Configure and use pre-shared key authentication
 sidebar_label: Pre-shared key
 ---
 
-This guide will show you how to configure and use pre-shared key (PSK) authentication for Deephaven run from Docker. PSK is the default authentication method used by Deephaven, while [username/password authentication](./auth-uname-pw.md) is the most basic method of authentication available.
+This guide will show you how to configure and use pre-shared key (PSK) authentication for Deephaven. PSK is the default authentication method used by Deephaven, while [username/password authentication](./auth-uname-pw.md) is the most basic method of authentication available.
 
 A pre-shared key is a shared secret between two or more parties that must be presented in order to be granted access to a particular resource. For Deephaven, the shared secret is a password. A typical example of a pre-shared key that guards a resource is a password to gain access to a Wi-Fi network. Anyone with the password can connect to the network, regardless of their affiliation with its owner.
 
@@ -18,6 +18,15 @@ By default, Deephaven sets the pre-shared key as a series of randomly selected c
 ![Log readout containing a randomly generated login key](../../assets/tutorials/default-psk.png)
 
 You can enter this key in the login screen or append it to the end of the Deephaven URL to gain access.
+
+> [!NOTE]
+> If you run Docker in detached mode (`docker compose up -d`), you will need to access the logs with the following command:
+>
+> `docker compose logs -f`
+>
+> To search the logs for the token:
+>
+> `docker compose logs -f | grep "access through pre-shared key"`
 
 ## Setting your own key
 
@@ -39,7 +48,7 @@ services:
 
 ![Log readout showing the pre-shared key and address](../../assets/how-to/custom-psk2.png)
 
-You can also store the key in an environment variable.
+You can also store the key in an environment variable. This is recommended over plaintext.
 
 ```yaml
 services:

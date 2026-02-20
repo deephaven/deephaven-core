@@ -4,7 +4,7 @@ title: Connect to a Kafka stream
 
 Kafka is a distributed event streaming platform that lets you read, write, store, and process events, also called records.
 
-Kafka topics take on many forms, such as raw input, [JSON](#read-kafka-topic-in-json-format), [AVRO](#read-kafka-topic-in-avro-format), or [Protobuf](#read-kafka-topic-in-protobuf-format) In this guide, we show you how to import each of these formats as Deephaven tables.
+Kafka topics take on many forms, such as raw input, [JSON](#read-kafka-topic-in-json-format), [AVRO](#read-kafka-topic-in-avro-format), or [Protobuf](#read-kafka-topic-in-protobuf-format). In this guide, we show you how to read each of these formats into Deephaven tables.
 
 Please see our overview, [Kafka in Deephaven: Basic terms](../../conceptual/kafka-basic-terms.md), for a detailed discussion of Kafka topics and supported formats. See the [Apache Kafka Documentation](https://kafka.apache.org/22/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html) for full details on how to use Kafka.
 
@@ -61,10 +61,10 @@ Kafka streams store data in the `KafkaKey` and `KafkaValue` columns. This inform
 
 The `KafkaKey` and `KafkaValue` attributes can be:
 
-- [simple type](/core/pydoc/code/deephaven.stream.kafka.consumer.html#deephaven.stream.kafka.consumer.simple_spec)
-- [JSON encoded](/core/pydoc/code/deephaven.stream.kafka.consumer.html#deephaven.stream.kafka.consumer.json_spec)
-- [Avro encoded](/core/pydoc/code/deephaven.stream.kafka.consumer.html#deephaven.stream.kafka.consumer.avro_spec)
-- [Protbuf encoded](/core/pydoc/code/deephaven.stream.kafka.consumer.html#deephaven.stream.kafka.consumer.protobuf_spec)
+- [simple type](https://deephaven.io/core/pydoc/code/deephaven.stream.kafka.consumer.html#deephaven.stream.kafka.consumer.simple_spec)
+- [JSON encoded](https://deephaven.io/core/pydoc/code/deephaven.stream.kafka.consumer.html#deephaven.stream.kafka.consumer.json_spec)
+- [Avro encoded](https://deephaven.io/core/pydoc/code/deephaven.stream.kafka.consumer.html#deephaven.stream.kafka.consumer.avro_spec)
+- [Protbuf encoded](https://deephaven.io/core/pydoc/code/deephaven.stream.kafka.consumer.html#deephaven.stream.kafka.consumer.protobuf_spec)
 - ignored (cannot ignore both key and value)
 
 ## Table types
@@ -85,7 +85,7 @@ Save this locally as a `docker-compose.yml` file, and launch with `docker compos
 
 In this example, we consume a Kafka topic (`test.topic`) as a Deephaven table. The Kafka topic is populated by commands entered into the terminal.
 
-For demonstration purposes, we will be using an `append` table and ignoring the Kafka key.
+For demonstration purposes, we will be using an [append-only](../../conceptual/table-types.md#specialization-1-append-only) table and ignoring the Kafka key.
 
 ```python docker-config=kafka test-set=2 order=null
 from deephaven.stream.kafka import consumer as kc
@@ -150,7 +150,7 @@ Since the `result_blink` table doesn't show the values in the topic, let's add a
 last_blink = result_blink.last_by()
 ```
 
-### Import a Kafka stream with append
+### Read a Kafka stream with append
 
 In this example, [`consume`](../../reference/data-import-export/Kafka/consume.md) reads the Kafka topic `share.price`. The specific key and value result in a table that appends new rows.
 
@@ -187,7 +187,7 @@ AAPL 135.99
 AAPL 136.82
 ```
 
-### Import a Kafka stream ignoring keys
+### Read a Kafka stream ignoring keys
 
 In this example, [`consume`](../../reference/data-import-export/Kafka/consume.md) reads the Kafka topic `share.price` and ignores the partition and key values.
 
@@ -212,7 +212,7 @@ As you can see, the key column is not included in the output table.
 
 The following two examples read a Kafka topic called `orders` in JSON format.
 
-This example uses [`json_spec`](/core/pydoc/code/deephaven.stream.kafka.consumer.html#deephaven.stream.kafka.consumer.json_spec):
+This example uses [`json_spec`](https://deephaven.io/core/pydoc/code/deephaven.stream.kafka.consumer.html#deephaven.stream.kafka.consumer.json_spec):
 
 ```python docker-config=kafka order=null
 from deephaven.stream.kafka import consumer as kc
@@ -230,7 +230,7 @@ result = kc.consume(
 )
 ```
 
-This example uses [`object_processor_spec`](/core/pydoc/code/deephaven.stream.kafka.consumer.html#deephaven.stream.kafka.consumer.object_processor_spec) with a [Jackson provider](/core/pydoc/code/deephaven.json.jackson.html):
+This example uses [`object_processor_spec`](https://deephaven.io/core/pydoc/code/deephaven.stream.kafka.consumer.html#deephaven.stream.kafka.consumer.object_processor_spec) with a [Jackson provider](/core/pydoc/code/deephaven.json.jackson.html):
 
 ```python docker-config=kafka order=null
 from deephaven import kafka_consumer as kc

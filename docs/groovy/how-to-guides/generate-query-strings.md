@@ -131,18 +131,15 @@ for (offset in offsets) {
 
 ## Related documentation
 
-<!--TODO: add links when https://deephaven.atlassian.net/jira/software/projects/DOC/boards/8?selectedIssue=DOC-905 is complete
-- [Built-in query language constants]
-- [Built-in query language variables]
-- [Built-in query language functions]
-- [Formulas in query strings]
-- [Filters]
-- [Operators]
-- [Groovy variables]
-- [Groovy functions]
-- [Groovy classes]
--->
-
-- [Create a new table](./new-and-empty-table.md#newtable)
-- [Create an empty table](./new-and-empty-table.md#emptytable)
+- [Built-in query language constants](./built-in-constants.md)
+- [Built-in query language variables](./built-in-variables.md)
+- [Built-in query language functions](./built-in-functions.md)
+- [Create a new table](./new-and-empty-table.md#new_table)
+- [Create an empty table](./new-and-empty-table.md#empty_table)
+- [Formulas in query strings](./formulas.md)
+- [Filters in query strings](./filters.md)
+- [Operators in query strings](./operators.md)
+- [Groovy variables in query strings](./groovy-variables.md)
+- [Groovy closures in query strings](./groovy-closures.md)
+- [Groovy classes in query strings](./groovy-classes.md)
 - [Think like a Deephaven ninja](../conceptual/ninja.md)

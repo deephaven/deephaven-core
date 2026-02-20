@@ -293,6 +293,6 @@ result = KeyedTranspose.keyedTranspose(
 
 ## Related documentation
 
-- [Multi-aggregation guide](./combined-aggregations.md)
+- [Aggregations guide](./combined-aggregations.md)
 - [`keyedTranspose`](../reference/table-operations/format/keyedTranspose.md)
 - [Javadoc](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/util/KeyedTranspose.html)

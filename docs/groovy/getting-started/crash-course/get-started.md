@@ -7,7 +7,7 @@ _A Crash Course in Deephaven_ is your backpack guide through the world of real-t
 
 To follow along, ensure you have [Docker](https://docs.docker.com/engine/install/) installed on your machine.
 
-Once [Docker](https://docs.docker.com/engine/install/) is installed, execute this [Docker command](../../getting-started/docker-install.md#start-the-application):
+Once [Docker](https://docs.docker.com/engine/install/) is installed, execute this [Docker command](../../getting-started/docker-install.md#the-simplest-possible-installation):
 
 ```bash skip-test
 docker run --rm --name deephaven -p 10000:10000 -v data:/data --env START_OPTS=-Dauthentication.psk=YOUR_PASSWORD_HERE ghcr.io/deephaven/server-slim:latest

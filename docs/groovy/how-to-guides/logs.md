@@ -116,6 +116,9 @@ You can also get help by asking questions in our [GitHub Discussions](https://gi
 ## Related documentation
 
 - [Create a new table](./new-and-empty-table.md#newtable)
+- [Filters in query strings](./filters.md)
+- [Formulas in query strings](./formulas.md)
+- [Operators in query strings](./operators.md)
 - [How to handle null, infinity, and not-a-number values](./null-inf-nan.md)
 - [Joins: Exact and Relational](./joins-exact-relational.md)
 - [Joins: Time-series and Range](./joins-timeseries-range.md)

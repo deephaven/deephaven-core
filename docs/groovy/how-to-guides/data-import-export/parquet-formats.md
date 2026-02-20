@@ -37,6 +37,6 @@ Deephaven supports optional metadata files that let you specify the types of you
 ## Related documentation
 
 - [Import Parquet into Deephaven video](https://youtu.be/k4gI6hSZ2Jc)
-- [Export Parquet files](../data-import-export/parquet-export.md)
-- [Import Parquet files](../data-import-export/parquet-import.md)
-- [Parquet instructions](../data-import-export/parquet-instructions.md)
+- [Import Parquet files](./parquet-import.md)
+- [Export Parquet files](./parquet-export.md)
+- [Parquet instructions](./parquet-instructions.md)

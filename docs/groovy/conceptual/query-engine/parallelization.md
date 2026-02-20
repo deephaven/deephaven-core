@@ -3,8 +3,7 @@ title: Parallelizing queries
 sidebar_label: Parallelization
 ---
 
-Deephaven supports using multiple processors to speed up query evaluation. The extent to which Deephaven employs
-multiple processors depends on both the phase of operation and the query itself.
+Deephaven supports using multiple processors to speed up query evaluation. The extent to which Deephaven employs multiple processors depends on both the phase of operation and the query itself.
 
 ## Query initialization and updates
 
@@ -12,38 +11,23 @@ When considering Deephaven query performance, there are two distinct phases to c
 
 ### Query initialization
 
-Every table operation method — [`.where`](../../reference/table-operations/filter/where.md),
-[`.update`](../../reference/table-operations/select/update.md),
-[`.naturalJoin`](../../reference/table-operations/join/natural-join.md), etc. — undergoes an _initialization_ phase
-when the method is called. Initialization produces a result table based on the data in the source table. For example,
-with a 100,000-row table called `myTable`, running `myTable.update("X = random()")` will run the `random()` method
-100,000 times (once per row).
+Every table operation method — [`where`](../../reference/table-operations/filter/where.md), [`update`](../../reference/table-operations/select/update.md), [`naturalJoin`](../../reference/table-operations/join/natural-join.md), etc. — undergoes an _initialization_ phase when the method is called. Initialization produces a result table based on the data in the source table. For example, with a 100,000-row table called `myTable`, running `myTable.update("X = random()")` will run the `random` method 100,000 times (once per row).
 
-If an operation's source table is
-[refreshing](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/BaseTable.html#isRefreshing()),
-then initialization will create a new node in the [update graph](../dag.md) as well.
+If an operation's source table is [refreshing](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/BaseTable.html#isRefreshing()), then initialization will create a new node in the [update graph](../dag.md) as well.
 
 ### Query updates
 
-After initialization, the Update Graph Processor monitors source tables for changes and process _updates_ to any
-table. For example, if 25,000 rows are added to `myTable`, the Update Graph will run the `random()` method 25,000
-more times, calculating the value of column `X` for each of the new rows.
+After initialization, the Update Graph Processor monitors source tables for changes and process _updates_ to any table. For example, if 25,000 rows are added to `myTable`, the Update Graph will run the `random()` method 25,000 more times, calculating the value of column `X` for each of the new rows.
 
 ## Parallelizing queries
 
 ### Parallelizing query initialization
 
-Deephaven is a column-oriented query engine — it focuses on handling data one column at a time, instead of one row at
-a time like many traditional databases. Since
-Deephaven [column sources](/core/javadoc/io/deephaven/engine/table/ColumnSource.html) support random
-access to data, different segments of a column can be processed in parallel. When possible, the Deephaven
-engine will do this automatically, based on the number of threads in the Operation Initialization Thread Pool.
+Deephaven is a column-oriented query engine — it focuses on handling data one column at a time, instead of one row at a time like many traditional databases. Since Deephaven [column sources](/core/javadoc/io/deephaven/engine/table/ColumnSource.html) support random access to data, different segments of a column can be processed in parallel. When possible, the Deephaven engine will do this automatically, based on the number of threads in the Operation Initialization Thread Pool.
 
 ### Parallelizing query updates
 
-As with query initialization, some operations can process different sections of a column in parallel. However, update
-processing can also be parallelized across independent nodes of the [DAG](../dag.md). Parallel processing
-of updates depends on the size of the Update Graph Processor Thread Pool.
+As with query initialization, some operations can process different sections of a column in parallel. However, update processing can also be parallelized across independent nodes of the [DAG](../dag.md). Parallel processing of updates depends on the size of the Update Graph Processor Thread Pool.
 
 Consider the following hypothetical example:
 
@@ -77,7 +61,7 @@ To change the default behavior for `select` and `update`, you can change the con
 > [!NOTE]
 > In Deephaven 41.0 and later, filters and selectables are _stateless_ by default. In previous versions, filters and selectables were _stateful_ by default.
 
-The [`ConcurrencyControl`](https://docs.deephaven.io/core/javadoc/io/deephaven/api/ConcurrencyControl.html) interface allows you to control the behavior of [`Filter`](https://docs.deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html) (where clause) and [`Selectable`](https://docs.deephaven.io/core/javadoc/io/deephaven/api/Selectable.html) (column formula) objects.
+The [`ConcurrencyControl`](https://docs.deephaven.io/core/javadoc/io/deephaven/api/ConcurrencyControl.html) interface allows you to control the behavior of [`Filter`](https://docs.deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html) (where clause) and [`Selectable`](https://docs.deephaven.io/core/javadoc/io/deephaven/api/Selectable.html) objects (update and select table operations).
 
 ConccurencyControl cannot be applied to Selectables passed to [`view`](../../reference/table-operations/select/view.md) or [`updateView`](../../reference/table-operations/select/update-view.md). The [`view`](../../reference/table-operations/select/view.md) and [`updateView`](../../reference/table-operations/select/update-view.md) operations compute results on demand, and therefore cannot enforce ordering constraints.
 
@@ -85,13 +69,18 @@ To explicitly mark a Selectable or Filter as stateful, use the `withSerial` meth
 
 - A serial Filter cannot be reordered with respect to other Filters. Every input row to a serial Filter is evaluated in order.
 - When a Selectable is serial, every row for that column is evaluated in order.
-- For Selectables, additional ordering constraints are controlled by the value of the `QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS`, which is set by the property `QueryTable.serialSelectImplicitBarriers`. The default value is the inverse of `QueryTable.statelessSelectByDefault`:
-  - When `Selectables` are stateless by default, no implicit barriers are added (i.e., `QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS` is false).
-  - When `Selectables` are stateful by default, then implicit barriers are added (i.e. `QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS` is true).
+- For Selectables, additional ordering constraints are controlled by `QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS`, which is set by the property `QueryTable.serialSelectImplicitBarriers`. The default value is the inverse of `QueryTable.statelessSelectByDefault`:
+  - When Selectables are stateless by default, no implicit barriers are added (i.e., `QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS` is false).
+  - When Selectables are stateful by default, implicit barriers are added (i.e., `QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS` is true).
 - If `QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS` is false, no additional ordering between expressions is imposed. As with every [`select`](../../reference/table-operations/select/select.md) or [`update`](../../reference/table-operations/select/update.md) call, if column B references column A, then column A is evaluated before column B. To impose further ordering constraints, use barriers.
-- If `QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS` is true, then a serial Selectable is an absolute barrier with respect to all other serial Selectables. This prohibits serial Selectables from being evaluated concurrently, permitting them to access global state. Non-serial Selectables may be reordered with respect to a serial Selectable.
+- If `QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS` is true, a serial Selectable acts as an absolute barrier with respect to all other serial Selectables. This prohibits serial Selectables from being evaluated concurrently, permitting them to access global state. Non-serial Selectables may be reordered with respect to a serial Selectable.
 
-Filters and Selectables may declare a _barrier_. A barrier is an opaque object (compared using reference equality) that is used to mark a particular Filter or Selectable. Subsequent Filters or Selectables may respect a previously declared barrier. If a Filter respects a barrier, that Filter cannot begin evaluation until the Filter which declares the barrier has been completely evaluated. Similarly, if a Selectable respects a barrier, then it cannot begin evaluation until the Selectable which declared the barrier has been completely evaluated.
+Filters and Selectables may declare a _barrier_. A barrier is an opaque object (compared using reference equality) used to control evaluation order between Filters or Selectables.
+
+Subsequent Filters or Selectables may respect a previously declared barrier:
+
+- If a Filter respects a barrier, it cannot begin evaluation until the Filter that declared the barrier has been completely evaluated.
+- If a Selectable respects a barrier, it cannot begin evaluation until the Selectable that declared the barrier has been completely evaluated.
 
 In this code block, two columns reference the AtomicInteger `a`:
 
@@ -132,18 +121,14 @@ t=emptyTable(1_000_000).update(List.of(
 
 ### Managing thread pool sizes
 
-The maximum parallelism of query initialization and update processing is determined by the Operation Initialization
-Thread Pool and the Periodic Update Graph Thread Pool. The size of these values is controlled using the properties
-described in the table below:
+The maximum parallelism of query initialization and update processing is determined by the Operation Initialization Thread Pool and the Periodic Update Graph Thread Pool. The size of these values is controlled using the properties described in the table below:
 
 | Thread Pool Property                      | Default Value | Description                                                                                                    |
 | ----------------------------------------- | ------------- | -------------------------------------------------------------------------------------------------------------- |
 | OperationInitializationThreadPool.threads | -1            | Determines the number of threads available for parallel processing of initialization operations.               |
 | PeriodicUpdateGraph.updateThreads         | -1            | Determines the number of threads available for parallel processing of the Periodic Update Graph refresh cycle. |
 
-Setting either of these properties to `-1` instructs Deephaven to use all available processors. The number of available
-processors is retrieved from the Java Virtual Machine at Deephaven startup,
-using [Runtime.availableProcessors()](https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/Runtime.html#availableProcessors()).
+Setting either of these properties to `-1` instructs Deephaven to use all available processors. The number of available processors is retrieved from the Java Virtual Machine at Deephaven startup, using [Runtime.availableProcessors()](https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/Runtime.html#availableProcessors()).
 
 ### Related documentation
 

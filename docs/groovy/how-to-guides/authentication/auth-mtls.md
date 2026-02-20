@@ -68,6 +68,6 @@ Navigate to `https://localhost:8443` in your browser. If you're met with a warni
 
 ## Related documentation
 
-- [Quickstart for Docker](../../getting-started/docker-install.md)
-- [How to configure pre-shared key](./auth-psk.md)
-- [How to configure anonyous authentication](./auth-anon.md)
+- [Install guide for Docker](../../getting-started/docker-install.md)
+- [How to configure pre-shared key authentication](./auth-psk.md)
+- [How to configure anonymous authentication](./auth-anon.md)

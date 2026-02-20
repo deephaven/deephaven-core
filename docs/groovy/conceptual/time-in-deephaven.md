@@ -425,8 +425,10 @@ eventsMiddleDay2 = events.where("inRange(EventDateTime, '2020-04-01T10:00 ET', '
 
 ## Related documentation
 
-- [How to use filters](../how-to-guides/filters.md)
+- [How to use filters](../how-to-guides/use-filters.md)
 - [How to work with strings](../how-to-guides/work-with-strings.md)
 - [date-time](../reference/query-language/types/date-time.md)
+- [Date-time literals in query strings](../how-to-guides/date-time-literals.md)
+- [Business calendars](../how-to-guides/business-calendar.md)
 - [`update`](../reference/table-operations/select/update.md)
 - [`where`](../reference/table-operations/filter/where.md)

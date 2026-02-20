@@ -174,7 +174,7 @@ result = AppendOnlyArrayBackedInputTable.make(definition)
 
 ## Related documentation
 
-- [InputTableUpdater](/core/javadoc/io/deephaven/engine/util/input/InputTableUpdater.html)
+- [Input Table](../reference/table-operations/create/InputTable.md)
 - [`emptyTable`](../reference/table-operations/create/emptyTable.md)
 - [Table types](../conceptual/table-types.md)
-- [Input Table](../reference/table-operations/create/InputTable.md)
+- [InputTableUpdater](/core/javadoc/io/deephaven/engine/util/input/InputTableUpdater.html)

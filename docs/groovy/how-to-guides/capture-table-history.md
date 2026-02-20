@@ -11,6 +11,13 @@ Append-only tables are simple. New rows are added at the bottom of the table, an
 
 [`snapshotWhen`](../reference/table-operations/snapshot/snapshot-when.md) produces an in-memory table that can contain the history of the source table. Values are added to the history every time the trigger table ticks.
 
+```groovy syntax
+result = source.snapshotWhen(trigger)
+result = source.snapshotWhen(trigger, features...)
+result = source.snapshotWhen(trigger, features, stampColumns...)
+result = source.snapshotWhen(trigger, options)
+```
+
 > [!NOTE]
 > The trigger table is often a [time table](../reference/table-operations/create/timeTable.md), a special type of table that adds new rows at a regular, user-defined interval.
 
