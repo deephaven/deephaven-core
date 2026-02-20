@@ -360,7 +360,10 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         } finally {
             // DH-20578: Handle cache invalidation AFTER execution
             final RemoteFileSourceClassLoader remoteLoader = RemoteFileSourceClassLoader.getInstance();
-            final boolean hasRemoteSources = remoteLoader.hasRemoteResourcesBeenFetched();
+            // Check both: were resources fetched in this execution? OR is there an active provider now?
+            // The second check handles the case where remote config was just added but resources not yet fetched
+            final boolean hasRemoteSources = remoteLoader.hasRemoteResourcesBeenFetched()
+                    || remoteLoader.hasActiveProviders();
 
             if (hasRemoteSources) {
                 log.debug("DH-20578: Remote sources detected - cleaning up and preparing for next execution");

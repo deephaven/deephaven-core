@@ -134,6 +134,21 @@ public class RemoteFileSourceClassLoader extends ClassLoader {
     }
 
     /**
+     * Returns whether there are any active providers with resource paths configured.
+     * This indicates that remote sources are available and may be used.
+     *
+     * @return true if any provider is active and has resources it can source, false otherwise
+     */
+    public boolean hasActiveProviders() {
+        for (RemoteFileSourceProvider candidate : providers) {
+            if (candidate.isActive()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * Gets the resource with the specified name by checking registered providers.
      *
      * <p>This method iterates through all registered providers to see if any can source the requested resource.
