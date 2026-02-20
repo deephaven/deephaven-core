@@ -11,7 +11,6 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.filter.ExtractBarriers;
 import io.deephaven.engine.table.impl.filter.ExtractInnerConjunctiveFilters;
 import io.deephaven.engine.table.impl.filter.ExtractRespectedBarriers;
-import io.deephaven.engine.table.impl.filter.ExtractSerialFilters;
 import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer;
 import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.engine.liveness.LivenessArtifact;
@@ -194,7 +193,7 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
                     ExtractRespectedBarriers.stream(filter).anyMatch(postViewBarriers::contains);
             if (isPostView || serialFilterFound || hasPostViewBarrier) {
                 // if this filter is serial, all subsequent filters must be postViewFilters
-                if (ExtractSerialFilters.hasAny(filter)) {
+                if (filter.isSerial()) {
                     serialFilterFound = true;
                 }
                 postViewFilters.add(filter);
@@ -289,7 +288,7 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
                 preViewFilters.add(preFilter);
             } else {
                 // if this filter is serial, all subsequent filters must be postViewFilters
-                if (ExtractSerialFilters.hasAny(filter)) {
+                if (filter.isSerial()) {
                     serialFilterFound = true;
                 }
 
