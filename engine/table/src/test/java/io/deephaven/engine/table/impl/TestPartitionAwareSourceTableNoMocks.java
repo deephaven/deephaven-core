@@ -165,7 +165,8 @@ public class TestPartitionAwareSourceTableNoMocks {
         testPartitioningFilterDoesNotRespectSerialWithStatefulDefault(true, true);
     }
 
-    public void testPartitioningFilterDoesNotRespectSerialWithStatefulDefault(boolean statelessByDefault, boolean iterateFilters) {
+    public void testPartitioningFilterDoesNotRespectSerialWithStatefulDefault(boolean statelessByDefault,
+            boolean iterateFilters) {
         final boolean oldStatefulDefault = QueryTable.STATELESS_FILTERS_BY_DEFAULT;
         try (final SafeCloseable ignored = () -> {
             QueryTable.STATELESS_FILTERS_BY_DEFAULT = oldStatefulDefault;
@@ -174,7 +175,8 @@ public class TestPartitionAwareSourceTableNoMocks {
 
             final long partitionSize = 128;
             final RowSetCapturingFilter filter0 = new RowSetCapturingFilter(RawString.of("II < 64"));
-            final RowSetCapturingFilter filter1 = new RowSetCapturingFilter(RawString.of("partition.equalsIgnoreCase(`A`) || partition.equalsIgnoreCase(`B`)"));
+            final RowSetCapturingFilter filter1 = new RowSetCapturingFilter(
+                    RawString.of("partition.equalsIgnoreCase(`A`) || partition.equalsIgnoreCase(`B`)"));
 
             final Table res0 = testFilterVisibility(partitionSize, iterateFilters, filter0, filter1);
 
@@ -244,7 +246,8 @@ public class TestPartitionAwareSourceTableNoMocks {
         final RowSetCapturingFilter filter2 = new RowSetCapturingFilter(FilterIn.of(
                 ColumnName.of("partition"), Literal.of("B")));
         final Table res0 = testFilterVisibility(
-                partitionSize, false, filter0, filter1.withDeclaredBarriers(barrier), filter2.withRespectedBarriers(barrier));
+                partitionSize, false, filter0, filter1.withDeclaredBarriers(barrier),
+                filter2.withRespectedBarriers(barrier));
 
         // ensure the inner filter sees only the one partitions' data
         Assert.eq(filter0.numRowsProcessed(), "filter0.numRowsProcessed()", partitionSize);
