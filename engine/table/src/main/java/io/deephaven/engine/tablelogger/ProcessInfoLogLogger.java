@@ -3,8 +3,6 @@
 //
 package io.deephaven.engine.tablelogger;
 
-import io.deephaven.tablelogger.Row;
-
 import java.io.Closeable;
 import java.io.IOException;
 
@@ -13,12 +11,6 @@ import java.io.IOException;
  */
 public interface ProcessInfoLogLogger extends Closeable {
     void log(final String id, final String type, final String key, final String value) throws IOException;
-
-    @Deprecated(forRemoval = true)
-    default void log(final Row.Flags flags, final String id, final String type, final String key, final String value)
-            throws IOException {
-        throw new UnsupportedOperationException();
-    }
 
     enum Noop implements ProcessInfoLogLogger {
         INSTANCE;

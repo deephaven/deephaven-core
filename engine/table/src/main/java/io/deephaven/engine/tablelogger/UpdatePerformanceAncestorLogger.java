@@ -3,8 +3,6 @@
 //
 package io.deephaven.engine.tablelogger;
 
-import io.deephaven.tablelogger.Row;
-
 import java.io.IOException;
 
 /**
@@ -14,12 +12,6 @@ import java.io.IOException;
 public interface UpdatePerformanceAncestorLogger {
     void log(final String updateGraphName, final long id, final String description, final long[] ancestors)
             throws IOException;
-
-    @Deprecated(forRemoval = true)
-    default void log(final Row.Flags flags, final String updateGraphName, final long id, final String description,
-            final long[] ancestors) throws IOException {
-        throw new UnsupportedOperationException();
-    }
 
     enum Noop implements UpdatePerformanceAncestorLogger {
         INSTANCE;
