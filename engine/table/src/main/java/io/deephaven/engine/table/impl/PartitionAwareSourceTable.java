@@ -140,8 +140,7 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
                     // When we are stateful by default, then we are not going to set serialFilterFound until after we've
                     // processed this filter. This allows the first partition filter that is stateful to be reordered
                     // (which is more like the 0.39 behavior) and evaluated location-by-location. This is intended as a
-                    // practical compromise so that
-                    // "Date==today()" is not always reordered with respect to other filters.
+                    // practical compromise so that "Date==today()" is can be reordered with respect to other filters.
                     serialFilterFound = true;
                 }
 
