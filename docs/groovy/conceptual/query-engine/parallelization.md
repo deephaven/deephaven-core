@@ -136,17 +136,19 @@ t=emptyTable(1_000_000).update(List.of(
 If Deephaven is configured to use stateless filters by default (the default setting in 41.0 and later), then a _partition
 filter_ (a filter that only accesses partitioning columns of the data) is only stateful if the application developer
 explicitly marks it as such. When Deephaven is configured to use stateless filters by default, stateful partition
-filters are not reordered.
+filters are not reordered and must be evaluated on all rows of the table.
 
-When Deephaven is configured to use stateful filters by default, a partition filter may be implicitly stateful therefore,
-the ordering constraints for the filters on Partitioning columns may be relaxed. This is to allow common partition filters
-to be reordered ahead of other filters. For example, the formula filter `Date=today()` is stateful if filters are stateful
-by default. To allow these kind of filters to be reordered ahead of other filters, the engine may treat a filter on
-partitioning columns as stateless, even when filters are stateful by default. This allows the engine to reorder partition
-filters ahead of other filters, improving performance.
+When Deephaven is configured to use stateful filters by default, the engine is permitted to treat stateful partition
+filters as if they were stateless for pragmatic, performance-oriented reasons.
+In particular, the ordering constraints for filters on partitioning columns may be relaxed, and rather than
+evaluating the filter on every row in the table it may only be evaluated per location. This is to allow common partition
+filters to be reordered ahead of other filters and avoid repeated evaluation against the same value. For example, the
+formula filter `Date=today()` is stateful if filters are stateful by default, but in nearly every case users would prefer this to
+be evaluated early, location-by-location.
 
-To ensure that partition filters are not reordered, you can `coalesce` the table prior to applying the filter. When possible,
-you should specify filters in the order they should be applied rather than relying on the engine's ability to reorder filters.
+To ensure that partition filters are not reordered and are evaluated row-by-row, you can `coalesce` the table prior to
+applying the filter. When possible, you should specify filters in the order they should be applied rather than relying
+on the engine's ability to reorder filters.
 
 ### Managing thread pool sizes
 
