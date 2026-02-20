@@ -148,7 +148,7 @@ def table_to_numpy(rows, cols):
 
 # Return the model's answer so that it can be scattered back into a table
 def numpy_to_table(data, idx):
-    return data[idx, 0]
+    return data[idx]
 
 
 result = learn.learn(
