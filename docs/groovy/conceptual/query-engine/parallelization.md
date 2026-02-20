@@ -131,6 +131,23 @@ t=emptyTable(1_000_000).update(List.of(
         Selectable.of(ColumnName.of("B"), RawString.of("a.getAndIncrement()"))))
 ```
 
+#### Stateful Partition Filters
+
+If Deephaven is configured to use stateless filters by default (the default setting in 41.0 and later), then a _partition
+filter_ (a filter that only accesses partitioning columns of the data) is only stateful if the application developer
+explicitly marks it as such. When Deephaven is configured to use stateless filters by default, stateful partition
+filters are not reordered.
+
+When Deephaven is configured to use stateful filters by default, a partition filter may be implicitly stateful therefore,
+the ordering constraints for the filters on Partitioning columns may be relaxed. This is to allow common partition filters
+to be reordered ahead of other filters. For example, the formula filter `Date=today()` is stateful if filters are stateful
+by default. To allow these kind of filters to be reordered ahead of other filters, the engine may treat a filter on
+partitioning columns as stateless, even when filters are stateful by default. This allows the engine to reorder partition
+filters ahead of other filters, improving performance.
+
+To ensure that partition filters are not reordered, you can `coalesce` the table prior to applying the filter. When possible,
+you should specify filters in the order they should be applied rather than relying on the engine's ability to reorder filters.
+
 ### Managing thread pool sizes
 
 The maximum parallelism of query initialization and update processing is determined by the Operation Initialization
