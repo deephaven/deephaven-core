@@ -149,7 +149,7 @@ public class DeferredViewTableTest {
         final Table sourceTable = TableTools.emptyTable(100_000).update("X = ii");
 
         final RowSetCapturingFilter serialFilter =
-                new RowSetCapturingFilter(new RangeFilter("Y", Condition.LESS_THAN, "50000").withSerial());
+                new RowSetCapturingFilter(new RangeFilter("Y", Condition.LESS_THAN, "50000"));
         final RowSetCapturingFilter freeFilter =
                 new RowSetCapturingFilter(new RangeFilter("X", Condition.LESS_THAN, "25000"));
 
@@ -161,7 +161,7 @@ public class DeferredViewTableTest {
                 SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY,
                 WhereFilter.ZERO_LENGTH_WHERE_FILTER_ARRAY)
                 .updateView("Y = ii")
-                .where(ConjunctiveFilter.of(serialFilter, freeFilter))
+                .where(ConjunctiveFilter.of(serialFilter.withSerial(), freeFilter))
                 .coalesce();
 
         Assert.eq(deferredTable.size(), "deferredTable.size()", 25000);

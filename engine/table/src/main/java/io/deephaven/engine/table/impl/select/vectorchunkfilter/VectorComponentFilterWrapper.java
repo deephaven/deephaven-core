@@ -193,7 +193,7 @@ public class VectorComponentFilterWrapper extends WhereFilterImpl {
                 new TypeDiscardedFilter(componentFilter));
     }
 
-    private static class TypeDiscardedFilter extends WhereFilterImpl implements ExposesChunkFilter {
+    private static class TypeDiscarded  Filter extends WhereFilterImpl implements ExposesChunkFilter {
         private final WhereFilter wrapped;
 
         private TypeDiscardedFilter(final WhereFilter wrapped) {
