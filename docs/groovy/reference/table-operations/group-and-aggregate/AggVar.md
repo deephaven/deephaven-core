@@ -93,7 +93,7 @@ result = source.aggBy([AggVar("VarNumber = Number"),AggMed("MedNumber = Number")
 
 ## Related documentation
 
-- [Create a new table](../../../how-to-guides/new-and-empty-table.md#newtable)
+- [How to create static tables](../../../how-to-guides/new-and-empty-table.md)
 - [How to create multiple summary statistics for groups](../../../how-to-guides/combined-aggregations.md)
 - [`aggBy`](./aggBy.md)
 - [`varBy`](./varBy.md)

@@ -9,7 +9,7 @@ A table's metadata provides basic information about its source data, such as the
 
 ## `meta_table`
 
-The `meta_table` attribute creates a new table that contains the table's meta data. Specifically, this table contains information about every column in the original table.
+The [`meta_table`](../reference/table-operations/metadata/meta_table.md) attribute creates a new table that contains the table's metadata. Specifically, this table contains information about every column in the original table.
 
 ```python syntax
 result = source.meta_table
@@ -51,7 +51,7 @@ miami = new_table(
 )
 ```
 
-We can access the meta data as follows:
+We can access the metadata as follows:
 
 ```python test-set=1
 meta = miami.meta_table

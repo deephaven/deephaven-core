@@ -52,5 +52,5 @@ result = source.head(5)
 ## Related documentation
 
 - [How to create static tables](../../../how-to-guides/new-and-empty-table.md)
-- [How to use filters](../../../how-to-guides/filters.md)
+- [How to use filters](../../../how-to-guides/use-filters.md)
 - [Javadoc](https://deephaven.io/core/javadoc/io/deephaven/api/TableOperations.html#head(long))

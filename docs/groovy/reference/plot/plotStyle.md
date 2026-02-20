@@ -15,18 +15,18 @@ title: plotStyle
 
 The plot style to apply. The following options are available:
 
-- `Area`
-- `Bar`
-- `Error_Bar`
-- `Histogram`
-- `Line`
+- `AREA`
+- `BAR`
+- `ERROR_BAR`
+- `HISTOGRAM`
+- `LINE`
 - `OHLC`
-- `Pie`
-- `Scatter`
-- `Stacked_Area`
-- `Stacked_Bar`
-- `Step`
-- `Treemap`
+- `PIE`
+- `SCATTER`
+- `STACKED_AREA`
+- `STACKED_BAR`
+- `STEP`
+- `TREEMAP`
 
 These arguments are case insensitive.
 
@@ -35,7 +35,7 @@ These arguments are case insensitive.
 
 ## Examples
 
-The following example creates a single series plot using the `stacked_area` style.
+The following example creates a single series plot using the `STACKED_AREA` style.
 
 ```groovy order=source,plot_single_stacked_area default=plot_single_stacked_area
 import static io.deephaven.csv.CsvTools.readCsv
@@ -48,7 +48,7 @@ plot_single_stacked_area= plot("Heart_rate", source, "Time", "HeartRate").plotSt
     .show()
 ```
 
-The following example creates a category plot with the `stacked_bar` style.
+The following example creates a category plot with the `STACKED_BAR` style.
 
 ```groovy order=sourceOne,sourceTwo,result default=result
 sourceOne = newTable(
@@ -70,4 +70,7 @@ result = catPlot("Categories Plot One", sourceOne, "Categories", "Values")
 ## Related documentation
 
 - [How to use the Chart Builder](../../how-to-guides/user-interface/chart-builder.md)
-- [How to create plots programmatically](../../how-to-guides/plotting/api-plotting.md)
+- [How to create plots with the built-in API](../../how-to-guides/plotting/api-plotting.md)
+- [`plot`](./plot.md)
+- [`catPlot`](./catPlot.md)
+<!--TODO: add Javadoc-->
