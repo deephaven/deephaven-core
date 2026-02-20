@@ -162,7 +162,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         }
     }
 
-    private final DeephavenGroovyShell groovyShell;
+    private DeephavenGroovyShell groovyShell;
 
     public static GroovyDeephavenSession of(
             final UpdateGraph updateGraph,
@@ -343,8 +343,9 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         final String currentScriptName = scriptName == null
                 ? DEFAULT_SCRIPT_PREFIX
                 : scriptName.replaceAll("[^0-9A-Za-z_]", "_").replaceAll("(^[0-9])", "_$1");
-        try (final SafeCloseable ignored = groovyShell.setScriptPrefix(currentScriptName)) {
 
+        // Execute the script
+        try (final SafeCloseable ignored = groovyShell.setScriptPrefix(currentScriptName)) {
             updateClassloader(lastCommand);
 
             try {
@@ -355,6 +356,40 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
                         maybeRewriteStackTrace(scriptName, currentScriptName, e, lastCommand, commandPrefix));
             } catch (Exception e) {
                 throw wrapAndRewriteStackTrace(scriptName, currentScriptName, e, lastCommand, commandPrefix);
+            }
+        } finally {
+            // DH-20578: Handle cache invalidation AFTER execution
+            final RemoteFileSourceClassLoader remoteLoader = RemoteFileSourceClassLoader.getInstance();
+            final boolean hasRemoteSources = remoteLoader.hasRemoteResourcesBeenFetched();
+
+            if (hasRemoteSources) {
+                log.debug("DH-20578: Remote sources detected - cleaning up and preparing for next execution");
+
+                // Get list of remote resources that were used
+                final java.util.List<String> remoteResources = remoteLoader.getFetchedRemoteResources();
+
+                // Delete .class files for remote sources so next execution doesn't load stale cached versions
+                if (remoteResources != null && classCacheDirectory != null && classCacheDirectory.exists()) {
+                    deleteClassFilesForRemoteSources(classCacheDirectory, remoteResources);
+                }
+
+                // Create fresh GroovyClassLoader for next execution
+                CompilerConfiguration freshConfig = new CompilerConfiguration();
+                freshConfig.getCompilationCustomizers().add(consoleImports);
+                freshConfig.setTargetDirectory(classCacheDirectory);
+                GroovyClassLoader freshClassLoader = new GroovyClassLoader(STATIC_LOADER, freshConfig);
+
+                // Update the session's ExecutionContext with fresh QueryCompiler
+                executionContext = createExecutionContext(
+                        executionContext.getUpdateGraph(),
+                        executionContext.getOperationInitializer(),
+                        freshClassLoader);
+
+                // Permanently replace groovyShell with fresh shell for next execution
+                groovyShell = new DeephavenGroovyShell(freshClassLoader, groovyShell.getContext(), freshConfig);
+
+                // Clear tracking after setup for next execution
+                remoteLoader.clearFetchedResourcesTracking();
             }
         }
     }
@@ -689,7 +724,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
                 // only increment QueryLibrary version if some dynamic class overrides an existing class
                 if (!dynamicClasses.add(entry.getKey()) && !notifiedQueryLibrary) {
                     notifiedQueryLibrary = true;
-                    executionContext.getQueryLibrary().updateVersionString();
+                    getExecutionContext().getQueryLibrary().updateVersionString();
                 }
 
                 try {
@@ -715,6 +750,126 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         } catch (NumberFormatException e) {
             return false;
         }
+    }
+
+    /**
+     * DH-20578: Delete .class files from the cache directory to force recompilation.
+     * This is necessary because GroovyClassLoader can reload .class files from disk even after clearCache().
+     */
+    private static void deleteClassFiles(File directory) {
+        if (directory == null || !directory.exists() || !directory.isDirectory()) {
+            return;
+        }
+
+        File[] files = directory.listFiles();
+        if (files == null) {
+            return;
+        }
+
+        for (File file : files) {
+            if (file.isDirectory()) {
+                deleteClassFiles(file);
+            } else if (file.getName().endsWith(".class")) {
+                if (!file.delete()) {
+                    log.warn("DH-20578: Failed to delete cached class file: " + file.getAbsolutePath());
+                }
+            }
+        }
+    }
+
+    /**
+     * DH-20578: Selectively delete .class files only for classes that correspond to remote sources.
+     * This is more efficient than deleting all .class files.
+     *
+     * @param directory the directory to search for .class files
+     * @param remoteResources list of remote resource names (e.g., "test2/notebook/MyNotebook.groovy")
+     */
+    private static void deleteClassFilesForRemoteSources(File directory, java.util.List<String> remoteResources) {
+        if (directory == null || !directory.exists() || !directory.isDirectory() || remoteResources.isEmpty()) {
+            return;
+        }
+
+        // Convert remote resource names to class file paths
+        // e.g., "test2/notebook/MyNotebook.groovy" -> "test2/notebook/MyNotebook.class"
+        java.util.Set<String> classFilePaths = new java.util.HashSet<>();
+        for (String resource : remoteResources) {
+            if (resource.endsWith(".groovy")) {
+                String classPath = resource.substring(0, resource.length() - 7) + ".class";  // Remove .groovy, add .class
+                classFilePaths.add(classPath);
+                log.debug("DH-20578: Will delete .class file for remote source: " + classPath);
+            }
+        }
+
+        deleteMatchingClassFiles(directory, classFilePaths);
+    }
+
+    /**
+     * Recursively delete .class files that match the given set of paths.
+     */
+    private static void deleteMatchingClassFiles(File directory, java.util.Set<String> classFilePaths) {
+        if (directory == null || !directory.exists() || !directory.isDirectory()) {
+            return;
+        }
+
+        File[] files = directory.listFiles();
+        if (files == null) {
+            return;
+        }
+
+        for (File file : files) {
+            if (file.isDirectory()) {
+                deleteMatchingClassFiles(file, classFilePaths);
+            } else if (file.getName().endsWith(".class")) {
+                // Get relative path from classCacheDirectory
+                String relativePath = getRelativePath(file);
+                if (classFilePaths.contains(relativePath)) {
+                    if (file.delete()) {
+                        log.info("DH-20578: Deleted cached .class file for remote source: " + relativePath);
+                    } else {
+                        log.warn("DH-20578: Failed to delete cached class file: " + file.getAbsolutePath());
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Get a relative path string from a file by walking up to find a reasonable base.
+     * This is a simple implementation that uses forward slashes.
+     */
+    private static String getRelativePath(File file) {
+        // Simple approach: get the path and look for package-like structure
+        String path = file.getPath();
+        // Replace backslashes with forward slashes for consistency
+        path = path.replace('\\', '/');
+
+        // Try to find a reasonable starting point by looking for common package prefixes
+        // For now, just return the path segments that look like packages
+        int lastSeparator = path.lastIndexOf('/');
+        if (lastSeparator > 0) {
+            // Look backwards to find what looks like a package structure
+            // This is a simple heuristic - could be improved
+            String[] segments = path.split("/");
+            StringBuilder result = new StringBuilder();
+            boolean inPackage = false;
+            for (int i = 0; i < segments.length; i++) {
+                String segment = segments[i];
+                // Start capturing when we see a lowercase segment (likely package name)
+                if (!inPackage && segment.length() > 0 && Character.isLowerCase(segment.charAt(0))) {
+                    inPackage = true;
+                }
+                if (inPackage) {
+                    if (result.length() > 0) {
+                        result.append('/');
+                    }
+                    result.append(segment);
+                }
+            }
+            if (result.length() > 0) {
+                return result.toString();
+            }
+        }
+        return file.getName();
     }
 
     @Override
