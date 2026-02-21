@@ -269,13 +269,13 @@ public class VectorComponentFilterWrapper extends WhereFilterImpl {
         }
 
         @Override
-        public boolean isSerial() {
-            return wrapped.isSerial();
+        public boolean permitParallelization() {
+            return wrapped.permitParallelization();
         }
 
         @Override
-        public boolean permitParallelization() {
-            return wrapped.permitParallelization();
+        public boolean isSerial() {
+            return wrapped.isSerial();
         }
     }
 }
