@@ -156,4 +156,9 @@ public abstract class ComposedFilter extends WhereFilterLivenessArtifactImpl imp
     public boolean permitParallelization() {
         return Arrays.stream(componentFilters).allMatch(WhereFilter::permitParallelization);
     }
+
+    @Override
+    public boolean isSerial() {
+        return Arrays.stream(componentFilters).anyMatch(WhereFilter::isSerial);
+    }
 }

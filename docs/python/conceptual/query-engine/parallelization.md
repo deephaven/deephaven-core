@@ -184,6 +184,19 @@ col_b = Selectable.parse(formula="B = get_and_increment_counter()")
 t = empty_table(1_000_000).update([col_a, col_b])
 ```
 
+#### Stateful Partition Filters
+
+If a _partition filter_ (a filter that only accesses partitioning columns of the data) is marked serial it cannot be
+reordered and must be evaluated on all rows of the table. Even if Deephaven is configured to treat filters as stateful
+by default, when a partition filter is not explictly marked serial, then the engine is permitted to treat stateful
+partition filters as if they were stateless for pragmatic, performance-oriented reasons.
+
+In particular, the ordering constraints for filters on partitioning columns may be relaxed, and rather than
+evaluating the filter on every row in the table it may only be evaluated per location. This is to allow common partition
+filters to be reordered ahead of other filters and avoid repeated evaluation against the same value. For example, the
+formula filter `Date=today()` is stateful if filters are stateful by default, but in nearly every case users would prefer this to
+be evaluated early, location-by-location.
+
 ### Managing thread pool sizes
 
 The maximum parallelism of query initialization and update processing is determined by the Operation Initialization

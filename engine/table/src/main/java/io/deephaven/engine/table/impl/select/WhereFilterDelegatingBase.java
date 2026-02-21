@@ -129,6 +129,11 @@ public abstract class WhereFilterDelegatingBase
     }
 
     @Override
+    public boolean isSerial() {
+        return filter.isSerial();
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (this == o)
             return true;

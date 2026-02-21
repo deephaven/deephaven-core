@@ -31,6 +31,11 @@ public class WhereFilterSerialImpl extends WhereFilterDelegatingBase {
         return false;
     }
 
+    @Override
+    public boolean isSerial() {
+        return true;
+    }
+
     public WhereFilter copy() {
         return new WhereFilterSerialImpl(filter.copy());
     }

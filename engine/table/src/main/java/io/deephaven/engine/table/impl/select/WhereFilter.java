@@ -280,6 +280,13 @@ public interface WhereFilter extends Filter {
     }
 
     /**
+     * Return true if this filter is a serial filter.
+     */
+    default boolean isSerial() {
+        return false;
+    }
+
+    /**
      * Set the {@link RecomputeListener} that should be notified if results based on this WhereFilter must be
      * recomputed.
      *
