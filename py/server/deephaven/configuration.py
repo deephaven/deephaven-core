@@ -14,13 +14,14 @@ from deephaven import DHError
 _JConfiguration = jpy.get_type("io.deephaven.configuration.Configuration")
 
 
-class Configuration:
+class Configuration(JObjectWrapper):
     """A wrapper for the Java Configuration class that provides convenient access to configuration properties.
 
     This class wraps the singleton Configuration.getInstance() by default, but can also wrap named or custom
     Configuration instances.
     """
 
+    j_object_type = _JConfiguration
     def __init__(self, j_configuration: Optional[jpy.JType] = None):
         """Initialize a Configuration wrapper.
 
