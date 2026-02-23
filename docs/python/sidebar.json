@@ -2619,8 +2619,11 @@
             "items": [
               {
                 "label": "Auto-imported functions",
-                "path": "reference/query-language/query-library/auto-imported/index.md",
                 "items": [
+                  {
+                    "label": "Overview",
+                    "path": "reference/query-language/query-library/auto-imported/index.md"
+                  },
                   {
                     "label": "Basic",
                     "path": "reference/query-language/query-library/auto-imported/basic.md"
