@@ -134,6 +134,16 @@ public class VectorComponentFilterWrapper extends WhereFilterImpl {
     public void setRecomputeListener(final RecomputeListener result) {}
 
     @Override
+    public boolean permitParallelization() {
+        return componentFilter.permitParallelization();
+    }
+
+    @Override
+    public boolean isSerial() {
+        return componentFilter.isSerial();
+    }
+
+    @Override
     public WhereFilter copy() {
         return new VectorComponentFilterWrapper(columnName, isArray, componentType, componentFilter.copy());
     }
@@ -256,6 +266,16 @@ public class VectorComponentFilterWrapper extends WhereFilterImpl {
         @Override
         public WhereFilter copy() {
             return new TypeDiscardedFilter(wrapped.copy());
+        }
+
+        @Override
+        public boolean permitParallelization() {
+            return wrapped.permitParallelization();
+        }
+
+        @Override
+        public boolean isSerial() {
+            return wrapped.isSerial();
         }
     }
 }
