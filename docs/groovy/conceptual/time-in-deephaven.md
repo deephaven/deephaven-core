@@ -28,7 +28,7 @@ There are four important tools provided by DQL that are relevant to the discussi
 
 ### 1. Built-in Java functions
 
-Deephaven has a collection of [built-in functions](../reference/query-language/query-library/auto-imported-functions.md) that are useful for working with date-time types. For the sake of performance, these functions are implemented in Java. DQL supports calling these functions directly in query strings, opening up all of Deephaven's [built-in Java functions](../reference/query-language/query-library/auto-imported-functions.md) to the Groovy interface. The following example uses the built-in Deephaven function [`now`](https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#now()) to get the current system time as a Java [`Instant`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Instant.html):
+Deephaven has a collection of [built-in functions](../reference/query-language/formulas/auto-imported-functions.md) that are useful for working with date-time types. For the sake of performance, these functions are implemented in Java. DQL supports calling these functions directly in query strings, opening up all of Deephaven's [built-in Java functions](../reference/query-language/formulas/auto-imported-functions.md) to the Groovy interface. The following example uses the built-in Deephaven function [`now`](https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#now()) to get the current system time as a Java [`Instant`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Instant.html):
 
 ```groovy test-set=2
 t = emptyTable(5).update("CurrentTime = now()")
@@ -37,7 +37,7 @@ t = emptyTable(5).update("CurrentTime = now()")
 > [!NOTE]
 > [`now`](https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#now()) uses the [current clock](https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#currentClock()) of the Deephaven engine. This clock is typically the system clock, but it may be set to a simulated clock when replaying tables.
 
-These [functions](../reference/query-language/query-library/auto-imported-functions.md) can also be applied to columns, constants, and variables. This slightly more complex example uses the built-in Deephaven function [`epochDaysToLocalDate`](https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#epochDaysToLocalDate(long)) to create a [`LocalDate`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/time/LocalDate.html) from a long that represents the number of days since the [Unix epoch](https://en.wikipedia.org/wiki/Unix_time):
+These [functions](../reference/query-language/formulas/auto-imported-functions.md) can also be applied to columns, constants, and variables. This slightly more complex example uses the built-in Deephaven function [`epochDaysToLocalDate`](https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#epochDaysToLocalDate(long)) to create a [`LocalDate`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/time/LocalDate.html) from a long that represents the number of days since the [Unix epoch](https://en.wikipedia.org/wiki/Unix_time):
 
 ```groovy test-set=3
 t = emptyTable(5).update("DaysSinceEpoch = ii", "LocalDateColumn = epochDaysToLocalDate(DaysSinceEpoch)")
@@ -72,7 +72,7 @@ To be clear:
 
 - `DaysSinceEpoch` is a 64-bit integer.
 - `LocalDateColumn` is a Java [`LocalDate`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/time/LocalDate.html) object.
-- [`epochDaysToLocalDate`](https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#epochDaysToLocalDate(long)) is a Java function from the [built-in Deephaven library](../reference/query-language/query-library/auto-imported-functions.md).
+- [`epochDaysToLocalDate`](https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#epochDaysToLocalDate(long)) is a Java function from the [built-in Deephaven library](../reference/query-language/formulas/auto-imported-functions.md).
 - `DayOfWeek` is the return value of [`getDayOfWeek`](https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/time/LocalDate.html#getDayOfWeek()), a Java method bound to the [`LocalDate`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/time/LocalDate.html) class.
 
 ### 3. Arithmetic and inequality operators
@@ -95,7 +95,7 @@ t = emptyTable(5).update(
 
 ### 4. Date-times using DQL
 
-In Deephaven, date-time values can be expressed using very simple [literal](https://en.wikipedia.org/wiki/Literal_(computer_programming)) syntax. These literal values can be used directly in query strings or as string inputs to [built-in functions](../reference/query-language/query-library/auto-imported-functions.md).
+In Deephaven, date-time values can be expressed using very simple [literal](https://en.wikipedia.org/wiki/Literal_(computer_programming)) syntax. These literal values can be used directly in query strings or as string inputs to [built-in functions](../reference/query-language/formulas/auto-imported-functions.md).
 
 > [!TIP]
 > In query strings, time literals are denoted with _single quotes_.

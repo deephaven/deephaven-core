@@ -9,7 +9,7 @@ title: to_j_local_date
 >
 > - [Time in Deephaven](../../../conceptual/time-in-deephaven.md)
 > - [Java/Python boundary crossings](../../../conceptual/python-java-boundary.md)
-> - [Auto-imported functions](../../query-language/query-library/auto-imported-functions.md)
+> - [Auto-imported functions](../../query-language/query-library/auto-imported/index.md)
 
 ## Syntax
 
