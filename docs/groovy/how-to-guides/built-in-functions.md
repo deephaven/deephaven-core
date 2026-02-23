@@ -56,4 +56,3 @@ This page does not provide a comprehensive list of all built-ins. For the comple
 - [Auto-imported functions](../reference/query-language/query-library/auto-imported-functions.md)
 - [`emptyTable`](../reference/table-operations/create/emptyTable.md)
 - [`update`](../reference/table-operations/select/update.md)
-

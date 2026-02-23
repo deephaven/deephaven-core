@@ -301,4 +301,3 @@ These aggregations can be re-ordered, edited, or deleted from the **Aggregate Co
 - [`sum_by`](../reference/table-operations/group-and-aggregate/sumBy.md)
 - [`tail_by`](../reference/table-operations/group-and-aggregate/tailBy.md)
 - [`var_by`](../reference/table-operations/group-and-aggregate/varBy.md)
-

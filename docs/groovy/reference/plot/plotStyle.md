@@ -73,4 +73,5 @@ result = catPlot("Categories Plot One", sourceOne, "Categories", "Values")
 - [How to create plots with the built-in API](../../how-to-guides/plotting/api-plotting.md)
 - [`plot`](./plot.md)
 - [`catPlot`](./catPlot.md)
+
 <!--TODO: add Javadoc-->

@@ -1,9 +1,8 @@
 ---
-title: How to retrieve logs
-sidebar_label: Retrieve logs
+title: Retrieve logs
 ---
 
-This guide will show you how several methods to retrieve logs.
+This guide shows you how to retrieve logs.
 
 As with any programming language, sometimes there are crashes. It is important to retrieve that infromation so that one can understand the root cause of the error.
 
@@ -61,7 +60,7 @@ You can fine-tune the level of logging inside Deephaven. For more detailed logs 
 
 Deephaven provides a record of all the commands that have been executed, as well as how long each command took or if an error occured. This information is available in the Command History panel, which is searchable.
 
-![The Command History panel](../assets/how-to/logs1groovy.png)
+![The command history panel](../assets/how-to/logs1groovy.png)
 
 Hover over the command for more information.
 
@@ -124,5 +123,4 @@ You can also get help by asking questions in our [GitHub Discussions](https://gi
 - [Joins: Time-series and Range](./joins-timeseries-range.md)
 - [How to select, view, and update data in tables](./use-select-view-update.md)
 - [How to work with strings](./work-with-strings.md)
-- [Formulas](../how-to-guides/formulas.md)
 - [Special variables](../reference/query-language/variables/special-variables.md)

@@ -1,19 +1,23 @@
 ---
-title: Authenticate with mTLS
+title: Configure mTLS for Deephaven
 sidebar_label: mTLS
 ---
 
 This guide will show you how to configure Deephaven to use mTLS to authenticate users trying to gain access.
 
-Mutual Transport Layer Security (mTLS) is an authentication method that ensures data security through both parties authenticating each other simultaneously. With mTLS, authentication happens through the use of certificates, where a certificate authority determines what certificates are valid, and which are not. Once both parties are verified, the authorization is complete.
+Mutual Transport Layer Security (mTLS) is an authentication method that ensures data security through both parties authenticating each other simultaneously. With mTLS, authentication happens through certificates, where a certificate authority determines which certificates are valid, and which are not. Once both parties are verified, the authentication is complete.
+
+Configuring Deephaven to use mTLS to guard against unauthorized access requires a custom setup with a few extra steps.
 
 ## Configuration
 
-The majority of the setup requires configuration of the Deephaven Docker application.
+mTLS authentication requires some extra configuration on top of Deephaven's basic setup. The majority of the setup requires configuration of the Deephaven Docker application. You will need a Dockerfile that adds the required JAR file to the Deephaven classpath, a docker-compose YAML file that sets some additional properties, and the necessary certificates.
+
+## Example
 
 ### Dockerfile
 
-First, create a Dockerfile from which the Deephaven application will be built. It will add the required JAR file to the Deephaven classpath. The following Dockerfile uses deephaven-core version 0.36.0. If you use a different version, specify a different version in your Dockerfile.
+First, create a Dockerfile from which the Deephaven application will be built. It will add the required JAR file to the Deephaven classpath. Specify which version of deephaven-core you are using in your Dockerfile; the following example Dockerfile uses version 0.36.0.
 
 ```Dockerfile
 FROM ghcr.io/deephaven/server-slim:0.36.0
@@ -48,9 +52,9 @@ There's a lot of text in the `environment`. Here's what it all means:
 - `-Dssl.clientAuthentication=NEEDED`: Any client trying to connect **must** use mTLS with a certificate to do so.
 - `-Dhttp.port=8443`: The authentication process happens over port 8443.
 
-Keeping certificates and keys in `/data/certs` isn't the most secure storage method. For more information on best security practices with Docker, see [Manage sensitive data with Docker secrets](https://docs.docker.com/engine/swarm/secrets/).
+Keeping certificates and keys in `/data/certs` isn't the most secure storage method. For more information on best security practices with Docker, see [How to use secrets in Docker Compose](https://docs.docker.com/compose/use-secrets/).
 
-### Required files
+### Certificates
 
 There are several required files listed above. These files are keys, certificates, and more. Creating them is a topic outside the coverage of this document. For more information on creating self-signed certificates, see this [README](https://github.com/deephaven/deephaven-core/blob/main/server/dev-certs/README.md). For more information on creating certificates that are not self-signed, use an external resource.
 

@@ -67,7 +67,7 @@ Rows (nodes) in a tree table are considered "orphans" if:
 
 Non-root nodes where the parent is `null` _are not considered orphans_. They can appear in the tree table, but they will always appear outside of the tree structure. For example, see rows 102 and 103 in the following figure:
 
-![Screenshot of a tree table highlighting rows with null parents outside the tree structure](../assets/how-to/tree-null-parents.png)
+![A tree table with orphan nodes](../assets/how-to/tree-null-parents.png)
 
 Note that these rows appear on the same level as the root node, outside of the tree structure.
 
@@ -89,5 +89,6 @@ resultWithOrphans = TreeTable.promoteOrphans(source, "ID", "Parent").tree("ID", 
 - [How to create a hierarchical rollup table](./rollup-table.md)
 - [How to create an empty table](../how-to-guides/new-and-empty-table.md#emptytable)
 - [How to create a time table](../how-to-guides/time-table.md)
-- [How to join tables](../how-to-guides/joins-exact-relational.md)
-- [Tree tables](../reference/table-operations/create/tree.md)
+- [Joins: Exact and Relational](../how-to-guides/joins-exact-relational.md)
+- [Joins: Time-Series and Range](../how-to-guides/joins-timeseries-range.md)
+- [`tree`](../reference/table-operations/create/tree.md)

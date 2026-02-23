@@ -2,7 +2,7 @@
 title: slicePct
 ---
 
-The `slicePct` method returns a table that that is a subset of another table corresponding to the difference between the start and end row percentages. For example, for a table of size 10, `slicePct(0.1, 0.7)` will return a subset from the second row to the seventh row. Similarly, `slicePct(0, 1)` would return the entire table (because row positions run from 0 to size - 1). If the percentage arguments are outisde of the range [0, 1], an error will occur.
+The `slicePct` method returns a table that is a subset of another table corresponding to the difference between the start and end row percentages. For example, for a table of size 10, `slicePct(0.1, 0.7)` will return a subset from the second row to the seventh row. Similarly, `slicePct(0, 1)` would return the entire table (because row positions run from 0 to size - 1). If the percentage arguments are outisde of the range [0.0, 1.0], an error will occur.
 
 > [!CAUTION]
 > Attempting to use `slicePct` on a [blink table](../../../conceptual/table-types.md#specialization-3-blink) will raise an error.

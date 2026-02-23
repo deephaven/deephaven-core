@@ -11,7 +11,7 @@ _When working with tables in Deephaven, I understand that "shifts" can happen wh
 
 Before diving into the details, let's define the key concepts:
 
-- **Row key (`k`)**: A unique identifier assigned to each row in a table. Row keys are used internally by the engine to track rows and are typically sequential integers starting from 0.
+- **Row key (`k`)**: A unique identifier assigned to each row in a table. Row keys are used internally by the engine to track rows and are typically sequential integers starting from 0. See [RowSet](/core/javadoc/io/deephaven/engine/rowset/RowSet.html) in the Javadoc for more details.
 
 - **Positional index (`i` and `ii`)**: The current position of a row within a table, starting from 0 for the first row. Unlike row keys, positional indices always reflect the current order of rows.
 

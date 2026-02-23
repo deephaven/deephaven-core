@@ -16,7 +16,7 @@ Rolling aggregations are unique from [dedicated](./dedicated-aggregations.md) an
 
 When performing aggregations with [dedicated](./dedicated-aggregations.md) and [combined](./combined-aggregations.md) aggregations, the output table contains a single row for each group. In contrast, rolling aggregation tables have the same number of rows as the source table. Thus, they preserve data history, whereas the others do not.
 
-To illustrate this, consider a cumulative sum on a single grouping column with two key values. Notice how `result_dedicated` and `result_combined` have two rows - one for each group. In contract, `result_rolling` has 20 rows - one for each row in the source table. You can see how the cumulative sum increases over time in the latter case.
+To illustrate this, consider a cumulative sum on a single grouping column with two key values. Notice how `result_dedicated` and `result_combined` have two rows - one for each group. In contrast, `result_rolling` has 20 rows - one for each row in the source table. You can see how the cumulative sum increases over time in the latter case.
 
 ```python order=result_rolling,result_dedicated,result_combined,source
 from deephaven import empty_table

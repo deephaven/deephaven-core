@@ -1,5 +1,4 @@
 ---
-id: query-string-overview
 title: An overview of query strings
 sidebar_label: Overview
 ---
@@ -47,7 +46,7 @@ The formulas used above all leverage query language built-ins including [built-i
 
 ### Filters
 
-Filters evaluate to true/false and are used to determine which rows are included in the result table. Consider the following example, which uses the table created in the [previous section](#formulas):
+Filters evaluate to `true` or `false` and are used to determine which rows are included in the result table. Consider the following example, which uses the table created in the [previous section](#formulas):
 
 ```groovy test-set=1 order=resultLessThan,resultEven,resultRng,resultConjunctive,resultDisjunctive
 resultLessThan = source.where("X <= 1.2")
@@ -57,7 +56,7 @@ resultConjunctive = source.where("X <= 2.4", "Z == `Even`")
 resultDisjunctive = source.where("X > 1.6 || Z == `Even`")
 ```
 
-For more on filtering table data, see [Use filters](./filters.md).
+For more on filtering table data, see [Use filters](./use-filters.md).
 
 ### Literals
 
@@ -205,6 +204,7 @@ For full coverage on arrays in tables, see [Arrays in Deephaven](./work-with-arr
 - [Java objects in query strings](./java-classes.md)
 - [Work with arrays](./work-with-arrays.md)
 - [Work with strings](./work-with-strings.md)
+- [Programmatically generate query strings](./generate-query-strings.md)
 - [Select and update columns](./use-select-view-update.md)
-- [Filter table data](./filters.md)
+- [Filter table data](./use-filters.md)
 - [`emptyTable`](../reference/table-operations/create/emptyTable.md)

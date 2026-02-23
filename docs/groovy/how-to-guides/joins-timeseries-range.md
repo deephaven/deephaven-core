@@ -83,7 +83,7 @@ result = leftTable.joinMethod(rightTable, "ColumnsToMatch", "NewColumnName = Old
 
 As-of (time series) joins combine data from a pair of tables - a left and right table - based on one or more match columns. The match columns establish key identifiers in the left table that will be used to find data in the right table. The last key column in the list will provide the contemplated inexact match; all other keys are exact matches. Columns of any data type can be chosen as a key column.
 
-These joins are _inexact_ joins. Instead of looking for a precise match in the right table, the operation looks for 1) the exact match if it exists, then 2) if no exact match exists, the best candidate before the exact match for [`aj`](../reference/table-operations/join/aj.md) (and the opposite for [`raj`](../reference/table-operations/join/raj.md)). These are commonly used in cases where no exact match between key column row values is guaranteed, such as when joining two tables based on the timestamp of events.
+These joins are _inexact_ joins. Instead of looking for a precise match in the right table, the operation looks for "(i) the exact match if it exists, then (ii) if no exact match exists, the best candidate before the exact match" for [`aj`](../reference/table-operations/join/aj.md) (and the opposite for [`raj`](../reference/table-operations/join/raj.md)). These are commonly used in cases where no exact match between key column row values is guaranteed, such as when joining two tables based on the timestamp of events.
 
 The output table contains all of the rows and columns of the left table plus additional columns containing data from the right table. If no matching key exists in the right table, appended row values are `NULL`.
 
@@ -221,7 +221,7 @@ result = left.rangeJoin(right, List.of("LeftStartValue < RightValue < LeftEndVal
 
 For a detailed explanation of this example, see [`rangeJoin`](../reference/table-operations/join/rangeJoin.md#examples).
 
-Queries often follow up a [`rangeJoin`](../reference/table-operations/join/rangeJoin.md) with an [`update`](../reference/table-operations/select/update.md) or [`updateView`](../reference/table-operations/select/update-view.md) that calls a Groovy closure that operates on the result. The following code block updates the `result` table from the previous example with a user-defined function.
+Queries often follow up a [`rangeJoin`](../reference/table-operations/join/rangeJoin.md) with an [`update`](../reference/table-operations/select/update.md) or [`updateView`](../reference/table-operations/select/update-view.md) that calls a Groovy closure that operates on the result. The following code block updates the `result` table from the previous example with a [user-defined function](./groovy-closures.md).
 
 ```groovy test-set=1 order=resultSummed
 sumGroup = { arr ->

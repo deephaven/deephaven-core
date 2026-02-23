@@ -95,7 +95,7 @@ The critical insight is that the `zebra` and `bear` rows **were not modified** -
 
 ## Impact on formulas using positional index (i)
 
-This behavior has important implications for formulas that reference the positional index `i`. Consider this example:
+This behavior has important implications for formulas that reference the positional index `i`. Consider what would happen if you tried to add a formula that depends on `i`:
 
 ```python should-fail
 # This will fail with IllegalArgumentException unless you enable unsafe formulas

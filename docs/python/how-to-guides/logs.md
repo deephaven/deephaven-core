@@ -2,7 +2,7 @@
 title: Retrieve logs
 ---
 
-This guide will show you how several methods to retrieve logs.
+This guide shows you how to retrieve logs.
 
 As with any programming language, sometimes there are crashes. It is important to retrieve that infromation so that one can understand the root cause of the error.
 

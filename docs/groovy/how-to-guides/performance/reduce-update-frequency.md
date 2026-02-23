@@ -1,5 +1,6 @@
 ---
-title: Dial down the update frequency of ticking tables
+title: How to dial down the update frequency of ticking tables
+sidebar_label: Dial down the update frequency of ticking tables
 ---
 
 This guide will show you how to reduce the update frequency of ticking tables.
@@ -21,7 +22,7 @@ result = source.snapshotWhen(trigger, options)
 > The trigger table is often a [time table](../../reference/table-operations/create/timeTable.md), a special type of table that adds new rows at a regular, user-defined interval. The sole column of a time table is `Timestamp`.
 
 > [!CAUTION]
-> Columns from the trigger table appear in the result table. If the trigger and source tables have any columns of the same name, an error will occur. To avoid this, either rename conflicting columns, or omit duplicates in the trigger table via stamp columns.
+> Columns from the trigger table appear in the result table. If the trigger and source tables have any columns with the same name, an error will be raised. To avoid this, either rename conflicting columns, or omit duplicates in the trigger table via stamp columns.
 
 The [`snapshot`](../../reference/table-operations/snapshot/snapshot.md) operation produces a static snapshot of a table at a specific point in time.
 

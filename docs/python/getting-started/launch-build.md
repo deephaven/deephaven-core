@@ -3,7 +3,7 @@ title: Build and run Deephaven from source code
 sidebar_label: Source code
 ---
 
-This guide will show you how to build and launch Deephaven Community Core from source code. It provides a starting point for tinkerers and developers who want to dig into configuration or experiment with code changes. 
+This guide will show you how to build and launch Deephaven Community Core from source code. It provides a starting point for tinkerers and developers who want to dig into configuration or experiment with code changes.
 
 These instructions show how to build on multiple operating systems, including Linux, Windows, and Mac.
 

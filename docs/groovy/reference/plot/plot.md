@@ -194,4 +194,5 @@ plot_single = plot("Distance",  source.where("SpeedKPH > 0"), "Time", "DistanceM
 - [How to create plots with the built-in API](../../how-to-guides/plotting/api-plotting.md)
 - [Arrays](../query-language/types/arrays.md)
 - [`plotStyle`](./plotStyle.md)
+
 <!--TODO: add Javadoc link-->

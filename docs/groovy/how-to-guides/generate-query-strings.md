@@ -3,9 +3,7 @@ title: Programmatically generate query strings with Groovy
 sidebar_label: Generate query strings
 ---
 
-The Deephaven Query Language allows users to write very powerful queries to filter and modify tables of data. Consider the following query, which uses a formula to add a new column to a table and a filter to filter the resulting table.
-
-<!--TODO: add filter and formula links when https://deephaven.atlassian.net/jira/software/projects/DOC/boards/8?selectedIssue=DOC-905 is complete-->
+The Deephaven Query Language allows users to write very powerful queries to filter and modify tables of data. Consider the following query, which uses a [formula](./formulas.md) to add a new column to a table and a [filter](./filters.md) to filter the resulting table.
 
 ```groovy order=result,source
 source = emptyTable(7).update("Value = i")
