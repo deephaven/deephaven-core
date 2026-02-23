@@ -273,6 +273,16 @@ public interface WhereFilter extends Filter {
     }
 
     /**
+     * Returns true if this filter permits parallelism.
+     *
+     * <p>
+     * No serial filters permit parallelization. A filter may not permit parallelism if the internal implementation does
+     * not support multiple {@link #filter(RowSet, RowSet, Table, boolean)} calls (e.g., some special filters that
+     * operate only on a rowset or have external state). {@link ConditionFilter}s automatically determine whether they
+     * permit parallelization based on whether filters are {@link QueryTable#STATELESS_FILTERS_BY_DEFAULT stateless by
+     * default}.
+     * </p>
+     *
      * @return if this filter can be applied in parallel
      */
     default boolean permitParallelization() {
@@ -280,7 +290,15 @@ public interface WhereFilter extends Filter {
     }
 
     /**
-     * Return true if this filter is a serial filter.
+     * Return true if this filter is a {@link io.deephaven.api.ConcurrencyControl#withSerial() serial} filter.
+     *
+     * <p>
+     * A filter only returns true if the user explicitly marked the filter (or a filter that it wraps) as serial. A
+     * serial filter must <b>not</b> permit parallelism (as being executed in parallel would violate the contract of a
+     * serial filter).
+     * </p>
+     *
+     * @return true if this filter is a serial filter.
      */
     default boolean isSerial() {
         return false;
