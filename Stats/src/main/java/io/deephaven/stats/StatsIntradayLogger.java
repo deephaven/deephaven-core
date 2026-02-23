@@ -7,7 +7,10 @@ import io.deephaven.base.stats.Counter;
 import io.deephaven.base.stats.HistogramState;
 import io.deephaven.base.stats.State;
 
-public interface StatsIntradayLogger {
+import java.io.Closeable;
+import java.io.IOException;
+
+public interface StatsIntradayLogger extends Closeable {
     /**
      * Convert a type tag to a friendly representation.
      * 
@@ -35,5 +38,8 @@ public interface StatsIntradayLogger {
         @Override
         public void log(String intervalName, long now, long appNow, char typeTag, String compactName, long n, long sum,
                 long last, long min, long max, long avg, long sum2, long stdev) {}
+
+        @Override
+        public void close() throws IOException {}
     }
 }
