@@ -119,8 +119,8 @@ Parallel snapshotting is not enabled until the snapshot size exceeds `QueryTable
 
 The `ungroup` table operation can expand one row into multiple rows. `QueryTable.minimumUngroupBase` controls the initial allocation used by `ungroup`.
 
-| Property Name                    | Default Value | Description                                                                 |
-| ------------------------------- | ------------- | --------------------------------------------------------------------------- |
+| Property Name                   | Default Value | Description                                                                  |
+| ------------------------------- | ------------- | ---------------------------------------------------------------------------- |
 | `QueryTable.minimumUngroupBase` | 10            | The minimum base used for ungroup output row allocation (uses `2^base` rows) |
 
 ## `SoftRecycler` configuration
