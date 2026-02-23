@@ -192,7 +192,7 @@ If you want to try out any of our work-in-progress client libraries:
 - Try out the [Python client](/core/client-api/python/) library.
 - Try out the [Java client](/core/javadoc/) library.
 - Try out the [C++ client](/core/client-api/cpp/) library.
-- Try out the [Javascript client](/core/client-api/javascript/modules/dh/) library.
+- Try out the [Javascript client](/core/client-api/javascript/) library.
 - Check out the [gRPC service definitions](https://github.com/deephaven/deephaven-core/tree/main/proto/proto-backplane-grpc/src/main/proto/deephaven_core/proto) for even more self-help fun.
 
 If you have an existing Flight Client:
