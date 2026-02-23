@@ -146,6 +146,86 @@ class ConfigurationTestCase(BaseTestCase):
         self.assertEqual(value1, value2)
         self.assertEqual(value1, "USNYSE_EXAMPLE")
 
+    def test_mapping_protocol_getitem(self):
+        """Test using square bracket notation to get properties."""
+        # Test with a property that exists in dh-defaults.prop
+        value = self.config["Calendar.default"]
+        self.assertEqual(value, "USNYSE_EXAMPLE")
+
+        value = self.config["UpdatePerformanceTracker.reportingMode"]
+        self.assertEqual(value, "LISTENER_ONLY")
+
+        # Test with non-existent property - should raise KeyError
+        with self.assertRaises(KeyError):
+            _ = self.config["test.nonexistent.property"]
+
+    def test_mapping_protocol_contains(self):
+        """Test using 'in' operator to check if properties exist."""
+        # Test with properties that exist in dh-defaults.prop
+        self.assertTrue("Calendar.default" in self.config)
+        self.assertTrue("QueryCompiler.logEnabledDefault" in self.config)
+        self.assertTrue("NIO.driver.initialThreadCount" in self.config)
+
+        # Test with non-existent property
+        self.assertFalse("test.nonexistent.property" in self.config)
+        self.assertFalse("nonexistent.key" in self.config)
+
+    def test_mapping_protocol_len(self):
+        """Test using len() to get the number of properties."""
+        # Get the length
+        length = len(self.config)
+
+        # Should be a positive integer (there are many properties in dh-defaults.prop)
+        self.assertIsInstance(length, int)
+        self.assertGreater(length, 0)
+
+        # Verify it's consistent
+        self.assertEqual(len(list(self.config)), length)
+
+    def test_mapping_protocol_iter(self):
+        """Test iteration over configuration property names."""
+        # Get all keys by iteration
+        keys = list(self.config)
+
+        # Should have at least some properties
+        self.assertGreater(len(keys), 0)
+
+        # All keys should be strings
+        for key in keys:
+            self.assertIsInstance(key, str)
+
+        # Some known properties should be in the list
+        self.assertIn("Calendar.default", keys)
+        self.assertIn("QueryCompiler.logEnabledDefault", keys)
+
+        # Can iterate multiple times
+        keys2 = list(self.config)
+        self.assertEqual(keys, keys2)
+
+        # Can use in for loop
+        count = 0
+        for key in self.config:
+            self.assertIsInstance(key, str)
+            count += 1
+        self.assertEqual(count, len(self.config))
+
+    def test_mapping_protocol_keys_values_items(self):
+        """Test that we can use dict-like patterns with the configuration."""
+        # Can access values via iteration
+        for key in self.config:
+            # Should be able to access the value
+            value = self.config[key]
+            self.assertIsInstance(value, str)
+
+        # Can create a dict from the config
+        config_dict = {key: self.config[key] for key in self.config}
+        self.assertIsInstance(config_dict, dict)
+        self.assertEqual(len(config_dict), len(self.config))
+
+        # Verify some known properties are in the dict
+        self.assertIn("Calendar.default", config_dict)
+        self.assertEqual(config_dict["Calendar.default"], "USNYSE_EXAMPLE")
+
 
 if __name__ == "__main__":
     unittest.main()

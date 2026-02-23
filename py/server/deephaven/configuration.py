@@ -10,6 +10,8 @@ from typing import Optional
 import jpy
 
 from deephaven import DHError
+from deephaven._wrapper import JObjectWrapper
+from deephaven.jcompat import j_collection_to_list
 
 _JConfiguration = jpy.get_type("io.deephaven.configuration.Configuration")
 
@@ -17,11 +19,12 @@ _JConfiguration = jpy.get_type("io.deephaven.configuration.Configuration")
 class Configuration(JObjectWrapper):
     """A wrapper for the Java Configuration class that provides convenient access to configuration properties.
 
-    This class wraps the singleton Configuration.getInstance() by default, but can also wrap named or custom
-    Configuration instances.
+    This class wraps the singleton Configuration.getInstance() by default, but can also wrap a passed in
+    Configuration instance.
     """
 
     j_object_type = _JConfiguration
+
     def __init__(self, j_configuration: Optional[jpy.JType] = None):
         """Initialize a Configuration wrapper.
 
@@ -211,6 +214,68 @@ class Configuration(JObjectWrapper):
             return self._j_configuration.hasProperty(property_name)
         except Exception as e:
             raise DHError(message=f"Failed to check property '{property_name}'") from e
+
+    def __getitem__(self, property_name: str) -> str:
+        """Get a configuration property as a string using square bracket notation.
+
+        This implements the mapping protocol to allow `config[property_name]` syntax.
+
+        Args:
+            property_name (str): The name of the property to retrieve.
+
+        Returns:
+            str: The property value as a string.
+
+        Raises:
+            KeyError: If the property is not set.
+        """
+        try:
+            return self._j_configuration.getProperty(property_name)
+        except Exception as e:
+            raise KeyError(f"Property '{property_name}' not found") from e
+
+    def __contains__(self, property_name: str) -> bool:
+        """Check if a configuration property is defined using the 'in' operator.
+
+        This implements the mapping protocol to allow `property_name in config` syntax.
+
+        Args:
+            property_name (str): The name of the property to check.
+
+        Returns:
+            bool: True if the property is defined, False otherwise.
+        """
+        return self.has_property(property_name)
+
+    def __len__(self) -> int:
+        """Return the number of configuration properties.
+
+        This implements the mapping protocol to allow `len(config)` syntax.
+
+        Returns:
+            int: The number of properties in the configuration.
+        """
+        try:
+            return self._j_configuration.getProperties().size()
+        except Exception as e:
+            raise DHError(message="Failed to get configuration size") from e
+
+    def __iter__(self):
+        """Return an iterator over the property names.
+
+        This implements the mapping protocol to allow iteration over property names.
+
+        Returns:
+            iterator: An iterator over the property names (keys).
+        """
+        try:
+            # Get the Properties object and convert its keySet to a Python list
+            properties = self._j_configuration.getProperties()
+            key_set = properties.keySet()
+            # Convert Java Set to Python list
+            return iter(j_collection_to_list(key_set))
+        except Exception as e:
+            raise DHError(message="Failed to iterate over configuration keys") from e
 
 
 def get_configuration() -> Configuration:
