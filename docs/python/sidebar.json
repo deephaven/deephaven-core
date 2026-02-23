@@ -1446,6 +1446,27 @@
                 ]
               },
               {
+                "label": "Session",
+                "items": [
+                  {
+                    "label": "publish",
+                    "path": "reference/client-api/session/publish.md"
+                  },
+                  {
+                    "label": "publish_table",
+                    "path": "reference/client-api/session/publish-table.md"
+                  },
+                  {
+                    "label": "fetch",
+                    "path": "reference/client-api/session/fetch.md"
+                  },
+                  {
+                    "label": "fetch_table",
+                    "path": "reference/client-api/session/fetch-table.md"
+                  }
+                ]
+              },
+              {
                 "label": "CSV",
                 "items": [
                   {
