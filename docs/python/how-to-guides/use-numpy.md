@@ -63,7 +63,7 @@ NumPy can be used in query strings like any other Python module. Deephaven recom
 > [!IMPORTANT]
 >
 > - Python functions called in query strings should use [type hints](https://docs.python.org/3/library/typing.html) to ensure the resultant column(s) are of the correct data type.
-> - Python functions are usually slower than equivalent [built-in methods](../reference/query-language/query-library/auto-imported-functions.md).
+> - Python functions are usually slower than equivalent [built-in methods](../reference/query-language/query-library/auto-imported/index.md).
 
 The following code block calculates the cube root of an array column with NumPy:
 
