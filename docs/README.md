@@ -116,6 +116,15 @@ Both workflows let you work directly with .md files without copying between your
 
 Documentation style standards are defined in `.windsurf/rules`. When using Windsurf, Cascade automatically applies these rules to this repo.
 
+**Slash Commands:**
+
+Custom workflows are available in `.windsurf/workflows/`. Type the command in Cascade chat:
+
+- `/format-docs` — Format, validate, and update snapshots for documentation.
+- `/create-groovy-version` — Create a Groovy version of a Python documentation page.
+- `/add-to-sidebar` — Add a new documentation page to the sidebar.
+- `/accuracy-check` — Review documentation for technical accuracy, style, and missing links.
+
 ## File Locations
 
 - **Python docs:** `docs/python/`
