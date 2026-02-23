@@ -56,7 +56,7 @@ Deephaven has a built-in [`sin`](https://deephaven.io/core/javadoc/io/deephaven/
 source = emptyTable(100).update("X = 0.1 * ii", "Y = sin(X)")
 ```
 
-Familiarity with Deephaven's built-in methods can speed up your workflow. Deephaven has a large number of built-in methods that can be called from query strings without any imports or classpaths. For more information and a complete list of what's available, see [auto-imported functions in Deephaven](../reference/query-language/query-library/auto-imported-functions.md).
+Familiarity with Deephaven's built-in methods can speed up your workflow. Deephaven has a large number of built-in methods that can be called from query strings without any imports or classpaths. For more information and a complete list of what's available, see [auto-imported functions in Deephaven](../reference/query-language/query-library/auto-imported/index.md).
 
 ## Passing tables to functions
 
@@ -142,12 +142,12 @@ import com.example.MyClass
 
 ## Related documentation
 
-- [Auto-imported functions](../reference/query-language/query-library/auto-imported-functions.md)
+- [Auto-imported functions](../reference/query-language/query-library/auto-imported/index.md)
 - [Create a new table](../how-to-guides/new-and-empty-table.md#newtable)
 - [Docker volumes](../conceptual/docker-data-volumes.md)
 - [How to use variables and functions in query strings](../how-to-guides/query-scope.md)
 - [How to install Java packages](../how-to-guides/install-and-use-java-packages.md)
 - [How to use Deephaven's built-in query language functions](../how-to-guides/built-in-functions.md)
-- [Query language functions](../reference/query-language/query-library/auto-imported-functions.md)
+- [Query language functions](../reference/query-language/query-library/auto-imported/index.md)
 - [update](../reference/table-operations/select/update.md)
 - [view](../reference/table-operations/select/view.md)

@@ -204,4 +204,4 @@ result = source.update(
 - [Operators in query strings](./operators.md)
 - [Groovy variables in query strings](./groovy-variables.md)
 - [Groovy closures in query strings](./groovy-closures.md)
-- [Auto-imported functions](../reference/query-language/query-library/auto-imported-functions.md)
+- [Auto-imported functions](../reference/query-language/query-library/auto-imported/index.md)

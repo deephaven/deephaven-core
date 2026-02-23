@@ -69,7 +69,7 @@ result = new_table(
 )
 ```
 
-Here, we create an example with two integer columns. Then, we update the table to add a new column `X` via a [formula](./formulas.md) that uses a [variable](./python-variables.md), a [Python function](./python-functions.md), an [auto-imported Java function](../reference/query-language/query-library/auto-imported-functions.md), and various [operators](./operators.md):
+Here, we create an example with two integer columns. Then, we update the table to add a new column `X` via a [formula](./formulas.md) that uses a [variable](./python-variables.md), a [Python function](./python-functions.md), an [auto-imported Java function](../reference/query-language/query-library/auto-imported/index.md), and various [operators](./operators.md):
 
 ```python order=source,result
 from deephaven import new_table

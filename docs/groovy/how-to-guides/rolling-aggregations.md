@@ -597,7 +597,7 @@ fXyz = plotBollinger(result, "XYZ")
 
 The [`updateBy`](/core/javadoc/io/deephaven/engine/table/impl/updateby/UpdateBy.html) module enables users to create custom rolling aggregations with the [`RollingFormula`](../reference/table-operations/update-by-operations/rolling-formula.md) function.
 
-The user-defined formula can utilize any of Deephaven's [built-in functions](../reference/query-language/query-library/auto-imported-functions.md), [arithmetic operators](../how-to-guides/operators.md), or even [user-defined Groovy functions](../how-to-guides/groovy-closures.md).
+The user-defined formula can utilize any of Deephaven's [built-in functions](../reference/query-language/query-library/auto-imported/index.md), [arithmetic operators](../how-to-guides/operators.md), or even [user-defined Groovy functions](../how-to-guides/groovy-closures.md).
 
 #### Tick-based rolling formulas
 

@@ -2619,7 +2619,53 @@
             "items": [
               {
                 "label": "Auto-imported functions",
-                "path": "reference/query-language/query-library/auto-imported-functions.md"
+                "path": "reference/query-language/query-library/auto-imported/index.md",
+                "items": [
+                  {
+                    "label": "Basic",
+                    "path": "reference/query-language/query-library/auto-imported/basic.md"
+                  },
+                  {
+                    "label": "Math",
+                    "path": "reference/query-language/query-library/auto-imported/math.md"
+                  },
+                  {
+                    "label": "Time",
+                    "path": "reference/query-language/query-library/auto-imported/time.md"
+                  },
+                  {
+                    "label": "Logic",
+                    "path": "reference/query-language/query-library/auto-imported/logic.md"
+                  },
+                  {
+                    "label": "Parse",
+                    "path": "reference/query-language/query-library/auto-imported/parse.md"
+                  },
+                  {
+                    "label": "Sort",
+                    "path": "reference/query-language/query-library/auto-imported/sort.md"
+                  },
+                  {
+                    "label": "Search",
+                    "path": "reference/query-language/query-library/auto-imported/search.md"
+                  },
+                  {
+                    "label": "GUI",
+                    "path": "reference/query-language/query-library/auto-imported/gui.md"
+                  },
+                  {
+                    "label": "Constants",
+                    "path": "reference/query-language/query-library/auto-imported/constants.md"
+                  },
+                  {
+                    "label": "Java",
+                    "path": "reference/query-language/query-library/auto-imported/java.md"
+                  },
+                  {
+                    "label": "Data types",
+                    "path": "reference/query-language/query-library/auto-imported/data-types.md"
+                  }
+                ]
               },
               {
                 "label": "Backend Imports",

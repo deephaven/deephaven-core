@@ -44,10 +44,10 @@ source = emptyTable(40).update(
 )
 ```
 
-This page does not provide a comprehensive list of all built-ins. For the complete list of functions built into the query language, see [Auto-imported functions](../reference/query-language/query-library/auto-imported-functions.md).
+This page does not provide a comprehensive list of all built-ins. For the complete list of functions built into the query language, see [Auto-imported functions](../reference/query-language/query-library/auto-imported/index.md).
 
 ## Related documentation
 
 - [Built-in constants](./built-in-constants.md)
 - [Built-in variables](./built-in-variables.md)
-- [Auto-imported functions](../reference/query-language/query-library/auto-imported-functions.md)
+- [Auto-imported functions](../reference/query-language/query-library/auto-imported/index.md)
