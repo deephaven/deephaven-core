@@ -48,7 +48,7 @@ literals = emptyTable(10).update(
 )
 ```
 
-The [`meta`](../../how-to-guides/metadata.md#get-a-metadata-table-with-meta) method is useful for assessing a table's schema. You can use it to confirm that the resulting columns are of the correct type.
+The [`meta`](../../how-to-guides/metadata.md#meta) method is useful for assessing a table's schema. You can use it to confirm that the resulting columns are of the correct type.
 
 ```groovy test-set=1
 literalsMeta = literals.meta()
