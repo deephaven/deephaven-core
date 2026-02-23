@@ -5,7 +5,7 @@ sidebar_label: Query table configuration
 
 This guide discusses how to control various `QueryTable` features that affect your Deephaven tables' latency and throughput.
 
-# `QueryTable`
+## `QueryTable`
 
 [`QueryTable`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/QueryTable.html) is Deephaven's primary implementation of our [Table API](../getting-started/crash-course/table-ops.md).
 
@@ -31,7 +31,6 @@ The `QueryTable` has the following user-configurable properties:
 | [Parallel processing with Select](#parallel-processing-with-select) | `QueryTable.forceParallelSelectAndUpdate` (test-focused) | false      |
 | [Parallel snapshotting](#parallel-snapshotting)                     | `QueryTable.enableParallelSnapshot`                      | true       |
 | [Parallel snapshotting](#parallel-snapshotting)                     | `QueryTable.minimumParallelSnapshotRows`                 | `1L << 20` |
-| [Ungroup operations](#ungroup-operations)                           | `QueryTable.minimumUngroupBase`                          | 10         |
 | [SoftRecycler configuration](#softrecycler-configuration)           | `array.recycler.capacity.*`                              | 1024       |
 | [SoftRecycler configuration](#softrecycler-configuration)           | `sparsearray.recycler.capacity.*`                        | 1024       |
 | [Stateless filters by default](#stateless-by-default)               | `QueryTable.statelessFiltersByDefault`                   | false      |

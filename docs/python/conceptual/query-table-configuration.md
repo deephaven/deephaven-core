@@ -5,7 +5,7 @@ sidebar_label: Query table configuration
 
 This guide discusses how to control various `QueryTable` features that affect your Deephaven tables' latency and throughput.
 
-# `QueryTable`
+## `QueryTable`
 
 [`QueryTable`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/QueryTable.html) is Deephaven's primary implementation of our [Table API](../getting-started/crash-course/table-ops.md).
 
