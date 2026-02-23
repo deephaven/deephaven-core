@@ -7,7 +7,7 @@ A literal value is one that is explicitly defined in code rather than computed o
 
 ## Boolean literals
 
-The Deephaven Query Language (DQL) uses the Java primitive `true` and `false` literal values:
+The Deephaven Query Language (DQL) uses `true` and `false` literal values:
 
 ```groovy order=source,sourceMeta
 source = emptyTable(1).update("TrueLiteral = true", "FalseLiteral = false")
@@ -16,7 +16,7 @@ sourceMeta = source.meta()
 
 ## Numeric literals
 
-Numeric literals in the query language can be integers or floating-point numbers. By default, an integer literal is treated as a 32-bit signed integer (Java primitive `int`), and a floating-point literal is treated as a 64-bit floating-point number (Java primitive `double`). You can specify the type of a numeric literal by appending a suffix to the number:
+Numeric literals in the query language can be integers or floating-point numbers. By default, an integer literal is treated as a 32-bit signed integer (`int`), and a floating-point literal is treated as a 64-bit floating-point number (`double`). You can specify the type of a numeric literal by appending a suffix to the number:
 
 - `L` or `l` for a 64-bit signed integer (Java primitive `long`).
 - `f` for a 32-bit floating-point number (Java primitive `float`).

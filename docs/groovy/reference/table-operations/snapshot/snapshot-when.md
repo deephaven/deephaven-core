@@ -2,7 +2,7 @@
 title: snapshotWhen
 ---
 
-`snapshotWhen` produces an in-memory copy of a source table that adds a new snapshot when another table, the trigger table, changes.
+The `snapshotWhen` method produces an in-memory copy of a source table that adds a new snapshot when another table, the trigger table, changes.
 
 > [!NOTE]
 > The trigger table is often a [time table](../create/timeTable.md), a special type of table that adds new rows at a regular, user-defined interval.

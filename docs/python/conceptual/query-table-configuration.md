@@ -20,17 +20,18 @@ The `QueryTable` has the following user-configurable properties:
 | [DataIndex](#dataindex)                                             | `QueryTable.useDataIndexForWhere`                        | true       |
 | [DataIndex](#dataindex)                                             | `QueryTable.useDataIndexForAggregation`                  | true       |
 | [DataIndex](#dataindex)                                             | `QueryTable.useDataIndexForJoins`                        | true       |
-| [Pushdown predicates with Where](#pushdown-predicates-with-where)   | `QueryTable.disableWherePushdownDataIndex`               | false      |
-| [Pushdown predicates with Where](#pushdown-predicates-with-where)   | `QueryTable.disableWherePushdownParquetRowGroupMetadata` | false      |
-| [Parallel processing with Where](#parallel-processing-with-where)   | `QueryTable.disableParallelWhere`                        | false      |
-| [Parallel processing with Where](#parallel-processing-with-where)   | `QueryTable.parallelWhereRowsPerSegment`                 | `1 << 16`  |
-| [Parallel processing with Where](#parallel-processing-with-where)   | `QueryTable.parallelWhereSegments`                       | -1         |
-| [Parallel processing with Where](#parallel-processing-with-where)   | `QueryTable.forceParallelWhere` (test-focused)           | false      |
-| [Parallel processing with Select](#parallel-processing-with-select) | `QueryTable.enableParallelSelectAndUpdate`               | true       |
-| [Parallel processing with Select](#parallel-processing-with-select) | `QueryTable.minimumParallelSelectRows`                   | `1L << 22` |
-| [Parallel processing with Select](#parallel-processing-with-select) | `QueryTable.forceParallelSelectAndUpdate` (test-focused) | false      |
+| [Pushdown predicates with where](#pushdown-predicates-with-where)   | `QueryTable.disableWherePushdownDataIndex`               | false      |
+| [Pushdown predicates with where](#pushdown-predicates-with-where)   | `QueryTable.disableWherePushdownParquetRowGroupMetadata` | false      |
+| [Parallel processing with where](#parallel-processing-with-where)   | `QueryTable.disableParallelWhere`                        | false      |
+| [Parallel processing with where](#parallel-processing-with-where)   | `QueryTable.parallelWhereRowsPerSegment`                 | `1 << 16`  |
+| [Parallel processing with where](#parallel-processing-with-where)   | `QueryTable.parallelWhereSegments`                       | -1         |
+| [Parallel processing with where](#parallel-processing-with-where)   | `QueryTable.forceParallelWhere` (test-focused)           | false      |
+| [Parallel processing with select](#parallel-processing-with-select) | `QueryTable.enableParallelSelectAndUpdate`               | true       |
+| [Parallel processing with select](#parallel-processing-with-select) | `QueryTable.minimumParallelSelectRows`                   | `1L << 22` |
+| [Parallel processing with select](#parallel-processing-with-select) | `QueryTable.forceParallelSelectAndUpdate` (test-focused) | false      |
 | [Parallel snapshotting](#parallel-snapshotting)                     | `QueryTable.enableParallelSnapshot`                      | true       |
 | [Parallel snapshotting](#parallel-snapshotting)                     | `QueryTable.minimumParallelSnapshotRows`                 | `1L << 20` |
+| [Ungroup operations](#ungroup-operations)                           | `QueryTable.minimumUngroupBase`                          | 10         |
 | [SoftRecycler configuration](#softrecycler-configuration)           | `array.recycler.capacity.*`                              | 1024       |
 | [SoftRecycler configuration](#softrecycler-configuration)           | `sparsearray.recycler.capacity.*`                        | 1024       |
 | [Stateless filters by default](#stateless-by-default-experimental)  | `QueryTable.statelessFiltersByDefault`                   | false      |
@@ -112,6 +113,14 @@ Parallel snapshotting is not enabled until the snapshot size exceeds `QueryTable
 | ---------------------------------------- | ------------- | ----------------------------------------------------------------------------------------------------- |
 | `QueryTable.enableParallelSnapshot`      | true          | Enables parallelized optimizations for snapshotting operations, such as Barrage subscription requests |
 | `QueryTable.minimumParallelSnapshotRows` | `1L << 20`    | The minimum number of rows required to enable parallel snapshotting operations                        |
+
+## Ungroup operations
+
+The `ungroup` table operation can expand one row into multiple rows. `QueryTable.minimumUngroupBase` controls the initial allocation used by `ungroup`.
+
+| Property Name                    | Default Value | Description                                                                 |
+| ------------------------------- | ------------- | --------------------------------------------------------------------------- |
+| `QueryTable.minimumUngroupBase` | 10            | The minimum base used for ungroup output row allocation (uses `2^base` rows) |
 
 ## `SoftRecycler` configuration
 

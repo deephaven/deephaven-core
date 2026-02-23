@@ -14,7 +14,7 @@ Deephaven provides many [dedicated aggregations](./dedicated-aggregations.md), s
 
 ## Syntax
 
-Aggregators are defined in an `agg_list`, then applied to data by the [`agg_by`](../reference/table-operations/group-and-aggregate/aggBy.md) method:
+Aggregators are applied to data by the [`aggBy`](../reference/table-operations/group-and-aggregate/aggBy.md) method:
 
 The general syntax follows:
 
@@ -22,12 +22,12 @@ The general syntax follows:
 import static io.deephaven.api.agg.Aggregation.AggAvg
 import static io.deephaven.api.agg.Aggregation.AggLast
 
-agg_list = [
+aggList = [
     AggAvg(sourceColumns),                 // first aggregation
     AggLast("inputColumn = outputColumn")  // second aggregation
 ]
 
-result = source.aggBy(agg_list, groupingColumns...) // apply the aggregations to data
+result = source.aggBy(aggList, groupingColumns...) // apply the aggregations to data
 ```
 
 ## What aggregations are available?

@@ -28,7 +28,7 @@ Protobuf can be used on its own for things like [serializing and deserializing K
 
 ### Messages
 
-[Messages](https://protobuf.dev/reference/protobuf/edition-2023-spec/#message_definition) are structured data types that define schemas for serialized data. These messages contain fields with names and types in a strict, well-defined sequence.
+[Messages](https://protobuf.dev/reference/protobuf/edition-2023-spec/#message_definition) are structured data types that define schemas for serialized data. Similar to classes and structs, these contain fields with names, types, and unique numbers used for encoding and decoding.
 
 The following example defines a message called `Person` with four fields: `name`, `id`, `email`, and `phones`.
 

@@ -46,7 +46,7 @@ The formulas used above all leverage query language built-ins including [built-i
 
 ### Filters
 
-Filters evaluate to `true` or `false` and are used to determine which rows are included in the result table. Consider the following example, which uses the table created in the [previous section](#formulas):
+Filters evaluate to true/false and are used to determine which rows are included in the result table. Consider the following example, which uses the table created in the [previous section](#formulas):
 
 ```groovy test-set=1 order=resultLessThan,resultEven,resultRng,resultConjunctive,resultDisjunctive
 resultLessThan = source.where("X <= 1.2")

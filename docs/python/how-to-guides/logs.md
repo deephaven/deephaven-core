@@ -60,7 +60,7 @@ You can fine-tune the level of logging inside Deephaven. For more detailed logs 
 
 Deephaven provides a record of all the commands that have been executed, as well as how long each command took or if an error occured. This information is available in the Command History panel, which is searchable.
 
-![The command history panel](../assets/how-to/logs1.png)
+![The Command History panel](../assets/how-to/logs1.png)
 
 Hover over the command for more information.
 
