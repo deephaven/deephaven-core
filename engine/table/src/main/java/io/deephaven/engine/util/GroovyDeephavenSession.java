@@ -350,17 +350,12 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
             throw new IllegalStateException("Cannot refresh classloader: cache directory does not exist");
         }
 
-        if (classPathsToClear == null) {
-            // Clear all cached .class files
-            deleteClassFiles(classCacheDirectory);
-        }
-        else if(classPathsToClear.isEmpty()) {
+        if (classPathsToClear != null && classPathsToClear.isEmpty()) {
             throw new IllegalArgumentException("classPathsToClear cannot be empty");
         }
-        else {
-            // Selectively clear only specified .class files
-            deleteMatchingClassFiles(classCacheDirectory, classPathsToClear);
-        }
+
+        // Clear cached .class files (all if classPathsToClear is null, otherwise only specified files)
+        deleteClassFiles(classCacheDirectory, classPathsToClear);
 
         // Create a fresh GroovyClassLoader
         CompilerConfiguration config = new CompilerConfiguration();
@@ -805,10 +800,19 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
     }
 
     /**
-     * Delete .class files from the cache directory to force recompilation.
+     * Recursively delete .class files from the cache directory to force recompilation.
      * This is necessary because GroovyClassLoader can reload .class files from disk even after clearCache().
+     *
+     * @param directory the directory to recursively search for .class files (initially classCacheDirectory, then subdirectories during recursion)
+     * @param classFilePaths optional set of specific class file paths to delete. If null, all .class files are deleted.
+     *                       Must not be empty if provided.
+     * @throws IllegalArgumentException if classFilePaths is non-null but empty
      */
-    private static void deleteClassFiles(File directory) {
+    private void deleteClassFiles(File directory, @Nullable Set<String> classFilePaths) {
+        if (classFilePaths != null && classFilePaths.isEmpty()) {
+            throw new IllegalArgumentException("classFilePaths cannot be empty");
+        }
+
         if (directory == null || !directory.exists() || !directory.isDirectory()) {
             return;
         }
@@ -820,38 +824,20 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
 
         for (File file : files) {
             if (file.isDirectory()) {
-                deleteClassFiles(file);
+                deleteClassFiles(file, classFilePaths);
             } else if (file.getName().endsWith(".class")) {
-                if (!file.delete()) {
-                    log.warn("Failed to delete cached class file: " + file.getAbsolutePath());
+                boolean shouldDelete = (classFilePaths == null);
+                if (!shouldDelete) {
+                    String relativePath = classCacheDirectory.toPath().relativize(file.toPath())
+                            .toString().replace(File.separatorChar, '/');
+                    shouldDelete = classFilePaths.contains(relativePath);
                 }
-            }
-        }
-    }
 
-
-    /**
-     * Recursively delete .class files that match the given set of paths.
-     */
-    private static void deleteMatchingClassFiles(File directory, Set<String> classFilePaths) {
-        if (directory == null || !directory.exists() || !directory.isDirectory()) {
-            return;
-        }
-
-        File[] files = directory.listFiles();
-        if (files == null) {
-            return;
-        }
-
-        for (File file : files) {
-            if (file.isDirectory()) {
-                deleteMatchingClassFiles(file, classFilePaths);
-            } else if (file.getName().endsWith(".class")) {
-                // Get relative path from classCacheDirectory
-                String relativePath = getRelativePath(file);
-                if (classFilePaths.contains(relativePath)) {
+                if (shouldDelete) {
                     if (file.delete()) {
-                        log.info("Deleted cached .class file for remote source: " + relativePath);
+                        if (classFilePaths != null) {
+                            log.info("Deleted cached .class file for remote source: " + file.getPath());
+                        }
                     } else {
                         log.warn("Failed to delete cached class file: " + file.getAbsolutePath());
                     }
@@ -860,44 +846,6 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         }
     }
 
-    /**
-     * Get a relative path string from a file by walking up to find a reasonable base.
-     * This is a simple implementation that uses forward slashes.
-     */
-    private static String getRelativePath(File file) {
-        // Simple approach: get the path and look for package-like structure
-        String path = file.getPath();
-        // Replace backslashes with forward slashes for consistency
-        path = path.replace('\\', '/');
-
-        // Try to find a reasonable starting point by looking for common package prefixes
-        // For now, just return the path segments that look like packages
-        int lastSeparator = path.lastIndexOf('/');
-        if (lastSeparator > 0) {
-            // Look backwards to find what looks like a package structure
-            // This is a simple heuristic - could be improved
-            String[] segments = path.split("/");
-            StringBuilder result = new StringBuilder();
-            boolean inPackage = false;
-            for (int i = 0; i < segments.length; i++) {
-                String segment = segments[i];
-                // Start capturing when we see a lowercase segment (likely package name)
-                if (!inPackage && segment.length() > 0 && Character.isLowerCase(segment.charAt(0))) {
-                    inPackage = true;
-                }
-                if (inPackage) {
-                    if (result.length() > 0) {
-                        result.append('/');
-                    }
-                    result.append(segment);
-                }
-            }
-            if (result.length() > 0) {
-                return result.toString();
-            }
-        }
-        return file.getName();
-    }
 
     @Override
     protected GroovySnapshot emptySnapshot() {
