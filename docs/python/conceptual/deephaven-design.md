@@ -19,7 +19,7 @@ Deephaven's architecture is built on several key innovations:
 - **Shared table structures**: RowSets and ColumnSources enable zero-copy operations and efficient memory usage across query operations.
 - **Mechanical sympathy**: Chunk-oriented processing, columnar layouts, and careful JVM optimization deliver exceptional performance.
 - **Seamless language integration**: Python, Java, and polyglot APIs work together through JPY and gRPC.
-- **Python-first UI framework**: deephaven.ui enables building reactive web applications entirely in Python, with live table integration and no front-end engineering required.
+- **Python-first UI framework**: `deephaven.ui` enables building reactive web applications entirely in Python, with live table integration and no front-end engineering required.
 - **Lambda architecture without complexity**: Batch and real-time data coexist behind a single, consistent API.
 
 ### How Deephaven compares
@@ -30,7 +30,7 @@ Deephaven's architecture is built on several key innovations:
 | **Update model**       | Recompute full datasets                 | Incremental (only changed rows)     |
 | **Memory efficiency**  | Copy-on-write, data duplication         | Shared RowSets and ColumnSources    |
 | **Query consistency**  | Manual coordination required            | Automatic via DAG and logical clock |
-| **UI development**     | Separate front-end team/codebase        | Pure Python (deephaven.ui) or JS    |
+| **UI development**     | Separate front-end team/codebase        | Pure Python (`deephaven.ui`) or JS  |
 | **Data movement**      | Row-at-a-time or full scans             | Chunk-oriented (4096 cells at once) |
 | **Performance tuning** | Complex configuration, multiple systems | Mechanical sympathy built-in        |
 
@@ -195,7 +195,7 @@ The Deephaven query engine moves data around using a data structure called a _Ch
 
 By working with chunks of data rather than single cells, we allow the engine to amortize data movement costs at every applicable level of the stack. For example, ColumnSources are _ChunkSources_, allowing bulk `getChunk` and `fillChunk` data transfers. These data transfers may in turn be implemented by wrapping or copying arrays, by reading the appropriate region of a file, or by evaluating a formula once for each result element.
 
-**Performance impact**: Processing data in chunks of 4,096 elements instead of one-at-a-time reduces method call overhead by approximately 1,000x and enables SIMD vectorization, delivering 4-8x throughput for arithmetic operations on modern CPUs. A filtering operation that would require 1 million method calls for 1 million rows requires only ~244 calls (1,000,000 ÷ 4,096) with chunk-oriented processing.
+**Performance impact**: Processing data in chunks of thousands of elements instead of one at a time reduces method call overhead by orders of magnitude and enables SIMD vectorization, delivering 4-8x throughput for arithmetic operations on modern CPUs.
 
 By structuring our engine operations as chunk-oriented kernels, we allow the JVM’s JIT compiler to vectorize computations where possible.
 
@@ -307,13 +307,13 @@ Although the core of Deephaven is implemented in Java, we consider Python to be 
 
 To maximize the familiarity of the Deephaven data science and app-dev experience, we have developed a transparent, pure Python API that relieves the user from the details of calling JPY. During the design and implementation of this Pythonic API, special care was taken to minimize the number of crossings between JNI and Python runtime.
 
-## Building UIs with deephaven.ui
+## Building UIs with `deephaven.ui`
 
-deephaven.ui represents a significant evolution in how data applications are built with Deephaven. It's a Python web framework that enables developers to create sophisticated, real-time data-focused web applications using only Python—no JavaScript, CSS, or front-end engineering expertise required.
+`deephaven.ui` represents a significant evolution in how data applications are built with Deephaven. It's a Python web framework that enables developers to create sophisticated, real-time data-focused web applications using only Python—no JavaScript, CSS, or front-end engineering expertise required.
 
 ### Architecture and design philosophy
 
-deephaven.ui adopts a React-like component model, but implemented entirely in Python:
+`deephaven.ui` adopts a React-like component model, but implemented entirely in Python:
 
 ```python syntax
 from deephaven import ui, agg, time_table
@@ -358,7 +358,7 @@ my_dashboard = stock_dashboard()
 
 ### How it works
 
-deephaven.ui bridges three layers:
+`deephaven.ui` bridges three layers:
 
 1. **Python component layer**: Developers write `@ui.component` decorated functions that return component hierarchies.
 2. **Server-side rendering**: The framework maintains component state on the server and tracks dependencies.
@@ -366,7 +366,7 @@ deephaven.ui bridges three layers:
 
 <Svg src='../assets/conceptual/deephaven-ui-architecture.svg' style={{height: 'auto', maxWidth: '1000px'}} />
 
-This architecture leverages Deephaven's DAG model: when source tables update, the DAG propagates changes through query operations, and deephaven.ui propagates those changes through to UI components. The entire data-to-display pipeline remains consistent and automatic.
+This architecture leverages Deephaven's DAG model: when source tables update, the DAG propagates changes through query operations, and `deephaven.ui` propagates those changes through to UI components. The entire data-to-display pipeline remains consistent and automatic.
 
 ### State management and interactivity
 
@@ -399,18 +399,18 @@ When the user moves the slider, `set_threshold` updates the state, triggering a 
 
 ### Design integration
 
-deephaven.ui fits naturally into Deephaven's overall architecture:
+`deephaven.ui` fits naturally into Deephaven's overall architecture:
 
 - **Leverages JPY**: Uses the same Python-Java bridge for engine communication.
 - **Extends gRPC APIs**: Adds UI-specific protocols on top of existing table and object services.
 - **Respects the DAG**: UI updates follow DAG propagation rules, maintaining consistency.
 - **Complements existing tools**: Works alongside notebook-style development, scripts, and traditional web UIs.
 
-For developers building data applications, deephaven.ui eliminates the complexity of managing separate front-end and back-end codebases, while preserving Deephaven's real-time performance characteristics.
+For developers building data applications, `deephaven.ui` eliminates the complexity of managing separate front-end and back-end codebases, while preserving Deephaven's real-time performance characteristics.
 
 ## gRPC APIs for polyglot interoperability
 
-Deephaven's core API is implemented using polyglot technologies that allow for compatible client (or server!) implementations in almost any language. It is composed of several complementary modules, but its Arrow Flight service and Table service are foremost. These offer high-performance data transport -- specifically organized to include real-time and updating data -- and a table manipulation API that mirrors the Deephaven engine's internal compute paradigm. You can read more about our API itself [here](./deephaven-core-api.md).
+Deephaven's core API is implemented using polyglot technologies that allow for compatible client (or server!) implementations in almost any language. It is composed of several complementary modules, but its Arrow Flight service and Table service are foremost. These offer high-performance data transport — specifically organized to include real-time and updating data — and a table manipulation API that mirrors the Deephaven engine's internal compute paradigm. You can read more about our API itself [here](./deephaven-core-api.md).
 
 ## Distributing DAGs and global consistency
 
@@ -432,9 +432,9 @@ Our JavaScript API starts with a gRPC-Web implementation of Arrow's services and
 
 This approach provides maximum flexibility for front-end engineers who need fine-grained control over the UI, want to integrate Deephaven into existing web applications, or prefer working directly with JavaScript/TypeScript.
 
-### deephaven.ui: Python-first web framework
+### `deephaven.ui`: Python-first web framework
 
-For developers who prefer to work entirely in Python, [deephaven.ui](https://deephaven.io/core/ui/docs/) provides a higher-level abstraction. It uses a React-like component model but requires no JavaScript knowledge:
+For developers who prefer to work entirely in Python, [`deephaven.ui`](https://deephaven.io/core/ui/docs/) provides a higher-level abstraction. It uses a React-like component model but requires no JavaScript knowledge:
 
 ```python syntax
 from deephaven import ui, time_table
@@ -449,7 +449,7 @@ def data_app():
 my_app = data_app()
 ```
 
-deephaven.ui automatically:
+`deephaven.ui` automatically:
 
 - Serializes Python components to React elements.
 - Manages WebSocket connections for real-time updates.
@@ -495,8 +495,8 @@ Deephaven Community Core is specifically designed, delivered, and packaged to be
 
 ### UI frameworks
 
-- [deephaven.ui documentation](https://deephaven.io/core/ui/docs/)
-- [deephaven.ui architecture](https://deephaven.io/core/ui/docs/architecture)
+- [`deephaven.ui` documentation](https://deephaven.io/core/ui/docs/)
+- [`deephaven.ui` architecture](https://deephaven.io/core/ui/docs/architecture)
 - [web-client-ui on GitHub](https://github.com/deephaven/web-client-ui)
 - [@deephaven/grid component](https://www.npmjs.com/package/@deephaven/grid)
 
