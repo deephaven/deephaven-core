@@ -166,6 +166,28 @@ Sum′ = Sum
 
 For all cells, the previous value is the value as of the beginning of the current update cycle, which implies that unchanged cells have the same value for previous and current. In order to provide this capability, all Deephaven column sources are required to be able to provide the previous values of removed or modified cells, and to recognize which cells are unchanged. This requirement only holds for the duration of the update phase of a cycle; the necessary data structures are released as part of intra-cycle cleanup, and accessing previous values outside of an updating phase produces undefined results, including the possibility of exceptions or inconsistent data.
 
+In Groovy, you access these values through the [`TableUpdate`](../how-to-guides/table-listeners-groovy.md) object passed to listeners:
+
+```groovy syntax
+import io.deephaven.engine.table.TableUpdate
+
+def listener = { TableUpdate update ->
+    // Access added, removed, and modified row sets
+    def added = update.added()
+    def removed = update.removed()
+    def modified = update.modified()
+
+    // Access previous values of modified cells
+    // (only valid during update processing)
+    if (!modified.isEmpty()) {
+        // Use column sources with usePrev=true for previous values
+        println "Modified ${modified.size()} rows"
+    }
+}
+
+myTable.addUpdateListener(listener)
+```
+
 ### Modified columns
 
 <div className="comment-title">
@@ -228,21 +250,21 @@ Some tables have multiple parents (e.g., join or merge results). Ensuring a sing
 
 Reading everything above, one might reasonably wonder: if this update processing is going on all the time, when and how can we actually safely read data or create new derived tables? There are three answers to this question, depending on the use case.
 
-In the simplest case, it’s sufficient to simply block update processing. Other subsystems running in-process with a Deephaven query engine can acquire a [shared lock](https://deephaven.io/core/javadoc/io/deephaven/engine/updategraph/UpdateGraph.html#sharedLock()) for the duration of any otherwise unsafe operations they need to perform, guaranteeing that data will remain consistent across all nodes in the DAG. When you type a command for execution in the Deephaven console, this is done for you.
+In the simplest case, it's sufficient to simply block update processing. Other subsystems running in-process with a Deephaven query engine can acquire a [shared lock](https://deephaven.io/core/javadoc/io/deephaven/engine/updategraph/UpdateGraph.html#sharedLock()) (or use the [exclusive lock](./query-engine/engine-locking.md)) for the duration of any otherwise unsafe operations they need to perform, guaranteeing that data will remain consistent across all nodes in the DAG. When you type a command for execution in the Deephaven console, this is done for you.
 
-Sometimes it’s preferable to perform potentially unsafe operations from _within_ the update processing system. There are two ways to accomplish this. Firstly, by performing work reactively in a table listener; this is ideal for publishing updates to external subscribers or reactive systems. Secondly, by scheduling special terminal notifications that are processed at the end of each update cycle; this is ideal for post-update maintenance.
+Sometimes it's preferable to perform potentially unsafe operations from _within_ the update processing system. There are two ways to accomplish this. Firstly, by performing work reactively in a [table listener](../how-to-guides/table-listeners-groovy.md); this is ideal for publishing updates to external subscribers or reactive systems. Secondly, by scheduling special terminal notifications that are processed at the end of each update cycle; this is ideal for post-update maintenance.
 
 All of the approaches described so far have liveness implications for real-time applications. The third strategy, on the other hand, trades concurrency in exchange for giving up a guarantee of success. Each update cycle has two _phases_ (_updating_ and _idle_), and also a _step_ tracked by a logical clock. This state (phase and step) can be read concurrently and atomically by external code, and is augmented by per-table tracking of the _last update step_.
 
 This allows a concurrent consumer to determine two important things. Firstly, whether it should attempt to use a source table’s current row set and current column source data, or its previous row set and previous column source data. Secondly, whether an optimistic operation cannot be proven to have succeeded consistently, and thus must be retried or abandoned.
 
-This third, optimistically concurrent approach generally requires a fallback strategy of acquiring the [shared lock](https://deephaven.io/core/javadoc/io/deephaven/engine/updategraph/UpdateGraph.html#sharedLock()). Deephaven provides utilities to encapsulate all of this complexity for internal use as well as user code. This enables many table operations to be initialized concurrently with the update cycle, including all the operations that are performed automatically when rendering UI components via Deephaven’s Javascript Client. It’s also used for client-driven snapshots and table subscriptions via Deephaven’s implementation of [Apache Arrow Flight](https://arrow.apache.org/docs/format/Flight.html).
+This third, optimistically concurrent approach generally requires a fallback strategy of acquiring the [shared lock](https://deephaven.io/core/javadoc/io/deephaven/engine/updategraph/UpdateGraph.html#sharedLock()). Deephaven provides utilities to encapsulate all of this complexity for internal use as well as user code. For practical guidance on safely accessing data during initialization and updates, see [Synchronization and locking](./query-engine/engine-locking.md). This enables many table operations to be initialized concurrently with the update cycle, including all the operations that are performed automatically when rendering UI components via Deephaven's Javascript Client. It's also used for client-driven snapshots and table subscriptions via Deephaven's implementation of [Apache Arrow Flight](https://arrow.apache.org/docs/format/Flight.html).
 
 None of these consistent data access mechanisms obviates the need to use good engineering sense. Developers should keep interactions with updating data as efficient and infrequent as possible. That said, together these strategies represent a toolbox with a wealth of possibilities for real-time application development when harnessed to the rest of the Deephaven query engine.
 
 ### Multi-process data pipelines
 
-Deephaven also provides mechanisms for consistently replicating table data to other processes. Our Apache Arrow Flight implementation uses custom metadata to implement a protocol we call [Barrage](https://github.com/deephaven/barrage), which communicates table updates in the same way as we described [previously](#describing-table-updates) via a language agnostic gRPC API. Our Apache Kafka integration allows for streaming data ingestion (and soon publication) via one of the most popular distributed event streaming platforms in the world.
+Deephaven also provides mechanisms for consistently replicating table data to other processes. Our Apache Arrow Flight implementation uses custom metadata to implement a protocol we call [Barrage](https://github.com/deephaven/barrage), which communicates table updates in the same way as we described [previously](#describing-table-updates) via a language agnostic gRPC API. Our [Apache Kafka](./kafka-basic-terms.md) integration allows for streaming data ingestion and publication via one of the most popular distributed event streaming platforms in the world.
 
 When coupled with the Deephaven query engine or with external publishers and subscribers that understand Apache Arrow Flight and Barrage or Apache Kafka, this allows for the creation of a multi-process DAG with remote links from publisher to subscriber. This simple primitive allows for consistent, asynchronous processing of data without inherent limitations on data size or resources. The Deephaven team intends to grow the toolset for this kind of data backplane system substantially over the coming months, but the building blocks are already in place for a huge variety of real-time data driven applications.
 
@@ -252,7 +274,9 @@ The update model described above serves as a cornerstone enabler of Deephaven’
 
 ## Related documentation
 
-- [Core API design](./deephaven-core-api.md)
-- [Deephaven’s Directed-Acyclic-Graph (DAG)](./dag.md)
+- [Table listeners](../how-to-guides/table-listeners-groovy.md) — React to table updates in Groovy
+- [Synchronization and locking](./query-engine/engine-locking.md) — Advanced locking mechanisms
+- [Deephaven's Directed-Acyclic-Graph (DAG)](./dag.md)
 - [Kafka basic terminology](./kafka-basic-terms.md)
 - [Deephaven Barrage](/barrage/docs)
+- [Core API design](./deephaven-core-api.md)
