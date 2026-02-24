@@ -23,7 +23,7 @@ Create a JS plugin when you need to:
 - Create reusable UI components that can be shared across projects.
 - Build components that require complex client-side interactivity.
 
-If you only need custom UI for a single project without sharing, consider using [deephaven.ui](./deephaven-ui.md) components directly.
+If you only need custom UI for a single project without sharing, consider using [`deephaven.ui`](./deephaven-ui.md) components directly.
 
 ## Quick start with cookiecutter
 
@@ -168,10 +168,10 @@ For faster iteration with hot module replacement, see the [deephaven-plugins dev
 
 The best way to learn JS plugin development is to study existing plugins. The [deephaven-plugins](https://github.com/deephaven/deephaven-plugins) repository contains production-ready examples:
 
-- [`plotly-express`](https://github.com/deephaven/deephaven-plugins/tree/main/plugins/plotly-express): Plotly visualization integration
-- [`matplotlib`](https://github.com/deephaven/deephaven-plugins/tree/main/plugins/matplotlib): Matplotlib figure support
-- [`json`](https://github.com/deephaven/deephaven-plugins/tree/main/plugins/json): JSON viewer component
-- [`ui`](https://github.com/deephaven/deephaven-plugins/tree/main/plugins/ui): The deephaven.ui framework itself
+- [`plotly-express`](https://github.com/deephaven/deephaven-plugins/tree/main/plugins/plotly-express): Plotly visualization integration.
+- [`matplotlib`](https://github.com/deephaven/deephaven-plugins/tree/main/plugins/matplotlib): Matplotlib figure support.
+- [`json`](https://github.com/deephaven/deephaven-plugins/tree/main/plugins/json): JSON viewer component.
+- [`ui`](https://github.com/deephaven/deephaven-plugins/tree/main/plugins/ui): The deephaven.ui framework itself.
 
 Each plugin demonstrates:
 
