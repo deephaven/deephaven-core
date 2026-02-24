@@ -363,19 +363,19 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         }
 
         // Create a fresh GroovyClassLoader
-        CompilerConfiguration freshConfig = new CompilerConfiguration();
-        freshConfig.getCompilationCustomizers().add(consoleImports);
-        freshConfig.setTargetDirectory(classCacheDirectory);
-        GroovyClassLoader freshClassLoader = new GroovyClassLoader(STATIC_LOADER, freshConfig);
+        CompilerConfiguration config = new CompilerConfiguration();
+        config.getCompilationCustomizers().add(consoleImports);
+        config.setTargetDirectory(classCacheDirectory);
+        GroovyClassLoader classLoader = new GroovyClassLoader(STATIC_LOADER, config);
 
         // Update the session's ExecutionContext with fresh QueryCompiler
         executionContext = createExecutionContext(
                 executionContext.getUpdateGraph(),
                 executionContext.getOperationInitializer(),
-                freshClassLoader);
+                classLoader);
 
         // Permanently replace groovyShell with fresh shell
-        groovyShell = new DeephavenGroovyShell(freshClassLoader, groovyShell.getContext(), freshConfig);
+        groovyShell = new DeephavenGroovyShell(classLoader, groovyShell.getContext(), config);
     }
 
     @Override
@@ -393,8 +393,11 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         final RemoteFileSourceClassLoader remoteLoader = RemoteFileSourceClassLoader.getInstance();
         final boolean hasRemoteSources = remoteLoader.hasConfiguredRemoteSources();
 
-        // If we are switching from no remote sources to active remote sources, we don't know which classes in the
-        // cache will be sourced remotely, so we clear the entire cache before execution.
+        // Any time there are remote sources, we need to clear the class cache to ensure they are freshly fetched.
+        // 1. For cases where previous evaluate had remote sources, the cache will have already been cleared of any
+        // fetched sources, so nothing to do.
+        // 2. For cases where previous evaluate did not have remote sources, we have to clear the entire cache since
+        // we don't know yet what sources need to be fetched.
         if (!previousEvalHadRemoteSources && hasRemoteSources) {
             log.debug("Remote file sourcing enabled. Clearing class cache.");
             refreshClassLoader(null);  // null = clear all cache files
@@ -420,8 +423,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
             // Get list of remote resources that were used in this execution
             final List<String> remoteResources = remoteLoader.getFetchedRemoteResources();
 
-            // Scenario 2: Remote sources were fetched during execution
-            // Selectively clear those specific .class files and refresh classloader for next execution
+            // If remote sources were fetched, clear them from the cache so that they will be re-fetched on next evaluate
             if (!remoteResources.isEmpty()) {
                 log.debug("Remote resources were fetched - selectively clearing cache after execution");
 
