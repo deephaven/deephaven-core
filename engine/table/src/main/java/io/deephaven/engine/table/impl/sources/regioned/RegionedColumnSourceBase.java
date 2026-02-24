@@ -13,7 +13,6 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.table.impl.locations.impl.AbstractTableLocation;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.util.SafeCloseableArray;
@@ -142,8 +141,7 @@ abstract class RegionedColumnSourceBase<DATA_TYPE, ATTR extends Values, REGION_T
 
                     // Create a local pushdown context that can provide the table location to the ColumnRegion
                     final RegionedColumnSourceManager.IncludedTableLocationEntry tle = tleList.get(regionIndex);
-                    final RegionedPushdownFilterLocationContext newCtx =
-                            filterContext.withTableLocation((AbstractTableLocation) tle.location);
+                    final RegionedPushdownFilterLocationContext newCtx = filterContext.withTableLocation(tle.location);
                     ctx.shiftedRowSet = tle.subsetAndShiftIntoLocationSpace(selection);
                     getRegion(regionIndex).estimatePushdownFilterCost(
                             filter,
@@ -196,7 +194,7 @@ abstract class RegionedColumnSourceBase<DATA_TYPE, ATTR extends Values, REGION_T
                     // Create a local pushdown context that can provide the table location to the ColumnRegion
                     final RegionedColumnSourceManager.IncludedTableLocationEntry tle = tleList.get(regionIndex);
                     final RegionedPushdownFilterLocationContext newCtx =
-                            filterContext.withTableLocation((AbstractTableLocation) tle.location);
+                            filterContext.withTableLocation(tle.location);
 
                     ctx.shiftedRowSet = tle.subsetAndShiftIntoLocationSpace(selection);
 

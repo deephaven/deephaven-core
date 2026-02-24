@@ -9,6 +9,8 @@ import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
+import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
+import io.deephaven.engine.table.impl.select.ExposesChunkFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.select.WhereFilterImpl;
 import io.deephaven.util.SafeCloseable;
@@ -17,6 +19,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * A WhereFilter that captures the RowSets it filters, allowing for inspection of the behavior of the
@@ -27,7 +30,7 @@ import java.util.List;
  * <p>
  * Once used, or between-uses, it is expected that the {@link #reset()} method is called to clear the captured RowSets.
  */
-public class RowSetCapturingFilter extends WhereFilterImpl implements SafeCloseable {
+public class RowSetCapturingFilter extends WhereFilterImpl implements SafeCloseable, ExposesChunkFilter {
     final List<RowSet> rowSets;
     final WhereFilter innerFilter;
 
@@ -165,5 +168,12 @@ public class RowSetCapturingFilter extends WhereFilterImpl implements SafeClosea
     @Override
     public String toString() {
         return "RowSetCapturingFilter{" + innerFilter + '}';
+    }
+
+    @Override
+    public Optional<ChunkFilter> chunkFilter() {
+        return innerFilter instanceof ExposesChunkFilter
+                ? ((ExposesChunkFilter) innerFilter).chunkFilter()
+                : Optional.empty();
     }
 }

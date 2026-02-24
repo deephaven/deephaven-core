@@ -5,7 +5,7 @@ package io.deephaven.engine.table.impl.sources.regioned;
 
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.impl.locations.impl.AbstractTableLocation;
+import io.deephaven.engine.table.impl.locations.TableLocation;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 
 import java.util.List;
@@ -16,19 +16,19 @@ import java.util.Map;
  * provides access to the table location.
  */
 public class RegionedPushdownFilterLocationContext extends RegionedPushdownFilterContext {
-    private final AbstractTableLocation tableLocation;
+    private final TableLocation tableLocation;
 
     public RegionedPushdownFilterLocationContext(
             final WhereFilter filter,
             final List<ColumnSource<?>> columnSources,
             final List<ColumnDefinition<?>> columnDefinitions,
             final Map<String, String> renameMap,
-            final AbstractTableLocation tableLocation) {
+            final TableLocation tableLocation) {
         super(filter, columnSources, columnDefinitions, renameMap);
         this.tableLocation = tableLocation;
     }
 
-    public AbstractTableLocation tableLocation() {
+    public TableLocation tableLocation() {
         return tableLocation;
     }
 }

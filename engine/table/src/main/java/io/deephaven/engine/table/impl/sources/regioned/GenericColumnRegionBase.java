@@ -9,7 +9,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.impl.PushdownFilterContext;
 import io.deephaven.engine.table.impl.PushdownResult;
 import io.deephaven.engine.table.impl.locations.InvalidatedRegionException;
-import io.deephaven.engine.table.impl.locations.impl.AbstractTableLocation;
+import io.deephaven.engine.table.impl.locations.TableLocation;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.util.SafeCloseable;
@@ -67,7 +67,7 @@ public abstract class GenericColumnRegionBase<ATTR extends Any> implements Colum
         final RegionedPushdownFilterLocationContext filterCtx = (RegionedPushdownFilterLocationContext) context;
         Assert.neqNull(filterCtx.tableLocation(), "filterCtx.tableLocation()");
 
-        final AbstractTableLocation tableLocation = filterCtx.tableLocation();
+        final TableLocation tableLocation = filterCtx.tableLocation();
 
         // We must consider all the actions from this region and from the AbstractTableLocation and execute them in
         // minimal cost order.
@@ -129,7 +129,7 @@ public abstract class GenericColumnRegionBase<ATTR extends Any> implements Colum
         final RegionedPushdownFilterLocationContext filterCtx = (RegionedPushdownFilterLocationContext) context;
         Assert.neqNull(filterCtx.tableLocation(), "filterCtx.tableLocation()");
 
-        final AbstractTableLocation tableLocation = filterCtx.tableLocation();
+        final TableLocation tableLocation = filterCtx.tableLocation();
 
         // We must consider all the actions from this region and from the AbstractTableLocation and execute them in
         // minimal cost order

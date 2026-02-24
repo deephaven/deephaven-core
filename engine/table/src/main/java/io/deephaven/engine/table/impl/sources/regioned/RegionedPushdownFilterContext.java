@@ -6,7 +6,7 @@ package io.deephaven.engine.table.impl.sources.regioned;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.BasePushdownFilterContext;
-import io.deephaven.engine.table.impl.locations.impl.AbstractTableLocation;
+import io.deephaven.engine.table.impl.locations.TableLocation;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 
 import java.util.List;
@@ -40,7 +40,7 @@ public class RegionedPushdownFilterContext extends BasePushdownFilterContext {
     /**
      * Create a copy of this context with the given table location set to the supplied value.
      */
-    public RegionedPushdownFilterLocationContext withTableLocation(final AbstractTableLocation tableLocation) {
+    public RegionedPushdownFilterLocationContext withTableLocation(final TableLocation tableLocation) {
         return new RegionedPushdownFilterLocationContext(
                 filter(),
                 columnSources(),
