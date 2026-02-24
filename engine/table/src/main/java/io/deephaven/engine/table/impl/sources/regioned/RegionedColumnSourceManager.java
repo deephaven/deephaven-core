@@ -911,7 +911,7 @@ public class RegionedColumnSourceManager
 
         jobScheduler.iterateParallel(
                 ExecutionContext.getContext(),
-                (LogOutput output) -> output.append("RegionedColumnSourceBase#estimatePushdownFilterCost"),
+                (LogOutput output) -> output.append("RegionedColumnSourceManager#pushdownFilter"),
                 RegionedPushdownHelper.RegionThreadContext::new,
                 0,
                 regionIndices.length,
