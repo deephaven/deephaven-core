@@ -1,8 +1,12 @@
 ---
 title: Apply color formatting to columns
+sidebar_label: Format columns
 ---
 
 This guide shows you how to apply various color formatting options to the columns in your static or dynamic tables.
+
+> [!CAUTION]
+> Formatting creates hidden columns in tables. It's recommended to apply formatting after all other data processing is complete.
 
 ## Format an entire column
 

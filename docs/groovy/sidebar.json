@@ -827,15 +827,6 @@
                 ]
               },
               {
-                "label": "Imports",
-                "items": [
-                  {
-                    "label": "Auto-imported functions",
-                    "path": "reference/query-language/query-library/auto-imported-functions.md"
-                  }
-                ]
-              },
-              {
                 "label": "Errors and troubleshooting",
                 "items": [
                   {

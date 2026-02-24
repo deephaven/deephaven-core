@@ -106,7 +106,7 @@ result = source.aggBy([AggMin("MinNumber = Number"),AggMax("MaxNumber = Number")
 
 ## Related documentation
 
-- [Create a new table](../../../how-to-guides/new-and-empty-table.md#newtable)
+- [How to create static tables](../../../how-to-guides/new-and-empty-table.md)
 - [How to create multiple summary statistics for groups](../../../how-to-guides/combined-aggregations.md)
 - [`aggBy`](./aggBy.md)
 - [`minBy`](./minBy.md)

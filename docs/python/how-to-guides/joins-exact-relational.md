@@ -37,6 +37,8 @@ result = left_table.join_method(
 )
 ```
 
+Where `right_table` is the table to join with, and `on` and `joins` are the String names for columns to match and add, respectively.
+
 The basic syntax for [`left_outer_join`](../reference/table-operations/join/left-outer-join.md) and [`full_outer_join`](../reference/table-operations/join/full-outer-join.md) are as follows:
 
 ```python syntax

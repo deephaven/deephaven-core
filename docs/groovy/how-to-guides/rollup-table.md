@@ -35,6 +35,8 @@ result = source.rollup(aggregations, includeConstituents, groupByColumns...)
 
 In the result table, only the first and second levels are initially expanded. Levels can be expanded by clicking on the right-facing arrow in a corresponding `by` column.
 
+The [`rollup`](../reference/table-operations/create/rollup.md) method takes up to three arguments. The first one is required, while the other two are optional.
+
 1. `aggregations`: One or more aggregations.
 
 The following aggregations are supported:

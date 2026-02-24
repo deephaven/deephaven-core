@@ -29,7 +29,7 @@ A new table with a specific percentage of rows from the end of the source table.
 
 ## Examples
 
-The following example filters the table to the last 40% and 33.33333333% of rows.
+The following example filters the table to the last 40% and 33.333333333% of rows.
 
 ```groovy order=source,result,result1
 source = newTable(
@@ -40,11 +40,11 @@ source = newTable(
 )
 
 result = source.tailPct(0.40)
-result1 = source.tailPct(0.3333333333)
+result1 = source.tailPct(0.333333333)
 ```
 
 ## Related documentation
 
-- [Create a new table](../../../how-to-guides/new-and-empty-table.md#newtable)
-- [How to use filters](../../../how-to-guides/filters.md)
+- [How to create static tables](../../../how-to-guides/new-and-empty-table.md)
+- [How to use filters](../../../how-to-guides/use-filters.md)
 - [Javadoc](https://deephaven.io/core/javadoc/io/deephaven/engine/table/Table.html#tailPct(double))

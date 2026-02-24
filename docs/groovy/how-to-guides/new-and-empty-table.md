@@ -40,7 +40,7 @@ source = emptyTable(100).update(
 )
 ```
 
-DQL is a powerful, versatile tool for table transformations. For more information, see the [formula documentation](../how-to-guides/formulas.md).
+DQL is a powerful, versatile tool for table transformations. For more information, see the [Query string overview](./query-string-overview.md).
 
 ## `newTable`
 
@@ -53,7 +53,7 @@ result = newTable(
 )
 ```
 
-Here, we create an example with two integer columns. Then, we update the table to add a new column `X` via a formula that uses a [variable](../reference/query-language/variables/scope.md), a [user-defined closure](../how-to-guides/groovy-closures.md), an [auto-imported Java function](../reference/query-language/formulas/auto-imported-functions.md), and various [operators](../how-to-guides/operators.md):
+Here, we create an example with two integer columns. Then, we update the table to add a new column `X` via a [formula](./formulas.md) that uses a [variable](../reference/query-language/variables/scope.md), a [user-defined closure](../how-to-guides/groovy-closures.md), an [auto-imported Java function](../reference/query-language/formulas/auto-imported-functions.md), and various [operators](../how-to-guides/operators.md):
 
 ```groovy order=source,result
 var = 3
@@ -68,10 +68,10 @@ result = source.update("X = A + 3 * sqrt(B) + var + (int)f(A, B)")
 
 Here, we will go into detail on creating new columns in your tables.
 
-[Selection methods](./use-select-view-update.md) -- such as [`select`](../reference/table-operations/select/select.md), [`view`](../reference/table-operations/select/view.md), [`update`](../reference/table-operations/select/update.md), [`updateView`](../reference/table-operations/select/update-view.md), and [`lazyUpdate`](../reference/table-operations/select/lazy-update.md) -- and [formulas](../how-to-guides/formulas.md) are used to create new columns:
+[Selection methods](./use-select-view-update.md) - such as [`select`](../reference/table-operations/select/select.md), [`view`](../reference/table-operations/select/view.md), [`update`](../reference/table-operations/select/update.md), [`updateView`](../reference/table-operations/select/update-view.md), and [`lazyUpdate`](../reference/table-operations/select/lazy-update.md) - and [formulas](./formulas.md) are used to create new columns:
 
 - The [selection method](./use-select-view-update.md) determines which columns will be in the output table and how the values are computed.
-- The [formulas](../how-to-guides/formulas.md) are the recipes for computing the cell values.
+- The [formulas](./formulas.md) are the recipes for computing the cell values.
 
 In the following examples, we use a table of student test results. Using [`update`](../reference/table-operations/select/update.md), we create a new `Total` column containing the sum of each student's math, science, and art scores. Notice that [`update`](../reference/table-operations/select/update.md) includes the columns from the source table in the output table.
 
@@ -124,7 +124,13 @@ Deephaven supports the following column types:
 
 ## Related documentation
 
-- [How to use select, view, and update](../how-to-guides/use-select-view-update.md)
+- [Built-in query language constants](./built-in-constants.md)
+- [Built-in query language variables](./built-in-variables.md)
+- [Built-in query language functions](./built-in-functions.md)
+- [Formulas in query strings](./formulas.md)
+- [Operators in query strings](./operators.md)
+- [How to use `select`, `view`, and `update`](./use-select-view-update.md)
+- [Query string overview](./query-string-overview.md)
 - [`empty_table`](../reference/table-operations/create/emptyTable.md)
 - [`new_table`](../reference/table-operations/create/newTable.md)
 - [`update`](../reference/table-operations/select/update.md)

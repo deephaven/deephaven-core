@@ -5,7 +5,7 @@ sidebar_label: Create Tables
 
 ## Static tables
 
-The simplest way to create static tables from scratch is with the [`new_table`](../../reference/table-operations/create/newTable.md) and [`empty_table`](../../reference/table-operations/create/emptyTable.md) methods.
+The simplest way to create static tables from scratch is with [`new_table`](../../reference/table-operations/create/newTable.md) and [`empty_table`](../../reference/table-operations/create/emptyTable.md).
 
 ```python test-set=1 order=static_table1,static_table2
 from deephaven import new_table, empty_table
@@ -89,4 +89,4 @@ replayed_crypto = replayer.add_table(
 replayer.start()
 ```
 
-Most real-world use cases for ticking data involve connecting to data streams that are constantly being updated. For this, Deephaven's [Apache Kafka integration](../../how-to-guides/data-import-export/kafka-stream.md) is first-in-class, and almost any imaginable real-time streaming source can be wrangled with the [`TablePublisher`](../../how-to-guides/table-publisher.md). That said, setting up the pipelines for Kafka streams or other real-time data sources can be very complex, and is outside the scope of this guide.
+Most real-world use cases for ticking data involve connecting to data streams that are constantly being updated. For this, Deephaven's [Apache Kafka integration](../../how-to-guides/data-import-export/kafka-stream.md) is first-in-class, and almost any imaginable real-time streaming source can be wrangled with the [`TablePublisher`](../../how-to-guides/table-publisher.md#table-publisher) or [`DynamicTableWriter`](../../how-to-guides/table-publisher.md#dynamictablewriter). That said, setting up the pipelines for Kafka streams or other real-time data sources can be very complex, and is outside the scope of this guide.

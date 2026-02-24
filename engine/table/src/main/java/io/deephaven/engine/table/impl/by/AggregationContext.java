@@ -270,10 +270,12 @@ public class AggregationContext {
      * 
      * @param upstream The upstream {@link TableUpdateImpl}
      * @param startingDestinationsCount The number of used destinations at the beginning of this step
+     * @param modifiedOperators an array of booleans, parallel to operators, indicating which operators were modified
      */
-    void resetOperatorsForStep(@NotNull final TableUpdate upstream, final int startingDestinationsCount) {
-        for (final IterativeChunkedAggregationOperator operator : operators) {
-            operator.resetForStep(upstream, startingDestinationsCount);
+    void resetOperatorsForStep(@NotNull final TableUpdate upstream, final int startingDestinationsCount,
+            final boolean[] modifiedOperators) {
+        for (int ii = 0; ii < operators.length; ii++) {
+            modifiedOperators[ii] = operators[ii].resetForStep(upstream, startingDestinationsCount);
         }
     }
 

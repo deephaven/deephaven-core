@@ -11,7 +11,6 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.filter.ExtractBarriers;
 import io.deephaven.engine.table.impl.filter.ExtractInnerConjunctiveFilters;
 import io.deephaven.engine.table.impl.filter.ExtractRespectedBarriers;
-import io.deephaven.engine.table.impl.filter.ExtractSerialFilters;
 import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
@@ -113,6 +112,13 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
         }
 
         @Override
+        protected boolean shouldCoalesce(WhereFilter... whereFilters) {
+            return Arrays.stream(whereFilters)
+                    .anyMatch(whereFilter -> ((PartitionAwareSourceTable) table).isValidAgainstColumnPartitionTable(
+                            whereFilter.getColumns(), whereFilter.getColumnArrays()));
+        }
+
+        @Override
         protected TableAndRemainingFilters getWithWhere(WhereFilter... whereFilters) {
             final List<WhereFilter> partitionFilters = new ArrayList<>();
             final List<WhereFilter> otherFilters = new ArrayList<>();
@@ -120,7 +126,7 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
             boolean serialFilterFound = false;
             final Set<Object> partitionBarriers = new HashSet<>();
             for (WhereFilter whereFilter : whereFilters) {
-                if (!whereFilter.permitParallelization()) {
+                if (whereFilter.isSerial()) {
                     serialFilterFound = true;
                 }
 
@@ -307,7 +313,7 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
             whereFilter.init(definition, compilationProcessor);
 
             // Test for user-mandated serial filters (e.g. FilterSerial.of() or Filter.serial())
-            if (ExtractSerialFilters.hasAny(whereFilter)) {
+            if (whereFilter.isSerial()) {
                 serialFilterFound = true;
             }
 

@@ -52,4 +52,9 @@ class StatsImpl implements StatsIntradayLogger {
             throw new UncheckedIOException(e);
         }
     }
+
+    @Override
+    public void close() throws IOException {
+        logger.close();
+    }
 }

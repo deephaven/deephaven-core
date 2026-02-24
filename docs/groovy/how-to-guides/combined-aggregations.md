@@ -22,12 +22,12 @@ The general syntax follows:
 import static io.deephaven.api.agg.Aggregation.AggAvg
 import static io.deephaven.api.agg.Aggregation.AggLast
 
-agg_list = [
+aggList = [
     AggAvg(sourceColumns),                 // first aggregation
     AggLast("inputColumn = outputColumn")  // second aggregation
 ]
 
-result = source.aggBy(agg_list, groupingColumns...) // apply the aggregations to data
+result = source.aggBy(aggList, groupingColumns...) // apply the aggregations to data
 ```
 
 ## What aggregations are available?
@@ -37,8 +37,8 @@ A number of built-in aggregations are available:
 - [`AggAbsSum`](../reference/table-operations/group-and-aggregate/AggAbsSum.md) - Sum of absolute values for each group.
 - [`AggAvg`](../reference/table-operations/group-and-aggregate/AggAvg.md) - Average value for each group.
 - [`AggCount`](../reference/table-operations/group-and-aggregate/AggCount.md) - Number of rows for each group.
-- [`AggCountWhere`](../reference/table-operations/group-and-aggregate/AggCountWhere.md) - Number of values for each group that pass a set of filters.
 - [`AggCountDistinct`](../reference/table-operations/group-and-aggregate/AggCountDistinct.md) - Number of unique values for each group.
+- [`AggCountWhere`](../reference/table-operations/group-and-aggregate/AggCountWhere.md) - Number of values for each group that pass a set of filters.
 - [`AggDistinct`](../reference/table-operations/group-and-aggregate/AggDistinct.md) - Array of unique values for each group.
 - [`AggFirst`](../reference/table-operations/group-and-aggregate/AggFirst.md) - First value for each group.
 - [`AggFormula`](../reference/table-operations/group-and-aggregate/AggFormula.md) - Custom formula for each group.

@@ -48,7 +48,7 @@ literals = emptyTable(10).update(
 )
 ```
 
-The [`meta`](../../how-to-guides/metadata.md#get-a-metadata-table-with-meta) method is useful for assessing a table's schema. You can use it to confirm that the resulting columns are of the correct type.
+The [`meta`](../../how-to-guides/metadata.md#meta) method is useful for assessing a table's schema. You can use it to confirm that the resulting columns are of the correct type.
 
 ```groovy test-set=1
 literalsMeta = literals.meta()
@@ -163,7 +163,7 @@ There are many more such operators supported in Deephaven. See the [guide on ope
 
 ## Built-in functions
 
-Aside from the common operations, Deephaven hosts a large library of functions known as [built-in or auto-imported functions](../../reference/query-language/query-library/auto-imported-functions.md) that can be used in query strings.
+Aside from the common operations, Deephaven hosts a large library of functions known as [built-in or auto-imported functions](../../reference/query-language/formulas/auto-imported-functions.md) that can be used in query strings.
 
 The [numeric subset of this library](/core/javadoc/io/deephaven/function/package-summary.html) is full of functions that perform common mathematical operations on numeric types. These include exponentials, trigonometric functions, random number generators, and more.
 
@@ -251,7 +251,7 @@ lastByBin = binnedTimestamps.lastBy("Last5Mins")
 
 The [time user guide](../../conceptual/time-in-deephaven.md) provides a comprehensive overview of working with date-time data in Deephaven.
 
-These functions provide only a glimpse of what the built-in library offers. There are modules for [sorting](/core/javadoc/io/deephaven/function/Sort.html), [searching](/core/javadoc/io/deephaven/function/BinSearch.html), [string parsing](/core/javadoc/io/deephaven/function/Parse.html), [null handling](https://deephaven.io/core/javadoc/io/deephaven/function/Basic.html#isNull(byte)), and much more. See the document on [auto-imported functions](../../reference/query-language/query-library/auto-imported-functions.md) for a comprehensive list of what's available or the [module summary page](/core/javadoc/io/deephaven/function/package-summary.html) for a high-level overview of what's offered.
+These functions provide only a glimpse of what the built-in library offers. There are modules for [sorting](/core/javadoc/io/deephaven/function/Sort.html), [searching](/core/javadoc/io/deephaven/function/BinSearch.html), [string parsing](/core/javadoc/io/deephaven/function/Parse.html), [null handling](https://deephaven.io/core/javadoc/io/deephaven/function/Basic.html#isNull(byte)), and much more. See the document on [auto-imported functions](../../reference/query-language/formulas/auto-imported-functions.md) for a comprehensive list of what's available or the [module summary page](/core/javadoc/io/deephaven/function/package-summary.html) for a high-level overview of what's offered.
 
 ## Java methods
 
@@ -316,6 +316,8 @@ These results can then be ungrouped with [`ungroup`](../../reference/table-opera
 ```groovy test-set=1
 tArrayFuncsUngrouped = tArrayFuncs.ungroup()
 ```
+
+> **_NOTE:_** Aggregations done with Deephaven's [Aggregations](../../how-to-guides/combined-aggregations.md) are more performant than with array functions.
 
 Deephaven provides array indexing and slicing operations.
 
@@ -493,7 +495,7 @@ result1 = compute(table, int1)
 result2 = compute(table, int2)
 ```
 
-For more information, see the [scoping reference documentation](../../reference/query-language/variables/scope.md).
+For more information, see the [scoping rules](../../how-to-guides/query-scope.md).
 
 Be mindful of whether or not Groovy functions are stateless or stateful. Generally, stateless functions have no side effects - they don't modify any objects outside of their scope. Also, they are invariant to execution order, so function calls can be evaluated in any order without affecting the result. This stateless function extracts elements from a list in a query string.
 

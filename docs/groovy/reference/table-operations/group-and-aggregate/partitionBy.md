@@ -50,7 +50,7 @@ result3 = result.constituentFor("C")
 
 ## Related documentation
 
-- [Create a new table](../../../how-to-guides/new-and-empty-table.md#newtable)
+- [How to create static tables](../../../how-to-guides/new-and-empty-table.md)
 - [How to group and ungroup data](../../../how-to-guides/grouping-data.md)
 - [How to partition a table into subtables](../../../how-to-guides/partitioned-tables.md)
 - [`aggBy`](./aggBy.md)
