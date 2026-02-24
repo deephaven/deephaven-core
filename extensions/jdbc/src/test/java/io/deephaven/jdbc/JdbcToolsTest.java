@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.jdbc;
 
@@ -15,30 +15,23 @@ import io.deephaven.util.function.ThrowingRunnable;
 import org.junit.*;
 
 import java.math.BigDecimal;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 import java.time.*;
 import java.util.InputMismatchException;
 import java.util.Set;
-import java.util.TimeZone;
 
 import static io.deephaven.chunk.util.pools.ChunkPoolConstants.LARGEST_POOLED_CHUNK_CAPACITY;
 
-@SuppressWarnings("removal")
-@Deprecated(forRemoval = true) // Remove this when the code it tests is removed
-public class JdbcToTableAdapterTest {
+public class JdbcToolsTest {
 
     @Rule
     public final EngineCleanup framework = new EngineCleanup();
 
     private static final ZoneId TZ_UTC = ZoneId.of("UTC");
+    private final long NUM_ROWS = (long) (2.5 * LARGEST_POOLED_CHUNK_CAPACITY);
 
     private Connection conn;
     private Statement stmt;
-    private final long numRows = (long) (2.5 * LARGEST_POOLED_CHUNK_CAPACITY);
 
     @Before
     public void setUp() throws SQLException {
@@ -59,14 +52,14 @@ public class JdbcToTableAdapterTest {
 
         final DateTimeFormatter dtf = DateTimeFormatters.NONISO9.getFormatter();
 
-        for (long ii = 0; ii < numRows; ++ii) {
+        for (long ii = 0; ii < NUM_ROWS; ++ii) {
             stmt.executeUpdate("INSERT INTO TestTable VALUES (" +
                     (ii % 16 == 0 ? "TRUE" : ii % 8 == 0 ? "NULL" : "FALSE") + // boolean
                     ", " + (ii % 256 == 0 ? "NULL" : (ii % 256 - 128)) + // tiny int
-                    ", " + (ii % 256 == 1 ? "NULL" : (ii - numRows / 2) & ((1 << 15) - 1)) + // short
-                    ", " + (ii % 256 == 2 ? "NULL" : ii - numRows / 2) + // int
-                    ", " + (ii % 256 == 3 ? "NULL" : ii - numRows / 2) + // long
-                    ", " + (ii % 256 == 4 ? "NULL" : (ii - numRows / 2) / 256.0) + // float
+                    ", " + (ii % 256 == 1 ? "NULL" : (ii - NUM_ROWS / 2) & ((1 << 15) - 1)) + // short
+                    ", " + (ii % 256 == 2 ? "NULL" : ii - NUM_ROWS / 2) + // int
+                    ", " + (ii % 256 == 3 ? "NULL" : ii - NUM_ROWS / 2) + // long
+                    ", " + (ii % 256 == 4 ? "NULL" : (ii - NUM_ROWS / 2) / 256.0) + // float
                     ", " + (ii % 256 == 5 ? "NULL" : "'" + ii + "'") + // string
                     ", " + (ii % 256 == 6
                             ? "NULL"
@@ -84,7 +77,7 @@ public class JdbcToTableAdapterTest {
     @Test
     public void testEmptyTable() throws SQLException {
         final ResultSet rs = stmt.executeQuery("SELECT * from TestTable LIMIT 0");
-        final Table result = JdbcToTableAdapter.readJdbc(rs);
+        final Table result = JdbcTools.readTable(rs);
 
         // check no-casing column names
         final Set<String> expectedNames = Set.of("Bool_Type", "TinyIntType", "SmallIntType", "Int_Type",
@@ -98,9 +91,10 @@ public class JdbcToTableAdapterTest {
     @Test
     public void testLowerCamelCasing() throws SQLException {
         final ResultSet rs = stmt.executeQuery("SELECT * from TestTable LIMIT 0");
-        final JdbcToTableAdapter.ReadJdbcOptions options = JdbcToTableAdapter.readJdbcOptions();
-        options.columnNameFormat(JdbcToTableAdapter.CasingStyle.lowerCamel, "_");
-        final Table result = JdbcToTableAdapter.readJdbc(rs, options);
+        final JdbcReadInstructions instructions = JdbcReadInstructions.builder()
+                .columnNameMapping(CasingStyle.lowerCamel, "_")
+                .build();
+        final Table result = JdbcTools.readTable(rs, instructions);
 
         // check no-casing column names
         final Set<String> expectedNames = Set.of("boolType", "tinyIntType", "smallIntType", "intType",
@@ -114,9 +108,10 @@ public class JdbcToTableAdapterTest {
     @Test
     public void testLowercaseCasing() throws SQLException {
         final ResultSet rs = stmt.executeQuery("SELECT * from TestTable LIMIT 0");
-        final JdbcToTableAdapter.ReadJdbcOptions options = JdbcToTableAdapter.readJdbcOptions();
-        options.columnNameFormat(JdbcToTableAdapter.CasingStyle.lowercase, "_");
-        final Table result = JdbcToTableAdapter.readJdbc(rs, options);
+        final JdbcReadInstructions instructions = JdbcReadInstructions.builder()
+                .columnNameMapping(CasingStyle.lowercase, "_")
+                .build();
+        final Table result = JdbcTools.readTable(rs, instructions);
 
         // check no-casing column names
         final Set<String> expectedNames = Set.of("bool_type", "tiny_int_type", "small_int_type", "int_type",
@@ -130,9 +125,10 @@ public class JdbcToTableAdapterTest {
     @Test
     public void testUpperCamelCasing() throws SQLException {
         final ResultSet rs = stmt.executeQuery("SELECT * from TestTable LIMIT 0");
-        final JdbcToTableAdapter.ReadJdbcOptions options = JdbcToTableAdapter.readJdbcOptions();
-        options.columnNameFormat(JdbcToTableAdapter.CasingStyle.UpperCamel, "_");
-        final Table result = JdbcToTableAdapter.readJdbc(rs, options);
+        final JdbcReadInstructions instructions = JdbcReadInstructions.builder()
+                .columnNameMapping(CasingStyle.UpperCamel, "_")
+                .build();
+        final Table result = JdbcTools.readTable(rs, instructions);
 
         // check no-casing column names
         final Set<String> expectedNames = Set.of("BoolType", "TinyIntType", "SmallIntType", "IntType",
@@ -146,9 +142,10 @@ public class JdbcToTableAdapterTest {
     @Test
     public void testUppercaseCasing() throws SQLException {
         final ResultSet rs = stmt.executeQuery("SELECT * from TestTable LIMIT 0");
-        final JdbcToTableAdapter.ReadJdbcOptions options = JdbcToTableAdapter.readJdbcOptions();
-        options.columnNameFormat(JdbcToTableAdapter.CasingStyle.UPPERCASE, "_");
-        final Table result = JdbcToTableAdapter.readJdbc(rs, options);
+        final JdbcReadInstructions instructions = JdbcReadInstructions.builder()
+                .columnNameMapping(CasingStyle.UPPERCASE, "_")
+                .build();
+        final Table result = JdbcTools.readTable(rs, instructions);
 
         // check no-casing column names
         final Set<String> expectedNames = Set.of("BOOL_TYPE", "TINY_INT_TYPE", "SMALL_INT_TYPE", "INT_TYPE",
@@ -162,9 +159,10 @@ public class JdbcToTableAdapterTest {
     @Test
     public void testAlternateReplacement() throws SQLException {
         final ResultSet rs = stmt.executeQuery("SELECT * from TestTable LIMIT 0");
-        final JdbcToTableAdapter.ReadJdbcOptions options = JdbcToTableAdapter.readJdbcOptions();
-        options.columnNameFormat(JdbcToTableAdapter.CasingStyle.UPPERCASE, "_Z_");
-        final Table result = JdbcToTableAdapter.readJdbc(rs, options);
+        final JdbcReadInstructions instructions = JdbcReadInstructions.builder()
+                .columnNameMapping(CasingStyle.UPPERCASE, "_Z_")
+                .build();
+        final Table result = JdbcTools.readTable(rs, instructions);
 
         // check no-casing column names
         final Set<String> expectedNames = Set.of("BOOL_Z_TYPE", "TINY_Z_INT_Z_TYPE", "SMALL_Z_INT_Z_TYPE", "INT_Z_TYPE",
@@ -178,12 +176,13 @@ public class JdbcToTableAdapterTest {
     @Test
     public void testDefaultResultTypes() throws SQLException {
         final ResultSet rs = stmt.executeQuery("SELECT * from TestTable");
-        final JdbcToTableAdapter.ReadJdbcOptions options = JdbcToTableAdapter.readJdbcOptions();
-        options.columnNameFormat(JdbcToTableAdapter.CasingStyle.lowercase, "_");
-        final Table result = JdbcToTableAdapter.readJdbc(rs, options);
+        final JdbcReadInstructions instructions = JdbcReadInstructions.builder()
+                .columnNameMapping(CasingStyle.lowercase, "_")
+                .build();
+        final Table result = JdbcTools.readTable(rs, instructions);
 
         // should have converted all rows
-        Assert.assertEquals(numRows, result.size());
+        Assert.assertEquals(NUM_ROWS, result.size());
 
         final ColumnSource<Boolean> bool_type = result.getColumnSource("bool_type");
         final ColumnSource<Short> tiny_int_type = result.getColumnSource("tiny_int_type");
@@ -223,26 +222,26 @@ public class JdbcToTableAdapterTest {
             if (ii % 256 == 1) {
                 Assert.assertEquals(QueryConstants.NULL_SHORT, small_int_type.getShort(ii));
             } else {
-                Assert.assertEquals((ii - numRows / 2) & ((1 << 15) - 1), small_int_type.getShort(ii));
+                Assert.assertEquals((ii - NUM_ROWS / 2) & ((1 << 15) - 1), small_int_type.getShort(ii));
             }
 
             if (ii % 256 == 2) {
                 Assert.assertEquals(QueryConstants.NULL_INT, int_type.getInt(ii));
             } else {
-                Assert.assertEquals(ii - numRows / 2, int_type.getInt(ii));
+                Assert.assertEquals(ii - NUM_ROWS / 2, int_type.getInt(ii));
             }
 
             if (ii % 256 == 3) {
                 Assert.assertEquals(QueryConstants.NULL_LONG, big_int_type.getLong(ii));
             } else {
-                Assert.assertEquals(ii - numRows / 2, big_int_type.getLong(ii));
+                Assert.assertEquals(ii - NUM_ROWS / 2, big_int_type.getLong(ii));
             }
 
             if (ii % 256 == 4) {
                 Assert.assertEquals(QueryConstants.NULL_DOUBLE, decimal_type.getDouble(ii), 1e-3);
             } else {
                 // noinspection IntegerDivisionInFloatingPointContext
-                Assert.assertEquals((ii - numRows / 2) / 256.0, decimal_type.getDouble(ii), 1e-3);
+                Assert.assertEquals((ii - NUM_ROWS / 2) / 256.0, decimal_type.getDouble(ii), 1e-3);
             }
 
             if (ii % 256 == 5) {
@@ -275,9 +274,10 @@ public class JdbcToTableAdapterTest {
                 ",NULL" +
                 ";");
 
-        final JdbcToTableAdapter.ReadJdbcOptions options = JdbcToTableAdapter.readJdbcOptions();
-        options.columnTargetType("ArrayColumn", double[].class);
-        Table result = JdbcToTableAdapter.readJdbc(stmt.executeQuery("SELECT * FROM SingleTestTable"), options);
+        final JdbcReadInstructions instructions = JdbcReadInstructions.builder()
+                .putColumnTargetTypes("ArrayColumn", double[].class)
+                .build();
+        Table result = JdbcTools.readTable(stmt.executeQuery("SELECT * FROM SingleTestTable"), instructions);
         ColumnSource<double[]> cs = result.getColumnSource("ArrayColumn");
 
         Assert.assertEquals(4, result.size());
@@ -301,9 +301,10 @@ public class JdbcToTableAdapterTest {
                 ",NULL" +
                 ";");
 
-        final JdbcToTableAdapter.ReadJdbcOptions options = JdbcToTableAdapter.readJdbcOptions();
-        options.columnTargetType("ArrayColumn", long[].class);
-        final Table result = JdbcToTableAdapter.readJdbc(stmt.executeQuery("SELECT * FROM SingleTestTable"), options);
+        final JdbcReadInstructions instructions = JdbcReadInstructions.builder()
+                .putColumnTargetTypes("ArrayColumn", long[].class)
+                .build();
+        final Table result = JdbcTools.readTable(stmt.executeQuery("SELECT * FROM SingleTestTable"), instructions);
         final ColumnSource<long[]> cs = result.getColumnSource("ArrayColumn");
 
         Assert.assertEquals(4, result.size());
@@ -323,17 +324,22 @@ public class JdbcToTableAdapterTest {
 
         insertRow.run();
 
-        final JdbcToTableAdapter.ReadJdbcOptions options = JdbcToTableAdapter.readJdbcOptions();
-        options.columnTargetType("ArrayColumn", double[].class);
+        final JdbcReadInstructions strictInstructions = JdbcReadInstructions.builder()
+                .putColumnTargetTypes("ArrayColumn", double[].class)
+                .build();
 
         try {
-            JdbcToTableAdapter.readJdbc(stmt.executeQuery("SELECT * FROM SingleTestTable"), options);
+            JdbcTools.readTable(stmt.executeQuery("SELECT * FROM SingleTestTable"), strictInstructions);
             Assert.fail("Did not throw Input");
         } catch (InputMismatchException ignored) {
         }
 
-        options.strict(false);
-        final Table result = JdbcToTableAdapter.readJdbc(stmt.executeQuery("SELECT * FROM SingleTestTable"), options);
+        final JdbcReadInstructions lenientInstructions = JdbcReadInstructions.builder()
+                .putColumnTargetTypes("ArrayColumn", double[].class)
+                .strict(false)
+                .build();
+        final Table result =
+                JdbcTools.readTable(stmt.executeQuery("SELECT * FROM SingleTestTable"), lenientInstructions);
         ColumnSource<double[]> cs = result.getColumnSource("ArrayColumn");
         Assert.assertEquals(1, result.size());
         Assert.assertArrayEquals(expectedRow, cs.get(0), 1e-8);
@@ -387,10 +393,11 @@ public class JdbcToTableAdapterTest {
                 ",('[7.0# 8.0# 9.0]')" +
                 ";");
 
-        final JdbcToTableAdapter.ReadJdbcOptions options = JdbcToTableAdapter.readJdbcOptions();
-        options.columnTargetType("ArrayColumn", double[].class);
-        options.arrayDelimiter("#");
-        final Table result = JdbcToTableAdapter.readJdbc(stmt.executeQuery("SELECT * FROM SingleTestTable"), options);
+        final JdbcReadInstructions instructions = JdbcReadInstructions.builder()
+                .putColumnTargetTypes("ArrayColumn", double[].class)
+                .arrayDelimiter("#")
+                .build();
+        final Table result = JdbcTools.readTable(stmt.executeQuery("SELECT * FROM SingleTestTable"), instructions);
         final ColumnSource<double[]> cs = result.getColumnSource("ArrayColumn");
 
         Assert.assertEquals(3, result.size());
@@ -403,9 +410,10 @@ public class JdbcToTableAdapterTest {
     @Test
     public void testMaxRowsOption() throws SQLException {
         final ResultSet rs = stmt.executeQuery("SELECT * from TestTable");
-        final JdbcToTableAdapter.ReadJdbcOptions options = JdbcToTableAdapter.readJdbcOptions();
-        options.maxRows(32);
-        final Table result = JdbcToTableAdapter.readJdbc(rs, options);
+        final JdbcReadInstructions instructions = JdbcReadInstructions.builder()
+                .maxRows(32)
+                .build();
+        final Table result = JdbcTools.readTable(rs, instructions);
 
         // should be only the first 32 rows
         Assert.assertEquals(32, result.size());
@@ -418,8 +426,8 @@ public class JdbcToTableAdapterTest {
         Assert.assertEquals(ResultSet.TYPE_SCROLL_INSENSITIVE, rs.getType());
 
         // scroll sensitive/insensitive uses an alternative column source type
-        final Table result = JdbcToTableAdapter.readJdbc(rs);
-        Assert.assertEquals(numRows, result.size());
+        final Table result = JdbcTools.readTable(rs);
+        Assert.assertEquals(NUM_ROWS, result.size());
     }
 
     @Test
@@ -429,7 +437,7 @@ public class JdbcToTableAdapterTest {
         Assert.assertEquals(ResultSet.TYPE_SCROLL_INSENSITIVE, rs.getType());
 
         // scroll sensitive/insensitive uses an alternative column source type
-        final Table result = JdbcToTableAdapter.readJdbc(rs);
+        final Table result = JdbcTools.readTable(rs);
         Assert.assertEquals(0, result.size());
     }
 
@@ -445,14 +453,13 @@ public class JdbcToTableAdapterTest {
                 ",NULL" +
                 ";");
 
-        final Table result = JdbcToTableAdapter.readJdbc(stmt.executeQuery("SELECT * FROM SingleTestTable"));
+        final Table result = JdbcTools.readTable(stmt.executeQuery("SELECT * FROM SingleTestTable"));
         final ColumnSource<byte[]> cs = result.getColumnSource("BlobColumn");
 
         Assert.assertEquals(2, result.size());
         Assert.assertArrayEquals("Hello World".getBytes(), cs.get(0));
         Assert.assertNull(cs.get(1));
     }
-
 
     @Test
     public void testDecimalTypeMapping() throws SQLException {
@@ -468,7 +475,7 @@ public class JdbcToTableAdapterTest {
                 ",(NULL, NULL, NULL)" +
                 ";");
 
-        Table result = JdbcToTableAdapter.readJdbc(stmt.executeQuery("SELECT * FROM SingleTestTable"));
+        Table result = JdbcTools.readTable(stmt.executeQuery("SELECT * FROM SingleTestTable"));
         ColumnSource<Float> floatCS = result.getColumnSource("FloatCol");
         ColumnSource<BigDecimal> bigdecimalCS = result.getColumnSource("DecimalCol");
         ColumnSource<Double> doubleCS = result.getColumnSource("DoubleCol");
@@ -485,31 +492,38 @@ public class JdbcToTableAdapterTest {
         Assert.assertNull(bigdecimalCS.get(1));
 
         // Check float to BigDecimal:
-        JdbcToTableAdapter.ReadJdbcOptions options = JdbcToTableAdapter.readJdbcOptions();
-        options.columnTargetType("FloatCol", BigDecimal.class);
-        result = JdbcToTableAdapter.readJdbc(stmt.executeQuery("SELECT \"FloatCol\" FROM SingleTestTable"), options);
+        JdbcReadInstructions instructions = JdbcReadInstructions.builder()
+                .putColumnTargetTypes("FloatCol", BigDecimal.class)
+                .build();
+        result = JdbcTools.readTable(stmt.executeQuery("SELECT \"FloatCol\" FROM SingleTestTable"), instructions);
         bigdecimalCS = result.getColumnSource("FloatCol");
         Assert.assertEquals(1567.89, bigdecimalCS.get(0).doubleValue(), 1e-3);
         Assert.assertNull(bigdecimalCS.get(1));
 
         // Check double to BigDecimal:
-        options.columnTargetType("DoubleCol", BigDecimal.class);
-        result = JdbcToTableAdapter.readJdbc(stmt.executeQuery("SELECT \"DoubleCol\" FROM SingleTestTable"), options);
+        instructions = JdbcReadInstructions.builder()
+                .putColumnTargetTypes("DoubleCol", BigDecimal.class)
+                .build();
+        result = JdbcTools.readTable(stmt.executeQuery("SELECT \"DoubleCol\" FROM SingleTestTable"), instructions);
         bigdecimalCS = result.getColumnSource("DoubleCol");
         Assert.assertEquals(2567.89, bigdecimalCS.get(0).doubleValue(), 1e-3);
         Assert.assertNull(bigdecimalCS.get(1));
         TableTools.show(result);
 
         // Check BigDecimal to float:
-        options.columnTargetType("DecimalCol", float.class);
-        result = JdbcToTableAdapter.readJdbc(stmt.executeQuery("SELECT \"DecimalCol\" FROM SingleTestTable"), options);
+        instructions = JdbcReadInstructions.builder()
+                .putColumnTargetTypes("DecimalCol", float.class)
+                .build();
+        result = JdbcTools.readTable(stmt.executeQuery("SELECT \"DecimalCol\" FROM SingleTestTable"), instructions);
         floatCS = result.getColumnSource("DecimalCol");
         Assert.assertEquals(3567.89, floatCS.getFloat(0), 1e-3);
         Assert.assertEquals(QueryConstants.NULL_FLOAT, floatCS.getFloat(1), 1e-3);
 
         // Check BigDecimal to double:
-        options.columnTargetType("DecimalCol", double.class);
-        result = JdbcToTableAdapter.readJdbc(stmt.executeQuery("SELECT \"DecimalCol\" FROM SingleTestTable"), options);
+        instructions = JdbcReadInstructions.builder()
+                .putColumnTargetTypes("DecimalCol", double.class)
+                .build();
+        result = JdbcTools.readTable(stmt.executeQuery("SELECT \"DecimalCol\" FROM SingleTestTable"), instructions);
         doubleCS = result.getColumnSource("DecimalCol");
         Assert.assertEquals(3567.89, doubleCS.getDouble(0), 1e-3);
         Assert.assertEquals(QueryConstants.NULL_DOUBLE, doubleCS.getDouble(1), 1e-3);
@@ -517,14 +531,15 @@ public class JdbcToTableAdapterTest {
 
     @Test
     public void testBoxedTypeMapsToPrimitive() throws SQLException {
-        JdbcToTableAdapter.ReadJdbcOptions options = JdbcToTableAdapter.readJdbcOptions();
-        options.columnNameFormat(JdbcToTableAdapter.CasingStyle.lowerCamel, "_");
-        options.columnTargetType("smallIntType", Short.class);
-        options.columnTargetType("intType", Integer.class);
-        options.columnTargetType("bigIntType", Long.class);
-        options.columnTargetType("decimalType", Double.class);
+        JdbcReadInstructions instructions = JdbcReadInstructions.builder()
+                .columnNameMapping(CasingStyle.lowerCamel, "_")
+                .putColumnTargetTypes("smallIntType", Short.class)
+                .putColumnTargetTypes("intType", Integer.class)
+                .putColumnTargetTypes("bigIntType", Long.class)
+                .putColumnTargetTypes("decimalType", Double.class)
+                .build();
 
-        Table result = JdbcToTableAdapter.readJdbc(stmt.executeQuery("SELECT * FROM TestTable"), options);
+        Table result = JdbcTools.readTable(stmt.executeQuery("SELECT * FROM TestTable"), instructions);
         Assert.assertEquals(short.class, result.getColumnSource("smallIntType").getType());
         Assert.assertEquals(int.class, result.getColumnSource("intType").getType());
         Assert.assertEquals(long.class, result.getColumnSource("bigIntType").getType());
@@ -543,9 +558,10 @@ public class JdbcToTableAdapterTest {
                 ",NULL" +
                 ";");
 
-        JdbcToTableAdapter.ReadJdbcOptions options = JdbcToTableAdapter.readJdbcOptions();
-        options.columnTargetType("CharCol", char.class);
-        Table result = JdbcToTableAdapter.readJdbc(stmt.executeQuery("SELECT * FROM SingleTestTable"), options);
+        JdbcReadInstructions instructions = JdbcReadInstructions.builder()
+                .putColumnTargetTypes("CharCol", char.class)
+                .build();
+        Table result = JdbcTools.readTable(stmt.executeQuery("SELECT * FROM SingleTestTable"), instructions);
         ColumnSource<Character> cs = result.getColumnSource("CharCol");
         Assert.assertEquals('H', cs.getChar(0));
         Assert.assertEquals(QueryConstants.NULL_CHAR, cs.getChar(1));
@@ -566,16 +582,18 @@ public class JdbcToTableAdapterTest {
         final LocalDate expectedDate = LocalDate.of(2022, 2, 22);
 
         // Test for default mapping to java LocalDate
-        JdbcToTableAdapter.ReadJdbcOptions options = JdbcToTableAdapter.readJdbcOptions();
-        Table result = JdbcToTableAdapter.readJdbc(stmt.executeQuery("SELECT * FROM SingleTestTable"), options);
+        JdbcReadInstructions instructions = JdbcReadInstructions.builder().build();
+        Table result = JdbcTools.readTable(stmt.executeQuery("SELECT * FROM SingleTestTable"), instructions);
         ColumnSource<LocalDate> ldcs = result.getColumnSource("DateCol");
         Assert.assertEquals(expectedDate, ldcs.get(0));
         Assert.assertNull(ldcs.get(1));
 
         // Convert to Instant
-        options.columnTargetType("DateCol", Instant.class);
-        options.sourceTimeZone(TimeZone.getTimeZone("UTC"));
-        result = JdbcToTableAdapter.readJdbc(stmt.executeQuery("SELECT * FROM SingleTestTable"), options);
+        instructions = JdbcReadInstructions.builder()
+                .putColumnTargetTypes("DateCol", Instant.class)
+                .sourceTimeZone(ZoneId.of("UTC"))
+                .build();
+        result = JdbcTools.readTable(stmt.executeQuery("SELECT * FROM SingleTestTable"), instructions);
         ColumnSource<Instant> dtcs = result.getColumnSource("DateCol");
 
         final long epochTm = expectedDate.atStartOfDay().toEpochSecond(ZoneOffset.UTC);
@@ -598,16 +616,18 @@ public class JdbcToTableAdapterTest {
         final LocalTime expectedTime = LocalTime.of(10, 22, 10, 220 * 1000000);
 
         // Test for default mapping to java LocalTime
-        JdbcToTableAdapter.ReadJdbcOptions options = JdbcToTableAdapter.readJdbcOptions();
-        Table result = JdbcToTableAdapter.readJdbc(stmt.executeQuery("SELECT * FROM SingleTestTable"), options);
+        JdbcReadInstructions instructions = JdbcReadInstructions.builder().build();
+        Table result = JdbcTools.readTable(stmt.executeQuery("SELECT * FROM SingleTestTable"), instructions);
         ColumnSource<LocalTime> ltcs = result.getColumnSource("TimeCol");
         Assert.assertEquals(expectedTime, ltcs.get(0));
         Assert.assertNull(ltcs.get(1));
 
         // Convert to Long
-        options.columnTargetType("TimeCol", long.class);
-        options.sourceTimeZone(TimeZone.getTimeZone("UTC"));
-        result = JdbcToTableAdapter.readJdbc(stmt.executeQuery("SELECT * FROM SingleTestTable"), options);
+        instructions = JdbcReadInstructions.builder()
+                .putColumnTargetTypes("TimeCol", long.class)
+                .sourceTimeZone(ZoneId.of("UTC"))
+                .build();
+        result = JdbcTools.readTable(stmt.executeQuery("SELECT * FROM SingleTestTable"), instructions);
         ColumnSource<Long> dtcs = result.getColumnSource("TimeCol");
 
         Assert.assertEquals(expectedTime.toNanoOfDay(), dtcs.getLong(0));
@@ -616,13 +636,14 @@ public class JdbcToTableAdapterTest {
 
     @Test
     public void testThrowsMapperException() throws SQLException {
-        JdbcToTableAdapter.ReadJdbcOptions options = JdbcToTableAdapter.readJdbcOptions();
-        options.columnNameFormat(JdbcToTableAdapter.CasingStyle.lowerCamel, "_");
-        options.columnTargetType("smallIntType", Object.class);
+        JdbcReadInstructions instructions = JdbcReadInstructions.builder()
+                .columnNameMapping(CasingStyle.lowerCamel, "_")
+                .putColumnTargetTypes("smallIntType", Object.class)
+                .build();
 
         // let's just make sure we get the expected mapping exception
         try {
-            JdbcToTableAdapter.readJdbc(stmt.executeQuery("SELECT * FROM TestTable"), options);
+            JdbcTools.readTable(stmt.executeQuery("SELECT * FROM TestTable"), instructions);
             Assert.fail("Did not throw expected JdbcTypeMapperException");
         } catch (final JdbcTypeMapperException ignored) {
         }
