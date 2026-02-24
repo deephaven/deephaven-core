@@ -5,7 +5,7 @@ sidebar_label: Query table configuration
 
 This guide discusses how to control various `QueryTable` features that affect your Deephaven tables' latency and throughput.
 
-# QueryTable
+## `QueryTable`
 
 [`QueryTable`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/QueryTable.html) is Deephaven's primary implementation of our [Table API](../getting-started/crash-course/table-ops.md).
 
@@ -117,17 +117,13 @@ Parallel snapshotting is not enabled until the snapshot size exceeds `QueryTable
 
 ## Ungroup operations
 
-The `ungroup` operation expands array or vector columns into individual rows. The `minimumUngroupBase` property controls the initial rowset allocation strategy for ungrouped tables.
+The `ungroup` table operation can expand one row into multiple rows. `QueryTable.minimumUngroupBase` controls the initial allocation used by `ungroup`.
 
-Each row from the input table is allocated `2^minimumUngroupBase` rows in the output table at startup. If rows are added to the table, this base may need to grow. If a single row in the input has more than 2^base rows, then the base must change for all of the rows.
+| Property Name                   | Default Value | Description                                                                  |
+| ------------------------------- | ------------- | ---------------------------------------------------------------------------- |
+| `QueryTable.minimumUngroupBase` | 10            | The minimum base used for ungroup output row allocation (uses `2^base` rows) |
 
-| Property Name                   | Default Value | Description                                                                                   |
-| ------------------------------- | ------------- | --------------------------------------------------------------------------------------------- |
-| `QueryTable.minimumUngroupBase` | 10            | The minimum base (power of 2) for allocating rows in ungrouped tables (allocates 2^base rows) |
-
-The default value of 10 means each input row is initially allocated 2^10 = 1,024 rows in the output. Lowering this value can reduce initial memory usage for tables with smaller arrays, while increasing it can prevent rebase operations for tables expected to have large arrays.
-
-## SoftRecycler configuration
+## `SoftRecycler` configuration
 
 Deephaven uses [`SoftRecycler`](https://docs.deephaven.io/core/javadoc/io/deephaven/util/SoftRecycler.html) objects to manage memory for array and sparse array column sources. These column sources must maintain previous values during an update graph cycle. Rather than allocating fresh memory on each cycle, when memory is needed to record previous values it is borrowed from the recycler and returned at the end of the update cycle. These pools can improve performance and reduce garbage collection pressure.
 
@@ -199,7 +195,7 @@ Sparse array column sources use a multi-level hierarchical structure and maintai
 | `sparsearray.recycler.capacity.inuse.1`   | 9216 (max of level 1)        | Recycler capacity for "in use" bitmap blocks at level 1          |
 | `sparsearray.recycler.capacity.inuse.0`   | 9216 (max of level 0)        | Recycler capacity for "in use" bitmap blocks at level 0 (top)    |
 
-#### Tuning SoftRecycler capacity
+#### Tuning `SoftRecycler` capacity
 
 The recycler capacity determines how many array blocks are kept in memory for potential reuse. Increasing capacity can improve performance if your workload uses more blocks within an update cycle than the recycler can hold, at the cost of higher baseline memory usage. Decreasing capacity reduces baseline memory requirements, but may increase garbage collection.
 

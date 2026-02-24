@@ -48,6 +48,11 @@ This page does not provide a comprehensive list of all built-ins. For the comple
 
 ## Related documentation
 
+- [Query string overview](./query-string-overview.md)
 - [Built-in constants](./built-in-constants.md)
 - [Built-in variables](./built-in-variables.md)
+- [Ternary conditional operator](./ternary-if-how-to.md)
+- [Java objects in query strings](./java-classes.md)
 - [Auto-imported functions](../reference/query-language/formulas/auto-imported-functions.md)
+- [`emptyTable`](../reference/table-operations/create/emptyTable.md)
+- [`update`](../reference/table-operations/select/update.md)

@@ -4,7 +4,7 @@ title: Navigate the GUI
 
 The Deephaven user interface (GUI) offers a comprehensive suite of advanced tools to manipulate and transform data and tables with ease. This guide shows users where to find the primary context menus and tools in the platform.
 
-![A screenshot of the UI, with color-coded highlights marked each of the items in the legend below](../../assets/how-to/ui/gui-tour-gr.png)
+![A screenshot of the UI, with color-coded highlights marking each of the items in the legend below](../../assets/how-to/ui/gui-tour-gr.png)
 
 ## Legend
 

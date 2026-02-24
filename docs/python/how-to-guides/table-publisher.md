@@ -6,13 +6,13 @@ sidebar_label: Write data to a real-time table
 This guide covers publishing data to in-memory ticking tables with two methods:
 
 - [`table_publisher`](../reference/table-operations/create/TablePublisher.md)
-- [`DynamicTableWriter`](../reference/table-operations/create/DynamicTableWriter.md).
+- [`DynamicTableWriter`](../reference/table-operations/create/DynamicTableWriter.md)
 
 A Table Publisher publishes data to a [blink table](../conceptual/table-types.md#specialization-3-blink), while a Dynamic Table Writer writes data to an append-only table. Both methods are great ways to ingest and publish data from external sources such as WebSockets and other live data sources. However, we recommend [`table_publisher`](../reference/table-operations/create/TablePublisher.md) in most cases, as it provides a newer and more refined API, as well as native support for blink tables.
 
 ## Table publisher
 
-Table publisher uses the [`table_publisher`](../reference/table-operations/create/TablePublisher.md) factory function to create an instance of the [`TablePublisher`](/core/pydoc/code/deephaven.stream.table_publisher.html#deephaven.stream.table_publisher.TablePublisher) as well as its linked [blink table](../conceptual/table-types.md#specialization-3-blink). From there:
+A table publisher uses the [`table_publisher`](../reference/table-operations/create/TablePublisher.md) factory function to create an instance of the [`TablePublisher`](/core/pydoc/code/deephaven.stream.table_publisher.html#deephaven.stream.table_publisher.TablePublisher) as well as its linked [blink table](../conceptual/table-types.md#specialization-3-blink). From there:
 
 - Add data to the [blink table](../conceptual/table-types.md#specialization-3-blink) with [`add`](../reference/table-operations/create/TablePublisher.md#methods).
 - (Optionally) Store [data history](#data-history) in a downstream table.
@@ -480,6 +480,7 @@ All table updates emanate from the Periodic Update Graph. An understanding of ho
 ## Related documentation
 
 - [Create new tables](./new-and-empty-table.md#empty_table)
+- [Deephaven data types](./data-types.md)
 - [Deephaven's table update model](../conceptual/table-update-model.md)
 - [DynamicTableWriter](../reference/table-operations/create/DynamicTableWriter.md)
 - [Execution Context](../conceptual/execution-context.md)

@@ -487,7 +487,7 @@ add_vars_class = empty_table(1).update(
 )
 ```
 
-Without any type casts or [type hints](https://docs.python.org/3/library/typing.html), the Deephaven query engine cannot infer what datatype results from a Python function. It stores the result as a Java [PyObject](../../how-to-guides/pyobjects.md#what-is-a-pyobject) or [Object](https://docs.oracle.com/javase/8/docs/api/java/lang/Object.html).
+Without any type casts or [type hints](https://docs.python.org/3/library/typing.html), the Deephaven query engine cannot infer what datatype results from a Python function. It stores the result as a Java [PyObject](../../how-to-guides/pyobjects.md#what-is-a-pyobject) or [Object](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html).
 
 ```python test-set=1 order=add_vars_meta,add_vars_func_meta,add_vars_class_meta
 add_vars_meta = add_vars.meta_table

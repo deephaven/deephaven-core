@@ -2,7 +2,7 @@
 title: formatColumns
 ---
 
-The `formatColumns` method creates a new table containing a new, formula column defining a column format for each argument. It is a special case of [`updateView`](../select/update-view.md) that creates columns that hold format information instead of regular data.
+The `formatColumns` method creates a new table containing a new formula column defining a column format for each argument. It is a special case of [`updateView`](../select/update-view.md) that creates columns that hold format information instead of regular data.
 
 Since `formatColumns` is implemented using `updateView`, the new columns are not stored in memory, and instead a formula is stored that is used to determine the format for each cell/row when necessary.
 

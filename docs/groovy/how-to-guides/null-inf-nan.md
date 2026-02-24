@@ -1,5 +1,4 @@
 ---
-id: null-inf-nan
 title: Null, infinity, and NaN values
 sidebar_label: Nulls, infs, and NaNs
 ---
@@ -147,7 +146,7 @@ source = emptyTable(10).update(
 
 ### Remove values
 
-[Built-in methods](./built-in-functions.md) can also be used to [filter](./filters.md) out null and NaN values. There is no built-in method specifically to remove infinity values.
+[Built-in methods](./built-in-functions.md) can also be used to [filter](./use-filters.md) out null and NaN values. There is no built-in method specifically to remove infinity values.
 
 ```groovy order=source,resultNoNulls,resultNoNans,resultNoNullsNans
 source = emptyTable(10).update(

@@ -206,4 +206,11 @@ Happy calendar-ing!
 
 - [Time in Deephaven](../conceptual/time-in-deephaven.md)
 - [BusinessCalendar Javadoc](/core/javadoc/io/deephaven/time/calendar/BusinessCalendar.html)
+- [`addCalendarFromFile`](/core/javadoc/io/deephaven/time/calendar/Calendars.html#addCalendarFromFile(java.io.File))
+- [`calendar`](/core/javadoc/io/deephaven/time/calendar/Calendars.html#calendar(java.lang.String))
+- [`calendarName`](/core/javadoc/io/deephaven/time/calendar/Calendars.html#calendarName())
+- [`calendarNames`](/core/javadoc/io/deephaven/time/calendar/Calendars.html#calendarNames())
+- [`removeCalendar`](/core/javadoc/io/deephaven/time/calendar/Calendars.html#removeCalendar(java.lang.String))
+- [`setCalendar`](/core/javadoc/io/deephaven/time/calendar/Calendars.html#setCalendar(io.deephaven.time.calendar.BusinessCalendar))
+- [BusinessCalendar Javadoc](/core/javadoc/io/deephaven/time/calendar/BusinessCalendar.html)
 - [XML Parser Javadoc](/core/javadoc/io/deephaven/time/calendar/BusinessCalendarXMLParser.html)

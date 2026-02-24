@@ -7,7 +7,7 @@ title: var_by
 Sample variance is calculated using the [Bessel correction](https://en.wikipedia.org/wiki/Bessel%27s_correction), which ensures it is an [unbiased estimator](https://en.wikipedia.org/wiki/Bias_of_an_estimator) of population variance under some conditions.
 
 > [!CAUTION]
-> Applying this aggregation to a column where the sample variance can not be computed will result in an error. For example, the sample variance is not defined for a column of string values.
+> Applying this aggregation to a column where the sample variance cannot be computed will result in an error. For example, the sample variance is not defined for a column of string values.
 
 ## Syntax
 
@@ -43,7 +43,7 @@ $$
 
 ## Examples
 
-In this example, `var_by` returns the sample variance of the whole table. Because the sample variance can not be computed for the string columns `X` and `Y`, these columns are dropped before applying `var_by`.
+In this example, `var_by` returns the sample variance of the whole table. Because the sample variance cannot be computed for the string columns `X` and `Y`, these columns are dropped before applying `var_by`.
 
 ```python order=source,result
 from deephaven import new_table
@@ -60,7 +60,7 @@ source = new_table(
 result = source.drop_columns(cols=["X", "Y"]).var_by()
 ```
 
-In this example, `var_by` returns the sample variance, as grouped by `X`. Because the sample variance can not be computed for the string column `Y`, this column is dropped before applying `var_by`.
+In this example, `var_by` returns the sample variance, as grouped by `X`. Because the sample variance cannot be computed for the string column `Y`, this column is dropped before applying `var_by`.
 
 ```python order=source,result
 from deephaven import new_table

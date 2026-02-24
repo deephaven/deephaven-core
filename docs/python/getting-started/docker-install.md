@@ -20,7 +20,7 @@ Deephaven is only supported on:
 
 ## Prerequisites
 
-Running Deephaven with Docker requires [`docker`](https://docs.docker.com/reference/cli/docker/) >= 20.10.8.
+Running Deephaven from Docker requires [`docker`](https://docs.docker.com/reference/cli/docker/) >= 20.10.8.
 
 [Docker Compose](https://docs.docker.com/compose/) is recomended for customized deployments, especially those that require multiple containers.
 
