@@ -354,8 +354,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
             throw new IllegalArgumentException("classPathsToClear cannot be empty");
         }
 
-        // Clear cached .class files (all if classPathsToClear is null, otherwise only specified files)
-        deleteClassFiles(classCacheDirectory, classPathsToClear);
+        deleteCachedClassFiles(classCacheDirectory, classPathsToClear);
 
         // Create a fresh GroovyClassLoader
         CompilerConfiguration config = new CompilerConfiguration();
@@ -808,12 +807,12 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
      *                       Must not be empty if provided.
      * @throws IllegalArgumentException if classFilePaths is non-null but empty
      */
-    private void deleteClassFiles(File directory, @Nullable Set<String> classFilePaths) {
+    private void deleteCachedClassFiles(@NotNull File directory, @Nullable Set<String> classFilePaths) {
         if (classFilePaths != null && classFilePaths.isEmpty()) {
             throw new IllegalArgumentException("classFilePaths cannot be empty");
         }
 
-        if (directory == null || !directory.exists() || !directory.isDirectory()) {
+        if (!directory.exists() || !directory.isDirectory()) {
             return;
         }
 
@@ -824,7 +823,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
 
         for (File file : files) {
             if (file.isDirectory()) {
-                deleteClassFiles(file, classFilePaths);
+                deleteCachedClassFiles(file, classFilePaths);
             } else if (file.getName().endsWith(".class")) {
                 boolean shouldDelete = (classFilePaths == null);
                 if (!shouldDelete) {
@@ -845,7 +844,6 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
             }
         }
     }
-
 
     @Override
     protected GroovySnapshot emptySnapshot() {
