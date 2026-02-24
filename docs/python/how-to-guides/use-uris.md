@@ -1,5 +1,4 @@
 ---
-id: use-uris
 title: Use URIs to share tables
 sidebar_label: URI
 ---

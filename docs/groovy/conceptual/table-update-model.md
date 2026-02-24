@@ -16,7 +16,7 @@ Classic, general-purpose data systems often operate entirely on static data. Whe
 
 Incrementally-updating systems, on the other hand, are able to consider only new data and operation-specific state describing the intermediate results. This can radically reduce the size of the problem that must be solved for each interval, allowing for lower resource consumption, shorter intervals, or both. Non-trivial analyses and data-driven applications often involve multiple steps, applying chains of logic expressed via SQL queries or streaming pipelines. Incrementally computing updates allows for problem size reduction at every stage, compounding performance and efficiency gains.
 
-In many cases, incrementally-updating systems are the best (or only) way to satisfy requirements when solving real-world data problems. Unfortunately, such architectures are often overlooked because they come with material complexity trade-offs. Off-the-shelf systems are often expensive or limited in scope. Bespoke solutions require significant upfront investment in development time and carry project risks. **The Deephaven team has aimed to solve this problem by providing a well-optimized, easy-to-use system that internalizes much of the complexity, while presenting developers with only the choices they need in order to architect their solution.**
+In many cases, incrementally-updating systems are the best (or only) way to satisfy requirements when solving real-world data problems. Unfortunately, such architectures are often overlooked because they come with material complexity tradeoffs. Off-the-shelf systems are often expensive or limited in scope. Bespoke solutions require significant upfront investment in development time and carry project risks. **The Deephaven team has aimed to solve this problem by providing a well-optimized, easy-to-use system that internalizes much of the complexity, while presenting developers with only the choices they need in order to architect their solution.**
 
 ## Deephaven’s approach
 
@@ -31,7 +31,7 @@ Deephaven uses an incremental table update model to unify two distinct concepts 
 - A stream can be defined as a sequence of events, and lends itself well to certain types of incremental processing.
 - A table is a structured data set consisting of columns and rows in a two-dimensional coordinate system.
 
-There are typically notable trade-offs made in either model. Stream-processing systems are often unable to offer the full set of operations encountered in table-oriented systems (e.g., joins) without significant compromises. Table-oriented systems, like databases and dataframe packages, offer powerful tools for analyzing data, but these typically operate in a static or snapshot-driven manner.
+There are typically notable tradeoffs made in either model. Stream-processing systems are often unable to offer the full set of operations encountered in table-oriented systems (e.g., joins) without significant compromises. Table-oriented systems, like databases and dataframe packages, offer powerful tools for analyzing data, but these typically operate in a static or snapshot-driven manner.
 
 Deephaven’s engine operates on tables, but distributes table updates incrementally via a [directed acyclic graph (DAG)](./dag.md) modeling relationships between source tables and their dependents. Each node in the DAG is a table (or map of related tables); its edges are the listeners that apply parent updates to child tables. Listeners may also couple the engine to external systems, e.g., publishers for remote clients, reactive event processors, or other application components. Changes flow through the entire [DAG](./dag.md) on each update cycle, effectively micro-batching updates based on the configured cycle interval.
 
@@ -47,7 +47,7 @@ This section introduces you to important vocabulary and defines our data structu
 
 In Deephaven, a **table** consists of a **row set** and zero or more named columns, each of which is backed by a **column source**:
 
-- A table’s row set is a sequence of **row keys** (non-negative 64-bit integers) in monotonically-increasing order. The row set additionally provides a mapping from each row key to its corresponding **row position** (ordinal) with the same relative order.
+- A table’s row set is a sequence of **row keys** (non-negative 64-bit integers) in monotonically increasing order. The row set additionally provides a mapping from each row key to its corresponding **row position** (ordinal) with the same relative order.
   - Row keys provide a compact way to describe each unique row of a table that is distinct from ordinal position, allowing certain [freedoms](#sparse-row-sets). That said, if row key "A" is less than row key "B", then the row identified by "A" must come before the row identified by "B".
   - Row sets are typically expressed as a set of closed ranges. This notation will be used in the explanations that follow.
 - Column sources provide a mapping from row keys to their corresponding data values, implementing the columns of a Deephaven table.
@@ -242,7 +242,7 @@ None of these consistent data access mechanisms obviates the need to use good en
 
 ### Multi-process data pipelines
 
-Deephaven also provides mechanisms for consistently replicating table data to other processes. Our Apache Arrow Flight implementation uses custom metadata to implement a protocol we call [Barrage](https://github.com/deephaven/barrage), which communicates table updates in the same way as we described [previously](#describing-table-updates) via a language agnostic gRPC API. Our Apache Kafka integration allows for streaming data ingestion (and soon publication) via one of the most popular distributed event streaming platforms in the world.
+Deephaven also provides mechanisms for consistently replicating table data to other processes. Our Apache Arrow Flight implementation uses custom metadata to implement a protocol we call [Barrage](https://github.com/deephaven/barrage), which communicates table updates in the same way as we described [previously](#describing-table-updates) via a language agnostic gRPC API. Our [Apache Kafka](./kafka-basic-terms.md) integration allows for streaming data ingestion (and soon publication) via one of the most popular distributed event streaming platforms in the world.
 
 When coupled with the Deephaven query engine or with external publishers and subscribers that understand Apache Arrow Flight and Barrage or Apache Kafka, this allows for the creation of a multi-process DAG with remote links from publisher to subscriber. This simple primitive allows for consistent, asynchronous processing of data without inherent limitations on data size or resources. The Deephaven team intends to grow the toolset for this kind of data backplane system substantially over the coming months, but the building blocks are already in place for a huge variety of real-time data driven applications.
 

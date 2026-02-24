@@ -31,7 +31,7 @@ Represented as a DAG, this query looks like:
 
 <Svg src='../assets/conceptual/dag.svg' style={{height: 'auto', maxWidth: '500px'}} />
 
-Here you can see each part of the query as connected components - aka a “graph”. The graph starts with the data sources; in this case, a [time table](../reference/table-operations/create/timeTable.md). In real time, data flows from the data sources through the graph, dynamically updating the tables. Because this data flow is in one direction, the graph has no loops. This is where the “directed acyclic” part of the DAG name comes from.
+Here you can see each part of the query as connected components - aka a "graph". The graph starts with the data sources; in this case, a [time table](../reference/table-operations/create/timeTable.md). In real time, data flows from the data sources through the graph, dynamically updating the tables. Because this data flow is in one direction, the graph has no loops. This is where the "directed acyclic" part of the DAG name comes from.
 
 The variables `t1`, `t2`, and `t3` are simply references to tables within the DAG. These variables allow the tables to be displayed, as well as used in further query operations. If a table is not associated with a variable, it is still part of the DAG, but it is not accessible to users.
 

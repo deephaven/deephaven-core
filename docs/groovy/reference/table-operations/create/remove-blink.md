@@ -4,7 +4,7 @@ title: removeBlink
 
 The `removeBlink` method returns a new non-blink copy of the source table or the source table itself if it is already not a blink table. This is useful when you want to disable the default aggregation <!--TODO: link conceptual/table-types#specialized semantics when merged--> behavior of a blink table.
 
-By default, many aggregations on blink tables will be computed over _every row_ that the table has seen since the aggregation was called. Although data in a blink table disappears every update cycle, some aggregations can still be computed as though the whole data history were available.
+By default, many aggregations on blink tables are computed over _every row_ that the table has seen since the aggregation was called. Although data in a blink table disappears every update cycle, some aggregations can still be computed as though the whole data history were available.
 
 ## Syntax
 

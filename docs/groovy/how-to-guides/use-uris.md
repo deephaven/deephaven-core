@@ -3,12 +3,29 @@ title: Use URIs to share tables
 sidebar_label: URI
 ---
 
-This guide will show you to use Deephaven's [URIs](/core/javadoc/io/deephaven/uri/package-summary.html) to share tables across instances and networks.
+This guide will show you how to use Deephaven's [URIs](https://deephaven.io/core/javadoc/io/deephaven/uri/package-summary.html) to share tables across server instances and networks.
 
-A URI, short for [Uniform Resource Identifier](https://en.wikipedia.org/wiki/Uniform_Resource_Identifier), is a sequence of characters that identifies a resource on the web. Think of a URI as a generalization of a URL. A Deephaven URI identifies a table. By linking to a URI, you share your results with others without them needing to replicate your setup or know the details of your queries.
+A URI, short for [Uniform Resource Identifier](https://en.wikipedia.org/wiki/Uniform_Resource_Identifier), is a sequence of characters that identifies a resource on the web. Think of a URI as a generalization of a URL. A Deephaven URI identifies a table on a server instance. By linking to a URI, you can access and work with tables from other Deephaven server instances without needing to replicate the data or queries that created them.
 
 > [!NOTE]
 > URIs can be used to share tables across Groovy and Python instances interchangably. For how to use URIs in Python, see [the equivalent guide](/core/docs/how-to-guides/use-uris).
+
+## Why use URIs?
+
+Deephaven URIs provide several key benefits:
+
+- **Canonicalized resource identification**: Access resources through a standardized string format that works across server instances.
+- **Simplified data sharing**: Share tables between different Deephaven instances without duplicating data or queries.
+- **Distributed computing**: Build systems where processing is distributed across multiple Deephaven nodes.
+- **Real-time access**: Access live, updating tables from remote sources that reflect the latest data.
+- **Resource abstraction**: Reference remote tables and application fields using a consistent pattern regardless of location.
+- **Cross-language compatibility**: Access the same data from both Python and Groovy scripts.
+- **Environmental isolation**: Access data across different containers, servers, or networks.
+
+By using URIs, you enable others to directly access your tables without needing to replicate your data pipeline, understand your query logic, or maintain duplicate datasets. This is particularly valuable in collaborative environments and distributed systems.
+
+> [!NOTE]
+> URI and Shared Tickets are two different ways to pull tables. Both work on static or dynamic tables. URI pulls tables already on the server via a URL-like string. Shared Tickets let you pull tables you create or access via the Python Client. Learn more about using Shared Tickets with Deephaven in the [Shared Tickets guide](../how-to-guides/capture-tables.md).
 
 ## Syntax
 
@@ -24,6 +41,8 @@ The above URL can be broken down as follows:
   - The authority, in this case, is `deephaven.io`. It is the host name of the web resource.
 - Path
   - The path, in this case, is `/core/docs`. It is a path on the authority.
+
+### Deephaven URI structure
 
 Deephaven URIs use a similar syntax:
 

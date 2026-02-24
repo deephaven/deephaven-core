@@ -5,7 +5,7 @@ sidebar_label: Query table configuration
 
 This guide discusses how to control various `QueryTable` features that affect your Deephaven tables' latency and throughput.
 
-# QueryTable
+## `QueryTable`
 
 [`QueryTable`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/QueryTable.html) is Deephaven's primary implementation of our [Table API](../getting-started/crash-course/table-ops.md).
 
@@ -31,6 +31,7 @@ The `QueryTable` has the following user-configurable properties:
 | [Parallel processing with select](#parallel-processing-with-select) | `QueryTable.forceParallelSelectAndUpdate` (test-focused) | false      |
 | [Parallel snapshotting](#parallel-snapshotting)                     | `QueryTable.enableParallelSnapshot`                      | true       |
 | [Parallel snapshotting](#parallel-snapshotting)                     | `QueryTable.minimumParallelSnapshotRows`                 | `1L << 20` |
+| [Ungroup operations](#ungroup-operations)                           | `QueryTable.minimumUngroupBase`                          | 10         |
 | [SoftRecycler configuration](#softrecycler-configuration)           | `array.recycler.capacity.*`                              | 1024       |
 | [SoftRecycler configuration](#softrecycler-configuration)           | `sparsearray.recycler.capacity.*`                        | 1024       |
 | [Stateless filters by default](#stateless-by-default)               | `QueryTable.statelessFiltersByDefault`                   | false      |
@@ -50,7 +51,7 @@ It can be beneficial to disable memoization when benchmarking or testing, as mem
 
 ## Redirection
 
-Deephaven Tables maintain a 63-bit keyspace that maps a logical row in row-key space to its data. Many of Deephaven's column sources use a multi-level data layout to avoid allocating more resources than necessary to fulfill operational requirements. See [selection method properties](/core/groovy/docs/reference/community-questions/selection-method-properties/) for more details.
+Deephaven Tables maintain a 63-bit keyspace that maps a logical row in row-key space to its data. Many of Deephaven's column sources use a multi-level data layout to avoid allocating more resources than necessary to fulfill operational requirements. See [selection method properties](../reference/community-questions/selection-method-properties.md) for more details.
 
 Redirection is a mapping between a parent column source and the resulting column source for a given operation. A sorted column, for example, is redirected from the original to present the rows in the targeted sort order. Redirection may also flatten from a sparse keyspace to a flat and dense keyspace.
 
@@ -114,7 +115,15 @@ Parallel snapshotting is not enabled until the snapshot size exceeds `QueryTable
 | `QueryTable.enableParallelSnapshot`      | true          | Enables parallelized optimizations for snapshotting operations, such as Barrage subscription requests |
 | `QueryTable.minimumParallelSnapshotRows` | `1L << 20`    | The minimum number of rows required to enable parallel snapshotting operations                        |
 
-## SoftRecycler configuration
+## Ungroup operations
+
+The `ungroup` table operation can expand one row into multiple rows. `QueryTable.minimumUngroupBase` controls the initial allocation used by `ungroup`.
+
+| Property Name                   | Default Value | Description                                                                  |
+| ------------------------------- | ------------- | ---------------------------------------------------------------------------- |
+| `QueryTable.minimumUngroupBase` | 10            | The minimum base used for ungroup output row allocation (uses `2^base` rows) |
+
+## `SoftRecycler` configuration
 
 Deephaven uses [`SoftRecycler`](https://docs.deephaven.io/core/javadoc/io/deephaven/util/SoftRecycler.html) objects to manage memory for array and sparse array column sources. These column sources must maintain previous values during an update graph cycle. Rather than allocating fresh memory on each cycle, when memory is needed to record previous values it is borrowed from the recycler and returned at the end of the update cycle. These pools can improve performance and reduce garbage collection pressure.
 
@@ -186,7 +195,7 @@ Sparse array column sources use a multi-level hierarchical structure and maintai
 | `sparsearray.recycler.capacity.inuse.1`   | 9216 (max of level 1)        | Recycler capacity for "in use" bitmap blocks at level 1          |
 | `sparsearray.recycler.capacity.inuse.0`   | 9216 (max of level 0)        | Recycler capacity for "in use" bitmap blocks at level 0 (top)    |
 
-#### Tuning SoftRecycler capacity
+#### Tuning `SoftRecycler` capacity
 
 The recycler capacity determines how many array blocks are kept in memory for potential reuse. Increasing capacity can improve performance if your workload uses more blocks within an update cycle than the recycler can hold, at the cost of higher baseline memory usage. Decreasing capacity reduces baseline memory requirements, but may increase garbage collection.
 

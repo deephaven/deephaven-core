@@ -18,7 +18,7 @@ import java.util.Objects;
 class ProcessInfoImpl {
 
     private final ProcessUniqueId id;
-    private final ProcessInfoLogLogger delegate;
+    private ProcessInfoLogLogger delegate;
     private Table table;
 
     public ProcessInfoImpl(ProcessUniqueId id, ProcessInfoLogLogger delegate) {
@@ -30,6 +30,8 @@ class ProcessInfoImpl {
         final Visitor visitor = new Visitor();
         pInfo.traverse(visitor);
         table = visitor.table();
+        delegate.close();
+        delegate = null;
     }
 
     public Table table() {

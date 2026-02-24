@@ -111,6 +111,11 @@ public class RowSetCapturingFilter extends WhereFilterImpl implements SafeClosea
     }
 
     @Override
+    public boolean isSerial() {
+        return innerFilter != null && innerFilter.isSerial();
+    }
+
+    @Override
     public void setRecomputeListener(WhereFilter.RecomputeListener result) {
         if (innerFilter != null) {
             innerFilter.setRecomputeListener(result);
