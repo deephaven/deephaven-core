@@ -158,6 +158,20 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
     }
 
     /**
+     * Checks if this provider has any resource paths configured.
+     *
+     * @return true if this provider is active and has non-empty resource paths, false otherwise
+     */
+    @Override
+    public boolean hasConfiguredResources() {
+        if (!isActive()) {
+            return false;
+        }
+        RemoteFileSourceExecutionContext context = executionContext;
+        return context != null && !context.getResourcePaths().isEmpty();
+    }
+
+    /**
      * Sets the execution context with the active message stream and resource paths.
      *
      * <p>This static method establishes which message stream instance should be considered "active" for

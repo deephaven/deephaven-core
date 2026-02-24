@@ -10,6 +10,11 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLStreamHandler;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 
@@ -32,7 +37,7 @@ public class RemoteFileSourceClassLoader extends ClassLoader {
 
     // Track which remote resources have been fetched (for cache invalidation optimization)
     // Using a thread-safe Set to ensure uniqueness and O(1) contains() performance
-    private final java.util.Set<String> fetchedRemoteResources = java.util.Collections.synchronizedSet(new java.util.HashSet<>());
+    private final Set<String> fetchedRemoteResources = Collections.synchronizedSet(new HashSet<>());
 
     /**
      * Constructs a new RemoteFileSourceClassLoader with the specified parent class loader.
@@ -105,15 +110,6 @@ public class RemoteFileSourceClassLoader extends ClassLoader {
         fetchedRemoteResources.add(resourceName);
     }
 
-    /**
-     * Returns whether any remote resources have been fetched.
-     * This can be used to determine if cache invalidation is necessary.
-     *
-     * @return true if any remote resources have been fetched, false otherwise
-     */
-    public boolean hasRemoteResourcesBeenFetched() {
-        return !fetchedRemoteResources.isEmpty();
-    }
 
     /**
      * Returns a copy of the list of remote resources that have been fetched.
@@ -121,8 +117,8 @@ public class RemoteFileSourceClassLoader extends ClassLoader {
      *
      * @return list of fetched remote resource names
      */
-    public java.util.List<String> getFetchedRemoteResources() {
-        return new java.util.ArrayList<>(fetchedRemoteResources);
+    public List<String> getFetchedRemoteResources() {
+        return new ArrayList<>(fetchedRemoteResources);
     }
 
     /**
@@ -142,6 +138,21 @@ public class RemoteFileSourceClassLoader extends ClassLoader {
     public boolean hasActiveProviders() {
         for (RemoteFileSourceProvider candidate : providers) {
             if (candidate.isActive()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Returns whether there are any active providers with non-empty resource paths configured.
+     * This indicates that remote sources are actually configured, not just that the execution context is set.
+     *
+     * @return true if any provider is active and has resource paths configured, false otherwise
+     */
+    public boolean hasConfiguredRemoteSources() {
+        for (RemoteFileSourceProvider candidate : providers) {
+            if (candidate.isActive() && candidate.hasConfiguredResources()) {
                 return true;
             }
         }

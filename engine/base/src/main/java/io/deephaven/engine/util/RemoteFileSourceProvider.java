@@ -27,6 +27,14 @@ public interface RemoteFileSourceProvider {
     boolean isActive();
 
     /**
+     * Check if this provider has any resource paths configured.
+     * A provider can be active (execution context set) but have no resource paths configured.
+     *
+     * @return true if this provider has resource paths configured, false otherwise
+     */
+    boolean hasConfiguredResources();
+
+    /**
      * Request a resource from the remote source.
      *
      * @param resourceName the name of the resource to fetch (e.g., "com/example/MyClass.groovy")
