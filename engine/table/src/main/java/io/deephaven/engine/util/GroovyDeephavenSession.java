@@ -804,23 +804,26 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
     }
 
     /**
-     * Predicate function to determine if a cached class file path matches any of the base class paths.
+     * Determine if a cached class file path matches any of the base class paths.
      * Handles the fact that a single .groovy file can generate multiple .class files
      * (main class, inner classes, closures, anonymous classes, etc.).
      *
      * @param cachedClassPath the relative path of a cached class file (e.g., "test2/notebook/MyNotebook$InnerClass.class")
-     * @param basePaths list of base class paths (e.g., "test2/notebook/MyNotebook")
+     * @param groovyBasePaths list of base class paths (e.g., "test2/notebook/MyNotebook")
      * @return true if the cached class file should be deleted because it matches one of the base paths
      */
-    private boolean isMatchingClassFile(String cachedClassPath, List<String> basePaths) {
+    private boolean isMatchingClassFile(@NotNull String cachedClassPath, @NotNull List<String> groovyBasePaths) {
+        if (!cachedClassPath.endsWith(".class")) {
+            return false;
+        }
+
         // Check if this class file matches any base class path
         // Handle: MyNotebook.class, MyNotebook$InnerClass.class, MyNotebook$_closure1.class, etc.
-        for (String basePath : basePaths) {
+        for (String basePath : groovyBasePaths) {
             String basePathWithClass = basePath + ".class";
             String basePathWithDollar = basePath + "$";
 
-            if (cachedClassPath.equals(basePathWithClass) ||
-                    (cachedClassPath.startsWith(basePathWithDollar) && cachedClassPath.endsWith(".class"))) {
+            if (cachedClassPath.equals(basePathWithClass) || cachedClassPath.startsWith(basePathWithDollar)) {
                 return true;
             }
         }
