@@ -164,8 +164,6 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
 
     private DeephavenGroovyShell groovyShell;
 
-    // Track whether remote sources were active in the previous execution
-    // Used to detect transitions from no remote sources to active remote sources
     private boolean previousEvalHadRemoteSources = false;
 
     public static GroovyDeephavenSession of(
@@ -342,8 +340,9 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
      *
      * @param classPathsToClear set of specific class file paths to delete (e.g., "test2/notebook/MyNotebook.class").
      *                          If null, all .class files in the cache directory will be deleted.
-     *                          If empty, no files will be deleted and this method does nothing.
+     *                          Must not be empty.
      * @throws IllegalStateException if the cache directory does not exist
+     * @throws IllegalArgumentException if classPathsToClear is empty
      */
     private void refreshClassLoader(@Nullable Set<String> classPathsToClear) {
         // If no cache directory exists, this is an error - we shouldn't be trying to refresh without a cache
@@ -351,16 +350,14 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
             throw new IllegalStateException("Cannot refresh classloader: cache directory does not exist");
         }
 
-        // If empty set, nothing to clear - skip entirely
-        if (classPathsToClear != null && classPathsToClear.isEmpty()) {
-            return;
-        }
-
-        // Delete cached .class files
         if (classPathsToClear == null) {
             // Clear all cached .class files
             deleteClassFiles(classCacheDirectory);
-        } else {
+        }
+        else if(classPathsToClear.isEmpty()) {
+            throw new IllegalArgumentException("classPathsToClear cannot be empty");
+        }
+        else {
             // Selectively clear only specified .class files
             deleteMatchingClassFiles(classCacheDirectory, classPathsToClear);
         }
