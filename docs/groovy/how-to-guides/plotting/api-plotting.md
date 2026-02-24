@@ -533,11 +533,11 @@ Connect the input column button in the dynamic plot to the matching column in th
 
 - [How to use the Chart Builder](../user-interface/chart-builder.md)
 - [Arrays](../../reference/query-language/types/arrays.md)
-- [`oneClick`](../../reference/plot/oneClick.md)
 - [`catPlot`](../../reference/plot/catPlot.md)
 - [`catHistPlot`](../../reference/plot/catHistPlot.md)
 - [`histPlot`](../../reference/plot/histPlot.md)
 - [`ohlcPlot`](../../reference/plot/ohlcPlot.md)
+- [`oneClick`](../../reference/plot/oneClick.md)
 - [`piePlot`](../../reference/plot/piePlot.md)
 - [`plot`](../../reference/plot/plot.md)
 - [`plotStyle`](../../reference/plot/plotStyle.md)
