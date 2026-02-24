@@ -37,6 +37,8 @@ The documentation consists primarily of "how-to" guides for both new and experie
 
 **Quotes:** Use straight quotes (`"` and `'`), never smart/curly quotes (`"` `"` `'` `'`).
 
+**Em dashes:** Surround em dashes with a single space on either side: `word — word`, not `word—word`.
+
 **Links:** When a method is mentioned outside its primary article, link to the appropriate reference page or API doc (excludes code snippets/blocks). Always describe what you are linking to.
 
 - Correct: "For more information, see the [Input table guide](link)."
