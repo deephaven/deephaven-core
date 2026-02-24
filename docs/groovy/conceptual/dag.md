@@ -87,10 +87,10 @@ Here's how a UG cycle works:
 
 For example, in our earlier query, if `t1` receives 5 new rows in one cycle:
 
-- `t1` processes 5 additions and notifies `t2` and `t3`
-- `t2` (the `lastBy`) processes updates for affected labels
-- `t3` (the `naturalJoin`) incorporates both sets of changes
-- All three tables update simultaneously from the user's perspective
+- `t1` processes 5 additions and notifies `t2` and `t3`.
+- `t2` (the `lastBy`) processes updates for affected labels.
+- `t3` (the `naturalJoin`) incorporates both sets of changes.
+- All three tables update simultaneously from the user's perspective.
 
 <Svg src='../assets/conceptual/dag-ug-cycle.svg' style={{height: 'auto', maxWidth: '1000px'}} />
 
