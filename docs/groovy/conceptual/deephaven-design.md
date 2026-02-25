@@ -19,7 +19,7 @@ Deephaven's architecture is built on several key innovations:
 - **Shared table structures**: RowSets and ColumnSources enable zero-copy operations and efficient memory usage across query operations.
 - **Mechanical sympathy**: Chunk-oriented processing, columnar layouts, and careful JVM optimization deliver exceptional performance.
 - **Seamless language integration**: Python, Java, Groovy, and polyglot APIs work together through JPY and gRPC.
-- **Python-first UI framework**: deephaven.ui enables building reactive web applications entirely in Python, with live table integration and no front-end engineering required.
+- **Python-first UI framework**: `deephaven.ui` enables building reactive web applications entirely in Python, with live table integration and no front-end engineering required.
 - **Lambda architecture without complexity**: Batch and real-time data coexist behind a single, consistent API.
 
 ### How Deephaven compares
@@ -30,7 +30,7 @@ Deephaven's architecture is built on several key innovations:
 | **Update model**       | Recompute full datasets                 | Incremental (only changed rows)     |
 | **Memory efficiency**  | Copy-on-write, data duplication         | Shared RowSets and ColumnSources    |
 | **Query consistency**  | Manual coordination required            | Automatic via DAG and logical clock |
-| **UI development**     | Separate front-end team/codebase        | Pure Python (deephaven.ui) or JS    |
+| **UI development**     | Separate front-end team/codebase        | Pure Python (`deephaven.ui`) or JS  |
 | **Data movement**      | Row-at-a-time or full scans             | Chunk-oriented (4096 cells at once) |
 | **Performance tuning** | Complex configuration, multiple systems | Mechanical sympathy built-in        |
 
@@ -316,95 +316,12 @@ Based on this observation, we’ve implemented a design for multi-process data-d
 
 This approach intentionally trades away “global consistency” for increased throughput and scalability. In practice, we think that such a global view is either illusory or better implemented via end-to-end sequence numbers that allow for data correlation within the query engine. By illusory we mean to observe that input sources often publish in a mutually-asynchronous manner, thus constraining the possibilities for true consistency to something narrower; e.g., “mutual consistency based on the inputs observed at a given point in time.” For data sources that do contain correlatable sequence numbers, Deephaven offers tools for synchronizing table views to reconstruct a truly consistent state.
 
-## Building UIs with deephaven.ui
+## Building UIs
 
-deephaven.ui represents a significant evolution in how data applications are built with Deephaven. It's a Python web framework that enables developers to create sophisticated, real-time data-focused web applications using only Python—no JavaScript, CSS, or front-end engineering expertise required.
+Deephaven provides two approaches for building custom user interfaces:
 
-### Architecture and design philosophy
-
-deephaven.ui adopts a React-like component model, but implemented entirely in Python. While Groovy users can interact with tables and data structures, the UI framework itself is Python-specific. Groovy developers can leverage the JavaScript/web-client-ui approach or work with Python scripts for UI components.
-
-### Key architectural benefits
-
-**Reactive components**: UI elements automatically update when underlying Deephaven tables change. The framework handles all DOM updates, state synchronization, and WebSocket communication transparently.
-
-**Live table integration**: Components are "table-aware" and can directly consume Deephaven tables as data sources. When a table updates (via DAG propagation), connected UI components refresh automatically without manual intervention.
-
-**Declarative composition**: Applications are described as functions of data. Developers specify what the UI should look like, and the framework handles how to efficiently render and update it.
-
-**Component reusability**: Custom components can be composed together, passed as parameters, and reused across applications, following familiar React patterns but in pure Python.
-
-### How it works
-
-deephaven.ui bridges three layers:
-
-1. **Python component layer**: Developers write `@ui.component` decorated functions that return component hierarchies.
-2. **Server-side rendering**: The framework maintains component state on the server and tracks dependencies.
-3. **Client-side React rendering**: Components are serialized and rendered in the browser using React, with automatic updates pushed via WebSockets when data changes.
-
-<Svg src='../assets/conceptual/deephaven-ui-architecture.svg' style={{height: 'auto', maxWidth: '1000px'}} />
-
-This architecture leverages Deephaven's DAG model: when source tables update, the DAG propagates changes through query operations, and deephaven.ui propagates those changes through to UI components. The entire data-to-display pipeline remains consistent and automatic.
-
-### Design integration
-
-deephaven.ui fits naturally into Deephaven's overall architecture:
-
-- **Leverages JPY**: Uses the same Python-Java bridge for engine communication.
-- **Extends gRPC APIs**: Adds UI-specific protocols on top of existing table and object services.
-- **Respects the DAG**: UI updates follow DAG propagation rules, maintaining consistency.
-- **Complements existing tools**: Works alongside notebook-style development, scripts, and traditional web UIs.
-
-For developers building data applications, deephaven.ui eliminates the complexity of managing separate front-end and back-end codebases, while preserving Deephaven's real-time performance characteristics.
-
-## gRPC APIs for polyglot interoperability
-
-Deephaven's core API is implemented using polyglot technologies that allow for compatible client (or server!) implementations in almost any language. It is composed of several complementary modules, but its Arrow Flight service and Table service are foremost. These offer high-performance data transport -- specifically organized to include real-time and updating data -- and a table manipulation API that mirrors the Deephaven engine's internal compute paradigm. You can read more about our API itself [here](./deephaven-core-api.md).
-
-## Distributing DAGs and global consistency
-
-At Deephaven, we believe that our approach to propagating static and updating tabular data will revolutionize distributed data systems development. It represents a powerful new model.
-
-As touched upon briefly earlier in this piece, the Deephaven query engine propagates updates concurrently via a [DAG](./dag.md), relying on a logical clock to mark phase and step changes for internal consistency. While this sort of coordination is suitable within a single process, the overhead increases exponentially when extending such a DAG across multiple processes.
-
-Based on this observation, we've implemented a design for multi-process data-driven applications that relies on consistent table replication using initial snapshots followed by subsequent deltas. This allows nodes to operate with their logical clocks mutually decoupled, allowing truly parallel update propagation. This also allows for bidirectional data flows, with nodes that publish a given table able to act as consumers for other tables.
-
-This approach intentionally trades away "global consistency" for increased throughput and scalability. In practice, we think that such a global view is either illusory or better implemented via end-to-end sequence numbers that allow for data correlation within the query engine. By illusory we mean to observe that input sources often publish in a mutually-asynchronous manner, thus constraining the possibilities for true consistency to something narrower; e.g., "mutual consistency based on the inputs observed at a given point in time." For data sources that do contain correlatable sequence numbers, Deephaven offers tools for synchronizing table views to reconstruct a truly consistent state.
-
-## Front-end architecture
-
-Deephaven offers two complementary approaches to building user interfaces:
-
-### JavaScript API and web-client-ui
-
-Our JavaScript API starts with a gRPC-Web implementation of Arrow's services and serialization formats, adds our own Arrow extensions to handle dynamic and ticking data (called [Barrage](/barrage/docs/)), and then layers on Deephaven's own gRPC services to manipulate and produce tables with the content users want to interact with. This results in an API where massive tables on the server can be easily displayed, respond to updates, and be efficiently modified based on user interactions like sorting, filtering, and adding new columns with custom formulas. The client-side Table object provides events to notify applications when an incremental change happens in the visible portion of the table, or when a pending operation has completed.
-
-This approach provides maximum flexibility for front-end engineers who need fine-grained control over the UI, want to integrate Deephaven into existing web applications, or prefer working directly with JavaScript/TypeScript.
-
-### deephaven.ui: Python-first web framework
-
-For developers who prefer to work entirely in Python, [deephaven.ui](https://deephaven.io/core/ui/docs/) provides a higher-level abstraction. It uses a React-like component model but requires no JavaScript knowledge. Groovy developers can leverage Python scripts for UI components or use the JavaScript API directly.
-
-deephaven.ui automatically:
-
-- Serializes Python components to React elements.
-- Manages WebSocket connections for real-time updates.
-- Synchronizes table changes from the DAG to UI components.
-- Handles state management and event routing.
-
-Both approaches leverage the same underlying architecture: Deephaven's DAG-based query engine, gRPC/Barrage protocols, and efficient table replication. The choice depends on developer preference and use case requirements.
-
-### Interacting with data without compromises
-
-Deephaven is designed to handle big ticking data. The [web-client-ui](https://github.com/deephaven/web-client-ui) front-end is no exception. We want to interact with as large a ticking data set as possible without compromising the user experience. This includes displaying a grid full of all the data and plotting the data.
-
-#### Displaying a grid
-
-In the web browser, we have some unique challenges when trying to display a large ticking set of data. When researching existing grid data solutions, we discovered that all of them had compromises when working with large data sets: the experience would either be completely different than a small data set (requiring paging buttons or some other mechanism to switch between small data sets), performance would be poor to the point of unusable, or they simply would not work at all. We wanted the same experience for data sets of any size, so we ended up developing our own front-end [grid component](https://www.npmjs.com/package/@deephaven/grid) that performs the same for all data sets.
-
-#### Plotting data
-
-When plotting large data sets, the biggest challenge is allowing interactivity with the data. A user could zoom out and view the entire data set from a high-level. With data sets with millions of points, it’s extremely inefficient to send the entire data set from server to client; even more so when ticking data is involved. With static data you can process the plot server side and simply send an image representation of the full plot, but that becomes inefficient when data is updating frequently, and also compromises the interactivity. We developed a downsampling algorithm that accurately represents the data with the current viewport/zoom-level set, efficiently updates as new data comes in, and allows the user to continue interacting with the plot naturally.
+- **[`deephaven.ui`](https://deephaven.io/core/ui/docs/)**: A Python web framework for building real-time data-focused applications entirely in Python. `deephaven.ui` adopts a React-like component model, but implemented entirely in Python. While Groovy users can interact with tables and data structures, the UI framework itself is Python-specific. You can use [`ui.resolve`](https://deephaven.io/core/ui/docs/components/uri/) from a Python query to layout and interact with tables and charts exported from a Groovy query.
+- **[web-client-ui](https://github.com/deephaven/web-client-ui)**: JavaScript/TypeScript components for building custom web applications with full control over the front-end.
 
 ## The whole is greater than….
 
@@ -430,8 +347,8 @@ Deephaven Community Core is specifically designed, delivered, and packaged to be
 
 ### UI frameworks
 
-- [deephaven.ui documentation](https://deephaven.io/core/ui/docs/)
-- [deephaven.ui architecture](https://deephaven.io/core/ui/docs/architecture)
+- [`deephaven.ui` documentation](https://deephaven.io/core/ui/docs/)
+- [`deephaven.ui` architecture](https://deephaven.io/core/ui/docs/architecture)
 - [web-client-ui on GitHub](https://github.com/deephaven/web-client-ui)
 - [@deephaven/grid component](https://www.npmjs.com/package/@deephaven/grid)
 
