@@ -202,7 +202,7 @@ The Chunk type hierarchy is designed such that cellular data access is never per
 
 Chunks are pooled to allow re-use as temporary data buffers without significant impact on garbage generation, thus reducing garbage collection frequency and duration.
 
-Chunks are currently implemented as regions of native Java arrays, with implementations for each primitive type as well as an additional one for Object references. We’ve long contemplated switching to use [Apache Arrow](https://arrow.apache.org/docs/index.html) [ValueVectors](https://arrow.apache.org/java/current/vector.html) (called Arrays in the C++ implementation), but haven’t yet invested sufficient development resources to build a proof of concept.
+Chunks are currently implemented as regions of native Java arrays, with implementations for each primitive type as well as an additional one for Object references. In the future we might switch to use [Apache Arrow](https://arrow.apache.org/docs/index.html) [ValueVectors](https://arrow.apache.org/java/current/vector.html) (called Arrays in the C++ implementation) or another high-performance implementation.
 
 ### Columnar hash tables
 
@@ -323,12 +323,12 @@ Deephaven provides two approaches for building custom user interfaces:
 - **[`deephaven.ui`](https://deephaven.io/core/ui/docs/)**: A Python web framework for building real-time data-focused applications. `deephaven.ui` adopts a React-like component model, but implemented entirely in Python. While Groovy users can interact with tables and data structures, the UI framework itself is Python-specific. You can use [`ui.resolve`](https://deephaven.io/core/ui/docs/components/uri/) from a Python query to layout and interact with tables and charts exported from a Groovy query.
 
   **Key features**:
-  - **Components**: Create user interfaces from components defined entirely with Python
-  - **Live dataframe aware**: Components can use Deephaven tables as a data source
-  - **Reactive**: UI components automatically update when the underlying Python data changes
-  - **Declarative**: Describe the UI as a function of the data and let the framework handle the rest
-  - **Composable**: Combine and reuse components to build complex interfaces
-  - **Wide range of components**: From simple text fields to complex tables and plots
+  - **Components**: Create user interfaces from components defined entirely with Python.
+  - **Live dataframe aware**: Components can use Deephaven tables as a data source.
+  - **Reactive**: UI components automatically update when the underlying Python data changes.
+  - **Declarative**: Describe the UI as a function of the data and let the framework handle the rest.
+  - **Composable**: Combine and reuse components to build complex interfaces.
+  - **Wide range of components**: From simple text fields to complex tables and plots.
 
   For complete documentation, tutorials, and examples, see the [`deephaven.ui` documentation](https://deephaven.io/core/ui/docs/).
 
