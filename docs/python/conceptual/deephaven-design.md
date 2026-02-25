@@ -307,20 +307,23 @@ Although the core of Deephaven is implemented in Java, we consider Python to be 
 
 To maximize the familiarity of the Deephaven data science and app-dev experience, we have developed a transparent, pure Python API that relieves the user from the details of calling JPY. During the design and implementation of this Pythonic API, special care was taken to minimize the number of crossings between JNI and Python runtime.
 
-## Building UIs with `deephaven.ui`
+## Building UIs
 
-[`deephaven.ui`](https://deephaven.io/core/ui/docs/) is a Python web framework for building real-time data-focused applications. Write scripts entirely in Python — no front-end engineering, JavaScript, or CSS required.
+Deephaven provides two approaches for building custom user interfaces:
 
-**Key features**:
+- **[`deephaven.ui`](https://deephaven.io/core/ui/docs/)**: A Python web framework for building real-time data-focused applications. Write scripts entirely in Python — no front-end engineering, JavaScript, or CSS required.
 
-- **Components**: Create user interfaces from components defined entirely with Python
-- **Live dataframe aware**: Components can use Deephaven tables as a data source
-- **Reactive**: UI components automatically update when the underlying Python data changes
-- **Declarative**: Describe the UI as a function of the data and let the framework handle the rest
-- **Composable**: Combine and reuse components to build complex interfaces
-- **Wide range of components**: From simple text fields to complex tables and plots
+  **Key features**:
+  - **Components**: Create user interfaces from components defined entirely with Python
+  - **Live dataframe aware**: Components can use Deephaven tables as a data source
+  - **Reactive**: UI components automatically update when the underlying Python data changes
+  - **Declarative**: Describe the UI as a function of the data and let the framework handle the rest
+  - **Composable**: Combine and reuse components to build complex interfaces
+  - **Wide range of components**: From simple text fields to complex tables and plots
 
-For complete documentation, tutorials, and examples, see the [`deephaven.ui` documentation](https://deephaven.io/core/ui/docs/).
+  For complete documentation, tutorials, and examples, see the [`deephaven.ui` documentation](https://deephaven.io/core/ui/docs/).
+
+- **[`web-client-ui`](https://github.com/deephaven/web-client-ui)**: JavaScript/TypeScript components for building custom web applications with full control over the front-end.
 
 ## gRPC APIs for polyglot interoperability
 
@@ -335,15 +338,6 @@ As touched upon briefly earlier in this piece, the Deephaven query engine propag
 Based on this observation, we've implemented a design for multi-process data-driven applications that relies on consistent table replication using initial snapshots followed by subsequent deltas. This allows nodes to operate with their logical clocks mutually decoupled, allowing truly parallel update propagation. This also allows for bidirectional data flows, with nodes that publish a given table able to act as consumers for other tables.
 
 This approach intentionally trades away "global consistency" for increased throughput and scalability. In practice, we think that such a global view is either illusory or better implemented via end-to-end sequence numbers that allow for data correlation within the query engine. By illusory we mean to observe that input sources often publish in a mutually-asynchronous manner, thus constraining the possibilities for true consistency to something narrower; e.g., "mutual consistency based on the inputs observed at a given point in time." For data sources that do contain correlatable sequence numbers, Deephaven offers tools for synchronizing table views to reconstruct a truly consistent state.
-
-## Front-end architecture
-
-Deephaven offers two approaches to building user interfaces:
-
-- **[`deephaven.ui`](https://deephaven.io/core/ui/docs/)**: A Python web framework for building real-time data-focused applications. See [Building UIs with `deephaven.ui`](#building-uis-with-deephavenui) above.
-- **[web-client-ui](https://github.com/deephaven/web-client-ui)**: JavaScript/TypeScript components for building custom web applications with full control over the front-end.
-
-Both approaches leverage the same underlying architecture: Deephaven's DAG-based query engine, gRPC/Barrage protocols, and efficient table replication.
 
 ## The whole is greater than….
 
@@ -372,7 +366,7 @@ Deephaven Community Core is specifically designed, delivered, and packaged to be
 
 - [`deephaven.ui` documentation](https://deephaven.io/core/ui/docs/)
 - [`deephaven.ui` architecture](https://deephaven.io/core/ui/docs/architecture)
-- [web-client-ui on GitHub](https://github.com/deephaven/web-client-ui)
+- [`web-client-ui` on GitHub](https://github.com/deephaven/web-client-ui)
 - [@deephaven/grid component](https://www.npmjs.com/package/@deephaven/grid)
 
 ### External resources
