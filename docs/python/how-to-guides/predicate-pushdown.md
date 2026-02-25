@@ -46,11 +46,28 @@ result = source.where(filters="Test1 > 90")
 
 Parquet metadata is optional, and not all Parquet files will have it. If the metadata is not available, Deephaven will fall back to scanning the data in the row groups to apply the filter. If Parquet metadata is malformed or incorrect, it may lead to incorrect filtering results. In such cases, you can [disable](#disabling-predicate-pushdown-features) this optimization.
 
+
+## Parquet dictionary encoding
+
+When storing `string` data, Parquet may create a dictionary encoding for the column where a dictionary of unique values is stored separately from the column data. The column data contains references (e.g., integer indices) to the dictionary entries instead of the actual string values. This can significantly reduce storage space and improve performance for columns with many repeated values. This additionally allows for efficient filtering on these columns, as the engine can check the unique dictionary values against the filter to determine matches without scanning the entire column. If matches are found, the engine will note which integer indices in the column data correspond to the matching dictionary values and filter the dataa much more efficiently than loading each string value and applying the filter. Additionally, if no matches are found, the engine can skip the entire column without scanning any of the row data.
+
+Nearly all single-column filters can be optimized using the dictionary encoding.
+
+```python order=source,result
+from deephaven import parquet
+
+# pass the path of the local Parquet file to `read`
+source = parquet.read(path="/data/examples/ParquetExamples/grades/grades.parquet")
+result = source.where(filters="Class = `Math`")
+```
+
+If desired, you can [disable](#disabling-predicate-pushdown-features) the use of dictionary encoding during pushdown operations:
+
 ## Deephaven data indexes
 
-Deephaven allows users to create data indexes when writing data to storage as Parquet files. These indexes can speed up filtering operations by applying the filter to the index instead of the larger table.
+Deephaven allows users to create data indexes for any table. These indexes can be retained in memory or written to storage and can speed up filtering operations significantly by applying the filter to the index instead of the larger table.
 
-Starting in Deephaven v0.40.0, the predicate pushdown framework enables data indexes to be used with most filter types (not just exact matches). When a materialized (in-memory) data index exists, the engine can leverage it during `where` operations. To avoid unexpected memory usage, filter operations do not automatically materialize deferred (disk-based) data indexes.
+Starting in Deephaven v0.40.0, the predicate pushdown framework enables data indexes to be used with most filter types (not just exact matches). When a materialized (in-memory) data index for a table exists, the engine can leverage it during `where` operations. To avoid unexpected memory usage, filter operations do not automatically materialize table-level data indexes. However, if an individual file-level data index is available on disk, the engine will use it to filter data without loading the entire index into memory.
 
 This technique is effective even if only a subset of the data files are indexed. The engine will filter non-indexed files using the standard method.
 
