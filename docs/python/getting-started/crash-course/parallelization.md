@@ -142,15 +142,15 @@ result = empty_table(100).update("ID = get_next_id()")
 
 The intent is for each row to get a unique ID: 1, 2, 3, and so on. But with parallelization, multiple cores call `get_next_id` at the same time. This doesn't throw an error — it silently produces wrong values like:
 
-| ID  |
-| --- |
-| 1   |
-| 2   |
-| 2   |
-| 4   |
-| 5   |
-| 5   |
-| 7   |
+| ID |
+| -- |
+| 1  |
+| 2  |
+| 2  |
+| 4  |
+| 5  |
+| 5  |
+| 7  |
 
 Two cores might both read `counter = 5`, both add 1 to get 6, and both return 6. The result: duplicate IDs and skipped numbers.
 

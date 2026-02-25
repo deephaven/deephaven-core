@@ -48,7 +48,7 @@
               },
               {
                 "label": "Query Parallelization",
-                "path": "tutorials/crash-course/parallelization.md"
+                "path": "getting-started/crash-course/parallelization.md"
               },
               {
                 "label": "Real-time Plots",

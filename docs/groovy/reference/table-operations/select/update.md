@@ -77,4 +77,4 @@ For more information, see [Parallelization](../../../conceptual/query-engine/par
 - [Choose the right selection method for your query](../../../how-to-guides/use-select-view-update.md#choose-the-right-column-selection-method)
 - [How to select, view, and update data](../../../how-to-guides/use-select-view-update.md)
 - [Parallelization](../../../conceptual/query-engine/parallelization.md)
-- [Javadoc](<https://deephaven.io/core/javadoc/io/deephaven/api/TableOperations.html#update(java.lang.String...)>)
+- [Javadoc](https://deephaven.io/core/javadoc/io/deephaven/api/TableOperations.html#update(java.lang.String...))
