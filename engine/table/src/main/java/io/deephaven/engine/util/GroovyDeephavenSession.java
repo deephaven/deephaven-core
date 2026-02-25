@@ -379,7 +379,9 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         final RemoteFileSourceClassLoader remoteLoader = RemoteFileSourceClassLoader.getInstance();
         final boolean hasRemoteSources = remoteLoader.hasConfiguredRemoteSources();
 
-        // Clear the class cache whenever remote sources are involved to ensure fresh compilation
+        // If previous run had remote sources enabled, we need to clear the cache in case anything has changed.
+        // If current run has remote sources enabled, we also need to clear the cache so that cached local classes have
+        // opportunity to be remotely fetched. If remote sources aren't involved, no need to clear the cache.
         if (previousEvalHadRemoteSources || hasRemoteSources) {
             log.debug("Remote file sourcing enabled or was previously enabled. Clearing class cache.");
             refreshClassLoader();
