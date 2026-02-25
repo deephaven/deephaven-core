@@ -51,7 +51,6 @@ import org.codehaus.groovy.control.customizers.ImportCustomizer;
 import org.codehaus.groovy.tools.GroovyClass;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jspecify.annotations.NonNull;
 
 import java.io.File;
 import java.io.IOException;
@@ -339,23 +338,15 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
      * Clears cached .class files and refreshes the GroovyClassLoader and associated shell.
      * This ensures that classes will be recompiled from source on the next execution.
      *
-     * @param groovyBasePaths list of base class paths from Groovy sources (e.g., "test2/notebook/MyNotebook").
-     *                  If null, all .class files in the cache directory will be deleted.
-     *                  Must not be empty if provided.
      * @throws IllegalStateException if the cache directory does not exist
-     * @throws IllegalArgumentException if basePaths is empty
      */
-    private void refreshClassLoader(@Nullable List<String> groovyBasePaths) {
+    private void refreshClassLoader() {
         // If no cache directory exists, this is an error - we shouldn't be trying to refresh without a cache
         if (classCacheDirectory == null || !classCacheDirectory.exists()) {
             throw new IllegalStateException("Cannot refresh classloader: cache directory does not exist");
         }
 
-        if (groovyBasePaths != null && groovyBasePaths.isEmpty()) {
-            throw new IllegalArgumentException("groovyBasePaths cannot be empty");
-        }
-
-        deleteCachedClassFiles(classCacheDirectory, groovyBasePaths);
+        deleteCachedClassFiles(classCacheDirectory);
 
         // Create a fresh GroovyClassLoader
         CompilerConfiguration config = new CompilerConfiguration();
@@ -388,14 +379,10 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         final RemoteFileSourceClassLoader remoteLoader = RemoteFileSourceClassLoader.getInstance();
         final boolean hasRemoteSources = remoteLoader.hasConfiguredRemoteSources();
 
-        // Any time there are remote sources, we need to clear the class cache to ensure they are freshly fetched.
-        // 1. For cases where previous evaluate had remote sources, the cache will have already been cleared of any
-        // fetched sources, so nothing to do.
-        // 2. For cases where previous evaluate did not have remote sources, we have to clear the entire cache since
-        // we don't know yet what sources need to be fetched.
-        if (!previousEvalHadRemoteSources && hasRemoteSources) {
-            log.debug("Remote file sourcing enabled. Clearing class cache.");
-            refreshClassLoader(null);  // null = clear all cache files
+        // Clear the class cache whenever remote sources are involved to ensure fresh compilation
+        if (previousEvalHadRemoteSources || hasRemoteSources) {
+            log.debug("Remote file sourcing enabled or was previously enabled. Clearing class cache.");
+            refreshClassLoader();
         }
 
         // Update state tracker for next execution
@@ -414,36 +401,9 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
             } catch (Exception e) {
                 throw wrapAndRewriteStackTrace(scriptName, currentScriptName, e, lastCommand, commandPrefix);
             }
-        } finally {
-            // Get list of remote resources that were used in this execution
-            List<String> groovyBasePaths = getGroovyBasePaths(remoteLoader.getFetchedRemoteResources());
-
-            // If remote .groovy sources were fetched, clear associated classes from the cache so that they will be
-            // re-fetched on next evaluate
-            if (!groovyBasePaths.isEmpty()) {
-                log.debug("Clearing remote .groovy sources from class cache");
-                refreshClassLoader(groovyBasePaths);
-            }
-
-            remoteLoader.clearFetchedResourcesTracking();
         }
     }
 
-    /**
-     * Extracts base paths from remote resources by filtering to .groovy files and stripping their extensions.
-     *
-     * @param remoteResources list of remote resource paths that were fetched
-     * @return list of base paths (without .groovy extension) for all groovy files in the input
-     */
-    private static @NonNull List<String> getGroovyBasePaths(List<String> remoteResources) {
-        List<String> groovyBasePaths = new ArrayList<>();
-        for (String resource : remoteResources) {
-            if (resource.endsWith(".groovy")) {
-                groovyBasePaths.add(resource.substring(0, resource.length() - 7));
-            }
-        }
-        return groovyBasePaths;
-    }
 
     private RuntimeException wrapAndRewriteStackTrace(String scriptName, String currentScriptName, Exception e,
             String lastCommand, String commandPrefix) {
@@ -804,47 +764,12 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
     }
 
     /**
-     * Determine if a cached class file path matches any of the base class paths.
-     * Handles the fact that a single .groovy file can generate multiple .class files
-     * (main class, inner classes, closures, anonymous classes, etc.).
-     *
-     * @param cachedClassPath the relative path of a cached class file (e.g., "test2/notebook/MyNotebook$InnerClass.class")
-     * @param groovyBasePaths list of base class paths (e.g., "test2/notebook/MyNotebook")
-     * @return true if the cached class file should be deleted because it matches one of the base paths
-     */
-    private boolean isMatchingClassFile(@NotNull String cachedClassPath, @NotNull List<String> groovyBasePaths) {
-        if (!cachedClassPath.endsWith(".class")) {
-            return false;
-        }
-
-        // Check if this class file matches any base class path
-        // Handle: MyNotebook.class, MyNotebook$InnerClass.class, MyNotebook$_closure1.class, etc.
-        for (String basePath : groovyBasePaths) {
-            String basePathWithClass = basePath + ".class";
-            String basePathWithDollar = basePath + "$";
-
-            if (cachedClassPath.equals(basePathWithClass) || cachedClassPath.startsWith(basePathWithDollar)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Recursively delete .class files from the cache directory to force recompilation.
+     * Recursively delete all .class files from the cache directory to force recompilation.
      * This is necessary because GroovyClassLoader can reload .class files from disk even after clearCache().
      *
-     * @param directory the directory to recursively search for .class files (initially classCacheDirectory, then subdirectories during recursion)
-     * @param groovyBasePaths optional list of base .groovy paths to find classes for. If null, all .class files are deleted.
-     *                  If non-null, only class files matching these base paths are deleted.
-     *                  Must not be empty if provided.
-     * @throws IllegalArgumentException if basePaths is non-null but empty
+     * @param directory the directory to recursively search for .class files
      */
-    private void deleteCachedClassFiles(@NotNull File directory, @Nullable List<String> groovyBasePaths) {
-        if (groovyBasePaths != null && groovyBasePaths.isEmpty()) {
-            throw new IllegalArgumentException("basePaths cannot be empty");
-        }
-
+    private void deleteCachedClassFiles(@NotNull File directory) {
         if (!directory.exists() || !directory.isDirectory()) {
             return;
         }
@@ -856,23 +781,10 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
 
         for (File file : files) {
             if (file.isDirectory()) {
-                deleteCachedClassFiles(file, groovyBasePaths);
+                deleteCachedClassFiles(file);
             } else if (file.getName().endsWith(".class")) {
-                boolean shouldDelete = (groovyBasePaths == null);
-                if (!shouldDelete) {
-                    String relativePath = classCacheDirectory.toPath().relativize(file.toPath())
-                            .toString().replace(File.separatorChar, '/');
-                    shouldDelete = isMatchingClassFile(relativePath, groovyBasePaths);
-                }
-
-                if (shouldDelete) {
-                    if (file.delete()) {
-                        if (groovyBasePaths != null) {
-                            log.info("Deleted cached .class file for remote source: " + file.getPath());
-                        }
-                    } else {
-                        log.warn("Failed to delete cached class file: " + file.getAbsolutePath());
-                    }
+                if (!file.delete()) {
+                    log.warn("Failed to delete cached class file: " + file.getAbsolutePath());
                 }
             }
         }

@@ -10,11 +10,6 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLStreamHandler;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 
@@ -35,9 +30,6 @@ public class RemoteFileSourceClassLoader extends ClassLoader {
     private static volatile RemoteFileSourceClassLoader instance;
     private final CopyOnWriteArrayList<RemoteFileSourceProvider> providers = new CopyOnWriteArrayList<>();
 
-    // Track which remote resources have been fetched (for cache invalidation optimization)
-    // Using a thread-safe Set to ensure uniqueness and O(1) contains() performance
-    private final Set<String> fetchedRemoteResources = Collections.synchronizedSet(new HashSet<>());
 
     /**
      * Constructs a new RemoteFileSourceClassLoader with the specified parent class loader.
@@ -100,34 +92,6 @@ public class RemoteFileSourceClassLoader extends ClassLoader {
         providers.remove(provider);
     }
 
-    /**
-     * Records that a remote resource has been fetched.
-     * This is used to track whether cache invalidation is needed.
-     *
-     * @param resourceName the name of the resource that was fetched
-     */
-    void recordRemoteResourceFetch(String resourceName) {
-        fetchedRemoteResources.add(resourceName);
-    }
-
-
-    /**
-     * Returns a copy of the list of remote resources that have been fetched.
-     * This can be used for selective cache invalidation.
-     *
-     * @return list of fetched remote resource names
-     */
-    public List<String> getFetchedRemoteResources() {
-        return new ArrayList<>(fetchedRemoteResources);
-    }
-
-    /**
-     * Clears the tracking of fetched remote resources.
-     * This should be called after cache invalidation to reset the state.
-     */
-    public void clearFetchedResourcesTracking() {
-        fetchedRemoteResources.clear();
-    }
 
     /**
      * Returns whether there are any active providers with resource paths configured.
@@ -257,8 +221,6 @@ public class RemoteFileSourceClassLoader extends ClassLoader {
                             .orTimeout(RESOURCE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
                             .get();
                     connected = true;
-                    // Track that this remote resource was fetched
-                    RemoteFileSourceClassLoader.getInstance().recordRemoteResourceFetch(resourceName);
                 } catch (Exception e) {
                     throw new IOException("Failed to fetch remote resource: " + resourceName, e);
                 }
