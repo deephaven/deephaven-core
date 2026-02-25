@@ -133,18 +133,10 @@ public class ImmutableConstantFloatSource
             onComplete.accept(PushdownResult.allNoMatch(selection));
             return;
         }
-
         final SingleValuePushdownHelper.FilterContext filterCtx = (SingleValuePushdownHelper.FilterContext) context;
 
-        // Chunk filtering has lower overhead than creating a dummy table.
-        if (filterCtx.supportsChunkFiltering()) {
-            final boolean matches = SingleValuePushdownHelper.chunkFilter(selection, filterCtx, this::getValueChunk);
-            onComplete.accept(matches ? PushdownResult.allMatch(selection) : PushdownResult.allNoMatch(selection));
-            return;
-        }
-
-        // Chunk filtering is not supported, so test against a dummy table.
-        final boolean matches = SingleValuePushdownHelper.tableFilter(filter, selection, usePrev, this);
+        final boolean matches =
+                SingleValuePushdownHelper.filter(filter, selection, usePrev, filterCtx, this::getValueChunk, this);
         onComplete.accept(matches ? PushdownResult.allMatch(selection) : PushdownResult.allNoMatch(selection));
     }
 

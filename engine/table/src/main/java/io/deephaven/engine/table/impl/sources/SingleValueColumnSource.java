@@ -167,16 +167,10 @@ public abstract class SingleValueColumnSource<T> extends AbstractColumnSource<T>
 
         final SingleValuePushdownHelper.FilterContext filterCtx = (SingleValuePushdownHelper.FilterContext) context;
 
-        // Chunk filtering has lower overhead than creating a dummy table.
-        if (filterCtx.supportsChunkFiltering()) {
-            final Supplier<Chunk<Values>> chunkSupplier = usePrev ? this::getPrevValueChunk : this::getValueChunk;
-            final boolean matches = SingleValuePushdownHelper.chunkFilter(selection, filterCtx, chunkSupplier);
-            onComplete.accept(matches ? PushdownResult.allMatch(selection) : PushdownResult.allNoMatch(selection));
-            return;
-        }
+        final Supplier<Chunk<Values>> chunkSupplier = usePrev ? this::getPrevValueChunk : this::getValueChunk;
 
-        // Chunk filtering is not supported, so test against a dummy table.
-        final boolean matches = SingleValuePushdownHelper.tableFilter(filter, selection, usePrev, this);
+        final boolean matches =
+                SingleValuePushdownHelper.filter(filter, selection, usePrev, filterCtx, chunkSupplier, this);
         onComplete.accept(matches ? PushdownResult.allMatch(selection) : PushdownResult.allNoMatch(selection));
     }
 

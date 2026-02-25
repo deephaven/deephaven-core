@@ -17,6 +17,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.sources.*;
@@ -134,18 +135,10 @@ public class ImmutableConstantByteSource
             onComplete.accept(PushdownResult.allNoMatch(selection));
             return;
         }
-
         final SingleValuePushdownHelper.FilterContext filterCtx = (SingleValuePushdownHelper.FilterContext) context;
 
-        // Chunk filtering has lower overhead than creating a dummy table.
-        if (filterCtx.supportsChunkFiltering()) {
-            final boolean matches = SingleValuePushdownHelper.chunkFilter(selection, filterCtx, this::getValueChunk);
-            onComplete.accept(matches ? PushdownResult.allMatch(selection) : PushdownResult.allNoMatch(selection));
-            return;
-        }
-
-        // Chunk filtering is not supported, so test against a dummy table.
-        final boolean matches = SingleValuePushdownHelper.tableFilter(filter, selection, usePrev, this);
+        final boolean matches =
+                SingleValuePushdownHelper.filter(filter, selection, usePrev, filterCtx, this::getValueChunk, this);
         onComplete.accept(matches ? PushdownResult.allMatch(selection) : PushdownResult.allNoMatch(selection));
     }
 

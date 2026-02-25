@@ -113,10 +113,30 @@ public class SingleValuePushdownHelper {
     }
 
     /**
+     * Execute the {@link #chunkFilter(BasePushdownFilterContext, Supplier)} or
+     * {@link #tableFilter(WhereFilter, RowSet, boolean, ColumnSource)} to test whether the single value matches the
+     * supplied filter.
+     */
+    public static boolean filter(
+            final WhereFilter filter,
+            final RowSet selection,
+            final boolean usePrev,
+            final BasePushdownFilterContext context,
+            final Supplier<Chunk<Values>> valueChunkSupplier,
+            final ColumnSource<?> columnSource) {
+
+        // Chunk filtering has lower overhead than creating a dummy table.
+        if (context.supportsChunkFiltering()) {
+            return chunkFilter(context, valueChunkSupplier);
+        }
+
+        return tableFilter(filter, selection, usePrev, columnSource);
+    }
+
+    /**
      * Execute the chunk filter from the context and return {@code true} if the filter matches any rows.
      */
     public static boolean chunkFilter(
-            final RowSet selection,
             final BasePushdownFilterContext context,
             final Supplier<Chunk<Values>> valueChunkSupplier) {
 
@@ -147,10 +167,7 @@ public class SingleValuePushdownHelper {
 
             // Execute the filter on the dummy table.
             try (final RowSet result = filter.filter(rowSet, rowSet, dummyTable, usePrev)) {
-                if (!result.isEmpty()) {
-                    return true;
-                }
-                return false;
+                return !result.isEmpty();
             }
         }
     }

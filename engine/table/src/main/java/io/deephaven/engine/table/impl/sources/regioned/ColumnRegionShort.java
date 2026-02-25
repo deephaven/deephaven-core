@@ -160,7 +160,7 @@ public interface ColumnRegionShort<ATTR extends Any> extends ColumnRegion<ATTR> 
                 matches = nullBehavior == BasePushdownFilterContext.FilterNullBehavior.INCLUDES_NULLS;
             } else {
                 if (filterCtx.supportsChunkFiltering()) {
-                    matches = SingleValuePushdownHelper.chunkFilter(selection, filterCtx,
+                    matches = SingleValuePushdownHelper.chunkFilter(filterCtx,
                             () -> SingleValuePushdownHelper.makeChunk(value));
                 } else {
                     final ColumnSource<?> columnSource =
