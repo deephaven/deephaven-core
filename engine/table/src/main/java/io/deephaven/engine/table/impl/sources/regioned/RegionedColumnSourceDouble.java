@@ -79,7 +79,7 @@ abstract class RegionedColumnSourceDouble<ATTR extends Values>
                                 + ": " + partitioningColumnValue + " is not a Double at location " + locationKey);
             }
             return partitioningColumnValue == null
-                    ? new ColumnRegionDouble.Null<>(regionMask())
+                    ? ColumnRegionDouble.createNull(regionMask())
                     : new ColumnRegionDouble.Constant<>(regionMask(), unbox((Double) partitioningColumnValue));
         }
     }

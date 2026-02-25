@@ -79,7 +79,7 @@ abstract class RegionedColumnSourceFloat<ATTR extends Values>
                                 + ": " + partitioningColumnValue + " is not a Float at location " + locationKey);
             }
             return partitioningColumnValue == null
-                    ? new ColumnRegionFloat.Null<>(regionMask())
+                    ? ColumnRegionFloat.createNull(regionMask())
                     : new ColumnRegionFloat.Constant<>(regionMask(), unbox((Float) partitioningColumnValue));
         }
     }

@@ -78,7 +78,7 @@ abstract class RegionedColumnSourceObject<DATA_TYPE, ATTR extends Values>
             }
             // noinspection unchecked
             return partitioningColumnValue == null
-                    ? new ColumnRegionObject.Null<>(PARAMETERS.regionMask)
+                    ? ColumnRegionObject.createNull(PARAMETERS.regionMask)
                     : new ColumnRegionObject.Constant<>(PARAMETERS.regionMask, (DATA_TYPE) partitioningColumnValue);
         }
     }

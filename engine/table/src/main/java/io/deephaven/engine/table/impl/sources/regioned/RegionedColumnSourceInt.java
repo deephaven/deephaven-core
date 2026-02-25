@@ -79,7 +79,7 @@ abstract class RegionedColumnSourceInt<ATTR extends Values>
                                 + ": " + partitioningColumnValue + " is not a Integer at location " + locationKey);
             }
             return partitioningColumnValue == null
-                    ? new ColumnRegionInt.Null<>(regionMask())
+                    ? ColumnRegionInt.createNull(regionMask())
                     : new ColumnRegionInt.Constant<>(regionMask(), unbox((Integer) partitioningColumnValue));
         }
     }

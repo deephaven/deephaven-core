@@ -91,7 +91,7 @@ abstract class RegionedColumnSourceByte<ATTR extends Values>
                                 + ": " + partitioningColumnValue + " is not a Byte at location " + locationKey);
             }
             return partitioningColumnValue == null
-                    ? new ColumnRegionByte.Null<>(regionMask())
+                    ? ColumnRegionByte.createNull(regionMask())
                     : new ColumnRegionByte.Constant<>(regionMask(), unbox((Byte) partitioningColumnValue));
         }
     }

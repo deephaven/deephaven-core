@@ -139,7 +139,7 @@ abstract class RegionedColumnSourceLong<ATTR extends Values>
                                 + ": " + partitioningColumnValue + " is not a Long at location " + locationKey);
             }
             return partitioningColumnValue == null
-                    ? new ColumnRegionLong.Null<>(regionMask())
+                    ? ColumnRegionLong.createNull(regionMask())
                     : new ColumnRegionLong.Constant<>(regionMask(), unbox((Long) partitioningColumnValue));
         }
     }

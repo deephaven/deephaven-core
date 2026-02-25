@@ -79,7 +79,7 @@ abstract class RegionedColumnSourceShort<ATTR extends Values>
                                 + ": " + partitioningColumnValue + " is not a Short at location " + locationKey);
             }
             return partitioningColumnValue == null
-                    ? new ColumnRegionShort.Null<>(regionMask())
+                    ? ColumnRegionShort.createNull(regionMask())
                     : new ColumnRegionShort.Constant<>(regionMask(), unbox((Short) partitioningColumnValue));
         }
     }

@@ -75,7 +75,7 @@ abstract class RegionedColumnSourceChar<ATTR extends Values>
                                 + ": " + partitioningColumnValue + " is not a Character at location " + locationKey);
             }
             return partitioningColumnValue == null
-                    ? new ColumnRegionChar.Null<>(regionMask())
+                    ? ColumnRegionChar.createNull(regionMask())
                     : new ColumnRegionChar.Constant<>(regionMask(), unbox((Character) partitioningColumnValue));
         }
     }
