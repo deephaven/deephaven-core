@@ -101,7 +101,7 @@ public class RemoteFileSourceCommandResolver implements CommandResolver, WantsTi
         }
 
         // Export a plugin-specific PluginMarker. Plugins using PluginMarker should check
-        // marker.getPluginName() in isType() to prevent conflicts when multiple plugins share PluginMarker.
+        // marker.getPluginName() in isType() to prevent conflicts with markers for other plugins.
         session.newExport(resultTicket, "RemoteFileSourcePluginFetchRequest.resultTicket")
                 .submit(() -> PluginMarker.forPluginName(pluginName));
 

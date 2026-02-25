@@ -7,7 +7,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * A generic marker object for plugin exports that can be shared across multiple plugin types.
+ * A generic marker object for plugin exports that can be used by multiple plugin types.
  * <p>
  * IMPORTANT: The pluginName field is required because ObjectTypeLookup.findObjectType()
  * returns the FIRST plugin where isType() returns true. Without plugin-specific identification
