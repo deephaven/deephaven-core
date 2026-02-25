@@ -8,7 +8,7 @@ _I have a blink table, from which I want to extract the first row of the last N 
 To achieve this:
 
 - Use a [Table listener](../../how-to-guides/table-listeners-groovy.md) to listen to the source blink table.
-- Use a [Dynamic table writer](../../how-to-guides/dynamic-table-writer.md) to write the first row each update cycle.
+- Use a [Dynamic table writer](../../how-to-guides/table-publisher.md) to write the first row each update cycle.
 - Convert the result to a ring table.
 
 Here's a complete example:

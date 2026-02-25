@@ -232,7 +232,7 @@
                   },
                   {
                     "label": "Basic terms",
-                    "path": "conceptual/kafka-in-deephaven.md"
+                    "path": "conceptual/kafka-basic-terms.md"
                   },
                   {
                     "label": "Connect to a Kafka stream",
@@ -1446,6 +1446,27 @@
                   {
                     "label": "snapshot",
                     "path": "reference/data-import-export/barrage/snapshot-barrage.md"
+                  }
+                ]
+              },
+              {
+                "label": "Session",
+                "items": [
+                  {
+                    "label": "publish",
+                    "path": "reference/client-api/session/publish.md"
+                  },
+                  {
+                    "label": "publish_table",
+                    "path": "reference/client-api/session/publish-table.md"
+                  },
+                  {
+                    "label": "fetch",
+                    "path": "reference/client-api/session/fetch.md"
+                  },
+                  {
+                    "label": "fetch_table",
+                    "path": "reference/client-api/session/fetch-table.md"
                   }
                 ]
               },

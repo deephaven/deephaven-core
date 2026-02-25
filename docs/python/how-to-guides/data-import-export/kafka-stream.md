@@ -6,7 +6,7 @@ Kafka is a distributed event streaming platform that lets you read, write, store
 
 Kafka topics take on many forms, such as raw input, [JSON](#read-kafka-topic-in-json-format), [AVRO](#read-kafka-topic-in-avro-format), or [Protobuf](#read-kafka-topic-in-protobuf-format) In this guide, we show you how to import each of these formats as Deephaven tables.
 
-Please see our overview, [Kafka in Deephaven: Basic terms](../../conceptual/kafka-in-deephaven.md), for a detailed discussion of Kafka topics and supported formats. See the [Apache Kafka Documentation](https://kafka.apache.org/22/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html) for full details on how to use Kafka.
+Please see our overview, [Kafka in Deephaven: Basic terms](../../conceptual/kafka-basic-terms.md), for a detailed discussion of Kafka topics and supported formats. See the [Apache Kafka Documentation](https://kafka.apache.org/22/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html) for full details on how to use Kafka.
 
 ## Standard data fields
 
@@ -503,8 +503,7 @@ write_topic_group = pk.produce(
 
 ## Related documentation
 
-- [Kafka basic terminology](../../conceptual/kafka-in-deephaven.md)
-- [Kafka in Deephaven](../../conceptual/kafka-in-deephaven.md)
+- [Kafka basic terminology](../../conceptual/kafka-basic-terms.md)
 - [Custom parser for Kafka](./write-your-own-custom-parser-for-kafka.md)
 - [`consume`](../../reference/data-import-export/Kafka/consume.md)
 - [`time_table`](../../reference/table-operations/create/timeTable.md)

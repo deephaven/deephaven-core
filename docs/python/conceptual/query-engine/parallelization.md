@@ -128,7 +128,7 @@ This pool processes live table updates. When source data changes, this pool comp
 - Propagating changes through dependent tables.
 - Running independent tables simultaneously.
 
-Both thread pools default to using all CPU cores, determined by [`Runtime.availableProcessors()](https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/Runtime.html#availableProcessors()) at startup.
+Both thread pools default to using all CPU cores, determined by [`Runtime.availableProcessors()](<https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/Runtime.html#availableProcessors()>) at startup.
 
 ## Controlling concurrency
 
@@ -257,13 +257,13 @@ bad_result = empty_table(10).update(
 
 Parallel execution causes inconsistent values because multiple threads increment `counter` concurrently. You may see results like:
 
-| A | B |
-| - | - |
-| 0 | 2 |
-| 1 | 1 |
-| 3 | 5 |
-| 4 | 4 |
-| 6 | 7 |
+| A   | B   |
+| --- | --- |
+| 0   | 2   |
+| 1   | 1   |
+| 3   | 5   |
+| 4   | 4   |
+| 6   | 7   |
 
 Notice the duplicates (1 appears twice), gaps (no 8 or 9), and `B` not following `A + 1`.
 
@@ -528,6 +528,19 @@ col_b = Selectable.parse("B = use_cache(Key)").with_respected_barriers(barrier)
 source = empty_table(10).update("Key = i")
 result = source.update([col_a, col_b])
 ```
+
+#### Stateful Partition Filters
+
+If a _partition filter_ (a filter that only accesses partitioning columns of the data) is marked serial it cannot be
+reordered and must be evaluated on all rows of the table. Even if Deephaven is configured to treat filters as stateful
+by default, when a partition filter is not explicitly marked serial, then the engine is permitted to treat stateful
+partition filters as if they were stateless for pragmatic, performance-oriented reasons.
+
+In particular, the ordering constraints for filters on partitioning columns may be relaxed, and rather than
+evaluating the filter on every row in the table it may only be evaluated per location. This is to allow common partition
+filters to be reordered ahead of other filters and avoid repeated evaluation against the same value. For example, the
+formula filter `Date=today()` is stateful if filters are stateful by default, but in nearly every case users would prefer this to
+be evaluated early, location-by-location.
 
 #### Quick reference table
 

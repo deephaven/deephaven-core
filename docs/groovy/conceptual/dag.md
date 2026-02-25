@@ -1,5 +1,5 @@
 ---
-title: Deephaven’s Directed-Acyclic-Graph (DAG)
+title: Deephaven’s live Directed-Acyclic-Graph (DAG)
 sidebar_label: Live DAG
 ---
 
@@ -17,6 +17,12 @@ DAGs are useful for representing many different types of flows, including data p
 
 Deephaven’s query syntax is very natural and readable. Under the hood, queries are converted into directed acyclic graphs (DAGs) for efficient real-time processing. Let’s look at an example to understand DAGs.
 
+```groovy order=t1,t2,t3
+t1 = timeTable("PT1S").update("Label=(ii%2)")
+t2 = t1.lastBy("Label")
+t3 = t1.naturalJoin(t2, "Label", "T2=Timestamp")
+```
+
 Here, table `t1` is a real-time table with two columns: `Timestamp` and `Label`. A new row is appended every second, and `Label` alternates between zero and one. Table `t2` contains the most recent row for each Label value, and `t3` joins the most recent `Timestamp` for a `Label`, from `t2`, onto `t1`.
 
 Represented as a DAG, this query looks like:
@@ -31,7 +37,7 @@ There is one exception. Tables that are not used in the calculation of any varia
 
 ## Smart engine
 
-The Deephaven query engine is smart. When data flows through the DAG, instead of recomputing entire tables, only necessary changes are recomputed. For example, if only one row changes, only one row is recomputed. If 11 rows change, only 11 rows are recomputed. If you use static data tables, large sections of the DAG may never recompute. This is one reason Deephaven is so fast.
+The Deephaven query engine is smart. When data flows through the DAG, instead of recomputing entire tables, only necessary changes are recomputed. For example, if only one row changes, only one row is recomputed. If 11 rows change, only 11 rows are recomputed. If you use static data tables, large sections of the DAG may never recompute. This is one reason Deephaven is so fast and scalable.
 
 When processing real-time data changes, Deephaven batches the changes together every 1000 ms (this is configurable). All of the changes within a batch are processed together. These processing events are called Update Graph (UG) cycles, and the update notifications propagated through the DAG indicate which rows have been added, modified, deleted, or reindexed (reordered). You can learn more about these update notifications in our concept guide on [the table update model](./table-update-model.md).
 

@@ -2,7 +2,7 @@
 title: Interpret Barrage metrics
 ---
 
-This guide covers what statistics Deephaven records on Barrage activity. Barrage is an extension of Apache Arrow Flight, with a particular focus on incrementally updating data sets.
+This guide covers the statistics Deephaven records on [Barrage](/barrage/docs) activity. Barrage is an extension of Apache Arrow Flight, with a particular focus on incrementally updating data sets.
 
 ## Metrics overview
 
@@ -14,9 +14,9 @@ Barrage listens to UpdateGraph changes from the source table. Whenever the sourc
 
 ![Diagram reading "Delta -> Delta -> Delta"](../assets/how-to/barrage-deltas.png)
 
-2. `PeriodicUpdateGraph.targetCycleDurationMillis` vs `barrage.minUpdateInterval`
+2. `PeriodicUpdateGraph.targetCycleDurationMillis` versus `barrage.minUpdateInterval`
 
-The Periodic Update Graph (UG) ticks at at an interval specified by the parameter `-DPeriodicUpdateGraph.targetCycleDurationMillis`. Barrage ticks at an interval specified by the parameter `-Dbarrage.minUpdateInterval` (ms). Barrage records `AggregateMillis`, the time it took to coalesce all upstream updates into a single update.
+The Periodic Update Graph (UG) ticks at an interval specified by the parameter `-DPeriodicUpdateGraph.targetCycleDurationMillis`. Barrage ticks at an interval specified by the parameter `-Dbarrage.minUpdateInterval` (ms). Barrage records `AggregateMillis`, the time it took to coalesce all upstream updates into a single update.
 
 !["Coalesced Delta"](../assets/how-to/barrage-coalesced-delta.png)
 
@@ -26,7 +26,7 @@ New subscriptions and subscription changes require initializing table state buil
 
 !["Coalesced Delta -> Snapshot -> Coalesced Delta"](../assets/how-to/barrage-coalesced-snapshot.png)
 
-4. Propagaion to gRPC listeners
+4. Propagation to gRPC listeners
 
 Each delta and snapshot is then propagated to subscribers. Barrage records `PropagateMillis`, the time it took to pass the message to the list of listeners.
 

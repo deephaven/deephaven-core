@@ -1395,6 +1395,14 @@ public class QueryTable extends BaseTable<QueryTable> {
                             }
                             if (reindexingFilter.requiresSorting()) {
                                 result = (QueryTable) result.sort(reindexingFilter.getSortColumns());
+                                if (!result.isFlat()) {
+                                    // The only reindexing filters are ClockFilters; and the SortedClockFilter is the
+                                    // only one that requires sorting. It makes the assumption that sort flattens the
+                                    // table, which is generally true for a historical sort - but if the input was
+                                    // already sorted, we don't create a new table but rather just return a copy of the
+                                    // table with the sorted columns set.
+                                    result = (QueryTable) result.flatten();
+                                }
                                 reindexingFilter.sortingDone();
                             }
                             // Execute the current filter (which is or wraps a reindexing filter)
@@ -2871,7 +2879,8 @@ public class QueryTable extends BaseTable<QueryTable> {
      * 2^minimumUngroupBase rows in the output table at startup. If rows are added to the table, this base may need to
      * grow. If a single row in the input has more than 2^base rows, then the base must change for all of the rows.
      */
-    static int minimumUngroupBase = 10;
+    static int minimumUngroupBase =
+            Configuration.getInstance().getIntegerWithDefault("QueryTable.minimumUngroupBase", 10);
 
     /**
      * For unit testing, it can be useful to reduce the minimum ungroup base.

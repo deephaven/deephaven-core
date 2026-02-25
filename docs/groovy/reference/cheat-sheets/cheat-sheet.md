@@ -1440,7 +1440,7 @@ result = source.snapshotWhen(trigger, myOpts)
 
 ### Use DynamicTableWriter
 
-See our guide [How to write data to an in-memory, real-time table](../../how-to-guides/dynamic-table-writer.md).
+See our guide [How to write data to an in-memory, real-time table](../../how-to-guides/table-publisher.md).
 
 ```groovy order=null
 import io.deephaven.engine.table.impl.util.DynamicTableWriter

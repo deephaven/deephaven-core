@@ -106,4 +106,4 @@ When multiple series are plotted, you might want to temporarily hide one or more
 
 ## Related documentation
 
-- [Quickstart](../../tutorials/quickstart.md)
+- [Quickstart](../../getting-started/quickstart.md)

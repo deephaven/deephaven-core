@@ -184,15 +184,15 @@ Adding yet more value, a user who has full access to the deployment may implemen
 
 If you are brand new to Deephaven:
 
-- Try out the REPL experience on our hosted demo site. [Coming Soon]
+- Try out the REPL experience on our [hosted demo site](https://controller.try-dh.demo.community.deephaven.io/).
 - Run a dockerized version locally by following the [quick start](../getting-started/docker-install.md) guide.
 
 If you want to try out any of our work-in-progress client libraries:
 
 - Try out the [Python client](/core/client-api/python/) library.
-- Try out the Java client library. [Documentation coming soon!]
-- Try out the C++ client library. [Documentation coming soon!]
-- Try out the Javascript client library. [Documentation coming soon!]
+- Try out the [Java client](/core/javadoc/) library.
+- Try out the [C++ client](/core/client-api/cpp/) library.
+- Try out the [Javascript client](/core/client-api/javascript/) library.
 - Check out the [gRPC service definitions](https://github.com/deephaven/deephaven-core/tree/main/proto/proto-backplane-grpc/src/main/proto/deephaven_core/proto) for even more self-help fun.
 
 If you have an existing Flight Client:
@@ -223,5 +223,5 @@ The Deephaven Community Core team has engaged with the Arrow team to improve inc
 
 - [Deephaven Overview](./deephaven-overview.md)
 - [Table update model](./table-update-model.md)
-- [Deephaven Barrage](https://github.com/deephaven/barrage)
+- [Deephaven Barrage](/barrage/docs)
 - [How to run scripts before launch with Application Mode](../how-to-guides/application-mode.md)

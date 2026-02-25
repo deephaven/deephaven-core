@@ -201,6 +201,6 @@ What can we do with a feed in Deephaven? We can compute derived feeds, we can in
 
 ## Related documentation
 
-- [Kafka in Deephaven](../conceptual/kafka-in-deephaven.md)
+- [Kafka in Deephaven](../conceptual/kafka-basic-terms.md)
 - [Connect to a Kafka stream](./data-import-export/kafka-stream.md)
 - [`consume`](../reference/data-import-export/Kafka/consume.md)
