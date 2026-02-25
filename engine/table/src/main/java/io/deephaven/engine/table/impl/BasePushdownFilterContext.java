@@ -134,7 +134,7 @@ public abstract class BasePushdownFilterContext implements PushdownFilterContext
 
     /**
      * Whether this filter supports direct chunk filtering, i.e., it can be applied to a chunk of data rather than a
-     * table. This includes any filter that implements {#@link ExposesChunkFilter} or {@link ConditionFilter} with
+     * table. This includes any filter that implements {@link ExposesChunkFilter} or {@link ConditionFilter} with
      * exactly one column.
      */
     public final boolean supportsChunkFiltering() {

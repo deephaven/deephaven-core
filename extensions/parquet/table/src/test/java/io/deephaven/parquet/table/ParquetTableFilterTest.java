@@ -2101,7 +2101,7 @@ public final class ParquetTableFilterTest {
     public void testMergedPartitioningTableColumnRegions() {
         // Partitioning columns are automatically added to a data index. We have to disable use of the data index
         // in order to test constant and null column region pushdown features.
-        QueryTable.DISABLE_WHERE_PUSHDOWN_DATA_INDEX = false;
+        QueryTable.DISABLE_WHERE_PUSHDOWN_DATA_INDEX = true;
 
         QueryScope.addParam("symList", List.of("alpha", "bravo", "charlie", "delta", "echo", "foxtrot"));
         final Table tmpTable = TableTools.emptyTable(100_000).update(
@@ -2136,7 +2136,7 @@ public final class ParquetTableFilterTest {
 
             result = diskTable.where(capturingFilterSym).coalesce();
 
-            // Expect one test per partitioning column region. Each disk table has 7 * 97 = 679
+            // Expect one test per partitioning column region. The disk table has 7 * 97 = 679 regions
             assertEquals(679, capturingFilterSym.numRowsProcessed());
             assertEquals(28572, result.size());
 
