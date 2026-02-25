@@ -35,7 +35,7 @@ t = emptyTable(100).update("Timestamp = '2015-01-01T00:00:00 ET' + 'PT1m' * ii")
 tUpdated = t.update("IntRowIndex = i", "LongRowIndex = ii", "Group = IntRowIndex % 5")
 ```
 
-[`updateView`](../../reference/table-operations/select/update-view.md) creates _formula_ columns. A formula column is one where only the formula is stored in memory when called. Results are then computed on the fly as needed.
+[`updateView`](../../reference/table-operations/select/update-view.md) creates _formula_ columns. A formula column is one where only the formula is stored in memory when called. Results are then computed on the fly as needed. [`updateView`](../../reference/table-operations/select/update-view.md) is best used when calculations are simple or when only small subsets of the data are used.
 
 The following code block adds two new columns to `t`.
 
@@ -116,7 +116,7 @@ tFiltered3 = tUpdated.where("Group == 3 || IntRowIndex % 2 == 0")
 
 In addition to [`where`](../../reference/table-operations/filter/where.md), Deephaven offers [`whereIn`](../../reference/table-operations/filter/where-in.md) and [`whereNotIn`](../../reference/table-operations/filter/where-not-in.md), which filter table data based on another table.
 
-See the [filtering guide](../../how-to-guides/filters.md) for more information.
+See the [filtering guide](../../how-to-guides/use-filters.md) for more information.
 
 ### By row position
 
@@ -149,7 +149,7 @@ tSlice = tUpdated.slice(40, 60)
 tSlicePct = tUpdated.slicePct(0.4, 0.6)
 ```
 
-See the [filtering guide](../../how-to-guides/filters.md) for more information.
+See the [filtering guide](../../how-to-guides/use-filters.md) for more information.
 
 ## Sort
 

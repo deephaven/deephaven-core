@@ -39,20 +39,20 @@ The following code creates a time table:
 ```python order=null
 from deephaven import time_table
 
-source = time_table("PT1S").update(["X = 0.1 * i", "Y = sin(X)"])
+real_time_data = time_table("PT1S").update(["X = 0.1 * i", "Y = sin(X)"])
 ```
 
-![The above ticking table, here labeled `real_time_data`](../../assets/reference/uris/uri1.gif)
+![The above ticking table](../../assets/reference/uris/uri1.gif)
 
 The following code resolves it:
 
 ```python skip-test
 from deephaven.uri import resolve
 
-result = resolve("dh+plain://table-producer:10000/scope/source")
+real_time_data_resolved = resolve("dh+plain://table-producer:10000/scope/source")
 ```
 
-![The above `real_time_data` table, resolved on another port as `real_time_data_resolved`](../../assets/reference/uris/uri2.gif)
+![The above ticking table](../../assets/reference/uris/uri2.gif)
 
 > [!NOTE]
 > If no port is specified when resolving a local URI, Deephaven tries port 10000. Thus, to resolve a local asset that is found on port 10000, this can be omitted. Otherwise, the port must be explicitly set.

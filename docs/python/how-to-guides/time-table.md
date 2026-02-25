@@ -59,7 +59,7 @@ When this code is run, `result` is initially populated with 1800 rows of data, o
 
 ### time_table as a blink table
 
-By default, the result of time_table is [append-only](../conceptual/table-types.md#specialization-1-append-only). You can set the `blink_table` parameter to `True` to create a [blink](../conceptual/table-types.md#specialization-3-blink) table, which only retains rows from the most recent update cycle:
+By default, the result of `time_table` is [append-only](../conceptual/table-types.md#specialization-1-append-only). You can set the `blink_table` parameter to `True` to create a [blink](../conceptual/table-types.md#specialization-3-blink) table, which only retains rows from the most recent update cycle:
 
 ```python ticking-table order=null
 from deephaven import time_table

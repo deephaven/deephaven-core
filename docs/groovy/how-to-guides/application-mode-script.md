@@ -5,7 +5,7 @@ sidebar_label: Application Mode scripts
 
 Deephaven's Application Mode allows you to [initialize server state](./application-mode.md). This guide covers how to use Application Mode scripts, allowing users to run Python or Groovy code when Deephaven is launched.
 
-Application Mode scripts are defined by having `type=script` set in the Application Mode `*.app` [config file](../reference/app-mode/application-mode-config.md). Once defined, any Python or Groovy scripts in the `file_N` settings of the config file will run when Deephaven is launched.
+Application Mode scripts are defined by having `type=script` set in the Application Mode `*.app` [configuration file](../reference/app-mode/application-mode-config.md). Once defined, any Python or Groovy scripts in the `file_N` settings of the config file will run when Deephaven is launched.
 
 Deephaven's [deephaven-examples Github organization](https://github.com/deephaven-examples) contains many examples of applications that use Application Mode. Specific tutorial examples can also be found for [Groovy](https://github.com/deephaven-examples/app-mode-init-groovy) and [Python](https://github.com/deephaven-examples/app-mode-init-python).
 
@@ -14,10 +14,13 @@ Deephaven's [deephaven-examples Github organization](https://github.com/deephave
 Deephaven expects your Application Mode configuration to be defined in a [config file](../reference/app-mode/application-mode-config.md) that ends with `.app` (this is the `*.app` file). For using Application Mode with scripts, you need to set:
 
 - `type=script`.
-- the `scriptType` to `python` or `groovy`.
-- your `file_N` files to run. Your `file_N` files can be any number of files defined relative to where the `*.app` file is located when packaged into Docker.
+- The `scriptType` to `python` or `groovy`.
+- `enabled=True`.
+- Set `id` to an identifier of your choice.
+- Set `name` to an application name of your choice.
+- Your `file_N` files to run. Your `file_N` files can be any number of files defined relative to where the `*.app` file is located when packaged into Docker.
 
-The following shows an example of a typical .app file:
+The following shows an example of a typical `.app` file:
 
 ```
 type=script
