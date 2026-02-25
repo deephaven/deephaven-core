@@ -45,10 +45,9 @@ result = source.where("Test1 > 90")
 
 Parquet metadata is optional, and not all Parquet files will have it. If the metadata is not available, Deephaven will fall back to scanning the data in the row groups to apply the filter. If Parquet metadata is malformed or incorrect, it may lead to incorrect filtering results. In such cases, you can [disable](#disabling-predicate-pushdown-features) this optimization.
 
-
 ## Parquet dictionary encoding
 
-When storing `string` data, Parquet may create a dictionary encoding for the column where a dictionary of unique values is stored separately from the column data. The column data contains references (e.g., integer indices) to the dictionary entries instead of the actual string values. This can significantly reduce storage space and improve performance for columns with many repeated values. This additionally allows for efficient filtering on these columns, as the engine can check the unique dictionary values against the filter to determine matches without scanning the entire column. If matches are found, the engine will note which integer indices in the column data correspond to the matching dictionary values and filter the dataa much more efficiently than loading each string value and applying the filter. Additionally, if no matches are found, the engine can skip the entire column without scanning any of the row data.
+When storing `string` data, Parquet may create a dictionary encoding for the column where a dictionary of unique values is stored separately from the column data. The column data contains references (e.g., integer indices) to the dictionary entries instead of the actual string values. This can significantly reduce storage space and improve performance for columns with many repeated values. This additionally allows for efficient filtering on these columns, as the engine can check the unique dictionary values against the filter to determine matches without scanning the entire column. If matches are found, the engine will note which integer indices in the column data correspond to the matching dictionary values and filter the data much more efficiently than loading each string value and applying the filter. Additionally, if no matches are found, the engine can skip the entire column without scanning any of the row data.
 
 Nearly all single-column filters can be optimized using the dictionary encoding.
 
@@ -97,8 +96,10 @@ If desired, you can [disable](#disabling-predicate-pushdown-features) the use of
 
 Under certain circumstances, you may want to disable specific predicate pushdown features. These settings are global and will affect all pushdown operations across the Deephaven engine. The following properties affect pushdown:
 
+- [`QueryTable.useDataIndexForWhere`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/QueryTable.html#USE_DATA_INDEX_FOR_WHERE) – enables the use of Deephaven table-level data indexes when filtering.
 - [`QueryTable.disableWherePushdownParquetRowGroupMetadata`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/QueryTable.html#DISABLE_WHERE_PUSHDOWN_PARQUET_ROW_GROUP_METADATA) – disables consideration of Parquet row group metadata when filtering.
-- [`QueryTable.disableWherePushdownDataIndex`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/QueryTable.html#DISABLE_WHERE_PUSHDOWN_DATA_INDEX) – disables the use of Deephaven data indexes when filtering.
+- [`QueryTable.disableWherePushdownDataIndex`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/QueryTable.html#DISABLE_WHERE_PUSHDOWN_DATA_INDEX) – disables the use of file-level Deephaven data indexes when filtering.
+- [`QueryTable.disableWherePushdownParquetDictionary`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/QueryTable.html#DISABLE_WHERE_PUSHDOWN_PARQUET_DICTIONARY) – disables the use of dictionary encoding when filtering.
 
 For more information, see the [Query table configuration](../conceptual/query-table-configuration.md) documentation.
 
