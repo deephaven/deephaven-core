@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.remotefilesource;
 
@@ -12,17 +12,16 @@ import io.deephaven.plugin.type.PluginMarker;
 import java.nio.ByteBuffer;
 
 /**
- * ObjectType plugin for remote file sources. This plugin is registered via @AutoService
- * and handles creation of RemoteFileSourceMessageStream connections for bidirectional
- * communication with clients.
+ * ObjectType plugin for remote file sources. This plugin is registered via @AutoService and handles creation of
+ * RemoteFileSourceMessageStream connections for bidirectional communication with clients.
  * <p>
- * This plugin recognizes PluginMarker objects whose pluginName matches this plugin's name.
- * When a connection is established, a RemoteFileSourceMessageStream is created to handle
- * bidirectional message passing between client and server.
+ * This plugin recognizes PluginMarker objects whose pluginName matches this plugin's name. When a connection is
+ * established, a RemoteFileSourceMessageStream is created to handle bidirectional message passing between client and
+ * server.
  * <p>
- * Each RemoteFileSourceMessageStream instance registers itself as a provider with the
- * RemoteFileSourceClassLoader when created and unregisters when closed. The RemoteFileSourceClassLoader
- * uses isActive() to determine which registered provider should handle resource requests.
+ * Each RemoteFileSourceMessageStream instance registers itself as a provider with the RemoteFileSourceClassLoader when
+ * created and unregisters when closed. The RemoteFileSourceClassLoader uses isActive() to determine which registered
+ * provider should handle resource requests.
  */
 @AutoService(ObjectType.class)
 public class RemoteFileSourcePlugin extends ObjectTypeBase {

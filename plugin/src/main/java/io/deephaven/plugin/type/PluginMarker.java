@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.plugin.type;
 
@@ -9,13 +9,12 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * A generic marker object for plugin exports that can be used by multiple plugin types.
  * <p>
- * IMPORTANT: The pluginName field is required because ObjectTypeLookup.findObjectType()
- * returns the FIRST plugin where isType() returns true. Without plugin-specific identification
- * in isType(), multiple plugins using PluginMarker would conflict, and whichever is registered
- * first would intercept all PluginMarker instances.
+ * IMPORTANT: The pluginName field is required because ObjectTypeLookup.findObjectType() returns the FIRST plugin where
+ * isType() returns true. Without plugin-specific identification in isType(), multiple plugins using PluginMarker would
+ * conflict, and whichever is registered first would intercept all PluginMarker instances.
  * <p>
- * This class maintains a single instance per pluginName - multiple calls to {@link #forPluginName(String)}
- * with the same name will return the same instance.
+ * This class maintains a single instance per pluginName - multiple calls to {@link #forPluginName(String)} with the
+ * same name will return the same instance.
  */
 public class PluginMarker {
     private static final Map<String, PluginMarker> INSTANCES = new ConcurrentHashMap<>();
@@ -46,8 +45,7 @@ public class PluginMarker {
     }
 
     /**
-     * Gets the plugin name this marker is intended for.
-     * This should match the ObjectType.name() of the target plugin.
+     * Gets the plugin name this marker is intended for. This should match the ObjectType.name() of the target plugin.
      *
      * @return the plugin name identifier
      */

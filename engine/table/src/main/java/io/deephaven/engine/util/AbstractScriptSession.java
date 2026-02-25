@@ -101,8 +101,8 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
     }
 
     /**
-     * DH-20578: Creates an ExecutionContext with a QueryCompiler based on the provided ClassLoader.
-     * This allows updating the ExecutionContext when fresh ClassLoaders are needed (e.g., for remote file sources).
+     * DH-20578: Creates an ExecutionContext with a QueryCompiler based on the provided ClassLoader. This allows
+     * updating the ExecutionContext when fresh ClassLoaders are needed (e.g., for remote file sources).
      *
      * @param updateGraph the update graph for the context
      * @param operationInitializer the operation initializer for the context

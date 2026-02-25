@@ -96,7 +96,8 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
             .getBooleanForClassWithDefault(GroovyDeephavenSession.class, "allowUnknownGroovyPackageImports", false);
 
     private static final ClassLoader STATIC_LOADER =
-    new URLClassLoader(new URL[0], RemoteFileSourceClassLoader.initialize(Thread.currentThread().getContextClassLoader())) {
+            new URLClassLoader(new URL[0],
+                    RemoteFileSourceClassLoader.initialize(Thread.currentThread().getContextClassLoader())) {
                 final ConcurrentHashMap<String, Object> mapping = new ConcurrentHashMap<>();
 
                 @Override
@@ -335,8 +336,8 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
     }
 
     /**
-     * Clears cached .class files and refreshes the GroovyClassLoader and associated shell.
-     * This ensures that classes will be recompiled from source on the next execution.
+     * Clears cached .class files and refreshes the GroovyClassLoader and associated shell. This ensures that classes
+     * will be recompiled from source on the next execution.
      *
      * @throws IllegalStateException if the cache directory does not exist
      */
@@ -766,8 +767,8 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
     }
 
     /**
-     * Recursively delete all .class files from the cache directory to force recompilation.
-     * This is necessary because GroovyClassLoader can reload .class files from disk even after clearCache().
+     * Recursively delete all .class files from the cache directory to force recompilation. This is necessary because
+     * GroovyClassLoader can reload .class files from disk even after clearCache().
      *
      * @param directory the directory to recursively search for .class files
      */
@@ -780,6 +781,9 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         if (files == null) {
             return;
         }
+
+        log.debug().append("Deleting ").append(files.length).append(" files from class cache directory: ")
+                .append(directory.getAbsolutePath());
 
         for (File file : files) {
             if (file.isDirectory()) {

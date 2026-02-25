@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.remotefilesource;
 
@@ -54,9 +54,8 @@ public class RemoteFileSourceCommandResolver implements CommandResolver, WantsTi
     }
 
     /**
-     * Attempts to parse ByteString data as a protobuf Any message.
-     * Returns null if parsing fails rather than throwing an exception, allowing callers to handle
-     * invalid data gracefully.
+     * Attempts to parse ByteString data as a protobuf Any message. Returns null if parsing fails rather than throwing
+     * an exception, allowing callers to handle invalid data gracefully.
      *
      * @param data the ByteString data to parse
      * @return the parsed Any message, or null if parsing fails
@@ -70,13 +69,12 @@ public class RemoteFileSourceCommandResolver implements CommandResolver, WantsTi
     }
 
     /**
-     * Exports the PluginMarker singleton based on the fetch request.
-     * The marker object is exported to the session using the result ticket specified in the request,
-     * and flight info is returned containing the endpoint for accessing it.
+     * Exports the PluginMarker singleton based on the fetch request. The marker object is exported to the session using
+     * the result ticket specified in the request, and flight info is returned containing the endpoint for accessing it.
      *
-     * <p>Note: This exports a PluginMarker for the specified plugin name. Plugin-specific routing
-     * is handled by TypedTicket.type in the ConnectRequest phase, which is validated against
-     * the plugin's name() method.
+     * <p>
+     * Note: This exports a PluginMarker for the specified plugin name. Plugin-specific routing is handled by
+     * TypedTicket.type in the ConnectRequest phase, which is validated against the plugin's name() method.
      *
      * @param session the session state for the current request
      * @param descriptor the flight descriptor containing the command
@@ -85,8 +83,8 @@ public class RemoteFileSourceCommandResolver implements CommandResolver, WantsTi
      * @throws StatusRuntimeException if the request doesn't contain a valid result ID ticket or plugin name
      */
     private static SessionState.ExportObject<Flight.FlightInfo> fetchPlugin(@Nullable final SessionState session,
-                                                                    final Flight.FlightDescriptor descriptor,
-                                                                    final RemoteFileSourcePluginFetchRequest request) {
+            final Flight.FlightDescriptor descriptor,
+            final RemoteFileSourcePluginFetchRequest request) {
         final Ticket resultTicket = request.getResultId();
         final boolean hasResultId = !resultTicket.getTicket().isEmpty();
         if (!hasResultId) {
@@ -120,16 +118,16 @@ public class RemoteFileSourceCommandResolver implements CommandResolver, WantsTi
     }
 
     /**
-     * Resolves a flight descriptor to flight info for remote file source commands.
-     * Handles RemoteFileSourcePluginFetchRequest commands by parsing the descriptor and delegating to the
-     * appropriate handler method.
+     * Resolves a flight descriptor to flight info for remote file source commands. Handles
+     * RemoteFileSourcePluginFetchRequest commands by parsing the descriptor and delegating to the appropriate handler
+     * method.
      *
      * @param session the session state for the current request
      * @param descriptor the flight descriptor containing the command
      * @param logId the log identifier for tracking
      * @return a FlightInfo export object for the requested command
-     * @throws StatusRuntimeException if session is null (UNAUTHENTICATED), the command cannot be parsed,
-     *                                or the command type URL is not recognized
+     * @throws StatusRuntimeException if session is null (UNAUTHENTICATED), the command cannot be parsed, or the command
+     *         type URL is not recognized
      */
     @Override
     public SessionState.ExportObject<Flight.FlightInfo> flightInfoFor(@Nullable final SessionState session,
@@ -158,7 +156,8 @@ public class RemoteFileSourceCommandResolver implements CommandResolver, WantsTi
     /**
      * Visits all flight info that this resolver exposes.
      *
-     * <p><b>Not implemented:</b> This resolver does not expose any flight info via list flights.
+     * <p>
+     * <b>Not implemented:</b> This resolver does not expose any flight info via list flights.
      */
     @Override
     public void forAllFlightInfo(@Nullable final SessionState session, final Consumer<Flight.FlightInfo> visitor) {
@@ -177,8 +176,8 @@ public class RemoteFileSourceCommandResolver implements CommandResolver, WantsTi
     }
 
     /**
-     * Determines if this resolver is responsible for handling the given command descriptor.
-     * This resolver handles commands with type URL matching RemoteFileSourcePluginFetchRequest.
+     * Determines if this resolver is responsible for handling the given command descriptor. This resolver handles
+     * commands with type URL matching RemoteFileSourcePluginFetchRequest.
      *
      * @param descriptor the flight descriptor containing the command
      * @return true if this resolver handles the command, false otherwise
@@ -247,7 +246,8 @@ public class RemoteFileSourceCommandResolver implements CommandResolver, WantsTi
     /**
      * Sets the ticket router for this resolver.
      *
-     * <p><b>Not implemented:</b> This resolver does not need access to the ticket router.
+     * <p>
+     * <b>Not implemented:</b> This resolver does not need access to the ticket router.
      */
     @Override
     public void setTicketRouter(TicketRouter ticketRouter) {
@@ -255,8 +255,7 @@ public class RemoteFileSourceCommandResolver implements CommandResolver, WantsTi
     }
 
     /**
-     * Returns the ticket route byte for this resolver.
-     * This resolver does not use ticket-based routing, so returns 0.
+     * Returns the ticket route byte for this resolver. This resolver does not use ticket-based routing, so returns 0.
      *
      * @return 0, indicating no ticket routing
      */

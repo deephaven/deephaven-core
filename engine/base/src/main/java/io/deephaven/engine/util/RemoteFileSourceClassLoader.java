@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.util;
 
@@ -17,11 +17,12 @@ import java.util.concurrent.TimeUnit;
  * A custom ClassLoader that fetches source files from remote clients via registered RemoteFileSourceProvider instances.
  * This is designed to support Groovy script imports where the source files are provided by remote clients.
  *
- * <p>When a resource is requested (e.g., for a Groovy import), this class loader:
+ * <p>
+ * When a resource is requested (e.g., for a Groovy import), this class loader:
  * <ol>
- *   <li>Checks registered providers to see if they can source the resource</li>
- *   <li>Returns a custom URL with protocol "remotefile://" if a provider can handle it</li>
- *   <li>When that URL is opened, fetches the resource bytes from the provider</li>
+ * <li>Checks registered providers to see if they can source the resource</li>
+ * <li>Returns a custom URL with protocol "remotefile://" if a provider can handle it</li>
+ * <li>When that URL is opened, fetches the resource bytes from the provider</li>
  * </ol>
  */
 public class RemoteFileSourceClassLoader extends ClassLoader {
@@ -43,8 +44,9 @@ public class RemoteFileSourceClassLoader extends ClassLoader {
     /**
      * Initializes the singleton RemoteFileSourceClassLoader instance with the specified parent class loader.
      *
-     * <p>This method must be called exactly once before any calls to {@link #getInstance()}. The method is
-     * synchronized to prevent race conditions when multiple threads attempt initialization.
+     * <p>
+     * This method must be called exactly once before any calls to {@link #getInstance()}. The method is synchronized to
+     * prevent race conditions when multiple threads attempt initialization.
      *
      * @param parent the parent class loader for delegation
      * @return the newly created singleton instance
@@ -62,7 +64,8 @@ public class RemoteFileSourceClassLoader extends ClassLoader {
     /**
      * Returns the singleton instance of the RemoteFileSourceClassLoader.
      *
-     * <p>This method requires that {@link #initialize(ClassLoader)} has been called first.
+     * <p>
+     * This method requires that {@link #initialize(ClassLoader)} has been called first.
      *
      * @return the singleton instance
      * @throws IllegalStateException if the instance has not yet been initialized via {@link #initialize(ClassLoader)}
@@ -93,8 +96,8 @@ public class RemoteFileSourceClassLoader extends ClassLoader {
     }
 
     /**
-     * Returns whether there are any active providers with non-empty resource paths configured.
-     * This indicates that remote sources are actually configured, not just that the execution context is set.
+     * Returns whether there are any active providers with non-empty resource paths configured. This indicates that
+     * remote sources are actually configured, not just that the execution context is set.
      *
      * @return true if any provider is active and has resource paths configured, false otherwise
      */
@@ -110,9 +113,10 @@ public class RemoteFileSourceClassLoader extends ClassLoader {
     /**
      * Gets the resource with the specified name by checking registered providers.
      *
-     * <p>This method iterates through all registered providers to see if any can source the requested resource.
-     * If a provider can handle the resource, a custom URL with protocol "remotefile://" is returned.
-     * If no provider can handle the resource, the request is delegated to the parent class loader.
+     * <p>
+     * This method iterates through all registered providers to see if any can source the requested resource. If a
+     * provider can handle the resource, a custom URL with protocol "remotefile://" is returned. If no provider can
+     * handle the resource, the request is delegated to the parent class loader.
      *
      * @param name the resource name
      * @return a URL for reading the resource, or null if the resource could not be found
@@ -192,8 +196,9 @@ public class RemoteFileSourceClassLoader extends ClassLoader {
         /**
          * Opens a connection to the resource by requesting it from the provider.
          *
-         * <p>This method fetches the resource bytes from the provider with a timeout of
-         * {@value #RESOURCE_TIMEOUT_SECONDS} seconds. If already connected, this method does nothing.
+         * <p>
+         * This method fetches the resource bytes from the provider with a timeout of {@value #RESOURCE_TIMEOUT_SECONDS}
+         * seconds. If already connected, this method does nothing.
          *
          * @throws IOException if the connection fails or times out
          */
@@ -214,9 +219,10 @@ public class RemoteFileSourceClassLoader extends ClassLoader {
         /**
          * Returns an input stream that reads from this connection's resource.
          *
-         * <p>This method calls {@link #connect()} to ensure the connection is established and resource bytes are
-         * fetched from the provider. The method then verifies that content has been successfully downloaded before
-         * creating the input stream.
+         * <p>
+         * This method calls {@link #connect()} to ensure the connection is established and resource bytes are fetched
+         * from the provider. The method then verifies that content has been successfully downloaded before creating the
+         * input stream.
          *
          * @return an input stream that reads from the fetched resource bytes
          * @throws IOException if the connection or content download fails or if the resource has no content

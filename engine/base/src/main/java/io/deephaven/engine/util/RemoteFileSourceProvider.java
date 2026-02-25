@@ -1,14 +1,13 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.util;
 
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Interface for providing remote resources to the ClassLoader.
- * Plugins can implement this interface and register with RemoteFileSourceClassLoader
- * to provide resources from remote sources.
+ * Interface for providing remote resources to the ClassLoader. Plugins can implement this interface and register with
+ * RemoteFileSourceClassLoader to provide resources from remote sources.
  */
 public interface RemoteFileSourceProvider {
     /**
@@ -27,8 +26,8 @@ public interface RemoteFileSourceProvider {
     boolean isActive();
 
     /**
-     * Check if this provider has any resource paths configured.
-     * A provider can be active (execution context set) but have no resource paths configured.
+     * Check if this provider has any resource paths configured. A provider can be active (execution context set) but
+     * have no resource paths configured.
      *
      * @return true if this provider has resource paths configured, false otherwise
      */

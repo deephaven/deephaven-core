@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api.remotefilesource;
 
@@ -49,10 +49,9 @@ import java.util.Map;
  * <p>
  * Events:
  * <ul>
- *   <li>{@link #EVENT_REQUEST_SOURCE}: Fired when the server requests a resource from the client.
- *       This event MUST have exactly one listener registered. Attempting to register more than one listener
- *       will throw an IllegalStateException. Receiving a resource request without a registered listener
- *       will also throw an IllegalStateException.</li>
+ * <li>{@link #EVENT_REQUEST_SOURCE}: Fired when the server requests a resource from the client. This event MUST have
+ * exactly one listener registered. Attempting to register more than one listener will throw an IllegalStateException.
+ * Receiving a resource request without a registered listener will also throw an IllegalStateException.</li>
  * </ul>
  */
 @JsType(namespace = "dh.remotefilesource", name = "RemoteFileSourceService")
@@ -123,8 +122,8 @@ public class JsRemoteFileSourceService extends HasEventHandling {
         descriptor.setCmd(anyWrappedBytes);
 
         // Send the getFlightInfo request
-        return Callbacks.grpcUnaryPromise(c ->
-                connection.flightServiceClient().getFlightInfo(descriptor, connection.metadata(), c::apply));
+        return Callbacks.grpcUnaryPromise(
+                c -> connection.flightServiceClient().getFlightInfo(descriptor, connection.metadata(), c::apply));
     }
 
     /**
@@ -233,12 +232,10 @@ public class JsRemoteFileSourceService extends HasEventHandling {
 
 
     /**
-     * Sets the execution context on the server to identify this message stream as active
-     * for script execution.
+     * Sets the execution context on the server to identify this message stream as active for script execution.
      *
-     * @param resourcePaths array of resource paths to resolve from remote source
-     *                      (e.g., ["com/example/Test.groovy", "org/mycompany/Utils.groovy"]),
-     *                      or null/empty for no specific resources
+     * @param resourcePaths array of resource paths to resolve from remote source (e.g., ["com/example/Test.groovy",
+     *        "org/mycompany/Utils.groovy"]), or null/empty for no specific resources
      * @return a promise that resolves to true if the server successfully set the execution context, false otherwise
      */
     @JsMethod
@@ -265,7 +262,8 @@ public class JsRemoteFileSourceService extends HasEventHandling {
      * @param requestId unique request ID
      * @return the constructed RemoteFileSourceClientRequest
      */
-    private static @NotNull RemoteFileSourceClientRequest getSetExecutionContextRequest(String[] resourcePaths, String requestId) {
+    private static @NotNull RemoteFileSourceClientRequest getSetExecutionContextRequest(String[] resourcePaths,
+            String requestId) {
         SetExecutionContextRequest setContextRequest = new SetExecutionContextRequest();
 
         if (resourcePaths != null) {
@@ -326,11 +324,11 @@ public class JsRemoteFileSourceService extends HasEventHandling {
          * Responds to this resource request with the given content.
          *
          * @param content the resource content (String | Uint8Array | null):
-         *                <ul>
-         *                  <li>String - will be UTF-8 encoded before sending to server</li>
-         *                  <li>Uint8Array - sent as-is to server</li>
-         *                  <li>null - indicates resource was not found</li>
-         *                </ul>
+         *        <ul>
+         *        <li>String - will be UTF-8 encoded before sending to server</li>
+         *        <li>Uint8Array - sent as-is to server</li>
+         *        <li>null - indicates resource was not found</li>
+         *        </ul>
          */
         @JsMethod
         public void respond(@JsNullable ResourceContentUnion content) {

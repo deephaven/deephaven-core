@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.remotefilesource;
 
@@ -24,20 +24,18 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Message stream implementation for RemoteFileSource bidirectional communication.
- * Each instance represents a file source provider for one client connection and implements
- * RemoteFileSourceProvider so it can be registered with the RemoteFileSourceClassLoader.
- * Only one MessageStream can be "active" at a time (determined by the execution context).
+ * Message stream implementation for RemoteFileSource bidirectional communication. Each instance represents a file
+ * source provider for one client connection and implements RemoteFileSourceProvider so it can be registered with the
+ * RemoteFileSourceClassLoader. Only one MessageStream can be "active" at a time (determined by the execution context).
  * The RemoteFileSourceClassLoader checks isActive() on each registered provider to find the active one.
  */
 public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, RemoteFileSourceProvider {
     private static final Logger log = LoggerFactory.getLogger(RemoteFileSourceMessageStream.class);
 
     /**
-     * The current execution context containing the active message stream and configuration.
-     * Null when no execution context is active.
-     * Used by this class's isActive() and canSourceResource() methods to determine if this
-     * provider should handle resource requests from RemoteFileSourceClassLoader.
+     * The current execution context containing the active message stream and configuration. Null when no execution
+     * context is active. Used by this class's isActive() and canSourceResource() methods to determine if this provider
+     * should handle resource requests from RemoteFileSourceClassLoader.
      */
     private static volatile RemoteFileSourceExecutionContext executionContext;
 
@@ -46,8 +44,8 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
     private final Map<String, CompletableFuture<byte[]>> pendingRequests = new ConcurrentHashMap<>();
 
     /**
-     * Creates a new RemoteFileSourceMessageStream for the given connection.
-     * Automatically registers this instance as a provider with the RemoteFileSourceClassLoader.
+     * Creates a new RemoteFileSourceMessageStream for the given connection. Automatically registers this instance as a
+     * provider with the RemoteFileSourceClassLoader.
      *
      * @param connection the message stream connection to the client
      */
@@ -58,9 +56,8 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
     }
 
     /**
-     * Determines if this provider can source the specified resource.
-     * Only returns true if this message stream is active, the resource is a .groovy file,
-     * and the resource path matches one of the configured resource paths.
+     * Determines if this provider can source the specified resource. Only returns true if this message stream is
+     * active, the resource is a .groovy file, and the resource path matches one of the configured resource paths.
      *
      * @param resourceName the name of the resource to check
      * @return true if this provider can source the resource, false otherwise
@@ -95,9 +92,8 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
     }
 
     /**
-     * Requests a resource from the remote client.
-     * Sends a request to the client and returns a future that will be completed when the client responds.
-     * Only services requests if this message stream is active.
+     * Requests a resource from the remote client. Sends a request to the client and returns a future that will be
+     * completed when the client responds. Only services requests if this message stream is active.
      *
      * @param resourceName the name of the resource to request
      * @return a CompletableFuture that will contain the resource bytes when available, or null if inactive
@@ -121,15 +117,15 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
             // Build RemoteFileSourceMetaRequest proto
             RemoteFileSourceMetaRequest metaRequest =
                     RemoteFileSourceMetaRequest.newBuilder()
-                    .setResourceName(resourceName)
-                    .build();
+                            .setResourceName(resourceName)
+                            .build();
 
             // Wrap in RemoteFileSourceServerRequest (server→client)
             RemoteFileSourceServerRequest message =
                     RemoteFileSourceServerRequest.newBuilder()
-                    .setRequestId(requestId)
-                    .setMetaRequest(metaRequest)
-                    .build();
+                            .setRequestId(requestId)
+                            .setMetaRequest(metaRequest)
+                            .build();
 
             ByteBuffer buffer = ByteBuffer.wrap(message.toByteArray());
 
@@ -146,8 +142,8 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
     }
 
     /**
-     * Checks if this message stream is currently active.
-     * A message stream is active when the execution context is set and this instance is the active stream.
+     * Checks if this message stream is currently active. A message stream is active when the execution context is set
+     * and this instance is the active stream.
      *
      * @return true if this message stream is active, false otherwise
      */
@@ -174,16 +170,18 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
     /**
      * Sets the execution context with the active message stream and resource paths.
      *
-     * <p>This static method establishes which message stream instance should be considered "active" for
-     * resource requests, and which resource paths should be resolved from that remote source. Only one
-     * execution context can be active at a time across all instances.
+     * <p>
+     * This static method establishes which message stream instance should be considered "active" for resource requests,
+     * and which resource paths should be resolved from that remote source. Only one execution context can be active at
+     * a time across all instances.
      *
-     * <p>In multi-client scenarios (Community Core), this ensures that only the
-     * message stream for the currently executing script is active, preventing resource requests from
-     * being serviced by the wrong client connection.
+     * <p>
+     * In multi-client scenarios (Community Core), this ensures that only the message stream for the currently executing
+     * script is active, preventing resource requests from being serviced by the wrong client connection.
      *
-     * <p><b>Typical Usage:</b> Called at the beginning of script execution to establish which .groovy
-     * files should be sourced from the remote client rather than the local classpath.
+     * <p>
+     * <b>Typical Usage:</b> Called at the beginning of script execution to establish which .groovy files should be
+     * sourced from the remote client rather than the local classpath.
      *
      * @param messageStream the message stream to set as active (must not be null)
      * @param resourcePaths list of resource paths (e.g., "package/MyScript.groovy") to resolve from remote source
@@ -210,8 +208,7 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
     }
 
     /**
-     * Handles incoming data from the client.
-     * Parses RemoteFileSourceClientRequest messages and processes meta responses
+     * Handles incoming data from the client. Parses RemoteFileSourceClientRequest messages and processes meta responses
      * or execution context updates from the client.
      *
      * @param payload the message payload containing the protobuf data
@@ -228,7 +225,8 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
             if (message.hasMetaResponse()) {
                 handleMetaResponse(message.getRequestId(), message.getMetaResponse());
             } else if (message.hasSetExecutionContext()) {
-                handleSetExecutionContext(message.getRequestId(), message.getSetExecutionContext().getResourcePathsList());
+                handleSetExecutionContext(message.getRequestId(),
+                        message.getSetExecutionContext().getResourcePathsList());
             } else {
                 log.error().append("Received unknown message type from client").endl();
                 throw new ObjectCommunicationException("Received unknown message type from client");
@@ -302,9 +300,9 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
     }
 
     /**
-     * Handles cleanup when the message stream is closed.
-     * Unregisters this provider from the RemoteFileSourceClassLoader, clears the execution context if this was active,
-     * and cancels all pending resource requests.
+     * Handles cleanup when the message stream is closed. Unregisters this provider from the
+     * RemoteFileSourceClassLoader, clears the execution context if this was active, and cancels all pending resource
+     * requests.
      */
     @Override
     public void onClose() {
@@ -336,15 +334,15 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
     private void unregisterFromClassLoader() {
         RemoteFileSourceClassLoader classLoader = RemoteFileSourceClassLoader.getInstance();
         classLoader.unregisterProvider(this);
-        log.info().append("Unregistered RemoteFileSourceMessageStream provider from RemoteFileSourceClassLoader").endl();
+        log.info().append("Unregistered RemoteFileSourceMessageStream provider from RemoteFileSourceClassLoader")
+                .endl();
     }
 
 
     /**
-     * Encapsulates the execution context for remote file source operations.
-     * This includes the currently active message stream and the resource paths
-     * that should be resolved from the remote source.
-     * This class is immutable - a new instance is created each time the context changes.
+     * Encapsulates the execution context for remote file source operations. This includes the currently active message
+     * stream and the resource paths that should be resolved from the remote source. This class is immutable - a new
+     * instance is created each time the context changes.
      */
     public static class RemoteFileSourceExecutionContext {
         private final RemoteFileSourceMessageStream activeMessageStream;

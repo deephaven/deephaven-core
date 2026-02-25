@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api;
 
@@ -12,9 +12,9 @@ import elemental2.dom.TextEncoder;
 public class JsProtobufUtils {
 
     // Varint encoding constants
-    private static final int VARINT_CONTINUATION_BIT = 0x80;  // 10000000 - indicates more bytes follow
-    private static final int VARINT_DATA_MASK = 0x7F;         // 01111111 - extracts 7 bits of data
-    private static final int VARINT_BYTE_THRESHOLD = 128;     // Values >= 128 require multiple bytes
+    private static final int VARINT_CONTINUATION_BIT = 0x80; // 10000000 - indicates more bytes follow
+    private static final int VARINT_DATA_MASK = 0x7F; // 01111111 - extracts 7 bits of data
+    private static final int VARINT_BYTE_THRESHOLD = 128; // Values >= 128 require multiple bytes
 
     private JsProtobufUtils() {
         // Utility class, no instantiation
@@ -25,12 +25,12 @@ public class JsProtobufUtils {
      * <p>
      * The google.protobuf.Any message has two fields:
      * <ul>
-     *   <li>Field 1: type_url (string) - identifies the type of message contained</li>
-     *   <li>Field 2: value (bytes) - the actual serialized message</li>
+     * <li>Field 1: type_url (string) - identifies the type of message contained</li>
+     * <li>Field 2: value (bytes) - the actual serialized message</li>
      * </ul>
      * <p>
-     * This method manually encodes the Any message in protobuf binary format since the client-side
-     * JavaScript protobuf library doesn't provide Any.pack() like the server-side Java library does.
+     * This method manually encodes the Any message in protobuf binary format since the client-side JavaScript protobuf
+     * library doesn't provide Any.pack() like the server-side Java library does.
      *
      * @param typeUrl the type URL for the message (e.g., "type.googleapis.com/package.MessageName")
      * @param messageBytes the serialized protobuf message bytes
@@ -40,8 +40,8 @@ public class JsProtobufUtils {
         // Protobuf tag constants for google.protobuf.Any message fields
         // Tag format: (field_number << 3) | wire_type
         // wire_type=2 means length-delimited (for strings/bytes)
-        final int TYPE_URL_TAG = 10;  // (1 << 3) | 2 = field 1, wire type 2
-        final int VALUE_TAG = 18;     // (2 << 3) | 2 = field 2, wire type 2
+        final int TYPE_URL_TAG = 10; // (1 << 3) | 2 = field 1, wire type 2
+        final int VALUE_TAG = 18; // (2 << 3) | 2 = field 2, wire type 2
 
         // Encode the type_url string to UTF-8 bytes
         TextEncoder textEncoder = new TextEncoder();
@@ -70,9 +70,9 @@ public class JsProtobufUtils {
      * <p>
      * A length-delimited field consists of:
      * <ul>
-     *   <li>Tag (field number + wire type) encoded as a varint</li>
-     *   <li>Length of the data encoded as a varint</li>
-     *   <li>The actual data bytes</li>
+     * <li>Tag (field number + wire type) encoded as a varint</li>
+     * <li>Length of the data encoded as a varint</li>
+     * <li>The actual data bytes</li>
      * </ul>
      *
      * @param tag the protobuf field tag (field number << 3 | wire type)
@@ -86,15 +86,15 @@ public class JsProtobufUtils {
     /**
      * Calculates how many bytes a varint encoding will require for the given value.
      * <p>
-     * Protobuf uses varint encoding where each byte stores 7 bits of data (the 8th bit is
-     * a continuation flag). This means:
+     * Protobuf uses varint encoding where each byte stores 7 bits of data (the 8th bit is a continuation flag). This
+     * means:
      * <ul>
-     *   <li>1 byte: 0 to 127 (2^7 - 1)</li>
-     *   <li>2 bytes: 128 to 16,383 (2^14 - 1)</li>
-     *   <li>3 bytes: 16,384 to 2,097,151 (2^21 - 1)</li>
-     *   <li>4 bytes: 2,097,152 to 268,435,455 (2^28 - 1)</li>
-     *   <li>5 bytes: 268,435,456 to 4,294,967,295 (max unsigned 32-bit int)</li>
-     *   <li>10 bytes: negative numbers (sign-extended to 64 bits in varint encoding)</li>
+     * <li>1 byte: 0 to 127 (2^7 - 1)</li>
+     * <li>2 bytes: 128 to 16,383 (2^14 - 1)</li>
+     * <li>3 bytes: 16,384 to 2,097,151 (2^21 - 1)</li>
+     * <li>4 bytes: 2,097,152 to 268,435,455 (2^28 - 1)</li>
+     * <li>5 bytes: 268,435,456 to 4,294,967,295 (max unsigned 32-bit int)</li>
+     * <li>10 bytes: negative numbers (sign-extended to 64 bits in varint encoding)</li>
      * </ul>
      *
      * @param value the integer value to encode
@@ -102,16 +102,16 @@ public class JsProtobufUtils {
      */
     private static int sizeOfVarint(int value) {
         if (value < 0)
-            return 10;                      // Negative numbers use sign extension, always 10 bytes
-        if (value < VARINT_BYTE_THRESHOLD)  // 2^7 = 128
+            return 10; // Negative numbers use sign extension, always 10 bytes
+        if (value < VARINT_BYTE_THRESHOLD) // 2^7 = 128
             return 1;
-        if (value < 16384)                  // 2^14
+        if (value < 16384) // 2^14
             return 2;
-        if (value < 2097152)                // 2^21
+        if (value < 2097152) // 2^21
             return 3;
-        if (value < 268435456)              // 2^28
+        if (value < 268435456) // 2^28
             return 4;
-        return 5;                           // Max unsigned 32-bit int requires 5 bytes
+        return 5; // Max unsigned 32-bit int requires 5 bytes
     }
 
     /**
@@ -119,9 +119,9 @@ public class JsProtobufUtils {
      * <p>
      * A length-delimited field consists of:
      * <ul>
-     *   <li>Tag (field number + wire type) encoded as a varint</li>
-     *   <li>Length of the data encoded as a varint</li>
-     *   <li>The actual data bytes</li>
+     * <li>Tag (field number + wire type) encoded as a varint</li>
+     * <li>Length of the data encoded as a varint</li>
+     * <li>The actual data bytes</li>
      * </ul>
      *
      * @param buffer the buffer to write to
@@ -146,21 +146,21 @@ public class JsProtobufUtils {
      * <p>
      * Varint encoding works by:
      * <ol>
-     *   <li>Taking the lowest 7 bits of the value</li>
-     *   <li>Setting the 8th bit to 1 if more bytes follow (continuation flag)</li>
-     *   <li>Writing the byte to the buffer</li>
-     *   <li>Shifting the value right by 7 bits</li>
-     *   <li>Repeating until the value is less than 128</li>
-     *   <li>Writing the final byte without the continuation flag (8th bit = 0)</li>
+     * <li>Taking the lowest 7 bits of the value</li>
+     * <li>Setting the 8th bit to 1 if more bytes follow (continuation flag)</li>
+     * <li>Writing the byte to the buffer</li>
+     * <li>Shifting the value right by 7 bits</li>
+     * <li>Repeating until the value is less than 128</li>
+     * <li>Writing the final byte without the continuation flag (8th bit = 0)</li>
      * </ol>
      * <p>
      * Example: encoding 300
      * <ul>
-     *   <li>300 in binary: 100101100</li>
-     *   <li>First byte: (300 & 0x7F) | 0x80 = 0b00101100 | 0b10000000 = 172 (0xAC)</li>
-     *   <li>Shift: 300 >>> 7 = 2</li>
-     *   <li>Second byte: 2 (no continuation flag)</li>
-     *   <li>Result: [172, 2]</li>
+     * <li>300 in binary: 100101100</li>
+     * <li>First byte: (300 & 0x7F) | 0x80 = 0b00101100 | 0b10000000 = 172 (0xAC)</li>
+     * <li>Shift: 300 >>> 7 = 2</li>
+     * <li>Second byte: 2 (no continuation flag)</li>
+     * <li>Result: [172, 2]</li>
      * </ul>
      *
      * @param buffer the buffer to write to
@@ -173,7 +173,7 @@ public class JsProtobufUtils {
             // Extract lowest 7 bits and set continuation flag (8th bit = 1)
             buffer.setAt(pos++, (double) ((value & VARINT_DATA_MASK) | VARINT_CONTINUATION_BIT));
             // Shift right by 7 to process next chunk
-            value >>>= 7;  // Unsigned right shift to handle large positive values
+            value >>>= 7; // Unsigned right shift to handle large positive values
         }
         // Write final byte (no continuation flag, 8th bit = 0)
         buffer.setAt(pos++, (double) value);
