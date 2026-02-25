@@ -16,23 +16,23 @@ This guide assumes familiarity with distributed systems, JVM architecture, and m
 Deephaven's architecture is built on several key innovations:
 
 - **Unified DAG-based update model**: Real-time and static data flow through the same directed acyclic graph with automatic dependency tracking and incremental updates.
-- **Shared table structures**: RowSets and ColumnSources enable zero-copy operations and efficient memory usage across query operations.
+- **Shared table structures**: `RowSets` and `ColumnSources` enable zero-copy operations and efficient memory usage across query operations.
 - **Mechanical sympathy**: Chunk-oriented processing, columnar layouts, and careful JVM optimization deliver exceptional performance.
-- **Seamless language integration**: Python, Java, Groovy, and polyglot APIs work together through JPY and gRPC.
+- **Seamless language integration**: Python, Java, Groovy, and polyglot APIs work together through [JPY](https://github.com/jpy-consortium/jpy) and [gRPC](./deephaven-core-api.md).
 - **Python-first UI framework**: `deephaven.ui` enables building reactive web applications entirely in Python, with live table integration and no front-end engineering required.
 - **Lambda architecture without complexity**: Batch and real-time data coexist behind a single, consistent API.
 
 ### How Deephaven compares
 
-| Capability             | Traditional Approach                    | Deephaven                           |
-| ---------------------- | --------------------------------------- | ----------------------------------- |
-| **Batch + Real-time**  | Separate systems (e.g., Spark + Flink)  | Unified table API for both          |
-| **Update model**       | Recompute full datasets                 | Incremental (only changed rows)     |
-| **Memory efficiency**  | Copy-on-write, data duplication         | Shared RowSets and ColumnSources    |
-| **Query consistency**  | Manual coordination required            | Automatic via DAG and logical clock |
-| **UI development**     | Separate front-end team/codebase        | Pure Python (`deephaven.ui`) or JS  |
-| **Data movement**      | Row-at-a-time or full scans             | Chunk-oriented (4096 cells at once) |
-| **Performance tuning** | Complex configuration, multiple systems | Mechanical sympathy built-in        |
+| Capability             | Traditional Approach                    | Deephaven                            |
+| ---------------------- | --------------------------------------- | ------------------------------------ |
+| **Batch + Real-time**  | Separate systems (e.g., Spark + Flink)  | Unified table API for both           |
+| **Update model**       | Recompute full datasets                 | Incremental (only changed rows)      |
+| **Memory efficiency**  | Copy-on-write, data duplication         | Shared `RowSets` and `ColumnSources` |
+| **Query consistency**  | Manual coordination required            | Automatic via DAG and logical clock  |
+| **UI development**     | Separate front-end team/codebase        | Pure Python (`deephaven.ui`) or JS   |
+| **Data movement**      | Row-at-a-time or full scans             | Chunk-oriented (4096 cells at once)  |
+| **Performance tuning** | Complex configuration, multiple systems | Mechanical sympathy built-in         |
 
 This document provides technical depth on each component. For a conceptual introduction to DAGs, start with our [DAG concept guide](./dag.md).
 
@@ -72,7 +72,7 @@ When `source` receives a new row, the DAG ensures that `filtered` and `aggregate
 
 ### Update graph (UG) cycles
 
-Updates are batched at a configurable interval (default 1000ms) and propagated through the DAG in topological order. This batching:
+The engine batches updates at a configurable interval (default 1000ms) and propagated through the DAG in topological order. This batching:
 
 - **Improves efficiency**: Process multiple changes together instead of one at a time.
 - **Ensures consistency**: All tables see the same snapshot of changes.
@@ -131,12 +131,12 @@ This combination of capabilities allows Deephaven to serve as the only necessary
 
 Deephaven tables are implemented using data structures that lend themselves to efficient sharing and incremental updating. At its most basic, each table consists of two components:
 
-1. A **RowSet** that enumerates the possibly-sparse sequence of _row keys_ (non-negative 64-bit integers) in the table.
-2. A **map** associating names with _ColumnSources_ that allow data retrieval for individual row keys, either element-by-element or in larger batches.
+1. A **`RowSet`** that enumerates the possibly-sparse sequence of _row keys_ (non-negative 64-bit integers) in the table.
+2. A **map** associating names with `ColumnSources` that allow data retrieval for individual row keys, either element-by-element or in larger batches.
 
-A ColumnSource represents a column of (possibly dynamically updating) data that may be shared by multiple tables.
+A `ColumnSource` represents a column of (possibly dynamically updating) data that may be shared by multiple tables.
 
-A RowSet selects elements of that ColumnSource and might represent all the data in the ColumnSource or just some subset of it. A _redirecting_ RowSet is a RowSet that is derived from another RowSet and which remaps its keys. It can be used, for example, to reorder the rows in a table effectively.
+A `RowSet` selects elements of that `ColumnSource` and might represent all the data in the `ColumnSource` or just some subset of it. A _redirecting_ `RowSet` is a `RowSet` that is derived from another `RowSet` and which remaps its keys. It can be used, for example, to reorder the rows in a table effectively.
 
 **Example of sharing**:
 
@@ -153,17 +153,17 @@ renamed = source.view("A", "C = B")  // Shares A's ColumnSource
 
 <Svg src='../assets/conceptual/table-structure.svg' style={{height: 'auto', maxWidth: '1000px'}} />
 
-_Filtering_ ([`where`](../how-to-guides/filters.md) operations) creates a new RowSet that is a subset of an existing RowSet; _sorting_ creates a redirecting RowSet.
+_Filtering_ ([`where`](../how-to-guides/filters.md) operations) creates a new `RowSet` that is a subset of an existing `RowSet`; _sorting_ creates a redirecting `RowSet`.
 
-A table may share its RowSet with any other table in its update graph that contains the same row keys. A single parent table is responsible for maintaining the RowSet on behalf of itself and any descendants that inherited its RowSet. Table operations that inherit RowSets include column projection and derivation operations like [`select`](../reference/table-operations/select/select.md) and [`view`](../reference/table-operations/select/view.md), as well as some join operations with respect to the left input table; e.g., [`natural join`](../reference/table-operations/join/natural-join.md), [`exact join`](../reference/table-operations/join/exact-join.md), and [`as-of join`](../reference/table-operations/join/aj.md).
+A table may share its `RowSet` with any other table in its update graph that contains the same row keys. A single parent table is responsible for maintaining the `RowSet` on behalf of itself and any descendants that inherited its `RowSet`. Table operations that inherit `RowSets` include column projection and derivation operations like [`select`](../reference/table-operations/select/select.md) and [`view`](../reference/table-operations/select/view.md), as well as some join operations with respect to the left input table; e.g., [`natural join`](../reference/table-operations/join/natural-join.md), [`exact join`](../reference/table-operations/join/exact-join.md), and [`as-of join`](../reference/table-operations/join/aj.md).
 
-A table may share any of its ColumnSources with any other table in its update graph that uses the same row key space or whose row key space can be _redirected_ onto the same row key space. A single parent table is responsible for updating the contents of a given ColumnSource for itself and any descendants that inherited that ColumnSource. Operations that allow this sharing without redirection include [`where`](../reference/table-operations/filter/where.md), as well as any column transformation that passes through columns unchanged or simply renamed, and some join operations with respect to the left-hand table’s ColumnSources. Operations that allow ColumnSource sharing with redirection include [`sort`](../reference/table-operations/sort/sort.md), as well as most joins with respect to the right-hand table’s ColumnSources.
+A table may share any of its `ColumnSources` with any other table in its update graph that uses the same row key space or whose row key space can be _redirected_ onto the same row key space. A single parent table is responsible for updating the contents of a given `ColumnSource` for itself and any descendants that inherited that `ColumnSource`. Operations that allow this sharing without redirection include [`where`](../reference/table-operations/filter/where.md), as well as any column transformation that passes through columns unchanged or simply renamed, and some join operations with respect to the left-hand table’s `ColumnSources`. Operations that allow `ColumnSource` sharing with redirection include [`sort`](../reference/table-operations/sort/sort.md), as well as most joins with respect to the right-hand table’s `ColumnSources`.
 
 By itself, this sharing capability represents an important optimization that avoids some data processing or copying work. When considered in an _updating_ query engine, it should be clear that this avoidance extends to each update cycle, paying dividends for the lifetime of a query.
 
-**Performance impact**: Shared ColumnSources can reduce memory footprint by 50-90% for queries with multiple filtered or joined views of the same source data. For example, five different `where()` filters on a 10-column table share all 10 ColumnSources, storing only five different RowSets instead of duplicating 50 columns.
+**Performance impact**: Shared `ColumnSources` can reduce memory footprint by 50-90% for queries with multiple filtered or joined views of the same source data. For example, five different `where` filters on a 10-column table share all 10 `ColumnSources`, storing only five different `RowSets` instead of duplicating 50 columns.
 
-Furthermore, the possible sparsity of the RowSet’s row key space allows for greatly reduced data movement within the RowSet itself and the ColumnSources it addresses. This is essential for the performance of Deephaven’s incremental sort operation, as well as in many cases when source tables publish changes that are more complex than simple append-only growth; e.g., multiple independently-growing partitions, or tabular representations of key-value store state.
+Furthermore, the possible sparsity of the `RowSet`'s row key space allows for greatly reduced data movement within the `RowSet` itself and the `ColumnSources` it addresses. This is essential for the performance of Deephaven’s incremental sort operation, as well as in many cases when source tables publish changes that are more complex than simple append-only growth; e.g., multiple independently-growing partitions, or tabular representations of key-value store state.
 
 ## Mechanical sympathy
 
@@ -190,7 +190,7 @@ The Deephaven query engine moves data around using a data structure called a _Ch
 
 <Svg src='../assets/conceptual/chunk-architecture.svg' style={{height: 'auto', maxWidth: '1000px'}} />
 
-By working with chunks of data rather than single cells, we allow the engine to amortize data movement costs at every applicable level of the stack. For example, ColumnSources are _ChunkSources_, allowing bulk `getChunk` and `fillChunk` data transfers. These data transfers may in turn be implemented by wrapping or copying arrays, by reading the appropriate region of a file, or by evaluating a formula once for each result element.
+By working with chunks of data rather than single cells, we allow the engine to amortize data movement costs at every applicable level of the stack. For example, `ColumnSources` are _ChunkSources_, allowing bulk `getChunk` and `fillChunk` data transfers. These data transfers may in turn be implemented by wrapping or copying arrays, by reading the appropriate region of a file, or by evaluating a formula once for each result element.
 
 **Performance impact**: Processing data in chunks of 4,096 elements instead of one-at-a-time reduces method call overhead by approximately 1,000x and enables SIMD vectorization, delivering 4-8x throughput for arithmetic operations on modern CPUs. A filtering operation that would require 1 million method calls for 1 million rows requires only ~244 calls (1,000,000 ÷ 4,096) with chunk-oriented processing.
 
@@ -208,11 +208,11 @@ Chunks are currently implemented as regions of native Java arrays, with implemen
 
 Building further on our chunk-oriented engine design, Deephaven [join](../how-to-guides/joins-exact-relational.md) and [aggregation](../how-to-guides/combined-aggregations.md) operations frequently rely on a columnar hash table implementation that allows chunks of single or multi-element keys to be hashed and inserted or probed in bulk operations where data patterns permit. Each component of this operational building block attempts to enable vectorization and avoid virtual method lookups by relying on chunk-oriented kernels, whether for hashing data, sorting data, looking for runs of identical values, and so on.
 
-### RowSet implementations
+### `RowSet` implementations
 
-Another area of the Deephaven query engine that merits specific attention is our [RowSet](#tables-designed-for-sharing-and-updating) implementation. In practice, RowSets switch between a number of implementation options depending on size and sparsity. Currently, there are three in use:
+Another area of the Deephaven query engine that merits specific attention is our [`RowSet`](#tables-designed-for-sharing-and-updating) implementation. In practice, `RowSets` switch between a number of implementation options depending on size and sparsity. Currently, there are three in use:
 
-1. **Single Range:** Exactly what it sounds like, ideal when all row keys in a RowSet are contiguous.
+1. **Single Range:** Exactly what it sounds like, ideal when all row keys in a `RowSet` are contiguous.
 2. **Sorted Ranges:** Like single range, but more than one, and in sorted order. Ideal for tables with a small number of contiguous ranges, no matter how widely separated.
 3. **Regular Space Partitioning:** Our take on the popular [Roaring Bitmaps](https://roaringbitmap.org/) (RB) data structure, but with substantial optimizations to allow for widely distributed row key ranges. We use a library of containers initially derived from the [Java RB implementation](https://github.com/lemire/RoaringBitmap/), with a few special case containers added to allow for a smaller memory footprint in important edge cases. These containers are organized in an array as in RB, but ranges of containers that would be entirely full are stored as a single entry in a parallel array.
 
@@ -228,11 +228,11 @@ In all cases, the goal is to allow for efficient traversal or set operations wit
 
 ### Regular Space Partitioning (RSP) vs Binary Space Partitioning (BSP)
 
-Regular Space Partitioning (RSP) is a fundamental and unique data structure used by every table operation in Deephaven's various APIs. Deephaven's RSP uses the [Roaring Bitmaps](https://roaringbitmap.org/) [RoaringArray](https://github.com/RoaringBitmap/RoaringBitmap/blob/master/roaringbitmap/src/main/java/org/roaringbitmap/RoaringArray.java) as a technical building block. It fixes some of the shortcomings of [Binary Space Partitioning](https://en.wikipedia.org/wiki/Binary_space_partitioning) (BSP), particularly those related to the overhead of operations on large RowSets.
+Regular Space Partitioning (RSP) is a fundamental and unique data structure used by every table operation in Deephaven's various APIs. Deephaven's RSP uses the [Roaring Bitmaps](https://roaringbitmap.org/) [RoaringArray](https://github.com/RoaringBitmap/RoaringBitmap/blob/master/roaringbitmap/src/main/java/org/roaringbitmap/RoaringArray.java) as a technical building block. It fixes some of the shortcomings of [Binary Space Partitioning](https://en.wikipedia.org/wiki/Binary_space_partitioning) (BSP), particularly those related to the overhead of operations on large `RowSets`.
 
-> RSP improves upon BSP by partitioning RowSets at fixed points instead of arbitrary ones. For large datasets, this has multiple benefits: not only does RSP guarantee that the pieces in each RowSet align, but it also eliminates the need to worry about iterators crossing array boundaries at different points for each RowSet.
+> RSP improves upon BSP by partitioning `RowSets` at fixed points instead of arbitrary ones. For large datasets, this has multiple benefits: not only does RSP guarantee that the pieces in each `RowSet` align, but it also eliminates the need to worry about iterators crossing array boundaries at different points for each `RowSet`.
 
-BSP allows a system to accumulate a set of values (i.e., a RowSet) in a sorted array. For example, the following sorted array of only a few values is very simple and efficient:
+BSP allows a system to accumulate a set of values (i.e., a `RowSet`) in a sorted array. For example, the following sorted array of only a few values is very simple and efficient:
 
 ```
 [ 1, 5, 9, 15, 16, 19, 25 ]
@@ -240,7 +240,7 @@ BSP allows a system to accumulate a set of values (i.e., a RowSet) in a sorted a
 
 To keep an array sorted when operations such as an insert are performed, the system must first find where to put the new value. This requires a binary search, which is an `O(log n)` operation. Next, space needs to be made for the new value. As the set grows, the array is split around the middle (the binary space partition), and the two pieces are arranged in a tree structure.
 
-For big RowSets - often accumulating millions of values - the overhead on BSP operations can be high. As a single RowSet is created or grows, the binary subdivision operation can be expensive. Operations involving mixing two different RowSets (e.g., union, intersect, or set difference) can be particularly expensive because they need to look at the individual values on each RowSet and decide what will happen in the result.
+For big `RowSets` - often accumulating millions of values - the overhead on BSP operations can be high. As a single `RowSet` is created or grows, the binary subdivision operation can be expensive. Operations involving mixing two different `RowSets` (e.g., union, intersect, or set difference) can be particularly expensive because they need to look at the individual values in each `RowSet` and decide what will happen in the result.
 
 Going back to the previous example, in BSP, if we need to insert 10 into the above array, Deephaven asks: `Is the resulting array too big?` If yes, the system splits it at a median value, creating two sub-arrays and a parent node:
 
@@ -248,15 +248,15 @@ Going back to the previous example, in BSP, if we need to insert 10 into the abo
 
 In this case, 10 is the parent node that directs which sub-branch to descend when a search is performed.
 
-Unlike BSP, RSP forces partitioning at specific fixed points. It divides the space in fixed ranges of 2^16 (65,536) values. In this data structure, a RowSet is an array of containers, each containing at most 2^16 elements. In our BSP example, the median value 10 bubbles in the tree to separate two nodes. In RSP, this would be `n * 2^16` for some `n`. The key difference is that in BSP, the middle of the array is the point where the partitioning takes place, which bubbles up as an inner tree node. In RSP, this cannot be arbitrary, since it's always an integer multiple of 2^16.
+Unlike BSP, RSP forces partitioning at specific fixed points. It divides the space in fixed ranges of 2^16 (65,536) values. In this data structure, a `RowSet` is an array of containers, each containing at most 2^16 elements. In our BSP example, the median value 10 bubbles in the tree to separate two nodes. In RSP, this would be `n * 2^16` for some `n`. The key difference is that in BSP, the middle of the array is the point where the partitioning takes place, which bubbles up as an inner tree node. In RSP, this cannot be arbitrary, since it's always an integer multiple of 2^16.
 
-Consider operations such as union, set difference, or intersect. The system can work on the corresponding containers without caring about boundaries between them. For instance, the position for RowSet key 65,537 can _only_ be in the container where n = 1, so Deephaven always knows exactly where to look.
+Consider operations such as union, set difference, or intersect. The system can work on the corresponding containers without caring about boundaries between them. For instance, the position for `RowSet` key 65,537 can _only_ be in the container where n = 1, so Deephaven always knows exactly where to look.
 
-For large datasets, RSP is usually much faster at these operations. If the system can work in pieces at a time for each operation and guarantee that the pieces on each RowSet align in terms of values, they can be worked on more efficiently without having to worry about iterators crossing individual array boundaries at different points for each RowSet.
+For large datasets, RSP is usually much faster at these operations. If the system can work in pieces at a time for each operation and guarantee that the pieces on each `RowSet` align in terms of values, they can be worked on more efficiently without having to worry about iterators crossing individual array boundaries at different points for each `RowSet`.
 
 RSP also compactly represents values. It would be inefficient to write out every single value in a big range - let's say all of the values in the set `[ 0, 1000 * 2^16 ]`. Deephaven would have to create 10,000 containers, with all keys in each of them present. Instead, Deephaven has a compact way to represent continuous ranges of values that can span full blocks in `[ n * 2^16, m * 2^16 - 1 ]` space, for some value of `n` and `m` where `m > n`.
 
-Nevertheless, small RowSets are more expensive in RSP because they are still comprised of an array of containers first and then the containers themselves. This matters for queries that need to create one RowSet per row (e.g., joins). This issue is alleviated by creating a special case for single-range RowSets.
+Nevertheless, small `RowSets` are more expensive in RSP because they are still comprised of an array of containers first and then the containers themselves. This matters for queries that need to create one `RowSet` per row (e.g., joins). This issue is alleviated by creating a special case for single-range `RowSets`.
 
 ## Formula and condition evaluation
 

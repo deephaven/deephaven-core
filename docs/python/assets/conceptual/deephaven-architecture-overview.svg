@@ -1,4 +1,6 @@
 <svg viewBox="0 0 1200 950" xmlns="http://www.w3.org/2000/svg">
+  <!-- Light background for dark theme compatibility -->
+  <rect width="100%" height="100%" fill="#ffffff" rx="8"/>
   <defs>
     <style>
       .title { font: bold 18px sans-serif; fill: #1f2937; }
