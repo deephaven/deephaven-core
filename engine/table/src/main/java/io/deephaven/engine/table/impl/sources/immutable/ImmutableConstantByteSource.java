@@ -27,6 +27,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
+import java.util.function.Supplier;
 
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
 
@@ -137,13 +138,10 @@ public class ImmutableConstantByteSource
         }
         final SingleValuePushdownHelper.FilterContext filterCtx = (SingleValuePushdownHelper.FilterContext) context;
 
+        final Supplier<Chunk<Values>> chunkSupplier = () -> SingleValuePushdownHelper.makeChunk(getByte(0));
         final boolean matches =
-                SingleValuePushdownHelper.filter(filter, selection, usePrev, filterCtx, this::getValueChunk, this);
+                SingleValuePushdownHelper.filter(filter, selection, usePrev, filterCtx, chunkSupplier, this);
         onComplete.accept(matches ? PushdownResult.allMatch(selection) : PushdownResult.allNoMatch(selection));
-    }
-
-    private Chunk<Values> getValueChunk() {
-        return SingleValuePushdownHelper.makeChunk(getByte(0));
     }
 
     // region reinterpretation
