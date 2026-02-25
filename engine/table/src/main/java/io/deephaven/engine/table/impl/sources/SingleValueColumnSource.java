@@ -170,7 +170,7 @@ public abstract class SingleValueColumnSource<T> extends AbstractColumnSource<T>
         final Supplier<Chunk<Values>> chunkSupplier = usePrev ? this::getPrevValueChunk : this::getValueChunk;
 
         final boolean matches =
-                SingleValuePushdownHelper.filter(filter, selection, usePrev, filterCtx, chunkSupplier, this);
+                SingleValuePushdownHelper.filter(selection, usePrev, filterCtx, chunkSupplier, this);
         onComplete.accept(matches ? PushdownResult.allMatch(selection) : PushdownResult.allNoMatch(selection));
     }
 

@@ -98,16 +98,4 @@ public interface ColumnRegion<ATTR extends Any> extends Page<ATTR>, Releasable, 
                     : PushdownResult.of(selection, input.match(), RowSetFactory.empty());
         }
     }
-
-    default RegionedPushdownAction.EstimateContext makeEstimateContext(
-            final WhereFilter filter,
-            final PushdownFilterContext context) {
-        return RegionedPushdownAction.DEFAULT_ESTIMATE_CONTEXT;
-    }
-
-    default RegionedPushdownAction.ActionContext makeActionContext(
-            final WhereFilter filter,
-            final PushdownFilterContext context) {
-        return RegionedPushdownAction.DEFAULT_ACTION_CONTEXT;
-    }
 }

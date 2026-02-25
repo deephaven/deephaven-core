@@ -402,20 +402,6 @@ public abstract class AbstractTableLocation
                 "makePushdownFilterContext() not supported for AbstractTableLocation");
     }
 
-    @Override
-    public RegionedPushdownAction.EstimateContext makeEstimateContext(
-            final WhereFilter filter,
-            final PushdownFilterContext context) {
-        return RegionedPushdownAction.DEFAULT_ESTIMATE_CONTEXT;
-    }
-
-    @Override
-    public RegionedPushdownAction.ActionContext makeActionContext(
-            final WhereFilter filter,
-            final PushdownFilterContext context) {
-        return RegionedPushdownAction.DEFAULT_ACTION_CONTEXT;
-    }
-
     // ------------------------------------------------------------------------------------------------------------------
     // Reference counting implementation
     // ------------------------------------------------------------------------------------------------------------------

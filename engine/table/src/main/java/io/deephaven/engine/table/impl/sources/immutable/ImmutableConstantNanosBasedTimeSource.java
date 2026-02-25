@@ -215,7 +215,7 @@ public abstract class ImmutableConstantNanosBasedTimeSource<TIME_TYPE> extends A
 
         final SingleValuePushdownHelper.FilterContext filterCtx = (SingleValuePushdownHelper.FilterContext) context;
         final boolean matches =
-                SingleValuePushdownHelper.filter(filter, selection, usePrev, filterCtx, this::getValueChunk, this);
+                SingleValuePushdownHelper.filter(selection, usePrev, filterCtx, this::getValueChunk, this);
         onComplete.accept(matches ? PushdownResult.allMatch(selection) : PushdownResult.allNoMatch(selection));
     }
 }

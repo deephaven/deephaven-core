@@ -138,7 +138,7 @@ public class ImmutableConstantDoubleSource
 
         final Supplier<Chunk<Values>> chunkSupplier = () -> SingleValuePushdownHelper.makeChunk(getDouble(0));
         final boolean matches =
-                SingleValuePushdownHelper.filter(filter, selection, usePrev, filterCtx, chunkSupplier, this);
+                SingleValuePushdownHelper.filter(selection, usePrev, filterCtx, chunkSupplier, this);
         onComplete.accept(matches ? PushdownResult.allMatch(selection) : PushdownResult.allNoMatch(selection));
     }
 

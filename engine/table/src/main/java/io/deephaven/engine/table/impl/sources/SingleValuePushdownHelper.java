@@ -118,7 +118,6 @@ public class SingleValuePushdownHelper {
      * supplied filter.
      */
     public static boolean filter(
-            final WhereFilter filter,
             final RowSet selection,
             final boolean usePrev,
             final BasePushdownFilterContext context,
@@ -130,7 +129,7 @@ public class SingleValuePushdownHelper {
             return chunkFilter(context, valueChunkSupplier);
         }
 
-        return tableFilter(filter, selection, usePrev, columnSource);
+        return tableFilter(context.filter(), selection, usePrev, columnSource);
     }
 
     /**

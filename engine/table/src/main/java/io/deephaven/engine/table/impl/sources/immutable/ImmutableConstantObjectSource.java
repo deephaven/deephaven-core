@@ -137,7 +137,7 @@ public class ImmutableConstantObjectSource<T>
 
         final Supplier<Chunk<Values>> chunkSupplier = () -> SingleValuePushdownHelper.makeChunk(get(0));
         final boolean matches =
-                SingleValuePushdownHelper.filter(filter, selection, usePrev, filterCtx, chunkSupplier, this);
+                SingleValuePushdownHelper.filter(selection, usePrev, filterCtx, chunkSupplier, this);
         onComplete.accept(matches ? PushdownResult.allMatch(selection) : PushdownResult.allNoMatch(selection));
     }
 

@@ -2098,7 +2098,7 @@ public final class ParquetTableFilterTest {
     }
 
     @Test
-    public void testMergedPartitioningTableColumnRegions() {
+    public void testPartitioningTableColumnRegions() {
         // Partitioning columns are automatically added to a data index. We have to disable use of the data index
         // in order to test constant and null column region pushdown features.
         QueryTable.DISABLE_WHERE_PUSHDOWN_DATA_INDEX = true;

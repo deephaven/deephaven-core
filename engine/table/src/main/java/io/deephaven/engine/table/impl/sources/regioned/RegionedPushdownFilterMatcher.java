@@ -24,9 +24,11 @@ public interface RegionedPushdownFilterMatcher extends PushdownFilterMatcher {
      * Create a context for estimating the cost for the filter and filter context. This context can be used to provide
      * additional information to the {@link #estimatePushdownAction} function
      */
-    RegionedPushdownAction.EstimateContext makeEstimateContext(
+    default RegionedPushdownAction.EstimateContext makeEstimateContext(
             final WhereFilter filter,
-            final PushdownFilterContext filterContext);
+            final PushdownFilterContext context) {
+        return RegionedPushdownAction.DEFAULT_ESTIMATE_CONTEXT;
+    }
 
     /**
      * Given a list of actions, estimate the cost of the next pushdown action. This is not always the first action in
@@ -46,9 +48,12 @@ public interface RegionedPushdownFilterMatcher extends PushdownFilterMatcher {
      * Create a context for processing the given filter and filter context. This context can be used to provide
      * additional information to the {@link #performPushdownAction} function
      */
-    RegionedPushdownAction.ActionContext makeActionContext(
+
+    default RegionedPushdownAction.ActionContext makeActionContext(
             final WhereFilter filter,
-            final PushdownFilterContext filterContext);
+            final PushdownFilterContext context) {
+        return RegionedPushdownAction.DEFAULT_ACTION_CONTEXT;
+    }
 
     /**
      * Perform the pushdown action for the given filter and filter context.
