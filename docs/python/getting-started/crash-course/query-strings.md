@@ -179,7 +179,7 @@ There are many more such operators supported in Deephaven. See the [guide on ope
 
 ## Built-in functions
 
-Aside from the common operations, Deephaven hosts a large library of functions known as [built-in or auto-imported functions](../../reference/query-language/query-library/auto-imported-functions.md) that can be used in query strings.
+Aside from the common operations, Deephaven hosts a large library of functions known as [built-in or auto-imported functions](../../reference/query-language/query-library/auto-imported/index.md) that can be used in query strings.
 
 The [numeric subset of this library](/core/javadoc/io/deephaven/function/package-summary.html) is full of functions that perform common mathematical operations on numeric types. These include exponentials, trigonometric functions, random number generators, and more.
 
@@ -279,7 +279,7 @@ last_by_bin = binned_timestamps.last_by("Last5Mins")
 
 The [time user guide](../../conceptual/time-in-deephaven.md) provides a comprehensive overview of working with date-time data in Deephaven.
 
-These functions provide only a glimpse of what the built-in library offers. There are modules for [sorting](/core/javadoc/io/deephaven/function/Sort.html), [searching](/core/javadoc/io/deephaven/function/BinSearch.html), [string parsing](/core/javadoc/io/deephaven/function/Parse.html), [null handling](https://deephaven.io/core/javadoc/io/deephaven/function/Basic.html#isNull(byte)), and much more. See the document on [auto-imported functions](../../reference/query-language/query-library/auto-imported-functions.md) for a comprehensive list of what's available or the [module summary page](/core/javadoc/io/deephaven/function/package-summary.html) for a high-level overview of what's offered.
+These functions provide only a glimpse of what the built-in library offers. There are modules for [sorting](/core/javadoc/io/deephaven/function/Sort.html), [searching](/core/javadoc/io/deephaven/function/BinSearch.html), [string parsing](/core/javadoc/io/deephaven/function/Parse.html), [null handling](https://deephaven.io/core/javadoc/io/deephaven/function/Basic.html#isNull(byte)), and much more. See the document on [auto-imported functions](../../reference/query-language/query-library/auto-imported/index.md) for a comprehensive list of what's available or the [module summary page](/core/javadoc/io/deephaven/function/package-summary.html) for a high-level overview of what's offered.
 
 ## Java methods
 
@@ -487,7 +487,7 @@ add_vars_class = empty_table(1).update(
 )
 ```
 
-Without any type casts or [type hints](https://docs.python.org/3/library/typing.html), the Deephaven query engine cannot infer what datatype results from a Python function. It stores the result as a Java [PyObject](../../how-to-guides/pyobjects.md#what-is-a-pyobject) or [Object](https://docs.oracle.com/javase/8/docs/api/java/lang/Object.html).
+Without any type casts or [type hints](https://docs.python.org/3/library/typing.html), the Deephaven query engine cannot infer what datatype results from a Python function. It stores the result as a Java [PyObject](../../how-to-guides/pyobjects.md#what-is-a-pyobject) or [Object](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html).
 
 ```python test-set=1 order=add_vars_meta,add_vars_func_meta,add_vars_class_meta
 add_vars_meta = add_vars.meta_table

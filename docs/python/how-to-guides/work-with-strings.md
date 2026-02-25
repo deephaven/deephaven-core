@@ -1,6 +1,5 @@
 ---
 title: Strings
-sidebar_label: Strings
 ---
 
 A [String](https://en.wikipedia.org/wiki/String_(computer_science)) is a sequence of characters, such as letters, numbers, or symbols, that is treated as a single data type. Strings frequently contain words or text. Deephaven queries use strings ubiquitously. The Deephaven engine uses [`java.lang.String`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html) but is designed to interoperate with Python strings as well.

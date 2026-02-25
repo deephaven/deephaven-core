@@ -831,15 +831,6 @@
                 ]
               },
               {
-                "label": "Imports",
-                "items": [
-                  {
-                    "label": "Auto-imported functions",
-                    "path": "reference/query-language/query-library/auto-imported-functions.md"
-                  }
-                ]
-              },
-              {
                 "label": "Errors and troubleshooting",
                 "items": [
                   {
@@ -2798,6 +2789,10 @@
                   {
                     "label": "How can I capture the first row of the last N updates?",
                     "path": "reference/community-questions/blink-ring.md"
+                  },
+                  {
+                    "label": "How do I create a partitioned blink table?",
+                    "path": "reference/community-questions/partitioned-blink-tables-drop-attribute.md"
                   },
                   {
                     "label": "How do I filter by time of day across all dates?",

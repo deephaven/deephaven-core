@@ -30,7 +30,7 @@ Deephaven has long embraced the idea of [lambda architecture](https://en.wikiped
 
 One classic use case can be found in capital markets’ trading systems, with previous days’ historical data that can be treated as static managed separately from intraday data that is still growing and evolving. It’s often necessary to bootstrap models over historical datasets and then extrapolate with intraday data as it arrives. Another applicable example can be found in infrastructure monitoring systems that aggregate data hierarchically across many nodes; older data may be batch-processed and aggregated at coarse granularity, while fresh data may be in its most raw form for minimum latency.
 
-In this regard, our [enterprise](/enterprise/docs/) product institutionalizes this model for our customers, providing a complete suite of tools for publishing persistent, append-only, immutable data streams as tables and distributing this data widely to many query engines hosted within remote applications, along with tooling for data lifecycle management and data-driven application orchestration. Deephaven Enterprise explicitly allows for historical data to be post-processed, stored, and served in an appropriate form to maximize throughput for common queries, while allowing minimum latency for raw, real-time data, and integrates these within its own distributed data service layer.
+In this regard, our [enterprise](/enterprise/docs/enterprise-overview) product institutionalizes this model for our customers, providing a complete suite of tools for publishing persistent, append-only, immutable data streams as tables and distributing this data widely to many query engines hosted within remote applications, along with tooling for data lifecycle management and data-driven application orchestration. Deephaven Enterprise explicitly allows for historical data to be post-processed, stored, and served in an appropriate form to maximize throughput for common queries, while allowing minimum latency for raw, real-time data, and integrates these within its own distributed data service layer.
 
 Our community software empowers users with a comprehensive, extensible query engine that can interact with and commingle data accessed or ingested directly from disparate sources, including custom applications, [Apache Parquet](https://parquet.apache.org/), [Apache Kafka](https://kafka.apache.org/), [Apache Orc](https://orc.apache.org/), CSV, JSON, CDC, and in the future, Arrow, ODBC, and other contemplated integrations. Our [table update model](#table-update-model) and [unified table API design](#unified-table-api-design) allow for seamless integration of data with different characteristics, thus allowing batch data and real-time data to coexist behind the same interface. Layering our [gRPC API](./deephaven-core-api.md) on top completes the picture, linking Deephaven query engines with one another or with client applications to construct data-driven applications.
 
@@ -47,7 +47,7 @@ A ColumnSource represents a column of (possibly dynamically updating) data that 
 
 A RowSet selects elements of that ColumnSource and might represent all the data in the ColumnSource or just some subset of it. A _redirecting_ RowSet is a RowSet that is derived from another RowSet and which remaps its keys. It can be used, for example, to reorder the rows in a table effectively.
 
-_Filtering_ ([`where`](../how-to-guides/filters.md) operations) creates a new RowSet that is a subset of an existing RowSet; _sorting_ creates a redirecting RowSet.
+_Filtering_ ([`where`](../how-to-guides/use-filters.md) operations) creates a new RowSet that is a subset of an existing RowSet; _sorting_ creates a redirecting RowSet.
 
 A table may share its RowSet with any other table in its update graph that contains the same row keys. A single parent table is responsible for maintaining the RowSet on behalf of itself and any descendants that inherited its RowSet. Table operations that inherit RowSets include column projection and derivation operations like [`select`](../reference/table-operations/select/select.md) and [`view`](../reference/table-operations/select/view.md), as well as some join operations with respect to the left input table; e.g., [`natural join`](../reference/table-operations/join/natural-join.md), [`exact join`](../reference/table-operations/join/exact-join.md), and [`as-of join`](../reference/table-operations/join/aj.md).
 
@@ -144,7 +144,7 @@ Deephaven table operations often support complex, user-defined expressions for c
 
 ### Expression parsing
 
-Deephaven uses [JavaParser](https://javaparser.org/) to turn user-specified [expressions](../how-to-guides/formulas.md) into three implementation categories:
+Deephaven uses [JavaParser](https://javaparser.org/) to turn user-specified [expressions](../how-to-guides/query-string-overview.md) into three implementation categories:
 
 1. Simple pre-compiled Java class instances.
 2. New Java classes that are subsequently compiled, loaded, and instantiated.

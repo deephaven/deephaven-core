@@ -57,9 +57,7 @@ Outside of the left and right tables, exact and relational joins take up to two 
 
 ### Match columns with different names
 
-When joining data from two different tables, you may need to match on columns that do not have the same name. For example, in the tables below, the column representing the department number has a different name in each table.
-
-The basic syntax looks like this:
+When two tables can be joined, their match column(s) often don't have identical names. The syntax below joins `leftTable` and `rightTable` on `ColumnToMatchLeft` and `ColumnToMatchRight`:
 
 ```groovy syntax
 result = leftTable.joinMethod(rightTable, "columnToMatchLeft = columnToMatchRight", "columnsToJoin")
@@ -67,7 +65,7 @@ result = leftTable.joinMethod(rightTable, "columnToMatchLeft = columnToMatchRigh
 
 ### Multiple match columns
 
-Tables can be joined on more than one match column. This is done by listing all of the key columns within the `columnsToMatch` argument as comma-separated values. The syntax below joins tables on two or more match columns:
+Tables can be joined on more than one match column. The syntax below joins tables on two or more match columns:
 
 ```groovy syntax
 result = leftTable.joinMethod(rightTable, "Column1", "Column2", "Column3Left = Column3Right")
@@ -195,7 +193,7 @@ result = OuterJoinTools.fullOuterJoin(left, right, "I")
 
 ## Join three or more tables
 
-The [Multi-Join](../reference/table-operations/join/multijoin.md) joins three or more tables. It was developed to improve the join speed by taking advantage of the potential to share a single hash table and exploit concurrency.
+The [`multijoin`](../reference/table-operations/join/multijoin.md) joins three or more tables. It was developed to improve the join speed by taking advantage of the potential to share a single hash table and exploit concurrency.
 
 [`MultiJoin.of`](../reference/table-operations/join/multijoin.md) joins three or more tables together in the same way that [`naturalJoin`](../reference/table-operations/join/natural-join.md) joins two tables together. The result of [`MultiJoin.of`](../reference/table-operations/join/multijoin.md) is not a typical table, but rather a `MultiJoinTable` object, so calling the `table` method is necessary for most use cases.
 

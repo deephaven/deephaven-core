@@ -214,7 +214,7 @@ static_1_meta = static_source_1.meta_table
 
 Most queries benefit by starting with filters. Less data generally means better performance.
 
-For SQL developers: in Deephaven, Joins are not a primary operation for filtering. Use [`where`](../table-operations/filter/where.md), [`where_in`](../table-operations/filter/where-in.md), and [`where_not_in`](../table-operations/filter/where-not-in.md).
+For SQL developers: in Deephaven, joins are not a primary operation for filtering. Use [`where`](../table-operations/filter/where.md), [`where_in`](../table-operations/filter/where-in.md), and [`where_not_in`](../table-operations/filter/where-not-in.md).
 
 > [!NOTE]
 > Backticks `\` in query strings denote a string within it. Single quotes``'` denote a literal value that gets parsed by the engine.
@@ -407,7 +407,7 @@ Single direction sorting:
 - [`sort`](../table-operations/sort/sort.md)
 - [`sortDescending`](../table-operations/sort/sort-descending.md)
 
-Sort on multiple column or directions:
+Sort on multiple columns or directions:
 
 - [`sort(sortColumns)`](../table-operations/sort/sort.md)
 
@@ -439,7 +439,7 @@ multi_sort = static_source_1.sort(
 ```
 
 > [!TIP]
-> Reversing tables is faster than sorting, and often used in UIs for seeing appending rows at top of table.
+> Reversing tables is faster than sorting, and is often used in UIs for seeing appending rows at top of table.
 
 ```python syntax
 reverse_table = static_source_1.reverse()
@@ -1228,7 +1228,7 @@ dh_table_again = dhpd.to_table(pandas_df)
 
 ## Format tables
 
-### Date-time formatting
+### Datetime formatting
 
 ```python test-set=1 order=null
 time_formatting = (

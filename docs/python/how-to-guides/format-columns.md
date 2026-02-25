@@ -223,7 +223,7 @@ Since `format_columns` leverages Deephaven's formula infrastructure, you have ac
 
 - Complex expressions involving multiple columns.
 - User-defined functions and variables.
-- All [built-in query language functions](../reference/query-language/query-library/auto-imported-functions.md).
+- All [built-in query language functions](../reference/query-language/query-library/auto-imported/index.md).
 
 #### Ternary expressions
 

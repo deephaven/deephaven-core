@@ -3,14 +3,14 @@ title: Export data to CSV or other delimited files
 sidebar_label: Export CSV files
 ---
 
-This guide discusses how to export table data to CSV (or other delimited) files by using [`writeCsv`](../../reference/data-import-export/CSV/writeCsv.md).
+This guide discusses how to export table data to CSV (or other delimited) files from Deephaven by using [`writeCsv`](../../reference/data-import-export/CSV/writeCsv.md).
 
 > [!TIP]
 > CSV files can also be exported via **Table Options > Download CSV** in the Deephaven UI.
 
 ## `writeCsv`
 
-The basic syntax for `writeCsv` follows:
+The basic syntax for `writeCsv` is:
 
 ```groovy skip-test
 import static io.deephaven.csv.CsvTools.writeCsv
@@ -58,7 +58,7 @@ If you are using Docker-installed Deephaven, you can find a `/data` folder insid
 
 Null values are common in tables. How are they handled when exporting data to a CSV? This depends on how you call [`writeCsv`](../../reference/data-import-export/CSV/writeCsv.md).
 
-First, let's create a table with null values. The example below uses a function to fill the `SinX` column with a large number of nulls.
+First, let's create a table with null values. The example below uses the [ternary conditional operator](../ternary-if-how-to.md) to fill the `SinX` column with a large number of nulls.
 
 ```groovy test-set=2
 sourceWithNulls = emptyTable(100).update(
@@ -77,7 +77,7 @@ import static io.deephaven.csv.CsvTools.writeCsv
 writeCsv(sourceWithNulls, "/data/TrigFunctionsWithNulls.csv")
 ```
 
-![The newly writted CSV file](../../assets/how-to/TrigFunctions_basicWithNulls.png)
+![The newly written CSV file](../../assets/how-to/TrigFunctions_basicWithNulls.png)
 
 ### Column selection
 
@@ -89,11 +89,11 @@ import static io.deephaven.csv.CsvTools.writeCsv
 writeCsv(sourceWithNulls, "/data/Cosine.csv", "X", "CosX")
 ```
 
-![The newly writted CSV file](../../assets/how-to/TrigFunctions_NullsCosineOnly.png)
+![The newly written CSV file](../../assets/how-to/TrigFunctions_NullsCosineOnly.png)
 
 ## Related documentation
 
-- [Create an empty table](../../how-to-guides/new-and-empty-table.md#emptytable)
+- [Create an empty table](../new-and-empty-table.md#emptytable)
 - [How to import CSV files](./csv-import.md)
 - [Docker data volumes](../../conceptual/docker-data-volumes.md)
 - [`writeCsv`](../../reference/data-import-export/CSV/writeCsv.md)

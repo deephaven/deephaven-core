@@ -4,6 +4,8 @@ title: Predicate Pushdown Filtering
 
 Predicate pushdown is a powerful feature in Deephaven that allows you to filter data closer to the data sources, improving query performance by reducing the amount of data that needs to be processed. This guide explains how to use predicate pushdown filtering effectively.
 
+## Overview
+
 In general, the filtering engine processes user-supplied filters sequentially in the order specified. The first filter operates on the rows of the full table and produces a subset of rows that pass the first filter. This subset is then provided to the subsequent filters and refined until only rows that pass every filter remain.
 
 Predicate pushdown enhances row elimination by leveraging the underlying data sources of the table. For example, match and range filters can use storage file metadata (such as min/max statistics) to eliminate entire row groups or files, so the engine does not need to load unnecessary data from storage. This is especially useful for large datasets stored in formats like Parquet and Iceberg. While filters are processed sequentially, the pushdown mechanism may reorder filters for efficiency based on the underlying data sources and their capabilities—the order of pushed-down filters is not guaranteed.
@@ -84,7 +86,7 @@ For more information, see the [Query table configuration](../conceptual/query-ta
 
 ## Related documentation
 
-- [Filter table data](./filters.md)
+- [Filter table data](./use-filters.md)
 - [Export to Parquet](./data-import-export/parquet-export.md)
 - [Import to Parquet](./data-import-export/parquet-import.md)
 - [`getDataIndex`](../reference/engine/getDataIndex.md)

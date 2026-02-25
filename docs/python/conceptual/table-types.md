@@ -77,7 +77,7 @@ Because static tables do not update, they have the following characteristics:
 2. Operations that depend on or modify external state can be used with static tables. Stateful operations can present problems for some types of streaming tables.
 3. The use of [special variables](../reference/query-language/variables/special-variables.md) is fully supported. Deephaven's special variables `i` and `ii` represent row indices of a table as `int` or `long` types, respectively. These variables are guaranteed to have consistent values in static tables.
 
-Static tables can be created by reading from a static data source, such as [CSV](../how-to-guides/data-import-export/csv-import.md), [Iceberg](../how-to-guides/data-import-export/iceberg.md), [Parquet](../how-to-guides/data-import-export/parquet-import.md), [SQL](../how-to-guides/data-import-export/execute-sql-queries.md). Or, they can be created with Deephaven's table creation functions, like [`new_table`](../how-to-guides/new-and-empty-table.md#new_table) or [`empty_table`](../how-to-guides/new-and-empty-table.md#empty_table). This example uses [`empty_table`](../how-to-guides/new-and-empty-table.md#new_table) to construct a static table:
+Static tables can be created by reading from a static data source, such as [CSV](../how-to-guides/data-import-export/csv-import.md), [Iceberg](../how-to-guides/data-import-export/iceberg.md), [Parquet](../how-to-guides/data-import-export/parquet-import.md), or [SQL](../how-to-guides/data-import-export/execute-sql-queries.md). Or, they can be created with Deephaven's table creation functions, like [`new_table`](../how-to-guides/new-and-empty-table.md#new_table) or [`empty_table`](../how-to-guides/new-and-empty-table.md#empty_table). This example uses [`empty_table`](../how-to-guides/new-and-empty-table.md#new_table) to construct a static table:
 
 ```python test-set=1 order=t
 from deephaven import empty_table
@@ -160,7 +160,7 @@ These properties yield the following consequences:
 
 ## Specialization 3: Blink
 
-Blink tables keep only the set of rows received during the current update cycle. Users can create blink tables when ingesting [Kafka streams](../how-to-guides/data-import-export/kafka-stream.md), creating [time tables](../how-to-guides/time-table.md), or using [Table Publishers](../how-to-guides/table-publisher.md). They have the following key properties:
+Blink tables keep only the set of rows received during the current update cycle. Users can create blink tables when ingesting [Kafka streams](../how-to-guides/data-import-export/kafka-stream.md), creating [time tables](../how-to-guides/time-table.md), or using [Table Publishers](../how-to-guides/table-publisher.md#table-publisher). They have the following key properties:
 
 - The table only consists of rows added in the previous update cycle.
 - No rows persist for more than one update cycle.
@@ -235,7 +235,7 @@ Attempting to use the following operations on a blink table will raise an error:
 
 - [`group_by`](../reference/table-operations/group-and-aggregate/groupBy.md)
 - [`partition_by`](../reference/table-operations/group-and-aggregate/partitionBy.md) (see [below](#partition-a-blink-table) for a workaround)
-- [`partition_agg_by`](../reference/table-operations/group-and-aggregate/partitionedAggBy.md)
+- [`partitioned_agg_by`](../reference/table-operations/group-and-aggregate/partitionedAggBy.md)
 - [`head_pct`](../reference/table-operations/filter/head-pct.md)
 - [`tail_pct`](../reference/table-operations/filter/tail-pct.md)
 - [`slice`](../reference/table-operations/filter/slice.md)
@@ -377,6 +377,6 @@ t_ring_without_initial = ring_table(parent=t, capacity=10, initialize=False)
 
 ## Related documentation
 
-- [How to use a TablePublisher](../how-to-guides/table-publisher.md)
+- [How to use a TablePublisher](../how-to-guides/table-publisher.md#table-publisher)
 - [Create a time table](../how-to-guides/time-table.md)
 - [Kafka basic terminology](./kafka-basic-terms.md)

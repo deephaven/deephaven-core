@@ -256,7 +256,7 @@ This example demonstrates filtering by business hours, extracting time component
 
 Time handling is crucial for real-time data processing. The concepts covered here form the foundation for more advanced time-series analysis, including:
 
-- [Built-in Time Functions](../../reference/query-language/query-library/auto-imported-functions.md)
+- [Built-in Time Functions](../../reference/query-language/query-library/auto-imported/index.md)
 - [Rolling window calculations](../../how-to-guides/rolling-aggregations.md)
 - [Time-based joins](../../how-to-guides/joins-timeseries-range.md)
 - [Time in Deephaven](../../conceptual/time-in-deephaven.md)

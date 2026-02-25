@@ -10,7 +10,7 @@ Sorting is a common operation in data analysis, and Deephaven makes it easy to s
 
 ## `sort` and `sort_descending`
 
-You can sort table data programmatically by using the `sort()` and `sort_descending` methods:
+You can sort table data programmatically by using the [`sort`](../reference/table-operations/sort/sort.md) and [`sort_descending`](../reference/table-operations/sort/sort-descending.md) methods:
 
 ```python test-set=1 order=result_sort,result_sort_desc
 from deephaven import new_table
@@ -28,7 +28,7 @@ result_sort = source.sort(order_by=["Letter"])
 result_sort_desc = source.sort_descending(order_by=["Letter"])
 ```
 
-Given a column name to order the data by, `sort` returns a new table with the data sorted in ascending (A-Z) order, and `sort_descending` returns a new table with the data sorted in descending (Z-A) order.
+Given a column name to order the data by, [`sort`](../reference/table-operations/sort/sort.md) returns a new table with the data sorted in ascending (A-Z) order, and [`sort_descending`](../reference/table-operations/sort/sort-descending.md) returns a new table with the data sorted in descending (Z-A) order.
 
 Deephaven typically sorts values by their _natural order_ with null values first. Deephaven's sort is _stable_, meaning that the order of two equal elements is not changed. For floating point values, nulls are first, followed by normal values, and finally, `NaN` values come last. Both positive zero and negative zero are treated as identical values, preserving the original order of two rows with a zero value. Arrays of primitives, Strings, BigDecimal, BigInteger, and [Comparable](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Comparable.html) values are sorted lexicographically.
 

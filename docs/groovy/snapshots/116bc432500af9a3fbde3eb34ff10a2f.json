@@ -1,0 +1,1 @@
+{"file":"reference/community-questions/partitioned-blink-tables-drop-attribute.md","objects":{"tBlink":{"type":"Table","data":{"columns":[{"name":"Timestamp","type":"java.time.Instant"},{"name":"X","type":"long"},{"name":"Group","type":"java.lang.String"}],"rows":[]}}}}
