@@ -92,22 +92,6 @@ public class RemoteFileSourceClassLoader extends ClassLoader {
         providers.remove(provider);
     }
 
-
-    /**
-     * Returns whether there are any active providers with resource paths configured.
-     * This indicates that remote sources are available and may be used.
-     *
-     * @return true if any provider is active and has resources it can source, false otherwise
-     */
-    public boolean hasActiveProviders() {
-        for (RemoteFileSourceProvider candidate : providers) {
-            if (candidate.isActive()) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     /**
      * Returns whether there are any active providers with non-empty resource paths configured.
      * This indicates that remote sources are actually configured, not just that the execution context is set.
