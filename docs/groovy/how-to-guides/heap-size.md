@@ -79,6 +79,6 @@ cpus: 4.0
 
 ## Related documentation
 
-- [Quick start](../getting-started/docker-install.md)
+- [Install guide for Docker](../getting-started/docker-install.md)
 - [Build and launch Deephaven from source code](../getting-started/launch-build.md)
 - [Access your file system with Docker data volumes](../conceptual/docker-data-volumes.md)

@@ -101,7 +101,7 @@ result = trades.aj(quotes, "Ticker, TradeTime >= QuoteTime", "Bid, Offer = Ask")
 
 ## Related documentation
 
-- [Create a new table](../../../how-to-guides/new-and-empty-table.md#newtable)
+- [How to create static tables](../../../how-to-guides/new-and-empty-table.md)
 - [Choose a join method](../../../how-to-guides/joins-exact-relational.md#which-method-should-you-use)
 - [Exact and relational joins](../../../how-to-guides/joins-exact-relational.md)
 - [Time series and range joins](../../../how-to-guides/joins-timeseries-range.md)

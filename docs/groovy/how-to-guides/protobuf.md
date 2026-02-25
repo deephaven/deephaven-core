@@ -1,13 +1,13 @@
 ---
-title: Protocol Buffers
-sidebar_label: Protocol Buffers
+title: Protocol Buffers and Remote Procedure Calls
+sidebar_label: Protobuf and RPC
 ---
 
-[Protobuf](https://protobuf.dev/), short for Protocol Buffers, is a language-neutral, platform-neutral mechanism for serializing structured data. By defining how data is structured a single time, you can use Protobuf to generate source code in multiple languages, which can then be used to serialize and deserialize data in a consistent way across different systems.
+[Protobuf](https://protobuf.dev/), short for Protocol Buffers, is a language-neutral, platform-neutral mechanism for serializing structured data. By defining how data is structured a single time, you can use Protobuf to generate source code in multiple languages, which can then be used to serialize and deserialize data consistently across different systems.
 
 Protobuf is one of several options for users who wish to build their own Deephaven client API. It is particularly powerful when considering performance, as binary serialization is much faster than string-based serialization. This is important for Deephaven, which is specifically designed to handle large amounts of data in real time. In short, Protobuf offers a closer-to-the-hardware binary representation of data, supporting higher throughput and lower latency than text-based serialization formats like JSON or XML.
 
-Protobuf allows you to define structured data types and services in language-neutral ways so your code can interact with other languages and platforms. This is critical for client APIs because they need to be able to communicate with a Deephaven server regardless of the client language used. For example, the Python client API communicates with the Deephaven server despite it being written largely in Java. Protobuf is the mechanism that standardizes the structures and messages sent between the two.
+Protobuf allows you to define structured data types and services in language-neutral ways so that your code can interact with other languages and platforms. This is critical for client APIs because they need to be able to communicate with a Deephaven server regardless of the client language used. For example, the Python client API communicates with the Deephaven server despite being written largely in Java. Protobuf is the mechanism that standardizes the structures and messages sent between the two.
 
 Deephaven defines several of its APIs using [gRPC](https://grpc.io/), Google's open-source Remote Procedure Call (RPC) framework. gRPC uses Protobuf as its interface description language, enabling it to let programs and/or objects written in one language communicate with those written in another language. Deephaven leverages this to facilitate communication between servers and clients in different languages. In particular, gRPC's support of bidirectional streaming is a key feature of Deephaven's architecture and design. For example, you can use the Java client API to connect to a Deephaven server and run queries while simultaneously using the Python client API to check the results of those queries. Protobuf can be used on its own, but since Deephaven uses it in conjunction with gRPC, this guide focuses on both.
 
@@ -24,13 +24,13 @@ It's because of gRPC and Protobuf that you can use multiple client APIs to inter
 
 ## Protobuf concepts
 
-Protobuf consists of `proto` files, which define the structure of data you want to serialize. These files contain several different types of definitions, each defined in a section below:
+Protobuf can be used on its own for things like [serializing and deserializing Kafka payloads](./data-import-export/kafka-stream.md#read-kafka-topic-in-protobuf-format). The concepts defined in this section are specific to Protobuf; gRPC is the mechanism that enables clients to call server functions and methods, while Protobuf describes the data passed between them.
 
 ### Messages
 
 [Messages](https://protobuf.dev/reference/protobuf/edition-2023-spec/#message_definition) are structured data types that define schemas for serialized data. Similar to classes and structs, these contain fields with names, types, and unique numbers used for encoding and decoding.
 
-The following example defines a Message called `Person` with four fields: `name`, `id`, `email`, and `phones`.
+The following example defines a message called `Person` with four fields: `name`, `id`, `email`, and `phones`.
 
 ```protobuf
 syntax = "proto3";
@@ -61,7 +61,7 @@ enum PhoneType {
 
 ## RPC concepts
 
-Remote Procedure Calls (RPC) allow programs to execute procedures on remote systems as if they were local. RPC is what allows data to be sent and received between a client and server, while Protobuf defines the structure, serializes, and deserializes it.
+Remote Procedure Calls (RPC) allow programs to execute procedures on remote systems as if they were local. RPC allows data to be sent and received between a client and server, while Protobuf defines the structure, serializes, and deserializes it.
 
 ### Services
 
@@ -89,7 +89,7 @@ message HelloResponse {
 ```
 
 > [!NOTE]
-> It's best practice to define separate messages for requests and responses, hence the `HelloRequest` and `HelloResponse` messages in the example above. The use of separate single argument requests and responses allows for API evolution without breaking backwards compatibility. For example, extending an API by including additional data in the request or response messages won't break existing servers or clients running old code.
+> It's best practice to define separate messages for requests and responses, hence the `HelloRequest` and `HelloResponse` messages in the example above. The use of separate single-argument requests and responses allows for API evolution without breaking backward compatibility. For example, extending an API by including additional data in the request or response messages won't break existing servers or clients running old code.
 
 ## A simple Deephaven example
 
@@ -150,7 +150,7 @@ The best way to understand this example is to break it down into its components:
 
 ### Syntax, packages, options, and imports
 
-The first line of the file specifies the Protobuf version being used. In this case, it specifies `proto3`, which is the latest version of Protobuf.
+The first line of the file specifies the Protobuf version being used. In this case, it specifies `proto3`, the latest version of Protobuf.
 
 Just below, the `package` statement prevents name clashes between protocol message types. In this case, this prevents name clashes with other protocol message types in the `io.deephaven.proto.backplane.grpc` package.
 
@@ -162,7 +162,7 @@ The `option` statements dictate custom behavior to provide additional metadata. 
 
 The `import` statement enables the use of definitions found in another `proto` file. In this case, it imports the `Ticket` message type from the `deephaven_core/proto/ticket.proto` file. This allows you to use anything defined in `ticket.proto` in this file. In particular, the `Ticket` message type is used in requests to add and delete tables from input tables.
 
-### InputTableService
+### `InputTableService`
 
 The `InputTableService` service defines the methods that can be called remotely. In this case, it defines two methods:
 
@@ -176,7 +176,7 @@ This accepts a request of type `DeleteTableRequest` and returns a response of ty
 
 ### Messages
 
-The `InputTableService` Service uses four different messages:
+The `InputTableService` service uses four different messages:
 
 - `AddTableRequest`: The request message for the `AddTableToInputTable` method. It contains two fields: `input_table` and `table_to_add`, both of type `Ticket`. These contain information about the input table and the table that a user wishes to add to it.
 - `AddTableResponse`: The response message for the `AddTableToInputTable` method. It does not contain any fields, as the response is empty. Empty messages are useful for indicating a request was successful.
@@ -185,11 +185,11 @@ The `InputTableService` Service uses four different messages:
 
 ### Result
 
-This `proto` file defines a service that allows a client API to add and remove tables of data from input tables. It can be used to generate standardized code in many different languages, all of which could be used to communicate with a Deephaven server to make these requests.
+This `proto` file defines a service that allows a client API to add and remove tables of data from input tables. It can generate standardized code in many different languages, all of which could be used to communicate with a Deephaven server to make these requests.
 
 ## A more complex Deephaven example
 
-Another illustration of Deephaven's use of Protobuf is the Console API. It defines how users running a client API can run commands remotely. The Console API is far more complex than the Input Table API - the latter is a simple request/response API for a table type that meant to mimic tables in spreadsheets. The former enables interaction with the Deephaven console, which is a complex system that allows users to run commands, check server health, use autocomplete, get logs, and more. The full source code for `console.proto` can be found [here](https://github.com/deephaven/deephaven-core/blob/main/proto/proto-backplane-grpc/src/main/proto/deephaven_core/proto/console.proto). It is collapsed by default due to its length.
+Another illustration of Deephaven's use of Protobuf is the Console API. It defines how users running a client API can run commands remotely. The Console API is far more complex than the Input Table API - the latter is a simple request/response API for a table type meant to mimic tables in spreadsheets. The former enables interaction with the Deephaven console, which is a complex system that allows users to run commands, check server health, use autocomplete, get logs, and more. The full source code for `console.proto` can be found [here](https://github.com/deephaven/deephaven-core/blob/main/proto/proto-backplane-grpc/src/main/proto/deephaven_core/proto/console.proto). It is collapsed by default due to its length.
 
 <details>
 <summary>console.proto</summary>

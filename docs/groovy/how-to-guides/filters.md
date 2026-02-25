@@ -1,5 +1,4 @@
 ---
-id: filters
 title: Filters
 ---
 
@@ -206,5 +205,6 @@ Deephaven provides several advanced filter utilities that can improve performanc
 - [Built-in functions](./built-in-functions.md)
 - [Query strings](./query-string-overview.md)
 - [Formulas](./formulas.md)
+- [How to filter table data](./use-filters.md)
 - [`emptyTable`](../reference/table-operations/create/emptyTable.md)
 - [`newTable`](../reference/table-operations/create/newTable.md)

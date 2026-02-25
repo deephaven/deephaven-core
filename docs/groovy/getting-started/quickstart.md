@@ -12,11 +12,11 @@ Deephaven Community Core can be installed with [Docker](https://docs.docker.com/
 Install and launch Deephaven via [Docker](https://docs.docker.com/engine/install/) with a one-line command:
 
 ```sh
-docker run --rm --name deephaven -p 10000:10000 --env START_OPTS="-Dauthentication.psk=PASSWORD" ghcr.io/deephaven/server-slim:latest
+docker run --rm --name deephaven -p 10000:10000 --env START_OPTS="-Dauthentication.psk=YOUR_PASSWORD_HERE" ghcr.io/deephaven/server-slim:latest
 ```
 
 > [!CAUTION]
-> Replace "PASSWORD" with a more secure passkey to keep your session safe.
+> Replace "YOUR_PASSWORD_HERE" with a more secure passkey to keep your session safe.
 
 For additional configuration options, see the [install guide for Docker](./docker-install.md).
 
@@ -63,6 +63,8 @@ You're ready to go! The Deephaven IDE is a fully-featured scripting IDE. Here's 
 6. <font color="#FF9302">Save your work</font>
 
    Save your work in the active notebook. Do this often!
+
+To learn more about the Deephaven IDE, check out [the navigating the UI guide](../how-to-guides/user-interface/navigating-the-ui.md) for a tour of the available menus and tools, and the accompanying guides on [graphical column manipulation](../how-to-guides/user-interface/formatting-tables.md), the [IDE chart-builder](../how-to-guides/user-interface/chart-builder.md), and more.
 
 Now that you have Deephaven installed and open, the rest of this guide will briefly highlight some key features of using Deephaven.
 
@@ -313,7 +315,7 @@ combinedCrypto = merge(fakeCryptoData, cryptoStreaming).sort("Timestamp")
 
 ![Animated GIF demonstrating merge operation combining static and streaming crypto tables](../assets/tutorials/quickstart/quickstart-15.gif)
 
-The ubiquitous join operation is used to combine tables based on columns that they have in common. Deephaven offers many variants of this operation such as [`join`](../reference/table-operations/join/join.md), [`naturalJoin`](../reference/table-operations/join/natural-join.md), [`exactJoin`](../reference/table-operations/join/exact-join.md), and many more.
+The ubiquitous join operation is used to combine tables based on columns that they have in common. Deephaven offers many variants of this operation such as [`join`](../reference/table-operations/join/join.md), [`naturalJoin`](../reference/table-operations/join/natural-join.md), [`exactJoin`](../reference/table-operations/join/exact-join.md), and [many more](../how-to-guides/joins-timeseries-range.md).
 
 For example, read in an older dataset containing price data on the same coins from the same exchanges. Then, use [`join`](../reference/table-operations/join/join.md) to combine the aggregated prices to see how current prices compare to those in the past:
 
@@ -402,19 +404,4 @@ writeTable(instrumentRollingStats, "/data/crypto_prices_stats.parquet")
 
 <!--TODO: For a more exhaustive introduction to Deephaven and an in-depth exploration of our design principles and APIs, check out 30 Minutes to Deephaven. add link -->
 
-Now that you've imported data, created tables, and manipulated static and real-time data, we suggest heading to our user guide. There, you can explore anything from complex data aggregations to detailed performance comparisons and more.
-
-- [Import CSV files](../how-to-guides/data-import-export/csv-import.md)
-- [Read Parquet files](../how-to-guides/data-import-export/parquet-import.md)
-- [Write Parquet files](../how-to-guides/data-import-export/parquet-export.md)
-- [Connect to a Kafka stream](../how-to-guides/data-import-export/kafka-stream.md)
-- [Create and organize notebooks using the File Explorer](../how-to-guides/user-interface/file-explorer.md)
-- [Create plots without writing queries using the Chart Builder](../how-to-guides/user-interface/chart-builder.md)
-- [Filter your data without writing queries](../how-to-guides/user-interface/filters.md)
-- [Perform combined aggregations](../how-to-guides/combined-aggregations.md)
-- [Group data](../how-to-guides/grouping-data.md)
-- [Joins: Exact and relational](../how-to-guides/joins-exact-relational.md)
-- [Joins: Time series and range joins](../how-to-guides/joins-timeseries-range.md)
-- [Select, view, and update data](../how-to-guides/use-select-view-update.md)
-- [Use filters](../how-to-guides/filters.md)
-- [Write a Groovy function](../how-to-guides/groovy-closures.md)
+Now that you've imported data, created tables, and manipulated static and real-time data, we suggest heading to the [Crash Course in Deephaven](../getting-started/crash-course/get-started.md) to learn more about Deephaven's real-time data platform.

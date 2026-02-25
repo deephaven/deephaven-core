@@ -264,7 +264,7 @@ Deephaven table operations often support complex, user-defined expressions for c
 
 ### Expression parsing
 
-Deephaven uses [JavaParser](https://javaparser.org/) to turn user-specified [expressions](../how-to-guides/formulas.md) into three implementation categories:
+Deephaven uses [JavaParser](https://javaparser.org/) to turn user-specified [expressions](../how-to-guides/query-string-overview.md) into three implementation categories:
 
 1. **Simple pre-compiled Java class instances**: For common operations, avoiding compilation overhead.
 2. **New Java classes**: Dynamically compiled, loaded, and instantiated for complex expressions.
