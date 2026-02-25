@@ -8,7 +8,7 @@ Parallelization is running multiple calculations at the same time on different C
 > [!IMPORTANT]
 > **Breaking change in Deephaven 0.41+**: Queries now run in parallel by default. Code that modifies shared variables or depends on row order will produce incorrect results.
 >
-> **Quick check**: Does your code use global variables, depend on row order, or modify external state? If yes, the [crash course guide](../../tutorials/crash-course/parallelization.md) shows how to fix it.
+> **Quick check**: Does your code use global variables, depend on row order, or modify external state? If yes, the [crash course guide](../../getting-started/crash-course/parallelization.md) shows how to fix it.
 
 ## How Deephaven parallelizes queries
 
@@ -56,7 +56,7 @@ Deephaven also parallelizes calculations within a single table. When you run `so
 
 **What doesn't get parallelized**:
 
-- Operations marked with `.withSerial()` (you control this).
+- Operations marked with `.withSerial` (you control this).
 - Operations waiting for dependencies (automatic in the update graph).
 
 ## Controlling parallelization
@@ -65,7 +65,7 @@ Most queries work correctly with automatic parallelization. However, some code r
 
 Deephaven provides two mechanisms:
 
-- **Serialization**: Process rows one at a time, in order, using `.withSerial()`. Use this when a single operation needs sequential execution.
+- **Serialization**: Process rows one at a time, in order, using `.withSerial`. Use this when a single operation needs sequential execution.
 - **Barriers**: Ensure one operation completes before another starts. Use this when operation A must finish before operation B begins.
 
 For detailed information and examples, see [Controlling concurrency](#controlling-concurrency) below.
@@ -84,8 +84,8 @@ For live (refreshing) tables, Deephaven also registers the table in the [update 
 
 After initialization, live tables update whenever their source data changes. During updates, Deephaven parallelizes in two ways:
 
-1. **Within each operation**: Rows are divided among cores, just like during initialization.
-2. **Across operations**: Independent tables in the update graph are computed simultaneously on different cores.
+1. **Within each operation**: Deephaven divides rows among cores, just like during initialization.
+2. **Across operations**: Deephaven computes independent tables in the update graph simultaneously on different cores.
 
 ## Thread pools
 
@@ -130,7 +130,7 @@ This section explains when and how to override automatic parallelization for cod
 **Key concepts**:
 
 - **[`Selectable`](https://deephaven.io/core/javadoc/io/deephaven/api/Selectable.html)**: An object representing a column expression, used in `select` or `update` operations.
-- **Serial execution**: Forces Deephaven to process rows one at a time, in order, using `.withSerial()`.
+- **Serial execution**: Forces Deephaven to process rows one at a time, in order, using `.withSerial`.
 - **[`Barrier`](https://docs.deephaven.io/core/javadoc/io/deephaven/api/ConcurrencyControl.Barrier.html)**: Ensures one operation completes before another starts.
 
 ### Parallelization (default)
@@ -170,7 +170,7 @@ result4 = source4.update("Squared = sqrt(X)")
 >
 > **Deephaven 0.41 and later**: Assumes all formulas can run in parallel by default.
 >
-> If your formula uses global state or depends on row order, you **must** mark it with `.withSerial()` or it will produce incorrect results.
+> If your formula uses global state or depends on row order, you **must** mark it with `.withSerial` or it will produce incorrect results.
 
 You can change the default behavior using configuration properties:
 
@@ -189,7 +189,7 @@ Serialization forces Deephaven to process rows one at a time, in order, on a sin
 - Parallel execution produces incorrect results (duplicates, gaps, wrong values).
 
 > [!NOTE]
-> Most queries don't need serial execution. Use `.withSerial()` only when parallelization causes incorrect results.
+> Most queries don't need serial execution. Use `.withSerial` only when parallelization causes incorrect results.
 
 #### How serialization works
 
@@ -199,10 +199,10 @@ Marking an operation as serial tells Deephaven:
 - Don't parallelize this operation across CPU cores.
 - Ensure thread-safe execution for stateful code.
 
-The [`ConcurrencyControl`](https://docs.deephaven.io/core/javadoc/io/deephaven/api/ConcurrencyControl.html) interface provides the [`.withSerial()`](../../reference/table-operations/select/update.md#serial-execution) method for [`Filter`](https://docs.deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html) ([`where`](../../reference/table-operations/filter/where.md#serial-execution)) and [`Selectable`](https://docs.deephaven.io/core/javadoc/io/deephaven/api/Selectable.html) ([`update`](../../reference/table-operations/select/update.md#serial-execution) and [`select`](../../reference/table-operations/select/select.md)).
+The [`ConcurrencyControl`](https://docs.deephaven.io/core/javadoc/io/deephaven/api/ConcurrencyControl.html) interface provides the [`.withSerial`](../../reference/table-operations/select/update.md#serial-execution) method for [`Filter`](https://docs.deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html) ([`where`](../../reference/table-operations/filter/where.md#serial-execution)) and [`Selectable`](https://docs.deephaven.io/core/javadoc/io/deephaven/api/Selectable.html) ([`update`](../../reference/table-operations/select/update.md#serial-execution) and [`select`](../../reference/table-operations/select/select.md)).
 
 > [!IMPORTANT]
-> You cannot use `.withSerial()` with [`view`](../../reference/table-operations/select/view.md) or [`updateView`](../../reference/table-operations/select/update-view.md). These operations compute values on-demand (when cells are accessed), so they cannot guarantee processing order. Use [`select`](../../reference/table-operations/select/select.md) or [`update`](../../reference/table-operations/select/update.md) instead when you need serial execution.
+> You cannot use `.withSerial` with [`view`](../../reference/table-operations/select/view.md) or [`updateView`](../../reference/table-operations/select/update-view.md). These operations compute values on-demand (when cells are accessed), so they cannot guarantee processing order. Use [`select`](../../reference/table-operations/select/select.md) or [`update`](../../reference/table-operations/select/update.md) instead when you need serial execution.
 
 #### Example: Global state requires serialization
 
@@ -236,35 +236,26 @@ Parallel execution causes inconsistent values because multiple threads increment
 
 Notice the duplicates (1 appears twice), gaps (no 8 or 9), and `B` not following `A + 1`.
 
-#### Using `.withSerial()` for Selectables
+#### Using `.withSerial` for Selectables
 
-To force serial execution for a column calculation, create a `Selectable` object and apply `.withSerial()`:
+To force serial execution for a column calculation, create a `Selectable` object and apply `.withSerial`:
 
 ```groovy order=result
 import io.deephaven.api.Selectable
-import io.deephaven.api.ColumnName
-import io.deephaven.api.RawString
 import java.util.concurrent.atomic.AtomicInteger
 
 counter = new AtomicInteger(0)
 
 // Force serial execution - rows processed one at a time, in order
-col = Selectable.of(ColumnName.of("ID"), RawString.of("counter.getAndIncrement()")).withSerial()
+col = Selectable.parse("ID = counter.getAndIncrement()").withSerial()
 result = emptyTable(10).update([col])
 ```
 
 #### Stateful Partition Filters
 
-If a _partition filter_ (a filter that only accesses partitioning columns of the data) is marked serial it cannot be
-reordered and must be evaluated on all rows of the table. Even if Deephaven is configured to treat filters as stateful
-by default, when a partition filter is not explicitly marked serial, then the engine is permitted to treat stateful
-partition filters as if they were stateless for pragmatic, performance-oriented reasons.
+When you mark a _partition filter_ (a filter that only accesses partitioning columns) as serial, Deephaven cannot reorder it and must evaluate it on all rows of the table. However, if you don't explicitly mark a partition filter as serial, the engine treats it as stateless for performance reasons — even when Deephaven is configured to treat filters as stateful by default.
 
-In particular, the ordering constraints for filters on partitioning columns may be relaxed, and rather than
-evaluating the filter on every row in the table it may only be evaluated per location. This is to allow common partition
-filters to be reordered ahead of other filters and avoid repeated evaluation against the same value. For example, the
-formula filter `Date=today()` is stateful if filters are stateful by default, but in nearly every case users would prefer this to
-be evaluated early, location-by-location.
+Specifically, Deephaven may relax ordering constraints for filters on partitioning columns and evaluate them per location rather than on every row. This allows Deephaven to reorder common partition filters ahead of other filters and avoid repeated evaluation against the same value. For example, the formula filter `Date=today()` is stateful if filters are stateful by default, but in nearly every case users prefer Deephaven to evaluate it early, location-by-location.
 
 When a Selectable is serial:
 
@@ -272,9 +263,9 @@ When a Selectable is serial:
 - Only one thread processes the column at a time.
 - Global state updates happen sequentially without race conditions.
 
-#### Using [`.withSerial`](../../reference/query-language/types/Filter.md#withserial) for Filters
+#### Using `.withSerial` for Filters
 
-Serial filters are needed when filter evaluation has stateful side effects. Deephaven parallelizes string-based filters in [`where()`](../../reference/table-operations/filter/where.md) by default, so construct Filter objects explicitly:
+Serial filters are needed when filter evaluation has stateful side effects. Deephaven parallelizes string-based filters in [`where`](../../reference/table-operations/filter/where.md) by default, so construct Filter objects explicitly:
 
 ```groovy order=result
 import io.deephaven.api.filter.Filter
@@ -319,8 +310,6 @@ To ensure that all rows of column `A` are evaluated before any rows of column `B
 
 ```groovy order=t
 import io.deephaven.api.Selectable
-import io.deephaven.api.ColumnName
-import io.deephaven.api.RawString
 import java.util.concurrent.atomic.AtomicInteger
 
 counter = new AtomicInteger(0)
@@ -329,12 +318,10 @@ counter = new AtomicInteger(0)
 barrier = new Object()
 
 // Column A declares the barrier (must finish first)
-colA = Selectable.of(ColumnName.of("A"), RawString.of("counter.getAndIncrement()"))
-    .withDeclaredBarriers(barrier)
+colA = Selectable.parse("A = counter.getAndIncrement()").withDeclaredBarriers(barrier)
 
 // Column B respects the barrier (waits for A to finish)
-colB = Selectable.of(ColumnName.of("B"), RawString.of("counter.getAndIncrement()"))
-    .withRespectedBarriers(barrier)
+colB = Selectable.parse("B = counter.getAndIncrement()").withRespectedBarriers(barrier)
 
 t = emptyTable(1_000_000).update([colA, colB])
 ```
@@ -343,7 +330,7 @@ With this barrier:
 
 - Column `A` processes all 1,000,000 rows completely.
 - Only after `A` finishes does column `B` start processing.
-- Both columns can still be parallelized internally (unless also marked serial).
+- Deephaven can still parallelize both columns internally (unless you also mark them serial).
 
 #### Barriers for Filters
 
@@ -369,7 +356,7 @@ result = emptyTable(1000)
 
 #### Implicit barriers
 
-By default, serial operations automatically create barriers between each other. This means if you have two serial columns in the same `update()`, the first one finishes completely before the second one starts.
+By default, serial operations automatically create barriers between each other. This means if you have two serial columns in the same `update`, the first one finishes completely before the second one starts.
 
 This behavior is controlled by `QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS`:
 
@@ -411,7 +398,7 @@ result4 = source4.update("Category = Value > 100 ? `High` : `Low`")
 
 #### When to use `.withSerial`
 
-**Use `.withSerial()` when**:
+**Use `.withSerial` when**:
 
 - Rows must be processed in order within a single operation.
 - The formula updates global state sequentially.
@@ -429,14 +416,12 @@ result4 = source4.update("Category = Value > 100 ? `High` : `Low`")
 
 ```groovy order=source,result
 import io.deephaven.api.Selectable
-import io.deephaven.api.ColumnName
-import io.deephaven.api.RawString
 import java.util.concurrent.atomic.AtomicInteger
 
 // Global state requires serial execution
 counter = new AtomicInteger(0)
 
-col = Selectable.of(ColumnName.of("ID"), RawString.of("counter.getAndIncrement()")).withSerial()
+col = Selectable.parse("ID = counter.getAndIncrement()").withSerial()
 source = emptyTable(10)
 result = source.update([col])
 ```
@@ -460,8 +445,6 @@ result = source.update([col])
 
 ```groovy order=source,result
 import io.deephaven.api.Selectable
-import io.deephaven.api.ColumnName
-import io.deephaven.api.RawString
 import java.util.concurrent.atomic.AtomicInteger
 
 counter = new AtomicInteger(0)
@@ -470,8 +453,8 @@ counter = new AtomicInteger(0)
 barrier = new Object()
 
 // A must complete before B starts - A sets values, B uses them
-colA = Selectable.of(ColumnName.of("A"), RawString.of("counter.getAndIncrement()")).withDeclaredBarriers(barrier)
-colB = Selectable.of(ColumnName.of("B"), RawString.of("counter.get()")).withRespectedBarriers(barrier)
+colA = Selectable.parse("A = counter.getAndIncrement()").withDeclaredBarriers(barrier)
+colB = Selectable.parse("B = counter.get()").withRespectedBarriers(barrier)
 
 source = emptyTable(10)
 result = source.update([colA, colB])
@@ -482,11 +465,11 @@ result = source.update([colA, colB])
 | Scenario                             | Solution                      | Why                                 |
 | ------------------------------------ | ----------------------------- | ----------------------------------- |
 | Pure column math                     | Default (parallel)            | Thread-safe, no shared state        |
-| Global counter                       | `.withSerial()`               | Needs sequential row processing     |
+| Global counter                       | `.withSerial`                 | Needs sequential row processing     |
 | Column A must finish before Column B | Barriers                      | Controls cross-operation ordering   |
-| File I/O or logging                  | `.withSerial()`               | Serialize access to shared resource |
+| File I/O or logging                  | `.withSerial`                 | Serialize access to shared resource |
 | Multiple operations sharing state    | Barriers or implicit barriers | Coordinates access to shared state  |
-| Non-thread-safe library              | `.withSerial()`               | Forces single-threaded access       |
+| Non-thread-safe library              | `.withSerial`                 | Forces single-threaded access       |
 
 ## Key takeaways
 
@@ -497,7 +480,7 @@ Deephaven automatically parallelizes queries across all available CPU cores. Mos
 - Use **barriers** when one operation must complete before another starts.
 - Both thread pools use all CPU cores by default.
 
-For a quick introduction, see the [crash course](../../tutorials/crash-course/parallelization.md).
+For a quick introduction, see the [crash course](../../getting-started/crash-course/parallelization.md).
 
 ### Related documentation
 

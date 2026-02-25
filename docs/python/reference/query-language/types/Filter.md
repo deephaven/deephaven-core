@@ -2,10 +2,10 @@
 title: Filter
 ---
 
-A [`Filter`](https://docs.deephaven.io/core/pydoc/code/deephaven.filters.html) represents a filter condition used in [`where`](../../table-operations/filter/where.md) operations. Use `Filter` objects when you need to control how Deephaven evaluates filter conditions - specifically, to force sequential (serial) execution or to coordinate execution order with barriers.
+A [`Filter`](https://docs.deephaven.io/core/pydoc/code/deephaven.filters.html) represents a filter condition used in [`where`](../../table-operations/filter/where.md) operations. Use `Filter` objects when you need to control how Deephaven evaluates filter conditions — specifically, to force sequential (serial) execution or to coordinate execution order with barriers.
 
 > [!NOTE]
-> `Filter` extends [`ConcurrencyControl`](https://docs.deephaven.io/core/pydoc/code/deephaven.concurrency_control.html#deephaven.concurrency_control.ConcurrencyControl), which defines the concurrency methods. You may see these methods documented in multiple places in the Pydoc - use the `Filter` class for filter operations.
+> `Filter` extends [`ConcurrencyControl`](https://docs.deephaven.io/core/pydoc/code/deephaven.concurrency_control.html#deephaven.concurrency_control.ConcurrencyControl), which defines the concurrency methods. You may see these methods documented in multiple places in the Pydoc — use the `Filter` class for filter operations.
 
 ## Creating a Filter
 
@@ -59,7 +59,7 @@ result = source.where(f)
 
 ### `.with_declared_barriers`
 
-Declares that this filter creates a barrier - other filters that respect this barrier will wait until this filter finishes evaluating all rows.
+Declares that this filter creates a barrier — other filters that respect this barrier will wait until this filter finishes evaluating all rows.
 
 ```python syntax
 from deephaven.filters import is_null
@@ -71,7 +71,7 @@ filter1 = is_null("X").with_declared_barriers(barrier)
 
 ### `.with_respected_barriers`
 
-Declares that this filter respects a barrier - it will not begin evaluating until all filters that declare the same barrier have finished.
+Declares that this filter respects a barrier — it will not begin evaluating until all filters that declare the same barrier have finished.
 
 ```python syntax
 from deephaven.filters import is_null

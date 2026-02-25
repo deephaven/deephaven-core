@@ -60,7 +60,7 @@ Deephaven also parallelizes calculations within a single table. When you run `so
 
 **What doesn't get parallelized**:
 
-- Operations marked with `.with_serial()` (you control this).
+- Operations marked with `.with_serial` (you control this).
 - Operations waiting for dependencies (automatic in the update graph).
 
 > [!CAUTION]
@@ -72,7 +72,7 @@ Most queries work correctly with automatic parallelization. However, some code r
 
 Deephaven provides two mechanisms:
 
-- **Serialization**: Process rows one at a time, in order, using `.with_serial()`. Use this when a single operation needs sequential execution.
+- **Serialization**: Process rows one at a time, in order, using `.with_serial`. Use this when a single operation needs sequential execution.
 - **Barriers**: Ensure one operation completes before another starts. Use this when operation A must finish before operation B begins.
 
 For detailed information and examples, see [Controlling concurrency](#controlling-concurrency) below.
@@ -91,8 +91,8 @@ For live (refreshing) tables, Deephaven also registers the table in the [update 
 
 After initialization, live tables update whenever their source data changes. During updates, Deephaven parallelizes in two ways:
 
-1. **Within each operation**: Rows are divided among cores, just like during initialization.
-2. **Across operations**: Independent tables in the update graph are computed simultaneously on different cores.
+1. **Within each operation**: Deephaven divides rows among cores, just like during initialization.
+2. **Across operations**: Deephaven computes independent tables in the update graph simultaneously on different cores.
 
 ## Thread pools
 
@@ -137,7 +137,7 @@ This section explains when and how to override automatic parallelization for cod
 **Key concepts**:
 
 - **[`Selectable`](https://docs.deephaven.io/core/pydoc/code/deephaven.table.html#deephaven.table.Selectable)**: An object representing a column expression, used in `select` or `update` operations.
-- **Serial execution**: Forces rows to be processed one at a time, in order, using `.with_serial()`.
+- **Serial execution**: Forces rows to be processed one at a time, in order, using `.with_serial`.
 - **[`Barrier`](https://docs.deephaven.io/core/pydoc/code/deephaven.concurrency_control.html#deephaven.concurrency_control.Barrier)**: Ensures one operation completes before another starts.
 
 ### Parallelization (default)
@@ -179,7 +179,7 @@ result4 = source4.update("Squared = sqrt(X)")
 >
 > **Deephaven 0.41 and later**: Assumes all formulas can run in parallel by default.
 >
-> If your formula uses global state or depends on row order, you **must** mark it with `.with_serial()` or it will produce incorrect results.
+> If your formula uses global state or depends on row order, you **must** mark it with `.with_serial` or it will produce incorrect results.
 
 You can change the default behavior using configuration properties:
 
@@ -198,7 +198,7 @@ Serialization processes rows one at a time, in order, on a single thread. Use it
 - Parallel execution produces incorrect results (duplicates, gaps, wrong values).
 
 > [!NOTE]
-> Most queries don't need serial execution. Use `.with_serial()` only when parallelization causes incorrect results.
+> Most queries don't need serial execution. Use `.with_serial` only when parallelization causes incorrect results.
 
 #### How serialization works
 
@@ -208,10 +208,10 @@ Marking an operation as serial tells Deephaven:
 - Don't parallelize this operation across CPU cores.
 - Ensure thread-safe execution for stateful code.
 
-The [`ConcurrencyControl`](https://docs.deephaven.io/core/pydoc/code/deephaven.concurrency_control.html#deephaven.concurrency_control.ConcurrencyControl) interface provides the [`.with_serial()`](../../reference/table-operations/select/update.md#serial-execution) method for [`Filter`](https://docs.deephaven.io/core/pydoc/code/deephaven.filters.html) ([`where`](../../reference/table-operations/filter/where.md#serial-execution)) and [`Selectable`](https://docs.deephaven.io/core/pydoc/code/deephaven.table.html#deephaven.table.Selectable) ([`update`](../../reference/table-operations/select/update.md#serial-execution) and [`select`](../../reference/table-operations/select/select.md)).
+The [`ConcurrencyControl`](https://docs.deephaven.io/core/pydoc/code/deephaven.concurrency_control.html#deephaven.concurrency_control.ConcurrencyControl) interface provides the [`.with_serial`](../../reference/table-operations/select/update.md#serial-execution) method for [`Filter`](https://docs.deephaven.io/core/pydoc/code/deephaven.filters.html) ([`where`](../../reference/table-operations/filter/where.md#serial-execution)) and [`Selectable`](https://docs.deephaven.io/core/pydoc/code/deephaven.table.html#deephaven.table.Selectable) ([`update`](../../reference/table-operations/select/update.md#serial-execution) and [`select`](../../reference/table-operations/select/select.md)).
 
 > [!IMPORTANT]
-> `.with_serial()` cannot be used with [`view`](../../reference/table-operations/select/view.md) or [`update_view`](../../reference/table-operations/select/update-view.md). These operations compute values on-demand (when cells are accessed), so they cannot guarantee processing order. Use [`select`](../../reference/table-operations/select/select.md) or [`update`](../../reference/table-operations/select/update.md) instead when you need serial execution.
+> `.with_serial` cannot be used with [`view`](../../reference/table-operations/select/view.md) or [`update_view`](../../reference/table-operations/select/update-view.md). These operations compute values on-demand (when cells are accessed), so they cannot guarantee processing order. Use [`select`](../../reference/table-operations/select/select.md) or [`update`](../../reference/table-operations/select/update.md) instead when you need serial execution.
 
 #### Example: Global state requires serialization
 
@@ -267,9 +267,9 @@ Parallel execution causes inconsistent values because multiple threads increment
 
 Notice the duplicates (1 appears twice), gaps (no 8 or 9), and `B` not following `A + 1`.
 
-#### Using `.with_serial()` for Selectables
+#### Using `.with_serial` for Selectables
 
-To force serial execution for a column calculation, create a `Selectable` object and apply `.with_serial()`:
+To force serial execution for a column calculation, create a `Selectable` object and apply `.with_serial`:
 
 ```python order=result
 from deephaven.table import Selectable
@@ -295,9 +295,9 @@ When a Selectable is serial:
 - Only one thread processes the column at a time.
 - Global state updates happen sequentially without race conditions.
 
-#### Using [`.with_serial`](../../reference/query-language/types/Filter.md#with_serial) for Filters
+#### Using `.with_serial` for Filters
 
-Serial filters are needed when filter evaluation has stateful side effects. Deephaven parallelizes string-based filters in [`where()`](../../reference/table-operations/filter/where.md) by default, so construct Filter objects explicitly:
+Serial filters are needed when filter evaluation has stateful side effects. Deephaven parallelizes string-based filters in [`where`](../../reference/table-operations/filter/where.md) by default, so construct Filter objects explicitly:
 
 ```python order=result
 from deephaven import empty_table
@@ -406,7 +406,7 @@ result = (
 
 #### Implicit barriers
 
-By default, serial operations automatically create barriers between each other. This means if you have two serial columns in the same `update()`, the first one finishes completely before the second one starts.
+By default, serial operations automatically create barriers between each other. This means if you have two serial columns in the same `update`, the first one finishes completely before the second one starts.
 
 This behavior is controlled by `QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS`:
 
@@ -450,7 +450,7 @@ result4 = source4.update("Category = Value > 100 ? `High` : `Low`")
 
 #### When to use `.with_serial`
 
-**Use `.with_serial()` when**:
+**Use `.with_serial` when**:
 
 - Rows must be processed in order within a single operation.
 - The formula updates global state sequentially.
@@ -531,27 +531,20 @@ result = source.update([col_a, col_b])
 
 #### Stateful Partition Filters
 
-If a _partition filter_ (a filter that only accesses partitioning columns of the data) is marked serial it cannot be
-reordered and must be evaluated on all rows of the table. Even if Deephaven is configured to treat filters as stateful
-by default, when a partition filter is not explicitly marked serial, then the engine is permitted to treat stateful
-partition filters as if they were stateless for pragmatic, performance-oriented reasons.
+When you mark a _partition filter_ (a filter that only accesses partitioning columns) as serial, Deephaven cannot reorder it and must evaluate it on all rows of the table. However, if you don't explicitly mark a partition filter as serial, the engine treats it as stateless for performance reasons — even when Deephaven is configured to treat filters as stateful by default.
 
-In particular, the ordering constraints for filters on partitioning columns may be relaxed, and rather than
-evaluating the filter on every row in the table it may only be evaluated per location. This is to allow common partition
-filters to be reordered ahead of other filters and avoid repeated evaluation against the same value. For example, the
-formula filter `Date=today()` is stateful if filters are stateful by default, but in nearly every case users would prefer this to
-be evaluated early, location-by-location.
+Specifically, Deephaven may relax ordering constraints for filters on partitioning columns and evaluate them per location rather than on every row. This allows Deephaven to reorder common partition filters ahead of other filters and avoid repeated evaluation against the same value. For example, the formula filter `Date=today()` is stateful if filters are stateful by default, but in nearly every case users prefer Deephaven to evaluate it early, location-by-location.
 
 #### Quick reference table
 
 | Scenario                             | Solution                      | Why                                 |
 | ------------------------------------ | ----------------------------- | ----------------------------------- |
 | Pure column math                     | Default (parallel)            | Thread-safe, no shared state        |
-| Global counter                       | `.with_serial()`              | Needs sequential row processing     |
+| Global counter                       | `.with_serial`                | Needs sequential row processing     |
 | Column A must finish before Column B | Barriers                      | Controls cross-operation ordering   |
-| File I/O or logging                  | `.with_serial()`              | Serialize access to shared resource |
+| File I/O or logging                  | `.with_serial`                | Serialize access to shared resource |
 | Multiple operations sharing state    | Barriers or implicit barriers | Coordinates access to shared state  |
-| Non-thread-safe library              | `.with_serial()`              | Forces single-threaded access       |
+| Non-thread-safe library              | `.with_serial`                | Forces single-threaded access       |
 
 ## Key takeaways
 

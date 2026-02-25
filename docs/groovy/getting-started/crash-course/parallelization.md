@@ -125,31 +125,29 @@ getNextId = {
 result = emptyTable(100).update("ID = getNextId()")
 ```
 
-The intent is for each row to get a unique ID: 1, 2, 3, and so on. But with parallelization, multiple cores call `getNextId()` at the same time. Two cores might both read `counter = 5`, both add 1 to get 6, and both return 6. The result: duplicate IDs and skipped numbers.
+The intent is for each row to get a unique ID: 1, 2, 3, and so on. But with parallelization, multiple cores call `getNextId` at the same time. Two cores might both read `counter = 5`, both add 1 to get 6, and both return 6. The result: duplicate IDs and skipped numbers.
 
-### The fix: force sequential processing with `.withSerial()`
+### The fix: force sequential processing with `.withSerial`
 
-The [`.withSerial()`](../../conceptual/query-engine/parallelization.md#serialization) method tells Deephaven to process this formula on a single core, one row at a time, in order:
+The [`.withSerial`](../../conceptual/query-engine/parallelization.md#serialization) method tells Deephaven to process this formula on a single core, one row at a time, in order:
 
 ```groovy
 import io.deephaven.api.Selectable
-import io.deephaven.api.ColumnName
-import io.deephaven.api.RawString
 import java.util.concurrent.atomic.AtomicInteger
 
 counter = new AtomicInteger(0)
 
 // Force sequential processing for this formula
-col = Selectable.of(ColumnName.of("ID"), RawString.of("counter.getAndIncrement()")).withSerial()
+col = Selectable.parse("ID = counter.getAndIncrement()").withSerial()
 result = emptyTable(100).update([col])
 ```
 
-**Trade-off**: Sequential processing uses only one core, so it's slower than parallel processing. Only use `.withSerial()` when your formula requires it for correctness.
+**Trade-off**: Sequential processing uses only one core, so it's slower than parallel processing. Only use `.withSerial` when your formula requires it for correctness.
 
 ## Key takeaways
 
 - Deephaven runs formulas in parallel by default — this is fast but requires stateless code.
 - Shared state or row-order dependencies cause silent errors with parallelization.
-- Use `.withSerial()` to force sequential execution when your formula needs it.
+- Use `.withSerial` to force sequential execution when your formula needs it.
 
 Most queries just work. If your formulas use only column values and built-in functions, parallelization handles everything automatically — no extra code required.

@@ -26,7 +26,7 @@ A table that is the same as the source table, but with only the specified attrib
 
 ## Examples
 
-In this example, we create an [Input Table](../../../how-to-guides/input-tables.md), and then create a `result` table with a call to `retainAttributes()`, which returns a new table with only the specified attributes retained.
+In this example, we create an [Input Table](../../../how-to-guides/input-tables.md), and then create a `result` table with a call to `retainAttributes`, which returns a new table with only the specified attributes retained.
 
 ```groovy order=:log
 import io.deephaven.engine.table.impl.util.AppendOnlyArrayBackedInputTable
@@ -53,4 +53,4 @@ println result.getAttributeKeys()
 - [`getAttributes`](../metadata/getAttributes.md)
 - [`hasAttribute`](../metadata/hasAttribute.md)
 - [`withAttributes`](../select/withAttributes.md)
-- [Javadoc](https://deephaven.io/core/javadoc/io/deephaven/engine/table/AttributeMap.html#retainingAttributes(java.util.Collection))
+- [Javadoc](<https://deephaven.io/core/javadoc/io/deephaven/engine/table/AttributeMap.html#retainingAttributes(java.util.Collection)>)
