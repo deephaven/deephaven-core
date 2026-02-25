@@ -19,6 +19,7 @@ description: Review documentation for technical accuracy, style, and missing lin
    - Check that method names in prose don't have parentheses.
    - Verify proper nouns are capitalized (Core+, Enterprise, Persistent Query, etc.).
    - Ensure backticks are used for methods, classes, variables, and file paths.
+   - Prefer em dashes over hyphens/en dashes for parenthetical statements, with spaces: `word — word`.
 
 5. **Internal link review:**
    - Identify methods, classes, or concepts mentioned without links.

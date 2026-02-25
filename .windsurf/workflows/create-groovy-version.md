@@ -7,17 +7,21 @@ description: Create Groovy version of a Python documentation page
 2. Read the Python documentation file.
 
 3. Convert to Groovy conventions:
-   - Change method names from `snake_case` to `camelCase`
    - Change variable names from `snake_case` to `camelCase`
-   - Update imports to Groovy/Java equivalents
-   - Convert Python syntax to Groovy syntax in code blocks
    - Update internal links to point to Groovy reference pages
 
-4. Create the file in the equivalent Groovy directory:
+4. **Verify code examples against JavaDocs** (do NOT assume direct equivalents):
+   - Look up each Python method in the JavaDocs to find the correct Groovy/Java equivalent.
+   - Python and Groovy APIs may differ significantly — verify method names, parameters, and return types.
+   - Check existing Groovy reference pages in `docs/groovy/reference/` for correct usage patterns.
+   - Update imports to Groovy/Java equivalents based on actual API.
+   - If no direct equivalent exists, note this and ask the user how to proceed.
+
+5. Create the file in the equivalent Groovy directory:
    - `docs/python/...` → `docs/groovy/...`
 
-5. Check if the page needs to be added to `docs/groovy/sidebar.json`:
+6. Check if the page needs to be added to `docs/groovy/sidebar.json`:
    - Find the equivalent section in the sidebar
    - Add the new page entry
 
-6. Run `/format-docs` to format and validate.
+7. Run `/format-docs` to format and validate.
