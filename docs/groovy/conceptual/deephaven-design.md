@@ -22,7 +22,7 @@ Deephaven's architecture is built on several key innovations:
 - **Python-first UI framework**: `deephaven.ui` enables building reactive web applications entirely in Python, with live table integration and no front-end engineering required.
 - **Unified batch and streaming**: Batch and real-time data coexist behind a single, consistent API — no separate systems or complex coordination required.
 
-### How Deephaven compares
+## How Deephaven compares
 
 | Capability             | Traditional Approach                    | Deephaven                            |
 | ---------------------- | --------------------------------------- | ------------------------------------ |
