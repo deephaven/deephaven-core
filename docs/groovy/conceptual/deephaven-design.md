@@ -20,7 +20,7 @@ Deephaven's architecture is built on several key innovations:
 - **Mechanical sympathy**: Chunk-oriented processing, columnar layouts, and careful JVM optimization deliver exceptional performance.
 - **Seamless language integration**: Python, Java, Groovy, and polyglot APIs work together through [JPY](https://github.com/jpy-consortium/jpy) and [gRPC](./deephaven-core-api.md).
 - **Python-first UI framework**: `deephaven.ui` enables building reactive web applications entirely in Python, with live table integration and no front-end engineering required.
-- **Lambda architecture without complexity**: Batch and real-time data coexist behind a single, consistent API.
+- **Unified batch and streaming**: Batch and real-time data coexist behind a single, consistent API — no separate systems or complex coordination required.
 
 ### How Deephaven compares
 
@@ -113,11 +113,11 @@ result2 = liveTrades.where("Price > 100").aggBy([AggAvg("Price")], "Symbol")
 // result2 updates in real-time as new trades arrive
 ```
 
-<Svg src='../assets/conceptual/lambda-architecture.svg' style={{height: 'auto', maxWidth: '1000px'}} />
+<Svg src='../assets/conceptual/unified-batch-streaming.svg' style={{height: 'auto', maxWidth: '1000px'}} />
 
-## Lambda architecture without compromises
+## Unified batch and streaming
 
-Deephaven has long embraced the idea of [lambda architecture](https://en.wikipedia.org/wiki/Lambda_architecture) in its products. Explained simply, this refers to data system deployments that layer batch data, real-time data, and a serving layer to allow different classes of data to be handled optimally while still producing integrated results. This class of architecture allows data system engineers to control the trade-offs they make between latency, throughput, resource utilization, and fault tolerance.
+Traditional [lambda architecture](https://en.wikipedia.org/wiki/Lambda_architecture) requires separate systems for batch and real-time data — a batch layer, a speed layer, and a serving layer — with complex coordination between them. Deephaven eliminates this complexity entirely. The same API handles both static and streaming data transparently, with no code changes required when switching between them.
 
 One classic use case can be found in capital markets’ trading systems, with previous days’ historical data that can be treated as static managed separately from intraday data that is still growing and evolving. It’s often necessary to bootstrap models over historical datasets and then extrapolate with intraday data as it arrives. Another applicable example can be found in infrastructure monitoring systems that aggregate data hierarchically across many nodes; older data may be batch-processed and aggregated at coarse granularity, while fresh data may be in its most raw form for minimum latency.
 
@@ -125,7 +125,7 @@ In this regard, our [Enterprise](/enterprise/docs/enterprise-overview) product i
 
 Our community software empowers users with a comprehensive, extensible query engine that can interact with and commingle data accessed or ingested directly from disparate sources, including custom applications, [Apache Parquet](https://parquet.apache.org/), [Apache Kafka](https://kafka.apache.org/), [Apache Orc](https://orc.apache.org/), CSV, JSON, CDC, and in the future, Arrow, ODBC, and other contemplated integrations. Our [table update model](#table-update-model) and [unified table API design](#unified-table-api-design) allow for seamless integration of data with different characteristics, thus allowing batch data and real-time data to coexist behind the same interface. Layering our [gRPC API](./deephaven-core-api.md) on top completes the picture, linking Deephaven query engines with one another or with client applications to construct data-driven applications.
 
-This combination of capabilities allows Deephaven to serve as the only necessary tool for all layers in a lambda architecture deployment, solving many of the challenges inherent in what is normally considered a complex design. This, in turn, allows for a better overall experience for end-users, as the data manipulation and access APIs are consistent and realize the full capabilities of all layers.
+This combination of capabilities allows Deephaven to replace the complexity of traditional lambda architecture with a single, unified system. This, in turn, allows for a better overall experience for end-users, as the data manipulation and access APIs are consistent and realize the full capabilities of all layers.
 
 ## Tables designed for sharing and updating
 

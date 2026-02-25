@@ -25,7 +25,7 @@
   </defs>
   
   <!-- Title -->
-  <text class="title" x="500" y="30" text-anchor="middle">Lambda Architecture: Traditional vs. Deephaven</text>
+  <text class="title" x="500" y="30" text-anchor="middle">Unified Batch and Streaming: Traditional vs. Deephaven</text>
   <text class="description" x="500" y="50" text-anchor="middle">Unified API eliminates complexity of separate batch and real-time systems</text>
   
   <!-- Traditional Lambda Architecture -->

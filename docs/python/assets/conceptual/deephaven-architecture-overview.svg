@@ -223,7 +223,7 @@
   </g>
   
   <!-- Choice indicator -->
-  <text class="description" x="600" y="875" text-anchor="middle" font-style="italic" font-size="11">
+  <text class="description" x="600" y="940" text-anchor="middle" font-style="italic" font-size="11">
     Both approaches leverage same DAG engine, gRPC protocols, and real-time capabilities
   </text>
 </svg>
