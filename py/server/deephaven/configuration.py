@@ -276,8 +276,19 @@ class Configuration(JObjectWrapper):
             return iter(j_collection_to_list(key_set))
         except Exception as e:
             raise DHError(message="Failed to iterate over configuration keys") from e
+from collections.abc import KeysView, ValuesView, ItemsView
 
-
+def keys(self):
+        """Return a dynamic view of the mapping's keys."""
+        return KeysView(self)
+    
+    def values(self):
+        """Return a dynamic view of the mapping's values."""
+        return ValuesView(self)
+    
+    def items(self):
+        """Return a dynamic view of the mapping's (key, value) pairs."""
+        return ItemsView(self)
 def get_configuration() -> Configuration:
     """Get the default Configuration instance.
 
