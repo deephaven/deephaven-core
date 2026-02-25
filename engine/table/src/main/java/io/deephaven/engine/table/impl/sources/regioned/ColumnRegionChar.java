@@ -121,13 +121,7 @@ public interface ColumnRegionChar<ATTR extends Any> extends ColumnRegion<ATTR> {
                 final boolean usePrev,
                 final PushdownFilterContext filterContext,
                 final RegionedPushdownAction.EstimateContext estimateContext) {
-            for (RegionedPushdownAction action : actions) {
-                // Only ConstantColumnRegion is supported by this class.
-                if (action == ConstantColumnRegion) {
-                    return ConstantColumnRegion.filterCost();
-                }
-            }
-            return Long.MAX_VALUE;
+            return ConstantColumnRegion.filterCost();
         }
 
         @Override
@@ -140,10 +134,6 @@ public interface ColumnRegionChar<ATTR extends Any> extends ColumnRegion<ATTR> {
                 final boolean usePrev,
                 final PushdownFilterContext filterContext,
                 final RegionedPushdownAction.ActionContext actionContext) {
-            // Only ConstantColumnRegion is supported by this class.
-            if (action != ConstantColumnRegion) {
-                return input.copy();
-            }
             final BasePushdownFilterContext filterCtx = (BasePushdownFilterContext) filterContext;
 
             final boolean matches;

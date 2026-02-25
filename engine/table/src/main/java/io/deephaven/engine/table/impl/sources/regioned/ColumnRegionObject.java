@@ -293,7 +293,7 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
                 matches = nullBehavior == BasePushdownFilterContext.FilterNullBehavior.INCLUDES_NULLS;
             } else {
                 if (filterCtx.supportsChunkFiltering()) {
-                    matches = SingleValuePushdownHelper.chunkFilter(selection, filterCtx,
+                    matches = SingleValuePushdownHelper.chunkFilter(filterCtx,
                             () -> SingleValuePushdownHelper.makeChunk(value));
                 } else {
                     @SuppressWarnings("unchecked")

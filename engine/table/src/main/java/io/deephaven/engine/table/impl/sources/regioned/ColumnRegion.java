@@ -71,13 +71,7 @@ public interface ColumnRegion<ATTR extends Any> extends Page<ATTR>, Releasable, 
                 final boolean usePrev,
                 final PushdownFilterContext filterContext,
                 final RegionedPushdownAction.EstimateContext estimateContext) {
-            for (RegionedPushdownAction action : actions) {
-                // Only NullColumnRegion is supported by this class.
-                if (action == NullColumnRegion) {
-                    return NullColumnRegion.filterCost();
-                }
-            }
-            return Long.MAX_VALUE;
+            return NullColumnRegion.filterCost();
         }
 
         @Override
@@ -90,11 +84,6 @@ public interface ColumnRegion<ATTR extends Any> extends Page<ATTR>, Releasable, 
                 final boolean usePrev,
                 final PushdownFilterContext filterContext,
                 final RegionedPushdownAction.ActionContext actionContext) {
-            // Only NullColumnRegion is supported by this class.
-            if (action != NullColumnRegion) {
-                return input.copy();
-            }
-
             final RegionedPushdownFilterContext filterCtx = (RegionedPushdownFilterContext) filterContext;
 
             final BasePushdownFilterContext.FilterNullBehavior nullBehavior = filterCtx.filterNullBehavior();
