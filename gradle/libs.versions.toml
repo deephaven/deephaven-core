@@ -4,7 +4,7 @@ airlift = "2.0.2"
 arrow = "18.3.0"
 autoservice = "1.1.1"
 avro = "1.12.1"
-awssdk = "2.29.52"
+awssdk = "2.41.34"
 aws-s3-tables-catalog-for-iceberg = "0.1.8"
 
 # Note: when bumping Calcite version, see if we still need the version constraint for json-smart
