@@ -335,7 +335,7 @@ Partitioned tables are powerful, but aren't a magic wand that improves performan
 
 We just stated that an [as-of join](./joins-timeseries-range.md#aj) can benefit from partitioning data, so let's see that in action. Consider tables of quotes and trades. The following code block creates two tables: `quotes` and `trades`. Each has 5 million rows of data, split across 4 unique exchanges and 7 unique symbols, for a total of 28 partitions. It then performs the join operation on both the standard and partitioned tables and times how long each takes.
 
-```groovy order=null
+```groovy order=:log,result,quotes,trades
 import io.deephaven.engine.context.ExecutionContext
 import io.deephaven.util.SafeCloseable
 
