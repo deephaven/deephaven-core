@@ -561,35 +561,39 @@ result2 = compute(source, 3)
 
 For more information, see [scoping rules](../../how-to-guides/query-scope.md).
 
-Be mindful of whether or not Python functions are stateless or stateful. Generally, stateless functions have no side effects - they don't modify any objects outside of their scope. Also, they are invariant to execution order, so function calls can be evaluated in any order without affecting the result. This stateless function extracts elements from a list in a query string.
+When Deephaven parallelizes a query, rows may be processed in any order across multiple CPU cores. Functions that work correctly regardless of execution order can run in parallel. This function works in parallel because each call is independent:
 
 ```python test-set=2
 my_list = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 
 
-def get_element_stateless(idx) -> int:
+def get_element(idx) -> int:
     return my_list[idx]
 
 
-t_stateless = empty_table(10).update("X = get_element_stateless(ii)")
+t = empty_table(10).update("X = get_element(ii)")
 ```
 
-`get_element` is stateless because it does not modify any objects outside its local scope. It could be evaluated in any order and give the same result.
+This works because each row's result depends only on the input `idx` - it doesn't matter which row is processed first.
 
-Stateful functions modify objects outside their local scope - they do not leave the world as they found it. They also may depend on execution order. This stateful function achieves the same resulting table.
+Some functions require rows to be processed one at a time, in order. This function increments a counter, so it needs [`.with_serial()`](../../conceptual/query-engine/parallelization.md#serialization) to force sequential execution:
 
 ```python test-set=2
+from deephaven.table import Selectable
+
 my_list = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 idx = 0
 
 
-def get_element_stateful() -> int:
+def get_next_element() -> int:
     global idx
-    idx += 1  # This modifies idx!
+    idx += 1  # Each call changes idx
     return my_list[idx - 1]
 
 
-t_stateful = empty_table(10).update("X = get_element_stateful()")
+# Use .with_serial() to ensure sequential execution
+col = Selectable.parse("X = get_next_element()").with_serial()
+t = empty_table(10).update(col)
 ```
 
 Print `idx` to verify it's been changed.
@@ -598,10 +602,10 @@ Print `idx` to verify it's been changed.
 print(idx)
 ```
 
-Now that `get_element` is stateful, it must be evaluated in the correct order to give the correct result.
+Without `.with_serial()`, multiple cores might increment `idx` simultaneously, causing incorrect results. Serial execution is slower (one core instead of many), so use it only when correctness requires it.
 
-Queries should use stateless functions whenever possible because:
+Queries run faster when they can be parallelized. To enable parallelization:
 
-- They minimize side effects when called.
-- They are deterministic.
-- They can be efficiently parallelized.
+- Each row's result should depend only on that row's inputs.
+- Avoid modifying external variables.
+- Use Deephaven's built-in functions when possible.

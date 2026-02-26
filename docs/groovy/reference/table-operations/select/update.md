@@ -55,9 +55,26 @@ source = newTable(
 result = source.update("A", "X = B", "Y = sqrt(C)")
 ```
 
+## Serial execution
+
+By default, Deephaven parallelizes `update` calculations across multiple CPU cores. If your formula uses global variables or depends on row order, use `.withSerial` to force sequential processing.
+
+```groovy order=result
+import io.deephaven.api.Selectable
+import java.util.concurrent.atomic.AtomicInteger
+
+counter = new AtomicInteger(0)
+
+col = Selectable.parse("ID = counter.getAndIncrement()").withSerial()
+result = emptyTable(10).update([col])
+```
+
+For more information, see [Parallelization](../../../conceptual/query-engine/parallelization.md).
+
 ## Related documentation
 
 - [Create a new table](../../../how-to-guides/new-and-empty-table.md#newtable)
 - [Choose the right selection method for your query](../../../how-to-guides/use-select-view-update.md#choose-the-right-column-selection-method)
 - [How to select, view, and update data](../../../how-to-guides/use-select-view-update.md)
+- [Parallelization](../../../conceptual/query-engine/parallelization.md)
 - [Javadoc](https://deephaven.io/core/javadoc/io/deephaven/api/TableOperations.html#update(java.lang.String...))
