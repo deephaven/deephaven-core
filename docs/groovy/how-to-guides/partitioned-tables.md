@@ -8,7 +8,7 @@ This guide will show you how to create and use partitioned tables. A partitioned
 Like a list of tables, partitioned tables can be [merged](#merge) together to form a new table. Unlike a list of tables, partitioned tables take advantage of [parallelization](../conceptual/query-engine/parallelization.md), which can improve query performance when leveraged properly.
 
 > [!NOTE]
-> Subtable partitioning via [`partitionBy`](../reference/table-operations/group-and-aggregate/partitionBy.md) should not be confused with [grouping and aggregation](./dedicated-aggregations.md). The [`partitionBy`](../reference/table-operations/group-and-aggregate/partitionBy.md) table operation partitions tables into subtables by key columns. Aggregation operators such as [`aggBy`](../reference/table-operations/group-and-aggregate/aggBy.md) compute summary information over groups of data within a table.
+> Subtable partitioning with [`partitionBy`](../reference/table-operations/group-and-aggregate/partitionBy.md) should not be confused with [grouping and aggregation](./dedicated-aggregations.md). The [`partitionBy`](../reference/table-operations/group-and-aggregate/partitionBy.md) table operation partitions tables into subtables by key columns. Aggregation operators such as [`aggBy`](../reference/table-operations/group-and-aggregate/aggBy.md) compute summary information over groups of data within a table.
 
 ## What is a partitioned table?
 
@@ -34,7 +34,7 @@ There are two ways to create a partitioned table:
 
 ### From a table
 
-The simplest way to create a partitioned table is from another table. To show this, let's first create a [new table](../how-to-guides/new-and-empty-table.md#newtable).
+The simplest way to create a partitioned table is from another table. To show this, let's first create a [new table](./new-and-empty-table.md#newtable).
 
 ```groovy test-set=1 order=source
 source = newTable(
@@ -235,7 +235,7 @@ tradesUpdated = ptTradesUpdated.merge()
 ```
 
 > [!NOTE]
-> When using a Partitioned Table proxy, you must call `.target()` to obtain the underlying partitioned table.
+> When using a Partitioned Table proxy, you must call `target` to obtain the underlying partitioned table.
 
 #### Should I use transform or proxy?
 
@@ -333,6 +333,56 @@ Partitioned tables are powerful, but aren't a magic wand that improves performan
 - Partitioned data is dense.
 - Data is sufficiently large.
 
+We just stated that an [as-of join](./joins-timeseries-range.md#aj) can benefit from partitioning data, so let's see that in action. Consider tables of quotes and trades. The following code block creates two tables: `quotes` and `trades`. Each has 5 million rows of data, split across 4 unique exchanges and 7 unique symbols, for a total of 28 partitions. It then performs the join operation on both the standard and partitioned tables and times how long each takes.
+
+```groovy order=:log,result,quotes,trades
+import io.deephaven.engine.context.ExecutionContext
+import io.deephaven.util.SafeCloseable
+
+defaultCtx = ExecutionContext.getContext()
+
+nRows = 5_000_000
+
+quotes = emptyTable(nRows).update(
+        "Timestamp = '2024-09-20T00:00:00 ET' + ii * SECOND",
+        "Exchange = `Exchange_` + (i % 4)",
+        "Symbol = `Sym_` + (i % 7)",
+        "QuoteSize = randomInt(1, 10)",
+        "QuotePrice = randomDouble(0, 100)",
+)
+
+trades = emptyTable(nRows).update(
+        "Timestamp = '2024-09-20T00:00:00.1 ET' + ii * SECOND",
+        "Exchange = `Exchange_` + (i % 4)",
+        "Symbol = `Sym_` + (i % 7)",
+        "TradeSize = randomInt(1, 10)",
+        "TradePrice = randomDouble(0, 100)",
+)
+
+ptQuotes = quotes.partitionBy("Exchange", "Symbol")
+ptTrades = trades.partitionBy("Exchange", "Symbol")
+
+partitionedAj = { t1, t2 ->
+    try (SafeCloseable ignored = defaultCtx.open()) {
+        return t1.aj(t2, "Exchange, Symbol, Timestamp")
+    }
+}
+
+start = System.nanoTime()
+result = quotes.aj(trades, "Exchange, Symbol, Timestamp")
+end = System.nanoTime()
+
+println String.format("Standard table aj: %.4f seconds.", (end - start) / 1_000_000_000.0)
+
+start = System.nanoTime()
+ptResult = ptQuotes.partitionedTransform(ptTrades, partitionedAj)
+end = System.nanoTime()
+
+println String.format("Partitioned table aj: %.4f seconds.", (end - start) / 1_000_000_000.0)
+```
+
+Partitioned tables are faster in this case because, as mentioned earlier, the join operation is done in parallel when the tables are partitioned on the exact match columns.
+
 If you are unsure if parallelization through partitioned tables could improve your query performance, reach out to us on [Slack](/slack) for more specific guidance.
 
 #### Tick amplification
@@ -402,6 +452,7 @@ As the code runs longer, the grouping/ungrouping operation on its own continues 
 
 ## Related documentation
 
+- [`partitionBy`](../reference/table-operations/group-and-aggregate/partitionBy.md)
 - [`constituentChangesPermitted`](../reference/table-operations/partitioned-tables/constituentChangesPermitted.md)
 - [`constituentColumnName`](../reference/table-operations/partitioned-tables/constituentColumnName.md)
 - [`constituentDefinition`](../reference/table-operations/partitioned-tables/constituentDefinition.md)
@@ -416,3 +467,4 @@ As the code runs longer, the grouping/ungrouping operation on its own continues 
 - [`table`](../reference/table-operations/partitioned-tables/table.md)
 - [`transform`](../reference/table-operations/partitioned-tables/transform.md)
 - [`uniqueKeys`](../reference/table-operations/partitioned-tables/uniqueKeys.md)
+- [Javadoc](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/PartitionedTable.html)
