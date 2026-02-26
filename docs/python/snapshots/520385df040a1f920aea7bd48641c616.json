@@ -1,0 +1,1 @@
+{"file":"conceptual/vectorization-and-recipes.md","objects":{"t1":{"type":"Table","data":{"columns":[{"name":"Timestamp","type":"java.time.Instant"},{"name":"X","type":"int"}],"rows":[]}},"t2":{"type":"Table","data":{"columns":[{"name":"Timestamp","type":"java.time.Instant"},{"name":"X","type":"int"},{"name":"Y","type":"int"}],"rows":[]}}}}
