@@ -82,14 +82,14 @@ public interface ColumnRegionInt<ATTR extends Any> extends ColumnRegion<ATTR> {
             extends GenericColumnRegionBase<ATTR>
             implements ColumnRegionInt<ATTR>, WithDefaultsForRepeatingValues<ATTR> {
 
-        final static RegionedPushdownAction.Region ConstantColumnRegion =
+        final static RegionedPushdownAction.Region CONSTANT_COLUMN_REGION =
                 new RegionedPushdownAction.Region(
                         () -> false,
                         PushdownResult.SINGLE_VALUE_REGION_COST,
                         (ctx) -> true,
                         (tl) -> true,
                         (cr) -> cr instanceof Constant);
-        private static final List<RegionedPushdownAction> supportedActions = List.of(ConstantColumnRegion);
+        private static final List<RegionedPushdownAction> SUPPORTED_ACTIONS = List.of(CONSTANT_COLUMN_REGION);
 
         private final int value;
 
@@ -113,7 +113,7 @@ public interface ColumnRegionInt<ATTR extends Any> extends ColumnRegion<ATTR> {
 
         @Override
         public List<RegionedPushdownAction> supportedActions() {
-            return supportedActions;
+            return SUPPORTED_ACTIONS;
         }
 
         @Override
@@ -125,7 +125,7 @@ public interface ColumnRegionInt<ATTR extends Any> extends ColumnRegion<ATTR> {
                 final boolean usePrev,
                 final PushdownFilterContext filterContext,
                 final RegionedPushdownAction.EstimateContext estimateContext) {
-            return ConstantColumnRegion.filterCost();
+            return CONSTANT_COLUMN_REGION.filterCost();
         }
 
         @Override

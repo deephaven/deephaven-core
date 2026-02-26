@@ -13,6 +13,7 @@ import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.BasePushdownFilterContext;
+import io.deephaven.engine.table.impl.BasePushdownFilterContextImpl;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.util.SafeCloseable;
@@ -104,7 +105,7 @@ public class SingleValuePushdownHelper {
     /**
      * A pushdown filter context for row key agnostic chunk sources.
      */
-    public static class FilterContext extends BasePushdownFilterContext {
+    public static class FilterContext extends BasePushdownFilterContextImpl {
         public FilterContext(
                 final WhereFilter filter,
                 final List<ColumnSource<?>> columnSources) {

@@ -36,14 +36,14 @@ public interface ColumnRegion<ATTR extends Any> extends Page<ATTR>, Releasable, 
             extends GenericColumnRegionBase<ATTR>
             implements ColumnRegion<ATTR>, WithDefaultsForRepeatingValues<ATTR> {
 
-        private static final RegionedPushdownAction.Region NullColumnRegion =
+        private static final RegionedPushdownAction.Region NULL_COLUMN_REGION =
                 new RegionedPushdownAction.Region(
                         () -> false,
                         PushdownResult.SINGLE_VALUE_REGION_COST,
                         (ctx) -> true,
                         (tl) -> true,
                         (cr) -> cr instanceof Null);
-        private static final List<RegionedPushdownAction> supportedActions = List.of(NullColumnRegion);
+        private static final List<RegionedPushdownAction> SUPPORTED_ACTIONS = List.of(NULL_COLUMN_REGION);
 
         Null(final long pageMask) {
             super(pageMask);
@@ -60,7 +60,7 @@ public interface ColumnRegion<ATTR extends Any> extends Page<ATTR>, Releasable, 
 
         @Override
         public List<RegionedPushdownAction> supportedActions() {
-            return supportedActions;
+            return SUPPORTED_ACTIONS;
         }
 
         @Override
@@ -71,7 +71,7 @@ public interface ColumnRegion<ATTR extends Any> extends Page<ATTR>, Releasable, 
                 final boolean usePrev,
                 final PushdownFilterContext filterContext,
                 final RegionedPushdownAction.EstimateContext estimateContext) {
-            return NullColumnRegion.filterCost();
+            return NULL_COLUMN_REGION.filterCost();
         }
 
         @Override
