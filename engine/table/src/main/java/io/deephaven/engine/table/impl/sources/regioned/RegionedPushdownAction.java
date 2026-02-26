@@ -32,8 +32,8 @@ public abstract class RegionedPushdownAction {
     public interface ActionContext extends SafeCloseable {
     }
 
-    // Note: the disabled static configuration values are _not_ currently final. While ill-advised to change them in
-    // this way, it is better that we retain the current behavior until a better pattern can be established.
+    // Note: the disabled static configuration values are _not_ currently final and we must test them on each call
+    // to ensure that dynamic configuration changes are respected.
     protected final BooleanSupplier disabled;
 
     private final long filterCost;

@@ -68,7 +68,7 @@ public final class ParquetTableFilterTest {
     private static final ParquetInstructions EMPTY = ParquetInstructions.EMPTY;
 
     private static File rootFile;
-    private static boolean pushdownDataIndexDisabled;
+    private boolean pushdownDataIndexDisabled;
 
     @Rule
     public final EngineCleanup framework = new EngineCleanup();
@@ -952,13 +952,13 @@ public final class ParquetTableFilterTest {
             diskRowsProcessedMergedIndex.add(filter.numRowsProcessed());
         }
 
-        // Verify that the merged indexes processed strictly fewer rows the disk table with location indexes.
+        // Verify that the merged indexes processed strictly fewer rows than the mem table.
         for (int i = 0; i < filters.size(); i++) {
             Assert.assertTrue(
                     "Merged indexes did not process fewer rows than Location indexes: "
                             + i + ", Merged index rows processed: " + diskRowsProcessedMergedIndex.get(i)
-                            + ", Location index rows processed: " + diskRowsProcessedLocationIndexes.get(i),
-                    diskRowsProcessedMergedIndex.get(i) < diskRowsProcessedLocationIndexes.get(i));
+                            + ", Mem rows processed: " + memRowsProcessed.get(i),
+                    diskRowsProcessedMergedIndex.get(i) < memRowsProcessed.get(i));
         }
     }
 

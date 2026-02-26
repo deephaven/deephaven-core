@@ -964,7 +964,7 @@ public class RegionedColumnSourceManager
     }
 
     /**
-     * Get (or create) a map from column source to column name.
+     * Get (or create) a map from column name to column definition.
      */
     private Map<String, ColumnDefinition<?>> columnNameToDefinition() {
         Map<String, ColumnDefinition<?>> local = columnNameToDefinition;

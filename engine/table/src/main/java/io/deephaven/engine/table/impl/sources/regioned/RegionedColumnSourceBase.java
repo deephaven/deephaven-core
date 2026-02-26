@@ -142,18 +142,25 @@ abstract class RegionedColumnSourceBase<DATA_TYPE, ATTR extends Values, REGION_T
                     // Create a local pushdown context that can provide the table location to the ColumnRegion
                     final RegionedColumnSourceManager.IncludedTableLocationEntry tle = tleList.get(regionIndex);
                     final RegionedPushdownFilterLocationContext newCtx = filterContext.withTableLocation(tle.location);
-                    ctx.shiftedRowSet = tle.subsetAndShiftIntoLocationSpace(selection);
-                    getRegion(regionIndex).estimatePushdownFilterCost(
-                            filter,
-                            ctx.shiftedRowSet,
-                            usePrev,
-                            newCtx,
-                            jobScheduler,
-                            regionCost -> {
-                                minCost.updateAndGet(old -> Math.min(old, regionCost));
-                                resume.run();
-                            },
-                            nec);
+                    try {
+                        ctx.shiftedRowSet = tle.subsetAndShiftIntoLocationSpace(selection);
+                        getRegion(regionIndex).estimatePushdownFilterCost(
+                                filter,
+                                ctx.shiftedRowSet,
+                                usePrev,
+                                newCtx,
+                                jobScheduler,
+                                regionCost -> {
+                                    minCost.updateAndGet(old -> Math.min(old, regionCost));
+                                    resume.run();
+                                    newCtx.close();
+                                },
+                                nec);
+                    } catch (final Exception e) {
+                        // In the case of an exception, clean up the temporary context.
+                        newCtx.close();
+                        throw e;
+                    }
                 },
                 () -> onComplete.accept(minCost.get()),
                 () -> {
