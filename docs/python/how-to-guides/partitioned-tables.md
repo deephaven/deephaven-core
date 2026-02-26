@@ -90,23 +90,43 @@ Deephaven can consume data from Kafka streams. Streaming data can be ingested in
 
 When ingesting streaming Kafka data directly into a partitioned table, the data is partitioned by the Kafka partition number of the topic. The constituent tables are the tables per topic partition.
 
-The following example ingests data from the Kafka topic `testTopic` directly into a partitioned table.
+The following example ingests data from the Kafka topic `orders` directly into a partitioned table.
 
 ```python skip-test
+from deephaven import dtypes as dht
 from deephaven import kafka_consumer as kc
+from deephaven.stream.kafka.consumer import KeyValueSpec, TableType
 
 result_partitioned = kc.consume_to_partitioned_table(
     kafka_config={
-        "bootstrap.servers": "redpanda:29092",
-        "deephaven.key.column.type": "String",
-        "deephaven.value.column.type": "String",
+        "bootstrap.servers": "redpanda:9092",
     },
-    topic="testTopic",
+    topic="orders",
+    offsets=kc.ALL_PARTITIONS_DONT_SEEK,
+    key_spec=KeyValueSpec.IGNORE,
+    value_spec=kc.json_spec(
+        col_defs={
+            "Symbol": dht.string,
+            "Side": dht.string,
+            "Price": dht.double,
+            "Qty": dht.int32,
+        },
+        mapping={
+            "jsymbol": "Symbol",
+            "jside": "Side",
+            "jprice": "Price",
+            "jqty": "Qty",
+        },
+    ),
+    table_type=TableType.append(),
 )
-print(result_partitioned.key_columns)
+
+keys = result_partitioned.table.select_distinct("Partition")
 ```
 
-For more information and examples on ingesting Kafka streams directly into partitioned tables, see [`consume_to_partitioned_table`](/core/pydoc/code/deephaven.stream.kafka.consumer.html#deephaven.stream.kafka.consumer.consume_to_partitioned_table).
+![The above `keys` table](../assets/how-to/partitionkeys.png)
+
+For more information and examples on ingesting Kafka streams directly into partitioned tables, see [`consume_to_partitioned_table`](../reference/data-import-export/Kafka/consume-to-partitioned-table.md).
 
 ### Partitioned table methods
 
@@ -239,7 +259,7 @@ trades_updated = pt_trades_updated.merge()
 ```
 
 > [!NOTE]
-> When using a Partitioned Table proxy, you must call `.target` to obtain the underlying partitioned table.
+> When using a Partitioned Table proxy, you must call `target` to obtain the underlying partitioned table.
 
 #### Should I use transform or proxy?
 
@@ -476,4 +496,4 @@ As the code runs longer, the grouping/ungrouping operation on its own continues 
 - [`proxy`](../reference/table-operations/partitioned-tables/proxy.md)
 - [`transform`](../reference/table-operations/partitioned-tables/transform.md)
 - [metadata methods](../reference/table-operations/partitioned-tables/metadata-methods.md)
-- [Pydoc](/core/pydoc/code/deephaven.table.html#deephaven.table.PartitionedTable)
+- [Pydoc](https://deephaven.io/core/pydoc/code/deephaven.table.html#deephaven.table.PartitionedTable)
