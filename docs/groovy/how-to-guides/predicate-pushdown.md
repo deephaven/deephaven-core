@@ -15,7 +15,7 @@ Filters are prioritized for pushdown in the following order (from highest to low
 - Filtering [single value column sources](#single-value-column-sources).
 - Range and match filtering of Parquet data columns using [row group metadata](#parquet-row-group-metadata).
 - Filtering columns with a cached (already loaded in memory) Deephaven [data index](#deephaven-data-indexes).
-- Filtering columns with dictionary encoding
+- Filtering columns with dictionary encoding.
 - Filtering columns with an un-cached Deephaven [data index](#deephaven-data-indexes).
 
 > [!IMPORTANT]
