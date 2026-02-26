@@ -1016,6 +1016,6 @@ public class RegionedColumnSourceManager
             renameMap.put(filterColumnName, localColumnName);
         }
 
-        return new RegionedPushdownFilterContext(filter, filterSources, columnDefinitions, renameMap);
+        return new RegionedPushdownFilterContextImpl(filter, filterSources, columnDefinitions, renameMap);
     }
 }

@@ -191,27 +191,34 @@ abstract class RegionedColumnSourceBase<DATA_TYPE, ATTR extends Values, REGION_T
                     ctx.reset();
                     final int regionIndex = regionIndices[idx];
 
-                    // Create a local pushdown context that can provide the table location to the ColumnRegion
                     final RegionedColumnSourceManager.IncludedTableLocationEntry tle = tleList.get(regionIndex);
+                    // Create a local pushdown context that can provide the table location to the ColumnRegion
                     final RegionedPushdownFilterLocationContext newCtx =
                             filterContext.withTableLocation(tle.location);
 
                     ctx.shiftedRowSet = tle.subsetAndShiftIntoLocationSpace(selection);
 
-                    getRegion(regionIndex).pushdownFilter(
-                            filter,
-                            ctx.shiftedRowSet,
-                            usePrev,
-                            newCtx,
-                            costCeiling,
-                            jobScheduler,
-                            result -> {
-                                tle.unshiftIntoRegionSpace(result);
-                                matches[idx] = result.match();
-                                maybeMatches[idx] = result.maybeMatch();
-                                resume.run();
-                            },
-                            nec);
+                    try {
+                        getRegion(regionIndex).pushdownFilter(
+                                filter,
+                                ctx.shiftedRowSet,
+                                usePrev,
+                                newCtx,
+                                costCeiling,
+                                jobScheduler,
+                                result -> {
+                                    tle.unshiftIntoRegionSpace(result);
+                                    matches[idx] = result.match();
+                                    maybeMatches[idx] = result.maybeMatch();
+                                    resume.run();
+                                    newCtx.close();
+                                },
+                                nec);
+                    } catch (final Exception e) {
+                        // In the case of an exception, clean up the temporary context.
+                        newCtx.close();
+                        throw e;
+                    }
                 },
                 () -> onComplete.accept(RegionedPushdownHelper.buildResults(matches, maybeMatches, selection)),
                 () -> {

@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl.select;
 
+import io.deephaven.api.filter.Filter;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 
 import java.util.Optional;
@@ -14,4 +15,8 @@ public interface ExposesChunkFilter {
      * @return If available, returns the underlying chunk filter. Otherwise returns {@link Optional#empty()}.
      */
     Optional<ChunkFilter> chunkFilter();
+
+    static Optional<ChunkFilter> chunkFilter(Filter filter) {
+        return (filter instanceof ExposesChunkFilter) ? ((ExposesChunkFilter) filter).chunkFilter() : Optional.empty();
+    }
 }

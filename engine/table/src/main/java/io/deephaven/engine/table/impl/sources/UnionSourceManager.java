@@ -901,7 +901,7 @@ public class UnionSourceManager implements PushdownPredicateManager {
                 onError);
     }
 
-    public static class UnionSourcePushdownFilterContext extends BasePushdownFilterContext {
+    public static class UnionSourcePushdownFilterContext extends BasePushdownFilterContextImpl {
         final UnionSourceManager manager;
         final WritableRowSet maybeMatch;
         final Map<String, String> renameMap;

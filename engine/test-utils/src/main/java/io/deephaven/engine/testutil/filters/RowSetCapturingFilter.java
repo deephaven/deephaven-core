@@ -177,8 +177,6 @@ public class RowSetCapturingFilter extends WhereFilterImpl implements SafeClosea
 
     @Override
     public Optional<ChunkFilter> chunkFilter() {
-        return innerFilter instanceof ExposesChunkFilter
-                ? ((ExposesChunkFilter) innerFilter).chunkFilter()
-                : Optional.empty();
+        return ExposesChunkFilter.chunkFilter(innerFilter);
     }
 }

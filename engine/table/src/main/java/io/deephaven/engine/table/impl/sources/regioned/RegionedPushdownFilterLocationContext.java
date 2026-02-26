@@ -12,23 +12,96 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * A pushdown filter context for regioned column sources that handles column name mappings and definitions. Additionally
- * provides access to the table location.
+ * A wrapper class for RegionedPushdownFilterContext that additionally provides access to a table location.
  */
-public class RegionedPushdownFilterLocationContext extends RegionedPushdownFilterContext {
+public class RegionedPushdownFilterLocationContext implements RegionedPushdownFilterContext {
+    private final RegionedPushdownFilterContext wrapped;
     private final TableLocation tableLocation;
 
     public RegionedPushdownFilterLocationContext(
-            final WhereFilter filter,
-            final List<ColumnSource<?>> columnSources,
-            final List<ColumnDefinition<?>> columnDefinitions,
-            final Map<String, String> renameMap,
+            final RegionedPushdownFilterContext wrapped,
             final TableLocation tableLocation) {
-        super(filter, columnSources, columnDefinitions, renameMap);
+        this.wrapped = wrapped;
         this.tableLocation = tableLocation;
+    }
+
+    @Override
+    public void close() {
+        // Not releasing or modifying the wrapped context.
     }
 
     public TableLocation tableLocation() {
         return tableLocation;
+    }
+
+    @Override
+    public WhereFilter filter() {
+        return wrapped.filter();
+    }
+
+    @Override
+    public List<ColumnSource<?>> columnSources() {
+        return wrapped.columnSources();
+    }
+
+    @Override
+    public boolean supportsChunkFiltering() {
+        return wrapped.supportsChunkFiltering();
+    }
+
+    @Override
+    public boolean supportsMetadataFiltering() {
+        return wrapped.supportsMetadataFiltering();
+    }
+
+    @Override
+    public boolean supportsInMemoryDataIndexFiltering() {
+        return wrapped.supportsInMemoryDataIndexFiltering();
+    }
+
+    @Override
+    public boolean supportsDeferredDataIndexFiltering() {
+        return wrapped.supportsDeferredDataIndexFiltering();
+    }
+
+    @Override
+    public WhereFilter filterForMetadataFiltering() {
+        return wrapped.filterForMetadataFiltering();
+    }
+
+    @Override
+    public FilterNullBehavior filterNullBehavior() {
+        return wrapped.filterNullBehavior();
+    }
+
+    @Override
+    public UnifiedChunkFilter createChunkFilter(int maxChunkSize) {
+        return wrapped.createChunkFilter(maxChunkSize);
+    }
+
+    @Override
+    public long executedFilterCost() {
+        return wrapped.executedFilterCost();
+    }
+
+    @Override
+    public void updateExecutedFilterCost(long executedFilterCost) {
+        // These wrapped context are transient, should not be called.
+        throw new UnsupportedOperationException("Should not update executed filter cost on wrapped context");
+    }
+
+    @Override
+    public List<ColumnDefinition<?>> columnDefinitions() {
+        return wrapped.columnDefinitions();
+    }
+
+    @Override
+    public Map<String, String> renameMap() {
+        return wrapped.renameMap();
+    }
+
+    @Override
+    public RegionedPushdownFilterLocationContext withTableLocation(TableLocation tableLocation) {
+        return null;
     }
 }
