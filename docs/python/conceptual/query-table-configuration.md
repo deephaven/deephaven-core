@@ -75,13 +75,13 @@ A Deephaven [DataIndex](../how-to-guides/data-indexes.md) is an index that can i
 
 Pushdown predicates refer to the mechanism whereby filtering conditions are applied as early as possible, ideally at the data source (e.g., Parquet or other columnar formats), before loading data into the system. By annotating source reads with predicates, the engine pulls in only the rows that satisfy the conditions, significantly reducing I/O and improving performance.
 
-| Property Name                                            | Default Value | Description                                                                                            |
-| -------------------------------------------------------- | ------------- | ------------------------------------------------------------------------------------------------------ |
+| Property Name                                            | Default Value | Description                                                                                               |
+| -------------------------------------------------------- | ------------- | --------------------------------------------------------------------------------------------------------- |
 | `QueryTable.useDataIndexForWhere`                        | true          | Enables the uses of table-level [data index](../how-to-guides/data-indexes.md) during `where` operations. |
 | `QueryTable.disableWherePushdownDataIndex`               | false         | Disables the use of [data index](../how-to-guides/data-indexes.md) within `where`'s predicate pushdown.   |
-| `QueryTable.disableWherePushdownParquetRowGroupMetadata` | false         | Disables the usage of Parquet row group metadata during push-down filtering.                           |
-| `QueryTable.disableWherePushdownMergedTables`            | false         | Disable predicate pushdown when filtering merged tables.                                                |
-| `QueryTable.disableWherePushdownParquetDictionary`       | false         | Disables dictionary-encoding predicate pushdown operations.                                             |
+| `QueryTable.disableWherePushdownParquetRowGroupMetadata` | false         | Disables the usage of Parquet row group metadata during push-down filtering.                              |
+| `QueryTable.disableWherePushdownMergedTables`            | false         | Disable predicate pushdown when filtering merged tables.                                                  |
+| `QueryTable.disableWherePushdownParquetDictionary`       | false         | Disables dictionary-encoding predicate pushdown operations.                                               |
 
 ## Parallel processing with `where`
 
