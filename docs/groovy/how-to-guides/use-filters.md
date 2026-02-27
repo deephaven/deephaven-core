@@ -3,7 +3,7 @@ title: Filter table data
 sidebar_label: Filter
 ---
 
-This guide covers filtering table data in Deephaven. Many different table operations filter data in a table. Some keep data based on conditional formulas, whereas others keep data based on row position.
+This guide covers filtering table data in Deephaven. Many different table operations filter data in a table. Some keep data based on conditional formulas, whereas others keep data based on row positions or columns.
 
 These table operations keep rows that match one or more conditional filter formulas:
 
@@ -18,7 +18,7 @@ These table operations keep rows based on row position:
 - [`tailPct`](../reference/table-operations/filter/tail-pct.md)
 - [`slicePct`](../reference/table-operations/filter/slice-pct.md)
 
-These table operations keep rows based on matching values in one or more columns of a separate table:
+These table operations keep rows based on equality in one or more columns of a separate table:
 
 - [`whereIn`](../reference/table-operations/filter/where-in.md)
 - [`whereNotIn`](../reference/table-operations/filter/where-not-in.md)
@@ -135,7 +135,7 @@ conjunctiveFilteredIris = iris.where("Class in `Iris-setosa`", "PetalLengthCM >=
 
 Disjunctive filtering returns a table where _one or more_ of the statements return `true`. You can accomplish this by using the `||` operator in a [`where`](../reference/table-operations/filter/where.md) statement, or by using [`Filter.or`](https://docs.deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html#or(io.deephaven.api.filter.Filter...)) to combine multiple filters.
 
-In the following example, two filters work disjunctively to return a new table where the petal length is greater than 1.9 cm or the petal width is less than 1.3 cm.
+In the following example, two filters work disjunctively to return a new table where the petal length is greater than 1.9 cm or less than 1.3 cm.
 
 ```groovy test-set=1 order=orFilteredIris,irisFilterOr
 orFilteredIris = iris.where("PetalLengthCM > 1.9 || PetalWidthCM < 1.3")
@@ -144,7 +144,7 @@ irisFilterOr = iris.where(Filter.or(Filter.from("PetalLengthCM > 1.9", "PetalWid
 
 ## Filter one table based on another
 
-The [`whereIn`](../reference/table-operations/filter/where-in.md) and [`whereNotIn`](../reference/table-operations/filter/where-not-in.md) methods filter one table based on another table. Deephaven evaluates these two methods whenever either table changes, whereas it only evaluates [`where`](../reference/table-operations/filter/where.md) when the filtered table ticks. ​The following example uses [`whereIn`](../reference/table-operations/filter/where.md) and [`whereNotIn`](../reference/table-operations/filter/where-not-in.md) to find Iris virginica sepal widths that match and do not match Iris versicolor sepal widths:
+The [`whereIn`](../reference/table-operations/filter/where-in.md) and [`whereNotIn`](../reference/table-operations/filter/where-not-in.md) methods filter one table based on another table. Deephaven evaluates these two methods whenever either table changes, whereas it only evaluates [`where`](../reference/table-operations/filter/where.md) when the filtered table ticks. ​The following example uses [`whereIn`](../reference/table-operations/filter/where-in.md) and [`whereNotIn`](../reference/table-operations/filter/where-not-in.md) to find Iris virginica sepal widths that match and do not match Iris versicolor sepal widths:
 
 ```groovy test-set=1 order=virginica,versicolor,virginicaMatchingPetalWidths,virginicaNonMatchingPetalWidths
 virginica = iris.where("Class in `Iris-virginica`")
@@ -153,10 +153,11 @@ virginicaMatchingPetalWidths = virginica.whereIn(versicolor, "PetalWidthCM")
 virginicaNonMatchingPetalWidths = virginica.whereNotIn(versicolor, "PetalWidthCM")
 ```
 
-> [!CAUTION] > [`whereIn`](../reference/table-operations/filter/where-in.md) and [`whereNotIn`](../reference/table-operations/filter/where-not-in.md) are inefficient if the filter table updates frequently.
+> [!CAUTION]
+> [`whereIn`](../reference/table-operations/filter/where-in.md) and [`whereNotIn`](../reference/table-operations/filter/where-not-in.md) are inefficient if the filter table updates frequently.
 
 > [!TIP]
-> Unlike [`naturalJoin`](../reference/table-operations/join/natural-join.md), [`whereIn`](../reference/table-operations/filter/where-in.md) works when more than one value in the right table matches values in the left table. [`join`](../reference/table-operations/join/join.md) also handles this, but [`whereIn`](../reference/table-operations/filter/where.md) returns matching rows faster than [`join`](../reference/table-operations/join/join.md).
+> Unlike [`naturalJoin`](../reference/table-operations/join/natural-join.md), [`whereIn`](../reference/table-operations/filter/where-in.md) works when more than one value in the right table matches values in the left table. This is true of [`join`](../reference/table-operations/join/join.md) as well, but [`whereIn`](../reference/table-operations/filter/where.md) returns matching rows faster than [`join`](../reference/table-operations/join/join.md).
 >
 > [`whereIn`](../reference/table-operations/filter/where-in.md) only provides filtering and does not allow adding columns from the right table. You may want to use [`whereIn`](../reference/table-operations/filter/where-in.md) to filter and then [`join`](../reference/table-operations/join/join.md) to add columns from the right table. This provides similar performance to [`naturalJoin`](../reference/table-operations/join/natural-join.md) while still allowing matches from the right table.
 
@@ -182,7 +183,7 @@ irisTailPct = iris.tailPct(0.1)
 
 ### Incremental Release Filter
 
-The [IncrementalReleaseFilter](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/select/IncrementalReleaseFilter.html), available from Java and Groovy, converts a static or add-only table into a ticking table that parcels out rows over time. This can be useful to simulate ticking data for development or to limit the number of rows that a complex query processes at one time. The incremental release filter takes two parameters:
+The [IncrementalReleaseFilter](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/select/IncrementalReleaseFilter.html), available from Java and Groovy, converts a static or add-only table into a ticking table that parcels out rows over time. This is useful to simulate ticking data for development or to limit the number of rows that a complex query processes at one time. The incremental release filter takes two parameters:
 
 - The initial number of rows to present in the resulting table.
 - The number of rows to release at the beginning of each update graph cycle.
