@@ -12,7 +12,7 @@ jobs:
     if: github.ref == 'refs/heads/main' && github.repository_owner == 'deephaven' # Don't run on forks that haven't disabled actions
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           sparse-checkout: /docs/
           sparse-checkout-cone-mode: false
@@ -33,7 +33,7 @@ jobs:
     if: github.ref == 'refs/heads/main' && github.repository_owner == 'deephaven' # Don't run on forks that haven't disabled actions
     steps:
     - name: Checkout
-      uses: actions/checkout@v5
+      uses: actions/checkout@v6
       with:
         sparse-checkout: /docs/
         sparse-checkout-cone-mode: false
