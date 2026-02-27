@@ -102,6 +102,6 @@ public class RegionedPushdownFilterLocationContext implements RegionedPushdownFi
 
     @Override
     public RegionedPushdownFilterLocationContext withTableLocation(TableLocation tableLocation) {
-        return null;
+        return new RegionedPushdownFilterLocationContext(wrapped, tableLocation);
     }
 }

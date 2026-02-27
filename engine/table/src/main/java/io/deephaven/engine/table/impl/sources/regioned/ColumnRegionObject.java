@@ -195,14 +195,14 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
         /**
          * The supported pushdown action for constant object regions.
          */
-        final static RegionedPushdownAction.Region ConstantColumnRegion =
+        final static RegionedPushdownAction.Region CONSTANT_COLUMN_REGION =
                 new RegionedPushdownAction.Region(
                         () -> false,
                         PushdownResult.SINGLE_VALUE_REGION_COST,
                         (ctx) -> true,
                         (tl) -> true,
                         (cr) -> cr instanceof Constant);
-        private static final List<RegionedPushdownAction> supportedActions = List.of(ConstantColumnRegion);
+        private static final List<RegionedPushdownAction> SUPPORTED_ACTIONS = List.of(CONSTANT_COLUMN_REGION);
 
         private final DATA_TYPE value;
 
@@ -246,7 +246,7 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
 
         @Override
         public List<RegionedPushdownAction> supportedActions() {
-            return supportedActions;
+            return SUPPORTED_ACTIONS;
         }
 
         @Override
@@ -260,8 +260,8 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
                 final RegionedPushdownAction.EstimateContext estimateContext) {
             for (RegionedPushdownAction action : actions) {
                 // Only ConstantColumnRegion is supported by this class.
-                if (action == ConstantColumnRegion) {
-                    return ConstantColumnRegion.filterCost();
+                if (action == CONSTANT_COLUMN_REGION) {
+                    return CONSTANT_COLUMN_REGION.filterCost();
                 }
             }
             return Long.MAX_VALUE;
@@ -278,7 +278,7 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
                 final PushdownFilterContext filterContext,
                 final RegionedPushdownAction.ActionContext actionContext) {
             // Only ConstantColumnRegion is supported by this class.
-            if (action != ConstantColumnRegion) {
+            if (action != CONSTANT_COLUMN_REGION) {
                 return input.copy();
             }
             final BasePushdownFilterContext filterCtx = (BasePushdownFilterContext) filterContext;
