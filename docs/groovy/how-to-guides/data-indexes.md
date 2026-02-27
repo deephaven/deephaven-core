@@ -482,7 +482,7 @@ fig = catPlotBy("Index benchmark times", resultsLong, "Operation", "TimeSeconds"
 - [Joins: exact and relational](./joins-exact-relational.md)
 - [Joins: inexact and range](./joins-timeseries-range.md)
 - [Sort table data](./sort.md)
-- [`dataIndex`](../reference/engine/dataIndex.md)
+- [`getDataIndex`](../reference/engine/getDataIndex.md)
 - [`hasDataIndex`](../reference/engine/hasDataIndex.md)
 - [`DataIndex` Javadoc](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/DataIndex.html)
 - [`DataIndexer` Javadoc](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/indexer/DataIndexer.html)
