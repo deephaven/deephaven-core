@@ -16,6 +16,7 @@ dependencies {
     implementation libs.dagger
     annotationProcessor libs.dagger.compiler
 
+    runtimeOnly project(':plugin-remotefilesource')
     runtimeOnly project(':log-to-slf4j')
     runtimeOnly project(':logback-print-stream-globals')
     runtimeOnly project(':logback-logbuffer')
