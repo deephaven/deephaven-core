@@ -23,7 +23,7 @@ result = source.snapshot_when(trigger_table=trigger, history=True)
 > The trigger table is often a [time table](../../reference/table-operations/create/timeTable.md), a special type of table that adds new rows at a regular, user-defined interval. The sole column of a time table is `Timestamp`.
 
 > [!CAUTION]
-> Columns from the trigger table appear in the result table. If the trigger and source tables have columns with the same name, an error will be raised. To avoid this problem, rename conflicting columns.
+> Columns from the trigger table appear in the result table. If the trigger and source tables have columns with the same name, an error will be raised. To avoid this, either rename conflicting columns, or omit duplicates in the trigger table via stamp columns.
 
 The [`snapshot`](../../reference/table-operations/snapshot/snapshot.md) operation produces a static snapshot of a table at a specific point in time.
 

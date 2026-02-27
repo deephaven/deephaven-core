@@ -9,6 +9,18 @@ This guide covers what data indexes are, how to create and use them, and how the
 
 Data indexes can improve the speed of filtering operations. Additionally, data indexes can be useful if multiple query operations need to compute the same data index on a table. This is common when a table is used in multiple joins or aggregations. If the table does not have a data index, each operation will internally create the same index. If the table does have a data index, the individual operations will not need to create their own indexes and can execute faster and use less RAM.
 
+## Data index inheritance and behavior
+
+Data indexes are inherited by derived tables unless one of the following conditions is true:
+
+1. The row set has changed.
+2. Any of the indexed data changed.
+3. It's a shared table from another worker (though you can still take advantage of the index if you apply pre-filtering before subscription).
+
+### Partitioning columns as data indexes
+
+Partitioning columns are a specialized form of data index. The main addition is that after location selection, the engine also leverages them like other data indexes for query operations.
+
 ## Create a data index
 
 A data index can be created from a source table and one or more key columns using [`data_index`](../reference/engine/data-index.md):
@@ -40,7 +52,7 @@ source = empty_table(10).update("X = 100 + i % 5")
 source_index = data_index(source, "X").table
 ```
 
-When looking at `source`, we can see that the value `100` in `X` appears in rows 0 and 5. The value `101` appears in rows 1, 6, and so on. Each row in `dh_row_set` contains the rows where each unique key value appears. Let's look at an example for more than one key column.
+When looking at `source`, we can see that the value `100` in column `X` appears in rows 0 and 5. The value `101` appears in rows 1, 6, and so on. Each row in `dh_row_set` contains the rows where each unique key value appears. Let's look at an example for more than one key column.
 
 ```python order=source_index,source
 from deephaven.experimental.data_index import data_index
@@ -168,7 +180,7 @@ source_right_distinct = source_right.select_distinct(["Key1", "Key2"])
 The engine will use single and multi-column indexes to accelerate filtering operations through the [predicate pushdown](./predicate-pushdown.md) framework. When a materialized (in-memory) data index exists, the engine can use it to quickly identify matching rows for various filter types. Deferred (disk-based) data indexes will not be materialized by `where` operations.
 
 > [!NOTE]
-> The Deephaven engine only uses a [`DataIndex`](/core/pydoc/code/deephaven.experimental.data_index.html#deephaven.experimental.data_index.DataIndex) when the keys exactly match what is needed for an operation. For example, if a data index is present for the columns `X` and `Y`, it will not be used if the engine only needs an index for column `X`.
+> The Deephaven engine only uses a [`DataIndex`](https://deephaven.io/core/pydoc/code/deephaven.experimental.data_index.html#deephaven.experimental.data_index.DataIndex) when the keys exactly match what is needed for an operation. For example, if a data index is present for the columns `X` and `Y`, it will not be used if the engine only needs an index for column `X`.
 
 Support for using data indexes with most filter types (beyond exact matches) was introduced in Deephaven v0.40.0 through the predicate pushdown framework.
 
