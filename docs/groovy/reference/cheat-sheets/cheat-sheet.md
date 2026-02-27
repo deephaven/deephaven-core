@@ -122,7 +122,7 @@ myInputTable = AppendOnlyArrayBackedInputTable.make(
 
 ### Ring tables
 
-A [`Ring Table`](/core/javadoc/io/deephaven/engine/table/impl/sources/ring/RingTableTools.html)<!--TODO: link Groovy RingTableTools.of doc when available--> is a table that contains the `n` most recent rows from a source table. If the table is non-static, rows outside of `n` will disappear from the ring table as the source table updates.
+A [`Ring Table`](../table-operations/create/ringTable.md) is a table that contains the `n` most recent rows from a source table. If the table is non-static, rows outside of `n` will disappear from the ring table as the source table updates.
 
 ```groovy order=tt,rt
 import io.deephaven.engine.table.impl.sources.ring.RingTableTools
@@ -569,11 +569,6 @@ timeStuff = staticSource2.view(
 )
 ```
 
-<!--TODO: add these lines back in when Chip is done with calendar changes:
-# "NextNonBizDay = nextNonBusinessDay()", \
-            # "NextBizDayCurrent = nextBusinessDay()", \
- -->
-
 ## Bin data
 
 Binning is a great pre-step for aggregating to support the down-sampling or other profiling of data.
@@ -785,8 +780,6 @@ putColsWherever = staticSource2.moveColumns(1, "String4", "Int2")
 ## Group and aggregate
 
 See [How to group and ungroup data](../../how-to-guides/grouping-data.md) for more details.
-
-<!--TODO: add group -->
 
 ### Simple grouping
 
