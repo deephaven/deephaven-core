@@ -68,7 +68,7 @@ public final class ParquetTableFilterTest {
     private static final ParquetInstructions EMPTY = ParquetInstructions.EMPTY;
 
     private static File rootFile;
-    private boolean pushdownDataIndexDisabled;
+    private boolean whereDataIndexEnabled;
 
     @Rule
     public final EngineCleanup framework = new EngineCleanup();
@@ -81,13 +81,13 @@ public final class ParquetTableFilterTest {
         }
         // noinspection ResultOfMethodCallIgnored
         rootFile.mkdirs();
-        pushdownDataIndexDisabled = QueryTable.DISABLE_WHERE_PUSHDOWN_DATA_INDEX;
+        whereDataIndexEnabled = QueryTable.USE_DATA_INDEX_FOR_WHERE;
     }
 
     @After
     public void tearDown() {
         FileUtils.deleteRecursively(rootFile);
-        QueryTable.DISABLE_WHERE_PUSHDOWN_DATA_INDEX = pushdownDataIndexDisabled;
+        QueryTable.USE_DATA_INDEX_FOR_WHERE = whereDataIndexEnabled;
     }
 
     private Table[] splitTable(final Table source, int numSplits, boolean randomSizes) {
@@ -2101,14 +2101,14 @@ public final class ParquetTableFilterTest {
     public void testPartitioningTableColumnRegions() {
         // Partitioning columns are automatically added to a data index. We have to disable use of the data index
         // in order to test constant and null column region pushdown features.
-        QueryTable.DISABLE_WHERE_PUSHDOWN_DATA_INDEX = true;
+        QueryTable.USE_DATA_INDEX_FOR_WHERE = false;
 
         QueryScope.addParam("symList", List.of("alpha", "bravo", "charlie", "delta", "echo", "foxtrot"));
         final Table tmpTable = TableTools.emptyTable(100_000).update(
                 "Sym = i % 7 == 6 ? (String)null : (String)symList.get(i % 7)",
-                "A = ii % 97 == 0 ? null : ii % 97",
-                "B = ii % 11 == 0 ? null : ii % 11",
-                "C = ii");
+                "A = i % 97 == 0 ? null : i % 97",
+                "B = i % 11 == 0 ? null : i % 11",
+                "C = i");
         final PartitionedTable partitionedTable = tmpTable.partitionBy("Sym", "A");
 
         final String destPath = Path.of(rootFile.getPath(), "partitioningTableColumnRegions").toString();
@@ -2116,7 +2116,8 @@ public final class ParquetTableFilterTest {
                 .build();
         writeKeyValuePartitionedTable(partitionedTable, destPath, writeInstructions);
 
-        final Table diskTable = ParquetTools.readTable(destPath);
+        // Coalesce the table to prevent PAST optimizations.
+        final Table diskTable = ParquetTools.readTable(destPath).coalesce();
         final Table memTable = diskTable.select();
 
         final Filter filterSym = RawString.of("Sym in `alpha`, `bravo`");
@@ -2134,10 +2135,12 @@ public final class ParquetTableFilterTest {
 
             Table result;
 
-            result = diskTable.where(capturingFilterSym).coalesce();
+            result = diskTable.where(capturingFilterSym);
 
-            // Expect one test per partitioning column region. The disk table has 7 * 97 = 679 regions
-            assertEquals(679, capturingFilterSym.numRowsProcessed());
+            // 583 is explained as follows. There are 6 * 97 = 582 regions where Sym is not-null which are tested.
+            // There are 97 null regions for Sym which are all covered by a single test (to determine filter null
+            // behavior).
+            assertEquals(583, capturingFilterSym.numRowsProcessed());
             assertEquals(28572, result.size());
 
             // Use the unwrapped filter to test other optimization paths (i.e. chunk filtering) and assert equality.
@@ -2150,8 +2153,9 @@ public final class ParquetTableFilterTest {
 
             result = diskTable.where(capturingFilterA).coalesce();
 
-            // Expect one test per partitioning column region.
-            assertEquals(679, capturingFilterA.numRowsProcessed());
+            // 673 is explained as follows. There are 7 * 96 = 672 regions where A is not null. There are 6 null
+            // regions for A, which are covered by a single test for filter null behavior.
+            assertEquals(673, capturingFilterA.numRowsProcessed());
             assertEquals(51550, result.size());
 
             // Use the unwrapped filter to test other optimization paths (i.e. chunk filtering) and assert equality.
@@ -2162,7 +2166,7 @@ public final class ParquetTableFilterTest {
 
             //////////////////////////////////////////////////////
 
-            result = diskTable.where(capturingFilterB).coalesce();
+            result = diskTable.where(capturingFilterB);
 
             // All rows to be tested.
             assertEquals(100000, capturingFilterB.numRowsProcessed());
@@ -2179,9 +2183,9 @@ public final class ParquetTableFilterTest {
             result = diskTable.where(Filter.and(capturingFilterSym, capturingFilterA)).coalesce();
 
             // All regions tested for Sym match
-            assertEquals(679, capturingFilterSym.numRowsProcessed());
+            assertEquals(583, capturingFilterSym.numRowsProcessed());
             // A subset of regions tested for A match
-            assertEquals(194, capturingFilterA.numRowsProcessed());
+            assertEquals(193, capturingFilterA.numRowsProcessed());
             assertEquals(14729, result.size());
 
             // Use the unwrapped filter to test other optimization paths (i.e. chunk filtering) and assert equality.
