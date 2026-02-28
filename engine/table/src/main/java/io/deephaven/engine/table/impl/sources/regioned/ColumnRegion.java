@@ -3,14 +3,23 @@
 //
 package io.deephaven.engine.table.impl.sources.regioned;
 
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.Releasable;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.engine.page.Page;
+import io.deephaven.engine.table.impl.BasePushdownFilterContext;
+import io.deephaven.engine.table.impl.PushdownFilterContext;
+import io.deephaven.engine.table.impl.PushdownResult;
+import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.util.annotations.FinalDefault;
+import org.jetbrains.annotations.MustBeInvokedByOverriders;
 import org.jetbrains.annotations.NotNull;
 
-public interface ColumnRegion<ATTR extends Any> extends Page<ATTR>, Releasable {
+import java.util.List;
+
+public interface ColumnRegion<ATTR extends Any> extends Page<ATTR>, Releasable, RegionedPushdownFilterMatcher {
 
     @Override
     @FinalDefault
@@ -27,6 +36,15 @@ public interface ColumnRegion<ATTR extends Any> extends Page<ATTR>, Releasable {
             extends GenericColumnRegionBase<ATTR>
             implements ColumnRegion<ATTR>, WithDefaultsForRepeatingValues<ATTR> {
 
+        private static final RegionedPushdownAction.Region NULL_COLUMN_REGION =
+                new RegionedPushdownAction.Region(
+                        () -> false,
+                        PushdownResult.SINGLE_VALUE_REGION_COST,
+                        (ctx) -> true,
+                        (tl) -> true,
+                        (cr) -> cr instanceof Null);
+        private static final List<RegionedPushdownAction> SUPPORTED_ACTIONS = List.of(NULL_COLUMN_REGION);
+
         Null(final long pageMask) {
             super(pageMask);
         }
@@ -38,6 +56,46 @@ public interface ColumnRegion<ATTR extends Any> extends Page<ATTR>, Releasable {
 
             destination.fillWithNullValue(offset, length);
             destination.setSize(offset + length);
+        }
+
+        @Override
+        public List<RegionedPushdownAction> supportedActions() {
+            return SUPPORTED_ACTIONS;
+        }
+
+        @Override
+        public long estimatePushdownAction(
+                final List<RegionedPushdownAction> actions,
+                final WhereFilter filter,
+                final RowSet selection,
+                final boolean usePrev,
+                final PushdownFilterContext filterContext,
+                final RegionedPushdownAction.EstimateContext estimateContext) {
+            return NULL_COLUMN_REGION.filterCost();
+        }
+
+        @Override
+        @MustBeInvokedByOverriders
+        public PushdownResult performPushdownAction(
+                final RegionedPushdownAction action,
+                final WhereFilter filter,
+                final RowSet selection,
+                final PushdownResult input,
+                final boolean usePrev,
+                final PushdownFilterContext filterContext,
+                final RegionedPushdownAction.ActionContext actionContext) {
+            final RegionedPushdownFilterContext filterCtx = (RegionedPushdownFilterContext) filterContext;
+
+            final BasePushdownFilterContext.FilterNullBehavior nullBehavior = filterCtx.filterNullBehavior();
+            if (nullBehavior == BasePushdownFilterContext.FilterNullBehavior.FAILS_ON_NULLS) {
+                // Bad-behaving filter, but not our responsibility to handle during pushdown.
+                return input.copy();
+            }
+            return nullBehavior == BasePushdownFilterContext.FilterNullBehavior.INCLUDES_NULLS
+                    // Promote all maybe rows to match.
+                    ? PushdownResult.of(selection, input.match().union(input.maybeMatch()), RowSetFactory.empty())
+                    // None of these rows match, return the original match rows.
+                    : PushdownResult.of(selection, input.match(), RowSetFactory.empty());
         }
     }
 }

@@ -16,6 +16,7 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
+import io.deephaven.engine.table.impl.BasePushdownFilterContext;
 import io.deephaven.engine.table.impl.PushdownFilterContext;
 import io.deephaven.engine.table.impl.PushdownResult;
 import io.deephaven.engine.table.impl.select.WhereFilter;
@@ -27,6 +28,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 import java.util.stream.Collectors;
@@ -319,6 +321,14 @@ public final class NullValueColumnSource<T> extends AbstractColumnSource<T>
     }
 
     @Override
+    public PushdownFilterContext makePushdownFilterContext(
+            final WhereFilter filter,
+            final List<ColumnSource<?>> filterSources) {
+        // Delegate to the shared code for SingleValuePushdownHelper
+        return new SingleValuePushdownHelper.FilterContext(filter, filterSources);
+    }
+
+    @Override
     public void estimatePushdownFilterCost(
             final WhereFilter filter,
             final RowSet selection,
@@ -327,9 +337,7 @@ public final class NullValueColumnSource<T> extends AbstractColumnSource<T>
             final JobScheduler jobScheduler,
             final LongConsumer onComplete,
             final Consumer<Exception> onError) {
-        // Delegate to the shared code for RowKeyAgnosticChunkSource
-        RowKeyAgnosticChunkSource.estimatePushdownFilterCostHelper(
-                filter, selection, usePrev, context, jobScheduler, onComplete, onError);
+        onComplete.accept(PushdownResult.SINGLE_VALUE_COLUMN_COST);
     }
 
     @Override
@@ -342,8 +350,23 @@ public final class NullValueColumnSource<T> extends AbstractColumnSource<T>
             final JobScheduler jobScheduler,
             final Consumer<PushdownResult> onComplete,
             final Consumer<Exception> onError) {
-        // Delegate to the shared code for RowKeyAgnosticChunkSource
-        RowKeyAgnosticChunkSource.pushdownFilterHelper(this, filter, selection, usePrev, context, costCeiling,
-                jobScheduler, onComplete, onError);
+        if (selection.isEmpty()) {
+            onComplete.accept(PushdownResult.allNoMatch(selection));
+            return;
+        }
+
+        final SingleValuePushdownHelper.FilterContext filterCtx = (SingleValuePushdownHelper.FilterContext) context;
+        final BasePushdownFilterContext.FilterNullBehavior nullBehavior = filterCtx.filterNullBehavior();
+
+        if (nullBehavior == BasePushdownFilterContext.FilterNullBehavior.INCLUDES_NULLS) {
+            onComplete.accept(PushdownResult.allMatch(selection));
+            return;
+        }
+        if (nullBehavior == BasePushdownFilterContext.FilterNullBehavior.EXCLUDES_NULLS) {
+            onComplete.accept(PushdownResult.allNoMatch(selection));
+            return;
+        }
+
+        onComplete.accept(PushdownResult.allMaybeMatch(selection));
     }
 }

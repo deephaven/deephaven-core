@@ -27,12 +27,13 @@ import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.SafeCloseableArray;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 import java.util.stream.Collectors;
@@ -54,7 +55,7 @@ public class RegionedColumnSourceManager
      * How many locations to test for data index or other location-level metadata before we give up and assume the
      * location has no useful information for push-down purposes.
      */
-    private static final int PUSHDOWN_LOCATION_SAMPLES = Configuration.getInstance()
+    static final int PUSHDOWN_LOCATION_SAMPLES = Configuration.getInstance()
             .getIntegerForClassWithDefault(RegionedColumnSourceManager.class, "pushdownLocationSamples", 5);
 
     /**
@@ -75,7 +76,7 @@ public class RegionedColumnSourceManager
     /**
      * The column definitions of this table as a map from column name.
      */
-    private final Map<String, ColumnDefinition<?>> columnNameToDefinition;
+    private volatile Map<String, ColumnDefinition<?>> columnNameToDefinition;
 
     /**
      * The column sources that make up this table.
@@ -186,13 +187,11 @@ public class RegionedColumnSourceManager
 
         this.isRefreshing = isRefreshing;
         this.columnDefinitions = columnDefinitions;
-        this.columnNameToDefinition = new HashMap<>(columnDefinitions.size());
         for (final ColumnDefinition<?> columnDefinition : columnDefinitions) {
             final String columnName = columnDefinition.getName();
             columnSources.put(
                     columnName,
                     componentFactory.createRegionedColumnSource(this, columnDefinition, codecMappings));
-            columnNameToDefinition.put(columnName, columnDefinition);
         }
 
         // Create the table that will hold the location data
@@ -552,7 +551,7 @@ public class RegionedColumnSourceManager
                 .collect(Collectors.toCollection(ArrayList::new));
     }
 
-    private synchronized ArrayList<IncludedTableLocationEntry> includedLocationEntries() {
+    synchronized ArrayList<IncludedTableLocationEntry> includedLocationEntries() {
         return new ArrayList<>(orderedIncludedTableLocations);
     }
 
@@ -637,9 +636,9 @@ public class RegionedColumnSourceManager
     /**
      * State-keeper for a table location and its column locations, once it's been found to have a positive size.
      */
-    private class IncludedTableLocationEntry implements Comparable<IncludedTableLocationEntry> {
+    class IncludedTableLocationEntry implements Comparable<IncludedTableLocationEntry> {
 
-        private final TableLocation location;
+        final TableLocation location;
         private final TableLocationUpdateSubscriptionBuffer subscriptionBuffer;
 
         // New regions indices are assigned in order of insertion, starting from 0 with no re-use of removed indices.
@@ -761,7 +760,7 @@ public class RegionedColumnSourceManager
             return Integer.compare(regionIndex, other.regionIndex);
         }
 
-        private WritableRowSet subsetAndShiftIntoLocationSpace(final RowSet selection) {
+        WritableRowSet subsetAndShiftIntoLocationSpace(final RowSet selection) {
             final long locationStartKey = firstRowKey();
             // Extract the portion of selection that overlaps this region.
             final WritableRowSet overlappingRows = selection.subSetByKeyRange(locationStartKey, lastRowKey());
@@ -823,7 +822,7 @@ public class RegionedColumnSourceManager
         return attributes;
     }
 
-    private static int[] regionIndices(final RowSet selection, final int maxCount) {
+    static int[] regionIndices(final RowSet selection, final int maxCount) {
         try (final RegionIndexIterator rit = RegionIndexIterator.of(selection)) {
             final IntStream.Builder builder = IntStream.builder();
             for (int i = 0; i < maxCount && rit.hasNext(); ++i) {
@@ -842,9 +841,57 @@ public class RegionedColumnSourceManager
             final JobScheduler jobScheduler,
             final LongConsumer onComplete,
             final Consumer<Exception> onError) {
-        final int[] regionIndices = regionIndices(selection, PUSHDOWN_LOCATION_SAMPLES);
-        new EstimateJobBuilder(selection.copy(), regionIndices, onComplete, onError)
-                .iterateParallel(jobScheduler, filter, usePrev, context);
+        // Sample a few regions and return the lowest cost
+        final int[] regionIndices = RegionedColumnSourceManager.regionIndices(selection,
+                RegionedColumnSourceManager.PUSHDOWN_LOCATION_SAMPLES);
+
+        final RowSet localSelection = selection.copy();
+        final AtomicLong minCost = new AtomicLong(Long.MAX_VALUE);
+
+        final class RegionContext implements JobScheduler.JobThreadContext {
+            RowSet shiftedRowSet;
+
+            @Override
+            public void close() {
+                SafeCloseable.closeAll(shiftedRowSet);
+            }
+
+            public void reset() {
+                if (shiftedRowSet != null) {
+                    shiftedRowSet.close();
+                    shiftedRowSet = null;
+                }
+            }
+        }
+
+        jobScheduler.iterateParallel(
+                ExecutionContext.getContext(),
+                (LogOutput output) -> output.append("RegionedColumnSourceManager#estimatePushdownFilterCost"),
+                RegionContext::new,
+                0,
+                regionIndices.length,
+                (ctx, idx, nec, resume) -> {
+                    ctx.reset();
+                    final int regionIndex = regionIndices[idx];
+
+                    final IncludedTableLocationEntry tle = orderedIncludedTableLocations.get(regionIndex);
+                    ctx.shiftedRowSet = tle.subsetAndShiftIntoLocationSpace(localSelection);
+
+                    tle.location.estimatePushdownFilterCost(
+                            filter,
+                            ctx.shiftedRowSet,
+                            usePrev,
+                            context,
+                            jobScheduler,
+                            cost -> {
+                                minCost.updateAndGet(old -> Math.min(old, cost));
+                                resume.run();
+                            },
+                            nec);
+                },
+                () -> onComplete.accept(minCost.get()),
+                localSelection::close,
+                onError);
     }
 
     @Override
@@ -857,390 +904,118 @@ public class RegionedColumnSourceManager
             final JobScheduler jobScheduler,
             final Consumer<PushdownResult> onComplete,
             final Consumer<Exception> onError) {
-        final int[] regionIndices = regionIndices(selection, Integer.MAX_VALUE);
-        new PushdownJobBuilder(selection.copy(), regionIndices, onComplete, onError)
-                .iterateParallel(jobScheduler, filter, usePrev, context, costCeiling);
+        final int[] regionIndices = RegionedColumnSourceManager.regionIndices(selection, Integer.MAX_VALUE);
+
+        final WritableRowSet[] matches = new WritableRowSet[regionIndices.length];
+        final WritableRowSet[] maybeMatches = new WritableRowSet[regionIndices.length];
+
+        jobScheduler.iterateParallel(
+                ExecutionContext.getContext(),
+                (LogOutput output) -> output.append("RegionedColumnSourceManager#pushdownFilter"),
+                RegionedPushdownHelper.RegionThreadContext::new,
+                0,
+                regionIndices.length,
+                (ctx, idx, nec, resume) -> {
+                    ctx.reset();
+                    final int regionIndex = regionIndices[idx];
+
+                    final IncludedTableLocationEntry tle = orderedIncludedTableLocations.get(regionIndex);
+                    ctx.shiftedRowSet = tle.subsetAndShiftIntoLocationSpace(selection);
+
+                    tle.location.pushdownFilter(
+                            filter,
+                            ctx.shiftedRowSet,
+                            usePrev,
+                            context,
+                            costCeiling,
+                            jobScheduler,
+                            result -> {
+                                tle.unshiftIntoRegionSpace(result);
+                                matches[idx] = result.match();
+                                maybeMatches[idx] = result.maybeMatch();
+                                resume.run();
+                            },
+                            nec);
+                },
+                () -> onComplete.accept(RegionedPushdownHelper.buildResults(matches, maybeMatches, selection)),
+                () -> {
+                    SafeCloseableArray.close(matches);
+                    SafeCloseableArray.close(maybeMatches);
+                },
+                onError);
     }
 
     /**
      * Get (or create) a map from column source to column name.
      */
     private IdentityHashMap<ColumnSource<?>, String> columnSourceToName() {
-        if (columnSourceToName == null) {
+        IdentityHashMap<ColumnSource<?>, String> local = columnSourceToName;
+        if (local == null) {
             synchronized (this) {
-                if (columnSourceToName == null) {
+                local = columnSourceToName;
+                if (local == null) {
                     final IdentityHashMap<ColumnSource<?>, String> tmp = new IdentityHashMap<>(columnSources.size());
                     columnSources.forEach((name, src) -> tmp.put(src, name));
-                    columnSourceToName = tmp;
+                    columnSourceToName = local = tmp;
                 }
             }
         }
-        return columnSourceToName;
+        return local;
     }
 
-    public static class RegionedColumnSourcePushdownFilterContext extends BasePushdownFilterContext {
-        private final List<ColumnDefinition<?>> columnDefinitions;
-        private final Map<String, String> renameMap;
-
-        public RegionedColumnSourcePushdownFilterContext(
-                final RegionedColumnSourceManager manager,
-                final WhereFilter filter,
-                final List<ColumnSource<?>> columnSources) {
-            super(filter, columnSources);
-
-            final List<String> filterColumns = filter.getColumns();
-            Require.eq(filterColumns.size(), "filterColumns.size()",
-                    columnSources.size(), "columnSources.size()");
-
-            // Map the incoming column sources to their local name and definition.
-            columnDefinitions = new ArrayList<>(columnSources.size());
-            renameMap = new HashMap<>();
-            final IdentityHashMap<ColumnSource<?>, String> columnSourceToName = manager.columnSourceToName();
-            final Map<String, ColumnDefinition<?>> columnNameToDefinition = manager.columnNameToDefinition;
-
-            for (int ii = 0; ii < filterColumns.size(); ii++) {
-                final String filterColumnName = filterColumns.get(ii);
-                final ColumnSource<?> filterSource = columnSources.get(ii);
-                final String localColumnName = columnSourceToName.get(filterSource);
-                if (localColumnName == null) {
-                    throw new IllegalArgumentException(
-                            "No associated source for '" + filterColumnName + "' found in column sources");
+    /**
+     * Get (or create) a map from column name to column definition.
+     */
+    private Map<String, ColumnDefinition<?>> columnNameToDefinition() {
+        Map<String, ColumnDefinition<?>> local = columnNameToDefinition;
+        if (local == null) {
+            synchronized (this) {
+                local = columnNameToDefinition;
+                if (local == null) {
+                    local = new HashMap<>(columnDefinitions.size());
+                    for (final ColumnDefinition<?> columnDefinition : columnDefinitions) {
+                        final String columnName = columnDefinition.getName();
+                        local.put(columnName, columnDefinition);
+                    }
+                    columnNameToDefinition = local;
                 }
-                // Add the definition.
-                columnDefinitions.add(columnNameToDefinition.get(localColumnName));
-
-                // Add the rename (if needed)
-                if (localColumnName.equals(filterColumnName)) {
-                    continue;
-                }
-                renameMap.put(filterColumnName, localColumnName);
             }
         }
-
-        public List<ColumnDefinition<?>> columnDefinitions() {
-            return columnDefinitions;
-        }
-
-        public Map<String, String> renameMap() {
-            return renameMap;
-        }
-
-        @Override
-        public void close() {
-            super.close();
-        }
+        return local;
     }
 
     @Override
     public PushdownFilterContext makePushdownFilterContext(
             final WhereFilter filter,
             final List<ColumnSource<?>> filterSources) {
-        return new RegionedColumnSourcePushdownFilterContext(this, filter, filterSources);
-    }
+        final List<String> filterColumns = filter.getColumns();
+        Require.eq(filterColumns.size(), "filterColumns.size()",
+                filterSources.size(), "filterSources.size()");
 
-    private abstract class JobBuilder {
+        final List<ColumnDefinition<?>> columnDefinitions = new ArrayList<>(filterSources.size());
+        final Map<String, String> renameMap = new HashMap<>();
 
-        protected final WritableRowSet selection;
-        protected final int[] regionIndices;
-        protected final Consumer<Exception> onError;
+        final IdentityHashMap<ColumnSource<?>, String> columnSourceToName = columnSourceToName();
+        final Map<String, ColumnDefinition<?>> columnNameToDefinition = columnNameToDefinition();
 
-        private JobBuilder(
-                final WritableRowSet selection,
-                final int[] regionIndices,
-                final Consumer<Exception> onError) {
-            this.selection = Objects.requireNonNull(selection);
-            this.regionIndices = Objects.requireNonNull(regionIndices);
-            this.onError = Objects.requireNonNull(onError);
-        }
-
-        public final void iterateParallel(
-                final JobScheduler jobScheduler,
-                final JobScheduler.IterateResumeAction<JobScheduler.JobThreadContext> action) {
-            jobScheduler.iterateParallel(
-                    ExecutionContext.getContext(),
-                    this::log,
-                    JobScheduler.DEFAULT_CONTEXT_FACTORY,
-                    0,
-                    regionIndices.length,
-                    action,
-                    this::onJobsComplete,
-                    this::jobsCleanup,
-                    this::onJobsError);
-        }
-
-        protected abstract LogOutput log(LogOutput output);
-
-        protected abstract void onJobsComplete();
-
-        private void jobsCleanup() {
-            cleanupImpl();
-        }
-
-        private void onJobsError(Exception e) {
-            try (final SafeCloseable ignored = this::cleanupImpl) {
-                onError.accept(e);
+        for (int ii = 0; ii < filterColumns.size(); ii++) {
+            final String filterColumnName = filterColumns.get(ii);
+            final ColumnSource<?> filterSource = filterSources.get(ii);
+            final String localColumnName = columnSourceToName.get(filterSource);
+            if (localColumnName == null) {
+                throw new IllegalArgumentException(
+                        "No associated source for '" + filterColumnName + "' found in column sources");
             }
-        }
+            // Add the definition.
+            columnDefinitions.add(columnNameToDefinition.get(localColumnName));
 
-        protected abstract void cleanupImpl();
-
-        abstract class JobRunner implements JobScheduler.IterateResumeAction<JobScheduler.JobThreadContext> {
-            protected final WhereFilter filter;
-            protected final boolean usePrev;
-            protected final io.deephaven.engine.table.impl.PushdownFilterContext context;
-            protected final JobScheduler jobScheduler;
-
-            JobRunner(
-                    final WhereFilter filter,
-                    final boolean usePrev,
-                    final io.deephaven.engine.table.impl.PushdownFilterContext context,
-                    final JobScheduler jobScheduler) {
-                this.filter = Objects.requireNonNull(filter);
-                this.usePrev = usePrev;
-                this.context = Objects.requireNonNull(context);
-                this.jobScheduler = Objects.requireNonNull(jobScheduler);
+            // Add the rename (if needed)
+            if (localColumnName.equals(filterColumnName)) {
+                continue;
             }
-
-            abstract class Job {
-                protected final int jobIndex;
-                private final Consumer<Exception> nestedErrorConsumer;
-                private final Runnable locationResume;
-                protected final IncludedTableLocationEntry tle;
-                protected final WritableRowSet shiftedSubset;
-                private final AtomicBoolean closed;
-
-                Job(final int jobIndex, final Consumer<Exception> nestedErrorConsumer, final Runnable locationResume) {
-                    this.jobIndex = jobIndex;
-                    this.locationResume = Objects.requireNonNull(locationResume);
-                    this.nestedErrorConsumer = Objects.requireNonNull(nestedErrorConsumer);
-                    this.tle = orderedIncludedTableLocations.get(regionIndices[jobIndex]);
-                    this.shiftedSubset = tle.subsetAndShiftIntoLocationSpace(selection);
-                    this.closed = new AtomicBoolean(false);
-                }
-
-                protected final void onCompleteSuccess() {
-                    locationResume.run();
-                    close();
-                }
-
-                protected final void onError(Exception e) {
-                    try (final SafeCloseable ignored = this::close) {
-                        nestedErrorConsumer.accept(e);
-                    }
-                }
-
-                private void close() {
-                    if (!closed.compareAndSet(false, true)) {
-                        return;
-                    }
-                    shiftedSubset.close();
-                }
-            }
-        }
-    }
-
-    private final class EstimateJobBuilder extends JobBuilder {
-        private final LongConsumer onEstimateComplete;
-        private long minEstimate;
-
-        EstimateJobBuilder(WritableRowSet selection, int[] regionIndices, LongConsumer onEstimateComplete,
-                Consumer<Exception> onEstimateError) {
-            super(selection, regionIndices, onEstimateError);
-            this.onEstimateComplete = Objects.requireNonNull(onEstimateComplete);
-            this.minEstimate = Long.MAX_VALUE;
+            renameMap.put(filterColumnName, localColumnName);
         }
 
-        public void iterateParallel(
-                final JobScheduler jobScheduler,
-                final WhereFilter filter,
-                final boolean usePrev,
-                final io.deephaven.engine.table.impl.PushdownFilterContext context) {
-            iterateParallel(jobScheduler, new EstimateJobRunner(filter, usePrev, context, jobScheduler));
-        }
-
-        private synchronized void addEstimate(final long estimate) {
-            if (estimate < minEstimate) {
-                minEstimate = estimate;
-            }
-        }
-
-        @Override
-        protected LogOutput log(LogOutput output) {
-            return output.append("RegionedColumnSourceManager#estimatePushdownFilterCost");
-        }
-
-        @Override
-        protected void onJobsComplete() {
-            onEstimateComplete.accept(minEstimate);
-        }
-
-        @Override
-        protected void cleanupImpl() {
-            selection.close();
-        }
-
-        final class EstimateJobRunner extends JobRunner {
-            EstimateJobRunner(WhereFilter filter, boolean usePrev,
-                    io.deephaven.engine.table.impl.PushdownFilterContext context,
-                    JobScheduler jobScheduler) {
-                super(filter, usePrev, context, jobScheduler);
-            }
-
-            @Override
-            public void run(JobScheduler.JobThreadContext taskThreadContext, int index,
-                    Consumer<Exception> nestedErrorConsumer, Runnable resume) {
-                new EstimateJob(index, nestedErrorConsumer, resume).estimatePushdownFilterCost();
-            }
-
-            final class EstimateJob extends Job {
-                EstimateJob(int jobIndex, Consumer<Exception> nestedErrorConsumer, Runnable locationResume) {
-                    super(jobIndex, nestedErrorConsumer, locationResume);
-                }
-
-                public void estimatePushdownFilterCost() {
-                    tle.location.estimatePushdownFilterCost(filter, shiftedSubset, usePrev, context, jobScheduler,
-                            this::onComplete, this::onError);
-                }
-
-                private void onComplete(long estimatedCost) {
-                    addEstimate(estimatedCost);
-                    onCompleteSuccess();
-                }
-            }
-        }
-    }
-
-    private final class PushdownJobBuilder extends JobBuilder {
-        private final Consumer<PushdownResult> onPushdownComplete;
-
-        private final WritableRowSet[] matches;
-        private final WritableRowSet[] maybeMatches;
-
-        public PushdownJobBuilder(WritableRowSet selection, int[] regionIndices,
-                Consumer<PushdownResult> onPushdownComplete, Consumer<Exception> onPushdownError) {
-            super(selection, regionIndices, onPushdownError);
-            this.onPushdownComplete = Objects.requireNonNull(onPushdownComplete);
-            this.matches = new WritableRowSet[regionIndices.length];
-            this.maybeMatches = new WritableRowSet[regionIndices.length];
-        }
-
-        public void iterateParallel(
-                final JobScheduler jobScheduler,
-                final WhereFilter filter,
-                final boolean usePrev,
-                final io.deephaven.engine.table.impl.PushdownFilterContext context,
-                final long costCeiling) {
-            iterateParallel(jobScheduler, new PushdownJobRunner(filter, usePrev, context, jobScheduler, costCeiling));
-        }
-
-        private void addResult(final int ix, final PushdownResult result) {
-            // Note: we are assuming that the lower-layer location pushdown logic is correct and using this assumption
-            // to build our results more efficiently because of that assumption. As such, we are destructuring the
-            // PushdownResult so that we can keep just the matches and maybeMatches and close selection since we don't
-            // _need_ it.
-            //
-            // If we ever need to be more defensive because we are seeing unexpected behavior, or we need to better
-            // validate this assumption for debugging purposes, it is easy to re-work this implementation so that this
-            // keeps the full PushdownResult and does a more thorough check in buildResults.
-            addResult(ix, result.match(), result.maybeMatch());
-
-            // Note: not closing result; we've already closed selection, and match / maybeMatch are now owned by this.
-        }
-
-        private synchronized void addResult(
-                final int jobIndex,
-                final WritableRowSet matchSubset,
-                final WritableRowSet maybeMatchSubset) {
-            // Note: we could consider a strategy where we incrementally compute the results via RowSet#insert or
-            // RowSetBuilderRandom#addRowSet. Without doing benchmarking, it is hard to say whether that would be a
-            // better approach.
-            //
-            // The justification for the current approach:
-            // 1. Very short time in addResult, meaning we won't block other jobs from completing / new jobs from
-            // running
-            // 2. In the case where the result represent the full selection, we can skip the building
-            this.matches[jobIndex] = matchSubset;
-            this.maybeMatches[jobIndex] = maybeMatchSubset;
-        }
-
-        private synchronized PushdownResult buildResults() {
-            final long totalMatchSize = Stream.of(matches).mapToLong(RowSet::size).sum();
-            final long totalMaybeMatchSize = Stream.of(maybeMatches).mapToLong(RowSet::size).sum();
-            final long selectionSize = selection.size();
-            if (totalMatchSize == selectionSize) {
-                Assert.eqZero(totalMaybeMatchSize, "totalMaybeMatchSize");
-                return PushdownResult.allMatch(selection);
-            }
-            if (totalMaybeMatchSize == selectionSize) {
-                Assert.eqZero(totalMatchSize, "totalMatchSize");
-                return PushdownResult.allMaybeMatch(selection);
-            }
-            if (totalMatchSize == 0 && totalMaybeMatchSize == 0) {
-                return PushdownResult.allNoMatch(selection);
-            }
-            // Note: it's not obvious what the best approach for building these RowSets is; that is, sequential
-            // insertion vs sequential builder. We know that the individual results are ordered and non-overlapping.
-            // If this becomes important, we can do more benchmarking.
-            try (
-                    final WritableRowSet match = RowSetFactory.unionInsert(Arrays.asList(matches));
-                    final WritableRowSet maybeMatch = RowSetFactory.unionInsert(Arrays.asList(maybeMatches))) {
-                return PushdownResult.of(selection, match, maybeMatch);
-            }
-        }
-
-        @Override
-        protected LogOutput log(LogOutput output) {
-            return output.append("RegionedColumnSourceManager#pushdownFilter");
-        }
-
-        @Override
-        protected void onJobsComplete() {
-            onPushdownComplete.accept(buildResults());
-        }
-
-        @Override
-        protected void cleanupImpl() {
-            SafeCloseable.closeAll(
-                    Stream.concat(Stream.of(selection),
-                            Stream.concat(
-                                    Stream.of(matches),
-                                    Stream.of(maybeMatches))));
-        }
-
-        final class PushdownJobRunner extends JobRunner {
-
-            private final long costCeiling;
-
-            public PushdownJobRunner(WhereFilter filter, boolean usePrev,
-                    io.deephaven.engine.table.impl.PushdownFilterContext context,
-                    JobScheduler jobScheduler, long costCeiling) {
-                super(filter, usePrev, context, jobScheduler);
-                this.costCeiling = costCeiling;
-            }
-
-            @Override
-            public void run(JobScheduler.JobThreadContext taskThreadContext, int index,
-                    Consumer<Exception> nestedErrorConsumer, Runnable resume) {
-                new PushdownJob(index, nestedErrorConsumer, resume).pushdownFilter();
-            }
-
-            final class PushdownJob extends Job {
-                public PushdownJob(int jobIndex, Consumer<Exception> nestedErrorConsumer, Runnable locationResume) {
-                    super(jobIndex, nestedErrorConsumer, locationResume);
-                }
-
-                public void pushdownFilter() {
-                    tle.location.pushdownFilter(filter, shiftedSubset, usePrev, context, costCeiling, jobScheduler,
-                            this::onComplete, this::onError);
-                }
-
-                private void onComplete(final PushdownResult pushdownResult) {
-                    tle.unshiftIntoRegionSpace(pushdownResult);
-                    addResult(jobIndex, pushdownResult);
-                    onCompleteSuccess();
-                }
-            }
-        }
-
+        return new RegionedPushdownFilterContextImpl(filter, filterSources, columnDefinitions, renameMap);
     }
 }
