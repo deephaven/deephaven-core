@@ -2136,8 +2136,8 @@ public final class ParquetTableFilterTest {
                         new ParallelizedRowSetCapturingFilter(filterAConditional);
                 final RowSetCapturingFilter capturingFilterB = new ParallelizedRowSetCapturingFilter(filterB)) {
 
-            final List<RowSetCapturingFilter> allFilters =
-                    List.of(capturingFilterSym, capturingFilterSymConditional, capturingFilterA, capturingFilterAConditional, capturingFilterB);
+            final List<RowSetCapturingFilter> allFilters = List.of(capturingFilterSym, capturingFilterSymConditional,
+                    capturingFilterA, capturingFilterAConditional, capturingFilterB);
 
             Table result;
 
