@@ -71,22 +71,10 @@ public abstract class BasePushdownFilterContextImpl implements BasePushdownFilte
                 ((MatchFilter) filter).getFailoverFilterIfCached() == null;
 
         final Optional<ChunkFilter> chunkFilter = ExposesChunkFilter.chunkFilter(filter);
-        if (chunkFilter.isPresent()) {
-            supportsChunkFiltering = true;
-            conditionalFilterInitTable = null;
-        } else if (filter instanceof ConditionFilter && ((ConditionFilter) filter).getNumInputsUsed() == 1) {
-            supportsChunkFiltering = true;
-            // Pre-create a simple table to use when initializing the ConditionFilter for chunk filtering.
-            final Map<String, ColumnSource<?>> columnSourceMap = Map.of(filter.getColumns().get(0),
-                    NullValueColumnSource.getInstance(
-                            columnSources.get(0).getType(),
-                            columnSources.get(0).getComponentType()));
-            conditionalFilterInitTable = TableTools.newTable(0, columnSourceMap);
-        } else {
-            supportsChunkFiltering = false;
-            conditionalFilterInitTable = null;
-        }
+        supportsChunkFiltering = chunkFilter.isPresent()
+                || (filter instanceof ConditionFilter && ((ConditionFilter) filter).getNumInputsUsed() == 1);
 
+        conditionalFilterInitTable = null; // lazily initialized
         filterNullBehavior = null; // lazily initialized
     }
 

@@ -2121,17 +2121,23 @@ public final class ParquetTableFilterTest {
         final Table memTable = diskTable.select();
 
         final Filter filterSym = RawString.of("Sym in `alpha`, `bravo`");
+        final Filter filterSymConditional = RawString.of("true && (Sym == `alpha` || Sym == `bravo`)");
         final Filter filterA = RawString.of("A < 50");
+        final Filter filterAConditional = RawString.of("true && A < 50");
         final Filter filterB = RawString.of("B < 5");
 
 
         // Create some capturing filters to verify the row sets being passed through the filter chain.
         try (final RowSetCapturingFilter capturingFilterSym = new ParallelizedRowSetCapturingFilter(filterSym);
+                final RowSetCapturingFilter capturingFilterSymConditional =
+                        new ParallelizedRowSetCapturingFilter(filterSymConditional);
                 final RowSetCapturingFilter capturingFilterA = new ParallelizedRowSetCapturingFilter(filterA);
+                final RowSetCapturingFilter capturingFilterAConditional =
+                        new ParallelizedRowSetCapturingFilter(filterAConditional);
                 final RowSetCapturingFilter capturingFilterB = new ParallelizedRowSetCapturingFilter(filterB)) {
 
             final List<RowSetCapturingFilter> allFilters =
-                    List.of(capturingFilterSym, capturingFilterA, capturingFilterB);
+                    List.of(capturingFilterSym, capturingFilterSymConditional, capturingFilterA, capturingFilterAConditional, capturingFilterB);
 
             Table result;
 
@@ -2151,6 +2157,19 @@ public final class ParquetTableFilterTest {
 
             //////////////////////////////////////////////////////
 
+            result = diskTable.where(capturingFilterSymConditional);
+
+            assertEquals(583, capturingFilterSymConditional.numRowsProcessed());
+            assertEquals(28572, result.size());
+
+            // Use the unwrapped filter to test other optimization paths (i.e. chunk filtering) and assert equality.
+            assertTableEquals(result, memTable.where(filterSymConditional));
+            assertTableEquals(result, diskTable.where(filterSymConditional));
+
+            allFilters.forEach(RowSetCapturingFilter::reset);
+
+            //////////////////////////////////////////////////////
+
             result = diskTable.where(capturingFilterA).coalesce();
 
             // 673 is explained as follows. There are 7 * 96 = 672 regions where A is not null. There are 6 null
@@ -2161,6 +2180,19 @@ public final class ParquetTableFilterTest {
             // Use the unwrapped filter to test other optimization paths (i.e. chunk filtering) and assert equality.
             assertTableEquals(result, memTable.where(filterA));
             assertTableEquals(result, diskTable.where(filterA));
+
+            allFilters.forEach(RowSetCapturingFilter::reset);
+
+            //////////////////////////////////////////////////////
+
+            result = diskTable.where(capturingFilterAConditional).coalesce();
+
+            assertEquals(673, capturingFilterAConditional.numRowsProcessed());
+            assertEquals(51550, result.size());
+
+            // Use the unwrapped filter to test other optimization paths (i.e. chunk filtering) and assert equality.
+            assertTableEquals(result, memTable.where(filterAConditional));
+            assertTableEquals(result, diskTable.where(filterAConditional));
 
             allFilters.forEach(RowSetCapturingFilter::reset);
 
