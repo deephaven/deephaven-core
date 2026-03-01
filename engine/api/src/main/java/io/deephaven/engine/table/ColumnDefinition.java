@@ -19,6 +19,8 @@ import io.deephaven.qst.type.GenericType;
 import io.deephaven.qst.type.GenericVectorType;
 import io.deephaven.qst.type.InstantType;
 import io.deephaven.qst.type.IntType;
+import io.deephaven.qst.type.LocalDateType;
+import io.deephaven.qst.type.LocalTimeType;
 import io.deephaven.qst.type.LongType;
 import io.deephaven.qst.type.NativeArrayType;
 import io.deephaven.qst.type.PrimitiveType;
@@ -309,6 +311,16 @@ public class ColumnDefinition<TYPE> implements LogOutputAppendable {
 
         @Override
         public ColumnDefinition<?> visit(InstantType instantType) {
+            return ofTime(name);
+        }
+
+        @Override
+        public ColumnDefinition<?> visit(LocalTimeType localTimeType) {
+            return ofTime(name);
+        }
+
+        @Override
+        public ColumnDefinition<?> visit(LocalDateType localDateType) {
             return ofTime(name);
         }
 

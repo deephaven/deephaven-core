@@ -290,6 +290,16 @@ public enum PartitionParser {
         }
 
         @Override
+        public PartitionParser visit(@NotNull final io.deephaven.qst.type.LocalTimeType localTimeType) {
+            return null;
+        }
+
+        @Override
+        public PartitionParser visit(@NotNull final io.deephaven.qst.type.LocalDateType localDateType) {
+            return null;
+        }
+
+        @Override
         public PartitionParser visit(@NotNull final ArrayType<?, ?> arrayType) {
             // If the partition parser ever supports ArrayTypes, make sure the short-circuit in
             // PartitionParser.lookup(java.lang.Class<?>, java.lang.Class<?>) is removed.
