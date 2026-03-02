@@ -2880,6 +2880,10 @@
                 "label": "Integrations: AWS",
                 "items": [
                   {
+                    "label": "How do I run Deephaven behind AWS ALB?",
+                    "path": "reference/community-questions/aws-alb-configuration.md"
+                  },
+                  {
                     "label": "Why can't I read from S3?",
                     "path": "reference/community-questions/aws-timeout.md"
                   },
