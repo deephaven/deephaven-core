@@ -460,7 +460,7 @@ public class FieldVectorAdapter implements Array.Visitor<FieldVector>, Primitive
             if (ld == null) {
                 vector.setNull(index);
             } else {
-                vector.set(index, (int) ld.toEpochDay());
+                vector.set(index, Math.toIntExact(ld.toEpochDay()));
             }
             index++;
         }
@@ -727,7 +727,7 @@ public class FieldVectorAdapter implements Array.Visitor<FieldVector>, Primitive
                     if (x == null) {
                         writer.writeNull();
                     } else {
-                        final int daysSinceEpoch = (int) x.toEpochDay();
+                        final int daysSinceEpoch = Math.toIntExact(x.toEpochDay());
                         writer.writeDateDay(daysSinceEpoch);
                     }
                 }

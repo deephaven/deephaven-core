@@ -41,6 +41,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Objects;
 
@@ -102,6 +104,14 @@ public class ColumnDefinition<TYPE> implements LogOutputAppendable {
 
     public static ColumnDefinition<Instant> ofTime(@NotNull final String name) {
         return new ColumnDefinition<>(name, Instant.class);
+    }
+
+    public static ColumnDefinition<LocalTime> ofLocalTime(@NotNull final String name) {
+        return new ColumnDefinition<>(name, LocalTime.class);
+    }
+
+    public static ColumnDefinition<LocalDate> ofLocalDate(@NotNull final String name) {
+        return new ColumnDefinition<>(name, LocalDate.class);
     }
 
     public static ColumnDefinition<?> of(String name, Type<?> type) {
@@ -316,12 +326,12 @@ public class ColumnDefinition<TYPE> implements LogOutputAppendable {
 
         @Override
         public ColumnDefinition<?> visit(LocalTimeType localTimeType) {
-            return ofTime(name);
+            return ofLocalTime(name);
         }
 
         @Override
         public ColumnDefinition<?> visit(LocalDateType localDateType) {
-            return ofTime(name);
+            return ofLocalDate(name);
         }
 
         @Override

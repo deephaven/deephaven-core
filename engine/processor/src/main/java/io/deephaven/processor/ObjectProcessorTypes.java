@@ -109,12 +109,12 @@ final class ObjectProcessorTypes {
 
         @Override
         public ChunkType visit(LocalTimeType localTimeType) {
-            return ChunkType.Long;
+            return ChunkType.Object;
         }
 
         @Override
         public ChunkType visit(LocalDateType localDateType) {
-            return ChunkType.Long;
+            return ChunkType.Object;
         }
 
         @Override
