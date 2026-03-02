@@ -18,7 +18,7 @@ These table operations keep rows based on row position:
 - [`tailPct`](../reference/table-operations/filter/tail-pct.md)
 - [`slicePct`](../reference/table-operations/filter/slice-pct.md)
 
-These table operations keep rows based on equality in one or more columns of a separate table:
+These table operations keep rows based on matching values in one or more columns of a separate table:
 
 - [`whereIn`](../reference/table-operations/filter/where-in.md)
 - [`whereNotIn`](../reference/table-operations/filter/where-not-in.md)

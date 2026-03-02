@@ -19,7 +19,7 @@ These table operations keep rows based on row position:
 - [`tail_pct`](../reference/table-operations/filter/tail-pct.md)
 - [`slice_pct`](../reference/table-operations/filter/slice-pct.md)
 
-These table operations keep rows based on equality in one or more columns of a separate table:
+These table operations keep rows based on matching values in one or more columns of a separate table:
 
 - [`where_in`](../reference/table-operations/filter/where-in.md)
 - [`where_not_in`](../reference/table-operations/filter/where-not-in.md)
