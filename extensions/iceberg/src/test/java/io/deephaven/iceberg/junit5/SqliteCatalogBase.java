@@ -2008,6 +2008,43 @@ public abstract class SqliteCatalogBase {
     }
 
     @Test
+    void testTableWriterViaParquetInstructions() {
+        final Table part1 = TableTools.emptyTable(6)
+                .update("intCol = (int) 2 * i + 10",
+                        "doubleCol = (double) 2.5 * i + 10");
+        final Table part2 = TableTools.emptyTable(5)
+                .update("intCol = (int) 3 * i + 20",
+                        "doubleCol = (double) 3.5 * i + 20");
+        final Table part3 = TableTools.emptyTable(4)
+                .update("intCol = (int) 4 * i + 30",
+                        "doubleCol = (double) 4.5 * i + 30");
+        final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.PartitionOrderingTest");
+
+        final TableDefinition tableDefinition1 = TableDefinition.of(
+                ColumnDefinition.ofInt("intCol"),
+                ColumnDefinition.ofDouble("doubleCol"),
+                ColumnDefinition.ofString("InternalPartition").withPartitioning(),
+                ColumnDefinition.ofString("Date").withPartitioning());
+        final IcebergTableAdapter tableAdapter1 = catalogAdapter.createTable(tableIdentifier, tableDefinition1);
+        final IcebergTableWriter tableWriter1 =
+                tableAdapter1.tableWriter(ParquetInstructions.builder().setMaximumDictionarySize(100).build());
+
+        tableWriter1.append(IcebergWriteInstructions.builder()
+                .addTables(part1, part2, part3)
+                .addAllPartitionPaths(List.of(
+                        "InternalPartition=0/Date=2024-08-01",
+                        "InternalPartition=1/Date=2024-08-02",
+                        "InternalPartition=2/Date=2024-08-02"))
+                .build());
+        final Table fromIceberg1 = tableAdapter1.table();
+        final Table expected1 = TableTools.merge(
+                part1.update("InternalPartition = `0`", "Date = `2024-08-01`"),
+                part2.update("InternalPartition = `1`", "Date = `2024-08-02`"),
+                part3.update("InternalPartition = `2`", "Date = `2024-08-02`"));
+        assertTableEquals(expected1, fromIceberg1);
+    }
+
+    @Test
     void testPartitionedAppendWithDeleting() {
         final Table part1 = TableTools.emptyTable(6)
                 .update("intCol = (int) 2 * i + 10",
