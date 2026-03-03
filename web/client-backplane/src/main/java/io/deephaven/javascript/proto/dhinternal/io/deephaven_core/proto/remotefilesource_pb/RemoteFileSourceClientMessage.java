@@ -14,9 +14,9 @@ import jsinterop.base.JsPropertyMap;
 
 @JsType(
         isNative = true,
-        name = "dhinternal.io.deephaven_core.proto.remotefilesource_pb.RemoteFileSourceClientRequest",
+        name = "dhinternal.io.deephaven_core.proto.remotefilesource_pb.RemoteFileSourceClientMessage",
         namespace = JsPackage.GLOBAL)
-public class RemoteFileSourceClientRequest {
+public class RemoteFileSourceClientMessage {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -24,7 +24,7 @@ public class RemoteFileSourceClientRequest {
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
             public interface GetContentUnionType {
                 @JsOverlay
-                static RemoteFileSourceClientRequest.ToObjectReturnType.MetaResponseFieldType.GetContentUnionType of(
+                static RemoteFileSourceClientMessage.ToObjectReturnType.MetaResponseFieldType.GetContentUnionType of(
                         Object o) {
                     return Js.cast(o);
                 }
@@ -51,12 +51,12 @@ public class RemoteFileSourceClientRequest {
             }
 
             @JsOverlay
-            static RemoteFileSourceClientRequest.ToObjectReturnType.MetaResponseFieldType create() {
+            static RemoteFileSourceClientMessage.ToObjectReturnType.MetaResponseFieldType create() {
                 return Js.uncheckedCast(JsPropertyMap.of());
             }
 
             @JsProperty
-            RemoteFileSourceClientRequest.ToObjectReturnType.MetaResponseFieldType.GetContentUnionType getContent();
+            RemoteFileSourceClientMessage.ToObjectReturnType.MetaResponseFieldType.GetContentUnionType getContent();
 
             @JsProperty
             String getError();
@@ -66,19 +66,19 @@ public class RemoteFileSourceClientRequest {
 
             @JsProperty
             void setContent(
-                    RemoteFileSourceClientRequest.ToObjectReturnType.MetaResponseFieldType.GetContentUnionType content);
+                    RemoteFileSourceClientMessage.ToObjectReturnType.MetaResponseFieldType.GetContentUnionType content);
 
             @JsOverlay
             default void setContent(String content) {
                 setContent(
-                        Js.<RemoteFileSourceClientRequest.ToObjectReturnType.MetaResponseFieldType.GetContentUnionType>uncheckedCast(
+                        Js.<RemoteFileSourceClientMessage.ToObjectReturnType.MetaResponseFieldType.GetContentUnionType>uncheckedCast(
                                 content));
             }
 
             @JsOverlay
             default void setContent(Uint8Array content) {
                 setContent(
-                        Js.<RemoteFileSourceClientRequest.ToObjectReturnType.MetaResponseFieldType.GetContentUnionType>uncheckedCast(
+                        Js.<RemoteFileSourceClientMessage.ToObjectReturnType.MetaResponseFieldType.GetContentUnionType>uncheckedCast(
                                 content));
             }
 
@@ -92,7 +92,7 @@ public class RemoteFileSourceClientRequest {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface SetExecutionContextFieldType {
             @JsOverlay
-            static RemoteFileSourceClientRequest.ToObjectReturnType.SetExecutionContextFieldType create() {
+            static RemoteFileSourceClientMessage.ToObjectReturnType.SetExecutionContextFieldType create() {
                 return Js.uncheckedCast(JsPropertyMap.of());
             }
 
@@ -109,29 +109,29 @@ public class RemoteFileSourceClientRequest {
         }
 
         @JsOverlay
-        static RemoteFileSourceClientRequest.ToObjectReturnType create() {
+        static RemoteFileSourceClientMessage.ToObjectReturnType create() {
             return Js.uncheckedCast(JsPropertyMap.of());
         }
 
         @JsProperty
-        RemoteFileSourceClientRequest.ToObjectReturnType.MetaResponseFieldType getMetaResponse();
+        RemoteFileSourceClientMessage.ToObjectReturnType.MetaResponseFieldType getMetaResponse();
 
         @JsProperty
         String getRequestId();
 
         @JsProperty
-        RemoteFileSourceClientRequest.ToObjectReturnType.SetExecutionContextFieldType getSetExecutionContext();
+        RemoteFileSourceClientMessage.ToObjectReturnType.SetExecutionContextFieldType getSetExecutionContext();
 
         @JsProperty
         void setMetaResponse(
-                RemoteFileSourceClientRequest.ToObjectReturnType.MetaResponseFieldType metaResponse);
+                RemoteFileSourceClientMessage.ToObjectReturnType.MetaResponseFieldType metaResponse);
 
         @JsProperty
         void setRequestId(String requestId);
 
         @JsProperty
         void setSetExecutionContext(
-                RemoteFileSourceClientRequest.ToObjectReturnType.SetExecutionContextFieldType setExecutionContext);
+                RemoteFileSourceClientMessage.ToObjectReturnType.SetExecutionContextFieldType setExecutionContext);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -141,7 +141,7 @@ public class RemoteFileSourceClientRequest {
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
             public interface GetContentUnionType {
                 @JsOverlay
-                static RemoteFileSourceClientRequest.ToObjectReturnType0.MetaResponseFieldType.GetContentUnionType of(
+                static RemoteFileSourceClientMessage.ToObjectReturnType0.MetaResponseFieldType.GetContentUnionType of(
                         Object o) {
                     return Js.cast(o);
                 }
@@ -168,12 +168,12 @@ public class RemoteFileSourceClientRequest {
             }
 
             @JsOverlay
-            static RemoteFileSourceClientRequest.ToObjectReturnType0.MetaResponseFieldType create() {
+            static RemoteFileSourceClientMessage.ToObjectReturnType0.MetaResponseFieldType create() {
                 return Js.uncheckedCast(JsPropertyMap.of());
             }
 
             @JsProperty
-            RemoteFileSourceClientRequest.ToObjectReturnType0.MetaResponseFieldType.GetContentUnionType getContent();
+            RemoteFileSourceClientMessage.ToObjectReturnType0.MetaResponseFieldType.GetContentUnionType getContent();
 
             @JsProperty
             String getError();
@@ -183,19 +183,19 @@ public class RemoteFileSourceClientRequest {
 
             @JsProperty
             void setContent(
-                    RemoteFileSourceClientRequest.ToObjectReturnType0.MetaResponseFieldType.GetContentUnionType content);
+                    RemoteFileSourceClientMessage.ToObjectReturnType0.MetaResponseFieldType.GetContentUnionType content);
 
             @JsOverlay
             default void setContent(String content) {
                 setContent(
-                        Js.<RemoteFileSourceClientRequest.ToObjectReturnType0.MetaResponseFieldType.GetContentUnionType>uncheckedCast(
+                        Js.<RemoteFileSourceClientMessage.ToObjectReturnType0.MetaResponseFieldType.GetContentUnionType>uncheckedCast(
                                 content));
             }
 
             @JsOverlay
             default void setContent(Uint8Array content) {
                 setContent(
-                        Js.<RemoteFileSourceClientRequest.ToObjectReturnType0.MetaResponseFieldType.GetContentUnionType>uncheckedCast(
+                        Js.<RemoteFileSourceClientMessage.ToObjectReturnType0.MetaResponseFieldType.GetContentUnionType>uncheckedCast(
                                 content));
             }
 
@@ -209,7 +209,7 @@ public class RemoteFileSourceClientRequest {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface SetExecutionContextFieldType {
             @JsOverlay
-            static RemoteFileSourceClientRequest.ToObjectReturnType0.SetExecutionContextFieldType create() {
+            static RemoteFileSourceClientMessage.ToObjectReturnType0.SetExecutionContextFieldType create() {
                 return Js.uncheckedCast(JsPropertyMap.of());
             }
 
@@ -226,41 +226,41 @@ public class RemoteFileSourceClientRequest {
         }
 
         @JsOverlay
-        static RemoteFileSourceClientRequest.ToObjectReturnType0 create() {
+        static RemoteFileSourceClientMessage.ToObjectReturnType0 create() {
             return Js.uncheckedCast(JsPropertyMap.of());
         }
 
         @JsProperty
-        RemoteFileSourceClientRequest.ToObjectReturnType0.MetaResponseFieldType getMetaResponse();
+        RemoteFileSourceClientMessage.ToObjectReturnType0.MetaResponseFieldType getMetaResponse();
 
         @JsProperty
         String getRequestId();
 
         @JsProperty
-        RemoteFileSourceClientRequest.ToObjectReturnType0.SetExecutionContextFieldType getSetExecutionContext();
+        RemoteFileSourceClientMessage.ToObjectReturnType0.SetExecutionContextFieldType getSetExecutionContext();
 
         @JsProperty
         void setMetaResponse(
-                RemoteFileSourceClientRequest.ToObjectReturnType0.MetaResponseFieldType metaResponse);
+                RemoteFileSourceClientMessage.ToObjectReturnType0.MetaResponseFieldType metaResponse);
 
         @JsProperty
         void setRequestId(String requestId);
 
         @JsProperty
         void setSetExecutionContext(
-                RemoteFileSourceClientRequest.ToObjectReturnType0.SetExecutionContextFieldType setExecutionContext);
+                RemoteFileSourceClientMessage.ToObjectReturnType0.SetExecutionContextFieldType setExecutionContext);
     }
 
-    public static native RemoteFileSourceClientRequest deserializeBinary(Uint8Array bytes);
+    public static native RemoteFileSourceClientMessage deserializeBinary(Uint8Array bytes);
 
-    public static native RemoteFileSourceClientRequest deserializeBinaryFromReader(
-            RemoteFileSourceClientRequest message, Object reader);
+    public static native RemoteFileSourceClientMessage deserializeBinaryFromReader(
+            RemoteFileSourceClientMessage message, Object reader);
 
     public static native void serializeBinaryToWriter(
-            RemoteFileSourceClientRequest message, Object writer);
+            RemoteFileSourceClientMessage message, Object writer);
 
-    public static native RemoteFileSourceClientRequest.ToObjectReturnType toObject(
-            boolean includeInstance, RemoteFileSourceClientRequest msg);
+    public static native RemoteFileSourceClientMessage.ToObjectReturnType toObject(
+            boolean includeInstance, RemoteFileSourceClientMessage msg);
 
     public native void clearMetaResponse();
 
@@ -290,7 +290,7 @@ public class RemoteFileSourceClientRequest {
 
     public native void setSetExecutionContext(SetExecutionContextRequest value);
 
-    public native RemoteFileSourceClientRequest.ToObjectReturnType0 toObject();
+    public native RemoteFileSourceClientMessage.ToObjectReturnType0 toObject();
 
-    public native RemoteFileSourceClientRequest.ToObjectReturnType0 toObject(boolean includeInstance);
+    public native RemoteFileSourceClientMessage.ToObjectReturnType0 toObject(boolean includeInstance);
 }

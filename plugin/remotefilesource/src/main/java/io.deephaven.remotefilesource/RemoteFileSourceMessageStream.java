@@ -10,10 +10,10 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.plugin.type.ObjectCommunicationException;
 import io.deephaven.plugin.type.ObjectType;
-import io.deephaven.proto.backplane.grpc.RemoteFileSourceClientRequest;
+import io.deephaven.proto.backplane.grpc.RemoteFileSourceClientMessage;
 import io.deephaven.proto.backplane.grpc.RemoteFileSourceMetaRequest;
 import io.deephaven.proto.backplane.grpc.RemoteFileSourceMetaResponse;
-import io.deephaven.proto.backplane.grpc.RemoteFileSourceServerRequest;
+import io.deephaven.proto.backplane.grpc.RemoteFileSourceServerMessage;
 import io.deephaven.proto.backplane.grpc.SetExecutionContextResponse;
 
 import java.nio.ByteBuffer;
@@ -119,9 +119,9 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
                             .setResourceName(resourceName)
                             .build();
 
-            // Wrap in RemoteFileSourceServerRequest (server→client)
-            RemoteFileSourceServerRequest message =
-                    RemoteFileSourceServerRequest.newBuilder()
+            // Wrap in RemoteFileSourceServerMessage (server→client)
+            RemoteFileSourceServerMessage message =
+                    RemoteFileSourceServerMessage.newBuilder()
                             .setRequestId(requestId)
                             .setMetaRequest(metaRequest)
                             .build();
@@ -207,7 +207,7 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
     }
 
     /**
-     * Handles incoming data from the client. Parses RemoteFileSourceClientRequest messages and processes meta responses
+     * Handles incoming data from the client. Parses RemoteFileSourceClientMessage messages and processes meta responses
      * or execution context updates from the client.
      *
      * @param payload the message payload containing the protobuf data
@@ -219,7 +219,7 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
         try {
             byte[] bytes = new byte[payload.remaining()];
             payload.get(bytes);
-            RemoteFileSourceClientRequest message = RemoteFileSourceClientRequest.parseFrom(bytes);
+            RemoteFileSourceClientMessage message = RemoteFileSourceClientMessage.parseFrom(bytes);
 
             if (message.hasMetaResponse()) {
                 handleMetaResponse(message.getRequestId(), message.getMetaResponse());
@@ -231,7 +231,7 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
                 throw new ObjectCommunicationException("Received unknown message type from client");
             }
         } catch (InvalidProtocolBufferException e) {
-            log.error().append("Failed to parse RemoteFileSourceClientRequest: ").append(e).endl();
+            log.error().append("Failed to parse RemoteFileSourceClientMessage: ").append(e).endl();
             throw new ObjectCommunicationException("Failed to parse message", e);
         }
     }
@@ -286,7 +286,7 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
                 .setSuccess(true)
                 .build();
 
-        RemoteFileSourceServerRequest serverRequest = RemoteFileSourceServerRequest.newBuilder()
+        RemoteFileSourceServerMessage serverRequest = RemoteFileSourceServerMessage.newBuilder()
                 .setRequestId(requestId)
                 .setSetExecutionContextResponse(response)
                 .build();

@@ -6,16 +6,15 @@ package io.deephaven.web.client.api.remotefilesource;
 import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
 import elemental2.core.Uint8Array;
-import elemental2.dom.DomGlobal;
 import elemental2.dom.TextEncoder;
 import elemental2.promise.Promise;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.FlightDescriptor;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.FlightInfo;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.remotefilesource_pb.RemoteFileSourceClientRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.remotefilesource_pb.RemoteFileSourceClientMessage;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.remotefilesource_pb.RemoteFileSourceMetaRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.remotefilesource_pb.RemoteFileSourceMetaResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.remotefilesource_pb.RemoteFileSourcePluginFetchRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.remotefilesource_pb.RemoteFileSourceServerRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.remotefilesource_pb.RemoteFileSourceServerMessage;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.remotefilesource_pb.SetExecutionContextRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.remotefilesource_pb.SetExecutionContextResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.ticket_pb.Ticket;
@@ -183,9 +182,9 @@ public class JsRemoteFileSourceService extends HasEventHandling {
     private void handleMessage(Event<WidgetMessageDetails> event) {
         Uint8Array payload = event.getDetail().getDataAsU8();
 
-        RemoteFileSourceServerRequest message;
+        RemoteFileSourceServerMessage message;
         try {
-            message = RemoteFileSourceServerRequest.deserializeBinary(payload);
+            message = RemoteFileSourceServerMessage.deserializeBinary(payload);
         } catch (Exception e) {
             // Failed to parse as proto
             throw new IllegalStateException("Received unparseable message from server", e);
@@ -206,7 +205,7 @@ public class JsRemoteFileSourceService extends HasEventHandling {
      *
      * @param message the server request message
      */
-    private void handleMetaRequest(RemoteFileSourceServerRequest message) {
+    private void handleMetaRequest(RemoteFileSourceServerMessage message) {
         if (!hasListeners(EVENT_REQUEST_SOURCE)) {
             throw new IllegalStateException(
                     "Received resource request from server but no listener is registered for EVENT_REQUEST_SOURCE. "
@@ -221,7 +220,7 @@ public class JsRemoteFileSourceService extends HasEventHandling {
      *
      * @param message the server request message
      */
-    private void handleSetExecutionContextResponse(RemoteFileSourceServerRequest message) {
+    private void handleSetExecutionContextResponse(RemoteFileSourceServerMessage message) {
         String requestId = message.getRequestId();
         LazyPromise<Boolean> promise = pendingSetExecutionContextRequests.remove(requestId);
         if (promise != null) {
@@ -248,7 +247,7 @@ public class JsRemoteFileSourceService extends HasEventHandling {
         pendingSetExecutionContextRequests.put(requestId, promise);
 
         // Send the request
-        RemoteFileSourceClientRequest clientRequest = getSetExecutionContextRequest(resourcePaths, requestId);
+        RemoteFileSourceClientMessage clientRequest = getSetExecutionContextRequest(resourcePaths, requestId);
         sendClientRequest(clientRequest);
 
         // Return a promise with built-in timeout
@@ -256,13 +255,13 @@ public class JsRemoteFileSourceService extends HasEventHandling {
     }
 
     /**
-     * Helper method to build a RemoteFileSourceClientRequest for setting execution context.
+     * Helper method to build a RemoteFileSourceClientMessage for setting execution context.
      *
      * @param resourcePaths array of resource paths to resolve
      * @param requestId unique request ID
-     * @return the constructed RemoteFileSourceClientRequest
+     * @return the constructed RemoteFileSourceClientMessage
      */
-    private static @NotNull RemoteFileSourceClientRequest getSetExecutionContextRequest(String[] resourcePaths,
+    private static @NotNull RemoteFileSourceClientMessage getSetExecutionContextRequest(String[] resourcePaths,
             String requestId) {
         SetExecutionContextRequest setContextRequest = new SetExecutionContextRequest();
 
@@ -270,18 +269,18 @@ public class JsRemoteFileSourceService extends HasEventHandling {
             setContextRequest.setResourcePathsList(resourcePaths);
         }
 
-        RemoteFileSourceClientRequest clientRequest = new RemoteFileSourceClientRequest();
+        RemoteFileSourceClientMessage clientRequest = new RemoteFileSourceClientMessage();
         clientRequest.setRequestId(requestId);
         clientRequest.setSetExecutionContext(setContextRequest);
         return clientRequest;
     }
 
     /**
-     * Helper method to send a RemoteFileSourceClientRequest to the server.
+     * Helper method to send a RemoteFileSourceClientMessage to the server.
      *
      * @param clientRequest the client request to send
      */
-    private void sendClientRequest(RemoteFileSourceClientRequest clientRequest) {
+    private void sendClientRequest(RemoteFileSourceClientMessage clientRequest) {
         // Serialize the protobuf message to bytes
         Uint8Array messageBytes = clientRequest.serializeBinary();
 
@@ -353,8 +352,8 @@ public class JsRemoteFileSourceService extends HasEventHandling {
                 }
             }
 
-            // Wrap in RemoteFileSourceClientRequest (client→server)
-            RemoteFileSourceClientRequest clientRequest = new RemoteFileSourceClientRequest();
+            // Wrap in RemoteFileSourceClientMessage (client→server)
+            RemoteFileSourceClientMessage clientRequest = new RemoteFileSourceClientMessage();
             clientRequest.setRequestId(requestId);
             clientRequest.setMetaResponse(response);
 

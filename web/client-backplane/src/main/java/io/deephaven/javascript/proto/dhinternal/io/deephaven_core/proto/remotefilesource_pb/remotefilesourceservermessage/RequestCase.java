@@ -1,14 +1,14 @@
 //
 // Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
-package io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.remotefilesource_pb.remotefilesourceserverrequest;
+package io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.remotefilesource_pb.remotefilesourceservermessage;
 
 import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsType;
 
 @JsType(
         isNative = true,
-        name = "dhinternal.io.deephaven_core.proto.remotefilesource_pb.RemoteFileSourceServerRequest.RequestCase",
+        name = "dhinternal.io.deephaven_core.proto.remotefilesource_pb.RemoteFileSourceServerMessage.RequestCase",
         namespace = JsPackage.GLOBAL)
 public class RequestCase {
     public static int META_REQUEST, REQUEST_NOT_SET, SET_EXECUTION_CONTEXT_RESPONSE;
