@@ -48,9 +48,13 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
      * provider with the RemoteFileSourceClassLoader.
      *
      * @param connection the message stream connection to the client
+     * @throws ObjectCommunicationException if the initial message cannot be sent to the client
      */
-    public RemoteFileSourceMessageStream(final ObjectType.MessageStream connection) {
+    public RemoteFileSourceMessageStream(final ObjectType.MessageStream connection)
+            throws ObjectCommunicationException {
         this.connection = connection;
+        // Send initial empty message to client as required by the ObjectType contract
+        connection.onData(ByteBuffer.allocate(0));
         // Register this instance as a provider with the RemoteFileSourceClassLoader
         registerWithClassLoader();
     }
@@ -74,12 +78,7 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
             return false;
         }
 
-        RemoteFileSourceExecutionContext context = executionContext;
-
-        List<String> resourcePaths = context.getResourcePaths();
-        if (resourcePaths.isEmpty()) {
-            return false;
-        }
+        List<String> resourcePaths = executionContext.getResourcePaths();
 
         for (String contextResourcePath : resourcePaths) {
             if (resourceName.equals(contextResourcePath)) {
@@ -104,7 +103,7 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
         if (!isActive()) {
             log.warn().append("Request for resource ").append(resourceName)
                     .append(" on inactive message stream").endl();
-            return CompletableFuture.completedFuture(null);
+            return CompletableFuture.failedFuture(new IllegalStateException("Inactive message stream"));
         }
 
         log.info().append("Requesting resource: ").append(resourceName).endl();

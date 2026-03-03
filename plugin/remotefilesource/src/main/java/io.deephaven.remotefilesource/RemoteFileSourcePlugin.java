@@ -47,9 +47,6 @@ public class RemoteFileSourcePlugin extends ObjectTypeBase {
             throw new ObjectCommunicationException("Expected RemoteFileSource marker object, got " + object.getClass());
         }
 
-        // Send initial empty message to client as required by the ObjectType contract
-        connection.onData(ByteBuffer.allocate(0));
-
         // Return a new bidirectional message stream for this connection
         return new RemoteFileSourceMessageStream(connection);
     }
