@@ -11,6 +11,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.select.Formula;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.sources.ViewColumnSource;
@@ -36,6 +37,8 @@ class BiTableTransformationColumn extends BaseTableTransformationColumn {
     private ColumnSource<Table> inputColumnSource1;
     private ColumnSource<Table> inputColumnSource2;
 
+    final String callsite;
+
     BiTableTransformationColumn(
             @NotNull final String inputOutputColumnName,
             @NotNull final String secondInputColumnName,
@@ -45,6 +48,7 @@ class BiTableTransformationColumn extends BaseTableTransformationColumn {
         this.secondInputColumnName = secondInputColumnName;
         this.executionContext = executionContext;
         this.transformer = transformer;
+        this.callsite = QueryPerformanceRecorder.getCallerLine();
     }
 
     @Override
@@ -163,7 +167,9 @@ class BiTableTransformationColumn extends BaseTableTransformationColumn {
             final WritableObjectChunk<Table, ? super Values> typedDestination = destination.asWritableObjectChunk();
             final int size = source1.size();
             typedDestination.setSize(size);
-            try (final SafeCloseable ignored = executionContext == null ? null : executionContext.open()) {
+            final boolean clearCallSite = QueryPerformanceRecorder.setCallsite(callsite);
+            try (final SafeCloseable ignored = executionContext == null ? null : executionContext.open();
+                    final SafeCloseable ignored2 = clearCallSite ? QueryPerformanceRecorder::clearCallsite : null) {
                 for (int ii = 0; ii < size; ++ii) {
                     typedDestination.set(ii, transformer.apply(source1.get(ii), source2.get(ii)));
                 }
