@@ -163,9 +163,9 @@ A table may share any of its `ColumnSources` with any other table in its update 
 
 By itself, this sharing capability represents an important optimization that avoids some data processing or copying work. When considered in an _updating_ query engine, it should be clear that this avoidance extends to each update cycle, paying dividends for the lifetime of a query.
 
-**Performance impact**: Shared `ColumnSources` can reduce memory footprint by 50-90% for queries with multiple filtered or joined views of the same source data. For example, five different `where` filters on a 10-column table share all 10 `ColumnSources`, storing only five different `RowSets` instead of duplicating 50 columns.
+**Performance impact**: Shared `ColumnSource`s can reduce memory footprint by 50-90% for queries with multiple filtered or joined views of the same source data. For example, five different `where` filters on a 10-column table share all 10 `ColumnSource`s, storing only five different `RowSet`s instead of duplicating 50 columns.
 
-Furthermore, the possible sparsity of the `RowSet`'s row key space allows for greatly reduced data movement within the `RowSet` itself and the `ColumnSources` it addresses. This is essential for the performance of Deephaven’s incremental sort operation, as well as in many cases when source tables publish changes that are more complex than simple append-only growth; e.g., multiple independently-growing partitions, or tabular representations of key-value store state.
+Furthermore, the possible sparsity of the `RowSet`'s row key space allows for greatly reduced data movement within the `RowSet` itself and the `ColumnSource`s it addresses. This is essential for the performance of Deephaven’s incremental sort operation, as well as in many cases when source tables publish changes that are more complex than simple append-only growth; e.g., multiple independently-growing partitions, or tabular representations of key-value store state.
 
 ## Mechanical sympathy
 
@@ -213,7 +213,7 @@ Building further on our chunk-oriented engine design, Deephaven [join](../how-to
 
 ### `RowSet` implementations
 
-Another area of the Deephaven query engine that merits specific attention is our [`RowSet`](#tables-designed-for-sharing-and-updating) implementation. In practice, `RowSets` switch between a number of implementation options depending on size and sparsity. Currently, there are three in use:
+Another area of the Deephaven query engine that merits specific attention is our [`RowSet`](#tables-designed-for-sharing-and-updating) implementation. In practice, `RowSet`s switch between a number of implementation options depending on size and sparsity. Currently, there are three in use:
 
 1. **Single Range:** Exactly what it sounds like, ideal when all row keys in a `RowSet` are contiguous.
 2. **Sorted Ranges:** Like single range, but more than one, and in sorted order. Ideal for tables with a small number of contiguous ranges, no matter how widely separated.
@@ -231,9 +231,9 @@ In all cases, the goal is to allow for efficient traversal or set operations wit
 
 ### Regular Space Partitioning (RSP) vs Binary Space Partitioning (BSP)
 
-Regular Space Partitioning (RSP) is a fundamental and unique data structure used by every table operation in Deephaven's various APIs. Deephaven's RSP uses the [Roaring Bitmaps](https://roaringbitmap.org/) [RoaringArray](https://github.com/RoaringBitmap/RoaringBitmap/blob/master/roaringbitmap/src/main/java/org/roaringbitmap/RoaringArray.java) as a technical building block. It fixes some of the shortcomings of [Binary Space Partitioning](https://en.wikipedia.org/wiki/Binary_space_partitioning) (BSP), particularly those related to the overhead of operations on large `RowSets`.
+Regular Space Partitioning (RSP) is a fundamental and unique data structure used by every table operation in Deephaven's various APIs. Deephaven's RSP uses the [Roaring Bitmaps](https://roaringbitmap.org/) [RoaringArray](https://github.com/RoaringBitmap/RoaringBitmap/blob/master/roaringbitmap/src/main/java/org/roaringbitmap/RoaringArray.java) as a technical building block. It fixes some of the shortcomings of [Binary Space Partitioning](https://en.wikipedia.org/wiki/Binary_space_partitioning) (BSP), particularly those related to the overhead of operations on large `RowSet`s.
 
-> RSP improves upon BSP by partitioning `RowSets` at fixed points instead of arbitrary ones. For large datasets, this has multiple benefits: not only does RSP guarantee that the pieces in each `RowSet` align, but it also eliminates the need to worry about iterators crossing array boundaries at different points for each `RowSet`.
+> RSP improves upon BSP by partitioning `RowSet`s at fixed points instead of arbitrary ones. For large datasets, this has multiple benefits: not only does RSP guarantee that the pieces in each `RowSet` align, but it also eliminates the need to worry about iterators crossing array boundaries at different points for each `RowSet`.
 
 BSP allows a system to accumulate a set of values (i.e., a `RowSet`) in a sorted array. For example, the following sorted array of only a few values is very simple and efficient:
 
@@ -243,7 +243,7 @@ BSP allows a system to accumulate a set of values (i.e., a `RowSet`) in a sorted
 
 To keep an array sorted when performing operations such as an insert, the system must first find where to put the new value. This requires a binary search, which is an `O(log n)` operation. Next, space needs to be made for the new value. As the set grows, the array is split around the middle (the binary space partition), and the two pieces are arranged in a tree structure.
 
-For big `RowSets` - often accumulating millions of values - the overhead on BSP operations can be high. As a single `RowSet` is created or grows, the binary subdivision operation can be expensive. Operations involving mixing two different `RowSets` (e.g., union, intersect, or set difference) can be particularly expensive because they need to look at the individual values in each `RowSet` and decide what will happen in the result.
+For big `RowSet`s - often accumulating millions of values - the overhead on BSP operations can be high. As a single `RowSet` is created or grows, the binary subdivision operation can be expensive. Operations involving mixing two different `RowSet`s (e.g., union, intersect, or set difference) can be particularly expensive because they need to look at the individual values in each `RowSet` and decide what will happen in the result.
 
 Going back to the previous example, in BSP, if we need to insert 10 into the above array, Deephaven asks: `Is the resulting array too big?` If yes, the system splits it at a median value, creating two sub-arrays and a parent node:
 
@@ -259,7 +259,7 @@ For large datasets, RSP is usually much faster at these operations. If the syste
 
 RSP also compactly represents values. It would be inefficient to write out every single value in a big range - let's say all of the values in the set `[ 0, 1000 * 2^16 ]`. Deephaven would have to create 10,000 containers, with all keys in each of them present. Instead, Deephaven has a compact way to represent continuous ranges of values that can span full blocks in `[ n * 2^16, m * 2^16 - 1 ]` space, for some value of `n` and `m` where `m > n`.
 
-Nevertheless, small `RowSets` are more expensive in RSP because they are still comprised of an array of containers first and then the containers themselves. This matters for queries that need to create one `RowSet` per row (e.g., joins). This issue is alleviated by creating a special case for single-range `RowSets`.
+Nevertheless, small `RowSet`s are more expensive in RSP because they are still comprised of an array of containers first and then the containers themselves. This matters for queries that need to create one `RowSet` per row (e.g., joins). This issue is alleviated by creating a special case for single-range `RowSet`s.
 
 ## Formula and condition evaluation
 
