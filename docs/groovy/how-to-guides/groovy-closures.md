@@ -148,6 +148,6 @@ import com.example.MyClass
 - [How to use variables and functions in query strings](../how-to-guides/query-scope.md)
 - [How to install Java packages](../how-to-guides/install-and-use-java-packages.md)
 - [How to use Deephaven's built-in query language functions](../how-to-guides/built-in-functions.md)
-- [Query language functions](../reference/query-language/query-library/auto-imported/index.md)
+- [Auto-imported functions](../reference/query-language/query-library/auto-imported/index.md)
 - [update](../reference/table-operations/select/update.md)
 - [view](../reference/table-operations/select/view.md)
