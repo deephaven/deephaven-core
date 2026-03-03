@@ -49,13 +49,12 @@ Deephaven also parallelizes calculations within a single table. When you run `so
 
 **What gets parallelized**:
 
-- Column calculations in [`update`](../../reference/table-operations/select/update.md), [`select`](../../reference/table-operations/select/select.md), [`view`](../../reference/table-operations/select/view.md), and [`updateView`](../../reference/table-operations/select/update-view.md).
+- Column calculations in [`update`](../../reference/table-operations/select/update.md) and [`select`](../../reference/table-operations/select/select.md).
 - Filters in [`where`](../../reference/table-operations/filter/where.md) clauses.
-- [Aggregations](../../reference/table-operations/group-and-aggregate/aggBy.md) and [group-by](../../reference/table-operations/group-and-aggregate/groupBy.md) operations.
-- [Join](../../reference/table-operations/join/join.md) operations.
 
-**What doesn't get parallelized**:
+**What does NOT get parallelized**:
 
+- [`view`](../../reference/table-operations/select/view.md) and [`updateView`](../../reference/table-operations/select/updateView.md) — these are lazily evaluated when cells are accessed, not computed upfront.
 - Operations marked with `.withSerial` (you control this).
 - Operations waiting for dependencies (automatic in the update graph).
 
@@ -93,18 +92,12 @@ Deephaven uses two separate groups of worker threads (called "thread pools") to 
 
 ### Operation Initialization Thread Pool
 
-This pool processes queries when they are first created. When you call `.update()`, `.where()`, or similar operations, this pool divides the existing data among its threads to compute the initial result.
+This pool processes queries when they are first created. When you call `.update`, `.where`, or similar operations, this pool divides the existing data among its threads to compute the initial result.
 
 **Configuration**: `OperationInitializationThreadPool.threads`
 
 - Default: `-1` (use all available cores).
 - Set to a specific number to limit parallelism during initialization.
-
-**When it's used**:
-
-- Initial calculation of [`update`](../../reference/table-operations/select/update.md), [`select`](../../reference/table-operations/select/select.md), [`where`](../../reference/table-operations/filter/where.md), etc.
-- Processing existing data when creating derived tables.
-- Join operations on static tables.
 
 ### Update Graph Processor Thread Pool
 
@@ -121,7 +114,7 @@ This pool processes live table updates. When source data changes, this pool comp
 - Propagating changes through dependent tables.
 - Running independent tables simultaneously.
 
-Both thread pools default to using all CPU cores, determined by [`Runtime.availableProcessors()`](https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/Runtime.html#availableProcessors()) at startup.
+Both thread pools default to using all CPU cores, determined by [`Runtime.availableProcessors()`](<https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/Runtime.html#availableProcessors()>) at startup.
 
 ## Controlling concurrency
 
@@ -164,11 +157,11 @@ result4 = source4.update("Squared = sqrt(X)")
 ```
 
 > [!WARNING]
-> **Breaking change in Deephaven 0.41+**
+> **Breaking change in Deephaven 41+**
 >
-> **Deephaven 0.40 and earlier**: Assumed all formulas required sequential processing by default.
+> **Deephaven 40 and earlier**: Assumed all formulas required sequential processing by default.
 >
-> **Deephaven 0.41 and later**: Assumes all formulas can run in parallel by default.
+> **Deephaven 41 and later**: Assumes all formulas can run in parallel by default.
 >
 > If your formula uses global state or depends on row order, you **must** mark it with `.withSerial` or it will produce incorrect results.
 
@@ -186,18 +179,10 @@ Serialization forces Deephaven to process rows one at a time, in order, on a sin
 - The formula reads or modifies global variables.
 - The formula calls external functions that aren't safe to call from multiple threads simultaneously.
 - The formula depends on rows being processed in a specific order.
-- Parallel execution produces incorrect results (duplicates, gaps, wrong values).
+- Parallel execution produces incorrect results (out-of-order values, gaps, wrong values).
 
 > [!NOTE]
 > Most queries don't need serial execution. Use `.withSerial` only when parallelization causes incorrect results.
-
-#### How serialization works
-
-Marking an operation as serial tells Deephaven:
-
-- Process rows one at a time, in order.
-- Don't parallelize this operation across CPU cores.
-- Ensure thread-safe execution for stateful code.
 
 The [`ConcurrencyControl`](https://docs.deephaven.io/core/javadoc/io/deephaven/api/ConcurrencyControl.html) interface provides the [`.withSerial`](../../reference/table-operations/select/update.md#serial-execution) method for [`Filter`](https://docs.deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html) ([`where`](../../reference/table-operations/filter/where.md#serial-execution)) and [`Selectable`](https://docs.deephaven.io/core/javadoc/io/deephaven/api/Selectable.html) ([`update`](../../reference/table-operations/select/update.md#serial-execution) and [`select`](../../reference/table-operations/select/select.md)).
 
@@ -226,15 +211,15 @@ bad_result = emptyTable(10).update("A = counter.getAndIncrement()", "B = counter
 
 Parallel execution causes inconsistent values because multiple threads increment `counter` concurrently. You may see results like:
 
-| A | B |
-| - | - |
-| 0 | 2 |
-| 1 | 1 |
-| 3 | 5 |
-| 4 | 4 |
-| 6 | 7 |
+| A   | B   |
+| --- | --- |
+| 0   | 2   |
+| 1   | 3   |
+| 5   | 6   |
+| 4   | 7   |
+| 9   | 8   |
 
-Notice the duplicates (1 appears twice), gaps (no 8 or 9), and `B` not following `A + 1`.
+Notice the out-of-order values (row 4 has `A=4` after row 3 has `A=5`), gaps (no 10-19 visible), and `B` not following `A + 1`.
 
 #### Using `.withSerial` for Selectables
 
@@ -251,17 +236,17 @@ col = Selectable.parse("ID = counter.getAndIncrement()").withSerial()
 result = emptyTable(10).update([col])
 ```
 
-#### Stateful Partition Filters
-
-When you mark a _partition filter_ (a filter that only accesses partitioning columns) as serial, Deephaven cannot reorder it and must evaluate it on all rows of the table. However, if you don't explicitly mark a partition filter as serial, the engine treats it as stateless for performance reasons — even when Deephaven is configured to treat filters as stateful by default.
-
-Specifically, Deephaven may relax ordering constraints for filters on partitioning columns and evaluate them per location rather than on every row. This allows Deephaven to reorder common partition filters ahead of other filters and avoid repeated evaluation against the same value. For example, the formula filter `Date=today()` is stateful if filters are stateful by default, but in nearly every case users prefer Deephaven to evaluate it early, location-by-location.
-
 When a Selectable is serial:
 
 - Every row is evaluated in order (row 0, then row 1, then row 2, etc.).
 - Only one thread processes the column at a time.
 - Global state updates happen sequentially without race conditions.
+
+#### Stateful Partition Filters
+
+When you mark a _partition filter_ (a filter that only accesses partitioning columns) as serial, Deephaven cannot reorder it and must evaluate it on all rows of the table. However, if you don't explicitly mark a partition filter as serial, the engine treats it as stateless for performance reasons — even when Deephaven is configured to treat filters as stateful by default.
+
+Specifically, Deephaven may relax ordering constraints for filters on partitioning columns and evaluate them per location rather than on every row. This allows Deephaven to reorder common partition filters ahead of other filters and avoid repeated evaluation against the same value. For example, the formula filter `Date=today()` is stateful if filters are stateful by default, but in nearly every case users prefer Deephaven to evaluate it early, location-by-location.
 
 #### Using `.withSerial` for Filters
 

@@ -201,15 +201,11 @@ The recycler capacity determines how many array blocks are kept in memory for po
 - **High throughput environments**: Consider increasing capacities to reduce allocation/deallocation overhead.
 - **Type-specific tuning**: If certain types are used more frequently, you can increase their capacity while reducing others.
 
-## Stateless by default (experimental)
+## Stateless by default
 
-In a future release of Deephaven, the flags in this category will change from a default of false to a default of true. These flags enable the engine to assume more often that a given Filter or Selectable can be executed in parallel (unless the Filter or Selectable is [marked serial or has barriers](./query-engine/parallelization.md#serialization) interface).
+Starting in Deephaven 41, the engine assumes that Filters and Selectables can be executed in parallel by default (unless the Filter or Selectable is [marked serial or has barriers](./query-engine/parallelization.md#serialization)).
 
-This is experimental; more details can be learned by reading the Javadoc on io.deephaven.api.ConcurrencyControl.
-
-| Property Name                          | Default Value | Description                                                                                         |
-| -------------------------------------- | ------------- | --------------------------------------------------------------------------------------------------- |
-| `QueryTable.statelessFiltersByDefault` | false         | Enables the engine to assume that filters are stateless by default, allowing for more optimizations |
+For more details, see the Javadoc on [io.deephaven.api.ConcurrencyControl](https://docs.deephaven.io/core/javadoc/io/deephaven/api/ConcurrencyControl.html).
 
 ## Related documentation
 

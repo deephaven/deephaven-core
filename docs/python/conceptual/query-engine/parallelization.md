@@ -6,7 +6,7 @@ sidebar_label: Parallelization
 Parallelization is running multiple calculations at the same time on different CPU cores instead of one after another. Deephaven automatically parallelizes table operations like [`select`](../../reference/table-operations/select/select.md), [`update`](../../reference/table-operations/select/update.md), and [`where`](../../reference/table-operations/filter/where.md) to make queries faster. This guide explains how parallelization works and when you need to control it.
 
 > [!IMPORTANT]
-> **Breaking change in Deephaven 0.41+**: Queries now run in parallel by default. Code that modifies shared variables or depends on row order will produce incorrect results.
+> **Breaking change in Deephaven 41+**: Queries now run in parallel by default. Code that modifies shared variables or depends on row order will produce incorrect results.
 >
 > **Quick check**: Does your code use global variables, depend on row order, or modify external state? If yes, the [crash course guide](../../getting-started/crash-course/parallelization.md) shows how to fix it.
 
@@ -53,13 +53,12 @@ Deephaven also parallelizes calculations within a single table. When you run `so
 
 **What gets parallelized**:
 
-- Column calculations in [`update`](../../reference/table-operations/select/update.md), [`select`](../../reference/table-operations/select/select.md), [`view`](../../reference/table-operations/select/view.md), and [`update_view`](../../reference/table-operations/select/update-view.md).
+- Column calculations in [`update`](../../reference/table-operations/select/update.md) and [`select`](../../reference/table-operations/select/select.md).
 - Filters in [`where`](../../reference/table-operations/filter/where.md) clauses.
-- Aggregations and group-by operations.
-- Join operations.
 
-**What doesn't get parallelized**:
+**What does NOT get parallelized**:
 
+- [`view`](../../reference/table-operations/select/view.md) and [`update_view`](../../reference/table-operations/select/update-view.md) — these are lazily evaluated when cells are accessed, not computed upfront.
 - Operations marked with `.with_serial` (you control this).
 - Operations waiting for dependencies (automatic in the update graph).
 
@@ -100,18 +99,12 @@ Deephaven uses two separate groups of worker threads (called "thread pools") to 
 
 ### Operation Initialization Thread Pool
 
-This pool processes queries when they are first created. When you call `.update()`, `.where()`, or similar operations, this pool divides the existing data among its threads to compute the initial result.
+This pool processes queries when they are first created. When you call `.update`, `.where`, or similar operations, this pool divides the existing data among its threads to compute the initial result.
 
 **Configuration**: `OperationInitializationThreadPool.threads`
 
 - Default: `-1` (use all available cores).
 - Set to a specific number to limit parallelism during initialization.
-
-**When it's used**:
-
-- Initial calculation of [`update`](../../reference/table-operations/select/update.md), [`select`](../../reference/table-operations/select/select.md), [`where`](../../reference/table-operations/filter/where.md), etc.
-- Processing existing data when creating derived tables.
-- Join operations on static tables.
 
 ### Update Graph Processor Thread Pool
 
@@ -128,7 +121,7 @@ This pool processes live table updates. When source data changes, this pool comp
 - Propagating changes through dependent tables.
 - Running independent tables simultaneously.
 
-Both thread pools default to using all CPU cores, determined by [`Runtime.availableProcessors()](https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/Runtime.html#availableProcessors()) at startup.
+Both thread pools default to using all CPU cores, determined by [`Runtime.availableProcessors()](<https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/Runtime.html#availableProcessors()>) at startup.
 
 ## Controlling concurrency
 
@@ -173,11 +166,11 @@ result4 = source4.update("Squared = sqrt(X)")
 ```
 
 > [!WARNING]
-> **Breaking change in Deephaven 0.41+**
+> **Breaking change in Deephaven 41+**
 >
-> **Deephaven 0.40 and earlier**: Assumed all formulas required sequential processing by default.
+> **Deephaven 40 and earlier**: Assumed all formulas required sequential processing by default.
 >
-> **Deephaven 0.41 and later**: Assumes all formulas can run in parallel by default.
+> **Deephaven 41 and later**: Assumes all formulas can run in parallel by default.
 >
 > If your formula uses global state or depends on row order, you **must** mark it with `.with_serial` or it will produce incorrect results.
 
@@ -195,18 +188,10 @@ Serialization processes rows one at a time, in order, on a single thread. Use it
 - The formula reads or modifies global variables.
 - The formula calls external functions that aren't safe to call from multiple threads simultaneously.
 - The formula depends on rows being processed in a specific order.
-- Parallel execution produces incorrect results (duplicates, gaps, wrong values).
+- Parallel execution produces incorrect results (out-of-order values, gaps, wrong values).
 
 > [!NOTE]
 > Most queries don't need serial execution. Use `.with_serial` only when parallelization causes incorrect results.
-
-#### How serialization works
-
-Marking an operation as serial tells Deephaven:
-
-- Process rows one at a time, in order.
-- Don't parallelize this operation across CPU cores.
-- Ensure thread-safe execution for stateful code.
 
 The [`ConcurrencyControl`](https://docs.deephaven.io/core/pydoc/code/deephaven.concurrency_control.html#deephaven.concurrency_control.ConcurrencyControl) interface provides the [`.with_serial`](../../reference/table-operations/select/update.md#serial-execution) method for [`Filter`](https://docs.deephaven.io/core/pydoc/code/deephaven.filters.html) ([`where`](../../reference/table-operations/filter/where.md#serial-execution)) and [`Selectable`](https://docs.deephaven.io/core/pydoc/code/deephaven.table.html#deephaven.table.Selectable) ([`update`](../../reference/table-operations/select/update.md#serial-execution) and [`select`](../../reference/table-operations/select/select.md)).
 
@@ -257,15 +242,15 @@ bad_result = empty_table(10).update(
 
 Parallel execution causes inconsistent values because multiple threads increment `counter` concurrently. You may see results like:
 
-| A | B |
-| - | - |
-| 0 | 2 |
-| 1 | 1 |
-| 3 | 5 |
-| 4 | 4 |
-| 6 | 7 |
+| A   | B   |
+| --- | --- |
+| 0   | 2   |
+| 1   | 3   |
+| 5   | 6   |
+| 4   | 7   |
+| 9   | 8   |
 
-Notice the duplicates (1 appears twice), gaps (no 8 or 9), and `B` not following `A + 1`.
+Notice the out-of-order values (row 4 has `A=4` after row 3 has `A=5`), gaps (no 10-19 visible), and `B` not following `A + 1`.
 
 #### Using `.with_serial` for Selectables
 
