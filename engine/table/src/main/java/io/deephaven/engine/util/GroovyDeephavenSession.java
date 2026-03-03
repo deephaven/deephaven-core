@@ -132,6 +132,9 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
     /** Contains imports to be applied to .groovy files loaded from the classpath */
     private final ImportCustomizer loadedGroovyScriptImports;
 
+    private final CompilerConfiguration scriptConfig;
+    private final CompilerConfiguration consoleConfig;
+
     private final Set<String> dynamicClasses;
     private final Map<String, Object> bindingBackingMap;
 
@@ -209,8 +212,8 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
 
 
         return new GroovyDeephavenSession(updateGraph, operationInitializer, objectTypeLookup, changeListener,
-                runScripts, classCacheDirectory, consoleImports, loadedGroovyScriptImports, bindingBackingMap,
-                groovyShell);
+                runScripts, classCacheDirectory, consoleImports, loadedGroovyScriptImports, scriptConfig,
+                consoleConfig, bindingBackingMap, groovyShell);
     }
 
     private GroovyDeephavenSession(
@@ -222,6 +225,8 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
             final File classCacheDirectory,
             final ImportCustomizer consoleImports,
             final ImportCustomizer loadedGroovyScriptImports,
+            final CompilerConfiguration scriptConfig,
+            final CompilerConfiguration consoleConfig,
             final Map<String, Object> bindingBackingMap,
             final DeephavenGroovyShell groovyShell)
             throws IOException {
@@ -232,6 +237,8 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
 
         this.consoleImports = consoleImports;
         this.loadedGroovyScriptImports = loadedGroovyScriptImports;
+        this.scriptConfig = scriptConfig;
+        this.consoleConfig = consoleConfig;
 
         this.dynamicClasses = new HashSet<>();
         this.bindingBackingMap = bindingBackingMap;
@@ -349,20 +356,15 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
 
         deleteCachedClassFiles(classCacheDirectory);
 
-        // Create a fresh GroovyClassLoader
-        CompilerConfiguration config = new CompilerConfiguration();
-        config.getCompilationCustomizers().add(consoleImports);
-        config.setTargetDirectory(classCacheDirectory);
-        GroovyClassLoader classLoader = new GroovyClassLoader(STATIC_LOADER, config);
+        // Create fresh classloader - reusing the existing configurations
+        GroovyClassLoader scriptClassLoader = new GroovyClassLoader(STATIC_LOADER, scriptConfig);
 
-        // Update the session's ExecutionContext with fresh QueryCompiler
-        executionContext = createExecutionContext(
-                executionContext.getUpdateGraph(),
-                executionContext.getOperationInitializer(),
-                classLoader);
+        // Update the execution context with a fresh QueryCompiler
+        final QueryCompiler freshCompiler = QueryCompilerImpl.create(classCacheDirectory, scriptClassLoader);
+        executionContext = executionContext.withQueryCompiler(freshCompiler);
 
         // Permanently replace groovyShell with fresh shell
-        groovyShell = new DeephavenGroovyShell(classLoader, groovyShell.getContext(), config);
+        groovyShell = new DeephavenGroovyShell(scriptClassLoader, groovyShell.getContext(), consoleConfig);
     }
 
     @Override
