@@ -154,7 +154,7 @@ public class TableTransformationColumn extends BaseTableTransformationColumn {
             final int size = source.size();
             typedDestination.setSize(size);
             try (final SafeCloseable ignored = executionContext == null ? null : executionContext.open();
-                    final SafeCloseable ignored2 = QueryPerformanceRecorder.setCallsiteWithCloseable()) {
+                    final SafeCloseable ignored2 = QueryPerformanceRecorder.setCallsiteWithCloseable(callsite)) {
                 for (int ii = 0; ii < size; ++ii) {
                     typedDestination.set(ii, transformer.apply(source.get(ii)));
                 }

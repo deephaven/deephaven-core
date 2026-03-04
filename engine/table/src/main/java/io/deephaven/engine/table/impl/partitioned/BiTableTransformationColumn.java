@@ -168,7 +168,7 @@ class BiTableTransformationColumn extends BaseTableTransformationColumn {
             final int size = source1.size();
             typedDestination.setSize(size);
             try (final SafeCloseable ignored = executionContext == null ? null : executionContext.open();
-                    final SafeCloseable ignored2 = QueryPerformanceRecorder.setCallsiteWithCloseable()) {
+                    final SafeCloseable ignored2 = QueryPerformanceRecorder.setCallsiteWithCloseable(callsite)) {
                 for (int ii = 0; ii < size; ++ii) {
                     typedDestination.set(ii, transformer.apply(source1.get(ii), source2.get(ii)));
                 }

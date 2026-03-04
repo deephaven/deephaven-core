@@ -140,6 +140,17 @@ public interface QueryPerformanceRecorder {
     }
 
     /**
+     * Attempt to compute and set the thread local callsite so that invocations of {@link #getCallerLine()} will not
+     * spend time trying to recompute.
+     *
+     * @param callsite The call site to use.
+     * @return a SafeCloseable (or null) that should be invoked to restore the callsite.
+     */
+    static SafeCloseable setCallsiteWithCloseable(final String callsite) {
+        return QueryPerformanceRecorderState.setCallSiteWithCloseable(callsite);
+    }
+
+    /**
      * Clear any previously set callsite. See {@link #setCallsite(String)}
      */
     static void clearCallsite() {
