@@ -60,8 +60,8 @@ public class ZeroKeyUpdateByManager extends UpdateBy {
         super(source, windows, inputSources, timestampColumnName, rowRedirection, control);
         final String bucketDescription = this + "-bucket-[]";
 
+        final TableDefinition resultDef = TableDefinition.inferFrom(source, resultSources);
         if (source.isRefreshing()) {
-            final TableDefinition resultDef = TableDefinition.inferFrom(source, resultSources);
             result = new QueryTable(resultDef, source.getRowSet(), resultSources);
 
             // create input and output modified column sets
@@ -71,7 +71,7 @@ public class ZeroKeyUpdateByManager extends UpdateBy {
             });
 
             // create an updateby bucket instance directly from the source table
-            zeroKeyUpdateBy = new UpdateByBucketHelper(bucketDescription, source, windows, resultSources,
+            zeroKeyUpdateBy = new UpdateByBucketHelper(bucketDescription, source, windows, resultDef, resultSources,
                     timestampColumnName, control, (oe, se) -> deliverUpdateError(oe, se, true),
                     ArrayTypeUtils.EMPTY_OBJECT_ARRAY);
             buckets.offer(zeroKeyUpdateBy);
@@ -88,7 +88,7 @@ public class ZeroKeyUpdateByManager extends UpdateBy {
             // result will depend on listener
             result.addParentReference(sourceListener);
         } else {
-            zeroKeyUpdateBy = new UpdateByBucketHelper(bucketDescription, source, windows, resultSources,
+            zeroKeyUpdateBy = new UpdateByBucketHelper(bucketDescription, source, windows, resultDef, resultSources,
                     timestampColumnName, control, (oe, se) -> {
                         throw new IllegalStateException("Update failure from static zero key updateBy");
                     }, ArrayTypeUtils.EMPTY_OBJECT_ARRAY);

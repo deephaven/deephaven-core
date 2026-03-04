@@ -94,6 +94,7 @@ class BucketedPartitionedUpdateByManager extends UpdateBy {
                         bucketDescription,
                         (QueryTable) t,
                         windows,
+                        resultDef,
                         resultSources,
                         timestampColumnName,
                         control,
