@@ -23,6 +23,7 @@ import io.deephaven.util.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.BiConsumer;
 
@@ -77,7 +78,7 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
             @NotNull final QueryTable source,
             @NotNull final UpdateByWindow[] windows,
             @NotNull TableDefinition resultDef,
-            @NotNull final Map<String, ? extends ColumnSource<?>> resultSources,
+            @NotNull final LinkedHashMap<String, ColumnSource<?>> resultSources,
             @Nullable final String timestampColumnName,
             @NotNull final UpdateByControl control,
             @NotNull final BiConsumer<Throwable, TableListener.Entry> failureNotifier,
@@ -90,7 +91,7 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
         this.failureNotifier = failureNotifier;
         this.bucketKeyValues = bucketKeyValues;
 
-        result = new QueryTable(resultDef, source.getRowSet(), resultSources);
+        result = new QueryTable(resultDef, source.getRowSet(), resultSources, null, null);
 
         // do we need a timestamp SSA?
         this.timestampColumnName = timestampColumnName;

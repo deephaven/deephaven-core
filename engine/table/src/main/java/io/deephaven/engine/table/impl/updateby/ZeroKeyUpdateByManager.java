@@ -18,6 +18,7 @@ import io.deephaven.util.type.ArrayTypeUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
@@ -53,7 +54,7 @@ public class ZeroKeyUpdateByManager extends UpdateBy {
             @NotNull final ColumnSource<?>[] inputSources,
             @NotNull final QueryTable source,
             @NotNull final String[] preservedColumns,
-            @NotNull final Map<String, ? extends ColumnSource<?>> resultSources,
+            @NotNull final LinkedHashMap<String, ColumnSource<?>> resultSources,
             @Nullable final String timestampColumnName,
             @Nullable final RowRedirection rowRedirection,
             @NotNull final UpdateByControl control) {
