@@ -40,10 +40,10 @@ import java.util.function.Supplier;
  * A Widget represents a server side object that sends one or more responses to the client. The client can then
  * interpret these responses to see what to render, or how to respond.
  * <p>
- * Most custom object types result in a single response being sent to the client, often with other exported objects, but
- * some will have streamed responses, and allow the client to send follow-up requests of its own. This class's API is
- * backwards compatible, but as such does not offer a way to tell the difference between a streaming or non-streaming
- * object type, the client code that handles the payloads is expected to know what to expect. See
+ * Most custom object types result in a single response being sent to the client (often with other exported objects),
+ * but some will have streamed responses, and allow the client to send follow-up requests of its own. This class's API is
+ * backward compatible, and as such does not offer a way to tell the difference between a streaming or non-streaming
+ * object type. The client code that handles the payloads is expected to know what to expect. See
  * {@link WidgetMessageDetails} for more information.
  * <p>
  * When the promise that returns this object resolves, it will have the first response assigned to its fields. Later
@@ -53,11 +53,11 @@ import java.util.function.Supplier;
  * remote messages are still pending - it is up to implementations of plugins to handle this case.
  * <p>
  * Also like WebSockets, the plugin API doesn't define how to serialize messages, and just handles any binary payloads.
- * What it does handle however, is allowing those messages to include references to server-side objects with those
+ * What it does handle, however, is allowing those messages to include references to server-side objects with those
  * payloads. Those server side objects might be tables or other built-in types in the Deephaven JS API, or could be
  * objects usable through their own plugins. They also might have no plugin at all, allowing the client to hold a
  * reference to them and pass them back to the server, either to the current plugin instance, or through another API.
- * The {@code Widget} type does not specify how those objects should be used or their lifecycle, but leaves that
+ * The {@link JsWidget Widget} type does not specify how those objects should be used or their lifecycle, but leaves that
  * entirely to the plugin. Messages will arrive in the order they were sent.
  * <p>
  * This can suggest several patterns for how plugins operate:
@@ -73,12 +73,12 @@ import java.util.function.Supplier;
  * before bidirectional plugins were implemented. Another example of this is plugins that serve as a "factory", giving
  * the user access to table manipulation/creation methods not supported by gRPC or the JS API.</li>
  * <li>The plugin provides reference to Tables and other objects that only make sense within the context of the widget
- * instance, so when the widget goes away, those objects should be released as well. This is also an example of
+ * instance. When the widget goes away, those objects should be released as well. This is also an example of
  * {@link io.deephaven.web.client.api.JsPartitionedTable}, as the partitioned table tracks creation of new keys through
  * an internal table instance.</li>
  * </ul>
  *
- * Handling server objects in messages also has more than one potential pattern that can be used:
+ * There are also multiple potential patterns for handling server objects in messages:
  * <ul>
  * <li>One object per message - the message clearly is about that object, no other details required.</li>
  * <li>Objects indexed within their message - as each message comes with a list of objects, those objects can be
@@ -94,8 +94,19 @@ import java.util.function.Supplier;
 // TODO consider reconnect support? This is somewhat tricky without understanding the semantics of the widget
 @TsName(namespace = "dh", name = "Widget")
 public class JsWidget extends HasEventHandling implements ServerObject, WidgetMessageDetails {
+    /**
+     * Fired when a new message is received from the server.
+     *
+     * <p>
+     * {@code event.detail} is an {@link EventDetails} instance containing the message payload and any exported objects
+     * included with the message.
+     */
     @JsProperty(namespace = "dh.Widget")
     public static final String EVENT_MESSAGE = "message";
+
+    /**
+     * Fired when the widget's message stream is closed.
+     */
     @JsProperty(namespace = "dh.Widget")
     public static final String EVENT_CLOSE = "close";
 
