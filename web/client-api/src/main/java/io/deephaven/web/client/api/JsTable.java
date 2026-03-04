@@ -459,9 +459,9 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     /**
      * The columns that are present on this table. This is always all possible columns. If you specify fewer columns in
      * {@link #setViewport(double, double, JsArray)}, you will get only those columns in your
-     * {@link io.deephaven.web.client.api.subscription.ViewportData ViewportData}. {@code size} is the total
-     * count of rows in the table. The size can and will change; see the {@link #EVENT_SIZECHANGED} event for details. Size
-     * will be negative in exceptional cases (eg. the table is uncoalesced, see the {@link #isUncoalesced()} property for
+     * {@link io.deephaven.web.client.api.subscription.ViewportData ViewportData}. {@code size} is the total count of
+     * rows in the table. The size can and will change; see the {@link #EVENT_SIZECHANGED} event for details. Size will
+     * be negative in exceptional cases (eg. the table is uncoalesced, see the {@link #isUncoalesced()} property for
      * details).
      * 
      * @return {@link Column} array
@@ -490,7 +490,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
      * When the size changes, the {@link #EVENT_SIZECHANGED} event will be fired.
      *
      * @return the size of the table, or {@link #SIZE_UNCOALESCED} if there is no subscription and the table is
-     * uncoalesced.
+     *         uncoalesced.
      */
     @JsProperty
     public double getSize() {
@@ -548,8 +548,8 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     /**
      * An ordered list of filter conditions to apply to the table. To update, call
      * {@link #applyFilter(FilterCondition[])}. Note that this getter will return the new value immediately, even though
-     * it may take a little time to update on the server. You may listen for the {@link #EVENT_FILTERCHANGED} event to know
-     * when to update the UI.
+     * it may take a little time to update on the server. You may listen for the {@link #EVENT_FILTERCHANGED} event to
+     * know when to update the UI.
      * 
      * @return {@link FilterCondition} array
      */
@@ -561,9 +561,9 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     /**
      * Replace the currently set sort on this table. Returns the previously set value. Note that the sort property will
      * immediately return the new value, but you may receive update events using the old sort before the new sort is
-     * applied, and the {@link #EVENT_SORTCHANGED} event fires. Reusing existing, applied sorts may enable this to perform
-     * better on the server. The {@link #EVENT_UPDATED} event will also fire, but {@link #EVENT_ROWADDED} and {@link #EVENT_ROWREMOVED} will
-     * not.
+     * applied, and the {@link #EVENT_SORTCHANGED} event fires. Reusing existing, applied sorts may enable this to
+     * perform better on the server. The {@link #EVENT_UPDATED} event will also fire, but {@link #EVENT_ROWADDED} and
+     * {@link #EVENT_ROWREMOVED} will not.
      *
      * @param sort
      * @return {@link Sort} array
@@ -600,8 +600,8 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     /**
      * Replace the currently set filters on the table. Returns the previously set value. Note that the filter property
      * will immediately return the new value, but you may receive update events using the old filter before the new one
-     * is applied, and the {@link #EVENT_FILTERCHANGED} event fires. Reusing existing, applied filters may enable this to
-     * perform better on the server. The {@link #EVENT_UPDATED} event will also fire, but {@link #EVENT_ROWADDED} and
+     * is applied, and the {@link #EVENT_FILTERCHANGED} event fires. Reusing existing, applied filters may enable this
+     * to perform better on the server. The {@link #EVENT_UPDATED} event will also fire, but {@link #EVENT_ROWADDED} and
      * {@link #EVENT_ROWREMOVED} will not.
      *
      * @param filter
@@ -840,9 +840,8 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
      * snapshot of the table atomically. The initial snapshot will arrive in a single event, but later changes will be
      * sent as updates. However, this may still be very expensive to run from a browser for very large tables. Each call
      * to {@link #createSubscription(Object) createSubscription} creates a new subscription, which must have
-     * {@link TableSubscription#close()}
-     * called on it to stop it and release its resources, and all events are fired from the {@link TableSubscription}
-     * instance.
+     * {@link TableSubscription#close()} called on it to stop it and release its resources, and all events are fired
+     * from the {@link TableSubscription} instance.
      * 
      * @param options options for the subscription; see {@link DataOptions.SubscriptionOptions} for details
      * @return a new {@link TableSubscription}
@@ -856,8 +855,8 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
      * Creates a viewport subscription to the specified columns, across the specified rows in the table. The returned
      * {@link TableViewportSubscription} instance allows the viewport to be changed over time, and events are fired from
      * it when the data changes or when a viewport change has been applied. Each call to
-     * {@link #createViewportSubscription(Object) createViewportSubscription} creates a new subscription, which must have
-     * {@link TableViewportSubscription#close()} called on it to stop it and release its resources
+     * {@link #createViewportSubscription(Object) createViewportSubscription} creates a new subscription, which must
+     * have {@link TableViewportSubscription#close()} called on it to stop it and release its resources
      *
      * @param options options for the viewport subscription; see {@link DataOptions.ViewportSubscriptionOptions} for
      *        details
@@ -1045,9 +1044,8 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     /**
      * A promise that will resolve to a Totals Table of this table. This table will obey the configurations provided as
      * a parameter, or will use the table's default if no parameter is provided, and be updated once per second as
-     * necessary. Note that multiple calls to this method will each produce a new
-     * {@link JsTotalsTable dh.TotalsTable} which must have {@link JsTotalsTable#close() close()} called on it when not
-     * in use.
+     * necessary. Note that multiple calls to this method will each produce a new {@link JsTotalsTable dh.TotalsTable}
+     * which must have {@link JsTotalsTable#close() close()} called on it when not in use.
      * 
      * @param config
      * @return Promise of dh.TotalsTable
@@ -1255,8 +1253,9 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     }
 
     /**
-     * a promise that will resolve to a new roll-up {@link JsTreeTable dh.TreeTable} of this table. Multiple calls to this method will
-     * each produce a new {@link JsTreeTable dh.TreeTable} which must have {@link JsTreeTable#close() close()} called on it when not in use.
+     * a promise that will resolve to a new roll-up {@link JsTreeTable dh.TreeTable} of this table. Multiple calls to
+     * this method will each produce a new {@link JsTreeTable dh.TreeTable} which must have {@link JsTreeTable#close()
+     * close()} called on it when not in use.
      * 
      * @param configObject
      * @return Promise of {@link JsTreeTable dh.TreeTable}
@@ -1291,8 +1290,9 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     }
 
     /**
-     * A promise that will resolve to a new {@link JsTreeTable dh.TreeTable} of this table. Multiple calls to this method will each
-     * produce a new {@link JsTreeTable dh.TreeTable} which must have {@link JsTreeTable#close() close()} called on it when not in use.
+     * A promise that will resolve to a new {@link JsTreeTable dh.TreeTable} of this table. Multiple calls to this
+     * method will each produce a new {@link JsTreeTable dh.TreeTable} which must have {@link JsTreeTable#close()
+     * close()} called on it when not in use.
      * 
      * @param configObject
      * @return Promise of {@link JsTreeTable dh.TreeTable}
@@ -1508,8 +1508,8 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     }
 
     /**
-     * Creates a new {@link JsPartitionedTable dh.PartitionedTable} from the contents of the current table, partitioning data based on the specified
-     * keys.
+     * Creates a new {@link JsPartitionedTable dh.PartitionedTable} from the contents of the current table, partitioning
+     * data based on the specified keys.
      *
      * @param keys
      * @param dropKeys

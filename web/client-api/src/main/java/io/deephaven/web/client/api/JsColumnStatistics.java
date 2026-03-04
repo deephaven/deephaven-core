@@ -171,8 +171,8 @@ public class JsColumnStatistics {
     }
 
     /**
-     * Gets a map of each unique value's name to the count of how many times it occurred in the column. This map will
-     * be empty for tables containing more than 19 unique values.
+     * Gets a map of each unique value's name to the count of how many times it occurred in the column. This map will be
+     * empty for tables containing more than 19 unique values.
      *
      * @return Map of String double
      *

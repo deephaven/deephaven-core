@@ -10,8 +10,8 @@ import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
 
 /**
- * Similar to {@link io.deephaven.web.client.api.subscription.ViewportData}, but with 
- * additional properties to reflect the tree structure.
+ * Similar to {@link io.deephaven.web.client.api.subscription.ViewportData}, but with additional properties to reflect
+ * the tree structure.
  */
 @JsType(namespace = "dh")
 public interface TreeViewportData extends TableData {
@@ -35,8 +35,8 @@ public interface TreeViewportData extends TableData {
     double getOffset();
 
     /**
-     * {@link io.deephaven.web.client.api.TableData.Row Row} implementation that also provides additional read-only properties. Represents visible rows in the table, but
-     * with additional properties to reflect the tree structure.
+     * {@link io.deephaven.web.client.api.TableData.Row Row} implementation that also provides additional read-only
+     * properties. Represents visible rows in the table, but with additional properties to reflect the tree structure.
      */
     @JsType
     interface TreeRow extends TableData.Row {

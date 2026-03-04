@@ -54,7 +54,8 @@ public class DataOptions {
         }
 
         /**
-         * If {@code true}, any array columns will be converted to strings for preview purposes. This is the legacy behavior.
+         * If {@code true}, any array columns will be converted to strings for preview purposes. This is the legacy
+         * behavior.
          */
         @JsNullable
         @JsProperty

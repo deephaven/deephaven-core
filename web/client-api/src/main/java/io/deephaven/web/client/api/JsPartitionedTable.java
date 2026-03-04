@@ -295,8 +295,8 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
         return baseTable.copy();
     }
 
-    /** 
-     * Close any subscriptions to underlying tables or key tables. 
+    /**
+     * Close any subscriptions to underlying tables or key tables.
      */
     private void closeSubscriptions() {
         if (baseTable != null) {

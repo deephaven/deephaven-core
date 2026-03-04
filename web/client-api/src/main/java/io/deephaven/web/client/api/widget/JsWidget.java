@@ -41,8 +41,8 @@ import java.util.function.Supplier;
  * interpret these responses to see what to render, or how to respond.
  * <p>
  * Most custom object types result in a single response being sent to the client (often with other exported objects),
- * but some will have streamed responses, and allow the client to send follow-up requests of its own. This class's API is
- * backward compatible, and as such does not offer a way to tell the difference between a streaming or non-streaming
+ * but some will have streamed responses, and allow the client to send follow-up requests of its own. This class's API
+ * is backward compatible, and as such does not offer a way to tell the difference between a streaming or non-streaming
  * object type. The client code that handles the payloads is expected to know what to expect. See
  * {@link WidgetMessageDetails} for more information.
  * <p>
@@ -57,8 +57,8 @@ import java.util.function.Supplier;
  * payloads. Those server side objects might be tables or other built-in types in the Deephaven JS API, or could be
  * objects usable through their own plugins. They also might have no plugin at all, allowing the client to hold a
  * reference to them and pass them back to the server, either to the current plugin instance, or through another API.
- * The {@link JsWidget Widget} type does not specify how those objects should be used or their lifecycle, but leaves that
- * entirely to the plugin. Messages will arrive in the order they were sent.
+ * The {@link JsWidget Widget} type does not specify how those objects should be used or their lifecycle, but leaves
+ * that entirely to the plugin. Messages will arrive in the order they were sent.
  * <p>
  * This can suggest several patterns for how plugins operate:
  * <ul>

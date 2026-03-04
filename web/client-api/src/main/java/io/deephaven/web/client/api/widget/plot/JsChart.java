@@ -24,8 +24,8 @@ import java.util.Map;
 @JsType(name = "Chart", namespace = "dh.plot")
 public class JsChart extends HasEventHandling {
     /**
-     * Fired when a new series is added to this chart as part of a multi-series chart. 
-     * The event detail is the added series instance.
+     * Fired when a new series is added to this chart as part of a multi-series chart. The event detail is the added
+     * series instance.
      */
     public static final String EVENT_SERIES_ADDED = "seriesadded";
 

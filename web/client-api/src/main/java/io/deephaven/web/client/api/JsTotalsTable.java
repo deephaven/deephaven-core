@@ -30,16 +30,17 @@ import jsinterop.base.Js;
 
 /**
  * Behaves like a {@link JsTable dh.Table}, but doesn't expose all of its API for changing the internal state. Instead,
- * state is
- * driven by the upstream table - when it changes handle, this table listens and updates its own handle accordingly.
+ * state is driven by the upstream table - when it changes handle, this table listens and updates its own handle
+ * accordingly.
  *
  * Additionally, this is automatically subscribed to its one and only row, across all columns.
  *
- * A new config is returned any time it is accessed. This is to 1) prevent accidental mutation, and 2) allow it to be used as a
- * template when fetching a new totals table or changing the totals table in use.
+ * A new config is returned any time it is accessed. This is to 1) prevent accidental mutation, and 2) allow it to be
+ * used as a template when fetching a new totals table or changing the totals table in use.
  *
- * This class has limited methods found on {@link JsTable dh.Table}. Instances of this type always have a size of one when no 
- * {@link JsTotalsTableConfig#groupBy groupBy} is set on the config, but may potentially contain as few as zero rows, or as many as the parent table if each row gets its own group.
+ * This class has limited methods found on {@link JsTable dh.Table}. Instances of this type always have a size of one
+ * when no {@link JsTotalsTableConfig#groupBy groupBy} is set on the config, but may potentially contain as few as zero
+ * rows, or as many as the parent table if each row gets its own group.
  *
  * When using the {@link JsTotalsTableConfig#groupBy groupBy} feature, it may be desirable to also provide a row to the
  * user with all values across all rows. To achieve this, request the same Totals Table again, but remove the
@@ -61,8 +62,9 @@ public class JsTotalsTable implements JoinableTable, ServerObject {
     private Double updateIntervalMs;
 
     /**
-     * Table is wrapped to let us delegate calls to it, the directive is a serialized string, and the {@link JsTotalsTableConfig#groupBy groupBy} is
-     * copied when passed in, as well as when it is accessed, to prevent accidental mutation of the array.
+     * Table is wrapped to let us delegate calls to it, the directive is a serialized string, and the
+     * {@link JsTotalsTableConfig#groupBy groupBy} is copied when passed in, as well as when it is accessed, to prevent
+     * accidental mutation of the array.
      */
     public JsTotalsTable(JsTable wrappedTable, String directive, JsArray<String> groupBy) {
         this.wrappedTable = wrappedTable;
@@ -416,9 +418,9 @@ public class JsTotalsTable implements JoinableTable, ServerObject {
     }
 
     /**
-     * A server-side snapshot of this table (a server-side snapshot of the entire source table). Viewports on the snapshot
-     * table will not update. This does not change the original table, and the new table will not have any of the client
-     * side sorts/filters/columns. New client side sorts/filters/columns can be added to the snapshot copy.
+     * A server-side snapshot of this table (a server-side snapshot of the entire source table). Viewports on the
+     * snapshot table will not update. This does not change the original table, and the new table will not have any of
+     * the client side sorts/filters/columns. New client side sorts/filters/columns can be added to the snapshot copy.
      * 
      * @return A promise that resolves to the snapshot table.
      */
