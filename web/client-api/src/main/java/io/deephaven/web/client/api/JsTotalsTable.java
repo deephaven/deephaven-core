@@ -29,21 +29,21 @@ import jsinterop.annotations.JsProperty;
 import jsinterop.base.Js;
 
 /**
- * Behaves like a {@code Table}, but doesn't expose all of its API for changing the internal state. Instead, state is
- * driven by the upstream table - when it changes handle, this listens and updates its own handle accordingly.
+ * Behaves like a {@link JsTable dh.Table}, but doesn't expose all of its API for changing the internal state. Instead,
+ * state is
+ * driven by the upstream table - when it changes handle, this table listens and updates its own handle accordingly.
  *
  * Additionally, this is automatically subscribed to its one and only row, across all columns.
  *
- * A new config is returned any time it is accessed, to prevent accidental mutation, and to allow it to be used as a
- * template when fetching a new totals table, or changing the totals table in use.
+ * A new config is returned any time it is accessed. This is to 1) prevent accidental mutation, and 2) allow it to be used as a
+ * template when fetching a new totals table or changing the totals table in use.
  *
- * A simplistic {@code Table}, providing access to aggregation of the table it is sourced from. This table is always
- * automatically subscribed to its parent, and adopts changes automatically from it. This class has limited methods
- * found on Table. Instances of this type always have a size of one when no groupBy is set on the config, but may
- * potentially contain as few as zero rows, or as many as the parent table if each row gets its own group.
+ * This class has limited methods found on {@link JsTable dh.Table}. Instances of this type always have a size of one when no 
+ * {@link JsTotalsTableConfig#groupBy groupBy} is set on the config, but may potentially contain as few as zero rows, or as many as the parent table if each row gets its own group.
  *
- * When using the {@code groupBy} feature, it may be desireable to also provide a row to the user with all values across
- * all rows. To achieve this, request the same Totals Table again, but remove the {@code groupBy} setting.
+ * When using the {@link JsTotalsTableConfig#groupBy groupBy} feature, it may be desirable to also provide a row to the
+ * user with all values across all rows. To achieve this, request the same Totals Table again, but remove the
+ * {@link JsTotalsTableConfig#groupBy groupBy} setting.
  */
 @TsInterface
 @TsName(namespace = "dh", name = "TotalsTable")
@@ -61,7 +61,7 @@ public class JsTotalsTable implements JoinableTable, ServerObject {
     private Double updateIntervalMs;
 
     /**
-     * Table is wrapped to let us delegate calls to it, the directive is a serialized string, and the {@code groupBy} is
+     * Table is wrapped to let us delegate calls to it, the directive is a serialized string, and the {@link JsTotalsTableConfig#groupBy groupBy} is
      * copied when passed in, as well as when it is accessed, to prevent accidental mutation of the array.
      */
     public JsTotalsTable(JsTable wrappedTable, String directive, JsArray<String> groupBy) {
@@ -70,11 +70,19 @@ public class JsTotalsTable implements JoinableTable, ServerObject {
         this.groupBy = Js.uncheckedCast(groupBy.slice());
     }
 
+    /**
+     * Gets the {@link WorkerConnection} used by this table.
+     *
+     * @return The connection.
+     */
     @Override
     public WorkerConnection getConnection() {
         return wrappedTable.getConnection();
     }
 
+    /**
+     * Re-applies the most recently set viewport options, if any.
+     */
     public void refreshViewport() {
         if (firstRow != null && lastRow != null) {
             setViewport(firstRow, lastRow, Js.uncheckedCast(columns), updateIntervalMs, null);
@@ -100,6 +108,11 @@ public class JsTotalsTable implements JoinableTable, ServerObject {
         return typedTicket;
     }
 
+    /**
+     * Gets the configuration used when creating this Totals Table.
+     *
+     * @return {@link JsTotalsTableConfig dh.TotalsTableConfig}
+     */
     @JsProperty
     public JsTotalsTableConfig getTotalsTableConfig() {
         JsTotalsTableConfig parsed = JsTotalsTableConfig.parse(directive);
@@ -259,26 +272,58 @@ public class JsTotalsTable implements JoinableTable, ServerObject {
         return wrappedTable.getSize();
     }
 
+    /**
+     * Gets a string representation of this Totals Table instance.
+     *
+     * @return A string representation of this totals table.
+     */
     @Override
     public String toString() {
         return "JsTotalsTable { totalsTableConfig=" + getTotalsTableConfig() + " }";
     }
 
+    /**
+     * Adds an event listener to this table.
+     *
+     * @param name The event name.
+     * @param callback The callback to invoke when the event fires.
+     * @return A function that removes this event listener when invoked.
+     */
     @JsMethod
     public <T> RemoverFn addEventListener(String name, EventFn<T> callback) {
         return wrappedTable.addEventListener(name, callback);
     }
 
+    /**
+     * Removes an event listener from this table.
+     *
+     * @param name The event name.
+     * @param callback The callback to remove.
+     * @return {@code true} if a listener was removed; {@code false} otherwise.
+     */
     @JsMethod
     public <T> boolean removeEventListener(String name, EventFn<T> callback) {
         return wrappedTable.removeEventListener(name, callback);
     }
 
+    /**
+     * Returns a promise that resolves with the next occurrence of the specified event.
+     *
+     * @param eventName The event name.
+     * @param timeoutInMillis Timeout in milliseconds.
+     * @return A promise that resolves to the next event.
+     */
     @JsMethod
     public <T> Promise<Event<T>> nextEvent(String eventName, Double timeoutInMillis) {
         return wrappedTable.nextEvent(eventName, timeoutInMillis);
     }
 
+    /**
+     * Checks whether this table has any listeners for the given event name.
+     *
+     * @param name The event name.
+     * @return {@code true} if there is at least one listener; {@code false} otherwise.
+     */
     @JsMethod
     public boolean hasListeners(String name) {
         return wrappedTable.hasListeners(name);
@@ -326,6 +371,11 @@ public class JsTotalsTable implements JoinableTable, ServerObject {
         return wrappedTable.applyFilter(filter);
     }
 
+    /**
+     * Gets the underlying {@link JsTable} instance used to back this Totals Table.
+     *
+     * @return The wrapped table.
+     */
     public JsTable getWrappedTable() {
         return wrappedTable;
     }
@@ -365,12 +415,27 @@ public class JsTotalsTable implements JoinableTable, ServerObject {
         return wrappedTable.getCustomColumns();
     }
 
+    /**
+     * A server-side snapshot of this table (a server-side snapshot of the entire source table). Viewports on the snapshot
+     * table will not update. This does not change the original table, and the new table will not have any of the client
+     * side sorts/filters/columns. New client side sorts/filters/columns can be added to the snapshot copy.
+     * 
+     * @return A promise that resolves to the snapshot table.
+     */
     @Override
     @JsMethod
     public Promise<JsTable> freeze() {
         return wrappedTable.freeze();
     }
 
+    /**
+     * Creates a server-side snapshot of {@code baseTable} when this table updates.
+     *
+     * @param baseTable The table to snapshot.
+     * @param doInitialSnapshot Whether to create an initial snapshot immediately.
+     * @param stampColumns Optional list of column names to include in the result.
+     * @return A promise that resolves to the snapshot table.
+     */
     @Override
     @JsMethod
     public Promise<JsTable> snapshot(JsTable baseTable, @JsOptional @JsNullable Boolean doInitialSnapshot,
@@ -378,6 +443,16 @@ public class JsTotalsTable implements JoinableTable, ServerObject {
         return wrappedTable.snapshot(baseTable, doInitialSnapshot, stampColumns);
     }
 
+    /**
+     * Joins this table to the provided table.
+     *
+     * @param joinType The join type.
+     * @param rightTable The table to join to.
+     * @param columnsToMatch Columns that should match.
+     * @param columnsToAdd Columns from the right table to add to the result.
+     * @param asOfMatchRule If joinType is {@code AJ}/{@code RAJ}/{@code ReverseAJ}, the match rule to use.
+     * @return A promise that resolves to the joined table.
+     */
     @Override
     @JsMethod
     public Promise<JsTable> join(String joinType, JoinableTable rightTable, JsArray<String> columnsToMatch,
@@ -385,6 +460,15 @@ public class JsTotalsTable implements JoinableTable, ServerObject {
         return wrappedTable.join(joinType, rightTable, columnsToMatch, columnsToAdd, asOfMatchRule);
     }
 
+    /**
+     * Performs an as-of join between this table and the provided table.
+     *
+     * @param rightTable The table to join to.
+     * @param columnsToMatch Columns that should match.
+     * @param columnsToAdd Columns from the right table to add to the result.
+     * @param asOfMatchRule The match rule to use.
+     * @return A promise that resolves to the joined table.
+     */
     @Override
     @JsMethod
     public Promise<JsTable> asOfJoin(JoinableTable rightTable, JsArray<String> columnsToMatch,
@@ -392,6 +476,15 @@ public class JsTotalsTable implements JoinableTable, ServerObject {
         return wrappedTable.asOfJoin(rightTable, columnsToMatch, columnsToAdd, asOfMatchRule);
     }
 
+    /**
+     * Performs a cross join between this table and the provided table.
+     *
+     * @param rightTable The table to join to.
+     * @param columnsToMatch Columns that should match.
+     * @param columnsToAdd Columns from the right table to add to the result.
+     * @param reserveBits Optional reserve bits for the join.
+     * @return A promise that resolves to the joined table.
+     */
     @Override
     @JsMethod
     public Promise<JsTable> crossJoin(JoinableTable rightTable, JsArray<String> columnsToMatch,
@@ -399,6 +492,14 @@ public class JsTotalsTable implements JoinableTable, ServerObject {
         return wrappedTable.crossJoin(rightTable, columnsToMatch, columnsToAdd, reserveBits);
     }
 
+    /**
+     * Performs an exact join between this table and the provided table.
+     *
+     * @param rightTable The table to join to.
+     * @param columnsToMatch Columns that should match.
+     * @param columnsToAdd Columns from the right table to add to the result.
+     * @return A promise that resolves to the joined table.
+     */
     @Override
     @JsMethod
     public Promise<JsTable> exactJoin(JoinableTable rightTable, JsArray<String> columnsToMatch,
@@ -406,6 +507,14 @@ public class JsTotalsTable implements JoinableTable, ServerObject {
         return wrappedTable.exactJoin(rightTable, columnsToMatch, columnsToAdd);
     }
 
+    /**
+     * Performs a natural join between this table and the provided table.
+     *
+     * @param rightTable The table to join to.
+     * @param columnsToMatch Columns that should match.
+     * @param columnsToAdd Columns from the right table to add to the result.
+     * @return A promise that resolves to the joined table.
+     */
     @Override
     @JsMethod
     public Promise<JsTable> naturalJoin(JoinableTable rightTable, JsArray<String> columnsToMatch,
