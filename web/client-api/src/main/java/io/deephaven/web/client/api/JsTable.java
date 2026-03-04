@@ -458,7 +458,8 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
 
     /**
      * The columns that are present on this table. This is always all possible columns. If you specify fewer columns in
-     * {@link #setViewport()}, you will get only those columns in your {@link AbstractTableSubscription.ViewportData ViewportData}. {@code size} is the total
+     * {@link #setViewport(double, double, JsArray)}, you will get only those columns in your
+     * {@link io.deephaven.web.client.api.subscription.ViewportData ViewportData}. {@code size} is the total
      * count of rows in the table. The size can and will change; see the {@link #EVENT_SIZECHANGED} event for details. Size
      * will be negative in exceptional cases (eg. the table is uncoalesced, see the {@link #isUncoalesced()} property for
      * details).
