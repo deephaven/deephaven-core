@@ -77,7 +77,7 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
             @NotNull final String description,
             @NotNull final QueryTable source,
             @NotNull final UpdateByWindow[] windows,
-            @NotNull TableDefinition resultDef,
+            @NotNull final TableDefinition resultDef,
             @NotNull final LinkedHashMap<String, ColumnSource<?>> resultSources,
             @Nullable final String timestampColumnName,
             @NotNull final UpdateByControl control,
