@@ -153,9 +153,8 @@ public class TableTransformationColumn extends BaseTableTransformationColumn {
             final WritableObjectChunk<Table, ? super Values> typedDestination = destination.asWritableObjectChunk();
             final int size = source.size();
             typedDestination.setSize(size);
-            final boolean clearCallSite = QueryPerformanceRecorder.setCallsite(callsite);
             try (final SafeCloseable ignored = executionContext == null ? null : executionContext.open();
-                    final SafeCloseable ignored2 = clearCallSite ? QueryPerformanceRecorder::clearCallsite : null) {
+                    final SafeCloseable ignored2 = QueryPerformanceRecorder.setCallsiteWithCloseable()) {
                 for (int ii = 0; ii < size; ++ii) {
                     typedDestination.set(ii, transformer.apply(source.get(ii)));
                 }
