@@ -112,7 +112,7 @@ Edit the `CATEGORY_FILTERS` dictionary in `generate_autoimport_docs.py` to add n
 
 ### Modifying page templates
 
-Edit the `generate_page_header()` and `generate_page_footer()` functions to customize the markdown output.
+Edit the `generate_page_header` and `generate_page_footer` functions to customize the markdown output.
 
 ## Dependencies
 
@@ -124,6 +124,6 @@ The script requires:
 
 ## Notes
 
-- The script must run inside a Deephaven session because it uses `jpy` to introspect Java classes
-- Scraping JavaDocs can be slow; the script caches requests to avoid redundant downloads
-- Some methods may show "No description." if JavaDoc documentation is missing
+- The script must run inside a Deephaven session because it uses `jpy` to introspect Java classes.
+- Scraping JavaDocs can be slow; the script caches requests to avoid redundant downloads.
+- Some methods may show "No description." if JavaDoc documentation is missing.
