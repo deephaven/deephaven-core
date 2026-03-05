@@ -14,6 +14,7 @@ import io.deephaven.proto.backplane.grpc.RemoteFileSourceClientMessage;
 import io.deephaven.proto.backplane.grpc.RemoteFileSourceMetaRequest;
 import io.deephaven.proto.backplane.grpc.RemoteFileSourceMetaResponse;
 import io.deephaven.proto.backplane.grpc.RemoteFileSourceServerMessage;
+import io.deephaven.proto.backplane.grpc.SetExecutionContextRequest;
 import io.deephaven.proto.backplane.grpc.SetExecutionContextResponse;
 
 import java.nio.ByteBuffer;
@@ -68,7 +69,6 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
      */
     @Override
     public boolean canSourceResource(String resourceName) {
-        // Only active if this instance is the currently active message stream
         if (!isActive()) {
             return false;
         }
@@ -78,9 +78,7 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
             return false;
         }
 
-        List<String> resourcePaths = executionContext.getResourcePaths();
-
-        for (String contextResourcePath : resourcePaths) {
+        for (String contextResourcePath : executionContext.getResourcePaths()) {
             if (resourceName.equals(contextResourcePath)) {
                 log.debug().append("Can source: ").append(resourceName).endl();
                 return true;
@@ -159,11 +157,17 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
      */
     @Override
     public boolean hasConfiguredResources() {
-        if (!isActive()) {
-            return false;
-        }
-        RemoteFileSourceExecutionContext context = executionContext;
-        return context != null && !context.getResourcePaths().isEmpty();
+        return isActive() && !executionContext.getResourcePaths().isEmpty();
+    }
+
+    /**
+     * Checks if this provider's execution context is dirty.
+     *
+     * @return true if this provider is active and the execution context is dirty, false otherwise
+     */
+    @Override
+    public boolean isDirty() {
+        return isActive() && executionContext.isDirty();
     }
 
     /**
@@ -184,16 +188,19 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
      *
      * @param messageStream the message stream to set as active (must not be null)
      * @param resourcePaths list of resource paths (e.g., "package/MyScript.groovy") to resolve from remote source
+     * @param isDirty whether remote sources have changed and cache should be cleared
      * @throws IllegalArgumentException if messageStream is null
      */
-    public static void setExecutionContext(RemoteFileSourceMessageStream messageStream, List<String> resourcePaths) {
+    public static void setExecutionContext(RemoteFileSourceMessageStream messageStream, List<String> resourcePaths,
+            boolean isDirty) {
         if (messageStream == null) {
             throw new IllegalArgumentException("messageStream must not be null");
         }
 
-        executionContext = new RemoteFileSourceExecutionContext(messageStream, resourcePaths);
+        executionContext = new RemoteFileSourceExecutionContext(messageStream, resourcePaths, isDirty);
         log.info().append("Set execution context with ")
-                .append(executionContext.getResourcePaths().size()).append(" resource paths").endl();
+                .append(executionContext.getResourcePaths().size()).append(" resource paths")
+                .append(", isDirty: ").append(isDirty).endl();
     }
 
     /**
@@ -205,6 +212,7 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
             log.info().append("Cleared execution context").endl();
         }
     }
+
 
     /**
      * Handles incoming data from the client. Parses RemoteFileSourceClientMessage messages and processes meta responses
@@ -224,8 +232,7 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
             if (message.hasMetaResponse()) {
                 handleMetaResponse(message.getRequestId(), message.getMetaResponse());
             } else if (message.hasSetExecutionContext()) {
-                handleSetExecutionContext(message.getRequestId(),
-                        message.getSetExecutionContext().getResourcePathsList());
+                handleSetExecutionContext(message.getRequestId(), message.getSetExecutionContext());
             } else {
                 log.error().append("Received unknown message type from client").endl();
                 throw new ObjectCommunicationException("Received unknown message type from client");
@@ -266,12 +273,16 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
      * Handles a request from the client to set the execution context.
      *
      * @param requestId the request ID
-     * @param resourcePaths the list of resource paths to resolve from remote source
+     * @param setExecutionContext the SetExecutionContextRequest containing resource paths and isDirty flag
      */
-    private void handleSetExecutionContext(String requestId, List<String> resourcePaths) {
-        setExecutionContext(this, resourcePaths);
+    private void handleSetExecutionContext(String requestId, SetExecutionContextRequest setExecutionContext) {
+        boolean isDirty = setExecutionContext.getIsDirty();
+        List<String> resourcePaths = setExecutionContext.getResourcePathsList();
+
+        setExecutionContext(this, resourcePaths, isDirty);
         log.info().append("Client set execution context for this message stream with ")
-                .append(resourcePaths.size()).append(" resource paths").endl();
+                .append(resourcePaths.size()).append(" resource paths")
+                .append(", isDirty: ").append(isDirty).endl();
 
         sendExecutionContextAcknowledgment(requestId);
     }
@@ -346,17 +357,20 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
     public static class RemoteFileSourceExecutionContext {
         private final RemoteFileSourceMessageStream activeMessageStream;
         private final List<String> resourcePaths;
+        private final boolean isDirty;
 
         /**
          * Creates a new execution context.
          *
          * @param activeMessageStream the active message stream
          * @param resourcePaths list of resource paths to resolve from remote source
+         * @param isDirty whether remote sources have changed and cache should be cleared
          */
         public RemoteFileSourceExecutionContext(RemoteFileSourceMessageStream activeMessageStream,
-                List<String> resourcePaths) {
+                List<String> resourcePaths, boolean isDirty) {
             this.activeMessageStream = activeMessageStream;
             this.resourcePaths = resourcePaths;
+            this.isDirty = isDirty;
         }
 
         /**
@@ -375,6 +389,15 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
          */
         public List<String> getResourcePaths() {
             return resourcePaths;
+        }
+
+        /**
+         * Gets whether remote sources have changed and cache should be cleared.
+         *
+         * @return true if dirty, false otherwise
+         */
+        public boolean isDirty() {
+            return isDirty;
         }
     }
 }

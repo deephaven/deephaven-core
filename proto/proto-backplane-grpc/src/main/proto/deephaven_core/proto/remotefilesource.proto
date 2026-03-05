@@ -62,6 +62,9 @@ message SetExecutionContextRequest {
   // Resource paths that should be resolved from the remote source
   // (e.g., ["com/example/Test.groovy", "org/mycompany/Utils.groovy"])
   repeated string resource_paths = 1;
+
+  // Indicates whether remote sources have changed and cache should be cleared
+  bool is_dirty = 2;
 }
 
 // Response acknowledging execution context was set

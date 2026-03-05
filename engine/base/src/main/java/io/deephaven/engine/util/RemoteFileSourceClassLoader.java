@@ -111,6 +111,21 @@ public class RemoteFileSourceClassLoader extends ClassLoader {
     }
 
     /**
+     * Returns whether the current execution context is dirty, indicating that remote sources have changed and the cache
+     * should be cleared. This method is used by GroovyDeephavenSession to determine when to refresh the class cache.
+     *
+     * @return true if there is a dirty execution context, false otherwise
+     */
+    public boolean isDirty() {
+        for (RemoteFileSourceProvider candidate : providers) {
+            if (candidate.isActive() && candidate.isDirty()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * Gets the resource with the specified name by checking registered providers.
      *
      * <p>

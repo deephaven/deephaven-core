@@ -34,6 +34,14 @@ public interface RemoteFileSourceProvider {
     boolean hasConfiguredResources();
 
     /**
+     * Check if this provider's execution context is dirty, indicating that remote sources have changed and the cache
+     * should be cleared.
+     *
+     * @return true if this provider is active and dirty, false otherwise
+     */
+    boolean isDirty();
+
+    /**
      * Request a resource from the remote source.
      *
      * @param resourceName the name of the resource to fetch (e.g., "com/example/MyClass.groovy")
