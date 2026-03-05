@@ -1068,6 +1068,11 @@ public class QueryTable extends BaseTable<QueryTable> {
         }
 
         @Override
+        public String toString() {
+            return "FilteredTable(" + whereListener + ")";
+        }
+
+        @Override
         public void requestRecompute() {
             refilterMatchedRequested = refilterUnmatchedRequested = true;
             Require.neqNull(whereListener, "whereListener").notifyChanges();

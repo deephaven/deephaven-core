@@ -12,6 +12,9 @@ import junit.framework.TestCase;
 import org.junit.Rule;
 import org.junit.Test;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 /**
  * Unit tests for liveness code.
  */
@@ -75,5 +78,104 @@ public class TestLiveness {
         } catch (LivenessStateException expected) {
             expected.printStackTrace();
         }
+    }
+
+    private static class NamedLivenessArtifact extends LivenessArtifact {
+        public String name;
+
+        public NamedLivenessArtifact(String name, boolean strong) {
+            super(strong);
+            this.name = name;
+        }
+
+        @Override
+        public String toString() {
+            return name;
+        }
+    }
+
+    @Test
+    public void testMultipleReferences() {
+        testMultipleReferences(false);
+        testMultipleReferences(true);
+    }
+
+    private void testMultipleReferences(boolean strong) {
+        final LivenessArtifact a1, a2, a3;
+        final LivenessScope scope = new LivenessScope();
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            a1 = new NamedLivenessArtifact("a1", strong);
+            a2 = new NamedLivenessArtifact("a2", strong);
+            a3 = new NamedLivenessArtifact("a3", strong);
+            a1.manage(a3);
+            a1.manage(a2);
+            scope.manage(a1);
+        }
+
+        final LivenessArtifact a4;
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            a4 = new NamedLivenessArtifact("a4", strong);
+            a4.manage(a1);
+            a4.manage(a2);
+            a4.manage(a3);
+        }
+
+        if (a4.tryManage(a1)) {
+            TestCase.fail("Expected not to manage a1");
+        }
+
+        scope.release();
+
+        final LivenessArtifact a5;
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            a5 = new NamedLivenessArtifact("a5", strong);
+            if (a5.tryManage(a1)) {
+                TestCase.fail("Expected not to manage a1");
+            }
+            if (a5.tryManage(a2)) {
+                TestCase.fail("Expected not to manage a2");
+            }
+            if (a5.tryManage(a3)) {
+                TestCase.fail("Expected not to manage a3");
+            }
+        }
+    }
+
+    @Test
+    public void testSingletonLivenessManager() {
+        testSingletonLivenessManager(false);
+        testSingletonLivenessManager(true);
+    }
+
+    private void testSingletonLivenessManager(final boolean strong) {
+        final LivenessArtifact a1, a2, a3;
+        final SingletonLivenessManager slm;
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            a1 = new NamedLivenessArtifact("a1", strong);
+            a2 = new NamedLivenessArtifact("a2", strong);
+            a3 = new NamedLivenessArtifact("a3", strong);
+            a2.manage(a1);
+            a3.manage(a1);
+            a3.manage(a2);
+            slm = new SingletonLivenessManager(a3);
+        }
+
+        assertTrue(a1.tryRetainReference());
+        a1.dropReference();
+        assertTrue(a2.tryRetainReference());
+        a2.dropReference();
+        assertTrue(a3.tryRetainReference());
+        a3.dropReference();
+
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            final LivenessArtifact a4 = new NamedLivenessArtifact("a4", strong);
+            a4.manage(a3);
+        }
+
+        slm.release();
+
+        assertFalse(a1.tryRetainReference());
+        assertFalse(a2.tryRetainReference());
+        assertFalse(a3.tryRetainReference());
     }
 }
