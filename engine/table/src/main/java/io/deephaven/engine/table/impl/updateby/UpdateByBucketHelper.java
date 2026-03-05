@@ -23,6 +23,7 @@ import io.deephaven.util.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.BiConsumer;
 
@@ -65,6 +66,7 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
      *
      * @param description describes this bucket helper
      * @param source the source table
+     * @param resultDef the definition of the result table
      * @param resultSources the result sources
      * @param timestampColumnName the timestamp column used for time-based operations
      * @param control the control object.
@@ -75,7 +77,8 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
             @NotNull final String description,
             @NotNull final QueryTable source,
             @NotNull final UpdateByWindow[] windows,
-            @NotNull final Map<String, ? extends ColumnSource<?>> resultSources,
+            @NotNull final TableDefinition resultDef,
+            @NotNull final LinkedHashMap<String, ColumnSource<?>> resultSources,
             @Nullable final String timestampColumnName,
             @NotNull final UpdateByControl control,
             @NotNull final BiConsumer<Throwable, TableListener.Entry> failureNotifier,
@@ -88,8 +91,7 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
         this.failureNotifier = failureNotifier;
         this.bucketKeyValues = bucketKeyValues;
 
-        final TableDefinition resultDef = TableDefinition.inferFrom(source, resultSources);
-        result = new QueryTable(resultDef, source.getRowSet(), resultSources);
+        result = new QueryTable(resultDef, source.getRowSet(), resultSources, null, null);
 
         // do we need a timestamp SSA?
         this.timestampColumnName = timestampColumnName;
