@@ -100,6 +100,12 @@ public class RemoteFileSourceClientMessage {
             JsArray<String> getResourcePathsList();
 
             @JsProperty
+            boolean isIsDirty();
+
+            @JsProperty
+            void setIsDirty(boolean isDirty);
+
+            @JsProperty
             void setResourcePathsList(JsArray<String> resourcePathsList);
 
             @JsOverlay
@@ -215,6 +221,12 @@ public class RemoteFileSourceClientMessage {
 
             @JsProperty
             JsArray<String> getResourcePathsList();
+
+            @JsProperty
+            boolean isIsDirty();
+
+            @JsProperty
+            void setIsDirty(boolean isDirty);
 
             @JsProperty
             void setResourcePathsList(JsArray<String> resourcePathsList);
