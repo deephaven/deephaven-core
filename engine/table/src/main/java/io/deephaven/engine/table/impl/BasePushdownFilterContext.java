@@ -39,8 +39,8 @@ public interface BasePushdownFilterContext extends PushdownFilterContext {
     }
 
     /**
-     * Interface for a unified chunk filter that can be used to apply a filter to a chunk of data, whether the
-     * underlying filter is a {@link ExposesChunkFilter} or a {@link ConditionFilter}.
+     * Interface for a single column unified chunk filter that can be used to apply a filter to a chunk of data, whether
+     * the underlying filter is a {@link ExposesChunkFilter} or a {@link ConditionFilter}.
      */
     interface UnifiedChunkFilter extends SafeCloseable {
         LongChunk<OrderedRowKeys> filter(Chunk<? extends Values> values, LongChunk<OrderedRowKeys> keys);
@@ -68,8 +68,14 @@ public interface BasePushdownFilterContext extends PushdownFilterContext {
      */
     boolean supportsMetadataFiltering();
 
+    /**
+     * Whether this filter supports filtering based on cached data indexes.
+     */
     boolean supportsInMemoryDataIndexFiltering();
 
+    /**
+     * Whether this filter supports materializing and using stored data indexes.
+     */
     boolean supportsDeferredDataIndexFiltering();
 
     /**
