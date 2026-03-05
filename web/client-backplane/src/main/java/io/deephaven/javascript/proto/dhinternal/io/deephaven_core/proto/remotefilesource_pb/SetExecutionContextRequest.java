@@ -28,6 +28,12 @@ public class SetExecutionContextRequest {
         JsArray<String> getResourcePathsList();
 
         @JsProperty
+        boolean isIsDirty();
+
+        @JsProperty
+        void setIsDirty(boolean isDirty);
+
+        @JsProperty
         void setResourcePathsList(JsArray<String> resourcePathsList);
 
         @JsOverlay
@@ -45,6 +51,12 @@ public class SetExecutionContextRequest {
 
         @JsProperty
         JsArray<String> getResourcePathsList();
+
+        @JsProperty
+        boolean isIsDirty();
+
+        @JsProperty
+        void setIsDirty(boolean isDirty);
 
         @JsProperty
         void setResourcePathsList(JsArray<String> resourcePathsList);
@@ -72,9 +84,13 @@ public class SetExecutionContextRequest {
 
     public native void clearResourcePathsList();
 
+    public native boolean getIsDirty();
+
     public native JsArray<String> getResourcePathsList();
 
     public native Uint8Array serializeBinary();
+
+    public native void setIsDirty(boolean value);
 
     public native void setResourcePathsList(JsArray<String> value);
 
