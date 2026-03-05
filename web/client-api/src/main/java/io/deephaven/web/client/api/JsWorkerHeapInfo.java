@@ -8,6 +8,12 @@ import com.vertispan.tsdefs.annotations.TsName;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.GetHeapInfoResponse;
 import jsinterop.annotations.JsProperty;
 
+/**
+ * Heap memory information for a Deephaven worker.
+ *
+ * <p>
+ * This is a JS-exposed model type ({@code dh.WorkerHeapInfo}).
+ */
 @TsInterface
 @TsName(name = "WorkerHeapInfo", namespace = "dh")
 public class JsWorkerHeapInfo {
@@ -21,11 +27,17 @@ public class JsWorkerHeapInfo {
         this.totalHeapSize = Long.parseLong(heapInfo.getTotalMemory());
     }
 
+    /**
+     * Maximum heap size available to this worker.
+     */
     @JsProperty
     public double getMaximumHeapSize() {
         return maximumHeapSize;
     }
 
+    /**
+     * Free heap memory available to this worker.
+     */
     @JsProperty
     public double getFreeMemory() {
         return freeMemory;
