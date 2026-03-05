@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl.util;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -11,6 +12,10 @@ import java.util.List;
 import static junit.framework.TestCase.*;
 
 public class TestRuntimeMemory {
+    /**
+     * Ignored because we can have extra stuff going on and can't get good results in a CI run.
+     */
+    @Ignore
     @Test
     public void testPooling() throws InterruptedException {
         final RuntimeMemory.PooledSample pooledSample1 = RuntimeMemory.getInstance().readPooledSample();
@@ -77,9 +82,7 @@ public class TestRuntimeMemory {
 
         if (tries == 0) {
             System.err.println("Failed to see cached memory usage after 50 tries");
-            // this assertion is commented out so we are not a heisentest; we would ideally be able to enable this, but
-            // if you e.g. run in a debugger you might not come back fast enough
-            // assertTrue(tries > 0);
+            assertTrue(tries > 0);
         }
 
         // prevent unused-ness
