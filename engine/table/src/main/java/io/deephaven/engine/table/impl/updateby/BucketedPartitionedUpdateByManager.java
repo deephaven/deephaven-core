@@ -20,8 +20,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
@@ -68,7 +68,7 @@ class BucketedPartitionedUpdateByManager extends UpdateBy {
             @NotNull final ColumnSource<?>[] inputSources,
             @NotNull final QueryTable source,
             @NotNull final String[] preservedColumns,
-            @NotNull final Map<String, ? extends ColumnSource<?>> resultSources,
+            @NotNull final LinkedHashMap<String, ColumnSource<?>> resultSources,
             @NotNull final String[] byColumnNames,
             @Nullable final String timestampColumnName,
             @Nullable final RowRedirection rowRedirection,
@@ -77,7 +77,7 @@ class BucketedPartitionedUpdateByManager extends UpdateBy {
 
         // this table will always have the rowset of the source
         final TableDefinition resultDef = TableDefinition.inferFrom(source, resultSources);
-        result = new QueryTable(resultDef, source.getRowSet(), resultSources);
+        result = new QueryTable(resultDef, source.getRowSet(), resultSources, null, null);
 
         final Table transformedTable = LivenessScopeStack.computeEnclosed(() -> {
             final PartitionedTable partitioned = source.partitionedAggBy(List.of(), true, null, byColumnNames);
@@ -94,6 +94,7 @@ class BucketedPartitionedUpdateByManager extends UpdateBy {
                         bucketDescription,
                         (QueryTable) t,
                         windows,
+                        resultDef,
                         resultSources,
                         timestampColumnName,
                         control,
