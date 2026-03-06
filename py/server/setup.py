@@ -65,11 +65,6 @@ setup(
         "numpy",
         "pandas>=1.5.0",
         "pyarrow",
-        # TODO(deephaven-core#3082): Clarify dependency requirements wrt numba
-        # It took 6 months for numba to support 3.11 after it was released, we want to make sure deephaven-core will be
-        # installable when 3.13 is out. When we decide to upgrade to 3.13 or higher for testing/production, CI check
-        # will alert us that numba isn't available.
-        'numba; python_version < "3.13"',
     ],
     extras_require={
         "autocomplete": ["jedi==0.19.1", "docstring_parser>=0.16"],
