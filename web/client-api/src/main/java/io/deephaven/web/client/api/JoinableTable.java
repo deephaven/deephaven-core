@@ -13,7 +13,7 @@ import jsinterop.annotations.JsOptional;
 import jsinterop.annotations.JsType;
 
 /**
- * Represents a table which can be joined to another table. Current implementations are {@link JsTable} and
+ * Represents a table that can be joined to another table. Current implementations are {@link JsTable} and
  * {@link JsTotalsTable}.
  */
 @JsType(namespace = "dh")
@@ -24,6 +24,14 @@ public interface JoinableTable {
     @JsMethod
     Promise<JsTable> freeze();
 
+    /**
+     * Creates a server-side snapshot of {@code baseTable} when this table updates.
+     *
+     * @param baseTable The table to snapshot.
+     * @param doInitialSnapshot Whether to create an initial snapshot immediately.
+     * @param stampColumns Optional list of column names to include in the result.
+     * @return A promise that resolves to the snapshot table.
+     */
     @JsMethod
     Promise<JsTable> snapshot(JsTable baseTable, @JsOptional Boolean doInitialSnapshot,
             @JsOptional String[] stampColumns);
@@ -31,14 +39,13 @@ public interface JoinableTable {
     /**
      * Joins this table to the provided table, using one of the specified join types:
      * <ul>
-     * <li><code>AJ</code>, <code>ReverseAJ</code> (or <code>RAJ</code>) - Inexact timeseries joins, based on the
-     * provided matching rule.</li>
-     * <li><code>CROSS_JOIN</code> (or <code>Join</code>) - Cross join of all rows that have matching values in both
-     * tables.</li>
-     * <li><code>EXACT_JOIN</code> (or <code>ExactJoin</code>) - Matches values in exactly one row in the right table,
-     * with errors if there is not exactly one.</li>
-     * <li><code>NATURAL_JOIN</code> (or <code>Natural</code> - Matches values in at most one row in the right table,
-     * with nulls if there is no match or errors if there are multiple matches.</li>
+     * <li>{@code AJ}, {@code ReverseAJ} (or {@code RAJ}) - Inexact timeseries joins, based on the provided matching
+     * rule.</li>
+     * <li>{@code CROSS_JOIN} (or {@code Join}) - Cross join of all rows that have matching values in both tables.</li>
+     * <li>{@code EXACT_JOIN} (or {@code ExactJoin}) - Matches values in exactly one row in the right table, with errors
+     * if there is not exactly one.</li>
+     * <li>{@code NATURAL_JOIN} (or {@code Natural}) - Matches values in at most one row in the right table, with nulls
+     * if there is no match or errors if there are multiple matches.</li>
      * </ul>
      *
      * Note that <code>Left</code> join is not supported here, unlike DHE.
@@ -51,7 +58,7 @@ public interface JoinableTable {
      * @param rightTable The table to match to values in this table.
      * @param columnsToMatch Columns that should match.
      * @param columnsToAdd Columns from the right table to add to the result - empty/null/absent to add all columns.
-     * @param asOfMatchRule If joinType is AJ/RAJ/ReverseAJ, the match rule to use.
+     * @param asOfMatchRule If joinType is {@code AJ}/{@code RAJ}/{@code ReverseAJ}, the match rule to use.
      * @return A promise that will resolve to the joined table.
      */
     @JsMethod
