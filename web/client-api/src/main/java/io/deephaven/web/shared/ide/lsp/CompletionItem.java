@@ -11,21 +11,75 @@ import java.io.Serializable;
 import java.util.Objects;
 
 
+/**
+ * A completion suggestion for use by the IDE language tools.
+ *
+ * This is a JS-exposed model type ({@code dh.lsp.CompletionItem}) that closely follows the Language Server Protocol
+ * completion item shape.
+ */
 @JsType(namespace = "dh.lsp")
 public class CompletionItem implements Serializable {
     private int start;
     private int length;
+
+    /**
+     * The primary label to display for this completion item.
+     */
     public String label;
+
+    /**
+     * The kind of completion item (for example, method, variable, keyword), represented as an integer.
+     */
     public int kind;
+
+    /**
+     * Additional detail text to display alongside {@link #label}.
+     */
     public String detail;
+
+    /**
+     * Documentation for this completion item.
+     */
     public MarkupContent documentation;
+
+    /**
+     * Whether this completion item is deprecated.
+     */
     public boolean deprecated;
+
+    /**
+     * Whether this completion item should be preselected in completion UI.
+     */
     public boolean preselect;
+
+    /**
+     * The edit to apply to the document when this completion item is accepted.
+     */
     public TextEdit textEdit;
+
+    /**
+     * Sort text for ordering completion items.
+     */
     public String sortText;
+
+    /**
+     * Filter text used to match this completion item against a query.
+     */
     public String filterText;
+
+    /**
+     * The insert text format (for example, plain text vs snippet), represented as an integer.
+     */
     public int insertTextFormat;
+
+    /**
+     * Additional edits to apply when this completion item is accepted.
+     */
     public JsArray<TextEdit> additionalTextEdits;
+
+    /**
+     * Characters that commit this completion item if typed.
+     */
     public JsArray<String> commitCharacters;
 
     public CompletionItem() {

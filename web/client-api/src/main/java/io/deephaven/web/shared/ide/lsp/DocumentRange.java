@@ -9,9 +9,21 @@ import jsinterop.base.JsPropertyMap;
 
 import java.io.Serializable;
 
+/**
+ * A range within a text document.
+ *
+ * This is a JS-exposed model type ({@code dh.lsp.Range}) that closely follows the Language Server Protocol range shape.
+ */
 @JsType(namespace = "dh.lsp", name = "Range")
 public class DocumentRange implements Serializable {
+    /**
+     * The start position of the range.
+     */
     public Position start;
+
+    /**
+     * The end position of the range.
+     */
     public Position end;
 
     public DocumentRange() {}
@@ -44,6 +56,14 @@ public class DocumentRange implements Serializable {
     }
 
     @JsIgnore
+    /**
+     * Creates a range from an offset and length within a source string.
+     *
+     * @param source the source string
+     * @param start the starting offset (in characters)
+     * @param length the length (in characters)
+     * @return the corresponding {@link DocumentRange}
+     */
     public static DocumentRange rangeFromSource(String source, int start, int length) {
         final DocumentRange range = new DocumentRange();
         range.start = getPositionFromOffset(source, start);
@@ -55,6 +75,13 @@ public class DocumentRange implements Serializable {
 
     // some document change helpers
     @JsIgnore
+    /**
+     * Converts a {@link Position} to a character offset within a document.
+     *
+     * @param document the document text
+     * @param position the position to convert
+     * @return the character offset, or {@code -1} if the requested line is beyond the document
+     */
     public static int getOffsetFromPosition(String document, Position position) {
         int offset = 0;
         int line = 0;
@@ -74,6 +101,13 @@ public class DocumentRange implements Serializable {
     }
 
     @JsIgnore
+    /**
+     * Converts a character offset within a document to a {@link Position}.
+     *
+     * @param document the document text
+     * @param offset the character offset
+     * @return the corresponding {@link Position}
+     */
     public static Position getPositionFromOffset(String document, int offset) {
         Position position = new Position();
         int pos = 0;
@@ -126,11 +160,21 @@ public class DocumentRange implements Serializable {
     }
 
     @JsIgnore
+    /**
+     * Decrements the {@link Position#character character} offset of both {@link #start} and {@link #end} by one.
+     */
     public void decrementColumns() {
         start.character--;
         end.character--;
     }
 
+    /**
+     * Checks whether the provided range is contained within this range.
+     *
+     * @param innerStart the start position to check
+     * @param innerEnd the end position to check
+     * @return {@code true} if the provided range is inside this range
+     */
     public boolean isInside(Position innerStart, Position innerEnd) {
         return innerStart.line >= start.line && innerStart.character >= start.character
                 && innerEnd.line <= end.line && innerEnd.character <= end.character;
