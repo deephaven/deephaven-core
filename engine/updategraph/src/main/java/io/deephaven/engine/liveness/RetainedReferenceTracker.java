@@ -295,7 +295,8 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
 
         @Override
         public Impl add(@NotNull final LivenessReferent referent) {
-            final LivenessReferent existingReference = retainedWeakReference.get();
+            final LivenessReferent existingReference =
+                    retainedWeakReference == null ? null : retainedWeakReference.get();
             if (existingReference == null) {
                 if (retainedWeakReference instanceof RetainedReferenceTracker<?>) {
                     ((RetainedReferenceTracker<?>) retainedWeakReference).cleanup();
