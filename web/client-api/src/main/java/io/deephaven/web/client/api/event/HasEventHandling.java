@@ -109,7 +109,9 @@ public class HasEventHandling {
     }
 
     /**
-     * Returns a promise that resolves with the next event matching the given name.
+     * Returns a promise that resolves the next time the named event occurs, with the value of the event's detail. If a
+     * timeout is specified and occurs before the event takes place, the promise will reject, otherwise waits
+     * indefinitely.
      *
      * @param eventName The event name.
      * @param timeoutInMillis Optional timeout in milliseconds.

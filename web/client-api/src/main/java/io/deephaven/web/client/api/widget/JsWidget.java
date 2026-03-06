@@ -57,8 +57,8 @@ import java.util.function.Supplier;
  * payloads. Those server side objects might be tables or other built-in types in the Deephaven JS API, or could be
  * objects usable through their own plugins. They also might have no plugin at all, allowing the client to hold a
  * reference to them and pass them back to the server, either to the current plugin instance, or through another API.
- * The {@link JsWidget Widget} type does not specify how those objects should be used or their lifecycle, but leaves
- * that entirely to the plugin. Messages will arrive in the order they were sent.
+ * The {@link JsWidget} type does not specify how those objects should be used or their lifecycle, but leaves that
+ * entirely to the plugin. Messages will arrive in the order they were sent.
  * <p>
  * This can suggest several patterns for how plugins operate:
  * <ul>
@@ -96,7 +96,6 @@ import java.util.function.Supplier;
 public class JsWidget extends HasEventHandling implements ServerObject, WidgetMessageDetails {
     /**
      * Fired when a new message is received from the server.
-     *
      * <p>
      * {@code event.detail} is an {@link EventDetails} instance containing the message payload and any exported objects
      * included with the message.
@@ -105,7 +104,9 @@ public class JsWidget extends HasEventHandling implements ServerObject, WidgetMe
     public static final String EVENT_MESSAGE = "message";
 
     /**
-     * Fired when the widget's message stream is closed.
+     * Fired when the widget's message stream is closed, either because the server is finished sending messages, or
+     * because an error occurred, server shut down, session closed, etc. Plugins should specify their own close message
+     * if required.
      */
     @JsProperty(namespace = "dh.Widget")
     public static final String EVENT_CLOSE = "close";

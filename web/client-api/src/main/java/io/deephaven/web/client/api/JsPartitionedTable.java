@@ -32,8 +32,8 @@ import jsinterop.base.Js;
 import java.util.*;
 
 /**
- * Represents a set of {@link JsTable dh.Table}s each corresponding to some key. The keys are available locally, but a
- * call must be made to the server to get each {@link JsTable dh.Table}. All tables will have the same structure.
+ * Represents a set of {@link JsTable}s, each corresponding to some key. The keys are available locally, but a call must
+ * be made to the server to get each {@link JsTable}. All tables will have the same structure.
  */
 @JsType(namespace = "dh", name = "PartitionedTable")
 public class JsPartitionedTable extends HasLifecycle implements ServerObject {
@@ -161,7 +161,7 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
      * Fetch the table with the given key. If the key does not exist, returns {@code null}.
      *
      * @param key The key to fetch. An array of values for each key column, in the same order as the key columns are.
-     * @return Promise of {@link JsTable dh.Table}, or {@code null} if the key does not exist.
+     * @return Promise of {@link JsTable}, or {@code null} if the key does not exist.
      */
     public Promise<@JsNullable JsTable> getTable(Object key) {
         // Wrap non-arrays in an array so we are consistent with how we track keys

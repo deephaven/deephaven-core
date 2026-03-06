@@ -22,7 +22,7 @@ import java.util.Map;
  * Statistics are exposed via {@link #getStatisticsMap()}, keyed by display name (for example, "COUNT" or "AVG"). For
  * each statistic name, {@link #getType(String)} returns the expected type name for formatting purposes, or {@code null}
  * to indicate that the column's formatting should be used.
- *
+ * <p>
  * If present, {@link #getUniqueValues()} returns a map of unique values (as strings) to their occurrence counts.
  */
 @TsInterface

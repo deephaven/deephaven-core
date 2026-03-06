@@ -97,7 +97,7 @@ import static io.deephaven.web.client.fu.LazyPromise.logError;
 
 /**
  * Provides access to data in a table. Note that several methods present their response through Promises. This allows
- * the client to: 1) avoid actually connecting to the server until necessary, and 2) permit some changes not to inform
+ * the client to: 1. avoid actually connecting to the server until necessary, and 2. permit some changes not to inform
  * the UI right away that they have taken place.
  */
 @TsName(namespace = "dh", name = "Table")
@@ -220,7 +220,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     }
 
     /**
-     * a {@code Sort} than can be used to reverse a table. This can be passed into an array in applySort. Note that Tree
+     * a {@link Sort} than can be used to reverse a table. This can be passed into an array in applySort. Note that Tree
      * Tables do not support {@code reverse}.
      * 
      * @return {@link Sort}
@@ -244,12 +244,6 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
         return typedTicket;
     }
 
-    /**
-     * Runs multiple table operations as a single batch.
-     *
-     * @param userCode Callback that receives a {@link RequestBatcher}.
-     * @return A {@link Promise} that resolves to this table when the batch is complete.
-     */
     @JsMethod
     public Promise<JsTable> batch(JsConsumer<RequestBatcher> userCode) {
         boolean rootBatch = batchDepth++ == 0;
@@ -472,7 +466,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     }
 
     /**
-     * Gets layout hints for displaying this table.
+     * Layout hints for displaying this table.
      *
      * @return {@link JsLayoutHints}, or {@code null}.
      */
@@ -507,7 +501,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     }
 
     /**
-     * Gets the table description attribute.
+     * The table description attribute.
      *
      * @return The description, or {@code null}.
      */
@@ -1754,7 +1748,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     }
 
     /**
-     * Gets the plugin name attribute for this table.
+     * The plugin name attribute for this table.
      *
      * @return The plugin name, or {@code null}.
      */

@@ -195,9 +195,6 @@ public class JsChart extends HasEventHandling {
     /**
      * Gets the chart multi-series array.
      *
-     * <p>
-     * Exposed for JS; do not use this from Java methods.
-     *
      * @return {@link JsMultiSeries dh.plot.MultiSeries}[]
      */
     // exposed for JS, do not use this from java methods
@@ -209,7 +206,7 @@ public class JsChart extends HasEventHandling {
     /**
      * The series data for display in this chart.
      * 
-     * @return {@link JsSeries dh.plot.Series}[]
+     * @return {@link JsSeries}[]
      */
     @JsIgnore
     public JsSeries[] getSeries() {
@@ -219,7 +216,7 @@ public class JsChart extends HasEventHandling {
     /**
      * The multi-series data for display in this chart.
      * 
-     * @return {@link JsMultiSeries dh.plot.MultiSeries}
+     * @return {@link JsMultiSeries}[]
      */
     @JsIgnore
     public JsMultiSeries[] getMultiSeries() {
@@ -236,11 +233,6 @@ public class JsChart extends HasEventHandling {
         return axes;
     }
 
-    /**
-     * Adds a series generated from a multi-series into the series array.
-     *
-     * @param series The series instance to add.
-     */
     @JsIgnore
     public void addSeriesFromMultiSeries(JsSeries series) {
         this.series[this.series.length] = series;
