@@ -5,22 +5,7 @@ package io.deephaven.sql;
 
 import io.deephaven.qst.column.header.ColumnHeader;
 import io.deephaven.qst.table.TableHeader;
-import io.deephaven.qst.type.ArrayType;
-import io.deephaven.qst.type.BooleanType;
-import io.deephaven.qst.type.BoxedType;
-import io.deephaven.qst.type.ByteType;
-import io.deephaven.qst.type.CharType;
-import io.deephaven.qst.type.CustomType;
-import io.deephaven.qst.type.DoubleType;
-import io.deephaven.qst.type.FloatType;
-import io.deephaven.qst.type.GenericType;
-import io.deephaven.qst.type.InstantType;
-import io.deephaven.qst.type.IntType;
-import io.deephaven.qst.type.LongType;
-import io.deephaven.qst.type.PrimitiveType;
-import io.deephaven.qst.type.ShortType;
-import io.deephaven.qst.type.StringType;
-import io.deephaven.qst.type.Type;
+import io.deephaven.qst.type.*;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeFactory.Builder;
@@ -112,6 +97,16 @@ final class TypeAdapter
     @Override
     public RelDataType visit(InstantType instantType) {
         return create(SqlTypeName.TIMESTAMP);
+    }
+
+    @Override
+    public RelDataType visit(LocalTimeType localTimeType) {
+        return create(SqlTypeName.TIME);
+    }
+
+    @Override
+    public RelDataType visit(LocalDateType localDateType) {
+        return create(SqlTypeName.DATE);
     }
 
     @Override

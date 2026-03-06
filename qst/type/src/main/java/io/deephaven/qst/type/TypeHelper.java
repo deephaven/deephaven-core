@@ -5,6 +5,8 @@ package io.deephaven.qst.type;
 
 import java.lang.reflect.InvocationTargetException;
 import java.time.Instant;
+import java.time.LocalTime;
+import java.time.LocalDate;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -32,7 +34,7 @@ class TypeHelper {
     static Stream<GenericType<?>> genericTypes() {
         return Stream.of(
                 BoxedType.instances(),
-                Stream.of(StringType.of(), InstantType.of()),
+                Stream.of(StringType.of(), InstantType.of(), LocalTimeType.of(), LocalDateType.of()),
                 primitiveVectorTypes())
                 .flatMap(Function.identity());
     }
@@ -45,6 +47,7 @@ class TypeHelper {
             return Stream.empty();
         }
     }
+
 
     static <T> Optional<Type<T>> findStatic(Class<T> clazz) {
         // noinspection unchecked
@@ -94,6 +97,18 @@ class TypeHelper {
         @Override
         public Void visit(InstantType instantType) {
             add(Instant.class, instantType);
+            return null;
+        }
+
+        @Override
+        public Void visit(LocalTimeType localTimeType) {
+            add(LocalTime.class, localTimeType);
+            return null;
+        }
+
+        @Override
+        public Void visit(LocalDateType localDateType) {
+            add(LocalDate.class, localDateType);
             return null;
         }
 
