@@ -153,7 +153,7 @@ public class DataIndexPushdownManager implements PushdownPredicateManager {
         onComplete.accept(PushdownResult.allMaybeMatch(selection));
     }
 
-    public static class DataIndexPushdownContext extends BasePushdownFilterContext {
+    public static class DataIndexPushdownContext extends BasePushdownFilterContextImpl {
         private final Map<String, String> renameMap;
         private final PushdownFilterContext wrappedContext;
 

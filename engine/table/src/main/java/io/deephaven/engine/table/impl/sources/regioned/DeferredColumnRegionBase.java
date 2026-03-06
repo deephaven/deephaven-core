@@ -7,9 +7,15 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.table.impl.PushdownFilterContext;
+import io.deephaven.engine.table.impl.PushdownResult;
+import io.deephaven.engine.table.impl.select.WhereFilter;
+import org.jetbrains.annotations.MustBeInvokedByOverriders;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.OverridingMethodsMustInvokeSuper;
+import java.util.List;
 import java.util.function.Supplier;
 
 /**
@@ -91,5 +97,36 @@ public abstract class DeferredColumnRegionBase<ATTR extends Any, REGION_TYPE ext
     @Override
     public Chunk<? extends ATTR> getChunk(@NotNull GetContext context, long firstKey, long lastKey) {
         return getResultRegion().getChunk(context, firstKey, lastKey);
+    }
+
+    @Override
+    public List<RegionedPushdownAction> supportedActions() {
+        return getResultRegion().supportedActions();
+    }
+
+    @Override
+    public long estimatePushdownAction(
+            final List<RegionedPushdownAction> actions,
+            final WhereFilter filter,
+            final RowSet selection,
+            final boolean usePrev,
+            final PushdownFilterContext filterContext,
+            final RegionedPushdownAction.EstimateContext estimateContext) {
+        return getResultRegion().estimatePushdownAction(actions, filter, selection, usePrev, filterContext,
+                estimateContext);
+    }
+
+    @Override
+    @MustBeInvokedByOverriders
+    public PushdownResult performPushdownAction(
+            final RegionedPushdownAction action,
+            final WhereFilter filter,
+            final RowSet selection,
+            final PushdownResult input,
+            final boolean usePrev,
+            final PushdownFilterContext filterContext,
+            final RegionedPushdownAction.ActionContext actionContext) {
+        return getResultRegion().performPushdownAction(action, filter, selection, input, usePrev, filterContext,
+                actionContext);
     }
 }
