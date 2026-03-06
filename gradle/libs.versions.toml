@@ -43,7 +43,7 @@ grpc = "1.76.2"
 netty = "4.1.127.Final"
 
 guava = "33.4.8-jre"
-gwt = "2.12.2"
+gwt = "2.13.0"
 # used by GwtTools
 gwtJetty = "9.4.44.v20210927"
 hadoop = "3.4.1"
