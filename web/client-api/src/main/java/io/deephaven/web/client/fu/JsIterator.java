@@ -34,10 +34,19 @@ public class JsIterator<T> {
 
     private final Iterator<T> wrapped;
 
+    /**
+     * Checks whether there are more items to return.
+     */
     public boolean hasNext() {
         return wrapped.hasNext();
     }
 
+    /**
+     * Returns the next item and whether iteration is complete.
+     *
+     * @return an object with {@code done} set to {@code true} when there are no more items, and {@code value} set when
+     *         an item was available
+     */
     public IIterableResult<T> next() {
         JsIIterableResult<T> result = JsIIterableResult.create();
         if (hasNext()) {

@@ -19,9 +19,9 @@ import java.util.*;
 import java.util.Map.Entry;
 
 /**
- * Helper class to manage snapshots and deltas and keep not only a contiguous JS array of data per column in the
- * underlying table, but also support a mapping function to let client code translate data in some way for display and
- * keep that cached as well.
+ * Helper class to manage snapshots and deltas. Keeps a contiguous JS array of data per column in the underlying table,
+ * and supports a mapping function to let client code translate data in some way for display and caches the translated
+ * values.
  */
 @JsType(namespace = "dh.plot")
 public class ChartData {
@@ -34,6 +34,15 @@ public class ChartData {
         this.table = table;
     }
 
+    /**
+     * Updates cached column data to reflect a subscription update.
+     *
+     * <p>
+     * This applies row removals, insertions, and modifications to any cached column arrays so they remain aligned with
+     * the table's current row order.
+     *
+     * @param tableData the subscription update to apply
+     */
     public void update(SubscriptionTableData tableData) {
         RangeSet positionsForAddedKeys = tableData.getFullIndex().getRange().invert(tableData.getAdded().getRange());
         RangeSet positionsForRemovedKeys = prevRanges.invert(tableData.getRemoved().getRange());
@@ -148,6 +157,19 @@ public class ChartData {
         return Js.uncheckedCast(result);
     }
 
+    /**
+     * Returns the cached data for {@code columnName}.
+     *
+     * <p>
+     * The cache key includes both {@code columnName} and {@code mappingFunc}. If no cached entry exists, the column
+     * data is computed from {@code currentUpdate} and stored for future calls.
+     *
+     * @param columnName the column name
+     * @param mappingFunc an optional mapping function applied to each value; {@code null} returns the raw column values
+     * @param currentUpdate the table snapshot used to populate the cache when the column is requested for the first
+     *        time
+     * @return a contiguous JS array of values for this column
+     */
     public JsArray<Any> getColumn(String columnName, JsFunction<Any, Any> mappingFunc, TableData currentUpdate) {
         // returns the existing column, if any, otherwise iterates over existing data and builds it
 

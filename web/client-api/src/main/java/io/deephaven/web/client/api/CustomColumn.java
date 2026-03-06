@@ -11,6 +11,13 @@ import jsinterop.annotations.JsType;
 import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
+/**
+ * Describes a custom column expression.
+ *
+ * <p>
+ * This type is used to represent a formula column or a formatting column (for example, table color or number/date
+ * formatting) in the Deephaven JS API.
+ */
 @JsType(namespace = "dh")
 public class CustomColumn {
     public static final String TYPE_FORMAT_COLOR = "FORMAT_COLOR",
@@ -158,17 +165,32 @@ public class CustomColumn {
         return options;
     }
 
+    /**
+     * Returns the {@link #toString()} value for this custom column.
+     */
     @JsMethod
     public String valueOf() {
         return toString();
     }
 
+    /**
+     * Returns a string representation of this custom column.
+     *
+     * <p>
+     * The returned value is formatted as {@code name[SUFFIX]=expression} and can be parsed by {@link #from(String)}.
+     */
     @JsMethod
     @Override
     public String toString() {
         return "" + name + getNameSuffix(type) + "=" + expression;
     }
 
+    /**
+     * Creates a {@link CustomColumn} by parsing a string produced by {@link #toString()}.
+     *
+     * @param columnInfo a string formatted as {@code name=expression}
+     * @return a new {@link CustomColumn}
+     */
     @JsMethod
     public static CustomColumn from(String columnInfo) {
         // Parse the column info from the formatted string (produced from toString())
