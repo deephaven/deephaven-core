@@ -125,10 +125,19 @@ public class JsFigure extends HasLifecycle {
         void close(JsFigure figure);
     }
 
+    /**
+     * Indicates that a series data source could not be resolved or used for this figure.
+     */
     public class FigureSourceException extends RuntimeException {
+        /**
+         * The table associated with the failing source.
+         */
         @JsProperty
         transient JsTable table;
 
+        /**
+         * The series data source associated with the failure.
+         */
         @JsProperty
         transient SeriesDataSource source;
 
@@ -140,10 +149,19 @@ public class JsFigure extends HasLifecycle {
         }
     }
 
+    /**
+     * Error details for a failed figure fetch.
+     */
     public class FigureFetchError {
+        /**
+         * The underlying error object.
+         */
         @JsProperty
         Object error;
 
+        /**
+         * A String array of any server-reported error messages.
+         */
         @JsProperty
         JsArray<String> errors;
 
@@ -152,6 +170,9 @@ public class JsFigure extends HasLifecycle {
             this.errors = errors;
         }
 
+        /**
+         * Returns the string representation of the underlying error.
+         */
         public String toString() {
             return error.toString();
         }
