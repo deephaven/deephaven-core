@@ -34,7 +34,7 @@ freemarker = "2.3.33"
 google-findbugs = "3.0.2"
 google-java-allocation-instrumenter = "3.3.4"
 google-rpc-protos="2.63.2"
-graalvm = "24.2.1"
+graalvm = "25.0.2"
 groovy = "3.0.25"
 
 # Only bump this in concert with netty (which will update boringssl). See the dependency matrix
