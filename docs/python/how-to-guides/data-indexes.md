@@ -9,6 +9,9 @@ This guide covers what data indexes are, how to create and use them, and how the
 
 Data indexes can improve the speed of filtering operations. Additionally, data indexes can be useful if multiple query operations need to compute the same data index on a table. This is common when a table is used in multiple joins or aggregations. If the table does not have a data index, each operation will internally create the same index. If the table does have a data index, the individual operations will not need to create their own indexes and can execute faster and use less RAM.
 
+> [!WARNING]
+> Do not create data indexes on partitioning or grouping columns. Deephaven automatically manages indexes for these columns internally. Adding a manual data index can interfere with this process and cause unexpected behavior.
+
 ## Create a data index
 
 A data index can be created from a source table and one or more key columns using [`data_index`](../reference/engine/data-index.md):
