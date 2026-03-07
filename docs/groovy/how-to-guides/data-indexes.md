@@ -47,7 +47,7 @@ source = emptyTable(10).update("X = 100 + i % 5")
 sourceIndex = getOrCreateDataIndex(source, "X").table()
 ```
 
-When looking at `source`, we can see that the value `100` in column `X` appears in rows 0 and 5. The value `101` appears in rows 1 and 6, and so on. Each row in `dh_row_set` contains the rows where each unique key value appears. Let's look at an example for more than one key column.
+When looking at `source`, we can see that the value `100` in column `X` appears in rows 0 and 5. The value `101` appears in rows 1, 6, and so on. Each row in `dh_row_set` contains the rows where each unique key value appears. Let's look at an example for more than one key column.
 
 ```groovy order=sourceIndex,source
 import static io.deephaven.engine.table.impl.indexer.DataIndexer.getOrCreateDataIndex
@@ -77,7 +77,7 @@ You can verify whether a data index exists for a particular table using one of t
 - `hasDataIndex`: Returns a boolean indicating whether a data index exists for the table and the given key column(s).
 - `getDataIndex`: Returns a data index if it exists. Returns `null` it does not, if the cached index is invalid, or if the refreshing cached index is no longer live.
 
-The following example creates a data index for a table and checks if data indexes exist for different key columns:
+The following example creates data indexes for a table and checks if they exist based on different key columns. [`hasDataIndex`](../reference/engine/hasDataIndex.md) is used to check if the index exists.
 
 ```groovy order=:log,source
 import static io.deephaven.engine.table.impl.indexer.DataIndexer.*
@@ -120,7 +120,7 @@ If a table has a data index and an engine operation can leverage it, it will be 
   - [`aj`](../reference/table-operations/join/aj.md)
   - [`raj`](../reference/table-operations/join/raj.md)
 - Group and aggregate:
-  - [Single aggregators](../how-to-guides/dedicated-aggregations.md)
+  - [Single aggregators](./dedicated-aggregations.md)
   - [`aggBy`](../reference/table-operations/group-and-aggregate/aggBy.md)
   - [`updateBy`](../reference/table-operations/update-by-operations/updateBy.md)
 - Filter:
@@ -161,7 +161,7 @@ sourceRightDistinct = sourceRight.selectDistinct("Key1", "Key2")
 The engine will use single and multi-column indexes to accelerate filtering operations through the [predicate pushdown](./predicate-pushdown.md) framework. When a materialized (in-memory) data index exists, the engine can use it to quickly identify matching rows for various filter types. Deferred (disk-based) data indexes will not be materialized by `where` operations.
 
 > [!NOTE]
-> The Deephaven engine only uses a `DataIndex` when the keys exactly match what is needed for an operation. For example, if a data index is present for the columns `X` and `Y`, it will not be used if the engine only needs an index for column `X`.
+> The Deephaven engine only uses a [`DataIndex`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/DataIndex.html) when the keys exactly match what is needed for an operation. For example, if a data index is present for the columns `X` and `Y`, it will not be used if the engine only needs an index for column `X`.
 
 Support for using data indexes with most filter types (beyond exact matches) was introduced in Deephaven v0.40.0 through the predicate pushdown framework.
 
@@ -353,16 +353,136 @@ Data indexes improve performance when used in the right context. If used in the 
 - Reusing a data index multiple times is necessary to overcome the cost of initially computing the index.
 - Generally speaking, the higher the key cardinality, the better the performance improvement.
 
-<!-- TODO: Benchmark scripts section -->
+### Benchmark scripts
+
+If you're interested in how data indexes impact query performance, the scripts below collect performance metrics for each operation. You will notice that performance improves in some instances and is worse in others.
+
+This first script sets up the tests:
+
+```groovy skip-test
+import static io.deephaven.engine.table.impl.indexer.DataIndexer.*
+
+import io.deephaven.engine.table.Table
+import io.deephaven.engine.table.impl.QueryTable
+
+// Disable memoization for perf testing
+QueryTable.setMemoizeResults(false)
+
+timeIt = { String name, Closure<Table> f ->
+    final long start = System.nanoTime()
+    final Table rst = f.call()
+    final long end = System.nanoTime()
+    final double execTimeSeconds = (end - start) / 1_000_000_000.0
+    println "${name} took ${String.format('%.4f', execTimeSeconds)} seconds."
+    return [rst, execTimeSeconds]
+}
+
+addIndex = { Table t, List<String> by ->
+    println "Adding data index: ${by}"
+
+    final def idx = getOrCreateDataIndex(t, by as String[])
+    // call .table() to force index computation here -- to benchmark the index creation separately -- not for production
+    idx.table()
+    return idx
+}
+
+runTest = { int nIKeys, int nJKeys, List<Boolean> createIdxs ->
+    final Table t = emptyTable(100_000_000).update(
+        "I = (int)(ii % ${nIKeys})",
+        "J = (int)(ii % ${nJKeys})",
+        "V = random()"
+    )
+
+    final Table tLastBy = t.lastBy("I", "J")
+
+    if (createIdxs[0]) {
+        addIndex(t, ["I"])
+    }
+    if (createIdxs[1]) {
+        addIndex(t, ["J"])
+    }
+    if (createIdxs[2]) {
+        addIndex(t, ["I", "J"])
+    }
+
+    final boolean idxIJ = hasDataIndex(t, "I", "J")
+    final boolean idxI = hasDataIndex(t, "I")
+    final boolean idxJ = hasDataIndex(t, "J")
+    println "Has index: ['I', 'J']=${idxIJ} ['I']=${idxI} ['J']=${idxJ}"
+
+    def (ret, tWhere) = timeIt("where", { t.where("I = 3", "J = 6") })
+    def (ret2, tCountBy) = timeIt("countBy", { t.countBy("Count", "I", "J") })
+    def (ret3, tSumBy) = timeIt("sumBy", { t.sumBy("I", "J") })
+    def (ret4, tNj) = timeIt("naturalJoin", { t.naturalJoin(tLastBy, "I, J", "VJ = V") })
+
+    return [tWhere, tCountBy, tSumBy, tNj]
+}
+```
+
+Here's a follow-up script that runs tests for both low- and high-cardinality cases, both with and without data indexes:
+
+```groovy skip-test
+println "Low cardinality, no data indexes"
+timesLcNi = runTest(100, 7, [false, false, false])
+
+println "Low cardinality, with data indexes"
+timesLcWi = runTest(100, 7, [true, true, true])
+
+println "High cardinality, no data indexes"
+timesHcNi = runTest(100, 997, [false, false, false])
+
+println "High cardinality, with data indexes"
+timesHcWi = runTest(100, 997, [true, true, true])
+
+println "Low cardinality, no data indexes: ${timesLcNi}"
+println "Low cardinality, with data indexes: ${timesLcWi}"
+println "High cardinality, no data indexes: ${timesHcNi}"
+println "High cardinality, with data indexes: ${timesHcWi}"
+```
+
+It can also be helpful to plot the results:
+
+```groovy skip-test
+operations = ["where", "countBy", "sumBy", "naturalJoin"]
+
+scenarioToTimes = [
+    "Low cardinality (700 keys), no indexes.": timesLcNi,
+    "Low cardinality (700 keys), with indexes.": timesLcWi,
+    "High cardinality (99,700 keys), no indexes.": timesHcNi,
+    "High cardinality (99,700 keys), with indexes.": timesHcWi,
+]
+
+operationCol = []
+scenarioCol = []
+timeSecondsCol = []
+
+scenarioToTimes.each { scenario, times ->
+    operations.eachWithIndex { op, i ->
+        operationCol << op
+        scenarioCol << scenario
+        timeSecondsCol << times[i]
+    }
+}
+
+resultsLong = newTable(
+    stringCol("Operation", operationCol as String[]),
+    stringCol("Scenario", scenarioCol as String[]),
+    doubleCol("TimeSeconds", timeSecondsCol as double[])
+)
+
+fig = catPlotBy("Index benchmark times", resultsLong, "Operation", "TimeSeconds", "Scenario").show()
+```
 
 ## Related documentation
 
 - [Combined aggregations](./dedicated-aggregations.md)
-- [Filter table data](./filters.md)
+- [Filter table data](./use-filters.md)
 - [Export to Parquet](./data-import-export/parquet-export.md)
 - [Import to Parquet](./data-import-export/parquet-import.md)
 - [Joins: exact and relational](./joins-exact-relational.md)
 - [Joins: inexact and range](./joins-timeseries-range.md)
 - [Sort table data](./sort.md)
+- [`getDataIndex`](../reference/engine/getDataIndex.md)
+- [`hasDataIndex`](../reference/engine/hasDataIndex.md)
 - [`DataIndex` Javadoc](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/DataIndex.html)
 - [`DataIndexer` Javadoc](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/indexer/DataIndexer.html)
