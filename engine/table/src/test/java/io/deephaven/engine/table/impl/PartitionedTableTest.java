@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.agg.Partition;
+import io.deephaven.api.filter.Filter;
 import io.deephaven.base.FileUtils;
 import io.deephaven.base.SleepUtil;
 import io.deephaven.base.log.LogOutput;
@@ -20,7 +21,9 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.PartitionedTable.Proxy;
+import io.deephaven.engine.table.impl.select.WhereFilterFactory;
 import io.deephaven.engine.testutil.*;
+import io.deephaven.engine.testutil.filters.RowSetCapturingFilter;
 import io.deephaven.engine.testutil.generator.DoubleGenerator;
 import io.deephaven.engine.testutil.generator.IntGenerator;
 import io.deephaven.engine.testutil.generator.SetGenerator;
@@ -1109,6 +1112,92 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
         } finally {
             FileUtils.deleteRecursively(tmpDir);
         }
+    }
+
+    public void testWhereKeyPrioritization() {
+        final Random random = new Random(0);
+        final Table testTable = newTable(
+                getRandomIntCol("a", 100, random),
+                getRandomIntCol("b", 100, random),
+                getRandomIntCol("c", 100, random),
+                getRandomIntCol("d", 100, random),
+                getRandomIntCol("e", 100, random));
+
+        final long partCount = testTable.selectDistinct("c").size();
+        final long passPartRows = testTable.where("c > 500").size();
+        final long passRowsD = testTable.where("d < 500").size();
+
+        final PartitionedTable partitionedTable = testTable.partitionBy("c");
+        final Proxy selfPtProxy = partitionedTable.proxy();
+
+        final RowSetCapturingFilter filter = new RowSetCapturingFilter(WhereFilterFactory.getExpression("c > 500"));
+        final Proxy result = selfPtProxy.where(filter);
+        assertEquals(partCount, filter.numRowsProcessed());
+
+        assertTableEquals(testTable.where("c > 500").sort("c"), result.target().merge().sort("c"));
+
+        // let's do the same thing, but have "d" get filtered too
+        filter.reset();
+        final RowSetCapturingFilter filter2 = new RowSetCapturingFilter(WhereFilterFactory.getExpression("d < 500"));
+
+        final Proxy result2 = selfPtProxy.where(Filter.and(filter2, filter));
+        assertEquals(partCount, filter.numRowsProcessed());
+        assertEquals(passPartRows, filter2.numRowsProcessed());
+
+        assertTableEquals(testTable.where("c > 500", "d < 500").sort("c"), result2.target().merge().sort("c"));
+
+        // if D is serial, we can't move it forward
+        filter.reset();
+        filter2.reset();
+        final Proxy result3 = selfPtProxy.where(Filter.and(filter2.withSerial(), filter));
+        assertEquals(testTable.size(), filter2.numRowsProcessed());
+        assertEquals(passRowsD, filter.numRowsProcessed());
+        assertTableEquals(testTable.where("c > 500", "d < 500").sort("c"), result3.target().merge().sort("c"));
+
+        // if C is serial, we can't move it forward before D
+        filter.reset();
+        filter2.reset();
+        final Proxy result4 = selfPtProxy.where(Filter.and(filter2, filter.withSerial()));
+        assertEquals(testTable.size(), filter2.numRowsProcessed());
+        assertEquals(passRowsD, filter.numRowsProcessed());
+        assertTableEquals(testTable.where("c > 500", "d < 500").sort("c"), result4.target().merge().sort("c"));
+
+        // if B declares a barrier that C respects, we can't move it forward
+        final Object barrier = new Object();
+        filter.reset();
+        filter2.reset();
+        final Proxy result5 = selfPtProxy
+                .where(Filter.and(filter2.withDeclaredBarriers(barrier), filter.withRespectedBarriers(barrier)));
+        assertEquals(testTable.size(), filter2.numRowsProcessed());
+        assertEquals(passRowsD, filter.numRowsProcessed());
+        assertTableEquals(testTable.where("c > 500", "d < 500").sort("c"), result5.target().merge().sort("c"));
+
+        // if we move C forward with a barrier, we must include it in the set of barriers
+        filter.reset();
+        filter2.reset();
+        final RowSetCapturingFilter filter3 = new RowSetCapturingFilter(WhereFilterFactory.getExpression("e % 2 == 0"));
+
+        final Proxy result6 = selfPtProxy.where(
+                Filter.and(filter2, filter.withDeclaredBarriers(barrier), filter3.withRespectedBarriers(barrier)));
+        assertEquals(passPartRows, filter2.numRowsProcessed());
+        assertEquals(partCount, filter.numRowsProcessed());
+
+        final long rowsForE = testTable.where("c > 500", "d < 500").size();
+        assertEquals(rowsForE, filter3.numRowsProcessed());
+
+        assertTableEquals(testTable.where("c > 500", "d < 500", "e % 2 == 0").sort("c"),
+                result6.target().merge().sort("c"));
+
+        filter.reset();
+        filter2.reset();
+        filter3.reset();
+
+        // we cannot prioritize a filter using arrays
+        final RowSetCapturingFilter filter4 =
+                new RowSetCapturingFilter(WhereFilterFactory.getExpression("c != c_[i - 1]"));
+        final Proxy result7 = selfPtProxy.where(filter4);
+        assertEquals(testTable.size(), filter4.numRowsProcessed());
+        assertTableEquals(testTable.sort("c").where(filter4), result7.target().merge().sort("c"));
     }
 
     @SuppressWarnings({"unchecked"})

@@ -17,9 +17,13 @@ import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.*;
+import io.deephaven.engine.table.impl.filter.ExtractBarriers;
+import io.deephaven.engine.table.impl.filter.ExtractInnerConjunctiveFilters;
+import io.deephaven.engine.table.impl.filter.ExtractRespectedBarriers;
 import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.SourceColumn;
+import io.deephaven.engine.table.impl.select.WhereAllFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer;
 import io.deephaven.engine.table.impl.updateby.UpdateBy;
@@ -32,6 +36,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BinaryOperator;
+import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
@@ -468,14 +473,87 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
 
     @Override
     public PartitionedTable.Proxy where(Filter filter) {
-        final WhereFilter[] whereFilters = WhereFilter.fromInternal(filter);
+        final List<WhereFilter> whereFilters = Arrays.stream(WhereFilter.fromInternal(filter))
+                .flatMap(f -> ExtractInnerConjunctiveFilters.of(f).stream()).collect(Collectors.toList());
         final TableDefinition definition = target.constituentDefinition();
         final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor = QueryCompilerRequestProcessor.batch();
         for (WhereFilter whereFilter : whereFilters) {
             whereFilter.init(definition, compilationProcessor);
         }
         compilationProcessor.compile();
-        return basicTransform(ct -> ct.where(Filter.and(WhereFilter.copyFrom(whereFilters))));
+
+        final List<WhereFilter> keyColumnFilters = new ArrayList<>();
+        final List<Object> keyColumnBarriers = new ArrayList<>();
+        final List<Object> nonKeyColumnBarriers = new ArrayList<>();
+
+        for (final Iterator<WhereFilter> fi = whereFilters.iterator(); fi.hasNext();) {
+            WhereFilter wf = fi.next();
+            if (wf.isSerial()) {
+                // we must apply all earlier filters before applying this filter, and then apply it before applying
+                // prior filters; at which point we might as well let the individual tables handle it
+                break;
+            }
+
+            Collection<Object> respectedBarriers = ExtractRespectedBarriers.of(wf);
+            final boolean respectsNonKeyBarriers = respectedBarriers.stream().anyMatch(nonKeyColumnBarriers::contains);
+
+            // we can only prioritize this filter if it is a key column filter, and does not respect non-prioritized
+            // barriers
+            final boolean isKeyColumnFilter = !respectsNonKeyBarriers && isValidAgainstKeyColumns(wf);
+
+            Collection<Object> objects = ExtractBarriers.of(wf);
+            if (!objects.isEmpty()) {
+                // we have a barrier here
+                if (isKeyColumnFilter) {
+                    keyColumnBarriers.addAll(objects);
+                } else {
+                    nonKeyColumnBarriers.addAll(objects);
+                }
+            }
+
+            if (isKeyColumnFilter) {
+                fi.remove();
+                keyColumnFilters.add(wf);
+            }
+        }
+
+        final WhereFilter[] remainingFilters = whereFilters.toArray(WhereFilter[]::new);
+        if (keyColumnFilters.isEmpty()) {
+            return basicTransform(ct -> ct.where(Filter.and(WhereFilter.copyFrom(remainingFilters))));
+        }
+
+        return LivenessScopeStack.computeEnclosed(() -> {
+            final PartitionedTable keyFiltered = target.filter(keyColumnFilters);
+
+            // nothing more to do, because we have no additional filters
+            if (whereFilters.isEmpty()) {
+                return new PartitionedTableProxyImpl(keyFiltered, requireMatchingKeys, sanityCheckJoins);
+            }
+
+            final WhereFilter[] nonKeyFilters;
+            if (!keyColumnBarriers.isEmpty()) {
+                nonKeyFilters = new WhereFilter[remainingFilters.length + 1];
+                nonKeyFilters[0] = WhereAllFilter.INSTANCE.withDeclaredBarriers(keyColumnBarriers.toArray());
+                System.arraycopy(remainingFilters, 0, nonKeyFilters, 1, remainingFilters.length);
+            } else {
+                nonKeyFilters = remainingFilters;
+            }
+
+            return new PartitionedTableProxyImpl(
+                    keyFiltered.transform(
+                            getOrCreateExecutionContext(false),
+                            ct -> ct.where(Filter.and(WhereFilter.copyFrom(nonKeyFilters))),
+                            target.table().isRefreshing()),
+                    requireMatchingKeys,
+                    sanityCheckJoins);
+        }, target.table().isRefreshing(), ptp -> ptp.target.table().isRefreshing());
+    }
+
+    private boolean isValidAgainstKeyColumns(WhereFilter filter) {
+        if (!filter.getColumnArrays().isEmpty()) {
+            return false;
+        }
+        return target.keyColumnNames().containsAll(filter.getColumns());
     }
 
     @Override
