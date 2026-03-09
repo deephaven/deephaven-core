@@ -559,13 +559,80 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
     @Override
     public PartitionedTable.Proxy whereIn(TableOperations<?, ?> rightTable,
             Collection<? extends JoinMatch> columnsToMatch) {
+        if (isValidAgainstKeyColumns(columnsToMatch)) {
+            if (rightTable instanceof Table) {
+                final Table rightAsTable = (Table) rightTable;
+                final boolean shouldEnclose = target.table().isRefreshing() || rightAsTable.isRefreshing();
+                return LivenessScopeStack.computeEnclosed(() -> {
+                    Table table = target.table().whereIn(rightAsTable, columnsToMatch);
+                    final PartitionedTable filteredPartitionedTable = new PartitionedTableImpl(table,
+                            target.keyColumnNames(), target.uniqueKeys(), target.constituentColumnName(),
+                            target.constituentDefinition(), target.constituentChangesPermitted(), false);
+                    return new PartitionedTableProxyImpl(filteredPartitionedTable, requireMatchingKeys,
+                            sanityCheckJoins);
+                }, shouldEnclose, ptp -> ptp.target.table().isRefreshing());
+            } else if (rightTable instanceof PartitionedTable.Proxy
+                    && isValidAgainstRightKeyColumns((PartitionedTable.Proxy) rightTable, columnsToMatch)) {
+                final PartitionedTable.Proxy rightAsProxy = (PartitionedTable.Proxy) rightTable;
+
+                final boolean shouldEnclose =
+                        target.table().isRefreshing() || rightAsProxy.target().table().isRefreshing();
+                return LivenessScopeStack.computeEnclosed(() -> {
+                    Table table = target.table().whereIn(rightAsProxy.target().table(), columnsToMatch);
+                    final PartitionedTable filteredPartitionedTable = new PartitionedTableImpl(table,
+                            target.keyColumnNames(), target.uniqueKeys(), target.constituentColumnName(),
+                            target.constituentDefinition(), target.constituentChangesPermitted(), false);
+                    return new PartitionedTableProxyImpl(filteredPartitionedTable, requireMatchingKeys,
+                            sanityCheckJoins);
+                }, shouldEnclose, ptp -> ptp.target.table().isRefreshing());
+            }
+        }
+
         // TODO (https://github.com/deephaven/deephaven-core/issues/5261): Share set tables when possible
         return complexTransform(rightTable, (ct, ot) -> ct.whereIn(ot, columnsToMatch), columnsToMatch);
+    }
+
+    private boolean isValidAgainstKeyColumns(Collection<? extends JoinMatch> columnsToMatch) {
+        return columnsToMatch.stream().allMatch(jm -> target.keyColumnNames().contains(jm.left().name()));
+    }
+
+    private boolean isValidAgainstRightKeyColumns(final PartitionedTable.Proxy right,
+            Collection<? extends JoinMatch> columnsToMatch) {
+        return columnsToMatch.stream().allMatch(jm -> right.target().keyColumnNames().contains(jm.right().name()));
     }
 
     @Override
     public PartitionedTable.Proxy whereNotIn(TableOperations<?, ?> rightTable,
             Collection<? extends JoinMatch> columnsToMatch) {
+        if (isValidAgainstKeyColumns(columnsToMatch)) {
+            if (rightTable instanceof Table) {
+                final Table rightAsTable = (Table) rightTable;
+                final boolean shouldEnclose = target.table().isRefreshing() || rightAsTable.isRefreshing();
+                return LivenessScopeStack.computeEnclosed(() -> {
+                    Table table = target.table().whereNotIn(rightAsTable, columnsToMatch);
+                    final PartitionedTable filteredPartitionedTable = new PartitionedTableImpl(table,
+                            target.keyColumnNames(), target.uniqueKeys(), target.constituentColumnName(),
+                            target.constituentDefinition(), target.constituentChangesPermitted(), false);
+                    return new PartitionedTableProxyImpl(filteredPartitionedTable, requireMatchingKeys,
+                            sanityCheckJoins);
+                }, shouldEnclose, ptp -> ptp.target.table().isRefreshing());
+            } else if (rightTable instanceof PartitionedTable.Proxy
+                    && isValidAgainstRightKeyColumns((PartitionedTable.Proxy) rightTable, columnsToMatch)) {
+                final PartitionedTable.Proxy rightAsProxy = (PartitionedTable.Proxy) rightTable;
+
+                final boolean shouldEnclose =
+                        target.table().isRefreshing() || rightAsProxy.target().table().isRefreshing();
+                return LivenessScopeStack.computeEnclosed(() -> {
+                    Table table = target.table().whereNotIn(rightAsProxy.target().table(), columnsToMatch);
+                    final PartitionedTable filteredPartitionedTable = new PartitionedTableImpl(table,
+                            target.keyColumnNames(), target.uniqueKeys(), target.constituentColumnName(),
+                            target.constituentDefinition(), target.constituentChangesPermitted(), false);
+                    return new PartitionedTableProxyImpl(filteredPartitionedTable, requireMatchingKeys,
+                            sanityCheckJoins);
+                }, shouldEnclose, ptp -> ptp.target.table().isRefreshing());
+            }
+        }
+
         // TODO (https://github.com/deephaven/deephaven-core/issues/5261): Share set tables when possible
         return complexTransform(rightTable, (ct, ot) -> ct.whereNotIn(ot, columnsToMatch), columnsToMatch);
     }

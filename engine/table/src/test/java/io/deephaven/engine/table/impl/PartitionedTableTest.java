@@ -1200,6 +1200,81 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
         assertTableEquals(testTable.sort("c").where(filter4), result7.target().merge().sort("c"));
     }
 
+    public void testWhereIn() {
+        final Random random = new Random(0);
+        final Table toFilter = newTable(
+                getRandomIntCol("a", 100, random),
+                getRandomIntCol("b", 100, random),
+                getRandomIntCol("c", 100, random),
+                getRandomIntCol("d", 100, random),
+                getRandomIntCol("e", 100, random));
+
+        final Table setTableA = newTable(getRandomIntCol("A_p", 100, random));
+        final Table setTableB = newTable(getRandomIntCol("B_p", 100, random));
+
+        final PartitionedTable partitionedTable = toFilter.partitionBy("a");
+        final Proxy selfPtProxy = partitionedTable.proxy();
+
+        final Proxy filteredA = selfPtProxy.whereIn(setTableA, "a=A_p");
+        assertTableEquals(toFilter.whereIn(setTableA, "a=A_p").sort("a"), filteredA.target().merge().sort("a"));
+
+        final Proxy filteredB = selfPtProxy.whereIn(setTableB, "b=B_p");
+        assertTableEquals(toFilter.whereIn(setTableB, "b=B_p").sort("a"), filteredB.target().merge().sort("a"));
+
+        Table someOfADoubled = toFilter.where("a % 2 == 0").update("x =a * 2");
+        final PartitionedTable apart2 = someOfADoubled.partitionBy("a");
+        final Proxy apart2PtProxy = apart2.proxy(false, false);
+
+        final Proxy withoutMatchingKeys = partitionedTable.proxy(false, false);
+
+        final Proxy filteredComboA = withoutMatchingKeys.whereIn(apart2PtProxy, "a");
+        assertTableEquals(toFilter.whereIn(someOfADoubled, "a=a").sort("a"), filteredComboA.target().merge().sort("a"));
+
+        // since we don't have matching keys enabled; this is the kind of thing that can get you in trouble ... notice
+        // how we only have values where a *and* b match; not just "b"
+        final Proxy filteredComboB = withoutMatchingKeys.whereIn(apart2PtProxy, "b");
+        assertTableEquals(toFilter.whereIn(someOfADoubled, "a", "b").sort("a"),
+                filteredComboB.target().merge().sort("a"));
+    }
+
+    public void testWhereNotIn() {
+        final Random random = new Random(0);
+        final Table toFilter = newTable(
+                getRandomIntCol("a", 100, random),
+                getRandomIntCol("b", 100, random),
+                getRandomIntCol("c", 100, random),
+                getRandomIntCol("d", 100, random),
+                getRandomIntCol("e", 100, random));
+
+        final Table setTableA = newTable(getRandomIntCol("A_p", 100, random));
+        final Table setTableB = newTable(getRandomIntCol("B_p", 100, random));
+
+        final PartitionedTable partitionedTable = toFilter.partitionBy("a");
+        final Proxy selfPtProxy = partitionedTable.proxy();
+
+        final Proxy filteredA = selfPtProxy.whereNotIn(setTableA, "a=A_p");
+        assertTableEquals(toFilter.whereNotIn(setTableA, "a=A_p").sort("a"), filteredA.target().merge().sort("a"));
+
+        final Proxy filteredB = selfPtProxy.whereNotIn(setTableB, "b=B_p");
+        assertTableEquals(toFilter.whereNotIn(setTableB, "b=B_p").sort("a"), filteredB.target().merge().sort("a"));
+
+        Table someOfADoubled = toFilter.where("a % 2 == 0").update("x =a * 2");
+        final PartitionedTable apart2 = someOfADoubled.partitionBy("a");
+        final Proxy apart2PtProxy = apart2.proxy(false, false);
+
+        final Proxy withoutMatchingKeys = partitionedTable.proxy(false, false);
+
+        final Proxy filteredComboA = withoutMatchingKeys.whereNotIn(apart2PtProxy, "a");
+        assertTableEquals(toFilter.whereNotIn(someOfADoubled, "a=a").sort("a"),
+                filteredComboA.target().merge().sort("a"));
+
+        // since we don't have matching keys enabled; this is the kind of thing that can get you in trouble ...
+        // we can't possibly have any results, because the "a" values we operate on must match ... therefore you cannot
+        // actually get any answers
+        final Proxy filteredComboB = withoutMatchingKeys.whereNotIn(apart2PtProxy, "b");
+        assertEquals(0, filteredComboB.target().merge().size());
+    }
+
     @SuppressWarnings({"unchecked"})
     public static <K, V> Map<K, V> mapFromArray(Object... data) {
         Map<K, V> map = new LinkedHashMap<K, V>();
