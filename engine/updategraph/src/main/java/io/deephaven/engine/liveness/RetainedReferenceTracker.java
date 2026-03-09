@@ -314,6 +314,10 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
 
         @Override
         public void drop(@NotNull LivenessReferent referent) {
+            if (retainedWeakReference == null) {
+                return;
+            }
+
             LivenessReferent livenessReferent = retainedWeakReference.get();
 
             if (livenessReferent == null && (retainedWeakReference instanceof RetainedReferenceTracker<?>)) {
@@ -326,6 +330,10 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
 
         @Override
         public void drop(@NotNull Stream<? extends LivenessReferent> referents) {
+            if (retainedWeakReference == null) {
+                return;
+            }
+
             LivenessReferent livenessReferent = retainedWeakReference.get();
 
             if (livenessReferent == null && (retainedWeakReference instanceof RetainedReferenceTracker<?>)) {
@@ -483,7 +491,7 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
     }
 
     private static final class EmptyStrongImpl implements Impl {
-        private final static EmptyStrongImpl INSTANCE = new EmptyStrongImpl();
+        private static final EmptyStrongImpl INSTANCE = new EmptyStrongImpl();
 
         @Override
         public Impl add(@NotNull LivenessReferent referent) {
@@ -566,8 +574,10 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
 
         @Override
         public void makePermanent() {
-            STRONG_RETENTION_CACHE.retain(retained);
-            retained = null;
+            if (retained != null) {
+                STRONG_RETENTION_CACHE.retain(retained);
+                retained = null;
+            }
         }
     }
 
