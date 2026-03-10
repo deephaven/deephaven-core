@@ -226,6 +226,72 @@ class ConfigurationTestCase(BaseTestCase):
         self.assertIn("Calendar.default", config_dict)
         self.assertEqual(config_dict["Calendar.default"], "USNYSE_EXAMPLE")
 
+    def test_mapping_protocol_keys(self):
+        """Test the keys() method returns all property names."""
+        keys = self.config.keys()
+
+        # Should be iterable
+        keys_list = list(keys)
+        self.assertGreater(len(keys_list), 0)
+
+        # All keys should be strings
+        for key in keys_list:
+            self.assertIsInstance(key, str)
+
+        # Should contain known properties
+        self.assertIn("Calendar.default", keys_list)
+        self.assertIn("QueryCompiler.logEnabledDefault", keys_list)
+
+        # Length should match config length
+        self.assertEqual(len(keys_list), len(self.config))
+
+    def test_mapping_protocol_values(self):
+        """Test the values() method returns all property values."""
+        values = self.config.values()
+
+        # Should be iterable
+        values_list = list(values)
+        self.assertGreater(len(values_list), 0)
+
+        # All values should be strings
+        for value in values_list:
+            self.assertIsInstance(value, str)
+
+        # Length should match config length
+        self.assertEqual(len(values_list), len(self.config))
+
+        # Should contain known values
+        self.assertIn("USNYSE_EXAMPLE", values_list)
+
+    def test_mapping_protocol_items(self):
+        """Test the items() method returns all property key-value pairs."""
+        items = self.config.items()
+
+        # Should be iterable
+        items_list = list(items)
+        self.assertGreater(len(items_list), 0)
+
+        # All items should be tuples of (key, value)
+        for item in items_list:
+            self.assertIsInstance(item, tuple)
+            self.assertEqual(len(item), 2)
+            key, value = item
+            self.assertIsInstance(key, str)
+            self.assertIsInstance(value, str)
+
+        # Length should match config length
+        self.assertEqual(len(items_list), len(self.config))
+
+        # Should contain known key-value pairs
+        items_dict = dict(items_list)
+        self.assertIn("Calendar.default", items_dict)
+        self.assertEqual(items_dict["Calendar.default"], "USNYSE_EXAMPLE")
+
+        # Can create dict directly from items()
+        config_dict = dict(self.config.items())
+        self.assertEqual(len(config_dict), len(self.config))
+        self.assertEqual(config_dict["Calendar.default"], "USNYSE_EXAMPLE")
+
 
 if __name__ == "__main__":
     unittest.main()
