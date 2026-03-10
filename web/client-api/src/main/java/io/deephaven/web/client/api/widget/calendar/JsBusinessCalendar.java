@@ -35,7 +35,7 @@ public class JsBusinessCalendar {
     }
 
     /**
-     * Get the name of the calendar.
+     * The name of the calendar.
      * 
      * @return String
      */
@@ -45,7 +45,7 @@ public class JsBusinessCalendar {
     }
 
     /**
-     * Get the time zone of this calendar.
+     * The time zone of this calendar.
      * 
      * @return {@link JsTimeZone dh.i18n.TimeZone}
      */
@@ -55,7 +55,7 @@ public class JsBusinessCalendar {
     }
 
     /**
-     * Get an array of all days of the week that are business days.
+     * An array of all days of the week that are business days.
      * 
      * @return String array
      */
@@ -66,7 +66,7 @@ public class JsBusinessCalendar {
     }
 
     /**
-     * Get an array of all business periods that are open on a business day.
+     * An array of all business periods that are open on a business day.
      * 
      * @return {@link JsBusinessPeriod dh.calendar.BusinessPeriod} array
      */
@@ -76,7 +76,7 @@ public class JsBusinessCalendar {
     }
 
     /**
-     * Get an array of all holidays defined for this calendar.
+     * An array of all holidays defined for this calendar.
      * 
      * @return {@link JsHoliday dh.calendar.Holiday} array
      */

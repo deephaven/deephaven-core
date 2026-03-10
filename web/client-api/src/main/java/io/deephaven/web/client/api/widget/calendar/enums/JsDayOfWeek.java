@@ -39,7 +39,7 @@ public class JsDayOfWeek {
     /**
      * Gets the full list of day-of-week enum values.
      *
-     * @return A frozen array of all supported {@code dh.calendar.DayOfWeek} values.
+     * @return A frozen array of all supported {@code dh.calendar.DayOfWeek} values
      */
     @JsMethod
     public static String[] values() {

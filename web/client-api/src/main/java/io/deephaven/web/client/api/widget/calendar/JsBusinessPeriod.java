@@ -10,7 +10,7 @@ import jsinterop.annotations.JsProperty;
 
 /**
  * A business period within a {@code dh.calendar.BusinessCalendar}.
- *
+ * <p>
  * A business period describes the open and close times for a single contiguous range of time on a business day.
  */
 @TsInterface
@@ -23,9 +23,9 @@ public class JsBusinessPeriod {
     }
 
     /**
-     * Gets the open time for this business period.
+     * The open time for this business period.
      *
-     * @return The open time.
+     * @return The open time
      */
     @JsProperty
     public String getOpen() {
@@ -33,9 +33,9 @@ public class JsBusinessPeriod {
     }
 
     /**
-     * Gets the close time for this business period.
+     * The close time for this business period.
      *
-     * @return The close time.
+     * @return The close time
      */
     @JsProperty
     public String getClose() {
