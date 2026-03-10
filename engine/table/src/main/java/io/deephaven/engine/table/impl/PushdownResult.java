@@ -25,37 +25,51 @@ public final class PushdownResult implements SafeCloseable {
     // Larger numbers indicate operations that are expected to touch more data or incur higher I/O latency; the values
     // are strictly relative.
     /**
-     * The entire column contains a single value, so a single read is sufficient to determine matches.
+     * The entire column contains a single value, so a single read and evaluation is sufficient to determine matches.
      */
-    public static final long SINGLE_VALUE_COLUMN_COST = 1_000L;
+    public static final long SINGLE_VALUE_COLUMN_COST =
+            Configuration.getInstance().getLongWithDefault("PredicatePushdown.singleValueColumnCost", 1_000L);
     /**
-     * The entire region contains a single value, so a single read is sufficient to determine matches.
+     * Can leverage table/row-group statistics, will load metadata if not already loaded
      */
-    public static final long SINGLE_VALUE_REGION_COST = 2_000L;
+    public static final long METADATA_STATS_COST =
+            Configuration.getInstance().getLongWithDefault("PredicatePushdown.metadataStatsCost", 10_000L);
     /**
-     * Only table/row-group statistics are checked, assuming the metadata is already loaded
+     * Can leverage Column-level Bloom filters.
      */
-    public static final long METADATA_STATS_COST = 10_000L;
+    public static final long BLOOM_FILTER_COST =
+            Configuration.getInstance().getLongWithDefault("PredicatePushdown.bloomFilterCost", 20_000L);
     /**
-     * Column-level Bloom filter needs to be used
+     * Requires querying an already-materialized Table-level index.
      */
-    public static final long BLOOM_FILTER_COST = 20_000L;
+    public static final long TABLE_LEVEL_DATA_INDEX_COST =
+            Configuration.getInstance().getLongWithDefault("PredicatePushdown.tableLevelDataIndexCost", 22_000L);
+    /**
+     * The entire region contains a single value, so a single read is sufficient to determine matches. Filtering is
+     * efficient, but there is significant overhead in applying the filter (e.g. chunk/context/dummy table creation).
+     */
+    public static final long SINGLE_VALUE_REGION_COST =
+            Configuration.getInstance().getLongWithDefault("PredicatePushdown.singleValueRegionCost", 25_000L);
     /**
      * Requires querying an in-memory index structure
      */
-    public static final long IN_MEMORY_DATA_INDEX_COST = 30_000L;
+    public static final long IN_MEMORY_DATA_INDEX_COST =
+            Configuration.getInstance().getLongWithDefault("PredicatePushdown.inMemoryDataIndexCost", 30_000L);
     /**
      * Requires reading a dictionary to determine matches
      */
-    public static final long DICTIONARY_DATA_COST = 35_000L;
+    public static final long DICTIONARY_DATA_COST =
+            Configuration.getInstance().getLongWithDefault("PredicatePushdown.dictionaryDataCost", 35_000L);
     /**
      * Requires using binary search on sorted data
      */
-    public static final long SORTED_DATA_COST = 40_000L;
+    public static final long SORTED_DATA_COST =
+            Configuration.getInstance().getLongWithDefault("PredicatePushdown.sortedDataCost", 40_000L);
     /**
      * Requires reading and querying an external index table
      */
-    public static final long DEFERRED_DATA_INDEX_COST = 50_000L;
+    public static final long DEFERRED_DATA_INDEX_COST =
+            Configuration.getInstance().getLongWithDefault("PredicatePushdown.deferredDataIndexCost", 50_000L);
 
     /**
      * Forces additional safety checks in {@link #of(RowSet, RowSet, RowSet)}. Controlled via configuration property
