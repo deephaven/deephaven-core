@@ -443,5 +443,8 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
         final Filter conjunctiveTwo =
                 ConjunctiveFilter.of(timeSeriesFilter, WhereFilterFactory.getExpression("A in `Apple`"));
         assertTrue(conjunctiveTwo instanceof ConjunctiveFilter);
+
+        final WhereFilter inverted = WhereFilterInvertedImpl.of(timeSeriesFilter);
+        assertTrue(inverted instanceof WhereFilterInvertedImpl);
     }
 }
