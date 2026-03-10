@@ -433,13 +433,15 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
         final Filter disjunctiveOne = DisjunctiveFilter.of(timeSeriesFilter);
         assertTrue(disjunctiveOne instanceof TimeSeriesFilter);
 
-        final Filter disjunctiveTwo = DisjunctiveFilter.of(timeSeriesFilter, WhereFilterFactory.getExpression("A in `Apple`"));
+        final Filter disjunctiveTwo =
+                DisjunctiveFilter.of(timeSeriesFilter, WhereFilterFactory.getExpression("A in `Apple`"));
         assertTrue(disjunctiveTwo instanceof DisjunctiveFilter);
 
         final Filter conjunctiveOne = ConjunctiveFilter.of(timeSeriesFilter);
         assertTrue(conjunctiveOne instanceof TimeSeriesFilter);
 
-        final Filter conjunctiveTwo = ConjunctiveFilter.of(timeSeriesFilter, WhereFilterFactory.getExpression("A in `Apple`"));
+        final Filter conjunctiveTwo =
+                ConjunctiveFilter.of(timeSeriesFilter, WhereFilterFactory.getExpression("A in `Apple`"));
         assertTrue(conjunctiveTwo instanceof ConjunctiveFilter);
     }
 }
