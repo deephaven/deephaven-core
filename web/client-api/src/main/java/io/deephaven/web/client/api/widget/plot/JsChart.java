@@ -150,8 +150,6 @@ public class JsChart extends HasEventHandling {
 
     /**
      * The font used to render the chart legend.
-     *
-     * @return String
      */
     @JsProperty
     public String getLegendFont() {
@@ -160,8 +158,6 @@ public class JsChart extends HasEventHandling {
 
     /**
      * The color used to render the chart legend.
-     *
-     * @return String
      */
     @JsProperty
     public String getLegendColor() {
@@ -170,8 +166,6 @@ public class JsChart extends HasEventHandling {
 
     /**
      * Whether this chart is rendered in 3D.
-     *
-     * @return boolean
      */
     @JsProperty(name = "is3d")
     public boolean isIs3d() {
@@ -180,11 +174,6 @@ public class JsChart extends HasEventHandling {
 
     /**
      * Gets a copy of the chart series array.
-     *
-     * <p>
-     * Exposed for JS; do not use this from Java methods.
-     *
-     * @return {@link JsSeries dh.plot.Series}[]
      */
     // exposed for JS, do not use this from java methods
     @JsProperty(name = "series")
@@ -194,8 +183,6 @@ public class JsChart extends HasEventHandling {
 
     /**
      * Gets the chart multi-series array.
-     *
-     * @return {@link JsMultiSeries dh.plot.MultiSeries}[]
      */
     // exposed for JS, do not use this from java methods
     @JsProperty(name = "multiSeries")
@@ -205,8 +192,6 @@ public class JsChart extends HasEventHandling {
 
     /**
      * The series data for display in this chart.
-     * 
-     * @return {@link JsSeries}[]
      */
     @JsIgnore
     public JsSeries[] getSeries() {
@@ -215,8 +200,6 @@ public class JsChart extends HasEventHandling {
 
     /**
      * The multi-series data for display in this chart.
-     * 
-     * @return {@link JsMultiSeries}[]
      */
     @JsIgnore
     public JsMultiSeries[] getMultiSeries() {
@@ -225,8 +208,6 @@ public class JsChart extends HasEventHandling {
 
     /**
      * The axes used in this chart.
-     * 
-     * @return {@link JsAxis dh.plot.Axis}[]
      */
     @JsProperty
     public JsAxis[] getAxes() {

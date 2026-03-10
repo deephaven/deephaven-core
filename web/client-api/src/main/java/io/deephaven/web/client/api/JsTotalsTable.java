@@ -35,8 +35,12 @@ import jsinterop.base.Js;
  *
  * Additionally, this is automatically subscribed to its one and only row, across all columns.
  *
- * A new config is returned any time it is accessed. This is to 1) prevent accidental mutation, and 2) allow it to be
- * used as a template when fetching a new totals table or changing the totals table in use.
+ * A new config is returned any time it is accessed. This is to:
+ *
+ * <ol>
+ * <li>Prevent accidental mutation.</li>
+ * <li>Allow it to be used as a template when fetching a new totals table or changing the totals table in use.</li>
+ * </ol>
  *
  * This class has limited methods found on {@link JsTable dh.Table}. Instances of this type always have a size of one
  * when no {@link JsTotalsTableConfig#groupBy groupBy} is set on the config, but may potentially contain as few as zero
@@ -418,7 +422,7 @@ public class JsTotalsTable implements JoinableTable, ServerObject {
     }
 
     /**
-     * A server-side snapshot of this table (a server-side snapshot of the entire source table). Viewports on the
+     * A server-side snapshot of this table (a server-side snapshot of the entire source table). Subscriptions on the
      * snapshot table will not update. This does not change the original table, and the new table will not have any of
      * the client side sorts/filters/columns. New client side sorts/filters/columns can be added to the snapshot copy.
      * 

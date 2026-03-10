@@ -97,8 +97,12 @@ import static io.deephaven.web.client.fu.LazyPromise.logError;
 
 /**
  * Provides access to data in a table. Note that several methods present their response through Promises. This allows
- * the client to: 1. avoid actually connecting to the server until necessary, and 2. permit some changes not to inform
- * the UI right away that they have taken place.
+ * the client to:
+ *
+ * <ol>
+ * <li>Avoid actually connecting to the server until necessary.</li>
+ * <li>Permit some changes not to inform the UI right away that they have taken place.</li>
+ * </ol>
  */
 @TsName(namespace = "dh", name = "Table")
 public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTable, ServerObject {
@@ -220,7 +224,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     }
 
     /**
-     * a {@link Sort} than can be used to reverse a table. This can be passed into an array in applySort. Note that Tree
+     * a {@link Sort} that can be used to reverse a table. This can be passed into an array in applySort. Note that Tree
      * Tables do not support {@code reverse}.
      * 
      * @return {@link Sort}
