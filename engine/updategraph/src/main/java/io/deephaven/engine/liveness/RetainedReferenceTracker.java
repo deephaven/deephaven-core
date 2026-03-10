@@ -322,6 +322,7 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
 
             if (livenessReferent == null && (retainedWeakReference instanceof RetainedReferenceTracker<?>)) {
                 ((RetainedReferenceTracker<?>) retainedWeakReference).cleanup();
+                retainedWeakReference = null;
             } else if (livenessReferent == referent) {
                 livenessReferent.dropReference();
                 retainedWeakReference = null;
@@ -338,6 +339,7 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
 
             if (livenessReferent == null && (retainedWeakReference instanceof RetainedReferenceTracker<?>)) {
                 ((RetainedReferenceTracker<?>) retainedWeakReference).cleanup();
+                retainedWeakReference = null;
                 return;
             }
             if (referents.anyMatch(referent -> livenessReferent == referent)) {
@@ -545,6 +547,9 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
 
         @Override
         public void drop(@NotNull final Stream<? extends LivenessReferent> referents) {
+            if (retained == null) {
+                return;
+            }
             if (referents.anyMatch(referent -> referent == this.retained)) {
                 retained.dropReference();
                 retained = null;

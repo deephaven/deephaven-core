@@ -12,6 +12,10 @@ import junit.framework.TestCase;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Stream;
+
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -164,6 +168,59 @@ public class TestLiveness {
         a1.dropReference();
         assertTrue(a2.tryRetainReference());
         a2.dropReference();
+        assertTrue(a3.tryRetainReference());
+        a3.dropReference();
+
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            final LivenessArtifact a4 = new NamedLivenessArtifact("a4", strong);
+            a4.manage(a3);
+        }
+
+        slm.release();
+
+        assertFalse(a1.tryRetainReference());
+        assertFalse(a2.tryRetainReference());
+        assertFalse(a3.tryRetainReference());
+    }
+
+    @Test
+    public void testSingletonDrop() {
+        testSingletonDrop(false);
+        testSingletonDrop(true);
+    }
+
+    private void testSingletonDrop(final boolean strong) {
+        final LivenessArtifact a0, a1, a2, a3;
+        final SingletonLivenessManager slm;
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            a0 = new NamedLivenessArtifact("a0", strong);
+            a1 = new NamedLivenessArtifact("a1", strong);
+            a2 = new NamedLivenessArtifact("a2", strong);
+            a3 = new NamedLivenessArtifact("a3", strong);
+
+
+            a1.manage(a0);
+            a2.manage(a1);
+            a3.manage(a1);
+            a3.manage(a2);
+
+            // negative test for a referent that isn't managed
+            a1.unmanage(Stream.of(a3));
+            a2.unmanage(a3);
+
+            // drop the single value
+            a1.unmanage(Stream.of(a0));
+            a2.unmanage(a1);
+
+            a3.unmanage(a1);
+            a3.unmanage(a2);
+
+            slm = new SingletonLivenessManager(a3);
+        }
+
+        assertFalse(a0.tryRetainReference());
+        assertFalse(a1.tryRetainReference());
+        assertFalse(a2.tryRetainReference());
         assertTrue(a3.tryRetainReference());
         a3.dropReference();
 
