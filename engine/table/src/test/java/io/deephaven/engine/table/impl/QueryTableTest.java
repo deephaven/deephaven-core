@@ -3632,7 +3632,8 @@ public class QueryTableTest extends QueryTableTestBase {
     }
 
     public void testUpdateListenersRemoveConcurrency() throws InterruptedException {
-        final int tests = 100; // we do this 100 times so that we have some confidence we are actually adding the listeners
+        final int tests = 100; // we do this 100 times so that we have some confidence we are actually adding the
+                               // listeners
         for (int ii = 0; ii < tests; ++ii) {
             updateListenersRemoveConcurrency();
         }
