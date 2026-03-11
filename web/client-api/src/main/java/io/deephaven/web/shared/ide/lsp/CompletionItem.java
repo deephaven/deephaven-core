@@ -13,7 +13,7 @@ import java.util.Objects;
 
 /**
  * A completion suggestion for use by the IDE language tools.
- *
+ * <p>
  * This is a JS-exposed model type ({@code dh.lsp.CompletionItem}) that closely follows the Language Server Protocol
  * completion item shape.
  */
