@@ -121,8 +121,12 @@ class PerfmonTestCase(BaseTestCase):
         d = query_update_performance_map(1)
         self.assertIsInstance(d, dict)
         expected_keys = {
-            'QueryUpdatePerformance', 'UpdateWorst', 'WorstInterval',
-            'UpdateMostRecent', 'UpdateAggregate', 'UpdateSummaryStats',
+            "QueryUpdatePerformance",
+            "UpdateWorst",
+            "WorstInterval",
+            "UpdateMostRecent",
+            "UpdateAggregate",
+            "UpdateSummaryStats",
         }
         self.assertEqual(set(d.keys()), expected_keys)
         from deephaven.table import Table
