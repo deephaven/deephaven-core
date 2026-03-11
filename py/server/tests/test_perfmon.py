@@ -27,6 +27,7 @@ from deephaven.perfmon import (
     update_performance_ancestors_log,
     update_performance_log,
 )
+from deephaven.table import Table
 from tests.testbase import BaseTestCase
 
 
@@ -129,7 +130,7 @@ class PerfmonTestCase(BaseTestCase):
             "UpdateSummaryStats",
         }
         self.assertEqual(set(d.keys()), expected_keys)
-        from deephaven.table import Table
+ 
         for key, value in d.items():
             self.assertIsInstance(value, Table, f"Value for key '{key}' is not a Table")
 
