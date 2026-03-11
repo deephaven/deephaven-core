@@ -3,13 +3,16 @@
 //
 package io.deephaven.engine.table.impl.util;
 
+import io.deephaven.base.FileUtils;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.BaseTable;
+import io.deephaven.engine.table.impl.select.WhereFilterFactory;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
+import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.testutil.sources.InstantTestSource;
 import io.deephaven.engine.util.TableTools;
@@ -18,6 +21,10 @@ import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.util.QueryConstants;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Arrays;
 
@@ -26,6 +33,9 @@ import static io.deephaven.engine.testutil.TstUtils.i;
 import static org.junit.Assert.assertThrows;
 
 public class TestTailInitializationFilter extends RefreshingTableTestCase {
+
+    public static final long SECOND_PARTITION_START = 1L << 45;
+
     public void testSimple() {
         final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
         builder.appendRange(0, 99);
@@ -144,7 +154,7 @@ public class TestTailInitializationFilter extends RefreshingTableTestCase {
     public void testNoReinterpret() {
         final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
         builder.appendRange(0, 99);
-        builder.appendRange(1000, 1099);
+        builder.appendRange(SECOND_PARTITION_START, SECOND_PARTITION_START + 99);
         final long[] data = new long[200];
         final Instant baseTime = DateTimeUtils.parseInstant("2020-08-20T07:00:00 NY");
         final Instant baseTime2 = DateTimeUtils.parseInstant("2020-08-20T06:00:00 NY");
@@ -161,7 +171,7 @@ public class TestTailInitializationFilter extends RefreshingTableTestCase {
         assertEquals(44, filtered.size());
     }
 
-    public void testNullValues() {
+    public void testNullValues() throws IOException {
         final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
         builder.appendRange(0, 99);
         builder.appendRange(1000, 1099);
@@ -188,6 +198,8 @@ public class TestTailInitializationFilter extends RefreshingTableTestCase {
                 () -> TailInitializationFilter.mostRecent(badinput.assertAddOnly(), "Timestamp", "PT00:10:00"));
         assertEquals("Found null timestamp at row key 99", iae.getMessage());
 
+        final Table badsnap1 = badinput.slice(0, 100).snapshot();
+
         baddata[99] = data[99];
         baddata[50] = QueryConstants.NULL_LONG;
         final QueryTable badinput2 = TstUtils.testRefreshingTable(builder.build().toTracking(),
@@ -195,5 +207,170 @@ public class TestTailInitializationFilter extends RefreshingTableTestCase {
         final IllegalArgumentException iae2 = assertThrows(IllegalArgumentException.class,
                 () -> TailInitializationFilter.mostRecent(badinput2.assertAddOnly(), "Timestamp", "PT00:10:00"));
         assertEquals("Found null timestamp at row key 50", iae2.getMessage());
+
+        final Table badsnap2 = badinput2.slice(0, 100).snapshot();
+
+        baddata[50] = data[50];
+        baddata[0] = QueryConstants.NULL_LONG;
+
+        final QueryTable badinput3 = TstUtils.testRefreshingTable(builder.build().toTracking(),
+                ColumnHolder.getInstantColumnHolder("Timestamp", false, baddata));
+        final IllegalArgumentException iae3 = assertThrows(IllegalArgumentException.class,
+                () -> TailInitializationFilter.mostRecent(badinput3.assertAddOnly(), "Timestamp", "PT00:10:00"));
+        assertEquals("Found null timestamp at row key 0", iae3.getMessage());
+
+        final Table badsnap3 = badinput3.slice(0, 100).snapshot();
+
+        final Path tempDirectory = Files.createTempDirectory("testNullValues");
+        try {
+            final File parquetFile = tempDirectory.resolve("test1.parquet").toAbsolutePath().toFile();
+            ParquetTools.writeTable(badsnap1, parquetFile.toString());
+
+            final Table badParquet1 = ParquetTools.readTable(parquetFile.toString());
+            final IllegalArgumentException iae4 = assertThrows(IllegalArgumentException.class,
+                    () -> TailInitializationFilter.mostRecent(badParquet1, "Timestamp", "PT00:10:00"));
+            assertEquals("Found null timestamp at row key 99", iae4.getMessage());
+
+            FileUtils.deleteRecursively(parquetFile);
+            ParquetTools.writeTable(badsnap2, parquetFile.toString());
+
+            final Table badParquet2 = ParquetTools.readTable(parquetFile.toString());
+            final IllegalArgumentException iae5 = assertThrows(IllegalArgumentException.class,
+                    () -> TailInitializationFilter.mostRecent(badParquet2, "Timestamp", "PT00:10:00"));
+            assertEquals("Found null timestamp at row key 50", iae5.getMessage());
+            FileUtils.deleteRecursively(parquetFile);
+
+            ParquetTools.writeTable(badsnap3, parquetFile.toString());
+            final Table badParquet3 = ParquetTools.readTable(parquetFile.toString());
+            final IllegalArgumentException iae6 = assertThrows(IllegalArgumentException.class,
+                    () -> TailInitializationFilter.mostRecent(badParquet3, "Timestamp", "PT00:10:00"));
+            assertEquals("Found null timestamp at row key 0", iae6.getMessage());
+            FileUtils.deleteRecursively(parquetFile);
+        } finally {
+            FileUtils.deleteRecursively(tempDirectory.toFile());
+        }
+    }
+
+    public void testOutOfOrder() throws IOException {
+        final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
+        builder.appendRange(0, 99);
+        final long[] data = new long[100];
+        final Instant baseTime = DateTimeUtils.parseInstant("2020-08-20T07:00:00 NY");
+        for (int ii = 0; ii < 100; ii++) {
+            data[ii] = DateTimeUtils.epochNanos(baseTime) + (DateTimeUtils.secondsToNanos(60) * (ii / 2));
+        }
+
+        final QueryTable input = TstUtils.testRefreshingTable(builder.build().toTracking(),
+                ColumnHolder.getInstantColumnHolder("Timestamp", false, data));
+        final Table filtered = TailInitializationFilter.mostRecent(input.assertAddOnly(), "Timestamp", "PT00:10:00");
+        assertEquals(22, filtered.size());
+
+        // now let's break some data in interesting ways to force out-of-order conditions
+        final long[] baddata = Arrays.copyOf(data, data.length);
+        baddata[0] = data[99] + 1;
+        outOfOrderTest(builder, baddata, "Found inconsistently sorted rows, " + baddata[0]
+                + " at row key 0 is greater than " + baddata[99] + " at row key 99");
+        baddata[0] = data[0];
+
+        baddata[75] = data[99] + 1;
+        outOfOrderTest(builder, baddata, "Found inconsistently sorted rows, " + baddata[75]
+                + " at row key 75 is greater than " + baddata[99] + " at row key 99");
+        baddata[75] = data[75];
+
+        baddata[88] = data[99] + 1;
+        outOfOrderTest(builder, baddata, "Found inconsistently sorted rows, " + baddata[88]
+                + " at row key 88 is greater than " + baddata[99] + " at row key 99");
+        baddata[88] = data[87];
+
+        baddata[50] = data[0] - 1;
+        outOfOrderTest(builder, baddata, "Found inconsistently sorted rows, " + baddata[50]
+                + " at row key 50 is less than " + baddata[0] + " at row key 0");
+        baddata[50] = data[0];
+
+        baddata[88] = data[75] - 1;
+        outOfOrderTest(builder, baddata, "Found inconsistently sorted rows, " + baddata[88]
+                + " at row key 88 is less than " + baddata[75] + " at row key 75");
+        baddata[88] = data[88];
+
+        baddata[82] = data[88] + 1;
+        outOfOrderTest(builder, baddata, "Found inconsistently sorted rows, " + baddata[82]
+                + " at row key 82 is greater than " + baddata[88] + " at row key 88");
+        baddata[82] = data[82];
+    }
+
+    private static void outOfOrderTest(RowSetBuilderSequential builder, long[] baddata, final String expected)
+            throws IOException {
+        final QueryTable badinput = TstUtils.testRefreshingTable(builder.build().toTracking(),
+                ColumnHolder.getInstantColumnHolder("Timestamp", false, baddata));
+        final IllegalArgumentException iae = assertThrows(IllegalArgumentException.class,
+                () -> TailInitializationFilter.mostRecent(badinput.assertAddOnly(), "Timestamp", "PT00:10:00"));
+        assertEquals(expected, iae.getMessage());
+
+        final Path tempDirectory = Files.createTempDirectory("testOutOfOrder");
+        try {
+            final File parquetFile = tempDirectory.resolve("test1.parquet").toAbsolutePath().toFile();
+            ParquetTools.writeTable(badinput, parquetFile.toString());
+
+            final Table badParquet = ParquetTools.readTable(parquetFile.toString());
+            final IllegalArgumentException iae4 = assertThrows(IllegalArgumentException.class,
+                    () -> TailInitializationFilter.mostRecent(badParquet, "Timestamp", "PT00:10:00"));
+            assertEquals(expected, iae4.getMessage());
+        } finally {
+            FileUtils.deleteRecursively(tempDirectory.toFile());
+        }
+    }
+
+
+    public void testSimpleRegioned() throws IOException {
+        final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
+        builder.appendRange(0, 99);
+        builder.appendRange(1000, 1099);
+        final long[] data = new long[200];
+        final Instant baseTime = DateTimeUtils.parseInstant("2020-08-20T07:00:00 NY");
+        final Instant baseTime2 = DateTimeUtils.parseInstant("2020-08-20T06:00:00 NY");
+        for (int ii = 0; ii < 100; ii++) {
+            data[ii] = DateTimeUtils.epochNanos(baseTime) + (DateTimeUtils.secondsToNanos(60) * (ii / 2));
+            data[100 + ii] = DateTimeUtils.epochNanos(baseTime2) + (DateTimeUtils.secondsToNanos(60) * (ii / 2));
+        }
+        final Instant threshold1 = DateTimeUtils.epochNanosToInstant(data[99] - DateTimeUtils.secondsToNanos(600));
+        final Instant threshold2 = DateTimeUtils.epochNanosToInstant(data[199] - DateTimeUtils.secondsToNanos(600));
+
+
+        final QueryTable toWrite = TstUtils.testRefreshingTable(builder.build().toTracking(),
+                ColumnHolder.getInstantColumnHolder("Timestamp", false, data));
+
+        Path tempDirectory = Files.createTempDirectory("testSimpleRegioned");
+
+        try {
+            ParquetTools.writeTable(toWrite.slice(0, 100),
+                    tempDirectory.resolve("test1.parquet").toAbsolutePath().toString());
+            ParquetTools.writeTable(toWrite.slice(100, 200),
+                    tempDirectory.resolve("test2.parquet").toAbsolutePath().toString());
+            final Table input = ParquetTools.readTable(tempDirectory.toFile().getAbsolutePath());
+
+            final Table result1 = TailInitializationFilter.mostRecent(input, "Timestamp", "PT00:10:00");
+            assertFalse(result1.isRefreshing());
+            assertEquals(44, result1.size());
+
+            final Table slice0_100_filtered = input.slice(0, 100).where("Timestamp >= '" + threshold1 + "'");
+            final Table slice100_200_filtered = input.slice(100, 200).where("Timestamp >= '" + threshold2 + "'");
+            final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+            final Table expected1 = updateGraph.sharedLock().computeLocked(
+                    () -> TableTools.merge(slice0_100_filtered, slice100_200_filtered));
+            assertTableEquals(result1, expected1);
+
+            final Table preFilter = input.where(WhereFilterFactory.getExpression("ii % 2 == 0").withSerial());
+            final Table result2 = TailInitializationFilter.mostRecent(preFilter, "Timestamp", "PT00:10:00");
+
+            final Table slice0_100_filtered2 = preFilter.slice(0, 50).where("Timestamp >= '" + threshold1 + "'");
+            final Table slice100_200_filtered2 = preFilter.slice(50, 100).where("Timestamp >= '" + threshold2 + "'");
+            final Table expected2 = updateGraph.sharedLock().computeLocked(
+                    () -> TableTools.merge(slice0_100_filtered2, slice100_200_filtered2));
+            assertTableEquals(result2, expected2);
+
+            assertEquals(22, result2.size());
+        } finally {
+            FileUtils.deleteRecursively(tempDirectory.toFile());
+        }
     }
 }
