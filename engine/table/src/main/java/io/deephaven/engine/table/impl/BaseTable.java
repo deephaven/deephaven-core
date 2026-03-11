@@ -783,7 +783,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
     public boolean hasListeners() {
         final Object localChildListenerReferences = childListenerReferences;
         if (localChildListenerReferences instanceof SimpleReferenceManager) {
-            return ((SimpleReferenceManager<?, ?>) localChildListenerReferences).isEmpty();
+            return !((SimpleReferenceManager<?, ?>) localChildListenerReferences).isEmpty();
         }
         if (localChildListenerReferences instanceof SimpleReference) {
             return ((SimpleReference<?>) localChildListenerReferences).get() != null;

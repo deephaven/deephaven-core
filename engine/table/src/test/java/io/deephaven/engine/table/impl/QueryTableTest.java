@@ -3486,8 +3486,11 @@ public class QueryTableTest extends QueryTableTestBase {
 
     public void testUpdateListeners() {
         final QueryTable source = testRefreshingTable(intCol("A", 1, 2, 3));
+        assertFalse(source.hasListeners());
+
         final SimpleListener listener = new SimpleListener(source);
         source.addUpdateListener(listener);
+        assertTrue(source.hasListeners());
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.runWithinUnitTestCycle(() -> {
@@ -3499,6 +3502,7 @@ public class QueryTableTest extends QueryTableTestBase {
 
         final SimpleListener listener2 = new SimpleListener(source);
         source.addUpdateListener(listener2);
+        assertTrue(source.hasListeners());
 
         updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(source, i(5), intCol("A", 5));
@@ -3517,6 +3521,7 @@ public class QueryTableTest extends QueryTableTestBase {
         assertEquals(2, listener2.count);
 
         source.removeUpdateListener(listener2);
+        assertFalse(source.hasListeners());
         updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(source, i(7), intCol("A", 7));
             source.notifyListeners(simpleAddUpdate(TstUtils.i(7)));
@@ -3528,6 +3533,7 @@ public class QueryTableTest extends QueryTableTestBase {
         source.addUpdateListener(listener3);
         // shouldn't matter
         source.removeUpdateListener(listener2);
+        assertTrue(source.hasListeners());
 
         updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(source, i(8), intCol("A", 8));
@@ -3540,6 +3546,7 @@ public class QueryTableTest extends QueryTableTestBase {
         final SimpleShiftObliviousListener listener4 = new SimpleShiftObliviousListener(source);
         source.removeUpdateListener(listener3);
         source.addUpdateListener(listener4);
+        assertTrue(source.hasListeners());
 
         updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(source, i(9), intCol("A", 9));
@@ -3561,6 +3568,8 @@ public class QueryTableTest extends QueryTableTestBase {
         assertEquals(2, listener4.count);
 
         source.removeUpdateListener(listener4);
+        assertFalse(source.hasListeners());
+
         updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(source, i(11), intCol("A", 11));
             source.notifyListeners(simpleAddUpdate(TstUtils.i(11)));
