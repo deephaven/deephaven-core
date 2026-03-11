@@ -34,8 +34,6 @@ import static org.junit.Assert.assertThrows;
 
 public class TestTailInitializationFilter extends RefreshingTableTestCase {
 
-    public static final long SECOND_PARTITION_START = 1L << 45;
-
     public void testSimple() {
         final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
         builder.appendRange(0, 99);
@@ -154,7 +152,7 @@ public class TestTailInitializationFilter extends RefreshingTableTestCase {
     public void testNoReinterpret() {
         final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
         builder.appendRange(0, 99);
-        builder.appendRange(SECOND_PARTITION_START, SECOND_PARTITION_START + 99);
+        builder.appendRange(1000, 1099);
         final long[] data = new long[200];
         final Instant baseTime = DateTimeUtils.parseInstant("2020-08-20T07:00:00 NY");
         final Instant baseTime2 = DateTimeUtils.parseInstant("2020-08-20T06:00:00 NY");
