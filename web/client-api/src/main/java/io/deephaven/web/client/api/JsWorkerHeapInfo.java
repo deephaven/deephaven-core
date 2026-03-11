@@ -10,9 +10,6 @@ import jsinterop.annotations.JsProperty;
 
 /**
  * Heap memory information for a Deephaven worker.
- *
- * <p>
- * This is a JS-exposed model type ({@code dh.WorkerHeapInfo}).
  */
 @TsInterface
 @TsName(name = "WorkerHeapInfo", namespace = "dh")

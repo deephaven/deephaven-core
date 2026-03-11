@@ -164,6 +164,9 @@ public class ChartData {
      * The cache key includes both {@code columnName} and {@code mappingFunc}. If no cached entry exists, the column
      * data is computed from {@code currentUpdate} and stored for future calls.
      *
+     * <p>
+     * If you want subsequent calls to re-use cached data, use the same {@code mappingFunc} instance each time.
+     *
      * @param columnName the column name
      * @param mappingFunc an optional mapping function applied to each value; {@code null} returns the raw column values
      * @param currentUpdate the table snapshot used to populate the cache when the column is requested for the first

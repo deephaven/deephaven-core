@@ -166,7 +166,7 @@ public class CustomColumn {
     }
 
     /**
-     * Returns the {@link #toString()} value for this custom column.
+     * Returns the primitive value for this custom column.
      */
     @JsMethod
     public String valueOf() {

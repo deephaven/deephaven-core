@@ -75,17 +75,14 @@ public class CoreClient extends HasEventHandling {
      * Password login type.
      *
      * <p>
-     * When used as {@code credentials.type} for {@link #login}, the credentials must include {@code username} and
-     * {@code token}. The client will set the connection token type to {@code Basic} and base64-encode
-     * {@code username:token}.
+     * When used as {@code credentials.type} for {@link #login}, the credentials must include a username and a password.
      */
     public static final String LOGIN_TYPE_PASSWORD = "password",
             /**
              * Anonymous login type.
              *
              * <p>
-             * When used as {@code credentials.type} for {@link #login}, the client will set the connection token type
-             * to {@code Anonymous} with an empty value. No password will be required for login.
+             * When used as {@code credentials.type} for {@link #login}, no credentials are required.
              */
             LOGIN_TYPE_ANONYMOUS = "anonymous";
 
@@ -137,7 +134,7 @@ public class CoreClient extends HasEventHandling {
      * Fetches authentication configuration values.
      *
      * <p>
-     * This method is intended to work before a session is established.
+     * This method is intended to be used before a session is established.
      *
      * @return a promise of key/value pairs, returned as a two-element string array per entry
      */
@@ -161,12 +158,8 @@ public class CoreClient extends HasEventHandling {
     /**
      * Logs in using the provided credentials.
      *
-     * <p>
-     * This updates the connection token used by this client and triggers a reconnect if the client is already
-     * connected.
-     *
      * @param credentials the login credentials
-     * @return a promise which resolves once the client has connected using the updated credentials
+     * @return a promise which resolves once the client has connected using the provided credentials
      */
     public Promise<Void> login(@TsTypeRef(LoginCredentials.class) JsPropertyMap<Object> credentials) {
         final LoginCredentials creds;
