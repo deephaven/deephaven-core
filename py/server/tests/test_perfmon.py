@@ -7,6 +7,7 @@ import tempfile
 import unittest
 
 from deephaven import empty_table
+from deephaven import DHError
 from deephaven.perfmon import (
     ancestor_dot,
     ancestor_svg,
@@ -21,6 +22,7 @@ from deephaven.perfmon import (
     query_performance_log,
     query_performance_tree_table,
     query_update_performance,
+    query_update_performance_map,
     server_state,
     server_state_log,
     update_performance_ancestors_log,
@@ -115,6 +117,13 @@ class PerfmonTestCase(BaseTestCase):
         self.assertTrue(q.to_string())
         q = query_operation_performance_tree_table()
         self.assertIsNotNone(q)
+
+    def test_query_update_performance_map(self):
+        # DH-6883: query_update_performance_map raises DHError due to double-wrapping
+        # of Java Table objects. j_map_to_dict already wraps the values via wrap_j_object,
+        # but the function then tries to wrap them again with Table(j_table=d[k]).
+        with self.assertRaises(DHError):
+            query_update_performance_map(1)
 
 
 if __name__ == "__main__":
