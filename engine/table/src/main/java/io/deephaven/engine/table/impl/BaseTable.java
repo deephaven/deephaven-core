@@ -606,7 +606,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
             if (listener instanceof NotificationQueue.Dependency) {
                 getUpdateGraph((NotificationQueue.Dependency) listener);
             }
-            addChildListenerReferences(listener);
+            addChildListenerReference(listener);
         }
     }
 
@@ -630,25 +630,24 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
             if (listener instanceof NotificationQueue.Dependency) {
                 getUpdateGraph((NotificationQueue.Dependency) listener);
             }
-            addChildListenerReferences(listener);
+            addChildListenerReference(listener);
 
             return true;
         }
     }
 
-    private void addChildListenerReferences(TableUpdateListener listenerToAdd) {
-
-        if (childListenerReferences == EMPTY_CHILD_LISTENER_REFERENCES) {
-            final SimpleReference<TableUpdateListener> weakReference =
-                    listenerToAdd instanceof LegacyListenerAdapter ? (LegacyListenerAdapter) listenerToAdd
-                            : new WeakSimpleReference<>(listenerToAdd);
-            if (CHILD_LISTENER_REFERENCES_UPDATER.compareAndSet(this, EMPTY_CHILD_LISTENER_REFERENCES, weakReference)) {
-                return;
-            }
-        }
-        do {
+    private void addChildListenerReference(TableUpdateListener listenerToAdd) {
+        while (true) {
             Object localChildListenerReferences = childListenerReferences;
-            if (localChildListenerReferences instanceof SimpleReferenceManager) {
+            if (localChildListenerReferences == EMPTY_CHILD_LISTENER_REFERENCES) {
+                final SimpleReference<TableUpdateListener> weakReference =
+                        listenerToAdd instanceof LegacyListenerAdapter ? (LegacyListenerAdapter) listenerToAdd
+                                : new WeakSimpleReference<>(listenerToAdd);
+                if (CHILD_LISTENER_REFERENCES_UPDATER.compareAndSet(this, EMPTY_CHILD_LISTENER_REFERENCES,
+                        weakReference)) {
+                    return;
+                }
+            } else if (localChildListenerReferences instanceof SimpleReferenceManager) {
                 // noinspection unchecked
                 final SimpleReferenceManager<TableUpdateListener, ? extends SimpleReference<TableUpdateListener>> listenerReferences =
                         (SimpleReferenceManager<TableUpdateListener, ? extends SimpleReference<TableUpdateListener>>) localChildListenerReferences;
@@ -680,7 +679,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
                 throw new IllegalStateException(
                         "Unexpected childListenerReferences type: " + localChildListenerReferences);
             }
-        } while (true);
+        }
     }
 
     private void forEachChildListenerReference(
