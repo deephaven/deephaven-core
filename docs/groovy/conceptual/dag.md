@@ -107,16 +107,16 @@ import io.deephaven.engine.table.TableUpdate
 import io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter
 
 // Create a monitoring table
-disk_monitor = timeTable("PT5S").update(
+diskMonitor = timeTable("PT5S").update(
     "Server = `server-` + (ii % 3)",
     "DiskUsagePct = 60 + Math.random() * 35"  // Simulated disk usage
 )
 
 // Filter for critical alerts (>90% usage)
-critical_alerts = disk_monitor.where("DiskUsagePct > 90")
+criticalAlerts = disk_monitor.where("DiskUsagePct > 90")
 
 // Custom listener that "sends an alert" when disk usage is critical
-handle_alert = new InstrumentedTableUpdateListenerAdapter("DiskAlertListener", critical_alerts, false) {
+handleAlert = new InstrumentedTableUpdateListenerAdapter("DiskAlertListener", critical_alerts, false) {
     @Override
     void onUpdate(TableUpdate upstream) {
         def addedRowSet = upstream.added()
@@ -132,7 +132,7 @@ In this example, whenever a new row appears in `critical_alerts` (indicating a s
 
 ### Cross-query sharing
 
-DAGs are not limited to one query or even one host. Preemptive tables allow tables and update notifications to be shared between queries. You may have Query1 perform a difficult or secret calculation. Query2 can use the shared results of Query1 without having to recompute and without being able to see the secret sauce that went into Query1's calculation.
+DAGs are not limited to one query or even one host. Preemptive tables allow tables and update notifications to be shared between queries. You may have `Query1` perform a difficult or secret calculation. `Query2` can use the shared results of `Query1` without having to recompute and without being able to see the secret sauce that went into `Query1`'s calculation.
 
 This distributed DAG capability enables efficient reuse of expensive computations across multiple query sessions, reducing redundant processing and improving overall system performance.
 
@@ -162,11 +162,11 @@ Common performance bottlenecks include:
 
 Once you understand what operations are slow, you can optimize your query:
 
-- **Use `coalesce()`**: Reduce update frequency by batching changes.
-- **Add `.snapshot()`**: Create periodic snapshots instead of continuous updates.
+- **Use `coalesce`**: Reduce update frequency by batching changes.
+- **Add `snapshot`**: Create periodic snapshots instead of continuous updates.
 - **Restructure dependencies**: Break long dependency chains into parallel branches.
 - **Pre-aggregate data**: Move expensive aggregations upstream in the DAG.
-- **Filter early**: Apply `where()` clauses before expensive operations.
+- **Filter early**: Apply `where` clauses before expensive operations.
 
 For example, instead of:
 
