@@ -8,6 +8,7 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.select.WhereFilterFactory;
@@ -181,7 +182,8 @@ public class TestTailInitializationFilter extends RefreshingTableTestCase {
             data[100 + ii] = DateTimeUtils.epochNanos(baseTime2) + (DateTimeUtils.secondsToNanos(60) * (ii / 2));
         }
 
-        final QueryTable input = TstUtils.testRefreshingTable(builder.build().toTracking(),
+        final TrackingWritableRowSet rowset = builder.build().toTracking();
+        final QueryTable input = TstUtils.testRefreshingTable(rowset,
                 ColumnHolder.getInstantColumnHolder("Timestamp", false, data));
         final Table filtered = TailInitializationFilter.mostRecent(
                 input.assertAddOnly(), "Timestamp", "PT00:10:00");
@@ -190,34 +192,25 @@ public class TestTailInitializationFilter extends RefreshingTableTestCase {
         // now let's break some data
         final long[] baddata = Arrays.copyOf(data, data.length);
         baddata[99] = QueryConstants.NULL_LONG;
-        final QueryTable badinput = TstUtils.testRefreshingTable(builder.build().toTracking(),
-                ColumnHolder.getInstantColumnHolder("Timestamp", false, baddata));
-        final IllegalArgumentException iae = assertThrows(IllegalArgumentException.class,
-                () -> TailInitializationFilter.mostRecent(badinput.assertAddOnly(), "Timestamp", "PT00:10:00"));
-        assertEquals("Found null timestamp at row key 99", iae.getMessage());
-
-        final Table badsnap1 = badinput.slice(0, 100).snapshot();
+        doNullCheck(rowset, baddata, "Found null timestamp at row key 99");
 
         baddata[99] = data[99];
         baddata[50] = QueryConstants.NULL_LONG;
-        final QueryTable badinput2 = TstUtils.testRefreshingTable(builder.build().toTracking(),
-                ColumnHolder.getInstantColumnHolder("Timestamp", false, baddata));
-        final IllegalArgumentException iae2 = assertThrows(IllegalArgumentException.class,
-                () -> TailInitializationFilter.mostRecent(badinput2.assertAddOnly(), "Timestamp", "PT00:10:00"));
-        assertEquals("Found null timestamp at row key 50", iae2.getMessage());
-
-        final Table badsnap2 = badinput2.slice(0, 100).snapshot();
+        doNullCheck(rowset, baddata, "Found null timestamp at row key 50");
 
         baddata[50] = data[50];
         baddata[0] = QueryConstants.NULL_LONG;
+        doNullCheck(rowset, baddata, "Found null timestamp at row key 0");
+    }
 
-        final QueryTable badinput3 = TstUtils.testRefreshingTable(builder.build().toTracking(),
+    private static void doNullCheck(TrackingWritableRowSet rowset, long[] baddata, String expected) throws IOException {
+        final QueryTable badinput = TstUtils.testRefreshingTable(rowset,
                 ColumnHolder.getInstantColumnHolder("Timestamp", false, baddata));
-        final IllegalArgumentException iae3 = assertThrows(IllegalArgumentException.class,
-                () -> TailInitializationFilter.mostRecent(badinput3.assertAddOnly(), "Timestamp", "PT00:10:00"));
-        assertEquals("Found null timestamp at row key 0", iae3.getMessage());
+        final IllegalArgumentException iae = assertThrows(IllegalArgumentException.class,
+                () -> TailInitializationFilter.mostRecent(badinput.assertAddOnly(), "Timestamp", "PT00:10:00"));
+        assertEquals(expected, iae.getMessage());
 
-        final Table badsnap3 = badinput3.slice(0, 100).snapshot();
+        final Table badsnap1 = badinput.slice(0, 100).snapshot();
 
         final Path tempDirectory = Files.createTempDirectory("testNullValues");
         try {
@@ -227,23 +220,7 @@ public class TestTailInitializationFilter extends RefreshingTableTestCase {
             final Table badParquet1 = ParquetTools.readTable(parquetFile.toString());
             final IllegalArgumentException iae4 = assertThrows(IllegalArgumentException.class,
                     () -> TailInitializationFilter.mostRecent(badParquet1, "Timestamp", "PT00:10:00"));
-            assertEquals("Found null timestamp at row key 99", iae4.getMessage());
-
-            FileUtils.deleteRecursively(parquetFile);
-            ParquetTools.writeTable(badsnap2, parquetFile.toString());
-
-            final Table badParquet2 = ParquetTools.readTable(parquetFile.toString());
-            final IllegalArgumentException iae5 = assertThrows(IllegalArgumentException.class,
-                    () -> TailInitializationFilter.mostRecent(badParquet2, "Timestamp", "PT00:10:00"));
-            assertEquals("Found null timestamp at row key 50", iae5.getMessage());
-            FileUtils.deleteRecursively(parquetFile);
-
-            ParquetTools.writeTable(badsnap3, parquetFile.toString());
-            final Table badParquet3 = ParquetTools.readTable(parquetFile.toString());
-            final IllegalArgumentException iae6 = assertThrows(IllegalArgumentException.class,
-                    () -> TailInitializationFilter.mostRecent(badParquet3, "Timestamp", "PT00:10:00"));
-            assertEquals("Found null timestamp at row key 0", iae6.getMessage());
-            FileUtils.deleteRecursively(parquetFile);
+            assertEquals(expected, iae4.getMessage());
         } finally {
             FileUtils.deleteRecursively(tempDirectory.toFile());
         }
