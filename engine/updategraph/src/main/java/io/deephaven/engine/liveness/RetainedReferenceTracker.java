@@ -255,9 +255,9 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
 
         void drop(@NotNull final Stream<? extends LivenessReferent> referents);
 
-        void enqueueReferencesForDrop(@NotNull PendingDropsTracker tracker, boolean onCleanup);
+        void enqueueReferencesForDrop(@NotNull final PendingDropsTracker tracker, final boolean onCleanup);
 
-        void transferReferencesTo(@NotNull RetainedReferenceTracker<?> other);
+        void transferReferencesTo(@NotNull final RetainedReferenceTracker<?> other);
 
         void makePermanent();
     }
@@ -271,16 +271,16 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
         }
 
         @Override
-        public void drop(@NotNull LivenessReferent referent) {}
+        public void drop(@NotNull final LivenessReferent referent) {}
 
         @Override
-        public void drop(@NotNull Stream<? extends LivenessReferent> referents) {}
+        public void drop(@NotNull final Stream<? extends LivenessReferent> referents) {}
 
         @Override
-        public void enqueueReferencesForDrop(@NotNull PendingDropsTracker tracker, boolean onCleanup) {}
+        public void enqueueReferencesForDrop(@NotNull final PendingDropsTracker tracker, final boolean onCleanup) {}
 
         @Override
-        public void transferReferencesTo(@NotNull RetainedReferenceTracker<?> other) {}
+        public void transferReferencesTo(@NotNull final RetainedReferenceTracker<?> other) {}
 
         @Override
         public void makePermanent() {}
@@ -289,7 +289,7 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
     private static final class SingleWeakImpl implements Impl {
         private WeakReference<? extends LivenessReferent> retainedWeakReference;
 
-        public SingleWeakImpl(@NotNull LivenessReferent referent) {
+        public SingleWeakImpl(@NotNull final LivenessReferent referent) {
             retainedWeakReference = referent.getWeakReference();
         }
 
@@ -313,43 +313,43 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
         }
 
         @Override
-        public void drop(@NotNull LivenessReferent referent) {
+        public void drop(@NotNull final LivenessReferent referent) {
             if (retainedWeakReference == null) {
                 return;
             }
 
-            LivenessReferent livenessReferent = retainedWeakReference.get();
+            final LivenessReferent retained = retainedWeakReference.get();
 
-            if (livenessReferent == null && (retainedWeakReference instanceof RetainedReferenceTracker<?>)) {
+            if (retained == null && (retainedWeakReference instanceof RetainedReferenceTracker<?>)) {
                 ((RetainedReferenceTracker<?>) retainedWeakReference).cleanup();
                 retainedWeakReference = null;
-            } else if (livenessReferent == referent) {
-                livenessReferent.dropReference();
+            } else if (retained == referent) {
+                retained.dropReference();
                 retainedWeakReference = null;
             }
         }
 
         @Override
-        public void drop(@NotNull Stream<? extends LivenessReferent> referents) {
+        public void drop(@NotNull final Stream<? extends LivenessReferent> referents) {
             if (retainedWeakReference == null) {
                 return;
             }
 
-            LivenessReferent livenessReferent = retainedWeakReference.get();
+            final LivenessReferent retained = retainedWeakReference.get();
 
-            if (livenessReferent == null && (retainedWeakReference instanceof RetainedReferenceTracker<?>)) {
+            if (retained == null && (retainedWeakReference instanceof RetainedReferenceTracker<?>)) {
                 ((RetainedReferenceTracker<?>) retainedWeakReference).cleanup();
                 retainedWeakReference = null;
                 return;
             }
-            if (referents.anyMatch(referent -> livenessReferent == referent)) {
-                livenessReferent.dropReference();
+            if (referents.anyMatch(referent -> retained == referent)) {
+                retained.dropReference();
                 retainedWeakReference = null;
             }
         }
 
         @Override
-        public void enqueueReferencesForDrop(@NotNull PendingDropsTracker tracker, boolean onCleanup) {
+        public void enqueueReferencesForDrop(@NotNull final PendingDropsTracker tracker, final boolean onCleanup) {
             if (retainedWeakReference == null) {
                 return;
             }
@@ -362,7 +362,7 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
         }
 
         @Override
-        public void transferReferencesTo(@NotNull RetainedReferenceTracker<?> other) {
+        public void transferReferencesTo(@NotNull final RetainedReferenceTracker<?> other) {
             if (retainedWeakReference == null) {
                 return;
             }
@@ -384,9 +384,9 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
 
     private static final class WeakImpl implements Impl {
 
-        private final List<WeakReference<? extends LivenessReferent>> retainedReferences = new ArrayList<>();
+        private final List<WeakReference<? extends LivenessReferent>> retainedReferences = new ArrayList<>(2);
 
-        WeakImpl(WeakReference<? extends LivenessReferent> retainedReference) {
+        WeakImpl(@NotNull final WeakReference<? extends LivenessReferent> retainedReference) {
             retainedReferences.add(retainedReference);
         }
 
@@ -496,21 +496,21 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
         private static final EmptyStrongImpl INSTANCE = new EmptyStrongImpl();
 
         @Override
-        public Impl add(@NotNull LivenessReferent referent) {
+        public Impl add(@NotNull final LivenessReferent referent) {
             return new SingleStrongImpl(referent);
         }
 
         @Override
-        public void drop(@NotNull LivenessReferent referent) {}
+        public void drop(@NotNull final LivenessReferent referent) {}
 
         @Override
-        public void drop(@NotNull Stream<? extends LivenessReferent> referents) {}
+        public void drop(@NotNull final Stream<? extends LivenessReferent> referents) {}
 
         @Override
-        public void enqueueReferencesForDrop(@NotNull PendingDropsTracker tracker, boolean onCleanup) {}
+        public void enqueueReferencesForDrop(@NotNull final PendingDropsTracker tracker, boolean onCleanup) {}
 
         @Override
-        public void transferReferencesTo(@NotNull RetainedReferenceTracker<?> other) {}
+        public void transferReferencesTo(@NotNull final RetainedReferenceTracker<?> other) {}
 
         @Override
         public void makePermanent() {}
@@ -532,14 +532,14 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
                 retained = referent;
                 return this;
             }
-            final Impl result = new StrongImpl().add(this.retained).add(referent);
+            final Impl result = new StrongImpl().add(retained).add(referent);
             retained = null;
             return result;
         }
 
         @Override
         public void drop(@NotNull final LivenessReferent referent) {
-            if (referent == this.retained) {
+            if (referent == retained) {
                 retained.dropReference();
                 retained = null;
             }
@@ -550,7 +550,7 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
             if (retained == null) {
                 return;
             }
-            if (referents.anyMatch(referent -> referent == this.retained)) {
+            if (referents.anyMatch(referent -> referent == retained)) {
                 retained.dropReference();
                 retained = null;
             }
