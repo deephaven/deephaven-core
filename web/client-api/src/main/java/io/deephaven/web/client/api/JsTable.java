@@ -224,7 +224,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     }
 
     /**
-     * a {@link Sort} that can be used to reverse a table. This can be passed into an array in applySort. Note that Tree
+     * A {@link Sort} that can be used to reverse a table. This can be passed into an array in applySort. Note that Tree
      * Tables do not support {@code reverse}.
      * 
      * @return {@link Sort}
@@ -1782,13 +1782,13 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
         return head;
     }
 
-    @JsMethod
-    @Override
     /**
      * Gets a string representation of this table instance.
      *
      * @return A string representation of this table.
      */
+    @JsMethod
+    @Override
     public String toString() {
         if (isAlive()) {
             return "Table { id=" + subscriptionId + " filters=[" + getFilter() + "], sort=[" + getSort()

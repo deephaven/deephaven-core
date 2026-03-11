@@ -30,7 +30,7 @@ import jsinterop.base.Js;
 
 /**
  * Behaves like a {@link JsTable dh.Table}, but doesn't expose all of its API for changing the internal state. Instead,
- * state is driven by the upstream table - when it changes handle, this table listens and updates its own handle
+ * state is driven by the upstream table - when its handle changes, this table listens and updates its own handle
  * accordingly.
  *
  * Additionally, this is automatically subscribed to its one and only row, across all columns.
