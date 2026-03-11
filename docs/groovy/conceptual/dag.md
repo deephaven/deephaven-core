@@ -102,7 +102,7 @@ Most users never interact directly with update notifications, but it is possible
 
 Here's a practical example of a custom listener that monitors disk usage:
 
-```groovy ticking-table order=disk_monitor,critical_alerts
+```groovy ticking-table order=diskMonitor,criticalAlerts
 import io.deephaven.engine.table.TableUpdate
 import io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter
 
@@ -113,10 +113,10 @@ diskMonitor = timeTable("PT5S").update(
 )
 
 // Filter for critical alerts (>90% usage)
-criticalAlerts = disk_monitor.where("DiskUsagePct > 90")
+criticalAlerts = diskMonitor.where("DiskUsagePct > 90")
 
 // Custom listener that "sends an alert" when disk usage is critical
-handleAlert = new InstrumentedTableUpdateListenerAdapter("DiskAlertListener", critical_alerts, false) {
+handleAlert = new InstrumentedTableUpdateListenerAdapter("DiskAlertListener", criticalAlerts, false) {
     @Override
     void onUpdate(TableUpdate upstream) {
         def addedRowSet = upstream.added()
@@ -128,7 +128,7 @@ handleAlert = new InstrumentedTableUpdateListenerAdapter("DiskAlertListener", cr
 }
 ```
 
-In this example, whenever a new row appears in `critical_alerts` (indicating a server exceeds 90% disk usage), the custom listener executes and could send notifications to your monitoring system.
+In this example, whenever a new row appears in `criticalAlerts` (indicating a server exceeds 90% disk usage), the custom listener executes and could send notifications to your monitoring system.
 
 ### Cross-query sharing
 
