@@ -127,7 +127,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
      * <p>
      * A table starts off with the singleton {@link #EMPTY_CHILD_LISTENER_REFERENCES}, and when the first listener is
      * added the empty reference is CASed with the new listener. When the second reference is added, we create a new
-     * SimpleReferenceManager that contains our original reference and the new reference. The the new manager is CASed
+     * SimpleReferenceManager that contains our original reference and the new reference. The new manager is CASed
      * in place of the existing reference.
      * </p>
      */
