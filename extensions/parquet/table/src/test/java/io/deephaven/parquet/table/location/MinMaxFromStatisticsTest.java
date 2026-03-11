@@ -649,6 +649,21 @@ public class MinMaxFromStatisticsTest {
     }
 
     @Test
+    public void enumLogicalStatisticsAreRejected() {
+        // ENUM logical type is currently not supported for string min/max statistics
+        final PrimitiveType colType = Types.required(PrimitiveType.PrimitiveTypeName.BINARY)
+                .as(LogicalTypeAnnotation.enumType())
+                .named("enumBinary");
+        final Statistics<?> stats = buildStats(
+                colType, "ALPHA".getBytes(StandardCharsets.UTF_8), "ZETA".getBytes(StandardCharsets.UTF_8), 0L);
+        final MutableObject<String> min = new MutableObject<>();
+        final MutableObject<String> max = new MutableObject<>();
+        assertRejected(
+                MinMaxFromStatistics.getMinMaxForStrings(stats, min::setValue, max::setValue),
+                min, max);
+    }
+
+    @Test
     public void binaryWithoutStringLogicalTypeIsRejected() {
         final PrimitiveType colType = Types.required(PrimitiveType.PrimitiveTypeName.BINARY).named("rawBinary");
         final Statistics<?> stats = buildStats(
