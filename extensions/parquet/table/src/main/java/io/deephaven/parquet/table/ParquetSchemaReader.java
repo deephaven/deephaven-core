@@ -393,8 +393,7 @@ public class ParquetSchemaReader {
 
             @Override
             public Optional<Class<?>> visit(final LogicalTypeAnnotation.EnumLogicalTypeAnnotation enumLogicalType) {
-                errorString.setValue("EnumLogicalType");
-                return Optional.empty();
+                return Optional.of(String.class);
             }
 
             @Override

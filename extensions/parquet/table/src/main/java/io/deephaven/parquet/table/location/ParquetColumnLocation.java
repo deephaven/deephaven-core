@@ -537,6 +537,12 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
 
         @Override
         public Optional<ToPage<ATTR, ?>> visit(
+                final LogicalTypeAnnotation.EnumLogicalTypeAnnotation enumLogicalType) {
+            return Optional.of(ToStringPage.create(pageType, columnChunkReader.getDictionarySupplier()));
+        }
+
+        @Override
+        public Optional<ToPage<ATTR, ?>> visit(
                 final LogicalTypeAnnotation.TimestampLogicalTypeAnnotation timestampLogicalType) {
             if (timestampLogicalType.isAdjustedToUTC()) {
                 // The column will be stored as nanoseconds elapsed since epoch as long values
