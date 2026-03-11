@@ -130,7 +130,6 @@ class PerfmonTestCase(BaseTestCase):
             "UpdateSummaryStats",
         }
         self.assertEqual(set(d.keys()), expected_keys)
- 
         for key, value in d.items():
             self.assertIsInstance(value, Table, f"Value for key '{key}' is not a Table")
 
