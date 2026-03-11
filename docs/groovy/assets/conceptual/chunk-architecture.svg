@@ -1,0 +1,198 @@
+<svg viewBox="0 0 1000 750" xmlns="http://www.w3.org/2000/svg">
+  <!-- Light background for dark theme compatibility -->
+  <rect width="100%" height="100%" fill="#ffffff" rx="8"/>
+  <defs>
+    <style>
+      .title { font: bold 16px sans-serif; fill: #1f2937; }
+      .label { font: 14px sans-serif; fill: #374151; }
+      .code { font: 12px 'Courier New', monospace; fill: #1f2937; }
+      .description { font: 11px sans-serif; fill: #6b7280; }
+      .source { fill: #dbeafe; stroke: #3b82f6; stroke-width: 2.5; }
+      .chunk { fill: #fef3c7; stroke: #f59e0b; stroke-width: 2.5; }
+      .operation { fill: #dcfce7; stroke: #22c55e; stroke-width: 2.5; }
+      .pool { fill: #f3e8ff; stroke: #a855f7; stroke-width: 2.5; }
+      .arrow { stroke: #6b7280; stroke-width: 2.5; fill: none; marker-end: url(#arrowhead); }
+      .data-flow { stroke: #3b82f6; stroke-width: 2; fill: none; marker-end: url(#dataflow); }
+      .shadow { filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1)); }
+      .cell { fill: #e0e7ff; stroke: #6366f1; }
+    </style>
+    
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#6b7280" />
+    </marker>
+    
+    <marker id="dataflow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#3b82f6" />
+    </marker>
+  </defs>
+  
+  <!-- Title -->
+  <text class="title" x="500" y="30" text-anchor="middle">Chunk-Oriented Architecture: Bulk Data Processing</text>
+  <text class="description" x="500" y="50" text-anchor="middle">Process blocks of data instead of individual cells for better performance</text>
+  
+  <!-- Before: Cell-by-cell (inefficient) -->
+  <g transform="translate(50, 80)">
+    <text class="label" x="150" y="0" text-anchor="middle" font-weight="bold">❌ Cell-by-cell (Traditional)</text>
+    
+    <g class="shadow">
+      <rect class="source" x="0" y="20" width="300" height="120" rx="8"/>
+      <text class="label" x="10" y="40">ColumnSource: Values</text>
+      
+      <!-- Individual cells -->
+      <rect class="cell" x="10" y="50" width="30" height="30"/>
+      <text class="code" x="25" y="70" text-anchor="middle" font-size="10">42</text>
+      
+      <rect class="cell" x="45" y="50" width="30" height="30"/>
+      <text class="code" x="60" y="70" text-anchor="middle" font-size="10">17</text>
+      
+      <rect class="cell" x="80" y="50" width="30" height="30"/>
+      <text class="code" x="95" y="70" text-anchor="middle" font-size="10">93</text>
+      
+      <rect class="cell" x="115" y="50" width="30" height="30"/>
+      <text class="code" x="130" y="70" text-anchor="middle" font-size="10">28</text>
+      
+      <text class="description" x="155" y="70" font-size="10">... (millions more)</text>
+      
+      <text class="description" x="10" y="105" font-size="10" fill="#ef4444">⚠ Each cell: virtual method call</text>
+      <text class="description" x="10" y="120" font-size="10" fill="#ef4444">⚠ Poor cache locality</text>
+      <text class="description" x="10" y="135" font-size="10" fill="#ef4444">⚠ Can't vectorize</text>
+    </g>
+  </g>
+  
+  <!-- After: Chunk-based (efficient) -->
+  <g transform="translate(400, 80)">
+    <text class="label" x="250" y="0" text-anchor="middle" font-weight="bold">✅ Chunk-based (Deephaven)</text>
+    
+    <g class="shadow">
+      <rect class="source" x="0" y="20" width="500" height="120" rx="8"/>
+      <text class="label" x="10" y="40">ColumnSource (ChunkSource)</text>
+      
+      <!-- Chunk of cells -->
+      <rect class="chunk" x="10" y="50" width="480" height="40" rx="4"/>
+      <text class="label" x="20" y="70">Chunk[4096] (bulk read)</text>
+      
+      <g transform="translate(20, 75)">
+        <rect class="cell" x="0" y="0" width="20" height="15"/>
+        <rect class="cell" x="22" y="0" width="20" height="15"/>
+        <rect class="cell" x="44" y="0" width="20" height="15"/>
+        <rect class="cell" x="66" y="0" width="20" height="15"/>
+        <text class="description" x="95" y="12" font-size="9">... 4092 more values ...</text>
+        <rect class="cell" x="220" y="0" width="20" height="15"/>
+        <rect class="cell" x="242" y="0" width="20" height="15"/>
+      </g>
+      
+      <text class="description" x="10" y="110" font-size="10" fill="#22c55e">✓ One call for 4096 cells</text>
+      <text class="description" x="10" y="125" font-size="10" fill="#22c55e">✓ Sequential memory access</text>
+      <text class="description" x="10" y="140" font-size="10" fill="#22c55e">✓ JIT can vectorize (SIMD)</text>
+    </g>
+  </g>
+  
+  <!-- Chunk processing flow -->
+  <g transform="translate(50, 240)">
+    <text class="label" x="400" y="0" text-anchor="middle" font-weight="bold">Chunk Processing Pipeline</text>
+    
+    <!-- Source -->
+    <g class="shadow" transform="translate(0, 30)">
+      <rect class="source" x="0" y="0" width="180" height="80" rx="8"/>
+      <text class="label" x="10" y="25">1. ColumnSource</text>
+      <text class="code" x="10" y="45" font-size="11">getChunk(offset,</text>
+      <text class="code" x="10" y="60" font-size="11">  size=4096)</text>
+    </g>
+    
+    <path class="data-flow" d="M 180 70 L 220 70"/>
+    
+    <!-- Chunk -->
+    <g class="shadow" transform="translate(220, 30)">
+      <rect class="chunk" x="0" y="0" width="180" height="80" rx="8"/>
+      <text class="label" x="10" y="25">2. Chunk Buffer</text>
+      <text class="description" x="10" y="45" font-size="10">Typed array wrapper</text>
+      <text class="description" x="10" y="60" font-size="10">IntChunk, DoubleChunk,</text>
+      <text class="description" x="10" y="73" font-size="10">ObjectChunk, etc.</text>
+    </g>
+    
+    <path class="data-flow" d="M 400 70 L 440 70"/>
+    
+    <!-- Operation -->
+    <g class="shadow" transform="translate(440, 30)">
+      <rect class="operation" x="0" y="0" width="180" height="80" rx="8"/>
+      <text class="label" x="10" y="25">3. Bulk Operation</text>
+      <text class="description" x="10" y="45" font-size="10">Process entire chunk</text>
+      <text class="description" x="10" y="60" font-size="10">Filter, aggregate,</text>
+      <text class="description" x="10" y="73" font-size="10">transform, etc.</text>
+    </g>
+    
+    <path class="data-flow" d="M 620 70 L 660 70"/>
+    
+    <!-- Result -->
+    <g class="shadow" transform="translate(660, 30)">
+      <rect class="chunk" x="0" y="0" width="180" height="80" rx="8"/>
+      <text class="label" x="10" y="25">4. Result Chunk</text>
+      <text class="description" x="10" y="45" font-size="10">Output buffer</text>
+      <text class="description" x="10" y="60" font-size="10">Reused from pool or</text>
+      <text class="description" x="10" y="73" font-size="10">written to destination</text>
+    </g>
+  </g>
+  
+  <!-- Chunk pooling -->
+  <g class="shadow" transform="translate(50, 380)">
+    <rect class="pool" x="0" y="0" width="900" height="120" rx="8"/>
+    <text class="label" x="20" y="25" font-weight="bold">♻️ Chunk Pooling: Reduce Garbage Collection</text>
+    
+    <text class="description" x="30" y="50">Chunks are reusable buffers managed by a pool to avoid allocating temporary objects</text>
+    
+    <g transform="translate(30, 60)">
+      <rect class="chunk" x="0" y="0" width="100" height="40" rx="4"/>
+      <text class="description" x="10" y="25" text-anchor="middle">Available</text>
+      
+      <path class="arrow" d="M 100 20 L 130 20"/>
+      <text class="description" x="140" y="25">acquire()</text>
+      
+      <rect class="chunk" x="220" y="0" width="100" height="40" rx="4" fill="#fcd34d"/>
+      <text class="description" x="270" y="25" text-anchor="middle">In Use</text>
+      
+      <path class="arrow" d="M 320 20 L 350 20"/>
+      <text class="description" x="360" y="25">release()</text>
+      
+      <rect class="chunk" x="440" y="0" width="100" height="40" rx="4"/>
+      <text class="description" x="490" y="25" text-anchor="middle">Returned</text>
+    </g>
+  </g>
+  
+  <!-- Performance benefits -->
+  <g transform="translate(50, 520)">
+    <text class="label" x="0" y="0" font-weight="bold">⚡ Performance Benefits:</text>
+    
+    <g transform="translate(0, 20)">
+      <rect fill="#dbeafe" x="0" y="0" width="280" height="80" rx="5" stroke="#3b82f6" stroke-width="2"/>
+      <text class="label" x="10" y="25">Amortized Overhead</text>
+      <text class="description" x="10" y="45">One method call for 4096 cells</text>
+      <text class="description" x="10" y="60">vs. 4096 individual calls</text>
+      <text class="description" x="10" y="75" font-weight="bold">~1000x fewer calls</text>
+    </g>
+    
+    <g transform="translate(310, 20)">
+      <rect fill="#dcfce7" x="0" y="0" width="280" height="80" rx="5" stroke="#22c55e" stroke-width="2"/>
+      <text class="label" x="10" y="25">Vectorization</text>
+      <text class="description" x="10" y="45">Sequential memory allows</text>
+      <text class="description" x="10" y="60">SIMD operations</text>
+      <text class="description" x="10" y="75" font-weight="bold">Process 4-8 values per instruction</text>
+    </g>
+    
+    <g transform="translate(620, 20)">
+      <rect fill="#fef3c7" x="0" y="0" width="280" height="80" rx="5" stroke="#f59e0b" stroke-width="2"/>
+      <text class="label" x="10" y="25">Cache Efficiency</text>
+      <text class="description" x="10" y="45">Contiguous data improves</text>
+      <text class="description" x="10" y="60">L1/L2/L3 cache hit rates</text>
+      <text class="description" x="10" y="75" font-weight="bold">Fewer memory stalls</text>
+    </g>
+  </g>
+  
+  <!-- Code example -->
+  <g transform="translate(50, 640)">
+    <rect fill="#f9fafb" stroke="#d1d5db" stroke-width="2" x="0" y="0" width="900" height="90" rx="8"/>
+    <text class="label" x="20" y="25" font-weight="bold">Example: Filtering with Chunks</text>
+    <text class="code" x="30" y="45" font-size="10">// Instead of: for (long key : rowSet) { if (predicate(getValue(key))) { ... } }</text>
+    <text class="code" x="30" y="60" font-size="10">// Chunks do: Chunk values = source.getChunk(context, rowSequence);</text>
+    <text class="code" x="30" y="75" font-size="10">//            bulkFilter(values, predicate, outputKeys);  // Process 4096 at once</text>
+  </g>
+</svg>
