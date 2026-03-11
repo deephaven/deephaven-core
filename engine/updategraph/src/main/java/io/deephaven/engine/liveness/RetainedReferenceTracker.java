@@ -507,7 +507,7 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
         public void drop(@NotNull final Stream<? extends LivenessReferent> referents) {}
 
         @Override
-        public void enqueueReferencesForDrop(@NotNull final PendingDropsTracker tracker, boolean onCleanup) {}
+        public void enqueueReferencesForDrop(@NotNull final PendingDropsTracker tracker, final boolean onCleanup) {}
 
         @Override
         public void transferReferencesTo(@NotNull final RetainedReferenceTracker<?> other) {}
