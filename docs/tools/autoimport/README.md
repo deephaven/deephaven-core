@@ -144,10 +144,14 @@ You can manually run the sync check from the GitHub Actions tab:
 To check locally if docs are in sync:
 
 ```bash
+# Check against default image (edge)
 ./docs/tools/autoimport/check_autoimport_sync.sh
+
+# Check against a specific version
+./docs/tools/autoimport/check_autoimport_sync.sh both 0.36.0
 ```
 
-This requires Docker to be running.
+This requires Docker to be running. The script defaults to the `edge` tag (latest development build).
 
 ### What happens on failure
 
