@@ -7,7 +7,6 @@ import tempfile
 import unittest
 
 from deephaven import empty_table
-from deephaven import DHError
 from deephaven.perfmon import (
     ancestor_dot,
     ancestor_svg,
