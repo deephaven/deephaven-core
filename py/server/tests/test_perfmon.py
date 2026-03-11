@@ -119,11 +119,16 @@ class PerfmonTestCase(BaseTestCase):
         self.assertIsNotNone(q)
 
     def test_query_update_performance_map(self):
-        # DH-6883: query_update_performance_map raises DHError due to double-wrapping
-        # of Java Table objects. j_map_to_dict already wraps the values via wrap_j_object,
-        # but the function then tries to wrap them again with Table(j_table=d[k]).
-        with self.assertRaises(DHError):
-            query_update_performance_map(1)
+        d = query_update_performance_map(1)
+        self.assertIsInstance(d, dict)
+        expected_keys = {
+            'QueryUpdatePerformance', 'UpdateWorst', 'WorstInterval',
+            'UpdateMostRecent', 'UpdateAggregate', 'UpdateSummaryStats',
+        }
+        self.assertEqual(set(d.keys()), expected_keys)
+        from deephaven.table import Table
+        for key, value in d.items():
+            self.assertIsInstance(value, Table, f"Value for key '{key}' is not a Table")
 
 
 if __name__ == "__main__":
