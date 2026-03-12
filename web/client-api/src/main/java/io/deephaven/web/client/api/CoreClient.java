@@ -30,23 +30,70 @@ import jsinterop.base.JsPropertyMap;
 import java.util.Objects;
 import java.util.function.Consumer;
 
+/**
+ * A client for connecting to a Deephaven server from the Deephaven JS API.
+ *
+ * <p>
+ * This type manages connection lifecycle and authentication state, and provides helpers to fetch server and
+ * authentication-related configuration.
+ */
 @JsType(namespace = "dh")
 public class CoreClient extends HasEventHandling {
+    /**
+     * Fired when the client has connected.
+     */
     public static final String EVENT_CONNECT = "connect",
+            /**
+             * Fired when the client has disconnected.
+             */
             EVENT_DISCONNECT = "disconnect",
+            /**
+             * Fired when the client has reconnected.
+             */
             EVENT_RECONNECT = "reconnect",
+            /**
+             * Fired when reconnecting fails due to authentication.
+             */
             EVENT_RECONNECT_AUTH_FAILED = "reconnectauthfailed",
+            /**
+             * Fired when a request has failed.
+             */
             EVENT_REQUEST_FAILED = "requestfailed",
+            /**
+             * Fired when a request has started.
+             */
             EVENT_REQUEST_STARTED = "requeststarted",
+            /**
+             * Fired when a request has succeeded.
+             */
             EVENT_REQUEST_SUCCEEDED = "requestsucceeded";
 
     @Deprecated
     public static final String EVENT_REFRESH_TOKEN_UPDATED = "refreshtokenupdated";
+
+    /**
+     * Password login type.
+     *
+     * <p>
+     * When used as {@code credentials.type} for {@link #login}, the credentials must include a username and a password.
+     */
     public static final String LOGIN_TYPE_PASSWORD = "password",
+            /**
+             * Anonymous login type.
+             *
+             * <p>
+             * When used as {@code credentials.type} for {@link #login}, no credentials are required.
+             */
             LOGIN_TYPE_ANONYMOUS = "anonymous";
 
     private final IdeConnection ideConnection;
 
+    /**
+     * Creates a client for the given server URL.
+     *
+     * @param serverUrl the Deephaven server URL
+     * @param connectOptions optional connection options
+     */
     public CoreClient(String serverUrl, @TsTypeRef(ConnectOptions.class) @JsOptional Object connectOptions) {
         ideConnection = new IdeConnection(serverUrl, connectOptions);
     }
@@ -62,6 +109,11 @@ public class CoreClient extends HasEventHandling {
         });
     }
 
+    /**
+     * Indicates whether this client instance is still usable.
+     *
+     * @return a promise which resolves to {@code this} when the client is usable
+     */
     public Promise<CoreClient> running() {
         // This assumes that once the connection has been initialized and left a usable state, it cannot be used again
         if (!ideConnection.connection.isAvailable() || ideConnection.connection.get().isUsable()) {
@@ -71,10 +123,21 @@ public class CoreClient extends HasEventHandling {
         }
     }
 
+    /**
+     * Returns the server URL associated with this client.
+     */
     public String getServerUrl() {
         return ideConnection.getServerUrl();
     }
 
+    /**
+     * Fetches authentication configuration values.
+     *
+     * <p>
+     * This method is intended to be used before a session is established.
+     *
+     * @return a promise of key/value pairs, returned as a two-element string array per entry
+     */
     public Promise<String[][]> getAuthConfigValues() {
         BrowserHeaders metadata = new BrowserHeaders();
         JsPropertyMap<String> headers = ideConnection.getOptions().headers;
@@ -92,6 +155,12 @@ public class CoreClient extends HasEventHandling {
                 AuthenticationConstantsResponse::getConfigValuesMap);
     }
 
+    /**
+     * Logs in using the provided credentials.
+     *
+     * @param credentials the login credentials
+     * @return a promise which resolves once the client has connected using the provided credentials
+     */
     public Promise<Void> login(@TsTypeRef(LoginCredentials.class) JsPropertyMap<Object> credentials) {
         final LoginCredentials creds;
         if (credentials instanceof LoginCredentials) {
@@ -133,14 +202,30 @@ public class CoreClient extends HasEventHandling {
         return login;
     }
 
+    /**
+     * Logs in using a refresh token.
+     *
+     * @param token the refresh token
+     * @return a promise which resolves once the client has connected using the updated credentials
+     */
     public Promise<Void> relogin(@TsTypeRef(JsRefreshToken.class) Object token) {
         return login(Js.cast(LoginCredentials.reconnect(JsRefreshToken.fromObject(token).getBytes())));
     }
 
+    /**
+     * Returns a promise that resolves when the client is connected.
+     *
+     * @param timeoutInMillis optional timeout, currently ignored
+     */
     public Promise<Void> onConnected(@JsOptional Double timeoutInMillis) {
         return ideConnection.onConnected();
     }
 
+    /**
+     * Fetches server configuration values for the current connection.
+     *
+     * @return a promise of configuration entries as an array of {@code [key, value]} string pairs
+     */
     public Promise<String[][]> getServerConfigValues() {
         return getConfigs(
                 c -> ideConnection.connection.get().configServiceClient().getConfigurationConstants(
@@ -150,14 +235,23 @@ public class CoreClient extends HasEventHandling {
                 ConfigurationConstantsResponse::getConfigValuesMap);
     }
 
+    /**
+     * Returns a storage service associated with this client's connection.
+     */
     public JsStorageService getStorageService() {
         return new JsStorageService(ideConnection.connection.get());
     }
 
+    /**
+     * Returns the underlying {@link IdeConnection}.
+     */
     public Promise<IdeConnection> getAsIdeConnection() {
         return Promise.resolve(ideConnection);
     }
 
+    /**
+     * Disconnects and releases resources associated with this client.
+     */
     public void disconnect() {
         ideConnection.close();
     }
