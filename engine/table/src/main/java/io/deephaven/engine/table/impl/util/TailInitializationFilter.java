@@ -9,6 +9,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSource;
 import io.deephaven.time.DateTimeUtils;
@@ -167,8 +168,10 @@ public class TailInitializationFilter {
                         }
                     }
                     if (firstPosition <= forPartition.size() - 1) {
-                        builder.appendRowSequence(
-                                forPartition.subSetByPositionRange(firstPosition, forPartition.size()));
+                        try (WritableRowSet forPartitionTail =
+                                forPartition.subSetByPositionRange(firstPosition, forPartition.size())) {
+                            builder.appendRowSequence(forPartitionTail);
+                        }
                     }
                 }
             }
@@ -247,7 +250,7 @@ public class TailInitializationFilter {
 
             final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
             if (isRegioned) {
-                try (final RowSequence.Iterator it = table.getRowSet().getRowSequenceIterator()) {
+                try (final RowSequence.Iterator it = source.getRowSet().getRowSequenceIterator()) {
                     while (it.hasMore()) {
                         final long nextRowKey = it.peekNextKey();
                         final long maxKey = nextRowKey | RegionedColumnSource.ROW_KEY_TO_SUB_REGION_ROW_INDEX_MASK;
