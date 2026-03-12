@@ -779,6 +779,22 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
         return isFailed;
     }
 
+    /**
+     * Does this table have any listeners?
+     *
+     * <p>
+     * Note, that this function may return true in cases where there are no active listeners. This may happen either if
+     * a listener was garbage collected, but the table still has a WeakReference to the listener. Additionally, listener
+     * removal in {@link SimpleReferenceManager} is subject to race conditions which may leave a cleared WeakReference
+     * in the list. The listener will not fire; but this function will return true until the list is next traversed
+     * </p>
+     *
+     * <p>
+     * If the function returns false, then no listeners exist.
+     * </p>
+     *
+     * @return true if this table has any listeners, false otherwise
+     */
     public boolean hasListeners() {
         final Object localChildListenerReferences = childListenerReferences;
         if (localChildListenerReferences instanceof SimpleReferenceManager) {

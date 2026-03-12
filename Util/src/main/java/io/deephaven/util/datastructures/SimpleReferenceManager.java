@@ -205,6 +205,13 @@ public final class SimpleReferenceManager<T, R extends SimpleReference<T>> {
     /**
      * Return true if the list is empty. Does not check for cleared references.
      *
+     * <p>
+     * Note that {@link #remove(Object)}, {@link #removeIf(Predicate)}, and {@link #removeAll(Collection)} have
+     * potential races when removing references. After a removal call, the list may contain cleared references. This
+     * method does not check for cleared references, and thus may return {@code false} even if there are no active
+     * references.
+     * </p>
+     *
      * @return true if the list is empty.
      */
     public boolean isEmpty() {
