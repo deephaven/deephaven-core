@@ -97,7 +97,7 @@ If any of these assumptions are violated, the result table is undefined.
 
 This example uses a time table and filters to show only rows from the last 10 seconds:
 
-```groovy
+```groovy order=result,source
 import io.deephaven.engine.table.impl.util.TailInitializationFilter
 
 source = timeTable("2026-01-01T00:00:00 America/New_York", "PT00:00:01").update("Value = ii")
@@ -111,7 +111,7 @@ This filters to show only rows where the timestamp is within 10 seconds of the m
 
 This example filters to show rows from the last 5 seconds (5 billion nanoseconds):
 
-```groovy
+```groovy order=result,source
 import io.deephaven.engine.table.impl.util.TailInitializationFilter
 import static io.deephaven.time.DateTimeUtils.SECOND
 
@@ -124,7 +124,7 @@ result = TailInitializationFilter.mostRecent(source, "Timestamp", 5 * SECOND)
 
 The `mostRecentRows()` method filters to show a specified number of rows from the end of each partition:
 
-```groovy
+```groovy order=result,source
 source = timeTable("2026-01-01T00:00:00 America/New_York", "PT00:00:01").update("Value = ii")
 rowCount = 10
 result = TailInitializationFilter.mostRecentRows(source, rowCount)
