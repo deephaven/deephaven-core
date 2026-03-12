@@ -4,7 +4,7 @@ title: TailInitializationFilter
 
 `TailInitializationFilter` reduces the input size for downstream operations by limiting initialization to only the most recent rows from each partition. This is particularly useful when working with large datasets that periodically publish new snapshots, and you intend to run a `lastBy` on the data to retrieve the most recent snapshot.
 
-The filter is designed to work with add-only source tables with one or more partitions. If the input table is a parquet or Enterprise format table, then partitions are detected automatically. Otherwise, each contiguous range of row keys is assumed to represent a partition. Each partition must be sorted by timestamp, with the most recent timestamp at the end.
+The filter is designed to work with add-only source tables with one or more partitions. If the input table is in Parquet or Enterprise format, partitions are detected automatically. Otherwise, each contiguous range of row keys is assumed to represent a partition. Each partition must be sorted by timestamp, with the most recent timestamp at the end.
 
 Once initialized, the filter passes through all new rows. Rows that have already been filtered are not removed or modified.
 
