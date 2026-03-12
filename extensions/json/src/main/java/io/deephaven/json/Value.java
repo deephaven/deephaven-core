@@ -107,6 +107,8 @@ public abstract class Value {
 
         T visit(LocalDateValue localDate);
 
+        T visit(LocalTimeValue localTime);
+
         T visit(ArrayValue array);
 
         T visit(AnyValue any);

@@ -6,30 +6,7 @@ package io.deephaven.json.jackson;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import io.deephaven.api.util.NameValidator;
-import io.deephaven.json.AnyValue;
-import io.deephaven.json.ArrayValue;
-import io.deephaven.json.BigDecimalValue;
-import io.deephaven.json.BigIntegerValue;
-import io.deephaven.json.BoolValue;
-import io.deephaven.json.ByteValue;
-import io.deephaven.json.CharValue;
-import io.deephaven.json.DoubleValue;
-import io.deephaven.json.FloatValue;
-import io.deephaven.json.InstantNumberValue;
-import io.deephaven.json.InstantValue;
-import io.deephaven.json.IntValue;
-import io.deephaven.json.JsonValueTypes;
-import io.deephaven.json.LocalDateValue;
-import io.deephaven.json.LongValue;
-import io.deephaven.json.ObjectField;
-import io.deephaven.json.ObjectEntriesValue;
-import io.deephaven.json.ObjectValue;
-import io.deephaven.json.ShortValue;
-import io.deephaven.json.SkipValue;
-import io.deephaven.json.StringValue;
-import io.deephaven.json.TupleValue;
-import io.deephaven.json.TypedObjectValue;
-import io.deephaven.json.Value;
+import io.deephaven.json.*;
 import io.deephaven.processor.ObjectProcessor;
 import io.deephaven.qst.type.Type;
 
@@ -348,6 +325,11 @@ abstract class Mixin<T extends Value> implements JacksonProvider {
         @Override
         public LocalDateMixin visit(LocalDateValue localDate) {
             return new LocalDateMixin(localDate, factory);
+        }
+
+        @Override
+        public Mixin<?> visit(LocalTimeValue localTime) {
+            return new LocalTimeMixin(localTime, factory);
         }
 
         @Override
