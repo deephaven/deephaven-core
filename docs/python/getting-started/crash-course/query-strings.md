@@ -393,7 +393,7 @@ t_array_funcs_ungrouped = t_array_funcs.ungroup()
 ```
 
 > [!NOTE]
-> Aggregations done with [`deephaven.agg`](../../how-to-guides/combined-aggregations.md) are more performant than with array functions.
+> Aggregations are more performant when done with [`deephaven.agg`](../../how-to-guides/combined-aggregations.md) than with array functions.
 
 Deephaven provides array indexing and slicing operations.
 
