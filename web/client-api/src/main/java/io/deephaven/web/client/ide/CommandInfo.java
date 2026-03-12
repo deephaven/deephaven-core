@@ -37,8 +37,8 @@ public class CommandInfo {
      * A promise that resolves with the result of executing {@link #getCode()}.
      *
      * <p>
-     * The promise resolves to a {@link JsCommandResult} when the command completes, and may reject if command
-     * execution fails.
+     * The promise resolves to a {@link JsCommandResult} when the command completes, and may reject if command execution
+     * fails.
      */
     @JsProperty
     public Promise<JsCommandResult> getResult() {
