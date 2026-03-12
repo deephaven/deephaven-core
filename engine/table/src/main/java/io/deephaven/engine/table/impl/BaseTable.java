@@ -502,7 +502,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
     private Collection<Object> ensureParents() {
         // noinspection unchecked
         return FieldUtils.ensureField(this, PARENTS_UPDATER, EMPTY_PARENTS,
-                () -> new KeyedObjectHashSet<>(IdentityKeyedObjectKey.getInstance()));
+                () -> new KeyedObjectHashSet<>(1, 0.5f, IdentityKeyedObjectKey.getInstance()));
     }
 
     @Override
