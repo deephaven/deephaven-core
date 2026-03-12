@@ -256,8 +256,9 @@ public class TailInitializationFilter {
                         final long maxKey = nextRowKey | RegionedColumnSource.ROW_KEY_TO_SUB_REGION_ROW_INDEX_MASK;
                         RowSequence forPartition = it.getNextRowSequenceThrough(maxKey);
                         final long firstRow = Math.max(0, forPartition.size() - rowCount);
+                        final long effectiveRowCount = Math.min(rowCount, forPartition.size());
                         try (RowSequence tailForPartition =
-                                forPartition.getRowSequenceByPosition(firstRow, forPartition.size())) {
+                                forPartition.getRowSequenceByPosition(firstRow, effectiveRowCount)) {
                             builder.appendRowSequence(tailForPartition);
                         }
                     }
