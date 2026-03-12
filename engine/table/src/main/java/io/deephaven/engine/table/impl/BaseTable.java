@@ -793,7 +793,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
      * If the function returns false, then no listeners exist.
      * </p>
      *
-     * @return true if this table has any listeners, false otherwise
+     * @return true if this table may have any listeners, false otherwise
      */
     public boolean hasListeners() {
         final Object localChildListenerReferences = childListenerReferences;
