@@ -177,7 +177,12 @@ public class CustomColumn {
      * Returns a string representation of this custom column.
      *
      * <p>
-     * The returned value is formatted as {@code name[SUFFIX]=expression} and can be parsed by {@link #from(String)}.
+     * The returned value is formatted as {@code name[SUFFIX]=expression}, where {@code [SUFFIX]} depends on the
+     * {@linkplain #getType() type}.
+     *
+     * <p>
+     * {@link #from(String)} parses {@code name=expression} and always produces a {@link #TYPE_NEW} column. It does not
+     * interpret suffixes or preserve the original type.
      */
     @JsMethod
     @Override
@@ -187,6 +192,10 @@ public class CustomColumn {
 
     /**
      * Creates a {@link CustomColumn} by parsing a string produced by {@link #toString()}.
+     *
+     * <p>
+     * This method parses {@code name=expression} and always produces a {@link #TYPE_NEW} column. It does not interpret
+     * suffixes.
      *
      * @param columnInfo a string formatted as {@code name=expression}
      * @return a new {@link CustomColumn}
