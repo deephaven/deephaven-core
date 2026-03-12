@@ -241,12 +241,29 @@ public class TailInitializationFilter {
     public static Table mostRecentRows(final Table table, final long rowCount) {
         return QueryPerformanceRecorder.withNugget("TailInitializationFilter(rows=" + rowCount + ")", () -> {
             final QueryTable source = validateInputTable(table);
+
+            final boolean isRegioned = source.getColumnSourceMap().values().stream().anyMatch(RegionedColumnSource.class::isInstance);
+
             final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
-            source.getRowSet().forEachRowKeyRange((startRow, lastRow) -> {
-                final long firstRow = Math.max(startRow, lastRow - rowCount + 1);
-                builder.appendRange(firstRow, lastRow);
-                return true;
-            });
+            if (isRegioned) {
+                try (final RowSequence.Iterator it = table.getRowSet().getRowSequenceIterator()) {
+                    while (it.hasMore()) {
+                        final long nextRowKey = it.peekNextKey();
+                        final long maxKey = nextRowKey | RegionedColumnSource.ROW_KEY_TO_SUB_REGION_ROW_INDEX_MASK;
+                        RowSequence forPartition = it.getNextRowSequenceThrough(maxKey);
+                        final long firstRow = Math.max(0, forPartition.size() - rowCount);
+                        try (RowSequence tailForPartition = forPartition.getRowSequenceByPosition(firstRow, forPartition.size())) {
+                            builder.appendRowSequence(tailForPartition);
+                        }
+                    }
+                }
+            } else {
+                source.getRowSet().forEachRowKeyRange((startRow, lastRow) -> {
+                    final long firstRow = Math.max(startRow, lastRow - rowCount + 1);
+                    builder.appendRange(firstRow, lastRow);
+                    return true;
+                });
+            }
             return makeResult(source, builder.build().toTracking());
         });
     }

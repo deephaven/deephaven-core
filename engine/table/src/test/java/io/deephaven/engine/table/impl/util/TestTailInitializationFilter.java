@@ -344,6 +344,21 @@ public class TestTailInitializationFilter extends RefreshingTableTestCase {
             assertTableEquals(result2, expected2);
 
             assertEquals(22, result2.size());
+
+            final Table byRows = TailInitializationFilter.mostRecentRows(input, 5);
+            assertEquals(10, byRows.size());
+            final Table expectedByRows = updateGraph.sharedLock().computeLocked(
+                    () -> TableTools.merge(toWrite.slice(95, 100), toWrite.slice(195, 200)));
+            assertTableEquals(expectedByRows, byRows);
+
+            final Table preFilterByRows = TailInitializationFilter.mostRecentRows(preFilter, 5);
+
+            final Table expectedPreFilterRows = updateGraph.sharedLock().computeLocked(
+                    () -> TableTools.merge(preFilter.slice(45, 50), preFilter.slice(95, 100)));
+            assertTableEquals(expectedPreFilterRows, preFilterByRows);
+
+            final Table byRowsAll = TailInitializationFilter.mostRecentRows(input, 200);
+            assertTableEquals(input, byRowsAll);
         } finally {
             FileUtils.deleteRecursively(tempDirectory.toFile());
         }
