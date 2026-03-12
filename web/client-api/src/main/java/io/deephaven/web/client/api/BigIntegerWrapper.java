@@ -14,6 +14,12 @@ import java.math.BigInteger;
  */
 @JsType(namespace = "dh")
 public class BigIntegerWrapper {
+    /**
+     * Creates a wrapper from an integer string.
+     *
+     * @param str A string value accepted by {@link BigInteger#BigInteger(String)}.
+     * @return A wrapper for the parsed value.
+     */
     public static BigIntegerWrapper ofString(String str) {
         return new BigIntegerWrapper(new BigInteger(str));
     }
@@ -30,19 +36,41 @@ public class BigIntegerWrapper {
         return value;
     }
 
+    /**
+     * Returns the wrapped value as a number.
+     *
+     * @return The {@link BigInteger} value converted to a {@code double}.
+     */
     public double asNumber() {
         return getWrapped().doubleValue();
     }
 
+    /**
+     * Returns the string representation of this value.
+     *
+     * <p>
+     * Provided to match JavaScript's {@code valueOf} convention.
+     *
+     * @return The string form of this value.
+     */
     public String valueOf() {
         return toString();
     }
 
+    /**
+     * Returns the string representation of the wrapped {@link BigInteger}.
+     */
     @Override
     public String toString() {
         return value.toString();
     }
 
+    /**
+     * Compares this wrapper to another object.
+     *
+     * @param o The object to compare.
+     * @return {@code true} if {@code o} is a {@link BigIntegerWrapper} with an equal wrapped value.
+     */
     @Override
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) {
@@ -53,6 +81,9 @@ public class BigIntegerWrapper {
         return value.equals(that.value);
     }
 
+    /**
+     * Returns a hash code based on the wrapped value.
+     */
     @Override
     public int hashCode() {
         return value.hashCode();
