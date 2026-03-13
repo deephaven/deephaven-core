@@ -79,17 +79,17 @@ For details on how Deephaven processes updates internally, see [Incremental upda
 
 Here's the quick reference. Details follow in the sections below.
 
-| DO                                                                                                                      | DON'T                                                                               |
-| ----------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| Use table operations — let the engine handle consistency.                                                               | Extract data to Python immediately after creating a ticking table.                  |
-| Wait for data with [`await_update()`](../reference/table-operations/table-listeners/await-update.md) before extracting. | Assume data exists just because you created the table.                              |
-| Use [`snapshot()`](../reference/table-operations/snapshot/snapshot.md) to get a static copy for Python processing.      | Call [`to_pandas()`](../reference/pandas/to-pandas.md) directly on a ticking table. |
-| Use [listeners](./table-listeners-python.md) for reacting to updates.                                                   | Perform table operations inside listeners.                                          |
-| Initialize state with `do_replay=True`.                                                                                 | Mix data from different update cycles.                                              |
+| DO                                                                                                                    | DON'T                                                                             |
+| --------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| Use table operations — let the engine handle consistency.                                                             | Extract data to Python immediately after creating a ticking table.                |
+| Wait for data with [`await_update`](../reference/table-operations/table-listeners/await-update.md) before extracting. | Assume data exists just because you created the table.                            |
+| Use [`snapshot`](../reference/table-operations/snapshot/snapshot.md) to get a static copy for Python processing.      | Call [`to_pandas`](../reference/pandas/to-pandas.md) directly on a ticking table. |
+| Use [listeners](./table-listeners-python.md) for reacting to updates.                                                 | Perform table operations inside listeners.                                        |
+| Initialize state with `do_replay=True`.                                                                               | Mix data from different update cycles.                                            |
 
-## Waiting for data: the `await_update()` pattern
+## Waiting for data: the `await_update` pattern
 
-The most common initialization problem is trying to read data before it arrives. Use [`await_update()`](../reference/table-operations/table-listeners/await-update.md) to pause until the table receives an update:
+The most common initialization problem is trying to read data before it arrives. Use [`await_update`](../reference/table-operations/table-listeners/await-update.md) to pause until the table receives an update:
 
 ```python syntax
 from deephaven import kafka_consumer as ck
@@ -122,17 +122,17 @@ first_ts_py = dhpd.to_pandas(first_ts).iloc[0, 0]
 ```
 
 > [!NOTE]
-> `await_update()` blocks until the table receives at least one update. In app mode startup scripts, this ensures your initialization code waits for data to flow in before proceeding.
+> `await_update` blocks until the table receives at least one update. In app mode startup scripts, this ensures your initialization code waits for data to flow in before proceeding.
 >
 > You can also specify a timeout in milliseconds: `trades.await_update(timeout=5000)` returns `False` if the timeout is reached before an update occurs.
 
-### When to use `await_update()`
+### When to use `await_update`
 
 - **App mode startup scripts** — When you need to extract initial values from external data sources.
 - **Sequential initialization** — When later code depends on data from earlier tables.
 - **One-time setup** — When you need a value once at startup, not continuously.
 
-### When NOT to use `await_update()`
+### When NOT to use `await_update`
 
 - **In listeners** — Listeners already receive data when it's ready.
 - **For continuous processing** — Use table operations or listeners instead.
@@ -167,9 +167,9 @@ def custom_calculation(x, y):
 result = source.update("Z = custom_calculation(X, Y)")
 ```
 
-### Pattern 2: Use `snapshot()` for point-in-time extraction
+### Pattern 2: Use `snapshot` for point-in-time extraction
 
-When you need a static copy of ticking data for Python processing, use [`snapshot()`](../reference/table-operations/snapshot/snapshot.md):
+When you need a static copy of ticking data for Python processing, use [`snapshot`](../reference/table-operations/snapshot/snapshot.md):
 
 ```python ticking-table order=null
 from deephaven import time_table
@@ -187,9 +187,9 @@ print(f"Captured {len(df)} rows")
 
 The snapshot creates a static table that won't change, making it safe to extract and process in Python.
 
-### Pattern 3: Use `snapshot_when()` for controlled timing
+### Pattern 3: Use `snapshot_when` for controlled timing
 
-When you need to extract data at specific intervals or synchronized with other events, use [`snapshot_when()`](../reference/table-operations/snapshot/snapshot-when.md):
+When you need to extract data at specific intervals or synchronized with other events, use [`snapshot_when`](../reference/table-operations/snapshot/snapshot-when.md):
 
 ```python ticking-table order=null
 from deephaven import time_table
@@ -234,7 +234,7 @@ source = time_table("PT1s").update("X = ii")
 handle = listen(source, on_update)
 ```
 
-The `.added()`, `.modified()`, `.removed()`, and `.modified_prev()` methods return dictionaries with column names as keys and NumPy arrays as values. This data is a consistent snapshot from the update cycle.
+The `.added`, `.modified`, `.removed`, and `.modified_prev` methods return dictionaries with column names as keys and NumPy arrays as values. This data is a consistent snapshot from the update cycle.
 
 ### Pattern 5: Initialize state with `do_replay`
 
@@ -340,11 +340,12 @@ print(f"Extracted {len(df)} rows safely")
 
 ```python should-fail
 from deephaven import time_table
+import deephaven.pandas as dhpd
 
 source = time_table("PT0.1s").update("X = ii")
 
 # DON'T: Direct extraction from ticking table
-df = source.to_pandas()  # May get inconsistent data!
+df = dhpd.to_pandas(source)  # May get inconsistent data!
 ```
 
 **What can go wrong:**
@@ -353,7 +354,7 @@ df = source.to_pandas()  # May get inconsistent data!
 - Some columns could have new values, others old values.
 - Row keys might have shifted.
 
-**Do instead:** Use `snapshot()` first, or use locking.
+**Do instead:** Use `snapshot` first, or use locking.
 
 ### DON'T perform table operations inside listeners
 
@@ -419,15 +420,16 @@ class BadListener:
 - Row keys from previous cycles may no longer be valid.
 - Comparisons assume consistency that doesn't exist.
 
-**Do instead:** Use `modified_prev()` for before/after comparisons within the same update, or store only computed results (not raw data) between cycles.
+**Do instead:** Use `modified_prev` for before/after comparisons within the same update, or store only computed results (not raw data) between cycles.
 
 ### DON'T hold locks longer than necessary
 
 ```python should-fail
 from deephaven.update_graph import exclusive_lock
+import deephaven.pandas as dhpd
 
 with exclusive_lock(source):
-    df = source.to_pandas()
+    df = dhpd.to_pandas(source)
     # DON'T: Long computation while holding the lock
     result = expensive_ml_training(df)  # Blocks ALL updates!
     save_to_database(result)  # I/O while locked!
@@ -443,10 +445,11 @@ with exclusive_lock(source):
 
 ```python syntax
 from deephaven.update_graph import exclusive_lock
+import deephaven.pandas as dhpd
 
 # DO: Minimize lock duration
 with exclusive_lock(source):
-    df = source.to_pandas()  # Quick extraction
+    df = dhpd.to_pandas(source)  # Quick extraction
 
 # Process OUTSIDE the lock
 result = expensive_ml_training(df)
@@ -455,15 +458,15 @@ save_to_database(result)
 
 ## Common scenarios
 
-| Scenario                                        | Recommended approach                                                                 |
-| ----------------------------------------------- | ------------------------------------------------------------------------------------ |
-| Wait for Kafka/external data before extracting  | `table.await_update()` before extraction.                                            |
-| Export ticking data to pandas periodically      | `snapshot_when()` with a trigger table, then `to_pandas()`.                          |
-| React to updates and call external API          | Listener with `added()` data access.                                                 |
-| Aggregate ticking data with custom Python logic | Use table operations (`.agg_by()`, `.update_by()`), or Python functions in formulas. |
-| Initialize ML model from table state            | `do_replay=True` in listener, or snapshot before listening.                          |
-| Join ticking data with external database        | Snapshot the ticking table, then join in Python.                                     |
-| Debug why data looks inconsistent               | Check if you're reading without synchronization; add logging to listener.            |
+| Scenario                                        | Recommended approach                                                           |
+| ----------------------------------------------- | ------------------------------------------------------------------------------ |
+| Wait for Kafka/external data before extracting  | `table.await_update` before extraction.                                        |
+| Export ticking data to pandas periodically      | `snapshot_when` with a trigger table, then `to_pandas`.                        |
+| React to updates and call external API          | Listener with `added` data access.                                             |
+| Aggregate ticking data with custom Python logic | Use table operations (`agg_by`, `update_by`), or Python functions in formulas. |
+| Initialize ML model from table state            | `do_replay=True` in listener, or snapshot before listening.                    |
+| Join ticking data with external database        | Snapshot the ticking table, then join in Python.                               |
+| Debug why data looks inconsistent               | Check if you're reading without synchronization; add logging to listener.      |
 
 ## Understanding the update cycle
 

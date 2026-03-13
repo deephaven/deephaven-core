@@ -18,7 +18,7 @@ For more details on how updates propagate, see [Incremental update model](../con
 
 ## Safe patterns
 
-### Use `snapshot()` for point-in-time extraction
+### Use `snapshot` for point-in-time extraction
 
 When you need to read data from a ticking table, create a static copy first:
 
@@ -30,7 +30,7 @@ staticCopy = source.snapshot()
 println "Captured ${staticCopy.size()} rows"
 ```
 
-### Use `snapshotWhen()` for periodic extraction
+### Use `snapshotWhen` for periodic extraction
 
 To extract data at controlled intervals:
 
@@ -42,16 +42,18 @@ trigger = timeTable("PT5s").renameColumns("TriggerTime = Timestamp")
 periodicSnapshot = source.snapshotWhen(trigger)
 ```
 
-### Use `awaitUpdate()` to wait for data
+### Use `awaitUpdate` to wait for data
 
 In app mode scripts, wait for external data before proceeding:
 
 ```groovy syntax
+import io.deephaven.engine.table.vectors.ColumnVectors
+
 // Wait for the first update before extracting data
 trades.awaitUpdate()
 
 // Now safe to read - data has arrived
-firstValue = trades.getColumn("Price").get(0)
+firstValue = ColumnVectors.ofDouble(trades, "Price").get(0)
 ```
 
 You can specify a timeout: `trades.awaitUpdate(5000)` returns `false` if no update occurs within 5 seconds.
@@ -63,6 +65,7 @@ For reacting to changes, use [table listeners](./table-listeners-groovy.md):
 ```groovy ticking-table order=null
 import io.deephaven.engine.table.TableUpdate
 import io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter
+import io.deephaven.engine.table.vectors.ColumnVectors
 
 source = timeTable("PT1s").update("X = ii")
 
@@ -70,6 +73,8 @@ listener = new InstrumentedTableUpdateListenerAdapter(source, false) {
     @Override
     void onUpdate(TableUpdate upstream) {
         println "Added ${upstream.added().size()} rows"
+        // Safe value extraction example:
+        // latestX = ColumnVectors.ofInt(source, "X").get(source.size() - 1)
     }
 }
 
@@ -97,7 +102,7 @@ ug.exclusiveLock().doLocked {
 
 ## What NOT to do
 
-- **Don't read ticking data without synchronization** — use `snapshot()` or locking.
+- **Don't read ticking data without synchronization** — use `snapshot` or locking.
 - **Don't create tables inside listeners** — create derived tables before attaching the listener.
 - **Don't hold locks during long computations** — extract data quickly, then process outside the lock.
 
