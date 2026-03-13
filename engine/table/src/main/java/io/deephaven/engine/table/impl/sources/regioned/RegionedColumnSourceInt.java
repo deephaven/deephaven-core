@@ -78,7 +78,9 @@ abstract class RegionedColumnSourceInt<ATTR extends Values>
                         "Unexpected partitioning column value type for " + columnDefinition.getName()
                                 + ": " + partitioningColumnValue + " is not a Integer at location " + locationKey);
             }
-            return new ColumnRegionInt.Constant<>(regionMask(), unbox((Integer) partitioningColumnValue));
+            return partitioningColumnValue == null
+                    ? ColumnRegionInt.createNull(regionMask())
+                    : new ColumnRegionInt.Constant<>(regionMask(), unbox((Integer) partitioningColumnValue));
         }
     }
 }

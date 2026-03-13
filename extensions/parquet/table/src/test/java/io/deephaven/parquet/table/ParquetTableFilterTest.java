@@ -55,8 +55,7 @@ import static io.deephaven.engine.util.TableTools.floatCol;
 import static io.deephaven.engine.util.TableTools.intCol;
 import static io.deephaven.engine.util.TableTools.newTable;
 import static io.deephaven.engine.util.TableTools.stringCol;
-import static io.deephaven.parquet.table.ParquetTools.readTable;
-import static io.deephaven.parquet.table.ParquetTools.writeTable;
+import static io.deephaven.parquet.table.ParquetTools.*;
 import static io.deephaven.time.DateTimeUtils.parseInstant;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -69,6 +68,7 @@ public final class ParquetTableFilterTest {
     private static final ParquetInstructions EMPTY = ParquetInstructions.EMPTY;
 
     private static File rootFile;
+    private boolean whereDataIndexEnabled;
 
     @Rule
     public final EngineCleanup framework = new EngineCleanup();
@@ -81,11 +81,13 @@ public final class ParquetTableFilterTest {
         }
         // noinspection ResultOfMethodCallIgnored
         rootFile.mkdirs();
+        whereDataIndexEnabled = QueryTable.USE_DATA_INDEX_FOR_WHERE;
     }
 
     @After
     public void tearDown() {
         FileUtils.deleteRecursively(rootFile);
+        QueryTable.USE_DATA_INDEX_FOR_WHERE = whereDataIndexEnabled;
     }
 
     private Table[] splitTable(final Table source, int numSplits, boolean randomSizes) {
@@ -950,13 +952,13 @@ public final class ParquetTableFilterTest {
             diskRowsProcessedMergedIndex.add(filter.numRowsProcessed());
         }
 
-        // Verify that the merged indexes processed strictly fewer rows the disk table with location indexes.
+        // Verify that the merged indexes processed strictly fewer rows than the mem table.
         for (int i = 0; i < filters.size(); i++) {
             Assert.assertTrue(
                     "Merged indexes did not process fewer rows than Location indexes: "
                             + i + ", Merged index rows processed: " + diskRowsProcessedMergedIndex.get(i)
-                            + ", Location index rows processed: " + diskRowsProcessedLocationIndexes.get(i),
-                    diskRowsProcessedMergedIndex.get(i) < diskRowsProcessedLocationIndexes.get(i));
+                            + ", Mem rows processed: " + memRowsProcessed.get(i),
+                    diskRowsProcessedMergedIndex.get(i) < memRowsProcessed.get(i));
         }
     }
 
@@ -2093,5 +2095,136 @@ public final class ParquetTableFilterTest {
 
         assertEquals(26430, result.size());
         allFilters.forEach(RowSetCapturingFilter::reset);
+    }
+
+    @Test
+    public void testPartitioningTableColumnRegions() {
+        // Partitioning columns are automatically added to a data index. We have to disable use of the data index
+        // in order to test constant and null column region pushdown features.
+        QueryTable.USE_DATA_INDEX_FOR_WHERE = false;
+
+        QueryScope.addParam("symList", List.of("alpha", "bravo", "charlie", "delta", "echo", "foxtrot"));
+        final Table tmpTable = TableTools.emptyTable(100_000).update(
+                "Sym = i % 7 == 6 ? (String)null : (String)symList.get(i % 7)",
+                "A = i % 97 == 0 ? null : i % 97",
+                "B = i % 11 == 0 ? null : i % 11",
+                "C = i");
+        final PartitionedTable partitionedTable = tmpTable.partitionBy("Sym", "A");
+
+        final String destPath = Path.of(rootFile.getPath(), "partitioningTableColumnRegions").toString();
+        final ParquetInstructions writeInstructions = new ParquetInstructions.Builder()
+                .build();
+        writeKeyValuePartitionedTable(partitionedTable, destPath, writeInstructions);
+
+        // Coalesce the table to prevent PAST optimizations.
+        final Table diskTable = ParquetTools.readTable(destPath).coalesce();
+        final Table memTable = diskTable.select();
+
+        final Filter filterSym = RawString.of("Sym in `alpha`, `bravo`");
+        final Filter filterSymConditional = RawString.of("true && (Sym == `alpha` || Sym == `bravo`)");
+        final Filter filterA = RawString.of("A < 50");
+        final Filter filterAConditional = RawString.of("true && A < 50");
+        final Filter filterB = RawString.of("B < 5");
+
+
+        // Create some capturing filters to verify the row sets being passed through the filter chain.
+        try (final RowSetCapturingFilter capturingFilterSym = new ParallelizedRowSetCapturingFilter(filterSym);
+                final RowSetCapturingFilter capturingFilterSymConditional =
+                        new ParallelizedRowSetCapturingFilter(filterSymConditional);
+                final RowSetCapturingFilter capturingFilterA = new ParallelizedRowSetCapturingFilter(filterA);
+                final RowSetCapturingFilter capturingFilterAConditional =
+                        new ParallelizedRowSetCapturingFilter(filterAConditional);
+                final RowSetCapturingFilter capturingFilterB = new ParallelizedRowSetCapturingFilter(filterB)) {
+
+            final List<RowSetCapturingFilter> allFilters = List.of(capturingFilterSym, capturingFilterSymConditional,
+                    capturingFilterA, capturingFilterAConditional, capturingFilterB);
+
+            Table result;
+
+            result = diskTable.where(capturingFilterSym);
+
+            // 583 is explained as follows. There are 6 * 97 = 582 regions where Sym is not-null which are tested.
+            // There are 97 null regions for Sym which are all covered by a single test (to determine filter null
+            // behavior).
+            assertEquals(583, capturingFilterSym.numRowsProcessed());
+            assertEquals(28572, result.size());
+
+            // Use the unwrapped filter to test other optimization paths (i.e. chunk filtering) and assert equality.
+            assertTableEquals(result, memTable.where(filterSym));
+            assertTableEquals(result, diskTable.where(filterSym));
+
+            allFilters.forEach(RowSetCapturingFilter::reset);
+
+            //////////////////////////////////////////////////////
+
+            result = diskTable.where(capturingFilterSymConditional);
+
+            assertEquals(583, capturingFilterSymConditional.numRowsProcessed());
+            assertEquals(28572, result.size());
+
+            // Use the unwrapped filter to test other optimization paths (i.e. chunk filtering) and assert equality.
+            assertTableEquals(result, memTable.where(filterSymConditional));
+            assertTableEquals(result, diskTable.where(filterSymConditional));
+
+            allFilters.forEach(RowSetCapturingFilter::reset);
+
+            //////////////////////////////////////////////////////
+
+            result = diskTable.where(capturingFilterA).coalesce();
+
+            // 673 is explained as follows. There are 7 * 96 = 672 regions where A is not null. There are 6 null
+            // regions for A, which are covered by a single test for filter null behavior.
+            assertEquals(673, capturingFilterA.numRowsProcessed());
+            assertEquals(51550, result.size());
+
+            // Use the unwrapped filter to test other optimization paths (i.e. chunk filtering) and assert equality.
+            assertTableEquals(result, memTable.where(filterA));
+            assertTableEquals(result, diskTable.where(filterA));
+
+            allFilters.forEach(RowSetCapturingFilter::reset);
+
+            //////////////////////////////////////////////////////
+
+            result = diskTable.where(capturingFilterAConditional).coalesce();
+
+            assertEquals(673, capturingFilterAConditional.numRowsProcessed());
+            assertEquals(51550, result.size());
+
+            // Use the unwrapped filter to test other optimization paths (i.e. chunk filtering) and assert equality.
+            assertTableEquals(result, memTable.where(filterAConditional));
+            assertTableEquals(result, diskTable.where(filterAConditional));
+
+            allFilters.forEach(RowSetCapturingFilter::reset);
+
+            //////////////////////////////////////////////////////
+
+            result = diskTable.where(capturingFilterB);
+
+            // All rows to be tested.
+            assertEquals(100000, capturingFilterB.numRowsProcessed());
+            assertEquals(45455, result.size());
+
+            // Use the unwrapped filter to test other optimization paths (i.e. chunk filtering) and assert equality.
+            assertTableEquals(result, memTable.where(filterB));
+            assertTableEquals(result, diskTable.where(filterB));
+
+            allFilters.forEach(RowSetCapturingFilter::reset);
+
+            //////////////////////////////////////////////////////
+
+            result = diskTable.where(Filter.and(capturingFilterSym, capturingFilterA)).coalesce();
+
+            // All regions tested for Sym match
+            assertEquals(583, capturingFilterSym.numRowsProcessed());
+            // A subset of regions tested for A match
+            assertEquals(193, capturingFilterA.numRowsProcessed());
+            assertEquals(14729, result.size());
+
+            // Use the unwrapped filter to test other optimization paths (i.e. chunk filtering) and assert equality.
+            assertTableEquals(result, memTable.where(Filter.and(filterSym, filterA)));
+            assertTableEquals(result, diskTable.where(Filter.and(filterSym, filterA)));
+
+            allFilters.forEach(RowSetCapturingFilter::reset);
+        }
     }
 }

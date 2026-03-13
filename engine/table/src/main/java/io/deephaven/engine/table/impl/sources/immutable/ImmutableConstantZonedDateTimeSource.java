@@ -3,9 +3,12 @@
 //
 package io.deephaven.engine.table.impl.sources.immutable;
 
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.ImmutableColumnSourceGetDefaults;
 import io.deephaven.engine.table.impl.sources.ConvertibleTimeSource;
+import io.deephaven.engine.table.impl.sources.SingleValuePushdownHelper;
 import io.deephaven.time.DateTimeUtils;
 import org.jetbrains.annotations.NotNull;
 
@@ -48,5 +51,11 @@ public class ImmutableConstantZonedDateTimeSource extends ImmutableConstantNanos
     @Override
     public ZoneId getZone() {
         return zone;
+    }
+
+
+    @Override
+    protected Chunk<Values> getValueChunk() {
+        return SingleValuePushdownHelper.makeChunk(get(0));
     }
 }
