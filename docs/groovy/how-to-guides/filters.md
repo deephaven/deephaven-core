@@ -184,7 +184,9 @@ Disjunctive filters return only rows that match _any_ of the specified filters. 
 
 ## Filter performance
 
-How you structure filter clauses can affect query performance. The following guidelines help optimize filter execution:
+How you structure filter clauses can affect query performance. The following guidelines help optimize filter execution.
+
+These guidelines provide useful rules of thumb, but they won't perform best for all filters and data combinations. Filters exercise many aspects of the Deephaven engine: each filter constructs a `RowSet` representing the rows that pass, and rowset construction can be expensive. Simple filters (like match or range filters) may take advantage of optimizations like Parquet row group statistics. To evaluate a filter, data must be read from its source (e.g., disk or a network server). For important queries, measure performance to determine the optimal order and structure of filters.
 
 ### Combine filters on the same column
 
