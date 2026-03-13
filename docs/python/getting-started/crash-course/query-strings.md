@@ -7,7 +7,7 @@ Deephaven query strings are the primary way of expressing commands directly to t
 
 ## Syntax
 
-Query strings are just Python strings that get passed into table operations. Deephaven **highly** recommends using double quotes to encapsulate query strings.
+Query strings are just Python strings that get passed into table operations.
 
 ```python test-set=1
 from deephaven import empty_table
@@ -68,7 +68,8 @@ special_vars = empty_table(10).update(["IdxInt = i", "IdxLong = ii"])
 special_meta = special_vars.meta_table
 ```
 
-> **_NOTE:_** The special variables `i` and `ii` can only be used in [append-only](../../conceptual/table-types.md#specialization-1-append-only) tables.
+> [!NOTE]
+> The special variables `i` and `ii` can only be used in [append-only](../../conceptual/table-types.md#specialization-1-append-only) tables.
 
 Additionally, Deephaven provides a range of common constants that can be accessed from query strings. These constants are always written with snake case in capital letters. They include [minimum and maximum values for various data types](/core/javadoc/io/deephaven/util/QueryConstants.html), [conversion factors for time types](/core/javadoc/io/deephaven/time/DateTimeUtils.html), and more. Of particular interest are the null constants for primitive types.
 
@@ -391,7 +392,8 @@ These results can then be ungrouped with [`ungroup`](../../reference/table-opera
 t_array_funcs_ungrouped = t_array_funcs.ungroup()
 ```
 
-> **_NOTE:_** Aggregations done with [`deephaven.agg`](../../how-to-guides/combined-aggregations.md) are more performant than with array functions.
+> [!NOTE]
+> Aggregations are more performant when done with [`deephaven.agg`](../../how-to-guides/combined-aggregations.md) than with array functions.
 
 Deephaven provides array indexing and slicing operations.
 

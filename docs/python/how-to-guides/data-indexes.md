@@ -21,6 +21,9 @@ Data indexes are inherited by derived tables unless one of the following conditi
 
 Partitioning columns are a specialized form of data index. The main addition is that after location selection, the engine also leverages them like other data indexes for query operations.
 
+> [!WARNING]
+> Do not create data indexes on partitioning or grouping columns. Deephaven automatically manages indexes for these columns internally. Adding a manual data index can interfere with this process and cause unexpected behavior.
+
 ## Create a data index
 
 A data index can be created from a source table and one or more key columns using [`data_index`](../reference/engine/data-index.md):
