@@ -133,10 +133,39 @@ result_filtered = source.where(filters=["(boolean)my_filter(IntegerColumn)"])
 result_not_filtered = source.where(filters=["!((boolean)my_filter(IntegerColumn))"])
 ```
 
+## Serial execution
+
+By default, Deephaven parallelizes filter evaluation across multiple CPU cores. For filters with side effects or order dependencies, use [`.with_serial`](../../query-language/types/Filter.md#with_serial) to force sequential processing.
+
+This filter tracks how many rows it evaluates. Without serial execution, the counter may produce incorrect results due to parallel access:
+
+```python order=source,result
+from deephaven.filters import Filter
+from deephaven import empty_table
+
+rows_checked = 0
+
+
+def check_value(x) -> bool:
+    global rows_checked
+    rows_checked += 1  # Side effect: modifies external state
+    return x > 5
+
+
+source = empty_table(100).update("X = i")
+
+# Use .with_serial because the filter has side effects
+f = Filter.from_("(boolean)check_value(X)").with_serial()
+result = source.where(f)
+```
+
+See [Parallelization](../../../conceptual/query-engine/parallelization.md) for more details.
+
 ## Related documentation
 
 - [How to create static tables](../../../how-to-guides/new-and-empty-table.md)
 - [How to use filters](../../../how-to-guides/use-filters.md)
+- [Parallelization](../../../conceptual/query-engine/parallelization.md)
 - [equals](../../query-language/match-filters/equals.md)
 - [not equals (`!=`)](../../query-language/match-filters/not-equals.md)
 - [`icase in`](../..//query-language/match-filters/icase-in.md)
