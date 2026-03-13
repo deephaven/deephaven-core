@@ -87,10 +87,10 @@ Here's how a UG cycle works:
 
 For example, in our earlier query, if `t1` receives 5 new rows in one cycle:
 
-- `t1` processes 5 additions and notifies `t2` and `t3`
-- `t2` (the `last_by`) processes updates for affected labels
-- `t3` (the `natural_join`) incorporates both sets of changes
-- All three tables update simultaneously from the user's perspective
+- `t1` processes 5 additions and notifies `t2` and `t3`.
+- `t2` (the `last_by`) processes updates for affected labels.
+- `t3` (the `natural_join`) incorporates both sets of changes.
+- All three tables update simultaneously from the user's perspective.
 
 <Svg src='../assets/conceptual/dag-ug-cycle.svg' style={{height: 'auto', maxWidth: '1000px'}} />
 
@@ -139,7 +139,7 @@ In this example, whenever a new row appears in `critical_alerts` (indicating a s
 
 ### Cross-query sharing
 
-DAGs are not limited to one query or even one host. Preemptive tables allow tables and update notifications to be shared between queries. You may have Query1 perform a difficult or secret calculation. Query2 can use the shared results of Query1 without having to recompute and without being able to see the secret sauce that went into Query1's calculation.
+DAGs are not limited to one query or even one host. Preemptive tables allow tables and update notifications to be shared between queries. You may have `Query1` perform a difficult or secret calculation. `Query2` can use the shared results of `Query1` without having to recompute and without being able to see the secret sauce that went into Query1's calculation.
 
 This distributed DAG capability enables efficient reuse of expensive computations across multiple query sessions, reducing redundant processing and improving overall system performance.
 
@@ -169,11 +169,11 @@ Common performance bottlenecks include:
 
 Once you understand what operations are slow, you can optimize your query:
 
-- **Use `coalesce()`**: Reduce update frequency by batching changes.
-- **Add `.snapshot()`**: Create periodic snapshots instead of continuous updates.
+- **Use `coalesce`**: Reduce update frequency by batching changes.
+- **Add `snapshot`**: Create periodic snapshots instead of continuous updates.
 - **Restructure dependencies**: Break long dependency chains into parallel branches.
 - **Pre-aggregate data**: Move expensive aggregations upstream in the DAG.
-- **Filter early**: Apply `where()` clauses before expensive operations.
+- **Filter early**: Apply `where` clauses before expensive operations.
 
 For example, instead of:
 
