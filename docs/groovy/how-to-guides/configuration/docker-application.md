@@ -99,14 +99,6 @@ docker run --rm -p 10000:10000 my-deephaven-image
 - `ghcr.io/deephaven/server`: Deephaven's server-side Python API. Includes jpy, deephaven-plugin, numpy, pandas, numba, and deephaven-ui.
 - `ghcr.io/deephaven/server-slim`: Deephaven's server-side Groovy API.
 
-### Extended Python images
-
-- `ghcr.io/deephaven/server-all-ai`: Deephaven's server-side API with NLTK, Tensorflow, PyTorch, and SciKit-Learn.
-- `ghcr.io/deephaven/server-nltk`: Deephaven's server-side API with NLTK.
-- `ghcr.io/deephaven/server-pytorch`: Deephaven's server-side API with PyTorch.
-- `ghcr.io/deephaven/server-sklearn`: Deephaven's server-side API with SciKit-Learn.
-- `ghcr.io/deephaven/server-tensorflow`: Deephaven's server-side API with Tensorflow.
-
 ### Debugging
 
 To debug a running Docker container, use the `docker exec` command. The following command creates an executable bash shell in a running Docker container called `deephaven-application`:
