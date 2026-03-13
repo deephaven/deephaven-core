@@ -304,3 +304,6 @@ plotOHLC = ohlcPlot("BTC", btcOHLC, "TimestampBin", "Open", "High", "Low", "Clos
 
 - [How to use the Chart Builder](../../how-to-guides/user-interface/chart-builder.md)
 - [How to create OHLC plots with the built-in API](../../how-to-guides/plotting/api-plotting.md#ohlc)
+- [`plot`](./plot.md)
+
+<!--TODO: add Javadoc-->

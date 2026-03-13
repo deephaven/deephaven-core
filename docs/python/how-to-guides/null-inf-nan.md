@@ -251,5 +251,5 @@ result = source.update(
 - [Operators in query strings](./operators.md)
 - [Python variables in query strings](./python-variables.md)
 - [Python functions in query strings](./python-functions.md)
-- [Auto-imported functions](../reference/query-language/query-library/auto-imported-functions.md)
+- [Auto-imported functions](../reference/query-language/query-library/auto-imported/index.md)
 - [Pydoc](https://docs.deephaven.io/core/pydoc/code/deephaven.constants.html)

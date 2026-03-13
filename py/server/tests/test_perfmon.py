@@ -21,11 +21,13 @@ from deephaven.perfmon import (
     query_performance_log,
     query_performance_tree_table,
     query_update_performance,
+    query_update_performance_map,
     server_state,
     server_state_log,
     update_performance_ancestors_log,
     update_performance_log,
 )
+from deephaven.table import Table
 from tests.testbase import BaseTestCase
 
 
@@ -115,6 +117,21 @@ class PerfmonTestCase(BaseTestCase):
         self.assertTrue(q.to_string())
         q = query_operation_performance_tree_table()
         self.assertIsNotNone(q)
+
+    def test_query_update_performance_map(self):
+        d = query_update_performance_map(1)
+        self.assertIsInstance(d, dict)
+        expected_keys = {
+            "QueryUpdatePerformance",
+            "UpdateWorst",
+            "WorstInterval",
+            "UpdateMostRecent",
+            "UpdateAggregate",
+            "UpdateSummaryStats",
+        }
+        self.assertEqual(set(d.keys()), expected_keys)
+        for key, value in d.items():
+            self.assertIsInstance(value, Table, f"Value for key '{key}' is not a Table")
 
 
 if __name__ == "__main__":

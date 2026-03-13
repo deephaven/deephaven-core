@@ -5,14 +5,14 @@ sidebar_label: Keycloak
 
 This guide will show you how to configure and use [Keycloak](https://www.keycloak.org/) with [OpenID Connect (OIDC)](https://openid.net/developers/how-connect-works/) to authenticate users running Deephaven from Docker.
 
-Keycloak is a open source tool for identity and access management that uses realms to create and manage isolated groups of applications and users. Keycloak is too broad a topic to cover in this guide - for more information about Keycloak, see its [docs](https://www.keycloak.org/documentation).
+Keycloak is an open-source tool for identity and access management that uses realms to create and manage isolated groups of applications and users. Keycloak is too broad a topic to cover in this guide - for more information about Keycloak, see its [documentation](https://www.keycloak.org/documentation).
 
-OpenId Connect (OIDC) is an open authentication protocol that uses an authorization server to verify the identity of users attempting to access a resource. A common example of this type of authentication is the use of an email to log into a video streaming service.
+OpenID Connect (OIDC) is an open authentication protocol that uses an authorization server to verify the identity of users attempting to access a resource. A common example of this type of authentication is using an email address to log into a video streaming service.
 
-Configuring Deephaven to use OIDC with Keycloak to guard access requires some configuration. This guide details it.
+Deephaven can be configured to authenticate users with OIDC and Keycloak with some additional configuration. The steps are covered in this guide.
 
 > [!NOTE]
-> This authentication method is typically used by organizations to guard resources accessed by large numbers of people. If you don't need to set up Keycloak, but rather need to gain access or grant access to a Deephaven resource guarded by it, see [Granting access to users](#granting-access-to-users). For more detailed information about Keycloak than this guide provides, see [Keycloak's server administration documentation](https://www.keycloak.org/docs/latest/server_admin/).
+> OIDC and Keycloak are typically used to guard resources accessed by large numbers of people, such as those used by organizations. If you need to be granted access to a Deephaven instance guarded by OIDC and Keycloak, contact your system administrator. If you need to grant access to a Deephaven resource guarded by it, see [Granting access to users](#granting-access-to-users). For more detailed information about Keycloak than this guide provides, see [Keycloak's server administration documentation](https://www.keycloak.org/docs/latest/server_admin/).
 
 ## Setup
 
@@ -133,7 +133,7 @@ COPY --from=js-plugins js-plugins/ /opt/deephaven/config/js-plugins/
 
 This Dockerfile installs the necessary Keycloak packages, builds the latest version of the Deephaven server, and copies the required [Deephaven OIDC JAR file](https://repo1.maven.org/maven2/io/deephaven/deephaven-oidc-authentication-provider/0.36.0/deephaven-oidc-authentication-provider-0.36.0.jar) into the `/apps/libs` directory within the Deephaven Docker container.
 
-> [!NOTE]
+> [!IMPORTANT]
 > The Deephaven version (`${VERSION:-latest}` in the Dockerfile above) _must_ be consistent between the server and JAR file. Inconsistencies between them will cause errors.
 
 ## Keycloak
@@ -256,7 +256,7 @@ To configure Keycloak with users and passwords, a `deephaven_realm.json` file mu
 
 </details>
 
-> [!NOTE]
+> [!IMPORTANT]
 > This file configures users with passwords that do not meet minimum security requirements. These are placeholders, and should _never_ be used in a production system.
 
 ### Database

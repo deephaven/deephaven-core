@@ -567,6 +567,11 @@ public interface Table extends
      * </p>
      *
      * <p>
+     * A blink table can be converted to an append-only table with
+     * {@link io.deephaven.engine.table.impl.BlinkTableTools#blinkToAppendOnly(io.deephaven.engine.table.Table)}.
+     * </p>
+     *
+     * <p>
      * Some aggregations (in particular {@link #groupBy} and {@link #partitionBy} cannot provide the desired blink table
      * aggregation semantics because doing so would require storing the entire stream of blink updates in memory. If
      * that behavior is desired, use {@code blinkToAppendOnly}. If on the other hand, you would like to group or

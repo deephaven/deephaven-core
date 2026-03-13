@@ -133,6 +133,7 @@ There are many operators available in the Deephaven Query Language (DQL). They a
 - [Query strings](./query-string-overview.md)
 - [Filters](./filters.md)
 - [Formulas](./formulas.md)
+- [Filter table data](./use-filters.md)
 - [Select and update columns](./use-select-view-update.md)
 - [Groovy classes in query strings](./groovy-classes.md)
 - [`emptyTable`](../reference/table-operations/create/emptyTable.md)

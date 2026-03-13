@@ -74,8 +74,8 @@ public interface TableData {
     /**
      * Reads a row object from the table, from which any subscribed column can be read.
      *
-     * @param index the position or key to access
-     * @return the row at the given location
+     * @param index The position or key to access.
+     * @return The row at the given location.
      */
     @JsMethod
     default Row get(RowPositionUnion index) {
@@ -94,9 +94,9 @@ public interface TableData {
     /**
      * Reads a specific cell from the table, by row key and column.
      *
-     * @param index the row in the table to get data from
-     * @param column the column to read
-     * @return the value in the table
+     * @param index The row in the table to get data from.
+     * @param column The column to read.
+     * @return The value in the table.
      */
     // TODO (deephaven-core#5927) Consider a get/fillChunk API as an efficient alternative
     @JsMethod
@@ -116,9 +116,9 @@ public interface TableData {
     /**
      * The server-specified Format to use for the cell at the given position.
      * 
-     * @param index the row to read
-     * @param column the column to read
-     * @return a Format instance with any server-specified details
+     * @param index The row to read.
+     * @param column The column to read.
+     * @return A {@link Format} instance with any server-specified details.
      */
     @JsMethod
     default Format getFormat(RowPositionUnion index, Column column) {

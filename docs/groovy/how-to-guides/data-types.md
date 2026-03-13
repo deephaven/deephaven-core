@@ -1,5 +1,5 @@
 ---
-title: Data types in Deephaven and Python
+title: Data types in Deephaven
 sidebar_label: Data types
 ---
 

@@ -316,7 +316,7 @@ If you have chosen a deployment with example data, the example data sets will be
 import { TutorialCTA } from '@theme/deephaven/CTA';
 
 <div className="row">
-<TutorialCTA to="/core/groovy/docs/tutorials/crash-course/architecture-overview" />
+<TutorialCTA to="/core/groovy/docs/getting-started/crash-course/architecture-overview" />
 </div>
 
 ## Related documentation

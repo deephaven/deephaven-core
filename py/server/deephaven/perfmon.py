@@ -329,10 +329,9 @@ def query_update_performance_map(eval_number: int) -> dict[str, Table]:
     """
 
     try:
-        d = j_map_to_dict(_JPerformanceQueries.queryUpdatePerformanceMap(eval_number))
-        for k in d.keys():
-            d[k] = Table(j_table=d[k])
-        return d
+        return j_map_to_dict(
+            _JPerformanceQueries.queryUpdatePerformanceMap(eval_number)
+        )
     except Exception as e:
         raise DHError(e, "failed to obtain the query update perf map.") from e
 

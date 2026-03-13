@@ -2,7 +2,7 @@
 title: Inexact, time-series, and range joins
 ---
 
-This guide covers as-of, reverse-as-of, and range joins in Deephaven. As-of joins are often referred to as time-series joins because they provide a mechanism for joining tables based on time columns, largely with the assumption that the match will often be inexact. All of these joins combine columns from two tables based on either (i) a single inexact key, like an ordered timestamp column, or (ii) one or more exact, relational keys and a single inexact key.
+This guide covers as-of, reverse-as-of, and range joins in Deephaven. As-of joins are often referred to as time-series joins because they provide a mechanism for joining tables based on time columns, largely with the assumption that the match will often be inexact. All of these joins combine columns from two tables based on either 1) a single inexact key, like an ordered timestamp column, or 2) one or more exact, relational keys and a single inexact key.
 
 - As-of joins ([`aj`](../reference/table-operations/join/aj.md) and [`raj`](../reference/table-operations/join/raj.md)) use inexact matches to join the data by looking for the closest match in the respective join-key column if no exact match exists. Think: "Go grab data from (i) the row in the right table that has a timestamp equal to the timestamp in this row of the left table, or (ii) the best candidate row from the right table with the timestamp closest to this timestamp.
 - A [`rangeJoin`](../reference/table-operations/join/rangeJoin.md) de facto finds all of the rows from the right table matching the range criteria. One can imagine a range join performing an `aj()` and an `raj()` at the same time and providing all of the rows in between. This is often a set up for an aggregation: Sum all the records in Column XYZ in the right table between the Time1 and Time2 in this row of the left table.
@@ -221,7 +221,7 @@ result = left.rangeJoin(right, List.of("LeftStartValue < RightValue < LeftEndVal
 
 For a detailed explanation of this example, see [`rangeJoin`](../reference/table-operations/join/rangeJoin.md#examples).
 
-Queries often follow up a [`rangeJoin`](../reference/table-operations/join/rangeJoin.md) with an [`update`](../reference/table-operations/select/update.md) or [`updateView`](../reference/table-operations/select/update-view.md) that calls a Groovy closure that operates on the result. The following code block updates the `result` table from the previous example with a user-defined function.
+Queries often follow up a [`rangeJoin`](../reference/table-operations/join/rangeJoin.md) with an [`update`](../reference/table-operations/select/update.md) or [`updateView`](../reference/table-operations/select/update-view.md) that calls a Groovy closure that operates on the result. The following code block updates the `result` table from the previous example with a [user-defined function](./groovy-closures.md).
 
 ```groovy test-set=1 order=resultSummed
 sumGroup = { arr ->

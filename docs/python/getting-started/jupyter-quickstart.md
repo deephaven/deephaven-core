@@ -249,7 +249,7 @@ display(DeephavenWidget(summary_prices))
 
 ![Animated GIF showing summary table updated with percentage variation column](../assets/tutorials/quickstart-jupyter/jquickstart-12.gif)
 
-Finally, create a minute-by-minute Open-High-Low-Close table using the [`lowerBin`](https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#lowerBin(java.time.Instant,long)) [built-in function](../reference/query-language/query-library/auto-imported-functions.md) along with [`first`](../reference/table-operations/group-and-aggregate/AggFirst.md), [`max_`](../reference/table-operations/group-and-aggregate/AggMax.md), [`min_`](../reference/table-operations/group-and-aggregate/AggMin.md), and [`last`](../reference/table-operations/group-and-aggregate/AggLast.md):
+Finally, create a minute-by-minute Open-High-Low-Close table using the [`lowerBin`](https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#lowerBin(java.time.Instant,long)) [built-in function](../reference/query-language/query-library/auto-imported/index.md) along with [`first`](../reference/table-operations/group-and-aggregate/AggFirst.md), [`max_`](../reference/table-operations/group-and-aggregate/AggMax.md), [`min_`](../reference/table-operations/group-and-aggregate/AggMin.md), and [`last`](../reference/table-operations/group-and-aggregate/AggLast.md):
 
 ```python test-set=1 order=null ticking-table skip-test
 ohlc_by_minute = (

@@ -93,9 +93,9 @@ class TableTestCase(BaseTestCase):
             abs_sum(["aggAbsSum=var"]),
             var(["aggVar=var"]),
             weighted_avg("var", ["weights"]),
+            group(["aggGroup=var"]),
         ]
         self.aggs_not_for_rollup = [
-            group(["aggGroup=var"]),
             partition("aggPartition"),
             median(["aggMed=var"]),
             pct(0.20, ["aggPct=var"]),
@@ -1138,6 +1138,19 @@ class TableTestCase(BaseTestCase):
             aggs=self.aggs_for_rollup, include_constituents=True
         )
         self.assertIsNotNone(rollup_table)
+
+        rollup_reagg = test_table.rollup(
+            formula("var=sum(var)", reaggregating=True),
+            by="grp_id",
+        )
+        self.assertIsNotNone(rollup_reagg)
+
+        with self.assertRaises(DHError) as cm:
+            test_table.agg_by(aggs=formula("var=sum(var)", reaggregating=True))
+        self.assertRegex(
+            str(cm.exception),
+            r".+AggFormula does not support reaggregating except in a rollup.",
+        )
 
     def test_tree(self):
         # column 'a' contains duplicate values

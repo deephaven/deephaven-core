@@ -831,15 +831,6 @@
                 ]
               },
               {
-                "label": "Imports",
-                "items": [
-                  {
-                    "label": "Auto-imported functions",
-                    "path": "reference/query-language/query-library/auto-imported-functions.md"
-                  }
-                ]
-              },
-              {
                 "label": "Errors and troubleshooting",
                 "items": [
                   {
@@ -2669,7 +2660,56 @@
             "items": [
               {
                 "label": "Auto-imported functions",
-                "path": "reference/query-language/formulas/auto-imported-functions.md"
+                "items": [
+                  {
+                    "label": "Overview",
+                    "path": "reference/query-language/query-library/auto-imported/index.md"
+                  },
+                  {
+                    "label": "Basic",
+                    "path": "reference/query-language/query-library/auto-imported/basic.md"
+                  },
+                  {
+                    "label": "Math",
+                    "path": "reference/query-language/query-library/auto-imported/math.md"
+                  },
+                  {
+                    "label": "Time",
+                    "path": "reference/query-language/query-library/auto-imported/time.md"
+                  },
+                  {
+                    "label": "Logic",
+                    "path": "reference/query-language/query-library/auto-imported/logic.md"
+                  },
+                  {
+                    "label": "Parse",
+                    "path": "reference/query-language/query-library/auto-imported/parse.md"
+                  },
+                  {
+                    "label": "Sort",
+                    "path": "reference/query-language/query-library/auto-imported/sort.md"
+                  },
+                  {
+                    "label": "Search",
+                    "path": "reference/query-language/query-library/auto-imported/search.md"
+                  },
+                  {
+                    "label": "GUI",
+                    "path": "reference/query-language/query-library/auto-imported/gui.md"
+                  },
+                  {
+                    "label": "Constants",
+                    "path": "reference/query-language/query-library/auto-imported/constants.md"
+                  },
+                  {
+                    "label": "Java",
+                    "path": "reference/query-language/query-library/auto-imported/java.md"
+                  },
+                  {
+                    "label": "Data types",
+                    "path": "reference/query-language/query-library/auto-imported/data-types.md"
+                  }
+                ]
               },
               {
                 "label": "Automatic Groovy Imports",
@@ -2792,6 +2832,10 @@
                     "path": "reference/community-questions/blink-ring.md"
                   },
                   {
+                    "label": "How do I create a partitioned blink table?",
+                    "path": "reference/community-questions/partitioned-blink-tables-drop-attribute.md"
+                  },
+                  {
                     "label": "How do I filter by time of day across all dates?",
                     "path": "reference/community-questions/filter-time-window-all-dates.md"
                   }
@@ -2888,6 +2932,10 @@
               {
                 "label": "Integrations: AWS",
                 "items": [
+                  {
+                    "label": "How do I run Deephaven behind AWS ALB?",
+                    "path": "reference/community-questions/aws-alb-configuration.md"
+                  },
                   {
                     "label": "Why can't I read from S3?",
                     "path": "reference/community-questions/aws-timeout.md"

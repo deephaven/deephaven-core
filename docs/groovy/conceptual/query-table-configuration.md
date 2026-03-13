@@ -5,7 +5,7 @@ sidebar_label: Query table configuration
 
 This guide discusses how to control various `QueryTable` features that affect your Deephaven tables' latency and throughput.
 
-# QueryTable
+## `QueryTable`
 
 [`QueryTable`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/QueryTable.html) is Deephaven's primary implementation of our [Table API](../getting-started/crash-course/table-ops.md).
 
@@ -31,6 +31,9 @@ The `QueryTable` has the following user-configurable properties:
 | [Parallel processing with select](#parallel-processing-with-select) | `QueryTable.forceParallelSelectAndUpdate` (test-focused) | false      |
 | [Parallel snapshotting](#parallel-snapshotting)                     | `QueryTable.enableParallelSnapshot`                      | true       |
 | [Parallel snapshotting](#parallel-snapshotting)                     | `QueryTable.minimumParallelSnapshotRows`                 | `1L << 20` |
+| [Ungroup operations](#ungroup-operations)                           | `QueryTable.minimumUngroupBase`                          | 10         |
+| [SoftRecycler configuration](#softrecycler-configuration)           | `array.recycler.capacity.*`                              | 1024       |
+| [SoftRecycler configuration](#softrecycler-configuration)           | `sparsearray.recycler.capacity.*`                        | 1024       |
 | [Stateless filters by default](#stateless-by-default)               | `QueryTable.statelessFiltersByDefault`                   | false      |
 | [Stateless select by default](#stateless-by-default)                | `QueryTable.statelessSelectByDefault`                    | false      |
 
@@ -48,7 +51,7 @@ It can be beneficial to disable memoization when benchmarking or testing, as mem
 
 ## Redirection
 
-Deephaven Tables maintain a 63-bit keyspace that maps a logical row in row-key space to its data. Many of Deephaven's column sources use a multi-level data layout to avoid allocating more resources than necessary to fulfill operational requirements. See [selection method properties](/core/groovy/docs/reference/community-questions/selection-method-properties/) for more details.
+Deephaven Tables maintain a 63-bit keyspace that maps a logical row in row-key space to its data. Many of Deephaven's column sources use a multi-level data layout to avoid allocating more resources than necessary to fulfill operational requirements. See [selection method properties](../reference/community-questions/selection-method-properties.md) for more details.
 
 Redirection is a mapping between a parent column source and the resulting column source for a given operation. A sorted column, for example, is redirected from the original to present the rows in the targeted sort order. Redirection may also flatten from a sparse keyspace to a flat and dense keyspace.
 
@@ -111,6 +114,93 @@ Parallel snapshotting is not enabled until the snapshot size exceeds `QueryTable
 | ---------------------------------------- | ------------- | ----------------------------------------------------------------------------------------------------- |
 | `QueryTable.enableParallelSnapshot`      | true          | Enables parallelized optimizations for snapshotting operations, such as Barrage subscription requests |
 | `QueryTable.minimumParallelSnapshotRows` | `1L << 20`    | The minimum number of rows required to enable parallel snapshotting operations                        |
+
+## Ungroup operations
+
+The `ungroup` table operation can expand one row into multiple rows. `QueryTable.minimumUngroupBase` controls the initial allocation used by `ungroup`.
+
+| Property Name                   | Default Value | Description                                                                  |
+| ------------------------------- | ------------- | ---------------------------------------------------------------------------- |
+| `QueryTable.minimumUngroupBase` | 10            | The minimum base used for ungroup output row allocation (uses `2^base` rows) |
+
+## `SoftRecycler` configuration
+
+Deephaven uses [`SoftRecycler`](https://docs.deephaven.io/core/javadoc/io/deephaven/util/SoftRecycler.html) objects to manage memory for array and sparse array column sources. These column sources must maintain previous values during an update graph cycle. Rather than allocating fresh memory on each cycle, when memory is needed to record previous values it is borrowed from the recycler and returned at the end of the update cycle. These pools can improve performance and reduce garbage collection pressure.
+
+The capacity of these recyclers (how many arrays each recycler holds) can be configured on a per-type basis, allowing you to tune memory usage based on your workload characteristics.
+
+### Array column source recyclers
+
+Array-backed column sources (dense arrays) use SoftRecyclers to manage blocks of data for each primitive type.
+
+| Property Name                     | Default Value           | Description                                                                                           |
+| --------------------------------- | ----------------------- | ----------------------------------------------------------------------------------------------------- |
+| `array.recycler.capacity.default` | 1024                    | Default recycler capacity for all array types (used if type-specific property is not set)             |
+| `array.recycler.capacity.boolean` | 1024                    | Recycler capacity for boolean array blocks                                                            |
+| `array.recycler.capacity.byte`    | 1024                    | Recycler capacity for byte array blocks                                                               |
+| `array.recycler.capacity.char`    | 1024                    | Recycler capacity for character array blocks                                                          |
+| `array.recycler.capacity.double`  | 1024                    | Recycler capacity for double array blocks                                                             |
+| `array.recycler.capacity.float`   | 1024                    | Recycler capacity for float array blocks                                                              |
+| `array.recycler.capacity.int`     | 1024                    | Recycler capacity for integer array blocks                                                            |
+| `array.recycler.capacity.long`    | 1024                    | Recycler capacity for long array blocks                                                               |
+| `array.recycler.capacity.short`   | 1024                    | Recycler capacity for short array blocks                                                              |
+| `array.recycler.capacity.object`  | 1024                    | Recycler capacity for object array blocks                                                             |
+| `array.recycler.capacity.inuse`   | 9216 (max of all types) | Recycler capacity for "in use" bitmap blocks (should be at least the maximum capacity of other types) |
+
+### Sparse array column source recyclers
+
+Sparse array column sources use a multi-level hierarchical structure and maintain separate recyclers at each level. Each level can be configured independently to optimize memory usage for your access patterns.
+
+| Property Name                             | Default Value                | Description                                                      |
+| ----------------------------------------- | ---------------------------- | ---------------------------------------------------------------- |
+| `sparsearray.recycler.capacity.default`   | 1024                         | Default recycler capacity for all sparse array types             |
+| `sparsearray.recycler.capacity.boolean`   | 1024                         | Base recycler capacity for boolean sparse arrays                 |
+| `sparsearray.recycler.capacity.byte`      | 1024                         | Base recycler capacity for byte sparse arrays                    |
+| `sparsearray.recycler.capacity.char`      | 1024                         | Base recycler capacity for character sparse arrays               |
+| `sparsearray.recycler.capacity.double`    | 1024                         | Base recycler capacity for double sparse arrays                  |
+| `sparsearray.recycler.capacity.float`     | 1024                         | Base recycler capacity for float sparse arrays                   |
+| `sparsearray.recycler.capacity.int`       | 1024                         | Base recycler capacity for integer sparse arrays                 |
+| `sparsearray.recycler.capacity.long`      | 1024                         | Base recycler capacity for long sparse arrays                    |
+| `sparsearray.recycler.capacity.short`     | 1024                         | Base recycler capacity for short sparse arrays                   |
+| `sparsearray.recycler.capacity.object`    | 1024                         | Base recycler capacity for object sparse arrays                  |
+| `sparsearray.recycler.capacity.boolean.2` | 1024                         | Level 2 recycler capacity for boolean sparse arrays              |
+| `sparsearray.recycler.capacity.byte.2`    | 1024                         | Level 2 recycler capacity for byte sparse arrays                 |
+| `sparsearray.recycler.capacity.char.2`    | 1024                         | Level 2 recycler capacity for character sparse arrays            |
+| `sparsearray.recycler.capacity.double.2`  | 1024                         | Level 2 recycler capacity for double sparse arrays               |
+| `sparsearray.recycler.capacity.float.2`   | 1024                         | Level 2 recycler capacity for float sparse arrays                |
+| `sparsearray.recycler.capacity.int.2`     | 1024                         | Level 2 recycler capacity for integer sparse arrays              |
+| `sparsearray.recycler.capacity.long.2`    | 1024                         | Level 2 recycler capacity for long sparse arrays                 |
+| `sparsearray.recycler.capacity.short.2`   | 1024                         | Level 2 recycler capacity for short sparse arrays                |
+| `sparsearray.recycler.capacity.object.2`  | 1024                         | Level 2 recycler capacity for object sparse arrays               |
+| `sparsearray.recycler.capacity.boolean.1` | 1024                         | Level 1 recycler capacity for boolean sparse arrays              |
+| `sparsearray.recycler.capacity.byte.1`    | 1024                         | Level 1 recycler capacity for byte sparse arrays                 |
+| `sparsearray.recycler.capacity.char.1`    | 1024                         | Level 1 recycler capacity for character sparse arrays            |
+| `sparsearray.recycler.capacity.double.1`  | 1024                         | Level 1 recycler capacity for double sparse arrays               |
+| `sparsearray.recycler.capacity.float.1`   | 1024                         | Level 1 recycler capacity for float sparse arrays                |
+| `sparsearray.recycler.capacity.int.1`     | 1024                         | Level 1 recycler capacity for integer sparse arrays              |
+| `sparsearray.recycler.capacity.long.1`    | 1024                         | Level 1 recycler capacity for long sparse arrays                 |
+| `sparsearray.recycler.capacity.short.1`   | 1024                         | Level 1 recycler capacity for short sparse arrays                |
+| `sparsearray.recycler.capacity.object.1`  | 1024                         | Level 1 recycler capacity for object sparse arrays               |
+| `sparsearray.recycler.capacity.boolean.0` | 1024                         | Level 0 (top) recycler capacity for boolean sparse arrays        |
+| `sparsearray.recycler.capacity.byte.0`    | 1024                         | Level 0 (top) recycler capacity for byte sparse arrays           |
+| `sparsearray.recycler.capacity.char.0`    | 1024                         | Level 0 (top) recycler capacity for character sparse arrays      |
+| `sparsearray.recycler.capacity.double.0`  | 1024                         | Level 0 (top) recycler capacity for double sparse arrays         |
+| `sparsearray.recycler.capacity.float.0`   | 1024                         | Level 0 (top) recycler capacity for float sparse arrays          |
+| `sparsearray.recycler.capacity.int.0`     | 1024                         | Level 0 (top) recycler capacity for integer sparse arrays        |
+| `sparsearray.recycler.capacity.long.0`    | 1024                         | Level 0 (top) recycler capacity for long sparse arrays           |
+| `sparsearray.recycler.capacity.short.0`   | 1024                         | Level 0 (top) recycler capacity for short sparse arrays          |
+| `sparsearray.recycler.capacity.object.0`  | 1024                         | Level 0 (top) recycler capacity for object sparse arrays         |
+| `sparsearray.recycler.capacity.inuse`     | 9216 (sum of all base types) | Recycler capacity for "in use" bitmap blocks at the lowest level |
+| `sparsearray.recycler.capacity.inuse.2`   | 9216 (max of level 2)        | Recycler capacity for "in use" bitmap blocks at level 2          |
+| `sparsearray.recycler.capacity.inuse.1`   | 9216 (max of level 1)        | Recycler capacity for "in use" bitmap blocks at level 1          |
+| `sparsearray.recycler.capacity.inuse.0`   | 9216 (max of level 0)        | Recycler capacity for "in use" bitmap blocks at level 0 (top)    |
+
+#### Tuning `SoftRecycler` capacity
+
+The recycler capacity determines how many array blocks are kept in memory for potential reuse. Increasing capacity can improve performance if your workload uses more blocks within an update cycle than the recycler can hold, at the cost of higher baseline memory usage. Decreasing capacity reduces baseline memory requirements, but may increase garbage collection.
+
+- **High throughput environments**: Consider increasing capacities to reduce allocation/deallocation overhead.
+- **Type-specific tuning**: If certain types are used more frequently, you can increase their capacity while reducing others.
 
 ## Stateless by default
 

@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.Selectable;
 import io.deephaven.api.filter.Filter;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.liveness.Liveness;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.filter.ExtractBarriers;
@@ -81,56 +82,41 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
     @Override
     public Table where(Filter filter) {
         final WhereFilter[] whereFilters = WhereFilter.fromInternal(filter);
-        final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor = QueryCompilerRequestProcessor.batch();
-        for (WhereFilter f : whereFilters) {
-            f.init(definition, compilationProcessor);
-        }
-        compilationProcessor.compile();
-        return getResultTableWithWhere(whereFilters);
-    }
 
-    private Table getResultTableWithWhere(WhereFilter... whereFilters) {
-        {
-            final Table coalesced = getCoalesced();
-            if (Liveness.verifyCachedObjectForReuse(coalesced)) {
-                return coalesced.where(Filter.and(whereFilters));
-            }
-        }
-
-        final WhereFilter[] allFilters = Stream.concat(
-                Arrays.stream(deferredFilters).map(WhereFilter::copy),
-                Arrays.stream(whereFilters))
+        final WhereFilter[] innerFilters = Arrays.stream(whereFilters)
                 .flatMap(ExtractInnerConjunctiveFilters::stream)
                 .toArray(WhereFilter[]::new);
 
-        if (allFilters.length == 0) {
-            Table result = tableReference.get();
-            result = applyDeferredViews(result);
-            copyAttributes((BaseTable<?>) result, CopyAttributeOperation.Coalesce);
-            setCoalesced(result);
+        if (innerFilters.length == 0) {
+            return coalesce();
+        }
+
+        // only the pre-view filters are passed down to the coalesce check and enable automatic coalescing
+        final PreAndPostFilters preAndPostFilters = applyFilterRenamings(WhereFilter.copyFrom(innerFilters));
+        if (tableReference.shouldCoalesce(preAndPostFilters.preViewFilters)) {
+            final WhereFilter[] allFilters = concat(deferredFilters, innerFilters);
+            SplitAndApply splitAndApply = splitAndApplyFilters(allFilters, tableReference);
+            Table result = splitAndApply.result;
+            if (splitAndApply.postViewFilters.length != 0) {
+                result = result.where(Filter.and(splitAndApply.postViewFilters));
+            }
             return result;
         }
+        return new DeferredViewTable(getDefinition(), getDescription() + "-filtered",
+                new CopiedTableReference(this, tableReference), null, null, innerFilters);
+    }
 
-        final PreAndPostFilters preAndPostFilters = applyFilterRenamings(allFilters);
-        final TableReference.TableAndRemainingFilters tableAndRemainingFilters =
-                tableReference.getWithWhere(preAndPostFilters.preViewFilters);
-
-        Table localResult = tableAndRemainingFilters.table;
-        if (tableAndRemainingFilters.remainingFilters.length != 0) {
-            localResult = localResult.where(Filter.and(tableAndRemainingFilters.remainingFilters));
+    @NotNull
+    private static WhereFilter[] concat(WhereFilter[] filters1, WhereFilter[] filters2) {
+        if (filters1.length == 0) {
+            return filters2;
         }
-
-        localResult = applyDeferredViews(localResult);
-        if (preAndPostFilters.postViewFilters.length > 0) {
-            localResult = localResult.where(Filter.and(preAndPostFilters.postViewFilters));
+        if (filters2.length == 0) {
+            return filters1;
         }
-
-        if (whereFilters.length == 0) {
-            // The result is effectively the same as if we called doCoalesce()
-            copyAttributes((BaseTable<?>) localResult, CopyAttributeOperation.Coalesce);
-            setCoalesced(localResult);
-        }
-        return localResult;
+        final WhereFilter[] allFilters = Arrays.copyOf(filters1, filters1.length + filters2.length);
+        System.arraycopy(filters2, 0, allFilters, filters1.length, filters2.length);
+        return allFilters;
     }
 
     private Table applyDeferredViews(Table result) {
@@ -207,7 +193,7 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
                     ExtractRespectedBarriers.stream(filter).anyMatch(postViewBarriers::contains);
             if (isPostView || serialFilterFound || hasPostViewBarrier) {
                 // if this filter is serial, all subsequent filters must be postViewFilters
-                if (!filter.permitParallelization()) {
+                if (filter.isSerial()) {
                     serialFilterFound = true;
                 }
                 postViewFilters.add(filter);
@@ -302,7 +288,7 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
                 preViewFilters.add(preFilter);
             } else {
                 // if this filter is serial, all subsequent filters must be postViewFilters
-                if (!filter.permitParallelization()) {
+                if (filter.isSerial()) {
                     serialFilterFound = true;
                 }
 
@@ -333,21 +319,37 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
                 postViewFilters.toArray(WhereFilter.ZERO_LENGTH_WHERE_FILTER_ARRAY));
     }
 
+    private SplitAndApply splitAndApplyFilters(WhereFilter[] allFilters, final TableReference tableReference) {
+        final PreAndPostFilters preAndPostFilters = applyFilterRenamings(WhereFilter.copyFrom(allFilters));
+        final TableReference.TableAndRemainingFilters tarf =
+                tableReference.getWithWhere(preAndPostFilters.preViewFilters);
+        Table result = tarf.table;
+        if (tarf.remainingFilters.length != 0) {
+            result = result.where(Filter.and(tarf.remainingFilters));
+        }
+        result = applyDeferredViews(result);
+        return new SplitAndApply(preAndPostFilters.postViewFilters, result);
+    }
+
+    private static class SplitAndApply {
+        public final WhereFilter[] postViewFilters;
+        public final Table result;
+
+        public SplitAndApply(WhereFilter[] postViewFilters, Table result) {
+            this.postViewFilters = postViewFilters;
+            this.result = result;
+        }
+    }
+
     @Override
     protected Table doCoalesce() {
         Table result;
         if (deferredFilters.length > 0) {
-            final PreAndPostFilters preAndPostFilters = applyFilterRenamings(WhereFilter.copyFrom(deferredFilters));
-            final TableReference.TableAndRemainingFilters tarf =
-                    tableReference.getWithWhere(preAndPostFilters.preViewFilters);
-            result = tarf.table;
-            if (tarf.remainingFilters.length != 0) {
-                result = result.where(Filter.and(tarf.remainingFilters));
-            }
-            result = applyDeferredViews(result);
-            if (preAndPostFilters.postViewFilters.length > 0) {
-                result = result.where(Filter.and(preAndPostFilters.postViewFilters));
-            }
+            SplitAndApply splitAndApply = splitAndApplyFilters(deferredFilters, tableReference);
+            result = splitAndApply.result;
+            // we cannot have a deferred filter that uses a view on this level, because we prohibit
+            // the view and filter from being present on the same DVT in the constructor
+            Assert.eqZero(splitAndApply.postViewFilters.length, "splitAndApply.postViewFilters.length");
         } else {
             result = tableReference.get();
             result = applyDeferredViews(result);
@@ -371,12 +373,22 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
             return coalesce().selectDistinct(columns);
         }
 
-        /* If we have changed the partitioning columns, we should perform the selectDistinct on the coalesced table. */
-        if (deferredViewColumns.length > 0) {
-            if (tableReference.getDefinition().getPartitioningColumns().stream().anyMatch(
-                    cd -> Arrays.stream(deferredViewColumns).anyMatch(dvc -> dvc.getName().equals(cd.getName())))) {
-                return coalesce().selectDistinct(columns);
-            }
+        /* Determine if we are using any of the deferred views in this selectDistinct. */
+        final List<SelectColumn> selectColumns = Arrays.asList(SelectColumn.from(columns));
+        try {
+            SelectAndViewAnalyzer.initializeSelectColumns(getDefinition().getColumnNameMap(),
+                    selectColumns.toArray(SelectColumn[]::new));
+        } catch (Exception e) {
+            return coalesce().selectDistinct(columns);
+        }
+
+        final Set<String> outputColumnNames = Arrays.stream(deferredViewColumns)
+                .filter(sc -> !sc.isRetain())
+                .map(SelectColumn::getName)
+                .collect(Collectors.toSet());
+        if (selectColumns.stream().anyMatch(sc -> !sc.getColumnArrays().isEmpty()
+                || sc.getColumns().stream().anyMatch(outputColumnNames::contains))) {
+            return coalesce().selectDistinct(columns);
         }
 
         /* If the cachedResult is not yet created, we first ask for a selectDistinct cachedResult. */
@@ -386,8 +398,9 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
 
     @Override
     protected DeferredViewTable copy() {
-        final DeferredViewTable result = new DeferredViewTable(definition, getDescription(), new TableReference(this),
-                null, null, null);
+        final DeferredViewTable result =
+                new DeferredViewTable(definition, getDescription(), new CopiedTableReference(this, tableReference),
+                        null, null, null);
         LiveAttributeMap.copyAttributes(this, result, ak -> true);
         return result;
     }
@@ -400,14 +413,14 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
             newView[cdi] = new SourceColumn(cDefs.get(cdi).getName());
         }
         return new DeferredViewTable(newDefinition, getDescription() + "-redefined",
-                new TableReference(this), null, newView, null);
+                new CopiedTableReference(this, tableReference), null, newView, null);
     }
 
     @Override
     protected Table redefine(TableDefinition newDefinitionExternal, TableDefinition newDefinitionInternal,
             SelectColumn[] viewColumns) {
         return new DeferredViewTable(newDefinitionExternal, getDescription() + "-redefined",
-                new TableReference(this), null, viewColumns, null);
+                new CopiedTableReference(this, tableReference), null, viewColumns, null);
     }
 
     /**
@@ -456,6 +469,16 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
             return table.getDefinition();
         }
 
+        /**
+         * Should this set of filter force a coalescing of the table?
+         * 
+         * @param whereFilters the filters that are to be applied
+         * @return true if this set of filters should force a coalescing of the table, false otherwise.
+         */
+        protected boolean shouldCoalesce(WhereFilter... whereFilters) {
+            return false;
+        }
+
         public static class TableAndRemainingFilters {
 
             public TableAndRemainingFilters(Table table, WhereFilter[] remainingFilters) {
@@ -489,6 +512,34 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
          */
         public Table selectDistinctInternal(Collection<? extends Selectable> columns) {
             return null;
+        }
+    }
+
+    private class CopiedTableReference extends TableReference {
+        private final TableReference innerTableReference;
+
+        CopiedTableReference(Table table, final TableReference tableReference) {
+            super(table);
+            this.innerTableReference = tableReference;
+        }
+
+        @Override
+        protected boolean shouldCoalesce(WhereFilter... whereFilters) {
+            return this.innerTableReference.shouldCoalesce(whereFilters);
+        }
+
+        @Override
+        protected TableAndRemainingFilters getWithWhere(WhereFilter... whereFilters) {
+            final WhereFilter[] allFilters;
+            if (deferredFilters.length == 0) {
+                allFilters = whereFilters;
+            } else {
+                allFilters = concat(deferredFilters, whereFilters);
+            }
+
+            SplitAndApply splitAndApply = splitAndApplyFilters(allFilters, innerTableReference);
+
+            return new TableAndRemainingFilters(splitAndApply.result, splitAndApply.postViewFilters);
         }
     }
 }

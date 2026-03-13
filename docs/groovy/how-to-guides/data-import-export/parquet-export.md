@@ -161,5 +161,5 @@ ParquetTools.writeTables(
 ## Related documentation
 
 - [Import Parquet files](./parquet-import.md)
-- [Parquet file formats](./parquet-formats.md)
+- [Parquet formats](./parquet-formats.md)
 - [Parquet instructions](./parquet-instructions.md)

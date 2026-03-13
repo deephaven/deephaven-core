@@ -31,7 +31,10 @@ public abstract class ComposedFilter extends WhereFilterLivenessArtifactImpl imp
         this.componentFilters = componentFilters;
 
         for (WhereFilter f : this.componentFilters) {
-            if (f instanceof LivenessArtifact && f.isRefreshing()) {
+            // We do not check for isRefreshing here (the filters are not dynamic nodes, they have a distinct
+            // isRefreshing method), because we don't actually know if a filter is going to be refreshing until we
+            // initialize it.
+            if (f instanceof LivenessArtifact) {
                 manage((LivenessArtifact) f);
             }
         }
@@ -155,5 +158,10 @@ public abstract class ComposedFilter extends WhereFilterLivenessArtifactImpl imp
     @Override
     public boolean permitParallelization() {
         return Arrays.stream(componentFilters).allMatch(WhereFilter::permitParallelization);
+    }
+
+    @Override
+    public boolean isSerial() {
+        return Arrays.stream(componentFilters).anyMatch(WhereFilter::isSerial);
     }
 }

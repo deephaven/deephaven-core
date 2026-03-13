@@ -191,7 +191,7 @@ static1Meta = staticSource1.meta()
 
 Most queries benefit by starting with filters. Less data generally means better performance.
 
-For SQL developers: In Deephaven, joins are not the primary filtering operation. Use [`where`](../table-operations/filter/where.md), [`whereIn`](../table-operations/filter/where-in.md), and [`whereNotIn`](../table-operations/filter/where-not-in.md).
+For SQL developers: In Deephaven, joins are not a primary operation for filtering. Use [`where`](../table-operations/filter/where.md), [`whereIn`](../table-operations/filter/where-in.md), and [`whereNotIn`](../table-operations/filter/where-not-in.md).
 
 > [!NOTE]
 > Backticks `\` in query strings denote a string within it. Single quotes``'` denote a literal value that gets parsed by the engine.
@@ -403,7 +403,7 @@ multiSort = staticSource1.sort(
 ```
 
 > [!TIP]
-> Reversing tables is faster than sorting and is often used in UIs for seeing appending rows at the top of the table.
+> Reversing tables is faster than sorting, and is often used in UIs for seeing appending rows at the top of the table.
 
 ```groovy syntax
 reverseTable = staticSource1.reverse()
@@ -458,7 +458,7 @@ lazyUpdateExample = staticSource2.lazyUpdate(
 )
 ```
 
-### Getting the row number
+### Get the row number
 
 ```groovy test-set=1 order=null
 getRowNum = staticSource2.updateView("RowNumInt = i", "RowNumLong = ii")
@@ -508,7 +508,7 @@ arrayExamples = staticSource2.updateView(
 )
 ```
 
-# Create a slice or sub-vector
+## Create a slice or sub-vector
 
 ```groovy test-set=1 order=null
 sliceAndRolling = staticSource2.update(
@@ -690,7 +690,7 @@ grFuncExample = staticSource2.update(
 This is useful when working with operations that require more or less precision than the pre-cast data type.
 See [casting](../query-language/control-flow/casting.md).
 
-### cast numeric types
+### Cast numeric types
 
 ```groovy order=numbersMax,numbersMin,numbersMinMeta,numbersMaxMeta
 numbersMax = newTable(
@@ -1440,7 +1440,7 @@ result = source.snapshotWhen(trigger, myOpts)
 
 ### Use DynamicTableWriter
 
-See our guide [How to write data to an in-memory, real-time table](../../how-to-guides/table-publisher.md).
+See our guide [How to write data to an in-memory, real-time table](../../how-to-guides/table-publisher.md#table-publisher).
 
 ```groovy order=null
 import io.deephaven.engine.table.impl.util.DynamicTableWriter

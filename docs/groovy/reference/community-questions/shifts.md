@@ -11,7 +11,7 @@ _When working with tables in Deephaven, I understand that "shifts" can happen wh
 
 Before diving into the details, let's define the key concepts:
 
-- **Row key (`k`)**: A unique identifier assigned to each row in a table. Row keys are used internally by the engine to track rows and are typically sequential integers starting from 0.
+- **Row key (`k`)**: A unique identifier assigned to each row in a table. Row keys are used internally by the engine to track rows and are typically sequential integers starting from 0. See [RowSet](/core/javadoc/io/deephaven/engine/rowset/RowSet.html) in the Javadoc for more details.
 
 - **Positional index (`i` and `ii`)**: The current position of a row within a table, starting from 0 for the first row. Unlike row keys, positional indices always reflect the current order of rows.
 
@@ -22,7 +22,6 @@ Before diving into the details, let's define the key concepts:
 - **Row key slots**: Pre-allocated ranges of row keys reserved for each constituent table. For example, table A might get slots 0-4095, while table B gets slots 4096-8191.
 
 - **Refreshing tables**: Tables that can change over time (live data), as opposed to static tables that never change after creation. This includes:
-
   - tables created from live data sources (like `timeTable`, Kafka streams, etc.).
   - tables that are the result of operations on refreshing tables.
   - any table where rows can be added, removed, or shifted after creation.
@@ -30,7 +29,8 @@ Before diving into the details, let's define the key concepts:
 
 - **Append-only tables**: A special type of refreshing table where new rows are only added (never moved or deleted), making positional indices safe to use. See [Table types - Append-only](../../conceptual/table-types.md#specialization-1-append-only) for more information.
 
-> [!CAUTION] > **Formulas using positional indices (`i`, `ii`, `k`) or column array variables are unsafe on refreshing tables and will cause `IllegalArgumentException` errors.** The engine blocks these formulas by default to prevent incorrect results. While you can override this with the system property `io.deephaven.engine.table.impl.select.AbstractFormulaColumn.allowUnsafeRefreshingFormulas=true`, doing so **will produce incorrect results** when table shifts occur. Additionally, any table operations that add or remove rows can also cause positional indices to become incorrect. **Note that shifts can happen with any table operation, not just merges** - including joins, updates, selects, and other operations on live/refreshing tables. These formulas are safe to use on static tables or append-only tables (like `timeTable("PT1s").update("X = ii")`) where shifts cannot happen because rows are only added, never moved.
+> [!CAUTION]
+> **Formulas using positional indices (`i`, `ii`, `k`) or column array variables are unsafe on refreshing tables and will cause `IllegalArgumentException` errors.** The engine blocks these formulas by default to prevent incorrect results. While you can override this with the system property `io.deephaven.engine.table.impl.select.AbstractFormulaColumn.allowUnsafeRefreshingFormulas=true`, doing so **will produce incorrect results** when table shifts occur. Additionally, any table operations that add or remove rows can also cause positional indices to become incorrect. **Note that shifts can happen with any table operation, not just merges** - including joins, updates, selects, and other operations on live/refreshing tables. These formulas are safe to use on static tables or append-only tables (like `timeTable("PT1s").update("X = ii")`) where shifts cannot happen because rows are only added, never moved.
 
 ## Row key allocation and shifts
 

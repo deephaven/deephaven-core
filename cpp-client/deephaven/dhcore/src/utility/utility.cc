@@ -31,46 +31,22 @@ const char kEncodeLookup[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwx
 const char kPadCharacter = '=';
 }  // namespace
 
-// Adapted from
-// https://en.wikibooks.org/wiki/Algorithm_Implementation/Miscellaneous/Base64#C++
-std::string Base64Encode(const std::string &input_buffer) {
-  std::string encoded_string;
-  encoded_string.reserve(((input_buffer.size() + 2) / 3) * 4);
-  size_t i = 0;
-  while (i + 2 < input_buffer.size()) {
-    auto temp = static_cast<uint32_t>(input_buffer[i++]) << 16;
-    temp |= static_cast<uint32_t>(input_buffer[i++]) << 8;
-    temp |= static_cast<uint32_t>(input_buffer[i++]);
-    encoded_string.push_back(kEncodeLookup[(temp & 0x00FC0000) >> 18]);
-    encoded_string.push_back(kEncodeLookup[(temp & 0x0003F000) >> 12]);
-    encoded_string.push_back(kEncodeLookup[(temp & 0x00000FC0) >> 6]);
-    encoded_string.push_back(kEncodeLookup[(temp & 0x0000003F)]);
+std::string Base64Encode(const std::string& input) {
+  std::string output;
+  output.reserve(((input.size() + 2) / 3) * 4);
+
+  for (size_t i = 0; i < input.size(); i += 3) {
+    uint32_t n = (static_cast<uint8_t>(input[i])) << 16;
+    if (i + 1 < input.size()) n |= static_cast<uint8_t>(input[i + 1]) << 8;
+    if (i + 2 < input.size()) n |= static_cast<uint8_t>(input[i + 2]);
+
+    output.push_back(kEncodeLookup[(n >> 18) & 0x3F]);
+    output.push_back(kEncodeLookup[(n >> 12) & 0x3F]);
+    output.push_back((i + 1 < input.size()) ? kEncodeLookup[(n >> 6) & 0x3F] : '=');
+    output.push_back((i + 2 < input.size()) ? kEncodeLookup[n & 0x3F] : '=');
   }
 
-  if (i == input_buffer.size() - 1) {
-    uint32_t temp = static_cast<uint32_t>(input_buffer[i++]) << 16;
-    encoded_string.push_back(kEncodeLookup[(temp & 0x00FC0000) >> 18]);
-    encoded_string.push_back(kEncodeLookup[(temp & 0x0003F000) >> 12]);
-    encoded_string.push_back(kPadCharacter);
-    encoded_string.push_back(kPadCharacter);
-  } else if (i == input_buffer.size() - 2) {
-    uint32_t temp = static_cast<uint32_t>(input_buffer[i++]) << 16;
-    temp |= static_cast<uint32_t>(input_buffer[i++]) << 8;
-    encoded_string.push_back(kEncodeLookup[(temp & 0x00FC0000) >> 18]);
-    encoded_string.push_back(kEncodeLookup[(temp & 0x0003F000) >> 12]);
-    encoded_string.push_back(kEncodeLookup[(temp & 0x00000FC0) >> 6]);
-    encoded_string.push_back(kPadCharacter);
-  }
-  return encoded_string;
-}
-
-void AssertLessEq(size_t lhs, size_t rhs, std::string_view context, std::string_view lhs_text,
-    std::string_view rhs_text) {
-  if (lhs <= rhs) {
-    return;
-  }
-  auto message = fmt::format("{}: assertion failed: {} <= {} ({} <= {})",
-      context, lhs, rhs, lhs_text, rhs_text);
+  return output;
 }
 
 SimpleOstringstream::SimpleOstringstream() : std::ostream(this), dest_(&internalBuffer_) {}

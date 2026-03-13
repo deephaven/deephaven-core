@@ -10,7 +10,7 @@ There are two underlying processes when updating streaming tables in Deephaven:
 1. When new data is generated or acquired, the Periodic Update Graph (PUG) first manages the process of updating the source tables and the derived tables with the new data. At this point, data updates are available within the server process.
 2. Once a table has been updated during the PUG refresh cycle, the Viewport Update process sends the relevant data to the client, which then displays it in the user interface.
 
-![img](../assets/conceptual/ugp-cycle.png)
+![A diagram of the UGP Cycle](../assets/conceptual/ugp-cycle.png)
 
 ## Periodic Update Graph
 
@@ -18,7 +18,7 @@ The Periodic Update Graph is the update graph that ultimately controls how often
 
 An illustration of the process is below:
 
-![img](../assets/conceptual/ugp-refresh-cycle.png)
+![A diagram of the UGP refresh cycle](../assets/conceptual/ugp-refresh-cycle.png)
 
 The Periodic Update Graph has five user-configurable properties:
 

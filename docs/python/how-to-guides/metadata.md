@@ -9,7 +9,7 @@ A table's metadata provides basic information about its source data, such as the
 
 ## `meta_table`
 
-The `meta_table` attribute creates a new table that contains the table's meta data. Specifically, this table contains information about every column in the original table.
+The [`meta_table`](../reference/table-operations/metadata/meta_table.md) attribute creates a new table that contains the table's metadata. Specifically, this table contains information about every column in the original table.
 
 ```python syntax
 result = source.meta_table
@@ -51,7 +51,7 @@ miami = new_table(
 )
 ```
 
-We can access the meta data as follows:
+We can access the metadata as follows:
 
 ```python test-set=1
 meta = miami.meta_table
@@ -193,6 +193,7 @@ print(miami.update_graph)
 
 - [Create a new table](./new-and-empty-table.md#new_table)
 - [How to perform dedicated aggregations for groups](./dedicated-aggregations.md)
+- [`meta_table`](../reference/table-operations/metadata/meta_table.md)
 - [`attributes`](../reference/table-operations/metadata/attributes.md)
 - [`columns`](../reference/table-operations/metadata/columns.md)
 - [`has_columns`](../reference/table-operations/metadata/has_columns.md)
@@ -200,6 +201,5 @@ print(miami.update_graph)
 - [`is_flat`](../reference/table-operations/metadata/is_flat.md)
 - [`is_refreshing`](../reference/table-operations/metadata/is_refreshing.md)
 - [`size`](../reference/table-operations/metadata/size.md)
-- [`meta_table`](../reference/table-operations/metadata/meta_table.md)
 - [`to_string`](../reference/table-operations/metadata/to_string.md)
 - [`update_graph`](../reference/table-operations/metadata/update_graph.md)

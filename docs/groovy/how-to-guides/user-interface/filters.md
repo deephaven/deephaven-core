@@ -20,13 +20,13 @@ Several filter options are available throughout Deephaven's UI menus:
 
 - Table data context menu:
 
-  - [Filter by value](#filter-by-value)
+  - [Filter by value](#filter-by-values)
 
 - Table Options menu:
   - [Quick filters](#quick-filters)
   - [Search bar](#search-bar)
 
-We'll discuss each option below as we interact with the tables of crypto data.
+We'll discuss each option below as we interact with tables of crypto data.
 
 ## Input Filters
 
@@ -58,7 +58,7 @@ In the dialog, choose a:
 
 The dropdown list expects unique values for the column source. You can create a new table for this purpose in one of two ways:
 
-- apply a [`.selectDistinct`](../../reference/table-operations/select/select-distinct.md) in a table's query.
+- apply a [`selectDistinct`](../../reference/table-operations/select/select-distinct.md) in a table's query.
 - use **Select Distinct Values** in a table's Options menu.
 
 > [!NOTE]
@@ -153,7 +153,7 @@ The upper and lower portions of the **Advanced Filter** work conjunctively - the
 
 ![Options to remove filters in the Column Header context menu](../../assets/how-to/advanced-filters5.png)
 
-## Filter By Value
+## Filter By Value(s)
 
 Right-clicking a table cell will show the Filter By Value feature:
 
@@ -190,8 +190,8 @@ Click the gear at the top right of the Filter Set Manager to return to the edito
 
 The **Clear All Filters** option in the **Controls** menu removes all filters of any type in the active workspace at once:
 
-![Clear all filters via the controls menu](../../assets/how-to/clearall.png)
+![Clear all filters via the Controls menu](../../assets/how-to/clearall.png)
 
 ## Related documentation
 
-- [How to use filter query methods](../filters.md)
+- [How to use filter query methods](../use-filters.md)

@@ -16,7 +16,7 @@ Rolling aggregations are unique from [dedicated](./dedicated-aggregations.md) an
 
 When performing aggregations with [dedicated](./dedicated-aggregations.md) and [combined](./combined-aggregations.md) aggregations, the output table contains a single row for each group. In contrast, rolling aggregation tables have the same number of rows as the source table. Thus, they preserve data history, whereas the others do not.
 
-To illustrate this, consider a cumulative sum on a single grouping column with two key values. Notice how `result_dedicated` and `result_combined` have two rows - one for each group. In contract, `result_rolling` has 20 rows - one for each row in the source table. You can see how the cumulative sum increases over time in the latter case.
+To illustrate this, consider a cumulative sum on a single grouping column with two key values. Notice how `result_dedicated` and `result_combined` have two rows - one for each group. In contrast, `result_rolling` has 20 rows - one for each row in the source table. You can see how the cumulative sum increases over time in the latter case.
 
 ```python order=result_rolling,result_dedicated,result_combined,source
 from deephaven import empty_table
@@ -169,7 +169,7 @@ Cumulative aggregations are the simplest operations in the [`updateby`](/core/py
 
 To illustrate a cumulative statistic, consider the cumulative sum. For each row, this operation calculates the sum of all previous values in a column, including the current row's value. The following illustration shows this:
 
-![img](../assets/how-to/updateby-cum-sum.png)
+![Cumulative sum illustration](../assets/how-to/updateby-cum-sum.png)
 
 The code for the illustration above looks like this:
 
@@ -292,7 +292,7 @@ Simple moving (or rolling) aggregations are statistics computed over a finite, m
 
 To illustrate a simple moving aggregation, consider the rolling average. For each row, this operation calculates the average of all values within a specified window. The following illustration shows this:
 
-![img](../assets/how-to/updateby-rolling-avg.png)
+![Rolling average illustration](../assets/how-to/updateby-rolling-avg.png)
 
 The code for the illustration above looks like this:
 

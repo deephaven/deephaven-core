@@ -290,4 +290,9 @@ abstract class BaseAggregateColumnSource<VECTOR_TYPE extends Vector<VECTOR_TYPE>
     public boolean isImmutable() {
         return aggregatedSource.isImmutable() && groupRowSetSource.isImmutable();
     }
+
+    @Override
+    public ColumnSource<COMPONENT_TYPE> getAggregatedSource() {
+        return aggregatedSource;
+    }
 }

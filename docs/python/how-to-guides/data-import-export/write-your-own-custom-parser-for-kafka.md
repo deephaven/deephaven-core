@@ -8,7 +8,7 @@ Kafka topics often contain data that does not fit neatly into Deephaven's built-
 This guide shows how to:
 
 - **Understand when you need a custom parser**.
-- **Consume raw bytes from Kafka into a Deephaven table**.
+- **Consume raw bytes or structured data from Kafka into a Deephaven table**.
 - **Apply a Python function to parse those bytes into a rich object**.
 - **Project that object into regular Deephaven columns**.
 

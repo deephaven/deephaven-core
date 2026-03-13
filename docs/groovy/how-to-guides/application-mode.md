@@ -4,11 +4,11 @@ title: Application Mode
 
 <div className="comment-title">
 
-Hands-free; production-ready
+Hands-free. Production-ready.
 
 </div>
 
-When launching Deephaven, you may want to initialize the server state before any client can connect to the server. Application Mode enables users to bind tables, plots, functions, etc. to [REPL variables](https://en.wikipedia.org/wiki/Read-eval-print_loop), and read-only accessors, available during the runtime of the server process.
+When launching Deephaven, you may want to initialize the server state before any client can connect to the server. Application Mode enables users to bind tables, plots, functions, etc. to [REPL variables](https://en.wikipedia.org/wiki/Read-eval-print_loop) and read-only accessors that are available during the runtime of the server process.
 
 The variables, tables, functions, etc. that are exposed in the application are then available on the dashboard. For example, you can create scripts to instantiate helper functions to use inside the IDE. Or, you can even develop scripts for full dashboards. Application Mode allows this work to be more readily shared.
 
@@ -16,7 +16,7 @@ This guide will show you how to use Application Mode and what feature set it off
 
 ## Application types
 
-There are many different applications that you can run, from a Python or Groovy script designed to run in Deephaven, to a Dynamic application written in any [JVM-based language](https://en.wikipedia.org/wiki/List_of_JVM_languages).
+There are many different applications that you can run, from a Python or Groovy script designed to run in Deephaven, to a dynamic application written in any [JVM-based language](https://en.wikipedia.org/wiki/List_of_JVM_languages).
 
 - Script Application: Configure an application in the context of the script type of the Deephaven server.
 - Static Application: Configure an application that declares all exported variables during server initialization.
@@ -174,17 +174,17 @@ def start = { ApplicationState app ->
 ApplicationContext.initialize(start)
 ```
 
-These scripts allow only the `my_new_table` to be available to the [query scope](../reference/query-language/variables/scope.md), while the other tables are only available in the **Panels** menu. If you want to perform queries on fields defined in application mode, they need to be explicitly assigned to the [query scope](../reference/query-language/variables/scope.md) inside the applications.
+These scripts allow only the `my_new_table` to be available to the [query scope](./query-scope.md), while the other tables are only available in the **Panels** menu. If you want to perform queries on fields defined in application mode, they need to be explicitly assigned to the [query scope](./query-scope.md) inside the applications.
 
 ## Other application modes
 
-The other application modes are just as easily configured. You can write applications in other [JVM-based language](https://en.wikipedia.org/wiki/List_of_JVM_languages) such as Java/Scala/Kotlin and then access them from the REPL via scripting mechanics. This can be done with either static or dynamic applications.
+The other application modes are just as easily configured. You can write applications in other [JVM-based languages](https://en.wikipedia.org/wiki/List_of_JVM_languages) such as Java/Scala/Kotlin and then access them from the REPL via scripting mechanics. This can be done with either static or dynamic applications.
 
 ### Static Applications
 
 Static Applications define all the fields at the creation of the instance. These applications are useful for applications in which all fields are known and accessible at all times.
 
-The subclass to implement is `io.deephaven.appmode.StaticClassApplication`. Be sure to [package this into a jar file](https://docs.oracle.com/javase/tutorial/deployment/jar/) and provide it as a third-party dependency to Deephaven’s server. See [How to install Java packages](./install-and-use-java-packages.md) for more information.
+The subclass to implement is `io.deephaven.appmode.StaticClassApplication`. Be sure to [package this into a jar file](https://docs.oracle.com/javase/tutorial/deployment/jar/) and provide it as a third-party dependency to Deephaven’s server. See [How to install and use Java packages](./install-and-use-java-packages.md) for more information.
 
 The `.app` configuration file is as follows:
 
@@ -198,7 +198,7 @@ enabled=true
 
 Dynamic Applications allow for fields to be created and removed during the instance. These applications are useful when fields might be created or removed with time or as data changes.
 
-The subclass to implement is `io.deephaven.appmode.DynamicApplication` for making your app a dynamic application. Be sure to [package this into a jar file](https://docs.oracle.com/javase/tutorial/deployment/jar/) and provide it as a third-party dependency to Deephaven’s server. See [How to install Java packages](./install-and-use-java-packages.md) for more information.
+The subclass to implement is `io.deephaven.appmode.DynamicApplication` for making your app a dynamic application. Be sure to [package this into a jar file](https://docs.oracle.com/javase/tutorial/deployment/jar/) and provide it as a third-party dependency to Deephaven’s server. See [How to install and use Java packages](./install-and-use-java-packages.md) for more information.
 
 The `.app` configuration file is as follows:
 

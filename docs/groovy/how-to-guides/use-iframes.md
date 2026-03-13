@@ -1,6 +1,6 @@
 ---
-title: How to display tables in an Inline Frame
-sidebar_label: Use IFrames
+title: Display tables in an Inline Frame
+sidebar_label: IFrames
 ---
 
 In this guide, you'll learn how to create a basic web page with embedded tables and charts from Deephaven using Inline Frames (IFrames). In addition to the Deephaven Web UI, the Deephaven server also provides endpoints for fetching individual tables or charts. Add the following script using [Application Mode](./application-mode.md) to run through the examples below:
@@ -23,7 +23,7 @@ http://localhost:10000/iframe/widget/?name=TABLE_NAME
 
 For example, to show the `sin_table` from the code above, the IFrame URL is `http://localhost:10000/iframe/widget/?name=sin_table`.
 
-Here is a basic HTML page embedding an IFrame:
+Here is a basic HTML page embedding an IFrame table:
 
 ```html
 <html>
@@ -50,7 +50,7 @@ http://localhost:10000/iframe/widget/?name=CHART_NAME
 
 For example, to show the `sin_chart` from the code above, the IFrame URL is `http://localhost:10000/iframe/widget/?name=sin_chart`.
 
-Here is a basic HTML page embedding an IFrame:
+Here is a basic HTML page embedding an IFrame chart:
 
 ```html
 <html>
@@ -72,7 +72,7 @@ Here is a basic HTML page embedding an IFrame:
 When embedding in IFrames, you may want to provide authentication details from the parent window. This can be done by providing the `authProvider=parent` query parameter on the IFrame URL, and then responding to the authentication request sent by the child window.
 
 <details>
-<summary> Expand for the full html. </summary>
+<summary> Expand for the full HTML. </summary>
 
 ```html
 <html>

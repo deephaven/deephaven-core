@@ -2,7 +2,7 @@
 title: Arrays
 ---
 
-Arrays are an in-memory ordered data structure common in many programming languages. They are typically used to store multiple elements of the same type in an easily iterable manner.
+Arrays are an in-memory ordered data structure common in many programming languages. They are typically used to store multiple elements of the same type in an easily iterable manner. Arrays in the Deephaven engine are implemented by [Vector](https://deephaven.io/core/javadoc/io/deephaven/vector/Vector.html) and its subclasses.
 
 The Deephaven Query Language comes with its own built-in array functionality.
 
@@ -10,7 +10,7 @@ The Deephaven Query Language comes with its own built-in array functionality.
 
 ### Columns as arrays
 
-DQL allows queries to access a column's array representation by using the `_` suffix on the column name. Use the bracket syntax `[ ]` to access items from a column.
+DQL allows queries to access a column's array representation by using the `_` suffix on the column name. Use the bracket syntax `[]` to access items from a column.
 
 ```groovy order=source,result
 source = newTable(
@@ -21,7 +21,8 @@ result = source.update("UpdatedValues = Values_[i] + 1")
 ```
 
 > [!WARNING]
-> The [special variables](../variables/special-variables.md), `i` and `ii`, are unreliable within a ticking table. Inconsistent results occur since previously created row indexes do not automatically update.
+> The [special variables](../variables/special-variables.md), `i` and `ii`, are unreliable within a ticking table.
+> Inconsistent results occur since previously created row indexes do not automatically update.
 
 [Built-in array methods](/core/javadoc/io/deephaven/vector/Vector.html) like `size()` can be used within queries.
 
@@ -75,8 +76,9 @@ result = source.update("A= X_.subVector(i-2,i+1)",\
 ## Related documentation
 
 - [How to work with arrays](../../../how-to-guides/work-with-arrays.md)
-- [How to use Deephaven's built-in query language functions](../../../how-to-guides/built-in-functions.md)
-- [Query language functions](../query-library/query-language-function-reference.md)
+- [Built-in query language constants](../../../how-to-guides/built-in-constants.md)
+- [Built-in query language variables](../../../how-to-guides/built-in-variables.md)
+- [Built-in query language functions](../../../how-to-guides/built-in-functions.md)
 - [`newTable`](../../table-operations/create/newTable.md)
 - [`update`](../../table-operations/select/update.md)
 - [Javadoc](/core/javadoc/io/deephaven/vector/Vector.html)

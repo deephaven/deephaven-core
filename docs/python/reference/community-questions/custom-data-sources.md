@@ -16,8 +16,8 @@ There are three main integration approaches:
 
 Each Deephaven table consists of:
 
-- A [RowSet](https://deephaven.io/core/javadoc/io/deephaven/engine/rowset/RowSet.html) - An ordered set of long keys representing valid row addresses.
-- Named [ColumnSources](https://deephaven.io/core/javadoc/io/deephaven/engine/table/ColumnSource.html) - A map from column name to ColumnSource, which acts as a dictionary from row key to cell value.
+- A [`RowSet`](/core/javadoc/io/deephaven/engine/rowset/RowSet.html) - An ordered set of long keys representing valid row addresses.
+- Named [`ColumnSources`](/core/javadoc/io/deephaven/engine/table/ColumnSource.html) - A map from column name to ColumnSource, which acts as a dictionary from row key to cell value.
 
 In Python, you typically use higher-level APIs like `new_table()`, `DynamicTableWriter`, or pandas integration rather than working directly with RowSets and ColumnSources.
 

@@ -89,7 +89,7 @@ try (
 Any ADBC client that has a Flight SQL driver should work with Deephaven Flight SQL:
 
 - [ADBC C / C++](https://arrow.apache.org/adbc/current/cpp/index.html) [driver and installation](https://arrow.apache.org/adbc/main/driver/installation.html#c-c).
-- [ADBC Go](https://pkg.go.dev/github.com/apache/arrow-adbc/go/adbc) [driver](https://pkg.go.dev/github.com/apache/arrow-adbc/go/adbc/driver/flightsql) and [installation](https://arrow.apache.org/adbc/main/driver/installation.html#go).
+- [ADBC Go](https://pkg.go.dev/github.com/apache/arrow-adbc/go/adbc) [driver](https://pkg.go.dev/github.com/apache/arrow-adbc/go/adbc/driver/flightsql) and [installation](https://arrow.apache.org/adbc/current/driver/installation.html#go).
 - [ADBC R](https://arrow.apache.org/adbc/current/r/index.html) [driver](https://arrow.apache.org/adbc/current/r/adbcflightsql/index.html) and [installation](https://arrow.apache.org/adbc/main/driver/installation.html#r).
 
 ### Flight SQL JDBC Driver
