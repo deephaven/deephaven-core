@@ -233,12 +233,13 @@ public class JsRemoteFileSourceService extends HasEventHandling {
     /**
      * Sets the execution context on the server to identify this message stream as active for script execution.
      *
+     * @param isDirty whether the execution context is dirty (has pending changes)
      * @param resourcePaths array of resource paths to resolve from remote source (e.g., ["com/example/Test.groovy",
      *        "org/mycompany/Utils.groovy"]), or null/empty for no specific resources
      * @return a promise that resolves to true if the server successfully set the execution context, false otherwise
      */
     @JsMethod
-    public Promise<Boolean> setExecutionContext(@JsOptional String[] resourcePaths) {
+    public Promise<Boolean> setExecutionContext(boolean isDirty, @JsOptional String[] resourcePaths) {
         // Generate a unique request ID
         String requestId = "setExecutionContext-" + (requestIdCounter++);
 
@@ -247,7 +248,7 @@ public class JsRemoteFileSourceService extends HasEventHandling {
         pendingSetExecutionContextRequests.put(requestId, promise);
 
         // Send the request
-        RemoteFileSourceClientMessage clientRequest = getSetExecutionContextRequest(resourcePaths, requestId);
+        RemoteFileSourceClientMessage clientRequest = getSetExecutionContextRequest(isDirty, resourcePaths, requestId);
         sendClientRequest(clientRequest);
 
         // Return a promise with built-in timeout
@@ -257,13 +258,15 @@ public class JsRemoteFileSourceService extends HasEventHandling {
     /**
      * Helper method to build a RemoteFileSourceClientMessage for setting execution context.
      *
+     * @param isDirty whether the execution context is dirty (has pending changes)
      * @param resourcePaths array of resource paths to resolve
      * @param requestId unique request ID
      * @return the constructed RemoteFileSourceClientMessage
      */
-    private static @NotNull RemoteFileSourceClientMessage getSetExecutionContextRequest(String[] resourcePaths,
-            String requestId) {
+    private static @NotNull RemoteFileSourceClientMessage getSetExecutionContextRequest(boolean isDirty,
+            String[] resourcePaths, String requestId) {
         SetExecutionContextRequest setContextRequest = new SetExecutionContextRequest();
+        setContextRequest.setIsDirty(isDirty);
 
         if (resourcePaths != null) {
             setContextRequest.setResourcePathsList(resourcePaths);
