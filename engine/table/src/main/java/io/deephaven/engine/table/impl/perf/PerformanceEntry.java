@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.perf;
 
@@ -51,8 +51,7 @@ public class PerformanceEntry extends BasePerformanceEntry implements TableListe
     private long collectionTimeMs;
 
     private boolean loggedOnce;
-    private final RuntimeMemory.Sample startSample;
-    private final RuntimeMemory.Sample endSample;
+    private RuntimeMemory.PooledSample startSample;
 
     PerformanceEntry(final long id, final long evaluationNumber, final int operationNumber,
             final String description, final String callerLine, final String updateGraphName) {
@@ -63,8 +62,6 @@ public class PerformanceEntry extends BasePerformanceEntry implements TableListe
         this.callerLine = callerLine;
         authContext = id == QueryConstants.NULL_LONG ? null : getContext();
         this.updateGraphName = updateGraphName;
-        startSample = new RuntimeMemory.Sample();
-        endSample = new RuntimeMemory.Sample();
         maxTotalMemory = 0;
         minFreeMemory = Long.MAX_VALUE;
         collections = 0;
@@ -78,7 +75,7 @@ public class PerformanceEntry extends BasePerformanceEntry implements TableListe
     }
 
     public final void onUpdateStart() {
-        RuntimeMemory.getInstance().read(startSample);
+        startSample = RuntimeMemory.getInstance().readPooledSample();
         super.onBaseEntryStart();
     }
 
@@ -103,12 +100,14 @@ public class PerformanceEntry extends BasePerformanceEntry implements TableListe
 
     public final void onUpdateEnd() {
         onBaseEntryEnd();
-        RuntimeMemory.getInstance().read(endSample);
+        final RuntimeMemory.PooledSample endSample = RuntimeMemory.getInstance().readPooledSample();
         maxTotalMemory = Math.max(maxTotalMemory, Math.max(startSample.totalMemory, endSample.totalMemory));
         minFreeMemory = Math.min(minFreeMemory, Math.min(startSample.freeMemory, endSample.freeMemory));
         collections += endSample.totalCollections - startSample.totalCollections;
         collectionTimeMs += endSample.totalCollectionTimeMs - startSample.totalCollectionTimeMs;
         ++invocationCount;
+        RuntimeMemory.getInstance().returnPooledSample(startSample);
+        RuntimeMemory.getInstance().returnPooledSample(endSample);
     }
 
     void reset() {

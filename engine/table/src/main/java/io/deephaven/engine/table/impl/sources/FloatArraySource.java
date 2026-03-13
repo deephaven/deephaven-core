@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CharacterArraySource and run "./gradlew replicateSourcesAndChunks" to regenerate
@@ -41,7 +41,7 @@ import static io.deephaven.util.type.TypeUtils.unbox;
  */
 public class FloatArraySource extends ArraySourceHelper<Float, float[]>
         implements MutableColumnSourceGetDefaults.ForFloat /* MIXIN_IMPLS */ {
-    private static final SoftRecycler<float[]> recycler = new SoftRecycler<>(DEFAULT_RECYCLER_CAPACITY,
+    private static final SoftRecycler<float[]> recycler = new SoftRecycler<>(ArrayColumnSourceConfiguration.FLOAT_RECYCLER_CAPACITY,
             () -> new float[BLOCK_SIZE], null);
 
     private float[][] blocks;

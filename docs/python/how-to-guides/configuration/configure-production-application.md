@@ -5,7 +5,7 @@ sidebar_label: Production application
 
 This guide provides detailed information about the Deephaven production application bootstrap configuration and startup process. The Deephaven production application is the recommended way to run Deephaven for any production application, hence its name. It runs Deephaven directly from artifacts produced during each new release. These artifacts can be found in the GitHub [releases page](https://github.com/deephaven/deephaven-core/releases), listed under assets.
 
-The production application offers a greater degree of control and performance than other methods. However, it requires more setup and consideration of low-level details. Users who wish to get up and running without needing to worry about these details should consider [Docker](../../getting-started/docker-install.md) or [pip-installed](../../getting-started/pip-install.md) Deephaven.
+The production application offers a greater degree of control and performance than other methods, but requires more setup and consideration of low-level details. Users who wish to get up and running without needing to worry about these details should consider [Docker](../../getting-started/docker-install.md) or [pip-installed](../../getting-started/pip-install.md) Deephaven.
 
 This guide assumes familiarity with installing and running the Deephaven production application. For an introductory guide on installing and running, see [Install and run the Deephaven production application](../../getting-started/production-application.md).
 
@@ -56,7 +56,7 @@ java <required-opts> $JAVA_OPTS $START_OPTS -classpath <classpath> io.deephaven.
 Bootstrap configuration parameters are set early in the application startup lifecycle, before anything in a configuration file. The Deephaven server process has a few essential bootstrap configuration parameters. They have default values that the user may choose to change via an environment variable or system property.
 
 > [!NOTE]
-> Bootstrapping configuration is limited in scope and is a prerequisite to the Deephaven configuration file.
+> Bootstrapping configuration is limited in scope, and is a prerequisite to the Deephaven configuration file.
 
 | Bootstrap configuration parameter | Environment variable    | System property         | Description                                                              | Default value |
 | --------------------------------- | ----------------------- | ----------------------- | ------------------------------------------------------------------------ | ------------- |

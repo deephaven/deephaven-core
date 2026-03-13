@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.by;
 
@@ -67,4 +67,10 @@ public final class RollupConstants {
      * infinity count columns used in rollup aggregations.
      */
     static final String ROLLUP_NI_COUNT_COLUMN_ID = "_NIC_";
+
+    /**
+     * Middle column name component (between source column name and {@link #ROLLUP_COLUMN_SUFFIX suffix}) for group
+     * columns used in support of rollup formulas.
+     */
+    static final String ROLLUP_GRP_COLUMN_ID = "_GRP_";
 }

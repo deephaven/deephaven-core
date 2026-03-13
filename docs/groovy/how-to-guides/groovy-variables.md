@@ -6,7 +6,7 @@ sidebar_label: Variables
 
 The ability to use your own custom Groovy variables, [closures](./groovy-closures.md), and [classes](./groovy-classes.md) in Deephaven query strings is one of its most powerful features. The use of Groovy variables in query strings follows some basic rules, which are outlined in this guide.
 
-There are three types of Groovy variables supported in the Deephaven Query Language (DQL). The use of variables in queries follows Groovy's scoping rules and Deephaven's [query scope](./queryscope.md) mechanism.
+There are three types of Groovy variables supported in the Deephaven Query Language (DQL). The use of variables in queries follows Groovy's scoping rules and Deephaven's [query scope](./query-scope.md) mechanism.
 
 ## Scalars
 
@@ -59,7 +59,7 @@ sourceMeta = source.meta()
 
 ## Related documentation
 
-- [Query scope](./queryscope.md)
+- [Query scope](./query-scope.md)
 - [Python functions in query strings](./groovy-closures.md)
 - [Groovy classes and objects in query strings](./groovy-classes.md)
 - [`emptyTable`](../reference/table-operations/create/emptyTable.md)

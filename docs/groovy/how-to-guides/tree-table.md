@@ -5,7 +5,7 @@ sidebar_label: Tree tables
 
 This guide will show you how to create a hierarchical tree table. A tree table is a table with an expandable [tree structure](https://en.wikipedia.org/wiki/Tree_(data_structure)), as seen in the diagram below:
 
-![Diagram of a hierarchical tree structure with parent and child nodes](../assets/how-to/new-tree2.png)
+![A diagram of a hierarchical tree structure with parent and child nodes](../assets/how-to/new-tree2.png)
 
 In computer science, trees are data structures used to represent hierarchical relationships between pieces of data. The data within the tree is stored in _nodes_, which are represented by the boxes in the diagram above.
 
@@ -28,7 +28,7 @@ Where:
 
 The resulting table is initially collapsed, only showing the root node. Clicking on that node will expand it to show its children, and so on. Rows in the initial table with a `parentCol` value equal to a row in the `idCol` column will appear as children of the parent row.
 
-![Animated GIF demonstrating expanding and collapsing rows in a tree table](../assets/how-to/treetable.gif)
+![A user expands notes in a tree table](../assets/how-to/treetable.gif)
 
 ## Examples
 
@@ -67,7 +67,7 @@ Rows (nodes) in a tree table are considered "orphans" if:
 
 Non-root nodes where the parent is `null` _are not considered orphans_. They can appear in the tree table, but they will always appear outside of the tree structure. For example, see rows 102 and 103 in the following figure:
 
-![Screenshot of a tree table highlighting rows with null parents outside the tree structure](../assets/how-to/tree-null-parents.png)
+![A tree table with orphan nodes](../assets/how-to/tree-null-parents.png)
 
 Note that these rows appear on the same level as the root node, outside of the tree structure.
 
@@ -89,5 +89,6 @@ resultWithOrphans = TreeTable.promoteOrphans(source, "ID", "Parent").tree("ID", 
 - [How to create a hierarchical rollup table](./rollup-table.md)
 - [How to create an empty table](../how-to-guides/new-and-empty-table.md#emptytable)
 - [How to create a time table](../how-to-guides/time-table.md)
-- [How to join tables](../how-to-guides/joins-exact-relational.md)
-- [Tree tables](../reference/table-operations/create/tree.md)
+- [Joins: Exact and Relational](../how-to-guides/joins-exact-relational.md)
+- [Joins: Time-Series and Range](../how-to-guides/joins-timeseries-range.md)
+- [`tree`](../reference/table-operations/create/tree.md)

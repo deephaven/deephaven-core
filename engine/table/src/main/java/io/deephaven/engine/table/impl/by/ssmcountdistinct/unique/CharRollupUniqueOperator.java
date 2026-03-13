@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.by.ssmcountdistinct.unique;
 
@@ -41,7 +41,7 @@ public class CharRollupUniqueOperator implements IterativeChunkedAggregationOper
     private final CharacterArraySource internalResult;
     private final ColumnSource<?> externalResult;
     private final Supplier<SegmentedSortedMultiSet.RemoveContext> removeContextFactory;
-    private final boolean countNull;
+    private final boolean countNullNaN;
     private final char onlyNullsSentinel;
     private final char nonUniqueSentinel;
 
@@ -52,11 +52,11 @@ public class CharRollupUniqueOperator implements IterativeChunkedAggregationOper
             // region Constructor
             // endregion Constructor
             String name,
-            boolean countNulls,
+            boolean countNullNaN,
             char onlyNullsSentinel,
             char nonUniqueSentinel) {
         this.name = name;
-        this.countNull = countNulls;
+        this.countNullNaN = countNullNaN;
         this.nonUniqueSentinel = nonUniqueSentinel;
         this.onlyNullsSentinel = onlyNullsSentinel;
         // region SsmCreation
@@ -113,7 +113,7 @@ public class CharRollupUniqueOperator implements IterativeChunkedAggregationOper
                 bucketedContext.counts.ensureCapacityPreserve(currentPos + newLength);
                 bucketedContext.counts.get().setSize(currentPos + newLength);
                 newLength = CharCompactKernel.compactAndCount(bucketedContext.valueCopy.get().asWritableCharChunk(),
-                        bucketedContext.counts.get(), currentPos, newLength, countNull);
+                        bucketedContext.counts.get(), currentPos, newLength, countNullNaN, countNullNaN);
             }
 
             bucketedContext.lengthCopy.set(ii, newLength);
@@ -193,7 +193,7 @@ public class CharRollupUniqueOperator implements IterativeChunkedAggregationOper
                 context.counts.ensureCapacityPreserve(currentPos + newLength);
                 context.counts.get().setSize(currentPos + newLength);
                 newLength = CharCompactKernel.compactAndCount(context.valueCopy.get().asWritableCharChunk(),
-                        context.counts.get(), currentPos, newLength, countNull);
+                        context.counts.get(), currentPos, newLength, countNullNaN, countNullNaN);
             }
 
             context.lengthCopy.set(ii, newLength);
@@ -228,7 +228,7 @@ public class CharRollupUniqueOperator implements IterativeChunkedAggregationOper
             final WritableIntChunk<ChunkLengths> countSlice =
                     context.countResettable.resetFromChunk(context.counts.get(), startPosition, runLength);
             ssm.remove(removeContext, valueSlice, countSlice);
-            if (ssm.size() == 0) {
+            if (ssm.isEmpty()) {
                 clearSsm(destination);
             }
 
@@ -278,7 +278,7 @@ public class CharRollupUniqueOperator implements IterativeChunkedAggregationOper
                 context.counts.ensureCapacityPreserve(currentPos + newLength);
                 context.counts.get().setSize(currentPos + newLength);
                 newLength = CharCompactKernel.compactAndCount(context.valueCopy.get().asWritableCharChunk(),
-                        context.counts.get(), currentPos, newLength, countNull);
+                        context.counts.get(), currentPos, newLength, countNullNaN, countNullNaN);
             }
 
             context.lengthCopy.set(ii, newLength);
@@ -311,7 +311,7 @@ public class CharRollupUniqueOperator implements IterativeChunkedAggregationOper
             final WritableIntChunk<ChunkLengths> countSlice =
                     context.countResettable.resetFromChunk(context.counts.get(), startPosition, runLength);
             ssm.remove(removeContext, valueSlice, countSlice);
-            if (ssm.size() == 0) {
+            if (ssm.isEmpty()) {
                 context.ssmsToMaybeClear.set(ii, true);
             }
         }
@@ -378,7 +378,7 @@ public class CharRollupUniqueOperator implements IterativeChunkedAggregationOper
             context.counts.ensureCapacityPreserve(currentPos);
             context.counts.get().setSize(currentPos);
             CharCompactKernel.compactAndCount(context.valueCopy.get().asWritableCharChunk(), context.counts.get(),
-                    countNull);
+                    countNullNaN, countNullNaN);
         }
         return context;
     }
@@ -430,7 +430,7 @@ public class CharRollupUniqueOperator implements IterativeChunkedAggregationOper
             context.counts.ensureCapacityPreserve(currentPos);
             context.counts.get().setSize(currentPos);
             CharCompactKernel.compactAndCount(context.valueCopy.get().asWritableCharChunk(), context.counts.get(),
-                    countNull);
+                    countNullNaN, countNullNaN);
         }
         return context;
     }
@@ -447,7 +447,7 @@ public class CharRollupUniqueOperator implements IterativeChunkedAggregationOper
 
         final CharSegmentedSortedMultiset ssm = ssmForSlot(destination);
         ssm.remove(context.removeContext, updatedValues, context.counts.get());
-        if (ssm.size() == 0) {
+        if (ssm.isEmpty()) {
             clearSsm(destination);
         }
 
@@ -486,7 +486,7 @@ public class CharRollupUniqueOperator implements IterativeChunkedAggregationOper
             context.counts.ensureCapacityPreserve(currentPos);
             context.counts.get().setSize(currentPos);
             CharCompactKernel.compactAndCount(context.valueCopy.get().asWritableCharChunk(), context.counts.get(),
-                    countNull);
+                    countNullNaN, countNullNaN);
         }
     }
 
@@ -509,7 +509,7 @@ public class CharRollupUniqueOperator implements IterativeChunkedAggregationOper
                 ssm = ssmForSlot(destination);
             }
             ssm.insert(updatedValues, context.counts.get());
-        } else if (ssm != null && ssm.size() == 0) {
+        } else if (ssm != null && ssm.isEmpty()) {
             clearSsm(destination);
         } else if (ssm == null) {
             return false;

@@ -1,8 +1,9 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.parquet.table.location;
 
+import io.deephaven.engine.table.MatchOptions;
 import io.deephaven.engine.table.impl.select.CharRangeFilter;
 import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.test.types.OutOfBandTest;
@@ -92,13 +93,13 @@ public class CharPushdownHandlerTest {
 
         // unsorted list with duplicates, at least one inside
         assertTrue(CharPushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Regular,
+                new MatchFilter(MatchOptions.REGULAR,
                         "c", 'x', 'C', 'M', 'M', 'a'),
                 stats));
 
         // all values outside after sort
         assertFalse(CharPushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Regular,
+                new MatchFilter(MatchOptions.REGULAR,
                         "c", 'q', 'r', 's'),
                 stats));
 
@@ -110,27 +111,27 @@ public class CharPushdownHandlerTest {
         System.arraycopy(many, 0, withInside, 0, many.length);
         withInside[withInside.length - 1] = 'H'; // inside
         assertTrue(CharPushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Regular, "c", withInside), stats));
+                new MatchFilter(MatchOptions.REGULAR, "c", withInside), stats));
 
         // empty list
         assertFalse(CharPushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Regular, "c"), stats));
+                new MatchFilter(MatchOptions.REGULAR, "c"), stats));
 
         // list containing NULL disables push-down
         assertTrue(CharPushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Regular, "c", QueryConstants.NULL_CHAR, 'X'), stats));
+                new MatchFilter(MatchOptions.REGULAR, "c", QueryConstants.NULL_CHAR, 'X'), stats));
     }
 
     @Test
     public void charInvertMatchFilterScenarios() {
         // stats B..G; NOT IN {C,D,E} leaves gaps
         assertTrue(CharPushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Inverted, "c", 'E', 'C', 'D'),
+                new MatchFilter(MatchOptions.INVERTED, "c", 'E', 'C', 'D'),
                 charStats('B', 'G')));
 
         // stats D..D; NOT IN {D} removes the only value, leaving no gap inside stats
         assertFalse(CharPushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Inverted, "c", 'D'),
+                new MatchFilter(MatchOptions.INVERTED, "c", 'D'),
                 charStats('D', 'D')));
 
         // stats A..Z; NOT IN list of 25 letters leaves single-point gap
@@ -139,22 +140,22 @@ public class CharPushdownHandlerTest {
                 .mapToObj(c -> (char) c)
                 .toArray();
         assertTrue(CharPushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Inverted, "c", exclude),
+                new MatchFilter(MatchOptions.INVERTED, "c", exclude),
                 charStats('A', 'Z')));
 
         // excluding nothing (empty list) treated as maybe overlap
         assertTrue(CharPushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Inverted, "c"), charStats('A', 'B')));
+                new MatchFilter(MatchOptions.INVERTED, "c"), charStats('A', 'B')));
 
         // NULL value disables push-down in inverted mode
         assertTrue(CharPushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Inverted, "c", QueryConstants.NULL_CHAR),
+                new MatchFilter(MatchOptions.INVERTED, "c", QueryConstants.NULL_CHAR),
                 charStats('A', 'B')));
 
         // Inverse match of {'A', 'B'} against statistics ['A', 'A'] should return false but currently returns true
         // since the implementation assumes the range ('A', 'B') overlaps with the statistics range ['A', 'B'].
         assertTrue(CharPushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Inverted, "i", 'A', 'B'),
+                new MatchFilter(MatchOptions.INVERTED, "i", 'A', 'B'),
                 charStats('A', 'B')));
     }
 }

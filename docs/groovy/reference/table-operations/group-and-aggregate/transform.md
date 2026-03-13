@@ -67,7 +67,7 @@ import static io.deephaven.api.agg.Aggregation.AggAvg
 import static io.deephaven.api.agg.Aggregation.AggSum
 import io.deephaven.engine.context.ExecutionContext
 
-import org.apache.commons.lang.RandomStringUtils
+import org.apache.commons.lang3.RandomStringUtils
 
 Random random = new Random()
 

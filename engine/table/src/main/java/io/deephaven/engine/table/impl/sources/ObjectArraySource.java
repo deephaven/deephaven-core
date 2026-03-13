@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.sources;
 
@@ -25,8 +25,9 @@ import java.util.Arrays;
 public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]>
         implements MutableColumnSourceGetDefaults.ForObject<T> {
     @SuppressWarnings("rawtypes")
-    private static final SoftRecycler recycler = new SoftRecycler<>(DEFAULT_RECYCLER_CAPACITY,
-            () -> new Object[BLOCK_SIZE], (item) -> Arrays.fill(item, null));
+    private static final SoftRecycler recycler =
+            new SoftRecycler<>(ArrayColumnSourceConfiguration.OBJECT_RECYCLER_CAPACITY,
+                    () -> new Object[BLOCK_SIZE], (item) -> Arrays.fill(item, null));
     transient private T[][] prevBlocks;
     private T[][] blocks;
     private final boolean isArrayType;

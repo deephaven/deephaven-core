@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api.widget;
 
@@ -132,7 +132,7 @@ public class JsWidgetExportedObject implements ServerObject {
 
     /**
      * Releases the server-side resources associated with this object, regardless of whether other client-side objects
-     * exist that also use that object. Should not be called after fetch() has been invoked.
+     * exist that also use that object. Should not be called after {@code fetch} has been invoked.
      */
     @JsMethod
     public void close() {

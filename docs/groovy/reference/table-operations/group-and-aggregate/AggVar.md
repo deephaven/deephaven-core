@@ -2,7 +2,9 @@
 title: AggVar
 ---
 
-`AggVar` returns an aggregator that computes the variance of values, within an aggregation group, for each input column.
+`AggVar` returns an aggregator that computes the sample variance of values, within an aggregation group, for each input column.
+
+Sample variance is calculated using the [Bessel correction](https://en.wikipedia.org/wiki/Bessel%27s_correction), which ensures it is an [unbiased estimator](https://en.wikipedia.org/wiki/Bias_of_an_estimator) of population variance under some conditions.
 
 ## Syntax
 
@@ -18,9 +20,9 @@ AggVar(pairs...)
 
 The input/output names of the columns for the calculations.
 
-- `"X"` will output the variance of values in the `X` column for each group.
-- `"Y = X"` will output the variance of values in the `X` column for each group and rename it to `Y`.
-- `"X, A = B"` will output the variance of values in the `X` column for each group and the variance of values in the `B` value column renaming it to `A`.
+- `"X"` will output the sample variance of values in the `X` column for each group.
+- `"Y = X"` will output the sample variance of values in the `X` column for each group and rename it to `Y`.
+- `"X, A = B"` will output the sample variance of values in the `X` column for each group and the sample variance of values in the `B` value column renaming it to `A`.
 
 </Param>
 </ParamTable>
@@ -30,11 +32,11 @@ The input/output names of the columns for the calculations.
 
 ## Returns
 
-An aggregator that computes the variance of values, within an aggregation group, for each input column.
+An aggregator that computes the sample variance of values, within an aggregation group, for each input column.
 
 ## Examples
 
-In this example, `AggVar` returns the variance of values of `Number` as grouped by `X`.
+In this example, `AggVar` returns the sample variance of values of `Number` as grouped by `X`.
 
 ```groovy order=source,result
 import static io.deephaven.api.agg.Aggregation.AggVar
@@ -48,7 +50,7 @@ source = newTable(
 result = source.aggBy([AggVar("Number")], "X")
 ```
 
-In this example, `AggVar` returns the variance of values of `Number` (renamed to `VarNumber`), as grouped by `X`.
+In this example, `AggVar` returns the sample variance of values of `Number` (renamed to `VarNumber`), as grouped by `X`.
 
 ```groovy order=source,result
 import static io.deephaven.api.agg.Aggregation.AggVar
@@ -62,7 +64,7 @@ source = newTable(
 result = source.aggBy([AggVar("VarNumber = Number")], "X")
 ```
 
-In this example, `AggVar` returns the variance of values of `Number` (renamed to `VarNumber`), as grouped by `X` and `Y`.
+In this example, `AggVar` returns the sample variance of values of `Number` (renamed to `VarNumber`), as grouped by `X` and `Y`.
 
 ```groovy order=source,result
 import static io.deephaven.api.agg.Aggregation.AggVar
@@ -76,7 +78,7 @@ source = newTable(
 result = source.aggBy([AggVar("VarNumber = Number")], "X", "Y")
 ```
 
-In this example, `AggVar` returns the variance of values of `Number` (renamed to `VarNumber`), and `AggMed` returns the median `Number`, as grouped by `X`.
+In this example, `AggVar` returns the sample variance of values of `Number` (renamed to `VarNumber`), and `AggMed` returns the median of `Number` (renamed to `MedNumber`), as grouped by `X`.
 
 ```groovy order=source,result
 import static io.deephaven.api.agg.Aggregation.AggVar
@@ -93,7 +95,7 @@ result = source.aggBy([AggVar("VarNumber = Number"),AggMed("MedNumber = Number")
 
 ## Related documentation
 
-- [Create a new table](../../../how-to-guides/new-and-empty-table.md#newtable)
+- [How to create static tables](../../../how-to-guides/new-and-empty-table.md)
 - [How to create multiple summary statistics for groups](../../../how-to-guides/combined-aggregations.md)
 - [`aggBy`](./aggBy.md)
 - [`varBy`](./varBy.md)

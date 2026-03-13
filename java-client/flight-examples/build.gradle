@@ -8,6 +8,7 @@ dependencies {
     implementation project(':java-client-example-utilities')
 
     implementation libs.deephaven.barrage.format
+    implementation project(":proto:proto-backplane-grpc-flight")
 
     testImplementation libs.assertj
     testImplementation platform(libs.junit.bom)
@@ -60,6 +61,11 @@ application.applicationDistribution.into('bin') {
     from(createApplication('convert-to-table', 'io.deephaven.client.examples.ConvertToTable'))
 
     fileMode = 0755
+}
+
+project.tasks.register("run-add-to-input-table", JavaExec) {
+    mainClass = "io.deephaven.client.examples.AddToInputTable"
+    classpath = sourceSets.main.runtimeClasspath
 }
 
 apply plugin: 'io.deephaven.java-open-nio'

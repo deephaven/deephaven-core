@@ -1,5 +1,5 @@
 plugins {
-    id 'com.gradle.develocity' version '4.2.2'
+    id 'com.gradle.develocity' version '4.3.1'
     id 'org.gradle.toolchains.foojay-resolver-convention' version '0.9.0'
 }
 
@@ -364,6 +364,9 @@ include(':qst-type')
 project(':qst-type').projectDir = file('qst/type')
 
 include(':application-mode')
+
+include(':util-annotations')
+project(':util-annotations').projectDir = file('Util/annotations')
 
 include(':util-immutables')
 project(':util-immutables').projectDir = file('Util/immutables')

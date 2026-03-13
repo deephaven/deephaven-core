@@ -1,9 +1,10 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.parquet.table.location;
 
 import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.MatchOptions;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.select.ComparableRangeFilter;
 import io.deephaven.engine.table.impl.select.MatchFilter;
@@ -80,10 +81,10 @@ public class ComparablePushdownHandlerTest {
     }
 
     private static MatchFilter makeMatchFilter(
-            @NotNull final MatchFilter.MatchType matchType,
+            @NotNull final MatchOptions matchOptions,
             @NotNull final String columnName,
             @NotNull final Object... values) {
-        final MatchFilter filter = new MatchFilter(matchType, columnName, values);
+        final MatchFilter filter = new MatchFilter(matchOptions, columnName, values);
         filter.init(TABLE_DEFINITION);
         return filter;
     }
@@ -131,60 +132,60 @@ public class ComparablePushdownHandlerTest {
 
         // hit
         assertTrue(ComparablePushdownHandler.maybeOverlaps(
-                makeMatchFilter(MatchFilter.MatchType.Regular, "strCol", "Foo", "beta", "OMEGA"), stats));
+                makeMatchFilter(MatchOptions.REGULAR, "strCol", "Foo", "beta", "OMEGA"), stats));
 
         // all below
         assertFalse(ComparablePushdownHandler.maybeOverlaps(
-                makeMatchFilter(MatchFilter.MatchType.Regular, "strCol", "000", "abc"), stats));
+                makeMatchFilter(MatchOptions.REGULAR, "strCol", "000", "abc"), stats));
 
         // all above
         assertFalse(ComparablePushdownHandler.maybeOverlaps(
-                makeMatchFilter(MatchFilter.MatchType.Regular, "strCol", "zzz", "zzz1"), stats));
+                makeMatchFilter(MatchOptions.REGULAR, "strCol", "zzz", "zzz1"), stats));
 
         // empty list
         assertFalse(ComparablePushdownHandler.maybeOverlaps(
-                makeMatchFilter(MatchFilter.MatchType.Regular, "strCol"), stats));
+                makeMatchFilter(MatchOptions.REGULAR, "strCol"), stats));
 
         // null entry
         assertTrue(ComparablePushdownHandler.maybeOverlaps(
-                makeMatchFilter(MatchFilter.MatchType.Regular, "strCol", "mu", null), stats));
+                makeMatchFilter(MatchOptions.REGULAR, "strCol", "mu", null), stats));
     }
 
     @Test
     public void invertedMatchFilterScenarios() {
         // stats alpha..delta ; NOT IN {beta}
         assertTrue(ComparablePushdownHandler.maybeOverlaps(
-                makeMatchFilter(MatchFilter.MatchType.Inverted, "strCol", "beta"),
+                makeMatchFilter(MatchOptions.INVERTED, "strCol", "beta"),
                 stringStats("alpha", "delta")));
 
         // single‑point stats excluded
         assertFalse(ComparablePushdownHandler.maybeOverlaps(
-                makeMatchFilter(MatchFilter.MatchType.Inverted, "strCol", "gamma"),
+                makeMatchFilter(MatchOptions.INVERTED, "strCol", "gamma"),
                 stringStats("gamma", "gamma")));
 
         // single‑point stats, exclusion miss
         assertTrue(ComparablePushdownHandler.maybeOverlaps(
-                makeMatchFilter(MatchFilter.MatchType.Inverted, "strCol", "theta"),
+                makeMatchFilter(MatchOptions.INVERTED, "strCol", "theta"),
                 stringStats("gamma", "gamma")));
 
         // stats span equals two exclusion points
         assertTrue(ComparablePushdownHandler.maybeOverlaps(
-                makeMatchFilter(MatchFilter.MatchType.Inverted, "strCol", "bar", "baz"),
+                makeMatchFilter(MatchOptions.INVERTED, "strCol", "bar", "baz"),
                 stringStats("bar", "baz")));
 
         // empty exclusion list
         assertTrue(ComparablePushdownHandler.maybeOverlaps(
-                makeMatchFilter(MatchFilter.MatchType.Inverted, "strCol"),
+                makeMatchFilter(MatchOptions.INVERTED, "strCol"),
                 stringStats("a", "b")));
 
         // null in the exclusion list
         assertTrue(ComparablePushdownHandler.maybeOverlaps(
-                makeMatchFilter(MatchFilter.MatchType.Inverted, "strCol", (Object) null),
+                makeMatchFilter(MatchOptions.INVERTED, "strCol", (Object) null),
                 stringStats("x", "y")));
 
         // exclusion list with a value that is in the stats range
         assertTrue(ComparablePushdownHandler.maybeOverlaps(
-                makeMatchFilter(MatchFilter.MatchType.Inverted, "strCol", "x", "y"),
+                makeMatchFilter(MatchOptions.INVERTED, "strCol", "x", "y"),
                 stringStats("x", "y")));
     }
 
@@ -213,22 +214,22 @@ public class ComparablePushdownHandlerTest {
                     LocalDate.of(2020, 6, 30));
 
             assertTrue(ComparablePushdownHandler.maybeOverlaps(
-                    makeMatchFilter(MatchFilter.MatchType.Regular, "dateCol",
+                    makeMatchFilter(MatchOptions.REGULAR, "dateCol",
                             LocalDate.of(2020, 6, 15), LocalDate.of(2021, 1, 1)),
                     stats));
 
             assertFalse(ComparablePushdownHandler.maybeOverlaps(
-                    makeMatchFilter(MatchFilter.MatchType.Regular, "dateCol",
+                    makeMatchFilter(MatchOptions.REGULAR, "dateCol",
                             LocalDate.of(2019, 12, 31), LocalDate.of(2021, 1, 1)),
                     stats));
 
             assertTrue(ComparablePushdownHandler.maybeOverlaps(
-                    makeMatchFilter(MatchFilter.MatchType.Inverted, "dateCol",
+                    makeMatchFilter(MatchOptions.INVERTED, "dateCol",
                             LocalDate.of(2020, 6, 15)),
                     stats));
 
             assertFalse(ComparablePushdownHandler.maybeOverlaps(
-                    makeMatchFilter(MatchFilter.MatchType.Inverted,
+                    makeMatchFilter(MatchOptions.INVERTED,
                             "dateCol", LocalDate.of(2020, 6, 1)),
                     dateStats(LocalDate.of(2020, 6, 1),
                             LocalDate.of(2020, 6, 1))));
@@ -260,25 +261,25 @@ public class ComparablePushdownHandlerTest {
                     LocalDateTime.of(2022, 1, 1, 12, 0));
 
             assertTrue(ComparablePushdownHandler.maybeOverlaps(
-                    makeMatchFilter(MatchFilter.MatchType.Regular, "localDateTimeCol",
+                    makeMatchFilter(MatchOptions.REGULAR, "localDateTimeCol",
                             LocalDateTime.of(2022, 1, 1, 6, 0)),
                     stats));
 
             assertFalse(ComparablePushdownHandler.maybeOverlaps(
-                    makeMatchFilter(MatchFilter.MatchType.Regular, "localDateTimeCol",
+                    makeMatchFilter(MatchOptions.REGULAR, "localDateTimeCol",
                             LocalDateTime.of(2021, 12, 31, 23, 59)),
                     stats));
 
             // single‑point stats excluded
             assertFalse(ComparablePushdownHandler.maybeOverlaps(
-                    makeMatchFilter(MatchFilter.MatchType.Inverted, "localDateTimeCol",
+                    makeMatchFilter(MatchOptions.INVERTED, "localDateTimeCol",
                             LocalDateTime.of(2022, 1, 1, 0, 0)),
                     dateTimeStats(LocalDateTime.of(2022, 1, 1, 0, 0),
                             LocalDateTime.of(2022, 1, 1, 0, 0))));
 
             // exclusion miss
             assertTrue(ComparablePushdownHandler.maybeOverlaps(
-                    makeMatchFilter(MatchFilter.MatchType.Inverted, "localDateTimeCol",
+                    makeMatchFilter(MatchOptions.INVERTED, "localDateTimeCol",
                             LocalDateTime.of(2021, 12, 31, 23, 59)),
                     stats));
         }

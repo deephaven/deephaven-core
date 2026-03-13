@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.select;
 
@@ -191,7 +191,7 @@ public class FunctionalColumn<S, D> implements SelectColumn {
                 final FunctionalColumnFillContext ctx = (FunctionalColumnFillContext) fillContext;
                 ctx.chunkFiller.fillPrevByIndices(this, rowSequence, destination);
             }
-        }, false);
+        }, isStateless());
     }
 
     private static class FunctionalColumnFillContext implements Formula.FillContext {

@@ -36,11 +36,11 @@ function `Decimal()`; e.g., ``"X = Decimal(`$#,##0.00`)"``.
 
 ## Returns
 
-A new table applies the specified formatting to the source table.
+A new table that applies the specified formatting to the source table.
 
 ## Examples
 
-In the following example, we use `formatColumnWhere` to paint the "Timestamp" column red where the value of X is between 2 and 5.
+In the following example, we use `formatColumnWhere` to paint the "Timestamp" column red where the value of "X" is between 2 and 5.
 
 ```groovy order=result,tt
 tt = timeTable("PT1S").update("X = ii")

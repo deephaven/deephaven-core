@@ -31,7 +31,7 @@ jobs:
   checks:
     runs-on: ubuntu-24.04
     needs: changes
-    if: ${{ needs.changes.outputs.non-docs == 'true' }}
+    if: ${{ needs.changes.outputs.non-docs == 'true' || startsWith(github.ref, 'refs/heads/release/v') }}
     steps:
       - name: Free Disk Space
         uses: endersonmenezes/free-disk-space@v2
@@ -48,29 +48,19 @@ jobs:
         with:
           lfs: true
 
-      - name: Setup JDK 11
-        id: setup-java-11
+      - name: Setup JDKs
         uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
-          java-version: '11'
-
-      - name: Setup JDK 17
-        id: setup-java-17
-        uses: actions/setup-java@v5
-        with:
-          distribution: 'temurin'
-          java-version: '17'
+          java-version: |
+            21
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v5
 
-      - name: Set JAVA_HOME
-        run: echo "JAVA_HOME=${{ steps.setup-java-11.outputs.path }}" >> $GITHUB_ENV
-
       - name: Setup gradle properties
         run: |
-          .github/scripts/gradle-properties.sh >> gradle.properties
+          .github/scripts/gradle-properties.sh 21 >> gradle.properties
           cat gradle.properties
 
       - name: Check

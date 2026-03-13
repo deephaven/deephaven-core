@@ -1,6 +1,6 @@
 ---
 title: How to use liveness scopes
-sidebar_label: Liveness Scopes
+sidebar_label: Liveness scope
 ---
 
 Deephaven's liveness scopes allow the nodes in a refreshing query's update propagation graph to be updated proactively by assessing the nodes' "liveness" (whether or not they are active), rather than only via actions of the Java garbage collector. This does not replace garbage collection (GC), but it does allow cleanup to happen immediately when objects in the GUI are not needed. This is accomplished internally via reference counting, and works automatically for all users. For developers building new functionality using the Deephaven query engine, the [`LivenessScope`](/core/javadoc/io/deephaven/engine/liveness/LivenessScope.html) and [`LivenessScopeStack`](/core/javadoc/io/deephaven/engine/liveness/LivenessScopeStack.html) classes allow a finer degree of control over the reference counts of various query engine artifacts. Constructing an external scope before running a refreshing query will hold together the related artifacts created in its query update propagation graph. Releasing the scope after the query runs will release any referents that are no longer "live".
@@ -141,3 +141,9 @@ The [`LivenessScopeStack`](/core/javadoc/io/deephaven/engine/liveness/LivenessSc
 - [`LivenessScopeStack.pop(scope)`](https://deephaven.io/core/javadoc/io/deephaven/engine/liveness/LivenessScopeStack.html#pop(io.deephaven.engine.liveness.LivenessManager)) - Pop the scope from the top of the current thread's scope stack.
 - [`LivenessScopeStack.open(scope, true)`](https://deephaven.io/core/javadoc/io/deephaven/engine/liveness/LivenessScopeStack.html#open(io.deephaven.engine.liveness.ReleasableLivenessManager,boolean)) - Push a scope onto the scope stack, and get a SafeCloseable that pops it. The first parameter specifies the scope; the second boolean parameter determines whether the scope should release when the result is closed. This is useful for enclosing scope usage in a try-with-resources block.
 - [`LivenessScopeStack.open()`](https://deephaven.io/core/javadoc/io/deephaven/engine/liveness/LivenessScopeStack.html#open()) - Push an anonymous scope onto the scope stack, and get a SafeCloseable that pops it and then uses LivenessScope.release(). This is useful enclosing a series of query engine actions whose results must be explicitly retained externally in order to preserve liveness.
+
+## Related documentation
+
+- [`LivenessScope`](/core/javadoc/io/deephaven/engine/liveness/LivenessScope.html)
+- [`LivenessScopeStack`](/core/javadoc/io/deephaven/engine/liveness/LivenessScopeStack.html)
+- [Table Update Model](./table-update-model.md)

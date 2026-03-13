@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.lang;
 
@@ -95,6 +95,7 @@ import io.deephaven.engine.util.PyCallableWrapperJpyImpl;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.time.TimeLiteralReplacedExpression;
+import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.util.annotations.TestUseOnly;
 import io.deephaven.util.type.TypeUtils;
 import io.deephaven.vector.ByteVector;
@@ -533,7 +534,8 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         return types.toArray(new Class[0]);
     }
 
-    static Class<?> binaryNumericPromotionType(Class<?> type1, Class<?> type2) {
+    @InternalUseOnly
+    public static Class<?> binaryNumericPromotionType(Class<?> type1, Class<?> type2) {
         if (type1 == double.class || type2 == double.class) {
             return double.class;
         }
@@ -1185,7 +1187,8 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         return op.asString();
     }
 
-    static String getOperatorName(BinaryExpr.Operator op) {
+    @InternalUseOnly
+    public static String getOperatorName(BinaryExpr.Operator op) {
         switch (op) {
             case OR:
                 return "or";

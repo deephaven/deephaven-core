@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 #
 
 """Tools to obtain internal, Deephaven logs as tables, and tools to analyze the performance of the Deephaven
@@ -329,10 +329,9 @@ def query_update_performance_map(eval_number: int) -> dict[str, Table]:
     """
 
     try:
-        d = j_map_to_dict(_JPerformanceQueries.queryUpdatePerformanceMap(eval_number))
-        for k in d.keys():
-            d[k] = Table(j_table=d[k])
-        return d
+        return j_map_to_dict(
+            _JPerformanceQueries.queryUpdatePerformanceMap(eval_number)
+        )
     except Exception as e:
         raise DHError(e, "failed to obtain the query update perf map.") from e
 

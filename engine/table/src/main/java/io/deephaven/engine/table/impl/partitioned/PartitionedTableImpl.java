@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.partitioned;
 
@@ -22,7 +22,6 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.select.MatchFilter;
-import io.deephaven.engine.table.impl.select.MatchFilter.MatchType;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
 import io.deephaven.engine.table.impl.sources.UnionSourceManager;
@@ -45,7 +44,6 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import static io.deephaven.engine.table.impl.select.MatchFilter.MatchType.Inverted;
 import static io.deephaven.engine.table.iterators.ChunkedColumnIterator.DEFAULT_CHUNK_SIZE;
 
 /**
@@ -368,7 +366,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
                     new MatchPair[] {new MatchPair(RHS_CONSTITUENT, other.constituentColumnName())};
             final Table joined = uniqueKeys
                     ? table.naturalJoin(other.table(), Arrays.asList(joinPairs), Arrays.asList(joinAdditions))
-                            .where(new MatchFilter(Inverted, RHS_CONSTITUENT, (Object) null))
+                            .where(new MatchFilter(MatchOptions.INVERTED, RHS_CONSTITUENT, (Object) null))
                     : table.join(other.table(), Arrays.asList(joinPairs), Arrays.asList(joinAdditions));
 
             final Table prepared = prepareForTransform(joined, expectRefreshingResults, dependencies);
@@ -459,7 +457,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
         final List<MatchFilter> filters = new ArrayList<>(numKeys);
         final String[] keyColumnNames = keyColumnNames().toArray(String[]::new);
         for (int kci = 0; kci < numKeys; ++kci) {
-            filters.add(new MatchFilter(MatchType.Regular, keyColumnNames[kci], keyColumnValues[kci]));
+            filters.add(new MatchFilter(MatchOptions.REGULAR, keyColumnNames[kci], keyColumnValues[kci]));
         }
         return LivenessScopeStack.computeEnclosed(() -> {
             final Table[] matchingConstituents = filter(filters).snapshotConstituents();
@@ -496,7 +494,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
                             resultHolder.setValue(fetchConstituents(usePrev));
                             return true;
                         });
-                return resultHolder.getValue();
+                return resultHolder.get();
             }
         } else {
             return fetchConstituents(false);

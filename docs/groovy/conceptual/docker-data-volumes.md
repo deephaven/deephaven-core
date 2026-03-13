@@ -25,9 +25,9 @@ Your Docker-Compose YAML file is located in your Deephaven deployment directory 
 
 The Docker-Compose YAML file your installation uses depends on how you launch Deephaven:
 
-- If you [launch Deephaven from pre-built images](../tutorials/docker-install.md), your Docker Compose file is called `docker-compose.yml`.
+- If you [launch Deephaven from pre-built images](../getting-started/docker-install.md), your Docker Compose file is called `docker-compose.yml`.
 
-- If you [build and launch Deephaven from source code](../how-to-guides/launch-build.md), your Docker Compose file is called `docker-compose-common.yml`.
+- If you [build and launch Deephaven from source code](../getting-started/launch-build.md), your Docker Compose file is called `docker-compose-common.yml`.
 
 The `/data` mount point is configured using the `volumes` keyword in the Docker Compose YAML file.
 
@@ -56,5 +56,5 @@ When Deephaven is re-launched, the new volumes will be available.
 
 ## Related documentation
 
-- [Launch Deephaven from pre-built images](../tutorials/docker-install.md)
-- [Launch Deephaven from source code](../how-to-guides/launch-build.md)
+- [Launch Deephaven from pre-built images](../getting-started/docker-install.md)
+- [Launch Deephaven from source code](../getting-started/launch-build.md)

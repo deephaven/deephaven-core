@@ -7,90 +7,59 @@ using Xunit.Abstractions;
 namespace Deephaven.Dh_NetClientTests;
 
 public class ValidationTest(ITestOutputHelper output) {
-  [Fact]
-  public void Select() {
-    string[][] badSelects = [
-      [ "X = 3)" ],
-      ["S = `hello`", "T = java.util.regex.Pattern.quote(S)"], // Pattern.quote not on whitelist
-      ["X = Math.min(3, 4)"] // Math.min not on whitelist
-    ];
-    string[][] goodSelects = [
-      ["X = 3"],
-      ["S = `hello`", "T = S.length()"], // instance methods of String ok
-      ["X = min(3, 4)"], // "builtin" from GroovyStaticImports
-      ["X = isFinite(3)"], // another builtin from GroovyStaticImports
-    ];
+  [Theory]
+  [InlineData("X = 3)")]  // Syntax error
+  [InlineData("S = `hello`", "T = java.util.regex.Pattern.quote(S)")]  // Pattern.quote not on whitelist
+  [InlineData("X = Math.min(3, 4)")]  // Math.min not on whitelist
+  public void BadSelect(params string[] selections) {
+    using var ctx = CommonContextForTests.Create(new ClientOptions());
+    var thm = ctx.Client.Manager;
+    using var staticTable = thm.EmptyTable(10);
+    Assert.Throws<AggregateException>(() => {
+      using var temp = staticTable.Select(selections);
+    });
+  }
 
+
+  [Theory]
+  [InlineData("X = 3")]
+  [InlineData("S = `hello`", "T = S.length()")]  // instance methods of String ok
+  [InlineData("X = min(3, 4)")]  // builtin from GroovyStaticImports
+  [InlineData("X = isFinite(3)")]  // another builtin from GroovyStaticImports
+  public void GoodSelect(params string[] selections) {
+    using var ctx = CommonContextForTests.Create(new ClientOptions());
+    var thm = ctx.Client.Manager;
+    using var staticTable = thm.EmptyTable(10)
+      .Select(selections);
+  }
+
+  [Theory]
+  [InlineData("X > 3)")]  // syntax error
+  [InlineData("S = java.util.regex.Pattern.quote(S)")]  // Pattern.quote not on whitelist
+  [InlineData("X = Math.min(3, 4)")]  // Math.min not on whitelist
+  public void BadWhere(string condition) {
     using var ctx = CommonContextForTests.Create(new ClientOptions());
     var thm = ctx.Client.Manager;
     using var staticTable = thm.EmptyTable(10)
       .Update("X = 12", "S = `hello`");
-    TestSelectsHelper("static Table", staticTable, badSelects, goodSelects);
+
+    Assert.Throws<AggregateException>(() => {
+      using var temp = staticTable.Where(condition);
+    });
   }
 
-  [Fact]
-  public void Where() {
-    string[] badWheres = [
-      "X > 3)", // syntax error
-      "S = new String(`hello`)", // new not allowed
-      "S = java.util.regex.Pattern.quote(S)", // Pattern.quote not on whitelist
-      "X = Math.min(3, 4)" // Math.min not on whitelist
-    ];
-
-    string[] goodWheres = [
-      "X = 3",
-      "S = `hello`",
-      "S.length() = 17", // instance methods of String ok
-      "X = min(3, 4)", // "builtin" from GroovyStaticImports
-      "X = isFinite(3)", // another builtin from GroovyStaticImports
-      "X in 3, 4, 5"
-    ];
-
+  [Theory]
+  [InlineData("X = 3")]
+  [InlineData("S = `hello`")]
+  [InlineData("S.length() = 17")] // instance methods of String ok
+  [InlineData("X = min(3, 4)")] // "builtin" from GroovyStaticImports
+  [InlineData("X = isFinite(3)")] // another builtin from GroovyStaticImports
+  [InlineData("X in 3, 4, 5")]
+  public void GoodWhere(string condition) {
     using var ctx = CommonContextForTests.Create(new ClientOptions());
     var thm = ctx.Client.Manager;
     using var staticTable = thm.EmptyTable(10)
-      .Update("X = 12", "S = `hello`");
-    TestWheresHelper("static Table", staticTable, badWheres, goodWheres);
-  }
-
-  private void TestWheresHelper(string what, TableHandle table,
-    IEnumerable<string> badWheres, IEnumerable<string> goodWheres) {
-    foreach (var bw in badWheres) {
-      try {
-        output.WriteLine($"Trying {what} {bw}");
-        using var dummy = table.Where(bw);
-      } catch (Exception e) {
-        output.WriteLine($"{what}: {bw}: Failed *as expected* with: {e.Message}");
-        continue;
-      }
-
-      throw new Exception($"{what}: {bw}: Expected to fail, but succeeded");
-    }
-
-    foreach (var gw in goodWheres) {
-      using var dummy = table.Where(gw);
-      output.WriteLine($"{what}: {gw}: Succeeded as expected");
-    }
-  }
-
-  private void TestSelectsHelper(string what, TableHandle table,
-    IEnumerable<string[]> badSelects, IEnumerable<string[]> goodSelects) {
-    foreach (var bs in badSelects) {
-      var printable = string.Join(", ", bs);
-      try {
-        using var dummy = table.Select(bs);
-      } catch (Exception e) {
-        output.WriteLine($"{what}: {printable}: Failed as expected with: {e.Message}");
-        continue;
-      }
-
-      throw new Exception($"{what}: {printable}: Expected to fail, but succeeded");
-    }
-
-    foreach (var gs in goodSelects) {
-      var printable = string.Join(", ", gs);
-      using var dummy = table.Select(gs);
-      output.WriteLine($"{what}: {printable}: Succeeded as expected");
-    }
+      .Update("X = 12", "S = `hello`")
+      .Where(condition);
   }
 }

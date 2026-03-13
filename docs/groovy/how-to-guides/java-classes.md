@@ -84,7 +84,7 @@ This makes working with Java objects in Groovy query strings very natural and st
 - [Built-in functions](./built-in-functions.md)
 - [Built-in constants](./built-in-constants.md)
 - [Work with arrays](./work-with-arrays.md)
-- [Work with strings](./strings.md)
+- [Work with strings](./work-with-strings.md)
 - [`emptyTable`](../reference/table-operations/create/emptyTable.md)
 - [`meta`](../reference/table-operations/metadata/meta.md)
 - [`update`](../reference/table-operations/select/update.md)

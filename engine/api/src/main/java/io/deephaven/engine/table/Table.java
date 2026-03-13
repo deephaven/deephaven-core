@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table;
 
@@ -564,6 +564,11 @@ public interface Table extends
      * table. On each cycle, all existing rows are removed. When used with an aggregation this has the effect of
      * providing the aggregated values for only this cycle, because aggregating the result table will no longer apply
      * special blink semantics.
+     * </p>
+     *
+     * <p>
+     * A blink table can be converted to an append-only table with
+     * {@link io.deephaven.engine.table.impl.BlinkTableTools#blinkToAppendOnly(io.deephaven.engine.table.Table)}.
      * </p>
      *
      * <p>

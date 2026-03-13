@@ -17,46 +17,50 @@
         "items": [
           {
             "label": "Quickstart",
-            "path": "tutorials/quickstart.md"
+            "path": "getting-started/quickstart.md"
           },
           {
             "label": "A Crash Course in Deephaven",
             "items": [
               {
+                "label": "Overview",
+                "path": "getting-started/crash-course/overview.md"
+              },
+              {
                 "label": "Get Started",
-                "path": "tutorials/crash-course/get-started.md"
+                "path": "getting-started/crash-course/get-started.md"
               },
               {
                 "label": "Architecture Overview",
-                "path": "tutorials/crash-course/architecture-overview.md"
+                "path": "getting-started/crash-course/architecture-overview.md"
               },
               {
                 "label": "Create Tables",
-                "path": "tutorials/crash-course/create-tables.md"
+                "path": "getting-started/crash-course/create-tables.md"
               },
               {
                 "label": "Table Operations",
-                "path": "tutorials/crash-course/table-ops.md"
+                "path": "getting-started/crash-course/table-ops.md"
               },
               {
                 "label": "Query Strings",
-                "path": "tutorials/crash-course/query-strings.md"
+                "path": "getting-started/crash-course/query-strings.md"
               },
               {
                 "label": "Real-time Plots",
-                "path": "tutorials/crash-course/plots.md"
+                "path": "getting-started/crash-course/plots.md"
               },
               {
                 "label": "Data I/O",
-                "path": "tutorials/crash-course/export-data.md"
+                "path": "getting-started/crash-course/export-data.md"
               },
               {
                 "label": "Configure your Instance",
-                "path": "tutorials/crash-course/configure.md"
+                "path": "getting-started/crash-course/configure.md"
               },
               {
                 "label": "Wrapping Up",
-                "path": "tutorials/crash-course/crash-course-wrap-up.md"
+                "path": "getting-started/crash-course/crash-course-wrap-up.md"
               }
             ]
           },
@@ -65,15 +69,15 @@
             "items": [
               {
                 "label": "Docker",
-                "path": "tutorials/docker-install.md"
+                "path": "getting-started/docker-install.md"
               },
               {
                 "label": "Source code",
-                "path": "how-to-guides/launch-build.md"
+                "path": "getting-started/launch-build.md"
               },
               {
                 "label": "Production application",
-                "path": "tutorials/production-application.md"
+                "path": "getting-started/production-application.md"
               }
             ]
           }
@@ -144,7 +148,7 @@
                   },
                   {
                     "label": "Write data to a real-time table",
-                    "path": "how-to-guides/dynamic-table-writer.md"
+                    "path": "how-to-guides/table-publisher.md"
                   },
                   {
                     "label": "Generate tables with Groovy functions",
@@ -157,11 +161,11 @@
                 "items": [
                   {
                     "label": "Import CSV files",
-                    "path": "how-to-guides/csv-import.md"
+                    "path": "how-to-guides/data-import-export/csv-import.md"
                   },
                   {
                     "label": "Export CSV files",
-                    "path": "how-to-guides/csv-export.md"
+                    "path": "how-to-guides/data-import-export/csv-export.md"
                   },
                   {
                     "label": "The Deephaven CSV library",
@@ -191,6 +195,10 @@
                   {
                     "label": "Connect to a Kafka stream",
                     "path": "how-to-guides/data-import-export/kafka-stream.md"
+                  },
+                  {
+                    "label": "Write your own custom parser for Kafka",
+                    "path": "how-to-guides/data-import-export/write-your-own-custom-parser-for-kafka.md"
                   }
                 ]
               },
@@ -199,7 +207,7 @@
                 "items": [
                   {
                     "label": "Supported Parquet formats",
-                    "path": "conceptual/parquet-formats.md"
+                    "path": "how-to-guides/data-import-export/parquet-formats.md"
                   },
                   {
                     "label": "Import Parquet files",
@@ -267,6 +275,10 @@
                 "path": "how-to-guides/format-columns.md"
               },
               {
+                "label": "Filter",
+                "path": "how-to-guides/use-filters.md"
+              },
+              {
                 "label": "Sort",
                 "path": "how-to-guides/sort.md"
               },
@@ -320,6 +332,10 @@
               {
                 "label": "Partition",
                 "path": "how-to-guides/partitioned-tables.md"
+              },
+              {
+                "label": "Synchronize tables",
+                "path": "how-to-guides/synchronizing-tables.md"
               },
               {
                 "label": "Snapshot",
@@ -415,7 +431,7 @@
                 "items": [
                   {
                     "label": "Query Scope",
-                    "path": "how-to-guides/queryscope.md"
+                    "path": "how-to-guides/query-scope.md"
                   },
                   {
                     "label": "Variables",
@@ -445,7 +461,7 @@
               },
               {
                 "label": "Strings",
-                "path": "how-to-guides/strings.md"
+                "path": "how-to-guides/work-with-strings.md"
               },
               {
                 "label": "Java classes & objects",
@@ -553,7 +569,7 @@
                       },
                       {
                         "label": "Use IFrames",
-                        "path": "how-to-guides/user-interface/use-iframes.md"
+                        "path": "how-to-guides/use-iframes.md"
                       }
                     ]
                   }
@@ -726,15 +742,6 @@
                 "path": "how-to-guides/flight-sql.md"
               },
               {
-                "label": "Excel",
-                "items": [
-                  {
-                    "label": "Excel Client",
-                    "path": "how-to-guides/excel/excel-client.md"
-                  }
-                ]
-              },
-              {
                 "label": "Protobuf",
                 "items": [
                   {
@@ -770,11 +777,11 @@
                 "items": [
                   {
                     "label": "Use performance tables",
-                    "path": "how-to-guides/performance-tables.md"
+                    "path": "how-to-guides/performance/performance-tables.md"
                   },
                   {
                     "label": "Dial down the update frequency of ticking tables",
-                    "path": "how-to-guides/reduce-update-frequency.md"
+                    "path": "how-to-guides/performance/reduce-update-frequency.md"
                   },
                   {
                     "label": "Data Indexes",
@@ -791,6 +798,10 @@
                   {
                     "label": "Synchronization and locking",
                     "path": "conceptual/query-engine/engine-locking.md"
+                  },
+                  {
+                    "label": "Formulas and threads",
+                    "path": "how-to-guides/performance/formula-threads.md"
                   },
                   {
                     "label": "Barrage metrics",
@@ -812,15 +823,6 @@
                   {
                     "label": "Application Mode configuration",
                     "path": "reference/app-mode/application-mode-config.md"
-                  }
-                ]
-              },
-              {
-                "label": "Imports",
-                "items": [
-                  {
-                    "label": "Auto-imported functions",
-                    "path": "reference/query-language/query-library/auto-imported-functions.md"
                   }
                 ]
               },
@@ -919,7 +921,7 @@
                     "items": [
                       {
                         "label": "Application Mode",
-                        "path": "how-to-guides/app-mode.md"
+                        "path": "how-to-guides/application-mode.md"
                       },
                       {
                         "label": "Application Mode libraries",
@@ -1239,18 +1241,6 @@
                   {
                     "label": "removeBlink",
                     "path": "reference/table-operations/create/remove-blink.md"
-                  },
-                  {
-                    "label": "assertAddOnly",
-                    "path": "reference/table-operations/create/assert-add-only.md"
-                  },
-                  {
-                    "label": "assertAppendOnly",
-                    "path": "reference/table-operations/create/assert-append-only.md"
-                  },
-                  {
-                    "label": "assertBlink",
-                    "path": "reference/table-operations/create/assert-blink.md"
                   }
                 ]
               },
@@ -1516,6 +1506,10 @@
                   {
                     "label": "tailPct",
                     "path": "reference/table-operations/filter/tail-pct.md"
+                  },
+                  {
+                    "label": "TailInitializationFilter",
+                    "path": "reference/table-operations/filter/TailInitializationFilter.md"
                   },
                   {
                     "label": "where",
@@ -2662,7 +2656,56 @@
             "items": [
               {
                 "label": "Auto-imported functions",
-                "path": "reference/query-language/formulas/auto-imported-functions.md"
+                "items": [
+                  {
+                    "label": "Overview",
+                    "path": "reference/query-language/query-library/auto-imported/index.md"
+                  },
+                  {
+                    "label": "Basic",
+                    "path": "reference/query-language/query-library/auto-imported/basic.md"
+                  },
+                  {
+                    "label": "Math",
+                    "path": "reference/query-language/query-library/auto-imported/math.md"
+                  },
+                  {
+                    "label": "Time",
+                    "path": "reference/query-language/query-library/auto-imported/time.md"
+                  },
+                  {
+                    "label": "Logic",
+                    "path": "reference/query-language/query-library/auto-imported/logic.md"
+                  },
+                  {
+                    "label": "Parse",
+                    "path": "reference/query-language/query-library/auto-imported/parse.md"
+                  },
+                  {
+                    "label": "Sort",
+                    "path": "reference/query-language/query-library/auto-imported/sort.md"
+                  },
+                  {
+                    "label": "Search",
+                    "path": "reference/query-language/query-library/auto-imported/search.md"
+                  },
+                  {
+                    "label": "GUI",
+                    "path": "reference/query-language/query-library/auto-imported/gui.md"
+                  },
+                  {
+                    "label": "Constants",
+                    "path": "reference/query-language/query-library/auto-imported/constants.md"
+                  },
+                  {
+                    "label": "Java",
+                    "path": "reference/query-language/query-library/auto-imported/java.md"
+                  },
+                  {
+                    "label": "Data types",
+                    "path": "reference/query-language/query-library/auto-imported/data-types.md"
+                  }
+                ]
               },
               {
                 "label": "Automatic Groovy Imports",
@@ -2785,6 +2828,10 @@
                     "path": "reference/community-questions/blink-ring.md"
                   },
                   {
+                    "label": "How do I create a partitioned blink table?",
+                    "path": "reference/community-questions/partitioned-blink-tables-drop-attribute.md"
+                  },
+                  {
                     "label": "How do I filter by time of day across all dates?",
                     "path": "reference/community-questions/filter-time-window-all-dates.md"
                   }
@@ -2881,6 +2928,10 @@
               {
                 "label": "Integrations: AWS",
                 "items": [
+                  {
+                    "label": "How do I run Deephaven behind AWS ALB?",
+                    "path": "reference/community-questions/aws-alb-configuration.md"
+                  },
                   {
                     "label": "Why can't I read from S3?",
                     "path": "reference/community-questions/aws-timeout.md"

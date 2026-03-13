@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api.widget.plot;
 
@@ -169,8 +169,8 @@ public class ChartData {
     }
 
     /**
-     * Removes some column from the cache, avoiding extra computation on incoming events, and possibly freeing some
-     * memory. If this pair of column name and map function are requested again, it will be recomputed from scratch.
+     * Removes a column from the cache, avoiding extra computation on incoming events, and possibly freeing some memory.
+     * If this pair of column name and map function are requested again, it will be recomputed from scratch.
      */
     public void removeColumn(String columnName, JsFunction<Any, Any> mappingFunc) {
         Map<JsFunction<Any, Any>, JsArray<Any>> map = cachedData.get(columnName);

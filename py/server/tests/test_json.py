@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 #
 
 import unittest
@@ -104,6 +104,18 @@ class JsonTestCase(BaseTestCase):
             instant_val(on_missing=datetime.fromtimestamp(0))
         with self.subTest("on_null"):
             instant_val(on_null=datetime.fromtimestamp(0))
+        with self.subTest("number_format s"):
+            instant_val(number_format="s")
+            instant_val(number_format="s", allow_string=True)
+        with self.subTest("number_format ms"):
+            instant_val(number_format="ms")
+            instant_val(number_format="ms", allow_string=True)
+        with self.subTest("number_format us"):
+            instant_val(number_format="us")
+            instant_val(number_format="us", allow_string=True)
+        with self.subTest("number_format ns"):
+            instant_val(number_format="ns")
+            instant_val(number_format="ns", allow_string=True)
 
     def test_any(self):
         self.all_same_json([any_val(), dtypes.JObject, object])

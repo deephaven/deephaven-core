@@ -64,3 +64,9 @@ Now, we can still sort by `Letter`, but attempting to sort by `Number` will resu
 ```groovy test-set=1 skip-test
 tSorted = table.sort("Number")
 ```
+
+## Related documentation
+
+- [`sort`](../reference/table-operations/sort/sort.md)
+- [`sortDescending`](../reference/table-operations/sort/sort-descending.md)
+- [`reverse`](../reference/table-operations/sort/reverse.md)

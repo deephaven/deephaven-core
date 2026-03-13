@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CharSetResult and run "./gradlew replicateSegmentedSortedMultiset" to regenerate
@@ -30,7 +30,9 @@ public class ShortSetResult implements SsmChunkedMinMaxOperator.SetResult {
             newResult = NULL_SHORT;
         } else {
             final ShortSegmentedSortedMultiset shortSsm = (ShortSegmentedSortedMultiset) ssm;
+            // region nan handling
             newResult = minimum ? shortSsm.getMinShort() : shortSsm.getMaxShort();
+            // endregion nan handling
         }
         return setResult(destination, newResult);
     }

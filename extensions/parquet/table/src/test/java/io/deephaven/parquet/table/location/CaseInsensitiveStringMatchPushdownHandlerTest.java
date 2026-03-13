@@ -1,8 +1,9 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.parquet.table.location;
 
+import io.deephaven.engine.table.MatchOptions;
 import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.test.types.OutOfBandTest;
 import org.apache.parquet.column.statistics.Statistics;
@@ -37,35 +38,35 @@ public class CaseInsensitiveStringMatchPushdownHandlerTest {
 
         // at least one value inside (case-mixed)
         assertTrue(CaseInsensitiveStringMatchPushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Regular,
+                new MatchFilter(MatchOptions.REGULAR,
                         "s", "FOO", "BaR", "mMm"),
                 stats));
 
         // all values below range
         assertFalse(CaseInsensitiveStringMatchPushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Regular,
+                new MatchFilter(MatchOptions.REGULAR,
                         "s", "000", "99"),
                 stats));
 
         // all values above range
         assertFalse(CaseInsensitiveStringMatchPushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Regular,
+                new MatchFilter(MatchOptions.REGULAR,
                         "s", "~~~", "zz{"),
                 stats));
 
         // value just below min boundary
         assertFalse(CaseInsensitiveStringMatchPushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Regular,
+                new MatchFilter(MatchOptions.REGULAR,
                         "s", "aa`"),
                 stats));
 
         // empty list
         assertFalse(CaseInsensitiveStringMatchPushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Regular, "s"), stats));
+                new MatchFilter(MatchOptions.REGULAR, "s"), stats));
 
         // list containing null
         assertTrue(CaseInsensitiveStringMatchPushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Regular,
+                new MatchFilter(MatchOptions.REGULAR,
                         "s", "xyz", null),
                 stats));
     }
@@ -74,42 +75,42 @@ public class CaseInsensitiveStringMatchPushdownHandlerTest {
     public void invertedMatchScenarios() {
         // stats aaa..hhh ; NOT IN {ccc,DDD} leaves gaps
         assertTrue(CaseInsensitiveStringMatchPushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Inverted,
+                new MatchFilter(MatchOptions.INVERTED,
                         "s", "ccc", "DDD"),
                 stringStats("aaa", "hhh")));
 
         // stats foo..foo; exclude foo (case-varied), so no gap
         assertFalse(CaseInsensitiveStringMatchPushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Inverted,
+                new MatchFilter(MatchOptions.INVERTED,
                         "s", "FoO"),
                 stringStats("foo", "fOo")));
 
         // stats foo..foo ; exclude different value, so gap exists
         assertTrue(CaseInsensitiveStringMatchPushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Inverted,
+                new MatchFilter(MatchOptions.INVERTED,
                         "s", "bar"),
                 stringStats("foo", "foo")));
 
         // stats bar..baz; NOT IN {bar,baz} still leaves an internal gap ("bar" < x < "baz")
         assertTrue(CaseInsensitiveStringMatchPushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Inverted,
+                new MatchFilter(MatchOptions.INVERTED,
                         "s", "BAR", "baz"),
                 stringStats("bar", "Baz")));
 
         // empty exclusion list
         assertTrue(CaseInsensitiveStringMatchPushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Inverted, "s"),
+                new MatchFilter(MatchOptions.INVERTED, "s"),
                 stringStats("a", "b")));
 
         // null in the exclusion list
         assertTrue(CaseInsensitiveStringMatchPushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Inverted,
-                        "s", null),
+                new MatchFilter(MatchOptions.INVERTED,
+                        "s", new Object[] {null}),
                 stringStats("x", "y")));
 
         // exclusion list with a value that is in the stats range
         assertTrue(CaseInsensitiveStringMatchPushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Inverted,
+                new MatchFilter(MatchOptions.INVERTED,
                         "s", "x", "y"),
                 stringStats("x", "y")));
     }

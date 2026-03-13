@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CharPercentileTypeMedianHelper and run "./gradlew replicateSegmentedSortedMultiset" to regenerate
@@ -36,6 +36,8 @@ public class ShortPercentileTypeMedianHelper extends ShortPercentileTypeHelper {
         if (totalSize == 0) {
             newResult = NULL_DOUBLE;
         } else {
+            // region maybeHandleNaN
+            // endregion maybeHandleNaN
             final long targetLo = (int) ((totalSize - 1) * percentile) + 1;
             if (loSize < targetLo) {
                 ssmHi.moveFrontToBack(ssmLo, targetLo - loSize);

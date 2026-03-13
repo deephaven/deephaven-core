@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CharacterArraySource and run "./gradlew replicateSourcesAndChunks" to regenerate
@@ -41,7 +41,7 @@ import static io.deephaven.util.type.TypeUtils.unbox;
  */
 public class IntegerArraySource extends ArraySourceHelper<Integer, int[]>
         implements MutableColumnSourceGetDefaults.ForInt /* MIXIN_IMPLS */ {
-    private static final SoftRecycler<int[]> recycler = new SoftRecycler<>(DEFAULT_RECYCLER_CAPACITY,
+    private static final SoftRecycler<int[]> recycler = new SoftRecycler<>(ArrayColumnSourceConfiguration.INT_RECYCLER_CAPACITY,
             () -> new int[BLOCK_SIZE], null);
 
     private int[][] blocks;

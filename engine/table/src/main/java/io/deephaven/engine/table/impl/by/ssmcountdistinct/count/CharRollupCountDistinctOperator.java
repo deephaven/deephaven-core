@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.by.ssmcountdistinct.count;
 
@@ -38,7 +38,7 @@ public class CharRollupCountDistinctOperator implements IterativeChunkedAggregat
     private final CharSsmBackedSource ssms;
     private final Supplier<SegmentedSortedMultiSet.RemoveContext> removeContextFactory;
     private final LongArraySource resultColumn;
-    private final boolean countNull;
+    private final boolean countNullNaN;
 
     private UpdateCommitter<CharRollupCountDistinctOperator> prevFlusher = null;
     private WritableRowSet touchedStates;
@@ -47,9 +47,9 @@ public class CharRollupCountDistinctOperator implements IterativeChunkedAggregat
             // region Constructor
             // endregion Constructor
             String name,
-            boolean countNulls) {
+            boolean countNullNaN) {
         this.name = name;
-        this.countNull = countNulls;
+        this.countNullNaN = countNullNaN;
         this.resultColumn = new LongArraySource();
 
         // region SsmCreation
@@ -101,7 +101,7 @@ public class CharRollupCountDistinctOperator implements IterativeChunkedAggregat
                 bucketedContext.counts.ensureCapacityPreserve(currentPos + newLength);
                 bucketedContext.counts.get().setSize(currentPos + newLength);
                 newLength = CharCompactKernel.compactAndCount(bucketedContext.valueCopy.get().asWritableCharChunk(),
-                        bucketedContext.counts.get(), currentPos, newLength, countNull);
+                        bucketedContext.counts.get(), currentPos, newLength, countNullNaN, countNullNaN);
             }
 
             bucketedContext.lengthCopy.set(ii, newLength);
@@ -182,7 +182,7 @@ public class CharRollupCountDistinctOperator implements IterativeChunkedAggregat
                 context.counts.ensureCapacityPreserve(currentPos + newLength);
                 context.counts.get().setSize(currentPos + newLength);
                 newLength = CharCompactKernel.compactAndCount(context.valueCopy.get().asWritableCharChunk(),
-                        context.counts.get(), currentPos, newLength, countNull);
+                        context.counts.get(), currentPos, newLength, countNullNaN, countNullNaN);
             }
 
             context.lengthCopy.set(ii, newLength);
@@ -217,7 +217,7 @@ public class CharRollupCountDistinctOperator implements IterativeChunkedAggregat
             final WritableIntChunk<ChunkLengths> countSlice =
                     context.countResettable.resetFromChunk(context.counts.get(), startPosition, runLength);
             ssm.remove(removeContext, valueSlice, countSlice);
-            if (ssm.size() == 0) {
+            if (ssm.isEmpty()) {
                 clearSsm(destination);
             }
 
@@ -267,7 +267,7 @@ public class CharRollupCountDistinctOperator implements IterativeChunkedAggregat
                 context.counts.ensureCapacityPreserve(currentPos + newLength);
                 context.counts.get().setSize(currentPos + newLength);
                 newLength = CharCompactKernel.compactAndCount(context.valueCopy.get().asWritableCharChunk(),
-                        context.counts.get(), currentPos, newLength, countNull);
+                        context.counts.get(), currentPos, newLength, countNullNaN, countNullNaN);
             }
 
             context.lengthCopy.set(ii, newLength);
@@ -300,7 +300,7 @@ public class CharRollupCountDistinctOperator implements IterativeChunkedAggregat
             final WritableIntChunk<ChunkLengths> countSlice =
                     context.countResettable.resetFromChunk(context.counts.get(), startPosition, runLength);
             ssm.remove(removeContext, valueSlice, countSlice);
-            if (ssm.size() == 0) {
+            if (ssm.isEmpty()) {
                 context.ssmsToMaybeClear.set(ii, true);
             }
         }
@@ -370,7 +370,7 @@ public class CharRollupCountDistinctOperator implements IterativeChunkedAggregat
             context.counts.ensureCapacityPreserve(currentPos);
             context.counts.get().setSize(currentPos);
             CharCompactKernel.compactAndCount(context.valueCopy.get().asWritableCharChunk(), context.counts.get(),
-                    countNull);
+                    countNullNaN, countNullNaN);
         }
         return context;
     }
@@ -422,7 +422,7 @@ public class CharRollupCountDistinctOperator implements IterativeChunkedAggregat
             context.counts.ensureCapacityPreserve(currentPos);
             context.counts.get().setSize(currentPos);
             CharCompactKernel.compactAndCount(context.valueCopy.get().asWritableCharChunk(), context.counts.get(),
-                    countNull);
+                    countNullNaN, countNullNaN);
         }
         return context;
     }
@@ -439,7 +439,7 @@ public class CharRollupCountDistinctOperator implements IterativeChunkedAggregat
 
         final CharSegmentedSortedMultiset ssm = ssmForSlot(destination);
         ssm.remove(context.removeContext, updatedValues, context.counts.get());
-        if (ssm.size() == 0) {
+        if (ssm.isEmpty()) {
             clearSsm(destination);
         }
 
@@ -478,7 +478,7 @@ public class CharRollupCountDistinctOperator implements IterativeChunkedAggregat
             context.counts.ensureCapacityPreserve(currentPos);
             context.counts.get().setSize(currentPos);
             CharCompactKernel.compactAndCount(context.valueCopy.get().asWritableCharChunk(), context.counts.get(),
-                    countNull);
+                    countNullNaN, countNullNaN);
         }
     }
 
@@ -503,7 +503,7 @@ public class CharRollupCountDistinctOperator implements IterativeChunkedAggregat
             }
             ssm.insert(updatedValues, context.counts.get());
             newSize = ssm.size();
-        } else if (ssm != null && ssm.size() == 0) {
+        } else if (ssm != null && ssm.isEmpty()) {
             clearSsm(destination);
         } else if (ssm == null) {
             return false;

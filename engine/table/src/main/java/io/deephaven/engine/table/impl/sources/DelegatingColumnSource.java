@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.sources;
 
@@ -10,6 +10,7 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.MatchOptions;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import org.jetbrains.annotations.NotNull;
@@ -26,12 +27,11 @@ public class DelegatingColumnSource<T, R> extends AbstractColumnSource<T> {
 
     @Override
     public WritableRowSet match(
-            boolean invertMatch,
-            boolean usePrev,
-            boolean caseInsensitive,
-            @NotNull RowSet mapper,
+            final boolean usePrev,
+            @NotNull final MatchOptions matchOptions,
+            @NotNull RowSet selection,
             Object... keys) {
-        return delegate.match(invertMatch, usePrev, caseInsensitive, mapper, keys);
+        return delegate.match(usePrev, matchOptions, selection, keys);
     }
 
     @Override

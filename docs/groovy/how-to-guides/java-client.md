@@ -15,14 +15,14 @@ We will show you how to construct a simple system that: monitors weather data (s
 ## Prerequisites
 
 - Clone the [Deephaven Community repository](https://github.com/deephaven/deephaven-core).
-- [Build and run Deephaven](../tutorials/docker-install.md).
+- [Build and run Deephaven](../getting-started/docker-install.md).
 - Create a valid [Google Geolocation API key](https://developers.google.com/maps/documentation/geolocation/overview).
 
 ## The application
 
 The application is broken up into three major parts:
 
-- The first part creates the Deephaven table where weather data will be recorded and then creates several derived tables that will analyze the data to produce some simple statistics. Each of these tables will be visited in more detail in the following sections.
+- The first part creates the Deephaven table where weather data will be recorded, and then creates several derived tables that will analyze the data to produce some simple statistics. Each of these tables will be visited in more detail in the following sections.
 - The second part is a handful of simple Python methods that will extract position and weather data from the Google Geolocation API and NOAA's weather data API and record it. It also provides a method for the external java application to add more cities to be monitored.
 - The final part is a very simple Java application that connects to the Deephaven worker and pulls the ticking results to be displayed. It also provides some simple functionality to add more cities to be monitored, demonstrating that complex Client/Server applications can be built directly with Deephaven.
 
@@ -35,7 +35,7 @@ At this point, you should have a running Deephaven IDE. You first need to config
 > [!NOTE]
 > Note that the 'requests' library, which is used to do simple GET calls, is not part of the default Deephaven Python image, so it is imported directly into the running session. See [How to install Python packages](../how-to-guides/install-packages.md) for more details.
 
-2. Create the [DynamicTableWriter](../how-to-guides/dynamic-table-writer.md) that will be used to ingest ticking data.
+2. Create the [DynamicTableWriter](../how-to-guides/table-publisher.md) that will be used to ingest ticking data.
 
 This simply creates a table with five columns to which the application will record weather measurements.
 
@@ -217,3 +217,8 @@ With that final step, the Deephaven Table is subscribed, and will receive live u
 
 > [!CAUTION]
 > When your app is done using tables that were fetched, be sure to call `resultSub.close()` to release any resources that are being held. Without this, the server believes the table is still active and will continue to consume memory and CPU time.
+
+## Related documentation
+
+- [Arrow Flight](./data-import-export/arrow-flight.md)
+- [Servers and clients](../conceptual/client-server-model.md)

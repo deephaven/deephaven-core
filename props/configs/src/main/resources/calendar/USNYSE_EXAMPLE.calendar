@@ -8,13 +8,13 @@
     <language>en</language>
     <country>US</country>
     <firstValidDate>1999-01-01</firstValidDate>
-    <lastValidDate>2025-12-31</lastValidDate>
+    <lastValidDate>2027-12-31</lastValidDate>
     <description>
         New York Stock Exchange Business Calendar.
         *** NOTE: This is an example calendar, and is not intended to be used for trading or other production purposes. ***
         Sources: https://www.nyse.com/markets/hours-calendars
         Historical reference: https://www.thestreet.com/markets/stock-market-open-or-closed-fourth-of-july
-        Last updated 11/10/2023
+        Last updated 01/05/2026
     </description>
     <default>
         <businessTime><open>09:30</open><close>16:00</close></businessTime>
@@ -985,5 +985,77 @@
     </holiday>
     <holiday>
         <date>2025-12-25</date>
+    </holiday>
+    <holiday>
+        <date>2026-01-01</date>
+    </holiday>
+    <holiday>
+        <date>2026-01-19</date>
+    </holiday>
+    <holiday>
+        <date>2026-02-16</date>
+    </holiday>
+    <holiday>
+        <date>2026-04-03</date>
+    </holiday>
+    <holiday>
+        <date>2026-05-25</date>
+    </holiday>
+    <holiday>
+        <date>2026-06-19</date>
+    </holiday>
+    <holiday>
+        <date>2026-07-03</date>
+    </holiday>
+    <holiday>
+        <date>2026-09-07</date>
+    </holiday>
+    <holiday>
+        <date>2026-11-26</date>
+    </holiday>
+    <holiday>
+        <date>2026-11-27</date>
+        <businessTime><open>09:30</open><close>13:00</close></businessTime>
+    </holiday>
+    <holiday>
+        <date>2026-12-24</date>
+        <businessTime><open>09:30</open><close>13:00</close></businessTime>
+    </holiday>
+    <holiday>
+        <date>2026-12-25</date>
+    </holiday>
+    <holiday>
+        <date>2027-01-01</date>
+    </holiday>
+    <holiday>
+        <date>2027-01-18</date>
+    </holiday>
+    <holiday>
+        <date>2027-02-15</date>
+    </holiday>
+    <holiday>
+        <date>2027-03-26</date>
+    </holiday>
+    <holiday>
+        <date>2027-05-31</date>
+    </holiday>
+    <holiday>
+        <date>2027-06-18</date>
+    </holiday>
+    <holiday>
+        <date>2027-07-05</date>
+    </holiday>
+    <holiday>
+        <date>2027-09-06</date>
+    </holiday>
+    <holiday>
+        <date>2027-11-25</date>
+    </holiday>
+    <holiday>
+        <date>2027-11-26</date>
+        <businessTime><open>09:30</open><close>13:00</close></businessTime>
+    </holiday>
+    <holiday>
+        <date>2027-12-24</date>
     </holiday>
 </calendar>

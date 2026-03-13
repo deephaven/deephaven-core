@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 #
 
 """This module provides Java compatibility support including convenience functions to create some widely used Java
@@ -227,7 +227,7 @@ def j_lambda(
     )
 
 
-def _to_sequence(v: Optional[Any] = None, wrapped: bool = False) -> Sequence[Any]:
+def to_sequence(v: Optional[Any] = None, wrapped: bool = False) -> Sequence[Any]:
     """A convenience function to create a sequence of wrapped or unwrapped object from either one or a sequence of
     input values to help JPY find the matching Java overloaded method to call.
 

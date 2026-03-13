@@ -74,7 +74,7 @@ while (iterator.hasNext()) {
 }
 ```
 
-## Related Documentation
+## Related documentation
 
 - [`ColumnVectors`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/vectors/ColumnVectors.html)
 - [Iterate over tables](iterate-table-vectors.md)

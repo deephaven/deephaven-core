@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CharChunkedDistinctOperator and run "./gradlew replicateSegmentedSortedMultiset" to regenerate
@@ -43,7 +43,7 @@ public class IntChunkedDistinctOperator implements IterativeChunkedAggregationOp
     private final IntSsmBackedSource internalResult;
     private final ColumnSource<?> externalResult;
     private final Supplier<SegmentedSortedMultiSet.RemoveContext> removeContextFactory;
-    private final boolean countNull;
+    private final boolean countNullNaN;
     private final boolean exposeInternal;
     private WritableRowSet touchedStates;
     private UpdateCommitter<IntChunkedDistinctOperator> prevFlusher = null;
@@ -51,9 +51,9 @@ public class IntChunkedDistinctOperator implements IterativeChunkedAggregationOp
     public IntChunkedDistinctOperator(
             // region Constructor
             // endregion Constructor
-            String name, boolean countNulls, boolean exposeInternal) {
+            String name, boolean countNullNaN, boolean exposeInternal) {
         this.name = name;
-        this.countNull = countNulls;
+        this.countNullNaN = countNullNaN;
         this.exposeInternal = exposeInternal;
         // region SsmCreation
         this.internalResult = new IntSsmBackedSource();
@@ -78,7 +78,7 @@ public class IntChunkedDistinctOperator implements IterativeChunkedAggregationOp
         context.lengthCopy.copyFromChunk(length, 0, 0, length.size());
 
         IntCompactKernel.compactAndCount((WritableIntChunk<? extends Values>) context.valueCopy, context.counts,
-                startPositions, context.lengthCopy, countNull);
+                startPositions, context.lengthCopy, countNullNaN, countNullNaN);
         return context;
     }
 
@@ -198,7 +198,7 @@ public class IntChunkedDistinctOperator implements IterativeChunkedAggregationOp
         context.valueCopy.setSize(values.size());
         context.valueCopy.copyFromChunk(values, 0, 0, values.size());
         IntCompactKernel.compactAndCount((WritableIntChunk<? extends Values>) context.valueCopy, context.counts,
-                countNull);
+                countNullNaN, countNullNaN);
         return context;
     }
 

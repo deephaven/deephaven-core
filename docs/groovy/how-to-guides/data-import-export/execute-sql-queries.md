@@ -14,7 +14,7 @@ The [`Sql`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/sql/Sql.h
 - [`evaluate`](../../reference/data-import-export/SQL/evaluate.md) - Executes a SQL query and returns a Deephaven table.
 - [`dryRun`](../../reference/data-import-export/SQL/dryRun.md) - Parses a SQL query into a [`TableSpec`](https://docs.deephaven.io/core/javadoc/io/deephaven/qst/table/TableSpec.html) without executing it. Useful for validation.
 
-These methods automatically use tables from your script session's [query scope](../queryscope.md) as the catalog for SQL queries.
+These methods automatically use tables from your script session's [query scope](../query-scope.md) as the catalog for SQL queries.
 
 ## Execute a query with `evaluate`
 
@@ -135,4 +135,4 @@ Each of the above methods serves different use cases.
 - [`evaluate`](../../reference/data-import-export/SQL/evaluate.md)
 - [`dryRun`](../../reference/data-import-export/SQL/dryRun.md)
 - [`parseSql`](../../reference/data-import-export/SQL/parseSql.md)
-- [Query scope](../queryscope.md)
+- [Query scope](../query-scope.md)

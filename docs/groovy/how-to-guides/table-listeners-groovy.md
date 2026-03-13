@@ -289,7 +289,7 @@ source.addUpdateListener(listener)
 
 ## Reduce data volumes
 
-Tables often tick at high frequencies and with large quantities of incoming data. It's best practice to only listen to what's required for an operation. In such cases, applying [filters](./filters.md) and/or [reducing tick frequencies](./reduce-update-frequency.md) will reduce both the quantity and frequency of incoming data to a listener.
+Tables often tick at high frequencies and with large quantities of incoming data. It's best practice to only listen to what's required for an operation. In such cases, applying [filters](./filters.md) and/or [reducing tick frequencies](./performance/reduce-update-frequency.md) will reduce both the quantity and frequency of incoming data to a listener.
 
 The following example listens to a table that has been filtered and had its tick frequency reduced to reduce the rate at which the listener receives data.
 

@@ -38,7 +38,7 @@ UNKNOWN: ItemType.ValueType  # 0
 """Should not be used, exists only to indicate that this was left unset"""
 DIRECTORY: ItemType.ValueType  # 1
 FILE: ItemType.ValueType  # 2
-global___ItemType = ItemType
+Global___ItemType: typing_extensions.TypeAlias = ItemType
 
 @typing.final
 class ListItemsRequest(google.protobuf.message.Message):
@@ -60,11 +60,15 @@ class ListItemsRequest(google.protobuf.message.Message):
         path: builtins.str = ...,
         filter_glob: builtins.str | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing.Literal["_filter_glob", b"_filter_glob", "filter_glob", b"filter_glob"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing.Literal["_filter_glob", b"_filter_glob", "filter_glob", b"filter_glob", "path", b"path"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing.Literal["_filter_glob", b"_filter_glob"]) -> typing.Literal["filter_glob"] | None: ...
+    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["_filter_glob", b"_filter_glob", "filter_glob", b"filter_glob"]
+    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
+    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["_filter_glob", b"_filter_glob", "filter_glob", b"filter_glob", "path", b"path"]
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    _WhichOneofReturnType__filter_glob: typing_extensions.TypeAlias = typing.Literal["filter_glob"]
+    _WhichOneofArgType__filter_glob: typing_extensions.TypeAlias = typing.Literal["_filter_glob", b"_filter_glob"]
+    def WhichOneof(self, oneof_group: _WhichOneofArgType__filter_glob) -> _WhichOneofReturnType__filter_glob | None: ...
 
-global___ListItemsRequest = ListItemsRequest
+Global___ListItemsRequest: typing_extensions.TypeAlias = ListItemsRequest
 
 @typing.final
 class ItemInfo(google.protobuf.message.Message):
@@ -76,7 +80,7 @@ class ItemInfo(google.protobuf.message.Message):
     ETAG_FIELD_NUMBER: builtins.int
     path: builtins.str
     """The path to the item that this message describes."""
-    type: global___ItemType.ValueType
+    type: Global___ItemType.ValueType
     """The type of this item, either file or directory."""
     size: builtins.int
     """If this message represents a file, this is the size of the file."""
@@ -86,15 +90,19 @@ class ItemInfo(google.protobuf.message.Message):
         self,
         *,
         path: builtins.str = ...,
-        type: global___ItemType.ValueType = ...,
+        type: Global___ItemType.ValueType = ...,
         size: builtins.int = ...,
         etag: builtins.str | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing.Literal["_etag", b"_etag", "etag", b"etag"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing.Literal["_etag", b"_etag", "etag", b"etag", "path", b"path", "size", b"size", "type", b"type"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing.Literal["_etag", b"_etag"]) -> typing.Literal["etag"] | None: ...
+    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["_etag", b"_etag", "etag", b"etag"]
+    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
+    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["_etag", b"_etag", "etag", b"etag", "path", b"path", "size", b"size", "type", b"type"]
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    _WhichOneofReturnType__etag: typing_extensions.TypeAlias = typing.Literal["etag"]
+    _WhichOneofArgType__etag: typing_extensions.TypeAlias = typing.Literal["_etag", b"_etag"]
+    def WhichOneof(self, oneof_group: _WhichOneofArgType__etag) -> _WhichOneofReturnType__etag | None: ...
 
-global___ItemInfo = ItemInfo
+Global___ItemInfo: typing_extensions.TypeAlias = ItemInfo
 
 @typing.final
 class ListItemsResponse(google.protobuf.message.Message):
@@ -107,18 +115,19 @@ class ListItemsResponse(google.protobuf.message.Message):
     of the items in a cross-platform way.
     """
     @property
-    def items(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___ItemInfo]:
+    def items(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[Global___ItemInfo]:
         """List of items found in the specified directory."""
 
     def __init__(
         self,
         *,
-        items: collections.abc.Iterable[global___ItemInfo] | None = ...,
+        items: collections.abc.Iterable[Global___ItemInfo] | None = ...,
         canonical_path: builtins.str = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing.Literal["canonical_path", b"canonical_path", "items", b"items"]) -> None: ...
+    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["canonical_path", b"canonical_path", "items", b"items"]
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
 
-global___ListItemsResponse = ListItemsResponse
+Global___ListItemsResponse: typing_extensions.TypeAlias = ListItemsResponse
 
 @typing.final
 class FetchFileRequest(google.protobuf.message.Message):
@@ -136,11 +145,15 @@ class FetchFileRequest(google.protobuf.message.Message):
         path: builtins.str = ...,
         etag: builtins.str | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing.Literal["_etag", b"_etag", "etag", b"etag"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing.Literal["_etag", b"_etag", "etag", b"etag", "path", b"path"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing.Literal["_etag", b"_etag"]) -> typing.Literal["etag"] | None: ...
+    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["_etag", b"_etag", "etag", b"etag"]
+    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
+    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["_etag", b"_etag", "etag", b"etag", "path", b"path"]
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    _WhichOneofReturnType__etag: typing_extensions.TypeAlias = typing.Literal["etag"]
+    _WhichOneofArgType__etag: typing_extensions.TypeAlias = typing.Literal["_etag", b"_etag"]
+    def WhichOneof(self, oneof_group: _WhichOneofArgType__etag) -> _WhichOneofReturnType__etag | None: ...
 
-global___FetchFileRequest = FetchFileRequest
+Global___FetchFileRequest: typing_extensions.TypeAlias = FetchFileRequest
 
 @typing.final
 class FetchFileResponse(google.protobuf.message.Message):
@@ -161,11 +174,15 @@ class FetchFileResponse(google.protobuf.message.Message):
         contents: builtins.bytes = ...,
         etag: builtins.str | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing.Literal["_etag", b"_etag", "etag", b"etag"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing.Literal["_etag", b"_etag", "contents", b"contents", "etag", b"etag"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing.Literal["_etag", b"_etag"]) -> typing.Literal["etag"] | None: ...
+    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["_etag", b"_etag", "etag", b"etag"]
+    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
+    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["_etag", b"_etag", "contents", b"contents", "etag", b"etag"]
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    _WhichOneofReturnType__etag: typing_extensions.TypeAlias = typing.Literal["etag"]
+    _WhichOneofArgType__etag: typing_extensions.TypeAlias = typing.Literal["_etag", b"_etag"]
+    def WhichOneof(self, oneof_group: _WhichOneofArgType__etag) -> _WhichOneofReturnType__etag | None: ...
 
-global___FetchFileResponse = FetchFileResponse
+Global___FetchFileResponse: typing_extensions.TypeAlias = FetchFileResponse
 
 @typing.final
 class SaveFileRequest(google.protobuf.message.Message):
@@ -187,9 +204,10 @@ class SaveFileRequest(google.protobuf.message.Message):
         path: builtins.str = ...,
         contents: builtins.bytes = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing.Literal["allow_overwrite", b"allow_overwrite", "contents", b"contents", "path", b"path"]) -> None: ...
+    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["allow_overwrite", b"allow_overwrite", "contents", b"contents", "path", b"path"]
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
 
-global___SaveFileRequest = SaveFileRequest
+Global___SaveFileRequest: typing_extensions.TypeAlias = SaveFileRequest
 
 @typing.final
 class SaveFileResponse(google.protobuf.message.Message):
@@ -203,11 +221,15 @@ class SaveFileResponse(google.protobuf.message.Message):
         *,
         etag: builtins.str | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing.Literal["_etag", b"_etag", "etag", b"etag"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing.Literal["_etag", b"_etag", "etag", b"etag"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing.Literal["_etag", b"_etag"]) -> typing.Literal["etag"] | None: ...
+    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["_etag", b"_etag", "etag", b"etag"]
+    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
+    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["_etag", b"_etag", "etag", b"etag"]
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    _WhichOneofReturnType__etag: typing_extensions.TypeAlias = typing.Literal["etag"]
+    _WhichOneofArgType__etag: typing_extensions.TypeAlias = typing.Literal["_etag", b"_etag"]
+    def WhichOneof(self, oneof_group: _WhichOneofArgType__etag) -> _WhichOneofReturnType__etag | None: ...
 
-global___SaveFileResponse = SaveFileResponse
+Global___SaveFileResponse: typing_extensions.TypeAlias = SaveFileResponse
 
 @typing.final
 class MoveItemRequest(google.protobuf.message.Message):
@@ -233,9 +255,10 @@ class MoveItemRequest(google.protobuf.message.Message):
         new_path: builtins.str = ...,
         allow_overwrite: builtins.bool = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing.Literal["allow_overwrite", b"allow_overwrite", "new_path", b"new_path", "old_path", b"old_path"]) -> None: ...
+    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["allow_overwrite", b"allow_overwrite", "new_path", b"new_path", "old_path", b"old_path"]
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
 
-global___MoveItemRequest = MoveItemRequest
+Global___MoveItemRequest: typing_extensions.TypeAlias = MoveItemRequest
 
 @typing.final
 class MoveItemResponse(google.protobuf.message.Message):
@@ -245,7 +268,7 @@ class MoveItemResponse(google.protobuf.message.Message):
         self,
     ) -> None: ...
 
-global___MoveItemResponse = MoveItemResponse
+Global___MoveItemResponse: typing_extensions.TypeAlias = MoveItemResponse
 
 @typing.final
 class CreateDirectoryRequest(google.protobuf.message.Message):
@@ -259,9 +282,10 @@ class CreateDirectoryRequest(google.protobuf.message.Message):
         *,
         path: builtins.str = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing.Literal["path", b"path"]) -> None: ...
+    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["path", b"path"]
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
 
-global___CreateDirectoryRequest = CreateDirectoryRequest
+Global___CreateDirectoryRequest: typing_extensions.TypeAlias = CreateDirectoryRequest
 
 @typing.final
 class CreateDirectoryResponse(google.protobuf.message.Message):
@@ -271,7 +295,7 @@ class CreateDirectoryResponse(google.protobuf.message.Message):
         self,
     ) -> None: ...
 
-global___CreateDirectoryResponse = CreateDirectoryResponse
+Global___CreateDirectoryResponse: typing_extensions.TypeAlias = CreateDirectoryResponse
 
 @typing.final
 class DeleteItemRequest(google.protobuf.message.Message):
@@ -285,9 +309,10 @@ class DeleteItemRequest(google.protobuf.message.Message):
         *,
         path: builtins.str = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing.Literal["path", b"path"]) -> None: ...
+    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["path", b"path"]
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
 
-global___DeleteItemRequest = DeleteItemRequest
+Global___DeleteItemRequest: typing_extensions.TypeAlias = DeleteItemRequest
 
 @typing.final
 class DeleteItemResponse(google.protobuf.message.Message):
@@ -297,4 +322,4 @@ class DeleteItemResponse(google.protobuf.message.Message):
         self,
     ) -> None: ...
 
-global___DeleteItemResponse = DeleteItemResponse
+Global___DeleteItemResponse: typing_extensions.TypeAlias = DeleteItemResponse

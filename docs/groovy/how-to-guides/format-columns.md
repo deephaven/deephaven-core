@@ -1,8 +1,12 @@
 ---
 title: Apply color formatting to columns
+sidebar_label: Format columns
 ---
 
 This guide shows you how to apply various color formatting options to the columns in your static or dynamic tables.
+
+> [!CAUTION]
+> Formatting creates hidden columns in tables. It's recommended to apply formatting after all other data processing is complete.
 
 ## Format an entire column
 
@@ -250,7 +254,7 @@ students_rgba = students.formatColumns("Name = colorRGB(135, 206, 250, 50)")
 - [Create a new table](./new-and-empty-table.md#newtable)
 - [How to select, view, and update data in tables](./use-select-view-update.md)
 - [How to use filters](./filters.md)
-- [How to use variables and functions in query strings](./queryscope.md)
+- [How to use variables and functions in query strings](./query-scope.md)
 - [`formatColumns()`](../reference/table-operations/format/format-columns.md)
 - [`formatColumnWhere()`](../reference/table-operations/format/format-column-where.md)
 - [`formatRowWhere()`](../reference/table-operations/format/format-row-where.md)

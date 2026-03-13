@@ -63,7 +63,7 @@ source = empty_table(40).update(
 )
 ```
 
-This page does not provide a comprehensive list of all built-ins. For the complete list of functions built into the query language, see [Auto-imported functions](../reference/query-language/query-library/auto-imported-functions.md).
+This page does not provide a comprehensive list of all built-ins. For the complete list of functions built into the query language, see [Auto-imported functions](../reference/query-language/query-library/auto-imported/index.md).
 
 ## Add Java classes to the query library
 
@@ -117,6 +117,6 @@ source = empty_table(10).update(
 - [Built-in variables](./built-in-variables.md)
 - [Ternary conditional operator](./ternary-if-how-to.md)
 - [Java objects in query strings](./java-classes.md)
-- [Auto-imported functions](../reference/query-language/query-library/auto-imported-functions.md)
+- [Auto-imported functions](../reference/query-language/query-library/auto-imported/index.md)
 - [`empty_table`](../reference/table-operations/create/emptyTable.md)
 - [`update`](../reference/table-operations/select/update.md)

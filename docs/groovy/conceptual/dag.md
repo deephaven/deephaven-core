@@ -37,6 +37,12 @@ t2 = t1.lastBy("Label")
 t3 = t1.naturalJoin(t2, "Label", "T2 = Timestamp")
 ```
 
+```groovy order=t1,t2,t3
+t1 = timeTable("PT1S").update("Label=(ii%2)")
+t2 = t1.lastBy("Label")
+t3 = t1.naturalJoin(t2, "Label", "T2=Timestamp")
+```
+
 Here, table `t1` is a real-time table with two columns: `Timestamp` and `Label`. A new row is appended every second, and `Label` alternates between zero and one. Table `t2` contains the most recent row for each Label value, and `t3` joins the most recent `Timestamp` for a `Label`, from `t2`, onto `t1`.
 
 Represented as a DAG, this query looks like:
@@ -76,7 +82,7 @@ The Deephaven query engine is smart. When data flows through the DAG, instead of
 
 ### Update Graph (UG) cycles
 
-When processing real-time data changes, Deephaven batches the changes together at a configurable interval (defaulting to 1000 ms). All of the changes within a batch are processed together. These processing events are called Periodic Update Graph (UG) cycles, and the update notifications propagated through the DAG indicate which rows have been added, modified, deleted, or reindexed (reordered).
+When processing real-time data changes, Deephaven batches the changes together at a configurable interval (defaulting to 1000 ms). All of the changes within a batch are processed together. These processing events are called Periodic Update Graph (UG) cycles, and the update notifications propagated through the DAG indicate which rows have been added, modified, deleted, or reindexed (reordered). You can learn more about these update notifications in our concept guide on [the table update model](./table-update-model.md).
 
 Here's how a UG cycle works:
 

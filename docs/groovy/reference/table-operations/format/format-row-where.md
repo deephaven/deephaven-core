@@ -30,16 +30,16 @@ For decimal formats, the result must be a string, and the formula must be wrappe
 
 ## Returns
 
-A new table applies the specified formatting to the source table.
+A new table that applies the specified formatting to the source table.
 
 ## Examples
 
-In the following example, we use `formatRowWhere` to paint rows where X is greater than 2 red.
+In the following example, we use `formatRowWhere` to paint the table's 4th row red.
 
 ```groovy order=result,tt
 tt = timeTable("PT1S").update("X = ii")
 
-result = tt.formatRowWhere("X > 2", "RED").view()
+result = tt.formatRowWhere("X > 2 && X < 4", "RED").view()
 ```
 
 ## Related documentation

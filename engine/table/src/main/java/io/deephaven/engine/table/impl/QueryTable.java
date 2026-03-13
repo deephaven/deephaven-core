@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl;
 
@@ -31,10 +31,7 @@ import io.deephaven.engine.table.hierarchical.RollupTable;
 import io.deephaven.engine.table.hierarchical.TreeTable;
 import io.deephaven.engine.table.impl.MemoizedOperationKey.SelectUpdateViewOrUpdateView.Flavor;
 import io.deephaven.engine.table.impl.by.*;
-import io.deephaven.engine.table.impl.filter.ExtractBarriers;
-import io.deephaven.engine.table.impl.filter.ExtractInnerConjunctiveFilters;
-import io.deephaven.engine.table.impl.filter.ExtractShiftedColumnDefinitions;
-import io.deephaven.engine.table.impl.filter.ExtractRespectedBarriers;
+import io.deephaven.engine.table.impl.filter.*;
 import io.deephaven.engine.table.impl.hierarchical.RollupTableImpl;
 import io.deephaven.engine.table.impl.hierarchical.TreeTableImpl;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
@@ -329,7 +326,7 @@ public class QueryTable extends BaseTable<QueryTable> {
      * the data source when possible, like in case of parquet files.
      */
     public static boolean STATELESS_FILTERS_BY_DEFAULT =
-            Configuration.getInstance().getBooleanWithDefault("QueryTable.statelessFiltersByDefault", false);
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.statelessFiltersByDefault", true);
 
     /**
      * If set to true, then the default behavior of formulas is to be stateless. Stateless formulas are allowed to be
@@ -338,7 +335,7 @@ public class QueryTable extends BaseTable<QueryTable> {
      * stateless, use {@link SelectColumn#ofStateless(Selectable)}.
      */
     public static boolean STATELESS_SELECT_BY_DEFAULT =
-            Configuration.getInstance().getBooleanWithDefault("QueryTable.statelessSelectByDefault", false);
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.statelessSelectByDefault", true);
 
     /**
      * If set to true, then stateful SelectColumns form implicit barriers. If set to false, then StatefulSelectColumns
@@ -1071,6 +1068,11 @@ public class QueryTable extends BaseTable<QueryTable> {
         }
 
         @Override
+        public String toString() {
+            return "FilteredTable(" + whereListener + ")";
+        }
+
+        @Override
         public void requestRecompute() {
             refilterMatchedRequested = refilterUnmatchedRequested = true;
             Require.neqNull(whereListener, "whereListener").notifyChanges();
@@ -1332,6 +1334,21 @@ public class QueryTable extends BaseTable<QueryTable> {
         compilationProcessor.compile();
     }
 
+    /**
+     * Create a copy of the array of filters, introducing the declared barriers into the first filter if any are
+     * provided.
+     */
+    private WhereFilter[] cloneFiltersForReindexing(final WhereFilter[] filters,
+            final Collection<Object> declaredBarriers) {
+        if (filters.length == 0 || declaredBarriers.isEmpty()) {
+            return filters;
+        }
+        final WhereFilter[] toUse = filters.clone();
+        // Force the first filter to declare all the barriers we have already processed.
+        toUse[0] = toUse[0].withDeclaredBarriers(declaredBarriers.toArray());
+        return toUse;
+    }
+
     private QueryTable whereInternal(final WhereFilter... filters) {
         if (filters.length == 0) {
             return (QueryTable) prepareReturnThis();
@@ -1346,32 +1363,74 @@ public class QueryTable extends BaseTable<QueryTable> {
                 () -> {
                     initializeFilters(extractedFilters);
 
-                    for (int fi = 0; fi < extractedFilters.length; ++fi) {
-                        if (!(extractedFilters[fi] instanceof ReindexingFilter)) {
-                            continue;
+                    final boolean hasReindexingFilter = Arrays.stream(extractedFilters)
+                            .anyMatch(filter -> !ExtractReindexingFilters.of(filter).isEmpty());
+                    if (hasReindexingFilter) {
+                        // Filters will be processed in subsets of the provided list. Need to track all the
+                        // declared barriers that we have encountered.
+                        final Set<Object> declaredBarriers = new HashSet<>();
+
+                        for (int fi = 0; fi < extractedFilters.length; ++fi) {
+                            final WhereFilter filter = extractedFilters[fi];
+                            final Collection<ReindexingFilter> reindexingFilters = ExtractReindexingFilters.of(filter);
+                            if (reindexingFilters.isEmpty()) {
+                                continue;
+                            }
+                            if (reindexingFilters.size() > 1) {
+                                throw new IllegalStateException(
+                                        "Expected at most one reindexing filter per component filter: " + filter);
+                            }
+                            final ReindexingFilter reindexingFilter = reindexingFilters.iterator().next();
+                            final boolean first = fi == 0;
+                            final boolean last = fi == extractedFilters.length - 1;
+                            if (last && !reindexingFilter.requiresSorting()) {
+                                // If this is the last (or only) filter, we can just run it as normal unless it requires
+                                // sorting.
+                                break;
+                            }
+                            QueryTable result = this;
+                            if (!first) {
+                                final WhereFilter[] subset = Arrays.copyOf(extractedFilters, fi);
+                                final WhereFilter[] toUse = cloneFiltersForReindexing(subset, declaredBarriers);
+                                result = result.whereInternal(toUse);
+                                // collect all the newly declared barriers
+                                for (final WhereFilter priorFilter : subset) {
+                                    declaredBarriers.addAll(ExtractBarriers.of(priorFilter));
+                                }
+                            }
+                            if (reindexingFilter.requiresSorting()) {
+                                result = (QueryTable) result.sort(reindexingFilter.getSortColumns());
+                                if (!result.isFlat()) {
+                                    // The only reindexing filters are ClockFilters; and the SortedClockFilter is the
+                                    // only one that requires sorting. It makes the assumption that sort flattens the
+                                    // table, which is generally true for a historical sort - but if the input was
+                                    // already sorted, we don't create a new table but rather just return a copy of the
+                                    // table with the sorted columns set.
+                                    result = (QueryTable) result.flatten();
+                                }
+                                reindexingFilter.sortingDone();
+                            }
+                            // Execute the current filter (which is or wraps a reindexing filter)
+                            // adding all previous encountered barriers as declared barriers.
+                            if (!declaredBarriers.isEmpty()) {
+                                result = result.whereInternal(filter.withDeclaredBarriers(declaredBarriers.toArray()));
+                            } else {
+                                result = result.whereInternal(filter);
+                            }
+                            // Add the barriers from the current filter.
+                            declaredBarriers.addAll(ExtractBarriers.of(filter));
+                            if (!last) {
+                                final WhereFilter[] subset =
+                                        Arrays.copyOfRange(extractedFilters, fi + 1, extractedFilters.length);
+                                final WhereFilter[] toUse = cloneFiltersForReindexing(subset, declaredBarriers);
+                                result = result.whereInternal(toUse);
+                                // collect all the new barriers that may have been processed
+                                for (final WhereFilter priorFilter : subset) {
+                                    declaredBarriers.addAll(ExtractBarriers.of(priorFilter));
+                                }
+                            }
+                            return result;
                         }
-                        final ReindexingFilter reindexingFilter = (ReindexingFilter) extractedFilters[fi];
-                        final boolean first = fi == 0;
-                        final boolean last = fi == extractedFilters.length - 1;
-                        if (last && !reindexingFilter.requiresSorting()) {
-                            // If this is the last (or only) filter, we can just run it as normal unless it requires
-                            // sorting.
-                            break;
-                        }
-                        QueryTable result = this;
-                        if (!first) {
-                            result = result.whereInternal(Arrays.copyOf(extractedFilters, fi));
-                        }
-                        if (reindexingFilter.requiresSorting()) {
-                            result = (QueryTable) result.sort(reindexingFilter.getSortColumns());
-                            reindexingFilter.sortingDone();
-                        }
-                        result = result.whereInternal(reindexingFilter);
-                        if (!last) {
-                            result = result.whereInternal(
-                                    Arrays.copyOfRange(extractedFilters, fi + 1, extractedFilters.length));
-                        }
-                        return result;
                     }
 
                     boolean hasConstArrayOffsetFilter = false;
@@ -1874,14 +1933,6 @@ public class QueryTable extends BaseTable<QueryTable> {
         // Assuming that the description is human-readable, we make it once here and use it twice.
         final String updateDescription = humanReadablePrefix + '(' + selectColumnString(viewColumns) + ')';
 
-        if (STATELESS_SELECT_BY_DEFAULT) {
-            // An updateView can fetch things in any order; therefore we cannot allow it to be stateful. That said, we
-            // cannot check this if stateful is the default, because it will break too much user code.
-            if (Arrays.stream(viewColumns).anyMatch(Predicate.not(SelectColumn::isStateless))) {
-                throw new IllegalArgumentException("A stateful column cannot safely be used in a view or updateView.");
-            }
-        }
-
         if (Arrays.stream(viewColumns).anyMatch(vc -> vc.respectedBarriers() != null)) {
             throw new IllegalArgumentException("view and updateView cannot respect barriers");
         }
@@ -1901,6 +1952,18 @@ public class QueryTable extends BaseTable<QueryTable> {
                                                 publishTheseSources, true, viewColumns);
                                 final SelectColumn[] processedViewColumns = analyzerContext.getProcessedColumns()
                                         .toArray(SelectColumn[]::new);
+
+                                if (STATELESS_SELECT_BY_DEFAULT) {
+                                    // An updateView can fetch things in any order; therefore we cannot allow it to be
+                                    // stateful. That said, we cannot check this if stateful is the default, because
+                                    // it will break too much user code.
+                                    if (Arrays.stream(processedViewColumns)
+                                            .anyMatch(Predicate.not(SelectColumn::isStateless))) {
+                                        throw new IllegalArgumentException(
+                                                "A stateful column cannot safely be used in a view or updateView.");
+                                    }
+                                }
+
                                 final Map<String, ColumnSource<?>> resultMap =
                                         analyzerContext.getPublishedColumnSources();
                                 final TableDefinition tableDef = TableDefinition.inferFrom(this,
@@ -2821,7 +2884,8 @@ public class QueryTable extends BaseTable<QueryTable> {
      * 2^minimumUngroupBase rows in the output table at startup. If rows are added to the table, this base may need to
      * grow. If a single row in the input has more than 2^base rows, then the base must change for all of the rows.
      */
-    static int minimumUngroupBase = 10;
+    static int minimumUngroupBase =
+            Configuration.getInstance().getIntegerWithDefault("QueryTable.minimumUngroupBase", 10);
 
     /**
      * For unit testing, it can be useful to reduce the minimum ungroup base.

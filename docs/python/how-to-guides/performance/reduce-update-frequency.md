@@ -54,7 +54,7 @@ result = source.snapshot_when(trigger_table=trigger)
 
 Creating a static snapshot of a ticking table is as easy as calling [`snapshot`](../../reference/table-operations/snapshot/snapshot.md) on the table.
 
-This example creates a ticking table, and then after some time, calls `snapshot` to capture a moment in the table's history.
+This example creates a ticking table, and then after some time, calls [`snapshot`](../../reference/table-operations/snapshot/snapshot.md) to capture a moment in the table's history.
 
 ```python ticking-table order=null
 from deephaven import time_table

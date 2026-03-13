@@ -1,7 +1,9 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.chunkfilter;
+
+import io.deephaven.engine.table.MatchOptions;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -11,8 +13,8 @@ public class ObjectChunkMatchFilterFactory {
     private ObjectChunkMatchFilterFactory() {} // static use only
 
     @SuppressWarnings("rawtypes")
-    public static ObjectChunkFilter makeFilter(boolean invert, Object... values) {
-        if (invert) {
+    public static ObjectChunkFilter makeFilter(final MatchOptions matchOptions, final Object... values) {
+        if (matchOptions.inverted()) {
             if (values.length == 1) {
                 return new InverseSingleValueObjectChunkFilter(values[0]);
             }

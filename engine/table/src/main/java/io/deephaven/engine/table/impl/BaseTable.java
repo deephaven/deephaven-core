@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl;
 
@@ -491,7 +491,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
     private Collection<Object> ensureParents() {
         // noinspection unchecked
         return FieldUtils.ensureField(this, PARENTS_UPDATER, EMPTY_PARENTS,
-                () -> new KeyedObjectHashSet<>(IdentityKeyedObjectKey.getInstance()));
+                () -> new KeyedObjectHashSet<>(1, 0.5f, IdentityKeyedObjectKey.getInstance()));
     }
 
     @Override

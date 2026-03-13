@@ -52,8 +52,7 @@ The following table shows current debugging support for different Deephaven inst
   </tbody>
 </table>
 
-> [!NOTE]
-> **PyCharm Professional** is a paid product with remote debugging capabilities. **PyCharm Community** is free but only supports local debugging (pip installation only).
+> [!NOTE] > **PyCharm Professional** is a paid product with remote debugging capabilities. **PyCharm Community** is free but only supports local debugging (pip installation only).
 
 > [!WARNING]
 > PyCharm debugging has only been verified to work with **PyCharm 2024 or higher**. Earlier versions may have compatibility issues.
@@ -91,3 +90,10 @@ Use PyCharm Professional's remote debugging server to debug versions of Deephave
 </CoreTutorialCard>
 
 </div>
+
+## Related documentation
+
+- [Docker debugging setup](./docker-setup.md)
+- [Pip debugging setup](./pip-setup.md)
+- [Source debugging setup](./source-setup.md)
+- [Common debugging problems](./common-problems.md)

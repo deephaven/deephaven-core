@@ -45,7 +45,7 @@ result = new_table([float_col("Floats", [9.9, 8.8, 7.7])])
 
 ## Related documentation
 
-- [Create static tables](../../../how-to-guides/new-and-empty-table.md#new_table)
+- [Create static tables](../../../how-to-guides/new-and-empty-table.md)
 - [`new_table`](./newTable.md)
 - [Javadoc](https://deephaven.io/core/javadoc/io/deephaven/engine/util/TableTools.html#floatCol(java.lang.String,float...))
 - [Pydoc](/core/pydoc/code/deephaven.column.html#deephaven.column.float_col)

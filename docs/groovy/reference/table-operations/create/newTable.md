@@ -86,7 +86,7 @@ result = newTable(
 
 ## Related documentation
 
-- [Create new and empty tables](../../../how-to-guides/new-and-empty-table.md)
+- [How to create static tables](../../../how-to-guides/new-and-empty-table.md)
 - [`emptyTable`](./emptyTable.md)
 - [`boolCol`](./booleanCol.md)
 - [`byteCol`](./byteCol.md)

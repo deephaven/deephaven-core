@@ -197,6 +197,6 @@ flatMetadata = ParquetTools.readTable(
 
 ## Related documentation
 
-- [Parquet formats](../../conceptual/parquet-formats.md)
+- [Parquet formats](./parquet-formats.md)
 - [Parquet export](./parquet-export.md)
 - [Parquet instructions](./parquet-instructions.md)

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl;
 
@@ -10,6 +10,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.MatchOptions;
 import io.deephaven.engine.table.impl.chunkfillers.ChunkFiller;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkMatchFilterFactory;
@@ -103,21 +104,12 @@ public abstract class AbstractColumnSource<T> implements
 
     @Override
     public WritableRowSet match(
-            final boolean invertMatch,
             final boolean usePrev,
-            final boolean caseInsensitive,
-            @NotNull final RowSet rowsetToFilter,
+            final MatchOptions matchOptions,
+            @NotNull final RowSet selection,
             final Object... keys) {
-        return doChunkFilter(invertMatch, usePrev, caseInsensitive, rowsetToFilter, keys);
-    }
-
-    private WritableRowSet doChunkFilter(final boolean invertMatch,
-            final boolean usePrev,
-            final boolean caseInsensitive,
-            @NotNull final RowSet rowsetToFilter,
-            final Object[] keys) {
-        return ChunkFilter.applyChunkFilter(rowsetToFilter, this, usePrev,
-                ChunkMatchFilterFactory.getChunkFilter(type, caseInsensitive, invertMatch, keys));
+        return ChunkFilter.applyChunkFilter(selection, this, usePrev,
+                ChunkMatchFilterFactory.getChunkFilter(type, matchOptions, keys));
     }
 
     @Override

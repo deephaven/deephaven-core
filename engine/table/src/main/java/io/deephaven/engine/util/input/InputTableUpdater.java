@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.util.input;
 
@@ -7,6 +7,8 @@ import io.deephaven.engine.exceptions.ArgumentException;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import org.jetbrains.annotations.Nullable;
+import com.google.protobuf.Any;
 
 import java.io.IOException;
 import java.util.List;
@@ -52,6 +54,19 @@ public interface InputTableUpdater {
         return getTableDefinition().getColumnNames().stream()
                 .filter(colName -> !keyNames.contains(colName))
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * If there are client-side defined restrictions on this column; return them as a JSON string to be interpreted by
+     * the client for properly displaying the edit field.
+     *
+     * @param columnName the column name to query
+     * @return a string representing the restrictions for this column, or null if no client-side restrictions are
+     *         supplied for this column
+     */
+    @Nullable
+    default List<Any> getColumnRestrictions(final String columnName) {
+        return null;
     }
 
     /**

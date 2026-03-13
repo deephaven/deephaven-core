@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CharChunkMatchFilterFactory and run "./gradlew replicateChunkFilters" to regenerate
@@ -8,6 +8,7 @@
 package io.deephaven.engine.table.impl.chunkfilter;
 
 import gnu.trove.set.hash.TShortHashSet;
+import io.deephaven.engine.table.MatchOptions;
 
 /**
  * Creates chunk filters for short values.
@@ -20,8 +21,8 @@ import gnu.trove.set.hash.TShortHashSet;
 public class ShortChunkMatchFilterFactory {
     private ShortChunkMatchFilterFactory() {} // static use only
 
-    public static ShortChunkFilter makeFilter(boolean invertMatch, short... values) {
-        if (invertMatch) {
+    public static ShortChunkFilter makeFilter(final MatchOptions matchOptions, final short... values) {
+        if (matchOptions.inverted()) {
             if (values.length == 1) {
                 return new InverseSingleValueShortChunkFilter(values[0]);
             }

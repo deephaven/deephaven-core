@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 #
 """This module implements the Query class that can be used to execute a chained set of Table operations in one
 batch."""
@@ -12,6 +12,7 @@ from pydeephaven._table_interface import TableInterface
 from pydeephaven._table_ops import NaturalJoinType, NoneOp, SortDirection, TableOp
 from pydeephaven.agg import Aggregation
 from pydeephaven.dherror import DHError
+from pydeephaven.filters import Filter
 from pydeephaven.table import Table
 from pydeephaven.updateby import UpdateByOperation
 
@@ -148,11 +149,11 @@ class Query(TableInterface["Query"]):
         """
         return super().sort(order_by, order)
 
-    def where(self, filters: Union[str, list[str]]) -> Query:
+    def where(self, filters: Union[str, list[str], Filter, list[Filter]]) -> Query:
         """Adds a filter operation to the query.
 
         Args:
-            filters (Union[str, list[str]]): the filter condition expression(s)
+            filters (Union[str, list[str], Filter, list[Filter]]): the filter condition expression(s)
 
         Returns:
             self

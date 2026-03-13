@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 #
 """This module gives users the ability to directly manage the Deephaven query execution context on threads, which is
 critical for applications to correctly launch deferred query evaluations, such as table update operations in threads.
@@ -12,8 +12,9 @@ from typing import Optional, Union
 import jpy
 
 from deephaven import DHError
+from deephaven._query_scope import query_scope_ctx
 from deephaven._wrapper import JObjectWrapper
-from deephaven.jcompat import _to_sequence
+from deephaven.jcompat import to_sequence
 from deephaven.update_graph import UpdateGraph
 
 _JExecutionContext = jpy.get_type("io.deephaven.engine.context.ExecutionContext")
@@ -71,25 +72,26 @@ def make_user_exec_ctx(
     Raises:
         DHError
     """
-    freeze_vars = _to_sequence(freeze_vars)
+    freeze_vars = to_sequence(freeze_vars)
 
     if not freeze_vars:
         return ExecutionContext(
             j_exec_ctx=_JExecutionContext.makeExecutionContext(False)
         )
     else:
-        try:
-            j_exec_ctx = (
-                _JExecutionContext.newBuilder()
-                .captureQueryCompiler()
-                .captureQueryLibrary()
-                .captureQueryScopeVars(*freeze_vars)
-                .captureUpdateGraph()
-                .build()
-            )
-            return ExecutionContext(j_exec_ctx=j_exec_ctx)
-        except Exception as e:
-            raise DHError(message="failed to make a new ExecutionContext") from e
+        with query_scope_ctx():
+            try:
+                j_exec_ctx = (
+                    _JExecutionContext.newBuilder()
+                    .captureQueryCompiler()
+                    .captureQueryLibrary()
+                    .captureQueryScopeVars(*freeze_vars)
+                    .captureUpdateGraph()
+                    .build()
+                )
+                return ExecutionContext(j_exec_ctx=j_exec_ctx)
+            except Exception as e:
+                raise DHError(message="failed to make a new ExecutionContext") from e
 
 
 def get_exec_ctx() -> ExecutionContext:

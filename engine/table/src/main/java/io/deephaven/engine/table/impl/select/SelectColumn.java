@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.select;
 
@@ -250,6 +250,27 @@ public interface SelectColumn extends Selectable, ConcurrencyControl<Selectable>
      * row).
      */
     boolean isStateless();
+
+    /**
+     * Returns true if this column may be parallelized.
+     *
+     * <p>
+     * Even if this method returns true, if the column is not {@link #isStateless() stateless}, the engine does not
+     * parallelize evaluation. This situation can occur, for example if a Python formula is werapped by a
+     * {@link StatelessSelectColumn}. Therefore, this method should report true if the column can be parallelized
+     * independent of statelessness.
+     * </p>
+     *
+     * <p>
+     * Even if a column is not parallelizable, the engine may choose to evaluate it out-of-order and may not evaluate
+     * all rows individually.
+     * </p>
+     *
+     * @return true if this column may be parallelized
+     */
+    default boolean isParallelizable() {
+        return true;
+    }
 
     /**
      * Returns true if this column uses row virtual offset columns of {@code i}, {@code ii} or {@code k}.

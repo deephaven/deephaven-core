@@ -1,5 +1,5 @@
 ﻿//
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 using Io.Deephaven.Proto.Backplane.Grpc;
 using Io.Deephaven.Proto.Backplane.Script.Grpc;

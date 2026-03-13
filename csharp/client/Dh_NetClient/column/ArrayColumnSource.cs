@@ -1,5 +1,5 @@
 ﻿//
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 global using BooleanArrayColumnSource = Deephaven.Dh_NetClient.ArrayColumnSource<bool>;
 global using StringArrayColumnSource = Deephaven.Dh_NetClient.ArrayColumnSource<string>;

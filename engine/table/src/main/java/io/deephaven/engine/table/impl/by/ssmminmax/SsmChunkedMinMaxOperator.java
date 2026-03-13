@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.by.ssmminmax;
 
@@ -107,7 +107,9 @@ public class SsmChunkedMinMaxOperator implements IterativeChunkedAggregationOper
         context.lengthCopy.setSize(length.size());
         context.lengthCopy.copyFromChunk(length, 0, 0, length.size());
 
-        compactAndCountKernel.compactAndCount(context.valueCopy, context.counts, startPositions, context.lengthCopy);
+        // Count NaN, but not NULL values
+        compactAndCountKernel.compactAndCount(context.valueCopy, context.counts, startPositions, context.lengthCopy,
+                false, true);
 
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int runLength = context.lengthCopy.get(ii);
@@ -142,7 +144,9 @@ public class SsmChunkedMinMaxOperator implements IterativeChunkedAggregationOper
         context.lengthCopy.setSize(length.size());
         context.lengthCopy.copyFromChunk(length, 0, 0, length.size());
 
-        compactAndCountKernel.compactAndCount(context.valueCopy, context.counts, startPositions, context.lengthCopy);
+        // Count NaN, but not NULL values
+        compactAndCountKernel.compactAndCount(context.valueCopy, context.counts, startPositions, context.lengthCopy,
+                false, true);
 
         final SegmentedSortedMultiSet.RemoveContext removeContext = removeContextFactory.get();
         for (int ii = 0; ii < startPositions.size(); ++ii) {
@@ -180,7 +184,9 @@ public class SsmChunkedMinMaxOperator implements IterativeChunkedAggregationOper
         context.lengthCopy.setSize(length.size());
         context.lengthCopy.copyFromChunk(length, 0, 0, length.size());
 
-        compactAndCountKernel.compactAndCount(context.valueCopy, context.counts, startPositions, context.lengthCopy);
+        // Count NaN, but not NULL values
+        compactAndCountKernel.compactAndCount(context.valueCopy, context.counts, startPositions, context.lengthCopy,
+                false, true);
 
         final SegmentedSortedMultiSet.RemoveContext removeContext = removeContextFactory.get();
         context.ssmsToMaybeClear.fillWithValue(0, destinations.size(), false);
@@ -209,7 +215,9 @@ public class SsmChunkedMinMaxOperator implements IterativeChunkedAggregationOper
         context.lengthCopy.setSize(length.size());
         context.lengthCopy.copyFromChunk(length, 0, 0, length.size());
 
-        compactAndCountKernel.compactAndCount(context.valueCopy, context.counts, startPositions, context.lengthCopy);
+        // Count NaN, but not NULL values
+        compactAndCountKernel.compactAndCount(context.valueCopy, context.counts, startPositions, context.lengthCopy,
+                false, true);
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int runLength = context.lengthCopy.get(ii);
             final int startPosition = startPositions.get(ii);
@@ -242,7 +250,8 @@ public class SsmChunkedMinMaxOperator implements IterativeChunkedAggregationOper
 
         context.valueCopy.setSize(values.size());
         context.valueCopy.copyFromChunk(values, 0, 0, values.size());
-        compactAndCountKernel.compactAndCount(context.valueCopy, context.counts);
+        // Count NaN, but not NULL values
+        compactAndCountKernel.compactAndCount(context.valueCopy, context.counts, false, true);
         final SegmentedSortedMultiSet ssm = ssmForSlot(destination);
         if (context.valueCopy.size() > 0) {
             ssm.insert(context.valueCopy, context.counts);
@@ -257,7 +266,8 @@ public class SsmChunkedMinMaxOperator implements IterativeChunkedAggregationOper
 
         context.valueCopy.setSize(values.size());
         context.valueCopy.copyFromChunk(values, 0, 0, values.size());
-        compactAndCountKernel.compactAndCount(context.valueCopy, context.counts);
+        // Count NaN, but not NULL values
+        compactAndCountKernel.compactAndCount(context.valueCopy, context.counts, false, true);
         if (context.valueCopy.size() == 0) {
             return false;
         }
@@ -276,7 +286,8 @@ public class SsmChunkedMinMaxOperator implements IterativeChunkedAggregationOper
 
         context.valueCopy.setSize(preValues.size());
         context.valueCopy.copyFromChunk(preValues, 0, 0, preValues.size());
-        compactAndCountKernel.compactAndCount(context.valueCopy, context.counts);
+        // Count NaN, but not NULL values
+        compactAndCountKernel.compactAndCount(context.valueCopy, context.counts, false, true);
         SegmentedSortedMultiSet ssm = null;
         if (context.valueCopy.size() > 0) {
             ssm = ssmForSlot(destination);
@@ -285,7 +296,8 @@ public class SsmChunkedMinMaxOperator implements IterativeChunkedAggregationOper
 
         context.valueCopy.setSize(postValues.size());
         context.valueCopy.copyFromChunk(postValues, 0, 0, postValues.size());
-        compactAndCountKernel.compactAndCount(context.valueCopy, context.counts);
+        // Count NaN, but not NULL values
+        compactAndCountKernel.compactAndCount(context.valueCopy, context.counts, false, true);
         if (context.valueCopy.size() > 0) {
             if (ssm == null) {
                 ssm = ssmForSlot(destination);

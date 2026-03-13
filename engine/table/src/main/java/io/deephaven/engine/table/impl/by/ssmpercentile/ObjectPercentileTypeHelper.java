@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CharPercentileTypeHelper and run "./gradlew replicateSegmentedSortedMultiset" to regenerate
@@ -43,6 +43,8 @@ public class ObjectPercentileTypeHelper implements SsmChunkedPercentileOperator.
         if (totalSize == 0) {
             return setResult(destination, null);
         } else {
+            // region maybeHandleNaN
+            // endregion maybeHandleNaN
             final long targetLo = Math.round((totalSize - 1) * percentile) + 1;
             if (loSize < targetLo) {
                 ssmHi.moveFrontToBack(ssmLo, targetLo - loSize);

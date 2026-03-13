@@ -1,15 +1,15 @@
 ---
-title: Access table meta data
+title: Access table metadata
 sidebar_label: Metadata
 ---
 
-This guide will show you how to use methods and attributes from Deephaven's `Table` class to access the meta data for your table.
+This guide will show you how to use methods and attributes from Deephaven's `Table` class to access the metadata for your table.
 
 A table's metadata provides basic information about its source data, such as the table type and size, whether the data is refreshing, and the data types of each column. You may want to confirm if a column is an `int` or a `double`, or check whether a column is a partitioning column or grouping column.
 
-## Get a metadata table with `meta`
+## `meta`
 
-The [`meta`](../reference/table-operations/metadata/meta.md) method creates a new table that contains the table's meta data. Specifically, this table contains information about every column in the original table.
+The [`meta`](../reference/table-operations/metadata/meta.md) method creates a new table that contains the table's metadata. Specifically, this table contains information about every column in the original table.
 
 ```groovy syntax
 result = source.meta()
@@ -27,7 +27,7 @@ miami = newTable(
 )
 ```
 
-We can access the meta data as follows:
+We can access the metadata as follows:
 
 ```groovy test-set=2
 meta = miami.meta()

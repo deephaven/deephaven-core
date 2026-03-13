@@ -25,8 +25,10 @@ The table containing the set of values to filter on.
 
 A list of the columns (as [Strings](../../query-language/types/strings.md)) to match between the two tables.
 
-- `"X"` will match on the same column name. Equivalent to `"X = X"`.
+- `"X"` will match on the same column name.
 - `"X = Y"` will match when the columns have different names, with `X` being the source table column and `Y` being the filter table column.
+
+Matches are defined the same as the set exclusion operator ([`not in`](../../query-language/match-filters/not-in.md)).
 
 </Param>
 </ParamTable>

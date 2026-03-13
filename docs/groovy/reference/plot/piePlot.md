@@ -2,7 +2,7 @@
 title: piePlot
 ---
 
-The `piePlot` method creates category histograms using data from Deephaven tables.
+The `piePlot` method creates pie charts using data from Deephaven tables.
 
 ## Syntax
 

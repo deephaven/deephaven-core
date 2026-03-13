@@ -1,10 +1,11 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.replicators;
 
 import io.deephaven.replication.ReplicatePrimitiveCode;
 import io.deephaven.replication.ReplicationUtils;
+import io.deephaven.util.type.ArrayTypeUtils;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
@@ -50,7 +51,8 @@ public class ReplicateColumnStats {
                 "import io.deephaven.util.QueryConstants;");
         lines = ReplicationUtils.addImport(lines,
                 Set.class,
-                HashSet.class);
+                HashSet.class,
+                ArrayTypeUtils.class);
         lines = globalReplacements(lines,
                 "QueryConstants.NULL_OBJECT", "null",
                 "\\? extends Attributes.Values", "?, ? extends Attributes.Values",
@@ -62,6 +64,18 @@ public class ReplicateColumnStats {
                 "new ChunkedObjectColumnIterator", "new ChunkedObjectColumnIterator<>",
                 "\\(ObjectColumnIterator", "(ObjectColumnIterator<Object>",
                 "nextObject\\(\\)", "next()");
+        lines = ReplicationUtils.replaceRegion(lines, "add_entries", List.of("" +
+                "        if (columnSource.getType().isArray()) {\n" +
+                "            countValues.forEachEntry((o, c) -> {\n" +
+                "                sorted.add(Map.entry(ArrayTypeUtils.toString(o), c));\n" +
+                "                return true;\n" +
+                "            });\n" +
+                "        } else {\n" +
+                "            countValues.forEachEntry((o, c) -> {\n" +
+                "                sorted.add(Map.entry(Objects.toString(o), c));\n" +
+                "                return true;\n" +
+                "            });\n" +
+                "        }"));
         FileUtils.writeLines(objectFile, lines);
     }
 }

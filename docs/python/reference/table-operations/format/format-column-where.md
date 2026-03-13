@@ -45,18 +45,18 @@ A new table that applies the specified formatting to the source table.
 
 ## Examples
 
-In the following example, we use `format_column_where` to paint the "X" column red where the value is greater than 2.
+In the following example, we use `format_column_where` to paint the "Timestamp" column red where the value of "X" is between 2 and 5.
 
 ```python order=result,tt
 from deephaven import time_table
 
 tt = time_table("PT1S").update("X = ii")
 
-result = tt.format_column_where(col="X", cond="X > 2", formula="RED")
+result = tt.format_column_where(col="Timestamp", cond="X > 2 && X < 5", formula="RED")
 ```
 
 ## Related documentation
 
 - [How to apply color formatting to columns in a table](../../../how-to-guides/format-columns.md)
-- [How to select, view, and update data](../../../how-to-guides/use-select-view-update.md)
+- [How to `select`, `view`, and `update` data](../../../how-to-guides/use-select-view-update.md)
 - [Pydoc](/core/pydoc/code/deephaven.table.html#deephaven.table.Table.format_column_where)

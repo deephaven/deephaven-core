@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.perf;
 
@@ -186,6 +186,26 @@ public abstract class QueryPerformanceRecorderState {
         }
 
         return false;
+    }
+
+    /**
+     * See {@link QueryPerformanceRecorder#setCallsiteWithCloseable()}.
+     */
+    static SafeCloseable setCallSiteWithCloseable() {
+        if (setCallsite()) {
+            return QueryPerformanceRecorder::clearCallsite;
+        }
+        return null;
+    }
+
+    /**
+     * See {@link QueryPerformanceRecorder#setCallsiteWithCloseable(String)}.
+     */
+    static SafeCloseable setCallSiteWithCloseable(final String callsite) {
+        if (setCallsite(callsite)) {
+            return QueryPerformanceRecorder::clearCallsite;
+        }
+        return null;
     }
 
     /**

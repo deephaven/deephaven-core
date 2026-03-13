@@ -98,6 +98,6 @@ publisher.publishFailure(new RuntimeException("Publisher shut down by user."))
 
 ## Related documentation
 
-- [How to use TablePublisher](../../../how-to-guides/dynamic-table-writer.md#table-publisher)
+- [How to use TablePublisher](../../../how-to-guides/table-publisher.md#table-publisher)
 - [`emptyTable`](./emptyTable.md)
 - [Javadoc](/core/javadoc/io/deephaven/stream/TablePublisher.html)

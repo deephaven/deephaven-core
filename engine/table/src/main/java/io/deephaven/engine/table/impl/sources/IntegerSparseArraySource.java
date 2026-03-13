@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CharacterSparseArraySource and run "./gradlew replicateSourcesAndChunks" to regenerate
@@ -48,13 +48,13 @@ import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.*;
 public class IntegerSparseArraySource extends SparseArrayColumnSource<Integer>
         implements MutableColumnSourceGetDefaults.ForInt /* MIXIN_IMPLS */ {
     // region recyclers
-    private static final SoftRecycler<int[]> recycler = new SoftRecycler<>(DEFAULT_RECYCLER_CAPACITY,
+    private static final SoftRecycler<int[]> recycler = new SoftRecycler<>(SparseArrayColumnSourceConfiguration.INT_RECYCLER_CAPACITY,
             () -> new int[BLOCK_SIZE], null);
-    private static final SoftRecycler<int[][]> recycler2 = new SoftRecycler<>(DEFAULT_RECYCLER_CAPACITY,
+    private static final SoftRecycler<int[][]> recycler2 = new SoftRecycler<>(SparseArrayColumnSourceConfiguration.INT_RECYCLER_CAPACITY2,
             () -> new int[BLOCK2_SIZE][], null);
-    private static final SoftRecycler<IntOneOrN.Block2[]> recycler1 = new SoftRecycler<>(DEFAULT_RECYCLER_CAPACITY,
+    private static final SoftRecycler<IntOneOrN.Block2[]> recycler1 = new SoftRecycler<>(SparseArrayColumnSourceConfiguration.INT_RECYCLER_CAPACITY1,
             () -> new IntOneOrN.Block2[BLOCK1_SIZE], null);
-    private static final SoftRecycler<IntOneOrN.Block1[]> recycler0 = new SoftRecycler<>(DEFAULT_RECYCLER_CAPACITY,
+    private static final SoftRecycler<IntOneOrN.Block1[]> recycler0 = new SoftRecycler<>(SparseArrayColumnSourceConfiguration.INT_RECYCLER_CAPACITY0,
             () -> new IntOneOrN.Block1[BLOCK0_SIZE], null);
     // endregion recyclers
 

@@ -1,9 +1,10 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.chunkfilter;
 
 import gnu.trove.set.hash.TCharHashSet;
+import io.deephaven.engine.table.MatchOptions;
 
 /**
  * Creates chunk filters for char values.
@@ -16,8 +17,8 @@ import gnu.trove.set.hash.TCharHashSet;
 public class CharChunkMatchFilterFactory {
     private CharChunkMatchFilterFactory() {} // static use only
 
-    public static CharChunkFilter makeFilter(boolean invertMatch, char... values) {
-        if (invertMatch) {
+    public static CharChunkFilter makeFilter(final MatchOptions matchOptions, final char... values) {
+        if (matchOptions.inverted()) {
             if (values.length == 1) {
                 return new InverseSingleValueCharChunkFilter(values[0]);
             }

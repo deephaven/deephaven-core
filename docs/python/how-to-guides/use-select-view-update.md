@@ -37,7 +37,7 @@ table_lazy_update = source.lazy_update(["New_Column_A = Column_1 + Column_2^2"])
 
 Within these selection and update operations you can use [query strings](./query-string-overview.md) to transform data; do math; use common [operators](./operators.md), [literals](./query-string-overview.md#literals), objects, and [special variables](../reference/query-language/variables/special-variables.md); [cast data types](../reference/query-language/control-flow/casting.md); [parse and manipulate strings](./work-with-strings.md); [handle arrays](./work-with-arrays.md); [use built-in functions](./built-in-functions.md); [operate on time](../conceptual/time-in-deephaven.md); [bin data](../reference/community-questions/bin-times-specific-time.md#every-day); [introduce ternaries](./ternary-if-how-to.md); and address other vital use cases by generating a new column, manipulating an existing column, or combining and decorating multiple columns from a table. You can also use Java methods, Python, and user-defined and 3rd-party library functions within these table operations.
 
-For example, below is an inelegant, but demonstrative script of using [query strings](./query-string-overview.md) within an [`update`](../reference/table-operations/select/update.md) operation, as representative of the other four methods. The projections below are just just a taste of what you can do with these operations and query strings.
+For example, below is an inelegant, but demonstrative script of using [query strings](./query-string-overview.md) within an [`update`](../reference/table-operations/select/update.md) operation, as representative of the other four methods. The projections below are just a taste of what you can do with these operations and query strings.
 
 ```python order=source,result
 # Create a sample table
@@ -123,7 +123,7 @@ For other cases, consider using `select` or `update`. ([`lazy_update`](../refere
 Extreme cases #1-4 from the note above are easy to determine. The challenge in determinging the fitness of `update_view` or `view` (over their `update` or `select` counterparts) comes when use case conditions are less obvious. Here are some good rules of thumb for when to prefer the `update_view` or `view` over the alternatives:
 
 - The table is the last node in the DAG and it isn't obvious how the calculated column will be used.
-- The table updates in real-time, the new column will therefore be ticking, and clients/comsumers thereof will be sporadic.
+- The table updates in real-time, the new column will therefore be ticking, and clients/consumers thereof will be sporadic.
 - The table is big, the column is intermediate and only used once in downstream calculations.
 - The only consumers of the new column are humans using GUIs (and therefore restricted to the relatively small scale of viewports in their UI).
 
@@ -137,7 +137,7 @@ The [`lazy_update`](../reference/table-operations/select/lazy-update.md) method 
 
 Similar to `update_view`, with `lazy_update` column formulas are computed on-demand, deferring computation and memory until it is required.
 
-When performing a `lazy_update`, cell values are stored in memory in a cache. Because results are cached (memoized) for the set of input values, the same input values will never be computed twice. Existing results are referenced without additional memory allocation. THis improves performance when the number of distinct inputs are low relative to the number of rows in the table.
+When performing a `lazy_update`, cell values are stored in memory in a cache. Because results are cached (memoized) for the set of input values, the same input values will never be computed twice. Existing results are referenced without additional memory allocation. This improves performance when the number of distinct inputs are low relative to the number of rows in the table.
 
 > [!NOTE]
 > The syntax for the `lazy_update`, [`update_view`](../reference/table-operations/select/update-view.md), and [`update`](../reference/table-operations/select/update.md) methods is identical, as is the resulting table.

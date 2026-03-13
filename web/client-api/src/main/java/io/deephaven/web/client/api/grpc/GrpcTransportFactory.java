@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api.grpc;
 
@@ -29,11 +29,11 @@ public interface GrpcTransportFactory {
     GrpcTransport create(GrpcTransportOptions options);
 
     /**
-     * Return true to signal that created transports may have {@link GrpcTransport#sendMessage(Uint8Array)} called on it
-     * more than once before {@link GrpcTransport#finishSend()} should be called.
+     * Return {@code true} to signal that created transports may have {@link GrpcTransport#sendMessage(Uint8Array)}
+     * called on it more than once before {@link GrpcTransport#finishSend()} should be called.
      * 
-     * @return true to signal that the implementation can stream multiple messages, false otherwise indicating that
-     *         Open/Next gRPC calls should be used
+     * @return {@code true} to signal that the implementation can stream multiple messages, or {@code false} to indicate
+     *         that Open/Next gRPC calls should be used.
      */
     @JsProperty
     boolean getSupportsClientStreaming();

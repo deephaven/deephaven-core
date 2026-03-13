@@ -42,9 +42,10 @@ class WrappedAuthenticationRequest(google.protobuf.message.Message):
         type: builtins.str = ...,
         payload: builtins.bytes = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing.Literal["payload", b"payload", "type", b"type"]) -> None: ...
+    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["payload", b"payload", "type", b"type"]
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
 
-global___WrappedAuthenticationRequest = WrappedAuthenticationRequest
+Global___WrappedAuthenticationRequest: typing_extensions.TypeAlias = WrappedAuthenticationRequest
 
 @typing.final
 class HandshakeRequest(google.protobuf.message.Message):
@@ -74,9 +75,10 @@ class HandshakeRequest(google.protobuf.message.Message):
         auth_protocol: builtins.int = ...,
         payload: builtins.bytes = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing.Literal["auth_protocol", b"auth_protocol", "payload", b"payload"]) -> None: ...
+    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["auth_protocol", b"auth_protocol", "payload", b"payload"]
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
 
-global___HandshakeRequest = HandshakeRequest
+Global___HandshakeRequest: typing_extensions.TypeAlias = HandshakeRequest
 
 @typing.final
 class HandshakeResponse(google.protobuf.message.Message):
@@ -117,9 +119,10 @@ class HandshakeResponse(google.protobuf.message.Message):
         token_deadline_time_millis: builtins.int = ...,
         token_expiration_delay_millis: builtins.int = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing.Literal["metadata_header", b"metadata_header", "session_token", b"session_token", "token_deadline_time_millis", b"token_deadline_time_millis", "token_expiration_delay_millis", b"token_expiration_delay_millis"]) -> None: ...
+    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["metadata_header", b"metadata_header", "session_token", b"session_token", "token_deadline_time_millis", b"token_deadline_time_millis", "token_expiration_delay_millis", b"token_expiration_delay_millis"]
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
 
-global___HandshakeResponse = HandshakeResponse
+Global___HandshakeResponse: typing_extensions.TypeAlias = HandshakeResponse
 
 @typing.final
 class CloseSessionResponse(google.protobuf.message.Message):
@@ -131,7 +134,7 @@ class CloseSessionResponse(google.protobuf.message.Message):
         self,
     ) -> None: ...
 
-global___CloseSessionResponse = CloseSessionResponse
+Global___CloseSessionResponse: typing_extensions.TypeAlias = CloseSessionResponse
 
 @typing.final
 class ReleaseRequest(google.protobuf.message.Message):
@@ -145,10 +148,12 @@ class ReleaseRequest(google.protobuf.message.Message):
         *,
         id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing.Literal["id", b"id"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing.Literal["id", b"id"]) -> None: ...
+    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["id", b"id"]
+    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
+    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["id", b"id"]
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
 
-global___ReleaseRequest = ReleaseRequest
+Global___ReleaseRequest: typing_extensions.TypeAlias = ReleaseRequest
 
 @typing.final
 class ReleaseResponse(google.protobuf.message.Message):
@@ -160,7 +165,7 @@ class ReleaseResponse(google.protobuf.message.Message):
         self,
     ) -> None: ...
 
-global___ReleaseResponse = ReleaseResponse
+Global___ReleaseResponse: typing_extensions.TypeAlias = ReleaseResponse
 
 @typing.final
 class ExportRequest(google.protobuf.message.Message):
@@ -178,10 +183,12 @@ class ExportRequest(google.protobuf.message.Message):
         source_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
         result_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing.Literal["result_id", b"result_id", "source_id", b"source_id"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing.Literal["result_id", b"result_id", "source_id", b"source_id"]) -> None: ...
+    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["result_id", b"result_id", "source_id", b"source_id"]
+    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
+    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["result_id", b"result_id", "source_id", b"source_id"]
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
 
-global___ExportRequest = ExportRequest
+Global___ExportRequest: typing_extensions.TypeAlias = ExportRequest
 
 @typing.final
 class ExportResponse(google.protobuf.message.Message):
@@ -193,7 +200,7 @@ class ExportResponse(google.protobuf.message.Message):
         self,
     ) -> None: ...
 
-global___ExportResponse = ExportResponse
+Global___ExportResponse: typing_extensions.TypeAlias = ExportResponse
 
 @typing.final
 class PublishRequest(google.protobuf.message.Message):
@@ -211,10 +218,12 @@ class PublishRequest(google.protobuf.message.Message):
         source_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
         result_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing.Literal["result_id", b"result_id", "source_id", b"source_id"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing.Literal["result_id", b"result_id", "source_id", b"source_id"]) -> None: ...
+    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["result_id", b"result_id", "source_id", b"source_id"]
+    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
+    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["result_id", b"result_id", "source_id", b"source_id"]
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
 
-global___PublishRequest = PublishRequest
+Global___PublishRequest: typing_extensions.TypeAlias = PublishRequest
 
 @typing.final
 class PublishResponse(google.protobuf.message.Message):
@@ -226,7 +235,7 @@ class PublishResponse(google.protobuf.message.Message):
         self,
     ) -> None: ...
 
-global___PublishResponse = PublishResponse
+Global___PublishResponse: typing_extensions.TypeAlias = PublishResponse
 
 @typing.final
 class ExportNotificationRequest(google.protobuf.message.Message):
@@ -238,7 +247,7 @@ class ExportNotificationRequest(google.protobuf.message.Message):
         self,
     ) -> None: ...
 
-global___ExportNotificationRequest = ExportNotificationRequest
+Global___ExportNotificationRequest: typing_extensions.TypeAlias = ExportNotificationRequest
 
 @typing.final
 class ExportNotification(google.protobuf.message.Message):
@@ -309,7 +318,7 @@ class ExportNotification(google.protobuf.message.Message):
     EXPORT_STATE_FIELD_NUMBER: builtins.int
     CONTEXT_FIELD_NUMBER: builtins.int
     DEPENDENT_HANDLE_FIELD_NUMBER: builtins.int
-    export_state: global___ExportNotification.State.ValueType
+    export_state: Global___ExportNotification.State.ValueType
     context: builtins.str
     """
     any errors will include an id that can be used to find details of the error in the logs
@@ -324,14 +333,16 @@ class ExportNotification(google.protobuf.message.Message):
         self,
         *,
         ticket: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
-        export_state: global___ExportNotification.State.ValueType = ...,
+        export_state: Global___ExportNotification.State.ValueType = ...,
         context: builtins.str = ...,
         dependent_handle: builtins.str = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing.Literal["ticket", b"ticket"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing.Literal["context", b"context", "dependent_handle", b"dependent_handle", "export_state", b"export_state", "ticket", b"ticket"]) -> None: ...
+    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["ticket", b"ticket"]
+    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
+    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["context", b"context", "dependent_handle", b"dependent_handle", "export_state", b"export_state", "ticket", b"ticket"]
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
 
-global___ExportNotification = ExportNotification
+Global___ExportNotification: typing_extensions.TypeAlias = ExportNotification
 
 @typing.final
 class TerminationNotificationRequest(google.protobuf.message.Message):
@@ -343,7 +354,7 @@ class TerminationNotificationRequest(google.protobuf.message.Message):
         self,
     ) -> None: ...
 
-global___TerminationNotificationRequest = TerminationNotificationRequest
+Global___TerminationNotificationRequest: typing_extensions.TypeAlias = TerminationNotificationRequest
 
 @typing.final
 class TerminationNotificationResponse(google.protobuf.message.Message):
@@ -367,7 +378,8 @@ class TerminationNotificationResponse(google.protobuf.message.Message):
             message: builtins.str = ...,
             elements: collections.abc.Iterable[builtins.str] | None = ...,
         ) -> None: ...
-        def ClearField(self, field_name: typing.Literal["elements", b"elements", "message", b"message", "type", b"type"]) -> None: ...
+        _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["elements", b"elements", "message", b"message", "type", b"type"]
+        def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
 
     ABNORMAL_TERMINATION_FIELD_NUMBER: builtins.int
     REASON_FIELD_NUMBER: builtins.int
@@ -380,7 +392,7 @@ class TerminationNotificationResponse(google.protobuf.message.Message):
     is_from_uncaught_exception: builtins.bool
     """if this is due to an exception, whether or not it was uncaught"""
     @property
-    def stack_traces(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___TerminationNotificationResponse.StackTrace]:
+    def stack_traces(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[Global___TerminationNotificationResponse.StackTrace]:
         """if applicable, the list of stack traces in reverse causal order"""
 
     def __init__(
@@ -389,8 +401,9 @@ class TerminationNotificationResponse(google.protobuf.message.Message):
         abnormal_termination: builtins.bool = ...,
         reason: builtins.str = ...,
         is_from_uncaught_exception: builtins.bool = ...,
-        stack_traces: collections.abc.Iterable[global___TerminationNotificationResponse.StackTrace] | None = ...,
+        stack_traces: collections.abc.Iterable[Global___TerminationNotificationResponse.StackTrace] | None = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing.Literal["abnormal_termination", b"abnormal_termination", "is_from_uncaught_exception", b"is_from_uncaught_exception", "reason", b"reason", "stack_traces", b"stack_traces"]) -> None: ...
+    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["abnormal_termination", b"abnormal_termination", "is_from_uncaught_exception", b"is_from_uncaught_exception", "reason", b"reason", "stack_traces", b"stack_traces"]
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
 
-global___TerminationNotificationResponse = TerminationNotificationResponse
+Global___TerminationNotificationResponse: typing_extensions.TypeAlias = TerminationNotificationResponse

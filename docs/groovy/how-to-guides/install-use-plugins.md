@@ -13,7 +13,7 @@ Client-side plugins extend the functionality of any of Deephaven's client APIs. 
 > [!NOTE]
 > In some cases, you'll want to install packages rather than use plugins. Those instructions are covered in [How to install packages](./install-packages.md).
 >
-> To have _complete control_ of the build process, you can [Build and launch Deephaven from source code](./launch-build.md).
+> To have _complete control_ of the build process, you can [Build and launch Deephaven from source code](../getting-started/launch-build.md).
 
 This guide covers the installation and use of pre-built plugins. For information on building your own plugins, see [Create your own plugin](./create-plugins.md).
 
@@ -24,7 +24,7 @@ This guide covers the installation and use of pre-built plugins. For information
 
 ### Extend Deephaven with Docker
 
-First, follow the [Launch Deephaven from pre-built images](../tutorials/docker-install.md) steps from the Docker install guide.
+First, follow the [Launch Deephaven from pre-built images](../getting-started/docker-install.md) steps from the Docker install guide.
 
 To open a Groovy session, run:
 
@@ -267,8 +267,8 @@ dependencies {
 ## Related documentation
 
 - [Access your file system with Docker data volumes](../conceptual/docker-data-volumes.md)
-- [Build and launch Deephaven from source code](./launch-build.md)
+- [Build and launch Deephaven from source code](../getting-started/launch-build.md)
 - [Create your own plugin](./create-plugins.md)
 - [How to install packages](./install-packages.md)
 - [Install and use Java packages](./install-and-use-java-packages.md)
-- [Launch Deephaven from pre-built images](../tutorials/docker-install.md)
+- [Launch Deephaven from pre-built images](../getting-started/docker-install.md)

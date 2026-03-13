@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.testutil.filters;
 
@@ -108,6 +108,11 @@ public class RowSetCapturingFilter extends WhereFilterImpl implements SafeClosea
     }
 
     @Override
+    public boolean isSerial() {
+        return innerFilter != null && innerFilter.isSerial();
+    }
+
+    @Override
     public void setRecomputeListener(WhereFilter.RecomputeListener result) {
         if (innerFilter != null) {
             innerFilter.setRecomputeListener(result);
@@ -160,5 +165,10 @@ public class RowSetCapturingFilter extends WhereFilterImpl implements SafeClosea
         synchronized (rowSets) {
             return rowSets.stream().mapToLong(RowSet::size).sum();
         }
+    }
+
+    @Override
+    public String toString() {
+        return "RowSetCapturingFilter{" + innerFilter + '}';
     }
 }

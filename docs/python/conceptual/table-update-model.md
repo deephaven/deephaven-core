@@ -33,7 +33,7 @@ Deephaven uses an incremental table update model to unify two distinct concepts 
 
 There are typically notable tradeoffs made in either model. Stream-processing systems are often unable to offer the full set of operations encountered in table-oriented systems (e.g., joins) without significant compromises. Table-oriented systems, like databases and dataframe packages, offer powerful tools for analyzing data, but these typically operate in a static or snapshot-driven manner.
 
-Deephaven’s engine operates on tables, but distributes table updates incrementally via a [directed acyclic graph (DAG)](../conceptual/dag.md) modeling relationships between source tables and their dependents. Each node in the DAG is a table (or map of related tables); its edges are the listeners that apply parent updates to child tables. Listeners may also couple the engine to external systems, e.g., publishers for remote clients, reactive event processors, or other application components. Changes flow through the entire [DAG](./dag.md) on each update cycle, effectively micro-batching updates based on the configured cycle interval.
+Deephaven’s engine operates on tables, but distributes table updates incrementally via a [directed acyclic graph (DAG)](./dag.md) modeling relationships between source tables and their dependents. Each node in the DAG is a table (or map of related tables); its edges are the listeners that apply parent updates to child tables. Listeners may also couple the engine to external systems, e.g., publishers for remote clients, reactive event processors, or other application components. Changes flow through the entire [DAG](./dag.md) on each update cycle, effectively micro-batching updates based on the configured cycle interval.
 
 Note that Deephaven tables are _always_ ordered, with strict guarantees for observable evaluation order within an operation; this is somewhat common in dataframe systems and time series databases, but usually not a property of relational databases. This makes it more natural for Deephaven to model ordered streams as tables, while also simplifying the programming model for time series analyses and related applications.
 
@@ -242,7 +242,7 @@ None of these consistent data access mechanisms obviates the need to use good en
 
 ### Multi-process data pipelines
 
-Deephaven also provides mechanisms for consistently replicating table data to other processes. Our Apache Arrow Flight implementation uses custom metadata to implement a protocol we call [Barrage](https://github.com/deephaven/barrage), which communicates table updates in the same way as we described [previously](#describing-table-updates) via a language agnostic gRPC API. Our [Apache Kafka](./kafka-in-deephaven.md) integration allows for streaming data ingestion (and soon publication) via one of the most popular distributed event streaming platforms in the world.
+Deephaven also provides mechanisms for consistently replicating table data to other processes. Our Apache Arrow Flight implementation uses custom metadata to implement a protocol we call [Barrage](https://github.com/deephaven/barrage), which communicates table updates in the same way as we described [previously](#describing-table-updates) via a language agnostic gRPC API. Our [Apache Kafka](./kafka-basic-terms.md) integration allows for streaming data ingestion (and soon publication) via one of the most popular distributed event streaming platforms in the world.
 
 When coupled with the Deephaven query engine or with external publishers and subscribers that understand Apache Arrow Flight and Barrage or Apache Kafka, this allows for the creation of a multi-process DAG with remote links from publisher to subscriber. This simple primitive allows for consistent, asynchronous processing of data without inherent limitations on data size or resources. The Deephaven team intends to grow the toolset for this kind of data backplane system substantially over the coming months, but the building blocks are already in place for a huge variety of real-time data driven applications.
 
@@ -254,6 +254,5 @@ The update model described above serves as a cornerstone enabler of Deephaven’
 
 - [Core API design](./deephaven-core-api.md)
 - [Deephaven’s Directed-Acyclic-Graph (DAG)](./dag.md)
-- [Kafka introduction](./kafka-in-deephaven.md)
-- [Kafka basic terminology](./kafka-in-deephaven.md)
+- [Kafka basic terminology](./kafka-basic-terms.md)
 - [Deephaven Barrage](/barrage/docs)

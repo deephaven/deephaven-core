@@ -119,6 +119,6 @@ The `S3Instructions` class has the following methods:
 
 ## Related documentation
 
-- [Supported Parquet formats](../../conceptual/parquet-formats.md)
+- [Supported Parquet formats](./parquet-formats.md)
 - [Import Parquet files](./parquet-import.md)
 - [Export Parquet files](./parquet-export.md)

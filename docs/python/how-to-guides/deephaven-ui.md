@@ -52,3 +52,9 @@ Here is a relatively complex [`deephaven.ui`](https://github.com/deephaven/deeph
 <LoopedVideo src='../assets/how-to/deephaven-ui/dashboard.mp4' />
 
 For comprehensive examples and more detailed documentation, see the [`deephaven.ui` README](https://github.com/deephaven/deephaven-plugins/blob/main/plugins/ui/docs/README.md).
+
+## Related documentation
+
+- [`deephaven.ui` README](https://github.com/deephaven/deephaven-plugins/blob/main/plugins/ui/docs/README.md)
+- [Install and use plugins](./install-use-plugins.md)
+- [Navigate the GUI](./user-interface/navigating-the-ui.md)

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.updateby;
 
@@ -1432,7 +1432,7 @@ public abstract class UpdateBy {
                 .map(colName -> ReinterpretUtils.maybeConvertToPrimitive(source.getColumnSource(colName)))
                 .toArray(ColumnSource[]::new);
 
-        final Map<String, ColumnSource<?>> resultSources = new LinkedHashMap<>(source.getColumnSourceMap());
+        final LinkedHashMap<String, ColumnSource<?>> resultSources = new LinkedHashMap<>(source.getColumnSourceMap());
 
         final Map<String, ColumnSource<?>> unorderedResultSources = new HashMap<>();
         // We have the source table and the row redirection; we can initialize the operators and collect the output

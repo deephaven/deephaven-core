@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CharacterArraySource and run "./gradlew replicateSourcesAndChunks" to regenerate
@@ -52,7 +52,7 @@ import static io.deephaven.util.type.TypeUtils.unbox;
  */
 public class LongArraySource extends ArraySourceHelper<Long, long[]>
         implements MutableColumnSourceGetDefaults.ForLong , ConvertibleTimeSource {
-    private static final SoftRecycler<long[]> recycler = new SoftRecycler<>(DEFAULT_RECYCLER_CAPACITY,
+    private static final SoftRecycler<long[]> recycler = new SoftRecycler<>(ArrayColumnSourceConfiguration.LONG_RECYCLER_CAPACITY,
             () -> new long[BLOCK_SIZE], null);
 
     private long[][] blocks;

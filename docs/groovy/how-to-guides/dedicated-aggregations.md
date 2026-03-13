@@ -69,12 +69,7 @@ The [`lastBy`](../reference/table-operations/group-and-aggregate/lastBy.md) oper
 
 The "last" row is defined as the row closest to the bottom of the table. It is based strictly on the order of the rows in the source table — not an aspect of the data (such as timestamps or sequence numbers) nor, for live-updating tables, the row which appeared in the dataset most recently.
 
-A related operation is [`AggSortedLast`](../reference/table-operations/group-and-aggregate/AggSortedLast.md),
-which sorts the data within each key before finding the last row. When used with `aggBy`, `AggSortedLast` takes
-the column name (or an array of column names) to sort the data by before performing the `lastBy` operation to identify
-the last row. It is more efficient than `.sort(<sort columns>).lastBy(<key columns>)` because the data is first
-separated into groups (based on the key columns), then sorted within each group. In many cases this requires less memory
-and processing than sorting the entire table at once.
+A related operation is [`AggSortedLast`](../reference/table-operations/group-and-aggregate/AggSortedLast.md), which sorts the data within each key before finding the last row. When used with `aggBy`, `AggSortedLast` takes the column name (or an array of column names) to sort the data by before performing the `lastBy` operation to identify the last row. It is more efficient than `.sort(<sort columns>).lastBy(<key columns>)` because the data is first separated into groups (based on the key columns), then sorted within each group. In many cases this requires less memory and processing than sorting the entire table at once.
 
 The most basic case is a [`lastBy`](../reference/table-operations/group-and-aggregate/lastBy.md) with no key columns. When no key columns are specified, [`lastBy`](../reference/table-operations/group-and-aggregate/lastBy.md) simply returns the last row in the table:
 
@@ -101,8 +96,7 @@ t = emptyTable(10).update(
 t2 = t.lastBy("MyKey", "MySecondKey")
 ```
 
-Often, [`lastBy`](../reference/table-operations/group-and-aggregate/lastBy.md) is used with time series data to return a table showing the current state of a time series. The example below demonstrates using [`lastBy`](../reference/table-operations/group-and-aggregate/lastBy.md) on time series data (using generated data, including timestamps generated based
-on the current time).
+Often, [`lastBy`](../reference/table-operations/group-and-aggregate/lastBy.md) is used with time series data to return a table showing the current state of a time series. The example below demonstrates using [`lastBy`](../reference/table-operations/group-and-aggregate/lastBy.md) on time series data (using generated data, including timestamps generated based on the current time).
 
 ```groovy order=t2,t
 startTime = now()
@@ -116,9 +110,7 @@ t = emptyTable(100).update(
 t2 = t.lastBy("MyKey")
 ```
 
-When data is out of order, it can be sorted before applying the [`lastBy`](../reference/table-operations/group-and-aggregate/lastBy.md). For example, the data below is naturally
-ordered by `Timestamp1`. In order to find the latest rows based on `Timestamp2`, simply sort the data before
-running the [`lastBy`](../reference/table-operations/group-and-aggregate/lastBy.md):
+When data is out of order, it can be sorted before applying the [`lastBy`](../reference/table-operations/group-and-aggregate/lastBy.md). For example, the data below is naturally ordered by `Timestamp1`. In order to find the latest rows based on `Timestamp2`, simply sort the data before running the [`lastBy`](../reference/table-operations/group-and-aggregate/lastBy.md):
 
 ```groovy test-set=2 order=t2,tSorted,t
 startTime = now()
@@ -134,9 +126,7 @@ tSorted = t.sort("Timestamp2")
 t2 = tSorted.lastBy("MyKey")
 ```
 
-If the sorted data is not used elsewhere in the query, a more efficient implementation is to use
-[AggSortedLast](../reference/table-operations/group-and-aggregate/AggSortedLast.md). This produces the same
-result table (`t2`) with one method call (and more efficeint processing of the `sort` step):
+If the sorted data is not used elsewhere in the query, a more efficient implementation is to use [AggSortedLast](../reference/table-operations/group-and-aggregate/AggSortedLast.md). This produces the same result table (`t2`) with one method call (and more efficeint processing of the `sort` step):
 
 ```groovy order=t2,t
 startTime = now()
@@ -154,7 +144,7 @@ t2 = t.aggBy(AggSortedLast("Timestamp2", "Timestamp1", "MyCol"), "MyKey")
 
 ### `headBy` and `tailBy`
 
-In this example, we want to know the first two and the last two test results for each student. To achieve this, we can use [`headBy`](../reference/table-operations/group-and-aggregate/headBy.md) to return the first `n` test values and [`tailBy`](../reference/table-operations/group-and-aggregate/tailBy.md) to return the last `n` test value. The results are grouped by `Name`.
+In this example, we want to know the first two and the last two test results for each student. To achieve this, we can use [`headBy`](../reference/table-operations/group-and-aggregate/headBy.md) to return the first `n` test values and [`tailBy`](../reference/table-operations/group-and-aggregate/tailBy.md) to return the last `n` test values. The results are grouped by `Name`.
 
 ```groovy test-set=1 order=head,tail
 head = source.headBy(2, "Name")

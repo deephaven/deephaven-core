@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.updateby;
 
@@ -18,6 +18,7 @@ import io.deephaven.util.type.ArrayTypeUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
@@ -53,15 +54,15 @@ public class ZeroKeyUpdateByManager extends UpdateBy {
             @NotNull final ColumnSource<?>[] inputSources,
             @NotNull final QueryTable source,
             @NotNull final String[] preservedColumns,
-            @NotNull final Map<String, ? extends ColumnSource<?>> resultSources,
+            @NotNull final LinkedHashMap<String, ColumnSource<?>> resultSources,
             @Nullable final String timestampColumnName,
             @Nullable final RowRedirection rowRedirection,
             @NotNull final UpdateByControl control) {
         super(source, windows, inputSources, timestampColumnName, rowRedirection, control);
         final String bucketDescription = this + "-bucket-[]";
 
+        final TableDefinition resultDef = TableDefinition.inferFrom(source, resultSources);
         if (source.isRefreshing()) {
-            final TableDefinition resultDef = TableDefinition.inferFrom(source, resultSources);
             result = new QueryTable(resultDef, source.getRowSet(), resultSources);
 
             // create input and output modified column sets
@@ -71,7 +72,7 @@ public class ZeroKeyUpdateByManager extends UpdateBy {
             });
 
             // create an updateby bucket instance directly from the source table
-            zeroKeyUpdateBy = new UpdateByBucketHelper(bucketDescription, source, windows, resultSources,
+            zeroKeyUpdateBy = new UpdateByBucketHelper(bucketDescription, source, windows, resultDef, resultSources,
                     timestampColumnName, control, (oe, se) -> deliverUpdateError(oe, se, true),
                     ArrayTypeUtils.EMPTY_OBJECT_ARRAY);
             buckets.offer(zeroKeyUpdateBy);
@@ -88,7 +89,7 @@ public class ZeroKeyUpdateByManager extends UpdateBy {
             // result will depend on listener
             result.addParentReference(sourceListener);
         } else {
-            zeroKeyUpdateBy = new UpdateByBucketHelper(bucketDescription, source, windows, resultSources,
+            zeroKeyUpdateBy = new UpdateByBucketHelper(bucketDescription, source, windows, resultDef, resultSources,
                     timestampColumnName, control, (oe, se) -> {
                         throw new IllegalStateException("Update failure from static zero key updateBy");
                     }, ArrayTypeUtils.EMPTY_OBJECT_ARRAY);

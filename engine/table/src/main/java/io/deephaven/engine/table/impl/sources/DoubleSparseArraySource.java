@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CharacterSparseArraySource and run "./gradlew replicateSourcesAndChunks" to regenerate
@@ -48,13 +48,13 @@ import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.*;
 public class DoubleSparseArraySource extends SparseArrayColumnSource<Double>
         implements MutableColumnSourceGetDefaults.ForDouble /* MIXIN_IMPLS */ {
     // region recyclers
-    private static final SoftRecycler<double[]> recycler = new SoftRecycler<>(DEFAULT_RECYCLER_CAPACITY,
+    private static final SoftRecycler<double[]> recycler = new SoftRecycler<>(SparseArrayColumnSourceConfiguration.DOUBLE_RECYCLER_CAPACITY,
             () -> new double[BLOCK_SIZE], null);
-    private static final SoftRecycler<double[][]> recycler2 = new SoftRecycler<>(DEFAULT_RECYCLER_CAPACITY,
+    private static final SoftRecycler<double[][]> recycler2 = new SoftRecycler<>(SparseArrayColumnSourceConfiguration.DOUBLE_RECYCLER_CAPACITY2,
             () -> new double[BLOCK2_SIZE][], null);
-    private static final SoftRecycler<DoubleOneOrN.Block2[]> recycler1 = new SoftRecycler<>(DEFAULT_RECYCLER_CAPACITY,
+    private static final SoftRecycler<DoubleOneOrN.Block2[]> recycler1 = new SoftRecycler<>(SparseArrayColumnSourceConfiguration.DOUBLE_RECYCLER_CAPACITY1,
             () -> new DoubleOneOrN.Block2[BLOCK1_SIZE], null);
-    private static final SoftRecycler<DoubleOneOrN.Block1[]> recycler0 = new SoftRecycler<>(DEFAULT_RECYCLER_CAPACITY,
+    private static final SoftRecycler<DoubleOneOrN.Block1[]> recycler0 = new SoftRecycler<>(SparseArrayColumnSourceConfiguration.DOUBLE_RECYCLER_CAPACITY0,
             () -> new DoubleOneOrN.Block1[BLOCK0_SIZE], null);
     // endregion recyclers
 

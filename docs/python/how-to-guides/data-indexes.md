@@ -9,6 +9,9 @@ This guide covers what data indexes are, how to create and use them, and how the
 
 Data indexes can improve the speed of filtering operations. Additionally, data indexes can be useful if multiple query operations need to compute the same data index on a table. This is common when a table is used in multiple joins or aggregations. If the table does not have a data index, each operation will internally create the same index. If the table does have a data index, the individual operations will not need to create their own indexes and can execute faster and use less RAM.
 
+> [!WARNING]
+> Do not create data indexes on partitioning or grouping columns. Deephaven automatically manages indexes for these columns internally. Adding a manual data index can interfere with this process and cause unexpected behavior.
+
 ## Create a data index
 
 A data index can be created from a source table and one or more key columns using [`data_index`](../reference/engine/data-index.md):
@@ -165,10 +168,12 @@ source_right_distinct = source_right.select_distinct(["Key1", "Key2"])
 
 ### Filter
 
-The engine will use single and multi-column indexes to accelerate exact match filtering. Range filtering does not benefit from an index.
+The engine will use single and multi-column indexes to accelerate filtering operations through the [predicate pushdown](./predicate-pushdown.md) framework. When a materialized (in-memory) data index exists, the engine can use it to quickly identify matching rows for various filter types. Deferred (disk-based) data indexes will not be materialized by `where` operations.
 
 > [!NOTE]
 > The Deephaven engine only uses a [`DataIndex`](/core/pydoc/code/deephaven.experimental.data_index.html#deephaven.experimental.data_index.DataIndex) when the keys exactly match what is needed for an operation. For example, if a data index is present for the columns `X` and `Y`, it will not be used if the engine only needs an index for column `X`.
+
+Support for using data indexes with most filter types (beyond exact matches) was introduced in Deephaven v0.40.0 through the predicate pushdown framework.
 
 The following filters can use the index created atop the code block:
 

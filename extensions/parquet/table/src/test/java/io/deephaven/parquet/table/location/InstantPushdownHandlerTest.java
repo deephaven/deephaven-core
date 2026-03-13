@@ -1,8 +1,9 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.parquet.table.location;
 
+import io.deephaven.engine.table.MatchOptions;
 import io.deephaven.engine.table.impl.select.InstantRangeFilter;
 import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.test.types.OutOfBandTest;
@@ -88,30 +89,30 @@ public class InstantPushdownHandlerTest {
 
         // at least one in range
         assertTrue(InstantPushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Regular, "t",
+                new MatchFilter(MatchOptions.REGULAR, "t",
                         Instant.ofEpochMilli(2), // inside
                         Instant.ofEpochMilli(20)), // outside
                 stats));
 
         // all values outside
         assertFalse(InstantPushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Regular, "t",
+                new MatchFilter(MatchOptions.REGULAR, "t",
                         Instant.ofEpochMilli(20), Instant.ofEpochMilli(30)),
                 stats));
 
         // non-Instant value short-circuits to true
         assertTrue(InstantPushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Regular, "t",
+                new MatchFilter(MatchOptions.REGULAR, "t",
                         "not-an-instant"),
                 stats));
 
         // empty list
         assertFalse(InstantPushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Regular, "t"), stats));
+                new MatchFilter(MatchOptions.REGULAR, "t"), stats));
 
         // list containing null
         assertTrue(InstantPushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Regular, "t",
+                new MatchFilter(MatchOptions.REGULAR, "t",
                         Instant.ofEpochMilli(2), null),
                 stats));
     }
@@ -120,28 +121,28 @@ public class InstantPushdownHandlerTest {
     public void instantInvertMatchFilterScenarios() {
         // stats 0..100 ms; NOT IN {50 ms} leaves gaps
         assertTrue(InstantPushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Inverted, "t",
+                new MatchFilter(MatchOptions.INVERTED, "t",
                         Instant.ofEpochMilli(50)),
                 instantStatsMillis(Instant.ofEpochMilli(0L),
                         Instant.ofEpochMilli(100))));
 
         // single-point stats excluded
         assertFalse(InstantPushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Inverted, "t",
+                new MatchFilter(MatchOptions.INVERTED, "t",
                         Instant.ofEpochMilli(25)),
                 instantStatsMillis(Instant.ofEpochMilli(25),
                         Instant.ofEpochMilli(25))));
 
         // single-point stats, exclusion miss
         assertTrue(InstantPushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Inverted, "t",
+                new MatchFilter(MatchOptions.INVERTED, "t",
                         Instant.ofEpochMilli(26L)),
                 instantStatsMillis(Instant.ofEpochMilli(25L),
                         Instant.ofEpochMilli(25L))));
 
         // null in the exclusion list disables push-down
         assertTrue(InstantPushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Inverted, "t",
+                new MatchFilter(MatchOptions.INVERTED, "t",
                         (Object) null),
                 instantStatsMillis(Instant.ofEpochMilli(10L), Instant.ofEpochMilli(20L))));
     }

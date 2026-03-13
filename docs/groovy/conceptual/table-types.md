@@ -77,7 +77,7 @@ Because static tables do not update, they have the following characteristics:
 2. Operations that depend on or modify external state can be used with static tables. Stateful operations can present problems for some types of streaming tables.
 3. The use of [special variables](../reference/query-language/variables/special-variables.md) is fully supported. Deephaven's special variables `i` and `ii` represent row indices of a table as `int` or `long` types, respectively. These variables are guaranteed to have consistent values in static tables.
 
-Static tables can be created by reading from a static data source, such as [CSV](../how-to-guides/csv-import.md), Iceberg<!--TODO: add link-->, [Parquet](../how-to-guides/data-import-export/parquet-import.md), SQL<!--TODO: add link when SQL docs exist in groovy-->. Or, they can be created with Deephaven's table creation functions, like [`newTable`](../how-to-guides/new-and-empty-table.md#newtable) or [`emptyTable`](../how-to-guides/new-and-empty-table.md#emptytable). This example uses [`emptyTable`](../how-to-guides/new-and-empty-table.md#newtable) to construct a static table:
+Static tables can be created by reading from a static data source, such as [CSV](../how-to-guides/data-import-export/csv-import.md), [Iceberg](../how-to-guides/data-import-export/iceberg.md), [Parquet](../how-to-guides/data-import-export/parquet-import.md), or [SQL](../how-to-guides/data-import-export/execute-sql-queries.md). Or, they can be created with Deephaven's table creation functions, like [`newTable`](../how-to-guides/new-and-empty-table.md#newtable) or [`emptyTable`](../how-to-guides/new-and-empty-table.md#emptytable). This example uses [`emptyTable`](../how-to-guides/new-and-empty-table.md#emptytable) to construct a static table:
 
 ```groovy test-set=1 order=t
 // create a static table with 10 rows and 2 columns
@@ -100,7 +100,7 @@ t = timeTable("PT1s")
 tSnapshot = t.snapshot()
 ```
 
-![A user creates a static snapshot of the ticking table `t`](../assets/conceptual/table-types/table-types-1.gif)
+![Two Deephaven tables side by side - 't' ticks, while 'tSnapshot' is static](../assets/conceptual/table-types/table-types-1.gif)
 
 Verify that the snapshot is static with [`isRefreshing`](../reference/table-operations/metadata/isRefreshing.md):
 
@@ -144,7 +144,7 @@ Append-only tables are useful when the use case needs a complete and ordered his
 
 Add-only tables are relaxed versions of append-only tables. They have the following key properties:
 
-- Rows can only be added to the table, but they may be added at _any position_ in the table.
+- Rows can only be added to the table, but they may be added at _any position_ in the table as long as they have a new row key (see [How do row keys and positional indices behave during table operations](../reference/community-questions/shifts.md#key-terms) for details). If a new row is added in a way that requires a shift, such as with [`merge`](../reference/table-operations/merge/merge.md), it is _not_ an add-only operation.
 - Existing rows cannot be deleted or modified, but may be reindexed.
 - The table's size can grow without bound.
 
@@ -156,7 +156,7 @@ These properties yield the following consequences:
 
 ## Specialization 3: Blink
 
-Blink tables keep only the set of rows received during the current update cycle. Users can create blink tables when ingesting [Kafka streams](../how-to-guides/data-import-export/kafka-stream.md), creating [time tables](../how-to-guides/time-table.md), or using [Table Publishers](../how-to-guides/dynamic-table-writer.md#table-publisher). They have the following key properties:
+Blink tables keep only the set of rows received during the current update cycle. Users can create blink tables when ingesting [Kafka streams](../how-to-guides/data-import-export/kafka-stream.md), creating [time tables](../how-to-guides/time-table.md), or using [Table Publishers](../how-to-guides/table-publisher.md#table-publisher). They have the following key properties:
 
 - The table only consists of rows added in the previous update cycle.
 - No rows persist for more than one update cycle.
@@ -170,7 +170,7 @@ These properties have the following consequences:
 
 Blink tables are the default table type for Kafka ingestion within Deephaven because they use little memory. They are most useful for low-memory aggregations, deriving downstream tables, or using programmatic listeners to react to data.
 
-Check whether a table is a blink table with the [`isBlink`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/BlinkTableTools.html#isBlink(io.deephaven.engine.table.Table)) method:
+Check whether a table is a blink table with the [`isBlink`](../reference/table-operations)(https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/BlinkTableTools.html#isBlink(io.deephaven.engine.table.Table)) method:
 
 ```groovy test-set=3 ticking-table order=null
 import io.deephaven.engine.table.impl.BlinkTableTools
@@ -223,6 +223,9 @@ Most operations on blink tables behave exactly as they do on other tables (see t
 
 Because Deephaven does not need to keep all the history of rows read from the input stream in memory, table operations on blink tables may require less memory.
 
+> [!TIP]
+> To disable blink table semantics, use [`removeBlink`](../reference/table-operations/create/remove-blink.md), which returns a child table that is identical to the parent blink table in every way, but is no longer marked for special blink table semantics. The resulting table will still exhibit the “blink” table update pattern, removing all previous rows on each cycle, and thus only containing “new” rows.
+
 ### Unsupported operations
 
 Attempting to use the following operations on a blink table will raise an error:
@@ -256,15 +259,11 @@ tAppendOnly = BlinkTableTools.blinkToAppendOnly(t)
 
 ![An append-only table that preserves the data from table 't' as it ticks](../assets/conceptual/table-types/table-types-5.gif)
 
-> [!TIP]
-> To disable blink table semantics, use [`removeBlink`]<!--TODO: add link when merged-->, which returns a child table that is identical to the parent blink table in every way, but is no longer marked for special blink table semantics. The resulting table will still exhibit the “blink” table update pattern, removing all previous rows on each cycle, and thus only containing “new” rows.
-
 ### Partition a blink table
 
 To partition a blink table, drop the blink attribute, create the partition, and then use a transform to add back the blink table attribute:
 
 ```groovy
-import io.deephaven.engine.table.impl.BlinkTableTools
 import io.deephaven.engine.table.impl.TimeTable.Builder
 import io.deephaven.engine.table.Table
 
@@ -275,7 +274,7 @@ table = builder.build().update("X = ii", "Group = ii % 2 == 0 ? `A` : `B`")
 partitionedBlinkTable =
     table.removeBlink()
     .partitionBy("Group")
-    .transform(t -> t.assertBlink())
+    .transform(t -> t.withAttributes(Map.of(Table.BLINK_TABLE_ATTRIBUTE, true)))
 ```
 
 ## Specialization 4: Ring
@@ -348,7 +347,7 @@ t = merge(tStatic, tDynamic)
 tRingWithInitial = RingTableTools.of(t, 10)
 ```
 
-![A ring table initializes with the rows that are already present in the source append-only table](../assets/conceptual/table-types/table-types-8.gif)
+![An append-only time table and a 5-row ring table](../assets/conceptual/table-types/table-types-8.gif)
 
 To disable this behavior, set `initialize = false`:
 
@@ -362,6 +361,6 @@ tRingWithoutInitial = RingTableTools.of(t, 10, false)
 
 ## Related documentation
 
-- [How to use a TablePublisher](../how-to-guides/dynamic-table-writer.md#table-publisher)
+- [How to use a TablePublisher](../how-to-guides/table-publisher.md#table-publisher)
 - [Create a time table](../how-to-guides/time-table.md)
 - [Kafka basic terminology](./kafka-basic-terms.md)

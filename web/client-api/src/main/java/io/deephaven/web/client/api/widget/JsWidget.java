@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api.widget;
 
@@ -17,8 +17,10 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.object_p
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.object_pb.ServerData;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.object_pb.StreamRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.object_pb.StreamResponse;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.session_pb.ExportRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.ticket_pb.Ticket;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.ticket_pb.TypedTicket;
+import io.deephaven.web.client.api.Callbacks;
 import io.deephaven.web.client.api.ServerObject;
 import io.deephaven.web.client.api.WorkerConnection;
 import io.deephaven.web.client.api.barrage.stream.BiDiStream;
@@ -187,6 +189,26 @@ public class JsWidget extends HasEventHandling implements ServerObject, WidgetMe
             req.setConnect(data);
             messageStream.send(req);
         });
+    }
+
+    /**
+     * Exports another copy of the widget, allowing it to be fetched separately.
+     * 
+     * @return Promise returning a reexported copy of this widget, still referencing the same server-side widget.
+     */
+    public Promise<JsWidget> reexport() {
+        Ticket reexportedTicket = connection.getTickets().newExportTicket();
+
+        // Race these calls so we avoid a round trip, server will do the synchronization for us
+        ExportRequest req = new ExportRequest();
+        req.setSourceId(getTicket());
+        req.setResultId(reexportedTicket);
+        connection.sessionServiceClient().exportFromTicket(req, connection.metadata(), null);
+
+        TypedTicket typedTicket = new TypedTicket();
+        typedTicket.setTicket(reexportedTicket);
+        typedTicket.setType(getType());
+        return new JsWidget(connection, typedTicket).refetch();
     }
 
     public Ticket getTicket() {

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl;
 
@@ -50,7 +50,6 @@ import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -1063,7 +1062,8 @@ public abstract class QueryTableWhereTest {
                     called.setValue(true);
                     return (ConditionFilter) ConditionFilter.createConditionFilter("var1 != var2");
                 }),
-                MatchFilter.CaseSensitivity.IgnoreCase, MatchFilter.MatchType.Inverted, "var1", "var2");
+                MatchOptions.builder().caseInsensitive(true).inverted(true).build(),
+                "var1", new String[] {"var2"}, null);
 
         final Table result = table.where(filter);
         assertTableEquals(table, result);
@@ -1760,7 +1760,6 @@ public abstract class QueryTableWhereTest {
     }
 
     @Test
-    @Ignore
     public void testDataIndexRespectBarrierPartialPrioritization() {
         QueryTable.PARALLEL_WHERE_SEGMENTS = 10;
         QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT = 10_000;

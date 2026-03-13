@@ -62,7 +62,7 @@ There are four important tools provided by DQL that are relevant to the discussi
 
 ### 1. Built-in Java functions
 
-Deephaven has a collection of [built-in functions](../reference/query-language/query-library/auto-imported-functions.md) that are useful for working with date-time types. For the sake of performance, these functions are implemented in Java. DQL supports calling these functions directly in query strings, opening up all of Deephaven's [built-in Java functions](../reference/query-language/query-library/auto-imported-functions.md) to the Python interface. The following example uses the built-in Deephaven function [`now`](https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#now()) to get the current system time as a Java [`Instant`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Instant.html):
+Deephaven has a collection of [built-in functions](../reference/query-language/query-library/auto-imported/index.md) that are useful for working with date-time types. For the sake of performance, these functions are implemented in Java. DQL supports calling these functions directly in query strings, opening up all of Deephaven's [built-in Java functions](../reference/query-language/query-library/auto-imported/index.md) to the Python interface. The following example uses the built-in Deephaven function [`now`](https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#now()) to get the current system time as a Java [`Instant`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Instant.html):
 
 ```python test-set=2
 from deephaven import empty_table
@@ -71,9 +71,9 @@ t = empty_table(5).update("CurrentTime = now()")
 ```
 
 > [!NOTE]
-> [`now`](https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#now()) uses the [current clock](https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#currentClock()) of the Deephaven engine. This clock is typically the system clock, but it may be set to a simulated clock when replaying tables.
+> The [`now`](https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#now()) function uses the [current clock](https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#currentClock()) of the Deephaven engine. This clock is typically the system clock, but it may be set to a simulated clock when replaying tables.
 
-These [functions](../reference/query-language/query-library/auto-imported-functions.md) can also be applied to columns, constants, and variables. This slightly more complex example uses the built-in Deephaven function [`epochDaysToLocalDate`](https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#epochDaysToLocalDate(long)) to create a [`LocalDate`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/time/LocalDate.html) from a long that represents the number of days since the [Unix epoch](https://en.wikipedia.org/wiki/Unix_time):
+These [functions](../reference/query-language/query-library/auto-imported/index.md) can also be applied to columns, constants, and variables. This slightly more complex example uses the built-in Deephaven function [`epochDaysToLocalDate`](https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#epochDaysToLocalDate(long)) to create a [`LocalDate`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/time/LocalDate.html) from a long that represents the number of days since the [Unix epoch](https://en.wikipedia.org/wiki/Unix_time):
 
 ```python test-set=3
 from deephaven import empty_table
@@ -120,7 +120,7 @@ To be clear:
 
 - `DaysSinceEpoch` is a 64-bit integer.
 - `LocalDateColumn` is a Java [`LocalDate`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/time/LocalDate.html) object.
-- [`epochDaysToLocalDate`](https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#epochDaysToLocalDate(long)) is a Java function from the [built-in Deephaven library](../reference/query-language/query-library/auto-imported-functions.md).
+- [`epochDaysToLocalDate`](https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#epochDaysToLocalDate(long)) is a Java function from the [built-in Deephaven library](../reference/query-language/query-library/auto-imported/index.md).
 - `DayOfWeek` is the return value of [`getDayOfWeek`](https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/time/LocalDate.html#getDayOfWeek()), a Java method bound to the [`LocalDate`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/time/LocalDate.html) class.
 
 DQL enables them all to be used seamlessly from the Python API!
@@ -149,7 +149,7 @@ t = empty_table(5).update(
 
 ### 4. Date-times using DQL
 
-In Deephaven, date-time values can be expressed using very simple [literal](https://en.wikipedia.org/wiki/Literal_(computer_programming)) syntax. These literal values can be used directly in query strings or as string inputs to [built-in functions](../reference/query-language/query-library/auto-imported-functions.md).
+In Deephaven, date-time values can be expressed using very simple [literal](https://en.wikipedia.org/wiki/Literal_(computer_programming)) syntax. These literal values can be used directly in query strings or as string inputs to [built-in functions](../reference/query-language/query-library/auto-imported/index.md).
 
 > [!TIP]
 > In query strings, time literals are denoted with _single quotes_.
@@ -553,7 +553,7 @@ def predict(timestamp) -> float:
     # here, we use deephaven.time to convert the value from DH to something that the model can use
     pd_timestamp = dhtime.to_pd_timestamp(timestamp).tz_localize("UTC")
     prediction = res.predict(start=pd_timestamp)
-    return prediction
+    return float(prediction.iloc[0])
 
 
 t_testing_eval = t_testing.update(["YPred = predict(Timestamp)"])
@@ -661,6 +661,7 @@ from deephaven.time import simple_date_format
 
 # pass the format of the input date-time
 input_format = simple_date_format("YYYYMMDD")
+input_format2 = simple_date_format("YYYYMMDD")
 ```
 
 Now, `input_format` is an object that can be used in a query to format the `BEGIN` and `END` columns. This is done with the [`parse`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/text/SimpleDateFormat.html#parse(java.lang.String,java.text.ParsePosition)) method, which accepts the input date-time columns as strings. So, the `int` values must be converted to strings before calling [`parse`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/text/SimpleDateFormat.html#parse(java.lang.String,java.text.ParsePosition)). Finally, call [`toInstant`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Date.html#toInstant()) on the result to get the formatted date-time as a Java [`Instant`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Instant.html):
@@ -668,9 +669,9 @@ Now, `input_format` is an object that can be used in a query to format the `BEGI
 ```python test-set=17
 # use String.valueOf() to get int as string, then pass to input_format.parse(), finally call toInstant()
 format_gsod = gsod.update(
-    [
+    formulas=[
         "BEGIN = input_format.parse(String.valueOf(BEGIN)).toInstant()",
-        "END = input_format.parse(String.valueOf(END)).toInstant()",
+        "END = input_format2.parse(String.valueOf(END)).toInstant()",
     ]
 )
 ```
@@ -679,7 +680,7 @@ The resulting columns can then be converted to any of the desired Java date-time
 
 ```python test-set=17
 format_gsod_local_date = format_gsod.update(
-    ["BEGIN = toLocalDate(BEGIN, 'UTC')", "END = toLocalDate(END, 'UTC')"]
+    formulas=["BEGIN = toLocalDate(BEGIN, 'UTC')", "END = toLocalDate(END, 'UTC')"]
 )
 ```
 
@@ -707,7 +708,7 @@ reformat_gsod_local_date = format_gsod_local_date.update(
 Because Deephaven queries can contain Python and the Deephaven query engine is implemented in Java, performance-conscious users should be aware of [Python-Java boundary crossings](../conceptual/python-java-boundary.md). Every time a query's execution passes between Python and Java, there is a performance penalty. Fast queries must be written to minimize such [boundary crossings](../conceptual/python-java-boundary.md).
 
 > [!WARNING]
-> Avoid [`deephaven.time`](/core/pydoc/code/deephaven.time.html#module-deephaven.time) functions in query strings. Because [`deephaven.time`](/core/pydoc/code/deephaven.time.html#module-deephaven.time) provides functions that convert between Python and Java types, every call crosses the [Python-Java boundary](../conceptual/python-java-boundary.md). Thus, each call incurs a tiny overhead. This overhead can add up when applied millions or billions of times during a query. Instead, use the [built-in functions](../reference/query-language/query-library/auto-imported-functions.md) that provide the same functionality and do not cross the [Python-Java boundary](../conceptual/python-java-boundary.md).
+> Avoid [`deephaven.time`](/core/pydoc/code/deephaven.time.html#module-deephaven.time) functions in query strings. Because [`deephaven.time`](/core/pydoc/code/deephaven.time.html#module-deephaven.time) provides functions that convert between Python and Java types, every call crosses the [Python-Java boundary](../conceptual/python-java-boundary.md). Thus, each call incurs a tiny overhead. This overhead can add up when applied millions or billions of times during a query. Instead, use the [built-in functions](../reference/query-language/query-library/auto-imported/index.md) that provide the same functionality and do not cross the [Python-Java boundary](../conceptual/python-java-boundary.md).
 
 Here is an example that demonstrates the effects that excess boundary crossings can have on performance:
 
@@ -866,3 +867,15 @@ Again, the resulting tables are identical, but the execution times are quite dif
 | [`pandas.TimedeltaIndex`](https://pandas.pydata.org/docs/reference/api/pandas.TimedeltaIndex.html)     | NA                                                                                                            | NA                                                                                           | NA                                                                                       |
 | [`pandas.Period`](https://pandas.pydata.org/docs/reference/api/pandas.Period.html)                     | NA                                                                                                            | NA                                                                                           | NA                                                                                       |
 | [`pandas.PeriodIndex`](https://pandas.pydata.org/docs/reference/api/pandas.PeriodIndex.html)           | NA                                                                                                            | NA                                                                                           | NA                                                                                       |
+
+## Related documentation
+
+- [How to use filters](../how-to-guides/use-filters.md)
+- [How to work with strings](../how-to-guides/work-with-strings.md)
+- [date-time](../reference/query-language/types/date-time.md)
+- [Date-time literals in query strings](../how-to-guides/date-time-literals.md)
+- [Business calendars](../how-to-guides/business-calendar.md)
+- [`update`](../reference/table-operations/select/update.md)
+- [`where`](../reference/table-operations/filter/where.md)
+- [The Python-Java boundary](python-java-boundary.md)
+- [`deephaven.time` Pydoc](/core/pydoc/code/deephaven.time.html)

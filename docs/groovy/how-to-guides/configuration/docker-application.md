@@ -7,7 +7,7 @@ This documentation provides user-level details about the Deephaven Docker applic
 
 ## Construction
 
-The Deephaven Docker application images are based on the [production application](../../tutorials/production-application.md), which is unpacked into the `/opt/deephaven` directory. The images have volumes `/data` and `/cache`. The images expose port 10000. A configuration file exists at `/opt/deephaven/config/deephaven.prop`. Additional Java JARs can be included in `/apps/libs`.
+The Deephaven Docker application images are based on the [production application](../../getting-started/production-application.md), which is unpacked into the `/opt/deephaven` directory. The images have volumes `/data` and `/cache`. The images expose port 10000. A configuration file exists at `/opt/deephaven/config/deephaven.prop`. Additional Java JARs can be included in `/apps/libs`.
 
 As such, the Deephaven Docker application images set the following bootstrap environment configuration values:
 
@@ -151,4 +151,4 @@ table = emptyTable(5).update(
 ## Related documentation
 
 - [Configure the production application](./configure-production-application.md)
-- [Build from source](../launch-build.md)
+- [Build from source](../../getting-started/launch-build.md)

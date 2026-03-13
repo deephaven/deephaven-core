@@ -16,8 +16,8 @@ There are three main integration approaches:
 
 Each Deephaven table consists of:
 
-- A [`RowSet`](https://deephaven.io/core/javadoc/io/deephaven/engine/rowset/RowSet.html) - An ordered set of long keys representing valid row addresses.
-- Named [`ColumnSources`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/ColumnSource.html) - A Java map from column name to `ColumnSource`, which acts as a dictionary from row key to cell value.
+- A [`RowSet`](/core/javadoc/io/deephaven/engine/rowset/RowSet.html) - An ordered set of long keys representing valid row addresses.
+- Named [`ColumnSources`](/core/javadoc/io/deephaven/engine/table/ColumnSource.html) - A Java map from column name to `ColumnSource`, which acts as a dictionary from row key to cell value.
 
 To construct a table for use by Deephaven engine operations, create a [`QueryTable`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/QueryTable.html) by passing in a `RowSet` and `Map<String, ColumnSource>`. We recommend using a LinkedHashMap to preserve column order.
 
@@ -62,7 +62,7 @@ Key features of dynamic tables:
 - Use the same `ArrayBackedColumnSource` as static tables.
 - Poll for updates on each Deephaven update cycle.
 - Track both current and previous values for incremental computation.
-- Notify listeners using [`notifyListeners`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/QueryTable.html#notifyListeners(io.deephaven.engine.table.TableUpdate)).
+- Notify listeners using [`notifyListeners`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/BaseTable.html#notifyListeners(io.deephaven.engine.table.TableUpdate)).
 
 Here's a simplified example of a dynamic table that updates periodically:
 

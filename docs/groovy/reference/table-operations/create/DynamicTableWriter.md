@@ -122,5 +122,5 @@ def thread = Thread.start {
 
 ## Related documentation
 
-- [How to use write data to a real-time in-memory table](../../../how-to-guides/dynamic-table-writer.md)
+- [How to use write data to a real-time in-memory table](../../../how-to-guides/table-publisher.md)
 - [Javadoc](/core/javadoc/io/deephaven/engine/table/impl/util/DynamicTableWriter.html)

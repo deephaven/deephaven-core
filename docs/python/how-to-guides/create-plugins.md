@@ -25,7 +25,7 @@ ExampleServicePlugin/
     └── pyproject.toml
     └── example_plugin_server/
         └── __init__.py
-└── server/
+└── client/
     └── pyproject.toml
     └── example_plugin_client/
         └── __init__.py
@@ -86,7 +86,7 @@ class ExampleService:
 
     def hello_string(self, data: str) -> str:
         """Returns a string containing the input data."""
-        return f"Hello client.  You said: {data}"
+        return f"Hello client. You said: {data}"
 
     def hello_table(self, table: Table, data: str) -> Table:
         """Returns a table generated from the input table and the input data."""
@@ -201,7 +201,7 @@ class ExampleService:
 
     def hello_string(self, data: str) -> str:
         """Returns a string containing the input data."""
-        return f"Hello client.  You said: {data}"
+        return f"Hello client. You said: {data}"
 
     def hello_table(self, table: Table, data: str) -> Table:
         """Returns a table generated from the input table and the input data."""
@@ -427,7 +427,7 @@ dependencies = ["pydeephaven>=0.36.1", "pandas"]
 
 ## Use the plugin
 
-Once you have completed all of the client—and server-side wiring, you can test the plugin. The following subsections cover testing the server using different launch methods.
+Once you have completed all of the client- and server-side wiring, you can test the plugin. The following subsections cover testing the server using different launch methods.
 
 ### Installation
 
@@ -463,7 +463,7 @@ RUN pip install /server
 The following Docker Compose file runs Deephaven using the image built by the above Dockerfile:
 
 > [!IMPORTANT]
-> The Dockerfile below sets the pre-shared key to `YOUR_PASSWORD_HERE` for demonstration purposes. The client needs this key when connecting to the server. It is recommended that this key be changed to something more secure.
+> The Docker Compose file below sets the pre-shared key to `YOUR_PASSWORD_HERE` for demonstration purposes. The client needs this key when connecting to the server. It is recommended that this key be changed to something more secure.
 
 ```yaml
 services:
@@ -487,8 +487,12 @@ If running Deephaven from Python, the following Python script will start a Deeph
 
 ```python skip-test
 import sys
+from deephaven_server import Server
 from example_plugin_server import ExampleService
 
+# Start the Deephaven server
+server = Server(port=10000)
+server.start()
 
 example_service = ExampleService()
 
@@ -573,6 +577,82 @@ print(table_result.to_arrow().to_pandas())
 session.close()
 ```
 
+## Share plugin objects between sessions
+
+You can share plugin objects created in one session with other sessions using the [`publish`](../reference/client-api/session/publish.md) and [`fetch`](../reference/client-api/session/fetch.md) methods. This is useful when you want multiple client sessions to interact with the same server-side plugin object.
+
+### Publishing a plugin object
+
+To share a plugin object, first fetch it to get an export ticket, then publish it to a shared ticket:
+
+```python skip-test
+from pydeephaven import Session
+from pydeephaven.ticket import SharedTicket
+
+# Connect to the server
+session = Session(
+    auth_type="io.deephaven.authentication.psk.PskAuthenticationHandler",
+    auth_token="YOUR_PASSWORD_HERE",
+)
+
+# Get the plugin object ticket
+example_service_ticket = session.exportable_objects["example_service"]
+
+# Create a plugin client
+plugin_client = session.plugin_client(example_service_ticket)
+
+# Fetch the plugin object to get an export ticket
+export_ticket = session.fetch(plugin_client)
+
+# Publish to a shared ticket
+shared_ticket = SharedTicket.random_ticket()
+session.publish(export_ticket, shared_ticket)
+
+# Now other sessions can use this shared_ticket to access the same plugin object
+```
+
+### Fetching a shared plugin object
+
+Another session can fetch the shared plugin object using the shared ticket:
+
+```python skip-test
+from pydeephaven import Session
+from pydeephaven.ticket import ServerObject, SharedTicket
+
+# Connect to the server
+sub_session = Session(
+    auth_type="io.deephaven.authentication.psk.PskAuthenticationHandler",
+    auth_token="YOUR_PASSWORD_HERE",
+)
+
+# Use the shared ticket from the publishing session
+# (In practice, you would pass this ticket between sessions)
+shared_ticket = SharedTicket.random_ticket()  # Use the actual shared ticket
+
+# Create a ServerObject reference with the appropriate type
+server_obj = ServerObject(
+    type="example_plugin_server.ExampleService", ticket=shared_ticket
+)
+
+# Create a plugin client to interact with the shared object
+sub_plugin_client = sub_session.plugin_client(server_obj)
+
+# Now you can use the plugin client as usual
+from example_plugin_client import ExampleServiceProxy
+
+example_service = ExampleServiceProxy(sub_plugin_client)
+
+result = example_service.hello_string("Hello from another session!")
+print(result)
+
+sub_session.close()
+```
+
+> [!IMPORTANT]
+> Shared tickets remain valid only as long as the publishing session keeps the object alive. When the publishing session closes or releases the object, the shared ticket becomes invalid.
+
 ## Related documentation
 
 - [Install and use plugins](./install-use-plugins.md)
+- [`publish`](../reference/client-api/session/publish.md) - Publish server objects to shared tickets
+- [`fetch`](../reference/client-api/session/fetch.md) - Fetch server objects by ticket

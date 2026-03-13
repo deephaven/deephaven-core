@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CharSetResult and run "./gradlew replicateSegmentedSortedMultiset" to regenerate
@@ -32,7 +32,9 @@ public class ObjectSetResult implements SsmChunkedMinMaxOperator.SetResult {
             newResult = null;
         } else {
             final ObjectSegmentedSortedMultiset ObjectSsm = (ObjectSegmentedSortedMultiset) ssm;
+            // region nan handling
             newResult = minimum ? ObjectSsm.getMinObject() : ObjectSsm.getMaxObject();
+            // endregion nan handling
         }
         return setResult(destination, newResult);
     }

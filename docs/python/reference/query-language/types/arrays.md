@@ -2,7 +2,7 @@
 title: Arrays
 ---
 
-Arrays are an in-memory ordered data structure common in many programming languages. They are typically used to store multiple elements of the same type in an easily iterable manner. Arrays in the Deephaven engine are implemented by [Vector](/core/javadoc/io/deephaven/vector/Vector.html) and its subclasses.
+Arrays are an in-memory ordered data structure common in many programming languages. They are typically used to store multiple elements of the same type in an easily iterable manner. Arrays in the Deephaven engine are implemented by [Vector](https://deephaven.io/core/javadoc/io/deephaven/vector/Vector.html) and its subclasses.
 
 The Deephaven Query Language comes with its own built-in array functionality.
 
@@ -10,8 +10,7 @@ The Deephaven Query Language comes with its own built-in array functionality.
 
 ### Columns as arrays
 
-DQL allows queries to access a column's array representation by using the `_` suffix on the column name. Use the bracket
-syntax `[]` to access items from a column.
+DQL allows queries to access a column's array representation by using the `_` suffix on the column name. Use the bracket syntax `[]` to access items from a column.
 
 ```python order=source,result
 from deephaven import new_table
@@ -26,8 +25,7 @@ result = source.update(formulas=["UpdatedValues = Values_[i] + 1"])
 > The [special variables](../variables/special-variables.md), `i` and `ii`, are unreliable within a ticking table.
 > Inconsistent results occur since previously created row indexes do not automatically update.
 
-[Built-in array methods](/core/javadoc/io/deephaven/vector/Vector.html) like `size()` can be used
-within queries.
+[Built-in array methods](/core/javadoc/io/deephaven/vector/Vector.html) like `size()` can be used within queries.
 
 ```python order=source,result
 from deephaven import new_table
@@ -40,9 +38,7 @@ result = source.update(formulas=["ValuesSize = Values_.size()"])
 
 ### Convert a column to an array
 
-[Aggregations](../../../how-to-guides/dedicated-aggregations.md) such
-as [`group_by`](../../table-operations/group-and-aggregate/groupBy.md) can be used to convert a column into an array.
-The following example shows how to store a converted array in a table.
+[Aggregations](../../../how-to-guides/dedicated-aggregations.md) such as [`group_by`](../../table-operations/group-and-aggregate/groupBy.md) can be used to convert a column into an array. The following example shows how to store a converted array in a table.
 
 ```python order=source,result
 from deephaven import new_table

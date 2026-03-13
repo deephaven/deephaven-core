@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // @formatter:off
 package io.deephaven.engine.table.impl.sources;
@@ -38,7 +38,7 @@ import static io.deephaven.util.type.TypeUtils.unbox;
  */
 public class CharacterArraySource extends ArraySourceHelper<Character, char[]>
         implements MutableColumnSourceGetDefaults.ForChar /* MIXIN_IMPLS */ {
-    private static final SoftRecycler<char[]> recycler = new SoftRecycler<>(DEFAULT_RECYCLER_CAPACITY,
+    private static final SoftRecycler<char[]> recycler = new SoftRecycler<>(ArrayColumnSourceConfiguration.CHAR_RECYCLER_CAPACITY,
             () -> new char[BLOCK_SIZE], null);
 
     private char[][] blocks;
