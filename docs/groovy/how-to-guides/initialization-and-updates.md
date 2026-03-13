@@ -36,9 +36,10 @@ To extract data at controlled intervals:
 
 ```groovy ticking-table order=null
 source = timeTable("PT0.1s").update("X = ii")
+// "trigger" table will update every 5 seconds
 trigger = timeTable("PT5s").renameColumns("TriggerTime = Timestamp")
 
-// Updates every 5 seconds with a consistent view
+// on every change to "trigger", snapshot with a consistent view
 periodicSnapshot = source.snapshotWhen(trigger)
 ```
 
@@ -65,7 +66,6 @@ For reacting to changes, use [table listeners](./table-listeners-groovy.md):
 ```groovy ticking-table order=null
 import io.deephaven.engine.table.TableUpdate
 import io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter
-import io.deephaven.engine.table.vectors.ColumnVectors
 
 source = timeTable("PT1s").update("X = ii")
 
@@ -74,12 +74,17 @@ listener = new InstrumentedTableUpdateListenerAdapter(source, false) {
     void onUpdate(TableUpdate upstream) {
         println "Added ${upstream.added().size()} rows"
         // Safe value extraction example:
-        // latestX = ColumnVectors.ofInt(source, "X").get(source.size() - 1)
+        if (upstream.added().isNonempty()) {
+            latestX = source.getColumnSource("X").get(upstream.added().lastRowKey())
+        }
     }
 }
 
 source.addUpdateListener(listener)
 ```
+
+> [!CAUTION]
+> Keep listener execution fast — listeners block further Update Graph processing while running.
 
 ### Use locking for direct access (advanced)
 
@@ -91,20 +96,21 @@ import io.deephaven.engine.context.ExecutionContext
 source = timeTable("PT0.5s").update("X = ii")
 
 def ug = ExecutionContext.getContext().getUpdateGraph()
-ug.exclusiveLock().doLocked {
+ug.sharedLock().doLocked {
     // Table is consistent while lock is held
     println "Row count: ${source.size()}"
 }
 ```
 
 > [!CAUTION]
-> Keep lock duration minimal — it blocks all table updates.
+> Keep lock duration minimal — it blocks update processing while held.
 
 ## What NOT to do
 
 - **Don't read ticking data without synchronization** — use `snapshot` or locking.
-- **Don't create tables inside listeners** — create derived tables before attaching the listener.
+- **Only access the table you are listening to within a listener** — other tables are not guaranteed to have been consistently updated.
 - **Don't hold locks during long computations** — extract data quickly, then process outside the lock.
+- **Don't mix data from different update cycles** — use `upstream.getModifiedPreShift` for before/after comparisons within the same update, or store only computed results (not raw data) between cycles.
 
 ## Related documentation
 

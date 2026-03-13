@@ -177,7 +177,7 @@ def on_update(update, is_replay):
     added_data = update.added()  # Dict of column_name -> numpy array
     removed_data = update.removed()
     modified_data = update.modified()
-    modified_prev_data = update.modified_prev()  # Previous values of modified cells
+    modified_prev_data = update.modified_prev()  # Pre-shift values of modified cells
 
     # Example: compute change in values
     if modified_data and modified_prev_data:
@@ -251,7 +251,7 @@ Some tables have multiple parents (e.g., join or merge results). Ensuring a sing
 
 Reading everything above, one might reasonably wonder: if this update processing is going on all the time, when and how can we actually safely read data or create new derived tables? There are three answers to this question, depending on the use case.
 
-In the simplest case, it's sufficient to simply block update processing. Other subsystems running in-process with a Deephaven query engine can acquire a [shared lock](https://deephaven.io/core/javadoc/io/deephaven/engine/updategraph/UpdateGraph.html#sharedLock()) (or in Python, use [`exclusive_lock`](../how-to-guides/initialization-and-updates.md#pattern-7-use-locking-for-direct-table-access-advanced)) for the duration of any otherwise unsafe operations they need to perform, guaranteeing that data will remain consistent across all nodes in the DAG. When you type a command for execution in the Deephaven console, this is done for you.
+In the simplest case, it's sufficient to simply block update processing. Other subsystems running in-process with a Deephaven query engine can acquire a [shared lock](<https://deephaven.io/core/javadoc/io/deephaven/engine/updategraph/UpdateGraph.html#sharedLock()>) for the duration of any otherwise unsafe operations they need to perform, guaranteeing that data will remain consistent across all nodes in the DAG. When you type a command for execution in the Deephaven console, this is done for you.
 
 Sometimes it's preferable to perform potentially unsafe operations from _within_ the update processing system. There are two ways to accomplish this. Firstly, by performing work reactively in a [table listener](../how-to-guides/table-listeners-python.md); this is ideal for publishing updates to external subscribers or reactive systems. Secondly, by scheduling special terminal notifications that are processed at the end of each update cycle; this is ideal for post-update maintenance.
 
@@ -259,7 +259,7 @@ All of the approaches described so far have liveness implications for real-time 
 
 This allows a concurrent consumer to determine two important things. Firstly, whether it should attempt to use a source table's current row set and current column source data, or its previous row set and previous column source data. Secondly, whether an optimistic operation cannot be proven to have succeeded consistently, and thus must be retried or abandoned.
 
-This third, optimistically concurrent approach generally requires a fallback strategy of acquiring the [shared lock](https://deephaven.io/core/javadoc/io/deephaven/engine/updategraph/UpdateGraph.html#sharedLock()). Deephaven provides utilities to encapsulate all of this complexity for internal use as well as user code. For practical guidance on safely accessing data during initialization and updates, see [Initialization and updates](../how-to-guides/initialization-and-updates.md). This enables many table operations to be initialized concurrently with the update cycle, including all the operations that are performed automatically when rendering UI components via Deephaven’s Javascript Client. It’s also used for client-driven snapshots and table subscriptions via Deephaven’s implementation of [Apache Arrow Flight](https://arrow.apache.org/docs/format/Flight.html).
+This third, optimistically concurrent approach generally requires a fallback strategy of acquiring the [shared lock](<https://deephaven.io/core/javadoc/io/deephaven/engine/updategraph/UpdateGraph.html#sharedLock()>). Deephaven provides utilities to encapsulate all of this complexity for internal use as well as user code. For practical guidance on safely accessing data during initialization and updates, see [Initialization and updates](../how-to-guides/initialization-and-updates.md). This enables many table operations to be initialized concurrently with the update cycle, including all the operations that are performed automatically when rendering UI components via Deephaven’s Javascript Client. It’s also used for client-driven snapshots and table subscriptions via Deephaven’s implementation of [Apache Arrow Flight](https://arrow.apache.org/docs/format/Flight.html).
 
 None of these consistent data access mechanisms obviates the need to use good engineering sense. Developers should keep interactions with updating data as efficient and infrequent as possible. That said, together these strategies represent a toolbox with a wealth of possibilities for real-time application development when harnessed to the rest of the Deephaven query engine.
 

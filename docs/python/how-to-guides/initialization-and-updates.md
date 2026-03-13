@@ -84,7 +84,7 @@ Here's the quick reference. Details follow in the sections below.
 | Use table operations — let the engine handle consistency.                                                             | Extract data to Python immediately after creating a ticking table.                |
 | Wait for data with [`await_update`](../reference/table-operations/table-listeners/await-update.md) before extracting. | Assume data exists just because you created the table.                            |
 | Use [`snapshot`](../reference/table-operations/snapshot/snapshot.md) to get a static copy for Python processing.      | Call [`to_pandas`](../reference/pandas/to-pandas.md) directly on a ticking table. |
-| Use [listeners](./table-listeners-python.md) for reacting to updates.                                                 | Perform table operations inside listeners.                                        |
+| Use [listeners](./table-listeners-python.md) for reacting to updates.                                                 | Access other tables inside listeners.                                             |
 | Initialize state with `do_replay=True`.                                                                               | Mix data from different update cycles.                                            |
 
 ## Waiting for data: the `await_update` pattern
@@ -197,13 +197,11 @@ from deephaven import time_table
 # Data source updating frequently
 source = time_table("PT0.1s").update("X = ii")
 
-# Trigger table controls when snapshots occur
+# "trigger" table will update every 5 seconds
 trigger = time_table("PT5s").rename_columns("TriggerTime = Timestamp")
 
-# DO: Snapshot at controlled intervals
+# on every change to "trigger", snapshot with a consistent view
 periodic_snapshot = source.snapshot_when(trigger)
-
-# periodic_snapshot updates every 5 seconds with a consistent view of source
 ```
 
 This is useful for:
@@ -233,6 +231,9 @@ def on_update(update, is_replay):
 source = time_table("PT1s").update("X = ii")
 handle = listen(source, on_update)
 ```
+
+> [!CAUTION]
+> Keep listener execution fast — listeners block further Update Graph processing while running.
 
 The `.added`, `.modified`, `.removed`, and `.modified_prev` methods return dictionaries with column names as keys and NumPy arrays as values. This data is a consistent snapshot from the update cycle.
 
@@ -312,7 +313,7 @@ For advanced use cases where you need to read directly from a ticking table, use
 
 ```python ticking-table order=null
 from deephaven import time_table
-from deephaven.update_graph import exclusive_lock
+from deephaven.update_graph import shared_lock
 import deephaven.pandas as dhpd
 
 source = time_table("PT0.5s").update("X = ii")
@@ -320,7 +321,7 @@ source = time_table("PT0.5s").update("X = ii")
 
 def extract_data_safely():
     # DO: Use lock for direct access to ticking data
-    with exclusive_lock(source):
+    with shared_lock(source):
         # Table is guaranteed consistent while lock is held
         df = dhpd.to_pandas(source)
         return df
@@ -332,7 +333,7 @@ print(f"Extracted {len(df)} rows safely")
 ```
 
 > [!CAUTION]
-> Keep lock duration minimal. While you hold the lock, the update graph cannot process new data. Long-running computations under the lock will block all table updates.
+> Keep lock duration minimal — it blocks update processing while held.
 
 ## Unsafe patterns
 
@@ -356,16 +357,15 @@ df = dhpd.to_pandas(source)  # May get inconsistent data!
 
 **Do instead:** Use `snapshot` first, or use locking.
 
-### DON'T perform table operations inside listeners
+### DON'T access other tables inside listeners
 
 ```python should-fail
 from deephaven.table_listener import listen
 
 
 def bad_listener(update, is_replay):
-    # DON'T: Create derived tables in listeners
-    filtered = source.where("X > 10")  # Dangerous!
-    new_table = source.update("Y = X * 2")  # Also dangerous!
+    # DON'T: Access other tables in listeners
+    other_data = other_table.to_pandas()  # Dangerous - may be inconsistent!
 
 
 handle = listen(source, bad_listener)
@@ -373,11 +373,10 @@ handle = listen(source, bad_listener)
 
 **What can go wrong:**
 
-- Update graph conflicts and exceptions.
-- Derived tables may be in inconsistent states.
-- Memory leaks from repeatedly created tables.
+- Other tables are not guaranteed to have been consistently updated.
+- You may see partial or stale data from other tables.
 
-**Do instead:** Create derived tables before attaching the listener, then add them as [dependencies](./table-listeners-python.md#dependent-tables):
+**Do instead:** Only access the table you are listening to within a listener. If you need data from multiple tables, add them as [dependencies](./table-listeners-python.md#dependent-tables):
 
 ```python ticking-table order=null
 from deephaven import time_table
@@ -420,15 +419,15 @@ class BadListener:
 - Row keys from previous cycles may no longer be valid.
 - Comparisons assume consistency that doesn't exist.
 
-**Do instead:** Use `modified_prev` for before/after comparisons within the same update, or store only computed results (not raw data) between cycles.
+**Do instead:** Use `modified_prev` (which reads pre-shift values) for before/after comparisons within the same update, or store only computed results (not raw data) between cycles.
 
 ### DON'T hold locks longer than necessary
 
 ```python should-fail
-from deephaven.update_graph import exclusive_lock
+from deephaven.update_graph import shared_lock
 import deephaven.pandas as dhpd
 
-with exclusive_lock(source):
+with shared_lock(source):
     df = dhpd.to_pandas(source)
     # DON'T: Long computation while holding the lock
     result = expensive_ml_training(df)  # Blocks ALL updates!
@@ -444,11 +443,11 @@ with exclusive_lock(source):
 **Do instead:** Extract data quickly, release the lock, then process:
 
 ```python syntax
-from deephaven.update_graph import exclusive_lock
+from deephaven.update_graph import shared_lock
 import deephaven.pandas as dhpd
 
 # DO: Minimize lock duration
-with exclusive_lock(source):
+with shared_lock(source):
     df = dhpd.to_pandas(source)  # Quick extraction
 
 # Process OUTSIDE the lock
