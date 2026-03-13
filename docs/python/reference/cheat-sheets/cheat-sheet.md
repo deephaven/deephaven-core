@@ -852,8 +852,6 @@ put_cols_wherever = static_source_2.move_columns(1, ["String4", "Int2"])
 
 See [How to group and ungroup data](../../how-to-guides/grouping-data.md) for more details.
 
-<!--TODO: add group -->
-
 ### Simple grouping
 
 ```python test-set=1 order=group_to_arrays,group_multiple_keys
