@@ -654,19 +654,22 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
                 listenerReferences.add(listenerToAdd);
                 return;
             } else if (localChildListenerReferences instanceof SimpleReference) {
-                // swap the existing reference with a new SimpleReferenceManager
-                final SimpleReferenceManager<TableUpdateListener, ? extends SimpleReference<TableUpdateListener>> newListenerReferences =
-                        new SimpleReferenceManager<>(BaseTable::makeChildListenerReference, true);
                 SimpleReference<TableUpdateListener> asSimpleReference =
                         (SimpleReference<TableUpdateListener>) localChildListenerReferences;
+                final Object newReference;
                 final TableUpdateListener item = asSimpleReference.get();
-                if (item != null) {
+                if (item == null) {
+                    // swap the cleared reference with a new reference
+                    newReference = makeChildListenerReference(listenerToAdd);
+                } else {
+                    // swap the existing reference with a new SimpleReferenceManager
+                    final SimpleReferenceManager<TableUpdateListener, ? extends SimpleReference<TableUpdateListener>> newListenerReferences =
+                            new SimpleReferenceManager<>(BaseTable::makeChildListenerReference, true);
                     newListenerReferences.add(item);
+                    newListenerReferences.add(listenerToAdd);
+                    newReference = newListenerReferences;
                 }
-                newListenerReferences.add(listenerToAdd);
-                // now swap it
-                if (CHILD_LISTENER_REFERENCES_UPDATER.compareAndSet(this, localChildListenerReferences,
-                        newListenerReferences)) {
+                if (CHILD_LISTENER_REFERENCES_UPDATER.compareAndSet(this, localChildListenerReferences, newReference)) {
                     return;
                 }
             } else {
