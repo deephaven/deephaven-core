@@ -44,6 +44,7 @@ import io.deephaven.util.datastructures.hash.IdentityKeyedObjectKey;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.NonNull;
 
 import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.io.*;
@@ -122,13 +123,14 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
     private volatile Collection<Object> parents = EMPTY_PARENTS;
 
     /**
-     * The childListenerReferences is either a SimpleReferenceManager or a SimpleReference&lt;TableUpdateListener&gt;.
+     * The childListenerReferences is either a SimpleReferenceManager&lt;TableUpdateListener, ? extends
+     * SimpleReference&lt;TableUpdateListener&gt;&gt; or a SimpleReference&lt;TableUpdateListener&gt;.
      *
      * <p>
      * A table starts off with the singleton {@link #EMPTY_CHILD_LISTENER_REFERENCES}, and when the first listener is
-     * added the empty reference is CASed with the new listener. When the second reference is added, we create a new
-     * SimpleReferenceManager that contains our original reference and the new reference. The new manager is CASed in
-     * place of the existing reference.
+     * added the empty reference is CASed with a reference to new listener. When the second reference is added, we
+     * create a new SimpleReferenceManager that contains our original reference and the new reference. The new manager
+     * is CASed in place of the existing reference.
      * </p>
      */
     @SuppressWarnings("FieldMayBeFinal") // Set via ensureField with CHILD_LISTENER_REFERENCES_UPDATER
@@ -636,15 +638,13 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
         }
     }
 
-    private void addChildListenerReference(TableUpdateListener listenerToAdd) {
+    private void addChildListenerReference(final TableUpdateListener listenerToAdd) {
         while (true) {
             Object localChildListenerReferences = childListenerReferences;
             if (localChildListenerReferences == EMPTY_CHILD_LISTENER_REFERENCES) {
-                final SimpleReference<TableUpdateListener> weakReference =
-                        listenerToAdd instanceof LegacyListenerAdapter ? (LegacyListenerAdapter) listenerToAdd
-                                : new WeakSimpleReference<>(listenerToAdd);
+                final SimpleReference<TableUpdateListener> reference = makeChildListenerReference(listenerToAdd);
                 if (CHILD_LISTENER_REFERENCES_UPDATER.compareAndSet(this, EMPTY_CHILD_LISTENER_REFERENCES,
-                        weakReference)) {
+                        reference)) {
                     return;
                 }
             } else if (localChildListenerReferences instanceof SimpleReferenceManager) {
@@ -656,13 +656,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
             } else if (localChildListenerReferences instanceof SimpleReference) {
                 // swap the existing reference with a new SimpleReferenceManager
                 final SimpleReferenceManager<TableUpdateListener, ? extends SimpleReference<TableUpdateListener>> newListenerReferences =
-                        new SimpleReferenceManager<>((final TableUpdateListener tableUpdateListener) -> {
-                            if (tableUpdateListener instanceof LegacyListenerAdapter) {
-                                return (LegacyListenerAdapter) tableUpdateListener;
-                            } else {
-                                return new WeakSimpleReference<>(tableUpdateListener);
-                            }
-                        }, true);
+                        new SimpleReferenceManager<>(BaseTable::makeChildListenerReference, true);
                 SimpleReference<TableUpdateListener> asSimpleReference =
                         (SimpleReference<TableUpdateListener>) localChildListenerReferences;
                 final TableUpdateListener item = asSimpleReference.get();
@@ -680,6 +674,13 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
                         "Unexpected childListenerReferences type: " + localChildListenerReferences);
             }
         }
+    }
+
+    private static @NonNull SimpleReference<TableUpdateListener> makeChildListenerReference(
+            TableUpdateListener listenerToAdd) {
+        return listenerToAdd instanceof LegacyListenerAdapter
+                ? (LegacyListenerAdapter) listenerToAdd
+                : new WeakSimpleReference<>(listenerToAdd);
     }
 
     private void forEachChildListenerReference(
@@ -720,6 +721,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
                     if (asLegacyListenerAdapter.matches(listenerToRemove)) {
                         if (CHILD_LISTENER_REFERENCES_UPDATER.compareAndSet(this, localChildListenerReferences,
                                 EMPTY_CHILD_LISTENER_REFERENCES)) {
+                            asLegacyListenerAdapter.clear();
                             return;
                         }
                         continue;
@@ -743,11 +745,13 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
                 asSimpleReferenceManager.remove(listenerToRemove);
                 return;
             } else if (localChildListenerReferences instanceof SimpleReference) {
-                final TableUpdateListener listener =
-                        ((SimpleReference<TableUpdateListener>) localChildListenerReferences).get();
+                SimpleReference<TableUpdateListener> asSimpleReference =
+                        (SimpleReference<TableUpdateListener>) localChildListenerReferences;
+                final TableUpdateListener listener = asSimpleReference.get();
                 if (listener == listenerToRemove) {
                     if (CHILD_LISTENER_REFERENCES_UPDATER.compareAndSet(this, localChildListenerReferences,
                             EMPTY_CHILD_LISTENER_REFERENCES)) {
+                        asSimpleReference.clear();
                         return;
                     }
                     continue;
