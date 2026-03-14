@@ -44,6 +44,7 @@ import io.deephaven.util.datastructures.hash.IdentityKeyedObjectKey;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.NonNull;
 
 import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.io.*;
@@ -82,9 +83,9 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
             AtomicReferenceFieldUpdater.newUpdater(BaseTable.class, Collection.class, "parents");
     private static final Collection<Object> EMPTY_PARENTS = Collections.emptyList();
 
-    private static final AtomicReferenceFieldUpdater<BaseTable, SimpleReferenceManager> CHILD_LISTENER_REFERENCES_UPDATER =
+    private static final AtomicReferenceFieldUpdater<BaseTable, Object> CHILD_LISTENER_REFERENCES_UPDATER =
             AtomicReferenceFieldUpdater.newUpdater(
-                    BaseTable.class, SimpleReferenceManager.class, "childListenerReferences");
+                    BaseTable.class, Object.class, "childListenerReferences");
     private static final SimpleReferenceManager<TableUpdateListener, ? extends SimpleReference<TableUpdateListener>> EMPTY_CHILD_LISTENER_REFERENCES =
             new SimpleReferenceManager<>((final TableUpdateListener listener) -> {
                 throw new UnsupportedOperationException("EMPTY_CHILDREN does not support adds");
@@ -120,9 +121,21 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
     private volatile Condition updateGraphCondition;
     @SuppressWarnings("FieldMayBeFinal") // Set via ensureField with PARENTS_UPDATER
     private volatile Collection<Object> parents = EMPTY_PARENTS;
+
+    /**
+     * The childListenerReferences is either a SimpleReferenceManager&lt;TableUpdateListener, ? extends
+     * SimpleReference&lt;TableUpdateListener&gt;&gt; or a SimpleReference&lt;TableUpdateListener&gt;.
+     *
+     * <p>
+     * A table starts off with the singleton {@link #EMPTY_CHILD_LISTENER_REFERENCES}, and when the first listener is
+     * added the empty reference is CASed with a reference to new listener. When the second reference is added, we
+     * create a new SimpleReferenceManager that contains our original reference and the new reference. The new manager
+     * is CASed in place of the existing reference.
+     * </p>
+     */
     @SuppressWarnings("FieldMayBeFinal") // Set via ensureField with CHILD_LISTENER_REFERENCES_UPDATER
-    private volatile SimpleReferenceManager<TableUpdateListener, ? extends SimpleReference<TableUpdateListener>> childListenerReferences =
-            EMPTY_CHILD_LISTENER_REFERENCES;
+    private volatile Object childListenerReferences = EMPTY_CHILD_LISTENER_REFERENCES;
+
     @SuppressWarnings("FieldMayBeFinal")
     private volatile long lastSatisfiedStep = NotificationStepReceiver.NULL_NOTIFICATION_STEP;
     private volatile boolean isFailed;
@@ -595,7 +608,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
             if (listener instanceof NotificationQueue.Dependency) {
                 getUpdateGraph((NotificationQueue.Dependency) listener);
             }
-            ensureChildListenerReferences().add(listener);
+            addChildListenerReference(listener);
         }
     }
 
@@ -619,34 +632,139 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
             if (listener instanceof NotificationQueue.Dependency) {
                 getUpdateGraph((NotificationQueue.Dependency) listener);
             }
-            ensureChildListenerReferences().add(listener);
+            addChildListenerReference(listener);
 
             return true;
         }
     }
 
-    private SimpleReferenceManager<TableUpdateListener, ? extends SimpleReference<TableUpdateListener>> ensureChildListenerReferences() {
-        // noinspection unchecked
-        return FieldUtils.ensureField(this, CHILD_LISTENER_REFERENCES_UPDATER, EMPTY_CHILD_LISTENER_REFERENCES,
-                () -> new SimpleReferenceManager<>((final TableUpdateListener tableUpdateListener) -> {
-                    if (tableUpdateListener instanceof LegacyListenerAdapter) {
-                        return (LegacyListenerAdapter) tableUpdateListener;
-                    } else {
-                        return new WeakSimpleReference<>(tableUpdateListener);
-                    }
-                }, true));
+    private void addChildListenerReference(final TableUpdateListener listenerToAdd) {
+        while (true) {
+            Object localChildListenerReferences = childListenerReferences;
+            if (localChildListenerReferences == EMPTY_CHILD_LISTENER_REFERENCES) {
+                final SimpleReference<TableUpdateListener> reference = makeChildListenerReference(listenerToAdd);
+                if (CHILD_LISTENER_REFERENCES_UPDATER.compareAndSet(this, EMPTY_CHILD_LISTENER_REFERENCES,
+                        reference)) {
+                    return;
+                }
+            } else if (localChildListenerReferences instanceof SimpleReferenceManager) {
+                // noinspection unchecked
+                final SimpleReferenceManager<TableUpdateListener, ? extends SimpleReference<TableUpdateListener>> listenerReferences =
+                        (SimpleReferenceManager<TableUpdateListener, ? extends SimpleReference<TableUpdateListener>>) localChildListenerReferences;
+                listenerReferences.add(listenerToAdd);
+                return;
+            } else if (localChildListenerReferences instanceof SimpleReference) {
+                SimpleReference<TableUpdateListener> asSimpleReference =
+                        (SimpleReference<TableUpdateListener>) localChildListenerReferences;
+                final Object newReference;
+                final TableUpdateListener item = asSimpleReference.get();
+                if (item == null) {
+                    // swap the cleared reference with a new reference
+                    newReference = makeChildListenerReference(listenerToAdd);
+                } else {
+                    // swap the existing reference with a new SimpleReferenceManager
+                    final SimpleReferenceManager<TableUpdateListener, ? extends SimpleReference<TableUpdateListener>> newListenerReferences =
+                            new SimpleReferenceManager<>(BaseTable::makeChildListenerReference, true);
+                    newListenerReferences.add(item);
+                    newListenerReferences.add(listenerToAdd);
+                    newReference = newListenerReferences;
+                }
+                if (CHILD_LISTENER_REFERENCES_UPDATER.compareAndSet(this, localChildListenerReferences, newReference)) {
+                    return;
+                }
+            } else {
+                throw new IllegalStateException(
+                        "Unexpected childListenerReferences type: " + localChildListenerReferences);
+            }
+        }
+    }
+
+    private static @NonNull SimpleReference<TableUpdateListener> makeChildListenerReference(
+            TableUpdateListener listenerToAdd) {
+        return listenerToAdd instanceof LegacyListenerAdapter
+                ? (LegacyListenerAdapter) listenerToAdd
+                : new WeakSimpleReference<>(listenerToAdd);
+    }
+
+    private void forEachChildListenerReference(
+            @NotNull BiConsumer<SimpleReference<TableUpdateListener>, TableUpdateListener> consumer) {
+        final Object localChildListenerReferences = childListenerReferences;
+        if (localChildListenerReferences instanceof SimpleReferenceManager) {
+            final SimpleReferenceManager<TableUpdateListener, SimpleReference<TableUpdateListener>> asSimpleReferenceManager =
+                    (SimpleReferenceManager<TableUpdateListener, SimpleReference<TableUpdateListener>>) localChildListenerReferences;
+            asSimpleReferenceManager.forEach(consumer);
+        } else if (localChildListenerReferences instanceof SimpleReference) {
+            final SimpleReference<TableUpdateListener> asSimpleReference =
+                    (SimpleReference<TableUpdateListener>) localChildListenerReferences;
+            final TableUpdateListener listener = asSimpleReference.get();
+            if (listener != null) {
+                consumer.accept(asSimpleReference, listener);
+            }
+        } else {
+            throw new IllegalStateException(
+                    "Unexpected childListenerReferences type: " + localChildListenerReferences.getClass());
+        }
     }
 
     @Override
     public void removeUpdateListener(final ShiftObliviousListener listenerToRemove) {
-        childListenerReferences
-                .removeIf((final TableUpdateListener listener) -> listener instanceof LegacyListenerAdapter
-                        && ((LegacyListenerAdapter) listener).matches(listenerToRemove));
+        while (true) {
+            final Object localChildListenerReferences = childListenerReferences;
+            if (localChildListenerReferences instanceof SimpleReferenceManager) {
+                final SimpleReferenceManager<TableUpdateListener, SimpleReference<TableUpdateListener>> asSimpleReferenceManager =
+                        (SimpleReferenceManager<TableUpdateListener, SimpleReference<TableUpdateListener>>) localChildListenerReferences;
+                asSimpleReferenceManager
+                        .removeIf((final TableUpdateListener listener) -> listener instanceof LegacyListenerAdapter
+                                && ((LegacyListenerAdapter) listener).matches(listenerToRemove));
+                return;
+            } else if (localChildListenerReferences instanceof SimpleReference) {
+                if (localChildListenerReferences instanceof LegacyListenerAdapter) {
+                    final LegacyListenerAdapter asLegacyListenerAdapter =
+                            (LegacyListenerAdapter) localChildListenerReferences;
+                    if (asLegacyListenerAdapter.matches(listenerToRemove)) {
+                        if (CHILD_LISTENER_REFERENCES_UPDATER.compareAndSet(this, localChildListenerReferences,
+                                EMPTY_CHILD_LISTENER_REFERENCES)) {
+                            asLegacyListenerAdapter.clear();
+                            return;
+                        }
+                        continue;
+                    }
+                }
+                return;
+            } else {
+                throw new IllegalStateException(
+                        "Unexpected childListenerReferences type: " + localChildListenerReferences.getClass());
+            }
+        }
     }
 
     @Override
     public void removeUpdateListener(final TableUpdateListener listenerToRemove) {
-        childListenerReferences.remove(listenerToRemove);
+        while (true) {
+            final Object localChildListenerReferences = childListenerReferences;
+            if (localChildListenerReferences instanceof SimpleReferenceManager) {
+                final SimpleReferenceManager<TableUpdateListener, SimpleReference<TableUpdateListener>> asSimpleReferenceManager =
+                        (SimpleReferenceManager<TableUpdateListener, SimpleReference<TableUpdateListener>>) localChildListenerReferences;
+                asSimpleReferenceManager.remove(listenerToRemove);
+                return;
+            } else if (localChildListenerReferences instanceof SimpleReference) {
+                SimpleReference<TableUpdateListener> asSimpleReference =
+                        (SimpleReference<TableUpdateListener>) localChildListenerReferences;
+                final TableUpdateListener listener = asSimpleReference.get();
+                if (listener == listenerToRemove) {
+                    if (CHILD_LISTENER_REFERENCES_UPDATER.compareAndSet(this, localChildListenerReferences,
+                            EMPTY_CHILD_LISTENER_REFERENCES)) {
+                        asSimpleReference.clear();
+                        return;
+                    }
+                    continue;
+                }
+                return;
+            } else {
+                throw new IllegalStateException(
+                        "Unexpected childListenerReferences type: " + localChildListenerReferences.getClass());
+            }
+        }
     }
 
     @Override
@@ -668,8 +786,32 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
         return isFailed;
     }
 
+    /**
+     * Does this table have any listeners?
+     *
+     * <p>
+     * Note, that this function may return true in cases where there are no active listeners. This may happen either if
+     * a listener was garbage collected, but the table still has a WeakReference to the listener. Additionally, listener
+     * removal in {@link SimpleReferenceManager} is subject to race conditions which may leave a cleared WeakReference
+     * in the list. The listener will not fire; but this function will return true until the list is next traversed
+     * </p>
+     *
+     * <p>
+     * If the function returns false, then no listeners exist.
+     * </p>
+     *
+     * @return true if this table may have any listeners, false otherwise
+     */
     public boolean hasListeners() {
-        return !childListenerReferences.isEmpty();
+        final Object localChildListenerReferences = childListenerReferences;
+        if (localChildListenerReferences instanceof SimpleReferenceManager) {
+            return !((SimpleReferenceManager<?, ?>) localChildListenerReferences).isEmpty();
+        }
+        if (localChildListenerReferences instanceof SimpleReference) {
+            return ((SimpleReference<?>) localChildListenerReferences).get() != null;
+        }
+        throw new IllegalStateException(
+                "ChildListenerReferences was neither a SimpleReferenceManager or a SimpleReference!");
     }
 
     /**
@@ -762,9 +904,8 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
             lastNotificationStep = currentStep;
 
             final NotificationQueue notificationQueue = getNotificationQueue();
-            childListenerReferences.forEach(
-                    (listenerRef, listener) -> notificationQueue
-                            .addNotification(listener.getNotification(updateToSend)));
+            forEachChildListenerReference((listenerRef, listener) -> notificationQueue
+                    .addNotification(listener.getNotification(updateToSend)));
         }
 
         updateToSend.release();
@@ -880,7 +1021,8 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
             lastNotificationStep = currentStep;
 
             final NotificationQueue notificationQueue = getNotificationQueue();
-            childListenerReferences.forEach((listenerRef, listener) -> notificationQueue
+
+            forEachChildListenerReference((listenerRef, listener) -> notificationQueue
                     .addNotification(listener.getErrorNotification(e, sourceEntry)));
         }
     }
@@ -1365,7 +1507,15 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
         super.destroy();
         // NB: We should not assert things about empty listener lists, here, given that listener cleanup might never
         // happen or happen out of order if the listeners were GC'd and not explicitly left unmanaged.
-        childListenerReferences.clear();
+        final Object localChildListenerReferences = childListenerReferences;
+        if (localChildListenerReferences instanceof SimpleReferenceManager) {
+            ((SimpleReferenceManager<?, ?>) localChildListenerReferences).clear();
+        } else if (localChildListenerReferences instanceof SimpleReference) {
+            ((SimpleReference<?>) localChildListenerReferences).clear();
+        } else {
+            throw new IllegalStateException(
+                    "ChildListenerReferences was neither a SimpleReferenceManager or a SimpleReference!");
+        }
         parents.clear();
     }
 
