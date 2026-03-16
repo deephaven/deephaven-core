@@ -10,6 +10,8 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.PushdownFilterContext;
 import io.deephaven.engine.table.impl.PushdownResult;
 import io.deephaven.engine.table.impl.select.WhereFilter;
+import io.deephaven.engine.table.impl.sources.regioned.RegionedPushdownAction;
+import io.deephaven.engine.table.impl.sources.regioned.RegionedPushdownFilterContext;
 import io.deephaven.engine.table.impl.util.FieldUtils;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.util.string.StringUtils;
@@ -25,10 +27,12 @@ import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.lang.ref.SoftReference;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
+import java.util.stream.Collectors;
 
 /**
  * Partial TableLocation implementation for use by TableDataService implementations.
@@ -300,6 +304,10 @@ public abstract class AbstractTableLocation
     @Nullable
     public abstract BasicDataIndex loadDataIndex(@NotNull String... columns);
 
+    // ------------------------------------------------------------------------------------------------------------------
+    // PushdownFilterMatcher default implementation
+    // ------------------------------------------------------------------------------------------------------------------
+
     @Override
     public void estimatePushdownFilterCost(
             final WhereFilter filter,
@@ -309,8 +317,31 @@ public abstract class AbstractTableLocation
             final JobScheduler jobScheduler,
             final LongConsumer onComplete,
             final Consumer<Exception> onError) {
-        // Default to having no benefit by pushing down.
-        onComplete.accept(Long.MAX_VALUE);
+        if (selection.isEmpty()) {
+            // If the selection is empty, we can skip all pushdown filtering.
+            onComplete.accept(Long.MAX_VALUE);
+            return;
+        }
+
+        final RegionedPushdownFilterContext filterCtx = (RegionedPushdownFilterContext) context;
+
+        // Generate a list of all the allowed actions, sorted by minimum cost.
+        final List<RegionedPushdownAction> sorted = supportedActions()
+                .stream()
+                .filter(action -> action.allows(this, filterCtx))
+                .sorted(Comparator.comparingLong(RegionedPushdownAction::filterCost))
+                .collect(Collectors.toList());
+
+        // If no modes are allowed, we can skip all pushdown filtering.
+        if (sorted.isEmpty()) {
+            onComplete.accept(Long.MAX_VALUE);
+            return;
+        }
+
+        // Delegate to TableLocation to determine which of the supported actions applies to this particular location.
+        try (final RegionedPushdownAction.EstimateContext estimateCtx = makeEstimateContext(filter, filterCtx)) {
+            onComplete.accept(estimatePushdownAction(sorted, filter, selection, usePrev, filterCtx, estimateCtx));
+        }
     }
 
     @Override
@@ -323,8 +354,44 @@ public abstract class AbstractTableLocation
             final JobScheduler jobScheduler,
             final Consumer<PushdownResult> onComplete,
             final Consumer<Exception> onError) {
-        // Default to returning all results as "maybe"
-        onComplete.accept(PushdownResult.allMaybeMatch(selection));
+        if (selection.isEmpty()) {
+            // If the selection is empty, we can skip all pushdown filtering.
+            onComplete.accept(PushdownResult.allMaybeMatch(selection));
+            return;
+        }
+
+        final RegionedPushdownFilterContext filterCtx = (RegionedPushdownFilterContext) context;
+
+        // Generate a list of all the supported allowed actions, sorted by minimum cost.
+        final List<RegionedPushdownAction> sorted = supportedActions()
+                .stream()
+                .filter(action -> action.allows(this, filterCtx, costCeiling))
+                .sorted(Comparator.comparingLong(RegionedPushdownAction::filterCost))
+                .collect(Collectors.toList());
+
+        // If no modes are allowed, we can skip all pushdown filtering.
+        if (sorted.isEmpty()) {
+            onComplete.accept(PushdownResult.allMaybeMatch(selection));
+            return;
+        }
+
+        // Initialize the pushdown result with the selection rowset as "maybe" rows
+        PushdownResult result = PushdownResult.allMaybeMatch(selection);
+
+        // Delegate to TableLocation and perform each supported action..
+        try (final RegionedPushdownAction.ActionContext actionCtx = makeActionContext(filter, filterCtx)) {
+            for (final RegionedPushdownAction action : sorted) {
+                try (final PushdownResult ignored = result) {
+                    result = performPushdownAction(action, filter, selection, result, usePrev, filterCtx, actionCtx);
+                }
+                if (result.maybeMatch().isEmpty()) {
+                    // No maybe rows remaining, so no reason to continue filtering.
+                    break;
+                }
+            }
+            // Return the final result
+            onComplete.accept(result);
+        }
     }
 
     @Override

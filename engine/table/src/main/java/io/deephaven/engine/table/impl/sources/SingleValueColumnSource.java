@@ -3,13 +3,21 @@
 //
 package io.deephaven.engine.table.impl.sources;
 
+import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.table.ChunkSink;
-import io.deephaven.engine.table.WritableColumnSource;
-import io.deephaven.engine.table.impl.AbstractColumnSource;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.*;
+import io.deephaven.engine.table.impl.select.WhereFilter;
+import io.deephaven.engine.table.impl.util.JobScheduler;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.List;
+import java.util.function.Consumer;
+import java.util.function.LongConsumer;
+import java.util.function.Supplier;
 
 public abstract class SingleValueColumnSource<T> extends AbstractColumnSource<T>
         implements WritableColumnSource<T>, ChunkSink<Values>, InMemoryColumnSource,
@@ -122,4 +130,57 @@ public abstract class SingleValueColumnSource<T> extends AbstractColumnSource<T>
     public FillFromContext makeFillFromContext(int chunkCapacity) {
         return DEFAULT_FILL_FROM_INSTANCE;
     }
+
+    @Override
+    public PushdownFilterContext makePushdownFilterContext(
+            final WhereFilter filter,
+            final List<ColumnSource<?>> filterSources) {
+        return new SingleValuePushdownHelper.FilterContext(filter, filterSources);
+    }
+
+    @Override
+    public void estimatePushdownFilterCost(
+            final WhereFilter filter,
+            final RowSet selection,
+            final boolean usePrev,
+            final PushdownFilterContext context,
+            final JobScheduler jobScheduler,
+            final LongConsumer onComplete,
+            final Consumer<Exception> onError) {
+        onComplete.accept(PushdownResult.SINGLE_VALUE_COLUMN_COST);
+    }
+
+    @Override
+    public void pushdownFilter(
+            final WhereFilter filter,
+            final RowSet selection,
+            final boolean usePrev,
+            final PushdownFilterContext context,
+            final long costCeiling,
+            final JobScheduler jobScheduler,
+            final Consumer<PushdownResult> onComplete,
+            final Consumer<Exception> onError) {
+        if (selection.isEmpty()) {
+            onComplete.accept(PushdownResult.allNoMatch(selection));
+            return;
+        }
+
+        final SingleValuePushdownHelper.FilterContext filterCtx = (SingleValuePushdownHelper.FilterContext) context;
+
+        final Supplier<Chunk<Values>> chunkSupplier = usePrev ? this::getPrevValueChunk : this::getValueChunk;
+
+        final boolean matches =
+                SingleValuePushdownHelper.filter(selection, usePrev, filterCtx, chunkSupplier, this);
+        onComplete.accept(matches ? PushdownResult.allMatch(selection) : PushdownResult.allNoMatch(selection));
+    }
+
+    /**
+     * Returns a chunk containing the value for this column source.
+     */
+    protected abstract Chunk<Values> getValueChunk();
+
+    /**
+     * Returns a chunk containing the previous value for this columnSource.
+     */
+    protected abstract Chunk<Values> getPrevValueChunk();
 }

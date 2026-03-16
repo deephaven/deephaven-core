@@ -5,6 +5,11 @@ package io.deephaven.engine.table.impl.sources.regioned;
 
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.page.PagingContextHolder;
+import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.impl.BasePushdownFilterContext;
+import io.deephaven.engine.table.impl.PushdownFilterContext;
+import io.deephaven.engine.table.impl.PushdownResult;
 import io.deephaven.engine.table.impl.chunkattributes.DictionaryKeys;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.WritableChunk;
@@ -13,9 +18,15 @@ import io.deephaven.engine.page.Page;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
+import io.deephaven.engine.table.impl.select.WhereFilter;
+import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
+import io.deephaven.engine.table.impl.sources.SingleValuePushdownHelper;
 import io.deephaven.util.annotations.FinalDefault;
+import org.jetbrains.annotations.MustBeInvokedByOverriders;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.List;
+import java.util.Objects;
 import java.util.stream.IntStream;
 
 import static io.deephaven.util.QueryConstants.NULL_LONG;
@@ -144,7 +155,7 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
 
         private ColumnRegionLong<DictionaryKeys> dictionaryKeysRegion;
 
-        private Null(final long pageMask) {
+        public Null(final long pageMask) {
             super(pageMask);
         }
 
@@ -181,6 +192,17 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
 
         private static final ColumnRegionLong<DictionaryKeys> DEFAULT_SINGLETON_DICTIONARY_KEYS_REGION =
                 new ColumnRegionLong.Constant<>(RegionedColumnSourceBase.PARAMETERS.regionMask, 0L);
+        /**
+         * The supported pushdown action for constant object regions.
+         */
+        final static RegionedPushdownAction.Region CONSTANT_COLUMN_REGION =
+                new RegionedPushdownAction.Region(
+                        () -> false,
+                        PushdownResult.SINGLE_VALUE_REGION_COST,
+                        (ctx) -> true,
+                        (tl) -> true,
+                        (cr) -> cr instanceof Constant);
+        private static final List<RegionedPushdownAction> SUPPORTED_ACTIONS = List.of(CONSTANT_COLUMN_REGION);
 
         private final DATA_TYPE value;
 
@@ -220,6 +242,63 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
         public ColumnRegionLong<DictionaryKeys> getDictionaryKeysRegion() {
             return dictionaryKeysRegion == null ? dictionaryKeysRegion = createConstantDictionaryKeysRegion(mask())
                     : dictionaryKeysRegion;
+        }
+
+        @Override
+        public List<RegionedPushdownAction> supportedActions() {
+            return SUPPORTED_ACTIONS;
+        }
+
+        @Override
+        @MustBeInvokedByOverriders
+        public long estimatePushdownAction(
+                final List<RegionedPushdownAction> actions,
+                final WhereFilter filter,
+                final RowSet selection,
+                final boolean usePrev,
+                final PushdownFilterContext filterContext,
+                final RegionedPushdownAction.EstimateContext estimateContext) {
+            return CONSTANT_COLUMN_REGION.filterCost();
+        }
+
+        @Override
+        @MustBeInvokedByOverriders
+        public PushdownResult performPushdownAction(
+                final RegionedPushdownAction action,
+                final WhereFilter filter,
+                final RowSet selection,
+                final PushdownResult input,
+                final boolean usePrev,
+                final PushdownFilterContext filterContext,
+                final RegionedPushdownAction.ActionContext actionContext) {
+            final BasePushdownFilterContext filterCtx = (BasePushdownFilterContext) filterContext;
+
+            final boolean matches;
+            if (Objects.isNull(value)) {
+                // We can resolve all the maybe rows with one test.
+                final BasePushdownFilterContext.FilterNullBehavior nullBehavior = filterCtx.filterNullBehavior();
+                if (nullBehavior == BasePushdownFilterContext.FilterNullBehavior.FAILS_ON_NULLS) {
+                    return input.copy();
+                }
+                matches = nullBehavior == BasePushdownFilterContext.FilterNullBehavior.INCLUDES_NULLS;
+            } else {
+                if (filterCtx.supportsChunkFiltering()) {
+                    matches = SingleValuePushdownHelper.chunkFilter(filterCtx,
+                            () -> SingleValuePushdownHelper.makeChunk(value));
+                } else {
+                    @SuppressWarnings("unchecked")
+                    final ColumnSource<Object> columnSource = InMemoryColumnSource.makeImmutableConstantSource(
+                            (Class<Object>) value.getClass(),
+                            value.getClass().getComponentType(),
+                            value);
+                    matches = SingleValuePushdownHelper.tableFilter(filter, selection, false, columnSource);
+                }
+            }
+            return matches
+                    // Promote all maybe rows to match.
+                    ? PushdownResult.of(selection, input.match().union(input.maybeMatch()), RowSetFactory.empty())
+                    // None of these rows match, return the original match rows.
+                    : PushdownResult.of(selection, input.match(), RowSetFactory.empty());
         }
     }
 
