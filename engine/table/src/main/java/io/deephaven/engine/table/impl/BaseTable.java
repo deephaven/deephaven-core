@@ -656,15 +656,15 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
                 final SimpleReference<TableUpdateListener> asSimpleReference =
                         (SimpleReference<TableUpdateListener>) localChildListenerReferences;
                 final Object newReference;
-                final TableUpdateListener item = asSimpleReference.get();
-                if (item == null) {
+                final TableUpdateListener existingReference = asSimpleReference.get();
+                if (existingReference == null) {
                     // swap the cleared reference with a new reference
                     newReference = makeChildListenerReference(listenerToAdd);
                 } else {
                     // swap the existing reference with a new SimpleReferenceManager
                     final SimpleReferenceManager<TableUpdateListener, ? extends SimpleReference<TableUpdateListener>> newListenerReferences =
                             new SimpleReferenceManager<>(BaseTable::makeChildListenerReference, true);
-                    newListenerReferences.add(item);
+                    newListenerReferences.add(existingReference);
                     newListenerReferences.add(listenerToAdd);
                     newReference = newListenerReferences;
                 }
