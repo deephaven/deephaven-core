@@ -3,7 +3,7 @@ title: An Overview of Deephaven's Architecture
 sidebar_label: Architecture Overview
 ---
 
-Deephaven's power is largely due to the concept that _everything_ is a table. Think of Deephaven tables like [Pandas DataFrames](https://pandas.pydata.org/pandas-docs/stable/user_guide/dsintro.html#dataframe), except that they support real-time operations! The Deephaven table is the key abstraction that unites static and real-time data for a seamless, integrated experience. This section will discuss the conceptual building blocks of Deephaven tables before diving into some real code.
+Deephaven's power is largely due to the concept that _everything_ is a table. Think of Deephaven tables like [Pandas DataFrames](https://pandas.pydata.org/docs/user_guide/dsintro.html#dataframe), except that they support real-time operations! The Deephaven table is the key abstraction that unites static and real-time data for a seamless, integrated experience. This section will discuss the conceptual building blocks of Deephaven tables before diving into some real code.
 
 ## The Deephaven Table API
 
