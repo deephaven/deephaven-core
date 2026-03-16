@@ -4788,6 +4788,11 @@ public class DateTimeUtils {
                 return epochNanosToInstant(nanos);
             }
 
+            if (s.startsWith("Z") || s.startsWith("z")) {
+                throw new RuntimeException(
+                        "A 'Z' or 'z' prefix is not allowed for Instant parsing.  Use parseZonedDateTime instead.");
+            }
+
             return parseZonedDateTime(s).toInstant();
         } catch (Exception e) {
             throw new DateTimeParseException("Cannot parse instant: " + s, e);
@@ -4882,7 +4887,8 @@ public class DateTimeUtils {
      * Parses the string argument as a {@link ZonedDateTime}.
      * <p>
      * Date time strings are formatted according to the ISO 8601 date time format
-     * {@code yyyy-MM-ddThh:mm:ss[.SSSSSSSSS] TZ} and others.
+     * {@code yyyy-MM-ddThh:mm:ss[.SSSSSSSSS] TZ}, a Z-prefixed ISO 8601 date time format
+     * {@code Zyyyy-MM-ddThh:mm:ss[.SSSSSSSSS] TZ}, and others.
      *
      * @param s date time string
      * @return a {@link ZonedDateTime} represented by the input string
@@ -4891,10 +4897,14 @@ public class DateTimeUtils {
      */
     @ScriptApi
     @NotNull
-    public static ZonedDateTime parseZonedDateTime(@NotNull final String s) {
+    public static ZonedDateTime parseZonedDateTime(@NotNull String s) {
         // noinspection ConstantConditions
         if (s == null) {
             throw new DateTimeParseException("Cannot parse datetime (null): " + s);
+        }
+
+        if (s.startsWith("Z") || s.startsWith("z")) {
+            s = s.substring(1);
         }
 
         try {
@@ -4941,7 +4951,8 @@ public class DateTimeUtils {
      * Parses the string argument as a {@link ZonedDateTime}.
      * <p>
      * Date time strings are formatted according to the ISO 8601 date time format
-     * {@code yyyy-MM-ddThh:mm:ss[.SSSSSSSSS] TZ} and others.
+     * {@code yyyy-MM-ddThh:mm:ss[.SSSSSSSSS] TZ}, a Z-prefixed ISO 8601 date time format
+     * {@code Zyyyy-MM-ddThh:mm:ss[.SSSSSSSSS] TZ}, and others.
      *
      * @param s date time string
      * @return a {@link ZonedDateTime} represented by the input string, or {@code null} if the string can not be parsed
