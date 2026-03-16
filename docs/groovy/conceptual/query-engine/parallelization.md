@@ -114,7 +114,7 @@ This pool processes live table updates. When source data changes, this pool comp
 - Propagating changes through dependent tables.
 - Running independent tables simultaneously.
 
-Both thread pools default to using all CPU cores, determined by [`Runtime.availableProcessors()`](<https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/Runtime.html#availableProcessors()>) at startup.
+Both thread pools default to using all CPU cores, determined by [`Runtime.availableProcessors()`](https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/Runtime.html#availableProcessors()) at startup.
 
 ## Controlling concurrency
 
@@ -211,13 +211,13 @@ bad_result = emptyTable(10).update("A = counter.getAndIncrement()", "B = counter
 
 Parallel execution causes inconsistent values because multiple threads increment `counter` concurrently. You may see results like:
 
-| A   | B   |
-| --- | --- |
-| 0   | 2   |
-| 1   | 3   |
-| 5   | 6   |
-| 4   | 7   |
-| 9   | 8   |
+| A | B |
+| - | - |
+| 0 | 2 |
+| 1 | 3 |
+| 5 | 6 |
+| 4 | 7 |
+| 9 | 8 |
 
 Notice the out-of-order values (row 4 has `A=4` after row 3 has `A=5`), gaps (no 10-19 visible), and `B` not following `A + 1`.
 
