@@ -54,7 +54,7 @@ Deephaven also parallelizes calculations within a single table. When you run `so
 
 **What does NOT get parallelized**:
 
-- [`view`](../../reference/table-operations/select/view.md) and [`updateView`](../../reference/table-operations/select/updateView.md) — these are lazily evaluated when cells are accessed, not computed upfront.
+- [`view`](../../reference/table-operations/select/view.md) and [`updateView`](../../reference/table-operations/select/update-view.md) — these are lazily evaluated when cells are accessed, not computed upfront.
 - Operations marked with `.withSerial` (you control this).
 - Operations waiting for dependencies (automatic in the update graph).
 
