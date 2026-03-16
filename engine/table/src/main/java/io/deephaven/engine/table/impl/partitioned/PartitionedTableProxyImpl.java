@@ -36,7 +36,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BinaryOperator;
-import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
@@ -151,16 +150,47 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
     }
 
     private PartitionedTable.Proxy basicTransform(@NotNull final UnaryOperator<Table> transformer) {
-        return basicTransform(false, transformer);
+        return basicTransform(false, transformer, Collections.emptySet());
     }
 
+    private PartitionedTable.Proxy basicColumnPreservingTransform(@NotNull final UnaryOperator<Table> transformer) {
+        return basicTransform(false, transformer, target instanceof PartitionedTableImpl
+                ? ((PartitionedTableImpl) target).getConsistentKeyColumnNames()
+                : Collections.emptySet());
+    }
+
+    /**
+     * @param requiresFullContext if the ExecutionContext should get a new query library and scope
+     * @param transformer the transform function to apply
+     * @param retainedColumns a set of columns retained without change; used to create a new subset of consistent key
+     *        columns. This set is permitted to contain non-key columns, which are ignored.
+     */
     private PartitionedTable.Proxy basicTransform(
-            final boolean requiresFullContext, @NotNull final UnaryOperator<Table> transformer) {
+            final boolean requiresFullContext,
+            @NotNull final UnaryOperator<Table> transformer,
+            @NotNull final Collection<String> retainedColumns) {
+        final PartitionedTable transformed;
+        if (!retainedColumns.isEmpty() && target instanceof PartitionedTableImpl) {
+            final PartitionedTableImpl asImpl = (PartitionedTableImpl) target;
+            Set<String> resultConsistentKeyColumns = asImpl.getConsistentKeyColumnNames();
+            if (!resultConsistentKeyColumns.isEmpty()) {
+                resultConsistentKeyColumns = new HashSet<>(resultConsistentKeyColumns);
+                resultConsistentKeyColumns.retainAll(retainedColumns);
+            }
+            transformed = asImpl.transform(
+                    getOrCreateExecutionContext(requiresFullContext),
+                    transformer,
+                    resultConsistentKeyColumns,
+                    asImpl.table().isRefreshing());
+        } else {
+            transformed = target.transform(
+                    getOrCreateExecutionContext(requiresFullContext),
+                    transformer,
+                    target.table().isRefreshing());
+        }
+
         return new PartitionedTableProxyImpl(
-                target.transform(
-                        getOrCreateExecutionContext(requiresFullContext),
-                        transformer,
-                        target.table().isRefreshing()),
+                transformed,
                 requireMatchingKeys,
                 sanityCheckJoins);
     }
@@ -427,48 +457,51 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
 
     @Override
     public PartitionedTable.Proxy head(long size) {
-        return basicTransform(ct -> ct.head(size));
+        return basicColumnPreservingTransform(ct -> ct.head(size));
     }
 
     @Override
     public PartitionedTable.Proxy tail(long size) {
-        return basicTransform(ct -> ct.tail(size));
+        return basicColumnPreservingTransform(ct -> ct.tail(size));
     }
 
     @Override
     public PartitionedTable.Proxy slice(long firstPositionInclusive, long lastPositionExclusive) {
-        return basicTransform(ct -> ct.slice(firstPositionInclusive, lastPositionExclusive));
+        return basicColumnPreservingTransform(ct -> ct.slice(firstPositionInclusive, lastPositionExclusive));
     }
 
     @Override
     public PartitionedTable.Proxy reverse() {
-        return basicTransform(Table::reverse);
+        return basicColumnPreservingTransform(Table::reverse);
     }
 
     @Override
     public PartitionedTable.Proxy snapshot() {
-        return basicTransform(TableOperations::snapshot);
+        return basicColumnPreservingTransform(TableOperations::snapshot);
     }
 
     @Override
     public PartitionedTable.Proxy snapshotWhen(TableOperations<?, ?> trigger, Flag... features) {
+        // TODO: can we overwrite a key column?
         return complexTransform(trigger, (base, tr) -> base.snapshotWhen(tr, features), null);
     }
 
     @Override
     public PartitionedTable.Proxy snapshotWhen(TableOperations<?, ?> trigger, Collection<Flag> features,
             String... stampColumns) {
+        // TODO: can we overwrite a key column?
         return complexTransform(trigger, (base, tr) -> base.snapshotWhen(tr, features, stampColumns), null);
     }
 
     @Override
     public PartitionedTable.Proxy snapshotWhen(TableOperations<?, ?> trigger, SnapshotWhenOptions options) {
+        // TODO: can we overwrite a key column?
         return complexTransform(trigger, (base, tr) -> base.snapshotWhen(tr, options), null);
     }
 
     @Override
     public PartitionedTable.Proxy sort(Collection<SortColumn> columnsToSortBy) {
-        return basicTransform(ct -> ct.sort(columnsToSortBy));
+        return basicColumnPreservingTransform(ct -> ct.sort(columnsToSortBy));
     }
 
     @Override
@@ -519,7 +552,7 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
 
         final WhereFilter[] remainingFilters = whereFilters.toArray(WhereFilter[]::new);
         if (keyColumnFilters.isEmpty()) {
-            return basicTransform(ct -> ct.where(Filter.and(WhereFilter.copyFrom(remainingFilters))));
+            return basicColumnPreservingTransform(ct -> ct.where(Filter.and(WhereFilter.copyFrom(remainingFilters))));
         }
 
         return LivenessScopeStack.computeEnclosed(() -> {
@@ -539,11 +572,22 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
                 nonKeyFilters = remainingFilters;
             }
 
+            final PartitionedTable transformed;
+            if (keyFiltered instanceof PartitionedTableImpl) {
+                final PartitionedTableImpl asImpl = (PartitionedTableImpl) keyFiltered;
+                transformed = asImpl.transform(
+                        getOrCreateExecutionContext(false),
+                        ct -> ct.where(Filter.and(WhereFilter.copyFrom(nonKeyFilters))),
+                        asImpl.getConsistentKeyColumnNames(),
+                        target.table().isRefreshing());
+            } else {
+                transformed = keyFiltered.transform(
+                        getOrCreateExecutionContext(false),
+                        ct -> ct.where(Filter.and(WhereFilter.copyFrom(nonKeyFilters))),
+                        target.table().isRefreshing());
+            }
             return new PartitionedTableProxyImpl(
-                    keyFiltered.transform(
-                            getOrCreateExecutionContext(false),
-                            ct -> ct.where(Filter.and(WhereFilter.copyFrom(nonKeyFilters))),
-                            target.table().isRefreshing()),
+                    transformed,
                     requireMatchingKeys,
                     sanityCheckJoins);
         }, target.table().isRefreshing(), ptp -> ptp.target.table().isRefreshing());
@@ -553,7 +597,12 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
         if (!filter.getColumnArrays().isEmpty()) {
             return false;
         }
-        return target.keyColumnNames().containsAll(filter.getColumns());
+        if (!(target instanceof PartitionedTableImpl)) {
+            return false;
+        }
+        final PartitionedTableImpl asImpl = (PartitionedTableImpl) target;
+        Set<String> consistentKeyColumnNames = asImpl.getConsistentKeyColumnNames();
+        return consistentKeyColumnNames.containsAll(filter.getColumns());
     }
 
     @Override
@@ -649,31 +698,70 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
     @Override
     public PartitionedTable.Proxy view(Collection<? extends Selectable> columns) {
         final Collection<SelectColumn> selectColumns = toSelectColumns(columns);
-        return basicTransform(ct -> ct.view(SelectColumn.copyFrom(selectColumns)));
+        return basicTransform(false, ct -> ct.view(SelectColumn.copyFrom(selectColumns)),
+                computePreservedKeyColumnsFromRetentions(selectColumns));
+    }
+
+    private static @NotNull Set<String> computePreservedKeyColumnsFromRetentions(
+            final Collection<SelectColumn> selectColumns) {
+        return selectColumns.stream().filter(SelectColumn::isRetain).map(SelectColumn::getName)
+                .collect(Collectors.toSet());
+    }
+
+    private Collection<String> computePreservedKeyColumnsFromSelectColumnChanges(
+            final Collection<SelectColumn> changedColumns) {
+        final Set<String> changedColumnNames =
+                changedColumns.stream().map(SelectColumn::getName).collect(Collectors.toSet());
+        return computePreservedKeyColumnsFromChanges(changedColumnNames);
+    }
+
+    private Collection<String> computePreservedKeyColumnsFromColumnNameChanges(
+            final Collection<? extends ColumnName> changedColumns) {
+        final Set<String> changedColumnNames =
+                changedColumns.stream().map(ColumnName::name).collect(Collectors.toSet());
+        return computePreservedKeyColumnsFromChanges(changedColumnNames);
+    }
+
+    private Collection<String> computePreservedKeyColumnsFromChanges(final Set<String> changedColumnNames) {
+        if (!(target instanceof PartitionedTableImpl)) {
+            return Collections.emptySet();
+        }
+        final PartitionedTableImpl asImpl = (PartitionedTableImpl) target;
+        Set<String> consistentKeyColumnNames = asImpl.getConsistentKeyColumnNames();
+        if (consistentKeyColumnNames.isEmpty()) {
+            return Collections.emptySet();
+        }
+        final LinkedHashSet<String> newConsistentColumns = new LinkedHashSet<>(consistentKeyColumnNames);
+        newConsistentColumns.removeAll(changedColumnNames);
+        return newConsistentColumns;
     }
 
     @Override
     public PartitionedTable.Proxy updateView(Collection<? extends Selectable> columns) {
         final Collection<SelectColumn> selectColumns = toSelectColumns(columns);
-        return basicTransform(ct -> ct.updateView(SelectColumn.copyFrom(selectColumns)));
+        return basicTransform(false, ct -> ct.updateView(SelectColumn.copyFrom(selectColumns)),
+                computePreservedKeyColumnsFromSelectColumnChanges(selectColumns));
     }
 
     @Override
     public PartitionedTable.Proxy update(Collection<? extends Selectable> columns) {
         final Collection<SelectColumn> selectColumns = toSelectColumns(columns);
-        return basicTransform(ct -> ct.update(SelectColumn.copyFrom(selectColumns)));
+        return basicTransform(false, ct -> ct.update(SelectColumn.copyFrom(selectColumns)),
+                computePreservedKeyColumnsFromSelectColumnChanges(selectColumns));
     }
 
     @Override
     public PartitionedTable.Proxy lazyUpdate(Collection<? extends Selectable> columns) {
         final Collection<SelectColumn> selectColumns = toSelectColumns(columns);
-        return basicTransform(ct -> ct.lazyUpdate(SelectColumn.copyFrom(selectColumns)));
+        return basicTransform(false, ct -> ct.lazyUpdate(SelectColumn.copyFrom(selectColumns)),
+                computePreservedKeyColumnsFromSelectColumnChanges(selectColumns));
     }
 
     @Override
     public PartitionedTable.Proxy select(Collection<? extends Selectable> columns) {
         final Collection<SelectColumn> selectColumns = toSelectColumns(columns);
-        return basicTransform(ct -> ct.select(SelectColumn.copyFrom(selectColumns)));
+        return basicTransform(false, ct -> ct.select(SelectColumn.copyFrom(selectColumns)),
+                computePreservedKeyColumnsFromRetentions(selectColumns));
     }
 
     @Override
@@ -724,16 +812,18 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
 
     @Override
     public PartitionedTable.Proxy aggAllBy(AggSpec spec, ColumnName... groupByColumns) {
-        return basicTransform(true, ct -> ct.aggAllBy(spec, groupByColumns));
+        // Note: we assume the key columns are transformed
+        return basicTransform(true, ct -> ct.aggAllBy(spec, groupByColumns), Collections.emptySet());
     }
 
     @Override
     public PartitionedTable.Proxy aggBy(Collection<? extends Aggregation> aggregations, boolean preserveEmpty,
             TableOperations<?, ?> initialGroups, Collection<? extends ColumnName> groupByColumns) {
+        // Note: we assume the key columns are transformed
         if (initialGroups == null) {
             return basicTransform(
                     true,
-                    ct -> ct.aggBy(aggregations, preserveEmpty, null, groupByColumns));
+                    ct -> ct.aggBy(aggregations, preserveEmpty, null, groupByColumns), Collections.emptySet());
         }
         if (initialGroups instanceof Table) {
             // Force a consistent view of initial groups table to be used for all current and future constituents
@@ -743,7 +833,8 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
                     Table::isRefreshing);
             return basicTransform(
                     true,
-                    ct -> ct.aggBy(aggregations, preserveEmpty, initialGroupsTable, groupByColumns));
+                    ct -> ct.aggBy(aggregations, preserveEmpty, initialGroupsTable, groupByColumns),
+                    Collections.emptySet());
         }
         if (initialGroups instanceof PartitionedTable.Proxy) {
             return complexTransform(
@@ -760,28 +851,41 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
             Collection<? extends ColumnName> byColumns) {
         final UpdateBy.UpdateByOperatorCollection collection = UpdateBy.UpdateByOperatorCollection
                 .from(target.constituentDefinition(), control, operations, byColumns);
-        return basicTransform(ct -> UpdateBy.updateBy((QueryTable) ct, collection.copy(), control));
+        return basicTransform(false, ct -> UpdateBy.updateBy((QueryTable) ct, collection.copy(), control),
+                Set.of(collection.getPreservedColumnNames()));
     }
 
     @Override
     public PartitionedTable.Proxy selectDistinct() {
-        return basicTransform(Table::selectDistinct);
+        return basicColumnPreservingTransform(Table::selectDistinct);
     }
 
     @Override
     public PartitionedTable.Proxy selectDistinct(Collection<? extends Selectable> columns) {
         final Collection<SelectColumn> selectColumns = toSelectColumns(columns);
-        return basicTransform(ct -> ct.selectDistinct(SelectColumn.copyFrom(selectColumns)));
+        return basicTransform(false, ct -> ct.selectDistinct(SelectColumn.copyFrom(selectColumns)),
+                computePreservedKeyColumnsFromSelectColumnChanges(selectColumns));
     }
 
     @Override
     public PartitionedTable.Proxy ungroup(boolean nullFill, Collection<? extends ColumnName> columnsToUngroup) {
-        return basicTransform(ct -> ct.ungroup(nullFill, columnsToUngroup));
+        final Collection<String> retainedColumns;
+        if (columnsToUngroup.isEmpty()) {
+            // all vectors and arrays change
+            final Set<String> changedColumns =
+                    target.constituentDefinition().getColumns().stream().filter(cd -> cd.getComponentType() != null)
+                            .map(ColumnDefinition::getName).collect(Collectors.toUnmodifiableSet());
+            retainedColumns = computePreservedKeyColumnsFromChanges(changedColumns);
+        } else {
+            retainedColumns = computePreservedKeyColumnsFromColumnNameChanges(columnsToUngroup);
+        }
+        return basicTransform(false, ct -> ct.ungroup(nullFill, columnsToUngroup), retainedColumns);
     }
 
     @Override
     public PartitionedTable.Proxy dropColumns(String... columnNames) {
-        return basicTransform(ct -> ct.dropColumns(columnNames));
+        return basicTransform(false, ct -> ct.dropColumns(columnNames),
+                computePreservedKeyColumnsFromChanges(Set.of(columnNames)));
     }
 
     // endregion TableOperations Implementation

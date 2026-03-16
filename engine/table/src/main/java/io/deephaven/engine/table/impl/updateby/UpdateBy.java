@@ -34,6 +34,7 @@ import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableArray;
+import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedNode;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedQueue;
 import org.apache.commons.lang3.ArrayUtils;
@@ -1354,6 +1355,11 @@ public abstract class UpdateBy {
                     preservedColumnNames,
                     description,
                     localWindowArr);
+        }
+
+        @InternalUseOnly
+        public String[] getPreservedColumnNames() {
+            return preservedColumnNames;
         }
     }
 

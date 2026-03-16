@@ -7,6 +7,7 @@ import io.deephaven.api.ColumnName;
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.agg.Partition;
 import io.deephaven.api.filter.Filter;
+import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.base.FileUtils;
 import io.deephaven.base.SleepUtil;
 import io.deephaven.base.log.LogOutput;
@@ -1198,6 +1199,201 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
         final Proxy result7 = selfPtProxy.where(filter4);
         assertEquals(testTable.size(), filter4.numRowsProcessed());
         assertTableEquals(testTable.sort("c").where(filter4), result7.target().merge().sort("c"));
+    }
+
+    public void testWhereKeyPrioritizationWithChangedColumns() {
+        final Random random = new Random(0);
+        final Table testTable = newTable(
+                getRandomIntCol("a", 100, random),
+                getRandomIntCol("b", 100, random),
+                getRandomIntCol("c", 100, random),
+                getRandomIntCol("d", 100, random),
+                getRandomIntCol("e", 100, random));
+
+        final long partCount = testTable.selectDistinct("c").size();
+
+        final PartitionedTable partitionedTable = testTable.partitionBy("c");
+        final Proxy selfPtProxy = partitionedTable.proxy();
+
+        final RowSetCapturingFilter filter = new RowSetCapturingFilter(WhereFilterFactory.getExpression("c > 500"));
+        final Proxy result = selfPtProxy.where(filter);
+        assertEquals(partCount, filter.numRowsProcessed());
+        assertTableEquals(testTable.where("c > 500").sort("c"), result.target().merge().sort("c"));
+        filter.reset();
+
+        // if we update one of the non-key columns we can still be optimized
+        final Proxy updatedD = selfPtProxy.update("d = d * 2");
+        final Proxy resultUpdatedD = updatedD.where(filter);
+        assertEquals(partCount, filter.numRowsProcessed());
+        assertTableEquals(testTable.update("d = d * 2").where("c > 500").sort("c"),
+                resultUpdatedD.target().merge().sort("c"));
+        filter.reset();
+
+        // but if we update a key column, we cannot
+        final Proxy updatedC = selfPtProxy.update("c = c * 2");
+        final Proxy resultUpdatedC = updatedC.where(filter);
+        assertEquals(testTable.size(), filter.numRowsProcessed());
+        assertTableEquals(testTable.update("c = c * 2").where("c > 500").sort("c"),
+                resultUpdatedC.target().merge().sort("c"));
+        filter.reset();
+
+        // we can view a subset of columns, including the key as a result and still be optimized
+        final Proxy viewRetainC = selfPtProxy.view("d = 1", "c", "a = a * 2");
+        final Proxy resultRetainC = viewRetainC.where(filter);
+        assertEquals(partCount, filter.numRowsProcessed());
+        assertTableEquals(testTable.view("d = 1", "c", "a = a * 2").where("c > 500").sort("c"),
+                resultRetainC.target().merge().sort("c"));
+        filter.reset();
+
+        // but if we change C, then we can't do that anymore
+        final Proxy selectChangeC = selfPtProxy.select("d = 1", "c = a", "a = a * 2");
+        final Proxy resultSelectC = selectChangeC.where(filter);
+        assertEquals(testTable.size(), filter.numRowsProcessed());
+        assertTableEquals(testTable.select("d = 1", "c = a", "a = a * 2").where("c > 500").sort("c"),
+                resultSelectC.target().merge().sort("c"));
+        filter.reset();
+
+        // we can drop D
+        final Proxy dropD = selfPtProxy.dropColumns("d");
+        final Proxy resultDropD = dropD.where(filter);
+        assertEquals(partCount, filter.numRowsProcessed());
+        assertTableEquals(testTable.dropColumns("d").where("c > 500").sort("c"),
+                resultDropD.target().merge().sort("c"));
+        filter.reset();
+
+        // we can call selectDistinct on all columns w/o changing anything
+        final Proxy selectDistinctAll = selfPtProxy.selectDistinct();
+        final Proxy resultSDAll = selectDistinctAll.where(filter);
+        assertEquals(partCount, filter.numRowsProcessed());
+        assertTableEquals(testTable.selectDistinct().where("c > 500").sort("c"),
+                resultSDAll.target().merge().sort("c"));
+        filter.reset();
+
+        // we can call selectDistinct on "c" w/o changing anything
+        final Proxy selectDistinctC = selfPtProxy.selectDistinct("c");
+        final Proxy resultSDC = selectDistinctC.where(filter);
+        assertEquals(partCount, filter.numRowsProcessed());
+        assertTableEquals(testTable.selectDistinct("c").where("c > 500").sort("c"),
+                resultSDC.target().merge().sort("c"));
+        filter.reset();
+
+        // if we call selectDistinct with a formula, we can't do better anymore
+        final Proxy selectDistinctCFormula = selfPtProxy.selectDistinct("c=a*2");
+        final Proxy resultSDCF = selectDistinctCFormula.where(filter);
+        assertEquals(testTable.selectDistinct("a").size(), filter.numRowsProcessed());
+        assertTableEquals(testTable.selectDistinct("c=a*2").where("c > 500").sort("c"),
+                resultSDCF.target().merge().sort("c"));
+        filter.reset();
+    }
+
+    public void testWhereKeyPrioritizationUngroup() {
+        final Random random = new Random(0);
+        final int size = 100;
+        final Table testTable = newTable(
+                getRandomIntCol("a", size, random),
+                getRandomIntCol("b", size, random),
+                getRandomIntCol("c", size, random),
+                getRandomIntCol("d", size, random),
+                getRandomIntCol("e", size, random));
+
+        final Table grouped = testTable.groupBy("a", "c");
+
+        final long partCount = grouped.selectDistinct("c").size();
+        assertFalse(grouped.size() == partCount);
+
+        final PartitionedTable partitionedTable = grouped.partitionBy("c");
+        final Proxy selfPtProxy = partitionedTable.proxy();
+
+        final RowSetCapturingFilter filter = new RowSetCapturingFilter(WhereFilterFactory.getExpression("c > 500"));
+        final Proxy result = selfPtProxy.where(filter);
+        assertEquals(partCount, filter.numRowsProcessed());
+        assertTableEquals(grouped.where("c > 500").sort("c"), result.target().merge().sort("c"));
+        filter.reset();
+
+        final RowSetCapturingFilter filterB =
+                new RowSetCapturingFilter(WhereFilterFactory.getExpression("sum(b) > 500"));
+        final Proxy result2 = selfPtProxy.where(filterB);
+        assertEquals(grouped.size(), filterB.numRowsProcessed());
+        assertTableEquals(grouped.where("sum(b) > 500").sort("c"), result2.target().merge().sort("c"));
+        filterB.reset();
+
+        // we are not changing anything related to "c" here, because it is already a key column
+        final Proxy ungrouped = selfPtProxy.ungroup();
+        final Proxy result3 = ungrouped.where(filter);
+        assertEquals(partCount, filter.numRowsProcessed());
+        assertTableEquals(grouped.ungroup().where("c > 500").sort("c"), result3.target().merge().sort("c"));
+        filter.reset();
+
+        // let's only ungroup by "b", which also preserves "b"
+        final Proxy ungroupedB = selfPtProxy.ungroup("b");
+        final Proxy result4 = ungroupedB.where(filter);
+        assertEquals(partCount, filter.numRowsProcessed());
+        assertTableEquals(grouped.ungroup("b").where("c > 500").sort("c"), result4.target().merge().sort("c"));
+        filter.reset();
+
+        final Table groupedByA = testTable.groupBy("a");
+
+        final long partCountByA = grouped.selectDistinct("c").size();
+        assertFalse(groupedByA.size() == partCountByA);
+
+        final PartitionedTable partitionedTableByA = groupedByA.partitionBy("c");
+        final Proxy ptProxyByA = partitionedTableByA.proxy();
+
+        // now let's ungroup by "c", which changes "c"
+        final RowSetCapturingFilter filterC2 =
+                new RowSetCapturingFilter(WhereFilterFactory.getExpression("sum(c) > 500"));
+        final Proxy ungroupedC = ptProxyByA.ungroup("c");
+        final Proxy result5 = ungroupedC.where(filterC2);
+        assertEquals(testTable.size(), filterC2.numRowsProcessed());
+        assertTableEquals(groupedByA.ungroup("c").where("sum(c) > 500").sort("c"), result5.target().merge().sort("c"));
+        filterC2.reset();
+    }
+
+    public void testWhereKeyPrioritizationUpdateBy() {
+        final Random random = new Random(0);
+        final int size = 100;
+        final Table testTable = newTable(
+                getRandomIntCol("a", size, random),
+                getRandomIntCol("b", size, random),
+                getRandomIntCol("c", size, random),
+                getRandomIntCol("d", size, random),
+                getRandomIntCol("e", size, random));
+
+        final long partCount = testTable.selectDistinct("c").size();
+
+        final PartitionedTable partitionedTable = testTable.partitionBy("c");
+        final Proxy selfPtProxy = partitionedTable.proxy();
+
+        final RowSetCapturingFilter filter = new RowSetCapturingFilter(WhereFilterFactory.getExpression("c > 500"));
+        final Proxy result = selfPtProxy.where(filter);
+        assertEquals(partCount, filter.numRowsProcessed());
+        assertTableEquals(testTable.where("c > 500").sort("c"), result.target().merge().sort("c"));
+        filter.reset();
+
+        // doesn't change c
+        final Proxy updateByOthers = selfPtProxy.updateBy(UpdateByOperation.CumSum("d"), "a");
+        final Proxy result2 = updateByOthers.where(filter);
+        assertEquals(partCount, filter.numRowsProcessed());
+        assertTableEquals(testTable.updateBy(UpdateByOperation.CumSum("d"), "a").where("c > 500").sort("c").view("c"),
+                result2.target().merge().sort("c").view("c"));
+        filter.reset();
+
+        // doesn't change c either
+        final Proxy updateByKey = selfPtProxy.updateBy(UpdateByOperation.CumSum("d"), "c");
+        final Proxy result3 = updateByKey.where(filter);
+        assertEquals(partCount, filter.numRowsProcessed());
+        assertTableEquals(testTable.updateBy(UpdateByOperation.CumSum("d"), "c").where("c > 500").sort("c"),
+                result3.target().merge().sort("c"));
+        filter.reset();
+
+        // change c now
+        final RowSetCapturingFilter filter2 = new RowSetCapturingFilter(WhereFilterFactory.getExpression("c > 500"));
+        final Proxy sumKey = selfPtProxy.updateBy(UpdateByOperation.CumSum("c"), "a");
+        final Proxy result4 = sumKey.where(filter2);
+        assertEquals(testTable.size(), filter2.numRowsProcessed());
+        assertTableEquals(testTable.partitionBy("c").transform(t -> t.updateBy(UpdateByOperation.CumSum("c"), "a"))
+                .merge().sort("c").where("c > 500"), result4.target().merge().sort("c"));
+        filter2.reset();
     }
 
     public void testWhereIn() {
