@@ -32,7 +32,7 @@ jobs:
         run: ./gradlew --continue pullImage compareImage
 
       - name: Notify Slack
-        uses: slackapi/slack-github-action@v2.1.0
+        uses: slackapi/slack-github-action@v3.0.1
         id: notify-slack
         if: ${{ failure() }}
         env:
