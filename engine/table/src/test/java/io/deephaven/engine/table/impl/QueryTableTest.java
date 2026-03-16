@@ -48,7 +48,6 @@ import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.groovy.util.Maps;
 import org.jetbrains.annotations.NotNull;
-import org.jspecify.annotations.NonNull;
 import org.junit.Assert;
 import org.junit.experimental.categories.Category;
 
@@ -3696,7 +3695,7 @@ public class QueryTableTest extends QueryTableTestBase {
         });
     }
 
-    private static @NonNull TableUpdateImpl simpleAddUpdate(final RowSet added) {
+    private static @NotNull TableUpdateImpl simpleAddUpdate(final RowSet added) {
         final TableUpdateImpl update = new TableUpdateImpl();
         update.added = added;
         update.removed = i();

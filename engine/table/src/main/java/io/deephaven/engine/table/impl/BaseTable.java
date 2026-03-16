@@ -44,7 +44,6 @@ import io.deephaven.util.datastructures.hash.IdentityKeyedObjectKey;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jspecify.annotations.NonNull;
 
 import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.io.*;
@@ -640,7 +639,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
 
     private void addChildListenerReference(final TableUpdateListener listenerToAdd) {
         while (true) {
-            Object localChildListenerReferences = childListenerReferences;
+            final Object localChildListenerReferences = childListenerReferences;
             if (localChildListenerReferences == EMPTY_CHILD_LISTENER_REFERENCES) {
                 final SimpleReference<TableUpdateListener> reference = makeChildListenerReference(listenerToAdd);
                 if (CHILD_LISTENER_REFERENCES_UPDATER.compareAndSet(this, EMPTY_CHILD_LISTENER_REFERENCES,
@@ -654,7 +653,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
                 listenerReferences.add(listenerToAdd);
                 return;
             } else if (localChildListenerReferences instanceof SimpleReference) {
-                SimpleReference<TableUpdateListener> asSimpleReference =
+                final SimpleReference<TableUpdateListener> asSimpleReference =
                         (SimpleReference<TableUpdateListener>) localChildListenerReferences;
                 final Object newReference;
                 final TableUpdateListener item = asSimpleReference.get();
@@ -679,7 +678,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
         }
     }
 
-    private static @NonNull SimpleReference<TableUpdateListener> makeChildListenerReference(
+    private static @NotNull SimpleReference<TableUpdateListener> makeChildListenerReference(
             TableUpdateListener listenerToAdd) {
         return listenerToAdd instanceof LegacyListenerAdapter
                 ? (LegacyListenerAdapter) listenerToAdd
@@ -748,7 +747,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
                 asSimpleReferenceManager.remove(listenerToRemove);
                 return;
             } else if (localChildListenerReferences instanceof SimpleReference) {
-                SimpleReference<TableUpdateListener> asSimpleReference =
+                final SimpleReference<TableUpdateListener> asSimpleReference =
                         (SimpleReference<TableUpdateListener>) localChildListenerReferences;
                 final TableUpdateListener listener = asSimpleReference.get();
                 if (listener == listenerToRemove) {
