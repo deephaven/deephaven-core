@@ -150,9 +150,7 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
     }
 
     private PartitionedTable.Proxy basicColumnPreservingTransform(@NotNull final UnaryOperator<Table> transformer) {
-        final Set<String> retainedKeyColumns = target instanceof PartitionedTableImpl
-                ? ((PartitionedTableImpl) target).getConsistentKeyColumnNames()
-                : Collections.emptySet();
+        final Set<String> retainedKeyColumns = getResultConsistentKeyColumns();
         return basicTransform(false, transformer, retainedKeyColumns);
     }
 
@@ -192,9 +190,7 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
             @NotNull final TableOperations<?, ?> other,
             @NotNull final BinaryOperator<Table> transformer,
             @Nullable final Collection<? extends JoinMatch> joinMatches) {
-        final Set<String> retainedKeyColumns = target instanceof PartitionedTableImpl
-                ? ((PartitionedTableImpl) target).getConsistentKeyColumnNames()
-                : Collections.emptySet();
+        final Set<String> retainedKeyColumns = getResultConsistentKeyColumns();
         return complexTransform(other, transformer, joinMatches, retainedKeyColumns);
     }
 
@@ -316,6 +312,12 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
         resultConsistentKeyColumns = new HashSet<>(resultConsistentKeyColumns);
         resultConsistentKeyColumns.retainAll(retainedColumns);
         return resultConsistentKeyColumns;
+    }
+
+    private Set<String> getResultConsistentKeyColumns() {
+        return target instanceof PartitionedTableImpl
+                ? ((PartitionedTableImpl) target).getConsistentKeyColumnNames()
+                : Collections.emptySet();
     }
 
     private static IllegalArgumentException onUnexpectedTableOperations(@NotNull TableOperations<?, ?> other) {
@@ -691,25 +693,37 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
     }
 
     private boolean isValidAgainstKeyColumns(Collection<? extends JoinMatch> columnsToMatch) {
-        return columnsToMatch.stream().allMatch(jm -> target.keyColumnNames().contains(jm.left().name()));
+        if (!(target instanceof PartitionedTableImpl)) {
+            return false;
+        }
+        final PartitionedTableImpl asImpl = (PartitionedTableImpl) target;
+        Set<String> consistentKeyColumnNames = asImpl.getConsistentKeyColumnNames();
+        return columnsToMatch.stream().allMatch(jm -> consistentKeyColumnNames.contains(jm.left().name()));
     }
 
     private boolean isValidAgainstRightKeyColumns(final PartitionedTable.Proxy right,
             Collection<? extends JoinMatch> columnsToMatch) {
-        return columnsToMatch.stream().allMatch(jm -> right.target().keyColumnNames().contains(jm.right().name()));
+        if (!(target instanceof PartitionedTableImpl)) {
+            return false;
+        }
+        final PartitionedTableImpl asImpl = (PartitionedTableImpl) target;
+        Set<String> consistentKeyColumnNames = asImpl.getConsistentKeyColumnNames();
+        return columnsToMatch.stream().allMatch(jm -> consistentKeyColumnNames.contains(jm.right().name()));
     }
 
     @Override
     public PartitionedTable.Proxy whereNotIn(TableOperations<?, ?> rightTable,
             Collection<? extends JoinMatch> columnsToMatch) {
         if (isValidAgainstKeyColumns(columnsToMatch)) {
+            final Set<String> resultConsistentKeyColumns = getResultConsistentKeyColumns();
             if (rightTable instanceof Table) {
                 final Table rightAsTable = (Table) rightTable;
                 final boolean shouldEnclose = target.table().isRefreshing() || rightAsTable.isRefreshing();
                 return LivenessScopeStack.computeEnclosed(() -> {
                     Table table = target.table().whereNotIn(rightAsTable, columnsToMatch);
                     final PartitionedTable filteredPartitionedTable = new PartitionedTableImpl(table,
-                            target.keyColumnNames(), target.uniqueKeys(), target.constituentColumnName(),
+                            target.keyColumnNames(), resultConsistentKeyColumns, target.uniqueKeys(),
+                            target.constituentColumnName(),
                             target.constituentDefinition(), target.constituentChangesPermitted(), false);
                     return new PartitionedTableProxyImpl(filteredPartitionedTable, requireMatchingKeys,
                             sanityCheckJoins);
@@ -723,7 +737,8 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
                 return LivenessScopeStack.computeEnclosed(() -> {
                     Table table = target.table().whereNotIn(rightAsProxy.target().table(), columnsToMatch);
                     final PartitionedTable filteredPartitionedTable = new PartitionedTableImpl(table,
-                            target.keyColumnNames(), target.uniqueKeys(), target.constituentColumnName(),
+                            target.keyColumnNames(), resultConsistentKeyColumns, target.uniqueKeys(),
+                            target.constituentColumnName(),
                             target.constituentDefinition(), target.constituentChangesPermitted(), false);
                     return new PartitionedTableProxyImpl(filteredPartitionedTable, requireMatchingKeys,
                             sanityCheckJoins);
