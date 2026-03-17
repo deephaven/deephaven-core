@@ -154,20 +154,21 @@ class PartitionedTableProxyTestCase(BaseTestCase):
 
         with self.subTest("where-in filter"):
             filtered_pt_proxy = self.pt_proxy.where_in(unique_table, cols=["c"])
-            for ct, filtered_ct in zip(
-                self.pt_proxy.target.constituent_tables,
-                filtered_pt_proxy.target.constituent_tables,
-            ):
-                self.assertLessEqual(filtered_ct.size, ct.size)
+            # When filtering on a key column, the fast path removes non-matching partitions
+            # entirely rather than keeping them with 0 rows, so compare total sizes.
+            self.assertLessEqual(
+                sum(ct.size for ct in filtered_pt_proxy.target.constituent_tables),
+                sum(ct.size for ct in self.pt_proxy.target.constituent_tables),
+            )
 
         with self.subTest("where-not-in filter"):
             filtered_pt_proxy2 = self.pt_proxy.where_not_in(unique_table, cols=["c"])
-            for ct, filtered_ct, filtered_ct2 in zip(
-                self.pt_proxy.target.constituent_tables,
-                filtered_pt_proxy.target.constituent_tables,
-                filtered_pt_proxy2.target.constituent_tables,
-            ):
-                self.assertEqual(ct.size, filtered_ct.size + filtered_ct2.size)
+            # whereIn and whereNotIn are complementary: every row in the original must
+            # appear in exactly one of the two results.
+            total_original = sum(ct.size for ct in self.pt_proxy.target.constituent_tables)
+            total_in = sum(ct.size for ct in filtered_pt_proxy.target.constituent_tables)
+            total_not_in = sum(ct.size for ct in filtered_pt_proxy2.target.constituent_tables)
+            self.assertEqual(total_original, total_in + total_not_in)
 
     def test_USV(self):
         ops = [
