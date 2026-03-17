@@ -268,8 +268,11 @@ public class BarrageRedirectedTable extends BarrageTable {
                 return coalescer;
             }
 
-            return (coalescer == null) ? new UpdateCoalescer(currRowsFromPrev, downstream)
+            final UpdateCoalescer result = (coalescer == null)
+                    ? new UpdateCoalescer(currRowsFromPrev, downstream)
                     : coalescer.update(downstream);
+            totalMods.close();
+            return result;
         }
     }
 

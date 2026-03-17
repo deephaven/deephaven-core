@@ -51,8 +51,9 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
     private boolean oldSerialSafe;
     private SafeCloseable executionContext;
 
+    protected AtomicInteger delayedErrorCount;
+
     List<Throwable> errors;
-    AtomicInteger delayedErrorCount;
 
     public static int scaleToDesiredTestLength(final int maxIter) {
         return TstUtils.scaleToDesiredTestLength(maxIter);

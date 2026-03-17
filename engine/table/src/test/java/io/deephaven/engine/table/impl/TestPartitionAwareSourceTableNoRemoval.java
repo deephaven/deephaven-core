@@ -263,6 +263,11 @@ public class TestPartitionAwareSourceTableNoRemoval extends RefreshingTableTestC
         doRefreshOkCheck();
         doRemoveLocations(locationKeysSlice(3));
         doBadRefreshCheck();
+
+        // We expect a DelayedErrorNotifier source in this test. Assert that we encountered at least one,
+        // then reset the counter to avoid issues in tearDown()
+        assertTrue(delayedErrorCount.get() > 0);
+        delayedErrorCount.set(0);
     }
 
     private void doInitializeCheck(final ImmutableTableLocationKey[] tableLocationKeys,
