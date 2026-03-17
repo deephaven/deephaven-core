@@ -34,5 +34,5 @@ When reviewing Markdown files in the `docs/` directory, check for the following:
 ## General style
 
 - Prefer active voice.
-- Avoid "will": "The system will process data in the order it is recieved" becomes "The system processes data in the order it is recieved".
+- Avoid "will": "The system will process data in the order it is received" becomes "The system processes data in the order it is received".
 - Link to related documentation when referencing other features.
