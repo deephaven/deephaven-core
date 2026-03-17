@@ -1118,8 +1118,8 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
         // initialize() incorrectly used row keys as slot positions for unionRedirection lookups.
         //
         // With N=15 initial constituents (row keys 0..14) and array length 16:
-        //   remove key 8, add key 15 → constituentRows = {0..7, 9..14, 15}
-        //   buggy code: tableSlots.get(14) = 15 → currLastRowKeyForSlot(15) → currFirstRowKeys[16] → AIOBE
+        // remove key 8, add key 15 → constituentRows = {0..7, 9..14, 15}
+        // buggy code: tableSlots.get(14) = 15 → currLastRowKeyForSlot(15) → currFirstRowKeys[16] → AIOBE
         final int N = 15;
         final Table[] initialConstituents = new Table[N];
         for (int i = 0; i < N; i++) {
