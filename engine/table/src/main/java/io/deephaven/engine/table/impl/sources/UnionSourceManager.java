@@ -3,7 +3,6 @@
 //
 package io.deephaven.engine.table.impl.sources;
 
-import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
@@ -26,6 +25,7 @@ import io.deephaven.util.SafeCloseableArray;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedNode;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedQueue;
 import io.deephaven.util.mutable.MutableLong;
+import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -945,15 +945,19 @@ public class UnionSourceManager implements PushdownPredicateManager {
             // is very important for UnionSourceManager because will likely contain refreshing constituent tables.
 
             final RowSet rowSetToUse = usePrev ? manager.constituentRows.prev() : manager.constituentRows;
-            final TIntArrayList tableSlots = new TIntArrayList(rowSetToUse.intSize());
-            rowSetToUse.forAllRowKeys(slot -> tableSlots.add((int) slot)); // Can't overflow, slots are dense
+            final int constituentCount = rowSetToUse.intSize();
 
-            matchers = new ArrayList<>(tableSlots.size());
-            contexts = new ArrayList<>(tableSlots.size());
-            firstRowKeys = new TLongArrayList(tableSlots.size());
-            lastRowKeys = new TLongArrayList(tableSlots.size());
+            matchers = new ArrayList<>(constituentCount);
+            contexts = new ArrayList<>(constituentCount);
+            firstRowKeys = new TLongArrayList(constituentCount);
+            lastRowKeys = new TLongArrayList(constituentCount);
 
-            tableSlots.forEach(slot -> {
+            // Use a 0-based position counter for unionRedirection slot lookups (which are position-indexed, not
+            // row-key-indexed). The actual row key from constituentRows is used for constituentTables lookups.
+            // These diverge when constituentChangesPermitted and removals have created gaps in constituentRows.
+            final MutableInt slotPosition = new MutableInt(0);
+            rowSetToUse.forAllRowKeys(rowKey -> {
+                final int slot = slotPosition.getAndIncrement();
                 final long firstKey = usePrev
                         ? manager.unionRedirection.prevFirstRowKeyForSlot(slot)
                         : manager.unionRedirection.currFirstRowKeyForSlot(slot);
@@ -964,8 +968,8 @@ public class UnionSourceManager implements PushdownPredicateManager {
                 // If there is no overlap, we can ignore this table completely.
                 if (selection.overlapsRange(firstKey, lastKey)) {
                     final Table constituent = usePrev
-                            ? manager.constituentTables.getPrev(slot)
-                            : manager.constituentTables.get(slot);
+                            ? manager.constituentTables.getPrev(rowKey)
+                            : manager.constituentTables.get(rowKey);
 
                     final List<ColumnSource<?>> filterSources = filter.getColumns().stream()
                             .map(cn -> renameMap.getOrDefault(cn, cn))
@@ -986,7 +990,6 @@ public class UnionSourceManager implements PushdownPredicateManager {
                         }
                     }
                 }
-                return true;
             });
         }
 
