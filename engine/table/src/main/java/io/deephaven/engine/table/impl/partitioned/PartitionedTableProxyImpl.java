@@ -659,13 +659,15 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
     public PartitionedTable.Proxy whereIn(TableOperations<?, ?> rightTable,
             Collection<? extends JoinMatch> columnsToMatch) {
         if (isValidAgainstKeyColumns(columnsToMatch)) {
+            final Set<String> resultConsistentKeyColumns = getResultConsistentKeyColumns();
             if (rightTable instanceof Table) {
                 final Table rightAsTable = (Table) rightTable;
                 final boolean shouldEnclose = target.table().isRefreshing() || rightAsTable.isRefreshing();
                 return LivenessScopeStack.computeEnclosed(() -> {
                     Table table = target.table().whereIn(rightAsTable, columnsToMatch);
                     final PartitionedTable filteredPartitionedTable = new PartitionedTableImpl(table,
-                            target.keyColumnNames(), target.uniqueKeys(), target.constituentColumnName(),
+                            target.keyColumnNames(), resultConsistentKeyColumns, target.uniqueKeys(),
+                            target.constituentColumnName(),
                             target.constituentDefinition(), target.constituentChangesPermitted(), false);
                     return new PartitionedTableProxyImpl(filteredPartitionedTable, requireMatchingKeys,
                             sanityCheckJoins);
@@ -679,7 +681,8 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
                 return LivenessScopeStack.computeEnclosed(() -> {
                     Table table = target.table().whereIn(rightAsProxy.target().table(), columnsToMatch);
                     final PartitionedTable filteredPartitionedTable = new PartitionedTableImpl(table,
-                            target.keyColumnNames(), target.uniqueKeys(), target.constituentColumnName(),
+                            target.keyColumnNames(), resultConsistentKeyColumns, target.uniqueKeys(),
+                            target.constituentColumnName(),
                             target.constituentDefinition(), target.constituentChangesPermitted(), false);
                     return new PartitionedTableProxyImpl(filteredPartitionedTable, requireMatchingKeys,
                             sanityCheckJoins);
