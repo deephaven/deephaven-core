@@ -36,6 +36,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BinaryOperator;
+import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
@@ -780,7 +781,8 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
     private Collection<String> computePreservedKeyColumnsFromSelectColumnChanges(
             final Collection<SelectColumn> changedColumns) {
         final Set<String> changedColumnNames =
-                changedColumns.stream().map(SelectColumn::getName).collect(Collectors.toSet());
+                changedColumns.stream().filter(Predicate.not(SelectColumn::isRetain)).map(SelectColumn::getName)
+                        .collect(Collectors.toSet());
         return computePreservedKeyColumnsFromChanges(changedColumnNames);
     }
 
@@ -943,7 +945,7 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
     public PartitionedTable.Proxy selectDistinct(Collection<? extends Selectable> columns) {
         final Collection<SelectColumn> selectColumns = toSelectColumns(columns);
         return basicTransform(false, ct -> ct.selectDistinct(SelectColumn.copyFrom(selectColumns)),
-                computePreservedKeyColumnsFromSelectColumnChanges(selectColumns));
+                computePreservedKeyColumnsFromRetentions(selectColumns));
     }
 
     @Override
