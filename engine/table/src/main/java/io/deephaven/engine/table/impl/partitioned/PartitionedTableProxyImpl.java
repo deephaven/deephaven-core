@@ -149,14 +149,11 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
         return context;
     }
 
-    private PartitionedTable.Proxy basicTransform(@NotNull final UnaryOperator<Table> transformer) {
-        return basicTransform(false, transformer, Collections.emptySet());
-    }
-
     private PartitionedTable.Proxy basicColumnPreservingTransform(@NotNull final UnaryOperator<Table> transformer) {
-        return basicTransform(false, transformer, target instanceof PartitionedTableImpl
+        final Set<String> retainedKeyColumns = target instanceof PartitionedTableImpl
                 ? ((PartitionedTableImpl) target).getConsistentKeyColumnNames()
-                : Collections.emptySet());
+                : Collections.emptySet();
+        return basicTransform(false, transformer, retainedKeyColumns);
     }
 
     /**
@@ -172,11 +169,7 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
         final PartitionedTable transformed;
         if (!retainedColumns.isEmpty() && target instanceof PartitionedTableImpl) {
             final PartitionedTableImpl asImpl = (PartitionedTableImpl) target;
-            Set<String> resultConsistentKeyColumns = asImpl.getConsistentKeyColumnNames();
-            if (!resultConsistentKeyColumns.isEmpty()) {
-                resultConsistentKeyColumns = new HashSet<>(resultConsistentKeyColumns);
-                resultConsistentKeyColumns.retainAll(retainedColumns);
-            }
+            Set<String> resultConsistentKeyColumns = getResultConsistentColumns(retainedColumns, asImpl);
             transformed = asImpl.transform(
                     getOrCreateExecutionContext(requiresFullContext),
                     transformer,
@@ -195,18 +188,35 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
                 sanityCheckJoins);
     }
 
-    private PartitionedTable.Proxy complexTransform(
+    private PartitionedTable.Proxy complexLhsColumnPreservingTransform(
             @NotNull final TableOperations<?, ?> other,
             @NotNull final BinaryOperator<Table> transformer,
             @Nullable final Collection<? extends JoinMatch> joinMatches) {
-        return complexTransform(false, other, transformer, joinMatches);
+        final Set<String> retainedKeyColumns = target instanceof PartitionedTableImpl
+                ? ((PartitionedTableImpl) target).getConsistentKeyColumnNames()
+                : Collections.emptySet();
+        return complexTransform(other, transformer, joinMatches, retainedKeyColumns);
     }
 
+
+    private PartitionedTable.Proxy complexTransform(
+            @NotNull final TableOperations<?, ?> other,
+            @NotNull final BinaryOperator<Table> transformer,
+            @Nullable final Collection<? extends JoinMatch> joinMatches,
+            @NotNull final Collection<String> retainedColumns) {
+        return complexTransform(false, other, transformer, joinMatches, retainedColumns);
+    }
+
+    /**
+     * @param retainedColumns a set of columns retained without change; used to create a new subset of consistent key
+     *        columns. This set is permitted to contain non-key columns, which are ignored.
+     */
     private PartitionedTable.Proxy complexTransform(
             final boolean requiresFullContext,
             @NotNull final TableOperations<?, ?> other,
             @NotNull final BinaryOperator<Table> transformer,
-            @Nullable final Collection<? extends JoinMatch> joinMatches) {
+            @Nullable final Collection<? extends JoinMatch> joinMatches,
+            @NotNull final Collection<String> retainedColumns) {
         final ExecutionContext context = getOrCreateExecutionContext(requiresFullContext);
         if (other instanceof Table) {
             final Table otherTable = (Table) other;
@@ -221,14 +231,29 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
                     : new Dependency[0];
 
             return ExecutionContext.getContext().withUpdateGraph(updateGraph).apply(
-                    () -> new PartitionedTableProxyImpl(
-                            target.transform(
+                    () -> {
+                        final PartitionedTable transformed;
+                        if (target instanceof PartitionedTableImpl) {
+                            final PartitionedTableImpl asImpl = (PartitionedTableImpl) target;
+
+                            transformed = asImpl.transform(
+                                    context,
+                                    ct -> transformer.apply(ct, otherTable),
+                                    getResultConsistentColumns(retainedColumns, asImpl),
+                                    refreshingResults,
+                                    dependencies);
+                        } else {
+                            transformed = target.transform(
                                     context,
                                     ct -> transformer.apply(ct, otherTable),
                                     refreshingResults,
-                                    dependencies),
-                            requireMatchingKeys,
-                            sanityCheckJoins));
+                                    dependencies);
+                        }
+                        return new PartitionedTableProxyImpl(
+                                transformed,
+                                requireMatchingKeys,
+                                sanityCheckJoins);
+                    });
         }
         if (other instanceof PartitionedTable.Proxy) {
             final PartitionedTable.Proxy otherProxy = (PartitionedTable.Proxy) other;
@@ -262,9 +287,17 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
                                 final PartitionedTable lhsToUse = maybeRewrap(validatedLhsTable, target);
                                 final PartitionedTable rhsToUse = maybeRewrap(validatedRhsTable, otherTarget);
 
+                                PartitionedTable transformed;
+                                if (lhsToUse instanceof PartitionedTableImpl) {
+                                    final PartitionedTableImpl asImpl = (PartitionedTableImpl) lhsToUse;
+                                    transformed = asImpl.partitionedTransform(rhsToUse, context, transformer,
+                                            getResultConsistentColumns(retainedColumns, asImpl), refreshingResults);
+                                } else {
+                                    transformed = lhsToUse.partitionedTransform(rhsToUse, context, transformer,
+                                            refreshingResults);
+                                }
                                 return new PartitionedTableProxyImpl(
-                                        lhsToUse.partitionedTransform(rhsToUse, context, transformer,
-                                                refreshingResults),
+                                        transformed,
                                         requireMatchingKeys,
                                         sanityCheckJoins);
                             },
@@ -272,6 +305,17 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
                             ptp -> refreshingResults));
         }
         throw onUnexpectedTableOperations(other);
+    }
+
+    private static @NotNull Set<String> getResultConsistentColumns(@NotNull Collection<String> retainedColumns,
+            PartitionedTableImpl asImpl) {
+        Set<String> resultConsistentKeyColumns = asImpl.getConsistentKeyColumnNames();
+        if (resultConsistentKeyColumns.isEmpty()) {
+            return Collections.emptySet();
+        }
+        resultConsistentKeyColumns = new HashSet<>(resultConsistentKeyColumns);
+        resultConsistentKeyColumns.retainAll(retainedColumns);
+        return resultConsistentKeyColumns;
     }
 
     private static IllegalArgumentException onUnexpectedTableOperations(@NotNull TableOperations<?, ?> other) {
@@ -482,21 +526,22 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
 
     @Override
     public PartitionedTable.Proxy snapshotWhen(TableOperations<?, ?> trigger, Flag... features) {
-        // TODO: can we overwrite a key column?
-        return complexTransform(trigger, (base, tr) -> base.snapshotWhen(tr, features), null);
+        // No column conflicts are permitted.
+        return complexLhsColumnPreservingTransform(trigger, (base, tr) -> base.snapshotWhen(tr, features), null);
     }
 
     @Override
     public PartitionedTable.Proxy snapshotWhen(TableOperations<?, ?> trigger, Collection<Flag> features,
             String... stampColumns) {
-        // TODO: can we overwrite a key column?
-        return complexTransform(trigger, (base, tr) -> base.snapshotWhen(tr, features, stampColumns), null);
+        // No column conflicts are permitted.
+        return complexLhsColumnPreservingTransform(trigger, (base, tr) -> base.snapshotWhen(tr, features, stampColumns),
+                null);
     }
 
     @Override
     public PartitionedTable.Proxy snapshotWhen(TableOperations<?, ?> trigger, SnapshotWhenOptions options) {
-        // TODO: can we overwrite a key column?
-        return complexTransform(trigger, (base, tr) -> base.snapshotWhen(tr, options), null);
+        // No column conflicts are permitted.
+        return complexLhsColumnPreservingTransform(trigger, (base, tr) -> base.snapshotWhen(tr, options), null);
     }
 
     @Override
@@ -638,7 +683,8 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
         }
 
         // TODO (https://github.com/deephaven/deephaven-core/issues/5261): Share set tables when possible
-        return complexTransform(rightTable, (ct, ot) -> ct.whereIn(ot, columnsToMatch), columnsToMatch);
+        return complexLhsColumnPreservingTransform(rightTable, (ct, ot) -> ct.whereIn(ot, columnsToMatch),
+                columnsToMatch);
     }
 
     private boolean isValidAgainstKeyColumns(Collection<? extends JoinMatch> columnsToMatch) {
@@ -683,7 +729,8 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
         }
 
         // TODO (https://github.com/deephaven/deephaven-core/issues/5261): Share set tables when possible
-        return complexTransform(rightTable, (ct, ot) -> ct.whereNotIn(ot, columnsToMatch), columnsToMatch);
+        return complexLhsColumnPreservingTransform(rightTable, (ct, ot) -> ct.whereNotIn(ot, columnsToMatch),
+                columnsToMatch);
     }
 
     @NotNull
@@ -770,7 +817,9 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
             final Collection<? extends JoinMatch> columnsToMatch,
             final Collection<? extends JoinAddition> columnsToAdd,
             final NaturalJoinType joinType) {
-        return complexTransform(rightTable, (ct, ot) -> ct.naturalJoin(ot, columnsToMatch, columnsToAdd, joinType),
+        // naturalJoin does not permit right columns to conflict with left columns
+        return complexLhsColumnPreservingTransform(rightTable,
+                (ct, ot) -> ct.naturalJoin(ot, columnsToMatch, columnsToAdd, joinType),
                 columnsToMatch);
     }
 
@@ -778,7 +827,9 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
     public PartitionedTable.Proxy exactJoin(TableOperations<?, ?> rightTable,
             Collection<? extends JoinMatch> columnsToMatch,
             Collection<? extends JoinAddition> columnsToAdd) {
-        return complexTransform(rightTable, (ct, ot) -> ct.exactJoin(ot, columnsToMatch, columnsToAdd), columnsToMatch);
+        // exactJoin does not permit right columns to conflict with left columns
+        return complexLhsColumnPreservingTransform(rightTable,
+                (ct, ot) -> ct.exactJoin(ot, columnsToMatch, columnsToAdd), columnsToMatch);
     }
 
     @Override
@@ -790,7 +841,9 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
     @Override
     public PartitionedTable.Proxy join(TableOperations<?, ?> rightTable, Collection<? extends JoinMatch> columnsToMatch,
             Collection<? extends JoinAddition> columnsToAdd, int reserveBits) {
-        return complexTransform(rightTable, (ct, ot) -> ct.join(ot, columnsToMatch, columnsToAdd, reserveBits),
+        // join does not permit right columns to conflict with left columns
+        return complexLhsColumnPreservingTransform(rightTable,
+                (ct, ot) -> ct.join(ot, columnsToMatch, columnsToAdd, reserveBits),
                 columnsToMatch);
     }
 
@@ -798,7 +851,9 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
     public PartitionedTable.Proxy asOfJoin(TableOperations<?, ?> rightTable,
             Collection<? extends JoinMatch> exactMatches,
             AsOfJoinMatch asOfMatch, Collection<? extends JoinAddition> columnsToAdd) {
-        return complexTransform(rightTable, (ct, ot) -> ct.asOfJoin(ot, exactMatches, asOfMatch, columnsToAdd),
+        // aj does not permit right columns to conflict with left columns
+        return complexLhsColumnPreservingTransform(rightTable,
+                (ct, ot) -> ct.asOfJoin(ot, exactMatches, asOfMatch, columnsToAdd),
                 exactMatches);
     }
 
@@ -806,8 +861,9 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
     public PartitionedTable.Proxy rangeJoin(TableOperations<?, ?> rightTable,
             Collection<? extends JoinMatch> exactMatches,
             RangeJoinMatch rangeMatch, Collection<? extends Aggregation> aggregations) {
+        // rangeJoin does permit overwriting columns; with enough complexity that we are not going to preserve our keys
         return complexTransform(rightTable, (ct, ot) -> ct.rangeJoin(ot, exactMatches, rangeMatch, aggregations),
-                exactMatches);
+                exactMatches, Collections.emptySet());
     }
 
     @Override
@@ -841,7 +897,8 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
                     true,
                     initialGroups,
                     (ct, ot) -> ct.aggBy(aggregations, preserveEmpty, ot, groupByColumns),
-                    null);
+                    null,
+                    groupByColumns.stream().map(ColumnName::name).collect(Collectors.toList()));
         }
         throw onUnexpectedTableOperations(initialGroups);
     }

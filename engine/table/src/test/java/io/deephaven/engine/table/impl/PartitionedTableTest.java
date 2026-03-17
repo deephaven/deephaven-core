@@ -55,6 +55,7 @@ import java.util.function.Function;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 
+import static io.deephaven.api.agg.Aggregation.AggGroup;
 import static io.deephaven.api.agg.Aggregation.AggLast;
 import static io.deephaven.api.agg.Aggregation.AggSum;
 import static io.deephaven.engine.testutil.TstUtils.*;
@@ -1394,6 +1395,175 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
         assertTableEquals(testTable.partitionBy("c").transform(t -> t.updateBy(UpdateByOperation.CumSum("c"), "a"))
                 .merge().sort("c").where("c > 500"), result4.target().merge().sort("c"));
         filter2.reset();
+    }
+
+    public void testWhereKeyPrioritizationComplexTransforms() {
+        final Random random = new Random(0);
+        final int size = 100;
+        final Table testTable = newTable(
+                getRandomIntCol("a", size, random),
+                getRandomIntCol("b", size, random),
+                getRandomIntCol("c", size, random),
+                getRandomIntCol("d", size, random),
+                getRandomIntCol("e", size, random));
+
+        // Right table for joins on 'a': unique 'a' values (so no row multiplication) plus added column 'x'
+        final Table rightTableOnA = testTable.selectDistinct("a").update("x = a * 2");
+        // Right table for joins on 'c': unique 'c' values plus added column 'y'
+        final Table rightTableOnC = testTable.selectDistinct("c").update("y = c * 3");
+        // Set table for whereIn / whereNotIn on non-key column 'b'
+        final Table setTableB = newTable(getRandomIntCol("B_p", size, random));
+
+        final long partCount = testTable.selectDistinct("c").size();
+
+        final PartitionedTable partitionedTable = testTable.partitionBy("c");
+        final Proxy selfPtProxy = partitionedTable.proxy();
+
+        final RowSetCapturingFilter filter = new RowSetCapturingFilter(WhereFilterFactory.getExpression("c > 500"));
+
+        // naturalJoin on non-key column 'a': adds column 'x' but leaves LHS 'c' unchanged -> key preserved
+        final Proxy naturalJoinedOnA = selfPtProxy.naturalJoin(rightTableOnA, "a", "x");
+        final Proxy resultNaturalJoinA = naturalJoinedOnA.where(filter);
+        assertEquals(partCount, filter.numRowsProcessed());
+        assertTableEquals(testTable.naturalJoin(rightTableOnA, "a", "x").where("c > 500").sort("c"),
+                resultNaturalJoinA.target().merge().sort("c"));
+        filter.reset();
+
+        // naturalJoin on the partition key column 'c' itself: 'c' is still a consistent LHS column -> preserved
+        final Proxy naturalJoinedOnC = selfPtProxy.naturalJoin(rightTableOnC, "c", "y");
+        final Proxy resultNaturalJoinC = naturalJoinedOnC.where(filter);
+        assertEquals(partCount, filter.numRowsProcessed());
+        assertTableEquals(testTable.naturalJoin(rightTableOnC, "c", "y").where("c > 500").sort("c"),
+                resultNaturalJoinC.target().merge().sort("c"));
+        filter.reset();
+
+        // exactJoin on non-key column 'a': LHS 'c' unmodified -> key preserved
+        final Proxy exactJoined = selfPtProxy.exactJoin(rightTableOnA, "a", "x");
+        final Proxy resultExactJoin = exactJoined.where(filter);
+        assertEquals(partCount, filter.numRowsProcessed());
+        assertTableEquals(testTable.exactJoin(rightTableOnA, "a", "x").where("c > 500").sort("c"),
+                resultExactJoin.target().merge().sort("c"));
+        filter.reset();
+
+        // join on non-key column 'a': LHS 'c' unmodified; rightTableOnA has unique 'a' so no row multiplication
+        final Proxy joined = selfPtProxy.join(rightTableOnA, "a", "x");
+        final Proxy resultJoin = joined.where(filter);
+        assertEquals(partCount, filter.numRowsProcessed());
+        assertTableEquals(testTable.join(rightTableOnA, "a", "x").where("c > 500").sort("c"),
+                resultJoin.target().merge().sort("c"));
+        filter.reset();
+
+        // whereIn on non-key column 'b': isValidAgainstKeyColumns returns false -> falls back to
+        // complexLhsColumnPreservingTransform, which preserves LHS key column 'c'
+        final Proxy whereInFallback = selfPtProxy.whereIn(setTableB, "b=B_p");
+        final Proxy resultWhereIn = whereInFallback.where(filter);
+        assertEquals(partCount, filter.numRowsProcessed());
+        assertTableEquals(testTable.whereIn(setTableB, "b=B_p").where("c > 500").sort("c"),
+                resultWhereIn.target().merge().sort("c"));
+        filter.reset();
+
+        // whereNotIn on non-key column 'b': same fallback, LHS key column 'c' preserved
+        final Proxy whereNotInFallback = selfPtProxy.whereNotIn(setTableB, "b=B_p");
+        final Proxy resultWhereNotIn = whereNotInFallback.where(filter);
+        assertEquals(partCount, filter.numRowsProcessed());
+        assertTableEquals(testTable.whereNotIn(setTableB, "b=B_p").where("c > 500").sort("c"),
+                resultWhereNotIn.target().merge().sort("c"));
+        filter.reset();
+
+        // Cover the isEmpty() early-return in getResultConsistentColumns / computePreservedKeyColumnsFromChanges:
+        // updating the partition key column 'c' clears the proxy's consistent key column set. When
+        // naturalJoin is then called on that proxy, complexLhsColumnPreservingTransform finds no
+        // consistent key columns to propagate, so the result also has none and where("c > 500")
+        // is NOT accelerated -- it must scan every row across all constituents.
+        final Proxy updatedKeyProxy = selfPtProxy.update("c = c * 2");
+        final Table testTableUpdatedC = testTable.update("c = c * 2");
+
+        // naturalJoin on non-key column 'a' after the key column was changed: consistent key columns
+        // are empty going into complexLhsColumnPreservingTransform, so nothing is preserved and
+        // where("c > 500") processes all rows instead of just the partCount outer-table rows.
+        final Proxy naturalJoinAfterKeyUpdate = updatedKeyProxy.naturalJoin(rightTableOnA, "a", "x");
+        final Proxy resultNaturalJoinKeyUpdate = naturalJoinAfterKeyUpdate.where(filter);
+        assertEquals(testTableUpdatedC.size(), filter.numRowsProcessed());
+        assertTableEquals(testTableUpdatedC.naturalJoin(rightTableOnA, "a", "x").where("c > 500").sort("c"),
+                resultNaturalJoinKeyUpdate.target().merge().sort("c"));
+        filter.reset();
+
+        // exactJoin after the key column was changed: same empty-consistent-columns path
+        final Proxy exactJoinAfterKeyUpdate = updatedKeyProxy.exactJoin(rightTableOnA, "a", "x");
+        final Proxy resultExactJoinKeyUpdate = exactJoinAfterKeyUpdate.where(filter);
+        assertEquals(testTableUpdatedC.size(), filter.numRowsProcessed());
+        assertTableEquals(testTableUpdatedC.exactJoin(rightTableOnA, "a", "x").where("c > 500").sort("c"),
+                resultExactJoinKeyUpdate.target().merge().sort("c"));
+        filter.reset();
+    }
+
+    public void testWhereKeyPrioritizationAsOfJoin() {
+        final Random random = new Random(0);
+        final int size = 100;
+        final Table testTable = newTable(
+                getRandomIntCol("a", size, random),
+                getRandomIntCol("b", size, random),
+                getRandomIntCol("c", size, random),
+                getRandomIntCol("d", size, random),
+                getRandomIntCol("e", size, random));
+
+        // asOfJoin requires data sorted on the as-of column; sort both sides by 'a'
+        final Table sortedTestTable = testTable.sort("a");
+        final Table rightTableSortedOnA = testTable.selectDistinct("a").sort("a").update("x = a * 2");
+
+        final long partCount = sortedTestTable.selectDistinct("c").size();
+
+        final PartitionedTable partitionedTable = sortedTestTable.partitionBy("c");
+        final Proxy selfPtProxy = partitionedTable.proxy();
+
+        final RowSetCapturingFilter filter = new RowSetCapturingFilter(WhereFilterFactory.getExpression("c > 500"));
+
+        // asOfJoin uses complexLhsColumnPreservingTransform: LHS column 'c' is not modified by adding
+        // RHS columns, so 'c' remains a consistent key column in the result and where("c > 500") IS
+        // accelerated -- the filter only processes the partCount outer-table rows.
+        final Proxy ajResult = selfPtProxy.aj(rightTableSortedOnA, "a>=a", "x");
+        final Proxy resultAj = ajResult.where(filter);
+        assertEquals(partCount, filter.numRowsProcessed());
+        assertTableEquals(sortedTestTable.aj(rightTableSortedOnA, "a>=a", "x").where("c > 500").sort("c"),
+                resultAj.target().merge().sort("c"));
+        filter.reset();
+    }
+
+    public void testWhereKeyPrioritizationRangeJoin() {
+        final Random random = new Random(0);
+        final int size = 100;
+        final Table testTable = newTable(
+                getRandomIntCol("a", size, random),
+                getRandomIntCol("b", size, random),
+                getRandomIntCol("c", size, random),
+                getRandomIntCol("d", size, random),
+                getRandomIntCol("e", size, random));
+
+        // LHS: add range-bound columns around 'b'
+        final Table lhsWithBounds = testTable.update("b_lo = b - 100", "b_hi = b + 100");
+        // RHS: sorted by exact-match column 'a', then range-value column 'b_val'
+        final Table rhsForRangeJoin = testTable.view("a", "b_val = b").sort("a", "b_val");
+
+        final long partCount = lhsWithBounds.selectDistinct("c").size();
+
+        final PartitionedTable partitionedTable = lhsWithBounds.partitionBy("c");
+        final Proxy selfPtProxy = partitionedTable.proxy();
+
+        final RowSetCapturingFilter filter = new RowSetCapturingFilter(WhereFilterFactory.getExpression("c > 500"));
+
+        // rangeJoin explicitly passes Collections.emptySet() for retained columns, so no consistent
+        // key columns are propagated to the result. where("c > 500") is NOT accelerated and must
+        // scan every row across all constituents.
+        final Proxy rangeJoined = selfPtProxy.rangeJoin(rhsForRangeJoin,
+                List.of("a", "b_lo <= b_val <= b_hi"), List.of(AggGroup("b_val")));
+        final Proxy resultRangeJoin = rangeJoined.where(filter);
+        assertEquals(lhsWithBounds.size(), filter.numRowsProcessed());
+        assertTableEquals(
+                lhsWithBounds.rangeJoin(rhsForRangeJoin,
+                        List.of("a", "b_lo <= b_val <= b_hi"), List.of(AggGroup("b_val")))
+                        .where("c > 500").sort("c"),
+                resultRangeJoin.target().merge().sort("c"));
+        filter.reset();
     }
 
     public void testWhereIn() {

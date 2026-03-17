@@ -452,6 +452,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
             resultPartitionedTable = new PartitionedTableImpl(
                     resultTable,
                     keyColumnNames,
+                    consistentKeyColumns,
                     uniqueKeys,
                     constituentColumnName,
                     resultConstituentDefinition,
