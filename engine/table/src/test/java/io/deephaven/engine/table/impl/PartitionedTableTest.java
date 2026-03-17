@@ -1324,12 +1324,12 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
                 resultSDAll.target().merge().sort("c"));
         filter.reset();
 
-        // we can call selectDistinct on "c" w/o changing anything
-        final Proxy selectDistinctC = selfPtProxy.selectDistinct("c");
-        final Proxy resultSDC = selectDistinctC.where(filter);
+        // we can call selectDistinct on "c" and a non-constant column "d" w/o changing anything
+        final Proxy selectDistinctCD = selfPtProxy.selectDistinct("c", "d");
+        final Proxy resultSDCD = selectDistinctCD.where(filter);
         assertEquals(partCount, filter.numRowsProcessed());
-        assertTableEquals(testTable.selectDistinct("c").where("c > 500").sort("c"),
-                resultSDC.target().merge().sort("c"));
+        assertTableEquals(testTable.selectDistinct("c", "d").where("c > 500").sort("c", "d"),
+                resultSDCD.target().merge().sort("c", "d"));
         filter.reset();
 
         // if we call selectDistinct with a formula, we can't do better anymore
