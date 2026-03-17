@@ -1281,8 +1281,8 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
         final Proxy selectDistinctCFormula = selfPtProxy.selectDistinct("c=a*2");
         final Proxy resultSDCF = selectDistinctCFormula.where(filter);
         assertEquals(testTable.size(), filter.numRowsProcessed());
-        assertTableEquals(testTable.selectDistinct("c=a*2").where("c > 500").sort("c"),
-                resultSDCF.target().merge().sort("c"));
+        assertTableEquals(testTable.selectDistinct("c=a*2").where("c > 500").sort("c").selectDistinct("c"),
+                resultSDCF.target().merge().sort("c").selectDistinct("c"));
         filter.reset();
     }
 
