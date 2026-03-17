@@ -1139,6 +1139,13 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
         final Table filtered = merged.where("Value >= 0");
         assertEquals(N, filtered.size());
 
+        // Attach an ErrorListener to capture any exception propagated via notifyListenersOnError. Without the fix,
+        // the AIOBE propagates via errorUpdate -> notifyListenersOnError and is delivered to downstream listeners
+        // of filtered; it does NOT reach RefreshingTableTestCase.reportUpdateError (and thus does not call
+        // TestCase.fail) because filtered has no further downstream error propagation.
+        final ErrorListener errorListener = new ErrorListener(filtered);
+        filtered.addUpdateListener(errorListener);
+
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
 
         // Remove constituent at row key 8, add a new one at row key 15 (past previous max key 14).
@@ -1150,6 +1157,10 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
             underlying.notifyListeners(i(15), i(8), i());
         });
 
+        assertThat(errorListener.originalException())
+                .describedAs("Expected no exception during pushdown filter update after constituent row-key gap")
+                .isNull();
+        TestCase.assertFalse("filter update set isFailed", filtered.isFailed());
         // Verify correctness: 15 constituent tables, one row each, all Value >= 0.
         assertEquals(N, filtered.size());
     }
