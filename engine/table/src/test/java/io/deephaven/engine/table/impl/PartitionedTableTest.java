@@ -1118,7 +1118,7 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
         // initialize() incorrectly used row keys as slot positions for unionRedirection lookups.
         //
         // With N=15 initial constituents (row keys 0..14) and array length 16:
-        // remove key 8, add key 15 → constituentRows = {0..7, 9..14, 15}
+        // remove key 8, add key 15 -> constituentRows = {0..7, 9..14, 15}
         // buggy code: tableSlots.get(14) = 15 -> currLastRowKeyForSlot(15) -> currFirstRowKeys[16] -> AIOOBE
         final int N = 15;
         final Table[] initialConstituents = new Table[N];
@@ -1135,7 +1135,7 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
         final Table merged = partitioned.merge();
 
         // A single-column where filter on the merged table routes through UnionColumnSource.estimatePushdownFilterCost
-        // → UnionSourceManager.estimatePushdownFilterCost → UnionSourcePushdownFilterContext.initialize.
+        // -> UnionSourceManager.estimatePushdownFilterCost -> UnionSourcePushdownFilterContext.initialize.
         final Table filtered = merged.where("Value >= 0");
         assertEquals(N, filtered.size());
 
