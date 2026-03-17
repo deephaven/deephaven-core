@@ -703,11 +703,12 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
 
     private boolean isValidAgainstRightKeyColumns(final PartitionedTable.Proxy right,
             Collection<? extends JoinMatch> columnsToMatch) {
-        if (!(target instanceof PartitionedTableImpl)) {
+        final PartitionedTable rightTarget = right.target();
+        if (!(rightTarget instanceof PartitionedTableImpl)) {
             return false;
         }
-        final PartitionedTableImpl asImpl = (PartitionedTableImpl) target;
-        Set<String> consistentKeyColumnNames = asImpl.getConsistentKeyColumnNames();
+        final PartitionedTableImpl rightAsImpl = (PartitionedTableImpl) rightTarget;
+        final Set<String> consistentKeyColumnNames = rightAsImpl.getConsistentKeyColumnNames();
         return columnsToMatch.stream().allMatch(jm -> consistentKeyColumnNames.contains(jm.right().name()));
     }
 
