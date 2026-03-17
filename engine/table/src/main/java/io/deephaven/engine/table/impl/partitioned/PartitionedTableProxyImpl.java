@@ -642,6 +642,9 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
         if (!filter.getColumnArrays().isEmpty()) {
             return false;
         }
+        if (filter.hasVirtualRowVariables()) {
+            return false;
+        }
         if (!(target instanceof PartitionedTableImpl)) {
             return false;
         }
@@ -909,7 +912,7 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
         final UpdateBy.UpdateByOperatorCollection collection = UpdateBy.UpdateByOperatorCollection
                 .from(target.constituentDefinition(), control, operations, byColumns);
         return basicTransform(false, ct -> UpdateBy.updateBy((QueryTable) ct, collection.copy(), control),
-                Set.of(collection.getPreservedColumnNames()));
+                collection.getPreservedColumnNames());
     }
 
     @Override

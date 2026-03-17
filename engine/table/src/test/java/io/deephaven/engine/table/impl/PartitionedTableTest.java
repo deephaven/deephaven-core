@@ -1218,7 +1218,7 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
         assertEquals(passRowsD, filter.numRowsProcessed());
         assertTableEquals(testTable.where("c > 500", "d < 500").sort("c"), result4.target().merge().sort("c"));
 
-        // if B declares a barrier that C respects, we can't move it forward
+        // if D declares a barrier that C respects, we can't move it forward
         final Object barrier = new Object();
         filter.reset();
         filter2.reset();
@@ -1388,6 +1388,7 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
 
         final Table groupedByA = testTable.groupBy("a");
 
+        // the number of distinct "c" values in our groupedByA table (computed differently for validation)
         final long partCountByA = grouped.selectDistinct("c").size();
         assertFalse(groupedByA.size() == partCountByA);
 

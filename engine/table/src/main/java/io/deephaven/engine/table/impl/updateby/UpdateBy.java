@@ -1358,8 +1358,8 @@ public abstract class UpdateBy {
         }
 
         @InternalUseOnly
-        public String[] getPreservedColumnNames() {
-            return preservedColumnNames;
+        public List<String> getPreservedColumnNames() {
+            return List.of(preservedColumnNames);
         }
     }
 
