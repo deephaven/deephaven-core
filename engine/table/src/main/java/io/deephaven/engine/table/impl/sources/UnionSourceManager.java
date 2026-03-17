@@ -25,7 +25,6 @@ import io.deephaven.util.SafeCloseableArray;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedNode;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedQueue;
 import io.deephaven.util.mutable.MutableLong;
-import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -952,45 +951,46 @@ public class UnionSourceManager implements PushdownPredicateManager {
             firstRowKeys = new TLongArrayList(constituentCount);
             lastRowKeys = new TLongArrayList(constituentCount);
 
-            // Use a 0-based position counter for unionRedirection slot lookups (which are position-indexed, not
-            // row-key-indexed). The actual row key from constituentRows is used for constituentTables lookups.
-            // These diverge when constituentChangesPermitted and removals have created gaps in constituentRows.
-            final MutableInt slotPosition = new MutableInt(0);
-            rowSetToUse.forAllRowKeys(rowKey -> {
-                final int slot = slotPosition.getAndIncrement();
-                final long firstKey = usePrev
-                        ? manager.unionRedirection.prevFirstRowKeyForSlot(slot)
-                        : manager.unionRedirection.currFirstRowKeyForSlot(slot);
-                final long lastKey = usePrev
-                        ? manager.unionRedirection.prevLastRowKeyForSlot(slot)
-                        : manager.unionRedirection.currLastRowKeyForSlot(slot);
+            // Use a 0-based slot counter for unionRedirection lookups (which are position-indexed, not
+            // row-key-indexed). Slot positions diverge from constituentRows row keys when
+            // constituentChangesPermitted and removals have created gaps in constituentRows.
+            try (final ObjectColumnIterator<Table> constituents = usePrev
+                    ? manager.prevConstituentIter(rowSetToUse)
+                    : manager.currConstituentIter(rowSetToUse)) {
+                int slot = 0;
+                while (constituents.hasNext()) {
+                    final Table constituent = constituents.next();
+                    final long firstKey = usePrev
+                            ? manager.unionRedirection.prevFirstRowKeyForSlot(slot)
+                            : manager.unionRedirection.currFirstRowKeyForSlot(slot);
+                    final long lastKey = usePrev
+                            ? manager.unionRedirection.prevLastRowKeyForSlot(slot)
+                            : manager.unionRedirection.currLastRowKeyForSlot(slot);
 
-                // If there is no overlap, we can ignore this table completely.
-                if (selection.overlapsRange(firstKey, lastKey)) {
-                    final Table constituent = usePrev
-                            ? manager.constituentTables.getPrev(rowKey)
-                            : manager.constituentTables.get(rowKey);
+                    // If there is no overlap, we can ignore this table completely.
+                    if (selection.overlapsRange(firstKey, lastKey)) {
+                        final List<ColumnSource<?>> filterSources = filter.getColumns().stream()
+                                .map(cn -> renameMap.getOrDefault(cn, cn))
+                                .map(constituent::getColumnSource).collect(Collectors.toList());
 
-                    final List<ColumnSource<?>> filterSources = filter.getColumns().stream()
-                            .map(cn -> renameMap.getOrDefault(cn, cn))
-                            .map(constituent::getColumnSource).collect(Collectors.toList());
+                        final PushdownFilterMatcher matcher =
+                                PushdownFilterMatcher.getPushdownFilterMatcher(filter, filterSources);
 
-                    final PushdownFilterMatcher matcher =
-                            PushdownFilterMatcher.getPushdownFilterMatcher(filter, filterSources);
-
-                    if (matcher != null) {
-                        matchers.add(matcher);
-                        contexts.add(matcher.makePushdownFilterContext(filter, filterSources));
-                        firstRowKeys.add(firstKey);
-                        lastRowKeys.add(lastKey);
-                    } else {
-                        // Skip this table, but save the rows from this constituent as "maybe"
-                        try (final RowSet localSelection = selection.subSetByKeyRange(firstKey, lastKey)) {
-                            maybeMatch.insert(localSelection);
+                        if (matcher != null) {
+                            matchers.add(matcher);
+                            contexts.add(matcher.makePushdownFilterContext(filter, filterSources));
+                            firstRowKeys.add(firstKey);
+                            lastRowKeys.add(lastKey);
+                        } else {
+                            // Skip this table, but save the rows from this constituent as "maybe"
+                            try (final RowSet localSelection = selection.subSetByKeyRange(firstKey, lastKey)) {
+                                maybeMatch.insert(localSelection);
+                            }
                         }
                     }
+                    ++slot;
                 }
-            });
+            }
         }
 
         @Override

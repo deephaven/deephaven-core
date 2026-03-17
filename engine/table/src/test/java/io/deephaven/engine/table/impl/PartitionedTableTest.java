@@ -1119,7 +1119,7 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
         //
         // With N=15 initial constituents (row keys 0..14) and array length 16:
         // remove key 8, add key 15 → constituentRows = {0..7, 9..14, 15}
-        // buggy code: tableSlots.get(14) = 15 → currLastRowKeyForSlot(15) → currFirstRowKeys[16] → AIOBE
+        // buggy code: tableSlots.get(14) = 15 → currLastRowKeyForSlot(15) → currFirstRowKeys[16] → AIOOBE
         final int N = 15;
         final Table[] initialConstituents = new Table[N];
         for (int i = 0; i < N; i++) {
@@ -1140,7 +1140,7 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
         assertEquals(N, filtered.size());
 
         // Attach an ErrorListener to capture any exception propagated via notifyListenersOnError. Without the fix,
-        // the AIOBE propagates via errorUpdate -> notifyListenersOnError and is delivered to downstream listeners
+        // the AIOOBE propagates via errorUpdate -> notifyListenersOnError and is delivered to downstream listeners
         // of filtered; it does NOT reach RefreshingTableTestCase.reportUpdateError (and thus does not call
         // TestCase.fail) because filtered has no further downstream error propagation.
         final ErrorListener errorListener = new ErrorListener(filtered);
