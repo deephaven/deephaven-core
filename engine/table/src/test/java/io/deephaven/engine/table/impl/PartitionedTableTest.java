@@ -1111,6 +1111,60 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
         }
     }
 
+    public void testMergeWhereWithConstituentChangeGap() {
+        // Regression test for ArrayIndexOutOfBoundsException in UnionSourcePushdownFilterContext.initialize.
+        // The bug was triggered when constituentChangesPermitted=true, a constituent is removed (creating a gap
+        // in constituentRows row keys), and a new constituent is added (whose row key exceeds the count-1).
+        // initialize() incorrectly used row keys as slot positions for unionRedirection lookups.
+        //
+        // With N=15 initial constituents (row keys 0..14) and array length 16:
+        // remove key 8, add key 15 -> constituentRows = {0..7, 9..14, 15}
+        // buggy code: tableSlots.get(14) = 15 -> currLastRowKeyForSlot(15) -> currFirstRowKeys[16] -> AIOOBE
+        final int N = 15;
+        final Table[] initialConstituents = new Table[N];
+        for (int i = 0; i < N; i++) {
+            initialConstituents[i] = TableTools.newTable(intCol("Value", i * 10));
+        }
+
+        // PartitionedTableFactory.of(refreshingTable) sets constituentChangesPermitted = true
+        final QueryTable underlying = testRefreshingTable(
+                RowSetFactory.flat(N).toTracking(),
+                col("Constituent", initialConstituents));
+
+        final PartitionedTable partitioned = PartitionedTableFactory.of(underlying);
+        final Table merged = partitioned.merge();
+
+        // A single-column where filter on the merged table routes through UnionColumnSource.estimatePushdownFilterCost
+        // -> UnionSourceManager.estimatePushdownFilterCost -> UnionSourcePushdownFilterContext.initialize.
+        final Table filtered = merged.where("Value >= 0");
+        assertEquals(N, filtered.size());
+
+        // Attach an ErrorListener to capture any exception propagated via notifyListenersOnError. Without the fix,
+        // the AIOOBE propagates via errorUpdate -> notifyListenersOnError and is delivered to downstream listeners
+        // of filtered; it does NOT reach RefreshingTableTestCase.reportUpdateError (and thus does not call
+        // TestCase.fail) because filtered has no further downstream error propagation.
+        final ErrorListener errorListener = new ErrorListener(filtered);
+        filtered.addUpdateListener(errorListener);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
+        // Remove constituent at row key 8, add a new one at row key 15 (past previous max key 14).
+        // constituentRows becomes {0..7, 9..14, 15}: 15 rows but max row key = 15.
+        final Table newConstituent = TableTools.newTable(intCol("Value", 150));
+        updateGraph.runWithinUnitTestCycle(() -> {
+            removeRows(underlying, i(8));
+            addToTable(underlying, i(15), col("Constituent", newConstituent));
+            underlying.notifyListeners(i(15), i(8), i());
+        });
+
+        assertThat(errorListener.originalException())
+                .describedAs("Expected no exception during pushdown filter update after constituent row-key gap")
+                .isNull();
+        TestCase.assertFalse("filter update set isFailed", filtered.isFailed());
+        // Verify correctness: 15 constituent tables, one row each, all Value >= 0.
+        assertEquals(N, filtered.size());
+    }
+
     @SuppressWarnings({"unchecked"})
     public static <K, V> Map<K, V> mapFromArray(Object... data) {
         Map<K, V> map = new LinkedHashMap<K, V>();
