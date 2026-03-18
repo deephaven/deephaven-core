@@ -11,6 +11,9 @@ import jsinterop.base.JsPropertyMap;
 
 @TsInterface
 @TsName(name = "RefreshToken", namespace = "dh")
+/**
+ * A refresh token and its expiration time.
+ */
 public class JsRefreshToken {
 
     public static JsRefreshToken fromObject(Object token) {
@@ -20,7 +23,13 @@ public class JsRefreshToken {
         return new JsRefreshToken((JsPropertyMap<Object>) token);
     }
 
+    /**
+     * The refresh token bytes.
+     */
     private String bytes;
+    /**
+     * The token expiry time.
+     */
     private double expiry;
 
     public JsRefreshToken(String token, double tokenDuration) {
@@ -37,11 +46,17 @@ public class JsRefreshToken {
         }
     }
 
+    /**
+     * The refresh token bytes.
+     */
     @JsProperty
     public String getBytes() {
         return bytes;
     }
 
+    /**
+     * The token expiry time, as milliseconds since the epoch.
+     */
     @JsProperty
     public double getExpiry() {
         return expiry;
