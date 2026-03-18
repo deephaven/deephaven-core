@@ -55,6 +55,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
 
     private final Table table;
     private final Set<String> keyColumnNames;
+    private final Set<String> consistentKeyColumnNames;
     private final boolean uniqueKeys;
     private final String constituentColumnName;
     private final TableDefinition constituentDefinition;
@@ -76,6 +77,28 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
             @NotNull final TableDefinition constituentDefinition,
             final boolean constituentChangesPermitted,
             final boolean validateConstituents) {
+        this(table, keyColumnNames, Collections.emptySet(), uniqueKeys, constituentColumnName, constituentDefinition,
+                constituentChangesPermitted, validateConstituents);
+    }
+
+    /**
+     * @apiNote Only engine-internal tools should call this constructor directly
+     * @see PartitionedTableFactory#of(Table, Collection, boolean, String, TableDefinition, boolean) Factory method that
+     *      delegates to this method for most parameter definitions
+     * @param consistentKeyColumnNames a set of key column values that are consistent between the table and constituent
+     *        tables. Filters on a proxy may take advantage of filtering the table of tables rather than filtering
+     *        constituents.
+     */
+    @InternalUseOnly
+    public PartitionedTableImpl(
+            @NotNull final Table table,
+            @NotNull final Collection<String> keyColumnNames,
+            @NotNull final Collection<String> consistentKeyColumnNames,
+            final boolean uniqueKeys,
+            @NotNull final String constituentColumnName,
+            @NotNull final TableDefinition constituentDefinition,
+            final boolean constituentChangesPermitted,
+            final boolean validateConstituents) {
         if (validateConstituents) {
             final QueryTable coalesced = (QueryTable) table.coalesce();
             this.table = coalesced.getResult(
@@ -86,7 +109,10 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
         if (this.table.isRefreshing()) {
             manage(this.table);
         }
-        this.keyColumnNames = Collections.unmodifiableSet(new LinkedHashSet<>(keyColumnNames));
+        this.keyColumnNames = keyColumnNames.isEmpty() ? Collections.emptySet()
+                : Collections.unmodifiableSet(new LinkedHashSet<>(keyColumnNames));
+        this.consistentKeyColumnNames = consistentKeyColumnNames.isEmpty() ? Collections.emptySet()
+                : Collections.unmodifiableSet(new LinkedHashSet<>(consistentKeyColumnNames));
         this.uniqueKeys = uniqueKeys;
         this.constituentColumnName = constituentColumnName;
         this.constituentDefinition = constituentDefinition;
@@ -245,6 +271,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
                 () -> new PartitionedTableImpl(
                         table.where(Filter.and(whereFilters)),
                         keyColumnNames,
+                        consistentKeyColumnNames,
                         uniqueKeys,
                         constituentColumnName,
                         constituentDefinition,
@@ -284,6 +311,22 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
             @NotNull final UnaryOperator<Table> transformer,
             final boolean expectRefreshingResults,
             @NotNull final Dependency... dependencies) {
+        return transform(executionContext, transformer, Collections.emptySet(), expectRefreshingResults, dependencies);
+    }
+
+    /**
+     * @see PartitionedTable#transform(ExecutionContext, UnaryOperator, boolean, Dependency...)
+     *
+     * @param consistentKeyColumns the key columns that are consistent between the constituents and the result table;
+     *        intended only for use from the Proxy where we can identify that key columns have not been modified by a
+     *        given operation.
+     */
+    PartitionedTable transform(
+            @Nullable final ExecutionContext executionContext,
+            @NotNull final UnaryOperator<Table> transformer,
+            @NotNull final Set<String> consistentKeyColumns,
+            final boolean expectRefreshingResults,
+            @NotNull final Dependency... dependencies) {
         final PartitionedTable resultPartitionedTable;
         final TableDefinition resultConstituentDefinition;
         final LivenessManager enclosingScope = LivenessScopeStack.peek();
@@ -307,6 +350,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
             resultPartitionedTable = new PartitionedTableImpl(
                     resultTable,
                     keyColumnNames,
+                    consistentKeyColumns,
                     uniqueKeys,
                     constituentColumnName,
                     resultConstituentDefinition,
@@ -345,6 +389,26 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
             @NotNull final PartitionedTable other,
             @Nullable final ExecutionContext executionContext,
             @NotNull final BinaryOperator<Table> transformer,
+            final boolean expectRefreshingResults,
+            @NotNull final Dependency... dependencies) {
+        return partitionedTransform(other, executionContext, transformer, Collections.emptySet(),
+                expectRefreshingResults, dependencies);
+    }
+
+
+    /**
+     * @see PartitionedTable#partitionedTransform(PartitionedTable, ExecutionContext, BinaryOperator, boolean,
+     *      Dependency...)
+     *
+     * @param consistentKeyColumns the key columns that are consistent between the constituents and the result table;
+     *        intended only for use from the Proxy where we can identify that key columns have not been modified by a
+     *        given operation.
+     */
+    PartitionedTable partitionedTransform(
+            @NotNull final PartitionedTable other,
+            @Nullable final ExecutionContext executionContext,
+            @NotNull final BinaryOperator<Table> transformer,
+            @NotNull final Set<String> consistentKeyColumns,
             final boolean expectRefreshingResults,
             @NotNull final Dependency... dependencies) {
         // Check safety before doing any extra work
@@ -389,6 +453,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
             resultPartitionedTable = new PartitionedTableImpl(
                     resultTable,
                     keyColumnNames,
+                    consistentKeyColumns,
                     uniqueKeys,
                     constituentColumnName,
                     resultConstituentDefinition,
@@ -566,6 +631,10 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
                 constituentDefinition,
                 RowSetFactory.empty().toTracking(),
                 NullValueColumnSource.createColumnSourceMap(constituentDefinition));
+    }
+
+    Set<String> getConsistentKeyColumnNames() {
+        return consistentKeyColumnNames;
     }
 
     private static final class ValidateConstituents implements QueryTable.MemoizableOperation<QueryTable> {
