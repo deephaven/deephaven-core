@@ -60,7 +60,7 @@ public abstract class LiveAttributeMap<IFACE_TYPE extends AttributeMap<IFACE_TYP
 
     /**
      * @param initialAttributes The attributes map to use until mutated, or else {@code null} to allocate a new one
-     * @param enforceStrongReachability Whether this LiveAtrributeMap should maintain strong references to its referents
+     * @param enforceStrongReachability Whether this LiveAttributeMap should maintain strong references to its referents
      */
     protected LiveAttributeMap(@Nullable final Map<String, Object> initialAttributes,
             boolean enforceStrongReachability) {
