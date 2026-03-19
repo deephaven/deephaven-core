@@ -1549,10 +1549,13 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
      */
     @Override
     public LongStream parentPerformanceEntryIds() {
+        final long[] idsSnapshot;
         synchronized (this) {
-            return Stream.concat(Stream.concat(Stream.of(this), parents.stream()), managedReferentStream())
-                    .flatMapToLong(BaseTable::getParentPerformanceEntryIds);
+            idsSnapshot = Stream.concat(Stream.concat(Stream.of(this), parents.stream()), managedReferentStream())
+                    .flatMapToLong(BaseTable::getParentPerformanceEntryIds)
+                    .toArray();
         }
+        return LongStream.of(idsSnapshot);
     }
 
     /**
