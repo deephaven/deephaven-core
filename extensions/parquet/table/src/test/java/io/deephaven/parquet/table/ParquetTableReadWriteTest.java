@@ -5019,15 +5019,16 @@ public final class ParquetTableReadWriteTest {
         for (final Binary v : values) {
             stats.updateStats(v);
         }
-        try (final java.io.OutputStream os = Files.newOutputStream(dest.toPath())) {
-            final ParquetFileWriter fileWriter = new ParquetFileWriter(dest.toURI(), os,
-                    ParquetInstructions.EMPTY.getTargetPageSize(), new HeapByteBufferAllocator(), schema,
-                    "UNCOMPRESSED", Collections.emptyMap(), NullParquetMetadataFileWriter.INSTANCE, true);
+        // ParquetFileWriter is AutoCloseable, so nest it in its own try-with-resources to
+        // guarantee the file is finalised even if an exception is thrown mid-write.
+        try (final java.io.OutputStream os = Files.newOutputStream(dest.toPath());
+                final ParquetFileWriter fileWriter = new ParquetFileWriter(dest.toURI(), os,
+                        ParquetInstructions.EMPTY.getTargetPageSize(), new HeapByteBufferAllocator(), schema,
+                        "UNCOMPRESSED", Collections.emptyMap(), NullParquetMetadataFileWriter.INSTANCE, true)) {
             final RowGroupWriter rowGroupWriter = fileWriter.addRowGroup(values.length);
             try (final ColumnWriter columnWriter = rowGroupWriter.addColumn("status")) {
                 columnWriter.addPageNoNulls(values, values.length, stats);
             }
-            fileWriter.close();
         }
         checkSingleTable(newTable(stringCol("status", "RED", "GREEN", "BLUE")), dest);
     }
