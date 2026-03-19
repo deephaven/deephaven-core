@@ -261,18 +261,19 @@ public class BarrageRedirectedTable extends BarrageTable {
                 }
             }
 
-            final TableUpdate downstream = new TableUpdateImpl(
-                    update.rowsAdded, update.rowsRemoved, totalMods, updateShiftData, modifiedColumnSet);
+            // Only totalMods is a new RowSet, clean it up.
+            try (final RowSet ignored = totalMods) {
+                final TableUpdate downstream = new TableUpdateImpl(
+                        update.rowsAdded, update.rowsRemoved, totalMods, updateShiftData, modifiedColumnSet);
 
-            if (downstream.empty()) {
-                return coalescer;
+                if (downstream.empty()) {
+                    return coalescer;
+                }
+
+                return (coalescer == null)
+                        ? new UpdateCoalescer(currRowsFromPrev, downstream)
+                        : coalescer.update(downstream);
             }
-
-            final UpdateCoalescer result = (coalescer == null)
-                    ? new UpdateCoalescer(currRowsFromPrev, downstream)
-                    : coalescer.update(downstream);
-            totalMods.close();
-            return result;
         }
     }
 
