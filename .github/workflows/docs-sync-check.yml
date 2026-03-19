@@ -1,0 +1,33 @@
+name: Docs Sync Check
+
+on:
+  pull_request:
+    types: [ opened, synchronize, reopened, labeled, unlabeled ]
+    branches: [ 'main', 'rc/v*' ]
+    paths:
+      - 'docs/python/**'
+      - 'docs/groovy/**'
+
+jobs:
+  docs-sync:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v45
+        with:
+          files: |
+            docs/python/**
+            docs/groovy/**
+
+      - name: Check Python/Groovy Docs Sync
+        env:
+          HAS_NoPythonDocsChangesNeeded: ${{ contains(github.event.pull_request.labels.*.name, 'NoPythonDocsChangesNeeded') }}
+          HAS_NoGroovyDocsChangesNeeded: ${{ contains(github.event.pull_request.labels.*.name, 'NoGroovyDocsChangesNeeded') }}
+          CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
+        run: .github/scripts/check-docs-sync.sh
