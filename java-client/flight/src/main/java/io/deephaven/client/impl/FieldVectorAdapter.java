@@ -48,18 +48,7 @@ import io.deephaven.qst.type.StringType;
 import io.deephaven.qst.type.Type;
 import org.apache.arrow.memory.ArrowBuf;
 import org.apache.arrow.memory.BufferAllocator;
-import org.apache.arrow.vector.BigIntVector;
-import org.apache.arrow.vector.BitVector;
-import org.apache.arrow.vector.FieldVector;
-import org.apache.arrow.vector.Float4Vector;
-import org.apache.arrow.vector.Float8Vector;
-import org.apache.arrow.vector.IntVector;
-import org.apache.arrow.vector.SmallIntVector;
-import org.apache.arrow.vector.TimeStampNanoTZVector;
-import org.apache.arrow.vector.TinyIntVector;
-import org.apache.arrow.vector.UInt2Vector;
-import org.apache.arrow.vector.VarBinaryVector;
-import org.apache.arrow.vector.VarCharVector;
+import org.apache.arrow.vector.*;
 import org.apache.arrow.vector.complex.ListVector;
 import org.apache.arrow.vector.complex.impl.UnionListWriter;
 import org.apache.arrow.vector.types.pojo.Field;
@@ -436,8 +425,8 @@ public class FieldVectorAdapter implements Array.Visitor<FieldVector>, Primitive
 
     private FieldVector visitLocalTimeElements(Collection<LocalTime> elements) {
         Field field = FieldAdapter.localTimeField(name);
-        BigIntVector vector = new BigIntVector(field, allocator);
-        vector.allocateNew();
+        TimeNanoVector vector = new TimeNanoVector(field, allocator);
+        vector.allocateNew(elements.size());
         int index = 0;
         for (LocalTime lt : elements) {
             if (lt == null) {
@@ -453,8 +442,8 @@ public class FieldVectorAdapter implements Array.Visitor<FieldVector>, Primitive
 
     private FieldVector visitLocalDateElements(Collection<LocalDate> elements) {
         Field field = FieldAdapter.localDateField(name);
-        IntVector vector = new IntVector(field, allocator);
-        vector.allocateNew();
+        DateDayVector vector = new DateDayVector(field, allocator);
+        vector.allocateNew(elements.size());
         int index = 0;
         for (LocalDate ld : elements) {
             if (ld == null) {
