@@ -78,7 +78,6 @@ public class ServerBuilderInProcessModule {
     }
 
     private static class Draining<ReqT, RespT> extends SimpleForwardingServerCall<ReqT, RespT> {
-
         private Draining(ServerCall<ReqT, RespT> delegate) {
             super(delegate);
         }
