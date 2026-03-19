@@ -266,12 +266,12 @@ public class TestPartitionAwareSourceTableNoRemoval extends RefreshingTableTestC
 
         // We expect a DelayedErrorNotifier source in this test. Assert that we encountered exactly one,
         // and it is the expected type.
-        assertEquals(1, delayedErrprs.size());
-        final Throwable error = delayedErrprs.get(0).getError();
+        assertEquals(1, delayedErrors.size());
+        final Throwable error = delayedErrors.get(0).getError();
         assertTrue(error instanceof TableLocationRemovedException);
 
         // Clear the list to avoid failure in tearDown()
-        delayedErrprs.clear();
+        delayedErrors.clear();
     }
 
     private void doInitializeCheck(final ImmutableTableLocationKey[] tableLocationKeys,

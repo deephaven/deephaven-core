@@ -50,7 +50,7 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
     private boolean oldSerialSafe;
     private SafeCloseable executionContext;
 
-    protected ArrayList<DelayedErrorNotifier> delayedErrprs = new ArrayList<>();
+    protected ArrayList<DelayedErrorNotifier> delayedErrors = new ArrayList<>();
 
     List<Throwable> errors;
 
@@ -83,7 +83,7 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
         oldMemoize = QueryTable.setMemoizeResults(false);
         oldReporter = AsyncClientErrorNotifier.setReporter(this);
         errors = null;
-        delayedErrprs.clear();
+        delayedErrors.clear();
         livenessScopeCloseable = LivenessScopeStack.open(new LivenessScope(true), true);
 
         oldLogEnabled = QueryCompilerImpl.setLogEnabled(ENABLE_QUERY_COMPILER_LOGGING);
@@ -98,8 +98,8 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
             public void addSource(@NotNull Runnable updateSource) {
                 super.addSource(updateSource);
                 if (updateSource instanceof DelayedErrorNotifier) {
-                    synchronized (delayedErrprs) {
-                        delayedErrprs.add((DelayedErrorNotifier) updateSource);
+                    synchronized (delayedErrors) {
+                        delayedErrors.add((DelayedErrorNotifier) updateSource);
                     }
                 }
             }
@@ -114,15 +114,15 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
         livenessScopeCloseable.close();
 
         ChunkPoolReleaseTracking.checkAndDisable();
-        if (!delayedErrprs.isEmpty()) {
+        if (!delayedErrors.isEmpty()) {
             final StringBuilder sb = new StringBuilder();
-            for (int i = 0; i < delayedErrprs.size(); i++) {
-                final DelayedErrorNotifier delayedErrpr = delayedErrprs.get(i);
+            for (int i = 0; i < delayedErrors.size(); i++) {
+                final DelayedErrorNotifier delayedErrpr = delayedErrors.get(i);
                 sb.append("Delayed error notification " + i + ": \n"
                         + new ExceptionDetails(delayedErrpr.getError()).getFullStackTrace());
                 sb.append("\n");
             }
-            TestCase.fail("ERROR: " + delayedErrprs.size()
+            TestCase.fail("ERROR: " + delayedErrors.size()
                     + " delayed error notifications were generated during the test: \n" + sb);
         }
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
