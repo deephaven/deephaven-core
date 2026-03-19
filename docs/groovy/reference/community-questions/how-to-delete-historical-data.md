@@ -95,7 +95,7 @@ To work with specific partitions:
 
 | Table Type                      | Can Delete Data? | How?                                                                  |
 | ------------------------------- | ---------------- | --------------------------------------------------------------------- |
-| **Keyed input tables**          | ✅ Yes           | `delete()` or `deleteAsync()` methods                                 |
+| **Keyed input tables**          | ✅ Yes           | `delete` or `deleteAsync` methods                                     |
 | **Append-only input tables**    | ❌ No            | Not supported                                                         |
 | **Standard/Append-only tables** | ❌ No            | Use filtering or ring tables instead                                  |
 | **Ring tables**                 | ✅ Automatic     | Old data discarded automatically when capacity is reached             |

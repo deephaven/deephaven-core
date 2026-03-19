@@ -100,7 +100,7 @@ The [`.formatColumns`](../reference/table-operations/format/format-columns.md) m
 formula is used to determine the format for an existing column, rather than to add a new column to the table.
 The result of a formula passed to [`.formatColumns`](../reference/table-operations/format/format-columns.md) must be either a color string (such as a hexadecimal RGB color,
 e.g. `"#040427`"), a [Color](/core/javadoc/io/deephaven/gui/color/Color.html), or a packed `long`
-representation of the background and foreground color (as returned by [`bgfg()` or `bgfga()`](#assign-colors-to-backgrounds-and-foregrounds)).
+representation of the background and foreground color (as returned by [`bgfg` or `bgfga`](#assign-colors-to-backgrounds-and-foregrounds)).
 
 Since `.formatColumns` leverages Deephaven's existing formula infrastructure, the full power of the Deephaven query
 engine is available to format formulas in `.formatColumns`. This allows column formats to utilize multiple
@@ -124,11 +124,11 @@ The following query will apply color to the `GPA` column as follows:
 students_heat = students.formatColumns("GPA = heatmap(GPA, 1, 4, BRIGHT_GREEN, BRIGHT_RED)")
 ```
 
-Options are also available for `heatmapFg()` and `heatmapForeground()`. When either of these methods is used, the heatmap color pair listed in the argument is applied only to the foreground.
+Options are also available for `heatmapFg` and `heatmapForeground`. When either of these methods is used, the heatmap color pair listed in the argument is applied only to the foreground.
 
 ### Conditional formatting
 
-Advanced conditional formats can be applied via `formatColumns()`, such as different colors for different values. The
+Advanced conditional formats can be applied via `formatColumns`, such as different colors for different values. The
 following query will use a [terrnary if](./ternary-if-how-to.md) to color the `Name` column as follows:
 
 - When the `TestGrade` or `HomeworkGrade` is less than 85, `BRIGHT_YELLOW` will be used.
@@ -153,12 +153,12 @@ students_cond = students.formatColumns("__ROWFORMATTED = GPA >= 3.5 ? LIGHT_GREE
 
 The field of a cell is the background. The text/numbers showing in the cell is the foreground. Color objects can then be used with the following methods to assign individual color values or combinations to the background and/or foreground:
 
-- `bg()` or `background()` - These methods set the background to a specific color, but do not apply any foreground color.
-- `fg()` or `foreground()` - These methods set the foreground to a specific color, but do not apply any background color.
-- `bgfg()` or `backgroundForeground()` - These methods set both the background and foreground to specific values.
-- `bgfga()` or `backgroundForegroundAuto()` - These methods set the background to a specific color. Deephaven automatically chooses a contrasting foreground color.
-- `fgo()` or `foregroundOverride()` - These methods are similar to `fg()` or `foreground()`. However, when either of these methods are used, the color selected will override the highlight color that is automatically assigned when the user highlights the cell or group of cells in the Deephaven console.
-- `bgo()` or `backgroundOverride()` - These methods are similar to `bg()` or `background()`. However, when either of these methods are used, the color selected will override the highlight color that is automatically assigned when the user highlights the cell or group of cells in the Deephaven console.
+- `bg` or `background` - These methods set the background to a specific color, but do not apply any foreground color.
+- `fg` or `foreground` - These methods set the foreground to a specific color, but do not apply any background color.
+- `bgfg` or `backgroundForeground` - These methods set both the background and foreground to specific values.
+- `bgfga` or `backgroundForegroundAuto` - These methods set the background to a specific color. Deephaven automatically chooses a contrasting foreground color.
+- `fgo` or `foregroundOverride` - These methods are similar to `fg` or `foreground`. However, when either of these methods are used, the color selected will override the highlight color that is automatically assigned when the user highlights the cell or group of cells in the Deephaven console.
+- `bgo` or `backgroundOverride` - These methods are similar to `bg` or `background`. However, when either of these methods are used, the color selected will override the highlight color that is automatically assigned when the user highlights the cell or group of cells in the Deephaven console.
 
 > [!CAUTION]
 > Overriding the foreground or background colors may make the highlighted content difficult to read. Care in use is suggested.
@@ -183,7 +183,7 @@ students_pink = students.formatColumns("Name = bgfg(colorRGB(255,105,80),colorRG
 ```
 
 The following query generates a table with a navy blue background (defined by `colorRGB(0,0,128)`) and automatically
-selects a contrasting foreground (using `bgfga()`).
+selects a contrasting foreground (using `bgfga`).
 
 ```groovy test-set=1
 students_navy = students.formatColumns("* = bgfga(colorRGB(0,0,128))")
@@ -255,6 +255,6 @@ students_rgba = students.formatColumns("Name = colorRGB(135, 206, 250, 50)")
 - [How to select, view, and update data in tables](./use-select-view-update.md)
 - [How to use filters](./filters.md)
 - [How to use variables and functions in query strings](./query-scope.md)
-- [`formatColumns()`](../reference/table-operations/format/format-columns.md)
-- [`formatColumnWhere()`](../reference/table-operations/format/format-column-where.md)
-- [`formatRowWhere()`](../reference/table-operations/format/format-row-where.md)
+- [`formatColumns`](../reference/table-operations/format/format-columns.md)
+- [`formatColumnWhere`](../reference/table-operations/format/format-column-where.md)
+- [`formatRowWhere`](../reference/table-operations/format/format-row-where.md)

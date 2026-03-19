@@ -54,10 +54,10 @@ A new `TablePublisher`.
 `TablePublisher` supports the following methods:
 
 - [`add(table)`](https://deephaven.io/core/javadoc/io/deephaven/stream/TablePublisher.html#add(io.deephaven.engine.table.Table)) - Adds a table to the blink table.
-- [`definition()`](https://deephaven.io/core/javadoc/io/deephaven/stream/TablePublisher.html#definition()) - Gets the table definition.
-- [`isAlive()`](https://deephaven.io/core/javadoc/io/deephaven/stream/TablePublisher.html#isAlive()) - Checks if the table publisher is alive.
+- [`definition`](https://deephaven.io/core/javadoc/io/deephaven/stream/TablePublisher.html#definition()) - Gets the table definition.
+- [`isAlive`](https://deephaven.io/core/javadoc/io/deephaven/stream/TablePublisher.html#isAlive()) - Checks if the table publisher is alive.
 - [`publishFailure(failure)`](https://deephaven.io/core/javadoc/io/deephaven/stream/TablePublisher.html#publishFailure(java.lang.Throwable)) - Indicate that data publication has hailed. Listeners will be notified, the on-shutdown callback will be invoked (if it hasn't already been), and future calls to `add` will return without doing anything.
-- [`table()`](https://deephaven.io/core/javadoc/io/deephaven/stream/TablePublisher.html#table()) - Gets the blink table.
+- [`table`](https://deephaven.io/core/javadoc/io/deephaven/stream/TablePublisher.html#table()) - Gets the blink table.
 
 ## Examples
 

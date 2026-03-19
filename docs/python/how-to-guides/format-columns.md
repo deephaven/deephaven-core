@@ -275,7 +275,7 @@ students_heat = students.format_columns(
 - When the value is greater than or equal to 4.00, `BRIGHT_RED` will be used.
 - An automatically interpolated color proportionally between `BRIGHT_GREEN` and `BRIGHT_RED` will be used for all other values between 1 and 4.
 
-You can also create foreground heat maps with `heatmapFg()` or `heatmapForeground()` to color the text instead of the background.
+You can also create foreground heat maps with `heatmapFg` or `heatmapForeground` to color the text instead of the background.
 
 ### Advanced row formatting
 

@@ -122,7 +122,7 @@ result = TailInitializationFilter.mostRecent(source, "Timestamp", 5 * SECOND)
 
 ### Filter by row count
 
-The `mostRecentRows()` method filters to show a specified number of rows from the end of each partition:
+The `mostRecentRows` method filters to show a specified number of rows from the end of each partition:
 
 ```groovy order=result,source
 source = timeTable("2026-01-01T00:00:00 America/New_York", "PT00:00:01").update("Value = ii")
