@@ -16,6 +16,7 @@ import io.deephaven.engine.table.impl.UpdateErrorReporter;
 import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.engine.table.impl.util.AsyncClientErrorNotifier;
 import io.deephaven.engine.table.impl.util.AsyncErrorLogger;
+import io.deephaven.engine.table.impl.util.DelayedErrorNotifier;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
@@ -24,6 +25,7 @@ import io.deephaven.util.ExceptionDetails;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.process.ProcessEnvironment;
 import junit.framework.TestCase;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -48,6 +50,8 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
     private boolean oldSerialSafe;
     private SafeCloseable executionContext;
 
+    protected ArrayList<DelayedErrorNotifier> delayedErrors = new ArrayList<>();
+
     List<Throwable> errors;
 
     public static int scaleToDesiredTestLength(final int maxIter) {
@@ -70,7 +74,7 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
                 .existingOrBuild();
 
         // initialize the unit test's execution context
-        executionContext = TestExecutionContext.createForUnitTests().open();
+        executionContext = makeExecutionContext().open();
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.enableUnitTestMode();
@@ -79,12 +83,28 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
         oldMemoize = QueryTable.setMemoizeResults(false);
         oldReporter = AsyncClientErrorNotifier.setReporter(this);
         errors = null;
+        delayedErrors.clear();
         livenessScopeCloseable = LivenessScopeStack.open(new LivenessScope(true), true);
 
         oldLogEnabled = QueryCompilerImpl.setLogEnabled(ENABLE_QUERY_COMPILER_LOGGING);
         oldSerialSafe = updateGraph.setSerialTableOperationsSafe(true);
         AsyncErrorLogger.init();
         ChunkPoolReleaseTracking.enableStrict();
+    }
+
+    protected ExecutionContext makeExecutionContext() {
+        final UpdateGraph ug = new ControlledUpdateGraph(TestExecutionContext.OPERATION_INITIALIZATION) {
+            @Override
+            public void addSource(@NotNull Runnable updateSource) {
+                super.addSource(updateSource);
+                if (updateSource instanceof DelayedErrorNotifier) {
+                    synchronized (delayedErrors) {
+                        delayedErrors.add((DelayedErrorNotifier) updateSource);
+                    }
+                }
+            }
+        };
+        return TestExecutionContext.createForUnitTests().withUpdateGraph(ug);
     }
 
     @Override
@@ -94,6 +114,17 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
         livenessScopeCloseable.close();
 
         ChunkPoolReleaseTracking.checkAndDisable();
+        if (!delayedErrors.isEmpty()) {
+            final StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < delayedErrors.size(); i++) {
+                final DelayedErrorNotifier delayedErrpr = delayedErrors.get(i);
+                sb.append("Delayed error notification " + i + ": \n"
+                        + new ExceptionDetails(delayedErrpr.getError()).getFullStackTrace());
+                sb.append("\n");
+            }
+            TestCase.fail("ERROR: " + delayedErrors.size()
+                    + " delayed error notifications were generated during the test: \n" + sb);
+        }
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.setSerialTableOperationsSafe(oldSerialSafe);
         QueryCompilerImpl.setLogEnabled(oldLogEnabled);

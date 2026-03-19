@@ -261,18 +261,19 @@ public class BarrageRedirectedTable extends BarrageTable {
                 }
             }
 
-            if (update.isSnapshot && !mightBeInitialSnapshot) {
-                // This applies to viewport or subscribed column changes; after the first snapshot later snapshots can't
-                // change the RowSet. In this case, we apply the data from the snapshot to local column sources but
-                // otherwise cannot communicate this change to listeners.
-                return coalescer;
+            // Only totalMods is a new RowSet, clean it up.
+            try (final RowSet ignored = totalMods) {
+                final TableUpdate downstream = new TableUpdateImpl(
+                        update.rowsAdded, update.rowsRemoved, totalMods, updateShiftData, modifiedColumnSet);
+
+                if (downstream.empty()) {
+                    return coalescer;
+                }
+
+                return (coalescer == null)
+                        ? new UpdateCoalescer(currRowsFromPrev, downstream)
+                        : coalescer.update(downstream);
             }
-
-            final TableUpdate downstream = new TableUpdateImpl(
-                    update.rowsAdded, update.rowsRemoved, totalMods, updateShiftData, modifiedColumnSet);
-
-            return (coalescer == null) ? new UpdateCoalescer(currRowsFromPrev, downstream)
-                    : coalescer.update(downstream);
         }
     }
 
