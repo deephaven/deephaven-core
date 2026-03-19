@@ -1142,7 +1142,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
         private final boolean canReuseModifiedColumnSet;
 
         public ListenerImpl(String description, Table parent, BaseTable<?> dependent) {
-            super(description, false, () -> ((BaseTable<?>) parent).parentPerformanceEntryIds(true));
+            super(description, false, () -> ((BaseTable<?>) parent).parentPerformanceEntryIdsArray());
             this.parent = parent;
             this.dependent = dependent;
             if (parent.isRefreshing()) {
@@ -1546,17 +1546,14 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
      */
     @Override
     public LongStream parentPerformanceEntryIds() {
-        return LongStream.of(parentPerformanceEntryIds(false));
+        return LongStream.of(parentPerformanceEntryIdsArray());
     }
 
-    private long[] parentPerformanceEntryIds(final boolean includeSelf) {
+    private long[] parentPerformanceEntryIdsArray() {
         final long[] idsSnapshot;
         synchronized (this) {
-            Stream<Object> stream =
+            final Stream<Object> stream =
                     Stream.concat(Stream.concat(Stream.of(this), parents.stream()), managedReferentStream());
-            if (includeSelf) {
-                stream = Stream.concat(Stream.of(this), stream);
-            }
             idsSnapshot = stream.flatMapToLong(BaseTable::getParentPerformanceEntryIds).toArray();
         }
         return idsSnapshot;
