@@ -20,6 +20,7 @@ import io.deephaven.json.InstantValue;
 import io.deephaven.json.IntValue;
 import io.deephaven.json.JsonValueTypes;
 import io.deephaven.json.LocalDateValue;
+import io.deephaven.json.LocalTimeValue;
 import io.deephaven.json.LongValue;
 import io.deephaven.json.ObjectField;
 import io.deephaven.json.ObjectEntriesValue;
@@ -348,6 +349,11 @@ abstract class Mixin<T extends Value> implements JacksonProvider {
         @Override
         public LocalDateMixin visit(LocalDateValue localDate) {
             return new LocalDateMixin(localDate, factory);
+        }
+
+        @Override
+        public Mixin<?> visit(LocalTimeValue localTime) {
+            return new LocalTimeMixin(localTime, factory);
         }
 
         @Override

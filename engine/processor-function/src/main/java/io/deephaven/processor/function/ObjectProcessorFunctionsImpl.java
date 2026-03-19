@@ -225,6 +225,18 @@ final class ObjectProcessorFunctionsImpl<T> implements ObjectProcessor<T> {
         }
 
         @Override
+        public ObjectAppender<T> visit(io.deephaven.qst.type.LocalTimeType localTimeType) {
+            // LocalTime is a generic object type
+            return new ObjectAppender<>(f);
+        }
+
+        @Override
+        public ObjectAppender<T> visit(io.deephaven.qst.type.LocalDateType localDateType) {
+            // LocalDate is a generic object type
+            return new ObjectAppender<>(f);
+        }
+
+        @Override
         public ObjectAppender<T> visit(ArrayType<?, ?> arrayType) {
             return new ObjectAppender<>(f);
         }

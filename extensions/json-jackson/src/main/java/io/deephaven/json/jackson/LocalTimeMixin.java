@@ -5,21 +5,21 @@ package io.deephaven.json.jackson;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
-import io.deephaven.json.LocalDateValue;
+import io.deephaven.json.LocalTimeValue;
 import io.deephaven.qst.type.Type;
 
 import java.io.IOException;
-import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.temporal.TemporalAccessor;
 
-final class LocalDateMixin extends GenericObjectMixin<LocalDateValue, LocalDate> {
+final class LocalTimeMixin extends GenericObjectMixin<LocalTimeValue, LocalTime> {
 
-    public LocalDateMixin(LocalDateValue options, JsonFactory factory) {
-        super(factory, options, Type.localDateType());
+    public LocalTimeMixin(LocalTimeValue options, JsonFactory factory) {
+        super(factory, options, Type.localTimeType());
     }
 
     @Override
-    public LocalDate parseValue(JsonParser parser) throws IOException {
+    public LocalTime parseValue(JsonParser parser) throws IOException {
         switch (parser.currentToken()) {
             case VALUE_STRING:
             case FIELD_NAME:
@@ -31,21 +31,21 @@ final class LocalDateMixin extends GenericObjectMixin<LocalDateValue, LocalDate>
     }
 
     @Override
-    public LocalDate parseMissing(JsonParser parser) throws IOException {
+    public LocalTime parseMissing(JsonParser parser) throws IOException {
         return parseFromMissing(parser);
     }
 
-    private LocalDate parseFromString(JsonParser parser) throws IOException {
+    private LocalTime parseFromString(JsonParser parser) throws IOException {
         final TemporalAccessor accessor = options.dateTimeFormatter().parse(Parsing.textAsCharSequence(parser));
-        return LocalDate.from(accessor);
+        return LocalTime.from(accessor);
     }
 
-    private LocalDate parseFromNull(JsonParser parser) throws IOException {
+    private LocalTime parseFromNull(JsonParser parser) throws IOException {
         checkNullAllowed(parser);
         return options.onNull().orElse(null);
     }
 
-    private LocalDate parseFromMissing(JsonParser parser) throws IOException {
+    private LocalTime parseFromMissing(JsonParser parser) throws IOException {
         checkMissingAllowed(parser);
         return options.onMissing().orElse(null);
     }
