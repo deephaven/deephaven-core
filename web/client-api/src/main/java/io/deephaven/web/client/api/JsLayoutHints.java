@@ -18,14 +18,29 @@ import java.util.stream.Collectors;
 
 @TsInterface
 @JsType(namespace = "dh", name = "LayoutHints")
+/**
+ * Layout hint values that can be used by clients when rendering a table.
+ */
 public class JsLayoutHints {
     @TsInterface
     @JsType(namespace = "dh")
+    /**
+     * Describes a column group to use when rendering a table.
+     */
     public static class ColumnGroup {
+        /**
+         * The group name.
+         */
         @JsNullable
         public final String name;
+        /**
+         * The column names contained by this group.
+         */
         @JsNullable
         public final String[] children;
+        /**
+         * The group color.
+         */
         @JsNullable
         public final String color;
 
@@ -67,6 +82,9 @@ public class JsLayoutHints {
 
     private boolean savedLayoutsAllowed = true;
 
+    /**
+     * The display mode for the search bar.
+     */
     private String searchDisplayMode = SearchDisplayMode.SEARCH_DISPLAY_DEFAULT;
     private String[] frontColumns;
     private String[] backColumns;
@@ -127,11 +145,17 @@ public class JsLayoutHints {
         return this;
     }
 
+    /**
+     * Whether saved layouts are allowed.
+     */
     @JsProperty
     public boolean getAreSavedLayoutsAllowed() {
         return savedLayoutsAllowed;
     }
 
+    /**
+     * The display mode for the search bar.
+     */
     @JsNullable
     @JsProperty
     @TsTypeRef(SearchDisplayMode.class)
@@ -139,30 +163,45 @@ public class JsLayoutHints {
         return searchDisplayMode;
     }
 
+    /**
+     * Column names to display at the front of the table.
+     */
     @JsProperty
     @JsNullable
     public String[] getFrontColumns() {
         return frontColumns;
     }
 
+    /**
+     * Column names to display at the back of the table.
+     */
     @JsNullable
     @JsProperty
     public String[] getBackColumns() {
         return backColumns;
     }
 
+    /**
+     * Column names to hide.
+     */
     @JsNullable
     @JsProperty
     public String[] getHiddenColumns() {
         return hiddenColumns;
     }
 
+    /**
+     * Column names to render as frozen.
+     */
     @JsNullable
     @JsProperty
     public String[] getFrozenColumns() {
         return frozenColumns;
     }
 
+    /**
+     * Column groups to use when rendering the table.
+     */
     @JsNullable
     @JsProperty
     public ColumnGroup[] getColumnGroups() {
