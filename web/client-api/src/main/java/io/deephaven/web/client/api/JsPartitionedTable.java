@@ -32,14 +32,15 @@ import jsinterop.base.Js;
 import java.util.*;
 
 /**
- * Represents a set of {@code Table}s each corresponding to some key. The keys are available locally, but a call must be
- * made to the server to get each {@code Table}. All tables will have the same structure.
+ * Represents a set of {@link JsTable}s, each corresponding to some key. The keys are available locally, but a call must
+ * be made to the server to get each {@link JsTable}. All tables will have the same structure.
  */
 @JsType(namespace = "dh", name = "PartitionedTable")
 public class JsPartitionedTable extends HasLifecycle implements ServerObject {
 
     /**
-     * Indicates that a new key has been added to the array of keys, which you can now fetch with {@code getTable}.
+     * Indicates that a new key has been added to the array of keys, which you can now fetch with
+     * {@link #getTable(Object) getTable}.
      */
     public static final String EVENT_KEYADDED = "keyadded",
             EVENT_DISCONNECT = JsTable.EVENT_DISCONNECT,
@@ -160,7 +161,7 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
      * Fetch the table with the given key. If the key does not exist, returns {@code null}.
      *
      * @param key The key to fetch. An array of values for each key column, in the same order as the key columns are.
-     * @return Promise of {@code dh.Table}, or {@code null} if the key does not exist.
+     * @return Promise of {@link JsTable}, or {@code null} if the key does not exist.
      */
     public Promise<@JsNullable JsTable> getTable(Object key) {
         // Wrap non-arrays in an array so we are consistent with how we track keys
@@ -222,7 +223,7 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
 
     /**
      * The set of all currently known keys. This is kept up to date, so getting the list after adding an event listener
-     * for <b>keyadded</b> will ensure no keys are missed.
+     * for {@link #EVENT_KEYADDED} will ensure no keys are missed.
      *
      * @return Set of Object
      */
@@ -294,7 +295,9 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
         return baseTable.copy();
     }
 
-    /** Close any subscriptions to underlying tables or key tables */
+    /**
+     * Close any subscriptions to underlying tables or key tables.
+     */
     private void closeSubscriptions() {
         if (baseTable != null) {
             baseTable.close();
