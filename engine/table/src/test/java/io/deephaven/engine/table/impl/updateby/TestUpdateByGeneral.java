@@ -8,6 +8,7 @@ import io.deephaven.api.updateby.BadDataBehavior;
 import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
@@ -582,5 +583,19 @@ public class TestUpdateByGeneral extends BaseUpdateByTest implements UpdateError
         assertTrue(result.getDefinition().getColumn("String").isPartitioning());
         assertTrue(result.getDefinition().getColumn("Int").isDirect());
         assertTrue(result.getDefinition().getColumn("Double").isDirect());
+    }
+
+    @Test
+    public void testMemoryUsage() {
+        final Random r = new Random(0);
+        final Random r2 = new Random(1);
+        QueryScope.addParam("r", r);
+        QueryScope.addParam("r2", r2);
+        final long sz = 1_000_000;
+        QueryScope.addParam("sz", sz);
+        final Table src = merge(emptyTable(sz), timeTable("PT1m").dropColumns("Timestamp")).assertAppendOnly();
+        final Table x = src.update("X=ii", "Oid=r.nextInt((int)(sz / 2))", "K=r2.nextBoolean() ? null : ii");
+        final Table ff = x.updateBy(Fill(), "Oid");
+        show(ff);
     }
 }

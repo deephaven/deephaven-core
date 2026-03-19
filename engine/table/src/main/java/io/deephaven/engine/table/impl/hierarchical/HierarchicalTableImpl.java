@@ -93,7 +93,7 @@ public abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable
             @NotNull final Map<String, Object> initialAttributes,
             @NotNull final QueryTable source,
             @NotNull final QueryTable root) {
-        super(initialAttributes);
+        super(initialAttributes, false);
         this.source = source;
         this.root = root;
     }
