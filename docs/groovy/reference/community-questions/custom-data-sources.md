@@ -158,8 +158,8 @@ For large datasets, implement custom [ColumnSource](https://deephaven.io/core/ja
 
 Key implementation points:
 
-- Implement `get()` methods for each primitive type (`getByte`, `getShort`, `getInt`, `getLong`, `getChar`, `getFloat`, `getDouble`).
-- Implement `fillChunk()` for efficient bulk data fetching.
+- Implement `get` methods for each primitive type (`getByte`, `getShort`, `getInt`, `getLong`, `getChar`, `getFloat`, `getDouble`).
+- Implement `fillChunk` for efficient bulk data fetching.
 - Cache data to avoid repeated disk reads.
 - For immutable on-disk data, delegate previous-value calls to current-value calls.
 

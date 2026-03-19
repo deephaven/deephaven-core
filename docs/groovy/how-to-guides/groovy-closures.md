@@ -48,7 +48,7 @@ source = emptyTable(100).update("X = 0.1 * ii", "Y = sine(X)")
 > Always define the expected argument types when defining a closure that will be called from the query language. This allows errors to be caught at compile time rather than at runtime, and often improves performance. For instance, if we define the `sine` function above as `sine = { X -> Math.sin(X) }`, omitting the `Double` specification, the query will take 285 milliseconds to complete instead of 7.
 
 > [!NOTE]
-> Closures used in query strings should perform null checks on their arguments, e.g., with `isNull()`. If null values are not handled, closures may yield undesirable results when nulls are encountered.
+> Closures used in query strings should perform null checks on their arguments, e.g., with `isNull`. If null values are not handled, closures may yield undesirable results when nulls are encountered.
 
 Deephaven has a built-in [`sin`](https://deephaven.io/core/javadoc/io/deephaven/function/Numeric.html#sin(double)) method that can be used from the query language with no imports. It handles `null` values by default: a call to `sin(NULL_DOUBLE)` will return `NULL_DOUBLE`; Math.sin will return `-0.004961954789184062` -- not what we're looking for.
 

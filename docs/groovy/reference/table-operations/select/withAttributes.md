@@ -32,7 +32,7 @@ A table with an `AttributeMap` that is the same as the source table's, but with 
 
 ## Examples
 
-In this example, we create a source table, then create a `result` table with a call to `withAttributes()`. This returns a `result` table that is identical to our source table, but with the attribute we specify (`"MyAttribute"`) added.
+In this example, we create a source table, then create a `result` table with a call to `withAttributes`. This returns a `result` table that is identical to our source table, but with the attribute we specify (`"MyAttribute"`) added.
 
 ```groovy order=source,result
 import io.deephaven.engine.table.AttributeMap

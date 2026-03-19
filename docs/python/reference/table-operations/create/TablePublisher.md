@@ -61,7 +61,7 @@ A [`TablePublisher`](/core/pydoc/code/deephaven.stream.table_publisher.html#deep
 `TablePublisher` supports the following methods:
 
 - [`add(table)`](/core/pydoc/code/deephaven.stream.table_publisher.html#deephaven.stream.table_publisher.TablePublisher.add) - Adds a snapshot of the data from `table` into the blink table. The table _must_ contain a superset of the columns from the blink table's definition. The columns can be in any order. Columns from `table` that are not in the blink table's definition are ignored.
-- [`is_alive()`](/core/pydoc/code/deephaven.stream.table_publisher.html#deephaven.stream.table_publisher.TablePublisher.is_alive) - Checks if the table is alive. Returns `True` if the table is alive, and `False` otherwise.
+- [`is_alive`](/core/pydoc/code/deephaven.stream.table_publisher.html#deephaven.stream.table_publisher.TablePublisher.is_alive) - Checks if the table is alive. Returns `True` if the table is alive, and `False` otherwise.
 - [`publish_failure(failure)`](/core/pydoc/code/deephaven.stream.table_publisher.html#deephaven.stream.table_publisher.TablePublisher.publish_failure) - Indicates that data publication has failed.
 
 ## Examples

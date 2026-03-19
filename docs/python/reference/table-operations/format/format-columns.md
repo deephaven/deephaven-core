@@ -22,10 +22,10 @@ table.format_columns(column_formats: Union[str, list[str]]) -> Table
 
 Formulas to compute formats for columns or rows in the table; e.g., `"X = Y > 5 ? RED : NO_FORMATTING"`.
 
-For color formats, the result of each formula must be either a color string (such as a hexadecimal RGB color, e.g. `"#040427`"), a [Color](/core/javadoc/io/deephaven/gui/color/Color.html), or a packed `long` representation of the background and foreground color (as returned by `bgfg()` or `bgfga()`).
+For color formats, the result of each formula must be either a color string (such as a hexadecimal RGB color, e.g. `"#040427`"), a [Color](/core/javadoc/io/deephaven/gui/color/Color.html), or a packed `long` representation of the background and foreground color (as returned by `bgfg` or `bgfga`).
 
 For decimal formats, the result must be a string, and the formula must be wrapped in the special internal
-function `Decimal()`; e.g., ``"X = Decimal(`$#,##0.00`)"``.
+function `Decimal`; e.g., ``"X = Decimal(`$#,##0.00`)"``.
 
 </Param>
 </ParamTable>

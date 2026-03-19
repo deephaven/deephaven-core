@@ -31,8 +31,8 @@ A liveness scope, once created, has several methods that can be used:
 - `manage(referent)` explicitly manages the object in the current scope.
 - `preserve(referent)` preserves the object in the scope outside the current scope.
 - `unmanage(referent)` causes the current scope to no longer manage the given object.
-- `open()` opens a liveness scope. This is meant to be used in a `with` statement. This method is _only_ available to liveness scopes created directly from the class.
-- `release()` closes a liveness scope and all of its managed resources. This method is _only_ available to liveness scopes created directly from the class.
+- `open` opens a liveness scope. This is meant to be used in a `with` statement. This method is _only_ available to liveness scopes created directly from the class.
+- `release` closes a liveness scope and all of its managed resources. This method is _only_ available to liveness scopes created directly from the class.
 
 ### The method
 
