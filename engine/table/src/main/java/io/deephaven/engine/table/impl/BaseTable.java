@@ -148,7 +148,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
             @NotNull final TableDefinition definition,
             @NotNull final String description,
             @Nullable final Map<String, Object> attributes) {
-        super(attributes);
+        super(attributes, true);
         this.definition = definition;
         this.description = description;
         updateGraph = Require.neqNull(ExecutionContext.getContext().getUpdateGraph(), "UpdateGraph");
@@ -493,9 +493,12 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
         }
         if (DynamicNode.notDynamicOrIsRefreshing(parent)) {
             setRefreshing(true);
-            ensureParents().add(parent);
             if (parent instanceof LivenessReferent) {
-                manage((LivenessReferent) parent);
+                synchronized (this) {
+                    manage((LivenessReferent) parent);
+                }
+            } else {
+                ensureParents().add(parent);
             }
         }
     }
@@ -518,9 +521,13 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
         // If we have no parents whatsoever then we are a source, and have no dependency chain other than the UGP
         // itself
         final Collection<Object> localParents = parents;
+        final boolean hasManagedParents;
+        synchronized (this) {
+            hasManagedParents = findAnyManagedReferent(x -> true).isPresent();
+        }
 
         if (!updateGraph.satisfied(step)) {
-            if (localParents.isEmpty()) {
+            if (localParents.isEmpty() && !hasManagedParents) {
                 updateGraph.logDependencies().append("Root node not satisfied ").append(this).endl();
             } else {
                 updateGraph.logDependencies().append("Update graph not satisfied for ").append(this).endl();
@@ -528,7 +535,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
             return false;
         }
 
-        if (localParents.isEmpty()) {
+        if (localParents.isEmpty() && !hasManagedParents) {
             updateGraph.logDependencies().append("Root node satisfied ").append(this).endl();
             StepUpdater.tryUpdateRecordedStep(LAST_SATISFIED_STEP_UPDATER, this, step);
             return true;
@@ -546,6 +553,22 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
                     }
                 }
             }
+        }
+        final Optional<LivenessReferent> unsatisfiedParent;
+        synchronized (this) {
+            unsatisfiedParent = findAnyManagedReferent(managed -> {
+                if (!(managed instanceof NotificationQueue.Dependency)) {
+                    return false;
+                }
+                return !((NotificationQueue.Dependency) managed).satisfied(step);
+            });
+        }
+        if (unsatisfiedParent.isPresent()) {
+            updateGraph.logDependencies()
+                    .append("Managed parent dependencies not satisfied for ").append(this)
+                    .append(", parent=").append((NotificationQueue.Dependency) unsatisfiedParent.get())
+                    .endl();
+            return false;
         }
 
         updateGraph.logDependencies()
@@ -1119,9 +1142,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
         private final boolean canReuseModifiedColumnSet;
 
         public ListenerImpl(String description, Table parent, BaseTable<?> dependent) {
-            super(description, false,
-                    () -> (Stream.concat(((BaseTable<?>) parent).parents.stream(), Stream.of(parent)))
-                            .flatMapToLong(BaseTable::getParentPerformanceEntryIds).toArray());
+            super(description, false, () -> ((BaseTable<?>) parent).parentPerformanceEntryIdsArray());
             this.parent = parent;
             this.dependent = dependent;
             if (parent.isRefreshing()) {
@@ -1525,7 +1546,17 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
      */
     @Override
     public LongStream parentPerformanceEntryIds() {
-        return Stream.concat(Stream.of(this), parents.stream()).flatMapToLong(BaseTable::getParentPerformanceEntryIds);
+        return LongStream.of(parentPerformanceEntryIdsArray());
+    }
+
+    private long[] parentPerformanceEntryIdsArray() {
+        final long[] idsSnapshot;
+        synchronized (this) {
+            final Stream<Object> stream =
+                    Stream.concat(Stream.concat(Stream.of(this), parents.stream()), managedReferentStream());
+            idsSnapshot = stream.flatMapToLong(BaseTable::getParentPerformanceEntryIds).toArray();
+        }
+        return idsSnapshot;
     }
 
     /**
