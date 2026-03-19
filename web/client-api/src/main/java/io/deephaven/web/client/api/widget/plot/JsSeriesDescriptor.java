@@ -13,38 +13,102 @@ import jsinterop.base.JsPropertyMap;
 
 import java.util.Map;
 
+/**
+ * A descriptor used to define a chart series when creating a figure from JS.
+ */
 @JsType(name = "SeriesDescriptor", namespace = "dh.plot")
 public class JsSeriesDescriptor {
     // TODO (deephaven-core#3442) change to some kind of String+int union type
+
+    /**
+     * The series plot style.
+     */
     public String plotStyle;
+
+    /**
+     * The series name.
+     */
     @JsNullable
     public String name;
 
+    /**
+     * Whether lines are visible.
+     */
     @JsNullable
     public Boolean linesVisible;
+
+    /**
+     * Whether shapes are visible.
+     */
     @JsNullable
     public Boolean shapesVisible;
+
+    /**
+     * Whether the series uses gradient rendering.
+     */
     @JsNullable
     public Boolean gradientVisible;
 
+    /**
+     * The line color.
+     */
     @JsNullable
     public String lineColor;
+
+    /**
+     * A format string used to render point labels.
+     *
+     * This value is passed through to the underlying plotting implementation. The interpretation of the format string
+     * is defined by the plotting implementation.
+     */
     @JsNullable
     public String pointLabelFormat;
+
+    /**
+     * A format string used to render X values in tooltips.
+     *
+     * This value is passed through to the underlying plotting implementation. The interpretation of the format string
+     * is defined by the plotting implementation.
+     */
     @JsNullable
     public String xToolTipPattern;
+
+    /**
+     * A format string used to render Y values in tooltips.
+     *
+     * This value is passed through to the underlying plotting implementation. The interpretation of the format string
+     * is defined by the plotting implementation.
+     */
     @JsNullable
     public String yToolTipPattern;
 
+    /**
+     * The shape label.
+     */
     @JsNullable
     public String shapeLabel;
+
+    /**
+     * The shape size.
+     */
     @JsNullable
     public Double shapeSize;
+
+    /**
+     * The shape color.
+     */
     @JsNullable
     public String shapeColor;
+
+    /**
+     * The shape name.
+     */
     @JsNullable
     public String shape;
 
+    /**
+     * The data sources for this series.
+     */
     public JsArray<JsSourceDescriptor> dataSources;
 
     @JsConstructor
