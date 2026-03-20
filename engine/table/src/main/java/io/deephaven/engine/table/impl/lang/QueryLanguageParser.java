@@ -571,9 +571,10 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
      * @return The class, if it exists; otherwise, {@code null}.
      */
     private Class<?> findClass(String name) {
+        ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
         if (name.contains(".")) { // Fully-qualified class name
             try {
-                return Class.forName(name);
+                return contextClassLoader.loadClass(name);
             } catch (ClassNotFoundException ignored) {
             }
         } else { // Simple name
@@ -581,7 +582,12 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             // check whether 'name' is an imported class:
             for (Class<?> classImport : classImports) {
                 if (name.equals(classImport.getSimpleName())) {
-                    return classImport;
+                    // Return a new class with that name - i hate this, but it seems less wrong?
+                    try {
+                        return contextClassLoader.loadClass(classImport.getName());
+                    } catch (ClassNotFoundException e) {
+                        break;
+                    }
                 }
             }
 
@@ -603,7 +609,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             // check whether 'name' is the name of a class in an imported package:
             for (Package packageImport : packageImports) {
                 try {
-                    return Class.forName(packageImport.getName() + '.' + name);
+                    return contextClassLoader.loadClass(packageImport.getName() + '.' + name);
                 } catch (ClassNotFoundException ignored) {
                 }
             }
@@ -1464,8 +1470,11 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
      */
     @Nullable
     private Class<?> lookupStaticImport(@NotNull final String name) {
+        // build cache just once?
         return staticImportLookupCache.computeIfAbsent(name, nameForLookup -> {
             for (final Class<?> staticImportedClass : staticImports) {
+                // re-lookup this class
+
                 // We don't support static imports of individual fields/methods -- have to check among
                 // *all* members of a class.
                 try {

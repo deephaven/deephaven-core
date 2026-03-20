@@ -16,6 +16,7 @@ import io.deephaven.util.datastructures.CachingSupplier;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.VisibleForTesting;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -134,6 +135,12 @@ public abstract class QueryCompilerRequestProcessor {
                 }
                 desc = descriptionBuilder.toString();
             }
+//            System.out.println(desc);
+//            try {
+//                System.out.println(new String(Thread.currentThread().getContextClassLoader().getResourceAsStream("test/notebook/C.groovy").readAllBytes(), "UTF-8"));
+//            } catch (IOException e) {
+//                throw new RuntimeException(e);
+//            }
 
             try (final SafeCloseable ignored = QueryPerformanceRecorder.getInstance().getCompilationNugget(desc)) {
                 final QueryCompiler compiler = ExecutionContext.getContext().getQueryCompiler();
