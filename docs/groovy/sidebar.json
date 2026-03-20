@@ -1219,6 +1219,14 @@
                 "label": "Advanced table constructors",
                 "items": [
                   {
+                    "label": "addOnlyToBlink",
+                    "path": "reference/table-operations/create/addOnlyToBlink.md"
+                  },
+                  {
+                    "label": "blinkToAppendOnly",
+                    "path": "reference/table-operations/create/blink-to-append-only.md"
+                  },
+                  {
                     "label": "FunctionGeneratedTableFactory",
                     "path": "reference/table-operations/create/create.md"
                   },
@@ -1235,16 +1243,12 @@
                     "path": "reference/table-operations/create/TablePublisher.md"
                   },
                   {
-                    "label": "blinkToAppendOnly",
-                    "path": "reference/table-operations/create/blink-to-append-only.md"
+                    "label": "removeBlink",
+                    "path": "reference/table-operations/create/remove-blink.md"
                   },
                   {
                     "label": "toBlink",
                     "path": "reference/table-operations/create/toBlink.md"
-                  },
-                  {
-                    "label": "removeBlink",
-                    "path": "reference/table-operations/create/remove-blink.md"
                   }
                 ]
               },
@@ -1396,6 +1400,10 @@
                   {
                     "label": "hasColumns",
                     "path": "reference/table-operations/metadata/hasColumns.md"
+                  },
+                  {
+                    "label": "isBlink",
+                    "path": "reference/table-operations/create/isBlink.md"
                   },
                   {
                     "label": "isEmpty",
