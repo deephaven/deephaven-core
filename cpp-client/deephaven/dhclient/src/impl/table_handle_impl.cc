@@ -7,6 +7,7 @@
 #include <memory>
 #include <mutex>
 #include <utility>
+#include <absl/log/log.h>
 #include <arrow/flight/client.h>
 #include <arrow/flight/types.h>
 #include <arrow/type.h>

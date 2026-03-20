@@ -286,6 +286,14 @@ public:
   void Render(std::ostream &s, const bool &item) const {
     s << (item ? "true" : "false");
   }
+
+  void Render(std::ostream &s, const char16_t &item) const {
+    s << static_cast<uint16_t>(item);
+  }
+
+  void Render(std::ostream &s, const char32_t &item) const {
+    s << static_cast<uint32_t>(item);
+  }
 };
 }  // namespace deephaven::dhcore::utility
 
