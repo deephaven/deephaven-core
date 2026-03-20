@@ -88,4 +88,4 @@ print(index)
 ## Related documentation
 
 - [`has_data_index`](./has-data-index.md)
-- [Pydoc](/core/pydoc/code/deephaven.experimental.data_index.html#deephaven.experimental.data_index.data_index)
+- [Pydoc](https://docs.deephaven.io/core/pydoc/code/deephaven.experimental.data_index.html#deephaven.experimental.data_index.data_index)

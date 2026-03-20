@@ -83,4 +83,4 @@ no_infer_meta = result_no_infer.meta_table
 
 - [Create a new table](../../how-to-guides/new-and-empty-table.md#new_table)
 - [`new_table`](../table-operations/create/newTable.md)
-- [Pydoc](/core/pydoc/code/deephaven.pandas.html#deephaven.pandas.to_table)
+- [Pydoc](https://docs.deephaven.io/core/pydoc/code/deephaven.pandas.html#deephaven.pandas.to_table)

@@ -201,3 +201,4 @@ result = KafkaTools.consumeToTable(
 ## Related documentation
 
 - [How to connect to a Kafka stream](../../../how-to-guides/data-import-export/kafka-stream.md)
+- [Javadoc](https://docs.deephaven.io/core/javadoc/io/deephaven/kafka/KafkaTools.html#consumeToTable(java.util.Properties,java.lang.String,java.util.function.IntPredicate,java.util.function.IntToLongFunction,io.deephaven.kafka.KafkaTools.Consume.KeyOrValueSpec,io.deephaven.kafka.KafkaTools.Consume.KeyOrValueSpec,io.deephaven.kafka.KafkaTools.TableType))
