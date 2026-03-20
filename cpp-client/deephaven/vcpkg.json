@@ -13,6 +13,7 @@
   "overrides": [
     { "name": "arrow", "version": "23.0.1" },
     { "name": "grpc", "version": "1.71.0" },
-    { "name": "protobuf", "version": "5.29.3" }
+    { "name": "protobuf", "version": "5.29.3" },
+    { "name": "abseil", "version": "20250127.0" }
   ]
 }
