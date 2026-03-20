@@ -1403,7 +1403,7 @@
                   },
                   {
                     "label": "isBlink",
-                    "path": "reference/table-operations/create/isBlink.md"
+                    "path": "reference/table-operations/metadata/isBlink.md"
                   },
                   {
                     "label": "isEmpty",

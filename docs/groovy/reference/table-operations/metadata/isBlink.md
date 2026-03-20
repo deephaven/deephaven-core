@@ -38,9 +38,9 @@ println "After conversion: ${result.isBlink()}"
 
 ## Related documentation
 
-- [`timeTable`](./timeTable.md)
-- [`toBlink`](./toBlink.md)
-- [`removeBlink`](./remove-blink.md)
-- [`blinkToAppendOnly`](./blink-to-append-only.md)
+- [`timeTable`](../create/timeTable.md)
+- [`toBlink`](../create/toBlink.md)
+- [`removeBlink`](../create/remove-blink.md)
+- [`blinkToAppendOnly`](../create/blink-to-append-only.md)
 - [Table types: Specialized semantics for blink tables](../../../conceptual/table-types.md#specialized-semantics-for-blink-tables)
 - [Javadoc](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/Table.html#isBlink())

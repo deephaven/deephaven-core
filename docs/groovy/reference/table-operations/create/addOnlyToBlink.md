@@ -49,7 +49,7 @@ println "After conversion: ${result.isBlink()}"
 ## Related documentation
 
 - [`timeTable`](./timeTable.md)
-- [`isBlink`](./isBlink.md)
+- [`isBlink`](../metadata/isBlink.md)
 - [`removeBlink`](./remove-blink.md)
 - [`blinkToAppendOnly`](./blink-to-append-only.md)
 - [Table types: Specialized semantics for blink tables](../../../conceptual/table-types.md#specialized-semantics-for-blink-tables)
