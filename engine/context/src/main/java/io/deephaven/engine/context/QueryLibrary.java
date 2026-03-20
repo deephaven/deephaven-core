@@ -7,8 +7,6 @@ import com.github.f4b6a3.uuid.UuidCreator;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentSkipListMap;
-import java.util.concurrent.ConcurrentSkipListSet;
-import java.util.stream.Collectors;
 
 public class QueryLibrary {
     private static final QueryLibraryImports IMPORTS_INSTANCE = QueryLibraryImports.copyFromServiceLoader();
@@ -28,8 +26,8 @@ public class QueryLibrary {
     private String versionString;
 
     private final Map<String, Package> packageImports;
-    private final Set<String> classImports;
-    private final Set<String> staticImports;
+    private final Map<String, Class<?>> classImports;
+    private final Map<String, Class<?>> staticImports;
 
     /** package-private constructor for {@link io.deephaven.engine.context.PoisonedQueryLibrary} */
     QueryLibrary() {
@@ -43,37 +41,25 @@ public class QueryLibrary {
         for (Package p : imports.packages()) {
             packageImports.put(p.getName(), p);
         }
-        classImports = new ConcurrentSkipListSet<>();
+        classImports = new ConcurrentSkipListMap<>();
         for (Class<?> c : imports.classes()) {
-            classImports.add(c.getName());
+            classImports.put(c.getCanonicalName(), c);
         }
-        staticImports = new ConcurrentSkipListSet<>();
+        staticImports = new ConcurrentSkipListMap<>();
         for (Class<?> c : imports.statics()) {
-            staticImports.add(c.getName());
+            staticImports.put(c.getCanonicalName(), c);
         }
         updateVersionString();
     }
 
-    private Class<?> load(String className) {
-        try {
-            return Class.forName(className, false, Thread.currentThread().getContextClassLoader());
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException("Failed to load class " + className, e);
-        }
-    }
-
     @Deprecated
     public Collection<Class<?>> getClassImports() {
-        return classImports.stream()
-                .map(this::load)
-                .collect(Collectors.toUnmodifiableList());
+        return Collections.unmodifiableCollection(classImports.values());
     }
 
     @Deprecated
     public Collection<Class<?>> getStaticImports() {
-        return staticImports.stream()
-                .map(this::load)
-                .collect(Collectors.toUnmodifiableList());
+        return Collections.unmodifiableCollection(staticImports.values());
     }
 
     @Deprecated
@@ -89,26 +75,28 @@ public class QueryLibrary {
     }
 
     public void importClass(Class<?> aClass) {
-        if (classImports.add(aClass.getCanonicalName())) {
-            updateVersionString();
-        } else {
-            //TODO consider weakrefs in a map, so we can see if the class is still loaded and avoid hitting this
+        final Class<?> previous = classImports.put(aClass.getName(), aClass);
+        if (aClass != previous) {
             updateVersionString();
         }
     }
 
     public void importStatic(Class<?> aClass) {
-        if (staticImports.add(aClass.getCanonicalName())) {
-            updateVersionString();
-        } else {
-            //TODO consider weakrefs in a map, so we can see if the class is still loaded and avoid hitting this
+        final Class<?> previous = staticImports.put(aClass.getCanonicalName(), aClass);
+        if (aClass != previous) {
             updateVersionString();
         }
     }
 
-    /**
-     * Builds a collection of imports and loads (but doesn't initialize) each class to ensure they are on the classpath.
-     */
+    private boolean load(String className) {
+        try {
+            Class.forName(className, false, Thread.currentThread().getContextClassLoader());
+            return true;
+        } catch (ClassNotFoundException e) {
+            return false;
+        }
+    }
+
     public Collection<String> getImportStrings() {
         final List<String> imports = new ArrayList<>();
 
@@ -116,17 +104,17 @@ public class QueryLibrary {
         for (final Package packageImport : packageImports.values()) {
             imports.add("import " + packageImport.getName() + ".*;");
         }
-        for (final String classImport : classImports) {
-            Class<?> c = load(classImport);
-            if (c.getDeclaringClass() != null) {
-                imports.add("import static " + classImport + ";");
-            } else if (!packageImports.containsKey(classImport.substring(0, classImport.lastIndexOf('.')))) {
-                imports.add("import " + classImport + ";");
+        for (final Class<?> classImport : classImports.values()) {
+            if (classImport.getDeclaringClass() != null && load(classImport.getCanonicalName())) {
+                imports.add("import static " + classImport.getCanonicalName() + ";");
+            } else if (!packageImports.containsKey(classImport.getPackage().getName()) && load(classImport.getName())) {
+                imports.add("import " + classImport.getCanonicalName() + ";");
             }
         }
-        for (final String staticImport : staticImports) {
-            load(staticImport);
-            imports.add("import static " + staticImport + ".*;");
+        for (final Class<?> staticImport : staticImports.values()) {
+            if (load(staticImport.getCanonicalName())) {
+                imports.add("import static " + staticImport.getCanonicalName() + ".*;");
+            }
         }
         return imports;
     }
