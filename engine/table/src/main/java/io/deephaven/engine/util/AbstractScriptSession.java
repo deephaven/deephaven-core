@@ -69,7 +69,8 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
     protected final File classCacheDirectory;
     private final ScriptSessionQueryScope queryScope;
 
-    protected final ExecutionContext executionContext;
+    // DH-20578: Not final so it can be updated with fresh QueryCompiler when remote sources are detected
+    protected ExecutionContext executionContext;
 
     private S lastSnapshot;
 
@@ -95,9 +96,26 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
         this.classCacheDirectory = classCacheDirectory;
 
         queryScope = new ScriptSessionQueryScope();
+
+        executionContext = createExecutionContext(updateGraph, operationInitializer, parentClassLoader);
+    }
+
+    /**
+     * DH-20578: Creates an ExecutionContext with a QueryCompiler based on the provided ClassLoader. This allows
+     * updating the ExecutionContext when fresh ClassLoaders are needed (e.g., for remote file sources).
+     *
+     * @param updateGraph the update graph for the context
+     * @param operationInitializer the operation initializer for the context
+     * @param parentClassLoader the ClassLoader to use for creating the QueryCompiler
+     * @return a new ExecutionContext with a QueryCompiler based on the provided ClassLoader
+     */
+    protected ExecutionContext createExecutionContext(
+            final UpdateGraph updateGraph,
+            final OperationInitializer operationInitializer,
+            final ClassLoader parentClassLoader) {
         final QueryCompiler compilerContext = QueryCompilerImpl.create(classCacheDirectory, parentClassLoader);
 
-        executionContext = ExecutionContext.newBuilder()
+        return ExecutionContext.newBuilder()
                 .markSystemic()
                 .newQueryLibrary()
                 .setQueryScope(queryScope)
