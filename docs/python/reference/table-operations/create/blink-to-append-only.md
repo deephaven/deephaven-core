@@ -44,4 +44,4 @@ append_only_result = blink_to_append_only(tt1)
 ## Related Documentation
 
 - [`time_table`](./timeTable.md)
-- [Pydoc](https://deephaven.io/core/pydoc/code/deephaven.stream.html#deephaven.stream.blink_to_append_only
+- [Pydoc](https://deephaven.io/core/pydoc/code/deephaven.stream.html#deephaven.stream.blink_to_append_only)
