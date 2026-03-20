@@ -97,7 +97,7 @@ TableHandleImpl::~TableHandleImpl() {
     managerImpl_->Server()->Release(std::move(ticket_));
   } catch (...) {
     auto what = GetWhat(std::current_exception());
-    gpr_log(GPR_INFO, "TableHandleImpl destructor is ignoring thrown exception: %s", what.c_str());
+    LOG(INFO) << "TableHandleImpl destructor is ignoring thrown exception: " << what;
   }
 }
 
