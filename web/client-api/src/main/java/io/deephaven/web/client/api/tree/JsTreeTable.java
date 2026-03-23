@@ -114,16 +114,16 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
     /**
      * Compute the action value for an expand-to-depth directive.
      *
-     * @param depth The number of levels to expand (must be &gt;= 2 and &lt;= 63)
+     * @param depth The number of levels to expand (must be &gt;= 1 and &lt;= 64)
      * @return The action value encoding the expand-to-depth action
      */
     private static double expandToDepthAction(int depth) {
-        if (depth < 2 || depth > 127 - ACTION_EXPAND_TO_DEPTH_BASE) {
+        if (depth < 1 || depth > 127 - ACTION_EXPAND_TO_DEPTH_BASE + 1) {
             throw new IllegalArgumentException(
-                    "Expand-to-depth must be between 2 and "
-                            + (int) (127 - ACTION_EXPAND_TO_DEPTH_BASE) + ", got " + depth);
+                    "Expand-to-depth must be between 1 and "
+                            + (int) (127 - ACTION_EXPAND_TO_DEPTH_BASE + 1) + ", got " + depth);
         }
-        return ACTION_EXPAND_TO_DEPTH_BASE + depth;
+        return ACTION_EXPAND_TO_DEPTH_BASE + depth - 1;
     }
 
     /**
@@ -1005,10 +1005,10 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
      * {@link #expand(RowReferenceUnion, Boolean) expand} (one level). A depth of 2 or more expands that many levels of
      * descendants below the target node, unless they have their own directives.
      *
-     * @param depth The number of levels to expand (must be &gt;= 1 and &lt;= 63)
      * @param row The row to expand - either the absolute row index or the row object.
+     * @param depth The number of levels to expand (must be &gt;= 1 and &lt;= 64)
      */
-    public void expandToDepth(int depth, RowReferenceUnion row) {
+    public void expandToDepth(RowReferenceUnion row, int depth) {
         if (depth < 1) {
             throw new IllegalArgumentException("depth must be >= 1, got " + depth);
         }

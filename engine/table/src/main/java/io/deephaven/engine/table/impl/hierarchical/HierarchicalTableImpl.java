@@ -723,7 +723,7 @@ public abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable
 
         static int lookupDepth(final byte wireValue) {
             if (wireValue >= KEY_TABLE_ACTION_EXPAND_TO_DEPTH_BASE) {
-                return wireValue - KEY_TABLE_ACTION_EXPAND_TO_DEPTH_BASE;
+                return wireValue - KEY_TABLE_ACTION_EXPAND_TO_DEPTH_BASE + 1;
             }
             return 0;
         }

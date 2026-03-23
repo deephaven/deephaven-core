@@ -123,14 +123,16 @@ public interface HierarchicalTable<IFACE_TYPE extends HierarchicalTable<IFACE_TY
     byte KEY_TABLE_ACTION_EXPAND_ALL = 0b011;
     /**
      * Key table action value specifying that a node should be contracted. The node must descend from a node that was
-     * {@link #KEY_TABLE_ACTION_EXPAND_ALL expanded with its descendants}, or this key table row will have no effect.
+     * {@link #KEY_TABLE_ACTION_EXPAND_ALL expanded with its descendants} or {@link #expandToDepthAction(int) expanded
+     * to a specific depth}, or this key table row will have no effect.
      */
     byte KEY_TABLE_ACTION_CONTRACT = 0b100;
 
     /**
      * Base value for expand-to-depth actions. The actual depth is encoded as
-     * {@code KEY_TABLE_ACTION_EXPAND_TO_DEPTH_BASE + depth}, where {@code depth >= 2}. A depth of 1 is equivalent to
-     * {@link #KEY_TABLE_ACTION_EXPAND}, and an unlimited depth is equivalent to {@link #KEY_TABLE_ACTION_EXPAND_ALL}.
+     * {@code KEY_TABLE_ACTION_EXPAND_TO_DEPTH_BASE + (depth - 1)}, where {@code depth >= 1}. A depth of 1 is equivalent
+     * to {@link #KEY_TABLE_ACTION_EXPAND}, and an unlimited depth is equivalent to
+     * {@link #KEY_TABLE_ACTION_EXPAND_ALL}.
      * <p>
      * The node will be expanded, and its descendants will be expanded up to {@code depth} levels below the directive
      * node, unless they are included in the key table with a {@link #KEY_TABLE_ACTION_CONTRACT contraction} or their
@@ -141,17 +143,17 @@ public interface HierarchicalTable<IFACE_TYPE extends HierarchicalTable<IFACE_TY
     /**
      * Create a key table action byte value for expanding a node to a specific depth.
      *
-     * @param depth The number of levels to expand below the directive node (must be &gt;= 2 and &lt;= 63)
+     * @param depth The number of levels to expand below the directive node (must be &gt;= 1 and &lt;= 64)
      * @return The action byte value encoding the expand-to-depth action
      * @throws IllegalArgumentException if depth is out of the valid range
      */
     static byte expandToDepthAction(final int depth) {
-        if (depth < 2 || depth > Byte.MAX_VALUE - KEY_TABLE_ACTION_EXPAND_TO_DEPTH_BASE) {
+        if (depth < 1 || depth > Byte.MAX_VALUE - KEY_TABLE_ACTION_EXPAND_TO_DEPTH_BASE + 1) {
             throw new IllegalArgumentException(
-                    "Expand-to-depth must be between 2 and "
-                            + (Byte.MAX_VALUE - KEY_TABLE_ACTION_EXPAND_TO_DEPTH_BASE) + ", got " + depth);
+                    "Expand-to-depth must be between 1 and "
+                            + (Byte.MAX_VALUE - KEY_TABLE_ACTION_EXPAND_TO_DEPTH_BASE + 1) + ", got " + depth);
         }
-        return (byte) (KEY_TABLE_ACTION_EXPAND_TO_DEPTH_BASE + depth);
+        return (byte) (KEY_TABLE_ACTION_EXPAND_TO_DEPTH_BASE + depth - 1);
     }
 
     /**
