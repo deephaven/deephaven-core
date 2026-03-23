@@ -36,7 +36,8 @@ class TypeHelper {
     static Stream<GenericType<?>> genericTypes() {
         return Stream.of(
                 BoxedType.instances(),
-                Stream.of(StringType.of(), InstantType.of(), LocalTimeType.of(), LocalDateType.of(), DurationType.of(), PeriodType.of()),
+                Stream.of(StringType.of(), InstantType.of(), LocalTimeType.of(), LocalDateType.of(), DurationType.of(),
+                        PeriodType.of()),
                 primitiveVectorTypes())
                 .flatMap(Function.identity());
     }
