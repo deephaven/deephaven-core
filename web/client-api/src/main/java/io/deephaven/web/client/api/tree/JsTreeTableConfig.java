@@ -4,7 +4,6 @@
 package io.deephaven.web.client.api.tree;
 
 import jsinterop.annotations.JsIgnore;
-import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsType;
 import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
@@ -29,7 +28,6 @@ public class JsTreeTableConfig {
     /**
      * Optional parameter indicating if items with an invalid parent ID should be promoted to root. Defaults to `false`.
      */
-    @JsNullable
     public boolean promoteOrphansToRoot = false;
 
     public JsTreeTableConfig() {}
