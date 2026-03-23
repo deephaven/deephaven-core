@@ -121,7 +121,7 @@ public class QueryLibrary {
             imports.add("import " + packageImport.getName() + ".*;");
         }
         for (final Class<?> classImport : classImports.values()) {
-            if (classImport.getDeclaringClass() != null && canLoad(classImport.getCanonicalName())) {
+            if (classImport.getDeclaringClass() != null && canLoad(classImport.getName())) {
                 imports.add("import static " + classImport.getCanonicalName() + ";");
             } else if (!packageImports.containsKey(classImport.getPackage().getName())
                     && canLoad(classImport.getName())) {
