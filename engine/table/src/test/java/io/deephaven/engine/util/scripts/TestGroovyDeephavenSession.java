@@ -652,9 +652,7 @@ public class TestGroovyDeephavenSession {
                 "        return s.contains('h')\n" +
                 "    }\n" +
                 "}");
-        if (c.error != null) {
-            throw c.error;
-        }
+        c.throwIfError();
 
         final ColumnHolder<String> strValues = stringCol("StrValue", "hello", "world");
         final Table source = TableTools.newTable(strValues);
@@ -663,6 +661,51 @@ public class TestGroovyDeephavenSession {
         assertTableEquals(TableTools.newTable(strValues, booleanCol("P", true, false)), updated);
         final Table filtered = source.where("pred.test(StrValue)");
         assertTableEquals(source.head(1), filtered);
+    }
+
+    @Test
+    public void testSessionFQCClassInFormula() {
+        ScriptSession.Changes c = session.evaluateScript("class Foo {}\n" +
+                "t = emptyTable(1).updateView(\"Y = new io.deephaven.dynamic.Foo()\")");
+        c.throwIfError();
+        Table t = session.getQueryScope().readParamValue("t");
+        assertEquals("io.deephaven.dynamic.Foo", ((Table) t).getColumnSource("Y").getType().getName());
+    }
+
+    @Test
+    public void testClasspathFQClassInFormula() {
+        ScriptSession.Changes c = session.evaluateScript(
+                "t = emptyTable(1).updateView(\"Y = new io.deephaven.engine.util.scripts.OtherModel()\")");
+        c.throwIfError();
+
+        Table t = session.getQueryScope().readParamValue("t");
+        assertEquals("io.deephaven.engine.util.scripts.OtherModel",
+                ((Table) t).getColumnSource("Y").getType().getName());
+    }
+
+    // This test is here rather than in engine-table because we need to have bytecode available in the classpath
+    // in order for the query compiler to reference it
+    @Test
+    public void testJoinOfSameNamedTypeFromDifferentClassloader() {
+        ScriptSession.Changes c = session.evaluateScript(
+                "class Foo {}\n" +
+                        "t1 = emptyTable(1).updateView(\"Y = new io.deephaven.dynamic.Foo()\")\n");
+        c.throwIfError();
+
+        c = session.evaluateScript(
+                "class Foo {}\n" +
+                        "t2 = emptyTable(1).updateView(\"Y = new io.deephaven.dynamic.Foo()\")\n");
+        c.throwIfError();
+
+        Table t1 = session.getQueryScope().readParamValue("t1");
+        Table t2 = session.getQueryScope().readParamValue("t2");
+        try {
+            Table joined = t1.join(t2, "Y=Y");
+            fail("Expected join to fail");
+        } catch (Exception e) {
+            assertTrue(e.getMessage(), e.getMessage().contains("join"));
+            assertTrue(e.getMessage(), e.getMessage().contains("ClassLoader"));
+        }
     }
 }
 
