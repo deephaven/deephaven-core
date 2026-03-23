@@ -7,6 +7,7 @@ import com.github.f4b6a3.uuid.UuidCreator;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.stream.Collectors;
 
 public class QueryLibrary {
     private static final QueryLibraryImports IMPORTS_INSTANCE = QueryLibraryImports.copyFromServiceLoader();
@@ -54,12 +55,24 @@ public class QueryLibrary {
 
     @Deprecated
     public Collection<Class<?>> getClassImports() {
-        return Collections.unmodifiableCollection(classImports.values());
+        return classImports
+                .values()
+                .stream()
+                .map(Class::getCanonicalName)
+                .map(this::tryLoad)
+                .flatMap(Optional::stream)
+                .collect(Collectors.toUnmodifiableList());
     }
 
     @Deprecated
     public Collection<Class<?>> getStaticImports() {
-        return Collections.unmodifiableCollection(staticImports.values());
+        return staticImports
+                .values()
+                .stream()
+                .map(Class::getCanonicalName)
+                .map(this::tryLoad)
+                .flatMap(Optional::stream)
+                .collect(Collectors.toUnmodifiableList());
     }
 
     @Deprecated
@@ -88,13 +101,16 @@ public class QueryLibrary {
         }
     }
 
-    private boolean load(String className) {
+    private Optional<Class<?>> tryLoad(String className) {
         try {
-            Class.forName(className, false, Thread.currentThread().getContextClassLoader());
-            return true;
+            return Optional.of(Class.forName(className, false, Thread.currentThread().getContextClassLoader()));
         } catch (ClassNotFoundException e) {
-            return false;
+            return Optional.empty();
         }
+    }
+
+    private boolean canLoad(String className) {
+        return tryLoad(className).isPresent();
     }
 
     public Collection<String> getImportStrings() {
@@ -105,14 +121,14 @@ public class QueryLibrary {
             imports.add("import " + packageImport.getName() + ".*;");
         }
         for (final Class<?> classImport : classImports.values()) {
-            if (classImport.getDeclaringClass() != null && load(classImport.getCanonicalName())) {
+            if (classImport.getDeclaringClass() != null && canLoad(classImport.getCanonicalName())) {
                 imports.add("import static " + classImport.getCanonicalName() + ";");
-            } else if (!packageImports.containsKey(classImport.getPackage().getName()) && load(classImport.getName())) {
+            } else if (!packageImports.containsKey(classImport.getPackage().getName()) && canLoad(classImport.getName())) {
                 imports.add("import " + classImport.getCanonicalName() + ";");
             }
         }
         for (final Class<?> staticImport : staticImports.values()) {
-            if (load(staticImport.getCanonicalName())) {
+            if (canLoad(staticImport.getCanonicalName())) {
                 imports.add("import static " + staticImport.getCanonicalName() + ".*;");
             }
         }
