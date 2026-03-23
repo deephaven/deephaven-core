@@ -109,6 +109,22 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
     private static final double ACTION_EXPAND = 0b001;
     private static final double ACTION_EXPAND_WITH_DESCENDENTS = 0b011;
     private static final double ACTION_COLLAPSE = 0b100;
+    private static final double ACTION_EXPAND_TO_DEPTH_BASE = 0b0100_0000;
+
+    /**
+     * Compute the action value for an expand-to-depth directive.
+     *
+     * @param depth The number of levels to expand (must be &gt;= 2 and &lt;= 63)
+     * @return The action value encoding the expand-to-depth action
+     */
+    private static double expandToDepthAction(int depth) {
+        if (depth < 2 || depth > 127 - ACTION_EXPAND_TO_DEPTH_BASE) {
+            throw new IllegalArgumentException(
+                    "Expand-to-depth must be between 2 and "
+                            + (int) (127 - ACTION_EXPAND_TO_DEPTH_BASE) + ", got " + depth);
+        }
+        return ACTION_EXPAND_TO_DEPTH_BASE + depth;
+    }
 
     /**
      * Ordered series of steps that must be performed when changes are made to the table. When any change is applied,
@@ -884,6 +900,21 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
         replaceKeyTable();
     }
 
+    private TreeSubscription.TreeRowImpl resolveRow(RowReferenceUnion row) {
+        if (row.isNumber()) {
+            return (TreeSubscription.TreeRowImpl) currentViewportData.getRows()
+                    .getAt((int) (row.asNumber() - currentViewportData.getOffset()));
+        } else if (row.isTreeRow()) {
+            return (TreeSubscription.TreeRowImpl) row.asTreeRow();
+        }
+        throw new IllegalArgumentException("row parameter must be an index or a row");
+    }
+
+    private void setRowAction(RowReferenceUnion row, double action) {
+        resolveRow(row).appendKeyData(keyTableData, action);
+        replaceKeyTable();
+    }
+
     /**
      * Expands the given node, so that its children are visible when they are in the viewport. The parameter can be the
      * row index, or the row object itself. The second parameter is a boolean value, false by default, specifying if the
@@ -958,19 +989,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
         } else {
             action = ACTION_EXPAND;
         }
-
-        final TreeSubscription.TreeRowImpl r;
-        if (row.isNumber()) {
-            r = (TreeSubscription.TreeRowImpl) currentViewportData.getRows()
-                    .getAt((int) (row.asNumber() - currentViewportData.getOffset()));
-        } else if (row.isTreeRow()) {
-            r = (TreeSubscription.TreeRowImpl) row.asTreeRow();
-        } else {
-            throw new IllegalArgumentException("row parameter must be an index or a row");
-        }
-
-        r.appendKeyData(keyTableData, action);
-        replaceKeyTable();
+        setRowAction(row, action);
     }
 
     public void expandAll() {
@@ -982,23 +1001,29 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
     }
 
     /**
+     * Expands the given node and its descendants to the specified depth. A depth of 1 is equivalent to a regular
+     * {@link #expand(RowReferenceUnion, Boolean) expand} (one level). A depth of 2 or more expands that many levels of
+     * descendants below the target node, unless they have their own directives.
+     *
+     * @param depth The number of levels to expand (must be &gt;= 1 and &lt;= 63)
+     * @param row The row to expand - either the absolute row index or the row object.
+     */
+    public void expandToDepth(int depth, RowReferenceUnion row) {
+        if (depth < 1) {
+            throw new IllegalArgumentException("depth must be >= 1, got " + depth);
+        }
+        final double action = depth == 1 ? ACTION_EXPAND : expandToDepthAction(depth);
+        setRowAction(row, action);
+    }
+
+    /**
      * Tests if the specified row is expanded.
      *
      * @param row The row to test - either the absolute row index or the row object.
      * @return {@code true} if the row is expanded, {@code false} otherwise.
      */
     public boolean isExpanded(RowReferenceUnion row) {
-        final TreeSubscription.TreeRowImpl r;
-        if (row.isNumber()) {
-            r = (TreeSubscription.TreeRowImpl) currentViewportData.getRows()
-                    .getAt((int) (row.asNumber() - currentViewportData.getOffset()));
-        } else if (row.isTreeRow()) {
-            r = (TreeSubscription.TreeRowImpl) row.asTreeRow();
-        } else {
-            throw new IllegalArgumentException("row parameter must be an index or a row");
-        }
-
-        return r.isExpanded();
+        return resolveRow(row).isExpanded();
     }
 
     // JsTable-like methods
