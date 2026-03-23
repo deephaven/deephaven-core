@@ -1276,7 +1276,8 @@ public class BarrageUtil {
                         return NANO_DURATION_TYPE;
                     }
                     if (type == Period.class) {
-                        return new ArrowType.Interval(IntervalUnit.YEAR_MONTH);
+                        // Only MONTH_DAY_NANO can capture a java.time.Period
+                        return new ArrowType.Interval(IntervalUnit.MONTH_DAY_NANO);
                     }
                     if (type == PeriodDuration.class) {
                         return new ArrowType.Interval(IntervalUnit.MONTH_DAY_NANO);

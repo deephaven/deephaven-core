@@ -178,6 +178,24 @@ public interface Type<T> {
     }
 
     /**
+     * Creates the duration type.
+     *
+     * @return the duration type
+     */
+    static DurationType durationType() {
+        return DurationType.of();
+    }
+
+    /**
+     * Creates the period type.
+     *
+     * @return the period type
+     */
+    static PeriodType periodType() {
+        return PeriodType.of();
+    }
+
+    /**
      * Creates a custom type. Equivalent to {@code CustomType.of(clazz)}.
      *
      * @param clazz the class

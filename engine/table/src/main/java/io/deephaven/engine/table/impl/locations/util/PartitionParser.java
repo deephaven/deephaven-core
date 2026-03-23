@@ -14,10 +14,12 @@ import io.deephaven.qst.type.BoxedLongType;
 import io.deephaven.qst.type.BoxedShortType;
 import io.deephaven.qst.type.BoxedType;
 import io.deephaven.qst.type.CustomType;
+import io.deephaven.qst.type.DurationType;
 import io.deephaven.qst.type.GenericType;
 import io.deephaven.qst.type.InstantType;
 import io.deephaven.qst.type.LocalDateType;
 import io.deephaven.qst.type.LocalTimeType;
+import io.deephaven.qst.type.PeriodType;
 import io.deephaven.qst.type.PrimitiveType;
 import io.deephaven.qst.type.StringType;
 import io.deephaven.qst.type.Type;
@@ -299,6 +301,18 @@ public enum PartitionParser {
         @Override
         public PartitionParser visit(@NotNull final LocalDateType localDateType) {
             return ForLocalDate;
+        }
+
+        @Override
+        public PartitionParser visit(@NotNull DurationType durationType) {
+            // Not supported; does not make sense as a partition
+            return null;
+        }
+
+        @Override
+        public PartitionParser visit(@NotNull PeriodType periodType) {
+            // Not supported; does not make sense as a partition
+            return null;
         }
 
         @Override

@@ -11,22 +11,25 @@ import io.deephaven.qst.type.ByteType;
 import io.deephaven.qst.type.CharType;
 import io.deephaven.qst.type.CustomType;
 import io.deephaven.qst.type.DoubleType;
+import io.deephaven.qst.type.DurationType;
 import io.deephaven.qst.type.FloatType;
 import io.deephaven.qst.type.GenericType;
 import io.deephaven.qst.type.GenericVectorType;
 import io.deephaven.qst.type.InstantType;
 import io.deephaven.qst.type.IntType;
-import io.deephaven.qst.type.LocalTimeType;
 import io.deephaven.qst.type.LocalDateType;
+import io.deephaven.qst.type.LocalTimeType;
 import io.deephaven.qst.type.LongType;
 import io.deephaven.qst.type.NativeArrayType;
+import io.deephaven.qst.type.PeriodType;
 import io.deephaven.qst.type.PrimitiveType;
 import io.deephaven.qst.type.PrimitiveVectorType;
 import io.deephaven.qst.type.ShortType;
 import io.deephaven.qst.type.StringType;
 import io.deephaven.qst.type.Type;
-import org.apache.arrow.vector.types.TimeUnit;
 import org.apache.arrow.vector.types.DateUnit;
+import org.apache.arrow.vector.types.IntervalUnit;
+import org.apache.arrow.vector.types.TimeUnit;
 import org.apache.arrow.vector.types.Types.MinorType;
 import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.Field;
@@ -101,6 +104,14 @@ public class FieldAdapter implements Type.Visitor<Field>, PrimitiveType.Visitor<
 
     public static Field localDateField(String name) {
         return field(name, new ArrowType.Date(DateUnit.DAY), "java.time.LocalDate");
+    }
+
+    public static Field durationField(String name) {
+        return field(name, new ArrowType.Duration(TimeUnit.NANOSECOND), "java.time.Duration");
+    }
+
+    public static Field periodField(String name) {
+        return field(name, new ArrowType.Interval(IntervalUnit.MONTH_DAY_NANO), "java.time.Period");
     }
 
     private static Field field(String name, ArrowType arrowType, String deephavenType) {
@@ -198,6 +209,16 @@ public class FieldAdapter implements Type.Visitor<Field>, PrimitiveType.Visitor<
     @Override
     public Field visit(LocalDateType localDateType) {
         return localDateField(name);
+    }
+
+    @Override
+    public Field visit(DurationType durationType) {
+        return durationField(name);
+    }
+
+    @Override
+    public Field visit(PeriodType periodType) {
+        return periodField(name);
     }
 
     @Override
@@ -306,6 +327,16 @@ public class FieldAdapter implements Type.Visitor<Field>, PrimitiveType.Visitor<
         @Override
         public Field visit(LocalDateType localDateType) {
             return field(name, MinorType.LIST.getType(), "java.time.LocalDate[]");
+        }
+
+        @Override
+        public Field visit(DurationType durationType) {
+            return field(name, MinorType.LIST.getType(), "java.time.Duration[]");
+        }
+
+        @Override
+        public Field visit(PeriodType periodType) {
+            return field(name, MinorType.LIST.getType(), "java.time.Period[]");
         }
 
         @Override

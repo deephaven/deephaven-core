@@ -7,9 +7,11 @@ import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.InvocationTargetException;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalTime;
 import java.time.LocalDate;
+import java.time.Period;
 import java.util.List;
 
 import static io.deephaven.qst.type.Type.booleanType;
@@ -24,6 +26,8 @@ import static io.deephaven.qst.type.Type.knownTypes;
 import static io.deephaven.qst.type.Type.localTimeType;
 import static io.deephaven.qst.type.Type.localDateType;
 import static io.deephaven.qst.type.Type.longType;
+import static io.deephaven.qst.type.Type.durationType;
+import static io.deephaven.qst.type.Type.periodType;
 import static io.deephaven.qst.type.Type.ofCustom;
 import static io.deephaven.qst.type.Type.shortType;
 import static io.deephaven.qst.type.Type.stringType;
@@ -36,8 +40,8 @@ public class TypeTest {
     void numberOfStaticTypes() {
         // A reminder that when the number of static types increases, we should
         // add tests in this class for it specifically
-        assertThat(knownTypes()).hasSize(20);
-        assertThat(knownTypes().stream().distinct()).hasSize(20);
+        assertThat(knownTypes()).hasSize(22);
+        assertThat(knownTypes().stream().distinct()).hasSize(22);
 
         assertThat(PrimitiveType.instances()).hasSize(8);
         assertThat(PrimitiveType.instances().distinct()).hasSize(8);
@@ -112,6 +116,20 @@ public class TypeTest {
         assertThat(find(LocalDate.class)).isEqualTo(localDateType());
         assertThat(find(LocalDate[].class)).isEqualTo(localDateType().arrayType());
         assertThat(find(LocalDate[].class, LocalDate.class)).isEqualTo(localDateType().arrayType());
+    }
+
+    @Test
+    void findDuration() {
+        assertThat(find(Duration.class)).isEqualTo(durationType());
+        assertThat(find(Duration[].class)).isEqualTo(durationType().arrayType());
+        assertThat(find(Duration[].class, Duration.class)).isEqualTo(durationType().arrayType());
+    }
+
+    @Test
+    void findPeriod() {
+        assertThat(find(Period.class)).isEqualTo(periodType());
+        assertThat(find(Period[].class)).isEqualTo(periodType().arrayType());
+        assertThat(find(Period[].class, Period.class)).isEqualTo(periodType().arrayType());
     }
 
     @Test

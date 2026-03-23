@@ -8,9 +8,11 @@ import io.deephaven.engine.table.impl.DefaultGetContext;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.qst.type.BoxedType;
+import io.deephaven.qst.type.DurationType;
 import io.deephaven.qst.type.GenericType;
 import io.deephaven.qst.type.LocalDateType;
 import io.deephaven.qst.type.LocalTimeType;
+import io.deephaven.qst.type.PeriodType;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
@@ -622,6 +624,16 @@ public abstract class ArrayBackedColumnSource<T>
                 @Override
                 public WritableColumnSource<?> visit(LocalDateType localDateType) {
                     return simple(localDateType);
+                }
+
+                @Override
+                public WritableColumnSource<?> visit(DurationType durationType) {
+                    return simple(durationType);
+                }
+
+                @Override
+                public WritableColumnSource<?> visit(PeriodType periodType) {
+                    return simple(periodType);
                 }
 
                 @Override

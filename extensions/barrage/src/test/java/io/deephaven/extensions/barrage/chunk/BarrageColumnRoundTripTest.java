@@ -52,9 +52,11 @@ import java.io.ByteArrayInputStream;
 import java.io.DataInput;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.Period;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -645,6 +647,18 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
                 new LocalTimeIdentityValidator());
     }
 
+    public void testDurationSerialization() throws IOException {
+        testRoundTripSerialization(SpecialMode.NONE, OPT_DEFAULT, Duration.class,
+                BarrageColumnRoundTripTest::initDurationChunk,
+                new DurationIdentityValidator());
+    }
+
+    public void testPeriodSerialization() throws IOException {
+        testRoundTripSerialization(SpecialMode.NONE, OPT_DEFAULT, Period.class,
+                BarrageColumnRoundTripTest::initPeriodChunk,
+                new PeriodIdentityValidator());
+    }
+
     private static class Unique {
         final int value;
 
@@ -754,6 +768,34 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
                 chunk.set(i, null);
             } else {
                 chunk.set(i, LocalTime.ofNanoOfDay(i * 1700000L));
+            }
+        }
+    }
+
+    private static void initDurationChunk(final WritableChunk<Values> untypedChunk) {
+        final Random random = new Random(0);
+        final WritableObjectChunk<Duration, Values> chunk = untypedChunk.asWritableObjectChunk();
+
+        for (int i = 0; i < chunk.size(); ++i) {
+            final int j = random.nextInt(20) - 1;
+            if (j < 0) {
+                chunk.set(i, null);
+            } else {
+                chunk.set(i, Duration.ofSeconds(i * 3600L, i * 123456789L % 1_000_000_000));
+            }
+        }
+    }
+
+    private static void initPeriodChunk(final WritableChunk<Values> untypedChunk) {
+        final Random random = new Random(0);
+        final WritableObjectChunk<Period, Values> chunk = untypedChunk.asWritableObjectChunk();
+
+        for (int i = 0; i < chunk.size(); ++i) {
+            final int j = random.nextInt(20) - 1;
+            if (j < 0) {
+                chunk.set(i, null);
+            } else {
+                chunk.set(i, Period.of(i, i % 12, i % 28));
             }
         }
     }
@@ -930,6 +972,54 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
                     Assert.eqNull(computed.get(offset + off.getAndIncrement()), "computed");
                 } else {
                     Assert.equals(lt, "lt", computed.get(offset + off.getAndIncrement()), "computed");
+                }
+            });
+        }
+    }
+
+    private static final class DurationIdentityValidator implements Validator {
+        @Override
+        public void assertExpected(
+                final WritableChunk<Values> untypedOriginal,
+                final WritableChunk<Values> unTypedComputed,
+                @Nullable RowSequence subset,
+                final int offset) {
+            final WritableObjectChunk<Duration, Values> original = untypedOriginal.asWritableObjectChunk();
+            final WritableObjectChunk<Duration, Values> computed = unTypedComputed.asWritableObjectChunk();
+            if (subset == null) {
+                subset = RowSetFactory.flat(original.size());
+            }
+            final MutableInt off = new MutableInt();
+            subset.forAllRowKeys(i -> {
+                final Duration d = original.get((int) i);
+                if (d == null) {
+                    Assert.eqNull(computed.get(offset + off.getAndIncrement()), "computed");
+                } else {
+                    Assert.equals(d, "d", computed.get(offset + off.getAndIncrement()), "computed");
+                }
+            });
+        }
+    }
+
+    private static final class PeriodIdentityValidator implements Validator {
+        @Override
+        public void assertExpected(
+                final WritableChunk<Values> untypedOriginal,
+                final WritableChunk<Values> unTypedComputed,
+                @Nullable RowSequence subset,
+                final int offset) {
+            final WritableObjectChunk<Period, Values> original = untypedOriginal.asWritableObjectChunk();
+            final WritableObjectChunk<Period, Values> computed = unTypedComputed.asWritableObjectChunk();
+            if (subset == null) {
+                subset = RowSetFactory.flat(original.size());
+            }
+            final MutableInt off = new MutableInt();
+            subset.forAllRowKeys(i -> {
+                final Period p = original.get((int) i);
+                if (p == null) {
+                    Assert.eqNull(computed.get(offset + off.getAndIncrement()), "computed");
+                } else {
+                    Assert.equals(p, "p", computed.get(offset + off.getAndIncrement()), "computed");
                 }
             });
         }

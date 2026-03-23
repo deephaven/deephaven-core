@@ -12,6 +12,8 @@ package io.deephaven.qst.type;
  * @see InstantType
  * @see LocalTimeType
  * @see LocalDateType
+ * @see DurationType
+ * @see PeriodType
  * @see ArrayType
  * @see CustomType
  */
@@ -31,6 +33,10 @@ public interface GenericType<T> extends Type<T> {
         R visit(LocalTimeType localTimeType);
 
         R visit(LocalDateType localDateType);
+
+        R visit(DurationType durationType);
+
+        R visit(PeriodType periodType);
 
         R visit(ArrayType<?, ?> arrayType);
 

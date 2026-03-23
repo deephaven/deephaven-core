@@ -23,9 +23,11 @@ import org.junit.Test;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.Period;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -117,6 +119,14 @@ public class BarrageSnapshotTest extends DeephavenApiServerTestBase {
                         LocalDate.of(2025, 1, 1),
                         null,
                         LocalDate.of(2025, 12, 31)),
+                col("durationCol",
+                        Duration.ofHours(1),
+                        null,
+                        Duration.ofMinutes(30)),
+                col("periodCol",
+                        Period.ofDays(1),
+                        null,
+                        Period.ofMonths(2)),
                 col("bigIntegerCol",
                         new BigInteger("12345678901234567890"),
                         null,
@@ -173,6 +183,18 @@ public class BarrageSnapshotTest extends DeephavenApiServerTestBase {
                         new LocalDate[] {LocalDate.of(2025, 1, 15)},
                         null,
                         new LocalDate[] {LocalDate.of(2025, 12, 25)}),
+                col("durationArrayCol",
+                        new Duration[] {Duration.ofHours(2)},
+                        null,
+                        new Duration[] {Duration.ofSeconds(45)}),
+                col("periodArrayCol",
+                        new Period[] {Period.ofWeeks(1)},
+                        null,
+                        // Note: a period of 1 year would be converted to 12 months during serialization;
+                        // Arrow does not have a type for years/months/days and java.time.Period stores years and months
+                        // separately.
+                        // See org.apache.arrow.vector.types.IntervalUnit.
+                        new Period[] {Period.ofMonths(12)}),
                 col("bigIntegerArrayCol",
                         new BigInteger[] {new BigInteger("12345678901234567890")},
                         null,

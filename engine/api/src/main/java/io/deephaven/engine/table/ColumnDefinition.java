@@ -14,6 +14,7 @@ import io.deephaven.qst.type.ByteType;
 import io.deephaven.qst.type.CharType;
 import io.deephaven.qst.type.CustomType;
 import io.deephaven.qst.type.DoubleType;
+import io.deephaven.qst.type.DurationType;
 import io.deephaven.qst.type.FloatType;
 import io.deephaven.qst.type.GenericType;
 import io.deephaven.qst.type.GenericVectorType;
@@ -23,6 +24,7 @@ import io.deephaven.qst.type.LocalDateType;
 import io.deephaven.qst.type.LocalTimeType;
 import io.deephaven.qst.type.LongType;
 import io.deephaven.qst.type.NativeArrayType;
+import io.deephaven.qst.type.PeriodType;
 import io.deephaven.qst.type.PrimitiveType;
 import io.deephaven.qst.type.PrimitiveVectorType;
 import io.deephaven.qst.type.ShortType;
@@ -40,9 +42,11 @@ import io.deephaven.vector.Vector;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.Period;
 import java.util.List;
 import java.util.Objects;
 
@@ -112,6 +116,14 @@ public class ColumnDefinition<TYPE> implements LogOutputAppendable {
 
     public static ColumnDefinition<LocalDate> ofLocalDate(@NotNull final String name) {
         return new ColumnDefinition<>(name, LocalDate.class);
+    }
+
+    public static ColumnDefinition<Duration> ofDuration(@NotNull final String name) {
+        return new ColumnDefinition<>(name, Duration.class);
+    }
+
+    public static ColumnDefinition<Period> ofPeriod(@NotNull final String name) {
+        return new ColumnDefinition<>(name, Period.class);
     }
 
     public static ColumnDefinition<?> of(String name, Type<?> type) {
@@ -332,6 +344,16 @@ public class ColumnDefinition<TYPE> implements LogOutputAppendable {
         @Override
         public ColumnDefinition<?> visit(LocalDateType localDateType) {
             return ofLocalDate(name);
+        }
+
+        @Override
+        public ColumnDefinition<?> visit(DurationType durationType) {
+            return ofDuration(name);
+        }
+
+        @Override
+        public ColumnDefinition<?> visit(PeriodType periodType) {
+            return ofPeriod(name);
         }
 
         @Override
