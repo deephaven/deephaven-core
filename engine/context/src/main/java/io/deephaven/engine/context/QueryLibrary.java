@@ -58,7 +58,6 @@ public class QueryLibrary {
         return classImports
                 .values()
                 .stream()
-                .map(Class::getCanonicalName)
                 .map(this::tryLoad)
                 .flatMap(Optional::stream)
                 .collect(Collectors.toUnmodifiableList());
@@ -69,7 +68,6 @@ public class QueryLibrary {
         return staticImports
                 .values()
                 .stream()
-                .map(Class::getCanonicalName)
                 .map(this::tryLoad)
                 .flatMap(Optional::stream)
                 .collect(Collectors.toUnmodifiableList());
@@ -101,16 +99,22 @@ public class QueryLibrary {
         }
     }
 
-    private Optional<Class<?>> tryLoad(String className) {
+    /**
+     * Tries to load the class by name from the current classloader, or else returns empty if it can't be loaded.
+     */
+    private Optional<Class<?>> tryLoad(Class<?> clazz) {
         try {
-            return Optional.of(Class.forName(className, false, Thread.currentThread().getContextClassLoader()));
+            return Optional.of(Class.forName(clazz.getName(), false, Thread.currentThread().getContextClassLoader()));
         } catch (ClassNotFoundException e) {
             return Optional.empty();
         }
     }
 
-    private boolean canLoad(String className) {
-        return tryLoad(className).isPresent();
+    /**
+     * Returns true if the class is available by name from the current classloader.
+     */
+    private boolean canLoad(Class<?> clazz) {
+        return tryLoad(clazz).isPresent();
     }
 
     public Collection<String> getImportStrings() {
@@ -121,15 +125,14 @@ public class QueryLibrary {
             imports.add("import " + packageImport.getName() + ".*;");
         }
         for (final Class<?> classImport : classImports.values()) {
-            if (classImport.getDeclaringClass() != null && canLoad(classImport.getName())) {
+            if (classImport.getDeclaringClass() != null && canLoad(classImport)) {
                 imports.add("import static " + classImport.getCanonicalName() + ";");
-            } else if (!packageImports.containsKey(classImport.getPackage().getName())
-                    && canLoad(classImport.getName())) {
+            } else if (!packageImports.containsKey(classImport.getPackage().getName()) && canLoad(classImport)) {
                 imports.add("import " + classImport.getCanonicalName() + ";");
             }
         }
         for (final Class<?> staticImport : staticImports.values()) {
-            if (canLoad(staticImport.getCanonicalName())) {
+            if (canLoad(staticImport)) {
                 imports.add("import static " + staticImport.getCanonicalName() + ".*;");
             }
         }
