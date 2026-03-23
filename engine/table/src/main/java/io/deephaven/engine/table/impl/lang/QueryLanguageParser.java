@@ -582,12 +582,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             // check whether 'name' is an imported class:
             for (Class<?> classImport : classImports) {
                 if (name.equals(classImport.getSimpleName())) {
-                    // Return a new class with that name - i hate this, but it seems less wrong?
-                    try {
-                        return contextClassLoader.loadClass(classImport.getName());
-                    } catch (ClassNotFoundException e) {
-                        break;
-                    }
+                    return classImport;
                 }
             }
 
@@ -1470,30 +1465,23 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
      */
     @Nullable
     private Class<?> lookupStaticImport(@NotNull final String name) {
-        // build cache just once?
-        return staticImportLookupCache.computeIfAbsent(name, nameForLookup -> {
-            for (final Class<?> staticImportedClass : staticImports) {
-                // re-lookup this class
-
-                // We don't support static imports of individual fields/methods -- have to check among
-                // *all* members of a class.
-                try {
-                    final Field field = staticImportedClass.getField(nameForLookup);
+        if (staticImportLookupCache.isEmpty()) {
+            // Preload the cache on our first hit - our defaults ensure it can never be empty unless not loaded yet.
+            // For any given name, if we have already seen that name, don't add another item to the cache.
+            for (final Class<?> staticImport : staticImports) {
+                for (final Field field : staticImport.getFields()) {
                     if (Modifier.isStatic(field.getModifiers())) {
-                        return field.getType();
+                        staticImportLookupCache.putIfAbsent(field.getName(), field.getType());
                     }
-                } catch (NoSuchFieldException ignored) {
                 }
-
-                for (final Class<?> nestedClass : staticImportedClass.getDeclaredClasses()) {
-                    if (Modifier.isStatic(nestedClass.getModifiers())
-                            && nestedClass.getSimpleName().equals(nameForLookup)) {
-                        return nestedClass;
+                for (final Class<?> nestedClass : staticImport.getDeclaredClasses()) {
+                    if (Modifier.isStatic(nestedClass.getModifiers())) {
+                        staticImportLookupCache.putIfAbsent(nestedClass.getSimpleName(), nestedClass);
                     }
                 }
             }
-            return null;
-        });
+        }
+        return staticImportLookupCache.get(name);
     }
 
     @Override
