@@ -167,28 +167,31 @@ public final class ParquetColumnRegionObject<DATA_TYPE, ATTR extends Any> extend
                     && ((RangeFilter) filter).getRealFilter() instanceof SingleSidedComparableRangeFilter) {
                 final SingleSidedComparableRangeFilter rangeFilter =
                         (SingleSidedComparableRangeFilter) ((RangeFilter) filter).getRealFilter();
-
+                final RowSet matches;
                 if (rangeFilter.isGreaterThan()) {
                     // Only need to find the lower bound, as the upper bound includes all values.
-                    try (final RowSet matches = ObjectRegionBinarySearchKernel.binarySearchMin(
+                    matches = ObjectRegionBinarySearchKernel.binarySearchMin(
                             this,
                             selection.firstRowKey(),
                             selection.lastRowKey(),
                             firstSortedColumn,
                             rangeFilter.getPivot(),
-                            rangeFilter.isLowerInclusive())) {
-                        return PushdownResult.of(selection, matches.intersect(selection), RowSetFactory.empty());
-                    }
+                            rangeFilter.isLowerInclusive());
+                } else {
+                    // Only need to find the upper bound, as the lower bound includes all values.
+                    matches = ObjectRegionBinarySearchKernel.binarySearchMax(
+                            this,
+                            selection.firstRowKey(),
+                            selection.lastRowKey(),
+                            firstSortedColumn,
+                            rangeFilter.getPivot(),
+                            rangeFilter.isUpperInclusive());
                 }
-                // Only need to find the upper bound, as the lower bound includes all values.
-                try (final RowSet matches = ObjectRegionBinarySearchKernel.binarySearchMax(
-                        this,
-                        selection.firstRowKey(),
-                        selection.lastRowKey(),
-                        firstSortedColumn,
-                        rangeFilter.getPivot(),
-                        rangeFilter.isUpperInclusive())) {
-                    return PushdownResult.of(selection, matches.intersect(selection), RowSetFactory.empty());
+                try (final RowSet ignored = matches) {
+                    return PushdownResult.of(
+                            selection,
+                            selection.subSetByKeyRange(matches.firstRowKey(), matches.lastRowKey()),
+                            RowSetFactory.empty());
                 }
             }
             return input.copy();

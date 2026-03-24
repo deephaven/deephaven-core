@@ -152,30 +152,28 @@ public final class ParquetColumnRegionByte<ATTR extends Any> extends ParquetColu
             if (ctx.isRangeFilter() && filter instanceof RangeFilter
                     && ((RangeFilter) filter).getRealFilter() instanceof ByteRangeFilter) {
                 final ByteRangeFilter rangeFilter = (ByteRangeFilter) ((RangeFilter) filter).getRealFilter();
+                final RowSet matches;
                 if (rangeFilter.getLower() == NULL_BYTE && rangeFilter.isLowerInclusive()) {
                     // Only need to find the upper bound, as the lower bound includes all values.
-                    try (final RowSet matches = ByteRegionBinarySearchKernel.binarySearchMax(
+                    matches = ByteRegionBinarySearchKernel.binarySearchMax(
                             this,
                             selection.firstRowKey(),
                             selection.lastRowKey(),
                             firstSortedColumn,
                             rangeFilter.getUpper(),
-                            rangeFilter.isUpperInclusive())) {
-                        return PushdownResult.of(selection, matches.intersect(selection), RowSetFactory.empty());
-                    }
+                            rangeFilter.isUpperInclusive());
                 } else if (rangeFilter.getUpper() == MAX_BYTE && rangeFilter.isUpperInclusive()) {
                     // Only need to find the lower bound, as the upper bound includes all values.
-                    try (final RowSet matches = ByteRegionBinarySearchKernel.binarySearchMin(
+                    matches = ByteRegionBinarySearchKernel.binarySearchMin(
                             this,
                             selection.firstRowKey(),
                             selection.lastRowKey(),
                             firstSortedColumn,
                             rangeFilter.getLower(),
-                            rangeFilter.isLowerInclusive())) {
-                        return PushdownResult.of(selection, matches.intersect(selection), RowSetFactory.empty());
-                    }
-                }
-                try (final RowSet matches = ByteRegionBinarySearchKernel.binarySearchMinMax(
+                            rangeFilter.isLowerInclusive());
+                } else {
+                    // Find the lower and upper bounds.
+                    matches = ByteRegionBinarySearchKernel.binarySearchMinMax(
                         this,
                         selection.firstRowKey(),
                         selection.lastRowKey(),
@@ -183,8 +181,13 @@ public final class ParquetColumnRegionByte<ATTR extends Any> extends ParquetColu
                         rangeFilter.getLower(),
                         rangeFilter.getUpper(),
                         rangeFilter.isLowerInclusive(),
-                        rangeFilter.isUpperInclusive())) {
-                    return PushdownResult.of(selection, matches.intersect(selection), RowSetFactory.empty());
+                        rangeFilter.isUpperInclusive());
+                }
+                try (final RowSet ignored = matches) {
+                    return PushdownResult.of(
+                            selection,
+                            selection.subSetByKeyRange(matches.firstRowKey(), matches.lastRowKey()),
+                            RowSetFactory.empty());
                 }
             }
             return input.copy();
