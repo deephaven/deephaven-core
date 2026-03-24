@@ -343,11 +343,9 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         final String currentScriptName = scriptName == null
                 ? DEFAULT_SCRIPT_PREFIX
                 : scriptName.replaceAll("[^0-9A-Za-z_]", "_").replaceAll("(^[0-9])", "_$1");
-        ClassLoader oldClassLoader = Thread.currentThread().getContextClassLoader();
         try (final SafeCloseable ignored = groovyShell.setScriptPrefix(currentScriptName)) {
 
             updateClassloader(lastCommand);
-            Thread.currentThread().setContextClassLoader(groovyShell.getClassLoader());
             try {
                 ExecutionContext.getContext().getUpdateGraph().exclusiveLock()
                         .doLockedInterruptibly(() -> groovyShell.evaluate(lastCommand));
@@ -357,8 +355,6 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
             } catch (Exception e) {
                 throw wrapAndRewriteStackTrace(scriptName, currentScriptName, e, lastCommand, commandPrefix);
             }
-        } finally {
-            Thread.currentThread().setContextClassLoader(oldClassLoader);
         }
     }
 

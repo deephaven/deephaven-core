@@ -669,7 +669,7 @@ public class TestGroovyDeephavenSession {
                 "t = emptyTable(1).updateView(\"Y = new io.deephaven.dynamic.Foo()\")");
         c.throwIfError();
         Table t = session.getQueryScope().readParamValue("t");
-        assertEquals("io.deephaven.dynamic.Foo", ((Table) t).getColumnSource("Y").getType().getName());
+        assertEquals("io.deephaven.dynamic.Foo", t.getColumnSource("Y").getType().getName());
     }
 
     @Test
@@ -680,7 +680,7 @@ public class TestGroovyDeephavenSession {
 
         Table t = session.getQueryScope().readParamValue("t");
         assertEquals("io.deephaven.engine.util.scripts.OtherModel",
-                ((Table) t).getColumnSource("Y").getType().getName());
+                t.getColumnSource("Y").getType().getName());
     }
 
     // This test is here rather than in engine-table because we need to have bytecode available in the classpath
