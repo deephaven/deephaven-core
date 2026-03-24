@@ -23,8 +23,8 @@ import org.jetbrains.annotations.NotNull;
 
 public class LongRegionBinarySearchKernel {
     /**
-     * Performs a binary search on a given column region to find the positions (row keys) of specified sorted keys. The
-     * method returns the RowSet containing the matched row keys.
+     * Performs a binary search on a given column region to find the positions (row keys) of specified keys. The method
+     * returns the RowSet containing the matched row keys.
      *
      * @param region The column region in which the search will be performed.
      * @param firstKey The first key in the column region to consider for the search.
@@ -55,11 +55,31 @@ public class LongRegionBinarySearchKernel {
         }
 
         final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
-        for (final long toFind : unboxed) {
-            final long lastFound = binarySearchSingle(region, builder, firstKey, lastKey, order, toFind);
 
-            if (lastFound >= 0) {
-                firstKey = lastFound + 1;
+        if (order.isAscending()) {
+            for (final long toFind : unboxed) {
+                final int start = findStartIndexAscending(region, firstKey, lastKey, toFind, true);
+                if (start == -1) {
+                    // No match for this key, move to the next key.
+                    continue;
+                }
+                final int end = findEndIndexAscending(region, start, lastKey, toFind, true);
+                if (end != -1) {
+                    builder.appendRange(start, end);
+                    firstKey = end + 1;
+                }
+            }
+        } else {
+            for (final long toFind : unboxed) {
+                final int start = findStartIndexDescending(region, firstKey, lastKey, toFind, true);
+                if (start == -1) {
+                    continue;
+                }
+                final int end = findEndIndexDescending(region, start, lastKey, toFind, true);
+                if (end != -1) {
+                    builder.appendRange(start, end);
+                    firstKey = end + 1;
+                }
             }
         }
 
@@ -67,79 +87,271 @@ public class LongRegionBinarySearchKernel {
     }
 
     /**
-     * Find the extents of the range containing the key to find, returning the last index found.
+     * Performs a binary search on a given column region to find the positions (row keys) of values within a specified
+     * range.
      *
-     * @param builder the builder to accumulate into
-     * @param firstKey the key to start searching
-     * @param lastKey the key to end searching
-     * @param sortDirection the sort direction of the column
-     * @param toFind the element to find
-     * @return the last key in the found range.
+     * @param region The column region in which the search will be performed.
+     * @param firstKey The first key in the column region to consider for the search.
+     * @param lastKey The last key in the column region to consider for the search.
+     * @param sortColumn A {@link SortColumn} object representing the sorting order of the column.
+     * @param min The minimum value of the range.
+     * @param max The maximum value of the range.
+     * @param minInc {@code true} if the minimum value is inclusive, {@code false} otherwise.
+     * @param maxInc {@code true} if the maximum value is inclusive, {@code false} otherwise.
+     * @return A {@link RowSet} containing the row keys where the values were found.
      */
-    private static long binarySearchSingle(
+    public static RowSet binarySearchMinMax(
             @NotNull final ColumnRegionLong<?> region,
-            @NotNull final RowSetBuilderSequential builder,
             final long firstKey,
             final long lastKey,
-            SortSpec.Order sortDirection,
-            final long toFind) {
-        // Find the beginning of the range
-        long matchStart = binarySearchRange(region, toFind, firstKey, lastKey, sortDirection, -1);
-        if (matchStart < 0) {
-            return -1;
+            @NotNull final SortColumn sortColumn,
+            final long min,
+            final long max,
+            final boolean minInc,
+            final boolean maxInc) {
+
+        final int start;
+        final int end;
+
+        if (sortColumn.isAscending()) {
+            start = findStartIndexAscending(region, firstKey, lastKey, min, minInc);
+            final long offset = Math.max(start, firstKey);
+            end = findEndIndexAscending(region, offset, lastKey, max, maxInc);
+        } else {
+            start = findStartIndexDescending(region, firstKey, lastKey, max, maxInc);
+            final long offset = Math.max(start, firstKey);
+            end = findEndIndexDescending(region, offset, lastKey, min, minInc);
         }
 
-        // Now we have to locate the actual start and end of the range.
-        long matchEnd = matchStart;
-        if (matchStart < lastKey && LongComparisons.eq(region.getLong(matchStart + 1), toFind)) {
-            matchEnd = binarySearchRange(region, toFind, matchStart + 1, lastKey, sortDirection, 1);
+        // Validate that a logical range was found and the bounds didn't cross
+        if (start != -1 && end != -1) {
+            return RowSetFactory.fromRange(start, end);
         }
 
-        builder.appendRange(matchStart, matchEnd);
-        return matchEnd;
+        return RowSetFactory.empty();
     }
 
     /**
-     * Performs a binary search on a specified column region to find a long within a given range. The method returns the
-     * row key where the long was found. If the long is not found, it returns -1.
+     * Performs a binary search on a given column region to find the positions (row keys) of values greater than a
+     * specified minimum.
      *
      * @param region The column region in which the search will be performed.
-     * @param toFind The long to find within the column region.
-     * @param start The first row key in the column region to consider for the search.
-     * @param end The last row key in the column region to consider for the search.
-     * @param sortDirection An enum specifying the sorting direction of the column.
-     * @param rangeDirection An integer indicating the direction of the range search. Positive for forward search,
-     *        negative for backward search.
-     *
-     * @return The row key where the specified long was found. If not found, returns -1.
+     * @param firstKey The first key in the column region to consider for the search.
+     * @param lastKey The last key in the column region to consider for the search.
+     * @param sortColumn A {@link SortColumn} object representing the sorting order of the column.
+     * @param min The minimum value of the range.
+     * @param minInc {@code true} if the minimum value is inclusive, {@code false} otherwise.
+     * @return A {@link RowSet} containing the row keys where the values were found.
      */
-    private static long binarySearchRange(
+    public static RowSet binarySearchMin(
             @NotNull final ColumnRegionLong<?> region,
-            final long toFind,
-            long start,
-            long end,
-            final SortSpec.Order sortDirection,
-            final int rangeDirection) {
-        final int sortDirectionInt = sortDirection.isAscending() ? 1 : -1;
-        long matchStart = -1;
-        while (start <= end) {
-            long pivot = (start + end) >>> 1;
-            final long curVal = region.getLong(pivot);
-            final int comparison = LongComparisons.compare(curVal, toFind) * sortDirectionInt;
-            if (comparison < 0) {
-                start = pivot + 1;
-            } else if (comparison == 0) {
-                matchStart = pivot;
-                if (rangeDirection > 0) {
-                    start = pivot + 1;
-                } else {
-                    end = pivot - 1;
-                }
-            } else {
-                end = pivot - 1;
-            }
+            final long firstKey,
+            final long lastKey,
+            @NotNull final SortColumn sortColumn,
+            final long min,
+            final boolean minInc) {
+
+        final int start;
+        final int end;
+
+        if (sortColumn.isAscending()) {
+            start = findStartIndexAscending(region, firstKey, lastKey, min, minInc);
+            end = (int) lastKey;
+        } else {
+            start = (int) firstKey;
+            end = findEndIndexDescending(region, firstKey, lastKey, min, minInc);
         }
 
-        return matchStart;
+        if (start != -1 && end != -1 && start <= end) {
+            return RowSetFactory.fromRange(start, end);
+        }
+
+        return RowSetFactory.empty();
+    }
+
+    /**
+     * Performs a binary search on a given column region to find the positions (row keys) of values less than a
+     * specified maximum.
+     *
+     * @param region The column region in which the search will be performed.
+     * @param firstKey The first key in the column region to consider for the search.
+     * @param lastKey The last key in the column region to consider for the search.
+     * @param sortColumn A {@link SortColumn} object representing the sorting order of the column.
+     * @param max The maximum value of the range.
+     * @param maxInc {@code true} if the maximum value is inclusive, {@code false} otherwise.
+     * @return A {@link RowSet} containing the row keys where the values were found.
+     */
+    public static RowSet binarySearchMax(
+            @NotNull final ColumnRegionLong<?> region,
+            final long firstKey,
+            final long lastKey,
+            @NotNull final SortColumn sortColumn,
+            final long max,
+            final boolean maxInc) {
+
+        final int start;
+        final int end;
+
+        if (sortColumn.isAscending()) {
+            start = (int) firstKey;
+            end = findEndIndexAscending(region, firstKey, lastKey, max, maxInc);
+        } else {
+            start = findStartIndexDescending(region, firstKey, lastKey, max, maxInc);
+            end = (int) lastKey;
+        }
+
+        if (start != -1 && end != -1 && start <= end) {
+            return RowSetFactory.fromRange(start, end);
+        }
+
+        return RowSetFactory.empty();
+    }
+
+    /**
+     * Finds the starting index for a given value in an ascending (non-descending) sorted region.
+     *
+     * @param region The column region to search.
+     * @param firstKey The starting key of the search range.
+     * @param lastKey The ending key of the search range.
+     * @param min The value to find.
+     * @param minInc If true, the search is inclusive of the value.
+     * @return The starting index, or -1 if not found.
+     */
+    private static int findStartIndexAscending(
+            @NotNull final ColumnRegionLong<?> region,
+            final long firstKey,
+            final long lastKey,
+            final long min,
+            final boolean minInc) {
+        int low = (int) firstKey;
+        int high = (int) lastKey;
+        int ans = -1;
+
+        while (low <= high) {
+            final int mid = low + (high - low) / 2;
+            final long midValue = region.getLong(mid);
+            final boolean satisfiesMin = minInc
+                    ? LongComparisons.geq(midValue, min)
+                    : LongComparisons.gt(midValue, min);
+
+            if (satisfiesMin) {
+                ans = mid;
+                high = mid - 1;
+            } else {
+                low = mid + 1;
+            }
+        }
+        return ans;
+    }
+
+    /**
+     * Finds the ending index for a given value in an ascending (non-descending) sorted region.
+     *
+     * @param region The column region to search.
+     * @param firstKey The starting key of the search range.
+     * @param lastKey The ending key of the search range.
+     * @param max The value to find.
+     * @param maxInc If true, the search is inclusive of the value.
+     * @return The ending index, or -1 if not found.
+     */
+    private static int findEndIndexAscending(
+            @NotNull final ColumnRegionLong<?> region,
+            final long firstKey,
+            final long lastKey,
+            final long max,
+            final boolean maxInc) {
+        int low = (int) firstKey;
+        int high = (int) lastKey;
+        int ans = -1;
+
+        while (low <= high) {
+            final int mid = low + (high - low) / 2;
+            final long midValue = region.getLong(mid);
+            final boolean satisfiesMax = maxInc
+                    ? LongComparisons.leq(midValue, max)
+                    : LongComparisons.lt(midValue, max);
+
+            if (satisfiesMax) {
+                ans = mid;
+                low = mid + 1;
+            } else {
+                high = mid - 1;
+            }
+        }
+        return ans;
+    }
+
+    /**
+     * Finds the starting index for a given value in a descending (non-ascending) sorted region.
+     *
+     * @param region The column region to search.
+     * @param firstKey The starting key of the search range.
+     * @param lastKey The ending key of the search range.
+     * @param max The value to find.
+     * @param maxInc If true, the search is inclusive of the value.
+     * @return The starting index, or -1 if not found.
+     */
+    private static int findStartIndexDescending(
+            @NotNull final ColumnRegionLong<?> region,
+            final long firstKey,
+            final long lastKey,
+            final long max,
+            final boolean maxInc) {
+        int low = (int) firstKey;
+        int high = (int) lastKey;
+        int ans = -1;
+
+        while (low <= high) {
+            final int mid = low + (high - low) / 2;
+            final long midValue = region.getLong(mid);
+            final boolean satisfiesMax = maxInc
+                    ? LongComparisons.leq(midValue, max)
+                    : LongComparisons.lt(midValue, max);
+
+            if (satisfiesMax) {
+                ans = mid;
+                high = mid - 1;
+            } else {
+                low = mid + 1;
+            }
+        }
+        return ans;
+    }
+
+    /**
+     * Finds the ending index for a given value in a descending (non-ascending) sorted region.
+     *
+     * @param region The column region to search.
+     * @param firstKey The starting key of the search range.
+     * @param lastKey The ending key of the search range.
+     * @param min The value to find.
+     * @param minInc If true, the search is inclusive of the value.
+     * @return The ending index, or -1 if not found.
+     */
+    private static int findEndIndexDescending(
+            @NotNull final ColumnRegionLong<?> region,
+            final long firstKey,
+            final long lastKey,
+            final long min,
+            final boolean minInc) {
+        int low = (int) firstKey;
+        int high = (int) lastKey;
+        int ans = -1;
+
+        while (low <= high) {
+            final int mid = low + (high - low) / 2;
+            final long midValue = region.getLong(mid);
+            final boolean satisfiesMin = minInc
+                    ? LongComparisons.geq(midValue, min)
+                    : LongComparisons.gt(midValue, min);
+
+            if (satisfiesMin) {
+                ans = mid;
+                low = mid + 1;
+            } else {
+                high = mid - 1;
+            }
+        }
+        return ans;
     }
 }

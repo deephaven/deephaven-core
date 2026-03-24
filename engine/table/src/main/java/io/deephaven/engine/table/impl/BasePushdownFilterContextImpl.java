@@ -104,6 +104,16 @@ public abstract class BasePushdownFilterContextImpl implements BasePushdownFilte
         return columnSources;
     }
 
+    @Override
+    public final boolean isRangeFilter() {
+        return isRangeFilter;
+    }
+
+    @Override
+    public final boolean isMatchFilter() {
+        return isMatchFilter;
+    }
+
     /**
      * Whether this filter supports direct chunk filtering, i.e., it can be applied to a chunk of data rather than a
      * table. This includes any filter that implements {@link ExposesChunkFilter} or {@link ConditionFilter} with

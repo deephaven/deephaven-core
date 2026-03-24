@@ -45,6 +45,16 @@ public class RegionedPushdownFilterLocationContext implements RegionedPushdownFi
     }
 
     @Override
+    public boolean isRangeFilter() {
+        return wrapped.isRangeFilter();
+    }
+
+    @Override
+    public boolean isMatchFilter() {
+        return wrapped.isMatchFilter();
+    }
+
+    @Override
     public boolean supportsChunkFiltering() {
         return wrapped.supportsChunkFiltering();
     }

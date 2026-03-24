@@ -1,10 +1,6 @@
 //
 // Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
-// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
-// ****** Edit CharRegionBinarySearchKernelTest and run "./gradlew replicateRegionAndRegionedSourceTests" to regenerate
-//
-// @formatter:off
 package io.deephaven.engine.table.impl.sources.regioned.kernel;
 
 import io.deephaven.api.ColumnName;
@@ -13,13 +9,12 @@ import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.table.impl.sources.regioned.ColumnRegionByte;
+import io.deephaven.engine.table.impl.sources.regioned.ColumnRegionObject;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSource;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
-import io.deephaven.generic.region.AppendOnlyFixedSizePageRegionByte;
+import io.deephaven.generic.region.AppendOnlyFixedSizePageRegionObject;
 import io.deephaven.generic.region.AppendOnlyRegionAccessor;
 import io.deephaven.test.types.ParallelTest;
-import io.deephaven.util.compare.ByteComparisons;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Assert;
 import org.junit.Rule;
@@ -28,13 +23,13 @@ import org.junit.experimental.categories.Category;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
 import java.util.function.IntToLongFunction;
-import static io.deephaven.util.QueryConstants.NULL_BYTE;
 
 @Category(ParallelTest.class)
-public class ByteRegionBinarySearchKernelTest {
+public class ObjectRegionBinarySearchKernelTest {
     private static final int[] SIZES = {10, 100, 1000000};
     private static final int MAX_FAILED_LOOKUPS = 1000;
     private static final int NUM_NEGATIVE_LOOKUPS = 100;
@@ -42,22 +37,42 @@ public class ByteRegionBinarySearchKernelTest {
     @Rule
     public final EngineCleanup framework = new EngineCleanup();
 
-    private static List<Byte> makeSortedData(int size, Random rnd) {
-        final List<Byte> data = new ArrayList<>(size);
-        for (int ii = 0; ii < size; ++ii) {
-            data.add((byte) rnd.nextInt());
+    private static int STRING_LENGTH = 3;
+    private static final char[] ALPHA_NUMERIC_CHARS =
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789".toCharArray();
+
+    private static String makeString(Random random, int length) {
+        if (length <= 0) {
+            return "";
         }
-        data.sort(ByteComparisons::compare);
+
+        char[] buffer = new char[length];
+
+        for (int i = 0; i < length; i++) {
+            // Fetch a random character directly from the static array
+            buffer[i] = ALPHA_NUMERIC_CHARS[random.nextInt(ALPHA_NUMERIC_CHARS.length)];
+        }
+
+        // A single String allocation at the very end
+        return new String(buffer);
+    }
+
+    private static List<String> makeSortedData(int size, Random rnd) {
+        final List<String> data = new ArrayList<>(size);
+        for (int ii = 0; ii < size; ++ii) {
+            data.add(makeString(rnd, STRING_LENGTH));
+        }
+        data.sort(Comparator.naturalOrder());
         return data;
     }
 
-    private static List<Byte> findAbsentValues(List<Byte> sortedData, int num, int maxFailures, Random rnd) {
-        final List<Byte> missingValues = new ArrayList<>();
+    private static List<String> findAbsentValues(List<String> sortedData, int num, int maxFailures, Random rnd) {
+        final List<String> missingValues = new ArrayList<>();
         int numFailedLookups = 0;
         while (missingValues.size() < num && numFailedLookups < maxFailures) {
-            final byte value = (byte) rnd.nextInt();
-            if (value == NULL_BYTE
-                    || Collections.binarySearch(sortedData, value, ByteComparisons::compare) >= 0) {
+            final String value = makeString(rnd, STRING_LENGTH);
+            if (value == null
+                    || Collections.binarySearch(sortedData, value, Comparator.naturalOrder()) >= 0) {
                 numFailedLookups++;
                 continue;
             }
@@ -70,32 +85,32 @@ public class ByteRegionBinarySearchKernelTest {
             int size, int seed, boolean inverted, IntToLongFunction firstKey, IntToLongFunction lastKey) {
 
         final Random rnd = new Random(seed);
-        final List<Byte> sortedData = makeSortedData(size, rnd);
-        final List<Byte> data = new ArrayList<>(sortedData);
+        final List<String> sortedData = makeSortedData(size, rnd);
+        final List<String> data = new ArrayList<>(sortedData);
         if (inverted) {
             java.util.Collections.reverse(data);
         }
-        final ColumnRegionByte<Values> region = makeColumnRegionByte(data);
+        final ColumnRegionObject<String, Values> region = makeColumnRegionObject(data);
         ColumnName columnName = ColumnName.of("test");
         final SortColumn sortColumn = inverted ? SortColumn.desc(columnName) : SortColumn.asc(columnName);
 
         for (int ii = 0; ii < size; ++ii) {
-            final byte value = data.get(ii);
+            final String value = data.get(ii);
             final long startRow = Math.max(0, firstKey.applyAsLong(ii));
             final long endRow = Math.min(size - 1, lastKey.applyAsLong(ii));
             // Test match search and min/max search give the same results for this value.
-            try (final RowSet matchesFound = ByteRegionBinarySearchKernel.binarySearchMatch(
+            try (final RowSet matchesFound = ObjectRegionBinarySearchKernel.binarySearchMatch(
                     region,
                     startRow, endRow,
                     sortColumn,
-                    new Byte[] {value});
-                    final RowSet minMaxFound = ByteRegionBinarySearchKernel.binarySearchMinMax(
+                    new String[] {value});
+                    final RowSet minMaxFound = ObjectRegionBinarySearchKernel.binarySearchMinMax(
                             region,
                             startRow, endRow,
                             sortColumn,
                             value,
                             value, true,
-                            true)) {
+                            true);) {
                 if (startRow <= ii && ii <= endRow) {
                     Assert.assertTrue("Expected to find " + value + " at index " + ii,
                             matchesFound.containsRange(ii, ii));
@@ -110,19 +125,19 @@ public class ByteRegionBinarySearchKernelTest {
         }
 
         // Test negative lookups
-        final List<Byte> missingValues =
+        final List<String> missingValues =
                 findAbsentValues(sortedData, NUM_NEGATIVE_LOOKUPS, MAX_FAILED_LOOKUPS, rnd);
-        for (Byte missingValue : missingValues) {
+        for (String missingValue : missingValues) {
             final long startRow = 0;
             final long endRow = size - 1;
-            try (final RowSet valuesFound = ByteRegionBinarySearchKernel.binarySearchMatch(
+            try (final RowSet valuesFound = ObjectRegionBinarySearchKernel.binarySearchMatch(
                     region,
                     startRow, endRow,
                     sortColumn,
-                    new Byte[] {missingValue})) {
+                    new String[] {missingValue})) {
                 Assert.assertTrue(valuesFound.isEmpty());
             }
-            try (final RowSet valuesFound = ByteRegionBinarySearchKernel.binarySearchMinMax(
+            try (final RowSet valuesFound = ObjectRegionBinarySearchKernel.binarySearchMinMax(
                     region,
                     startRow, endRow,
                     sortColumn,
@@ -262,11 +277,11 @@ public class ByteRegionBinarySearchKernelTest {
 
         final int steps = 20;
         for (int size : SIZES) {
-            final List<Byte> data = makeSortedData(size, rnd);
+            final List<String> data = makeSortedData(size, rnd);
 
             for (int step = 0; step < steps; ++step) {
                 System.out.println("Size = " + size + ", step = " + step);
-                final byte maxValue = (byte) rnd.nextInt();
+                final String maxValue = makeString(rnd, STRING_LENGTH);
 
                 final long firstKeyCandidate = rnd.nextInt(size);
                 final long lastKeyCandidate = rnd.nextInt(size);
@@ -289,11 +304,11 @@ public class ByteRegionBinarySearchKernelTest {
 
         final int steps = 20;
         for (int size : SIZES) {
-            final List<Byte> data = makeSortedData(size, rnd);
+            final List<String> data = makeSortedData(size, rnd);
 
             for (int step = 0; step < steps; ++step) {
                 System.out.println("Size = " + size + ", step = " + step);
-                final byte minValue = (byte) rnd.nextInt();
+                final String minValue = makeString(rnd, STRING_LENGTH);
 
                 final long firstKeyCandidate = rnd.nextInt(size);
                 final long lastKeyCandidate = rnd.nextInt(size);
@@ -316,15 +331,15 @@ public class ByteRegionBinarySearchKernelTest {
 
         final int steps = 20;
         for (int size : SIZES) {
-            final List<Byte> data = makeSortedData(size, rnd);
+            final List<String> data = makeSortedData(size, rnd);
 
             for (int step = 0; step < steps; ++step) {
                 System.out.println("Size = " + size + ", step = " + step);
-                final byte minCandidate = (byte) rnd.nextInt();
-                final byte maxCandidate = (byte) rnd.nextInt();
+                final String minCandidate = makeString(rnd, STRING_LENGTH);
+                final String maxCandidate = makeString(rnd, STRING_LENGTH);
 
-                final byte minValue = (byte) Math.min(minCandidate, maxCandidate);
-                final byte maxValue = (byte) Math.max(minCandidate, maxCandidate);
+                final String minValue = Collections.min(List.of(minCandidate, maxCandidate));
+                final String maxValue = Collections.max(List.of(minCandidate, maxCandidate));
 
                 final long firstKeyCandidate = rnd.nextInt(size);
                 final long lastKeyCandidate = rnd.nextInt(size);
@@ -346,129 +361,15 @@ public class ByteRegionBinarySearchKernelTest {
         }
     }
 
-    private void minMaxTestRunner(
-            List<Byte> data,
-            final boolean inverted,
-            final long firstKey,
-            final long lastKey,
-            final byte minValue,
-            final boolean minInclusive,
-            final byte maxValue,
-            final boolean maxInclusive) {
-
-        final List<Byte> dataToUse;
-        final SortColumn sortColumn;
-        if (inverted) {
-            dataToUse = new ArrayList<>(data);
-            Collections.reverse(dataToUse);
-            sortColumn = SortColumn.desc(ColumnName.of("test"));
-        } else {
-            dataToUse = data;
-            sortColumn = SortColumn.asc(ColumnName.of("test"));
-        }
-
-        final ColumnRegionByte<Values> region = makeColumnRegionByte(dataToUse);
-
-        try (final RowSet result = ByteRegionBinarySearchKernel.binarySearchMinMax(
-                region, firstKey, lastKey, sortColumn, minValue, maxValue, minInclusive, maxInclusive)) {
-
-            // Test from 0 to firstKey - 1 to make sure no false positives are found below the first key.
-            if (firstKey > 0) {
-                try (final RowSet excludedLow = RowSetFactory.fromRange(0, firstKey - 1);
-                        final RowSet intersection = result.intersect(excludedLow)) {
-                    Assert.assertTrue(intersection.isEmpty());
-                }
-            }
-
-            // Go through every value in the result and ensure it is within the min/max bounds.
-            result.forAllRowKeys(rowKey -> {
-                // Must be within the first/last key bounds
-                Assert.assertTrue(rowKey >= firstKey && rowKey <= lastKey);
-
-                // The value at the row key must be within the min/max bounds.
-                final byte value = dataToUse.get((int) rowKey);
-                if (minInclusive) {
-                    Assert.assertTrue(ByteComparisons.compare(value, minValue) >= 0);
-                } else {
-                    Assert.assertTrue(ByteComparisons.compare(value, minValue) > 0);
-                }
-                if (maxInclusive) {
-                    Assert.assertTrue(ByteComparisons.compare(value, maxValue) <= 0);
-                } else {
-                    Assert.assertTrue(ByteComparisons.compare(value, maxValue) < 0);
-                }
-            });
-
-            // Test from lastKey + 1 to make sure no false positives are found above the lastKey.
-            try (final RowSet excludedHigh = RowSetFactory.fromRange(lastKey + 1, Long.MAX_VALUE);
-                    final RowSet intersection = result.intersect(excludedHigh)) {
-                Assert.assertTrue(intersection.isEmpty());
-            }
-        }
-    }
-
-    private void minTestRunner(
-            List<Byte> data,
-            final boolean inverted,
-            final long firstKey,
-            final long lastKey,
-            final byte minValue,
-            final boolean minInclusive) {
-
-        final List<Byte> dataToUse;
-        final SortColumn sortColumn;
-        if (inverted) {
-            dataToUse = new ArrayList<>(data);
-            Collections.reverse(dataToUse);
-            sortColumn = SortColumn.desc(ColumnName.of("test"));
-        } else {
-            dataToUse = data;
-            sortColumn = SortColumn.asc(ColumnName.of("test"));
-        }
-
-        final ColumnRegionByte<Values> region = makeColumnRegionByte(dataToUse);
-
-        try (final RowSet result = ByteRegionBinarySearchKernel.binarySearchMin(
-                region, firstKey, lastKey, sortColumn, minValue, minInclusive)) {
-            // Test from 0 to firstKey - 1 to make sure no false positives are found below the first key.
-            if (firstKey > 0) {
-                try (final RowSet excludedLow = RowSetFactory.fromRange(0, firstKey - 1);
-                        final RowSet intersection = result.intersect(excludedLow)) {
-                    Assert.assertTrue(intersection.isEmpty());
-                }
-            }
-
-            // Go through every value in the result and ensure it is within the min/max bounds.
-            result.forAllRowKeys(rowKey -> {
-                // Must be within the first/last key bounds
-                Assert.assertTrue(rowKey >= firstKey && rowKey <= lastKey);
-
-                // The value at the row key must be within the min/max bounds.
-                final byte value = dataToUse.get((int) rowKey);
-                if (minInclusive) {
-                    Assert.assertTrue(ByteComparisons.compare(value, minValue) >= 0);
-                } else {
-                    Assert.assertTrue(ByteComparisons.compare(value, minValue) > 0);
-                }
-            });
-
-            // Test from lastKey + 1 to make sure no false positives are found above the lastKey.
-            try (final RowSet excludedHigh = RowSetFactory.fromRange(lastKey + 1, Long.MAX_VALUE);
-                    final RowSet intersection = result.intersect(excludedHigh)) {
-                Assert.assertTrue(intersection.isEmpty());
-            }
-        }
-    }
-
     private void maxTestRunner(
-            List<Byte> data,
+            List<String> data,
             final boolean inverted,
             final long firstKey,
             final long lastKey,
-            final byte maxValue,
+            final String maxValue,
             final boolean maxInclusive) {
 
-        final List<Byte> dataToUse;
+        final List<String> dataToUse;
         final SortColumn sortColumn;
         if (inverted) {
             dataToUse = new ArrayList<>(data);
@@ -479,9 +380,9 @@ public class ByteRegionBinarySearchKernelTest {
             sortColumn = SortColumn.asc(ColumnName.of("test"));
         }
 
-        final ColumnRegionByte<Values> region = makeColumnRegionByte(dataToUse);
+        final ColumnRegionObject<String, Values> region = makeColumnRegionObject(dataToUse);
 
-        try (final RowSet result = ByteRegionBinarySearchKernel.binarySearchMax(
+        try (final RowSet result = ObjectRegionBinarySearchKernel.binarySearchMax(
                 region, firstKey, lastKey, sortColumn, maxValue, maxInclusive)) {
 
             // Test from 0 to firstKey - 1 to make sure no false positives are found below the first key.
@@ -498,11 +399,125 @@ public class ByteRegionBinarySearchKernelTest {
                 Assert.assertTrue(rowKey >= firstKey && rowKey <= lastKey);
 
                 // The value at the row key must be within the min/max bounds.
-                final byte value = dataToUse.get((int) rowKey);
+                final String value = dataToUse.get((int) rowKey);
                 if (maxInclusive) {
-                    Assert.assertTrue(ByteComparisons.compare(value, maxValue) <= 0);
+                    Assert.assertTrue(Comparator.<String>naturalOrder().compare(value, maxValue) <= 0);
                 } else {
-                    Assert.assertTrue(ByteComparisons.compare(value, maxValue) < 0);
+                    Assert.assertTrue(Comparator.<String>naturalOrder().compare(value, maxValue) < 0);
+                }
+            });
+
+            // Test from lastKey + 1 to make sure no false positives are found above the lastKey.
+            try (final RowSet excludedHigh = RowSetFactory.fromRange(lastKey + 1, Long.MAX_VALUE);
+                    final RowSet intersection = result.intersect(excludedHigh)) {
+                Assert.assertTrue(intersection.isEmpty());
+            }
+        }
+    }
+
+    private void minTestRunner(
+            List<String> data,
+            final boolean inverted,
+            final long firstKey,
+            final long lastKey,
+            final String minValue,
+            final boolean minInclusive) {
+
+        final List<String> dataToUse;
+        final SortColumn sortColumn;
+        if (inverted) {
+            dataToUse = new ArrayList<>(data);
+            Collections.reverse(dataToUse);
+            sortColumn = SortColumn.desc(ColumnName.of("test"));
+        } else {
+            dataToUse = data;
+            sortColumn = SortColumn.asc(ColumnName.of("test"));
+        }
+
+        final ColumnRegionObject<String, Values> region = makeColumnRegionObject(dataToUse);
+
+        try (final RowSet result = ObjectRegionBinarySearchKernel.binarySearchMin(
+                region, firstKey, lastKey, sortColumn, minValue, minInclusive)) {
+            // Test from 0 to firstKey - 1 to make sure no false positives are found below the first key.
+            if (firstKey > 0) {
+                try (final RowSet excludedLow = RowSetFactory.fromRange(0, firstKey - 1);
+                        final RowSet intersection = result.intersect(excludedLow)) {
+                    Assert.assertTrue(intersection.isEmpty());
+                }
+            }
+
+            // Go through every value in the result and ensure it is within the min/max bounds.
+            result.forAllRowKeys(rowKey -> {
+                // Must be within the first/last key bounds
+                Assert.assertTrue(rowKey >= firstKey && rowKey <= lastKey);
+
+                // The value at the row key must be within the min/max bounds.
+                final String value = dataToUse.get((int) rowKey);
+                if (minInclusive) {
+                    Assert.assertTrue(Comparator.<String>naturalOrder().compare(value, minValue) >= 0);
+                } else {
+                    Assert.assertTrue(Comparator.<String>naturalOrder().compare(value, minValue) > 0);
+                }
+            });
+
+            // Test from lastKey + 1 to make sure no false positives are found above the lastKey.
+            try (final RowSet excludedHigh = RowSetFactory.fromRange(lastKey + 1, Long.MAX_VALUE);
+                    final RowSet intersection = result.intersect(excludedHigh)) {
+                Assert.assertTrue(intersection.isEmpty());
+            }
+        }
+    }
+
+    private void minMaxTestRunner(
+            List<String> data,
+            final boolean inverted,
+            final long firstKey,
+            final long lastKey,
+            final String minValue,
+            final boolean minInclusive,
+            final String maxValue,
+            final boolean maxInclusive) {
+
+        final List<String> dataToUse;
+        final SortColumn sortColumn;
+        if (inverted) {
+            dataToUse = new ArrayList<>(data);
+            Collections.reverse(dataToUse);
+            sortColumn = SortColumn.desc(ColumnName.of("test"));
+        } else {
+            dataToUse = data;
+            sortColumn = SortColumn.asc(ColumnName.of("test"));
+        }
+
+        final ColumnRegionObject<String, Values> region = makeColumnRegionObject(dataToUse);
+
+        try (final RowSet result = ObjectRegionBinarySearchKernel.binarySearchMinMax(
+                region, firstKey, lastKey, sortColumn, minValue, maxValue, minInclusive, maxInclusive)) {
+
+            // Test from 0 to firstKey - 1 to make sure no false positives are found below the first key.
+            if (firstKey > 0) {
+                try (final RowSet excludedLow = RowSetFactory.fromRange(0, firstKey - 1);
+                        final RowSet intersection = result.intersect(excludedLow)) {
+                    Assert.assertTrue(intersection.isEmpty());
+                }
+            }
+
+            // Go through every value in the result and ensure it is within the min/max bounds.
+            result.forAllRowKeys(rowKey -> {
+                // Must be within the first/last key bounds
+                Assert.assertTrue(rowKey >= firstKey && rowKey <= lastKey);
+
+                // The value at the row key must be within the min/max bounds.
+                final String value = dataToUse.get((int) rowKey);
+                if (minInclusive) {
+                    Assert.assertTrue(Comparator.<String>naturalOrder().compare(value, minValue) >= 0);
+                } else {
+                    Assert.assertTrue(Comparator.<String>naturalOrder().compare(value, minValue) > 0);
+                }
+                if (maxInclusive) {
+                    Assert.assertTrue(Comparator.<String>naturalOrder().compare(value, maxValue) <= 0);
+                } else {
+                    Assert.assertTrue(Comparator.<String>naturalOrder().compare(value, maxValue) < 0);
                 }
             });
 
@@ -516,8 +531,8 @@ public class ByteRegionBinarySearchKernelTest {
 
     private static final int PAGE_SIZE = 1 << 16;
 
-    private static ColumnRegionByte<Values> makeColumnRegionByte(@NotNull final List<Byte> values) {
-        return new AppendOnlyFixedSizePageRegionByte<>(
+    private static ColumnRegionObject<String, Values> makeColumnRegionObject(@NotNull final List<String> values) {
+        return new AppendOnlyFixedSizePageRegionObject<>(
                 RegionedColumnSource.ROW_KEY_TO_SUB_REGION_ROW_INDEX_MASK, PAGE_SIZE, new AppendOnlyRegionAccessor<>() {
                     @Override
                     public void readChunkPage(long firstRowPosition, int minimumSize,
@@ -525,7 +540,7 @@ public class ByteRegionBinarySearchKernelTest {
                         int finalSize = (int) Math.min(minimumSize, values.size() - firstRowPosition);
                         destination.setSize(finalSize);
                         for (int ii = 0; ii < finalSize; ++ii) {
-                            destination.asWritableByteChunk().set(ii, values.get((int) firstRowPosition + ii));
+                            destination.asWritableObjectChunk().set(ii, values.get((int) firstRowPosition + ii));
                         }
                     }
 

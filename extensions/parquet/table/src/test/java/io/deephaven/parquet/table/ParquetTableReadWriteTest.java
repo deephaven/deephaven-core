@@ -5,8 +5,10 @@ package io.deephaven.parquet.table;
 
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.api.ColumnName;
+import io.deephaven.api.RawString;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.SortColumn;
+import io.deephaven.api.filter.Filter;
 import io.deephaven.base.FileUtils;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
@@ -37,9 +39,7 @@ import io.deephaven.engine.table.impl.dataindex.DataIndexUtils;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.locations.ColumnLocation;
 import io.deephaven.engine.table.impl.locations.impl.StandaloneTableKey;
-import io.deephaven.engine.table.impl.select.FormulaEvaluationException;
-import io.deephaven.engine.table.impl.select.FunctionalColumn;
-import io.deephaven.engine.table.impl.select.SelectColumn;
+import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.table.iterators.*;
@@ -5000,6 +5000,130 @@ public final class ParquetTableReadWriteTest {
         assertTrue(result.getDefinition().getColumn("String").isDirect());
         assertTrue(result.getDefinition().getColumn("Int").isDirect());
         assertTrue(result.getDefinition().getColumn("Double").isDirect());
+    }
+
+    private void testSortedFilteringInternal(final Table table, final String columnName, final String filter) {
+        testSortedFilteringInternal(table, columnName, RawString.of(filter));
+    }
+
+    private void testSortedFilteringInternal(
+            final Table source,
+            final String columnName,
+            final Filter filter) {
+
+        Table sortedAsc = source.sort(columnName);
+        final File destAsc = new File(rootFile, "ParquetTest_sortedColumnFilteringAsc.parquet");
+        writeTable(sortedAsc, destAsc.getPath());
+        final Table fromDiskAsc = checkSingleTable(sortedAsc, destAsc);
+        Table resultAsc = fromDiskAsc.where(filter);
+        assertTableEquals(sortedAsc.where(filter), resultAsc);
+
+        // Perform the filter on an already filtered table.
+        resultAsc = fromDiskAsc.where("ii % 2 == 0").where(filter);
+        assertTableEquals(sortedAsc.where("ii % 2 == 0").where(filter), resultAsc);
+
+        // Also verify that the descending sort has the same results.
+        final Table sortedDesc = source.sortDescending(columnName);
+        final File destDesc = new File(rootFile, "ParquetTest_sortedColumnFilteringDesc.parquet");
+        writeTable(sortedDesc, destDesc.getPath());
+        final Table fromDiskDesc = checkSingleTable(sortedDesc, destDesc);
+        Table resultDesc = fromDiskDesc.where(filter);
+        assertTableEquals(sortedDesc.where(filter), resultDesc);
+
+        // Perform the filter on an already filtered table.
+        resultDesc = fromDiskDesc.where("ii % 2 == 0").where(filter);
+        assertTableEquals(sortedDesc.where("ii % 2 == 0").where(filter), resultDesc);
+    }
+
+    @Test
+    public void testSortedColumnFiltering() {
+        final Table testTable = TableTools.emptyTable(10_000)
+                .update(
+                        "byteCol = i % 97 == 0 ? null : (byte)(i % 97)",
+                        "charCol = i % 997 == 0 ? null : (char)(i % 997)",
+                        "shortCol = i % 997 == 0 ? null : (short)(i % 997)",
+                        "intCol = i % 997 == 0 ? null : i % 997",
+                        "longCol = i % 997 == 0 ? null : ii % 997",
+                        "floatCol = (i % 997 == 0) ? null : (i % 997 == 996) ? Float.NaN : (i % 997 == 995) ? Float.POSITIVE_INFINITY : (i % 997 == 994) ? Float.NEGATIVE_INFINITY : (float)(i % 997)",
+                        "doubleCol = (i % 997 == 0) ? null : (i % 997 == 996) ? Double.NaN : (i % 997 == 995) ? Double.POSITIVE_INFINITY : (i % 997 == 994) ? Double.NEGATIVE_INFINITY : (double)(i % 997)",
+                        "stringCol = i % 997 == 0 ? null : `Str` + (i % 997)");
+
+        testSortedFilteringInternal(testTable, "byteCol", "byteCol in 30, 50, 70");
+        testSortedFilteringInternal(testTable, "byteCol", "byteCol > 30");
+        testSortedFilteringInternal(testTable, "byteCol", "byteCol <= 50");
+
+        testSortedFilteringInternal(testTable, "charCol", "charCol in 'a', 'b', 'c'");
+        testSortedFilteringInternal(testTable, "charCol", "charCol > 'a'");
+        testSortedFilteringInternal(testTable, "charCol", "charCol <= 'b'");
+
+        testSortedFilteringInternal(testTable, "shortCol", "shortCol in 300, 500, 700");
+        testSortedFilteringInternal(testTable, "shortCol", "shortCol > 300");
+        testSortedFilteringInternal(testTable, "shortCol", "shortCol <= 500");
+
+        testSortedFilteringInternal(testTable, "intCol", "intCol in 300, 500, 700");
+        testSortedFilteringInternal(testTable, "intCol", "intCol > 300");
+        testSortedFilteringInternal(testTable, "intCol", "intCol <= 500");
+
+        testSortedFilteringInternal(testTable, "longCol", "longCol in 300, 500, 700");
+        testSortedFilteringInternal(testTable, "longCol", "longCol > 300");
+        testSortedFilteringInternal(testTable, "longCol", "longCol <= 500");
+
+        testSortedFilteringInternal(testTable, "floatCol", "floatCol in 300.0, 500.0, 700.0");
+        testSortedFilteringInternal(testTable, "floatCol", "floatCol in NaN");
+        testSortedFilteringInternal(testTable, "floatCol", "floatCol > 300.0");
+        testSortedFilteringInternal(testTable, "floatCol", "floatCol <= 500.0");
+        testSortedFilteringInternal(testTable, "floatCol", "floatCol > Float.POSITIVE_INFINITY");
+        testSortedFilteringInternal(testTable, "floatCol", "floatCol >= NaN");
+
+        testSortedFilteringInternal(testTable, "doubleCol", "doubleCol in 300.0, 500.0, 700.0");
+        testSortedFilteringInternal(testTable, "doubleCol", "doubleCol in NaN");
+        testSortedFilteringInternal(testTable, "doubleCol", "doubleCol > 300.0");
+        testSortedFilteringInternal(testTable, "doubleCol", "doubleCol <= 500.0");
+        testSortedFilteringInternal(testTable, "doubleCol", "doubleCol > Float.POSITIVE_INFINITY");
+        testSortedFilteringInternal(testTable, "doubleCol", "doubleCol >= NaN");
+
+        testSortedFilteringInternal(testTable, "stringCol", "stringCol in `Str300`, `Str500`, `Str700`");
+        testSortedFilteringInternal(testTable, "stringCol", "stringCol > `Str300`");
+        testSortedFilteringInternal(testTable, "stringCol", "stringCol <= `Str500`");
+    }
+
+    @Test
+    public void testSortedColumnDescFiltering() {
+        final Table testDesc = TableTools.emptyTable(100_000)
+                .update("A = i % 97 == 0 ? null : i % 97", "B = i % 997 == 0 ? null : i % 997")
+                .sortDescending("B");
+
+        final File dest = new File(rootFile, "ParquetTest_sortedColumnFiltering.parquet");
+        writeTable(testDesc, dest.getPath());
+
+        final Table fromDisk = checkSingleTable(testDesc, dest);
+
+        Table result;
+        Filter f;
+
+        f = RawString.of("A in 50, 30, 20");
+        result = fromDisk.where(f);
+        assertTableEquals(testDesc.where(f), result);
+
+        f = RawString.of("B in 500, 300, 200");
+        result = fromDisk.where(f);
+        assertTableEquals(testDesc.where(f), result);
+
+        f = RawString.of("A > 30");
+        result = fromDisk.where(f);
+        assertTableEquals(testDesc.where(f), result);
+
+        f = RawString.of("B > 300");
+        result = fromDisk.where(f);
+        assertTableEquals(testDesc.where(f), result);
+
+        f = RawString.of("A < 30");
+        result = fromDisk.where(f);
+        assertTableEquals(testDesc.where(f), result);
+
+        f = RawString.of("B < 300");
+        result = fromDisk.where(f);
+        assertTableEquals(testDesc.where(f), result);
     }
 
     private void assertTableStatistics(Table inputTable, File dest) {
