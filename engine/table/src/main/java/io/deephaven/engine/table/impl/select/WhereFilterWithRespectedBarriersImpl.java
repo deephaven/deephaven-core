@@ -31,6 +31,15 @@ public class WhereFilterWithRespectedBarriersImpl extends WhereFilterDelegatingB
         this.respectedBarriers = respectedBarriers;
     }
 
+    @Override
+    public WhereFilter maybeUnwrapFilter() {
+        if (filter instanceof WhereFilterDelegating) {
+            // Delegate to the wrapped filter to find the effective wrapped filter.
+            return ((WhereFilterDelegating) filter).maybeUnwrapFilter();
+        }
+        return filter;
+    }
+
     public Object[] respectedBarriers() {
         return respectedBarriers;
     }

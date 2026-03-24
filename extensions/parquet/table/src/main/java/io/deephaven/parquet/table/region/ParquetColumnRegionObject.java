@@ -151,8 +151,12 @@ public final class ParquetColumnRegionObject<DATA_TYPE, ATTR extends Any> extend
                 return input.copy();
             }
 
+            // We will use the effective filter from the context, which may bypass row tracking but provides the
+            // raw filter that we need to apply to the sorted column.
+            final WhereFilter effectiveFilter = ctx.filter();
+
             if (ctx.isMatchFilter()) {
-                final MatchFilter matchFilter = (MatchFilter) filter;
+                final MatchFilter matchFilter = (MatchFilter) effectiveFilter;
                 try (final RowSet matches = ObjectRegionBinarySearchKernel.binarySearchMatch(
                         this,
                         selection.firstRowKey(),
@@ -163,10 +167,10 @@ public final class ParquetColumnRegionObject<DATA_TYPE, ATTR extends Any> extend
                 }
             }
 
-            if (ctx.isRangeFilter() && filter instanceof RangeFilter
-                    && ((RangeFilter) filter).getRealFilter() instanceof SingleSidedComparableRangeFilter) {
+            if (ctx.isRangeFilter() && effectiveFilter instanceof RangeFilter
+                    && ((RangeFilter) effectiveFilter).getRealFilter() instanceof SingleSidedComparableRangeFilter) {
                 final SingleSidedComparableRangeFilter rangeFilter =
-                        (SingleSidedComparableRangeFilter) ((RangeFilter) filter).getRealFilter();
+                        (SingleSidedComparableRangeFilter) ((RangeFilter) effectiveFilter).getRealFilter();
                 final RowSet matches;
                 if (rangeFilter.isGreaterThan()) {
                     // Only need to find the lower bound, as the upper bound includes all values.
