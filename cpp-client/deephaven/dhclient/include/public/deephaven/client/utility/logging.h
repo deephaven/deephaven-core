@@ -19,5 +19,14 @@ namespace deephaven::client::utility {
  * This library intentionally does not call it, following the same convention as gRPC.
  */
 void log_verbosity_init();
+
+/**
+* Putting this static variable here means that anyone who includes logging.h will automatically
+* call log_verbosity_init() at static initialization time. Each translation unit that includes this file
+* will include its own copy of this static variable. However, this is fine because log_verbosity_init()
+* has a call_once style of implementation.
+*/
+static bool log_verbosity_init_flag = (log_verbosity_init(), true);
+
 }  // namespace deephaven::client::utility
 
