@@ -724,8 +724,10 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
 
     @Override
     protected GroovySnapshot takeSnapshot() {
-        // noinspection unchecked,rawtypes
-        return new GroovySnapshot(new LinkedHashMap<>(groovyShell.getContext().getVariables()));
+        synchronized (bindingBackingMap) {
+            // noinspection unchecked,rawtypes
+            return new GroovySnapshot(new LinkedHashMap<>(groovyShell.getContext().getVariables()));
+        }
     }
 
     @Override
@@ -765,7 +767,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
     @Override
     protected Set<String> getVariableNames() {
         synchronized (bindingBackingMap) {
-            return new HashSet<>(bindingBackingMap.keySet());
+            return new LinkedHashSet<>(bindingBackingMap.keySet());
         }
     }
 
