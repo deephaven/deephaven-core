@@ -584,21 +584,21 @@ public class TestHierarchicalTableSnapshots {
         final Table depthSnapshot = snapshotToTable(rollupTable, ss, depthKeys,
                 ColumnName.of("Action"), null, RowSetFactory.flat(30));
 
-        // ExpandToDepth(2): root expanded (depth remaining=2), A-level expanded (depth remaining=1),
-        // B-level visible but NOT expanded (depth remaining=0)
+        // ExpandToDepth(2): root expanded (depth remaining=1), EMPTY_KEY visited with default Expand
+        // (resets depth remaining=0), A-level visible but NOT expanded
         final Table expected = newTable(
                 intCol(rollupTable.getRowDepthColumn().name(),
-                        1, 2, 3, 3, 2, 3, 3),
+                        1, 2, 2),
                 booleanCol(rollupTable.getRowExpandedColumn().name(),
-                        true, true, false, false, true, false, false),
+                        true, false, false),
                 stringCol("A",
-                        null, "X", "X", "X", "Y", "Y", "Y"),
+                        null, "X", "Y"),
                 stringCol("B",
-                        null, null, "P", "Q", null, "P", "Q"),
+                        null, null, null),
                 stringCol("C",
-                        null, null, null, null, null, null, null),
+                        null, null, null),
                 intCol("MaxV",
-                        5, 3, 2, 3, 5, 4, 5));
+                        5, 3, 5));
         assertTableEquals(expected, depthSnapshot);
 
         freeSnapshotTableChunks(depthSnapshot);
@@ -710,24 +710,25 @@ public class TestHierarchicalTableSnapshots {
         final Table snapshot = snapshotToTable(rollupTable, ss, keys,
                 ColumnName.of("Action"), null, RowSetFactory.flat(30));
 
-        // ExpandToDepth(3) at root: expandingDepthRemaining = 3
+        // ExpandToDepth(3) at root: expandingDepthRemaining = 2 (after fix)
+        // EMPTY_KEY visited with default Expand (resets expandingDepthRemaining=0):
         // Expand on A=X overrides depth expansion for that subtree (expandingDepthRemaining=0):
         // X's children (X-P, X-Q) shown but not expanded further
-        // Y via Linkage: depth remaining decremented to 2
-        // Y-P, Y-Q expanded (depth remaining=1), their C-level children (Y-P-m, Y-Q-m) shown
+        // Y via Linkage would require depth remaining > 0, but Expand reset it to 0,
+        // so Y's children (Y-P, Y-Q) are visible but not expanded
         final Table expected = newTable(
                 intCol(rollupTable.getRowDepthColumn().name(),
-                        1, 2, 3, 3, 2, 3, 4, 3, 4),
+                        1, 2, 3, 3, 2, 3, 3),
                 booleanCol(rollupTable.getRowExpandedColumn().name(),
-                        true, true, false, false, true, true, null, true, null),
+                        true, true, false, false, true, false, false),
                 stringCol("A",
-                        null, "X", "X", "X", "Y", "Y", "Y", "Y", "Y"),
+                        null, "X", "X", "X", "Y", "Y", "Y"),
                 stringCol("B",
-                        null, null, "P", "Q", null, "P", "P", "Q", "Q"),
+                        null, null, "P", "Q", null, "P", "Q"),
                 stringCol("C",
-                        null, null, null, null, null, null, "m", null, "m"),
+                        null, null, null, null, null, null, null),
                 intCol("MaxV",
-                        4, 2, 1, 2, 4, 3, 3, 4, 4));
+                        4, 2, 1, 2, 4, 3, 4));
         assertTableEquals(expected, snapshot);
 
         freeSnapshotTableChunks(snapshot);
