@@ -18,6 +18,7 @@
 #include "deephaven/client/impl/update_by_operation_impl.h"
 #include "deephaven/client/subscription/subscription_handle.h"
 #include "deephaven/client/utility/arrow_util.h"
+#include "deephaven/client/utility/logging.h"
 #include "deephaven/dhcore/clienttable/schema.h"
 #include "deephaven/dhcore/utility/utility.h"
 
@@ -48,6 +49,7 @@ void CheckNotClosedOrThrow(const std::shared_ptr<ClientImpl> &impl);
 }  // namespace
 
 Client Client::Connect(const std::string &target, const ClientOptions &options) {
+  utility::log_verbosity_init();
   auto server = Server::CreateFromTarget(target, options);
   auto executor = Executor::Create("Client executor for " + server->me());
   auto flight_executor = Executor::Create("Flight executor for " + server->me());
