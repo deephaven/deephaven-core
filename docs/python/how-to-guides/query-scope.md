@@ -9,6 +9,15 @@ a = 2
 t2 = t.update(["Y = a * X"])
 ```
 
+This guide will walk you through Python's scoping rules and the process for adding variables and using functions in Python query strings. There are many reasons to use variables: more understandable code, better reusability, and in some cases, improved efficiency.
+
+If you'd like to learn more about query strings and the basic rationale of the query scope, see our [conceptual guide](../how-to-guides/query-scope.md).
+
+> [!NOTE]
+> Variable names and function names are case-sensitive.
+
+## Query scope in Python
+
 When the Deephaven engine compiles a [query string](./query-string-overview.md), it must be able to resolve all variables in the query string. This is done using the query scope. The Deephaven query scope follows rules similar to Python's [LEGB](https://realpython.com/python-scope-legb-rule/) rule, with some important distinctions.
 
 Query strings in Deephaven Python queries resolve variables with the following precedence:
@@ -107,13 +116,38 @@ result1 = compute(source, 10)
 result2 = compute(source, 3)
 ```
 
+## Example
+
+In this example, we want to know how much sales tax we will pay in various states given how much money is spent. The query scope is helpful because we can easily change the value of money spent as we call the function more than once.
+
+In Python, function parameters like `sales_price` are automatically available in the local scope and can be used directly in query strings.
+
+```python order=source,result1,result2
+from deephaven import new_table
+from deephaven.column import string_col, double_col
+
+
+def compute_tax(source, sales_price):
+    return source.update(formulas=["Taxed = SalesTaxRate * sales_price * 0.01"])
+
+
+source = new_table(
+    [
+        string_col("State", ["CO", "WY", "UT", "AZ", "NV"]),
+        double_col("SalesTaxRate", [2.9, 4, 5.95, 5.6, 6.85]),
+    ]
+)
+
+result1 = compute_tax(source, 500)
+result2 = compute_tax(source, 300)
+```
+
 ## Related documentation
 
 - [Built-in query language constants](./built-in-constants.md)
 - [Built-in query language variables](./built-in-variables.md)
 - [Built-in query language functions](./built-in-functions.md)
 - [Create a new table](./new-and-empty-table.md#new_table)
-- [How to use variables and functions in query strings](./query-scope.md)
 - [Use variables in query strings](./python-variables.md)
 - [Use functions in query strings](./python-functions.md)
 - [Query language formulas](./formulas.md)
