@@ -6,7 +6,7 @@ sidebar_label: JS API
 In this guide, you'll learn how to create a basic web page and use the JS API to create a table in Deephaven and display it. The Deephaven JS API is used to connect to a Deephaven Community Core instance from a browser or `node.js` application. It manages all your server connections, table tracking, and server communications. The Deephaven Console experience is created using our JS API.
 
 > [!NOTE]
-> This guide assumes you have Deephaven running locally with Python. You can find the completed example available at [http://localhost:10000/jsapi/table_basic.html](http://localhost:10000/jsapi/table_basic.html). There are other examples available at [http://localhost:10000/jsapi](http://localhost:10000/jsapi), but we focus specifically on creating the basic table example step-by-step.
+> This guide assumes you have Deephaven running locally with Groovy. You can find the completed example available at [http://localhost:10000/jsapi/table_basic.html](http://localhost:10000/jsapi/table_basic.html). There are other examples available at [http://localhost:10000/jsapi](http://localhost:10000/jsapi), but we focus specifically on creating the basic table example step-by-step. This guide uses pre-shared key (PSK) authentication. For other authentication methods, see our [authentication guides](./authentication/auth-anon.md).
 
 ## Create a simple web page
 
@@ -16,11 +16,35 @@ Create a new folder to work out of, add in `index.html`, and start up a server t
 mkdir api-example
 cd api-example
 touch index.html
-python -m http.server
+```
+
+Create a simple HTTP server script using Groovy. Save the following code to a file named `server.groovy`:
+
+```groovy skip-test
+@Grab('io.undertow:undertow-core:2.3.10.Final')
+import io.undertow.Undertow
+import io.undertow.server.handlers.resource.PathResourceManager
+import static io.undertow.Handlers.resource
+import java.nio.file.Paths
+
+def server = Undertow.builder()
+    .addHttpListener(8000, "0.0.0.0")
+    .setHandler(resource(new PathResourceManager(Paths.get("."), 100)))
+    .build()
+server.start()
+println "Server started at http://0.0.0.0:8000"
+println "Press Ctrl+C to stop"
+Thread.sleep(Long.MAX_VALUE)
+```
+
+Start the server:
+
+```sh
+groovy server.groovy
 ```
 
 > [!TIP]
-> This example uses a basic Python server to host the `index.html` file, but you can substitute another server.
+> If you don't have Groovy installed, you can use Python's built-in HTTP server (`python -m http.server`) or any other static file server instead.
 
 You should now be able to navigate to your server (located at at http://0.0.0.0:8000/ by default) to view our `index.html`. Initially, it will be a blank page - nothing is in the `index.html` yet!
 
@@ -32,51 +56,51 @@ Open up the `index.html` file for editing, and add the following:
   <head>
     <meta charset="utf-8" />
     <title>Deephaven JS API example</title>
-    <!-- Assumes your server is available at http://localhost:10000. Change as necessary -->
-    <script
-      src="http://localhost:10000/jsapi/dh-internal.js"
-      type="text/javascript"
-    ></script>
-    <script
-      src="http://localhost:10000/jsapi/dh-core.js"
-      type="text/javascript"
-    ></script>
   </head>
 
   <body>
     <h3>Table data</h3>
     <table id="simpleTable"></table>
 
-    <script>
-      (async () => {
-        // Add the rest of the code here
-      })();
+    <script type="module">
+      import dh from 'http://localhost:10000/jsapi/dh-core.js';
+
+      // Add the rest of the code here
     </script>
   </body>
 </html>
 ```
 
-Now, if you refresh the page, you should see "Table data" output. We're also loading the JS API scripts, which creates the global `dh` object (our main entry point into the JS API). If you do not include these scripts, or the path is incorrect, you will get errors trying to use the `dh` object.
-
-The inline `script` doesn't have any actual code yet. Let's add some code to make the page do something. Add all the code below into the inline `script` in the `body` element of the page.
+Now, if you refresh the page, you should see "Table data" output. The import statement downloads the Deephaven Core JS API and makes its namespace available locally as `dh`. The inline `script` doesn't have any actual code yet. Let's add some code to make the page do something. Add all the code below into the inline `script` in the `body` element of the page.
 
 First, we need to open a connection to the server:
 
 ```javascript
-var connection = new dh.IdeConnection("http://localhost:10000");
+var client = new dh.CoreClient("http://localhost:10000");
 ```
 
-After a connection is established, we need to start a session. For this example, we will start a `python` session (the default):
+And then authenticate. This example assumes you are using the "pre-shared key" method of authentication, with key "very-secret-password":
 
 ```javascript
-var ide = await connection.startSession("python");
+await client.login({
+  type: "io.deephaven.authentication.psk.PskAuthenticationHandler",
+  token: "very-secret-password",
+});
 ```
 
-Next, we need to run the code that will create the table. This code creates a static table called `remoteTable` with 10 rows and three columns: `I`, `J`, and `K`. Because it's Python code, be careful with indentation when creating the template string.
+This is specific to how your server is configured and deployed - for Deephaven Enterprise deployments, this will use type `io.deephaven.proto.auth.Token` and require an auth token be created for each new connection.
+
+After a connection is established and authenticated, ask the client for the IdeConnection instance, and start a console session. For this example, we will start a `groovy` session:
+
+```javascript
+var connection = await client.getAsIdeConnection();
+var ide = await connection.startSession("groovy");
+```
+
+Next, we need to run the code that will create the table. This code creates a static table called `remoteTable` with 10 rows and three columns: `I`, `J`, and `K`.
 
 ```javascript
 await ide.runCode(`
-from deephaven.TableTools import emptyTable
 remoteTable = emptyTable(10).updateView("I=i", "J=I*I", "K=i%2==0?\`Hello\`:\`World\`")
 `);
 ```
@@ -140,63 +164,56 @@ The final product of the HTML page is:
   <head>
     <meta charset="utf-8" />
     <title>Deephaven JS API example</title>
-    <!-- Assumes your server is running at http://localhost:10000. Change as necessary -->
-    <script
-      src="http://localhost:10000/jsapi/dh-internal.js"
-      type="text/javascript"
-    ></script>
-    <script
-      src="http://localhost:10000/jsapi/dh-core.js"
-      type="text/javascript"
-    ></script>
   </head>
 
   <body>
     <h3>Table data</h3>
     <table id="simpleTable"></table>
 
-    <script>
-      (async () => {
-        // Add the rest of the code here
+    <script type="module">
+      import dh from 'http://localhost:10000/jsapi/dh-core.js';
+      var client = new dh.CoreClient('http://localhost:10000');
 
-        var connection = new dh.IdeConnection('http://localhost:10000');
+      await client.login({
+        type: 'io.deephaven.authentication.psk.PskAuthenticationHandler',
+        token: 'very-secret-password',
+      });
 
-        var ide = await connection.startSession('python');
+      var connection = await client.getAsIdeConnection();
+      var ide = await connection.startSession('groovy');
 
-        await ide.runCode(`
-from deephaven.TableTools import emptyTable
+      await ide.runCode(`
 remoteTable = emptyTable(10).updateView("I=i", "J=I*I", "K=i%2==0?\`Hello\`:\`World\`")
       `);
 
-        var table = await ide.getTable('remoteTable');
+      var table = await ide.getTable('remoteTable');
 
-        var header = document.createElement('thead');
-        var headerRow = document.createElement('tr');
-        table.columns.forEach((column) => {
+      var header = document.createElement('thead');
+      var headerRow = document.createElement('tr');
+      table.columns.forEach((column) => {
+        var td = document.createElement('td');
+        td.innerText = column.name;
+        headerRow.appendChild(td);
+      });
+      header.appendChild(headerRow);
+
+      table.setViewport(0, 9);
+      var tbody = document.createElement('tbody');
+      var viewportData = await table.getViewportData();
+      var rows = viewportData.rows;
+      for (var i = 0; i < rows.length; i++) {
+        var tr = document.createElement('tr');
+        for (var j = 0; j < table.columns.length; j++) {
           var td = document.createElement('td');
-          td.innerText = column.name;
-          headerRow.appendChild(td);
-        });
-        header.appendChild(headerRow);
-
-        table.setViewport(0, 9);
-        var tbody = document.createElement('tbody');
-        var viewportData = await table.getViewportData();
-        var rows = viewportData.rows;
-        for (var i = 0; i < rows.length; i++) {
-          var tr = document.createElement('tr');
-          for (var j = 0; j < table.columns.length; j++) {
-            var td = document.createElement('td');
-            td.textContent = rows[i].get(table.columns[j]);
-            tr.appendChild(td);
-          }
-          tbody.appendChild(tr);
+          td.textContent = rows[i].get(table.columns[j]);
+          tr.appendChild(td);
         }
+        tbody.appendChild(tr);
+      }
 
-        var tableElement = document.getElementById('simpleTable');
-        tableElement.appendChild(header);
-        tableElement.appendChild(tbody);
-      })();
+      var tableElement = document.getElementById('simpleTable');
+      tableElement.appendChild(header);
+      tableElement.appendChild(tbody);
     </script>
   </body>
 </html>

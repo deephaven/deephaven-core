@@ -3,9 +3,23 @@ title: How to use liveness scopes
 sidebar_label: Liveness scope
 ---
 
+This guide discusses liveness scopes. It covers what a liveness scope is, how to use one, and why queries can benefit from its use.
+
+Liveness scopes give users a finer degree of control over cleanup of unreferenced nodes in the [query update graph](./table-update-model.md). A node in the update graph can be a table, plot, or any other object. A liveness scope automatically manages reference counting of the nodes created within it. Resources can be programmatically freed from a liveness scope.
+
+## Why use a liveness scope?
+
+Deephaven's engine runs in Java, in which garbage collection is handled by the JVM. Users have little control over when garbage collection takes place, as the JVM tries to optimize when it occurs to minimize GC runtime and maximize the amount of memory left available after it's run.
+
+Liveness scopes give users much more control over the query update graph and over garbage collection. Without liveness scope, queries rely solely on the JVM to perform garbage collection to clean up unreferenced nodes in the DAG. In most cases, this is acceptable. However, there are cases where a query can benefit from the use of a liveness scope.
+
+## How liveness scopes work
+
 Deephaven's liveness scopes allow the nodes in a refreshing query's update propagation graph to be updated proactively by assessing the nodes' "liveness" (whether or not they are active), rather than only via actions of the Java garbage collector. This does not replace garbage collection (GC), but it does allow cleanup to happen immediately when objects in the GUI are not needed. This is accomplished internally via reference counting, and works automatically for all users. For developers building new functionality using the Deephaven query engine, the [`LivenessScope`](/core/javadoc/io/deephaven/engine/liveness/LivenessScope.html) and [`LivenessScopeStack`](/core/javadoc/io/deephaven/engine/liveness/LivenessScopeStack.html) classes allow a finer degree of control over the reference counts of various query engine artifacts. Constructing an external scope before running a refreshing query will hold together the related artifacts created in its query update propagation graph. Releasing the scope after the query runs will release any referents that are no longer "live".
 
 When a table is live in Deephaven, the update propagation graph accumulates parent nodes that produce data (data sources) at the top, and all the child nodes that stream down the graph. Deephaven's liveness scope system keeps track of these referents: when child objects cease to be referenced and the parents' liveness count goes down, they will be cleaned up immediately without waiting for GC.
+
+## Demonstrating the problem
 
 Before we demonstrate liveness scopes in action, let's demonstrate the problem that liveness scopes solve.
 
@@ -29,7 +43,7 @@ data = null
 combo = null
 ```
 
-The above example works, but the query creates many objects that are not needed after it is run. The [`LivenessScope`](/core/javadoc/io/deephaven/engine/liveness/LivenessScope.html) can manage these objects and release them when they are no longer needed. This is best practice because it allows Deephaven to conserve memory.
+The above example works, but the query creates many objects that are not needed after it is run. The [`LivenessScope`](https://deephaven.io/core/javadoc/io/deephaven/engine/liveness/LivenessScope.html) can manage these objects and release them when they are no longer needed. This is best practice because it allows Deephaven to conserve memory.
 
 In this example, we will run the same query, but enclose it in a [`LivenessScope`](/core/javadoc/io/deephaven/engine/liveness/LivenessScope.html).
 
@@ -59,7 +73,7 @@ data = null
 combo = null
 ```
 
-## Using a LivenessScope
+## How to use a `LivenessScope`
 
 Deephaven's reference counting instrumentation will only clean up objects created purely for the GUI. This can be augmented by creating a [`LivenessScope`](/core/javadoc/io/deephaven/engine/liveness/LivenessScope.html) for your query. When the scope is released, any objects that are no longer needed or are not refreshing are let go.
 
@@ -144,6 +158,7 @@ The [`LivenessScopeStack`](/core/javadoc/io/deephaven/engine/liveness/LivenessSc
 
 ## Related documentation
 
-- [`LivenessScope`](/core/javadoc/io/deephaven/engine/liveness/LivenessScope.html)
+- [`LivenessScope`](../reference/engine/LivenessScope.md)
 - [`LivenessScopeStack`](/core/javadoc/io/deephaven/engine/liveness/LivenessScopeStack.html)
+- [Execution Context](./execution-context.md)
 - [Table Update Model](./table-update-model.md)
