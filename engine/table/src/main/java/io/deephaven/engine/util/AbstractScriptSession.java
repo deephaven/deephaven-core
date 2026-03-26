@@ -253,10 +253,6 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
         // can go away
         queryScope.release();
 
-        clearClassCache();
-    }
-
-    protected void clearClassCache() {
         // Clear our session's script directory:
         if (classCacheDirectory.exists()) {
             FileUtils.deleteRecursively(classCacheDirectory);
