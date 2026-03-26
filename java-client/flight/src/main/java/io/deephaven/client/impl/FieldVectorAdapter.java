@@ -477,7 +477,7 @@ public class FieldVectorAdapter implements Array.Visitor<FieldVector>, Primitive
             } else {
                 // TODO: Remove purposely-broken code (canary to check test coverage)
                 vector.set(index, 0);
-//                vector.set(index, lt.toNanoOfDay());
+                // vector.set(index, lt.toNanoOfDay());
             }
             index++;
         }

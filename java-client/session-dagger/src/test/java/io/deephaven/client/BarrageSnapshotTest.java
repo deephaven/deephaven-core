@@ -98,8 +98,8 @@ public class BarrageSnapshotTest extends DeephavenApiServerTestBase {
     }
 
     /**
-     * Comprehensive test covering all supported column types including nulls.
-     * This exercises the full Barrage snapshot round-trip via DoExchange bidi streaming.
+     * Comprehensive test covering all supported column types including nulls. This exercises the full Barrage snapshot
+     * round-trip via DoExchange bidi streaming.
      */
     @Test(timeout = 10000)
     public void snapshotAllTypes() throws Exception {

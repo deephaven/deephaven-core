@@ -374,6 +374,7 @@ public class DeephavenFlightSessionTest extends DeephavenFlightSessionTestBase {
     /**
      * Cannot use {@link Validator#compareVectorSchemaRoot} because the result we pull has extra metadata. So here is a
      * tweaked implementation that ignores metadata.
+     * 
      * @param expectedRoot The baseline expected {@code VectorSchemaRoot}.
      * @param root The one to compare to {@code expectedRoot}.
      */
@@ -384,12 +385,16 @@ public class DeephavenFlightSessionTest extends DeephavenFlightSessionTestBase {
         // Strip metadata from both the schema itself and the fields
         final Schema expectedSchemaNoMetadata = new Schema(root1.getSchema().getFields().stream().map(f -> {
             final FieldType fieldType = f.getFieldType();
-            return new Field(f.getName(), new FieldType(fieldType.isNullable(), fieldType.getType(), fieldType.getDictionary()), f.getChildren());
+            return new Field(f.getName(),
+                    new FieldType(fieldType.isNullable(), fieldType.getType(), fieldType.getDictionary()),
+                    f.getChildren());
         }).collect(Collectors.toList()));
 
         final Schema retrievedSchemaNoMetadata = new Schema(root2.getSchema().getFields().stream().map(f -> {
             final FieldType fieldType = f.getFieldType();
-            return new Field(f.getName(), new FieldType(fieldType.isNullable(), fieldType.getType(), fieldType.getDictionary()), f.getChildren());
+            return new Field(f.getName(),
+                    new FieldType(fieldType.isNullable(), fieldType.getType(), fieldType.getDictionary()),
+                    f.getChildren());
         }).collect(Collectors.toList()));
 
         Validator.compareSchemas(retrievedSchemaNoMetadata, expectedSchemaNoMetadata);
@@ -405,7 +410,8 @@ public class DeephavenFlightSessionTest extends DeephavenFlightSessionTestBase {
                     "Different column count:\n" + vectors1.toString() + "\n!=\n" + vectors2.toString());
         }
         for (int i = 0; i < vectors1.size(); i++) {
-            // Similarly, we cannot use Validator.compareFieldVectors becaues it compares the Fields themselves, which have different metadata
+            // Similarly, we cannot use Validator.compareFieldVectors becaues it compares the Fields themselves, which
+            // have different metadata
 
             final FieldVector vector1 = vectors1.get(i);
             final FieldVector vector2 = vectors2.get(i);
@@ -441,7 +447,9 @@ public class DeephavenFlightSessionTest extends DeephavenFlightSessionTestBase {
     }
 
     /**
-     * See package-private method org.apache.arrow.vector.util.Validator#equals(org.apache.arrow.vector.types.pojo.ArrowType, java.lang.Object, java.lang.Object)
+     * See package-private method
+     * org.apache.arrow.vector.util.Validator#equals(org.apache.arrow.vector.types.pojo.ArrowType, java.lang.Object,
+     * java.lang.Object)
      */
     private static boolean equals(ArrowType type, final Object o1, final Object o2) {
         if (type instanceof ArrowType.FloatingPoint) {
