@@ -110,6 +110,12 @@ final class TypeAdapter
     }
 
     @Override
+    public RelDataType visit(DurationType durationType) {
+        // TODO: is this the best choice?
+        return create(SqlTypeName.INTERVAL_HOUR_SECOND);
+    }
+
+    @Override
     public RelDataType visit(ArrayType<?, ?> arrayType) {
         // SQLTODO(array-type)
         return typeFactory.createJavaType(SqlTodoArrayType.class);
