@@ -684,10 +684,11 @@ public abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable
          */
         ExpandAll,
         /**
-         * Expand a node and its descendants to a specified depth. The depth is stored separately. Behaves like
-         * {@code ExpandAll} but stops auto-expanding after the specified number of levels. Descendants with a directive
-         * of action {@code Contract} or whose direct parent has a directive with action {@code Expand} are not
-         * expanded, same as {@code ExpandAll}.
+         * Expand a node and its descendants to a specified depth. The depth is stored separately, and is relative to
+         * the current node. Behaves like {@code ExpandAll} but stops auto-expanding after the specified number of
+         * levels. A depth of 1 is equivalent to {@code Expand}. A depth of 2 expands the node and its children, etc.
+         * Descendants with a directive of action {@code Contract} or whose direct parent has a directive with action
+         * {@code Expand} are not expanded, same as {@code ExpandAll}.
          */
         ExpandToDepth,
         /**
