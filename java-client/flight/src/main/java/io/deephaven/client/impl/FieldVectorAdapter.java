@@ -42,7 +42,6 @@ import io.deephaven.qst.type.LocalDateType;
 import io.deephaven.qst.type.LocalTimeType;
 import io.deephaven.qst.type.LongType;
 import io.deephaven.qst.type.NativeArrayType;
-import io.deephaven.qst.type.PeriodType;
 import io.deephaven.qst.type.PrimitiveType;
 import io.deephaven.qst.type.PrimitiveVectorType;
 import io.deephaven.qst.type.ShortType;
@@ -56,7 +55,6 @@ import org.apache.arrow.vector.DateDayVector;
 import org.apache.arrow.vector.DurationVector;
 import org.apache.arrow.vector.FieldVector;
 import org.apache.arrow.vector.Float4Vector;
-import org.apache.arrow.vector.IntervalMonthDayNanoVector;
 import org.apache.arrow.vector.Float8Vector;
 import org.apache.arrow.vector.IntVector;
 import org.apache.arrow.vector.SmallIntVector;
@@ -77,7 +75,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.time.Period;
 import java.util.Collection;
 import java.util.Objects;
 
@@ -200,11 +197,6 @@ public class FieldVectorAdapter implements Array.Visitor<FieldVector>, Primitive
             }
 
             @Override
-            public FieldVector visit(PeriodType periodType) {
-                return visitPeriodElements(generic.cast(periodType).values());
-            }
-
-            @Override
             public FieldVector visit(ArrayType<?, ?> arrayType) {
                 return arrayType.walk(new ArrayType.Visitor<FieldVector>() {
                     @Override
@@ -291,12 +283,6 @@ public class FieldVectorAdapter implements Array.Visitor<FieldVector>, Primitive
                                     public FieldVector visit(DurationType durationType) {
                                         return visitDurationArrayElements(
                                                 generic.cast(durationType.arrayType()).values());
-                                    }
-
-                                    @Override
-                                    public FieldVector visit(PeriodType periodType) {
-                                        return visitPeriodArrayElements(
-                                                generic.cast(periodType.arrayType()).values());
                                     }
 
                                     @Override
@@ -515,25 +501,6 @@ public class FieldVectorAdapter implements Array.Visitor<FieldVector>, Primitive
                 final int nano = d.getNano();
                 final long totalNanos = Math.addExact(Math.multiplyExact(epochSecond, 1_000_000_000L), nano);
                 vector.set(index, totalNanos);
-            }
-            index++;
-        }
-        vector.setValueCount(elements.size());
-        return vector;
-    }
-
-    private FieldVector visitPeriodElements(Collection<Period> elements) {
-        Field field = FieldAdapter.periodField(name);
-        IntervalMonthDayNanoVector vector = new IntervalMonthDayNanoVector(field, allocator);
-        vector.allocateNew(elements.size());
-        int index = 0;
-        for (Period p : elements) {
-            if (p == null) {
-                vector.setNull(index);
-            } else {
-                // Store full Period fidelity: total months (years * 12 + months), days, and 0 nanos
-                final int totalMonths = Math.toIntExact(p.toTotalMonths());
-                vector.set(index, totalMonths, p.getDays(), 0L);
             }
             index++;
         }
@@ -833,33 +800,6 @@ public class FieldVectorAdapter implements Array.Visitor<FieldVector>, Primitive
                         durationHolder.value = totalNanos;
                         durationHolder.unit = TimeUnit.NANOSECOND;
                         writer.write(durationHolder);
-                    }
-                }
-                writer.endList();
-            }
-        }
-        vector.setValueCount(elements.size());
-        return vector;
-    }
-
-    private FieldVector visitPeriodArrayElements(Collection<Period[]> elements) {
-        final Field field = FieldAdapter.of(ColumnHeader.of(name, Type.periodType().arrayType()));
-        final ListVector vector = new ListVector(field.getName(), allocator, field.getFieldType(), null);
-        vector.allocateNew();
-        final UnionListWriter writer = new UnionListWriter(vector);
-        for (Period[] array : elements) {
-            if (array == null) {
-                writer.writeNull();
-                writer.setPosition(writer.getPosition() + 1);
-            } else {
-                writer.startList();
-                for (Period x : array) {
-                    if (x == null) {
-                        writer.writeNull();
-                    } else {
-                        // Store full Period fidelity: total months (years * 12 + months), days, and 0 nanos
-                        final int totalMonths = Math.toIntExact(x.toTotalMonths());
-                        writer.writeIntervalMonthDayNano(totalMonths, x.getDays(), 0L);
                     }
                 }
                 writer.endList();

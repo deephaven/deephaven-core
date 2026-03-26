@@ -33,7 +33,6 @@ public class TestDataUtil {
                 ColumnHeader.of("localTimeCol", java.time.LocalTime.class),
                 ColumnHeader.of("localDateCol", java.time.LocalDate.class),
                 ColumnHeader.of("durationCol", java.time.Duration.class),
-                ColumnHeader.of("periodCol", java.time.Period.class),
                 ColumnHeader.of("byteArrayCol", byte[].class),
                 ColumnHeader.of("charArrayCol", char[].class),
                 ColumnHeader.of("shortArrayCol", short[].class),
@@ -45,15 +44,13 @@ public class TestDataUtil {
                 ColumnHeader.of("instantArrayCol", java.time.Instant[].class),
                 ColumnHeader.of("localTimeArrayCol", java.time.LocalTime[].class),
                 ColumnHeader.of("localDateArrayCol", java.time.LocalDate[].class),
-                ColumnHeader.of("durationArrayCol", java.time.Duration[].class),
-                ColumnHeader.of("periodArrayCol", java.time.Period[].class))
+                ColumnHeader.of("durationArrayCol", java.time.Duration[].class))
                 .start(3)
                 .row(true, (byte) 1, 'a', (short) 10, 100, 1000L, 1.1f, 1.1d, "hello",
                         Instant.parse("2025-01-01T10:00:00Z"),
                         java.time.LocalTime.of(10, 30, 45),
                         java.time.LocalDate.of(2025, 1, 1),
                         java.time.Duration.ofHours(1),
-                        java.time.Period.ofDays(1),
                         new byte[] {1, 2},
                         new char[] {'a', 'b'},
                         new short[] {10, 20},
@@ -65,17 +62,15 @@ public class TestDataUtil {
                         new Instant[] {Instant.parse("2025-01-01T10:00:00Z")},
                         new java.time.LocalTime[] {java.time.LocalTime.of(9, 0)},
                         new java.time.LocalDate[] {java.time.LocalDate.of(2025, 1, 15)},
-                        new java.time.Duration[] {java.time.Duration.ofHours(2)},
-                        new java.time.Period[] {java.time.Period.ofWeeks(1)})
+                        new java.time.Duration[] {java.time.Duration.ofHours(2)})
                 .row(false, (byte) 2, 'b', (short) 20, 200, 3000000000L, 2.2f, 2.2d, null,
-                        (Instant) null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+                        (Instant) null, null, null, null, null, null, null, null, null, null, null, null,
                         null, null, null, null)
                 .row(true, (byte) 3, 'c', (short) 30, 300, 3000L, 3.3f, 3.3d, "world",
                         Instant.parse("2025-01-03T12:00:00Z"),
                         java.time.LocalTime.of(22, 45, 0),
                         java.time.LocalDate.of(2025, 12, 31),
                         java.time.Duration.ofMinutes(30),
-                        java.time.Period.ofMonths(2),
                         new byte[] {3},
                         new char[] {'c'},
                         new short[] {30},
@@ -87,8 +82,7 @@ public class TestDataUtil {
                         new Instant[] {Instant.parse("2025-01-03T12:00:00Z")},
                         new java.time.LocalTime[] {java.time.LocalTime.of(18, 0)},
                         new java.time.LocalDate[] {java.time.LocalDate.of(2025, 12, 25)},
-                        new java.time.Duration[] {java.time.Duration.ofSeconds(45)},
-                        new java.time.Period[] {java.time.Period.ofMonths(12)})
+                        new java.time.Duration[] {java.time.Duration.ofSeconds(45)})
                 .newTable();
     }
 

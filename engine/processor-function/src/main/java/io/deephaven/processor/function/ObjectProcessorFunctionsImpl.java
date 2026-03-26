@@ -39,7 +39,6 @@ import io.deephaven.qst.type.CustomType;
 import io.deephaven.qst.type.DurationType;
 import io.deephaven.qst.type.GenericType;
 import io.deephaven.qst.type.InstantType;
-import io.deephaven.qst.type.PeriodType;
 import io.deephaven.qst.type.StringType;
 import io.deephaven.qst.type.Type;
 import io.deephaven.time.DateTimeUtils;
@@ -241,12 +240,6 @@ final class ObjectProcessorFunctionsImpl<T> implements ObjectProcessor<T> {
         @Override
         public ObjectAppender<T> visit(DurationType durationType) {
             // Duration is a generic object type
-            return new ObjectAppender<>(f);
-        }
-
-        @Override
-        public ObjectAppender<T> visit(PeriodType periodType) {
-            // Period is a generic object type
             return new ObjectAppender<>(f);
         }
 

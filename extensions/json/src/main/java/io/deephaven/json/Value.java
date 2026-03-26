@@ -111,8 +111,6 @@ public abstract class Value {
 
         T visit(DurationValue duration);
 
-        T visit(PeriodValue period);
-
         T visit(ArrayValue array);
 
         T visit(AnyValue any);

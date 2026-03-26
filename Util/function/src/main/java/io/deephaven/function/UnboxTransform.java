@@ -19,7 +19,6 @@ import io.deephaven.qst.type.InstantType;
 import io.deephaven.qst.type.DurationType;
 import io.deephaven.qst.type.LocalDateType;
 import io.deephaven.qst.type.LocalTimeType;
-import io.deephaven.qst.type.PeriodType;
 import io.deephaven.qst.type.StringType;
 
 import java.util.Objects;
@@ -219,11 +218,6 @@ public class UnboxTransform {
 
         @Override
         public ToPrimitiveFunction<T> visit(DurationType durationType) {
-            return null;
-        }
-
-        @Override
-        public ToPrimitiveFunction<T> visit(PeriodType periodType) {
             return null;
         }
 

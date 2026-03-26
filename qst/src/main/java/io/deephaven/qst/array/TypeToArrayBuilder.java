@@ -17,7 +17,6 @@ import io.deephaven.qst.type.InstantType;
 import io.deephaven.qst.type.LocalDateType;
 import io.deephaven.qst.type.LocalTimeType;
 import io.deephaven.qst.type.IntType;
-import io.deephaven.qst.type.PeriodType;
 import io.deephaven.qst.type.LongType;
 import io.deephaven.qst.type.PrimitiveType;
 import io.deephaven.qst.type.ShortType;
@@ -124,11 +123,6 @@ class TypeToArrayBuilder implements Type.Visitor<ArrayBuilder<?, ?, ?>>, Primiti
     @Override
     public ArrayBuilder<?, ?, ?> visit(DurationType durationType) {
         return GenericArray.builder(durationType);
-    }
-
-    @Override
-    public ArrayBuilder<?, ?, ?> visit(PeriodType periodType) {
-        return GenericArray.builder(periodType);
     }
 
     @Override

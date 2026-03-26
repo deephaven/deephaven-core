@@ -25,7 +25,6 @@ import io.deephaven.json.LocalTimeValue;
 import io.deephaven.json.LongValue;
 import io.deephaven.json.ObjectField;
 import io.deephaven.json.ObjectEntriesValue;
-import io.deephaven.json.PeriodValue;
 import io.deephaven.json.ObjectValue;
 import io.deephaven.json.ShortValue;
 import io.deephaven.json.SkipValue;
@@ -361,11 +360,6 @@ abstract class Mixin<T extends Value> implements JacksonProvider {
         @Override
         public Mixin<?> visit(DurationValue duration) {
             return new DurationMixin(duration, factory);
-        }
-
-        @Override
-        public Mixin<?> visit(PeriodValue period) {
-            return new PeriodMixin(period, factory);
         }
 
         @Override

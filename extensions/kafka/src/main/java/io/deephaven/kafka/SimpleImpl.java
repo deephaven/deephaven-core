@@ -31,7 +31,6 @@ import io.deephaven.qst.type.DurationType;
 import io.deephaven.qst.type.LocalDateType;
 import io.deephaven.qst.type.LocalTimeType;
 import io.deephaven.qst.type.LongType;
-import io.deephaven.qst.type.PeriodType;
 import io.deephaven.qst.type.PrimitiveType;
 import io.deephaven.qst.type.ShortType;
 import io.deephaven.qst.type.StringType;
@@ -367,11 +366,6 @@ class SimpleImpl {
 
         @Override
         public Serde<?> visit(DurationType durationType) {
-            return null;
-        }
-
-        @Override
-        public Serde<?> visit(PeriodType periodType) {
             return null;
         }
 

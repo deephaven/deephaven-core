@@ -92,12 +92,6 @@ public final class TypeCompatibility {
         }
 
         @Override
-        public Boolean visit(PeriodType periodType) {
-            // Iceberg does not have a native Period type
-            return false;
-        }
-
-        @Override
         public Boolean visit(ArrayType<?, ?> arrayType) {
             if (pt.typeId() == TypeID.BINARY || pt.typeId() == TypeID.FIXED) {
                 return byte.class.equals(arrayType.componentType().clazz());
@@ -237,11 +231,6 @@ public final class TypeCompatibility {
 
         @Override
         public Boolean visit(DurationType durationType) {
-            return false;
-        }
-
-        @Override
-        public Boolean visit(PeriodType periodType) {
             return false;
         }
 

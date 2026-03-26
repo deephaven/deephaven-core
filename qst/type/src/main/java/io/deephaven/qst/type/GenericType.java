@@ -36,8 +36,6 @@ public interface GenericType<T> extends Type<T> {
 
         R visit(DurationType durationType);
 
-        R visit(PeriodType periodType);
-
         R visit(ArrayType<?, ?> arrayType);
 
         // Implementation note: when adding new types here, add type to TypeHelper

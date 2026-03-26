@@ -653,12 +653,6 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
                 new DurationIdentityValidator());
     }
 
-    public void testPeriodSerialization() throws IOException {
-        testRoundTripSerialization(SpecialMode.NONE, OPT_DEFAULT, Period.class,
-                BarrageColumnRoundTripTest::initPeriodChunk,
-                new PeriodIdentityValidator());
-    }
-
     private static class Unique {
         final int value;
 
@@ -782,20 +776,6 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
                 chunk.set(i, null);
             } else {
                 chunk.set(i, Duration.ofSeconds(i * 3600L, i * 123456789L % 1_000_000_000));
-            }
-        }
-    }
-
-    private static void initPeriodChunk(final WritableChunk<Values> untypedChunk) {
-        final Random random = new Random(0);
-        final WritableObjectChunk<Period, Values> chunk = untypedChunk.asWritableObjectChunk();
-
-        for (int i = 0; i < chunk.size(); ++i) {
-            final int j = random.nextInt(20) - 1;
-            if (j < 0) {
-                chunk.set(i, null);
-            } else {
-                chunk.set(i, Period.of(i, i % 12, i % 28));
             }
         }
     }
@@ -996,30 +976,6 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
                     Assert.eqNull(computed.get(offset + off.getAndIncrement()), "computed");
                 } else {
                     Assert.equals(d, "d", computed.get(offset + off.getAndIncrement()), "computed");
-                }
-            });
-        }
-    }
-
-    private static final class PeriodIdentityValidator implements Validator {
-        @Override
-        public void assertExpected(
-                final WritableChunk<Values> untypedOriginal,
-                final WritableChunk<Values> unTypedComputed,
-                @Nullable RowSequence subset,
-                final int offset) {
-            final WritableObjectChunk<Period, Values> original = untypedOriginal.asWritableObjectChunk();
-            final WritableObjectChunk<Period, Values> computed = unTypedComputed.asWritableObjectChunk();
-            if (subset == null) {
-                subset = RowSetFactory.flat(original.size());
-            }
-            final MutableInt off = new MutableInt();
-            subset.forAllRowKeys(i -> {
-                final Period p = original.get((int) i);
-                if (p == null) {
-                    Assert.eqNull(computed.get(offset + off.getAndIncrement()), "computed");
-                } else {
-                    Assert.equals(p, "p", computed.get(offset + off.getAndIncrement()), "computed");
                 }
             });
         }

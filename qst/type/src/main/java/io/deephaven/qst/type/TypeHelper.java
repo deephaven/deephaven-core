@@ -36,8 +36,7 @@ class TypeHelper {
     static Stream<GenericType<?>> genericTypes() {
         return Stream.of(
                 BoxedType.instances(),
-                Stream.of(StringType.of(), InstantType.of(), LocalTimeType.of(), LocalDateType.of(), DurationType.of(),
-                        PeriodType.of()),
+                Stream.of(StringType.of(), InstantType.of(), LocalTimeType.of(), LocalDateType.of(), DurationType.of()),
                 primitiveVectorTypes())
                 .flatMap(Function.identity());
     }
@@ -118,12 +117,6 @@ class TypeHelper {
         @Override
         public Void visit(DurationType durationType) {
             add(Duration.class, durationType);
-            return null;
-        }
-
-        @Override
-        public Void visit(PeriodType periodType) {
-            add(Period.class, periodType);
             return null;
         }
 
