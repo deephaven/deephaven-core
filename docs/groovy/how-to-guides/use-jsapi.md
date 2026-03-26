@@ -6,7 +6,7 @@ sidebar_label: JS API
 In this guide, you'll learn how to create a basic web page and use the JS API to create a table in Deephaven and display it. The Deephaven JS API is used to connect to a Deephaven Community Core instance from a browser or `node.js` application. It manages all your server connections, table tracking, and server communications. The Deephaven Console experience is created using our JS API.
 
 > [!NOTE]
-> This guide assumes you have Deephaven running locally with Python. You can find the completed example available at [http://localhost:10000/jsapi/table_basic.html](http://localhost:10000/jsapi/table_basic.html). There are other examples available at [http://localhost:10000/jsapi](http://localhost:10000/jsapi), but we focus specifically on creating the basic table example step-by-step. This guide uses pre-shared key (PSK) authentication. For other authentication methods, see our [authentication guides](./authentication/auth-anon.md).
+> This guide assumes you have Deephaven running locally with Groovy. You can find the completed example available at [http://localhost:10000/jsapi/table_basic.html](http://localhost:10000/jsapi/table_basic.html). There are other examples available at [http://localhost:10000/jsapi](http://localhost:10000/jsapi), but we focus specifically on creating the basic table example step-by-step. This guide uses pre-shared key (PSK) authentication. For other authentication methods, see our [authentication guides](./authentication/auth-anon.md).
 
 ## Create a simple web page
 
@@ -16,11 +16,35 @@ Create a new folder to work out of, add in `index.html`, and start up a server t
 mkdir api-example
 cd api-example
 touch index.html
-python -m http.server
+```
+
+Create a simple HTTP server script using Groovy. Save the following code to a file named `server.groovy`:
+
+```groovy skip-test
+@Grab('io.undertow:undertow-core:2.3.10.Final')
+import io.undertow.Undertow
+import io.undertow.server.handlers.resource.PathResourceManager
+import static io.undertow.Handlers.resource
+import java.nio.file.Paths
+
+def server = Undertow.builder()
+    .addHttpListener(8000, "0.0.0.0")
+    .setHandler(resource(new PathResourceManager(Paths.get("."), 100)))
+    .build()
+server.start()
+println "Server started at http://0.0.0.0:8000"
+println "Press Ctrl+C to stop"
+Thread.sleep(Long.MAX_VALUE)
+```
+
+Start the server:
+
+```sh
+groovy server.groovy
 ```
 
 > [!TIP]
-> This example uses a basic Python server to host the `index.html` file, but you can substitute another server.
+> If you don't have Groovy installed, you can use Python's built-in HTTP server (`python -m http.server`) or any other static file server instead.
 
 You should now be able to navigate to your server (located at at http://0.0.0.0:8000/ by default) to view our `index.html`. Initially, it will be a blank page - nothing is in the `index.html` yet!
 
@@ -66,19 +90,18 @@ await client.login({
 
 This is specific to how your server is configured and deployed - for Deephaven Enterprise deployments, this will use type `io.deephaven.proto.auth.Token` and require an auth token be created for each new connection.
 
-After a connection is established and authenticated, ask the client for the IdeConnection instance, and start a console session. For this example, we will start a `python` session (the default):
+After a connection is established and authenticated, ask the client for the IdeConnection instance, and start a console session. For this example, we will start a `groovy` session:
 
 ```javascript
 var connection = await client.getAsIdeConnection();
-var ide = await connection.startSession("python");
+var ide = await connection.startSession("groovy");
 ```
 
-Next, we need to run the code that will create the table. This code creates a static table called `remoteTable` with 10 rows and three columns: `I`, `J`, and `K`. Because it's Python code, be careful with indentation when creating the template string.
+Next, we need to run the code that will create the table. This code creates a static table called `remoteTable` with 10 rows and three columns: `I`, `J`, and `K`.
 
 ```javascript
 await ide.runCode(`
-from deephaven import empty_table
-remoteTable = empty_table(10).update_view(formulas = ["I=i", "J=I*I", "K=i%2==0?\`Hello\`:\`World\`"])
+remoteTable = emptyTable(10).updateView("I=i", "J=I*I", "K=i%2==0?\`Hello\`:\`World\`")
 `);
 ```
 
@@ -157,11 +180,10 @@ The final product of the HTML page is:
       });
 
       var connection = await client.getAsIdeConnection();
-      var ide = await connection.startSession('python');
+      var ide = await connection.startSession('groovy');
 
       await ide.runCode(`
-from deephaven import empty_table
-remoteTable = empty_table(10).update_view(formulas = ["I=i", "J=I*I", "K=i%2==0?\`Hello\`:\`World\`"])
+remoteTable = emptyTable(10).updateView("I=i", "J=I*I", "K=i%2==0?\`Hello\`:\`World\`")
       `);
 
       var table = await ide.getTable('remoteTable');
