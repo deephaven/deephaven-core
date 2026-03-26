@@ -53,4 +53,4 @@ auto_refresh_instructions_30s = iceberg.IcebergReadInstructions(
 - [`IcebergWriteInstructions`](./iceberg-write-instructions.md)
 - [`SortOrderProvider`](./sort-order-provider.md)
 - [`TableParquetWriterOptions`](./table-parquet-writer-options.md)
-- [Pydoc](/core/pydoc/code/deephaven.experimental.iceberg.html#deephaven.experimental.iceberg.IcebergUpdateMode)
+- [Pydoc](https://docs.deephaven.io/core/pydoc/code/deephaven.experimental.iceberg.html#deephaven.experimental.iceberg.IcebergUpdateMode)

@@ -59,3 +59,4 @@ appendOnlyResult = BlinkTableTools.blinkToAppendOnly(tt1)
 ## Related Documentation
 
 - [`timeTable`](./timeTable.md)
+- [Javadoc](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/BlinkTableTools.html#blinkToAppendOnly(io.deephaven.engine.table.Table))

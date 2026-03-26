@@ -55,3 +55,4 @@ A list of scripts to run.
 - [How to use Application Mode libraries](../../how-to-guides/application-mode-libraries.md)
 - [How to use Application Mode scripts](../../how-to-guides/application-mode-script.md)
 - [Initialize server state with Application Mode](../../how-to-guides/application-mode.md)
+- [Javadoc](https://docs.deephaven.io/core/javadoc/io/deephaven/appmode/package-summary.html)
