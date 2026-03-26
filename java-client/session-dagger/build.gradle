@@ -44,3 +44,5 @@ dependencies {
 
 test {
 }
+
+apply plugin: 'io.deephaven.java-open-nio'

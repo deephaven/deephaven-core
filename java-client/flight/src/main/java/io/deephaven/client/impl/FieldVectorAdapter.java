@@ -68,6 +68,8 @@ import org.apache.arrow.vector.VarBinaryVector;
 import org.apache.arrow.vector.VarCharVector;
 import org.apache.arrow.vector.complex.ListVector;
 import org.apache.arrow.vector.complex.impl.UnionListWriter;
+import org.apache.arrow.vector.holders.DurationHolder;
+import org.apache.arrow.vector.types.TimeUnit;
 import org.apache.arrow.vector.types.pojo.Field;
 
 import java.nio.charset.StandardCharsets;
@@ -473,7 +475,9 @@ public class FieldVectorAdapter implements Array.Visitor<FieldVector>, Primitive
             if (lt == null) {
                 vector.setNull(index);
             } else {
+                // TODO: Remove purposely-broken code (canary to check test coverage)
                 vector.set(index, 0);
+//                vector.set(index, lt.toNanoOfDay());
             }
             index++;
         }
@@ -825,7 +829,10 @@ public class FieldVectorAdapter implements Array.Visitor<FieldVector>, Primitive
                         final long epochSecond = x.getSeconds();
                         final int nano = x.getNano();
                         final long totalNanos = Math.addExact(Math.multiplyExact(epochSecond, 1_000_000_000L), nano);
-                        writer.writeDuration(totalNanos);
+                        final DurationHolder durationHolder = new DurationHolder();
+                        durationHolder.value = totalNanos;
+                        durationHolder.unit = TimeUnit.NANOSECOND;
+                        writer.write(durationHolder);
                     }
                 }
                 writer.endList();

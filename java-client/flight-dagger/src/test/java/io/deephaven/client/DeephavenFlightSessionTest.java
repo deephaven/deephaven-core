@@ -7,6 +7,7 @@ import io.deephaven.api.TableOperations;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.client.impl.TableHandle;
+import io.deephaven.client.impl.VectorSchemaRootAdapter;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.qst.TableCreator;
 import io.deephaven.qst.column.header.ColumnHeader;
@@ -14,19 +15,25 @@ import io.deephaven.qst.table.NewTable;
 import io.deephaven.qst.table.TableCreatorImpl;
 import io.deephaven.qst.table.TableSpec;
 import io.deephaven.server.runner.RecordingErrorTransformer;
+import io.deephaven.server.util.TestDataUtil;
 import org.apache.arrow.flight.FlightStream;
 import org.apache.arrow.vector.BigIntVector;
+import org.apache.arrow.vector.FieldVector;
 import org.apache.arrow.vector.VectorSchemaRoot;
 import org.apache.arrow.vector.types.Types.MinorType;
+import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.arrow.vector.types.pojo.FieldType;
 import org.apache.arrow.vector.types.pojo.Schema;
+import org.apache.arrow.vector.util.Validator;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -344,11 +351,155 @@ public class DeephavenFlightSessionTest extends DeephavenFlightSessionTestBase {
         }
     }
 
+    /**
+     * Send a table to the server, pull it back to the client, and verify that the data is the same.
+     */
     @Test
-    public void doPutNewTable() throws TableHandle.TableHandleException, InterruptedException {
-        try (final TableHandle newTableHandle = flightSession.putExport(newTable(), bufferAllocator)) {
-            // ignore
+    public void doPutNewTable() throws Exception {
+        final NewTable newTable = TestDataUtil.getTestDataNewTable();
+
+        try (final TableHandle newTableHandle = flightSession.putExport(newTable, bufferAllocator);
+                final FlightStream stream = flightSession.stream(newTableHandle);
+                final VectorSchemaRoot expectedRoot = VectorSchemaRootAdapter.of(newTable, bufferAllocator)) {
+
+            assertThat(stream.next()).isTrue();
+            final VectorSchemaRoot retrievedRoot = stream.getRoot();
+
+            compareVectorSchemaRoot(expectedRoot, retrievedRoot);
+
+            assertThat(stream.next()).isFalse();
         }
+    }
+
+    /**
+     * Cannot use {@link Validator#compareVectorSchemaRoot} because the result we pull has extra metadata. So here is a
+     * tweaked implementation that ignores metadata.
+     * @param expectedRoot The baseline expected {@code VectorSchemaRoot}.
+     * @param root The one to compare to {@code expectedRoot}.
+     */
+    private static void compareVectorSchemaRoot(VectorSchemaRoot expectedRoot, VectorSchemaRoot root) {
+        final VectorSchemaRoot root1 = expectedRoot;
+        final VectorSchemaRoot root2 = root;
+
+        // Strip metadata from both the schema itself and the fields
+        final Schema expectedSchemaNoMetadata = new Schema(root1.getSchema().getFields().stream().map(f -> {
+            final FieldType fieldType = f.getFieldType();
+            return new Field(f.getName(), new FieldType(fieldType.isNullable(), fieldType.getType(), fieldType.getDictionary()), f.getChildren());
+        }).collect(Collectors.toList()));
+
+        final Schema retrievedSchemaNoMetadata = new Schema(root2.getSchema().getFields().stream().map(f -> {
+            final FieldType fieldType = f.getFieldType();
+            return new Field(f.getName(), new FieldType(fieldType.isNullable(), fieldType.getType(), fieldType.getDictionary()), f.getChildren());
+        }).collect(Collectors.toList()));
+
+        Validator.compareSchemas(retrievedSchemaNoMetadata, expectedSchemaNoMetadata);
+        if (root1.getRowCount() != root2.getRowCount()) {
+            throw new IllegalArgumentException(
+                    "Different row count:\n" + root1.getRowCount() + " != " + root2.getRowCount());
+        }
+
+        List<FieldVector> vectors1 = root1.getFieldVectors();
+        List<FieldVector> vectors2 = root2.getFieldVectors();
+        if (vectors1.size() != vectors2.size()) {
+            throw new IllegalArgumentException(
+                    "Different column count:\n" + vectors1.toString() + "\n!=\n" + vectors2.toString());
+        }
+        for (int i = 0; i < vectors1.size(); i++) {
+            // Similarly, we cannot use Validator.compareFieldVectors becaues it compares the Fields themselves, which have different metadata
+
+            final FieldVector vector1 = vectors1.get(i);
+            final FieldVector vector2 = vectors2.get(i);
+            final Field field1 = vector1.getField();
+
+
+            int valueCount = vector1.getValueCount();
+            if (valueCount != vector2.getValueCount()) {
+                throw new IllegalArgumentException(
+                        "Different value count for field "
+                                + field1
+                                + " : "
+                                + valueCount
+                                + " != "
+                                + vector2.getValueCount());
+            }
+            for (int j = 0; j < valueCount; j++) {
+                Object obj1 = vector1.getObject(j);
+                Object obj2 = vector2.getObject(j);
+                if (!equals(field1.getType(), obj1, obj2)) {
+                    throw new IllegalArgumentException(
+                            "Different values in column:\n"
+                                    + field1
+                                    + " at index "
+                                    + j
+                                    + ": "
+                                    + obj1
+                                    + " != "
+                                    + obj2);
+                }
+            }
+        }
+    }
+
+    /**
+     * See package-private method org.apache.arrow.vector.util.Validator#equals(org.apache.arrow.vector.types.pojo.ArrowType, java.lang.Object, java.lang.Object)
+     */
+    private static boolean equals(ArrowType type, final Object o1, final Object o2) {
+        if (type instanceof ArrowType.FloatingPoint) {
+            ArrowType.FloatingPoint fpType = (ArrowType.FloatingPoint) type;
+            switch (fpType.getPrecision()) {
+                case DOUBLE:
+                    return arrowValidatorEqualEnough((Double) o1, (Double) o2);
+                case SINGLE:
+                    return arrowValidatorEqualEnough((Float) o1, (Float) o2);
+                case HALF:
+                default:
+                    throw new UnsupportedOperationException("unsupported precision: " + fpType);
+            }
+        } else if (type instanceof ArrowType.Binary
+                || type instanceof ArrowType.LargeBinary
+                || type instanceof ArrowType.FixedSizeBinary) {
+            return Arrays.equals((byte[]) o1, (byte[]) o2);
+        } else if (o1 instanceof byte[] && o2 instanceof byte[]) {
+            return Arrays.equals((byte[]) o1, (byte[]) o2);
+        }
+
+        return Objects.equals(o1, o2);
+    }
+
+    /**
+     * See package-private method org.apache.arrow.vector.util.Validator#equalEnough(java.lang.Float, java.lang.Float)
+     */
+    private static boolean arrowValidatorEqualEnough(Float f1, Float f2) {
+        if (f1 == null || f2 == null) {
+            return f1 == null && f2 == null;
+        }
+        if (f1.isNaN()) {
+            return f2.isNaN();
+        }
+        if (f1.isInfinite()) {
+            return f2.isInfinite() && Math.signum(f1) == Math.signum(f2);
+        }
+        float average = Math.abs((f1 + f2) / 2);
+        float differenceScaled = Math.abs(f1 - f2) / (average == 0.0f ? 1f : average);
+        return differenceScaled < 1.0E-6f;
+    }
+
+    /**
+     * See package-private method org.apache.arrow.vector.util.Validator#equalEnough(java.lang.Double, java.lang.Double)
+     */
+    private static boolean arrowValidatorEqualEnough(Double f1, Double f2) {
+        if (f1 == null || f2 == null) {
+            return f1 == null && f2 == null;
+        }
+        if (f1.isNaN()) {
+            return f2.isNaN();
+        }
+        if (f1.isInfinite()) {
+            return f2.isInfinite() && Math.signum(f1) == Math.signum(f2);
+        }
+        double average = Math.abs((f1 + f2) / 2);
+        double differenceScaled = Math.abs(f1 - f2) / (average == 0.0d ? 1d : average);
+        return differenceScaled < 1.0E-12d;
     }
 
     private static Schema metadataLess(Schema schema) {
@@ -365,25 +516,4 @@ public class DeephavenFlightSessionTest extends DeephavenFlightSessionTestBase {
         return new FieldType(fieldType.isNullable(), fieldType.getType(), fieldType.getDictionary(), null);
     }
 
-    private NewTable newTable() {
-        return ColumnHeader.of(
-                ColumnHeader.ofBoolean("Boolean"),
-                ColumnHeader.ofByte("Byte"),
-                ColumnHeader.ofChar("Char"),
-                ColumnHeader.ofShort("Short"),
-                ColumnHeader.ofInt("Int"),
-                ColumnHeader.ofLong("Long"),
-                ColumnHeader.ofFloat("Float"),
-                ColumnHeader.ofDouble("Double"),
-                ColumnHeader.ofString("String"),
-                ColumnHeader.ofInstant("Instant"),
-                ColumnHeader.of("ByteVector", byte[].class))
-                .start(3)
-                .row(true, (byte) 42, 'a', (short) 32_000, 1234567, 1234567890123L, 3.14f, 3.14d, "Hello, World",
-                        Instant.now(), "abc".getBytes())
-                .row(null, null, null, null, null, null, null, null, null, (Instant) null, (byte[]) null)
-                .row(false, (byte) -42, 'b', (short) -32_000, -1234567, -1234567890123L, -3.14f, -3.14d, "Goodbye.",
-                        Instant.ofEpochMilli(0), new byte[] {0x32, 0x02, 0x17, 0x42})
-                .newTable();
-    }
 }
