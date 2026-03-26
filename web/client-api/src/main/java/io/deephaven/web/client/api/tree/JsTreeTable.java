@@ -917,25 +917,28 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
 
     /**
      * Expands the given node, so that its children are visible when they are in the viewport. The parameter can be the
-     * row index, or the row object itself. The second parameter is a boolean value, false by default, specifying if the
-     * row and all descendants should be fully expanded. Equivalent to {@code setExpanded(row, true)} with an optional
-     * third boolean parameter.
+     * row index, or the row object itself. The second parameter controls how descendants are expanded: pass
+     * {@code true} to expand the row and all descendants, a {@code number} to expand to a specified depth relative to
+     * the target node, or omit / pass {@code false} to expand only the row itself. A depth of 1 is equivalent to a
+     * regular expand (one level). A depth of 2 expands the node and its children, etc. Equivalent to
+     * {@code setExpanded(row, true)} with an optional third parameter.
      *
-     * @param row
-     * @param expandDescendants
+     * @param row The row to expand - either the absolute row index or the row object.
+     * @param expandDescendants Controls descendant expansion: {@code true} for all descendants, a {@code number} for
+     *        depth-limited expansion (relative to the target node), or {@code false}/omitted for a single level.
      */
-    public void expand(RowReferenceUnion row, @JsOptional Boolean expandDescendants) {
+    public void expand(RowReferenceUnion row, @JsOptional ExpandDescendantsUnion expandDescendants) {
         setExpanded(row, true, expandDescendants);
     }
 
     /**
      * Collapses the given node, so that its children and descendants are not visible in the size or the viewport. The
-     * parameter can be the row index, or the row object itself. Equivalent to {@code setExpanded(row, false, false)}.
+     * parameter can be the row index, or the row object itself. Equivalent to {@code setExpanded(row, false)}.
      *
-     * @param row
+     * @param row The row to collapse - either the absolute row index or the row object.
      */
     public void collapse(RowReferenceUnion row) {
-        setExpanded(row, false, false);
+        setExpanded(row, false, null);
     }
 
     @TsUnion
@@ -970,22 +973,80 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
     }
 
     /**
+     * Union type for the {@code expandDescendants} parameter of {@link #setExpanded} and {@link #expand}. In
+     * TypeScript, this is {@code boolean | number}. Pass {@code true} to expand the row and all descendants, a
+     * {@code number} (&gt;= 1) to expand to a specified depth relative to the target node, or {@code false} / omit to
+     * expand only the row itself. The depth is relative to the target node: a depth of 1 is equivalent to a regular
+     * expand (one level), a depth of 2 expands the node and its children, etc. Descendants with their own directives
+     * are respected, same as expand-all.
+     */
+    @TsUnion
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface ExpandDescendantsUnion {
+        @JsOverlay
+        static ExpandDescendantsUnion of(@DoNotAutobox Object o) {
+            return Js.cast(o);
+        }
+
+        @JsOverlay
+        default boolean isBoolean() {
+            return Js.typeof(this).equals("boolean");
+        }
+
+        @JsOverlay
+        default boolean isNumber() {
+            return Js.typeof(this).equals("number");
+        }
+
+        @JsOverlay
+        @TsUnionMember
+        default boolean asBoolean() {
+            return Js.asBoolean(this);
+        }
+
+        @JsOverlay
+        @TsUnionMember
+        default double asNumber() {
+            return Js.asDouble(this);
+        }
+    }
+
+    /**
      * Specifies if the given node should be expanded or collapsed. If this node has children, and the value is changed,
-     * the size of the table will change. If node is to be expanded and the third parameter, {@code expandDescendants},
-     * is {@code true}, then its children will also be expanded.
+     * the size of the table will change. The third parameter, {@code expandDescendants}, controls how descendants are
+     * expanded when {@code isExpanded} is {@code true}:
+     * <ul>
+     * <li>{@code true} — expand the row and all descendants (expand-all). Descendants with their own collapse or
+     * single-expand directives are respected.</li>
+     * <li>A {@code number} (&gt;= 1) — expand to a specified depth relative to the target node. The depth is relative
+     * to the target node: a depth of 1 is equivalent to a regular expand (one level), a depth of 2 expands the node and
+     * its children, etc. Behaves like expand-all but stops auto-expanding after the specified number of levels.
+     * Descendants with their own collapse or single-expand directives are respected, same as expand-all.</li>
+     * <li>{@code false}, {@code null}, or omitted — expand only the row itself (one level).</li>
+     * </ul>
      *
      * @param row The row to expand or collapse - either the absolute row index or the row object.
      * @param isExpanded {@code true} to expand the row, {@code false} to collapse.
-     * @param expandDescendants {@code true} to expand the row and all descendants, {@code false} to expand only the
-     *        row. Defaults to {@code false}.
+     * @param expandDescendants Controls descendant expansion: {@code true} for all descendants, a {@code number} for
+     *        depth-limited expansion (relative to the target node), or {@code false}/omitted for a single level.
+     *        Defaults to {@code false}.
      */
-    public void setExpanded(RowReferenceUnion row, boolean isExpanded, @JsOptional Boolean expandDescendants) {
+    public void setExpanded(RowReferenceUnion row, boolean isExpanded,
+            @JsOptional ExpandDescendantsUnion expandDescendants) {
         // TODO check row number is within bounds
         final double action;
         if (!isExpanded) {
             action = ACTION_COLLAPSE;
-        } else if (expandDescendants == Boolean.TRUE) {
-            action = ACTION_EXPAND_WITH_DESCENDENTS;
+        } else if (expandDescendants == null) {
+            action = ACTION_EXPAND;
+        } else if (expandDescendants.isBoolean()) {
+            action = expandDescendants.asBoolean() ? ACTION_EXPAND_WITH_DESCENDENTS : ACTION_EXPAND;
+        } else if (expandDescendants.isNumber()) {
+            int depth = (int) expandDescendants.asNumber();
+            if (depth < 1) {
+                throw new IllegalArgumentException("depth must be >= 1, got " + depth);
+            }
+            action = depth == 1 ? ACTION_EXPAND : expandToDepthAction(depth);
         } else {
             action = ACTION_EXPAND;
         }
@@ -1000,21 +1061,6 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
         replaceKeyTableData(ACTION_EXPAND);
     }
 
-    /**
-     * Expands the given node and its descendants to the specified depth. A depth of 1 is equivalent to a regular
-     * {@link #expand(RowReferenceUnion, Boolean) expand} (one level). A depth of 2 or more expands that many levels of
-     * descendants below the target node, unless they have their own directives.
-     *
-     * @param row The row to expand - either the absolute row index or the row object.
-     * @param depth The number of levels to expand (must be &gt;= 1 and &lt;= 64)
-     */
-    public void expandToDepth(RowReferenceUnion row, int depth) {
-        if (depth < 1) {
-            throw new IllegalArgumentException("depth must be >= 1, got " + depth);
-        }
-        final double action = depth == 1 ? ACTION_EXPAND : expandToDepthAction(depth);
-        setRowAction(row, action);
-    }
 
     /**
      * Tests if the specified row is expanded.
