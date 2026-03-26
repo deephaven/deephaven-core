@@ -11,10 +11,11 @@ import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
-import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
+import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.engine.util.GroovyDeephavenSession;
 import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.engine.util.TableTools;
@@ -24,6 +25,7 @@ import io.deephaven.plugin.type.ObjectTypeLookup.NoOp;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ScriptApi;
 import io.deephaven.util.mutable.MutableInt;
+import io.deephaven.util.thread.ThreadInitializationFactory;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -34,15 +36,18 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 import static io.deephaven.engine.testutil.TstUtils.i;
-import static io.deephaven.engine.util.TableTools.*;
+import static io.deephaven.engine.util.TableTools.booleanCol;
+import static io.deephaven.engine.util.TableTools.intCol;
+import static io.deephaven.engine.util.TableTools.stringCol;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -731,43 +736,68 @@ public class TestGroovyDeephavenSession {
     @Test
     public void testNestedFormulasAccessingGroovyClass() throws Exception {
         ExecutionContext context = ExecutionContext.getContext();
-        assert context.getUpdateGraph() instanceof ControlledUpdateGraph;
 
-        ScriptSession.Changes c =
-                session.evaluateScript("import io.deephaven.engine.util.scripts.TestGroovyDeephavenSession\n" +
-                        "class MyClass {" +
-                        "  public static int field = 42;\n" +
-                        "  public static int method() { return 43; }\n" +
-                        "}\n" +
-                        "ExecutionContext.getContext().getQueryLibrary().importStatic(MyClass)\n" +
-                        "t = TestGroovyDeephavenSession.makeTickingTable()\n" +
-                        "pt = t.partitionBy('I').transform(ExecutionContext.getContext(), { t -> t.update('Y=field', 'Z=method()') },true)");
-        c.throwIfError();
+        // re-create the PUG to set thread count to 1, so we know we will run the transform on our thread and can
+        // tweak the classloader for testing
+        PeriodicUpdateGraph updateGraph = new PeriodicUpdateGraph(
+                "TEST",
+                true,
+                1000,
+                25,
+                1,
+                ThreadInitializationFactory.NO_OP,
+                context.getOperationInitializer());
+        updateGraph.enableUnitTestMode();
+        updateGraph.resetForUnitTests(false);
+        updateGraph.setSerialTableOperationsSafe(true);
+        context = ExecutionContext.getContext().withUpdateGraph(updateGraph);
+        try (SafeCloseable ignored = context.open()) {
 
-        // Make sure the table ticks at least once so the transform runs
-        Table t = session.getQueryScope().readParamValue("t");
-        PartitionedTable pt = session.getQueryScope().readParamValue("pt");
+            // record the starting classloader
+            AtomicReference<ClassLoader> cl = new AtomicReference<>();
+            updateGraph.refreshUpdateSourceForUnitTests(() -> {
+                cl.set(Thread.currentThread().getContextClassLoader());
+            });
 
-        CountDownLatch latch = new CountDownLatch(1);
-        // Ensure that the update runs from another thread with its own classloader
-        new Thread() {
-            @Override
-            public void run() {
-                // Explicitly set the context classloader to null, so we know that it is being set again correctly
-                Thread.currentThread().setContextClassLoader(null);
-                context.getUpdateGraph().<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
-                    TstUtils.addToTable(t, i(0), intCol("I", 0));
-                });
 
-                // Verify that the classloader we set was restored
-                assertNull(Thread.currentThread().getContextClassLoader());
-                latch.countDown();
-            }
-        }.start();
+            GroovyDeephavenSession s = GroovyDeephavenSession.of(
+                    context.getUpdateGraph(), context.getOperationInitializer(), NoOp.INSTANCE,
+                    GroovyDeephavenSession.RunScripts.none());
 
-        pt.table().awaitUpdate(2_000);
+            ScriptSession.Changes c =
+                    s.evaluateScript("import io.deephaven.engine.util.scripts.TestGroovyDeephavenSession\n" +
+                            "class MyClass {" +
+                            "  public static int field = 42;\n" +
+                            "  public static int method() { return 43; }\n" +
+                            "}\n" +
+                            "ExecutionContext.getContext().getQueryLibrary().importStatic(MyClass)\n" +
+                            "t = TestGroovyDeephavenSession.makeTickingTable()\n" +
+                            // "pt = t.partitionBy('I').transform(ExecutionContext.getContext(), { t -> if (t.size() !=
+                            // 0) throw new RuntimeException(); return t.update() },true)");
+                            "pt = t.partitionBy('I').transform(ExecutionContext.getContext(), { t -> t.update('Y=field', 'Z=method()') },true)");
+            c.throwIfError();
 
-        latch.await();
+            // Make sure the table ticks at least once so the transform runs
+            QueryTable t = s.getQueryScope().readParamValue("t");
+            PartitionedTable pt = s.getQueryScope().readParamValue("pt");
+            Table merged = pt.merge();
+            assertEquals(int.class, merged.getColumnSource("Y").getType());
+            assertEquals(0, merged.size());
+
+            updateGraph.runWithinUnitTestCycle(() -> {
+                TstUtils.addToTable(t, i(0), intCol("I", 0));
+                t.notifyListeners(i(0), i(), i());
+            });
+            assertEquals(1, merged.size());
+            assertEquals(42, merged.getColumnSource("Y").getInt(0));
+
+            // Confirm we restored old classloader. As of writing, this is the "this.session" classloader, but test
+            // structure/setup could change and we could end up with something different here instead. Note that this
+            // is not the same as the classloader used to run the transform.
+            updateGraph.refreshUpdateSourceForUnitTests(() -> {
+                assertSame(cl.get(), Thread.currentThread().getContextClassLoader());
+            });
+        }
     }
 
     @ScriptApi
