@@ -633,7 +633,24 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
                 NullValueColumnSource.createColumnSourceMap(constituentDefinition));
     }
 
-    Set<String> getConsistentKeyColumnNames() {
+    /**
+     * Get key columns that are consistent with the constituents.
+     *
+     * <p>
+     * If a table is created by {@link Table#partitionBy(String...)}, then the key columns of the table of constituents
+     * match the key columns in the constituents. However, if the constituents are modified with a transform, then the
+     * key columns may no longer be consistent. When they are consistent, the {@link PartitionedTableProxyImpl} can
+     * optimize filters against those columns.
+     * </p>
+     *
+     * <p>
+     * <b>This method is for internal use only, and may be changed or removed at any time.</b>
+     * </p>
+     *
+     * @return the set of key columns that match the constituent tables
+     */
+    @InternalUseOnly
+    public Set<String> getConsistentKeyColumnNames() {
         return consistentKeyColumnNames;
     }
 
