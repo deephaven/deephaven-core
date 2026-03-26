@@ -61,3 +61,4 @@ In this example:
 - [blink_to_append_only](./blink-to-append-only.md) — Convert a blink table to append-only to preserve all rows.
 - [Table types: Specialized semantics for blink tables](../../../conceptual/table-types.md#specialized-semantics-for-blink-tables) — Detailed explanation of blink table aggregation behavior.
 - [`time_table`](./timeTable.md)
+- [Pydoc](https://deephaven.io/core/pydoc/code/deephaven.table.html#deephaven.table.Table.remove_blink)

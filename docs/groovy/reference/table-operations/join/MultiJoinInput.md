@@ -89,3 +89,4 @@ result = mjTable.table()
 
 - [Multi-Join](./multijoin.md)
 - [`MultiJoinTable`](./MultiJoinTable.md)
+- [Javadoc](https://deephaven.io/core/javadoc/io/deephaven/engine/table/MultiJoinInput.html)

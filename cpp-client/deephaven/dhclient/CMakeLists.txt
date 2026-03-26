@@ -102,14 +102,15 @@ set(ALL_FILES
     include/private/deephaven/client/subscription/subscribe_thread.h
     include/private/deephaven/client/subscription/subscription_handle.h
 
-    src/utility/executor.cc
-    include/private/deephaven/client/utility/executor.h
-
     src/utility/arrow_util.cc
+    src/utility/executor.cc
+    src/utility/logging.cc
     src/utility/table_maker.cc
 
+    include/private/deephaven/client/utility/executor.h
     include/public/deephaven/client/utility/arrow_util.h
     include/public/deephaven/client/utility/internal_types.h
+    include/public/deephaven/client/utility/logging.h
     include/public/deephaven/client/utility/misc_types.h
     include/public/deephaven/client/utility/table_maker.h
 )
