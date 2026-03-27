@@ -24,29 +24,29 @@ The following shows an example of a typical `.app` file:
 
 ```
 type=script
-scriptType=python
+scriptType=groovy
 enabled=true
 id=hello.world
 name=Hello World!
-file_0=./helloWorld.py
+file_0=./helloWorld.groovy
 ```
 
 ## Application Mode config files directory
 
-In your `docker-compose.yml` file in the `grpc-api` section, the `-Ddeephaven.application.dir` flag is set to the directory containing the `*.app` Application Mode files. Since this runs in Docker, this value will need to be wherever you decide to package your directory.
+When running Deephaven via Docker, you can set an additional [configuration property](./configuration/docker-application.md), `-Ddeephaven.application.dir`, to the directory containing your code listed in your [application mode configuration file](#application-mode-config-file).
 
-The following shows an example of what your `grpc-api` section may look like.
+The following Dockerfile builds on Deephaven's Groovy base Dockerfile by setting the application mode directory to `/app.d` within the Docker container.
 
 ```yml
-grpc-api:
-  image: my-app/deephaven-grpc:latest
-  expose:
-    - "8080"
+services:
+  deephaven:
+    image: ghcr.io/deephaven/server:${VERSION:-latest}
+    ports:
+      - "${DEEPHAVEN_PORT:-10000}:10000"
   volumes:
     - ./data:/data
-    - api-cache:/cache
   environment:
-    - JAVA_TOOL_OPTIONS=-Xmx4g -Ddeephaven.console.type=python -Ddeephaven.application.dir=/app.d
+    - START_OPTS=-Xmx4g -Ddeephaven.application.dir=/app.d
 ```
 
 ## Packaging your files
@@ -88,12 +88,12 @@ app.d
 
 ### Dockerfile
 
-Since we have bundled our scripts and [config files](../reference/app-mode/application-mode-config.md) in the same directory (`app.d`), our Dockerfile simply just needs to copy over this directory when we build it. All we need to do is make our own Dockerfile that extends the Deephaven base `ghcr.io/deephaven/grpc-api` image, and copies over our `app.d` directory.
+Since we have bundled our scripts and [config files](../reference/app-mode/application-mode-config.md) in the same directory (`app.d`), our Dockerfile simply needs to copy over this directory when we build it. All we need to do is make our own Dockerfile that extends the Deephaven server image, and copies over our `app.d` directory.
 
 This Dockerfile assumes that it is in the same directory as `app.d`.
 
 ```
-FROM ghcr.io/deephaven/grpc-api
+FROM ghcr.io/deephaven/server-slim:${VERSION:-latest}
 COPY app.d /app.d
 ```
 
@@ -120,22 +120,22 @@ my-project
 Our Dockerfile should contain the following.
 
 ```
-FROM ghcr.io/deephaven/grpc-api
+FROM ghcr.io/deephaven/server
 COPY app.d /app.d
 ```
 
-Assuming we build and tag our Docker image with `docker build --tag my-app/deephaven-grpc .`, the `grpc-api` section of our `docker-compose.yml` file should look like this.
+Assuming we build and tag our Docker image with `docker build --tag my-app/deephaven-grpc .`, our `docker-compose.yml` file should look like this.
 
 ```yml
-grpc-api:
-  image: my-app/deephaven-grpc:latest
-  expose:
-    - "8080"
+services:
+  deephaven:
+    image: ghcr.io/deephaven/deephaven-grpc:${VERSION:-latest}
+    ports:
+      - "${DEEPHAVEN_PORT:-10000}:10000"
   volumes:
     - ./data:/data
-    - api-cache:/cache
   environment:
-    - JAVA_TOOL_OPTIONS=-Xmx4g -Ddeephaven.console.type=python -Ddeephaven.application.dir=/app.d
+    - START_OPTS=-Xmx4g -Ddeephaven.application.dir=/app.d
 ```
 
 After building the Docker image, we can now launch the application by running `docker compose up`.
@@ -152,6 +152,10 @@ hello = { ->
 source = emptyTable(5)
 result = source.update("Values = i")
 ```
+
+## A real world example
+
+For a real world example of application mode being used in a Deephaven deployment, check out the [Deephaven Parquet viewer](https://github.com/devinrsmith/deephaven-parquet-viewer/tree/main), which uses Deephaven's application mode to view Parquet files from the command line.
 
 ## Related documentation
 
