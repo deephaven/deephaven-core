@@ -104,6 +104,7 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
                 .setQueryCompiler(compilerContext)
                 .setUpdateGraph(updateGraph)
                 .setOperationInitializer(operationInitializer)
+                .setClassLoader(parentClassLoader)
                 .build();
     }
 
