@@ -77,6 +77,7 @@ public class FilteredTableDataService extends AbstractTableDataService {
     @Override
     public void shutdown() {
         serviceToFilter.shutdown();
+        super.shutdown();
     }
 
     @Override

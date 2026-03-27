@@ -107,6 +107,7 @@ public class CompositeTableDataService extends AbstractTableDataService {
     @Override
     public void shutdown() {
         serviceSelector.shutdownServices();
+        super.shutdown();
     }
 
     @Override
