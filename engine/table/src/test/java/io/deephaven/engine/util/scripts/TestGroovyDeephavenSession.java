@@ -43,13 +43,7 @@ import static io.deephaven.engine.testutil.TstUtils.i;
 import static io.deephaven.engine.util.TableTools.booleanCol;
 import static io.deephaven.engine.util.TableTools.intCol;
 import static io.deephaven.engine.util.TableTools.stringCol;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 public class TestGroovyDeephavenSession {
 
@@ -709,13 +703,10 @@ public class TestGroovyDeephavenSession {
 
         Table t1 = session.getQueryScope().readParamValue("t1");
         Table t2 = session.getQueryScope().readParamValue("t2");
-        try {
-            Table joined = t1.join(t2, "Y=Y");
-            fail("Expected join to fail");
-        } catch (Exception e) {
-            assertTrue(e.getMessage(), e.getMessage().contains("join"));
-            assertTrue(e.getMessage(), e.getMessage().contains("ClassLoader"));
-        }
+        final IllegalArgumentException iae =
+                assertThrows(IllegalArgumentException.class, () -> t1.join(t2, "Y=Y"));
+        assertTrue(iae.getMessage().startsWith(
+                "Mismatched join types in Y=Y, but both sides have the same name 'io.deephaven.dynamic.Foo'. Was the class redefined or one side loaded from a different classloader?"));
     }
 
     @Test
@@ -772,8 +763,6 @@ public class TestGroovyDeephavenSession {
                             "}\n" +
                             "ExecutionContext.getContext().getQueryLibrary().importStatic(MyClass)\n" +
                             "t = TestGroovyDeephavenSession.makeTickingTable()\n" +
-                            // "pt = t.partitionBy('I').transform(ExecutionContext.getContext(), { t -> if (t.size() !=
-                            // 0) throw new RuntimeException(); return t.update() },true)");
                             "pt = t.partitionBy('I').transform(ExecutionContext.getContext(), { t -> t.update('Y=field', 'Z=method()') },true)");
             c.throwIfError();
 

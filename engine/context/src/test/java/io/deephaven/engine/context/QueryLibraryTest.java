@@ -61,33 +61,41 @@ public class QueryLibraryTest {
 
     @Test
     public void testImportChangingClass() throws ClassNotFoundException {
-        // Define a classloader for our new class and load it
-        String binaryName = "com.test.Foo";
-        ClassLoader cl = makeClassloaderWithClass(binaryName, 123);
-        Class<?> aClass = cl.loadClass(binaryName);
+        // Keep track of the initial classloader to avoid affecting other tests
+        ClassLoader original = Thread.currentThread().getContextClassLoader();
 
-        QueryLibrary ql = ExecutionContext.getContext().getQueryLibrary();
-        ql.importClass(aClass);
+        try {
+            // Define a classloader for our new class and load it
+            String binaryName = "com.test.Foo";
+            ClassLoader cl = makeClassloaderWithClass(binaryName, 123);
+            Class<?> aClass = cl.loadClass(binaryName);
 
-        // Validate that the class doesn't appear in imports if we try the default classloader
-        assertFalse(ql.getImportStrings()
-                .contains("import " + binaryName + ";"));
+            QueryLibrary ql = ExecutionContext.getContext().getQueryLibrary();
+            ql.importClass(aClass);
 
-        // Set up the context classloader to be our new classloader, and validate that we can now see the class
-        Thread.currentThread().setContextClassLoader(cl);
-        assertTrue(ql.getImportStrings()
-                .contains("import " + binaryName + ";"));
+            // Validate that the class doesn't appear in imports if we try the default classloader
+            assertFalse(ql.getImportStrings()
+                    .contains("import " + binaryName + ";"));
 
-        // Make a new classloader with the same class name, but a different class definition
-        ClassLoader cl2 = makeClassloaderWithClass(binaryName, 456);
-        Class<?> aClass2 = cl2.loadClass(binaryName);
-        assertNotEquals(aClass, aClass2);
-        Thread.currentThread().setContextClassLoader(cl2);
+            // Set up the context classloader to be our new classloader, and validate that we can now see the class
+            Thread.currentThread().setContextClassLoader(cl);
+            assertTrue(ql.getImportStrings()
+                    .contains("import " + binaryName + ";"));
 
-        assertTrue(ql.getImportStrings()
-                .contains("import " + binaryName + ";"));
-        assertFalse(ql.getClassImports().contains(aClass));
-        assertTrue(ql.getClassImports().contains(aClass2));
+            // Make a new classloader with the same class name, but a different class definition
+            ClassLoader cl2 = makeClassloaderWithClass(binaryName, 456);
+            Class<?> aClass2 = cl2.loadClass(binaryName);
+            assertNotEquals(aClass, aClass2);
+            Thread.currentThread().setContextClassLoader(cl2);
+
+            assertTrue(ql.getImportStrings()
+                    .contains("import " + binaryName + ";"));
+            assertFalse(ql.getClassImports().contains(aClass));
+            assertTrue(ql.getClassImports().contains(aClass2));
+        } finally {
+            // Restore the old classloader
+            Thread.currentThread().setContextClassLoader(original);
+        }
     }
 
     /**
