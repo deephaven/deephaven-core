@@ -106,7 +106,6 @@ public class UnionChunkWriter<T> extends BaseChunkWriter<ObjectChunk<T, Values>>
         private int cachedSize = -1;
         private final WritableByteChunk<Values> columnOfInterest;
         private final WritableIntChunk<Values> columnOffset;
-        private final SizedChunk<Values>[] innerSizedChunks;
         private final DrainableColumn[] innerColumns;
 
         private UnionChunkInputStream(
@@ -125,7 +124,7 @@ public class UnionChunkWriter<T> extends BaseChunkWriter<ObjectChunk<T, Values>>
 
             columnOfInterest = WritableByteChunk.makeWritableChunk(resultChunkSize);
             // noinspection unchecked
-            innerSizedChunks = new SizedChunk[numColumns];
+            final SizedChunk<Values>[] innerSizedChunks = new SizedChunk[numColumns];
             // noinspection unchecked
             final WritableObjectChunk<Object, Values>[] innerChunks = new WritableObjectChunk[numColumns];
             for (int ii = 0; ii < numColumns; ++ii) {
