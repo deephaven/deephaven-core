@@ -38,6 +38,11 @@ public class CompositeTableDataService extends AbstractTableDataService {
         void resetServices(@NotNull TableKey key);
 
         /**
+         * Stop any processes and release resources held by the services managed by this selector.
+         */
+        default void shutdownServices() {}
+
+        /**
          * Get a detailed description string.
          *
          * @return A description string
@@ -97,6 +102,11 @@ public class CompositeTableDataService extends AbstractTableDataService {
     public void reset(@NotNull final TableKey key) {
         super.reset(key);
         serviceSelector.resetServices(key);
+    }
+
+    @Override
+    public void shutdown() {
+        serviceSelector.shutdownServices();
     }
 
     @Override

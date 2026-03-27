@@ -59,6 +59,11 @@ public interface TableDataService {
     }
 
     /**
+     * Stop any processes and release resources held by this TableDataService instance.
+     */
+    default void shutdown() {}
+
+    /**
      * Get a detailed description string.
      *
      * @return A description string
