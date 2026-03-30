@@ -33,7 +33,6 @@ dependencies {
     testImplementation project(':engine-test-utils')
     testImplementation project(':Plot')
     testImplementation project(':java-client-flight')
-    testImplementation project(':java-client-barrage-dagger')
     testImplementation project(':proto:proto-backplane-grpc-flight')
     testImplementation project(':plugin-echo')
     testImplementation project(':plugin-figure')
@@ -44,5 +43,3 @@ dependencies {
 
 test {
 }
-
-apply plugin: 'io.deephaven.java-open-nio'

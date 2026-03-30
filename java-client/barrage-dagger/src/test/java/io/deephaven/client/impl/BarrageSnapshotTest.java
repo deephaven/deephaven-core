@@ -1,13 +1,11 @@
 //
 // Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
-package io.deephaven.client;
+package io.deephaven.client.impl;//
 
-import io.deephaven.client.impl.BarrageSession;
-import io.deephaven.client.impl.BarrageSnapshot;
-import io.deephaven.client.impl.DaggerDeephavenBarrageRoot;
-import io.deephaven.client.impl.FieldVectorAdapter;
-import io.deephaven.client.impl.TableHandle;
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
+//
+
 import io.deephaven.engine.table.Table;
 
 import io.deephaven.engine.table.impl.InMemoryTable;
@@ -25,18 +23,10 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.time.Duration;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalTime;
-import java.time.Period;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import static io.deephaven.engine.util.TableTools.col;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
