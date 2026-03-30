@@ -5,9 +5,7 @@ package io.deephaven.web.client.ide;
 
 import com.vertispan.tsdefs.annotations.TsTypeRef;
 import elemental2.promise.Promise;
-import io.deephaven.javascript.proto.dhinternal.browserheaders.BrowserHeaders;
 import io.deephaven.javascript.proto.dhinternal.grpcweb.Grpc;
-import io.deephaven.javascript.proto.dhinternal.grpcweb.grpc.Code;
 import io.deephaven.javascript.proto.dhinternal.grpcweb.grpc.Transport;
 import io.deephaven.javascript.proto.dhinternal.grpcweb.transports.transport.TransportOptions;
 import io.deephaven.proto.backplane.grpc.TerminationNotificationResponse;
@@ -16,7 +14,6 @@ import io.deephaven.web.client.api.JsTable;
 import io.deephaven.web.client.api.QueryConnectable;
 import io.deephaven.web.client.api.ServerObject;
 import io.deephaven.web.client.api.WorkerConnection;
-import io.deephaven.web.client.api.barrage.stream.ResponseStreamWrapper;
 import io.deephaven.web.client.api.console.JsVariableChanges;
 import io.deephaven.web.client.api.console.JsVariableDescriptor;
 import io.deephaven.web.client.api.console.JsVariableType;

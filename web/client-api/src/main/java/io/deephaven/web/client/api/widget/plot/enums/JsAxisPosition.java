@@ -4,7 +4,7 @@
 package io.deephaven.web.client.api.widget.plot.enums;
 
 import com.vertispan.tsdefs.annotations.TsTypeDef;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.figuredescriptor.AxisDescriptor;
+import io.deephaven.proto.backplane.script.grpc.FigureDescriptor;
 import jsinterop.annotations.JsType;
 
 @JsType(name = "AxisPosition", namespace = "dh.plot")
@@ -13,21 +13,21 @@ public class JsAxisPosition {
     /**
      * The axis should be drawn at the top of the chart.
      */
-    public static final int TOP = AxisDescriptor.AxisPosition.getTOP();
+    public static final int TOP = FigureDescriptor.AxisDescriptor.AxisPosition.TOP.getNumber();
     /**
      * The axis should be drawn at the bottom of the chart.
      */
-    public static final int BOTTOM = AxisDescriptor.AxisPosition.getBOTTOM();
+    public static final int BOTTOM = FigureDescriptor.AxisDescriptor.AxisPosition.BOTTOM.getNumber();
     /**
      * The axis should be drawn at the left side of the chart.
      */
-    public static final int LEFT = AxisDescriptor.AxisPosition.getLEFT();
+    public static final int LEFT = FigureDescriptor.AxisDescriptor.AxisPosition.LEFT.getNumber();
     /**
      * The axis should be drawn at the right side of the chart.
      */
-    public static final int RIGHT = AxisDescriptor.AxisPosition.getRIGHT();
+    public static final int RIGHT = FigureDescriptor.AxisDescriptor.AxisPosition.RIGHT.getNumber();
     /**
      * No position makes sense for this axis, or the position is apparent from the axis type.
      */
-    public static final int NONE = AxisDescriptor.AxisPosition.getNONE();
+    public static final int NONE = FigureDescriptor.AxisDescriptor.AxisPosition.NONE.getNumber();
 }
