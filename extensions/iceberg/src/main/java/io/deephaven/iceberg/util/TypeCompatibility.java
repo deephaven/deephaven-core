@@ -105,12 +105,6 @@ public final class TypeCompatibility {
             if (pt == Types.TimestampType.withoutZone()) {
                 return LocalDateTime.class.equals(clazz);
             }
-            if (pt == Types.DateType.get()) {
-                return LocalDate.class.equals(clazz);
-            }
-            if (pt == Types.TimeType.get()) {
-                return LocalTime.class.equals(clazz);
-            }
             if (pt instanceof Types.DecimalType) {
                 return BigDecimal.class.equals(clazz);
             }

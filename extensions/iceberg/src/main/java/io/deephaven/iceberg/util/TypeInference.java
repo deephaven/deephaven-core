@@ -299,12 +299,6 @@ public final class TypeInference {
             if (LocalDateTime.class.equals(customType.clazz())) {
                 return Types.TimestampType.withoutZone();
             }
-            if (LocalDate.class.equals(customType.clazz())) {
-                return Types.DateType.get();
-            }
-            if (LocalTime.class.equals(customType.clazz())) {
-                return Types.TimeType.get();
-            }
             return null;
         }
 
