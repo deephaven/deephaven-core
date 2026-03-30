@@ -3,7 +3,6 @@
 //
 package io.deephaven.web.client.api.grpc;
 
-import com.vertispan.tsdefs.annotations.TsInterface;
 import elemental2.core.JsError;
 import elemental2.core.Uint8Array;
 import elemental2.dom.URL;
@@ -19,7 +18,7 @@ import jsinterop.base.JsPropertyMap;
 /**
  * Options for creating a gRPC stream transport instance.
  */
-@JsType(namespace = "iris.grpc")
+@JsType(namespace = "dh.grpc")
 public class GrpcTransportOptions {
     @JsFunction
     @FunctionalInterface
@@ -72,22 +71,4 @@ public class GrpcTransportOptions {
     @JsIgnore
     @Deprecated // remove before merge
     public TransportOptions originalOptions;
-
-    /**
-     * Convert a {@link TransportOptions} instance to a {@link GrpcTransportOptions} instance.
-     */
-    @JsIgnore
-    @Deprecated // remove before merge
-    public static GrpcTransportOptions from(TransportOptions options) {
-        GrpcTransportOptions impl = new GrpcTransportOptions();
-        impl.url = new URL(options.getUrl());
-        impl.debug = options.isDebug();
-        impl.onHeaders = (headers, status) -> options.getOnHeaders().onInvoke(new BrowserHeaders(headers), status);
-        impl.onChunk = p0 -> {
-            // "false" because the underlying implementation doesn't rely on this anyway.
-            options.getOnChunk().onInvoke(p0, false);
-        };
-        impl.onEnd = options.getOnEnd()::onInvoke;
-        return impl;
-    }
 }

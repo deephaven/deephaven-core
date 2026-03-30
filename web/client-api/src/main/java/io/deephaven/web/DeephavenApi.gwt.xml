@@ -34,6 +34,7 @@
   <add-linker name="dh_linker" />
 
   <set-configuration-property name="user.agent.runtimeWarning" value="false"/>
+  <set-configuration-property name="document.compatMode.severity" value="IGNORE"/>
 
   <set-property name="jsinterop.checks" value="ENABLED"/>
 </module>

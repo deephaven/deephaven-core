@@ -279,13 +279,6 @@ public abstract class QueryConnectable<Self extends QueryConnectable<Self>> exte
         return constructor.apply(ClientInterceptors.intercept(channel, authenticationInterceptor));
     }
 
-    public RpcOptions makeRpcOptions() {
-        RpcOptions options = RpcOptions.create();
-        options.setDebug(getOptions().debug);
-        options.setTransport(GrpcTransportFactory.adapt(getOptions().transportFactory));
-        return options;
-    }
-
     public <T> T createStubNoAuth(Function<Channel, T> constructor) {
         return constructor.apply(new CustomTransportChannel(new URL(getServerUrl()), getOptions().transportFactory));
     }

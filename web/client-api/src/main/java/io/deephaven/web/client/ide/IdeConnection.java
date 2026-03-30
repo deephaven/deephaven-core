@@ -75,19 +75,19 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
             if (options.useWebsockets == Boolean.TRUE || !serverUrl.startsWith("https:")) {
                 options.transportFactory = new MultiplexedWebsocketTransport.Factory();
             } else {
-                options.transportFactory = new GrpcTransportFactory() {
-                    @Override
-                    public GrpcTransport create(GrpcTransportOptions options) {
-                        return GrpcTransport
-                                .from((Transport) Grpc.FetchReadableStreamTransport.onInvoke(new Object())
-                                        .onInvoke((TransportOptions) options));
-                    }
-
-                    @Override
-                    public boolean getSupportsClientStreaming() {
-                        return false;
-                    }
-                };
+//                options.transportFactory = new GrpcTransportFactory() {
+//                    @Override
+//                    public GrpcTransport create(GrpcTransportOptions options) {
+//                        return GrpcTransport
+//                                .from((Transport) Grpc.FetchReadableStreamTransport.onInvoke(new Object())
+//                                        .onInvoke((TransportOptions) options));
+//                    }
+//
+//                    @Override
+//                    public boolean getSupportsClientStreaming() {
+//                        return false;
+//                    }
+//                };
             }
         }
     }

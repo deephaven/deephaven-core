@@ -10,8 +10,6 @@ import elemental2.core.JsArray;
 import elemental2.core.JsObject;
 import elemental2.core.Uint8Array;
 import elemental2.dom.URL;
-import jsinterop.annotations.JsNullable;
-import jsinterop.annotations.JsProperty;
 import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
