@@ -6,8 +6,7 @@ package io.deephaven.web.client.api.widget.plot;
 import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
 import com.vertispan.tsdefs.annotations.TsTypeRef;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.figuredescriptor.AxisDescriptor;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.figuredescriptor.BusinessCalendarDescriptor;
+import io.deephaven.proto.backplane.script.grpc.FigureDescriptor;
 import io.deephaven.web.client.api.i18n.JsDateTimeFormat;
 import io.deephaven.web.client.api.widget.calendar.JsBusinessCalendar;
 import io.deephaven.web.client.api.widget.plot.enums.JsAxisFormatType;
@@ -24,7 +23,7 @@ import jsinterop.base.Js;
 @TsInterface
 @TsName(namespace = "dh.plot", name = "Axis")
 public class JsAxis {
-    private final AxisDescriptor axis;
+    private final FigureDescriptor.AxisDescriptor axis;
     private final JsFigure jsFigure;
     private final JsBusinessCalendar businessCalendar;
 
@@ -32,11 +31,12 @@ public class JsAxis {
     private Long min;
     private Long max;
 
-    public JsAxis(AxisDescriptor descriptor, JsFigure jsFigure) {
+    public JsAxis(FigureDescriptor.AxisDescriptor descriptor, JsFigure jsFigure) {
         this.axis = descriptor;
         this.jsFigure = jsFigure;
 
-        final BusinessCalendarDescriptor businessCalendarDescriptor = descriptor.getBusinessCalendarDescriptor();
+        final FigureDescriptor.BusinessCalendarDescriptor businessCalendarDescriptor =
+                descriptor.getBusinessCalendarDescriptor();
         if (businessCalendarDescriptor != null) {
             businessCalendar = new JsBusinessCalendar(businessCalendarDescriptor);
         } else {
@@ -74,7 +74,7 @@ public class JsAxis {
     @JsProperty
     @TsTypeRef(JsAxisFormatType.class)
     public int getFormatType() {
-        return axis.getFormatType();
+        return axis.getFormatType().getNumber();
     }
 
     /**
@@ -85,7 +85,7 @@ public class JsAxis {
     @JsProperty
     @TsTypeRef(JsAxisType.class)
     public int getType() {
-        return axis.getType();
+        return axis.getType().getNumber();
     }
 
     /**
@@ -96,7 +96,7 @@ public class JsAxis {
     @JsProperty
     @TsTypeRef(JsAxisPosition.class)
     public int getPosition() {
-        return axis.getPosition();
+        return axis.getPosition().getNumber();
     }
 
     @JsProperty
@@ -185,7 +185,7 @@ public class JsAxis {
 
     @JsProperty
     public double[] getMajorTickLocations() {
-        return Js.uncheckedCast(axis.getMajorTickLocationsList().slice());
+        return Js.uncheckedCast(axis.getMajorTickLocationsList().stream().mapToDouble(Double::doubleValue).toArray());
     }
 
     // TODO (deephaven-core#774) finish this field or remove it from the DSL
@@ -257,7 +257,7 @@ public class JsAxis {
         jsFigure.updateDownsampleRange(axis, this.pixels, this.min, this.max);
     }
 
-    public AxisDescriptor getDescriptor() {
+    public FigureDescriptor.AxisDescriptor getDescriptor() {
         return this.axis;
     }
 }

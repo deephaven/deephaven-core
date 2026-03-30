@@ -35,6 +35,7 @@ configurations {
 
     testImplementation.extendsFrom(gwt)
     api.extendsFrom(gwt)
+
 }
 
 dependencies {
@@ -65,10 +66,12 @@ dependencies {
     gwt libs.vertispan.nio.gwt
     gwt libs.vertispan.flatbuffers.gwt
 
-    js project(path: ':proto:raw-js-openapi', configuration: 'js')
     gwt project(':proto:proto-backplane-grpc')
 
+    gwt libs.arrow.flight.core
+
     gwt libs.guava
+    gwt libs.guava.gwt
 
     gwt libs.elemental.core
     gwt libs.elemental.promise

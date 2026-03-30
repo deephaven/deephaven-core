@@ -7,10 +7,11 @@ import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
 import elemental2.core.JsArray;
 import elemental2.core.JsObject;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.figuredescriptor.BusinessCalendarDescriptor;
+import io.deephaven.proto.backplane.script.grpc.FigureDescriptor;
 import io.deephaven.web.client.api.i18n.JsTimeZone;
 import io.deephaven.web.client.api.widget.calendar.enums.JsDayOfWeek;
 import jsinterop.annotations.JsProperty;
+import jsinterop.base.Js;
 
 /**
  * Defines a calendar with business hours and holidays.
@@ -18,19 +19,20 @@ import jsinterop.annotations.JsProperty;
 @TsInterface
 @TsName(namespace = "dh.calendar", name = "BusinessCalendar")
 public class JsBusinessCalendar {
-    private final BusinessCalendarDescriptor businessCalendarDescriptor;
+    private final FigureDescriptor.BusinessCalendarDescriptor businessCalendarDescriptor;
     private final JsTimeZone timeZone;
     private final JsArray<JsBusinessPeriod> businessPeriods;
     private final JsArray<JsHoliday> holidays;
 
-    public JsBusinessCalendar(BusinessCalendarDescriptor businessCalendarDescriptor) {
+    public JsBusinessCalendar(FigureDescriptor.BusinessCalendarDescriptor businessCalendarDescriptor) {
         this.businessCalendarDescriptor = businessCalendarDescriptor;
         JsObject.freeze(this.businessCalendarDescriptor);
         timeZone = JsTimeZone.getTimeZone(businessCalendarDescriptor.getTimeZone());
-        businessPeriods =
-                businessCalendarDescriptor.getBusinessPeriodsList().map((p0, p1) -> new JsBusinessPeriod(p0));
+        businessPeriods = Js.uncheckedCast(businessCalendarDescriptor.getBusinessPeriodsList().stream()
+                .map((p0) -> new JsBusinessPeriod(p0)).toArray());
         JsObject.freeze(businessPeriods);
-        holidays = businessCalendarDescriptor.getHolidaysList().map((p0, p1) -> new JsHoliday(p0));
+        holidays = Js.uncheckedCast(
+                businessCalendarDescriptor.getHolidaysList().stream().map((p0) -> new JsHoliday(p0)).toArray());
         JsObject.freeze(holidays);
     }
 
@@ -61,8 +63,10 @@ public class JsBusinessCalendar {
      */
     @JsProperty
     public JsArray<String> getBusinessDays() {
-        return businessCalendarDescriptor.getBusinessDaysList()
-                .map((p0, p1) -> JsDayOfWeek.values()[(int) (double) p0]);
+        return Js.uncheckedCast(businessCalendarDescriptor.getBusinessDaysList()
+                .stream()
+                .map(FigureDescriptor.BusinessCalendarDescriptor.DayOfWeek::name)
+                .toArray());
     }
 
     /**

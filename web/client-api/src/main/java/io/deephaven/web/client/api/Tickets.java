@@ -3,14 +3,14 @@
 //
 package io.deephaven.web.client.api;
 
+import com.google.common.io.BaseEncoding;
+import com.google.protobuf.ByteString;
 import elemental2.core.TypedArray;
 import elemental2.core.Uint8Array;
 import elemental2.dom.DomGlobal;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.TableReference;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.ticket_pb.Ticket;
+import io.deephaven.proto.backplane.grpc.TableReference;
+import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.web.client.api.console.JsVariableDefinition;
-import jsinterop.annotations.JsMethod;
-import jsinterop.annotations.JsPackage;
 import jsinterop.base.Js;
 
 /**
@@ -56,9 +56,7 @@ public class Tickets {
      * @return a ticket with the variable's id as the ticket bytes
      */
     public static Ticket createTicket(JsVariableDefinition varDef) {
-        Ticket ticket = new Ticket();
-        ticket.setTicket(varDef.getId());
-        return ticket;
+        return Ticket.newBuilder().setTicket(ByteString.copyFrom(BaseEncoding.base64().decode(varDef.getId()))).build();
     }
 
     /**
@@ -72,17 +70,16 @@ public class Tickets {
      */
 
     public static TableReference createTableRef(JsVariableDefinition varDef) {
-        TableReference tableRef = new TableReference();
-        tableRef.setTicket(createTicket(varDef));
-        return tableRef;
+        return TableReference.newBuilder()
+                .setTicket(createTicket(varDef))
+                .build();
     }
 
     public static void validateScopeOrApplicationTicketBase64(String base64Bytes) {
-        String bytes = DomGlobal.atob(base64Bytes);
-        if (bytes.length() > 2) {
-            String prefix = bytes.substring(0, 2);
-            if ((prefix.charAt(0) == SCOPE_PREFIX || prefix.charAt(0) == APPLICATION_PREFIX)
-                    && prefix.charAt(1) == TICKET_DELIMITER) {
+        byte[] bytes = BaseEncoding.base64().decode(base64Bytes);
+
+        if (bytes.length > 2) {
+            if (bytes[0] == SCOPE_PREFIX || bytes[0] == APPLICATION_PREFIX && bytes[1] == TICKET_DELIMITER) {
                 return;
             }
         }
@@ -95,9 +92,7 @@ public class Tickets {
      * @return a new ticket with an export id that hasn't previously been used for this session
      */
     public Ticket newExportTicket() {
-        Ticket ticket = new Ticket();
-        ticket.setTicket(newExportTicketRaw());
-        return ticket;
+        return newExportTicketRaw();
     }
 
     /**
@@ -113,7 +108,8 @@ public class Tickets {
         return nextExport++;
     }
 
-    private Uint8Array newExportTicketRaw() {
+    @Deprecated
+    private Ticket newExportTicketRaw() {
         final int exportId = newTicketInt();
         final double[] dest = new double[5];
         dest[0] = EXPORT_PREFIX;
@@ -124,7 +120,7 @@ public class Tickets {
 
         final Uint8Array bytes = new Uint8Array(5);
         bytes.set(dest);
-        return bytes;
+        return Ticket.newBuilder().setTicket(ByteString.copyFrom(Js.<byte[]>uncheckedCast(bytes))).build();
     }
 
     /**
@@ -133,7 +129,7 @@ public class Tickets {
      * @return a new table ticket with an export id that hasn't previously been used for this session
      */
     public TableTicket newTableTicket() {
-        return new TableTicket(newExportTicketRaw());
+        return new TableTicket(newExportTicket());
     }
 
     /**
@@ -153,8 +149,6 @@ public class Tickets {
         bytesWithPrefix.setAt(1, (double) TICKET_DELIMITER);
         bytesWithPrefix.set(array, 2);
 
-        Ticket ticket = new Ticket();
-        ticket.setTicket(bytesWithPrefix);
-        return ticket;
+        return Ticket.newBuilder().setTicket(ByteString.copyFrom(Js.<byte[]>uncheckedCast(bytesWithPrefix))).build();
     }
 }

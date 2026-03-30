@@ -46,6 +46,6 @@ spotless {
 
 protobuf {
     protoc {
-        artifact = "com.google.protobuf:protoc:${libs.versions.protobuf}"
+        artifact = libs.protoc.get().toString()
     }
 }

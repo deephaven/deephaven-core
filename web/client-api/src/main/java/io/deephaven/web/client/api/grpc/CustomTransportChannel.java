@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.web.client.api.grpc;
 
 import com.vertispan.grpc.fetch.AbstractGrpcWebChannel;
@@ -13,7 +16,8 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 /**
- * Custom Channel that delegates to the user-provided http transport factory.
+ * Custom Channel that delegates to the user-provided http transport factory. The factory is reused, allowing for a
+ * consistent, shared transport, but each gRPC call made on it can be from a unique Channel.
  */
 public class CustomTransportChannel extends AbstractGrpcWebChannel {
     private final GrpcTransportFactory transportFactory;

@@ -29,15 +29,14 @@ import java.util.function.IntFunction;
 public class WebBarrageUtils {
     public static final int FLATBUFFER_MAGIC = 0x6E687064;
 
-    public static Uint8Array wrapMessage(FlatBufferBuilder innerBuilder, byte messageType) {
+    public static ByteBuffer wrapMessage(FlatBufferBuilder innerBuilder, byte messageType) {
         FlatBufferBuilder outerBuilder = new FlatBufferBuilder(1024);
         int messageOffset = BarrageMessageWrapper.createMsgPayloadVector(outerBuilder, innerBuilder.dataBuffer());
         int offset =
                 BarrageMessageWrapper.createBarrageMessageWrapper(outerBuilder, FLATBUFFER_MAGIC, messageType,
                         messageOffset);
         outerBuilder.finish(offset);
-        ByteBuffer byteBuffer = outerBuilder.dataBuffer();
-        return bbToUint8ArrayView(byteBuffer);
+        return outerBuilder.dataBuffer();
     }
 
     public static Uint8Array bbToUint8ArrayView(ByteBuffer byteBuffer) {
@@ -45,12 +44,16 @@ public class WebBarrageUtils {
         return new Uint8Array(view.buffer, byteBuffer.position() + view.byteOffset, byteBuffer.remaining());
     }
 
-    public static Uint8Array emptyMessage() {
+    public static ByteBuffer emptyMessage() {
         FlatBufferBuilder builder = new FlatBufferBuilder(1024);
         int offset = BarrageMessageWrapper.createBarrageMessageWrapper(builder, FLATBUFFER_MAGIC,
                 BarrageMessageType.None, 0);
         builder.finish(offset);
-        return bbToUint8ArrayView(builder.dataBuffer());
+        return builder.dataBuffer();
+    }
+
+    public static InitialTableDefinition readTableDefinition(ByteBuffer flightSchemaMessage) {
+        return readTableDefinition(readSchemaMessage(flightSchemaMessage));
     }
 
     public static InitialTableDefinition readTableDefinition(Uint8Array flightSchemaMessage) {
@@ -79,13 +82,16 @@ public class WebBarrageUtils {
     }
 
     public static Schema readSchemaMessage(Uint8Array flightSchemaMessage) {
+        return readSchemaMessage(TypedArrayHelper.wrap(flightSchemaMessage));
+    }
+
+    public static Schema readSchemaMessage(ByteBuffer flightSchemaMessage) {
         // we conform to flight's schema representation of:
         // - IPC_CONTINUATION_TOKEN (4-byte int of -1)
         // - message size (4-byte int)
         // - a Message wrapping the schema
-        ByteBuffer bb = TypedArrayHelper.wrap(flightSchemaMessage);
-        bb.position(bb.position() + 8);
-        Message headerMessage = Message.getRootAsMessage(bb);
+        flightSchemaMessage.position(flightSchemaMessage.position() + 8);
+        Message headerMessage = Message.getRootAsMessage(flightSchemaMessage);
 
         assert headerMessage.headerType() == MessageHeader.Schema;
         return (Schema) headerMessage.header(new Schema());

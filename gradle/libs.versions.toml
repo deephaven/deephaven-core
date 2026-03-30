@@ -47,7 +47,7 @@ grpc-gwt='1.76.2-1'
 
 grpc-web-gwt-fetch='1.2.0'
 
-guava = "33.4.8-jre"
+guava = "33.5.0-jre"
 gwt = "2.12.2"
 # used by GwtTools
 gwtJetty = "9.4.44.v20210927"
@@ -310,6 +310,7 @@ postgresql = { module = "org.postgresql:postgresql", version.ref = "postgresql" 
 
 protobuf-java = { module = "com.google.protobuf:protobuf-java", version.ref = "protobuf" }
 protobuf-java-util = { module = "com.google.protobuf:protobuf-java-util", version.ref = "protobuf" }
+protoc = { module = "com.google.protobuf:protoc", version.ref = "protobuf" }
 
 randelshofer-fastdoubleparser = { module = "ch.randelshofer:fastdoubleparser", version.ref = "randelshofer" }
 

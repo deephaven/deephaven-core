@@ -97,6 +97,8 @@ class GwtTools {
                         .using(sub.module("com.vertispan.protobuf:protobuf-gwt:${protobufVers}"))
                 sub.substitute(sub.module('io.grpc:grpc-api'))
                         .using(sub.module("com.vertispan.grpc:grpc-gwt:${grpcVers}"))
+                sub.substitute(sub.module('io.grpc:grpc-core'))
+                        .using(sub.module("com.vertispan.grpc:grpc-gwt:${grpcVers}"))
                 sub.substitute(sub.module('io.grpc:grpc-stub'))
                         .using(sub.module("com.vertispan.grpc:grpc-gwt:${grpcVers}"))
                 sub.substitute(sub.module('io.grpc:grpc-protobuf'))
@@ -104,6 +106,9 @@ class GwtTools {
                 sub.substitute(sub.module('io.grpc:grpc-protobuf-stub'))
                         .using(sub.module("com.vertispan.grpc:grpc-gwt:${grpcVers}"))
             }
+
+            c.exclude(group: 'io.grpc', module: 'grpc-netty')
+            c.exclude(group: 'com.google.protobuf', module: 'protobuf-java-util')
         }
         String warPath = new File(p.buildDir, 'gwt').absolutePath
 
@@ -126,7 +131,7 @@ class GwtTools {
             /** Fail compilation if any input file contains an error. */
             strict = true
             /** Specifies Java source level. ("1.6", "1.7")*/
-            sourceLevel = "11"
+            sourceLevel = "17"
             /** The number of local workers to use when compiling permutations. */
             localWorkers = 1
             /** Emit extra information allow chrome dev tools to display Java identifiers in many places instead of JavaScript functions. (NONE, ONLY_METHOD_NAME, ABBREVIATED, FULL)*/

@@ -6,32 +6,40 @@ package io.deephaven.web.client.api;
 import com.vertispan.tsdefs.annotations.TsIgnore;
 import elemental2.core.JsArray;
 import elemental2.core.JsSet;
+import elemental2.dom.URL;
 import elemental2.promise.Promise;
 import io.deephaven.javascript.proto.dhinternal.grpcweb.client.RpcOptions;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.GetConsoleTypesRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.GetConsoleTypesResponse;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.GetHeapInfoRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.GetHeapInfoResponse;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.StartConsoleRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.session_pb.TerminationNotificationResponse;
+import io.deephaven.proto.backplane.grpc.TerminationNotificationResponse;
+import io.deephaven.proto.backplane.grpc.Ticket;
+import io.deephaven.proto.backplane.script.grpc.GetConsoleTypesRequest;
+import io.deephaven.proto.backplane.script.grpc.GetConsoleTypesResponse;
+import io.deephaven.proto.backplane.script.grpc.GetHeapInfoRequest;
+import io.deephaven.proto.backplane.script.grpc.GetHeapInfoResponse;
+import io.deephaven.proto.backplane.script.grpc.StartConsoleRequest;
+import io.deephaven.proto.backplane.script.grpc.StartConsoleResponse;
+import io.deephaven.web.client.api.barrage.stream.AuthenticationInterceptor;
 import io.deephaven.web.client.api.event.HasEventHandling;
+import io.deephaven.web.client.api.grpc.CustomTransportChannel;
 import io.deephaven.web.client.api.grpc.GrpcTransportFactory;
 import io.deephaven.web.client.ide.IdeSession;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.ticket_pb.Ticket;
-import io.deephaven.web.client.api.barrage.stream.ResponseStreamWrapper;
 import io.deephaven.web.client.fu.CancellablePromise;
 import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.client.fu.LazyPromise;
 import io.deephaven.web.shared.data.ConnectToken;
 import io.deephaven.web.shared.fu.JsConsumer;
 import io.deephaven.web.shared.fu.JsRunnable;
+import io.grpc.Channel;
+import io.grpc.ClientInterceptors;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
+import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.BiFunction;
+import java.util.function.Function;
 
 import static io.deephaven.web.client.ide.IdeConnection.HACK_CONNECTION_FAILURE;
 import static io.deephaven.web.shared.fu.PromiseLike.CANCELLATION_MESSAGE;
@@ -43,6 +51,7 @@ import static io.deephaven.web.shared.fu.PromiseLike.CANCELLATION_MESSAGE;
 @TsIgnore
 public abstract class QueryConnectable<Self extends QueryConnectable<Self>> extends HasEventHandling {
 
+    public final AuthenticationInterceptor authenticationInterceptor = new AuthenticationInterceptor();
     private final List<IdeSession> sessions = new ArrayList<>();
     private final JsSet<Ticket> cancelled = new JsSet<>();
 
@@ -62,16 +71,26 @@ public abstract class QueryConnectable<Self extends QueryConnectable<Self>> exte
     public abstract ConnectOptions getOptions();
 
     @Deprecated
-    public void notifyConnectionError(ResponseStreamWrapper.Status status) {
+    public void notifyConnectionError(Throwable err) {
+        if (err instanceof StatusRuntimeException) {
+            StatusRuntimeException sre = (StatusRuntimeException) err;
+            notifyConnectionError(sre);
+        } else {
+            notifyConnectionError(Status.fromThrowable(err).asRuntimeException());
+        }
+    }
+
+    @Deprecated
+    public void notifyConnectionError(StatusRuntimeException sre) {
         if (notifiedConnectionError || !hasListeners(HACK_CONNECTION_FAILURE)) {
             return;
         }
         notifiedConnectionError = true;
 
         fireEvent(HACK_CONNECTION_FAILURE, JsPropertyMap.of(
-                "status", status.getCode(),
-                "details", status.getDetails(),
-                "metadata", status.getMetadata()));
+                "status", sre.getStatus().getCode().value(),
+                "details", sre.getStatus().getDescription(),
+                "metadata", sre.getTrailers()));// TODO unpack this
         JsLog.warn(
                 "The event dh.IdeConnection.HACK_CONNECTION_FAILURE is deprecated and will be removed in a later release");
     }
@@ -157,11 +176,12 @@ public abstract class QueryConnectable<Self extends QueryConnectable<Self>> exte
             }
         };
 
-        onConnected().then(e -> Callbacks.grpcUnaryPromise(callback -> {
-            StartConsoleRequest request = new StartConsoleRequest();
-            request.setSessionType(type);
-            request.setResultId(ticket);
-            connection.get().consoleServiceClient().startConsole(request, connection.get().metadata(), callback::apply);
+        onConnected().then(e -> Callbacks.<StartConsoleResponse>grpcUnaryPromise(callback -> {
+            StartConsoleRequest request = StartConsoleRequest.newBuilder()
+                    .setSessionType(type)
+                    .setResultId(ticket)
+                    .build();
+            connection.get().consoleServiceClient().startConsole(request, callback);
         })).then(result -> {
             promise.succeed(ticket);
             return null;
@@ -186,20 +206,21 @@ public abstract class QueryConnectable<Self extends QueryConnectable<Self>> exte
     @JsMethod
     public Promise<JsArray<String>> getConsoleTypes() {
         Promise<GetConsoleTypesResponse> promise = Callbacks.grpcUnaryPromise(callback -> {
-            GetConsoleTypesRequest request = new GetConsoleTypesRequest();
-            connection.get().consoleServiceClient().getConsoleTypes(request, connection.get().metadata(),
-                    callback::apply);
+            GetConsoleTypesRequest request = GetConsoleTypesRequest.getDefaultInstance();
+            connection.get().consoleServiceClient().getConsoleTypes(request, callback);
         });
 
-        return promise.then(result -> Promise.resolve(result.getConsoleTypesList()));
+        return promise.then(result -> {
+            JsArray<String> strings = Js.uncheckedCast(result.getConsoleTypesList().toArray());
+            return Promise.resolve(strings);
+        });
     }
 
     @JsMethod
     public Promise<JsWorkerHeapInfo> getWorkerHeapInfo() {
         Promise<GetHeapInfoResponse> promise = Callbacks.grpcUnaryPromise(callback -> {
-            GetHeapInfoRequest request = new GetHeapInfoRequest();
-            connection.get().consoleServiceClient().getHeapInfo(request, connection.get().metadata(),
-                    callback::apply);
+            GetHeapInfoRequest request = GetHeapInfoRequest.getDefaultInstance();
+            connection.get().consoleServiceClient().getHeapInfo(request, callback);
         });
 
         return promise.then(result -> Promise.resolve(new JsWorkerHeapInfo(result)));
@@ -252,8 +273,10 @@ public abstract class QueryConnectable<Self extends QueryConnectable<Self>> exte
         return getOptions().transportFactory.getSupportsClientStreaming();
     }
 
-    public <T> T createClient(BiFunction<String, Object, T> constructor) {
-        return constructor.apply(getServerUrl(), makeRpcOptions());
+    public <T> T createStub(Function<Channel, T> constructor) {
+        CustomTransportChannel channel =
+                new CustomTransportChannel(new URL(getServerUrl()), getOptions().transportFactory);
+        return constructor.apply(ClientInterceptors.intercept(channel, authenticationInterceptor));
     }
 
     public RpcOptions makeRpcOptions() {
@@ -261,5 +284,17 @@ public abstract class QueryConnectable<Self extends QueryConnectable<Self>> exte
         options.setDebug(getOptions().debug);
         options.setTransport(GrpcTransportFactory.adapt(getOptions().transportFactory));
         return options;
+    }
+
+    public <T> T createStubNoAuth(Function<Channel, T> constructor) {
+        return constructor.apply(new CustomTransportChannel(new URL(getServerUrl()), getOptions().transportFactory));
+    }
+
+    public void login(String type, String token) {
+        authenticationInterceptor.login(type, token);
+    }
+
+    public void logout() {
+        authenticationInterceptor.deauth();
     }
 }

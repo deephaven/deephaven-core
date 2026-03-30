@@ -46,7 +46,7 @@ public interface GrpcTransport {
     /**
      * Helper to transform ts implementations to our own api.
      */
-    @Deprecated// remove before merge
+    @Deprecated // remove before merge
     @JsIgnore
     static GrpcTransport from(Transport tsTransport) {
         return new GrpcTransport() {

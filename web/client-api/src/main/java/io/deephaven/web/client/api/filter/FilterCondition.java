@@ -4,20 +4,17 @@
 package io.deephaven.web.client.api.filter;
 
 import elemental2.core.JsArray;
-import elemental2.core.Uint8Array;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.AndCondition;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.Condition;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.InvokeCondition;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.NotCondition;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.OrCondition;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.Reference;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.SearchCondition;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.Value;
+import io.deephaven.proto.backplane.grpc.AndCondition;
+import io.deephaven.proto.backplane.grpc.Condition;
+import io.deephaven.proto.backplane.grpc.InvokeCondition;
+import io.deephaven.proto.backplane.grpc.NotCondition;
+import io.deephaven.proto.backplane.grpc.OrCondition;
+import io.deephaven.proto.backplane.grpc.SearchCondition;
 import io.deephaven.web.client.api.Column;
 import jsinterop.annotations.*;
 
 import java.util.Arrays;
-import java.util.Objects;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -60,12 +57,14 @@ public class FilterCondition {
      */
     @JsMethod(namespace = "dh.FilterCondition")
     public static FilterCondition invoke(String function, FilterValue... args) {
-        InvokeCondition invoke = new InvokeCondition();
-        invoke.setMethod(function);
-        invoke.setArgumentsList(Arrays.stream(args).map(v -> v.descriptor).toArray(Value[]::new));
+        InvokeCondition invoke = InvokeCondition.newBuilder()
+                .setMethod(function)
+                .addAllArguments(Arrays.stream(args).map(v -> v.descriptor).collect(Collectors.toList()))
+                .build();
 
-        Condition c = new Condition();
-        c.setInvoke(invoke);
+        Condition c = Condition.newBuilder()
+                .setInvoke(invoke)
+                .build();
 
         return createAndValidate(c);
     }
@@ -85,15 +84,16 @@ public class FilterCondition {
      */
     @JsMethod(namespace = "dh.FilterCondition")
     public static FilterCondition search(FilterValue value, @JsOptional FilterValue[] columns) {
-        SearchCondition search = new SearchCondition();
+        SearchCondition.Builder search = SearchCondition.newBuilder();
         search.setSearchString(value.descriptor.getLiteral().getStringValue());
         if (columns != null) {
-            search.setOptionalReferencesList(
-                    Arrays.stream(columns).map(v -> v.descriptor.getReference()).toArray(Reference[]::new));
+            search.addAllOptionalReferences(
+                    Arrays.stream(columns).map(v -> v.descriptor.getReference()).collect(Collectors.toList()));
         }
 
-        Condition c = new Condition();
-        c.setSearch(search);
+        Condition c = Condition.newBuilder()
+                .setSearch(search)
+                .build();
 
         return createAndValidate(c);
     }
@@ -109,11 +109,13 @@ public class FilterCondition {
      * @return FilterCondition
      */
     public FilterCondition not() {
-        NotCondition not = new NotCondition();
-        not.setFilter(descriptor);
+        NotCondition not = NotCondition.newBuilder()
+                .setFilter(descriptor)
+                .build();
 
-        Condition c = new Condition();
-        c.setNot(not);
+        Condition c = Condition.newBuilder()
+                .setNot(not)
+                .build();
 
         return createAndValidate(c);
     }
@@ -132,12 +134,14 @@ public class FilterCondition {
      * @return FilterCondition
      */
     public FilterCondition and(FilterCondition... filters) {
-        AndCondition and = new AndCondition();
-        and.setFiltersList(Stream.concat(Stream.of(descriptor), Arrays.stream(filters).map(v -> v.descriptor))
-                .toArray(Condition[]::new));
+        AndCondition and = AndCondition.newBuilder()
+                .addAllFilters(Stream.concat(Stream.of(descriptor), Arrays.stream(filters).map(v -> v.descriptor))
+                        .collect(Collectors.toList()))
+                .build();
 
-        Condition c = new Condition();
-        c.setAnd(and);
+        Condition c = Condition.newBuilder()
+                .setAnd(and)
+                .build();
 
         return createAndValidate(c);
     }
@@ -150,12 +154,14 @@ public class FilterCondition {
      * @return FilterCondition.
      */
     public FilterCondition or(FilterCondition... filters) {
-        OrCondition or = new OrCondition();
-        or.setFiltersList(Stream.concat(Stream.of(descriptor), Arrays.stream(filters).map(v -> v.descriptor))
-                .toArray(Condition[]::new));
+        OrCondition or = OrCondition.newBuilder()
+                .addAllFilters(Stream.concat(Stream.of(descriptor), Arrays.stream(filters).map(v -> v.descriptor))
+                        .collect(Collectors.toList()))
+                .build();
 
-        Condition c = new Condition();
-        c.setOr(or);
+        Condition c = Condition.newBuilder()
+                .setOr(or)
+                .build();
 
         return createAndValidate(c);
     }
@@ -192,20 +198,7 @@ public class FilterCondition {
 
         final FilterCondition that = (FilterCondition) o;
 
-        // TODO (deephaven-core#723): implement a reasonable equality method; comparing pb serialization is expensive
-        final Uint8Array mBinary = descriptor.serializeBinary();
-        final Uint8Array oBinary = that.descriptor.serializeBinary();
-        if (mBinary.length != oBinary.length) {
-            return false;
-        }
-
-        for (int i = 0; i < mBinary.length; ++i) {
-            if (!Objects.equals(mBinary.getAt(i), oBinary.getAt(i))) {
-                return false;
-            }
-        }
-
-        return true;
+        return descriptor.equals(that.descriptor);
     }
 
     @Override

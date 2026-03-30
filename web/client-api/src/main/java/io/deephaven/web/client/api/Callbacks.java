@@ -6,8 +6,12 @@ package io.deephaven.web.client.api;
 import elemental2.dom.DomGlobal;
 import elemental2.promise.Promise;
 import elemental2.promise.Promise.PromiseExecutorCallbackFn.RejectCallbackFn;
+import io.deephaven.web.client.api.barrage.stream.TrailersCapturingInterceptor;
 import io.deephaven.web.client.api.event.HasEventHandling;
 import io.deephaven.web.shared.fu.JsBiConsumer;
+import io.grpc.Context;
+import io.grpc.Metadata;
+import io.grpc.stub.StreamObserver;
 
 import javax.annotation.Nullable;
 import java.util.function.BiConsumer;
@@ -17,6 +21,25 @@ import java.util.function.Consumer;
  * A set of utilities for creating callbacks and promises using lambdas.
  */
 public interface Callbacks {
+
+    static <T> StreamObserver<T> ignore() {
+        return new StreamObserver<T>() {
+            @Override
+            public void onNext(T value) {
+
+            }
+
+            @Override
+            public void onError(Throwable t) {
+
+            }
+
+            @Override
+            public void onCompleted() {
+
+            }
+        };
+    }
 
     static <S, T> Promise<S> promise(@Nullable HasEventHandling failHandler, Consumer<Callback<S, T>> t) {
         return new Promise<>((
@@ -88,7 +111,7 @@ public interface Callbacks {
         };
     }
 
-    static <S, F> Promise<S> grpcUnaryPromise(Consumer<JsBiConsumer<F, S>> t) {
+    static <S, F> Promise<S> grpcUnaryPromiseOld(Consumer<JsBiConsumer<F, S>> t) {
         return new Promise<>((resolve, reject) -> {
             t.accept((fail, success) -> {
                 if (fail == null) {
@@ -98,6 +121,66 @@ public interface Callbacks {
                 }
             });
         });
+    }
+
+    /**
+     * Propagates the message and the context into a Promise, as a promise's microtask will result in losing the
+     * context.
+     */
+    static <S> Promise<Response<S>> grpcUnaryPromiseWrapped(Consumer<StreamObserver<S>> t) {
+        return new Promise<>((resolve, reject) -> {
+            t.accept(new StreamObserver<S>() {
+                private S success;
+
+                @Override
+                public void onNext(S s) {
+                    success = s;
+                }
+
+                @Override
+                public void onError(Throwable throwable) {
+                    assert success == null;
+                    reject.onInvoke(throwable);
+                }
+
+                @Override
+                public void onCompleted() {
+                    if (success != null) {
+                        // Capture the context here, when the call has finished
+                        Context current = Context.current();
+                        resolve.onInvoke(new Response<>(success, current,
+                                TrailersCapturingInterceptor.getTrailersFromContext()));
+                    }
+                }
+            });
+        });
+    }
+
+    static <S> Promise<S> grpcUnaryPromise(Consumer<StreamObserver<S>> t) {
+        return new Promise<>((resolve, reject) -> {
+            t.accept(new StreamObserver<S>() {
+                private S success;
+
+                @Override
+                public void onNext(S s) {
+                    resolve.onInvoke(s);
+                }
+
+                @Override
+                public void onError(Throwable throwable) {
+                    assert success == null;
+                    reject.onInvoke(throwable);
+                }
+
+                @Override
+                public void onCompleted() {
+                    // no-op since we don't need context/trailers
+                }
+            });
+        });
+    }
+
+    record Response<M>(M message, Context context, Metadata trailers) {
     }
 
     static <S, F> void translateCallback(Callback<S, String> callback, Consumer<JsBiConsumer<F, S>> t) {

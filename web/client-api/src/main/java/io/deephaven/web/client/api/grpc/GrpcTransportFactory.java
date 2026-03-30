@@ -41,7 +41,7 @@ public interface GrpcTransportFactory {
     /**
      * Adapt this factory to the transport factory used by the gRPC-web library.
      */
-    @Deprecated//remove before merge
+    @Deprecated // remove before merge
     @JsIgnore
     static TransportFactory adapt(GrpcTransportFactory instance) {
         return options -> {
