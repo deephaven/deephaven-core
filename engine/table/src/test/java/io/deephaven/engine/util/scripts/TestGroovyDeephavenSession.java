@@ -8,10 +8,14 @@ import io.deephaven.engine.context.QueryCompilerImpl;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
+import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
+import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.engine.util.GroovyDeephavenSession;
 import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.engine.util.TableTools;
@@ -19,7 +23,9 @@ import io.deephaven.function.Numeric;
 import io.deephaven.function.Sort;
 import io.deephaven.plugin.type.ObjectTypeLookup.NoOp;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.annotations.ScriptApi;
 import io.deephaven.util.mutable.MutableInt;
+import io.deephaven.util.thread.ThreadInitializationFactory;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -30,16 +36,14 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
+import static io.deephaven.engine.testutil.TstUtils.i;
 import static io.deephaven.engine.util.TableTools.booleanCol;
+import static io.deephaven.engine.util.TableTools.intCol;
 import static io.deephaven.engine.util.TableTools.stringCol;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 public class TestGroovyDeephavenSession {
 
@@ -652,9 +656,7 @@ public class TestGroovyDeephavenSession {
                 "        return s.contains('h')\n" +
                 "    }\n" +
                 "}");
-        if (c.error != null) {
-            throw c.error;
-        }
+        c.throwIfError();
 
         final ColumnHolder<String> strValues = stringCol("StrValue", "hello", "world");
         final Table source = TableTools.newTable(strValues);
@@ -664,5 +666,131 @@ public class TestGroovyDeephavenSession {
         final Table filtered = source.where("pred.test(StrValue)");
         assertTableEquals(source.head(1), filtered);
     }
-}
 
+    @Test
+    public void testSessionFQCClassInFormula() {
+        ScriptSession.Changes c = session.evaluateScript("class Foo {}\n" +
+                "t = emptyTable(1).updateView(\"Y = new io.deephaven.dynamic.Foo()\")");
+        c.throwIfError();
+        Table t = session.getQueryScope().readParamValue("t");
+        assertEquals("io.deephaven.dynamic.Foo", t.getColumnSource("Y").getType().getName());
+    }
+
+    @Test
+    public void testClasspathFQClassInFormula() {
+        ScriptSession.Changes c = session.evaluateScript(
+                "t = emptyTable(1).updateView(\"Y = new io.deephaven.engine.util.scripts.OtherModel()\")");
+        c.throwIfError();
+
+        Table t = session.getQueryScope().readParamValue("t");
+        assertEquals("io.deephaven.engine.util.scripts.OtherModel",
+                t.getColumnSource("Y").getType().getName());
+    }
+
+    // This test is here rather than in engine-table because we need to have bytecode available in the classpath
+    // in order for the query compiler to reference it
+    @Test
+    public void testJoinOfSameNamedTypeFromDifferentClassloader() {
+        ScriptSession.Changes c = session.evaluateScript(
+                "class Foo {}\n" +
+                        "t1 = emptyTable(1).updateView(\"Y = new io.deephaven.dynamic.Foo()\")\n");
+        c.throwIfError();
+
+        c = session.evaluateScript(
+                "class Foo {}\n" +
+                        "t2 = emptyTable(1).updateView(\"Y = new io.deephaven.dynamic.Foo()\")\n");
+        c.throwIfError();
+
+        Table t1 = session.getQueryScope().readParamValue("t1");
+        Table t2 = session.getQueryScope().readParamValue("t2");
+        final IllegalArgumentException iae =
+                assertThrows(IllegalArgumentException.class, () -> t1.join(t2, "Y=Y"));
+        assertTrue(iae.getMessage().startsWith(
+                "Mismatched join types in Y=Y, but both sides have the same name 'io.deephaven.dynamic.Foo'. Was the class redefined or one side loaded from a different classloader?"));
+    }
+
+    @Test
+    public void testStaticImportsFromGroovyClass() {
+        ScriptSession.Changes c = session.evaluateScript("class MyClass {" +
+                "  public static int field = 42;\n" +
+                "  public static int method() { return 43; }\n" +
+                "}\n" +
+                "ExecutionContext.getContext().getQueryLibrary().importStatic(MyClass)\n" +
+                "t = emptyTable(1).updateView(\"Y=field\", \"Z=method()\")");
+        c.throwIfError();
+
+        Table t = session.getQueryScope().readParamValue("t");
+        assertEquals(int.class, t.getColumnSource("Y").getType());
+        assertEquals(int.class, t.getColumnSource("Z").getType());
+    }
+
+    @Test
+    public void testNestedFormulasAccessingGroovyClass() throws Exception {
+        ExecutionContext context = ExecutionContext.getContext();
+
+        // re-create the PUG to set thread count to 1, so we know we will run the transform on our thread and can
+        // tweak the classloader for testing
+        PeriodicUpdateGraph updateGraph = new PeriodicUpdateGraph(
+                "TEST",
+                true,
+                1000,
+                25,
+                1,
+                ThreadInitializationFactory.NO_OP,
+                context.getOperationInitializer());
+        updateGraph.enableUnitTestMode();
+        updateGraph.resetForUnitTests(false);
+        updateGraph.setSerialTableOperationsSafe(true);
+        context = ExecutionContext.getContext().withUpdateGraph(updateGraph);
+        try (SafeCloseable ignored = context.open()) {
+
+            // record the starting classloader
+            AtomicReference<ClassLoader> cl = new AtomicReference<>();
+            updateGraph.refreshUpdateSourceForUnitTests(() -> {
+                cl.set(Thread.currentThread().getContextClassLoader());
+            });
+
+
+            GroovyDeephavenSession s = GroovyDeephavenSession.of(
+                    context.getUpdateGraph(), context.getOperationInitializer(), NoOp.INSTANCE,
+                    GroovyDeephavenSession.RunScripts.none());
+
+            ScriptSession.Changes c =
+                    s.evaluateScript("import io.deephaven.engine.util.scripts.TestGroovyDeephavenSession\n" +
+                            "class MyClass {" +
+                            "  public static int field = 42;\n" +
+                            "  public static int method() { return 43; }\n" +
+                            "}\n" +
+                            "ExecutionContext.getContext().getQueryLibrary().importStatic(MyClass)\n" +
+                            "t = TestGroovyDeephavenSession.makeTickingTable()\n" +
+                            "pt = t.partitionBy('I').transform(ExecutionContext.getContext(), { t -> t.update('Y=field', 'Z=method()') },true)");
+            c.throwIfError();
+
+            // Make sure the table ticks at least once so the transform runs
+            QueryTable t = s.getQueryScope().readParamValue("t");
+            PartitionedTable pt = s.getQueryScope().readParamValue("pt");
+            Table merged = pt.merge();
+            assertEquals(int.class, merged.getColumnSource("Y").getType());
+            assertEquals(0, merged.size());
+
+            updateGraph.runWithinUnitTestCycle(() -> {
+                TstUtils.addToTable(t, i(0), intCol("I", 0));
+                t.notifyListeners(i(0), i(), i());
+            });
+            assertEquals(1, merged.size());
+            assertEquals(42, merged.getColumnSource("Y").getInt(0));
+
+            // Confirm we restored old classloader. As of writing, this is the "this.session" classloader, but test
+            // structure/setup could change and we could end up with something different here instead. Note that this
+            // is not the same as the classloader used to run the transform.
+            updateGraph.refreshUpdateSourceForUnitTests(() -> {
+                assertSame(cl.get(), Thread.currentThread().getContextClassLoader());
+            });
+        }
+    }
+
+    @ScriptApi
+    public static Table makeTickingTable() {
+        return TstUtils.testRefreshingTable(intCol("I"));
+    }
+}

@@ -91,7 +91,7 @@ result = woods.update(
 )
 ```
 
-## Functions in ternary conditional operators
+## Using custom methods
 
 Using a function in a ternary statement is very straightforward. All you need to do is replace the `condition` with the function call. The method _must_ return a boolean value. If it's a [Python function](./python-functions.md), be sure to include a type hint or typecast to ensure the output value is a boolean.
 
@@ -110,3 +110,4 @@ result = woods.update("Budget = budget(Price) ? `yes` : `no` ")
 - [Operators](./operators.md)
 - [`new_table`](../reference/table-operations/create/newTable.md)
 - [`update`](../reference/table-operations/select/update.md)
+- [Query string overview](./query-string-overview.md)

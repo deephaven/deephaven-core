@@ -70,7 +70,7 @@ Deephaven supports writing tables to partitioned Parquet directories. A partitio
 
 Data can be written to partitioned directories from Deephaven tables or from Deephaven's [partitioned tables](../../how-to-guides/partitioned-tables.md). Partitioned tables have partitioning columns built into the API, so Deephaven can use those partitioning columns to create partitioned directories. Regular Deephaven tables do not have partitioning columns, so the user must provide that information using the `table_definition` argument to any of the writing functions.
 
-Table definitions represent a table's schema. They are constructed from lists of Deephaven [`ColumnDefinition`](/core/javadoc/io/deephaven/engine/table/ColumnDefinition.html) objects that specify a column's name and type. Additionally, [`ColumnDefinition`](/core/javadoc/io/deephaven/engine/table/ColumnDefinition.html) objects are used to specify whether a particular column is a partitioning column by calling the `withPartitioning()` method.
+Table definitions represent a table's schema. They are constructed from lists of Deephaven [`ColumnDefinition`](/core/javadoc/io/deephaven/engine/table/ColumnDefinition.html) objects that specify a column's name and type. Additionally, [`ColumnDefinition`](/core/javadoc/io/deephaven/engine/table/ColumnDefinition.html) objects are used to specify whether a particular column is a partitioning column by calling the `withPartitioning` method.
 
 Create a table definition for the `grades` table defined above.
 
@@ -161,5 +161,5 @@ ParquetTools.writeTables(
 ## Related documentation
 
 - [Import Parquet files](./parquet-import.md)
-- [Parquet file formats](./parquet-formats.md)
+- [Parquet formats](./parquet-formats.md)
 - [Parquet instructions](./parquet-instructions.md)

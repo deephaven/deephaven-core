@@ -656,14 +656,18 @@ public class QueryTable extends BaseTable<QueryTable> {
                 final Table partitioned = aggBy(Partition.of(CONSTITUENT, !dropKeys), columns);
                 final Set<String> keyColumnNamesSet =
                         Arrays.stream(keyColumnNames).collect(Collectors.toCollection(LinkedHashSet::new));
+                final Set<String> consistentKeyColumns;
                 final TableDefinition constituentDefinition;
                 if (dropKeys) {
                     constituentDefinition = TableDefinition.of(definition.getColumnStream()
                             .filter(cd -> !keyColumnNamesSet.contains(cd.getName())).toArray(ColumnDefinition[]::new));
+                    consistentKeyColumns = Collections.emptySet();
                 } else {
                     constituentDefinition = definition;
+                    consistentKeyColumns = keyColumnNamesSet;
                 }
-                return new PartitionedTableImpl(partitioned, keyColumnNamesSet, true, CONSTITUENT.name(),
+                return new PartitionedTableImpl(partitioned, keyColumnNamesSet, consistentKeyColumns, true,
+                        CONSTITUENT.name(),
                         constituentDefinition, isRefreshing(), false);
             });
         }
@@ -690,13 +694,17 @@ public class QueryTable extends BaseTable<QueryTable> {
             final Set<String> keyColumnNamesSet =
                     Arrays.stream(keyColumnNames).collect(Collectors.toCollection(LinkedHashSet::new));
             final TableDefinition constituentDefinition;
+            final Collection<String> consistentKeyColumns;
             if (partition.includeGroupByColumns()) {
                 constituentDefinition = definition;
+                consistentKeyColumns = keyColumnNamesSet;
             } else {
                 constituentDefinition = TableDefinition.of(definition.getColumnStream()
                         .filter(cd -> !keyColumnNamesSet.contains(cd.getName())).toArray(ColumnDefinition[]::new));
+                consistentKeyColumns = Collections.emptySet();
             }
-            return new PartitionedTableImpl(aggregated, keyColumnNamesSet, true, partition.column().name(),
+            return new PartitionedTableImpl(aggregated, keyColumnNamesSet, consistentKeyColumns, true,
+                    partition.column().name(),
                     constituentDefinition, isRefreshing(), false);
         }
     }
@@ -1065,6 +1073,11 @@ public class QueryTable extends BaseTable<QueryTable> {
         public FilteredTable(final TrackingRowSet currentMapping, final QueryTable source) {
             super(source.getDefinition(), currentMapping, source.columns, null, null);
             this.source = source;
+        }
+
+        @Override
+        public String toString() {
+            return "FilteredTable(" + whereListener + ")";
         }
 
         @Override

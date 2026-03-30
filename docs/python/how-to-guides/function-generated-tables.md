@@ -114,10 +114,9 @@ def pull_denver_weather_data():
     )
 
 
-tt = time_table("PT60s")
-
 denver_weather = function_generated_table(
-    table_generator=pull_denver_weather_data, source_tables=tt
+    table_generator=pull_denver_weather_data,
+    refresh_interval_ms=60_000,
 )
 ```
 

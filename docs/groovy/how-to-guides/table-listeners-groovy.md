@@ -50,7 +50,7 @@ A [`MergedListener`](/core/javadoc/io/deephaven/engine/table/impl/MergedListener
 - `listenerDescription`: A String description of the listener.
 - `result`: a result table that uses the listener's tables as sources. Can be null.
 
-The following example listens to two time tables, one ticking every two seconds and the other ticking every three seconds. [`getUpdate()`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/ListenerRecorder.html#getUpdate()) returns a [`TableUpdate`](/core/javadoc/io/deephaven/engine/table/TableUpdate.html) object for each [`ListenerRecorder`](/core/javadoc/io/deephaven/engine/table/impl/ListenerRecorder.html), and the [`MergedListener`](/core/javadoc/io/deephaven/engine/table/impl/MergedListener.html)'s `process` function is overwritten to print updates if they have been received and to do nothing otherwise.
+The following example listens to two time tables, one ticking every two seconds and the other ticking every three seconds. [`getUpdate`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/ListenerRecorder.html#getUpdate()) returns a [`TableUpdate`](/core/javadoc/io/deephaven/engine/table/TableUpdate.html) object for each [`ListenerRecorder`](/core/javadoc/io/deephaven/engine/table/impl/ListenerRecorder.html), and the [`MergedListener`](/core/javadoc/io/deephaven/engine/table/impl/MergedListener.html)'s `process` function is overwritten to print updates if they have been received and to do nothing otherwise.
 
 ```groovy ticking-table order=null reset
 import io.deephaven.engine.table.TableUpdate

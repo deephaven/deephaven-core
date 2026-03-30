@@ -2,7 +2,7 @@
 title: piePlot
 ---
 
-The `piePlot` method creates category histograms using data from Deephaven tables.
+The `piePlot` method creates pie charts using data from Deephaven tables.
 
 ## Syntax
 
@@ -116,3 +116,4 @@ pieChart = piePlot("Expense per region", regionInsurance, "region", "expenses")\
 
 - [How to use the Chart Builder](../../how-to-guides/user-interface/chart-builder.md)
 - [How to create pie charts](../../how-to-guides/plotting/api-plotting.md#pie)
+- [Javadoc](https://docs.deephaven.io/core/javadoc/io/deephaven/plot/Figure.html#piePlot(java.lang.Comparable,io.deephaven.engine.table.Table,java.lang.String,java.lang.String))

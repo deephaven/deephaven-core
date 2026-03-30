@@ -136,6 +136,15 @@ class BucketingContext implements SafeCloseable {
             final Class<?> leftType = TypeUtils.getUnboxedTypeIfBoxed(leftSources[ii].getType());
             final Class<?> rightType = TypeUtils.getUnboxedTypeIfBoxed(rightSources[ii].getType());
             if (leftType != rightType) {
+                if (leftType.getName().equals(rightType.getName())) {
+                    // If the names are the same, the error message will be more helpful if we mention classloader
+                    // issues rather
+                    // than just showing the same string twice
+                    throw new IllegalArgumentException("Mismatched join types in " + columnsToMatch[ii]
+                            + ", but both sides have the same name '" + leftType.getName()
+                            + "'. Was the class redefined or one side loaded from a different classloader? Left type classloader: "
+                            + leftType.getClassLoader() + ", right type classloader: " + rightType.getClassLoader());
+                }
                 throw new IllegalArgumentException(
                         "Mismatched join types, " + columnsToMatch[ii] + ": " + leftType + " != " + rightType);
             }

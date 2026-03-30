@@ -22,7 +22,7 @@ The presents the following options:
 
 This sets the default time zone used in all tables in your session. Corresponding timestamps in the tables are adjusted accordingly.
 
-### Date-time
+### DateTime
 
 This sets the default format when [date-time](../reference/query-language/types/date-time.md) values are presented in table columns. Two additional options allow you to:
 
@@ -43,4 +43,5 @@ You can change the [date-time](../reference/query-language/types/date-time.md) f
 
 ## Related documentation
 
+- [Time in Deephaven](../conceptual/time-in-deephaven.md)
 - [date-time](../reference/query-language/types/date-time.md)

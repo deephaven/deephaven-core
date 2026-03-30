@@ -7,7 +7,7 @@ title: std_by
 Sample standard deviation is calculated as the square root of the [Bessel-corrected sample variance](https://en.wikipedia.org/wiki/Bessel%27s_correction), which can be shown to be an [unbiased estimator](https://en.wikipedia.org/wiki/Bias_of_an_estimator) of population variance under some conditions. However, sample standard deviation is a biased estimator of population standard deviation.
 
 > [!CAUTION]
-> Applying this aggregation to a column where the sample standard deviation can not be computed will result in an error. For example, the sample standard deviation is not defined for a column of string values.
+> Applying this aggregation to a column where the sample standard deviation cannot be computed will result in an error. For example, the sample standard deviation is not defined for a column of string values.
 
 ## Syntax
 
@@ -43,7 +43,7 @@ $$
 
 ## Examples
 
-In this example, `std_by` returns the sample standard deviation of the whole table. Because the sample standard deviation can not be computed for the string columns `X` and `Y`, these columns are dropped before applying `std_by`.
+In this example, `std_by` returns the sample standard deviation of the whole table. Because the sample standard deviation cannot be computed for the string columns `X` and `Y`, these columns are dropped before applying `std_by`.
 
 ```python order=source,result
 from deephaven import new_table
@@ -60,7 +60,7 @@ source = new_table(
 result = source.drop_columns(cols=["X", "Y"]).std_by()
 ```
 
-In this example, `std_by` returns the sample standard deviation, as grouped by `X`. Because the sample standard deviation can not be computed for the string column `Y`, this column is dropped before applying `std_by`.
+In this example, `std_by` returns the sample standard deviation, as grouped by `X`. Because the sample standard deviation cannot be computed for the string column `Y`, this column is dropped before applying `std_by`.
 
 ```python order=source,result
 from deephaven import new_table

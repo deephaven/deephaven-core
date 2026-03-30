@@ -5,7 +5,7 @@
 
 #include <stdexcept>
 
-#include <grpc/support/log.h>
+#include <absl/log/log.h>
 
 #include <arrow/array.h>
 #include <arrow/scalar.h>
@@ -53,11 +53,8 @@ Client Client::Connect(const std::string &target, const ClientOptions &options) 
   auto flight_executor = Executor::Create("Flight executor for " + server->me());
   void *const server_for_logging = server.get();
   auto impl = ClientImpl::Create(std::move(server), executor, flight_executor, options.sessionType_);
-  gpr_log(GPR_INFO,
-      "Client target=%s created ClientImpl(%p), Server(%p).",
-      target.c_str(),
-      static_cast<void*>(impl.get()),
-      server_for_logging);
+  LOG(INFO) << "Client target=" << target << " created ClientImpl(" << static_cast<void*>(impl.get())
+            << "), Server(" << server_for_logging << ").";
   return Client(std::move(impl));
 }
 
@@ -76,7 +73,7 @@ Client::~Client() {
     Close();
   } catch (...) {
     auto what = GetWhat(std::current_exception());
-    gpr_log(GPR_INFO, "Client destructor is ignoring thrown exception: %s", what.c_str());
+    LOG(INFO) << "Client destructor is ignoring thrown exception: " << what;
   }
 }
 

@@ -223,7 +223,7 @@ Since `format_columns` leverages Deephaven's formula infrastructure, you have ac
 
 - Complex expressions involving multiple columns.
 - User-defined functions and variables.
-- All [built-in query language functions](../reference/query-language/query-library/auto-imported-functions.md).
+- All [built-in query language functions](../reference/query-language/query-library/auto-imported/index.md).
 
 #### Ternary expressions
 
@@ -275,7 +275,7 @@ students_heat = students.format_columns(
 - When the value is greater than or equal to 4.00, `BRIGHT_RED` will be used.
 - An automatically interpolated color proportionally between `BRIGHT_GREEN` and `BRIGHT_RED` will be used for all other values between 1 and 4.
 
-You can also create foreground heat maps with `heatmapFg()` or `heatmapForeground()` to color the text instead of the background.
+You can also create foreground heat maps with `heatmapFg` or `heatmapForeground` to color the text instead of the background.
 
 ### Advanced row formatting
 

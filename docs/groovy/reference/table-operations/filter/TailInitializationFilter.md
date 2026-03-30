@@ -2,9 +2,9 @@
 title: TailInitializationFilter
 ---
 
-`TailInitializationFilter` reduces the input size for downstream operations by limiting initialization to only the most recent rows from each partition. This is particularly useful when working with large historical datasets where you're primarily interested in the tail of the data.
+`TailInitializationFilter` reduces the input size for downstream operations by limiting initialization to only the most recent rows from each partition. This is particularly useful when working with large datasets that periodically publish new snapshots, and you intend to run a `lastBy` on the data to retrieve the most recent snapshot.
 
-The filter is designed to work with add-only source tables where each contiguous range of row keys represents a partition. Each partition must be sorted by timestamp, with the most recent timestamp at the end.
+The filter is designed to work with add-only source tables with one or more partitions. If the input table is in Parquet or Enterprise format, partitions are detected automatically. Otherwise, each contiguous range of row keys is assumed to represent a partition. Each partition must be sorted by timestamp, with the most recent timestamp at the end.
 
 Once initialized, the filter passes through all new rows. Rows that have already been filtered are not removed or modified.
 
@@ -86,12 +86,10 @@ For each partition, the filter uses the last row's timestamp as the reference po
 The filter makes these assumptions:
 
 - The source table is add-only (no modifications, shifts, or removals).
-- Each contiguous range of row keys is a partition. If this assumption is violated, the `TailInitializationFilter` itself is inefficient as it must independently examine each range of row keys. Furthermore, because the end of each range is used as the timestamp, fewer rows are likely to be filtered before being passed to downstream operations. One common way to violate this assumption is to filter the table before the `TailInitializationFilter` is applied.
 - Each partition is sorted by timestamp.
 - Null timestamps are not permitted.
 
-> [!WARNING]
-> If you suspect you might not have full access to a given table, consider comparing initialization time with and without the `TailInitializationFilter`. Implicit ACL application may reduce the operation's effectiveness.
+If any of these assumptions are violated, the result table is undefined.
 
 ## Examples
 
@@ -99,10 +97,10 @@ The filter makes these assumptions:
 
 This example uses a time table and filters to show only rows from the last 10 seconds:
 
-```groovy order=null
+```groovy order=result,source
 import io.deephaven.engine.table.impl.util.TailInitializationFilter
 
-source = timeTable("PT00:00:01").update("Value = ii")
+source = timeTable("2026-01-01T00:00:00 America/New_York", "PT00:00:01").update("Value = ii")
 
 result = TailInitializationFilter.mostRecent(source, "Timestamp", "PT00:00:10")
 ```
@@ -113,21 +111,23 @@ This filters to show only rows where the timestamp is within 10 seconds of the m
 
 This example filters to show rows from the last 5 seconds (5 billion nanoseconds):
 
-```groovy order=null
+```groovy order=result,source
 import io.deephaven.engine.table.impl.util.TailInitializationFilter
 import static io.deephaven.time.DateTimeUtils.SECOND
 
-source = timeTable("PT00:00:01").update("Value = ii")
+source = timeTable("2026-01-01T00:00:00 America/New_York", "PT00:00:01").update("Value = ii")
 
 result = TailInitializationFilter.mostRecent(source, "Timestamp", 5 * SECOND)
 ```
 
 ### Filter by row count
 
-The `mostRecentRows()` method filters to show a specified number of rows from the end of each partition:
+The `mostRecentRows` method filters to show a specified number of rows from the end of each partition:
 
-```groovy syntax
-result = TailInitializationFilter.mostRecentRows(table, rowCount)
+```groovy order=result,source
+source = timeTable("2026-01-01T00:00:00 America/New_York", "PT00:00:01").update("Value = ii")
+rowCount = 10
+result = TailInitializationFilter.mostRecentRows(source, rowCount)
 ```
 
 ## Related documentation

@@ -1,9 +1,8 @@
 ---
-title: How to retrieve logs
-sidebar_label: Retrieve logs
+title: Retrieve logs
 ---
 
-This guide will show you how several methods to retrieve logs.
+This guide shows you how to retrieve logs.
 
 As with any programming language, sometimes there are crashes. It is important to retrieve that infromation so that one can understand the root cause of the error.
 
@@ -116,10 +115,12 @@ You can also get help by asking questions in our [GitHub Discussions](https://gi
 ## Related documentation
 
 - [Create a new table](./new-and-empty-table.md#newtable)
+- [Filters in query strings](./filters.md)
+- [Formulas in query strings](./formulas.md)
+- [Operators in query strings](./operators.md)
 - [How to handle null, infinity, and not-a-number values](./null-inf-nan.md)
 - [Joins: Exact and Relational](./joins-exact-relational.md)
 - [Joins: Time-series and Range](./joins-timeseries-range.md)
 - [How to select, view, and update data in tables](./use-select-view-update.md)
 - [How to work with strings](./work-with-strings.md)
-- [Formulas](../how-to-guides/formulas.md)
 - [Special variables](../reference/query-language/variables/special-variables.md)

@@ -10,7 +10,7 @@ Parquet is meant to be a standard interchange format for batch and interactive w
 
 ## Single Parquet file
 
-Deephaven supports single Parquet files. Using [a single large Parquet file](..//data-import-export/parquet-import.md#read-a-single-parquet-file) may be more storage efficient than many smaller files with accompanying metadata. It can be faster to read and process because there is less overhead in opening and closing files.
+Deephaven supports single Parquet files. Using [a single large Parquet file](../data-import-export/parquet-import.md#read-a-single-parquet-file) may be more storage efficient than many smaller files with accompanying metadata. It can be faster to read and process because there is less overhead in opening and closing files.
 
 ## Parquet file directories
 
@@ -37,6 +37,6 @@ Deephaven supports optional metadata files that let you specify the types of you
 ## Related documentation
 
 - [Import Parquet into Deephaven video](https://youtu.be/k4gI6hSZ2Jc)
-- [Export Parquet files](../data-import-export/parquet-export.md)
-- [Import Parquet files](../data-import-export/parquet-import.md)
-- [Parquet instructions](../data-import-export/parquet-instructions.md)
+- [Import Parquet files](./parquet-import.md)
+- [Export Parquet files](./parquet-export.md)
+- [Parquet instructions](./parquet-instructions.md)

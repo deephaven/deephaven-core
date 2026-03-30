@@ -34,6 +34,7 @@ import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableArray;
+import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedNode;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedQueue;
 import org.apache.commons.lang3.ArrayUtils;
@@ -1355,6 +1356,11 @@ public abstract class UpdateBy {
                     description,
                     localWindowArr);
         }
+
+        @InternalUseOnly
+        public List<String> getPreservedColumnNames() {
+            return List.of(preservedColumnNames);
+        }
     }
 
     public static Table updateBy(@NotNull final QueryTable source,
@@ -1432,7 +1438,7 @@ public abstract class UpdateBy {
                 .map(colName -> ReinterpretUtils.maybeConvertToPrimitive(source.getColumnSource(colName)))
                 .toArray(ColumnSource[]::new);
 
-        final Map<String, ColumnSource<?>> resultSources = new LinkedHashMap<>(source.getColumnSourceMap());
+        final LinkedHashMap<String, ColumnSource<?>> resultSources = new LinkedHashMap<>(source.getColumnSourceMap());
 
         final Map<String, ColumnSource<?>> unorderedResultSources = new HashMap<>();
         // We have the source table and the row redirection; we can initialize the operators and collect the output

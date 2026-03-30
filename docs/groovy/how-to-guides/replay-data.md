@@ -3,7 +3,7 @@ title: Replay data from static tables
 sidebar_label: Replay
 ---
 
-This guide will show you how to replay historical data as live data in Deephaven.
+This guide will show you how to replay historical data as if it was live data in Deephaven.
 
 Deephaven excels at handling live data. Integrating historical data into real-time analysis is common in a multitude of fields including machine learning, validation, modeling, simulation, and forecasting.
 
@@ -25,15 +25,13 @@ metricCentury = readCsv("https://media.githubusercontent.com/media/deephaven/exa
 
 The data is in memory. We can replay it with the following steps:
 
-Now we can replay our data. Follow these steps:
-
-- Import the Deephaven [`Replayer`](../reference/table-operations/create/Replayer.md) object.
+- Import [`Replayer`](../reference/table-operations/create/Replayer.md).
 - Set a start and end time for data replay.
-  - These correspond to those in the historical table.
+  - These times correspond to those in the table itself.
 - Create the replayer using the set start and end time.
-- Call [`replay`](../reference/table-operations/create/Replayer.md#methods) to prepare the replayed table
+- Call [`replay`](../reference/table-operations/create/Replayer.md#methods) to prepare the replayed table.
   This takes the table to replay and the timestamp column name as input.
-- Call [`start`](../reference/table-operations/create/Replayer.md#methods) to start replaying data
+- Call [`start`](../reference/table-operations/create/Replayer.md#methods) to start replaying data.
 
 ```groovy test-set=1 order=replayedResult
 import io.deephaven.engine.table.impl.replay.Replayer
@@ -107,5 +105,6 @@ replayer.start()
 
 ## Related documentation
 
+- [Time in Deephaven](../conceptual/time-in-deephaven.md)
 - [How to write data to a real-time in-memory table](./table-publisher.md)
 - [Replayer](../reference/table-operations/create/Replayer.md)

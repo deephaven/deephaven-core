@@ -58,7 +58,7 @@ In the dialog, choose a:
 
 The dropdown list expects unique values for the column source. You can create a new table for this purpose in one of two ways:
 
-- apply a [`.select_distinct`](../../reference/table-operations/select/select-distinct.md) in a table's query.
+- apply a [`select_distinct`](../../reference/table-operations/select/select-distinct.md) in a table's query.
 - use **Select Distinct Values** in a table's Options menu.
 
 > [!NOTE]

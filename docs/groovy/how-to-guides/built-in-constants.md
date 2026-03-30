@@ -124,6 +124,6 @@ Deephaven has only two built-in math constants:
 - [Built-in functions](./built-in-functions.md)
 - [Handle nulls, infinities, and NaNs](./null-inf-nan.md)
 - [Work with date-times](../conceptual/time-in-deephaven.md)
-- [Auto-imported functions](../reference/query-language/query-library/auto-imported-functions.md)
+- [Auto-imported functions](../reference/query-language/query-library/auto-imported/index.md)
 - [`emptyTable`](../reference/table-operations/create/emptyTable.md)
 - [`update`](../reference/table-operations/select/update.md)

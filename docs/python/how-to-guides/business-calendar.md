@@ -70,8 +70,7 @@ result = source.update(
 )
 ```
 
-The following example limits the data to only business days, and then only plots data that takes place during business hours.
-The `source` table is [filtered](./use-filters.md) twice to create two result tables. The first contains only data that takes place during an NYSE business day, while the second contains only data that takes place during NYSE business hours.
+The following example shows how to filter data to only business days and business hours. The `source` table is [filtered](./filters.md) twice to create two result tables. The first contains only data that takes place during an NYSE business day, while the second contains only data that takes place during NYSE business hours.
 
 ```python test-set=1 order=result_bizdays,result_bizhours
 result_bizdays = source.where(["nyse_cal.isBusinessDay(Timestamp)"])
@@ -79,7 +78,7 @@ result_bizdays = source.where(["nyse_cal.isBusinessDay(Timestamp)"])
 result_bizhours = source.where(["nyse_cal.isBusinessTime(Timestamp)"])
 ```
 
-The tables created in the previous code block could be used to plot data occurring only during business days/hours. When plotting this type of data, the recommended practice is to use an [`axis`](/core/pydoc/code/deephaven.plot.figure.html#deephaven.plot.figure.Figure.axis) to limit the data to business time only. The following code block plots only data that occurs during NYSE business time.
+The tables created in the previous code block can be used to plot data occurring only during business days/hours. When plotting this type of data, the recommended practice is to use an [`axis`](/core/pydoc/code/deephaven.plot.figure.html#deephaven.plot.figure.Figure.axis) to limit the data to business time only. The following code block plots only data that occurs during NYSE business time.
 
 ```python test-set=1 order=bizday_plot
 from deephaven.plot.figure import Figure
@@ -108,7 +107,7 @@ The calendar configuration files can be found [here](https://github.com/deephave
 - Holidays
 - More
 
-Users can build their own calendar by creating a calendar file using the format described in [this Javadoc](/core/javadoc/io/deephaven/time/calendar/BusinessCalendarXMLParser.html). This section goes over an example of using a custom-built calendar for a hypothetical business for the year 2024.
+Users can build their own calendars by creating a calendar file using the format described in [this Javadoc](/core/javadoc/io/deephaven/time/calendar/BusinessCalendarXMLParser.html). This section goes over an example of using a custom-built calendar for a hypothetical business for the year 2024.
 
 This example uses a calendar file found in Deephaven's [examples repository](https://github.com/deephaven/examples/tree/main/Calendar). This guide assumes you have the file on your local machine in the [/data mount point](../conceptual/docker-data-volumes.md). This hypothetical business is called "Company Y", and the calendar only covers the year 2024.
 

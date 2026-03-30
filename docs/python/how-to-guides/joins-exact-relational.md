@@ -37,6 +37,8 @@ result = left_table.join_method(
 )
 ```
 
+Where `right_table` is the table to join with, and `on` and `joins` are the String names for columns to match and add, respectively.
+
 The basic syntax for [`left_outer_join`](../reference/table-operations/join/left-outer-join.md) and [`full_outer_join`](../reference/table-operations/join/full-outer-join.md) are as follows:
 
 ```python syntax
@@ -294,8 +296,11 @@ Using constituent tables is syntactically simple. The syntax is as follows:
 
 ```python syntax
 multi_table = multi_join(input=[t1, t2, t3], on="CommonKeyColumn")
-multi_table = multi_join(input=[t1, t2, t3], on=["CommonKeyCol1, CommonKeyCol2"])
+multi_table = multi_join(input=[t1, t2, t3], on=["CommonKeyCol1", "CommonKeyCol2"])
 ```
+
+- `input` is any number of tables to merge; for example, `table1, table2, table3`.
+- `on` is a String or list of String key column names; for example, `["key1", "key2"]`.
 
 Using constituent tables requires that all tables have identical key column names and that _all_ of the tables' output rows are desired.
 
@@ -327,8 +332,10 @@ grade7 = new_table(
     ]
 )
 
+# create a MultiJoinTable object and join the three tables
 multijoin_table = multi_join(input=[grade5, grade6, grade7], on=["Name"])
 
+# access the multijoin object's internal table
 result = multijoin_table.table
 ```
 

@@ -9,7 +9,7 @@ Protobuf is one of several options for users who wish to build their own Deephav
 
 Protobuf allows you to define structured data types and services in language-neutral ways so that your code can interact with other languages and platforms. This is critical for client APIs because they need to be able to communicate with a Deephaven server regardless of the client language used. For example, the Python client API communicates with the Deephaven server despite being written largely in Java. Protobuf is the mechanism that standardizes the structures and messages sent between the two.
 
-Deephaven defines several of its APIs using [gRPC](https://grpc.io/), Google's open-source Remote Procedure Call (RPC) framework. gRPC uses Protobuf as its interface description language, enabling it to let programs and/or objects written in one language communicate with those written in another language. Deephaven leverages this to facilitate communication between servers and clients in different languages. In particular, gRPC's support of bidirectional streaming is a key feature of Deephaven's architecture and design. Protobuf can be used on its own, but since Deephaven uses it in conjunction with gRPC, this guide focuses on both.
+Deephaven defines several of its APIs using [gRPC](https://grpc.io/), Google's open-source Remote Procedure Call (RPC) framework. gRPC uses Protobuf as its interface description language, enabling it to let programs and/or objects written in one language communicate with those written in another language. Deephaven leverages this to facilitate communication between servers and clients in different languages. In particular, gRPC's support of bidirectional streaming is a key feature of Deephaven's architecture and design. For example, you can use the Java client API to connect to a Deephaven server and run queries while simultaneously using the Python client API to check the results of those queries. Protobuf can be used on its own, but since Deephaven uses it in conjunction with gRPC, this guide focuses on both.
 
 This guide provides a brief overview of what Protobuf and RPC are, what they do, and gives two examples of Deephaven `.proto` (Protobuf) files. For more detailed and specific guidance on Protobuf and gRPC, see:
 
@@ -28,7 +28,7 @@ Protobuf can be used on its own for things like [serializing and deserializing K
 
 ### Messages
 
-[Messages](https://protobuf.dev/reference/protobuf/edition-2023-spec/#message_definition) are structured data types that define schemas for serialized data. These messages contain fields with names and types in a strict, well-defined sequence.
+[Messages](https://protobuf.dev/reference/protobuf/edition-2023-spec/#message_definition) are structured data types that define schemas for serialized data. Similar to classes and structs, these contain fields with names, types, and unique numbers used for encoding and decoding.
 
 The following example defines a message called `Person` with four fields: `name`, `id`, `email`, and `phones`.
 

@@ -1463,8 +1463,7 @@ public class QueryTableTest extends QueryTableTestBase {
         final QueryTable table = testRefreshingTable(i(1).toTracking(), col("Sentinel", 1));
 
         final QueryTable reverseTable = (QueryTable) table.reverse();
-        final io.deephaven.engine.table.impl.SimpleListener listener =
-                new io.deephaven.engine.table.impl.SimpleListener(reverseTable);
+        final SimpleListener listener = new SimpleListener(reverseTable);
         reverseTable.addUpdateListener(listener);
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
@@ -1490,8 +1489,7 @@ public class QueryTableTest extends QueryTableTestBase {
         final QueryTable table = testRefreshingTable(i(1).toTracking(), col("Sentinel", 1));
         final QueryTable reversedTable = (QueryTable) table.reverse();
 
-        final io.deephaven.engine.table.impl.SimpleListener listener =
-                new io.deephaven.engine.table.impl.SimpleListener(reversedTable);
+        final SimpleListener listener = new SimpleListener(reversedTable);
         reversedTable.addUpdateListener(listener);
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
@@ -1551,8 +1549,7 @@ public class QueryTableTest extends QueryTableTestBase {
         final Table table = testRefreshingTable(RowSetFactory.flat(1).toTracking(), intCol("Sentinel", 100))
                 .withAttributes(Map.of(Table.BLINK_TABLE_ATTRIBUTE, true));
         final Table reverseTable = table.reverse();
-        final io.deephaven.engine.table.impl.SimpleListener listener =
-                new io.deephaven.engine.table.impl.SimpleListener(reverseTable);
+        final SimpleListener listener = new SimpleListener(reverseTable);
         reverseTable.addUpdateListener(listener);
 
         final long nextSize = ReverseOperation.MINIMUM_PIVOT + 2;
@@ -2384,8 +2381,8 @@ public class QueryTableTest extends QueryTableTestBase {
         assertTableEquals(snapshot, firstResult);
         assertTableEquals(prevTable(snapshot), firstResult);
 
-        final io.deephaven.engine.table.impl.SimpleListener listener;
-        snapshot.addUpdateListener(listener = new io.deephaven.engine.table.impl.SimpleListener(snapshot));
+        final SimpleListener listener;
+        snapshot.addUpdateListener(listener = new SimpleListener(snapshot));
         listener.reset();
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
@@ -2607,8 +2604,7 @@ public class QueryTableTest extends QueryTableTestBase {
                 col("intCol", 10, 20, 40, 60));
 
         final QueryTable selected = function.apply(queryTable);
-        final io.deephaven.engine.table.impl.SimpleListener simpleListener =
-                new io.deephaven.engine.table.impl.SimpleListener(selected);
+        final SimpleListener simpleListener = new SimpleListener(selected);
         selected.addUpdateListener(simpleListener);
 
         final Supplier<TableUpdateImpl> newUpdate =
@@ -2698,8 +2694,7 @@ public class QueryTableTest extends QueryTableTestBase {
                 col("intCol", 10, 20, 40, 60));
 
         final QueryTable selected = function.apply(queryTable);
-        final io.deephaven.engine.table.impl.SimpleListener simpleListener =
-                new io.deephaven.engine.table.impl.SimpleListener(selected);
+        final SimpleListener simpleListener = new SimpleListener(selected);
         selected.addUpdateListener(simpleListener);
 
         final Supplier<TableUpdateImpl> newUpdate =
@@ -3191,15 +3186,10 @@ public class QueryTableTest extends QueryTableTestBase {
 
     public void testNotifyListenersReleasesUpdateEmptyUpdate() {
         final QueryTable src = testRefreshingTable(RowSetFactory.flat(100).toTracking());
-        final TableUpdateImpl update = new TableUpdateImpl();
-        update.added = i();
-        update.removed = i();
-        update.modified = i();
-        update.shifted = RowSetShiftData.EMPTY;
-        update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
+        final TableUpdateImpl update = simpleAddUpdate(TstUtils.i());
 
         // any listener will do for this empty update test
-        final TableUpdateListener listener = new io.deephaven.engine.table.impl.SimpleListener(src);
+        final TableUpdateListener listener = new SimpleListener(src);
         src.addUpdateListener(listener);
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
@@ -3212,12 +3202,7 @@ public class QueryTableTest extends QueryTableTestBase {
 
     public void testNotifyListenersReleasesUpdateNoListeners() {
         final QueryTable src = testRefreshingTable(RowSetFactory.flat(100).toTracking());
-        final TableUpdateImpl update = new TableUpdateImpl();
-        update.added = RowSetFactory.fromRange(200, 220); // must be a non-empty update
-        update.removed = i();
-        update.modified = i();
-        update.shifted = RowSetShiftData.EMPTY;
-        update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
+        final TableUpdateImpl update = simpleAddUpdate(RowSetFactory.fromRange(200, 220));
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.runWithinUnitTestCycle(() -> {
@@ -3229,12 +3214,7 @@ public class QueryTableTest extends QueryTableTestBase {
 
     public void testNotifyListenersReleasesUpdateChildListener() {
         final QueryTable src = testRefreshingTable(RowSetFactory.flat(100).toTracking());
-        final TableUpdateImpl update = new TableUpdateImpl();
-        update.added = RowSetFactory.fromRange(200, 220); // must be a non-empty update
-        update.removed = i();
-        update.modified = i();
-        update.shifted = RowSetShiftData.EMPTY;
-        update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
+        final TableUpdateImpl update = simpleAddUpdate(RowSetFactory.fromRange(200, 220));
 
         // we want to specifically test non-shift-aware-listener path
         final ShiftObliviousListener listener = new SimpleShiftObliviousListener(src);
@@ -3250,16 +3230,10 @@ public class QueryTableTest extends QueryTableTestBase {
 
     public void testNotifyListenersReleasesUpdateShiftAwareChildListener() {
         final QueryTable src = testRefreshingTable(RowSetFactory.flat(100).toTracking());
-        final TableUpdateImpl update = new TableUpdateImpl();
-        update.added = RowSetFactory.fromRange(200, 220); // must be a non-empty update
-        update.removed = i();
-        update.modified = i();
-        update.shifted = RowSetShiftData.EMPTY;
-        update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
+        final TableUpdateImpl update = simpleAddUpdate(RowSetFactory.fromRange(200, 220));
 
         // we want to specifically test shift-aware-listener path
-        final io.deephaven.engine.table.impl.SimpleListener listener =
-                new io.deephaven.engine.table.impl.SimpleListener(src);
+        final SimpleListener listener = new SimpleListener(src);
         src.addUpdateListener(listener);
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
@@ -3501,6 +3475,234 @@ public class QueryTableTest extends QueryTableTestBase {
         assertTrue(result.getDefinition().getColumn("String").isPartitioning());
         assertTrue(result.getDefinition().getColumn("Int").isDirect());
         assertTrue(result.getDefinition().getColumn("Double").isDirect());
+    }
+
+    public void testUpdateListeners() {
+        final QueryTable source = testRefreshingTable(intCol("A", 1, 2, 3));
+        assertFalse(source.hasListeners());
+
+        final SimpleListener listener = new SimpleListener(source);
+        source.addUpdateListener(listener);
+        assertTrue(source.hasListeners());
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        listenerTestAddition(updateGraph, source, 4);
+
+        assertEquals(1, listener.count);
+
+        final SimpleListener listener2 = new SimpleListener(source);
+        source.addUpdateListener(listener2);
+        assertTrue(source.hasListeners());
+
+        listenerTestAddition(updateGraph, source, 5);
+
+        assertEquals(2, listener.count);
+        assertEquals(1, listener2.count);
+
+        source.removeUpdateListener(listener);
+        listenerTestAddition(updateGraph, source, 6);
+        assertEquals(2, listener.count);
+        assertEquals(2, listener2.count);
+
+        source.removeUpdateListener(listener2);
+        assertFalse(source.hasListeners());
+        listenerTestAddition(updateGraph, source, 7);
+        assertEquals(2, listener.count);
+        assertEquals(2, listener2.count);
+
+        final SimpleShiftObliviousListener listener3 = new SimpleShiftObliviousListener(source);
+        source.addUpdateListener(listener3);
+        // shouldn't matter
+        source.removeUpdateListener(listener2);
+        assertTrue(source.hasListeners());
+
+        listenerTestAddition(updateGraph, source, 8);
+        assertEquals(2, listener.count);
+        assertEquals(2, listener2.count);
+        assertEquals(1, listener3.count);
+
+        final SimpleShiftObliviousListener listener4 = new SimpleShiftObliviousListener(source);
+        source.removeUpdateListener(listener3);
+        source.addUpdateListener(listener4);
+        assertTrue(source.hasListeners());
+
+        listenerTestAddition(updateGraph, source, 9);
+        assertEquals(2, listener.count);
+        assertEquals(2, listener2.count);
+        assertEquals(1, listener3.count);
+        assertEquals(1, listener4.count);
+
+        listenerTestAddition(updateGraph, source, 10);
+
+        assertEquals(2, listener.count);
+        assertEquals(2, listener2.count);
+        assertEquals(1, listener3.count);
+        assertEquals(2, listener4.count);
+
+        source.removeUpdateListener(listener4);
+        assertFalse(source.hasListeners());
+
+        listenerTestAddition(updateGraph, source, 11);
+        assertEquals(2, listener.count);
+        assertEquals(2, listener2.count);
+        assertEquals(1, listener3.count);
+        assertEquals(2, listener4.count);
+    }
+
+    public void testUpdateListeners2() {
+        final QueryTable source = testRefreshingTable(intCol("A", 1, 2, 3));
+        assertFalse(source.hasListeners());
+
+        final SimpleListener listener = new SimpleListener(source);
+        source.addUpdateListener(listener);
+        assertTrue(source.hasListeners());
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        listenerTestAddition(updateGraph, source, 4);
+
+        assertEquals(1, listener.count);
+
+        source.removeUpdateListener(listener);
+        assertFalse(source.hasListeners());
+        listenerTestAddition(updateGraph, source, 5);
+
+        assertEquals(1, listener.count);
+
+        final SimpleShiftObliviousListener listener2 = new SimpleShiftObliviousListener(source);
+        source.addUpdateListener(listener2);
+        assertTrue(source.hasListeners());
+        listenerTestAddition(updateGraph, source, 6);
+        assertEquals(1, listener.count);
+        assertEquals(1, listener2.count);
+
+        source.removeUpdateListener(listener2);
+        assertFalse(source.hasListeners());
+
+        listenerTestAddition(updateGraph, source, 8);
+        assertEquals(1, listener.count);
+        assertEquals(1, listener2.count);
+    }
+
+    public void testUpdateListenersConcurrency() throws InterruptedException {
+        final int tests = 10; // we do this 10 times so that we have some confidence we are actually adding the
+                              // listeners
+        for (int ii = 0; ii < tests; ++ii) {
+            updateListenersConcurrencyStep();
+        }
+    }
+
+    private void updateListenersConcurrencyStep() throws InterruptedException {
+        final QueryTable source = testRefreshingTable(intCol("A", 1, 2, 3));
+        assertFalse(source.hasListeners());
+
+        int listenerCount = 10;
+
+        final SimpleListener[] listeners = new SimpleListener[listenerCount];
+        final Thread[] threads = new Thread[listenerCount];
+        final CountDownLatch latch = new CountDownLatch(listenerCount);
+        for (int ii = 0; ii < listenerCount; ++ii) {
+            final SimpleListener thisListener = new SimpleListener(source);
+            listeners[ii] = thisListener;
+            threads[ii] = new Thread(() -> {
+                latch.countDown();
+                try {
+                    latch.await();
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+                source.addUpdateListener(thisListener);
+            });
+        }
+
+        for (int ii = 0; ii < listenerCount; ++ii) {
+            threads[ii].start();
+        }
+
+        for (int ii = 0; ii < listenerCount; ++ii) {
+            threads[ii].join();
+        }
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        listenerTestAddition(updateGraph, source, 4);
+
+        for (int ii = 0; ii < listenerCount; ++ii) {
+            assertEquals("listeners[" + ii + "]", 1, listeners[ii].count);
+        }
+    }
+
+    public void testUpdateListenersRemoveConcurrency() throws InterruptedException {
+        final int tests = 100; // we do this 100 times so that we have some confidence we are actually adding the
+                               // listeners
+        for (int ii = 0; ii < tests; ++ii) {
+            updateListenersRemoveConcurrency();
+        }
+    }
+
+    private void updateListenersRemoveConcurrency() throws InterruptedException {
+        final QueryTable source = testRefreshingTable(intCol("A", 1, 2, 3));
+        assertFalse(source.hasListeners());
+
+        int listenerCount = 4;
+
+        final SimpleListener[] listeners = new SimpleListener[listenerCount];
+        final Thread[] threads = new Thread[listenerCount];
+        final CountDownLatch latch = new CountDownLatch(listenerCount);
+        for (int ii = 0; ii < listenerCount; ++ii) {
+            final SimpleListener thisListener = new SimpleListener(source);
+            listeners[ii] = thisListener;
+            threads[ii] = new Thread(() -> {
+                latch.countDown();
+                try {
+                    latch.await();
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+                source.addUpdateListener(thisListener);
+                assertTrue(source.hasListeners());
+                source.removeUpdateListener(thisListener);
+            });
+        }
+
+        for (int ii = 0; ii < listenerCount; ++ii) {
+            threads[ii].start();
+        }
+
+        for (int ii = 0; ii < listenerCount; ++ii) {
+            threads[ii].join();
+        }
+
+        if (source.hasListeners()) {
+            System.err.println("source.hasListeners() = true");
+            // Which one doesn't matter, we just want to reap the collected refs single-threaded to work around a
+            // SimpleReferenceManager bug.
+            source.removeUpdateListener(listeners[0]);
+        }
+
+        assertFalse(source.hasListeners());
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        listenerTestAddition(updateGraph, source, 4);
+
+        for (int ii = 0; ii < listenerCount; ++ii) {
+            assertEquals("listeners[" + ii + "]", 0, listeners[ii].count);
+        }
+    }
+
+    private static void listenerTestAddition(ControlledUpdateGraph updateGraph, QueryTable source, final int rowKey) {
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(source, i(rowKey), intCol("A", rowKey));
+            source.notifyListeners(simpleAddUpdate(TstUtils.i(rowKey)));
+        });
+    }
+
+    private static @NotNull TableUpdateImpl simpleAddUpdate(final RowSet added) {
+        final TableUpdateImpl update = new TableUpdateImpl();
+        update.added = added;
+        update.removed = i();
+        update.modified = i();
+        update.shifted = RowSetShiftData.EMPTY;
+        update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
+        return update;
     }
 
     public void testFlattenValidateDefinition() {

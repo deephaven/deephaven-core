@@ -25,7 +25,7 @@ services:
       - MY_VALUE=test
 ```
 
-You can now see your environmental variables in Deephaven on launch
+You can now see your environmental variables in Deephaven on launch:
 
 ```groovy
 def env = System.getenv()

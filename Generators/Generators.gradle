@@ -20,6 +20,8 @@ dependencies {
     implementation libs.groovy
     implementation libs.groovy.json
 
+    implementation project(':util-annotations')
+
     runtimeOnly project(':configs')
     runtimeOnly project(':test-configs')
     runtimeOnly project(':extensions-kafka')

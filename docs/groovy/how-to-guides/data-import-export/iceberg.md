@@ -110,7 +110,7 @@ At this point, you can load a table from the catalog with [`loadTable`](https://
 icebergTaxis = restAdapter.loadTable("nyc.taxis")
 ```
 
-With the table adapter and instructions in hand, the Iceberg table can be read into a Deephaven table.
+Now that we have the table adapter and the instructions, we can read the table into a Deephaven table:
 
 ```groovy docker-config=iceberg test-set=1 order=taxis
 taxis = icebergTaxis.table(staticInstructions)
@@ -193,7 +193,7 @@ When writing data to an unpartitioned Iceberg table, you need the Deephaven tabl
 sourceDef = source2024.getDefinition()
 ```
 
-Then, create an [`IcebergTableAdapter`](/core/javadoc/io/deephaven/iceberg/util/IcebergTableAdapter.html) from the `source2024` table's definition, and a table identifier, which must include the Iceberg namespace (`nyc`):
+Then, create an [`IcebergTableAdapter`](/core/javadoc/io/deephaven/iceberg/util/IcebergTableAdapter.html) from a table definition and table identifier, which must include the Iceberg namespace (`nyc`):
 
 <!-- This reset is needed because another example also creates nyc.source table and that throws an error if it already exists -->
 
@@ -241,13 +241,13 @@ sourceDefPartitioned = TableDefinition.of(
 )
 ```
 
-First, create an [`IcebergTableAdapter`](/core/javadoc/io/deephaven/iceberg/util/IcebergTableAdapter.html) from the `source` table's definition, and a table identifier, which must include the Iceberg namespace (`nyc`):
+Then, create an [`IcebergTableAdapter`](/core/javadoc/io/deephaven/iceberg/util/IcebergTableAdapter.html) from a table definition and table identifier, which must include the Iceberg namespace:
 
 ```groovy docker-config=iceberg test-set=1 order=null
 sourceAdapterPartitioned = restAdapter.createTable("nyc.sourcePartitioned", sourceDefPartitioned)
 ```
 
-To write the table to Iceberg, you'll need to create an [`IcebergTableWriter`](/core/javadoc/io/deephaven/iceberg/util/IcebergTableWriter.html). A single writer instance with a fixed table definition can write as many Deephaven tables as desired, given that all tables have the same definition as provided to the writer. Most of the heavy lifting is done when the writer is created, so it's more efficient to create a writer once and write many tables than to create a writer for each table.
+To write the table to Iceberg, you'll need to create an [`IcebergTableWriter`](/core/javadoc/io/deephaven/iceberg/util/IcebergTableWriter.html). A single writer instance with a fixed table definition can write as many Deephaven tables as desired if they all have the same definition as provided to the writer. Most of the heavy lifting is done when the writer is created, so it's more efficient to create a writer once and write many tables than to create a writer for each table.
 
 To create a writer instance, you need to define the [`TableParquetWriterOptions`](/core/javadoc/io/deephaven/iceberg/util/TableParquetWriterOptions.html) to configure the writer:
 
@@ -291,7 +291,7 @@ sourcePartitionedFromIceberg = sourceAdapterPartitioned.table()
 
 ### Custom Iceberg instructions
 
-You can set custom instructions when reading from or writing to Iceberg in Deephaven. The following sections deal with different custom instructions you can set.
+You can specify custom instructions when creating an [`IcebergReadInstructions`](/core/javadoc/io/deephaven/iceberg/util/IcebergReadInstructions.html) instance. Each subsection below covers a different custom instruction that can be passed in when reading Iceberg tables.
 
 #### Refreshing Iceberg tables
 
@@ -369,7 +369,7 @@ snapshotInstructions = IcebergReadInstructions.builder()
 
 ## Next steps
 
-This guide presented a basic example of reading from and writing to an Iceberg catalog in Deephaven. These examples can be extended to include other catalog types, more complex queries, catalogs with multiple namespaces, snapshots, custom instructions, and more.
+This guide presented a basic example of interacting with an Iceberg catalog in Deephaven. These examples can be extended to include more complex queries, catalogs with multiple namespaces, snapshots, custom instructions, and more.
 
 ## Related documentation
 

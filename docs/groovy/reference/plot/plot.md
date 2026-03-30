@@ -191,4 +191,7 @@ plot_single = plot("Distance",  source.where("SpeedKPH > 0"), "Time", "DistanceM
 ## Related documentation
 
 - [How to use the Chart Builder](../../how-to-guides/user-interface/chart-builder.md)
-- [How to create plots with the built-in API](../../how-to-guides/plotting/api-plotting.md#xy-series)
+- [How to create plots with the built-in API](../../how-to-guides/plotting/api-plotting.md)
+- [Arrays](../query-language/types/arrays.md)
+- [`plotStyle`](./plotStyle.md)
+- [Javadoc](https://docs.deephaven.io/core/javadoc/io/deephaven/plot/Figure.html#plot(java.lang.Comparable,io.deephaven.engine.table.Table,java.lang.String,java.lang.String))

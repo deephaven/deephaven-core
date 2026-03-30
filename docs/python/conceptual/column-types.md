@@ -122,7 +122,7 @@ t2 = empty_table(5).update(
 )
 ```
 
-You can check for nulls using `isNull()` or comparison with the null constant:
+You can check for nulls using `isNull` or comparison with the null constant:
 
 ```python test-set=column-types order=t3
 # Filter for non-null values

@@ -4,9 +4,9 @@ title: Connect to a Kafka stream
 
 Kafka is a distributed event streaming platform that lets you read, write, store, and process events, also called records.
 
-Kafka topics take on many forms, such as raw input, [JSON](#read-kafka-topic-in-json-format), [AVRO](#read-kafka-topic-in-avro-format), or [Protobuf](#read-kafka-topic-in-protobuf-format) In this guide, we show you how to read each of these formats into Deephaven tables.
+Kafka topics take on many forms, such as raw input, [JSON](#read-kafka-topic-in-json-format), [AVRO](#read-kafka-topic-in-avro-format), or [Protobuf](#read-kafka-topic-in-protobuf-format). In this guide, we show you how to read each of these formats into Deephaven tables.
 
-Please see our overview, [Kafka in Deephaven: Basic terms](../../how-to-guides/data-import-export/kafka-stream.md), for a detailed discussion of Kafka topics and supported formats. See the [Apache Kafka Documentation](https://kafka.apache.org/22/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html) for full details on how to use Kafka.
+Please see our overview, [Kafka in Deephaven: Basic terms](../../conceptual/kafka-basic-terms.md), for a detailed discussion of Kafka topics and supported formats. See the [Apache Kafka Documentation](https://kafka.apache.org/22/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html) for full details on how to use Kafka.
 
 ## Standard data fields
 
@@ -75,7 +75,7 @@ Deephaven Kafka tables can be append-only, blink, or ring.
 
 ## Launching Kafka with Deephaven
 
-Deephaven has an official [docker-compose file](https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/python-examples-redpanda/docker-compose.yml) that contains the Deephaven images along with images from [Redpanda](https://github.com/redpanda-data/redpanda). Redpanda allows us to input data directly into a Kafka stream from the terminal. This is just one of the supported Kafka-compatible event streaming platforms. Many more are available.
+Deephaven has an official [docker-compose file](https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/python-examples-redpanda/docker-compose.yml) that contains the Deephaven images along with images from [Redpanda](https://github.com/redpanda-data/redpanda). Redpanda lets us input data directly into a Kafka stream from the terminal. This is just one of the supported Kafka-compatible event streaming platforms. Many more are available.
 
 > [!IMPORTANT]
 > The `docker-compose.yml` file linked above uses Deephaven's Python server image. To change this to Groovy, change `server` to `server-slim` on line 5 of the file.
@@ -86,7 +86,7 @@ Save this locally as a `docker-compose.yml` file, and launch with `docker compos
 
 In this example, we consume a Kafka topic (`test.topic`) as a Deephaven table. The Kafka topic is populated by commands entered into the terminal.
 
-For demonstration purposes, we will be using an append-only table and ignoring the Kafka key.
+For demonstration purposes, we will be using an [append-only](../../conceptual/table-types.md#specialization-1-append-only) table and ignoring the Kafka key.
 
 ```groovy docker-config=kafka test-set=2 order=null
 import io.deephaven.kafka.KafkaTools
@@ -119,7 +119,7 @@ For this example, information is entered into the Kafka topic via a terminal. To
 docker compose exec redpanda rpk topic produce test.topic
 ```
 
-This will wait for and send any input to the `test.topic` topic. Enter the information and use the keyboard shortcut **Ctrl + D** to send.
+This will wait for input from the terminal and will send any input to the `test.topic` topic. Enter the information and use the keyboard shortcut **Ctrl + D** to send.
 
 Once sent, that information will automatically appear in your Deephaven table.
 
@@ -156,7 +156,7 @@ resultBlink = KafkaTools.consumeToTable(
 )
 ```
 
-Let's run a few more `docker compose exec redpanda rpk topic produce test.topic` commands to input additional data into the Kafka stream. As you can see, the `resultAppend` table contains all of the data, the `resultRing` table contains the last three entries, and the `resultBlink` table only shows rows before the next table update cycle is executed.
+Let's run a few more `docker compose exec redpanda rpk topic produce test.topic` commands to input additional data into the Kafka stream. As you can see, the `resultAppend` table contains all the data, the `resultRing` table contains the last three entries, and the `resultBlink` table only shows rows before the next table update cycle is executed.
 
 Since the `resultBlink` table doesn't show the values in the topic, let's add a table to store the last value added to the `resultBlink` table.
 
@@ -164,7 +164,7 @@ Since the `resultBlink` table doesn't show the values in the topic, let's add a 
 lastBlink = resultBlink.lastBy()
 ```
 
-## Read a Kafka stream with append
+### Read a Kafka stream with append
 
 In this example, [`consumeToTable`](../../reference/data-import-export/Kafka/consumeToTable.md) reads the Kafka topic `share.price`. The specific key and value result in a table that appends new rows.
 
@@ -203,7 +203,7 @@ AAPL 135.99
 AAPL 136.82
 ```
 
-## Read a Kafka stream ignoring keys
+### Read a Kafka stream ignoring keys
 
 In this example, [`consumeToTable`](../../reference/data-import-export/Kafka/consumeToTable.md) reads the Kafka topic `share.price` and ignores the partition and key values.
 
@@ -228,9 +228,9 @@ resultAppend = KafkaTools.consumeToTable(
 
 As you can see, the key column is not included in the output table.
 
-## Read Kafka topic in JSON format
+### Read Kafka topic in JSON format
 
-The following two examples read the Kafka topic `orders` in JSON format.
+The following two examples read a Kafka topic called `orders` in JSON format.
 
 This example uses [`jsonSpec`](https://deephaven.io/core/javadoc/io/deephaven/kafka/KafkaTools.Consume.html#jsonSpec(io.deephaven.engine.table.ColumnDefinition[])):
 
@@ -317,9 +317,9 @@ In the example, the map entry `'price' : 'Price'` specifies the incoming message
 
 If the `mapping` keyword argument is not provided, it is assumed that JSON field names and column names will match.
 
-## Read Kafka topic in Avro format
+### Read Kafka topic in Avro format
 
-In this example, [`consumeToTable`](../../reference/data-import-export/Kafka/consumeToTable.md) reads the Kafka topic `share.price` in [Avro](https://avro.apache.org/) format. This example uses an external schema definition registered in the deployment testing [Redpanda](https://www.redpanda.com/) instance that can be seen below.
+In this example, [`consumeToTable`](../../reference/data-import-export/Kafka/consumeToTable.md) reads the Kafka topic `share.price` in [Avro](https://avro.apache.org/) format. This example uses an external schema definition registered in the development testing [Redpanda](https://www.redpanda.com/) instance that can be seen below.
 
 A [Kafka Schema Registry](https://medium.com/slalom-technology/introduction-to-schema-registry-in-kafka-915ccf06b902) allows sharing and versioning of Kafka event schema definitions.
 
@@ -342,7 +342,7 @@ result = KafkaTools.consumeToTable(
 )
 ```
 
-In this query, the first argument included an additional entry for `schema.registry.url` to specify the URL for a schema registry with a REST API compatible with [Confluent's schema registry specification](https://docs.confluent.io/platform/current/schema-registry/develop/api.html).
+In this query, the first argument includes an additional entry for `schema.registry.url` to specify the URL for a schema registry with a REST API compatible with [Confluent's schema registry specification](https://docs.confluent.io/platform/current/schema-registry/develop/api.html).
 
 The `valueSpec` argument uses [`avroSpec`](https://deephaven.io/core/javadoc/io/deephaven/kafka/KafkaTools.Consume.html#avroSpec(org.apache.avro.Schema)), which specifies an Avro format for the Kafka `value` field.
 
@@ -355,7 +355,7 @@ Three optional keyword arguments are supported:
 - `mapping_only` expects a dictionary value, and if provided, specifies a name mapping for Avro field names to table column names. Any Avro field name not mentioned is omitted from the resulting table.
 - When `mapping` and `mapping_only` are both omitted, all Avro schema fields are mapped to columns using the field name as column name.
 
-## Read Kafka topic in Protobuf format
+### Read Kafka topic in Protobuf format
 
 In this example, [`consumeToTable`](../../reference/data-import-export/Kafka/consumeToTable.md) reads the Kafka topic `share.price` in [protobuf](https://protobuf.dev/) format, Google’s open-source, language-neutral, cross-platform data format used to serialize structured data.
 
@@ -407,7 +407,7 @@ Several optional keyword arguments are supported:
   - When `schema` is set, `ProtobufProtocol.serdes()` will be used by default.
   - When `message_class` is set, `ProtobufProtocol.raw()` will be used by default.
 
-## Perform multiple operations
+### Perform multiple operations
 
 In this example, [`consumeToTable`](../../reference/data-import-export/Kafka/consumeToTable.md) reads two Kafka topics, `quotes` and `orders`, into Deephaven as blink tables. Table operations are used to track the latest data from each topic (using [`lastBy`](../../reference/table-operations/group-and-aggregate/lastBy.md)), join the streams together ([`naturalJoin`](../../reference/table-operations/join/natural-join.md)), and aggregate ([`AggSum`](../../reference/table-operations/group-and-aggregate/AggSum.md)) the results.
 

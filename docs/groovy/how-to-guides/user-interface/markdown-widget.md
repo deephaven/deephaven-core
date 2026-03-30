@@ -9,7 +9,7 @@ The Markdown Widget is a useful tool for including text or images alongside your
 
 To create a Markdown Widget, use the **Controls** menu:
 
-![The **Controls** menu butthon highlighted in the Deephaven UI](../../assets/how-to/controls.png)
+![The **Controls** menu button highlighted in the Deephaven UI](../../assets/how-to/controls.png)
 
 ![The **Markdown Widget** button highlighted in the **Controls** drop-down](../../assets/how-to/mw1.png)
 
@@ -36,7 +36,7 @@ Content contained in the widget can be styled using the Markdown syntax. Example
 Additional styling options are available in Markdown, including code blocks, tables, links, lists, horizontal lines, etc.
 
 > [!NOTE]
-> To learn more, please refer to Markdown Guide's [basic syntax](https://www.markdownguide.org/basic-syntax/) page.
+> To learn more, please refer to the [Markdown Guide's basic syntax](https://www.markdownguide.org/basic-syntax/) page.
 
 ## Manage Markdown Widgets
 

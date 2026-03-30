@@ -5,9 +5,8 @@
 
 #include <iostream>
 #include <thread>
+#include <absl/log/log.h>
 #include "deephaven/dhcore/utility/utility.h"
-
-#include <grpc/support/log.h>
 
 using deephaven::dhcore::utility::GetWhat;
 
@@ -15,22 +14,22 @@ namespace deephaven::client::utility {
 std::shared_ptr<Executor> Executor::Create(std::string id) {
   auto result = std::make_shared<Executor>(Private(), std::move(id));
   result->executorThread_ = std::thread(&ThreadStart, result);
-  gpr_log(GPR_DEBUG, "%s: Created.", result->id_.c_str());
+  VLOG(2) << result->id_ << ": Created.";
   return result;
 }
 
 Executor::Executor(Private, std::string id) : id_(std::move(id)), cancelled_(false) {}
 
 Executor::~Executor() {
-  gpr_log(GPR_DEBUG, "%s: Destroyed.", id_.c_str());
+  VLOG(2) << id_ << ": Destroyed.";
 }
 
 void Executor::Shutdown() {
-  gpr_log(GPR_DEBUG, "%s: Shutdown requested.", id_.c_str());
+  VLOG(2) << id_ << ": Shutdown requested.";
   std::unique_lock<std::mutex> guard(mutex_);
   if (cancelled_) {
     guard.unlock(); // to be nice
-    gpr_log(GPR_ERROR, "%s: Already cancelled.", id_.c_str());
+    LOG(ERROR) << id_ << ": Already cancelled.";
     return;
   }
   cancelled_ = true;
@@ -55,9 +54,9 @@ void Executor::Invoke(std::function<void()> f) {
 }
 
 void Executor::ThreadStart(std::shared_ptr<Executor> self) {
-  gpr_log(GPR_DEBUG, "%s: thread starting.", self->id_.c_str());
+  VLOG(2) << self->id_ << ": thread starting.";
   self->RunUntilCancelled();
-  gpr_log(GPR_DEBUG, "%s: thread exiting.", self->id_.c_str());
+  VLOG(2) << self->id_ << ": thread exiting.";
 }
 
 void Executor::RunUntilCancelled() {
@@ -82,7 +81,7 @@ void Executor::RunUntilCancelled() {
         cb();
       } catch (...) {
         auto what = GetWhat(std::current_exception());
-        gpr_log(GPR_ERROR, "%s: Executor ignored exception: %s.", id_.c_str(), what.c_str());
+        LOG(ERROR) << id_ << ": Executor ignored exception: " << what << ".";
       }
     }
 

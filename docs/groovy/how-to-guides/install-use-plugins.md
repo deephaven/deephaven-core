@@ -2,13 +2,15 @@
 title: Install and use plugins
 ---
 
-There are many ways to customize either the Deephaven build or packages to fit your use-cases. In this guide, we extend Deephaven to build a custom Docker image with JS plugins installed. For this guide, we will add the `js-plugin-matplotlib`. This makes the popular [Matplotlib](https://matplotlib.org/) library available for use, providing more data visualization options within the Deephaven IDE, such as 3D plots and sophisticated scatter plots. As always, you'll be able to plot both your static and real-time data.
+This guide covers the installation and use of plugins in Deephaven. A plugin is something that extends the functionality of a software. Groovy packages are a common example of plugins - they extend Groovy's capabilities. Plugins in Deephaven can extend the functionality of a running server, UI, client API, or all of them.
 
-Plugins in Deephaven can extend the functionality of a running server, UI, client API, or all of them. Deephaven offers several pre-built plugins that can extend the platform's functionality. These are available to anyone using Deephaven Community Core.
+Deephaven offers several pre-built plugins that can extend the platform's functionality. These are available to anyone using Deephaven Community Core. They can be installed easily and provide a range of additional capabilities. For the full list of available plugins, see [available plugins](#available-plugins).
 
 Server-side plugins extend the functionality of the Deephaven server. For instance, plotting plugins add the ability to plot with new APIs such as Plotly Express, Matplotlib, and Seaborn. Authentication plugins add the ability to authenticate users with new authentication methods such as mTLS.
 
 Client-side plugins extend the functionality of any of Deephaven's client APIs. For instance, the Groovy client API can be extended with plugins that allow the client to manage arbitrary objects in the server, or to interact with the server using a different serialization format.
+
+Other plugins may have both a server-side plugin and a client-side plugin, allowing bidirectional communication between the client and server.
 
 > [!NOTE]
 > In some cases, you'll want to install packages rather than use plugins. Those instructions are covered in [How to install packages](./install-packages.md).

@@ -23,9 +23,25 @@ using deephaven::dhcore::utility::VerboseSharedPtrCast;
 namespace deephaven::client::tests {
 TEST_CASE("Base64encode", "[utility]") {
   // https://en.wikipedia.org/wiki/Base64
-  CHECK(Base64Encode("light work.") == "bGlnaHQgd29yay4=");
-  CHECK(Base64Encode("light work") == "bGlnaHQgd29yaw==");
-  CHECK(Base64Encode("light wor") == "bGlnaHQgd29y");
+  const auto [text, expected] = GENERATE(
+    std::pair("", ""),
+    std::pair("X", "WA=="),
+    std::pair("XX", "WFg="),
+    std::pair("XXX", "WFhY"),
+    std::pair("light wor", "bGlnaHQgd29y"),
+    std::pair("light work", "bGlnaHQgd29yaw=="),
+    std::pair("light work.", "bGlnaHQgd29yay4="),
+    std::pair("\x80", "gA=="),
+    std::pair("\x80\x81", "gIE="),
+    std::pair("\x80\x81\x82", "gIGC"),
+    std::pair("\x80\x81\x82\xfd", "gIGC/Q=="),
+    std::pair("\x80\x81\x82\xfd\xfe", "gIGC/f4="),
+    std::pair("\x80\x81\x82\xfd\xfe\xff", "gIGC/f7/")
+    );
+
+  auto actual = Base64Encode(text);
+  INFO("While encoding " << text);
+  CHECK(expected == actual);
 }
 
 TEST_CASE("EpochMillisToStr", "[utility]") {
