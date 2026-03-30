@@ -690,7 +690,8 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
 
         for (int i = 0; i < chunk.size(); ++i) {
             final int j = random.nextInt(20) - 1;
-            if (j < 0) {
+            final boolean setNull = random.nextDouble() < 0.05;
+            if (setNull) {
                 chunk.set(i, null);
             } else {
                 final String[] entry = new String[j];
@@ -708,7 +709,8 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
 
         for (int i = 0; i < chunk.size(); ++i) {
             final int j = random.nextInt(20) - 1;
-            if (j < 0) {
+            final boolean setNull = random.nextDouble() < 0.05;
+            if (setNull) {
                 chunk.set(i, null);
             } else {
                 final long[] entry = new long[j];
@@ -726,7 +728,8 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
 
         for (int i = 0; i < chunk.size(); ++i) {
             final int j = random.nextInt(20) - 1;
-            if (j < 0) {
+            final boolean setNull = random.nextDouble() < 0.05;
+            if (setNull) {
                 chunk.set(i, null);
             } else {
                 final long[] entry = new long[j];
@@ -743,8 +746,8 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         final WritableObjectChunk<LocalDate, Values> chunk = untypedChunk.asWritableObjectChunk();
 
         for (int i = 0; i < chunk.size(); ++i) {
-            final int j = random.nextInt(20) - 1;
-            if (j < 0) {
+            final boolean setNull = random.nextDouble() < 0.05;
+            if (setNull) {
                 chunk.set(i, null);
             } else {
                 chunk.set(i, LocalDate.ofEpochDay((i * 17L) % 365));
@@ -757,8 +760,8 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         final WritableObjectChunk<LocalTime, Values> chunk = untypedChunk.asWritableObjectChunk();
 
         for (int i = 0; i < chunk.size(); ++i) {
-            final int j = random.nextInt(20) - 1;
-            if (j < 0) {
+            final boolean setNull = random.nextDouble() < 0.05;
+            if (setNull) {
                 chunk.set(i, null);
             } else {
                 chunk.set(i, LocalTime.ofNanoOfDay(i * 1700000L));
@@ -771,8 +774,8 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         final WritableObjectChunk<Duration, Values> chunk = untypedChunk.asWritableObjectChunk();
 
         for (int i = 0; i < chunk.size(); ++i) {
-            final int j = random.nextInt(20) - 1;
-            if (j < 0) {
+            final boolean setNull = random.nextDouble() < 0.05;
+            if (setNull) {
                 chunk.set(i, null);
             } else {
                 chunk.set(i, Duration.ofSeconds(i * 3600L, i * 123456789L % 1_000_000_000));
