@@ -101,18 +101,20 @@ final class TypeAdapter
 
     @Override
     public RelDataType visit(LocalTimeType localTimeType) {
-        return create(SqlTypeName.TIME);
+        // TODO: ?? return create(SqlTypeName.TIME);
+        return typeFactory.createJavaType(SqlTodoCustomType.class);
     }
 
     @Override
     public RelDataType visit(LocalDateType localDateType) {
-        return create(SqlTypeName.DATE);
+        // TODO: ?? return create(SqlTypeName.DATE);
+        return typeFactory.createJavaType(SqlTodoCustomType.class);
     }
 
     @Override
     public RelDataType visit(DurationType durationType) {
-        // TODO: is this the best choice?
-        return create(SqlTypeName.INTERVAL_HOUR_SECOND);
+        // TODO: return create(SqlTypeName.INTERVAL_HOUR_SECOND);
+        return typeFactory.createJavaType(SqlTodoCustomType.class);
     }
 
     @Override
