@@ -23,7 +23,7 @@ jobs:
             21
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v5
+        uses: gradle/actions/setup-gradle@v6
 
       - name: Setup Crane
         if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
