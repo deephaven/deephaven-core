@@ -140,7 +140,9 @@ public class UnionChunkWriter<T> extends BaseChunkWriter<ObjectChunk<T, Values>>
                 innerChunks[ii] = innerSizedChunks[ii].get().asWritableObjectChunk();
             }
 
-            try (final RowSet toUse = subset != null ? subset.copy() : RowSetFactory.flat(resultChunkSize)) {
+            // Create (and close) a flat row set if subset is not provided.
+            try (final RowSet toClose = subset == null ? RowSetFactory.flat(resultChunkSize) : null) {
+                final RowSet toUse = subset == null ? toClose : subset;
                 final MutableInt index = new MutableInt(0);
                 toUse.forAllRowKeys(rowKey -> {
                     final Object value = chunk.get((int) rowKey);
