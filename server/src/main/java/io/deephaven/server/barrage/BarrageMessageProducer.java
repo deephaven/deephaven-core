@@ -1023,7 +1023,7 @@ public class BarrageMessageProducer extends LivenessArtifact
                         .append(" interval=").append(updateIntervalMs).append(" already scheduled to run at ")
                         .append(lastScheduledUpdateTime).endl();
             }
-        } else if (msSinceLastUpdate < localLastUpdateTime) {
+        } else if (msSinceLastUpdate < updateIntervalMs) {
             // we have updated within the period, so wait until a sufficient gap
             final long nextRunTime = localLastUpdateTime + updateIntervalMs;
             if (log.isDebugEnabled()) {
