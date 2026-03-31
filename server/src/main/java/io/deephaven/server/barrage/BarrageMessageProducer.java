@@ -902,6 +902,9 @@ public class BarrageMessageProducer extends LivenessArtifact
 
         if (addsToRecord.isNonempty() || modsToRecord.isNonempty()) {
             try (final SharedContext sharedContext = SharedContext.makeSharedContext()) {
+                final int deltaChunkSize =
+                        (int) Math.min(DELTA_CHUNK_SIZE, Math.max(addsToRecord.size(), modsToRecord.size()));
+
                 // create get contexts for each active column
                 final ChunkSource.GetContext[] getContexts = new ChunkSource.GetContext[chunkSources.length];
                 try (final SafeCloseableArray<?> ignored = new SafeCloseableArray<>(getContexts)) {
@@ -911,13 +914,13 @@ public class BarrageMessageProducer extends LivenessArtifact
                             continue;
                         }
                         getContexts[columnIndex] =
-                                chunkSources[columnIndex].makeGetContext(DELTA_CHUNK_SIZE, sharedContext);
+                                chunkSources[columnIndex].makeGetContext(deltaChunkSize, sharedContext);
                     }
 
                     final BiConsumer<RowSet, BitSet> recordRows = (keysToAdd, columnsToRecord) -> {
                         try (final RowSequence.Iterator rsIt = keysToAdd.getRowSequenceIterator()) {
                             while (rsIt.hasMore()) {
-                                final RowSequence srcKeys = rsIt.getNextRowSequenceWithLength(DELTA_CHUNK_SIZE);
+                                final RowSequence srcKeys = rsIt.getNextRowSequenceWithLength(deltaChunkSize);
 
                                 for (int columnIndex = columnsToRecord.nextSetBit(0); columnIndex >= 0; columnIndex =
                                         columnsToRecord.nextSetBit(columnIndex + 1)) {
@@ -1711,9 +1714,16 @@ public class BarrageMessageProducer extends LivenessArtifact
                 downstream.addColumnData[ci] = adds;
 
                 if (addColumnSet.get(ci)) {
-                    final WritableChunk<Values> addChunk = adds.chunkType.makeWritableChunk((int) addSize);
-                    extractRange(deltaColumns[ci], firstDelta.columnOffsets[ci], addSize, addChunk);
-                    adds.data.add(addChunk);
+                    long addRemaining = addSize;
+                    long addOffset = 0;
+                    while (addRemaining > 0) {
+                        final int chunkSize = (int) Math.min(SNAPSHOT_CHUNK_SIZE, addRemaining);
+                        final WritableChunk<Values> addChunk = adds.chunkType.makeWritableChunk(chunkSize);
+                        extractRange(deltaColumns[ci], firstDelta.columnOffsets[ci] + addOffset, chunkSize, addChunk);
+                        adds.data.add(addChunk);
+                        addOffset += chunkSize;
+                        addRemaining -= chunkSize;
+                    }
                 }
 
                 adds.type = realColumnType[ci];
@@ -1728,10 +1738,17 @@ public class BarrageMessageProducer extends LivenessArtifact
 
                 if (modColumnSet.get(ci)) {
                     mods.rowsModified = firstDelta.recordedMods.copy();
-                    final long modStart = firstDelta.columnOffsets[ci] + addSize;
-                    final WritableChunk<Values> modChunk = mods.chunkType.makeWritableChunk((int) modSize);
-                    extractRange(deltaColumns[ci], modStart, modSize, modChunk);
-                    mods.data.add(modChunk);
+                    final long modBaseStart = firstDelta.columnOffsets[ci] + addSize;
+                    long modRemaining = modSize;
+                    long modOffset = 0;
+                    while (modRemaining > 0) {
+                        final int chunkSize = (int) Math.min(SNAPSHOT_CHUNK_SIZE, modRemaining);
+                        final WritableChunk<Values> modChunk = mods.chunkType.makeWritableChunk(chunkSize);
+                        extractRange(deltaColumns[ci], modBaseStart + modOffset, chunkSize, modChunk);
+                        mods.data.add(modChunk);
+                        modOffset += chunkSize;
+                        modRemaining -= chunkSize;
+                    }
                 } else {
                     mods.rowsModified = RowSetFactory.empty();
                 }
@@ -1995,8 +2012,8 @@ public class BarrageMessageProducer extends LivenessArtifact
             return;
         }
         long remaining = numRows;
-        int chunkIdx = (int) (startRow / DELTA_CHUNK_SIZE);
-        int srcOffset = (int) (startRow % DELTA_CHUNK_SIZE);
+        int chunkIdx = Math.toIntExact(startRow / DELTA_CHUNK_SIZE);
+        int srcOffset = Math.toIntExact(startRow % DELTA_CHUNK_SIZE);
         int destOffset = 0;
 
         while (remaining > 0) {
@@ -2029,8 +2046,8 @@ public class BarrageMessageProducer extends LivenessArtifact
                 continue;
             }
 
-            final int chunkIdx = (int) (pos / DELTA_CHUNK_SIZE);
-            final int offsetInChunk = (int) (pos % DELTA_CHUNK_SIZE);
+            final int chunkIdx = Math.toIntExact(pos / DELTA_CHUNK_SIZE);
+            final int offsetInChunk = Math.toIntExact(pos % DELTA_CHUNK_SIZE);
             destChunk.copyFromChunk(srcChunks.get(chunkIdx), offsetInChunk, i, 1);
         }
     }
