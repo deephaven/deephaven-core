@@ -689,13 +689,13 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         final WritableObjectChunk<String[], Values> chunk = untypedChunk.asWritableObjectChunk();
 
         for (int i = 0; i < chunk.size(); ++i) {
-            final int j = random.nextInt(20) - 1;
             final boolean setNull = random.nextDouble() < 0.05;
             if (setNull) {
                 chunk.set(i, null);
             } else {
-                final String[] entry = new String[j];
-                for (int k = 0; k < j; ++k) {
+                final int arrLen = random.nextInt(20);
+                final String[] entry = new String[arrLen];
+                for (int k = 0; k < arrLen; ++k) {
                     entry[k] = i + ":" + k;
                 }
                 chunk.set(i, entry);
@@ -708,13 +708,13 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         final WritableObjectChunk<long[], Values> chunk = untypedChunk.asWritableObjectChunk();
 
         for (int i = 0; i < chunk.size(); ++i) {
-            final int j = random.nextInt(20) - 1;
             final boolean setNull = random.nextDouble() < 0.05;
             if (setNull) {
                 chunk.set(i, null);
             } else {
-                final long[] entry = new long[j];
-                for (int k = 0; k < j; ++k) {
+                final int arrLen = random.nextInt(20);
+                final long[] entry = new long[arrLen];
+                for (int k = 0; k < arrLen; ++k) {
                     entry[k] = i * 10000L + k;
                 }
                 chunk.set(i, entry);
@@ -727,13 +727,13 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         final WritableObjectChunk<LongVector, Values> chunk = untypedChunk.asWritableObjectChunk();
 
         for (int i = 0; i < chunk.size(); ++i) {
-            final int j = random.nextInt(20) - 1;
             final boolean setNull = random.nextDouble() < 0.05;
             if (setNull) {
                 chunk.set(i, null);
             } else {
-                final long[] entry = new long[j];
-                for (int k = 0; k < j; ++k) {
+                final int arrLen = random.nextInt(20);
+                final long[] entry = new long[arrLen];
+                for (int k = 0; k < arrLen; ++k) {
                     entry[k] = i * 10000L + k;
                 }
                 chunk.set(i, new LongVectorDirect(entry));
