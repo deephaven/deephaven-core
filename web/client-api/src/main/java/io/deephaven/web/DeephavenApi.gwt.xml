@@ -17,6 +17,8 @@
 
   <inherits name="com.vertispan.grpc.fetch.Fetch" />
 
+  <inherits name="com.google.gwt.logging.Logging"/>
+
   <define-property name="dh.dev" values="true, false" />
   <source path="client" />
   <source path="shared" />
@@ -35,6 +37,7 @@
 
   <set-configuration-property name="user.agent.runtimeWarning" value="false"/>
   <set-configuration-property name="document.compatMode.severity" value="IGNORE"/>
+  <set-property name="gwt.uncaughtexceptionhandler.windowonerror" value="IGNORE"/>
 
   <set-property name="jsinterop.checks" value="ENABLED"/>
 </module>

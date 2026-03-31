@@ -59,6 +59,11 @@ class GwtTools {
                 checkAssertions = true
                 setExtraArgs('-includeJsInteropExports', 'io.deephaven.*')
                 if (gwtDev) {
+                    extraArgs = [
+                            '-includeJsInteropExports', 'io.deephaven.*',
+                            '-setProperty', 'gwt.logging.logLevel=FINE',
+                            '-setProperty', 'jre.logging.logLevel=ALL',
+                    ]
                     saveSource = true
                     extra = extras
                     logLevel = 'INFO'

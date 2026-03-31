@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Logger;
 
 /**
  * Custom replacement for grpc-websockets transport that handles multiple grpc streams in a single websocket. All else
@@ -114,6 +115,7 @@ public class MultiplexedWebsocketTransport implements GrpcTransport {
             payload.setAt(4, 0d);
             payload.set(msgBytes, 5);
             webSocket.send(payload);
+            log.info("sent message frame for stream " + streamId + " with length " + msgBytes.byteLength);
         }
 
         @Override
@@ -129,6 +131,7 @@ public class MultiplexedWebsocketTransport implements GrpcTransport {
             streamId = streamId ^ (1 << 31);
             new DataView(data.buffer).setInt32(0, streamId);
             webSocket.send(data);
+            log.info("sent websocket finish signal for stream " + (streamId ^ (1 << 31)));
         }
 
         @Override
@@ -170,6 +173,7 @@ public class MultiplexedWebsocketTransport implements GrpcTransport {
          * @param actualUrl the url to connect to
          */
         private ActiveTransport(String key, String actualUrl) {
+            log.info("creating websocket");
             this.webSocket = new WebSocket(actualUrl, new String[] {MULTIPLEX_PROTOCOL, SOCKET_PER_STREAM_PROTOCOL});
 
             webSocket.binaryType = "arraybuffer";
@@ -242,6 +246,7 @@ public class MultiplexedWebsocketTransport implements GrpcTransport {
 
     @Override
     public void start(JsPropertyMap<HeaderValueUnion> metadata) {
+        log.info("starting transport for stream " + streamId + " with metadata " + metadata);
         if (alternativeTransport.isAvailable()) {
             alternativeTransport.get().start(new BrowserHeaders(metadata));
             return;
@@ -268,6 +273,8 @@ public class MultiplexedWebsocketTransport implements GrpcTransport {
 
     private void onOpen(Event event) {
         Object protocol = Js.asPropertyMap(transport.webSocket).get("protocol");
+        log.info("Websocket opened with protocol " + protocol);
+
         if (protocol.equals(SOCKET_PER_STREAM_PROTOCOL)) {
             // delegate to plain websocket impl, try to dissuade future users of this server
             Transport transport = alternativeTransport.get();
@@ -334,6 +341,7 @@ public class MultiplexedWebsocketTransport implements GrpcTransport {
     }
 
     private void onClose(Event event) {
+        log.warning("websocket closed" + event.toString());
         if (alternativeTransport.isAvailable()) {
             // must be downgrading to fallback
             return;
@@ -344,7 +352,7 @@ public class MultiplexedWebsocketTransport implements GrpcTransport {
     }
 
     private void onError(Event event) {
-
+        log.warning("websocket error: " + event.toString());
     }
 
     private void onMessage(Event event) {
@@ -366,11 +374,13 @@ public class MultiplexedWebsocketTransport implements GrpcTransport {
             }
         }
     }
-
+    private static final Logger log = Logger.getLogger(MultiplexedWebsocketTransport.class.getName());
     private void sendOrEnqueue(QueuedEntry e) {
         if (transport.webSocket.readyState == WebSocket.CONNECTING) {
+            log.info("enqueued " + e);
             sendQueue.add(e);
         } else {
+            log.info("sending " + e);
             e.send(transport.webSocket, streamId);
         }
     }

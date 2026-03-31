@@ -108,7 +108,7 @@ public class CoreClient extends HasEventHandling {
                 JsLog.warn("username ignored for login type " + creds.getType());
             }
         }
-        ideConnection.login(creds.getType(), creds.getToken());
+        ideConnection.login(token.getType(), token.getValue());
 
         boolean alreadyRunning = ideConnection.connection.isAvailable();
         WorkerConnection workerConnection = ideConnection.connection.get();

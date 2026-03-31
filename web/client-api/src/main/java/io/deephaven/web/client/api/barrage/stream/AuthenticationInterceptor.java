@@ -31,7 +31,7 @@ public class AuthenticationInterceptor implements ClientInterceptor {
 
     private final List<Runnable> pending = new ArrayList<>();
 
-    private State state;
+    private State state = State.UNAUTHENTICATED;
 
     public void deauth() {
         assert state != State.PENDING || pending.isEmpty();
@@ -63,7 +63,6 @@ public class AuthenticationInterceptor implements ClientInterceptor {
 
     public void login(String authType, String authToken) {
         this.headerToSet = (authType + " " + authToken).trim();
-        this.state = State.PENDING;
         lastHeaderValue = null;
     }
 
@@ -129,6 +128,8 @@ public class AuthenticationInterceptor implements ClientInterceptor {
                 assert headerToSet != null;
                 assert lastHeaderValue == null;
                 headers.put(AUTHORIZATION_HEADER, headerToSet);
+                state = State.PENDING;
+                headerToSet = null;
             } else if (state == State.AUTHENTICATED) {
                 // assert pending.isEmpty();
                 assert headerToSet == null;
