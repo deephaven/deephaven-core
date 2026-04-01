@@ -18,6 +18,9 @@ We will show you how to construct a simple system that: monitors weather data (s
 - [Build and run Deephaven](../getting-started/docker-install.md).
 - Create a valid [Google Geolocation API key](https://developers.google.com/maps/documentation/geolocation/overview).
 
+> [!NOTE]
+> This guide demonstrates connecting a Java client to a Deephaven Python server. Server-side Python code is provided throughout if you want to follow along.
+
 ## The application
 
 The application is broken up into three major parts:
