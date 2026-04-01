@@ -19,9 +19,14 @@ import io.deephaven.javascript.proto.dhinternal.grpcweb.Grpc;
 import io.deephaven.javascript.proto.dhinternal.grpcweb.transports.transport.Transport;
 import io.deephaven.web.client.api.JsLazy;
 import io.deephaven.web.shared.fu.JsRunnable;
+import io.grpc.InternalMetadata;
+import io.grpc.Metadata;
 import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
+import org.gwtproject.nio.TypedArrayHelper;
 
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -229,6 +234,8 @@ public class MultiplexedWebsocketTransport implements GrpcTransport {
 
     private JsRunnable cleanup = JsRunnable.doNothing();
 
+    private boolean sentHeaders = false;
+
     public MultiplexedWebsocketTransport(GrpcTransportOptions options) {
         this.options = options;
         String url = options.url.toString();
@@ -367,7 +374,38 @@ public class MultiplexedWebsocketTransport implements GrpcTransport {
             closed = false;
         }
         if (streamId == this.streamId) {
-            options.onChunk.onChunk(new Uint8Array(messageEvent.data, 4));
+            Uint8Array nextChunk = new Uint8Array(messageEvent.data, 4);
+            if (!sentHeaders) {
+                DataView dataView = new DataView(nextChunk.buffer, nextChunk.byteOffset, 5);
+                assert dataView.getUint8(0) == 0x80;
+                int length = dataView.getInt32(1);
+                assert length == nextChunk.byteLength - 5 : length + " != " + (nextChunk.byteLength - 5);
+
+                int status = 200;
+                JsPropertyMap<HeaderValueUnion> headers = JsPropertyMap.of();
+
+                // Decode ASCII header text after the 4-byte length prefix
+                StringBuilder headerText = new StringBuilder();
+                for (int i = 4; i < nextChunk.byteLength; i++) {
+                    headerText.append((char) nextChunk.getAt(i).intValue());
+                }
+                String[] lines = headerText.toString().split("\n");
+                for (String line : lines) {
+                    int colonIndex = line.indexOf(':');
+                    if (colonIndex >= 0) {
+                        String name = line.substring(0, colonIndex).trim();
+                        String value = line.substring(colonIndex + 1).trim();
+                        headers.set(name, HeaderValueUnion.of(value));
+                    }
+                }
+
+                options.onHeaders.onHeaders(headers, status);
+
+                sentHeaders = true;
+                return;
+            }
+
+            options.onChunk.onChunk(nextChunk);
             if (closed) {
                 options.onEnd.onEnd(null);
                 removeHandlers();
@@ -384,4 +422,32 @@ public class MultiplexedWebsocketTransport implements GrpcTransport {
             e.send(transport.webSocket, streamId);
         }
     }
+
+    private static Metadata makeMetadata(final ByteBuffer body) {
+        final byte[][] bytes = new byte[0][];
+        int start = 0;
+        for (int i = body.position(); i < body.limit(); ++i) {
+            final byte b = body.get(i);
+            if (b == '\n' || b == ':') {
+                assert start < i;
+                final byte[] line = new byte[i - start];
+                body.position(start).get(line);
+                // Trim trailing/leading whitespace before passing to InternalMetadata.
+                // In practice, this is effectively only leading whitespace after the `:`,
+                // but http header names/values must not have trailing whitespace either.
+                final String s = new String(line, StandardCharsets.UTF_8).trim();
+                bytes[bytes.length] = s.getBytes(StandardCharsets.UTF_8);
+                start = i + 1;
+            }
+        }
+        if (start < body.limit()) {
+            // No trailing newline - in practice our server always sends a trailing newline,
+            // so this will never be used
+            final byte[] line = new byte[body.limit() - start];
+            body.position(start).get(line);
+            bytes[bytes.length] = line;
+        }
+        return InternalMetadata.newMetadata(bytes);
+    }
+
 }

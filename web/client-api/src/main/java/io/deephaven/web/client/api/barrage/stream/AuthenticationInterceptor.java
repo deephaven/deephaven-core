@@ -13,6 +13,7 @@ import io.grpc.ForwardingClientCallListener;
 import io.grpc.Metadata;
 import io.grpc.MethodDescriptor;
 import io.grpc.Status;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -72,19 +73,23 @@ public class AuthenticationInterceptor implements ClientInterceptor {
         return new BearerCall<>(next.newCall(method, callOptions));
     }
 
-    private Context handleMetadata(Metadata metadata) {
+    private Context handleMetadata(@Nullable Status status, Metadata metadata) {
         String authHeader = metadata.get(AUTHORIZATION_HEADER);
+        if (authHeader == null && status == null) {
+            return Context.current();
+        }
         if (state == State.PENDING) {
             boolean created = false;
-            if (authHeader == null) {
+            if (status != null && status.getCode().equals(Status.Code.UNAUTHENTICATED)) {
                 setState(State.UNAUTHENTICATED);
                 lastHeaderValue = null;
-            } else {
+            } else if (authHeader != null) {
                 setState(State.AUTHENTICATED);
                 lastHeaderValue = authHeader;
                 created = true;
             }
             // either way, continue with pending calls
+            //TODO probably only in the two above cases
             flushPending();
 
             if (created) {
@@ -92,10 +97,10 @@ public class AuthenticationInterceptor implements ClientInterceptor {
             }
         } else {
             assert pending.isEmpty();
-            if (authHeader == null) {
+            if (status != null && status.getCode().equals(Status.Code.UNAUTHENTICATED)) {
                 setState(State.UNAUTHENTICATED);
                 lastHeaderValue = null;
-            } else {
+            } else if (authHeader != null) {
                 setState(State.AUTHENTICATED);
                 lastHeaderValue = authHeader;
             }
@@ -148,14 +153,14 @@ public class AuthenticationInterceptor implements ClientInterceptor {
 
         @Override
         public void onHeaders(Metadata headers) {
-            handleMetadata(headers).run(() -> {
+            handleMetadata(null, headers).run(() -> {
                 super.onHeaders(headers);
             });
         }
 
         @Override
         public void onClose(Status status, Metadata trailers) {
-            handleMetadata(trailers).run(() -> {
+            handleMetadata(status, trailers).run(() -> {
                 super.onClose(status, trailers);
             });
         }
