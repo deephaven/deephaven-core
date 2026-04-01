@@ -43,4 +43,4 @@ println "After conversion: ${result.isBlink()}"
 - [`removeBlink`](../create/remove-blink.md)
 - [`blinkToAppendOnly`](../create/blink-to-append-only.md)
 - [Table types: Specialized semantics for blink tables](../../../conceptual/table-types.md#specialized-semantics-for-blink-tables)
-- [Javadoc](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/Table.html#isBlink())
+- [Javadoc](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/BaseTable.html#isBlink())
