@@ -52,6 +52,10 @@ Integral coercion from a larger type to a smaller type follows typical truncatio
 
 Decimal coercion from a type with higher precision to a type with lower precision may result in rounding or truncation. For example, coercion to any integral type will lose the fractional part of the decimal value.
 
+## Further customization
+
+Please see the [Groovy documentation](/core/groovy/docs/how-to-guides/data-import-export/arrow-flight) for more details and examples.
+
 ## Related documentation
 
 - [Barrage Extensions Package Summary](https://docs.deephaven.io/core/javadoc/io/deephaven/extensions/barrage/package-summary.html)
