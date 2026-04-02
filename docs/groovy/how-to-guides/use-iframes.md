@@ -130,8 +130,8 @@ When embedding in IFrames, you may want to provide authentication details from t
 
     <!--
       The IFrame for our table.
-      In addition to the `name` parameter that we have specified before, we also specify `authProvider=parent`.
-      That triggers the embbeded IFrame to wait for login credentials from the parent window.
+      In addition to the `name` parameter we previously specified, we also specify `authProvider=parent`.
+      That triggers the embedded IFrame to wait for login credentials from the parent window.
      -->
     <iframe
       id="tableIframe"
@@ -142,7 +142,7 @@ When embedding in IFrames, you may want to provide authentication details from t
 
     <h1>Sin Chart</h1>
     <!--
-      The IFrame for our chart. We specify `authProvider=parent` here as well, and this parent window will authenticate both IFrames.
+      The IFrame for our chart. We also specify `authProvider=parent` here, and this parent window will authenticate both IFrames.
     -->
     <iframe
       src="http://localhost:10000/iframe/widget/?name=sin_chart&authProvider=parent"
@@ -381,9 +381,6 @@ The parent window can also explicitly set the theme by sending a `requestSetThem
     </script>
   </body>
 </html>
-```
-
-</details>
 
 ![IFrame Color Theme](../assets/how-to/iframe-color-theme.gif)
 
