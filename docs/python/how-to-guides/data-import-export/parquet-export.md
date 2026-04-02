@@ -8,10 +8,7 @@ The [Deephaven Parquet Python module](/core/pydoc/code/deephaven.parquet.html#mo
 By default, Deephaven tables are written to Parquet files using `SNAPPY` compression when writing the data. This default can be changed with the `compression_codec_name` argument in any of the writing functions discussed here or with the `codec_name` argument in the [`ColumnInstruction`](../../reference/data-import-export/Parquet/ColumnInstruction.md) class. See the [column instructions section](#column-instructions) for more information.
 
 > [!NOTE]
-> Much of this document covers writing Parquet files to S3. For the best performance, the Deephaven instance should be running in the same AWS region as the S3 bucket. Additional performance improvements can be made by using directory buckets to localize all data to a single AWS sub-region, and running the Deephaven instance in that same sub-region. See [this article](https://community.aws/content/2ZDARM0xDoKSPDNbArrzdxbO3ZZ/s3-express-one-zone?lang=en) for more information on S3 directory buckets.
-
-> [!NOTE]
-> Some of the code in this guide writes data to S3. Take care to replace the S3 authentication details with the correct values for your S3 instance.
+> Much of this document covers writing Parquet files to S3. For the best performance, the Deephaven instance should be running in the same AWS region as the S3 bucket. Additional performance improvements can be made by using directory buckets to localize all data to a single AWS sub-region, and running the Deephaven instance in that same sub-region. See [this article](https://community.aws/content/2ZDARM0xDoKSPDNbArrzdxbO3ZZ/s3-express-one-zone?lang=en) for more information on S3 directory buckets. Take care to replace the S3 authentication details in the examples with the correct values for your S3 instance.
 
 First, create some tables that will be used for the examples in this guide.
 

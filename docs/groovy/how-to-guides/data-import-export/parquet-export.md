@@ -8,10 +8,7 @@ The [Deephaven Parquet module](/core/javadoc/io/deephaven/parquet/table/package-
 By default, Deephaven tables are written to Parquet files using `SNAPPY` compression when writing the data. This default can be changed with the [`ParquetInstructions.Builder.setCompressionCodecName`](https://deephaven.io/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.Builder.html#setCompressionCodecName(java.lang.String)) method in any of the writing functions discussed here or with the [`addColumnCodec`](https://deephaven.io/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.Builder.html#addColumnCodec(java.lang.String,java.lang.String)) method for column-specific compression. See the [Parquet instructions](./parquet-instructions.md) document for more information.
 
 > [!NOTE]
-> Much of this document covers writing Parquet files to S3. For the best performance, the Deephaven instance should be running in the same AWS region as the S3 bucket. Additional performance improvements can be made by using directory buckets to localize all data to a single AWS sub-region, and running the Deephaven instance in that same sub-region. See [this article](https://community.aws/content/2ZDARM0xDoKSPDNbArrzdxbO3ZZ/s3-express-one-zone?lang=en) for more information on S3 directory buckets.
-
-> [!NOTE]
-> Some of the code in this guide writes data to S3. Take care to replace the S3 authentication details with the correct values for your S3 instance.
+> Much of this document covers writing Parquet files to S3. For the best performance, the Deephaven instance should be running in the same AWS region as the S3 bucket. Additional performance improvements can be made by using directory buckets to localize all data to a single AWS sub-region, and running the Deephaven instance in that same sub-region. See [this article](https://community.aws/content/2ZDARM0xDoKSPDNbArrzdxbO3ZZ/s3-express-one-zone?lang=en) for more information on S3 directory buckets. Take care to replace the S3 authentication details in the examples with the correct values for your S3 instance.
 
 First, create some tables that will be used for the examples in this guide.
 
@@ -55,7 +52,7 @@ import io.deephaven.parquet.table.ParquetTools
 ParquetTools.writeTable(grades, "/data/grades/grades.parquet")
 
 // write to a GZIP-compressed Parquet file
-ParquetTools.writeTable(grades, "/data/grades/grades_gzip.parquet", ParquetTools.GZIP)
+ParquetTools.writeTable(grades, "/data/grades/gradesGzip.parquet", ParquetTools.GZIP)
 ```
 
 Write `_metadata` and `_common_metadata` files by calling [`Builder.setGenerateMetadataFiles(true)`](https://deephaven.io/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.Builder.html#setGenerateMetadataFiles(boolean)). Parquet metadata files are useful for reading very large datasets, as they enhance the performance of the read operation significantly. If the data might be read in the future, consider writing metadata files.
@@ -65,7 +62,7 @@ import io.deephaven.parquet.table.ParquetInstructions
 
 ParquetTools.writeTable(
     grades,
-    "/data/grades_meta/grades.parquet",
+    "/data/gradesMeta/grades.parquet",
     ParquetInstructions.builder().setGenerateMetadataFiles(true).build()
 )
 ```
@@ -128,11 +125,11 @@ Use [`ParquetTools.writeKeyValuePartitionedTable`](https://deephaven.io/core/jav
 ```groovy test-set=1
 // write a standard Deephaven table, must specify table_definition
 ParquetTools.writeKeyValuePartitionedTable(
-    grades, "/data/grades_kv/", ParquetInstructions.builder().setTableDefinition(gradesDef).build()
+    grades, "/data/gradesKv/", ParquetInstructions.builder().setTableDefinition(gradesDef).build()
 )
 
 // or write a partitioned table
-ParquetTools.writeKeyValuePartitionedTable(gradesPartitioned, "/data/grades_kv_partitioned/", ParquetInstructions.builder().build())
+ParquetTools.writeKeyValuePartitionedTable(gradesPartitioned, "/data/gradesKvPartitioned/", ParquetInstructions.builder().build())
 ```
 
 Call `setGenerateMetadataFiles(true)` to write metadata files.
@@ -140,7 +137,7 @@ Call `setGenerateMetadataFiles(true)` to write metadata files.
 ```groovy test-set=1
 ParquetTools.writeKeyValuePartitionedTable(
     gradesPartitioned,
-    "/data/grades_kv_partitioned_meta/",
+    "/data/gradesKvPartitionedMeta/",
     ParquetInstructions.builder().setGenerateMetadataFiles(true).build()
 )
 ```
@@ -181,9 +178,9 @@ Use [`ParquetTools.writeTable`](../../reference/data-import-export/Parquet/write
 Supply [`ParquetTools.writeTable`](../../reference/data-import-export/Parquet/writeTable.md) with the Deephaven table to be written and the destination file path with the `table` and `path` arguments. The `path` must end with the `.parquet` file extension.
 
 ```groovy test-set=1
-ParquetTools.writeTable(mathGrades, "/data/grades_flat_1/math.parquet")
-ParquetTools.writeTable(scienceGrades, "/data/grades_flat_1/science.parquet")
-ParquetTools.writeTable(historyGrades, "/data/grades_flat_1/history.parquet")
+ParquetTools.writeTable(mathGrades, "/data/gradesFlat1/math.parquet")
+ParquetTools.writeTable(scienceGrades, "/data/gradesFlat1/science.parquet")
+ParquetTools.writeTable(historyGrades, "/data/gradesFlat1/history.parquet")
 ```
 
 Use [`ParquetTools.writeTables`](https://deephaven.io/core/javadoc/io/deephaven/parquet/table/ParquetTools.html#writeTables(io.deephaven.engine.table.Table%5B%5D,java.lang.String%5B%5D,io.deephaven.parquet.table.ParquetInstructions)) to accomplish the same thing by passing multiple tables to the `tables` argument and multiple destination paths to the `paths` argument. This requires the `table_definition` argument to be specified.
@@ -192,9 +189,9 @@ Use [`ParquetTools.writeTables`](https://deephaven.io/core/javadoc/io/deephaven/
 ParquetTools.writeTables(
     new Table[] {mathGrades, scienceGrades, historyGrades},
     new String[] {
-        "/data/grades_flat_2/math.parquet",
-        "/data/grades_flat_2/science.parquet",
-        "/data/grades_flat_2/history.parquet",
+        "/data/gradesFlat2/math.parquet",
+        "/data/gradesFlat2/science.parquet",
+        "/data/gradesFlat2/history.parquet",
     },
     ParquetInstructions.builder().setTableDefinition(gradesDef).build(),
 )
@@ -206,9 +203,9 @@ To write a [Deephaven partitioned table](../../how-to-guides/partitioned-tables.
 ParquetTools.writeTables(
     gradesPartitioned.constituents(),
     new String[] {
-        "/data/grades_flat_3/math.parquet",
-        "/data/grades_flat_3/science.parquet",
-        "/data/grades_flat_3/history.parquet",
+        "/data/gradesFlat3/math.parquet",
+        "/data/gradesFlat3/science.parquet",
+        "/data/gradesFlat3/history.parquet",
     },
     ParquetInstructions.builder().setTableDefinition(gradesDef).build(),
 )

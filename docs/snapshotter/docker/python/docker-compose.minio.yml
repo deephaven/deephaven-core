@@ -1,4 +1,9 @@
 services:
+  server:
+    depends_on:
+      init:
+        condition: service_completed_successfully
+
   minio:
     image: quay.io/minio/minio:latest
     command: server /data --console-address ":9001"
