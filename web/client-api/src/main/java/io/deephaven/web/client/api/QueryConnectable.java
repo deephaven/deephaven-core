@@ -18,6 +18,7 @@ import io.deephaven.proto.backplane.script.grpc.GetHeapInfoResponse;
 import io.deephaven.proto.backplane.script.grpc.StartConsoleRequest;
 import io.deephaven.proto.backplane.script.grpc.StartConsoleResponse;
 import io.deephaven.web.client.api.barrage.stream.AuthenticationInterceptor;
+import io.deephaven.web.client.api.barrage.stream.ClientBrowserStreamInterceptor;
 import io.deephaven.web.client.api.event.HasEventHandling;
 import io.deephaven.web.client.api.grpc.CustomTransportChannel;
 import io.deephaven.web.client.api.grpc.GrpcTransportFactory;
@@ -276,7 +277,7 @@ public abstract class QueryConnectable<Self extends QueryConnectable<Self>> exte
     public <T> T createStub(Function<Channel, T> constructor) {
         CustomTransportChannel channel =
                 new CustomTransportChannel(new URL(getServerUrl()), getOptions().transportFactory);
-        return constructor.apply(ClientInterceptors.intercept(channel, authenticationInterceptor));
+        return constructor.apply(ClientInterceptors.intercept(channel, authenticationInterceptor, new ClientBrowserStreamInterceptor()));
     }
 
     public <T> T createStubNoAuth(Function<Channel, T> constructor) {
