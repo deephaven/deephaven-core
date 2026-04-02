@@ -5,7 +5,6 @@ package io.deephaven.web.client.api.grpc;
 
 import elemental2.core.ArrayBuffer;
 import elemental2.core.DataView;
-import elemental2.core.Global;
 import elemental2.core.Int8Array;
 import elemental2.core.JsError;
 import elemental2.core.Uint8Array;
@@ -226,7 +225,7 @@ public class MultiplexedWebsocketTransport implements GrpcTransport {
 
     private JsRunnable cleanup = JsRunnable.doNothing();
 
-    private boolean sentHeaders = false;
+    private boolean sawHeaders = false;
 
     public MultiplexedWebsocketTransport(GrpcTransportOptions options) {
         this.options = options;
@@ -364,7 +363,7 @@ public class MultiplexedWebsocketTransport implements GrpcTransport {
         }
         if (streamId == this.streamId) {
             Uint8Array nextChunk = new Uint8Array(messageEvent.data, 4);
-            if (!sentHeaders) {
+            if (!sawHeaders) {
                 DataView dataView = new DataView(nextChunk.buffer, nextChunk.byteOffset, 5);
                 assert dataView.getUint8(0) == 0x80;
                 int length = dataView.getInt32(1);
@@ -390,7 +389,7 @@ public class MultiplexedWebsocketTransport implements GrpcTransport {
 
                 options.onHeaders.onHeaders(headers, status);
 
-                sentHeaders = true;
+                sawHeaders = true;
                 return;
             }
 
