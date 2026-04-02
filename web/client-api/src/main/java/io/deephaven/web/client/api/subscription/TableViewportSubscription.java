@@ -67,7 +67,6 @@ public class TableViewportSubscription extends AbstractTableSubscription {
     private UpdateEventData viewportData;
 
     public static TableViewportSubscription make(DataOptions.ViewportSubscriptionOptions options, JsTable jsTable) {
-        RangeSet rows = options.rows.asRangeSet().getRange();
         ClientTableState tableState = jsTable.state();
         WorkerConnection connection = jsTable.getConnection();
 

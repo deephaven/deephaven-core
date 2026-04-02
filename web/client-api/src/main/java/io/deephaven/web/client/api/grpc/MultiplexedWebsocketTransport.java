@@ -20,19 +20,13 @@ import io.deephaven.javascript.proto.dhinternal.grpcweb.Grpc;
 import io.deephaven.javascript.proto.dhinternal.grpcweb.transports.transport.Transport;
 import io.deephaven.web.client.api.JsLazy;
 import io.deephaven.web.shared.fu.JsRunnable;
-import io.grpc.InternalMetadata;
-import io.grpc.Metadata;
 import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
-import org.gwtproject.nio.TypedArrayHelper;
 
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Logger;
 
 /**
  * Custom replacement for grpc-websockets transport that handles multiple grpc streams in a single websocket. All else
@@ -98,7 +92,6 @@ public class MultiplexedWebsocketTransport implements GrpcTransport {
             Int8Array payload = new Int8Array(headerBytes.byteLength + 4);
             new DataView(payload.buffer).setInt32(0, streamId);
             payload.set(headerBytes, 4);
-            log.info("sending header frame for stream " + streamId + " with metadata " + str);
             webSocket.send(payload);
         }
 
@@ -122,7 +115,6 @@ public class MultiplexedWebsocketTransport implements GrpcTransport {
             payload.setAt(4, 0d);
             payload.set(msgBytes, 5);
             webSocket.send(payload);
-            log.info("sent message frame for stream " + streamId + " with length " + msgBytes.byteLength);
         }
 
         @Override
@@ -138,7 +130,6 @@ public class MultiplexedWebsocketTransport implements GrpcTransport {
             streamId = streamId ^ (1 << 31);
             new DataView(data.buffer).setInt32(0, streamId);
             webSocket.send(data);
-            log.info("sent websocket finish signal for stream " + (streamId ^ (1 << 31)));
         }
 
         @Override
@@ -180,7 +171,6 @@ public class MultiplexedWebsocketTransport implements GrpcTransport {
          * @param actualUrl the url to connect to
          */
         private ActiveTransport(String key, String actualUrl) {
-            log.info("creating websocket");
             this.webSocket = new WebSocket(actualUrl, new String[] {MULTIPLEX_PROTOCOL, SOCKET_PER_STREAM_PROTOCOL});
 
             webSocket.binaryType = "arraybuffer";
@@ -255,7 +245,6 @@ public class MultiplexedWebsocketTransport implements GrpcTransport {
 
     @Override
     public void start(JsPropertyMap<HeaderValueUnion> metadata) {
-        log.info("starting transport for stream " + streamId + " with metadata " + Global.JSON.stringify(metadata));
         if (alternativeTransport.isAvailable()) {
             alternativeTransport.get().start(new BrowserHeaders(metadata));
             return;
@@ -282,7 +271,6 @@ public class MultiplexedWebsocketTransport implements GrpcTransport {
 
     private void onOpen(Event event) {
         Object protocol = Js.asPropertyMap(transport.webSocket).get("protocol");
-        log.info("Websocket opened with protocol " + protocol);
 
         if (protocol.equals(SOCKET_PER_STREAM_PROTOCOL)) {
             // delegate to plain websocket impl, try to dissuade future users of this server
@@ -350,7 +338,6 @@ public class MultiplexedWebsocketTransport implements GrpcTransport {
     }
 
     private void onClose(Event event) {
-        log.warning("websocket closed" + event.toString());
         if (alternativeTransport.isAvailable()) {
             // must be downgrading to fallback
             return;
@@ -361,7 +348,7 @@ public class MultiplexedWebsocketTransport implements GrpcTransport {
     }
 
     private void onError(Event event) {
-        log.warning("websocket error: " + event.toString());
+
     }
 
     private void onMessage(Event event) {
@@ -414,42 +401,11 @@ public class MultiplexedWebsocketTransport implements GrpcTransport {
             }
         }
     }
-    private static final Logger log = Logger.getLogger(MultiplexedWebsocketTransport.class.getName());
     private void sendOrEnqueue(QueuedEntry e) {
         if (transport.webSocket.readyState == WebSocket.CONNECTING) {
-            log.info(streamId + " enqueued " + e);
             sendQueue.add(e);
         } else {
-            log.info(streamId + " sending " + e);
             e.send(transport.webSocket, streamId);
         }
     }
-
-    private static Metadata makeMetadata(final ByteBuffer body) {
-        final byte[][] bytes = new byte[0][];
-        int start = 0;
-        for (int i = body.position(); i < body.limit(); ++i) {
-            final byte b = body.get(i);
-            if (b == '\n' || b == ':') {
-                assert start < i;
-                final byte[] line = new byte[i - start];
-                body.position(start).get(line);
-                // Trim trailing/leading whitespace before passing to InternalMetadata.
-                // In practice, this is effectively only leading whitespace after the `:`,
-                // but http header names/values must not have trailing whitespace either.
-                final String s = new String(line, StandardCharsets.UTF_8).trim();
-                bytes[bytes.length] = s.getBytes(StandardCharsets.UTF_8);
-                start = i + 1;
-            }
-        }
-        if (start < body.limit()) {
-            // No trailing newline - in practice our server always sends a trailing newline,
-            // so this will never be used
-            final byte[] line = new byte[body.limit() - start];
-            body.position(start).get(line);
-            bytes[bytes.length] = line;
-        }
-        return InternalMetadata.newMetadata(bytes);
-    }
-
 }

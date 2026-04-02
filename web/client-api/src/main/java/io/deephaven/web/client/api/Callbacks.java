@@ -158,8 +158,7 @@ public interface Callbacks {
 
     static <S> Promise<S> grpcUnaryPromise(Consumer<StreamObserver<S>> t) {
         return new Promise<>((resolve, reject) -> {
-            t.accept(new StreamObserver<S>() {
-                private S success;
+            t.accept(new StreamObserver<>() {
 
                 @Override
                 public void onNext(S s) {
@@ -168,7 +167,6 @@ public interface Callbacks {
 
                 @Override
                 public void onError(Throwable throwable) {
-                    assert success == null;
                     reject.onInvoke(throwable);
                 }
 
