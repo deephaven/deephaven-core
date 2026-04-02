@@ -5,7 +5,13 @@ sidebar_label: Export to Parquet
 
 The [Deephaven Parquet module](/core/javadoc/io/deephaven/parquet/table/package-summary.html) provides tools to integrate Deephaven with the Parquet file format. This module makes it easy to write Deephaven tables to Parquet files and directories. This document covers writing Deephaven tables to single Parquet files, flat partitioned Parquet directories, and key-value partitioned Parquet directories.
 
-By default, Deephaven tables are written to Parquet files using `SNAPPY` compression when writing the data. This default can be changed with the [`ParquetInstructions.Builder.setCompressionCodecName`](https://deephaven.io/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.Builder.html#setCompressionCodecName(java.lang.String)) method in any of the writing functions discussed here.
+By default, Deephaven tables are written to Parquet files using `SNAPPY` compression when writing the data. This default can be changed with the [`ParquetInstructions.Builder.setCompressionCodecName`](https://deephaven.io/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.Builder.html#setCompressionCodecName(java.lang.String)) method in any of the writing functions discussed here or with the [`addColumnCodec`](https://deephaven.io/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.Builder.html#addColumnCodec(java.lang.String,java.lang.String)) method for column-specific compression. See the [Parquet instructions](./parquet-instructions.md) document for more information.
+
+> [!NOTE]
+> Much of this document covers writing Parquet files to S3. For the best performance, the Deephaven instance should be running in the same AWS region as the S3 bucket. Additional performance improvements can be made by using directory buckets to localize all data to a single AWS sub-region, and running the Deephaven instance in that same sub-region. See [this article](https://community.aws/content/2ZDARM0xDoKSPDNbArrzdxbO3ZZ/s3-express-one-zone?lang=en) for more information on S3 directory buckets.
+
+> [!NOTE]
+> Some of the code in this guide writes data to S3. Take care to replace the S3 authentication details with the correct values for your S3 instance.
 
 First, create some tables that will be used for the examples in this guide.
 
@@ -40,7 +46,7 @@ gradesPartitioned = grades.partitionBy("Class")
 
 ### To local storage
 
-Write a Deephaven table to a single Parquet file with [`ParquetTools.writeTable`](https://deephaven.io/core/javadoc/io/deephaven/parquet/table/ParquetTools.html#writeTable(io.deephaven.engine.table.Table,java.lang.String,io.deephaven.parquet.table.ParquetInstructions)). Supply the `sourceTable` argument with the Deephaven table to be written, and the `destination` argument with the file path for the resulting Parquet file. This file path should end with the `.parquet` file extension. A compression codec enum can be specified to compress the output file.
+Write a Deephaven table to a single Parquet file with [`ParquetTools.writeTable`](../../reference/data-import-export/Parquet/writeTable.md). Supply the `sourceTable` argument with the Deephaven table to be written, and the `destination` argument with the destination file path for the resulting Parquet file. This file path should end with the `.parquet` file extension. An optional `instructions` argument can be provided to specify compression and other settings.
 
 ```groovy test-set=1
 import io.deephaven.parquet.table.ParquetTools
@@ -66,7 +72,7 @@ ParquetTools.writeTable(
 
 ### To S3
 
-Use [`ParquetTools.writeTable`](https://deephaven.io/core/javadoc/io/deephaven/parquet/table/ParquetTools.html#writeTable(io.deephaven.engine.table.Table,java.lang.String,io.deephaven.parquet.table.ParquetInstructions)) to write Deephaven tables to Parquet files on S3. The `destination` should be the URI of the destination file in S3. Supply an instance of the [`S3Instructions`](/core/javadoc/io/deephaven/extensions/s3/S3Instructions.html) class to the `ParquetInstructions.Builder` to specify the details of the connection to the S3 instance.
+Similarly, use [`ParquetTools.writeTable`](../../reference/data-import-export/Parquet/writeTable.md) to write Deephaven tables to Parquet files on S3. The `destination` should be the URI of the destination file in S3. Supply an instance of the [`S3Instructions`](/core/javadoc/io/deephaven/extensions/s3/S3Instructions.html) class to the `ParquetInstructions.Builder` to specify the details of the connection to the S3 instance.
 
 ```groovy test-set=1
 import io.deephaven.extensions.s3.S3Instructions
@@ -121,20 +127,20 @@ Use [`ParquetTools.writeKeyValuePartitionedTable`](https://deephaven.io/core/jav
 
 ```groovy test-set=1
 // write a standard Deephaven table, must specify table_definition
-ParquetTools.writeTable(
-    grades, "/data/grades_kv_1.parquet", ParquetInstructions.builder().setTableDefinition(gradesDef).build()
+ParquetTools.writeKeyValuePartitionedTable(
+    grades, "/data/grades_kv/", ParquetInstructions.builder().setTableDefinition(gradesDef).build()
 )
 
 // or write a partitioned table
-ParquetTools.writeKeyValuePartitionedTable(gradesPartitioned, "/data/grades_kv_2.parquet", ParquetInstructions.builder().setTableDefinition(gradesDef).build())
+ParquetTools.writeKeyValuePartitionedTable(gradesPartitioned, "/data/grades_kv_partitioned/", ParquetInstructions.builder().build())
 ```
 
-Call the `setGenerateMetadataFiles` method to write metadata files.
+Call `setGenerateMetadataFiles(true)` to write metadata files.
 
 ```groovy test-set=1
 ParquetTools.writeKeyValuePartitionedTable(
     gradesPartitioned,
-    "/data/grades_kv_2_md.parquet",
+    "/data/grades_kv_partitioned_meta/",
     ParquetInstructions.builder().setGenerateMetadataFiles(true).build()
 )
 ```
@@ -170,14 +176,14 @@ A flat partitioned Parquet directory stores data without nested subdirectories. 
 
 ### To local storage
 
-Use [`ParquetTools.writeTable`](https://deephaven.io/core/javadoc/io/deephaven/parquet/table/ParquetTools.html#writeTable(io.deephaven.engine.table.Table,java.lang.String,io.deephaven.parquet.table.ParquetInstructions)) or [`ParquetTools.writeTables`](https://deephaven.io/core/javadoc/io/deephaven/parquet/table/ParquetTools.html#writeTables(io.deephaven.engine.table.Table%5B%5D,java.lang.String%5B%5D,io.deephaven.parquet.table.ParquetInstructions)) to write Deephaven tables to Parquet files in flat partitioned directories. [`ParquetTools.writeTable`](https://deephaven.io/core/javadoc/io/deephaven/parquet/table/ParquetTools.html#writeTable(io.deephaven.engine.table.Table,java.lang.String,io.deephaven.parquet.table.ParquetInstructions)) requires multiple calls to write multiple tables to the destination, while [`ParquetTools.writeTables`](https://deephaven.io/core/javadoc/io/deephaven/parquet/table/ParquetTools.html#writeTables(io.deephaven.engine.table.Table%5B%5D,java.lang.String%5B%5D,io.deephaven.parquet.table.ParquetInstructions)) can write multiple tables to multiple paths in a single call.
+Use [`ParquetTools.writeTable`](../../reference/data-import-export/Parquet/writeTable.md) or [`ParquetTools.writeTables`](https://deephaven.io/core/javadoc/io/deephaven/parquet/table/ParquetTools.html#writeTables(io.deephaven.engine.table.Table%5B%5D,java.lang.String%5B%5D,io.deephaven.parquet.table.ParquetInstructions)) to write Deephaven tables to Parquet files in flat partitioned directories. [`ParquetTools.writeTable`](../../reference/data-import-export/Parquet/writeTable.md) requires multiple calls to write multiple tables to the destination, while [`ParquetTools.writeTables`](https://deephaven.io/core/javadoc/io/deephaven/parquet/table/ParquetTools.html#writeTables(io.deephaven.engine.table.Table%5B%5D,java.lang.String%5B%5D,io.deephaven.parquet.table.ParquetInstructions)) can write multiple tables to multiple paths in a single call.
 
-Supply [`ParquetTools.writeTable`](https://deephaven.io/core/javadoc/io/deephaven/parquet/table/ParquetTools.html#writeTable(io.deephaven.engine.table.Table,java.lang.String,io.deephaven.parquet.table.ParquetInstructions)) with the Deephaven table to be written and the destination file path with the `table` and `path` arguments. The `path` must end with the `.parquet` file extension.
+Supply [`ParquetTools.writeTable`](../../reference/data-import-export/Parquet/writeTable.md) with the Deephaven table to be written and the destination file path with the `table` and `path` arguments. The `path` must end with the `.parquet` file extension.
 
 ```groovy test-set=1
-ParquetTools.writeTable(grades, "/data/grades_flat_1/math.parquet")
-ParquetTools.writeTable(grades, "/data/grades_flat_1/science.parquet")
-ParquetTools.writeTable(grades, "/data/grades_flat_1/history.parquet")
+ParquetTools.writeTable(mathGrades, "/data/grades_flat_1/math.parquet")
+ParquetTools.writeTable(scienceGrades, "/data/grades_flat_1/science.parquet")
+ParquetTools.writeTable(historyGrades, "/data/grades_flat_1/history.parquet")
 ```
 
 Use [`ParquetTools.writeTables`](https://deephaven.io/core/javadoc/io/deephaven/parquet/table/ParquetTools.html#writeTables(io.deephaven.engine.table.Table%5B%5D,java.lang.String%5B%5D,io.deephaven.parquet.table.ParquetInstructions)) to accomplish the same thing by passing multiple tables to the `tables` argument and multiple destination paths to the `paths` argument. This requires the `table_definition` argument to be specified.
@@ -200,9 +206,9 @@ To write a [Deephaven partitioned table](../../how-to-guides/partitioned-tables.
 ParquetTools.writeTables(
     gradesPartitioned.constituents(),
     new String[] {
-        "/data/grades_flat_2/math.parquet",
-        "/data/grades_flat_2/science.parquet",
-        "/data/grades_flat_2/history.parquet",
+        "/data/grades_flat_3/math.parquet",
+        "/data/grades_flat_3/science.parquet",
+        "/data/grades_flat_3/history.parquet",
     },
     ParquetInstructions.builder().setTableDefinition(gradesDef).build(),
 )
