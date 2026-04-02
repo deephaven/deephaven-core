@@ -3,45 +3,52 @@ title: Read Parquet files into Deephaven tables
 sidebar_label: Read Parquet files
 ---
 
-Deephaven integrates seamlessly with Parquet via the [Parquet Groovy module](/core/javadoc/io/deephaven/parquet/table/ParquetTools.html), making it easy to read Parquet files directly into Deephaven tables. This document covers reading data into tables from single Parquet files, flat Parquet directories, and partitioned key-value Parquet directories. This document also covers reading Parquet files from [S3 servers](https://docs.aws.amazon.com/AmazonS3/latest/API/Welcome.html) into Deephaven tables, a common use case.
+Deephaven integrates seamlessly with Parquet via the [Parquet Groovy module](/core/javadoc/io/deephaven/parquet/table/ParquetTools.html), making it easy to read Parquet files directly into Deephaven tables. This document covers reading data into tables from single Parquet files, flat Parquet directories, and partitioned key-value Parquet directories. This document also covers reading Parquet files from [S3](https://docs.aws.amazon.com/AmazonS3/latest/API/Welcome.html) into Deephaven tables, a common use case.
+
+> [!NOTE]
+> Much of this document covers reading Parquet files from S3. For the best performance, the Deephaven instance should be running in the same AWS region as the S3 bucket. Additional performance improvements can be made by using directory buckets to localize all data to a single AWS sub-region, and running the Deephaven instance in that same sub-region. See [this article](https://community.aws/content/2ZDARM0xDoKSPDNbArrzdxbO3ZZ/s3-express-one-zone?lang=en) for more information on S3 directory buckets.
 
 ## Read a single Parquet file
 
 Reading a single Parquet file involves loading data from one specific file into a table. This is straightforward and efficient when dealing with a relatively small dataset or when the data is consolidated into one file.
 
-The basic syntax follows:
-
-- `readTable("/data/output.parquet")`
-- `readTable("/data/output_GZIP.parquet", "GZIP")`
-
 ### From local storage
 
-Read single Parquet files into Deephaven tables with [`ParquetTools.readTable`](https://deephaven.io/core/javadoc/io/deephaven/parquet/table/ParquetTools.html#readTable(io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder,io.deephaven.parquet.table.ParquetInstructions)). The function takes a single required argument `source`, which gives the full file path of the Parquet file.
+Read single Parquet files into Deephaven tables with [`ParquetTools.readTable`](../../reference/data-import-export/Parquet/readTable.md). The function takes a single required argument `source`, which gives the full file path of the Parquet file.
 
 ```groovy test-set=1
 import io.deephaven.parquet.table.ParquetTools
 
 // pass the path of the local parquet file to `readTable`
-sensors = ParquetTools.readTable("/data/examples/SensorData/parquet/SensorData_gzip.parquet")
+grades = ParquetTools.readTable("/data/examples/ParquetExamples/grades/grades.parquet")
 ```
 
-### From an S3 server
+### From S3
 
-Deephaven provides some tooling around reading from S3 servers with the [`io.deephaven.extensions.s3`](/core/javadoc/io/deephaven/extensions/s3/package-summary.html) Groovy module. This module contains the [`S3Instructions`](/core/javadoc/io/deephaven/extensions/s3/S3Instructions.html) class, which is used to establish communication with the S3 server. Learn more about this class in the [Parquet instructions document](./parquet-instructions.md#s3instructions-methods).
+Deephaven provides some tooling around reading from S3 with the [`io.deephaven.extensions.s3`](/core/javadoc/io/deephaven/extensions/s3/package-summary.html) Groovy module. This module contains the [`S3Instructions`](/core/javadoc/io/deephaven/extensions/s3/S3Instructions.html) class, which is used to establish communication with the S3 instance. Learn more about this class in the [Parquet instructions document](./parquet-instructions.md#s3instructions-methods).
 
-Use [`ParquetTools.readTable`](https://deephaven.io/core/javadoc/io/deephaven/parquet/table/ParquetTools.html#readTable(io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder,io.deephaven.parquet.table.ParquetInstructions)) to read a single Parquet file from an S3 server, where the `source` argument is provided as the endpoint to the Parquet file on the server. Supply an instance of the [`S3Instructions`](/core/javadoc/io/deephaven/extensions/s3/S3Instructions.html) class to the `ParquetInstructions.Builder` to specify the details of the connection to the server.
+Use [`ParquetTools.readTable`](../../reference/data-import-export/Parquet/readTable.md) to read a single Parquet file from S3, where the `source` argument is provided as the endpoint to the Parquet file on the S3 instance. Supply an instance of the [`S3Instructions`](/core/javadoc/io/deephaven/extensions/s3/S3Instructions.html) class to the `ParquetInstructions.Builder` to specify the details of the connection to the S3 instance. Learn more
+about this class in the [Parquet instructions document](./parquet-instructions.md#s3instructions-methods).
 
-```groovy test-set=2
+```groovy test-set=2 docker-config=minio
 import io.deephaven.parquet.table.ParquetTools
 import io.deephaven.parquet.table.ParquetInstructions
-import io.deephaven.parquet.table.ParquetInstructions.ParquetFileLayout
 import io.deephaven.extensions.s3.S3Instructions
 import io.deephaven.extensions.s3.Credentials
 
-// pass URL to an S3 server, as well as instructions on how to talk to the server
-drivestats = ParquetTools.readTable(
-    "s3://drivestats-parquet/drivestats/year=2023/month=02/2023-02-1.parquet",
-    ParquetInstructions.builder().setSpecialInstructions(S3Instructions.builder().regionName("us-west-004").endpointOverride("https://s3.us-west-004.backblazeb2.com").credentials(Credentials.anonymous()).readTimeout(parseDuration("PT10S")).build()).build()
+// This example uses basic credentials - other options are available
+credentials = Credentials.basic("example_username", "example_password")
+
+// Pass the S3 URL as well as instructions on how to talk to the S3 instance
+grades = ParquetTools.readTable(
+    "s3://example-bucket/grades/grades.parquet",
+    ParquetInstructions.builder().setSpecialInstructions(
+        S3Instructions.builder()
+            .regionName("us-east-1")
+            .endpointOverride("http://minio.example.com:9000")
+            .credentials(credentials)
+            .build()
+    ).build()
 )
 ```
 
@@ -57,19 +64,19 @@ Key-value partitioned Parquet directories extend partitioning by organizing data
 
 ### From local storage
 
-Use [`ParquetTools.readTable`](https://deephaven.io/core/javadoc/io/deephaven/parquet/table/ParquetTools.html#readTable(io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder,io.deephaven.parquet.table.ParquetInstructions)) to read a key-value partitioned Parquet directory into a Deephaven partitioned table. The directory structure may be automatically inferred by [`ParquetTools.readTable`](https://deephaven.io/core/javadoc/io/deephaven/parquet/table/ParquetTools.html#readTable(io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder,io.deephaven.parquet.table.ParquetInstructions)). Alternatively, provide the appropriate directory structure to the `readInstructions` argument using [`ParquetFileLayout.valueOf("KV_PARTITIONED")`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.ParquetFileLayout.html#KV_PARTITIONED). Providing this argument will boost performance, as no computation is required to infer the directory layout.
+Use [`ParquetTools.readTable`](../../reference/data-import-export/Parquet/readTable.md) to read a key-value partitioned Parquet directory into a Deephaven partitioned table. The directory structure may be automatically inferred by [`ParquetTools.readTable`](../../reference/data-import-export/Parquet/readTable.md). Alternatively, provide the appropriate directory structure to the `readInstructions` argument using [`ParquetFileLayout.valueOf("KV_PARTITIONED")`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.ParquetFileLayout.html#KV_PARTITIONED). Providing this argument will boost performance, as no computation is required to infer the directory layout.
 
-```groovy test-set=3 order=pemsInferred,pemsProvided
+```groovy test-set=3 order=gradesInferred,gradesProvided
 import io.deephaven.parquet.table.ParquetTools
 import io.deephaven.parquet.table.ParquetInstructions
 import io.deephaven.parquet.table.ParquetInstructions.ParquetFileLayout
 
 // directory layout may be inferred
-pemsInferred = ParquetTools.readTable("/data/examples/Pems/parquet/pems")
+gradesInferred = ParquetTools.readTable("/data/examples/ParquetExamples/grades_kv/")
 
 // or provided by user, yielding a performance boost
-pemsProvided = ParquetTools.readTable(
-    "/data/examples/Pems/parquet/pems",
+gradesProvided = ParquetTools.readTable(
+    "/data/examples/ParquetExamples/grades_kv/",
     ParquetInstructions.builder().setFileLayout(ParquetFileLayout.valueOf("KV_PARTITIONED")).build()
 )
 ```
@@ -78,50 +85,71 @@ If the key-value partitioned Parquet directory contains `_common_metadata` and `
 
 ```groovy test-set=3
 // use metadata files for maximum performance
-pemsMetadata = ParquetTools.readTable(
-    "/data/examples/Pems/parquet/pems",
+gradesMetadata = ParquetTools.readTable(
+    "/data/examples/ParquetExamples/grades_kv_meta/",
     ParquetInstructions.builder().setFileLayout(ParquetFileLayout.valueOf("METADATA_PARTITIONED")).build()
 )
 ```
 
-### From an S3 server
+### From S3
 
-Use [`ParquetTools.readTable`](https://deephaven.io/core/javadoc/io/deephaven/parquet/table/ParquetTools.html#readTable(io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder,io.deephaven.parquet.table.ParquetInstructions)) to read a key-value partitioned Parquet directory from an S3 server. Supply the `setSpecialInstructions` method with an instance of the [`S3Instructions`](/core/javadoc/io/deephaven/extensions/s3/S3Instructions.html) class, and supply the `setFileLayout` method with [`ParquetFileLayout.KV_PARTITIONED`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.ParquetFileLayout.html#KV_PARTITIONED) for maximum performance.
+Use [`ParquetTools.readTable`](../../reference/data-import-export/Parquet/readTable.md) to read a key-value partitioned Parquet directory from S3. Supply the `setSpecialInstructions` method with an instance of the [`S3Instructions`](/core/javadoc/io/deephaven/extensions/s3/S3Instructions.html) class, and supply the `setFileLayout` method with [`ParquetFileLayout.KV_PARTITIONED`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.ParquetFileLayout.html#KV_PARTITIONED) for maximum performance.
 
-```groovy test-set=4 order=performanceInferred,performanceProvided
+```groovy test-set=4 order=gradesInferred,gradesProvided docker-config=minio
 import io.deephaven.parquet.table.ParquetTools
 import io.deephaven.parquet.table.ParquetInstructions
 import io.deephaven.parquet.table.ParquetInstructions.ParquetFileLayout
 import io.deephaven.extensions.s3.S3Instructions
 import io.deephaven.extensions.s3.Credentials
 
+credentials = Credentials.basic("example_username", "example_password")
+
 // directory layout may be inferred
-performanceInferred = ParquetTools.readTable(
-    "s3://ookla-open-data/parquet/performance/type=mobile/year=2023/",
-    ParquetInstructions.builder().setSpecialInstructions(S3Instructions.builder().regionName("us-east-1").credentials(Credentials.anonymous()).readTimeout(parseDuration("PT10S")).build()).build()
+gradesInferred = ParquetTools.readTable(
+    "s3://example-bucket/grades_kv/",
+    ParquetInstructions.builder().setSpecialInstructions(
+        S3Instructions.builder()
+            .regionName("us-east-1")
+            .endpointOverride("http://minio.example.com:9000")
+            .credentials(credentials)
+            .build()
+    ).build()
 )
 
 // or provided
-performanceProvided = ParquetTools.readTable(
-    "s3://ookla-open-data/parquet/performance/type=mobile/year=2023/",
-    ParquetInstructions.builder().setFileLayout(ParquetFileLayout.valueOf("KV_PARTITIONED")).setSpecialInstructions(S3Instructions.builder().regionName("us-east-1").credentials(Credentials.anonymous()).readTimeout(parseDuration("PT10S")).build()).build()
+gradesProvided = ParquetTools.readTable(
+    "s3://example-bucket/grades_kv/",
+    ParquetInstructions.builder()
+        .setFileLayout(ParquetFileLayout.valueOf("KV_PARTITIONED"))
+        .setSpecialInstructions(
+            S3Instructions.builder()
+                .regionName("us-east-1")
+                .endpointOverride("http://minio.example.com:9000")
+                .credentials(credentials)
+                .build()
+        )
+        .build()
 )
 ```
 
-S3-hosted key-value partitioned Parquet datasets may also have `_common_metadata` and `_metadata` files. Utilize them by setting the `setFileLayout` argument to [`ParquetFileLayout.valueOf("KV_PARTITIONED")`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.ParquetFileLayout.html).
+S3-hosted key-value partitioned Parquet datasets may also have `_common_metadata` and `_metadata` files. Utilize them by setting the `setFileLayout` argument to [`ParquetFileLayout.valueOf("METADATA_PARTITIONED")`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.ParquetFileLayout.html).
 
-> [!NOTE]
-> This example is for illustrative purposes and is not runnable.
+```groovy test-set=4 docker-config=minio
+credentials = Credentials.basic("example_username", "example_password")
 
-```groovy skip-test
 // use metadata files for maximum performance
-kvMetadata = ParquetTools.readTable(
-    "/s3/path/to/kvDirectory",
-    ParquetInstructions.builder().setFileLayout(
-        ParquetFileLayout.valueOf("METADATA_PARTITIONED")
-    ).setSpecialInstructions(
-        S3Instructions.builder().regionName("kvDirectoryRegion").credentials(Credentials.anonymous()).readTimeout(parseDuration("PT10S")).build()
-    ).build()
+gradesMetadata = ParquetTools.readTable(
+    "s3://example-bucket/grades_kv_meta/",
+    ParquetInstructions.builder()
+        .setFileLayout(ParquetFileLayout.valueOf("METADATA_PARTITIONED"))
+        .setSpecialInstructions(
+            S3Instructions.builder()
+                .regionName("us-east-1")
+                .endpointOverride("http://minio.example.com:9000")
+                .credentials(credentials)
+                .build()
+        )
+        .build()
 )
 ```
 
@@ -131,67 +159,82 @@ A flat partitioned Parquet directory stores data without nested subdirectories. 
 
 ### From local storage
 
-Read local flat partitioned Parquet directories into Deephaven tables with [`ParquetTools.readTable`](https://deephaven.io/core/javadoc/io/deephaven/parquet/table/ParquetTools.html#readTable(io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder,io.deephaven.parquet.table.ParquetInstructions)). Set the `readInstructions` argument to [`ParquetFileLayout.valueOf("FLAT_PARTITIONED")`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.ParquetFileLayout.html#FLAT_PARTITIONED) for maximum performance.
+Read local flat partitioned Parquet directories into Deephaven tables with [`ParquetTools.readTable`](../../reference/data-import-export/Parquet/readTable.md). Set the `readInstructions` argument to [`ParquetFileLayout.valueOf("FLAT_PARTITIONED")`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.ParquetFileLayout.html#FLAT_PARTITIONED) for maximum performance.
 
-> [!NOTE]
-> This example is for illustrative purposes and is not runnable.
-
-```groovy skip-test
+```groovy test-set=5 order=gradesInferred,gradesProvided
 import io.deephaven.parquet.table.ParquetTools
 import io.deephaven.parquet.table.ParquetInstructions
 import io.deephaven.parquet.table.ParquetInstructions.ParquetFileLayout
 
 // directory layout may be inferred
-flatDataInferred = ParquetTools.readTable("/local/path/to/flat_directory")
+gradesInferred = ParquetTools.readTable("/data/examples/ParquetExamples/grades_flat/")
 
 // or provided by user, yielding a performance boost
-flatDataProvided = parquet.read(
-    "/local/path/to/flat_directory",
+gradesProvided = ParquetTools.readTable(
+    "/data/examples/ParquetExamples/grades_flat/",
     ParquetInstructions.builder().setFileLayout(ParquetFileLayout.valueOf("FLAT_PARTITIONED")).build()
 )
 ```
 
-### From an S3 server
+### From S3
 
-Use [`ParquetTools.readTable`](https://deephaven.io/core/javadoc/io/deephaven/parquet/table/ParquetTools.html#readTable(io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder,io.deephaven.parquet.table.ParquetInstructions)) to read a flat partitioned Parquet directory from an S3 server. Supply the `special_instructions` argument with an instance of the [`S3Instructions`](/core/javadoc/io/deephaven/extensions/s3/S3Instructions.html) class, and set the `file_layout` argument to [`ParquetFileLayout.FLAT_PARTITIONED`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.ParquetFileLayout.html#FLAT_PARTITIONED) for maximum performance.
+Use [`ParquetTools.readTable`](../../reference/data-import-export/Parquet/readTable.md) to read a flat partitioned Parquet directory from S3. Supply the `special_instructions` argument with an instance of the [`S3Instructions`](/core/javadoc/io/deephaven/extensions/s3/S3Instructions.html) class, and set the `file_layout` argument to [`ParquetFileLayout.FLAT_PARTITIONED`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.ParquetFileLayout.html#FLAT_PARTITIONED) for maximum performance.
 
-> [!NOTE]
-> This example is for illustrative purposes and is not runnable.
+```groovy test-set=6 order=gradesInferred,gradesProvided docker-config=minio
+import io.deephaven.parquet.table.ParquetTools
+import io.deephaven.parquet.table.ParquetInstructions
+import io.deephaven.parquet.table.ParquetInstructions.ParquetFileLayout
+import io.deephaven.extensions.s3.S3Instructions
+import io.deephaven.extensions.s3.Credentials
 
-```groovy skip-test
+credentials = Credentials.basic("example_username", "example_password")
+
 // directory layout may be inferred
-flatS3Inferred = ParquetTools.readTable(
-    "/s3/path/to/flatDirectory",
+gradesInferred = ParquetTools.readTable(
+    "s3://example-bucket/grades_flat/",
     ParquetInstructions.builder().setSpecialInstructions(
-        S3Instructions.builder().regionName("flatDirectoryRegion").credentials(Credentials.anonymous()).readTimeout(parseDuration("PT10s"))
+        S3Instructions.builder()
+            .regionName("us-east-1")
+            .endpointOverride("http://minio.example.com:9000")
+            .credentials(credentials)
+            .build()
     ).build()
 )
 
 // or provided
-flatS3Provided = ParquetTools.readTable(
-    "/s3/path/to/flatDirectory",
-    ParquetInstructions.builder().setFileLayout(
-        ParquetFileLayout.valueOf("FLAT_PARTITIONED")
-    ).setSpecialInstructions(
-        S3Instructions.builder().regionName("flatDirectoryRegion").credentials(Credentials.anonymous()).readTimeout(parseDuration("PT10S")).build()
-    ).build()
+gradesProvided = ParquetTools.readTable(
+    "s3://example-bucket/grades_flat/",
+    ParquetInstructions.builder()
+        .setFileLayout(ParquetFileLayout.valueOf("FLAT_PARTITIONED"))
+        .setSpecialInstructions(
+            S3Instructions.builder()
+                .regionName("us-east-1")
+                .endpointOverride("http://minio.example.com:9000")
+                .credentials(credentials)
+                .build()
+        )
+        .build()
 )
 ```
 
 If the S3-hosted flat partitioned Parquet dataset has `_common_metadata` and `_metadata` files, utilize them by supplying the `setFileLayout` method with [`ParquetFileLayout.METADATA_PARTITIONED`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.ParquetFileLayout.html#METADATA_PARTITIONED).
 
-> [!NOTE]
-> This example is for illustrative purposes and is not runnable.
+```groovy test-set=6 docker-config=minio
+credentials = Credentials.basic("example_username", "example_password")
 
-```groovy skip-test
 // use metadata files for maximum performance
-flatMetadata = ParquetTools.readTable(
-    "/s3/path/to/flatDirectory",
-    ParquetInstructions.builder().setFileLayout(
-        ParquetFileLayout.valueOf("METADATA_PARTITIONED")
-    ).setSpecialInstructions(
-        S3Instructions.builder().regionName("kvDirectoryRegion").credentials(Credentials.anonymous()).readTimeout(parseDuration("PT10S")).build()
-    ).build()
+gradesMetadata = ParquetTools.readTable(
+    "s3://example-bucket/grades_flat_meta/",
+    ParquetInstructions.builder()
+        .setFileLayout(ParquetFileLayout.valueOf("METADATA_PARTITIONED"))
+        .setSpecialInstructions(
+            S3Instructions.builder()
+                .regionName("us-east-1")
+                .endpointOverride("http://minio.example.com:9000")
+                .credentials(credentials)
+                .build()
+        )
+        .build()
 )
 ```
 
