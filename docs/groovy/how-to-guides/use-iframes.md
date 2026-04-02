@@ -381,6 +381,9 @@ The parent window can also explicitly set the theme by sending a `requestSetThem
     </script>
   </body>
 </html>
+```
+
+</details>
 
 ![IFrame Color Theme](../assets/how-to/iframe-color-theme.gif)
 
