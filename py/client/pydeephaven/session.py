@@ -594,7 +594,7 @@ class Session:
             if isinstance(e.__cause__, grpc.RpcError):
                 if e.__cause__.code() == grpc.StatusCode.INVALID_ARGUMENT:
                     raise DHError(f"no table by the name {name}") from None
-            raise e
+            raise
         finally:
             # Explicitly close the table without releasing it (because it isn't ours)
             fake_table._closed = True
