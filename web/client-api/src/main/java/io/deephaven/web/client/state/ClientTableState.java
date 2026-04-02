@@ -6,7 +6,6 @@ package io.deephaven.web.client.state;
 import elemental2.core.JsMap;
 import elemental2.core.JsObject;
 import elemental2.core.JsSet;
-import elemental2.core.Uint8Array;
 import elemental2.promise.Promise;
 import io.deephaven.extensions.barrage.BarrageTypeInfo;
 import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;

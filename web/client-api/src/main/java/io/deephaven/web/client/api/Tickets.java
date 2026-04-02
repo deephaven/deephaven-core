@@ -12,6 +12,9 @@ import io.deephaven.proto.backplane.grpc.TableReference;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.web.client.api.console.JsVariableDefinition;
 import jsinterop.base.Js;
+import jsinterop.base.JsArrayLike;
+import org.gwtproject.nio.TypedArrayHelper;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Single factory for known ticket types. By definition, this cannot be exhaustive, since flight tickets have no
@@ -111,16 +114,14 @@ public class Tickets {
     @Deprecated
     private Ticket newExportTicketRaw() {
         final int exportId = newTicketInt();
-        final double[] dest = new double[5];
-        dest[0] = EXPORT_PREFIX;
-        dest[1] = (byte) exportId;
-        dest[2] = (byte) (exportId >>> 8);
-        dest[3] = (byte) (exportId >>> 16);
-        dest[4] = (byte) (exportId >>> 24);
+        final byte[] bytes = new byte[5];
+        bytes[0] = EXPORT_PREFIX;
+        bytes[1] = (byte) exportId;
+        bytes[2] = (byte) (exportId >>> 8);
+        bytes[3] = (byte) (exportId >>> 16);
+        bytes[4] = (byte) (exportId >>> 24);
 
-        final Uint8Array bytes = new Uint8Array(5);
-        bytes.set(dest);
-        return Ticket.newBuilder().setTicket(ByteString.copyFrom(Js.<byte[]>uncheckedCast(bytes))).build();
+        return Ticket.newBuilder().setTicket(ByteString.copyFrom(bytes)).build();
     }
 
     /**
@@ -142,13 +143,16 @@ public class Tickets {
      * @return a new shared ticket
      */
     public Ticket sharedTicket(TypedArray.SetArrayUnionType array) {
-        int length = Js.asArrayLike(array).getLength();
-        Uint8Array bytesWithPrefix = new Uint8Array(length + 2);
+        JsArrayLike<Object> arrayLike = Js.asArrayLike(array);
+        int length = arrayLike.getLength();
+        byte[] bytes = new byte[length + 2];
         // Add the shared ticket prefix at the start of the provided value
-        bytesWithPrefix.setAt(0, (double) SHARED_PREFIX);
-        bytesWithPrefix.setAt(1, (double) TICKET_DELIMITER);
-        bytesWithPrefix.set(array, 2);
+        bytes[0] = SHARED_PREFIX;
+        bytes[1] = TICKET_DELIMITER;
+        for (int i = 0; i < length; i++) {
+            bytes[i + 2] = (byte) (double) arrayLike.getAt(i + 2);
+        }
 
-        return Ticket.newBuilder().setTicket(ByteString.copyFrom(Js.<byte[]>uncheckedCast(bytesWithPrefix))).build();
+        return Ticket.newBuilder().setTicket(ByteString.copyFrom(bytes)).build();
     }
 }

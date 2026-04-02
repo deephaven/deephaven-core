@@ -34,6 +34,7 @@ import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
 import jsinterop.base.Js;
+import org.gwtproject.nio.TypedArrayHelper;
 
 import java.nio.charset.StandardCharsets;
 import java.util.function.Supplier;
@@ -328,12 +329,11 @@ public class JsWidget extends HasEventHandling implements ServerObject, WidgetMe
         if (msg.isString()) {
             data.setPayload(ByteString.copyFrom(msg.asString(), StandardCharsets.UTF_8));
         } else if (msg.isArrayBuffer()) {
-            data.setPayload(ByteString.copyFrom(Js.<byte[]>uncheckedCast(new Uint8Array(msg.asArrayBuffer()))));
+            data.setPayload(ByteString.copyFrom(TypedArrayHelper.wrap(msg.asArrayBuffer())));
         } else if (msg.isView()) {
             // can cast (unsafely) to any typed array or to DataView to read offset/length/buffer to make a new view
             ArrayBufferView view = msg.asView();
-            data.setPayload(ByteString
-                    .copyFrom(Js.<byte[]>uncheckedCast(new Uint8Array(view.buffer, view.byteOffset, view.byteLength))));
+            data.setPayload(ByteString.copyFrom(TypedArrayHelper.wrap(view)));
         } else {
             throw new IllegalArgumentException("Expected message to be a String or ArrayBuffer");
         }

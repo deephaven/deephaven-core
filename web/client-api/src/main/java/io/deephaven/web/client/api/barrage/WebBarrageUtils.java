@@ -4,7 +4,6 @@
 package io.deephaven.web.client.api.barrage;
 
 import com.google.flatbuffers.FlatBufferBuilder;
-import elemental2.core.*;
 import io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
 import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
@@ -15,7 +14,6 @@ import org.apache.arrow.flatbuf.KeyValue;
 import org.apache.arrow.flatbuf.Message;
 import org.apache.arrow.flatbuf.MessageHeader;
 import org.apache.arrow.flatbuf.Schema;
-import org.gwtproject.nio.TypedArrayHelper;
 
 import java.nio.ByteBuffer;
 import java.util.HashMap;
@@ -39,11 +37,6 @@ public class WebBarrageUtils {
         return outerBuilder.dataBuffer();
     }
 
-    public static Uint8Array bbToUint8ArrayView(ByteBuffer byteBuffer) {
-        ArrayBufferView view = TypedArrayHelper.unwrap(byteBuffer);
-        return new Uint8Array(view.buffer, byteBuffer.position() + view.byteOffset, byteBuffer.remaining());
-    }
-
     public static ByteBuffer emptyMessage() {
         FlatBufferBuilder builder = new FlatBufferBuilder(1024);
         int offset = BarrageMessageWrapper.createBarrageMessageWrapper(builder, FLATBUFFER_MAGIC,
@@ -53,10 +46,6 @@ public class WebBarrageUtils {
     }
 
     public static InitialTableDefinition readTableDefinition(ByteBuffer flightSchemaMessage) {
-        return readTableDefinition(readSchemaMessage(flightSchemaMessage));
-    }
-
-    public static InitialTableDefinition readTableDefinition(Uint8Array flightSchemaMessage) {
         return readTableDefinition(readSchemaMessage(flightSchemaMessage));
     }
 
@@ -79,10 +68,6 @@ public class WebBarrageUtils {
             cols[i] = new ColumnDefinition(i, schema.fields(i));
         }
         return cols;
-    }
-
-    public static Schema readSchemaMessage(Uint8Array flightSchemaMessage) {
-        return readSchemaMessage(TypedArrayHelper.wrap(flightSchemaMessage));
     }
 
     public static Schema readSchemaMessage(ByteBuffer flightSchemaMessage) {

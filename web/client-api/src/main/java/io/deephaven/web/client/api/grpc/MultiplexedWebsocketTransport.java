@@ -5,6 +5,7 @@ package io.deephaven.web.client.api.grpc;
 
 import elemental2.core.ArrayBuffer;
 import elemental2.core.DataView;
+import elemental2.core.Global;
 import elemental2.core.Int8Array;
 import elemental2.core.JsError;
 import elemental2.core.Uint8Array;
@@ -97,6 +98,7 @@ public class MultiplexedWebsocketTransport implements GrpcTransport {
             Int8Array payload = new Int8Array(headerBytes.byteLength + 4);
             new DataView(payload.buffer).setInt32(0, streamId);
             payload.set(headerBytes, 4);
+            log.info("sending header frame for stream " + streamId + " with metadata " + str);
             webSocket.send(payload);
         }
 
@@ -253,7 +255,7 @@ public class MultiplexedWebsocketTransport implements GrpcTransport {
 
     @Override
     public void start(JsPropertyMap<HeaderValueUnion> metadata) {
-        log.info("starting transport for stream " + streamId + " with metadata " + metadata);
+        log.info("starting transport for stream " + streamId + " with metadata " + Global.JSON.stringify(metadata));
         if (alternativeTransport.isAvailable()) {
             alternativeTransport.get().start(new BrowserHeaders(metadata));
             return;
@@ -384,9 +386,9 @@ public class MultiplexedWebsocketTransport implements GrpcTransport {
                 int status = 200;
                 JsPropertyMap<HeaderValueUnion> headers = JsPropertyMap.of();
 
-                // Decode ASCII header text after the 4-byte length prefix
+                // Decode ASCII header text after the 5-byte prefix
                 StringBuilder headerText = new StringBuilder();
-                for (int i = 4; i < nextChunk.byteLength; i++) {
+                for (int i = 5; i < nextChunk.byteLength; i++) {
                     headerText.append((char) nextChunk.getAt(i).intValue());
                 }
                 String[] lines = headerText.toString().split("\n");
@@ -415,10 +417,10 @@ public class MultiplexedWebsocketTransport implements GrpcTransport {
     private static final Logger log = Logger.getLogger(MultiplexedWebsocketTransport.class.getName());
     private void sendOrEnqueue(QueuedEntry e) {
         if (transport.webSocket.readyState == WebSocket.CONNECTING) {
-            log.info("enqueued " + e);
+            log.info(streamId + " enqueued " + e);
             sendQueue.add(e);
         } else {
-            log.info("sending " + e);
+            log.info(streamId + " sending " + e);
             e.send(transport.webSocket, streamId);
         }
     }

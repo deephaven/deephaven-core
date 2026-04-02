@@ -28,6 +28,7 @@ import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsOptional;
 import jsinterop.annotations.JsType;
 import jsinterop.base.Js;
+import org.gwtproject.nio.TypedArrayHelper;
 
 import static io.deephaven.web.client.api.tree.JsRollupConfig.toJsArray;
 
@@ -131,7 +132,7 @@ public class JsStorageService {
     public Promise<JsFileContents> saveFile(String path, JsFileContents contents, @JsOptional Boolean allowOverwrite) {
         return contents.arrayBuffer().then(ab -> {
             SaveFileRequest.Builder req = SaveFileRequest.newBuilder();
-            req.setContents(ByteString.copyFrom(Js.<byte[]>uncheckedCast(new Uint8Array(ab))));
+            req.setContents(ByteString.copyFrom(TypedArrayHelper.wrap(ab)));
             req.setPath(path);
 
             if (allowOverwrite != null) {
