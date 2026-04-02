@@ -30,8 +30,15 @@ public enum ChunkType implements ChunkFactory {
             ChunkType.Boolean, ChunkType.Char, ChunkType.Byte, ChunkType.Short, ChunkType.Int,
             ChunkType.Long, ChunkType.Float, ChunkType.Double, ChunkType.Object);
 
-    public static ChunkType fromElementType(Class elementType) {
+    public static ChunkType fromElementType(Class<?> elementType) {
         return fromElementTypeMap.get(elementType);
+    }
+
+    public static <T> ChunkType fromColumnDataType(Class<T> dataType) {
+        if (dataType == Boolean.class) {
+            return ChunkType.Object;
+        }
+        return ChunkType.fromElementType(dataType);
     }
 
     ChunkType(ChunkFactory factory) {
