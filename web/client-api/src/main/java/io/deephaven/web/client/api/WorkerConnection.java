@@ -736,7 +736,7 @@ public class WorkerConnection {
             return newState(info,
                     (c, cts) -> {
                         JsLog.debug("performing fetch for ", varDef.getTitle(), " / ", cts,
-                                " (" + LazyString.of(cts::getHandle), ")");
+                                " (" + cts.getHandle() + ")");
                         // Only apply preview if specifically requested
                         if (applyPreviewColumns != null && applyPreviewColumns) {
                             ApplyPreviewColumnsRequest req = ApplyPreviewColumnsRequest.newBuilder()

@@ -88,7 +88,7 @@ public class TableTicket {
     @Override
     public String toString() {
         return "TableTicket{" +
-                "ticket=" + ticket +
+                "ticket=" + ticket.getTicket() +
                 ", state=" + state +
                 ", isConnected=" + isConnected +
                 '}';
