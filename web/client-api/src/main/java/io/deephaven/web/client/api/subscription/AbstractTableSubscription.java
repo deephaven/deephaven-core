@@ -248,7 +248,7 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
                 .previewListLengthLimit(previewListLengthLimit)
                 .build();
         FlatBufferBuilder request = subscriptionRequest(
-                state.getHandle().getTicket().toByteArray(),
+                state.getHandle().getTicket().getTicket().toByteArray(),
                 columnBitSet,
                 viewport,
                 options,

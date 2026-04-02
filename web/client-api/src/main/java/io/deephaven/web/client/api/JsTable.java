@@ -921,7 +921,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
             int optOffset = barrageSnapshotOptions.appendTo(metadata);
 
             final int ticOffset = BarrageSnapshotRequest.createTicketVector(metadata,
-                    cts.getHandle().getTicket().toByteArray());
+                    cts.getHandle().getTicket().getTicket().toByteArray());
             BarrageSnapshotRequest.startBarrageSnapshotRequest(metadata);
             BarrageSnapshotRequest.addColumns(metadata, colOffset);
             BarrageSnapshotRequest.addViewport(metadata, vpOffset);
