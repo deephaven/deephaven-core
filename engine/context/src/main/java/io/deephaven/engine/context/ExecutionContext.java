@@ -205,6 +205,21 @@ public class ExecutionContext {
                 operationInitializer, classLoader);
     }
 
+    /**
+     * Returns, or creates, an execution context with the given value for {@code queryCompiler} and existing values for
+     * the other members.
+     *
+     * @param queryCompiler the query compiler to use instead
+     * @return the execution context
+     */
+    public ExecutionContext withQueryCompiler(QueryCompiler queryCompiler) {
+        if (queryCompiler == this.queryCompiler) {
+            return this;
+        }
+        return new ExecutionContext(isSystemic, authContext, queryLibrary, queryScope, queryCompiler, updateGraph,
+                operationInitializer);
+    }
+
 
     /**
      * Execute runnable within this execution context.

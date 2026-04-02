@@ -318,6 +318,9 @@ project(':plugin-figure').projectDir = file('plugin/figure')
 include(':plugin-partitionedtable')
 project(':plugin-partitionedtable').projectDir = file('plugin/partitionedtable')
 
+include(':plugin-remotefilesource')
+project(':plugin-remotefilesource').projectDir = file('plugin/remotefilesource')
+
 include(':plugin-hierarchicaltable')
 project(':plugin-hierarchicaltable').projectDir = file('plugin/hierarchicaltable')
 
