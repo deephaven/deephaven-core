@@ -56,6 +56,14 @@ Deephaven query strings are the primary way of expressing commands directly to t
 
 </CoreTutorialCard>
 
+<CoreTutorialCard to="/core/docs/getting-started/crash-course/vectorization-vs-loops/">
+
+## Vectorization
+
+Understand why Deephaven uses vectorized operations instead of loops. Learn the paradigm shift from imperative loops to declarative recipes.
+
+</CoreTutorialCard>
+
 <CoreTutorialCard to="/core/docs/getting-started/crash-course/py-integrations/">
 
 ## Python integrations
