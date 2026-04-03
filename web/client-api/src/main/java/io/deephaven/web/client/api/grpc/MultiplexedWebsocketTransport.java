@@ -390,10 +390,10 @@ public class MultiplexedWebsocketTransport implements GrpcTransport {
                 options.onHeaders.onHeaders(headers, status);
 
                 sawHeaders = true;
-                return;
+            } else {
+                options.onChunk.onChunk(nextChunk);
             }
 
-            options.onChunk.onChunk(nextChunk);
             if (closed) {
                 options.onEnd.onEnd(null);
                 removeHandlers();
