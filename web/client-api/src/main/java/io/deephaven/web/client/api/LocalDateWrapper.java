@@ -26,26 +26,46 @@ public class LocalDateWrapper {
         this.dayOfMonth = dayOfMonth;
     }
 
+    /**
+     * Returns the string representation of this date.
+     *
+     * <p>
+     * Provided to match JavaScript's {@code valueOf} convention.
+     *
+     * @return The string form of this date.
+     */
     @JsMethod
     public String valueOf() {
         return toString();
     }
 
+    /**
+     * The year.
+     */
     @JsMethod
     public int getYear() {
         return year;
     }
 
+    /**
+     * The month of the year, from 1 to 12.
+     */
     @JsMethod
     public int getMonthValue() {
         return monthValue;
     }
 
+    /**
+     * The day of the month, from 1 to 31.
+     */
     @JsMethod
     public int getDayOfMonth() {
         return dayOfMonth;
     }
 
+    /**
+     * Returns the date formatted as {@code YYYY-MM-DD}.
+     */
     @JsMethod
     @Override
     public String toString() {
