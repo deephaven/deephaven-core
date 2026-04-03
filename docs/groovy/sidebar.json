@@ -1003,6 +1003,10 @@
                 "path": "reference/cheat-sheets/csv.md"
               },
               {
+                "label": "Kafka",
+                "path": "reference/cheat-sheets/kafka.md"
+              },
+              {
                 "label": "Parquet",
                 "path": "reference/cheat-sheets/parquet.md"
               },

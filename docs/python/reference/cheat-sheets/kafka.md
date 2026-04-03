@@ -143,5 +143,4 @@ result = ck.consume(
 - [`consume`](../data-import-export/Kafka/consume.md)
 - [`produce`](../data-import-export/Kafka/produce.md)
 - [How to connect to a Kafka stream](../../how-to-guides/data-import-export/kafka-stream.md)
-- [Javadoc](/core/javadoc/io/deephaven/kafka/KafkaTools.Consume.html)
 - [Pydoc](/core/pydoc/code/deephaven.stream.kafka.consumer.html#deephaven.stream.kafka.consumer.consume)
