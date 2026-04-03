@@ -60,6 +60,13 @@ public interface TableDataService extends NamedImplementation {
     }
 
     /**
+     * Stop any processes, release resources, and clear all cached state held by this TableDataService instance. After
+     * calling shutdown, the behavior of all other methods is undefined. Callers should not invoke shutdown more than
+     * once.
+     */
+    default void shutdown() {}
+
+    /**
      * Get a detailed description string.
      *
      * @return A description string
