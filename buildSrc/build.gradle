@@ -7,6 +7,7 @@ plugins {
 // We choose to use Java 21 as the buildSrc toolchain / compiler (same as the normal projects); and set a target language
 // level of Java 17. The target language level here does not effect the target language level of the normal projects.
 
+// Note: holding this back to 21 instead of 25 b/c of reasons?
 final int buildSrcCompilerVersion = 21
 final int buildSrcLanguageLevel = 17
 
