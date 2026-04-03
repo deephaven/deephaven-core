@@ -10,6 +10,9 @@ import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
 import jsinterop.base.JsPropertyMap;
 
+/**
+ * Login credentials used to authenticate a Deephaven client session.
+ */
 @JsType(namespace = "dh")
 public class LoginCredentials {
 
@@ -42,6 +45,9 @@ public class LoginCredentials {
         }
     }
 
+    /**
+     * The username to authenticate with, if applicable.
+     */
     @JsProperty
     @JsNullable
     public final String getUsername() {
@@ -53,6 +59,9 @@ public class LoginCredentials {
         this.username = username;
     }
 
+    /**
+     * The authentication token.
+     */
     @JsProperty
     @JsNullable
     public final String getToken() {
@@ -64,6 +73,9 @@ public class LoginCredentials {
         this.token = token;
     }
 
+    /**
+     * The token type, such as {@code Bearer}.
+     */
     @JsProperty
     @JsNullable
     public final String getType() {
