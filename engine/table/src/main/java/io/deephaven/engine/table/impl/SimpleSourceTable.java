@@ -11,7 +11,6 @@ import io.deephaven.engine.table.impl.locations.TableLocationProvider;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
@@ -65,11 +64,7 @@ public class SimpleSourceTable extends SourceTable<SimpleSourceTable> {
     }
 
     @Override
-    protected final SourceTable<?> redefine(TableDefinition newDefinition) {
-        if (newDefinition.getColumnNames().equals(definition.getColumnNames())) {
-            // Nothing changed - we have the same columns in the same order.
-            return this;
-        }
+    protected final SourceTable<?> redefineImpl(TableDefinition newDefinition) {
         return newInstance(newDefinition, getDescription() + "-retainColumns", componentFactory, locationProvider,
                 updateSourceRegistrar);
     }
