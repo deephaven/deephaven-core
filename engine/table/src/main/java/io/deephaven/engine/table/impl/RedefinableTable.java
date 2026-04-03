@@ -45,7 +45,7 @@ public abstract class RedefinableTable<IMPL_TYPE extends RedefinableTable<IMPL_T
                 selectables.stream().map(SelectColumn::of))
                 .toArray(SelectColumn[]::new);
 
-        final Set<ColumnDefinition<?>> resultColumnsInternal = new HashSet<>();
+        final Set<ColumnDefinition<?>> resultColumnsInternal = new LinkedHashSet<>();
         final Map<String, ColumnDefinition<?>> resultColumnsExternal = new LinkedHashMap<>();
         final Map<String, ColumnDefinition<?>> allColumns = new HashMap<>(definition.getColumnNameMap());
         boolean simpleRetain = true;
@@ -139,12 +139,25 @@ public abstract class RedefinableTable<IMPL_TYPE extends RedefinableTable<IMPL_T
     }
 
     /**
-     * Redefine this table with a subset of its current columns.
+     * Redefine this table with a subset of its current columns. If {@code newDefinition} has the same column names in
+     * the same order as {@code this} table, {@code this} will be returned.
      *
      * @param newDefinition A TableDefinition with a subset of this RedefinableTable's ColumnDefinitions.
      * @return the redefined table
      */
-    protected abstract Table redefine(TableDefinition newDefinition);
+    protected final BaseTable<?> redefine(TableDefinition newDefinition) {
+        return newDefinition.getColumnNames().equals(definition.getColumnNames())
+                ? this
+                : redefineImpl(newDefinition);
+    }
+
+    /**
+     * Redefine this table with a proper-subset of its current columns.
+     *
+     * @param newDefinition A TableDefinition with a proper-subset of this RedefinableTable's ColumnDefinitions.
+     * @return the redefined table
+     */
+    protected abstract BaseTable<?> redefineImpl(TableDefinition newDefinition);
 
     /**
      * Redefine this table with a subset of its current columns, with a potentially-differing definition to present to
