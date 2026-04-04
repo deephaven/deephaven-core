@@ -21,10 +21,14 @@ import jsinterop.base.JsArrayLike;
 import jsinterop.base.JsPropertyMap;
 
 /**
+ * Base class providing an event listener API for Deephaven JS client objects.
  */
 @TsInterface
 @TsName(namespace = "dh")
 public class HasEventHandling {
+    /**
+     * Internal event name used by some implementations to indicate that the underlying object has been released.
+     */
     public static final String INTERNAL_EVENT_RELEASED = "released-internal";
 
     private final JsPropertyMap<JsArray<EventFn<?>>> map = Js.uncheckedCast(JsObject.create(null));
@@ -104,6 +108,16 @@ public class HasEventHandling {
         }
     }
 
+    /**
+     * Returns a promise that resolves the next time the named event occurs, with the value of the event's detail. If a
+     * timeout is specified and occurs before the event takes place, the promise will reject, otherwise waits
+     * indefinitely.
+     *
+     * @param eventName The event name.
+     * @param timeoutInMillis Optional timeout in milliseconds.
+     * @param <T> The type of the event detail.
+     * @return A promise that resolves with the next matching event.
+     */
     @JsMethod
     public <T> Promise<Event<T>> nextEvent(String eventName, @JsOptional Double timeoutInMillis) {
         LazyPromise<Event<T>> promise = new LazyPromise<>();
@@ -116,12 +130,25 @@ public class HasEventHandling {
         return promise.asPromise();
     }
 
+    /**
+     * Checks whether any event listeners are registered for the given event name.
+     *
+     * @param name The event name.
+     * @return {@code true} if there is at least one listener registered for {@code name}; {@code false} otherwise.
+     */
     @JsMethod
     public boolean hasListeners(String name) {
         final JsArray<EventFn<?>> listeners = map.get(name);
         return listeners != null && listeners.length > 0;
     }
 
+    /**
+     * Checks whether a specific event listener is registered for the given event name.
+     *
+     * @param name The event name.
+     * @param fn The event listener function.
+     * @return True if {@code fn} is currently registered for {@code name}.
+     */
     public boolean hasListener(String name, EventFn<?> fn) {
         return hasListeners(name) && map.get(name).indexOf(fn) != -1;
     }
@@ -156,14 +183,30 @@ public class HasEventHandling {
         return true;
     }
 
+    /**
+     * Fires an event with no detail.
+     *
+     * @param type The event name.
+     */
     public void fireEvent(String type) {
         fireEvent(new Event<>(type, null));
     }
 
+    /**
+     * Fires an event with the given detail payload.
+     *
+     * @param type The event name.
+     * @param detail The event detail.
+     */
     public <T> void fireEvent(String type, @DoNotAutobox T detail) {
         fireEvent(new Event<>(type, detail));
     }
 
+    /**
+     * Fires an event instance.
+     *
+     * @param e The event to fire.
+     */
     public <T> void fireEvent(Event<T> e) {
         if (suppress) {
             JsLog.debug("Event suppressed", e.getType(), e);
@@ -184,6 +227,14 @@ public class HasEventHandling {
         }
     }
 
+    /**
+     * Fires a critical event with no detail.
+     *
+     * <p>
+     * If no listeners are registered, a message is logged to the console.
+     *
+     * @param type The event type.
+     */
     public <T> void fireCriticalEvent(String type) {
         if (hasListeners(type)) {
             fireEvent(type);
@@ -192,6 +243,15 @@ public class HasEventHandling {
         }
     }
 
+    /**
+     * Fires a critical event with the given detail.
+     *
+     * <p>
+     * If no listeners are registered, a message is logged to the console.
+     *
+     * @param type The event type.
+     * @param detail The event detail.
+     */
     public <T> void fireCriticalEvent(String type, T detail) {
         if (hasListeners(type)) {
             fireEvent(type, detail);
@@ -208,14 +268,25 @@ public class HasEventHandling {
         fireCriticalEvent(CoreClient.EVENT_REQUEST_FAILED, failure);
     }
 
+    /**
+     * Suppresses delivery of fired events to listeners.
+     */
     public void suppressEvents() {
         suppress = true;
     }
 
+    /**
+     * Re-enables delivery of fired events to listeners.
+     */
     public void unsuppressEvents() {
         suppress = false;
     }
 
+    /**
+     * Checks whether events are currently suppressed.
+     *
+     * @return True if events are suppressed.
+     */
     public boolean isSuppress() {
         return suppress;
     }
