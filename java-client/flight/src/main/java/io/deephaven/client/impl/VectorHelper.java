@@ -239,7 +239,7 @@ public class VectorHelper {
         int i = 0;
         for (Instant value : array) {
             if (value == null) {
-                vector.set(i, Long.MIN_VALUE);
+                vector.setNull(i);
             } else {
                 final long epochSecond = value.getEpochSecond();
                 final int nano = value.getNano();

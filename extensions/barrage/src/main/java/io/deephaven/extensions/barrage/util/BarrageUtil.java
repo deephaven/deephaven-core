@@ -1276,6 +1276,7 @@ public class BarrageUtil {
                         return NANO_DURATION_TYPE;
                     }
                     if (type == Period.class) {
+                        // TODO: MONTH_DAY_NANO is probably a better choice (captures full precision of Period)
                         return new ArrowType.Interval(IntervalUnit.YEAR_MONTH);
                     }
                     if (type == PeriodDuration.class) {

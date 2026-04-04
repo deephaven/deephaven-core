@@ -7,7 +7,10 @@ import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.InvocationTargetException;
+import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalTime;
+import java.time.LocalDate;
 import java.util.List;
 
 import static io.deephaven.qst.type.Type.booleanType;
@@ -19,7 +22,10 @@ import static io.deephaven.qst.type.Type.floatType;
 import static io.deephaven.qst.type.Type.instantType;
 import static io.deephaven.qst.type.Type.intType;
 import static io.deephaven.qst.type.Type.knownTypes;
+import static io.deephaven.qst.type.Type.localTimeType;
+import static io.deephaven.qst.type.Type.localDateType;
 import static io.deephaven.qst.type.Type.longType;
+import static io.deephaven.qst.type.Type.durationType;
 import static io.deephaven.qst.type.Type.ofCustom;
 import static io.deephaven.qst.type.Type.shortType;
 import static io.deephaven.qst.type.Type.stringType;
@@ -32,8 +38,8 @@ public class TypeTest {
     void numberOfStaticTypes() {
         // A reminder that when the number of static types increases, we should
         // add tests in this class for it specifically
-        assertThat(knownTypes()).hasSize(18);
-        assertThat(knownTypes().stream().distinct()).hasSize(18);
+        assertThat(knownTypes()).hasSize(21);
+        assertThat(knownTypes().stream().distinct()).hasSize(21);
 
         assertThat(PrimitiveType.instances()).hasSize(8);
         assertThat(PrimitiveType.instances().distinct()).hasSize(8);
@@ -94,6 +100,27 @@ public class TypeTest {
         assertThat(find(Instant.class)).isEqualTo(instantType());
         assertThat(find(Instant[].class)).isEqualTo(instantType().arrayType());
         assertThat(find(Instant[].class, Instant.class)).isEqualTo(instantType().arrayType());
+    }
+
+    @Test
+    void findLocalTime() {
+        assertThat(find(LocalTime.class)).isEqualTo(localTimeType());
+        assertThat(find(LocalTime[].class)).isEqualTo(localTimeType().arrayType());
+        assertThat(find(LocalTime[].class, LocalTime.class)).isEqualTo(localTimeType().arrayType());
+    }
+
+    @Test
+    void findLocalDate() {
+        assertThat(find(LocalDate.class)).isEqualTo(localDateType());
+        assertThat(find(LocalDate[].class)).isEqualTo(localDateType().arrayType());
+        assertThat(find(LocalDate[].class, LocalDate.class)).isEqualTo(localDateType().arrayType());
+    }
+
+    @Test
+    void findDuration() {
+        assertThat(find(Duration.class)).isEqualTo(durationType());
+        assertThat(find(Duration[].class)).isEqualTo(durationType().arrayType());
+        assertThat(find(Duration[].class, Duration.class)).isEqualTo(durationType().arrayType());
     }
 
     @Test

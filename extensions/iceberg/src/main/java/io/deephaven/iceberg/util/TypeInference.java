@@ -3,22 +3,7 @@
 //
 package io.deephaven.iceberg.util;
 
-import io.deephaven.qst.type.ArrayType;
-import io.deephaven.qst.type.BooleanType;
-import io.deephaven.qst.type.BoxedType;
-import io.deephaven.qst.type.ByteType;
-import io.deephaven.qst.type.CharType;
-import io.deephaven.qst.type.CustomType;
-import io.deephaven.qst.type.DoubleType;
-import io.deephaven.qst.type.FloatType;
-import io.deephaven.qst.type.GenericType;
-import io.deephaven.qst.type.InstantType;
-import io.deephaven.qst.type.IntType;
-import io.deephaven.qst.type.LongType;
-import io.deephaven.qst.type.PrimitiveType;
-import io.deephaven.qst.type.ShortType;
-import io.deephaven.qst.type.StringType;
-import io.deephaven.qst.type.Type;
+import io.deephaven.qst.type.*;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.types.TypeUtil;
 import org.apache.iceberg.types.Types;
@@ -285,6 +270,22 @@ public final class TypeInference {
         }
 
         @Override
+        public org.apache.iceberg.types.Type visit(LocalTimeType localTimeType) {
+            return Types.TimeType.get();
+        }
+
+        @Override
+        public org.apache.iceberg.types.Type visit(LocalDateType localDateType) {
+            return Types.DateType.get();
+        }
+
+        @Override
+        public org.apache.iceberg.types.Type visit(DurationType durationType) {
+            // Iceberg does not have a native Duration type
+            return null;
+        }
+
+        @Override
         public org.apache.iceberg.types.Type visit(ArrayType<?, ?> arrayType) {
             final org.apache.iceberg.types.Type elementType = arrayType.componentType().walk(this);
             if (elementType == null) {
@@ -297,12 +298,6 @@ public final class TypeInference {
         public org.apache.iceberg.types.Type visit(CustomType<?> customType) {
             if (LocalDateTime.class.equals(customType.clazz())) {
                 return Types.TimestampType.withoutZone();
-            }
-            if (LocalDate.class.equals(customType.clazz())) {
-                return Types.DateType.get();
-            }
-            if (LocalTime.class.equals(customType.clazz())) {
-                return Types.TimeType.get();
             }
             return null;
         }
