@@ -15,6 +15,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.sized.SizedChunk;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.impl.util.unboxer.ChunkUnboxer;
 import io.deephaven.extensions.barrage.BarrageOptions;
 import io.deephaven.util.BooleanUtils;
@@ -114,15 +115,14 @@ public class UnionChunkWriter<T> extends BaseChunkWriter<ObjectChunk<T, Values>>
             super(context, mySubset, options);
             final int numColumns = classMatchers.size();
             final ObjectChunk<T, Values> chunk = context.getChunk().asObjectChunk();
+            final int resultChunkSize = subset != null ? subset.intSize() : chunk.size();
             if (mode == UnionChunkReader.Mode.Sparse) {
                 columnOffset = null;
             } else {
-                // noinspection resource
-                columnOffset = WritableIntChunk.makeWritableChunk(chunk.size());
+                columnOffset = WritableIntChunk.makeWritableChunk(resultChunkSize);
             }
 
-            // noinspection resource
-            columnOfInterest = WritableByteChunk.makeWritableChunk(chunk.size());
+            columnOfInterest = WritableByteChunk.makeWritableChunk(resultChunkSize);
             // noinspection unchecked
             final SizedChunk<Values>[] innerSizedChunks = new SizedChunk[numColumns];
             // noinspection unchecked
@@ -132,44 +132,52 @@ public class UnionChunkWriter<T> extends BaseChunkWriter<ObjectChunk<T, Values>>
                 innerSizedChunks[ii] = new SizedChunk<>(ChunkType.Object);
 
                 if (mode == UnionChunkReader.Mode.Sparse) {
-                    innerSizedChunks[ii].ensureCapacity(chunk.size());
-                    innerSizedChunks[ii].get().fillWithNullValue(0, chunk.size());
+                    innerSizedChunks[ii].ensureCapacity(resultChunkSize);
+                    innerSizedChunks[ii].get().fillWithNullValue(0, resultChunkSize);
                 } else {
                     innerSizedChunks[ii].ensureCapacity(0);
                 }
                 innerChunks[ii] = innerSizedChunks[ii].get().asWritableObjectChunk();
             }
-            for (int ii = 0; ii < chunk.size(); ++ii) {
-                final Object value = chunk.get(ii);
-                int jj;
-                for (jj = 0; jj < classMatchers.size(); ++jj) {
-                    if (value == null || classMatchers.get(jj).isAssignableFrom(value.getClass())) {
-                        columnOfInterest.set(ii, (byte) columnOfInterestMapping[jj]);
-                        if (mode == UnionChunkReader.Mode.Sparse) {
-                            innerChunks[jj].set(ii, value);
-                        } else {
-                            int size = innerChunks[jj].size();
-                            columnOffset.set(ii, size);
-                            if (innerChunks[jj].capacity() <= size) {
-                                int newSize = Math.max(16, size * 2);
-                                innerSizedChunks[jj].ensureCapacityPreserve(newSize);
-                                innerChunks[jj] = innerSizedChunks[jj].get().asWritableObjectChunk();
-                            }
-                            innerChunks[jj].add(value);
-                        }
-                        break;
-                    }
-                }
 
-                if (jj == classMatchers.size()) {
-                    if (value == null) {
-                        throw new UnsupportedOperationException("UnionChunkWriter found null-value without null child");
+            // Create (and close) a flat row set if subset is not provided.
+            try (final RowSet toClose = subset == null ? RowSetFactory.flat(resultChunkSize) : null) {
+                final RowSet toUse = subset == null ? toClose : subset;
+                final MutableInt index = new MutableInt(0);
+                toUse.forAllRowKeys(rowKey -> {
+                    final Object value = chunk.get((int) rowKey);
+                    final int idx = index.getAndIncrement();
+                    int jj;
+                    for (jj = 0; jj < classMatchers.size(); ++jj) {
+                        if (value == null || classMatchers.get(jj).isAssignableFrom(value.getClass())) {
+                            columnOfInterest.set(idx, (byte) columnOfInterestMapping[jj]);
+                            if (mode == UnionChunkReader.Mode.Sparse) {
+                                innerChunks[jj].set(idx, value);
+                            } else {
+                                int size = innerChunks[jj].size();
+                                columnOffset.set(idx, size);
+                                if (innerChunks[jj].capacity() <= size) {
+                                    int newSize = Math.max(16, size * 2);
+                                    innerSizedChunks[jj].ensureCapacityPreserve(newSize);
+                                    innerChunks[jj] = innerSizedChunks[jj].get().asWritableObjectChunk();
+                                }
+                                innerChunks[jj].add(value);
+                            }
+                            break;
+                        }
                     }
-                    throw new UnsupportedOperationException("UnionChunkWriter found unexpected class: "
-                            + value.getClass() + " allowed classes: " +
-                            classMatchers.stream().map(Class::getSimpleName)
-                                    .collect(Collectors.joining(", ")));
-                }
+
+                    if (jj == classMatchers.size()) {
+                        if (value == null) {
+                            throw new UnsupportedOperationException(
+                                    "UnionChunkWriter found null-value without null child");
+                        }
+                        throw new UnsupportedOperationException("UnionChunkWriter found unexpected class: "
+                                + value.getClass() + " allowed classes: " +
+                                classMatchers.stream().map(Class::getSimpleName)
+                                        .collect(Collectors.joining(", ")));
+                    }
+                });
             }
             innerColumns = new DrainableColumn[numColumns];
             for (int ii = 0; ii < numColumns; ++ii) {
@@ -184,15 +192,23 @@ public class UnionChunkWriter<T> extends BaseChunkWriter<ObjectChunk<T, Values>>
                     }
                 }
 
-                // note that we do not close the kernel since we steal the inner chunk into the context
+                // Notes on ownership: the context assumes ownership of the chunk and will close it
+                // when the context is closed. When we supply a boxed innerChunk, we can rely on the context to
+                // close it. However, when unboxing, the UnboxerKernel creates and owns a new chunk so we should
+                // not close the kernel but we do need to close the inner chunk.
                 final ChunkUnboxer.UnboxerKernel kernel = chunkType == ChunkType.Object
                         ? null
                         : ChunkUnboxer.getUnboxer(chunkType, innerChunk.size());
 
-                // noinspection unchecked
-                try (ChunkWriter.Context innerContext = writer.makeContext(kernel != null
-                        ? (Chunk<Values>) kernel.unbox(innerChunk)
-                        : innerChunk, 0)) {
+                final Chunk<Values> chunkToWrite;
+                if (kernel != null) {
+                    // noinspection unchecked
+                    chunkToWrite = (Chunk<Values>) kernel.unbox(innerChunk);
+                    innerChunk.close();
+                } else {
+                    chunkToWrite = innerChunk;
+                }
+                try (ChunkWriter.Context innerContext = writer.makeContext(chunkToWrite, 0)) {
                     innerColumns[ii] = writer.getInputStream(innerContext, null, options);
                 }
             }
