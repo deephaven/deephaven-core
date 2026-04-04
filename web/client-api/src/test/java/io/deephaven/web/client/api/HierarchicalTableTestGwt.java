@@ -851,4 +851,141 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                 .then(this::finish)
                 .catch_(this::report);
     }
+
+    /**
+     * Tests expand-to-depth via setExpanded(row, true, depth) on the static_tree table. The tree has the structure:
+     * <ul>
+     * <li>Root (ID=0, depth 1)</li>
+     * <li>Children (ID=1..9, depth 2, parent=0)</li>
+     * <li>Grandchildren (ID=10..99, depth 3, parent=ID/10)</li>
+     * <li>Great-grandchildren (ID=100..999, depth 4, parent=ID/10)</li>
+     * </ul>
+     * Expanding root to depth 2 should expand root and all 9 children, yielding 1 + 9 + 90 = 100 visible rows.
+     */
+    public void testExpandToDepth() {
+        connect(tables)
+                .then(treeTable("static_tree"))
+                .then(treeTable -> {
+                    delayTestFinish(5000);
+                    treeTable.setViewport(0, 199, treeTable.getColumns(), null);
+                    return treeTable.getViewportData()
+                            .then(data -> Promise.resolve((TreeViewportData) data))
+                            .then(data -> {
+                                assertEquals(1d, data.getTreeSize());
+
+                                // Expand root (row 0) to depth 2 using the union-typed expand API
+                                treeTable.setExpanded(
+                                        JsTreeTable.RowReferenceUnion.of(0),
+                                        true,
+                                        JsTreeTable.ExpandDescendantsUnion.of(2));
+
+                                return treeTable.<TreeViewportData>nextEvent(
+                                        JsTreeTable.EVENT_UPDATED, 2501d);
+                            }).then(event -> {
+                                // Root (depth 1) + 9 children (depth 2) + 90 grandchildren (depth 3) = 100
+                                assertEquals(100d, event.getDetail().getTreeSize());
+                                JsArray<TableData.Row> rows = event.getDetail().getRows();
+
+                                // Row 0 is the root, expanded
+                                TreeViewportData.TreeRow row0 = (TreeViewportData.TreeRow) rows.getAt(0);
+                                assertTrue(row0.isExpanded());
+                                assertTrue(row0.hasChildren());
+                                assertEquals(1, row0.depth());
+
+                                // Row 1 is child ID=1, which should also be expanded (depth 2 expands 2 levels)
+                                TreeViewportData.TreeRow row1 = (TreeViewportData.TreeRow) rows.getAt(1);
+                                assertTrue(row1.isExpanded());
+                                assertTrue(row1.hasChildren());
+                                assertEquals(2, row1.depth());
+
+                                // First grandchild of child 1 should be collapsed (depth 3, not expanded)
+                                TreeViewportData.TreeRow row2 = (TreeViewportData.TreeRow) rows.getAt(2);
+                                assertFalse(row2.isExpanded());
+                                assertTrue(row2.hasChildren());
+                                assertEquals(3, row2.depth());
+
+                                treeTable.close();
+                                return null;
+                            });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    /**
+     * Tests expand-to-depth via the expand(row, depth) shorthand on the static_tree table. Expanding root to depth 1
+     * should be equivalent to a regular expand, yielding 1 + 9 = 10 visible rows.
+     */
+    public void testExpandToDepthOne() {
+        connect(tables)
+                .then(treeTable("static_tree"))
+                .then(treeTable -> {
+                    delayTestFinish(5000);
+                    treeTable.setViewport(0, 99, treeTable.getColumns(), null);
+                    return treeTable.getViewportData()
+                            .then(data -> Promise.resolve((TreeViewportData) data))
+                            .then(data -> {
+                                assertEquals(1d, data.getTreeSize());
+
+                                // Expand root to depth 1 using the expand() shorthand
+                                treeTable.expand(
+                                        JsTreeTable.RowReferenceUnion.of(0),
+                                        JsTreeTable.ExpandDescendantsUnion.of(1));
+
+                                return treeTable.<TreeViewportData>nextEvent(
+                                        JsTreeTable.EVENT_UPDATED, 2502d);
+                            }).then(event -> {
+                                // Depth 1 = single expand: root + 9 children = 10
+                                assertEquals(10d, event.getDetail().getTreeSize());
+                                JsArray<TableData.Row> rows = event.getDetail().getRows();
+
+                                TreeViewportData.TreeRow row0 = (TreeViewportData.TreeRow) rows.getAt(0);
+                                assertTrue(row0.isExpanded());
+                                assertEquals(1, row0.depth());
+
+                                // Children should all be collapsed
+                                for (int i = 1; i < 10; i++) {
+                                    TreeViewportData.TreeRow row = (TreeViewportData.TreeRow) rows.getAt(i);
+                                    assertFalse(row.isExpanded());
+                                    assertTrue(row.hasChildren());
+                                    assertEquals(2, row.depth());
+                                }
+
+                                treeTable.close();
+                                return null;
+                            });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    /**
+     * Tests that passing a boolean true to expand() still works as expand-all (backwards compatibility).
+     */
+    public void testExpandWithBooleanTrue() {
+        connect(tables)
+                .then(treeTable("static_tree"))
+                .then(treeTable -> {
+                    delayTestFinish(5000);
+                    treeTable.setViewport(0, 99, treeTable.getColumns(), null);
+                    return treeTable.getViewportData()
+                            .then(data -> Promise.resolve((TreeViewportData) data))
+                            .then(data -> {
+                                assertEquals(1d, data.getTreeSize());
+
+                                // Expand root with boolean true (expand all descendants)
+                                treeTable.expand(
+                                        JsTreeTable.RowReferenceUnion.of(0),
+                                        JsTreeTable.ExpandDescendantsUnion.of(true));
+
+                                return treeTable.<TreeViewportData>nextEvent(
+                                        JsTreeTable.EVENT_UPDATED, 2503d);
+                            }).then(event -> {
+                                // All 1000 rows should be visible
+                                assertEquals(1000d, event.getDetail().getTreeSize());
+
+                                treeTable.close();
+                                return null;
+                            });
+                })
+                .then(this::finish).catch_(this::report);
+    }
 }
