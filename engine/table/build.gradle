@@ -136,3 +136,88 @@ jmhJar {
 // No need to assemble the jar by default on build
 // assemble.dependsOn(jmhJar)
 check.dependsOn(jmhClasses)
+
+// Task to check that auto-import documentation is in sync with QueryLibraryImportsDefaults
+tasks.register('checkAutoImportDocs') {
+    group = 'Verification'
+    description = 'Checks that auto-import function documentation matches QueryLibraryImportsDefaults'
+    
+    dependsOn classes
+    
+    def docsDir = rootProject.file('docs/python/reference/query-language/query-library/auto-imported')
+    def sourceFile = file('src/main/java/io/deephaven/engine/table/lang/impl/QueryLibraryImportsDefaults.java')
+    
+    inputs.file sourceFile
+    inputs.dir docsDir
+    outputs.upToDateWhen { true }
+    
+    doLast {
+        def classLoader = new URLClassLoader(
+            sourceSets.main.runtimeClasspath.collect { it.toURI().toURL() } as URL[],
+            getClass().classLoader
+        )
+        
+        // Load QueryLibraryImportsDefaults and get the statics
+        def importsClass = classLoader.loadClass('io.deephaven.engine.table.lang.impl.QueryLibraryImportsDefaults')
+        def instance = importsClass.getDeclaredConstructor().newInstance()
+        def staticsSet = instance.statics() as Set<Class<?>>
+        
+        // Collect all public static methods from statics classes
+        def expectedMethods = new TreeSet<String>()
+        staticsSet.each { clazz ->
+            clazz.declaredMethods.each { method ->
+                if (java.lang.reflect.Modifier.isPublic(method.modifiers) && 
+                    java.lang.reflect.Modifier.isStatic(method.modifiers)) {
+                    expectedMethods.add(method.name)
+                }
+            }
+            // Also get public static fields (constants)
+            clazz.declaredFields.each { field ->
+                if (java.lang.reflect.Modifier.isPublic(field.modifiers) && 
+                    java.lang.reflect.Modifier.isStatic(field.modifiers)) {
+                    expectedMethods.add(field.name)
+                }
+            }
+        }
+        
+        // Parse markdown docs to find documented methods
+        def documentedMethods = new TreeSet<String>()
+        docsDir.eachFileMatch(~/.*.md/) { file ->
+            if (file.name == 'index.md') return
+            file.eachLine { line ->
+                // Parse table rows: | TYPE | name | signature | description |
+                def matcher = line =~ /^\|\s*(FUNCTION|CONSTANT|CLASS)\s*\|\s*(\w+)\s*\|/
+                if (matcher.find()) {
+                    documentedMethods.add(matcher.group(2))
+                }
+            }
+        }
+        
+        // Compare
+        def missingInDocs = expectedMethods - documentedMethods
+        def extraInDocs = documentedMethods - expectedMethods
+        
+        // Filter out known exceptions (methods that shouldn't be documented)
+        def excludedMethods = ['getClass', 'hashCode', 'equals', 'toString', 'notify', 'notifyAll', 'wait'] as Set
+        missingInDocs.removeAll(excludedMethods)
+        
+        def hasErrors = false
+        
+        if (!missingInDocs.isEmpty()) {
+            logger.error("Methods in QueryLibraryImportsDefaults.statics() but NOT documented:")
+            missingInDocs.each { logger.error("  - $it") }
+            hasErrors = true
+        }
+        
+        if (!extraInDocs.isEmpty()) {
+            logger.warn("Methods documented but NOT in QueryLibraryImportsDefaults.statics():")
+            extraInDocs.each { logger.warn("  - $it") }
+        }
+        
+        if (hasErrors) {
+            throw new GradleException("Auto-import documentation is out of sync. Run the generator script to update docs.")
+        }
+        
+        logger.lifecycle("Auto-import documentation check passed. ${documentedMethods.size()} methods documented.")
+    }
+}
