@@ -9,6 +9,8 @@ import io.deephaven.util.annotations.VisibleForTesting;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.ref.WeakReference;
+import java.util.Optional;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 /**
@@ -111,5 +113,22 @@ public abstract class ReferenceCountedLivenessNode extends ReferenceCountedLiven
         try (final SafeCloseable ignored = tracker.enqueueReferencesForDrop()) {
             super.onReferenceCountAtZero();
         }
+    }
+
+    /**
+     * Find a managed reference that matches the given predicate.
+     * 
+     * @param referentPredicate a predicate to test against our managed items
+     * @return an Optional of a LivenessReferent that matches the given predicate; or empty if no such reference exists
+     */
+    protected Optional<LivenessReferent> findAnyManagedReferent(Predicate<LivenessReferent> referentPredicate) {
+        return tracker.findAny(referentPredicate);
+    }
+
+    /**
+     * @return a stream of retained LivenessReferents
+     */
+    protected Stream<LivenessReferent> managedReferentStream() {
+        return tracker.stream();
     }
 }
