@@ -122,6 +122,46 @@ The script requires:
 - `requests` - For HTTP requests (installed automatically)
 - Deephaven Python client libraries (available in Deephaven session)
 
+## CI Integration
+
+A GitHub Action (`autoimport-docs-check.yml`) monitors the auto-import documentation for sync issues:
+
+### Automatic checks
+
+- **Weekly schedule**: Runs every Sunday at 3AM UTC to detect drift
+- **PR trigger**: Warns when `QueryLibraryImportsDefaults.java` is modified
+
+### Manual trigger
+
+You can manually run the sync check from the GitHub Actions tab:
+
+1. Go to Actions → "Auto-Import Docs Sync Check"
+2. Click "Run workflow"
+3. Select which docs to check (python, groovy, or both)
+
+### Local sync check
+
+To check locally if docs are in sync:
+
+```bash
+# Check against default image (edge)
+./docs/tools/autoimport/check_autoimport_sync.sh
+
+# Check against a specific version
+./docs/tools/autoimport/check_autoimport_sync.sh both 0.36.0
+```
+
+This requires Docker to be running. The script defaults to the `edge` tag (latest development build).
+
+### What happens on failure
+
+- **Scheduled runs**: Sends a Slack notification to #ddl-devrel
+- **Manual runs**: Fails the workflow with details about which files differ
+
+### Required secrets
+
+The workflow requires a `SLACK_WEBHOOK_DDL_DEVREL` secret configured in the repository settings for Slack notifications.
+
 ## Notes
 
 - The script must run inside a Deephaven session because it uses `jpy` to introspect Java classes.
