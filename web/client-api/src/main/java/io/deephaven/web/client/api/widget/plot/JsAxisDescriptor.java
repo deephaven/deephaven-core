@@ -11,45 +11,143 @@ import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsType;
 import jsinterop.base.JsPropertyMap;
 
+/**
+ * A descriptor used to configure an axis when creating a figure from JS.
+ */
 @JsType(name = "AxisDescriptor", namespace = "dh.plot")
 public class JsAxisDescriptor {
     // TODO (deephaven-core#3442) change to some kind of String+int union type
+
+    /**
+     * The axis format type.
+     *
+     * <p>
+     * This should be a value from {@link io.deephaven.web.client.api.widget.plot.enums.JsAxisFormatType}.
+     */
     public String formatType;
     // TODO (deephaven-core#3442) change to some kind of String+int union type
+
+    /**
+     * The axis type.
+     *
+     * <p>
+     * This should be a value from {@link io.deephaven.web.client.api.widget.plot.enums.JsAxisType}.
+     */
     public String type;
     // TODO (deephaven-core#3442) change to some kind of String+int union type
+
+    /**
+     * The axis position.
+     *
+     * <p>
+     * This should be a value from {@link io.deephaven.web.client.api.widget.plot.enums.JsAxisPosition}.
+     */
     public String position;
 
+    /**
+     * Whether to use logarithmic scaling.
+     */
     @JsNullable
     public boolean log = false;
+
+    /**
+     * The axis label.
+     */
     @JsNullable
     public String label;
+
+    /**
+     * The font used to render the axis label.
+     */
     @JsNullable
     public String labelFont;
+
+    /**
+     * The font used to render tick labels.
+     */
     @JsNullable
     public String ticksFont;
+
+    /**
+     * The format pattern used to render axis values.
+     */
     @JsNullable
     public String formatPattern;
+
+    /**
+     * The axis color.
+     */
     @JsNullable
     public String color;
+
+    /**
+     * The minimum value for the axis range, or {@link Double#NaN} to use the default.
+     */
     @JsNullable
     public double minRange = Double.NaN;
+
+    /**
+     * The maximum value for the axis range, or {@link Double#NaN} to use the default.
+     */
     @JsNullable
     public double maxRange = Double.NaN;
+
+    /**
+     * Whether minor ticks are visible.
+     *
+     * <p>
+     * Minor ticks are typically small, unlabeled tick marks drawn between major ticks.
+     */
     @JsNullable
     public boolean minorTicksVisible = false;
+
+    /**
+     * Whether major ticks are visible.
+     *
+     * <p>
+     * Major ticks are the primary tick marks on an axis. They typically determine the main tick spacing and are often
+     * the tick marks that are labeled.
+     */
     @JsNullable
     public boolean majorTicksVisible = true;
+
+    /**
+     * The number of minor ticks between adjacent major ticks.
+     */
     @JsNullable
     public int minorTickCount = 0;
+
+    /**
+     * The gap between adjacent major ticks.
+     */
     @JsNullable
     public double gapBetweenMajorTicks = -1.0;
+
+    /**
+     * Explicit locations for major ticks.
+     *
+     * <p>
+     * When specified, these values are used as the primary (major) tick positions instead of automatically choosing
+     * major ticks.
+     */
     @JsNullable
     public JsArray<Double> majorTickLocations = new JsArray<>();
+
+    /**
+     * The angle to render tick labels at.
+     */
     @JsNullable
     public double tickLabelAngle = 0.0;
+
+    /**
+     * Whether to invert the axis.
+     */
     @JsNullable
     public boolean invert = false;
+
+    /**
+     * Whether this axis should be treated as a time axis.
+     */
     @JsNullable
     public boolean isTimeAxis = false;
 
