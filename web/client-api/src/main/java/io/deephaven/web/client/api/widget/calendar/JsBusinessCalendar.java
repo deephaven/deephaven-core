@@ -47,7 +47,7 @@ public class JsBusinessCalendar {
     /**
      * The time zone of this calendar.
      * 
-     * @return dh.i18n.TimeZone
+     * @return {@link JsTimeZone dh.i18n.TimeZone}
      */
     @JsProperty
     public JsTimeZone getTimeZone() {
@@ -55,7 +55,7 @@ public class JsBusinessCalendar {
     }
 
     /**
-     * The days of the week that are business days.
+     * An array of all days of the week that are business days.
      * 
      * @return String array
      */
@@ -66,9 +66,9 @@ public class JsBusinessCalendar {
     }
 
     /**
-     * The business periods that are open on a business day.
+     * An array of all business periods that are open on a business day.
      * 
-     * @return dh.calendar.BusinessPeriod
+     * @return {@link JsBusinessPeriod dh.calendar.BusinessPeriod} array
      */
     @JsProperty
     public JsArray<JsBusinessPeriod> getBusinessPeriods() {
@@ -76,9 +76,9 @@ public class JsBusinessCalendar {
     }
 
     /**
-     * All holidays defined for this calendar.
+     * An array of all holidays defined for this calendar.
      * 
-     * @return dh.calendar.Holiday
+     * @return {@link JsHoliday dh.calendar.Holiday} array
      */
     @JsProperty
     public JsArray<JsHoliday> getHolidays() {
