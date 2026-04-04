@@ -85,6 +85,14 @@ public class JsSeries {
         subscribe(null);
     }
 
+    /**
+     * Enables updates for this series.
+     *
+     * <p>
+     * If {@code forceDisableDownsample} is provided, the series will use the given downsample options.
+     *
+     * @param forceDisableDownsample optional downsample options
+     */
     public void subscribe(@JsOptional DownsampleOptions forceDisableDownsample) {
         this.downsample = forceDisableDownsample == null ? DownsampleOptions.DEFAULT : forceDisableDownsample;
         subscribed = true;
@@ -92,7 +100,7 @@ public class JsSeries {
     }
 
     /**
-     * Disable updates for this Series.
+     * Disables updates for this series.
      */
     public void unsubscribe() {
         markUnsubscribed();
@@ -135,6 +143,9 @@ public class JsSeries {
         return descriptor.getName();
     }
 
+    /**
+     * Whether lines are visible for this series.
+     */
     @JsProperty(name = "isLinesVisible")
     @JsNullable
     public Boolean getLinesVisible() {
@@ -144,6 +155,9 @@ public class JsSeries {
         return null;
     }
 
+    /**
+     * Whether shapes are visible for this series.
+     */
     @JsProperty(name = "isShapesVisible")
     @JsNullable
     public Boolean getShapesVisible() {
@@ -153,11 +167,17 @@ public class JsSeries {
         return null;
     }
 
+    /**
+     * Whether a gradient fill is visible for this series.
+     */
     @JsProperty
     public boolean isGradientVisible() {
         return descriptor.getGradientVisible();
     }
 
+    /**
+     * The line color for this series.
+     */
     @JsProperty
     public String getLineColor() {
         return descriptor.getLineColor();
@@ -169,6 +189,9 @@ public class JsSeries {
     // return descriptor.getLineStyle();
     // }
 
+    /**
+     * A format string for point labels.
+     */
     @JsProperty
     @JsNullable
     public String getPointLabelFormat() {
@@ -178,6 +201,9 @@ public class JsSeries {
         return null;
     }
 
+    /**
+     * A format string for the x-axis tooltip.
+     */
     @JsProperty
     @JsNullable
     public String getXToolTipPattern() {
@@ -187,6 +213,9 @@ public class JsSeries {
         return null;
     }
 
+    /**
+     * A format string for the y-axis tooltip.
+     */
     @JsProperty
     @JsNullable
     public String getYToolTipPattern() {
@@ -196,11 +225,17 @@ public class JsSeries {
         return null;
     }
 
+    /**
+     * The label for shapes in this series.
+     */
     @JsProperty
     public String getShapeLabel() {
         return descriptor.getShapeLabel();
     }
 
+    /**
+     * The size of shapes in this series.
+     */
     @JsProperty
     @JsNullable
     public Double getShapeSize() {
@@ -210,11 +245,17 @@ public class JsSeries {
         return null;
     }
 
+    /**
+     * The color used to render shapes in this series.
+     */
     @JsProperty
     public String getShapeColor() {
         return descriptor.getShapeColor();
     }
 
+    /**
+     * The shape used to render points in this series.
+     */
     @JsProperty
     public String getShape() {
         return descriptor.getShape();
@@ -252,6 +293,9 @@ public class JsSeries {
         return multiSeries;
     }
 
+    /**
+     * A one-click configuration for this series.
+     */
     @JsProperty
     public OneClick getOneClick() {
         return oneClick;
