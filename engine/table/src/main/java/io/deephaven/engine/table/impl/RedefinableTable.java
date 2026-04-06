@@ -37,7 +37,7 @@ public abstract class RedefinableTable<IMPL_TYPE extends RedefinableTable<IMPL_T
 
     private Table viewInternal(Collection<? extends Selectable> selectables, boolean isUpdate) {
         if (selectables == null || selectables.isEmpty()) {
-            return this;
+            return prepareReturnThis();
         }
 
         final SelectColumn[] columns = Stream.concat(
@@ -86,7 +86,7 @@ public abstract class RedefinableTable<IMPL_TYPE extends RedefinableTable<IMPL_T
     @Override
     public Table dropColumns(final String... columnNames) {
         if (columnNames == null || columnNames.length == 0) {
-            return this;
+            return prepareReturnThis();
         }
         final Set<String> columnNamesToDrop = new HashSet<>(Arrays.asList(columnNames));
         definition.checkHasColumns(columnNamesToDrop);
@@ -140,19 +140,20 @@ public abstract class RedefinableTable<IMPL_TYPE extends RedefinableTable<IMPL_T
 
     /**
      * Redefine this table with a subset of its current columns. If {@code newDefinition} has the same column names in
-     * the same order as {@code this} table, {@code this} will be returned.
+     * the same order as {@code this} table, {@link #prepareReturnThis()} will be returned. Delegates to
+     * {@link #redefineImpl(TableDefinition)} otherwise.
      *
      * @param newDefinition A TableDefinition with a subset of this RedefinableTable's ColumnDefinitions.
      * @return the redefined table
      */
     protected final BaseTable<?> redefine(TableDefinition newDefinition) {
         return newDefinition.getColumnNames().equals(definition.getColumnNames())
-                ? this
+                ? (BaseTable<?>) prepareReturnThis()
                 : redefineImpl(newDefinition);
     }
 
     /**
-     * Redefine this table with a proper-subset of its current columns.
+     * Redefine this table with a proper-subset, or re-ordering, of its current columns.
      *
      * @param newDefinition A TableDefinition with a proper-subset of this RedefinableTable's ColumnDefinitions.
      * @return the redefined table
