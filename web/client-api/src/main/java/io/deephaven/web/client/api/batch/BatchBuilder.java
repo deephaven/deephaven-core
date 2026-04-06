@@ -208,7 +208,7 @@ public class BatchBuilder {
                         ref.setTicket(op.getSource().makeTicket());
                     } else {
                         // every subsequent pb op references the entry before it
-                        ref.setBatchOffset(send.size() + internalOffset);
+                        ref.setBatchOffset(internalOffset);
                     }
                     internalOffset++;
 
