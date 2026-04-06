@@ -83,6 +83,8 @@ table = resolve("dh+plain://hostname:9876/scope/table_name")
 
 The `resolve` function connects to the specified Deephaven instance, retrieves the table, and returns it as a local reference that you can use in your code.
 
+Let's explore this with a couple of examples.
+
 ## Share tables locally
 
 For this first example, we will spin up two Docker containers that run Deephaven with Python on different ports.

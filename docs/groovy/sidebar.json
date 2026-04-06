@@ -110,6 +110,10 @@
                 "path": "conceptual/table-types.md"
               },
               {
+                "label": "Initialization and updates",
+                "path": "how-to-guides/initialization-and-updates.md"
+              },
+              {
                 "label": "Core API design",
                 "path": "conceptual/deephaven-core-api.md"
               },
@@ -1219,6 +1223,14 @@
                 "label": "Advanced table constructors",
                 "items": [
                   {
+                    "label": "addOnlyToBlink",
+                    "path": "reference/table-operations/create/addOnlyToBlink.md"
+                  },
+                  {
+                    "label": "blinkToAppendOnly",
+                    "path": "reference/table-operations/create/blink-to-append-only.md"
+                  },
+                  {
                     "label": "FunctionGeneratedTableFactory",
                     "path": "reference/table-operations/create/create.md"
                   },
@@ -1235,16 +1247,12 @@
                     "path": "reference/table-operations/create/TablePublisher.md"
                   },
                   {
-                    "label": "blinkToAppendOnly",
-                    "path": "reference/table-operations/create/blink-to-append-only.md"
+                    "label": "removeBlink",
+                    "path": "reference/table-operations/create/remove-blink.md"
                   },
                   {
                     "label": "toBlink",
                     "path": "reference/table-operations/create/toBlink.md"
-                  },
-                  {
-                    "label": "removeBlink",
-                    "path": "reference/table-operations/create/remove-blink.md"
                   }
                 ]
               },
@@ -1396,6 +1404,10 @@
                   {
                     "label": "hasColumns",
                     "path": "reference/table-operations/metadata/hasColumns.md"
+                  },
+                  {
+                    "label": "isBlink",
+                    "path": "reference/table-operations/metadata/isBlink.md"
                   },
                   {
                     "label": "isEmpty",
@@ -2668,7 +2680,56 @@
             "items": [
               {
                 "label": "Auto-imported functions",
-                "path": "reference/query-language/formulas/auto-imported-functions.md"
+                "items": [
+                  {
+                    "label": "Overview",
+                    "path": "reference/query-language/query-library/auto-imported/index.md"
+                  },
+                  {
+                    "label": "Basic",
+                    "path": "reference/query-language/query-library/auto-imported/basic.md"
+                  },
+                  {
+                    "label": "Math",
+                    "path": "reference/query-language/query-library/auto-imported/math.md"
+                  },
+                  {
+                    "label": "Time",
+                    "path": "reference/query-language/query-library/auto-imported/time.md"
+                  },
+                  {
+                    "label": "Logic",
+                    "path": "reference/query-language/query-library/auto-imported/logic.md"
+                  },
+                  {
+                    "label": "Parse",
+                    "path": "reference/query-language/query-library/auto-imported/parse.md"
+                  },
+                  {
+                    "label": "Sort",
+                    "path": "reference/query-language/query-library/auto-imported/sort.md"
+                  },
+                  {
+                    "label": "Search",
+                    "path": "reference/query-language/query-library/auto-imported/search.md"
+                  },
+                  {
+                    "label": "GUI",
+                    "path": "reference/query-language/query-library/auto-imported/gui.md"
+                  },
+                  {
+                    "label": "Constants",
+                    "path": "reference/query-language/query-library/auto-imported/constants.md"
+                  },
+                  {
+                    "label": "Java",
+                    "path": "reference/query-language/query-library/auto-imported/java.md"
+                  },
+                  {
+                    "label": "Data types",
+                    "path": "reference/query-language/query-library/auto-imported/data-types.md"
+                  }
+                ]
               },
               {
                 "label": "Automatic Groovy Imports",
@@ -2891,6 +2952,10 @@
               {
                 "label": "Integrations: AWS",
                 "items": [
+                  {
+                    "label": "How do I run Deephaven behind AWS ALB?",
+                    "path": "reference/community-questions/aws-alb-configuration.md"
+                  },
                   {
                     "label": "Why can't I read from S3?",
                     "path": "reference/community-questions/aws-timeout.md"

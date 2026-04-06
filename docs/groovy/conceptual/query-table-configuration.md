@@ -206,6 +206,11 @@ The recycler capacity determines how many array blocks are kept in memory for po
 
 Starting in Deephaven 41, the engine assumes that Filters and Selectables can be executed in parallel by default (unless the Filter or Selectable is [marked serial or has barriers](./query-engine/parallelization.md#serialization)).
 
+| Property Name                          | Default Value | Description                                                                                             |
+| -------------------------------------- | ------------- | ------------------------------------------------------------------------------------------------------- |
+| `QueryTable.statelessFiltersByDefault` | true          | Enables the engine to assume that filters are stateless by default, allowing for more optimizations     |
+| `QueryTable.statelessSelectByDefault`  | true          | Enables the engine to assume that Selectables are stateless by default, allowing for more optimizations |
+
 For more details, see the Javadoc on [io.deephaven.api.ConcurrencyControl](https://docs.deephaven.io/core/javadoc/io/deephaven/api/ConcurrencyControl.html).
 
 ## Related documentation

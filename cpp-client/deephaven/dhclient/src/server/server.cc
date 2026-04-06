@@ -7,7 +7,7 @@
 #include <exception>
 #include <grpcpp/grpcpp.h>
 #include <optional>
-#include <grpc/support/log.h>
+#include <absl/log/log.h>
 #include <arrow/flight/client_auth.h>
 #include <arrow/flight/client.h>
 #include <arrow/flight/types.h>
@@ -94,13 +94,8 @@ std::shared_ptr<Server> Server::CreateFromTarget(
       target, 
       credentials,
       channel_args);
-  gpr_log(GPR_DEBUG,
-        "%s: "
-        "grpc::Channel(%p) created, "
-        "target=%s",
-        "Server::CreateFromTarget",
-        static_cast<void*>(channel.get()),
-        target.c_str());
+  VLOG(2) << "Server::CreateFromTarget: grpc::Channel(" << static_cast<void*>(channel.get())
+          << ") created, target=" << target;
 
   auto as = ApplicationService::NewStub(channel);
   auto cs = ConsoleService::NewStub(channel);
@@ -134,13 +129,8 @@ std::shared_ptr<Server> Server::CreateFromTarget(
     auto message = fmt::format("FlightClient::Connect() failed, error = {}", client_res.status().ToString());
     throw std::runtime_error(message);
   }
-  gpr_log(GPR_DEBUG,
-          "%s: "
-          "FlightClient(%p) created, "
-          "target=%s",
-          "Server::CreateFromTarget",
-          static_cast<void*>(client_res->get()),
-          target.c_str());
+  VLOG(2) << "Server::CreateFromTarget: FlightClient(" << static_cast<void*>(client_res->get())
+          << ") created, target=" << target;
 
   std::string session_token;
   std::chrono::milliseconds expiration_interval;
@@ -185,13 +175,8 @@ std::shared_ptr<Server> Server::CreateFromTarget(
       std::move(ss), std::move(ts), std::move(cfs), std::move(its), std::move(*client_res),
       client_options.ExtraHeaders(), std::move(session_token), expiration_interval, next_handshake_time);
   result->keepAliveThread_ = std::thread(&SendKeepaliveMessages, result);
-  gpr_log(GPR_DEBUG,
-      "%s: "
-      "Server(%p) created, "
-      "target=%s",
-      "Server::CreateFromTarget",
-      static_cast<void*>(result.get()),
-      target.c_str());
+  VLOG(2) << "Server::CreateFromTarget: Server(" << static_cast<void*>(result.get())
+          << ") created, target=" << target;
   return result;
 }
 
@@ -223,16 +208,16 @@ Server::Server(Private,
 }
 
 Server::~Server() {
-  gpr_log(GPR_DEBUG, "%s: Destroyed.", me_.c_str());
+  VLOG(2) << me_ << ": Destroyed.";
 }
 
 void Server::Shutdown() {
-  gpr_log(GPR_DEBUG, "%s: Server Shutdown requested.", me_.c_str());
+  VLOG(2) << me_ << ": Server Shutdown requested.";
 
   std::unique_lock<std::mutex> guard(mutex_);
   if (cancelled_) {
     guard.unlock(); // to be nice
-    gpr_log(GPR_ERROR, "%s: Already cancelled.", me_.c_str());
+    LOG(ERROR) << me_ << ": Already cancelled.";
     return;
   }
   cancelled_ = true;
@@ -245,7 +230,7 @@ void Server::Shutdown() {
       ReleaseUnchecked(ticket);
     } catch (...) {
       auto what = GetWhat(std::current_exception());
-      gpr_log(GPR_INFO, "Server::Shutdown() is ignoring thrown exception: %s", what.c_str());
+      LOG(INFO) << "Server::Shutdown() is ignoring thrown exception: " << what;
     }
   }
 
@@ -307,12 +292,8 @@ void Server::SendRpc(const std::function<grpc::Status(grpc::ClientContext *)> &c
     bool disregard_cancellation_state) {
   using deephaven::dhcore::utility::TimePointToStr;
   auto now = std::chrono::system_clock::now();
-  gpr_log(GPR_DEBUG,
-      "Server(%p): "
-      "Sending RPC "
-      "at time %s.",
-      static_cast<void *>(this),
-      TimePointToStr(now).c_str());
+  VLOG(2) << "Server(" << static_cast<void *>(this) << "): Sending RPC at time "
+          << TimePointToStr(now) << ".";
 
   grpc::ClientContext ctx;
   ForEachHeaderNameAndValue([&ctx](const std::string &name, const std::string &value) {
@@ -353,7 +334,7 @@ void Server::SendKeepaliveMessages(const std::shared_ptr<Server> &self) {
     }
   }
 
-  gpr_log(GPR_INFO, "%s: Keepalive thread exiting.", self->me_.c_str());
+  LOG(INFO) << self->me_ << ": Keepalive thread exiting.";
 }
 
 bool Server::KeepaliveHelper() {
@@ -387,7 +368,7 @@ bool Server::KeepaliveHelper() {
       return configStub_->GetConfigurationConstants(ctx, req, &resp);
     });
   } catch (...) {
-    gpr_log(GPR_ERROR, "%s: Keepalive failed.", me().c_str());
+    LOG(ERROR) << me() << ": Keepalive failed.";
     return true;
   }
 

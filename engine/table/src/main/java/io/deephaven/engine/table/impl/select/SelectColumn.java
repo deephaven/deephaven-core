@@ -231,8 +231,7 @@ public interface SelectColumn extends Selectable, ConcurrencyControl<Selectable>
     WritableColumnSource<?> newFlatDestInstance(long size);
 
     /**
-     *
-     * @return
+     * @return true if this SelectColumn is retaining an existing column unchanged
      */
     boolean isRetain();
 

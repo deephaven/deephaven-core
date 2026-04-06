@@ -40,7 +40,7 @@ public class SeriesDataSource {
     }
 
     /**
-     * the axis that this source should be drawn on.
+     * The axis that this source should be drawn on.
      * 
      * @return dh.plot.Axis
      */
@@ -50,7 +50,7 @@ public class SeriesDataSource {
     }
 
     /**
-     * the feature of this series represented by this source. See the <b>SourceType</b> enum for more details.
+     * The feature of this series represented by this source. See the {@code SourceType} enum for more details.
      * 
      * @return int
      */
@@ -61,7 +61,7 @@ public class SeriesDataSource {
     }
 
     /**
-     * the type of data stored in the underlying table's Column.
+     * The type of data stored in the underlying table's column.
      * 
      * @return String
      */

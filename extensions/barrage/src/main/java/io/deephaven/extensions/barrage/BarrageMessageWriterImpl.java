@@ -545,7 +545,7 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
         return getSnapshotView(options, null, false, null, null);
     }
 
-    private final class SnapshotView implements RecordBatchMessageView {
+    protected class SnapshotView implements RecordBatchMessageView {
         private final BarrageSnapshotOptions options;
         private final boolean reverseViewport;
         private final BitSet subscribedColumns;
@@ -555,7 +555,7 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
         private final WritableRowSet clientAddedRows;
         private final WritableRowSet clientAddedRowOffsets;
 
-        public SnapshotView(final BarrageSnapshotOptions options,
+        protected SnapshotView(final BarrageSnapshotOptions options,
                 @Nullable final RowSet viewport,
                 final boolean reverseViewport,
                 @Nullable final RowSet keyspaceViewport,
@@ -627,7 +627,7 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
             throw new UnsupportedOperationException("asked for mod row on SnapshotView");
         }
 
-        private ByteBuffer getSnapshotMetadata() throws IOException {
+        protected ByteBuffer getSnapshotMetadata() throws IOException {
             final FlatBufferBuilder metadata = new FlatBufferBuilder();
 
             int effectiveViewportOffset = 0;

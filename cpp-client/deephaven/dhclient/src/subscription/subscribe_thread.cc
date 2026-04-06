@@ -17,7 +17,7 @@
 #include <thread>
 #include <utility>
 #include <vector>
-#include <grpc/support/log.h>
+#include <absl/log/log.h>
 #include "deephaven/client/arrowutil/arrow_column_source.h"
 #include "deephaven/client/arrowutil/arrow_array_converter.h"
 #include "deephaven/client/server/server.h"
@@ -211,11 +211,11 @@ UpdateProcessor::~UpdateProcessor() {
 
 void UpdateProcessor::Cancel() {
   constexpr const char *const kMe = "UpdateProcessor::Cancel";
-  gpr_log(GPR_INFO, "%s: Subscription Shutdown requested.", kMe);
+  LOG(INFO) << kMe << ": Subscription Shutdown requested.";
   std::unique_lock guard(mutex_);
   if (cancelled_) {
     guard.unlock(); // to be nice
-    gpr_log(GPR_ERROR, "%s: Already cancelled.", kMe);
+    LOG(ERROR) << kMe << ": Already cancelled.";
     return;
   }
   cancelled_ = true;

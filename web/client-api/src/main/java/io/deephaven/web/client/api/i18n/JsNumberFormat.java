@@ -20,11 +20,11 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * Exported wrapper of the GWT NumberFormat, plus LongWrapper support
+ * Exported wrapper of the GWT NumberFormat, plus {@link LongWrapper} support.
  *
  * Utility class to parse and format numbers, using the same format patterns as are supported by the standard Java
- * implementation used in the Deephaven server and swing client. Works for numeric types including BigInteger and
- * BigDecimal.
+ * implementation used in the Deephaven server and swing client. Works for numeric types including {@link LongWrapper},
+ * {@link BigIntegerWrapper}, and {@link BigDecimalWrapper}.
  */
 @JsType(namespace = "dh.i18n", name = "NumberFormat")
 public class JsNumberFormat {
@@ -79,9 +79,9 @@ public class JsNumberFormat {
     private static final Map<String, JsNumberFormat> cache = new HashMap<>();
 
     /**
-     * a number format instance matching the specified format. If this format has not been specified before, a new
+     * A number format instance matching the specified format. If this format has not been specified before, a new
      * instance will be created and cached for later reuse. Prefer this method to calling the constructor directly to
-     * take advantage of caching
+     * take advantage of caching.
      * 
      * @param pattern
      * @return dh.i18n.NumberFormat
@@ -102,8 +102,8 @@ public class JsNumberFormat {
     }
 
     /**
-     * Formats the specified number (or Java <b>long</b>, <b>BigInteger</b> or <b>BigDecimal</b> value) using the cached
-     * format matching the given pattern string.
+     * Formats the specified number (or {@link LongWrapper}, {@link BigIntegerWrapper}, or {@link BigDecimalWrapper}
+     * value) using the cached format matching the given pattern string.
      *
      * @param pattern
      * @param number
@@ -117,8 +117,9 @@ public class JsNumberFormat {
     private final NumberFormat wrapped;
 
     /**
-     * Creates a new number format instance. This generally should be avoided in favor of the static `getFormat`
-     * function, which will create and cache an instance so that later calls share the same instance.
+     * Creates a new number format instance. This generally should be avoided in favor of the static
+     * {@link #getFormat(String)} function, which will create and cache an instance so that later calls share the same
+     * instance.
      *
      * @param pattern
      */
@@ -148,7 +149,8 @@ public class JsNumberFormat {
     }
 
     /**
-     * Formats the specified number (or Java `long`, `BigInteger` or `BigDecimal` value) using this instance's pattern.
+     * Formats the specified number (or Java {@code long}, {@code BigInteger} or {@code BigDecimal} value) using this
+     * instance's pattern.
      *
      * @param number
      * @return String

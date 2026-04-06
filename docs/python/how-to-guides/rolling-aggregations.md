@@ -156,6 +156,20 @@ source = empty_table(10).update(
 result = source.update_by(ops=forward_fill(cols=[]), by=["Letter"])
 ```
 
+## `update_by` vs `updateby`
+
+This document refers to [`update_by`](../reference/table-operations/update-by-operations/updateBy.md) and [`updateby`](/core/pydoc/code/deephaven.updateby.html#module-deephaven.updateby) throughout. They are _not_ identical:
+
+- [`update_by`](../reference/table-operations/update-by-operations/updateBy.md) always refers to the [`update_by`](../reference/table-operations/update-by-operations/updateBy.md) _table operation_. This is always invoked as a method on a table:
+
+```python skip-test
+result = source.update_by(...)
+```
+
+- [`updateby`](/core/pydoc/code/deephaven.updateby.html#module-deephaven.updateby) refers to the Python module housing all of the functions and related plumbing. The module contains the `update_by` operations themselves, such as `ema_tick` and `rolling_formula_tick`.
+
+This distinction will be important to keep in mind as you progress through the document.
+
 ## Cumulative aggregations
 
 Cumulative aggregations are the simplest operations in the [`updateby`](/core/pydoc/code/deephaven.updateby.html#module-deephaven.updateby) Python module. They are statistics computed over all previous data points in a series. The following cumulative statistics are supported:
@@ -166,6 +180,8 @@ Cumulative aggregations are the simplest operations in the [`updateby`](/core/py
 | Maximum              | [`cum_max`](../reference/table-operations/update-by-operations/cum-max.md)                |
 | Sum                  | [`cum_sum`](../reference/table-operations/update-by-operations/cum-sum.md)                |
 | Product              | [`cum_prod`](../reference/table-operations/update-by-operations/cum-prod.md)              |
+
+### Cumulative sum
 
 To illustrate a cumulative statistic, consider the cumulative sum. For each row, this operation calculates the sum of all previous values in a column, including the current row's value. The following illustration shows this:
 
@@ -183,6 +199,26 @@ result = source.update_by(cum_sum("SumX=X"))
 
 > [!NOTE]
 > The syntax `SumX=X` indicates that the resultant column from the operation is named `SumX`.
+
+### Cumulative average
+
+The [`updateby`](/core/pydoc/code/deephaven.updateby.html#module-deephaven.updateby) module does not directly support a function to compute the cumulative average of a column. However, you can still compute the cumulative average by using two [`cum_sum`](../reference/table-operations/update-by-operations/cum-sum.md) operations, where one of them is applied over a column of ones:
+
+```python order=result
+from deephaven.updateby import cum_sum
+from deephaven import empty_table
+
+source = empty_table(8).update("X = ii")
+
+result = (
+    source.update("Ones = 1")
+    .update_by(cum_sum(cols=["SumX=X", "Ones"]))
+    .update("CumAvgX = SumX / Ones")
+    .drop_columns(cols=["SumX", "Ones"])
+)
+```
+
+This demonstrates the flexibility of the [`update_by`](../reference/table-operations/update-by-operations/updateBy.md) table operation. If a particular kind of calculation is unavailable, it's almost always possible to accomplish with Deephaven.
 
 ## Windowed aggregations
 
@@ -439,6 +475,230 @@ In this time-based example:
 - `decay_time="PT4s"`: Medium responsiveness, data loses ~63% influence after 4 seconds.
 - `decay_time="PT6s"`: Slower response, data loses ~63% influence after 6 seconds.
 
+## Bollinger Bands
+
+Bollinger bands are an application of moving statistics frequently used in financial applications.
+
+To compute Bollinger Bands:
+
+1. Compute the moving average.
+2. Compute the moving standard deviation.
+3. Compute the upper and lower envelopes.
+
+### Tick-based Bollinger Bands using simple moving statistics
+
+When computing tick-based Bollinger bands, [`update_by`](../reference/table-operations/update-by-operations/updateBy.md), [`rolling_avg_tick`](../reference/table-operations/update-by-operations/rolling-avg-tick.md) and [`rolling_std_tick`](../reference/table-operations/update-by-operations/rolling-std-tick.md) are used to compute the average and envelope. Here, `rev_ticks` is the moving average decay rate in ticks and is used to specify the size of the rolling window.
+
+```python order=f_abc,f_xyz,source,result
+from deephaven.updateby import rolling_avg_tick, rolling_std_tick
+from deephaven import empty_table
+from deephaven.plot import Figure
+
+# Generate some random example data
+
+source = empty_table(1000).update(
+    [
+        "Timestamp='2023-01-13T12:00 ET' + i*MINUTE",
+        "Ticker = i%2==0 ? `ABC` : `XYZ`",
+        "Price = i%2==0 ? 100*sin(i/40)+100*random() : 100*cos(i/40)+100*random()+i/2",
+    ]
+)
+
+# Compute the Bollinger Bands
+
+rev_ticks = 20
+
+# Coverage parameter - determines the width of the bands
+w = 2
+
+result = source.update_by(
+    [
+        rolling_avg_tick(cols="AvgPrice=Price", rev_ticks=rev_ticks),
+        rolling_std_tick(cols="StdPrice=Price", rev_ticks=rev_ticks),
+    ],
+    by="Ticker",
+).update(["Upper = AvgPrice + w*StdPrice", "Lower = AvgPrice - w*StdPrice"])
+
+# Plot the Bollinger Bands
+
+
+def plot_bollinger(t, ticker):
+    d = t.where(f"Ticker=`{ticker}`")
+    plot = (
+        Figure()
+        .plot_xy(series_name="Price", t=d, x="Timestamp", y="Price")
+        .plot_xy(series_name="AvgPrice", t=d, x="Timestamp", y="AvgPrice")
+        .plot_xy(series_name="Upper", t=d, x="Timestamp", y="Upper")
+        .plot_xy(series_name="Lower", t=d, x="Timestamp", y="Lower")
+        .show()
+    )
+    return d
+
+
+f_abc = plot_bollinger(result, "ABC")
+f_xyz = plot_bollinger(result, "XYZ")
+```
+
+### Time-based Bollinger Bands using simple moving statistics
+
+When computing time-based Bollinger Bands, [`update_by`](../reference/table-operations/update-by-operations/updateBy.md), [`rolling_avg_time`](../reference/table-operations/update-by-operations/rolling-avg-time.md) and [`rolling_std_time`](../reference/table-operations/update-by-operations/rolling-std-time.md) are used to compute the average and envelope. Here, `rev_time` is the moving average window time.
+
+```python order=f_abc,f_xyz,source,result
+from deephaven.updateby import rolling_avg_time, rolling_std_time
+from deephaven import empty_table
+from deephaven.plot import Figure
+
+# Generate some random example data
+
+source = empty_table(1000).update(
+    [
+        "Timestamp='2023-01-13T12:00 ET' + i*MINUTE",
+        "Ticker = i%2==0 ? `ABC` : `XYZ`",
+        "Price = i%2==0 ? 100*sin(i/40)+100*random() : 100*cos(i/40)+100*random()+i/2",
+    ]
+)
+
+# Compute the Bollinger Bands
+
+rev_time = "PT00:20:00"
+# Coverage parameter - determines the width of the bands
+w = 2
+
+result = source.update_by(
+    [
+        rolling_avg_time(ts_col="Timestamp", cols="AvgPrice=Price", rev_time=rev_time),
+        rolling_std_time(ts_col="Timestamp", cols="StdPrice=Price", rev_time=rev_time),
+    ],
+    by="Ticker",
+).update(["Upper = AvgPrice + w*StdPrice", "Lower = AvgPrice - w*StdPrice"])
+
+# Plot the Bollinger Bands
+
+
+def plot_bollinger(t, ticker):
+    d = t.where(f"Ticker=`{ticker}`")
+    plot = (
+        Figure()
+        .plot_xy(series_name="Price", t=d, x="Timestamp", y="Price")
+        .plot_xy(series_name="AvgPrice", t=d, x="Timestamp", y="AvgPrice")
+        .plot_xy(series_name="Upper", t=d, x="Timestamp", y="Upper")
+        .plot_xy(series_name="Lower", t=d, x="Timestamp", y="Lower")
+        .show()
+    )
+    return d
+
+
+f_abc = plot_bollinger(result, "ABC")
+f_xyz = plot_bollinger(result, "XYZ")
+```
+
+### Tick-based Bollinger Bands using exponential moving statistics
+
+When computing tick-based Bollinger Bands, [`update_by`](../reference/table-operations/update-by-operations/updateBy.md), [`ema_tick`](../reference/table-operations/update-by-operations/ema-tick.md) and [`emstd_tick`](../reference/table-operations/update-by-operations/emstd-tick.md) are used to compute the average and envelope. Here, `decay_ticks` is the moving average decay rate in ticks and is used to specify the weighting of previous data points.
+
+```python order=f_abc,f_xyz,source,result
+from deephaven.updateby import ema_tick, emstd_tick
+from deephaven import empty_table
+from deephaven.plot import Figure
+
+# Generate some random example data
+
+source = empty_table(1000).update(
+    [
+        "Timestamp='2023-01-13T12:00 ET' + i*MINUTE",
+        "Ticker = i%2==0 ? `ABC` : `XYZ`",
+        "Price = i%2==0 ? 100*sin(i/40)+100*random() : 100*cos(i/40)+100*random()+i/2",
+    ]
+)
+
+# Compute the Bollinger Bands
+
+decay_ticks = 20
+# Coverage parameter - determines the width of the bands
+w = 2
+
+result = source.update_by(
+    [
+        ema_tick(decay_ticks=decay_ticks, cols="EmaPrice=Price"),
+        emstd_tick(decay_ticks=decay_ticks, cols="StdPrice=Price"),
+    ],
+    by="Ticker",
+).update(["Upper = EmaPrice + w*StdPrice", "Lower = EmaPrice - w*StdPrice"])
+
+# Plot the Bollinger Bands
+
+
+def plot_bollinger(t, ticker):
+    d = t.where(f"Ticker=`{ticker}`")
+    plot = (
+        Figure()
+        .plot_xy(series_name="Price", t=d, x="Timestamp", y="Price")
+        .plot_xy(series_name="AvgPrice", t=d, x="Timestamp", y="EmaPrice")
+        .plot_xy(series_name="Upper", t=d, x="Timestamp", y="Upper")
+        .plot_xy(series_name="Lower", t=d, x="Timestamp", y="Lower")
+        .show()
+    )
+    return d
+
+
+f_abc = plot_bollinger(result, "ABC")
+f_xyz = plot_bollinger(result, "XYZ")
+```
+
+### Time-based Bollinger Bands using exponential moving statistics
+
+When computing time-based Bollinger Bands, [`update_by`](../reference/table-operations/update-by-operations/updateBy.md), [`ema_time`](../reference/table-operations/update-by-operations/ema-time.md) and [`emstd_time`](../reference/table-operations/update-by-operations/emstd-time.md) are used to compute the average and envelope. Here, `decay_time` is the moving average decay rate in time and is used to specify the weighting of new data points.
+
+```python order=f_abc,f_xyz,source,result
+from deephaven.updateby import ema_time, emstd_time
+from deephaven import empty_table
+from deephaven.plot import Figure
+
+# Generate some random example data
+
+source = empty_table(1000).update(
+    [
+        "Timestamp='2023-01-13T12:00 ET' + i*MINUTE",
+        "Ticker = i%2==0 ? `ABC` : `XYZ`",
+        "Price = i%2==0 ? 100*sin(i/40)+100*random() : 100*cos(i/40)+100*random()+i/2",
+    ]
+)
+
+# Compute the Bollinger Bands
+
+decay_time = "PT00:20:00"
+
+# Coverage parameter - determines the width of the bands
+w = 2
+
+result = source.update_by(
+    [
+        ema_time(ts_col="Timestamp", decay_time=decay_time, cols="EmaPrice=Price"),
+        emstd_time(ts_col="Timestamp", decay_time=decay_time, cols="StdPrice=Price"),
+    ],
+    by="Ticker",
+).update(["Upper = EmaPrice + w*StdPrice", "Lower = EmaPrice - w*StdPrice"])
+
+# Plot the Bollinger Bands
+
+
+def plot_bollinger(t, ticker):
+    d = t.where(f"Ticker=`{ticker}`")
+    plot = (
+        Figure()
+        .plot_xy(series_name="Price", t=d, x="Timestamp", y="Price")
+        .plot_xy(series_name="AvgPrice", t=d, x="Timestamp", y="EmaPrice")
+        .plot_xy(series_name="Upper", t=d, x="Timestamp", y="Upper")
+        .plot_xy(series_name="Lower", t=d, x="Timestamp", y="Lower")
+        .show()
+    )
+    return d
+
+
+f_abc = plot_bollinger(result, "ABC")
+f_xyz = plot_bollinger(result, "XYZ")
+```
+
 #### Additional rolling operations
 
 Deephaven offers two additional rolling operations that are not simple statistics, but rather for grouping or custom formulas:
@@ -534,32 +794,6 @@ result = source.update_by(
     by="Letter",
 )
 ```
-
-## Handling erroneous data
-
-It's common for tables to contain null, NaN, or other erroneous values. Different [`update_by`](../reference/table-operations/update-by-operations/updateBy.md) operations handle these values in various ways:
-
-### Operations with explicit error handling controls
-
-Certain operations can be configured to handle erroneous data through control parameters:
-
-- [`ema_tick`](../reference/table-operations/update-by-operations/ema-tick.md) and [`ema_time`](../reference/table-operations/update-by-operations/ema-time.md): Use `op_control` parameter with [OperationControl](../reference/table-operations/update-by-operations/OperationControl.md).
-- [`delta`](../reference/table-operations/update-by-operations/delta.md): Use `delta_control` parameter with [DeltaControl](../reference/table-operations/update-by-operations/DeltaControl.md).
-
-### Default null handling behavior
-
-Most [`update_by`](../reference/table-operations/update-by-operations/updateBy.md) operations have consistent default behavior for null values:
-
-- **Cumulative operations** (`cum_sum`, `cum_max`, etc.): Skip null values and continue with the last valid result.
-- **Rolling operations** (`rolling_avg_tick`, `rolling_sum_time`, etc.): Exclude null values from window calculations.
-- **Exponential operations** (`ema_tick`, `emmax_time`, etc.): Skip null values unless configured otherwise via `op_control`.
-
-### Specialized null handling operations
-
-- **[`forward_fill`](../reference/table-operations/update-by-operations/forward-fill.md)**: Specifically designed to replace null values with the most recent non-null value.
-- **[`delta`](../reference/table-operations/update-by-operations/delta.md)**: Configurable null handling through `DeltaControl` (see [Sequential difference](#sequential-difference) section).
-
-For detailed configuration options, see the [OperationControl reference guide](../reference/table-operations/update-by-operations/OperationControl.md).
 
 ## Additional operations
 
@@ -826,6 +1060,32 @@ For more information on splitting temporal data into buckets of time, see [Downs
 - Rolling aggregations are more performant than rolling groups followed by calculations.
 - Tick-based operations maintain separate windows per group, while time-based operations use timestamps across the entire table.
 - Exponential moving aggregations use all historical data but weight recent observations more heavily.
+
+## Handling erroneous data
+
+It's common for tables to contain null, NaN, or other erroneous values. Different [`update_by`](../reference/table-operations/update-by-operations/updateBy.md) operations handle these values in various ways:
+
+### Operations with explicit error handling controls
+
+Certain operations can be configured to handle erroneous data through control parameters:
+
+- [`ema_tick`](../reference/table-operations/update-by-operations/ema-tick.md) and [`ema_time`](../reference/table-operations/update-by-operations/ema-time.md): Use `op_control` parameter with [OperationControl](../reference/table-operations/update-by-operations/OperationControl.md).
+- [`delta`](../reference/table-operations/update-by-operations/delta.md): Use `delta_control` parameter with [DeltaControl](../reference/table-operations/update-by-operations/DeltaControl.md).
+
+### Default null handling behavior
+
+Most [`update_by`](../reference/table-operations/update-by-operations/updateBy.md) operations have consistent default behavior for null values:
+
+- **Cumulative operations** (`cum_sum`, `cum_max`, etc.): Skip null values and continue with the last valid result.
+- **Rolling operations** (`rolling_avg_tick`, `rolling_sum_time`, etc.): Exclude null values from window calculations.
+- **Exponential operations** (`ema_tick`, `emmax_time`, etc.): Skip null values unless configured otherwise via `op_control`.
+
+### Specialized null handling operations
+
+- **[`forward_fill`](../reference/table-operations/update-by-operations/forward-fill.md)**: Specifically designed to replace null values with the most recent non-null value.
+- **[`delta`](../reference/table-operations/update-by-operations/delta.md)**: Configurable null handling through `DeltaControl` (see [Null handling](#null-handling) section).
+
+For detailed configuration options, see the [OperationControl reference guide](../reference/table-operations/update-by-operations/OperationControl.md).
 
 ## Related documentation
 

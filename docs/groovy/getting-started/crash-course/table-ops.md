@@ -46,7 +46,7 @@ The following code block adds two new columns to `t`.
 tUpdateViewed = t.updateView("IntRowIndex = i", "Group = IntRowIndex % 5")
 ```
 
-[`lazyUpdate`](../../reference/table-operations/select/lazy-update.md) creates _memoized_ columns. A memoized column performs calculations immediately and stores them in memory, but a calculation is only performed and stored once for each unique set of input values.
+[`lazyUpdate`](../../reference/table-operations/select/lazy-update.md) creates _memoized_ columns. A memoized column computes values on-demand like a formula column, but caches the results. A calculation is only performed once for each unique set of input values, and subsequent requests for the same inputs return the cached result.
 
 The following code block adds two new columns to `tUpdated`.
 
@@ -63,7 +63,7 @@ tLazyUpdated = tUpdated.lazyUpdate("GroupSqrt = sqrt(Group)", "GroupSquared = Gr
 
 [`select`](../../reference/table-operations/select/select.md) and [`view`](../../reference/table-operations/select/view.md) both create tables containing subsets of input columns and new columns computed from input columns. The big difference between the methods is how much memory they allocate and when formulas are evaluated. Performance and memory considerations dictate the best method for a particular use case.
 
-[`select`](../../reference/table-operations/select/select.md), like [`update`](../../reference/table-operations/select/update.md), creates _in-memory_ columns. The following code block selects two existing columns from `t_updated` and adds a new column.
+[`select`](../../reference/table-operations/select/select.md), like [`update`](../../reference/table-operations/select/update.md), creates _in-memory_ columns. The following code block selects two existing columns from `tUpdated` and adds a new column.
 
 ```groovy test-set=1
 tSelected = tUpdated.select("Timestamp", "IntRowIndex", "RowPlusOne = IntRowIndex + 1")
@@ -74,6 +74,8 @@ tSelected = tUpdated.select("Timestamp", "IntRowIndex", "RowPlusOne = IntRowInde
 ```groovy test-set=1
 tViewed = tUpdated.view("Timestamp", "LongRowIndex", "RowPlusOne = LongRowIndex + 1")
 ```
+
+There's a lot to consider when choosing between in-memory, formula, and memoized columns in queries. For more information, see [choose the right selection method](../../how-to-guides/use-select-view-update.md#choose-the-right-column-selection-method).
 
 ### Drop columns
 
@@ -89,8 +91,6 @@ Alternatively, [`view`](../../reference/table-operations/select/view.md) and [`s
 tDroppedViaView = tUpdated.view("Timestamp", "Group")
 tDroppedViaSelect = tUpdated.select("Timestamp", "Group")
 ```
-
-There's a lot to consider when choosing between in-memory, formula, and memoized columns in queries. For more information, see [choose the right selection method](../../how-to-guides/use-select-view-update.md#choose-the-right-column-selection-method).
 
 ## Filter
 
@@ -153,7 +153,7 @@ See the [filtering guide](../../how-to-guides/use-filters.md) for more informati
 
 ## Sort
 
-The [`sort`](../../reference/table-operations/sort/sort.md) method sorts a table based on one or more columns. The following code block sorts `tStatic` by `X` in ascending order.
+The [`sort`](../../reference/table-operations/sort/sort.md) method sorts a table based on one or more columns. The following code block sorts `tUpdated` by `Group` in ascending order.
 
 ```groovy test-set=1
 tSorted = tUpdated.sort("Group")
@@ -419,7 +419,7 @@ tRight1 = newTable(
 tExactJoined = tLeft1.exactJoin(tRight1, "Color")
 ```
 
-Consider the following tables, which are similar to the previous example. However, in this case, `tLeft2` contains the color `Purple`, which is not in `tRight2`.
+Consider the following tables, which are similar to the previous example. However, in this case, `tLeft2` contains the color `Green`, which is not in `tRight2`.
 
 ```groovy test-set=6 order=tLeft2,tRight2
 tLeft2 = newTable(

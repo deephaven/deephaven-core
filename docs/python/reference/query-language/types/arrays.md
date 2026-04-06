@@ -25,7 +25,7 @@ result = source.update(formulas=["UpdatedValues = Values_[i] + 1"])
 > The [special variables](../variables/special-variables.md), `i` and `ii`, are unreliable within a ticking table.
 > Inconsistent results occur since previously created row indexes do not automatically update.
 
-[Built-in array methods](/core/javadoc/io/deephaven/vector/Vector.html) like `size()` can be used within queries.
+[Built-in array methods](/core/javadoc/io/deephaven/vector/Vector.html) like `size` can be used within queries.
 
 ```python order=source,result
 from deephaven import new_table

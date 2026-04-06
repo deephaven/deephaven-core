@@ -101,6 +101,7 @@ public class ExecutionContext {
     private final QueryCompiler queryCompiler;
     private final UpdateGraph updateGraph;
     private final OperationInitializer operationInitializer;
+    private final ClassLoader contextClassLoader;
 
     private ExecutionContext(
             final boolean isSystemic,
@@ -109,7 +110,8 @@ public class ExecutionContext {
             final QueryScope queryScope,
             final QueryCompiler queryCompiler,
             final UpdateGraph updateGraph,
-            OperationInitializer operationInitializer) {
+            final OperationInitializer operationInitializer,
+            final ClassLoader classLoader) {
         this.isSystemic = isSystemic;
         this.authContext = authContext;
         this.queryLibrary = Objects.requireNonNull(queryLibrary);
@@ -117,6 +119,7 @@ public class ExecutionContext {
         this.queryCompiler = Objects.requireNonNull(queryCompiler);
         this.updateGraph = Objects.requireNonNull(updateGraph);
         this.operationInitializer = Objects.requireNonNull(operationInitializer);
+        this.contextClassLoader = classLoader;
     }
 
     /**
@@ -131,7 +134,7 @@ public class ExecutionContext {
             return this;
         }
         return new ExecutionContext(isSystemic, authContext, queryLibrary, queryScope, queryCompiler, updateGraph,
-                operationInitializer);
+                operationInitializer, contextClassLoader);
     }
 
     /**
@@ -146,7 +149,7 @@ public class ExecutionContext {
             return this;
         }
         return new ExecutionContext(isSystemic, authContext, queryLibrary, queryScope, queryCompiler, updateGraph,
-                operationInitializer);
+                operationInitializer, contextClassLoader);
     }
 
     /**
@@ -161,7 +164,7 @@ public class ExecutionContext {
             return this;
         }
         return new ExecutionContext(isSystemic, authContext, queryLibrary, queryScope, queryCompiler, updateGraph,
-                operationInitializer);
+                operationInitializer, contextClassLoader);
     }
 
     public ExecutionContext withOperationInitializer(final OperationInitializer operationInitializer) {
@@ -169,7 +172,7 @@ public class ExecutionContext {
             return this;
         }
         return new ExecutionContext(isSystemic, authContext, queryLibrary, queryScope, queryCompiler, updateGraph,
-                operationInitializer);
+                operationInitializer, contextClassLoader);
     }
 
     /**
@@ -184,7 +187,22 @@ public class ExecutionContext {
             return this;
         }
         return new ExecutionContext(isSystemic, authContext, queryLibrary, queryScope, queryCompiler, updateGraph,
-                operationInitializer);
+                operationInitializer, contextClassLoader);
+    }
+
+    /**
+     * Returns, or creates, an execution context with the given value for {@code classLoader} and existing values for
+     * the other members.
+     *
+     * @param classLoader the classloader to use instead
+     * @return the execution context
+     */
+    public ExecutionContext withClassLoader(ClassLoader classLoader) {
+        if (classLoader == this.contextClassLoader) {
+            return this;
+        }
+        return new ExecutionContext(isSystemic, authContext, queryLibrary, queryScope, queryCompiler, updateGraph,
+                operationInitializer, classLoader);
     }
 
 
@@ -216,10 +234,18 @@ public class ExecutionContext {
     public SafeCloseable open() {
         // save the current context
         final ExecutionContext oldExecutionContext = currentContext.get();
+        // record the old classloader
+        final ClassLoader oldClassLoader = Thread.currentThread().getContextClassLoader();
 
         ExecutionContext.setContext(this);
 
+        // set the context classloader to the one captured by this execution context, if present
+        Thread.currentThread().setContextClassLoader(contextClassLoader);
+
         return () -> {
+            // restore the old classloader
+            Thread.currentThread().setContextClassLoader(oldClassLoader);
+
             // restore the old context
             ExecutionContext.setContext(oldExecutionContext);
         };
@@ -260,6 +286,7 @@ public class ExecutionContext {
         private QueryCompiler queryCompiler = PoisonedQueryCompiler.INSTANCE;
         private UpdateGraph updateGraph = PoisonedUpdateGraph.INSTANCE;
         private OperationInitializer operationInitializer = PoisonedOperationInitializer.INSTANCE;
+        private ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
 
         private Builder() {
             // propagate the auth context from the current context
@@ -428,12 +455,21 @@ public class ExecutionContext {
         }
 
         /**
+         * Use the specified classloader instead of the current thread's context classloader.
+         */
+        @ScriptApi
+        public Builder setClassLoader(ClassLoader classLoader) {
+            this.classLoader = classLoader;
+            return this;
+        }
+
+        /**
          * @return the newly instantiated ExecutionContext
          */
         @ScriptApi
         public ExecutionContext build() {
             return new ExecutionContext(isSystemic, authContext, queryLibrary, queryScope, queryCompiler, updateGraph,
-                    operationInitializer);
+                    operationInitializer, classLoader);
         }
     }
 }

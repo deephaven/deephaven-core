@@ -18,8 +18,8 @@ import jsinterop.annotations.*;
 import jsinterop.base.Js;
 
 /**
- * Defines one axis used with by series. These instances will be found both on the Chart and the Series instances, and
- * may be shared between Series instances.
+ * Defines one axis used by series. These instances will be found both on the Chart and the Series instances, and may be
+ * shared between Series instances.
  */
 @TsInterface
 @TsName(namespace = "dh.plot", name = "Axis")
@@ -67,7 +67,7 @@ public class JsAxis {
     }
 
     /**
-     * The type for this axis. See <b>AxisFormatType</b> enum for more details.
+     * The type for this axis. See {@code AxisFormatType} enum for more details.
      * 
      * @return int
      */
@@ -78,7 +78,7 @@ public class JsAxis {
     }
 
     /**
-     * The type for this axis, indicating how it will be drawn. See <b>AxisType</b> enum for more details.
+     * The type for this axis, indicating how it will be drawn. See {@code AxisType} enum for more details.
      * 
      * @return int
      */
@@ -89,7 +89,7 @@ public class JsAxis {
     }
 
     /**
-     * The position for this axis. See <b>AxisPosition</b> enum for more details.
+     * The position for this axis. See {@code AxisPosition} enum for more details.
      * 
      * @return int
      */
@@ -210,11 +210,11 @@ public class JsAxis {
     }
 
     /**
-     * Indicates that this axis is only `widthInPixels` wide, so any extra data can be downsampled out, if this can be
-     * done losslessly. The second two arguments represent the current zoom range of this axis, and if provided, most of
-     * the data outside of this range will be filtered out automatically and the visible width mapped to that range.
-     * When the UI zooms, pans, or resizes, this method should be called again to update these three values to ensure
-     * that data is correct and current.
+     * Indicates that this axis is only {@code widthInPixels} wide, so any extra data can be downsampled out, if this
+     * can be done losslessly. The second two arguments represent the current zoom range of this axis, and if provided,
+     * most of the data outside of this range will be filtered out automatically and the visible width mapped to that
+     * range. When the UI zooms, pans, or resizes, this method should be called again to update these three values to
+     * ensure that data is correct and current.
      *
      * @param pixelCount
      * @param min

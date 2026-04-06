@@ -132,7 +132,7 @@ public class JsWidgetExportedObject implements ServerObject {
 
     /**
      * Releases the server-side resources associated with this object, regardless of whether other client-side objects
-     * exist that also use that object. Should not be called after fetch() has been invoked.
+     * exist that also use that object. Should not be called after {@code fetch} has been invoked.
      */
     @JsMethod
     public void close() {

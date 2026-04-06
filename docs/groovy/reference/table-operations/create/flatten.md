@@ -36,4 +36,4 @@ println result.isFlat()
 
 ## Related documentation
 
-- [Java](https://deephaven.io/core/javadoc/io/deephaven/engine/table/Table.html#flatten())
+- [Javadoc](https://deephaven.io/core/javadoc/io/deephaven/engine/table/Table.html#flatten())

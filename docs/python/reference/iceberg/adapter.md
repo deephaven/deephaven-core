@@ -122,4 +122,4 @@ cloud_adapter = iceberg.adapter(
 - [`IcebergWriteInstructions`](./iceberg-write-instructions.md)
 - [`SortOrderProvider`](./sort-order-provider.md)
 - [`TableParquetWriterOptions`](./table-parquet-writer-options.md)
-- [Pydoc](/core/pydoc/code/deephaven.experimental.iceberg.html#deephaven.experimental.iceberg.adapter)
+- [Pydoc](https://docs.deephaven.io/core/pydoc/code/deephaven.experimental.iceberg.html#deephaven.experimental.iceberg.adapter)
