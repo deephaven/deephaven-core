@@ -4,6 +4,7 @@
 package io.deephaven.web.client.api.storage;
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.ByteStringAccess;
 import elemental2.core.JsArray;
 import elemental2.core.Uint8Array;
 import elemental2.dom.Blob;
@@ -59,11 +60,12 @@ public class JsStorageService {
      */
     @JsMethod
     public Promise<JsArray<JsItemDetails>> listItems(String path, @JsOptional String glob) {
-        ListItemsRequest req = ListItemsRequest.newBuilder()
-                .setPath(path)
-                .setFilterGlob(glob)
-                .build();
-        return Callbacks.<ListItemsResponse>grpcUnaryPromise(c -> client().listItems(req, c))
+        ListItemsRequest.Builder builder = ListItemsRequest.newBuilder()
+                .setPath(path);
+        if (glob != null) {
+            builder.setFilterGlob(glob);
+        }
+        return Callbacks.<ListItemsResponse>grpcUnaryPromise(c -> client().listItems(builder.build(), c))
                 .then(response -> Promise
                         .resolve(response.getItemsList()
                                 .stream()
@@ -132,7 +134,7 @@ public class JsStorageService {
     public Promise<JsFileContents> saveFile(String path, JsFileContents contents, @JsOptional Boolean allowOverwrite) {
         return contents.arrayBuffer().then(ab -> {
             SaveFileRequest.Builder req = SaveFileRequest.newBuilder();
-            req.setContents(ByteString.copyFrom(TypedArrayHelper.wrap(ab)));
+            req.setContents(ByteStringAccess.wrap(TypedArrayHelper.wrap(ab)));
             req.setPath(path);
 
             if (allowOverwrite != null) {

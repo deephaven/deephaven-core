@@ -8,7 +8,6 @@ import io.deephaven.web.client.api.event.HasEventHandling;
 import io.grpc.Context;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
-import jsinterop.base.Js;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.function.Consumer;
@@ -30,7 +29,7 @@ public class ResponseStreamWrapper<T> extends HasEventHandling {
     }
 
     private final Context.CancellableContext cancellation;
-    private final StreamObserver<T> observer = new StreamObserver<T>() {
+    private final StreamObserver<T> observer = new StreamObserver<>() {
         @Override
         public void onNext(T value) {
             fireEvent(DATA_EVENT, value);

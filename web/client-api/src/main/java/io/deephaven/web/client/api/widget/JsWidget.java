@@ -5,6 +5,7 @@ package io.deephaven.web.client.api.widget;
 
 import com.google.common.io.BaseEncoding;
 import com.google.protobuf.ByteString;
+import com.google.protobuf.ByteStringAccess;
 import com.vertispan.tsdefs.annotations.TsName;
 import com.vertispan.tsdefs.annotations.TsUnion;
 import com.vertispan.tsdefs.annotations.TsUnionMember;
@@ -23,6 +24,7 @@ import io.deephaven.proto.backplane.grpc.StreamRequest;
 import io.deephaven.proto.backplane.grpc.StreamResponse;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.backplane.grpc.TypedTicket;
+import io.deephaven.web.client.api.Callbacks;
 import io.deephaven.web.client.api.ServerObject;
 import io.deephaven.web.client.api.WorkerConnection;
 import io.deephaven.web.client.api.barrage.stream.BiDiStream;
@@ -209,7 +211,7 @@ public class JsWidget extends HasEventHandling implements ServerObject, WidgetMe
                 .setSourceId(getTicket())
                 .setResultId(reexportedTicket)
                 .build();
-        connection.sessionServiceClient().exportFromTicket(req, null);
+        connection.sessionServiceClient().exportFromTicket(req, Callbacks.ignore());
 
         TypedTicket typedTicket = TypedTicket.newBuilder()
                 .setTicket(reexportedTicket)
@@ -329,11 +331,11 @@ public class JsWidget extends HasEventHandling implements ServerObject, WidgetMe
         if (msg.isString()) {
             data.setPayload(ByteString.copyFrom(msg.asString(), StandardCharsets.UTF_8));
         } else if (msg.isArrayBuffer()) {
-            data.setPayload(ByteString.copyFrom(TypedArrayHelper.wrap(msg.asArrayBuffer())));
+            data.setPayload(ByteStringAccess.wrap(TypedArrayHelper.wrap(msg.asArrayBuffer())));
         } else if (msg.isView()) {
             // can cast (unsafely) to any typed array or to DataView to read offset/length/buffer to make a new view
             ArrayBufferView view = msg.asView();
-            data.setPayload(ByteString.copyFrom(TypedArrayHelper.wrap(view)));
+            data.setPayload(ByteStringAccess.wrap(TypedArrayHelper.wrap(view)));
         } else {
             throw new IllegalArgumentException("Expected message to be a String or ArrayBuffer");
         }

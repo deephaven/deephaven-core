@@ -64,47 +64,57 @@ public abstract class BiDiStream<Req, Resp> {
             this.nextIntTicket = nextIntTicket;
         }
 
+        static class RealBidiStream<ReqT, RespT> extends BiDiStream<ReqT, RespT> {
+            private final ResponseStreamWrapper<RespT> wrapper;
+            private StreamObserver<ReqT> observer;
+            RealBidiStream(BiDiStreamFactory<ReqT, RespT> factory) {
+                wrapper = ResponseStreamWrapper.of(o -> {
+                    observer = factory.openBiDiStream(o);
+                });
+            }
+
+            @Override
+            public void send(ReqT payload) {
+                observer.onNext(payload);
+            }
+
+            @Override
+            public void cancel() {
+                wrapper.cancel();
+            }
+
+            @Override
+            public void end() {
+                observer.onCompleted();
+            }
+
+            @Override
+            public void onData(Consumer<RespT> handler) {
+                wrapper.onData(handler);
+            }
+
+            @Override
+            public void onStatus(Consumer<Status> handler) {
+                wrapper.onStatus(handler);
+            }
+
+            @Override
+            public void onEnd(Consumer<Status> handler) {
+                wrapper.onEnd(handler);
+            }
+
+            @Override
+            public void onHeaders(Consumer<Object> handler) {
+                wrapper.onHeaders(handler);
+            }
+        }
+
         public <NoopT> BiDiStream<ReqT, RespT> create(
                 BiDiStreamFactory<ReqT, RespT> bidirectionalStream,
                 OpenStreamFactory<ReqT, RespT> openEmulatedStream,
                 NextStreamMessageFactory<ReqT, NoopT> nextEmulatedStream) {
             if (supportsClientStreaming) {
-                return new BiDiStream<ReqT, RespT>() {
-                    @Override
-                    public void send(ReqT payload) {
-
-                    }
-
-                    @Override
-                    public void cancel() {
-
-                    }
-
-                    @Override
-                    public void end() {
-
-                    }
-
-                    @Override
-                    public void onData(Consumer<RespT> handler) {
-
-                    }
-
-                    @Override
-                    public void onStatus(Consumer<Status> handler) {
-
-                    }
-
-                    @Override
-                    public void onEnd(Consumer<Status> handler) {
-
-                    }
-
-                    @Override
-                    public void onHeaders(Consumer<Object> handler) {
-
-                    }
-                };
+                return new RealBidiStream<>(bidirectionalStream);
             } else {
                 return new EmulatedBiDiStream<>(
                         openEmulatedStream,
@@ -113,26 +123,6 @@ public abstract class BiDiStream<Req, Resp> {
             }
         }
     }
-
-
-
-    // public static <Req, Resp> BiDiStream<Req, Resp> of(
-    // BiDiStreamFactory bidirectionalStream,
-    // OpenStreamFactory<Req> openEmulatedStream,
-    // NextStreamMessageFactory<Req> nextEmulatedStream,
-    // Req emptyReq,
-    // IntSupplier nextIntTicket,
-    // boolean useWebsocket) {
-    // if (useWebsocket) {
-    // return bidi(bidirectionalStream.openBiDiStream());
-    // } else {
-    // return new EmulatedBiDiStream<>(
-    // openEmulatedStream,
-    // nextEmulatedStream,
-    // emptyReq,
-    // nextIntTicket.getAsInt());
-    // }
-    // }
 
     public abstract void send(Req payload);
 

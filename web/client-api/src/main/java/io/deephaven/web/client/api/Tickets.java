@@ -150,7 +150,7 @@ public class Tickets {
         bytes[0] = SHARED_PREFIX;
         bytes[1] = TICKET_DELIMITER;
         for (int i = 0; i < length; i++) {
-            bytes[i + 2] = (byte) (double) arrayLike.getAt(i + 2);
+            bytes[i + 2] = (byte) (double) arrayLike.getAt(i);
         }
 
         return Ticket.newBuilder().setTicket(ByteString.copyFrom(bytes)).build();

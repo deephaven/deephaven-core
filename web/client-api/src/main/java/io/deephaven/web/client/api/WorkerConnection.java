@@ -5,7 +5,6 @@ package io.deephaven.web.client.api;
 
 import com.google.common.io.BaseEncoding;
 import com.google.flatbuffers.FlatBufferBuilder;
-import com.google.protobuf.ByteString;
 import com.google.protobuf.ByteStringAccess;
 import com.vertispan.tsdefs.annotations.TsIgnore;
 import elemental2.core.JsSet;
@@ -1182,7 +1181,7 @@ public class WorkerConnection {
             Flight.FlightData.Builder schemaMessage = Flight.FlightData.newBuilder();
             ByteBuffer schemaMessagePayload =
                     createMessage(schema, MessageHeader.Schema, Schema.endSchema(schema), 0, 0);
-            schemaMessage.setDataHeader(ByteString.copyFrom(schemaMessagePayload));
+            schemaMessage.setDataHeader(ByteStringAccess.wrap(schemaMessagePayload.duplicate()));
 
             schemaMessage.setAppMetadata(ByteStringAccess.wrap(WebBarrageUtils.emptyMessage()));
             schemaMessage.setFlightDescriptor(cts.getHandle().makeFlightDescriptor());
@@ -1199,11 +1198,12 @@ public class WorkerConnection {
             stream.onEnd(status -> {
                 if (status.isOk()) {
                     ByteBuffer schemaPlusHeader = ByteBuffer.allocate(schemaMessagePayload.remaining() + 8);
-                    schemaPlusHeader.position(8);
+                    schemaPlusHeader.putInt(-1);
+                    schemaPlusHeader.putInt(schemaMessagePayload.remaining());
                     schemaPlusHeader.put(schemaMessagePayload);
-                    schemaPlusHeader.position(0);
+                    schemaPlusHeader.flip();
                     ExportedTableCreationResponse syntheticResponse = ExportedTableCreationResponse.newBuilder()
-                            .setSchemaHeader(ByteString.copyFrom(schemaPlusHeader))
+                            .setSchemaHeader(ByteStringAccess.wrap(schemaPlusHeader))
                             .setSize(data[0].length)
                             .setIsStatic(true)
                             .setSuccess(true)
