@@ -34,7 +34,7 @@ fAnd = FilterAnd.of(Filter.from("X > 5", "Y < 10"))
 
 ## Methods
 
-### `.withSerial`
+### `withSerial`
 
 Forces the filter to evaluate sequentially on a single core, processing rows one at a time in order. Use this when the filter has side effects or depends on row order.
 
@@ -60,7 +60,7 @@ result = source.where(f)
 > [!NOTE]
 > Most filters don't need serial execution. Use `.withSerial` only when the filter modifies external state or has side effects.
 
-### `.withDeclaredBarriers`
+### `withDeclaredBarriers`
 
 Declares that this filter creates a barrier - other filters that respect this barrier will wait until this filter finishes evaluating all rows.
 
@@ -72,7 +72,7 @@ barrier = new Object()
 filter1 = Filter.from("X > 5")[0].withDeclaredBarriers(barrier)
 ```
 
-### `.withRespectedBarriers`
+### `withRespectedBarriers`
 
 Declares that this filter respects a barrier - it will not begin evaluating until all filters that declare the same barrier have finished.
 

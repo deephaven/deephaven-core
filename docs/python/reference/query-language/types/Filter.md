@@ -30,7 +30,7 @@ f4 = or_([Filter.from_("X > 5"), Filter.from_("Y < 10")])
 
 ## Methods
 
-### `.with_serial`
+### `with_serial`
 
 Forces the filter to evaluate sequentially on a single core, processing rows one at a time in order. Use this when the filter has side effects or depends on row order.
 
@@ -57,7 +57,7 @@ result = source.where(f)
 > [!NOTE]
 > Most filters don't need serial execution. Use `.with_serial` only when the filter modifies external state or has side effects.
 
-### `.with_declared_barriers`
+### `with_declared_barriers`
 
 Declares that this filter creates a barrier — other filters that respect this barrier will wait until this filter finishes evaluating all rows.
 
@@ -69,7 +69,7 @@ barrier = Barrier()
 filter1 = is_null("X").with_declared_barriers(barrier)
 ```
 
-### `.with_respected_barriers`
+### `with_respected_barriers`
 
 Declares that this filter respects a barrier — it will not begin evaluating until all filters that declare the same barrier have finished.
 
