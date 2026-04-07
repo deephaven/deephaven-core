@@ -290,9 +290,9 @@ public class QueryPerformanceRecorderImpl implements QueryPerformanceRecorder {
             // abnormal condition and the nugget should be logged
             return true;
         } else if (nugget == catchAllNugget) {
-            return UNINSTRUMENTED_LOG_THRESHOLD.shouldLog(nugget.getUsageNanos());
+            return UNINSTRUMENTED_LOG_THRESHOLD.shouldLog(nugget.getUsageNanos(), nugget.getDataReadCount());
         } else {
-            return LOG_THRESHOLD.shouldLog(nugget.getUsageNanos());
+            return LOG_THRESHOLD.shouldLog(nugget.getUsageNanos(), nugget.getDataReadCount());
         }
     }
 

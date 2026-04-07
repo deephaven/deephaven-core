@@ -19,6 +19,7 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.TableUpdateMode;
 import io.deephaven.engine.table.impl.locations.util.PartitionFormatter;
 import io.deephaven.engine.table.impl.locations.util.TableDataRefreshService;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.parquet.base.ParquetMetadataFileWriter;
 import io.deephaven.parquet.base.NullParquetMetadataFileWriter;
@@ -127,29 +128,31 @@ public class ParquetTools {
     public static Table readTable(
             @NotNull final String source,
             @NotNull final ParquetInstructions readInstructions) {
-        final boolean isParquetFile = ParquetUtils.isParquetFile(source);
-        final boolean isMetadataFile = !isParquetFile && ParquetUtils.isMetadataFile(source);
-        final boolean isDirectory = !isParquetFile && !isMetadataFile;
-        final URI sourceURI = convertToURI(source, isDirectory);
-        if (readInstructions.getFileLayout().isPresent()) {
-            switch (readInstructions.getFileLayout().get()) {
-                case SINGLE_FILE:
-                    return readSingleFileTable(sourceURI, readInstructions);
-                case FLAT_PARTITIONED:
-                    return readFlatPartitionedTable(sourceURI, readInstructions);
-                case KV_PARTITIONED:
-                    return readKeyValuePartitionedTable(sourceURI, readInstructions, null);
-                case METADATA_PARTITIONED:
-                    return readPartitionedTableWithMetadata(sourceURI, readInstructions, null);
+        return QueryPerformanceRecorder.withNugget("ParquetTools.readTable(" + source + ")", () -> {
+            final boolean isParquetFile = ParquetUtils.isParquetFile(source);
+            final boolean isMetadataFile = !isParquetFile && ParquetUtils.isMetadataFile(source);
+            final boolean isDirectory = !isParquetFile && !isMetadataFile;
+            final URI sourceURI = convertToURI(source, isDirectory);
+            if (readInstructions.getFileLayout().isPresent()) {
+                switch (readInstructions.getFileLayout().get()) {
+                    case SINGLE_FILE:
+                        return readSingleFileTable(sourceURI, readInstructions);
+                    case FLAT_PARTITIONED:
+                        return readFlatPartitionedTable(sourceURI, readInstructions);
+                    case KV_PARTITIONED:
+                        return readKeyValuePartitionedTable(sourceURI, readInstructions, null);
+                    case METADATA_PARTITIONED:
+                        return readPartitionedTableWithMetadata(sourceURI, readInstructions, null);
+                }
             }
-        }
-        if (isParquetFile) {
-            return readSingleFileTable(sourceURI, readInstructions);
-        }
-        if (isMetadataFile) {
-            return readPartitionedTableWithMetadata(sourceURI, readInstructions, null);
-        }
-        return readPartitionedTableDirectory(sourceURI, readInstructions);
+            if (isParquetFile) {
+                return readSingleFileTable(sourceURI, readInstructions);
+            }
+            if (isMetadataFile) {
+                return readPartitionedTableWithMetadata(sourceURI, readInstructions, null);
+            }
+            return readPartitionedTableDirectory(sourceURI, readInstructions);
+        });
     }
 
     /**

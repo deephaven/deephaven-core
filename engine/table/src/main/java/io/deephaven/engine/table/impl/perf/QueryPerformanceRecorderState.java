@@ -3,6 +3,9 @@
 //
 package io.deephaven.engine.table.impl.perf;
 
+import io.deephaven.base.stats.Item;
+import io.deephaven.base.stats.State;
+import io.deephaven.base.stats.Stats;
 import io.deephaven.chunk.util.pools.ChunkPoolInstrumentation;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.updategraph.UpdateGraphLock;
@@ -23,6 +26,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 
@@ -41,6 +45,25 @@ public abstract class QueryPerformanceRecorderState {
             () -> new MutableLong(ThreadProfiler.DEFAULT.memoryProfilingAvailable()
                     ? 0L
                     : io.deephaven.util.QueryConstants.NULL_LONG));
+
+    private static final String METADATA_OP_STATS_GROUP = "MetadataOp";
+
+    /**
+     * Cache of Stats items keyed by metadata operation type. Avoids repeated synchronized lookup in
+     * {@link Stats#makeItem} on every I/O operation.
+     */
+    private static final ConcurrentHashMap<String, Item<State>> METADATA_OP_STATS = new ConcurrentHashMap<>();
+
+    private static final ThreadLocal<MutableLong> DATA_READ_NANOS =
+            ThreadLocal.withInitial(() -> new MutableLong(0));
+    private static final ThreadLocal<MutableLong> DATA_READ_COUNT =
+            ThreadLocal.withInitial(() -> new MutableLong(0));
+    private static final ThreadLocal<MutableLong> DATA_READ_BYTES =
+            ThreadLocal.withInitial(() -> new MutableLong(0));
+    private static final ThreadLocal<MutableLong> METADATA_READ_NANOS =
+            ThreadLocal.withInitial(() -> new MutableLong(0));
+    private static final ThreadLocal<MutableLong> METADATA_READ_COUNT =
+            ThreadLocal.withInitial(() -> new MutableLong(0));
 
     static {
         // initialize the packages to skip when determining the callsite
@@ -138,6 +161,80 @@ public abstract class QueryPerformanceRecorderState {
      */
     static long getPoolAllocatedBytesForCurrentThread() {
         return POOL_ALLOCATED_BYTES.get().get();
+    }
+
+    /**
+     * Record a data read operation. Accumulates into the current thread's cumulative counters.
+     *
+     * @param nanos time spent on the read in nanoseconds
+     * @param bytesRead number of bytes read
+     */
+    public static void recordRead(final long nanos, final int bytesRead) {
+        DATA_READ_NANOS.get().add(nanos);
+        DATA_READ_COUNT.get().add(1);
+        DATA_READ_BYTES.get().add(bytesRead);
+    }
+
+    /**
+     * Record a metadata operation (e.g. listing files, checking existence, determining file sizes). Accumulates into
+     * the current thread's cumulative counters and records a Stats histogram sample.
+     *
+     * @param type the type of metadata operation (e.g. "exists", "list", "walk", "size")
+     * @param nanos time spent on the metadata operation in nanoseconds
+     */
+    public static void recordMetadataOperation(
+            @NotNull final String type, final long nanos) {
+        METADATA_READ_NANOS.get().add(nanos);
+        METADATA_READ_COUNT.get().add(1);
+        METADATA_OP_STATS.computeIfAbsent(type,
+                t -> Stats.makeItem(METADATA_OP_STATS_GROUP, t, State.FACTORY,
+                        "Metadata operation timing (nanos) for type: " + t))
+                .getValue().sample(nanos);
+    }
+
+    /**
+     * Get the cumulative data read nanos for the current thread.
+     *
+     * @return total data read nanos accumulated on this thread
+     */
+    static long getDataReadNanosForCurrentThread() {
+        return DATA_READ_NANOS.get().get();
+    }
+
+    /**
+     * Get the cumulative data read count for the current thread.
+     *
+     * @return total data read count accumulated on this thread
+     */
+    static long getDataReadCountForCurrentThread() {
+        return DATA_READ_COUNT.get().get();
+    }
+
+    /**
+     * Get the cumulative data read bytes for the current thread.
+     *
+     * @return total data read bytes accumulated on this thread
+     */
+    static long getDataReadBytesForCurrentThread() {
+        return DATA_READ_BYTES.get().get();
+    }
+
+    /**
+     * Get the cumulative metadata read nanos for the current thread.
+     *
+     * @return total metadata read nanos accumulated on this thread
+     */
+    static long getMetadataReadNanosForCurrentThread() {
+        return METADATA_READ_NANOS.get().get();
+    }
+
+    /**
+     * Get the cumulative metadata read count for the current thread.
+     *
+     * @return total metadata read count accumulated on this thread
+     */
+    static long getMetadataReadCountForCurrentThread() {
+        return METADATA_READ_COUNT.get().get();
     }
 
     /**

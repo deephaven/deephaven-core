@@ -8,6 +8,7 @@ import io.deephaven.base.stats.Stats;
 import io.deephaven.base.stats.Value;
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorderState;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -198,7 +199,9 @@ public final class FileHandle implements SeekableByteChannel {
             try {
                 return fileChannel.size();
             } finally {
-                SIZE_DURATION_NANOS.sample(System.nanoTime() - startTimeNanos);
+                final long duration = System.nanoTime() - startTimeNanos;
+                SIZE_DURATION_NANOS.sample(duration);
+                QueryPerformanceRecorderState.recordMetadataOperation("size", duration);
             }
         } catch (ClosedChannelException e) {
             postCloseProcedure.run();
@@ -272,7 +275,9 @@ public final class FileHandle implements SeekableByteChannel {
             try {
                 return fileChannel.read(destination, position);
             } finally {
-                READ_DURATION_NANOS.sample(System.nanoTime() - startTimeNanos);
+                final long duration = System.nanoTime() - startTimeNanos;
+                QueryPerformanceRecorderState.recordRead(duration, sizeBytes);
+                READ_DURATION_NANOS.sample(duration);
                 READ_SIZE_BYTES.sample(sizeBytes);
             }
         } catch (ClosedChannelException e) {
@@ -299,7 +304,9 @@ public final class FileHandle implements SeekableByteChannel {
             try {
                 return fileChannel.read(destination);
             } finally {
-                READ_DURATION_NANOS.sample(System.nanoTime() - startTimeNanos);
+                final long duration = System.nanoTime() - startTimeNanos;
+                QueryPerformanceRecorderState.recordRead(duration, sizeBytes);
+                READ_DURATION_NANOS.sample(duration);
                 READ_SIZE_BYTES.sample(sizeBytes);
             }
         } catch (ClosedChannelException e) {
