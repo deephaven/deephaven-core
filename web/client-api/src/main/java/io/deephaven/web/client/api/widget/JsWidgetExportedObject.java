@@ -85,10 +85,7 @@ public class JsWidgetExportedObject implements ServerObject {
 
     @Override
     public TypedTicket typedTicket() {
-        return TypedTicket.newBuilder()
-                .setTicket(ticket.getTicket())
-                .setType(getType())
-                .build();
+        return ticket;
     }
 
     /**

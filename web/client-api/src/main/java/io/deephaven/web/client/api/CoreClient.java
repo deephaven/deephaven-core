@@ -53,8 +53,8 @@ public class CoreClient extends HasEventHandling {
             JsFunction<R, Map<String, ConfigValue>> getConfigValues) {
         return Callbacks.grpcUnaryPromise(rpcCall).then(response -> {
             String[][] result = new String[0][];
-            getConfigValues.apply(response).forEach((item, key) -> {
-                result[result.length] = new String[] {item, key.getStringValue()};
+            getConfigValues.apply(response).forEach((key, value) -> {
+                result[result.length] = new String[] {key, value.getStringValue()};
             });
             return Promise.resolve(result);
         });

@@ -137,8 +137,6 @@ import java.util.stream.Collectors;
 @TsIgnore
 public class WorkerConnection {
 
-    private static final String FLIGHT_AUTH_HEADER_NAME = "authorization";
-
     private Double scheduledAuthUpdate;
     // default to 10s, the actual value is almost certainly higher than that
     private double sessionTimeoutMs = 10_000;
@@ -1417,24 +1415,7 @@ public class WorkerConnection {
         ReleaseRequest releaseRequest = ReleaseRequest.newBuilder()
                 .setId(ticket)
                 .build();
-        // TODO ignore
-        sessionServiceClient.release(null, new StreamObserver<>() {
-
-            @Override
-            public void onNext(ReleaseResponse releaseResponse) {
-
-            }
-
-            @Override
-            public void onError(Throwable throwable) {
-
-            }
-
-            @Override
-            public void onCompleted() {
-
-            }
-        });
+        sessionServiceClient.release(releaseRequest, Callbacks.ignore());
     }
 
     private void flush() {

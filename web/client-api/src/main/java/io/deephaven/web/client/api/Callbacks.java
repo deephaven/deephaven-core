@@ -105,6 +105,7 @@ public interface Callbacks {
         };
     }
 
+    @Deprecated
     static <S, F> Promise<S> grpcUnaryPromiseOld(Consumer<JsBiConsumer<F, S>> t) {
         return new Promise<>((resolve, reject) -> {
             t.accept((fail, success) -> {
@@ -119,11 +120,12 @@ public interface Callbacks {
 
     /**
      * Propagates the message and the context into a Promise, as a promise's microtask will result in losing the
-     * context.
+     * context. Does not resolve until the unary stream is closed, in order to read the trailers, in contrast
+     * with {@link #grpcUnaryPromise(Consumer)}.
      */
     static <S> Promise<Response<S>> grpcUnaryPromiseWrapped(Consumer<StreamObserver<S>> t) {
         return new Promise<>((resolve, reject) -> {
-            t.accept(new StreamObserver<S>() {
+            t.accept(new StreamObserver<>() {
                 private S success;
 
                 @Override
@@ -150,6 +152,11 @@ public interface Callbacks {
         });
     }
 
+    /**
+     * Returns a promise that resolves when the first payload arrives from a unary request. Because
+     * promises resolve on a microtask, the later called promise will not necessarily share the same
+     * Context as the call, use {@link #grpcUnaryPromiseWrapped(Consumer)} for that.
+     */
     static <S> Promise<S> grpcUnaryPromise(Consumer<StreamObserver<S>> t) {
         return new Promise<>((resolve, reject) -> {
             t.accept(new StreamObserver<>() {

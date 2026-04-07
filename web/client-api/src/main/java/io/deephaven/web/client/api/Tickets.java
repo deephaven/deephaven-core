@@ -91,7 +91,15 @@ public class Tickets {
      * @return a new ticket with an export id that hasn't previously been used for this session
      */
     public Ticket newExportTicket() {
-        return newExportTicketRaw();
+        final int exportId = newTicketInt();
+        final byte[] bytes = new byte[5];
+        bytes[0] = EXPORT_PREFIX;
+        bytes[1] = (byte) exportId;
+        bytes[2] = (byte) (exportId >>> 8);
+        bytes[3] = (byte) (exportId >>> 16);
+        bytes[4] = (byte) (exportId >>> 24);
+
+        return Ticket.newBuilder().setTicket(ByteString.copyFrom(bytes)).build();
     }
 
     /**
@@ -105,19 +113,6 @@ public class Tickets {
         }
 
         return nextExport++;
-    }
-
-    @Deprecated
-    private Ticket newExportTicketRaw() {
-        final int exportId = newTicketInt();
-        final byte[] bytes = new byte[5];
-        bytes[0] = EXPORT_PREFIX;
-        bytes[1] = (byte) exportId;
-        bytes[2] = (byte) (exportId >>> 8);
-        bytes[3] = (byte) (exportId >>> 16);
-        bytes[4] = (byte) (exportId >>> 24);
-
-        return Ticket.newBuilder().setTicket(ByteString.copyFrom(bytes)).build();
     }
 
     /**

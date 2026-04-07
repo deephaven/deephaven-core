@@ -6,7 +6,6 @@ package io.deephaven.web.client.api.grpc;
 import elemental2.core.JsError;
 import elemental2.core.Uint8Array;
 import elemental2.dom.URL;
-import io.deephaven.javascript.proto.dhinternal.browserheaders.BrowserHeaders;
 import io.deephaven.javascript.proto.dhinternal.grpcweb.transports.transport.TransportOptions;
 import jsinterop.annotations.JsFunction;
 import jsinterop.annotations.JsIgnore;

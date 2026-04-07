@@ -5,9 +5,6 @@ package io.deephaven.web.client.api.grpc;
 
 import com.vertispan.tsdefs.annotations.TsInterface;
 import elemental2.core.Uint8Array;
-import io.deephaven.javascript.proto.dhinternal.browserheaders.BrowserHeaders;
-import io.deephaven.javascript.proto.dhinternal.grpcweb.grpc.Transport;
-import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsType;
 import jsinterop.base.JsPropertyMap;
 
@@ -42,33 +39,4 @@ public interface GrpcTransport {
      * from receiving any more events.
      */
     void cancel();
-
-    /**
-     * Helper to transform ts implementations to our own api.
-     */
-    @Deprecated // remove before merge
-    @JsIgnore
-    static GrpcTransport from(Transport tsTransport) {
-        return new GrpcTransport() {
-            @Override
-            public void start(JsPropertyMap<HeaderValueUnion> metadata) {
-                tsTransport.start(new BrowserHeaders(metadata));
-            }
-
-            @Override
-            public void sendMessage(Uint8Array msgBytes) {
-                tsTransport.sendMessage(msgBytes);
-            }
-
-            @Override
-            public void finishSend() {
-                tsTransport.finishSend();
-            }
-
-            @Override
-            public void cancel() {
-                tsTransport.cancel();
-            }
-        };
-    }
 }
