@@ -140,7 +140,7 @@ public class TableReviver implements HasTableBinding {
             }
         });
         stream.onEnd(status -> {
-            if (status.isOk()) {
+            if (!status.isOk()) {
                 for (ClientTableState failed : all.values()) {
                     failed.forActiveLifecycles(t -> t.die(status.getDescription()));
                 }

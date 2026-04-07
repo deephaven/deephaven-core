@@ -243,7 +243,7 @@ public class JsWidget extends HasEventHandling implements ServerObject, WidgetMe
     @Override
     @JsMethod
     public String getDataAsBase64() {
-        return BaseEncoding.base32Hex().encode(response.getData().getPayload().toByteArray());
+        return BaseEncoding.base64().encode(response.getData().getPayload().toByteArray());
     }
 
     @Override

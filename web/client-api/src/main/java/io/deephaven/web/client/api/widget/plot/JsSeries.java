@@ -43,11 +43,11 @@ public class JsSeries {
         this.descriptor = series;
         this.jsFigure = jsFigure;
 
-        this.sources = new SeriesDataSource[0];
+        this.sources = new SeriesDataSource[series.getDataSourcesCount()];
 
         for (int i = 0; i < series.getDataSourcesCount(); i++) {
             FigureDescriptor.SourceDescriptor dataSource = series.getDataSources(i);
-            sources[sources.length] = new SeriesDataSource(axes.get(dataSource.getAxisId()), dataSource);
+            sources[i] = new SeriesDataSource(axes.get(dataSource.getAxisId()), dataSource);
 
             // set up oneclick if needed, make sure series make sense
             if (oneClick == null) {
