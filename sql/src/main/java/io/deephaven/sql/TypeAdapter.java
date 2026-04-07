@@ -119,19 +119,19 @@ final class TypeAdapter
 
     @Override
     public RelDataType visit(LocalTimeType localTimeType) {
-        // TODO: ?? return create(SqlTypeName.TIME);
+        // TODO: DH-22157: SQL support for LocalDate/LocalTime/Duration/Period
         return typeFactory.createJavaType(SqlTodoCustomType.class);
     }
 
     @Override
     public RelDataType visit(LocalDateType localDateType) {
-        // TODO: ?? return create(SqlTypeName.DATE);
+        // TODO: DH-22157: SQL support for LocalDate/LocalTime/Duration/Period
         return typeFactory.createJavaType(SqlTodoCustomType.class);
     }
 
     @Override
     public RelDataType visit(DurationType durationType) {
-        // TODO: return create(SqlTypeName.INTERVAL_HOUR_SECOND);
+        // TODO: DH-22157: SQL support for LocalDate/LocalTime/Duration/Period
         return typeFactory.createJavaType(SqlTodoCustomType.class);
     }
 
