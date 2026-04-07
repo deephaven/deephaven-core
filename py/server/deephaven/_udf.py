@@ -115,9 +115,9 @@ class _ParsedParam:
                                     )
                                 else:
                                     self.arg_converter = partial(
-                                        lambda nv, x: None
-                                        if x == nv
-                                        else effective_type(x),
+                                        lambda nv, x: (
+                                            None if x == nv else effective_type(x)
+                                        ),
                                         null_value,
                                     )
 
@@ -157,19 +157,15 @@ class _ParsedParam:
             if "N" in self.encoded_types:
                 self.arg_converter = to_pd_timestamp
             else:
-                self.arg_converter = (
-                    lambda x: to_np_datetime64(x)
-                    if x is not None
-                    else pd.Timestamp("NaT")
+                self.arg_converter = lambda x: (
+                    to_np_datetime64(x) if x is not None else pd.Timestamp("NaT")
                 )
         else:
             if "N" in self.encoded_types:
                 self.arg_converter = to_np_datetime64
             else:
-                self.arg_converter = (
-                    lambda x: to_np_datetime64(x)
-                    if x is not None
-                    else np.datetime64("NaT")
+                self.arg_converter = lambda x: (
+                    to_np_datetime64(x) if x is not None else np.datetime64("NaT")
                 )
 
 
@@ -185,8 +181,8 @@ class _ParsedReturnAnnotation:
         t = self.encoded_type
         if t == "H":
             if self.none_allowed:
-                self.ret_converter = (
-                    lambda x: dtypes.Character(int(x)) if x is not None else None
+                self.ret_converter = lambda x: (
+                    dtypes.Character(int(x)) if x is not None else None
                 )
             else:
                 self.ret_converter = lambda x: dtypes.Character(int(x))

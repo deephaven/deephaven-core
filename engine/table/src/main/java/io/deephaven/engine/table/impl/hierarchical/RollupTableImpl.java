@@ -42,6 +42,7 @@ import java.util.stream.Stream;
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
 import static io.deephaven.engine.table.impl.AbsoluteSortColumnConventions.*;
 import static io.deephaven.engine.table.impl.BaseTable.shouldCopyAttribute;
+import static io.deephaven.engine.table.impl.by.AggregationProcessor.EXPOSED_GROUP_ROW_SETS;
 import static io.deephaven.engine.table.impl.by.AggregationProcessor.getRowLookup;
 import static io.deephaven.engine.table.impl.by.AggregationRowLookup.DEFAULT_UNKNOWN_ROW;
 import static io.deephaven.engine.table.impl.by.AggregationRowLookup.EMPTY_KEY;
@@ -272,7 +273,7 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
         final AggregationRowLookup[] levelRowLookups = makeLevelRowLookupsArray(numLevels, filteredBaseLevelRowLookup);
         final ColumnSource<Table>[] levelNodeTableSources = makeLevelNodeTableSourcesArray(
                 numLevels, filteredBaseLevel.getColumnSource(ROLLUP_COLUMN.name(), Table.class));
-        rollupFromBase(levelTables, levelRowLookups, levelNodeTableSources, aggregations, groupByColumns);
+        rollupFromBase(levelTables, levelRowLookups, levelNodeTableSources, aggregations, groupByColumns, source);
 
         final WhereFilter[] newFilters;
         if (rollupKeyFilters == null) {
@@ -589,7 +590,7 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
         final AggregationRowLookup[] levelRowLookups = makeLevelRowLookupsArray(numLevels, getRowLookup(baseLevel));
         final ColumnSource<Table>[] levelNodeTableSources = makeLevelNodeTableSourcesArray(
                 numLevels, baseLevel.getColumnSource(ROLLUP_COLUMN.name(), Table.class));
-        rollupFromBase(levelTables, levelRowLookups, levelNodeTableSources, aggregations, groupByColumns);
+        rollupFromBase(levelTables, levelRowLookups, levelNodeTableSources, aggregations, groupByColumns, source);
 
         return new RollupTableImpl(
                 attributes,
@@ -670,13 +671,15 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
      *        already filled
      * @param aggregations The aggregations
      * @param groupByColumns The group-by columns
+     * @param source the source table for the rollup
      */
     private static void rollupFromBase(
             @NotNull final QueryTable[] levelTables,
             @NotNull final AggregationRowLookup[] levelRowLookups,
             @NotNull final ColumnSource<Table>[] levelNodeTableSources,
             @NotNull final Collection<? extends Aggregation> aggregations,
-            @NotNull final Collection<? extends ColumnName> groupByColumns) {
+            @NotNull final Collection<? extends ColumnName> groupByColumns,
+            @NotNull final QueryTable source) {
         final Deque<ColumnName> columnsToReaggregateBy = new ArrayDeque<>(groupByColumns);
         final Deque<String> nullColumnNames = new ArrayDeque<>(groupByColumns.size());
         int lastLevelIndex = levelTables.length - 1;
@@ -688,7 +691,7 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
                     nullColumnNames.stream().map(lastLevelDefinition::getColumn).collect(Collectors.toList());
 
             lastLevel = lastLevel.aggNoMemo(
-                    AggregationProcessor.forRollupReaggregated(aggregations, nullColumns, ROLLUP_COLUMN),
+                    AggregationProcessor.forRollupReaggregated(aggregations, nullColumns, ROLLUP_COLUMN, source),
                     false, null, new ArrayList<>(columnsToReaggregateBy));
             --lastLevelIndex;
             levelTables[lastLevelIndex] = lastLevel;
@@ -700,7 +703,8 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
 
     private static Stream<ColumnDefinition<?>> filterRollupInternalColumns(
             @NotNull final Stream<ColumnDefinition<?>> columnDefinitions) {
-        return columnDefinitions.filter(cd -> !cd.getName().endsWith(ROLLUP_COLUMN_SUFFIX));
+        return columnDefinitions.filter(cd -> !cd.getName().endsWith(ROLLUP_COLUMN_SUFFIX)
+                && !cd.getName().equals(EXPOSED_GROUP_ROW_SETS.name()));
     }
 
     @Override

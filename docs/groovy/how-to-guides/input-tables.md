@@ -1,6 +1,6 @@
 ---
-title: Create and use Input Tables
-sidebar_label: Input Tables
+title: Create and use input tables
+sidebar_label: Input tables
 ---
 
 Input tables allow users to enter new data into tables in two ways: programmatically, and manually through the UI.
@@ -174,7 +174,7 @@ result = AppendOnlyArrayBackedInputTable.make(definition)
 
 ## Related documentation
 
-- [InputTableUpdater](/core/javadoc/io/deephaven/engine/util/input/InputTableUpdater.html)
+- [Input Table](../reference/table-operations/create/InputTable.md)
 - [`emptyTable`](../reference/table-operations/create/emptyTable.md)
 - [Table types](../conceptual/table-types.md)
-- [Input Table](../reference/table-operations/create/InputTable.md)
+- [InputTableUpdater](/core/javadoc/io/deephaven/engine/util/input/InputTableUpdater.html)

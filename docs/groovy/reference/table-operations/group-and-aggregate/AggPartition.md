@@ -49,7 +49,7 @@ resultB = columnSource.get(1)
 
 ## Related documentation
 
-- [How to create an empty table](../../../how-to-guides/new-and-empty-table.md#emptytable)
+- [How to create static tables](../../../how-to-guides/new-and-empty-table.md)
 - [How to create multiple summary statistics for groups](../../../how-to-guides/combined-aggregations.md)
 - [`aggBy`](./aggBy.md)
 - [`partitionBy`](./partitionBy.md)

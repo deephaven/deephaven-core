@@ -45,4 +45,4 @@ def get_values():
 
 - [How to use Liveness Scopes](../../conceptual/liveness-scope-concept.md)
 - [`LivenessScope`](./LivenessScope.md)
-- [Pydoc](/core/pydoc/code/deephaven.liveness_scope.html#deephaven.liveness_scope.liveness_scope)
+- [Pydoc](https://docs.deephaven.io/core/pydoc/code/deephaven.liveness_scope.html#deephaven.liveness_scope.liveness_scope)

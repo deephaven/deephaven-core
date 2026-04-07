@@ -1,0 +1,1 @@
+{"file":"how-to-guides/initialization-and-updates.md","objects":{"source":{"type":"Table","data":{"columns":[{"name":"Timestamp","type":"java.time.Instant"},{"name":"X","type":"long"}],"rows":[]}},":log":{"type":"Log","data":"Initialized with sum: 0\n"}}}

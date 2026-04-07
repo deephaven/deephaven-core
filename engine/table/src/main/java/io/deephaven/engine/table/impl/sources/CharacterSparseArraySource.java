@@ -44,14 +44,18 @@ import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.*;
 public class CharacterSparseArraySource extends SparseArrayColumnSource<Character>
         implements MutableColumnSourceGetDefaults.ForChar /* MIXIN_IMPLS */ {
     // region recyclers
-    private static final SoftRecycler<char[]> recycler = new SoftRecycler<>(DEFAULT_RECYCLER_CAPACITY,
-            () -> new char[BLOCK_SIZE], null);
-    private static final SoftRecycler<char[][]> recycler2 = new SoftRecycler<>(DEFAULT_RECYCLER_CAPACITY,
-            () -> new char[BLOCK2_SIZE][], null);
-    private static final SoftRecycler<CharOneOrN.Block2[]> recycler1 = new SoftRecycler<>(DEFAULT_RECYCLER_CAPACITY,
-            () -> new CharOneOrN.Block2[BLOCK1_SIZE], null);
-    private static final SoftRecycler<CharOneOrN.Block1[]> recycler0 = new SoftRecycler<>(DEFAULT_RECYCLER_CAPACITY,
-            () -> new CharOneOrN.Block1[BLOCK0_SIZE], null);
+    private static final SoftRecycler<char[]> recycler =
+            new SoftRecycler<>(SparseArrayColumnSourceConfiguration.CHAR_RECYCLER_CAPACITY,
+                    () -> new char[BLOCK_SIZE], null);
+    private static final SoftRecycler<char[][]> recycler2 =
+            new SoftRecycler<>(SparseArrayColumnSourceConfiguration.CHAR_RECYCLER_CAPACITY2,
+                    () -> new char[BLOCK2_SIZE][], null);
+    private static final SoftRecycler<CharOneOrN.Block2[]> recycler1 =
+            new SoftRecycler<>(SparseArrayColumnSourceConfiguration.CHAR_RECYCLER_CAPACITY1,
+                    () -> new CharOneOrN.Block2[BLOCK1_SIZE], null);
+    private static final SoftRecycler<CharOneOrN.Block1[]> recycler0 =
+            new SoftRecycler<>(SparseArrayColumnSourceConfiguration.CHAR_RECYCLER_CAPACITY0,
+                    () -> new CharOneOrN.Block1[BLOCK0_SIZE], null);
     // endregion recyclers
 
     /**

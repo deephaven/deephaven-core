@@ -17,13 +17,15 @@ import io.deephaven.engine.table.ChunkSource.GetContext;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
+import io.deephaven.engine.table.impl.sources.ObjectSingleValueSource;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.vector.ObjectVector;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.function.UnaryOperator;
+import java.util.stream.Collectors;
 
 import static io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource.BLOCK_SIZE;
 
@@ -34,11 +36,17 @@ class FormulaMultiColumnChunkedOperator implements IterativeChunkedAggregationOp
 
     private final QueryTable inputTable;
 
-    private final GroupByChunkedOperator groupBy;
-    private final boolean delegateToBy;
+    private GroupByOperator groupBy;
+    private boolean delegateToBy;
     private final SelectColumn selectColumn;
     private final WritableColumnSource<?> resultColumn;
     private final String[] inputKeyColumns;
+    @Nullable
+    private final ColumnSource<Integer> formulaDepthSource;
+    @Nullable
+    private final ColumnSource<ObjectVector<String>> formulaKeyNameSource;
+    @Nullable
+    private final Map<String, String> renames;
 
     private ChunkSource<Values> formulaDataSource;
 
@@ -60,18 +68,28 @@ class FormulaMultiColumnChunkedOperator implements IterativeChunkedAggregationOp
      *        be false if {@code groupBy} is updated by the helper, or if this is not the first operator sharing
      *        {@code groupBy}.
      * @param selectColumn The formula column that will produce the results
+     * @param renames a map from input names in the groupBy operator (i.e. mangled names) to input column names in the
+     *        formula
+     * @param formulaDepthSource a source for the depth of a rollup
+     * @param formulaKeyNameSource a source for the key columns of a rollup
      */
     FormulaMultiColumnChunkedOperator(
             @NotNull final QueryTable inputTable,
-            @NotNull final GroupByChunkedOperator groupBy,
+            @NotNull final GroupByOperator groupBy,
             final boolean delegateToBy,
             @NotNull final SelectColumn selectColumn,
-            @NotNull final String[] inputKeyColumns) {
+            @NotNull final String[] inputKeyColumns,
+            @Nullable Map<String, String> renames,
+            @Nullable final ColumnSource<Integer> formulaDepthSource,
+            @Nullable ObjectSingleValueSource<ObjectVector<String>> formulaKeyNameSource) {
         this.inputTable = inputTable;
         this.groupBy = groupBy;
         this.delegateToBy = delegateToBy;
         this.selectColumn = selectColumn;
         this.inputKeyColumns = inputKeyColumns;
+        this.renames = renames;
+        this.formulaDepthSource = formulaDepthSource;
+        this.formulaKeyNameSource = formulaKeyNameSource;
 
         resultColumn = ArrayBackedColumnSource.getMemoryColumnSource(
                 0, selectColumn.getReturnedType(), selectColumn.getReturnedComponentType());
@@ -199,7 +217,7 @@ class FormulaMultiColumnChunkedOperator implements IterativeChunkedAggregationOp
 
     @Override
     public boolean requiresRowKeys() {
-        return delegateToBy;
+        return delegateToBy && groupBy.requiresRowKeys();
     }
 
     @Override
@@ -222,14 +240,37 @@ class FormulaMultiColumnChunkedOperator implements IterativeChunkedAggregationOp
         }
 
         final Map<String, ColumnSource<?>> sourceColumns;
-        if (inputKeyColumns.length == 0) {
+        if (inputKeyColumns.length == 0 && formulaDepthSource == null && formulaKeyNameSource == null
+                && renames == null) {
             // noinspection unchecked
             sourceColumns = (Map<String, ColumnSource<?>>) groupBy.getInputResultColumns();
         } else {
             final Map<String, ColumnSource<?>> columnSourceMap = resultTable.getColumnSourceMap();
-            sourceColumns = new HashMap<>(groupBy.getInputResultColumns());
+            sourceColumns = new HashMap<>(groupBy.getInputResultColumns().size() + 1);
+            for (Map.Entry<String, ? extends ColumnSource<?>> entry : groupBy.getInputResultColumns().entrySet()) {
+                final String columnName = entry.getKey();
+                final String renamed;
+                if (renames != null && (renamed = renames.get(columnName)) != null) {
+                    sourceColumns.put(renamed, entry.getValue());
+                } else {
+                    sourceColumns.put(columnName, entry.getValue());
+                }
+            }
             Arrays.stream(inputKeyColumns).forEach(col -> sourceColumns.put(col, columnSourceMap.get(col)));
+            if (formulaDepthSource != null) {
+                sourceColumns.put(AggregationProcessor.ROLLUP_FORMULA_DEPTH.name(), formulaDepthSource);
+            }
+            if (formulaKeyNameSource != null) {
+                sourceColumns.put(AggregationProcessor.ROLLUP_FORMULA_KEYS.name(), formulaKeyNameSource);
+            }
         }
+        final List<String> missingColumns = selectColumn.getColumns().stream()
+                .filter(column -> !sourceColumns.containsKey(column)).collect(Collectors.toList());
+        if (!missingColumns.isEmpty()) {
+            throw new IllegalStateException(
+                    "Columns " + missingColumns + " not found, available columns are: " + sourceColumns.keySet());
+        }
+
         selectColumn.initInputs(resultTable.getRowSet(), sourceColumns);
         formulaDataSource = selectColumn.getDataView();
 
@@ -260,11 +301,17 @@ class FormulaMultiColumnChunkedOperator implements IterativeChunkedAggregationOp
             return inputToResultModifiedColumnSetFactory = input -> ModifiedColumnSet.EMPTY;
         }
         final ModifiedColumnSet resultMCS = resultTable.newModifiedColumnSet(selectColumn.getName());
-        final String[] inputColumnNames = selectColumn.getColumns().toArray(String[]::new);
+        final Map<String, String> inverseRenames = new HashMap<>();
+        if (renames != null) {
+            renames.forEach((k, v) -> inverseRenames.put(v, k));
+        }
+        final String[] inputColumnNames = selectColumn.getColumns().stream()
+                .filter(c -> !c.equals(AggregationProcessor.ROLLUP_FORMULA_DEPTH.name())
+                        && !c.equals(AggregationProcessor.ROLLUP_FORMULA_KEYS.name()))
+                .map(c -> inverseRenames.getOrDefault(c, c)).toArray(String[]::new);
         final ModifiedColumnSet inputMCS = inputTable.newModifiedColumnSet(inputColumnNames);
         return inputToResultModifiedColumnSetFactory = input -> {
-            if (groupBy.getSomeKeyHasAddsOrRemoves() ||
-                    (groupBy.getSomeKeyHasModifies() && input.containsAny(inputMCS))) {
+            if (groupBy.hasModifications(input.containsAny(inputMCS))) {
                 return resultMCS;
             }
             return ModifiedColumnSet.EMPTY;
@@ -272,12 +319,13 @@ class FormulaMultiColumnChunkedOperator implements IterativeChunkedAggregationOp
     }
 
     @Override
-    public void resetForStep(@NotNull final TableUpdate upstream, final int startingDestinationsCount) {
+    public boolean resetForStep(@NotNull final TableUpdate upstream, final int startingDestinationsCount) {
         if (delegateToBy) {
             groupBy.resetForStep(upstream, startingDestinationsCount);
         }
         updateUpstreamModifiedColumnSet =
                 upstream.modified().isEmpty() ? ModifiedColumnSet.EMPTY : upstream.modifiedColumnSet();
+        return false;
     }
 
     @Override
@@ -407,5 +455,10 @@ class FormulaMultiColumnChunkedOperator implements IterativeChunkedAggregationOp
 
     private static long calculateContainingBlockLastKey(final long firstKey) {
         return (firstKey / BLOCK_SIZE) * BLOCK_SIZE + BLOCK_SIZE - 1;
+    }
+
+    public void updateGroupBy(GroupByOperator groupBy, boolean delegateToBy) {
+        this.groupBy = groupBy;
+        this.delegateToBy = delegateToBy;
     }
 }

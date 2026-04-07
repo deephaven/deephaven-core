@@ -77,7 +77,11 @@ import org.apache.commons.lang3.mutable.MutableDouble;
 import org.apache.commons.lang3.mutable.MutableFloat;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.parquet.column.Encoding;
+import org.apache.parquet.column.statistics.DoubleStatistics;
+import org.apache.parquet.column.statistics.IntStatistics;
+import org.apache.parquet.column.statistics.LongStatistics;
 import org.apache.parquet.column.statistics.Statistics;
+import org.apache.parquet.hadoop.metadata.BlockMetaData;
 import org.apache.parquet.hadoop.metadata.ColumnChunkMetaData;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import org.apache.parquet.io.api.Binary;
@@ -134,6 +138,7 @@ import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.INT32;
 import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.INT64;
 import static org.apache.parquet.schema.Types.optional;
 import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 @Category(OutOfBandTest.class)
@@ -3320,27 +3325,139 @@ public final class ParquetTableReadWriteTest {
         FileUtils.deleteRecursively(parentDir);
     }
 
-    private static void writeAndVerifyTable(final Table tableToWrite, final File targetFile, final RowGroupInfo rgi,
-            final Long[] expectedRowGroups) {
-        final ParquetInstructions writeInstructions = new ParquetInstructions.Builder()
-                .setRowGroupInfo(rgi)
-                .build();
+    @SuppressWarnings("SimplifiableAssertion")
+    private static void assertMinStatisticsEquals(final Table sourceTable, final long row,
+            final List<ColumnChunkMetaData> columnMetadata) {
+        final int expectedA = sourceTable.getColumnSource("A").getInt(row);
+        if (expectedA != NULL_INT) {
+            assertEquals("min(A)", expectedA, ((IntStatistics) columnMetadata.get(0).getStatistics()).getMin());
+        } else {
+            // if we expect the Min to be `null`, then the statistic is meaningless. verify `!hasNonNullValue()` instead
+            assertFalse("hasNonNull(A)", columnMetadata.get(0).getStatistics().hasNonNullValue());
+        }
+
+        final String expectedB = (String) sourceTable.getColumnSource("B").get(row);
+        if (expectedB != null) {
+            assertEquals("min(B)", expectedB, columnMetadata.get(1).getStatistics().minAsString());
+        } else {
+            assertFalse("hasNonNull(B)", columnMetadata.get(1).getStatistics().hasNonNullValue());
+        }
+
+        final double expectedC = sourceTable.getColumnSource("C").getDouble(row);
+        if (expectedC != NULL_DOUBLE) {
+            // leave this as `assertTrue(...)`. if you change it to `assertEquals(...)`, then we will FAIL
+            // when we expect `0.0` because the "Min" statistic will return `-0.0`.
+            // `0.0 == -0.0`, but `assertEquals(0.0, -0.0) == false`.
+            assertTrue("min(C)", expectedC == ((DoubleStatistics) columnMetadata.get(2).getStatistics()).getMin());
+        } else {
+            assertFalse("hasNonNull(C)", columnMetadata.get(2).getStatistics().hasNonNullValue());
+        }
+
+        final long expectedD = sourceTable.getColumnSource("D").getLong(row);
+        if (expectedD != NULL_LONG) {
+            assertEquals("min(D)", expectedD, ((LongStatistics) columnMetadata.get(3).getStatistics()).getMin());
+        } else {
+            assertFalse("hasNonNull(D)", columnMetadata.get(3).getStatistics().hasNonNullValue());
+        }
+    }
+
+    @SuppressWarnings("SimplifiableAssertion")
+    private static void assertMaxStatisticsEquals(final Table sourceTable, final long row,
+            final List<ColumnChunkMetaData> columnMetadata) {
+        final int expectedA = sourceTable.getColumnSource("A").getInt(row);
+        if (expectedA != NULL_INT) {
+            assertEquals("max(A)", expectedA, ((IntStatistics) columnMetadata.get(0).getStatistics()).getMax());
+        } else {
+            // if we expect the Max to be `null`, then the statistic is meaningless. verify `!hasNonNullValue()` instead
+            assertFalse("hasNonNull(A)", columnMetadata.get(0).getStatistics().hasNonNullValue());
+        }
+
+        final String expectedB = (String) sourceTable.getColumnSource("B").get(row);
+        if (expectedB != null) {
+            assertEquals("max(B)", expectedB, columnMetadata.get(1).getStatistics().maxAsString());
+        } else {
+            assertFalse("hasNonNull(B)", columnMetadata.get(1).getStatistics().hasNonNullValue());
+        }
+
+        final double expectedC = sourceTable.getColumnSource("C").getDouble(row);
+        if (expectedC != NULL_DOUBLE) {
+            assertTrue("max(C)", expectedC == ((DoubleStatistics) columnMetadata.get(2).getStatistics()).getMax());
+        } else {
+            assertFalse("hasNonNull(C)", columnMetadata.get(2).getStatistics().hasNonNullValue());
+        }
+
+        final long expectedD = sourceTable.getColumnSource("D").getLong(row);
+        if (expectedD != NULL_LONG) {
+            assertEquals("max(D)", expectedD, ((LongStatistics) columnMetadata.get(3).getStatistics()).getMax());
+        } else {
+            assertFalse("hasNonNull(D)", columnMetadata.get(3).getStatistics().hasNonNullValue());
+        }
+    }
+
+    private static void assertNullStatistics(final Table sourceTable, List<ColumnChunkMetaData> columnMetadata) {
+        final long nullCntA = sourceTable.where("A = NULL_INT").size();
+        final long nullCntB = sourceTable.where("B = null").size();
+        final long nullCntC = sourceTable.where("C = NULL_DOUBLE").size();
+        final long nullCntD = sourceTable.where("D = NULL_LONG").size();
+
+        assertEquals("hasNonNull(A)", sourceTable.size() != nullCntA,
+                columnMetadata.get(0).getStatistics().hasNonNullValue());
+        assertEquals("numNulls(A)", nullCntA, columnMetadata.get(0).getStatistics().getNumNulls());
+
+        assertEquals("hasNonNull(B)", sourceTable.size() != nullCntB,
+                columnMetadata.get(1).getStatistics().hasNonNullValue());
+        assertEquals("numNulls(B)", nullCntB, columnMetadata.get(1).getStatistics().getNumNulls());
+
+        assertEquals("hasNonNull(C)", sourceTable.size() != nullCntC,
+                columnMetadata.get(2).getStatistics().hasNonNullValue());
+        assertEquals("numNulls(C)", nullCntC, columnMetadata.get(2).getStatistics().getNumNulls());
+
+        assertEquals("hasNonNull(D)", sourceTable.size() != nullCntD,
+                columnMetadata.get(3).getStatistics().hasNonNullValue());
+        assertEquals("numNulls(D)", nullCntD, columnMetadata.get(3).getStatistics().getNumNulls());
+    }
+
+    private static Table writeAndReadTable(final Table tableToWrite, final File targetFile, final RowGroupInfo rgi) {
+        final ParquetInstructions writeInstructions = new ParquetInstructions.Builder().setRowGroupInfo(rgi).build();
         ParquetTools.writeTable(tableToWrite, targetFile.getAbsolutePath(), writeInstructions);
 
         final Table readTable = ParquetTools.readTable(targetFile.getAbsolutePath());
         assertTableEquals(tableToWrite, readTable);
+        return readTable;
+    }
+
+    private static void writeAndVerifyTable(final Table tableToWrite, final File targetFile, final RowGroupInfo rgi,
+            final Long[] expectedRowGroups, final Long[] expectedMinRows, final Long[] expectedMaxRows) {
+        writeAndReadTable(tableToWrite, targetFile, rgi);
 
         final ParquetMetadata metadata =
                 new ParquetTableLocationKey(convertToURI(targetFile, false), 0, null, ParquetInstructions.EMPTY)
                         .getMetadata();
 
-        // make sure we have the expected number of RowGroups, and each RowGroup is of the expected size
+        // make sure we have the expected number of RowGroups, and each RowGroup is of the expected size and has the
+        // expected statistics for each column
         assertEquals(expectedRowGroups.length, metadata.getBlocks().size());
+        assertEquals(expectedRowGroups.length, expectedMinRows.length);
+        assertEquals(expectedRowGroups.length, expectedMaxRows.length);
+        long subTableStart = 0;
         for (int ii = 0; ii < expectedRowGroups.length; ii++) {
-            assertEquals((long) expectedRowGroups[ii], metadata.getBlocks().get(ii).getRowCount());
+            final BlockMetaData metadataBlock = metadata.getBlocks().get(ii);
+            assertEquals((long) expectedRowGroups[ii], metadataBlock.getRowCount());
+            assertMinStatisticsEquals(tableToWrite, expectedMinRows[ii], metadataBlock.getColumns());
+            assertMaxStatisticsEquals(tableToWrite, expectedMaxRows[ii], metadataBlock.getColumns());
+
+            // find the sub-table represented by this RowGroup, and use that to determine Null statistics
+            final Table subTable = tableToWrite.slice(subTableStart, subTableStart + expectedRowGroups[ii]);
+            assertNullStatistics(subTable, metadataBlock.getColumns());
+
+            subTableStart += expectedRowGroups[ii];
         }
     }
 
+    /**
+     * Write a Parquet file for each of the {@link RowGroupInfo} types. Verify that the RowGroup sizes and the
+     * Statistics for each match expectations
+     */
     @Test
     public void writingParquetWithMultipleRowGroups() {
         final Table testTable = TableTools.emptyTable(10)
@@ -3350,21 +3467,112 @@ public final class ParquetTableReadWriteTest {
         final File parentDir = new File(rootFile, "multipleRowGroups");
         parentDir.mkdir();
 
-        // write a single RowGroup
+        // write a single RowGroup. Min statistics should match the 1st row, and Max statistics should match the last
         writeAndVerifyTable(testTable, new File(parentDir, "multipleRowGroups0.parquet"), RowGroupInfo.singleGroup(),
-                new Long[] {10L});
+                new Long[] {10L},
+                new Long[] {0L}, // row [0] contains min for each column
+                new Long[] {9L}); // row [9] contains max for each column
 
-        // write a (very inefficient) table with a RowGroup dedicated to each row
+        // write a (very inefficient) table with a RowGroup dedicated to each row. since each RowGroup contains only a
+        // single row, the Min and Max statistics should be the same for each
         writeAndVerifyTable(testTable, new File(parentDir, "multipleRowGroups1.parquet"), RowGroupInfo.maxRows(1),
-                new Long[] {1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L});
+                new Long[] {1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L},
+                new Long[] {0L, 1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L}, // each row is its own min ...
+                new Long[] {0L, 1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L}); // AND max
 
         // write a table with 3 RowGroups (of sizes {4, 3, 3})
         writeAndVerifyTable(testTable, new File(parentDir, "multipleRowGroups2.parquet"), RowGroupInfo.maxGroups(3),
-                new Long[] {4L, 3L, 3L});
+                new Long[] {4L, 3L, 3L},
+                new Long[] {
+                        0L, // min of rows [0, 1, 2, 3]
+                        4L, // min of rows [4, 5, 6]
+                        7L // min of rows [7, 8, 9]
+                },
+                new Long[] {
+                        3L, // max of rows [0, 1, 2, 3]
+                        6L, // max of rows [4, 5, 6]
+                        9L // max of rows [7, 8, 9]
+                });
 
         // write a table split by column `D`, with a maximum of 3 rows per RowGroup
-        writeAndVerifyTable(testTable, new File(parentDir, "multipleRowGroups3.parquet"), RowGroupInfo.byGroups(3, "D"),
-                new Long[] {1L, 2L, 3L, 2L, 2L});
+        writeAndVerifyTable(testTable, new File(parentDir, "multipleRowGroups3.parquet"), RowGroupInfo.byGroups(3,
+                "D"),
+                new Long[] {1L, 2L, 3L, 2L, 2L},
+                new Long[] {
+                        0L, // min of rows [0]
+                        1L, // min of rows [1, 2]
+                        3L, // min of rows [3, 4, 5]
+                        6L, // min of rows [6, 7]
+                        8L // min of rows [8, 9]
+                },
+                new Long[] {
+                        0L, // max of rows [0]
+                        2L, // max of rows [1, 2]
+                        5L, // max of rows [3, 4, 5]
+                        7L, // max of rows [6, 7]
+                        9L // max of rows [8, 9]
+                });
+
+        FileUtils.deleteRecursively(parentDir);
+    }
+
+    /**
+     * Write a parquet file with a number of RowGroups, and verify each RowGroup matches expectations (including null
+     * counts)
+     */
+    @Test
+    public void testRowGroupStatistics() {
+        // will be 1st RowGroup ...
+        final Table rg1 = TableTools.newTable(
+                intCol("A", 42, NULL_INT, 99),
+                stringCol("B", "a", null, "b"),
+                doubleCol("C", -1.0, NULL_DOUBLE, 1.0),
+                longCol("D", 0L, 0L, 0L));
+
+        // will be 2nd RowGroup ...
+        final Table rg2 = TableTools.newTable(
+                intCol("A", 41, NULL_INT, 98, NULL_INT),
+                stringCol("B", "c", null, "d", null),
+                doubleCol("C", -10.0, NULL_DOUBLE, 10.0, NULL_DOUBLE),
+                longCol("D", 1L, 1L, 1L, 1L));
+
+        // will be 3rd RowGroup ...
+        final Table rg3 = TableTools.newTable(
+                intCol("A", 100, NULL_INT, 98, NULL_INT, 40),
+                stringCol("B", "g", null, "f", null, "e"),
+                doubleCol("C", 11.0, NULL_DOUBLE, 0.0, NULL_DOUBLE, -11.0),
+                longCol("D", 2L, 2L, 2L, 2L, 2L));
+
+        // will be 4th RowGroup (all nulls)
+        final Table rg4 = TableTools.newTable(
+                intCol("A", NULL_INT, NULL_INT, NULL_INT),
+                stringCol("B", null, null, null),
+                doubleCol("C", NULL_DOUBLE, NULL_DOUBLE, NULL_DOUBLE),
+                longCol("D", NULL_LONG, NULL_LONG, NULL_LONG));
+
+        final Table[] rowGroupTables = new Table[] {rg1, rg2, rg3, rg4};
+
+        final File parentDir = new File(rootFile, "rowGroupStatistics");
+        parentDir.mkdir();
+
+        final File targetFile = new File(parentDir, "rowGroupStatistics.parquet");
+        writeAndReadTable(merge(rowGroupTables), targetFile, RowGroupInfo.byGroups("D"));
+
+        final ParquetMetadata metadata =
+                new ParquetTableLocationKey(convertToURI(targetFile, false), 0, null, ParquetInstructions.EMPTY)
+                        .getMetadata();
+
+        assertEquals(rowGroupTables.length, metadata.getBlocks().size());
+        for (int ii = 0; ii < rowGroupTables.length; ii++) {
+            final Table rowGroupTable = rowGroupTables[ii];
+            final BlockMetaData metadataBlock = metadata.getBlocks().get(ii);
+            assertEquals(rowGroupTable.size(), metadataBlock.getRowCount());
+
+            // verify Min, Max, and Null statistics per RowGroup ...
+            assertMinStatisticsEquals(rowGroupTable.minBy(), 0, metadataBlock.getColumns());
+            assertMaxStatisticsEquals(rowGroupTable.maxBy(), 0, metadataBlock.getColumns());
+            assertNullStatistics(rowGroupTable, metadataBlock.getColumns());
+        }
 
         FileUtils.deleteRecursively(parentDir);
     }

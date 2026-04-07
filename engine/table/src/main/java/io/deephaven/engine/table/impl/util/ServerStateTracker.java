@@ -15,16 +15,22 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.stream.StreamToBlinkTableAdapter;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.process.ProcessEnvironment;
+import io.deephaven.util.process.ShutdownManager;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Arrays;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 public class ServerStateTracker {
     private static final long REPORT_INTERVAL_MILLIS = Configuration.getInstance().getLongForClassWithDefault(
             ServerStateTracker.class, "reportIntervalMillis", 15 * 1000L);
+    private static final long SHUTDOWN_TIMEOUT_NANOS = TimeUnit.SECONDS.toNanos(1);
 
     private static volatile ServerStateTracker INSTANCE;
     private static boolean started = false;
@@ -67,11 +73,30 @@ public class ServerStateTracker {
 
     private void startThread() {
         final ExecutionContext executionContext = ExecutionContext.getContext();
-        Thread driverThread = new Thread(
-                new ServerStateTracker.Driver(executionContext),
+        final Driver driver = new Driver(executionContext);
+        final Thread driverThread = new Thread(
+                driver,
                 ServerStateTracker.class.getSimpleName() + ".Driver");
         driverThread.setDaemon(true);
         driverThread.start();
+        final ShutdownManager shutdownManager = ProcessEnvironment.getGlobalShutdownManager();
+        // TODO(DH-21651): Improve shutdown ordering constraints
+        final long[] deadline = new long[1];
+        shutdownManager.registerTask(ShutdownManager.OrderingCategory.FIRST, () -> {
+            deadline[0] = System.nanoTime() + SHUTDOWN_TIMEOUT_NANOS;
+            driver.shutdown();
+        });
+        shutdownManager.registerTask(ShutdownManager.OrderingCategory.MIDDLE, () -> {
+            final long remainingNanos = deadline[0] - System.nanoTime();
+            final long remainingMillis = TimeUnit.NANOSECONDS.toMillis(remainingNanos);
+            if (remainingMillis > 0) {
+                try {
+                    driverThread.join(remainingMillis);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+        });
     }
 
     public static synchronized void start() {
@@ -131,42 +156,56 @@ public class ServerStateTracker {
 
     private class Driver implements Runnable {
         private final ExecutionContext executionContext;
+        private final CountDownLatch shutdownLatch;
 
         public Driver(@NotNull final ExecutionContext executionContext) {
             this.executionContext = executionContext;
+            this.shutdownLatch = new CountDownLatch(1);
         }
 
         @Override
         public void run() {
-            final RuntimeMemory.Sample memSample = new RuntimeMemory.Sample();
-            // noinspection InfiniteLoopStatement
-            while (true) {
-                final long intervalStartTimeMillis = System.currentTimeMillis();
-                try {
-                    Thread.sleep(REPORT_INTERVAL_MILLIS);
-                } catch (InterruptedException ignore) {
-                    // should log, but no logger handy
-                    // ignore
+            try (final ServerStateLogLogger ignored = processMemLogger) {
+                final RuntimeMemory.Sample memSample = new RuntimeMemory.Sample();
+                while (shutdownLatch.getCount() != 0) {
+                    final long intervalStartTimeMillis = System.currentTimeMillis();
+                    try {
+                        if (shutdownLatch.await(REPORT_INTERVAL_MILLIS, TimeUnit.MILLISECONDS)) {
+                            return;
+                        }
+                    } catch (InterruptedException e) {
+                        // unexpected; should not be interrupting this thread
+                    }
+                    runOne(memSample, intervalStartTimeMillis);
                 }
-                final long prevTotalCollections = memSample.totalCollections;
-                final long prevTotalCollectionTimeMs = memSample.totalCollectionTimeMs;
-                RuntimeMemory.getInstance().read(memSample);
-                executionContext.getUpdateGraph().<PeriodicUpdateGraph>cast()
-                        .takeAccumulatedCycleStats(ugpAccumCycleStats);
-                final long endTimeMillis = System.currentTimeMillis();
-                try (final SafeCloseable ignored = executionContext.open()) {
-                    logProcessMem(
-                            intervalStartTimeMillis,
-                            endTimeMillis,
-                            memSample,
-                            prevTotalCollections,
-                            prevTotalCollectionTimeMs,
-                            ugpAccumCycleStats.cycles,
-                            ugpAccumCycleStats.cyclesOnBudget,
-                            ugpAccumCycleStats.cycleTimesMicros,
-                            ugpAccumCycleStats.safePoints,
-                            ugpAccumCycleStats.safePointPauseTimeMillis);
-                }
+            } catch (final IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        }
+
+        public void shutdown() {
+            shutdownLatch.countDown();
+        }
+
+        private void runOne(final RuntimeMemory.Sample memSample, final long intervalStartTimeMillis) {
+            final long prevTotalCollections = memSample.totalCollections;
+            final long prevTotalCollectionTimeMs = memSample.totalCollectionTimeMs;
+            RuntimeMemory.getInstance().read(memSample);
+            executionContext.getUpdateGraph().<PeriodicUpdateGraph>cast()
+                    .takeAccumulatedCycleStats(ugpAccumCycleStats);
+            final long endTimeMillis = System.currentTimeMillis();
+            try (final SafeCloseable ignored = executionContext.open()) {
+                logProcessMem(
+                        intervalStartTimeMillis,
+                        endTimeMillis,
+                        memSample,
+                        prevTotalCollections,
+                        prevTotalCollectionTimeMs,
+                        ugpAccumCycleStats.cycles,
+                        ugpAccumCycleStats.cyclesOnBudget,
+                        ugpAccumCycleStats.cycleTimesMicros,
+                        ugpAccumCycleStats.safePoints,
+                        ugpAccumCycleStats.safePointPauseTimeMillis);
             }
         }
     }

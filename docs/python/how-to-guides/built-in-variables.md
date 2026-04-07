@@ -1,6 +1,6 @@
 ---
 title: Built-in query language variables
-sidebar_label: Built-in Variables
+sidebar_label: Built-in variables
 ---
 
 There are three special built-in query language variables worth noting. They correspond to row indices in tables.

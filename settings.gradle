@@ -365,6 +365,9 @@ project(':qst-type').projectDir = file('qst/type')
 
 include(':application-mode')
 
+include(':util-annotations')
+project(':util-annotations').projectDir = file('Util/annotations')
+
 include(':util-immutables')
 project(':util-immutables').projectDir = file('Util/immutables')
 

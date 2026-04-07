@@ -23,10 +23,7 @@ though this is subject to change.
 
 ### Shared lock
 
-The **shared lock** is typically held while running table operations ([`.where`](../../reference/table-operations/filter/where.md), [`.naturalJoin`](../../reference/table-operations/join/natural-join.md), etc.) from
-independent threads, outside the Deephaven console and [app mode](../../reference/app-mode/application-mode-config.md) startup
-scripts. It can also be used when reading copious amounts of data from tables, but it is usually preferable to
-use [snapshotting](#snapshotting) in these cases to avoid the need to acquire the shared lock.
+The **shared lock** is typically held while running table operations ([`where`](../../reference/table-operations/filter/where.md), [`naturalJoin`](../../reference/table-operations/join/natural-join.md), etc.) from independent threads, outside the Deephaven console and [app mode](../../reference/app-mode/application-mode-config.md) startup scripts. It can also be used when reading copious amounts of data from tables, but it is usually preferable to use [snapshotting](#snapshotting) in these cases to avoid the need to acquire the shared lock.
 
 Any threads waiting for shared lock while the Periodic Update Graph is running will acquire it once the UG completes
 its cycle and releases the exclusive lock. Any thread can immediately acquire the shared lock while the Update Graph
@@ -45,26 +42,13 @@ an [app mode](../../reference/app-mode/application-mode-config.md) startup scrip
 Users do not typically interact with this lock directly, but in certain cases it is used when waiting for changes from
 the Periodic Update Graph.
 
-Most commonly, when waiting for table updates
-(using [`awaitUpdate()`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/Table.html#awaitUpdate())), the
-exclusive lock is acquired automatically. This is required if a Periodic Update Graph cycle must occur in the middle
-of another operation — for example, if data is flushed to a [DynamicTableWriter](../../reference/table-operations/create/DynamicTableWriter.md)
-in the middle of query initialization, it will not be reflected in the output table until the Periodic Update Graph
-runs a refresh cycle.
+Most commonly, when waiting for table updates (using [`awaitUpdate`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/Table.html#awaitUpdate())), the exclusive lock is acquired automatically. This is required if a Periodic Update Graph cycle must occur in the middle of another operation — for example, if data is flushed to a [DynamicTableWriter](../../reference/table-operations/create/DynamicTableWriter.md) in the middle of query initialization, it will not be reflected in the output table until the Periodic Update Graph runs a refresh cycle.
 
 > [!NOTE]
 > Upgrading from the shared lock to the exclusive lock is not supported and will throw an exception.
-> Accordingly, `awaitUpdate()` cannot be used while shared lock is held.
+> Accordingly, `awaitUpdate` cannot be used while shared lock is held.
 
-In advanced cases where `awaitUpdate()` is insufficient, the exclusive lock can also be held in order to wait
-on [conditions](https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/util/concurrent/locks/Condition.html)
-from the UG. This is helpful in situations where an independent (non-UG) thread must wait for a change or notification
-propagated by the Periodic Update Graph, often in conjunction with a
-custom [listener](/core/javadoc/io/deephaven/engine/table/TableUpdateListener.html). In this
-situation, a condition can be obtained using `ExecutionContext.getContext().getUpdateGraph().exclusiveLock().newCondition()`, the
-independent thread can [`await()`](https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/util/concurrent/locks/Condition.html#await())
-the condition, and the can condition can be signaled by calling [`requestSignal()`](https://deephaven.io/core/javadoc/io/deephaven/engine/updategraph/UpdateGraph.html#requestSignal(java.util.concurrent.locks.Condition))
-from the Periodic Update Graph's refresh thread. A simple example of this pattern that can be run in Groovy is
+In advanced cases where `awaitUpdate` is insufficient, the exclusive lock can also be held in order to wait on [conditions](https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/util/concurrent/locks/Condition.html) from the UG. This is helpful in situations where an independent (non-UG) thread must wait for a change or notification propagated by the Periodic Update Graph, often in conjunction with a custom [listener](../../how-to-guides/table-listeners-groovy.md). In this situation, a condition can be obtained using `ExecutionContext.getContext().getUpdateGraph().exclusiveLock().newCondition()`, the independent thread can [`await`](https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/util/concurrent/locks/Condition.html#await()) the condition, and the can condition can be signaled by calling [`requestSignal`](https://deephaven.io/core/javadoc/io/deephaven/engine/updategraph/UpdateGraph.html#requestSignal(java.util.concurrent.locks.Condition)) from the Periodic Update Graph's refresh thread. A simple example of this pattern that can be run in Groovy is
 provided below:
 
 ```groovy skip-test
@@ -107,7 +91,7 @@ myTable.addUpdateListener(myListener);
 
 The output to demonstrates the progress of the two threads. First, `myIndependentThread` acquires the lock and
 waits for the condition. Shortly afterward, the Periodic Update Graph processes a new `timeTable` tick on its
-five-second interval — triggering the listener's `onUpdate()` method, which signals the condition. After the condition
+five-second interval — triggering the listener's `onUpdate` method, which signals the condition. After the condition
 has been signaled and the Periodic Update Graph finishes its cycle, `myIndependentThread` returns from
 `myCondition.await()` and resumes execution. The Periodic Update Graph will continue to run the listener until the
 listener is either [removed](https://deephaven.io/core/javadoc/io/deephaven/engine/table/Table.html#removeUpdateListener(io.deephaven.engine.table.TableUpdateListener))
@@ -134,7 +118,7 @@ to execute (the [`SnapshotFunction`](/core/javadoc/io/deephaven/engine/table/imp
 is passed as an argument (typically a lambda expression). This simplifies the standard `try`/`finally`
 locking pattern (demonstrated under [Explicit locking and unlocking](#explicit-locking-and-unlocking))
 
-The `doLocked()` method allows for arbitrary code to be executed while holding the lock:
+The `doLocked` method allows for arbitrary code to be executed while holding the lock:
 
 ```groovy skip-test
 Table myTable = getMyTable();
@@ -146,7 +130,7 @@ ExecutionContext.getContext().getUpdateGraph().sharedLock().doLocked( () -> {
 ```
 
 It is also possible to compute a value while holding the lock and return it directly to the caller,
-using `computeLocked()`:
+using `computeLocked`:
 
 ```groovy skip-test
 Table myTable = getMyTable();
@@ -156,7 +140,7 @@ String[] myColAsArray = ExecutionContext.getContext().getUpdateGraph().sharedLoc
 });
 ```
 
-Both `doLocked()` and `computeLocked()` allow the supplier to throw [checked exceptions](https://docs.oracle.com/javase/specs/jls/se7/html/jls-11.html#jls-11.2.3)
+Both `doLocked` and `computeLocked` allow the supplier to throw [checked exceptions](https://docs.oracle.com/javase/specs/jls/se7/html/jls-11.html#jls-11.2.3)
 (e.g. `IOException`, `TimeoutException`, or anything else that is not a subclass of `RuntimeException`). In these cases,
 the caller must handle the potential exception.
 
@@ -170,9 +154,9 @@ try {
 
 ##### Explicit locking and unlocking
 
-Although it is not recommended, it is also possible to acquire and release a lock explicitly using the `lock()` and
-`unlock()` methods. When doing so, you must take care to ensure that the lock is always released in a `finally` block,
-so that it is guaranteed to be released even when exceptions or errors occur. (The `doLocked()` and `computeLocked()`
+Although it is not recommended, it is also possible to acquire and release a lock explicitly using the `lock` and
+`unlock` methods. When doing so, you must take care to ensure that the lock is always released in a `finally` block,
+so that it is guaranteed to be released even when exceptions or errors occur. (The `doLocked` and `computeLocked`
 methods handle this automatically.)
 
 Below is an example of the correct way to use the shared lock with explicit locking.
@@ -196,7 +180,7 @@ safely, quickly, and without blocking the Periodic Update Graph.
 
 Snapshots are performed
 using [`ConstructSnapshot.callDataSnapshotFunction()`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/remote/ConstructSnapshot.html#callDataSnapshotFunction(java.lang.String,io.deephaven.engine.table.impl.remote.ConstructSnapshot.SnapshotControl,io.deephaven.engine.table.impl.remote.ConstructSnapshot.SnapshotFunction)),
-which will attempt the operation without acquiring a lock, then verify that the UG did not change any data
+which will attempt the operation without acquiring a lock, then verify that the Update Graph did not change any data
 while the operation was running. If data may have changed while the operation was running, the snapshotting mechanism
 will retry the operation.
 
@@ -225,7 +209,7 @@ There are two steps to obtaining a snapshot of tables (or other data updated by 
 To obtain snapshots, first use
 [`ConstructSnapshot.makeSnapshotControl()`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/remote/ConstructSnapshot.html#makeSnapshotControl(boolean,boolean,io.deephaven.engine.table.impl.NotificationStepSource))
 to create a `SnapshotControl` object, which tells the query engine how to verify that the snapshot result is correct.
-The `makeSnapshotControl()` parameters `isNotificationAware`, `isRefreshing` and `sources` control this verification process.
+The `makeSnapshotControl` parameters `isNotificationAware`, `isRefreshing` and `sources` control this verification process.
 
 | Parameter Name        | Description                                                                                                                                                                                                                                  |
 | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -238,7 +222,7 @@ The `makeSnapshotControl()` parameters `isNotificationAware`, `isRefreshing` and
 To run a snapshot, pass a log prefix, the snapshot control object, and the
 [snapshot function](/core/javadoc/io/deephaven/engine/table/impl/remote/ConstructSnapshot.SnapshotFunction.html)
 itself (typically a lambda) to
-[`callDataSnapshotFunction()`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/remote/ConstructSnapshot.html#callDataSnapshotFunction(java.lang.String,io.deephaven.engine.table.impl.remote.ConstructSnapshot.SnapshotControl,io.deephaven.engine.table.impl.remote.ConstructSnapshot.SnapshotFunction))
+[`callDataSnapshotFunction`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/remote/ConstructSnapshot.html#callDataSnapshotFunction(java.lang.String,io.deephaven.engine.table.impl.remote.ConstructSnapshot.SnapshotControl,io.deephaven.engine.table.impl.remote.ConstructSnapshot.SnapshotFunction))
 to begin the snapshot process. The snapshot function may be called repeatedly, with or without the lock, depending on
 the configured limits on concurrent attempts. The `usePrev` parameter informs the snapshot function of whether
 it should use values from the current cycle or the previous cycle — if the UpdateGraph is running when the
@@ -273,7 +257,7 @@ boolean isNotificationAware = false;
 boolean isRefreshing = myTable.isRefreshing() || myTable2.isRefreshing();
 
 // It is *essential* that all tables referenced by the snapshot function (e.g. myTable and myTable2)
-// are included in the 'sources' parameter of `makeSnapshotControl()`.
+// are included in the 'sources' parameter of `makeSnapshotControl`.
 ConstructSnapshot.SnapshotControl snapshotControl = ConstructSnapshot.makeSnapshotControl(
   isNotificationAware,
   isRefreshing,
@@ -322,9 +306,9 @@ System.out.println("String from idx 0 of table: " + snapshotResult.getPlain());
 If the snapshot function returns `false`, it is assumed that the data was inconsistent and the snapshot function is
 rerun. If the snapshot function completes by returning `true` or throwing an exception, the `SnapshotControl` will be
 used to validate that the data used by the snapshot is consistent — if not, the snapshot function is rerun. (The
-exceptions are only propagated by `callDataSnapshotFunction()` when validation succeeds, since it is expected that
+exceptions are only propagated by `callDataSnapshotFunction` when validation succeeds, since it is expected that
 exceptions may occur when the data is inconsistent.) If the snapshot function throws an exception or returns `false`
-after `callDataSnapshotFunction()` has acquired the shared lock, then `callDataSnapshotFunction()` will throw
+after `callDataSnapshotFunction` has acquired the shared lock, then `callDataSnapshotFunction` will throw
 an exception.
 
 #### Early stopping of inconsistent snapshots
@@ -396,7 +380,7 @@ While the right choice among snapshots and locks depends heavily on the operatio
 from, the following guidelines can be helpful in making the choice:
 
 - When running code in the Deephaven console, it's rarely necessary to worry about any of these mechanisms — the exclusive lock is automatically held when running code in the console.
-- Use **_snapshots_** for filters and sorts in service of a user interface. (The Deephaven UI itself uses snapshotting to maximize responsiveness.) Snapshots can be processed even while the UG is updating, and in some cases they return considerably more quickly than a lock could be acquired.
+- Use **_snapshots_** for filters and sorts in service of a user interface. (The Deephaven UI itself uses snapshotting to maximize responsiveness.) Snapshots can be processed even while the Update Graph is updating, and in some cases they return considerably more quickly than a lock could be acquired.
 - Use the **_shared lock_** when running table operations from a context that does not already hold a lock (e.g. arbitrary threads). Most table operations (beyond filters and sorts) cannot be initialized within a snapshot and must be run under a lock, and the shared lock is preferable to the exclusive lock because it allows multiple threads to run concurrently.
 - Use the **_exclusive lock_** in advanced cases that must wait on processing performed by the Periodic Update Graph's refresh thread and are not served by [`Table.awaitUpdate()`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/Table.html#awaitUpdate()).
 

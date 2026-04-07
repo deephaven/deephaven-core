@@ -37,10 +37,10 @@ public class HasEventHandling {
     /**
      * Listen for events on this object.
      *
-     * @param name the name of the event to listen for
-     * @param callback a function to call when the event occurs
+     * @param name The name of the event to listen for.
+     * @param callback A function to call when the event occurs.
      * @return Returns a cleanup function.
-     * @param <T> the type of the data that the event will provide
+     * @param <T> The type of the data that the event will provide.
      */
     @JsMethod
     public <T> RemoverFn addEventListener(String name, EventFn<T> callback) {

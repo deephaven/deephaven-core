@@ -8,6 +8,7 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.NoSuchColumnException;
 import io.deephaven.qst.type.PrimitiveType;
 import io.deephaven.qst.type.Type;
+import org.apache.iceberg.PartitionField;
 import org.apache.iceberg.PartitionFieldHack;
 import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.PartitionSpecHack;
@@ -172,51 +173,33 @@ class ResolverTest {
     }
 
     @Test
-    void partitioningColumnSchemaFieldPartitionSpec() {
+    void partitioningColumn() {
         final Schema schema = simpleSchema(IT);
-        final PartitionSpec spec = PartitionSpec.builderFor(schema).identity("F1").build();
-        final TableDefinition td = TableDefinition.of(
-                ColumnDefinition.ofInt("F1").withPartitioning(),
-                ColumnDefinition.ofInt("F2"));
-        Resolver.builder()
-                .schema(schema)
-                .spec(spec)
-                .definition(td)
-                .putColumnInstructions("F1", schemaField(42))
-                .putColumnInstructions("F2", schemaField(43))
-                .build();
-    }
+        final NestedField f1 = schema.findField("F1");
+        final NestedField f2 = schema.findField("F2");
+        final PartitionSpec partitionSpec = PartitionSpec.builderFor(schema).identity("F1").build();
+        final PartitionField partitionField = partitionSpec.fields().get(0);
 
-    @Test
-    void partitioningColumnPartitionFieldPartitionSpec() {
-        final Schema schema = simpleSchema(IT);
-        final PartitionSpec spec = PartitionSpec.builderFor(schema).identity("F1").build();
-        final TableDefinition td = TableDefinition.of(
-                ColumnDefinition.ofInt("F1").withPartitioning(),
-                ColumnDefinition.ofInt("F2"));
-        Resolver.builder()
-                .schema(schema)
-                .spec(spec)
-                .definition(td)
-                .putColumnInstructions("F1", partitionField(spec.fields().get(0).fieldId()))
-                .putColumnInstructions("F2", schemaField(43))
-                .build();
-    }
+        final ColumnDefinition<Integer> f1Cd = ColumnDefinition.ofInt("DH_F1").withPartitioning();
+        final ColumnDefinition<Integer> f2Cd = ColumnDefinition.ofInt("DH_F2");
+        final TableDefinition td = TableDefinition.of(f1Cd, f2Cd);
+        final ColumnInstructions f2Instructions = schemaField(f2.fieldId());
 
-    @Test
-    void partitioningColumnSchemaFieldNamePartitionSpec() {
-        final Schema schema = simpleSchema(IT);
-        final PartitionSpec spec = PartitionSpec.builderFor(schema).identity("F1").build();
-        final TableDefinition td = TableDefinition.of(
-                ColumnDefinition.ofInt("F1").withPartitioning(),
-                ColumnDefinition.ofInt("F2"));
-        Resolver.builder()
-                .schema(schema)
-                .spec(spec)
-                .definition(td)
-                .putColumnInstructions("F1", schemaFieldName("F1"))
-                .putColumnInstructions("F2", schemaField(43))
-                .build();
+        // There are three ways to reference a partition field - you can use schemaField, partitionField, or
+        // schemaFieldName. These will all resolve to the same PartitionField.
+        for (final ColumnInstructions f1Instructions : List.of(
+                schemaField(f1.fieldId()),
+                partitionField(partitionField.fieldId()),
+                schemaFieldName(f1.name()))) {
+            final Resolver resolver = Resolver.builder()
+                    .schema(schema)
+                    .spec(partitionSpec)
+                    .definition(td)
+                    .putColumnInstructions(f1Cd.getName(), f1Instructions)
+                    .putColumnInstructions(f2Cd.getName(), f2Instructions)
+                    .build();
+            assertThat(resolver.partitionField(f1Cd)).isSameAs(partitionField);
+        }
     }
 
     @Test

@@ -52,7 +52,7 @@ import static io.deephaven.util.type.TypeUtils.unbox;
  */
 public class LongArraySource extends ArraySourceHelper<Long, long[]>
         implements MutableColumnSourceGetDefaults.ForLong , ConvertibleTimeSource {
-    private static final SoftRecycler<long[]> recycler = new SoftRecycler<>(DEFAULT_RECYCLER_CAPACITY,
+    private static final SoftRecycler<long[]> recycler = new SoftRecycler<>(ArrayColumnSourceConfiguration.LONG_RECYCLER_CAPACITY,
             () -> new long[BLOCK_SIZE], null);
 
     private long[][] blocks;

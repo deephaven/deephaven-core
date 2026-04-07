@@ -39,8 +39,8 @@ import static io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource.BLO
  */
 class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
 
-    private final GroupByChunkedOperator groupBy;
-    private final boolean delegateToBy;
+    private GroupByChunkedOperator groupBy;
+    private boolean delegateToBy;
     private final String[] inputColumnNames;
     private final String[] resultColumnNames;
 
@@ -301,12 +301,13 @@ class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
     }
 
     @Override
-    public void resetForStep(@NotNull final TableUpdate upstream, final int startingDestinationsCount) {
+    public boolean resetForStep(@NotNull final TableUpdate upstream, final int startingDestinationsCount) {
         if (delegateToBy) {
             groupBy.resetForStep(upstream, startingDestinationsCount);
         }
         updateUpstreamModifiedColumnSet =
                 upstream.modified().isEmpty() ? ModifiedColumnSet.EMPTY : upstream.modifiedColumnSet();
+        return false;
     }
 
     @Override
@@ -493,5 +494,10 @@ class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
                     || resultModifiedColumnSet.containsAny(resultColumnModifiedColumnSets[ci]);
         }
         return columnsMask;
+    }
+
+    public void updateGroupBy(GroupByChunkedOperator groupBy, boolean delegateToBy) {
+        this.groupBy = groupBy;
+        this.delegateToBy = delegateToBy;
     }
 }

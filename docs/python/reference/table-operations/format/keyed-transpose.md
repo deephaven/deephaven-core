@@ -122,3 +122,4 @@ Given the above contract, and to give you more control over the result, it may b
 ## Related documentation
 
 - [Javadoc](/core/javadoc/io/deephaven/engine/table/impl/util/KeyedTranspose.html)
+- [Pydoc](https://docs.deephaven.io/core/pydoc/code/deephaven.table.html#deephaven.table.keyed_transpose)

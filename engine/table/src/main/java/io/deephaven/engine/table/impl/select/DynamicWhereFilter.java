@@ -315,7 +315,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
     private void computeTupleIndexMaps() {
         assert sourceDataIndex != null;
 
-        if (sourceDataIndex.keyColumns().length == 1) {
+        if (sourceDataIndex.keyColumns().length == 1 && sourceKeyColumns.length == 1) {
             // Trivial mapping, no need to compute anything.
             return;
         }

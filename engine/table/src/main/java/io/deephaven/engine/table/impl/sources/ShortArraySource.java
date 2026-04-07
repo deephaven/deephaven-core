@@ -41,7 +41,7 @@ import static io.deephaven.util.type.TypeUtils.unbox;
  */
 public class ShortArraySource extends ArraySourceHelper<Short, short[]>
         implements MutableColumnSourceGetDefaults.ForShort /* MIXIN_IMPLS */ {
-    private static final SoftRecycler<short[]> recycler = new SoftRecycler<>(DEFAULT_RECYCLER_CAPACITY,
+    private static final SoftRecycler<short[]> recycler = new SoftRecycler<>(ArrayColumnSourceConfiguration.SHORT_RECYCLER_CAPACITY,
             () -> new short[BLOCK_SIZE], null);
 
     private short[][] blocks;

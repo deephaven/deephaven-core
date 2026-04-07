@@ -70,7 +70,7 @@ Consider the following formula:
 Fahrenheit = (Celsius * 9 / 5) + 32
 ```
 
-You may recognize this formula—it calculates the temperature in Fahrenheit given a temperature in Celsius. Going from left to right, the formula can be broken down as follows:
+You may recognize this formula — it calculates the temperature in Fahrenheit given a temperature in Celsius. Going from left to right, the formula can be broken down as follows:
 
 - `Fahrenheit` is the name of the resultant column.
 - `(` and `)` are parentheses used to group operations.

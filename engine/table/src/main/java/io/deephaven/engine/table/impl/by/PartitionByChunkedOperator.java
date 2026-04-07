@@ -618,7 +618,7 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
     }
 
     @Override
-    public void resetForStep(@NotNull final TableUpdate upstream, int startingDestinationsCount) {
+    public boolean resetForStep(@NotNull final TableUpdate upstream, int startingDestinationsCount) {
         stepUpdatedDestinations = RowSetFactory.empty();
         final boolean upstreamModified = upstream.modified().isNonempty() && upstream.modifiedColumnSet().nonempty();
         if (upstreamModified) {
@@ -628,6 +628,7 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
         } else {
             stepValuesModified = false;
         }
+        return false;
     }
 
     @Override

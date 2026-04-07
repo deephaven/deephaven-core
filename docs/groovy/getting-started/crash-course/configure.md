@@ -11,7 +11,7 @@ Keeping your real-time data secure is one of Deephaven's top priorities. As such
 
 ![Docker logs showing the PSK](../../assets/how-to/docker-logs.png)
 
-It is advised that you change the password from a randomly generated string to your own password for enhanced security. For the [Docker one-liner installation](../../getting-started/quickstart.md#1-install-and-launch-deephaven), you can set your password with the `-Dauthentication.psk` flag:
+It is advised that you change the password from a randomly generated string to your own password for enhanced security. For the [Docker one-liner installation](../../getting-started/docker-install.md), you can set your password with the `-Dauthentication.psk` flag:
 
 ```bash skip-test
 docker run --rm --name deephaven -p 10000:10000 -v data:/data  --env START_OPTS=-Dauthentication.psk=YOUR_PASSWORD_HERE ghcr.io/deephaven/server-slim:latest

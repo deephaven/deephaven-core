@@ -16,7 +16,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * Describes a template that will be used to make new series instances when a new table added to a plotBy.
+ * Describes a template that will be used to make new series instances when a new table added to a {@code plotBy}.
  */
 @TsInterface
 @TsName(name = "MultiSeries", namespace = "dh.plot")
@@ -134,7 +134,7 @@ public class JsMultiSeries {
     }
 
     /**
-     * The plotting style to use for the series that will be created. See <b>SeriesPlotStyle</b> enum for more details.
+     * The plotting style to use for the series that will be created. See {@code SeriesPlotStyle} enum for more details.
      * 
      * @return int
      *

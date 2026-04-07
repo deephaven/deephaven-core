@@ -105,7 +105,7 @@ Type-specific `ColumnSource` methods:
 - `get(rowKey)` for object columns
 
 > [!WARNING]
-> Using `.j_object` directly accesses the Java layer and is not idiomatic Python. Use `to_numpy()` for most use cases.
+> Using `.j_object` directly accesses the Java layer and is not idiomatic Python. Use `to_numpy` for most use cases.
 
 ## Related documentation
 

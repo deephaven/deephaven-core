@@ -10,7 +10,7 @@ This guide discusses how to export table data to CSV (or other delimited) files 
 
 ## `write_csv`
 
-The basic syntax for `write_csv` is as follows:
+The basic syntax for `write_csv` is:
 
 ```python syntax
 from deephaven import write_csv
@@ -21,7 +21,7 @@ write_csv(table, "/data/outputFile.csv")
 > [!NOTE]
 > Deephaven writes files to locations relative to the base of its Docker container. See [Docker data volumes](../../conceptual/docker-data-volumes.md) to learn more about the relation between locations in the container and the local file system.
 
-We'll create a table to export by using [`empty_Table`](../../reference/table-operations/create/emptyTable.md) and [`update`](../../reference/table-operations/select/update.md). The table contains 100 rows of trigonometric values.
+We'll create a table to export by using [`empty_table`](../../reference/table-operations/create/emptyTable.md) and [`update`](../../reference/table-operations/select/update.md). The table contains 100 rows of trigonometric values.
 
 ```python test-set=1
 from deephaven import empty_table
@@ -80,7 +80,7 @@ from deephaven import write_csv
 write_csv(source_with_nulls, "/data/TrigFunctionsWithNulls.csv")
 ```
 
-![The newly writted CSV file](../../assets/how-to/TrigFunctions_basicWithNulls.png)
+![The newly written CSV file](../../assets/how-to/TrigFunctions_basicWithNulls.png)
 
 ### Column selection
 

@@ -8,6 +8,7 @@ import io.deephaven.api.Selectable;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
+import io.deephaven.engine.liveness.SingletonLivenessManager;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.select.*;
@@ -165,6 +166,18 @@ public class QueryTableWhereInTest {
     }
 
     @Test
+    public void testPartialOutOfOrderDataIndex() {
+        final Table toFilter = TableTools.newTable(
+                stringCol("SC", "Alpha", "Bravo", "Charlie", "Alpha", "Bravo", "Charlie", "Delta", "Echo", "Foxtrot",
+                        "Golf", "Hotel", "India", "Lima", "Kilo"),
+                intCol("IC", 1, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3));
+        DataIndexer.getOrCreateDataIndex(toFilter, "IC");
+        final Table setTable = TableTools.newTable(stringCol("S1", "Alpha", "Bravo"), intCol("IC", 1, 2));
+        final Table result = toFilter.whereIn(setTable, "SC=S1", "IC=IC");
+        assertTableEquals(toFilter.head(2), result);
+    }
+
+    @Test
     public void testWhereDynamicIn() {
         final QueryTable setTable = testRefreshingTable(i(2, 4, 6, 8).toTracking(), col("X", "A", "B", "C", "B"));
         final QueryTable filteredTable = testRefreshingTable(i(1, 2, 3, 4, 5).toTracking(),
@@ -218,6 +231,41 @@ public class QueryTableWhereInTest {
             assertArrayEquals(new String[] {"D", "E"},
                     ColumnVectors.ofObject(resultInverse, "X", String.class).toArray());
         });
+    }
+
+    @Test
+    public void testWhereInStaticSet() {
+        final Table setTable = testTable(i(2, 4, 6, 8).toTracking(), col("X", "A", "B", "C", "B"));
+        assertFalse(setTable.isRefreshing());
+
+        final QueryTable filteredTable = testRefreshingTable(i(1, 2, 3, 4, 5).toTracking(),
+                col("X", "A", "B", "C", "D", "E"));
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
+        final Table result = updateGraph.exclusiveLock().computeLocked(
+                () -> filteredTable.whereIn(setTable, "X"));
+        show(result);
+        assertEquals(3, result.size());
+        assertArrayEquals(new String[] {"A", "B", "C"}, ColumnVectors.ofObject(result, "X", String.class).toArray());
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(filteredTable, i(6), col("X", "A"));
+            filteredTable.notifyListeners(i(6), i(), i());
+        });
+        show(result);
+        assertEquals(4, result.size());
+        assertArrayEquals(new String[] {"A", "B", "C", "A"},
+                ColumnVectors.ofObject(result, "X", String.class).toArray());
+
+        final DynamicWhereFilter dynamicWhereFilter =
+                new DynamicWhereFilter((QueryTable) setTable, true, MatchPairFactory.getExpressions("X"));
+        final WhereFilter invert = WhereFilterInvertedImpl.of(dynamicWhereFilter);
+
+        final Table filteredInvert = updateGraph.exclusiveLock().computeLocked(() -> filteredTable.where(invert));
+        assertEquals(2, filteredInvert.size());
+        assertArrayEquals(new String[] {"D", "E"},
+                ColumnVectors.ofObject(filteredInvert, "X", String.class).toArray());
     }
 
     @Test

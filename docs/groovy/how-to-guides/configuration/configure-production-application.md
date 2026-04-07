@@ -3,17 +3,17 @@ title: Configure the Deephaven production application
 sidebar_label: Production application
 ---
 
-This guide provides low-level details about the Deephaven production application bootstrap configuration and startup process. The Deephaven production application is the recommended way to run Deephaven for any production application, hence its name. It runs Deephaven directly from artifacts produced during each new release. These artifacts can be found in the GitHub [releases page](https://github.com/deephaven/deephaven-core/releases), listed under assets.
+This guide provides detailed information about the Deephaven production application bootstrap configuration and startup process. The Deephaven production application is the recommended way to run Deephaven for any production application, hence its name. It runs Deephaven directly from artifacts produced during each new release. These artifacts can be found in the GitHub [releases page](https://github.com/deephaven/deephaven-core/releases), listed under assets.
 
 The production application offers a greater degree of control and performance than other methods, but requires more setup and consideration of low-level details. Users who wish to get up and running without needing to worry about these details should consider [Deephaven's Docker images](./docker-application.md).
 
-This guide assumes familiarity with installing and running the Deephaven production application. For an introductory guide on installing and running, see [Install and run Deephaven with pre-built artifacts](../../getting-started/production-application.md).
+This guide assumes familiarity with installing and running the Deephaven production application. For an introductory guide on installing and running, see [Install and run the Deephaven production application](../../getting-started/production-application.md).
 
 ## Prerequisites
 
 Only Java is required to run the Deephaven production application. Deephaven recommends using the latest LTS version of Java. Java 11 or later is required.
 
-The production application also requires Linux or Mac OS. Running on Windows requires Windows Subsystem for Linux (WSL)[<sup>[1]</sup>](#footnotes).
+The production application also requires Linux or Mac OS. Running on Windows requires Windows Subsystem for Linux v2 (WSL 2)[<sup>[1]</sup>](#footnotes).
 
 ## Production application configuration
 
@@ -25,7 +25,7 @@ The inner structure of the application is a root directory of the form `server-j
 
 ### Environment variables
 
-The [`start` script](../../getting-started/production-application.md#run-the-server) contains the logic to collect the arguments, assemble the classpath, and execute the `java` command to run the server. There are several environment variables that influence the [`start` script](../../getting-started/production-application.md#run-the-server):
+The [`start` script](../../getting-started/production-application.md#run-the-server) contains the logic to collect the arguments, assemble the classpath, and execute the `java` command to run the server. Several environment variables influence the [`start` script](../../getting-started/production-application.md#run-the-server):
 
 | Environment Variable | Description                                                                                    | Default Value                                             | Example                                                                           |
 | -------------------- | ---------------------------------------------------------------------------------------------- | --------------------------------------------------------- | --------------------------------------------------------------------------------- |
@@ -33,9 +33,9 @@ The [`start` script](../../getting-started/production-application.md#run-the-ser
 | `START_OPTS`         | Additional user-supplied JVM arguments. These are added to the command line after `JAVA_OPTS`. | None                                                      | `START_OPTS="-Xms4g -Xmx4g -Dmyproperty=myvalue -Ddeephaven.console.type=groovy"` |
 | `EXTRA_CLASSPATH`    | Additional directories to include in the Java classpath (e.g., `/apps/libs/*`)                 | None                                                      | `EXTRA_CLASSPATH="/apps/libs/*:/opt/my_java_libs/*`                               |
 
-## What the start script does
+### What the start script does
 
-The end result of the [`start` script](../../getting-started/production-application.md#run-the-server) is a command that looks something like:
+The [`start` script](../../getting-started/production-application.md#run-the-server) executes a shell command that looks something like:
 
 ```shell
 java <required-opts> $JAVA_OPTS $START_OPTS -classpath <classpath> io.deephaven.server.jetty.JettyMain [optional-bootstrap-file]
@@ -49,7 +49,7 @@ java <required-opts> $JAVA_OPTS $START_OPTS -classpath <classpath> io.deephaven.
 
 ### Deephaven server bootstrap configuration
 
-Bootstrap configuration parameters are ones that get set early in the application startup lifecycle, before anything in a configuration file. The Deephaven server process has a few essential bootstrap configuration parameters. They have default values that the user may choose to change via either an environment variable or system property.
+Bootstrap configuration parameters are set early in the application startup lifecycle, before anything in a configuration file. The Deephaven server process has a few essential bootstrap configuration parameters. They have default values that the user may choose to change via an environment variable or system property.
 
 > [!NOTE]
 > Bootstrapping configuration is limited in scope, and is a prerequisite to the Deephaven configuration file.
@@ -73,7 +73,7 @@ Bootstrap configuration parameters are ones that get set early in the applicatio
 
 ### Docker images
 
-The Deephaven Docker images are based on the production application, as described above, with Docker specific bootstrap values. For example, the images set the environment variables `DEEPHAVEN_DATA_DIR=/data`, `DEEPHAVEN_CACHE_DIR=/cache`, and `DEEPHAVEN_CONFIG_DIR=/opt/deephaven/config`.
+The Deephaven Docker images are based on the production application, as described above, with Docker-specific bootstrap values. For example, the images set the environment variables `DEEPHAVEN_DATA_DIR=/data`, `DEEPHAVEN_CACHE_DIR=/cache`, and `DEEPHAVEN_CONFIG_DIR=/opt/deephaven/config`.
 
 For more information, see the [Docker application documentation](./docker-application.md).
 
@@ -87,5 +87,5 @@ For more information, see the [Docker application documentation](./docker-applic
 
 - [How to configure the Docker application](./docker-application.md)
 - [How to create a Deephaven configuration file](./config-file.md)
-- [Build from source](../../getting-started/launch-build.md)
 - [Install and run the Deephaven production application](../../getting-started/production-application.md)
+- [Build from source](../../getting-started/launch-build.md)

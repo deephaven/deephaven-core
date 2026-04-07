@@ -613,8 +613,8 @@ public class SessionState {
             this.logIdentity = Integer.toHexString(System.identityHashCode(this)) + "-sessionless";
 
             if (result == null) {
-                maybeAssignErrorId(caughtException, null);
                 state = ExportNotification.State.FAILED;
+                maybeAssignErrorId(caughtException, null, state);
             } else {
                 state = ExportNotification.State.EXPORTED;
             }
@@ -710,7 +710,7 @@ public class SessionState {
 
                 // since this is the first we know of the errorHandler, it could not have been invoked yet
                 if (errorHandler != null) {
-                    maybeAssignErrorId(caughtException, null);
+                    maybeAssignErrorId(caughtException, null, state);
                     errorHandler.onError(state, errorId, caughtException, failedDependencyLogIdentity);
                 }
                 return;
@@ -859,7 +859,7 @@ public class SessionState {
             }
 
             if (isExportStateFailure(state) && errorHandler != null) {
-                maybeAssignErrorId(caughtException, null);
+                maybeAssignErrorId(caughtException, null, state);
                 try {
                     final Exception toReport;
                     if (caughtException != null && errorTransformer != null) {
@@ -1012,7 +1012,7 @@ public class SessionState {
                 if (caughtException != null) {
                     synchronized (this) {
                         if (!isExportStateTerminal(state)) {
-                            maybeAssignErrorId(caughtException, null);
+                            maybeAssignErrorId(caughtException, null, ExportNotification.State.FAILED);
                             setState(ExportNotification.State.FAILED);
                         }
                     }
@@ -1027,15 +1027,17 @@ public class SessionState {
             }
         }
 
-        private void maybeAssignErrorId(final Exception caughtException, final String errorDetails) {
+        private void maybeAssignErrorId(final Exception caughtException, final String errorDetails,
+                ExportNotification.State state) {
             if (errorId == null) {
                 errorId = UuidCreator.toString(UuidCreator.getRandomBased());
 
                 if (caughtException == null && errorDetails == null) {
                     // We log the assigned error ID, even though we have no details. If we do not assign the error ID,
                     // then we may not correctly propagate than an error occurred.
-                    log.error().append("Internal Error '").append(errorId).append("' for ").append(logIdentity)
-                            .append(" and no error details are available.").endl();
+                    LogEntry level = state == ExportNotification.State.CANCELLED ? log.info() : log.error();
+                    level.append("Internal Error '").append(errorId).append("' for ").append(logIdentity)
+                            .append(" and no error details are available; state is ").append(state.name()).endl();
                     return;
                 }
 
@@ -1084,7 +1086,7 @@ public class SessionState {
                         break;
                 }
 
-                maybeAssignErrorId(caughtException, errorDetails);
+                maybeAssignErrorId(caughtException, errorDetails, terminalState);
                 failedDependencyLogIdentity = parent.logIdentity;
             }
 

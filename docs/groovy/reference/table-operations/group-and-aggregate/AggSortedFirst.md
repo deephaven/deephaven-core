@@ -120,7 +120,7 @@ result = source.aggBy([AggSortedFirst("Z", "SortedFirstY = Y"),AggMax("MaxZ = Z"
 
 ## Related documentation
 
-- [Create a new table](../../../how-to-guides/new-and-empty-table.md#newtable)
+- [How to create static tables](../../../how-to-guides/new-and-empty-table.md)
 - [`aggBy`](./aggBy.md)
 - [`firstBy`](./firstBy.md)
 - [`sort`](../sort/sort.md)

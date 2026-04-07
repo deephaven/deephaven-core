@@ -37,11 +37,11 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
- * Describes data that can be filtered, either a column reference or a literal value. Used this way, the type of a value
- * can be specified so that values which are ambiguous or not well supported in JS will not be confused with Strings or
- * imprecise numbers (e.g., nanosecond-precision date values). Additionally, once wrapped in this way, methods can be
- * called on these value literal instances. These instances are immutable - any method called on them returns a new
- * instance.
+ * Describes data that can be filtered - either a column reference or a literal value. Used this way, the type of a
+ * value can be specified so that values which are ambiguous or not well supported in JS will not be confused with
+ * Strings or imprecise numbers (e.g., nanosecond-precision date values). Additionally, once wrapped in this way,
+ * methods can be called on these value literal instances. These instances are immutable - any method called on them
+ * returns a new instance.
  */
 @JsType(namespace = "dh")
 public class FilterValue {
@@ -178,7 +178,7 @@ public class FilterValue {
     }
 
     /**
-     * a filter condition checking if the current value is equal to the given parameter
+     * A filter condition checking if the current value is equal to the given parameter.
      * 
      * @param term
      * @return {@link FilterCondition}
@@ -203,8 +203,8 @@ public class FilterValue {
     }
 
     /**
-     * a filter condition checking if the current value is equal to the given parameter, ignoring differences of upper
-     * vs lower case
+     * A filter condition checking if the current value is equal to the given parameter, ignoring differences of upper
+     * vs lower case.
      * 
      * @param term
      * @return {@link FilterCondition}
@@ -224,8 +224,8 @@ public class FilterValue {
     }
 
     /**
-     * a filter condition checking if the current value is not equal to the given parameter, ignoring differences of
-     * upper vs lower case
+     * A filter condition checking if the current value is not equal to the given parameter, ignoring differences of
+     * upper vs lower case.
      * 
      * @param term
      * @return {@link FilterCondition}
@@ -235,7 +235,7 @@ public class FilterValue {
     }
 
     /**
-     * a filter condition checking if the current value is greater than the given parameter
+     * A filter condition checking if the current value is greater than the given parameter.
      * 
      * @param term
      * @return {@link FilterCondition}
@@ -245,7 +245,7 @@ public class FilterValue {
     }
 
     /**
-     * a filter condition checking if the current value is less than the given parameter
+     * A filter condition checking if the current value is less than the given parameter.
      * 
      * @param term
      * @return {@link FilterCondition}
@@ -255,7 +255,7 @@ public class FilterValue {
     }
 
     /**
-     * a filter condition checking if the current value is greater than or equal to the given parameter
+     * A filter condition checking if the current value is greater than or equal to the given parameter.
      * 
      * @param term
      * @return {@link FilterCondition}
@@ -265,7 +265,7 @@ public class FilterValue {
     }
 
     /**
-     * a filter condition checking if the current value is less than or equal to the given parameter
+     * A filter condition checking if the current value is less than or equal to the given parameter.
      * 
      * @param term
      * @return {@link FilterCondition}
@@ -275,7 +275,7 @@ public class FilterValue {
     }
 
     /**
-     * a filter condition checking if the current value is in the given set of values
+     * A filter condition checking if the current value is in the given set of values.
      * 
      * @param terms
      * @return {@link FilterCondition}
@@ -299,8 +299,8 @@ public class FilterValue {
     }
 
     /**
-     * a filter condition checking if the current value is in the given set of values, ignoring differences of upper vs
-     * lower case
+     * A filter condition checking if the current value is in the given set of values, ignoring differences of upper vs
+     * lower case.
      * 
      * @param terms
      * @return {@link FilterCondition}
@@ -310,7 +310,7 @@ public class FilterValue {
     }
 
     /**
-     * a filter condition checking that the current value is not in the given set of values
+     * A filter condition checking that the current value is not in the given set of values.
      * 
      * @param terms
      * @return {@link FilterCondition}
@@ -320,8 +320,8 @@ public class FilterValue {
     }
 
     /**
-     * a filter condition checking that the current value is not in the given set of values, ignoring differences of
-     * upper vs lower case
+     * A filter condition checking that the current value is not in the given set of values, ignoring differences of
+     * upper vs lower case.
      * 
      * @param terms
      * @return {@link FilterCondition}
@@ -331,7 +331,7 @@ public class FilterValue {
     }
 
     /**
-     * a filter condition checking if the given value contains the given string value
+     * A filter condition checking if the given value contains the given string value.
      * 
      * @param term
      * @return {@link FilterCondition}
@@ -341,8 +341,8 @@ public class FilterValue {
     }
 
     /**
-     * a filter condition checking if the given value contains the given string value, ignoring differences of upper vs
-     * lower case
+     * A filter condition checking if the given value contains the given string value, ignoring differences of upper vs
+     * lower case.
      * 
      * @param term
      * @return {@link FilterCondition}
@@ -365,8 +365,8 @@ public class FilterValue {
     }
 
     /**
-     * a filter condition checking if the given value matches the provided regular expressions string. Regex patterns
-     * use Java regex syntax
+     * A filter condition checking if the given value matches the provided regular expressions string. Regex patterns
+     * use Java regex syntax.
      * 
      * @param pattern
      * @return {@link FilterCondition}
@@ -376,8 +376,8 @@ public class FilterValue {
     }
 
     /**
-     * a filter condition checking if the given value matches the provided regular expressions string, ignoring
-     * differences of upper vs lower case. Regex patterns use Java regex syntax
+     * A filter condition checking if the given value matches the provided regular expressions string, ignoring
+     * differences of upper vs lower case. Regex patterns use Java regex syntax.
      * 
      * @param pattern
      * @return {@link FilterCondition}
@@ -400,7 +400,7 @@ public class FilterValue {
     }
 
     /**
-     * a filter condition checking if the current value is a true boolean
+     * A filter condition checking if the current value is a true boolean.
      * 
      * @return {@link FilterCondition}
      */
@@ -409,7 +409,7 @@ public class FilterValue {
     }
 
     /**
-     * a filter condition checking if the current value is a false boolean
+     * A filter condition checking if the current value is a false boolean.
      * 
      * @return {@link FilterCondition}
      */
@@ -418,7 +418,7 @@ public class FilterValue {
     }
 
     /**
-     * a filter condition checking if the current value is a null value
+     * A filter condition checking if the current value is a null value.
      * 
      * @return {@link FilterCondition}
      */
@@ -434,16 +434,18 @@ public class FilterValue {
     }
 
     /**
-     * a filter condition invoking the given method on the current value, with the given parameters. Currently supported
+     * A filter condition invoking the given method on the current value, with the given parameters. Currently supported
      * functions that can be invoked on a String:
      * <ul>
-     * <li><b>startsWith</b>: Returns true if the current string value starts with the supplied string argument</li>
-     * <li><b>endsWith</b>: Returns true if the current string value ends with the supplied string argument</li>
-     * <li><b>matches</b>: Returns true if the current string value matches the supplied string argument used as a Java
-     * regular expression</li>
-     * <li><b>contains</b>: Returns true if the current string value contains the supplied string argument
+     * <li>{@code startsWith}: Returns {@code true} if the current string value starts with the supplied string
+     * argument.</li>
+     * <li>{@code endsWith}: Returns {@code true} if the current string value ends with the supplied string
+     * argument.</li>
+     * <li>{@code matches}: Returns {@code true} if the current string value matches the supplied string argument used
+     * as a Java regular expression.</li>
+     * <li>{@code contains}: Returns {@code true} if the current string value contains the supplied string argument.
      * <p>
-     * When invoking against a constant, this should be avoided in favor of FilterValue.contains
+     * When invoking against a constant, this should be avoided in favor of {@link FilterValue#contains}.
      * </p>
      * </li>
      * </ul>

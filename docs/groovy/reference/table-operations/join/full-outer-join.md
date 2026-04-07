@@ -50,7 +50,7 @@ Columns from the left and right tables used to join on.
 </Param>
 <Param name="columnsToAdd" type="String">
 
-The columns from the right table to add to the left table based on key.
+The columns from the right table to add to the left table based on key. The default value is `NULL`.
 
 - `NULL` will add all columns from the right table to the left table.
 - `"X"` will add column `X` from the right table to the left table as column `X`.

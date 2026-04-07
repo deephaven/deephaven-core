@@ -12,6 +12,8 @@ dependencies {
 
     implementation project(':Configuration')
 
+    compileOnlyApi project(':util-annotations')
+
     testRuntimeOnly project(':configs')
     testRuntimeOnly project(':test-configs')
 

@@ -11,7 +11,6 @@
 #include <string>
 #include <cstring>
 #include <cstdint>
-#include <grpc/support/log.h>
 #include <arrow/flight/client.h>
 
 #include "deephaven/client/client_options.h"

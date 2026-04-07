@@ -33,11 +33,27 @@ public abstract class Formula implements Aggregation {
     }
 
     public static Formula of(Selectable selectable) {
-        return ImmutableFormula.of(selectable);
+        return ImmutableFormula.of(selectable, false);
+    }
+
+    /**
+     * Return a copy of this formula that will be applied to the prior level of the rollup.
+     *
+     * <p>
+     * The reaggregating parameter has no effect when not part of a rollup.
+     * </p>
+     *
+     * @return a copy of this formula that is applied to the prior level of the rollup
+     */
+    public Formula asReaggregating() {
+        return ImmutableFormula.of(selectable(), true);
     }
 
     @Parameter
     public abstract Selectable selectable();
+
+    @Parameter
+    public abstract boolean reaggregateAggregatedValues();
 
     public ColumnName column() {
         return selectable().newColumn();

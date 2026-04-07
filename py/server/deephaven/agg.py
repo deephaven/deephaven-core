@@ -218,6 +218,7 @@ def formula(
     formula: str,
     formula_param: Optional[str] = None,
     cols: Optional[Union[str, Sequence[str]]] = None,
+    reaggregating: bool = False,
 ) -> Aggregation:
     """Creates a user defined formula aggregation. This formula can contain a combination of any of the following:
         |  Built-in functions such as `min`, `max`, etc.
@@ -228,7 +229,9 @@ def formula(
     and specific input column names in the following format:
         |  formula('output_col=(input_col1 + input_col2) * input_col3')
     This form does not accept `formula_param` or `cols` arguments because the input and output columns are explicitly
-    set within the formula string.
+    set within the formula string.  The reaggregating parameter only applies to rollups.  When False (the default), the
+    formula is applied independently to the corresponding values from the source table.  When set to True the formula
+    is applied to the prior level of the rollup.
 
     The second (deprecated) variant allows the user to apply a formula expression to one input column, producing one
     output column. In this call the `formula_param` is used as a placeholder for the input column name and the `cols`
@@ -244,19 +247,22 @@ def formula(
         cols (Optional[Union[str, Sequence[str]]]): If provided, supplies the column(s) to aggregate, can be renaming
             expressions, i.e. "new_col = col". This must be set to None (the default when omitted) when the `formula`
             argument specifies the input and output columns.
+        reaggregating (bool): If True, the formula is applied to the prior level of the rollup.
 
     Returns:
         an aggregation
     """
     if formula_param:
-        return Aggregation(
-            j_agg_spec=_JAggSpec.formula(formula, formula_param), cols=cols
-        )
+        j_spec = _JAggSpec.formula(formula, formula_param)
+        return Aggregation(j_agg_spec=j_spec, cols=cols)
     if cols:
         raise DHError(
             message="The 'cols' argument is only valid when 'formula_param' is provided."
         )
-    return Aggregation(j_aggregation=_JAggregation.AggFormula(formula))
+    j_agg = _JAggregation.AggFormula(formula)
+    if reaggregating:
+        j_agg = j_agg.asReaggregating()
+    return Aggregation(j_aggregation=j_agg)
 
 
 def last(cols: Optional[Union[str, Sequence[str]]] = None) -> Aggregation:

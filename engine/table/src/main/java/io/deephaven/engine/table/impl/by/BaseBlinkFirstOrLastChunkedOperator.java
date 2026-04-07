@@ -98,11 +98,12 @@ public abstract class BaseBlinkFirstOrLastChunkedOperator
 
     @Override
     @OverridingMethodsMustInvokeSuper
-    public void resetForStep(@NotNull final TableUpdate upstream, final int startingDestinationsCount) {
+    public boolean resetForStep(@NotNull final TableUpdate upstream, final int startingDestinationsCount) {
         if ((redirections = cachedRedirections.get()) == null) {
             cachedRedirections = new SoftReference<>(redirections = new LongArraySource());
             ensureCapacity(startingDestinationsCount);
         }
+        return false;
     }
 
     // -----------------------------------------------------------------------------------------------------------------
