@@ -19,8 +19,6 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -47,9 +45,6 @@ public class TestGroovyRemoteFileSourcing {
     private final AtomicBoolean providerDirty = new AtomicBoolean(false);
     private RemoteFileSourceProvider provider;
 
-    private String scriptServerDependency;
-    private String scriptRemoteOnlyDependency;
-
     @Before
     public void setup() throws IOException {
         livenessScope = new LivenessScope();
@@ -61,9 +56,6 @@ public class TestGroovyRemoteFileSourcing {
 
         provider = createProvider();
         RemoteFileSourceClassLoader.getInstance().registerProvider(provider);
-
-        scriptServerDependency = loadTestScript("/test-scripts/remote-test-entrypoint.groovy");
-        scriptRemoteOnlyDependency = loadTestScript("/test-scripts/remote-only-entrypoint.groovy");
     }
 
     @After
@@ -73,15 +65,6 @@ public class TestGroovyRemoteFileSourcing {
         LivenessScopeStack.pop(livenessScope);
         livenessScope.release();
         livenessScope = null;
-    }
-
-    private String loadTestScript(String resourcePath) throws IOException {
-        try (InputStream is = getClass().getResourceAsStream(resourcePath)) {
-            if (is == null) {
-                throw new IOException("Resource not found: " + resourcePath);
-            }
-            return new String(is.readAllBytes(), StandardCharsets.UTF_8);
-        }
     }
 
     private RemoteFileSourceProvider createProvider() {
@@ -116,27 +99,43 @@ public class TestGroovyRemoteFileSourcing {
         };
     }
 
-    private static final String PATH_ON_SERVER = "test/notebook/Helper.groovy";
-    private static final String PATH_NOT_ON_SERVER = "test/notebook/RemoteOnly.groovy";
-    private static final String REMOTE_SOURCE = remoteHelperSource("REMOTE", 999);
+    private static final String PATH_ON_CLASSPATH = "test/notebook/MyDependency.groovy";
+    private static final String SCRIPT_IMPORT_ON_CLASSPATH = entrypointScript("MyDependency");
 
-    private static String remoteHelperSource(String version, int value) {
+    private static final String PATH_REMOTE_ONLY = "test/notebook/RemoteOnly.groovy";
+    private static final String SCRIPT_IMPORT_REMOTE_ONLY = entrypointScript("RemoteOnly");
+
+    private static final String REMOTE_SOURCE = remoteClassSource("REMOTE", 999);
+    private static final String REMOTE_SOURCE_V2 = remoteClassSource("REMOTE_V2", 777);
+    private static final String REMOTE_ONLY_SOURCE = remoteClassSource("REMOTE_ONLY", 555);
+
+    private static String entrypointScript(String className) {
+        return "import io.deephaven.engine.context.ExecutionContext\n" +
+                "import test.notebook." + className + "\n\n" +
+                "ExecutionContext.getContext().getQueryLibrary().importClass(" + className + ".class)\n\n" +
+                "testTable = emptyTable(1).updateView(\n" +
+                "    \"Version = " + className + ".getVersion()\",\n" +
+                "    \"Value = " + className + ".getValue()\",\n" +
+                "    \"SourceViaClass = " + className + ".getSourceViaClass()\"\n" +
+                ")\n";
+    }
+
+    private static String remoteClassSource(String version, int value) {
         return "package test.notebook\n\n" +
-                "return \"Helper\"\n\n" +
                 "static String getVersion() {\n" +
                 "    return \"" + version + "\"\n" +
                 "}\n\n" +
                 "static int getValue() {\n" +
                 "    return " + value + "\n" +
                 "}\n\n" +
-                "class HelperClass {\n" +
+                "class Inner {\n" +
                 "    final String source = \"" + version + "\"\n" +
                 "    String getSource() {\n" +
                 "        return source\n" +
                 "    }\n" +
                 "}\n\n" +
                 "static String getSourceViaClass() {\n" +
-                "    new HelperClass().getSource()\n" +
+                "    new Inner().getSource()\n" +
                 "}";
     }
 
@@ -171,7 +170,7 @@ public class TestGroovyRemoteFileSourcing {
     public void testServerClassWorks() {
         evaluateAndAssertHelper(
                 "server baseline",
-                scriptServerDependency,
+                SCRIPT_IMPORT_ON_CLASSPATH,
                 Map.of(),
                 false,
                 "SERVER",
@@ -182,8 +181,8 @@ public class TestGroovyRemoteFileSourcing {
     public void testRemoteOverridesServer() {
         evaluateAndAssertHelper(
                 "remote overrides server",
-                scriptServerDependency,
-                Map.of(PATH_ON_SERVER, REMOTE_SOURCE),
+                SCRIPT_IMPORT_ON_CLASSPATH,
+                Map.of(PATH_ON_CLASSPATH, REMOTE_SOURCE),
                 true,
                 "REMOTE",
                 999);
@@ -193,7 +192,7 @@ public class TestGroovyRemoteFileSourcing {
     public void testServerToRemoteAndBack() {
         evaluateAndAssertHelper(
                 "step 1: server",
-                scriptServerDependency,
+                SCRIPT_IMPORT_ON_CLASSPATH,
                 Map.of(),
                 false,
                 "SERVER",
@@ -201,15 +200,15 @@ public class TestGroovyRemoteFileSourcing {
 
         evaluateAndAssertHelper(
                 "step 2: server→remote",
-                scriptServerDependency,
-                Map.of(PATH_ON_SERVER, REMOTE_SOURCE),
+                SCRIPT_IMPORT_ON_CLASSPATH,
+                Map.of(PATH_ON_CLASSPATH, REMOTE_SOURCE),
                 true,
                 "REMOTE",
                 999);
 
         evaluateAndAssertHelper(
                 "step 3: remote→server",
-                scriptServerDependency,
+                SCRIPT_IMPORT_ON_CLASSPATH,
                 Map.of(),
                 true,
                 "SERVER",
@@ -220,15 +219,15 @@ public class TestGroovyRemoteFileSourcing {
     public void testRemoteToServer() {
         evaluateAndAssertHelper(
                 "step 1: remote",
-                scriptServerDependency,
-                Map.of(PATH_ON_SERVER, REMOTE_SOURCE),
+                SCRIPT_IMPORT_ON_CLASSPATH,
+                Map.of(PATH_ON_CLASSPATH, REMOTE_SOURCE),
                 true,
                 "REMOTE",
                 999);
 
         evaluateAndAssertHelper(
                 "step 2: remote→server",
-                scriptServerDependency,
+                SCRIPT_IMPORT_ON_CLASSPATH,
                 Map.of(),
                 true,
                 "SERVER",
@@ -239,16 +238,16 @@ public class TestGroovyRemoteFileSourcing {
     public void testIsDirtyClearsCacheWithinRemote() {
         evaluateAndAssertHelper(
                 "step 1: remote v1",
-                scriptServerDependency,
-                Map.of(PATH_ON_SERVER, REMOTE_SOURCE),
+                SCRIPT_IMPORT_ON_CLASSPATH,
+                Map.of(PATH_ON_CLASSPATH, REMOTE_SOURCE),
                 true,
                 "REMOTE",
                 999);
 
         evaluateAndAssertHelper(
                 "step 2: remote v2",
-                scriptServerDependency,
-                Map.of(PATH_ON_SERVER, remoteHelperSource("REMOTE_V2", 777)),
+                SCRIPT_IMPORT_ON_CLASSPATH,
+                Map.of(PATH_ON_CLASSPATH, REMOTE_SOURCE_V2),
                 true,
                 "REMOTE_V2",
                 777);
@@ -261,8 +260,8 @@ public class TestGroovyRemoteFileSourcing {
         // Step 1: Remote-only class available
         evaluateAndAssertHelper(
                 "remote-only available",
-                scriptRemoteOnlyDependency,
-                Map.of(PATH_NOT_ON_SERVER, remoteHelperSource("REMOTE_ONLY", 555)),
+                SCRIPT_IMPORT_REMOTE_ONLY,
+                Map.of(PATH_REMOTE_ONLY, REMOTE_ONLY_SOURCE),
                 true,
                 "REMOTE_ONLY",
                 555);
@@ -271,7 +270,7 @@ public class TestGroovyRemoteFileSourcing {
         remoteSources.clear();
         providerDirty.set(true);
 
-        ScriptSession.Changes c2 = session.evaluateScript(scriptRemoteOnlyDependency);
+        ScriptSession.Changes c2 = session.evaluateScript(SCRIPT_IMPORT_REMOTE_ONLY);
         assertTrue("Script should fail when remote-only class is removed", c2.error != null);
     }
 }

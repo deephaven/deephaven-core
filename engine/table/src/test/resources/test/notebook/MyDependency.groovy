@@ -1,6 +1,6 @@
 package test.notebook
 
-return "Helper"
+return "MyDependency"
 
 static String getVersion() {
     return "SERVER"
@@ -10,7 +10,7 @@ static int getValue() {
     return 100
 }
 
-class HelperClass {
+class Inner {
     final String source = "SERVER"
     String getSource() {
         return source
@@ -18,5 +18,5 @@ class HelperClass {
 }
 
 static String getSourceViaClass() {
-    new HelperClass().getSource()
+    new Inner().getSource()
 }
