@@ -351,9 +351,7 @@ public class BatchBuilder {
         }
         return resultTicket -> {
             DropColumnsRequest.Builder value = DropColumnsRequest.newBuilder();
-            for (String dropColumn : op.getDropColumns()) {
-                value.addColumnNames(dropColumn);
-            }
+            value.addAllColumnNames(op.getDropColumns());
 
             value.setSourceId(prevTableSupplier.get());
             if (resultTicket != null) {
@@ -373,8 +371,8 @@ public class BatchBuilder {
         }
         return resultTicket -> {
             SelectOrUpdateRequest.Builder value = SelectOrUpdateRequest.newBuilder();
-            for (String dropColumn : op.getDropColumns()) {
-                value.addColumnSpecs(dropColumn);
+            for (String viewColumn : op.getViewColumns()) {
+                value.addColumnSpecs(viewColumn);
             }
 
             value.setSourceId(prevTableSupplier.get());
