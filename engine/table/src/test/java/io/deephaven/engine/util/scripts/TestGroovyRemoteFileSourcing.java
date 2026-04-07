@@ -43,6 +43,13 @@ public class TestGroovyRemoteFileSourcing {
     private LivenessScope livenessScope;
     private GroovyDeephavenSession session;
 
+    private final Map<String, String> remoteSources = new HashMap<>();
+    private final AtomicBoolean providerDirty = new AtomicBoolean(false);
+    private RemoteFileSourceProvider provider;
+
+    private String scriptServerDependency;
+    private String scriptRemoteOnlyDependency;
+
     @Before
     public void setup() throws IOException {
         livenessScope = new LivenessScope();
@@ -51,13 +58,17 @@ public class TestGroovyRemoteFileSourcing {
         session = GroovyDeephavenSession.of(
                 context.getUpdateGraph(), context.getOperationInitializer(), NoOp.INSTANCE,
                 GroovyDeephavenSession.RunScripts.none());
-        // NOTE: intentionally NOT calling session.getExecutionContext().open() here.
-        // Production (ConsoleServiceGrpcImpl) does not hold a persistent outer EC — each
-        // evaluateScript call manages its own EC via .apply() internally.
+
+        provider = createProvider();
+        RemoteFileSourceClassLoader.getInstance().registerProvider(provider);
+
+        scriptServerDependency = loadTestScript("/test-scripts/remote-test-entrypoint.groovy");
+        scriptRemoteOnlyDependency = loadTestScript("/test-scripts/remote-only-entrypoint.groovy");
     }
 
     @After
     public void teardown() {
+        RemoteFileSourceClassLoader.getInstance().unregisterProvider(provider);
         session.cleanup();
         LivenessScopeStack.pop(livenessScope);
         livenessScope.release();
@@ -73,10 +84,7 @@ public class TestGroovyRemoteFileSourcing {
         }
     }
 
-    private RemoteFileSourceProvider createProvider(
-            Map<String, String> remoteSources,
-            AtomicBoolean providerActive,
-            AtomicBoolean providerDirty) {
+    private RemoteFileSourceProvider createProvider() {
         return new RemoteFileSourceProvider() {
             @Override
             public boolean canSourceResource(String resourceName) {
@@ -85,7 +93,7 @@ public class TestGroovyRemoteFileSourcing {
 
             @Override
             public boolean isActive() {
-                return providerActive.get();
+                return true;
             }
 
             @Override
@@ -108,185 +116,21 @@ public class TestGroovyRemoteFileSourcing {
         };
     }
 
-    private static final String REMOTE_HELPER = "package test.notebook\n\n" +
-            "return \"Helper\"\n\n" +
-            "static String getVersion() {\n" +
-            "    return \"REMOTE\"\n" +
-            "}\n\n" +
-            "static int getValue() {\n" +
-            "    return 999\n" +
-            "}\n\n" +
-            "class HelperClass {\n" +
-            "    final String source = \"REMOTE\"\n" +
-            "    String getSource() {\n" +
-            "        return source\n" +
-            "    }\n" +
-            "}\n\n" +
-            "static String getSourceViaClass() {\n" +
-            "    new HelperClass().getSource()\n" +
-            "}";
+    private static final String PATH_ON_SERVER = "test/notebook/Helper.groovy";
+    private static final String PATH_NOT_ON_SERVER = "test/notebook/RemoteOnly.groovy";
+    private static final String REMOTE_SOURCE = remoteHelperSource("REMOTE", 999);
 
-    @Test
-    public void testServerClassWorks() throws IOException {
-        // Scenario 1: Server Works Baseline - verify server Helper class from classpath works
-        String script = loadTestScript("/test-scripts/remote-test-entrypoint.groovy");
-
-        ScriptSession.Changes c = session.evaluateScript(script);
-        c.throwIfError();
-
-        Table t = session.getQueryScope().readParamValue("testTable");
-        assertEquals("SERVER", (String) t.getColumnSource("Version").get(0));
-        assertEquals(100, t.getColumnSource("Value").getInt(0));
-        assertEquals("SERVER", (String) t.getColumnSource("SourceViaClass").get(0));
-    }
-
-    @Test
-    public void testRemoteOverridesServer() throws IOException {
-        // Scenario 2: Remote Override Takes Priority
-        String script = loadTestScript("/test-scripts/remote-test-entrypoint.groovy");
-
-        final Map<String, String> remoteSources = new HashMap<>();
-        final AtomicBoolean providerActive = new AtomicBoolean(true);
-        final AtomicBoolean providerDirty = new AtomicBoolean(true);
-
-        remoteSources.put("test/notebook/Helper.groovy", REMOTE_HELPER);
-
-        RemoteFileSourceProvider provider = createProvider(remoteSources, providerActive, providerDirty);
-        RemoteFileSourceClassLoader cl = RemoteFileSourceClassLoader.getInstance();
-        try {
-            cl.registerProvider(provider);
-
-            ScriptSession.Changes c = session.evaluateScript(script);
-            c.throwIfError();
-
-            providerDirty.set(false);
-
-            Table t = session.getQueryScope().readParamValue("testTable");
-            assertEquals("REMOTE", (String) t.getColumnSource("Version").get(0));
-            assertEquals(999, t.getColumnSource("Value").getInt(0));
-            assertEquals("REMOTE", (String) t.getColumnSource("SourceViaClass").get(0));
-        } finally {
-            cl.unregisterProvider(provider);
-        }
-    }
-
-    @Test
-    public void testServerToRemoteAndBack() throws IOException {
-        // Scenario 3: Server → Remote → Back to Server
-        String script = loadTestScript("/test-scripts/remote-test-entrypoint.groovy");
-
-        final Map<String, String> remoteSources = new HashMap<>();
-        final AtomicBoolean providerActive = new AtomicBoolean(false);
-        final AtomicBoolean providerDirty = new AtomicBoolean(false);
-
-        RemoteFileSourceProvider provider = createProvider(remoteSources, providerActive, providerDirty);
-        RemoteFileSourceClassLoader cl = RemoteFileSourceClassLoader.getInstance();
-
-        try {
-            cl.registerProvider(provider);
-
-            // Step 1: Provider is registered but inactive — server Helper is used
-            ScriptSession.Changes c1 = session.evaluateScript(script);
-            c1.throwIfError();
-
-            Table t1 = session.getQueryScope().readParamValue("testTable");
-            assertEquals("SERVER", (String) t1.getColumnSource("Version").get(0));
-            assertEquals(100, t1.getColumnSource("Value").getInt(0));
-            assertEquals("SERVER", (String) t1.getColumnSource("SourceViaClass").get(0));
-
-            // Step 2: Activate remote and verify remote version is used
-            remoteSources.put("test/notebook/Helper.groovy", REMOTE_HELPER);
-            providerActive.set(true);
-            providerDirty.set(true);
-
-            ScriptSession.Changes c2 = session.evaluateScript(script);
-            c2.throwIfError();
-
-            providerDirty.set(false);
-
-            Table t2 = session.getQueryScope().readParamValue("testTable");
-            assertEquals("REMOTE", (String) t2.getColumnSource("Version").get(0));
-            assertEquals(999, t2.getColumnSource("Value").getInt(0));
-            assertEquals("REMOTE", (String) t2.getColumnSource("SourceViaClass").get(0));
-
-            // Step 3: Deactivate provider and verify server version is used again
-            providerActive.set(false);
-            providerDirty.set(true);
-
-            ScriptSession.Changes c3 = session.evaluateScript(script);
-            c3.throwIfError();
-
-            Table t3 = session.getQueryScope().readParamValue("testTable");
-            assertEquals("SERVER", (String) t3.getColumnSource("Version").get(0));
-            assertEquals(100, t3.getColumnSource("Value").getInt(0));
-            assertEquals("SERVER", (String) t3.getColumnSource("SourceViaClass").get(0));
-        } finally {
-            cl.unregisterProvider(provider);
-        }
-    }
-
-    @Test
-    public void testRemoteThenUnrelatedScript() throws IOException {
-        // Scenario 4: Remote → Deactivate → Use Helper Again (should fall back to SERVER)
-        String script = loadTestScript("/test-scripts/remote-test-entrypoint.groovy");
-
-        final Map<String, String> remoteSources = new HashMap<>();
-        final AtomicBoolean providerActive = new AtomicBoolean(true);
-        final AtomicBoolean providerDirty = new AtomicBoolean(true);
-
-        remoteSources.put("test/notebook/Helper.groovy", REMOTE_HELPER);
-
-        RemoteFileSourceProvider provider = createProvider(remoteSources, providerActive, providerDirty);
-        RemoteFileSourceClassLoader cl = RemoteFileSourceClassLoader.getInstance();
-        try {
-            cl.registerProvider(provider);
-
-            // Step 1: Use Helper from remote
-            ScriptSession.Changes c1 = session.evaluateScript(script);
-            c1.throwIfError();
-
-            Table t1 = session.getQueryScope().readParamValue("testTable");
-            assertEquals("REMOTE", (String) t1.getColumnSource("Version").get(0));
-            assertEquals(999, t1.getColumnSource("Value").getInt(0));
-            assertEquals("REMOTE", (String) t1.getColumnSource("SourceViaClass").get(0));
-
-            providerDirty.set(false);
-
-            // Step 2: Deactivate provider and use Helper again (should fall back to SERVER)
-            providerActive.set(false);
-            providerDirty.set(true);
-
-            ScriptSession.Changes c2 = session.evaluateScript(script);
-            c2.throwIfError();
-
-            Table t2 = session.getQueryScope().readParamValue("testTable");
-            assertEquals("SERVER", (String) t2.getColumnSource("Version").get(0));
-            assertEquals(100, t2.getColumnSource("Value").getInt(0));
-            assertEquals("SERVER", (String) t2.getColumnSource("SourceViaClass").get(0));
-        } finally {
-            cl.unregisterProvider(provider);
-        }
-    }
-
-    @Test
-    public void testIsDirtyClearsCacheWithinRemote() throws IOException {
-        // Scenario 5: isDirty Clears Cache (Remote v1 → Remote v2)
-        String script = loadTestScript("/test-scripts/remote-test-entrypoint.groovy");
-
-        final Map<String, String> remoteSources = new HashMap<>();
-        final AtomicBoolean providerActive = new AtomicBoolean(true);
-        final AtomicBoolean providerDirty = new AtomicBoolean(true);
-
-        String remoteHelperV2 = "package test.notebook\n\n" +
+    private static String remoteHelperSource(String version, int value) {
+        return "package test.notebook\n\n" +
                 "return \"Helper\"\n\n" +
                 "static String getVersion() {\n" +
-                "    return \"REMOTE_V2\"\n" +
+                "    return \"" + version + "\"\n" +
                 "}\n\n" +
                 "static int getValue() {\n" +
-                "    return 777\n" +
+                "    return " + value + "\n" +
                 "}\n\n" +
                 "class HelperClass {\n" +
-                "    final String source = \"REMOTE_V2\"\n" +
+                "    final String source = \"" + version + "\"\n" +
                 "    String getSource() {\n" +
                 "        return source\n" +
                 "    }\n" +
@@ -294,89 +138,140 @@ public class TestGroovyRemoteFileSourcing {
                 "static String getSourceViaClass() {\n" +
                 "    new HelperClass().getSource()\n" +
                 "}";
+    }
 
-        remoteSources.put("test/notebook/Helper.groovy", REMOTE_HELPER);
+    /**
+     * Configure the provider state, evaluate the entrypoint script, and assert the expected Helper values.
+     *
+     * @param step description for assertion messages
+     * @param script the script to evaluate
+     * @param remoteSourceMap the remote sources to provide (resource path → source content)
+     * @param isDirty whether the provider should be marked dirty
+     * @param expectedVersion expected Version and SourceViaClass value
+     * @param expectedValue expected Value
+     */
+    private void evaluateAndAssertHelper(String step, String script,
+            Map<String, String> remoteSourceMap, boolean isDirty,
+            String expectedVersion, int expectedValue) {
+        remoteSources.clear();
+        remoteSources.putAll(remoteSourceMap);
+        providerDirty.set(isDirty);
 
-        RemoteFileSourceProvider provider = createProvider(remoteSources, providerActive, providerDirty);
-        RemoteFileSourceClassLoader cl = RemoteFileSourceClassLoader.getInstance();
-        try {
-            cl.registerProvider(provider);
+        ScriptSession.Changes c = session.evaluateScript(script);
+        c.throwIfError();
 
-            // Step 1: Use remote v1
-            ScriptSession.Changes c1 = session.evaluateScript(script);
-            c1.throwIfError();
+        Table t = session.getQueryScope().readParamValue("testTable");
+        assertEquals(step + ": Version", expectedVersion, (String) t.getColumnSource("Version").get(0));
+        assertEquals(step + ": Value", expectedValue, t.getColumnSource("Value").getInt(0));
+        assertEquals(step + ": SourceViaClass", expectedVersion,
+                (String) t.getColumnSource("SourceViaClass").get(0));
+    }
 
-            Table t1 = session.getQueryScope().readParamValue("testTable");
-            assertEquals("REMOTE", (String) t1.getColumnSource("Version").get(0));
-            assertEquals(999, t1.getColumnSource("Value").getInt(0));
-            assertEquals("REMOTE", (String) t1.getColumnSource("SourceViaClass").get(0));
+    @Test
+    public void testServerClassWorks() {
+        evaluateAndAssertHelper(
+                "server baseline",
+                scriptServerDependency,
+                Map.of(),
+                false,
+                "SERVER",
+                100);
+    }
 
-            providerDirty.set(false);
+    @Test
+    public void testRemoteOverridesServer() {
+        evaluateAndAssertHelper(
+                "remote overrides server",
+                scriptServerDependency,
+                Map.of(PATH_ON_SERVER, REMOTE_SOURCE),
+                true,
+                "REMOTE",
+                999);
+    }
 
-            // Step 2: Update to remote v2 and mark as dirty
-            remoteSources.put("test/notebook/Helper.groovy", remoteHelperV2);
-            providerDirty.set(true);
+    @Test
+    public void testServerToRemoteAndBack() {
+        evaluateAndAssertHelper(
+                "step 1: server",
+                scriptServerDependency,
+                Map.of(),
+                false,
+                "SERVER",
+                100);
 
-            ScriptSession.Changes c2 = session.evaluateScript(script);
-            c2.throwIfError();
+        evaluateAndAssertHelper(
+                "step 2: server→remote",
+                scriptServerDependency,
+                Map.of(PATH_ON_SERVER, REMOTE_SOURCE),
+                true,
+                "REMOTE",
+                999);
 
-            Table t2 = session.getQueryScope().readParamValue("testTable");
-            assertEquals("REMOTE_V2", (String) t2.getColumnSource("Version").get(0));
-            assertEquals(777, t2.getColumnSource("Value").getInt(0));
-            assertEquals("REMOTE_V2", (String) t2.getColumnSource("SourceViaClass").get(0));
-        } finally {
-            cl.unregisterProvider(provider);
-        }
+        evaluateAndAssertHelper(
+                "step 3: remote→server",
+                scriptServerDependency,
+                Map.of(),
+                true,
+                "SERVER",
+                100);
+    }
+
+    @Test
+    public void testRemoteToServer() {
+        evaluateAndAssertHelper(
+                "step 1: remote",
+                scriptServerDependency,
+                Map.of(PATH_ON_SERVER, REMOTE_SOURCE),
+                true,
+                "REMOTE",
+                999);
+
+        evaluateAndAssertHelper(
+                "step 2: remote→server",
+                scriptServerDependency,
+                Map.of(),
+                true,
+                "SERVER",
+                100);
+    }
+
+    @Test
+    public void testIsDirtyClearsCacheWithinRemote() {
+        evaluateAndAssertHelper(
+                "step 1: remote v1",
+                scriptServerDependency,
+                Map.of(PATH_ON_SERVER, REMOTE_SOURCE),
+                true,
+                "REMOTE",
+                999);
+
+        evaluateAndAssertHelper(
+                "step 2: remote v2",
+                scriptServerDependency,
+                Map.of(PATH_ON_SERVER, remoteHelperSource("REMOTE_V2", 777)),
+                true,
+                "REMOTE_V2",
+                777);
     }
 
     @Test
     public void testRemoteOnlyClassRemoved() {
-        // Scenario 6: Remote-Only Class Removed → Expected Failure
-        final Map<String, String> remoteSources = new HashMap<>();
-        final AtomicBoolean providerActive = new AtomicBoolean(true);
-        final AtomicBoolean providerDirty = new AtomicBoolean(true);
+        // RemoteOnly has no server fallback on the classpath — it only exists via the remote provider
 
-        String remoteOnly = "package test.notebook\n\n" +
-                "return \"RemoteOnly\"\n\n" +
-                "static String getType() {\n" +
-                "    return \"REMOTE_ONLY\"\n" +
-                "}\n\n" +
-                "static int getCode() {\n" +
-                "    return 555\n" +
-                "}";
+        // Step 1: Remote-only class available
+        evaluateAndAssertHelper(
+                "remote-only available",
+                scriptRemoteOnlyDependency,
+                Map.of(PATH_NOT_ON_SERVER, remoteHelperSource("REMOTE_ONLY", 555)),
+                true,
+                "REMOTE_ONLY",
+                555);
 
-        remoteSources.put("test/notebook/RemoteOnly.groovy", remoteOnly);
+        // Step 2: Remove remote sources — no server fallback exists, should fail
+        remoteSources.clear();
+        providerDirty.set(true);
 
-        RemoteFileSourceProvider provider = createProvider(remoteSources, providerActive, providerDirty);
-        RemoteFileSourceClassLoader cl = RemoteFileSourceClassLoader.getInstance();
-        try {
-            cl.registerProvider(provider);
-
-            // Step 1: Use RemoteOnly class
-            ScriptSession.Changes c1 = session.evaluateScript(
-                    "import test.notebook.RemoteOnly\n" +
-                            "ExecutionContext.getContext().getQueryLibrary().importClass(RemoteOnly.class)\n" +
-                            "t1 = emptyTable(1).updateView(\"Type = RemoteOnly.getType()\", \"Code = RemoteOnly.getCode()\")");
-            c1.throwIfError();
-
-            Table t1 = session.getQueryScope().readParamValue("t1");
-            assertEquals("REMOTE_ONLY", (String) t1.getColumnSource("Type").get(0));
-            assertEquals(555, t1.getColumnSource("Code").getInt(0));
-
-            // Step 2: Deactivate provider (makes RemoteOnly unavailable)
-            providerActive.set(false);
-            providerDirty.set(true);
-
-            // Step 3: Try to use RemoteOnly again - should fail
-            ScriptSession.Changes c2 = session.evaluateScript(
-                    "import test.notebook.RemoteOnly\n" +
-                            "ExecutionContext.getContext().getQueryLibrary().importClass(RemoteOnly.class)\n" +
-                            "t2 = emptyTable(1).updateView(\"Type = RemoteOnly.getType()\", \"Code = RemoteOnly.getCode()\")");
-
-            assertTrue("Script should fail when remote-only class is removed",
-                    c2.error != null);
-        } finally {
-            cl.unregisterProvider(provider);
-        }
+        ScriptSession.Changes c2 = session.evaluateScript(scriptRemoteOnlyDependency);
+        assertTrue("Script should fail when remote-only class is removed", c2.error != null);
     }
 }
