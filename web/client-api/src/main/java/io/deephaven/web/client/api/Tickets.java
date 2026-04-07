@@ -6,15 +6,11 @@ package io.deephaven.web.client.api;
 import com.google.common.io.BaseEncoding;
 import com.google.protobuf.ByteString;
 import elemental2.core.TypedArray;
-import elemental2.core.Uint8Array;
-import elemental2.dom.DomGlobal;
 import io.deephaven.proto.backplane.grpc.TableReference;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.web.client.api.console.JsVariableDefinition;
 import jsinterop.base.Js;
 import jsinterop.base.JsArrayLike;
-import org.gwtproject.nio.TypedArrayHelper;
-import org.jspecify.annotations.Nullable;
 
 /**
  * Single factory for known ticket types. By definition, this cannot be exhaustive, since flight tickets have no
@@ -38,7 +34,7 @@ public class Tickets {
     // Prefix for all shared tickets
     private static final byte SHARED_PREFIX = 'h';
 
-    // Some ticket types use a slash as a delimeter between fields
+    // Some ticket types use a slash as a delimiter between fields
     private static final char TICKET_DELIMITER = '/';
 
     /**
@@ -82,11 +78,11 @@ public class Tickets {
         byte[] bytes = BaseEncoding.base64().decode(base64Bytes);
 
         if (bytes.length > 2) {
-            if (bytes[0] == SCOPE_PREFIX || bytes[0] == APPLICATION_PREFIX && bytes[1] == TICKET_DELIMITER) {
+            if ((bytes[0] == SCOPE_PREFIX || bytes[0] == APPLICATION_PREFIX) && bytes[1] == TICKET_DELIMITER) {
                 return;
             }
         }
-        throw new IllegalArgumentException("Cannot create a VariableDefinition from a non-scope ticket");
+        throw new IllegalArgumentException("Can only create a VariableDefinition from scope or application tickets");
     }
 
     /**
