@@ -251,7 +251,7 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
     }
 
     public Promise<JsTable> newTable(String[] columnNames, String[] types, String[][] data, String userTimeZone) {
-        return connection.get().newTable(columnNames, types, data, userTimeZone, this).then(table -> {
+        return connection.get().newTable(columnNames, types, data, userTimeZone).then(table -> {
             fireEvent(EVENT_TABLE_OPENED, table);
 
             return Promise.resolve(table);

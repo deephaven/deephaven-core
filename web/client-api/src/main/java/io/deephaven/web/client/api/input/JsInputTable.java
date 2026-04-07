@@ -151,7 +151,7 @@ public class JsInputTable {
         }
 
         // TODO deephaven-core#2529 parallelize this
-        return table.getConnection().newTable(names, types, data, userTimeZone, null)
+        return table.getConnection().newTable(names, types, data, userTimeZone)
                 .then(this::addTable);
     }
 

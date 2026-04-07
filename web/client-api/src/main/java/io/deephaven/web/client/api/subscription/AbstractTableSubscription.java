@@ -101,7 +101,7 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
 
             connection.tableServiceClient().applyPreviewColumns(applyPreviewRequest.build(), callback);
         }, "preview");
-        previewedState.refetch(null).then(result -> null, err -> null);
+        previewedState.refetch().then(result -> null, err -> null);
         return previewedState;
     }
 

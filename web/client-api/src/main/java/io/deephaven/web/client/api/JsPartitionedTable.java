@@ -189,8 +189,7 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
                     columnNames,
                     columnTypes,
                     keysData,
-                    null,
-                    this)
+                    null)
                     .then(table -> {
                         GetTableRequest getTableRequest = GetTableRequest.newBuilder()
                                 .setPartitionedTable(widget.getTicket())
@@ -221,7 +220,7 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
         },
                 "partitioned table key " + key);
 
-        return entry.refetch(this)
+        return entry.refetch()
                 .then(cts -> Promise.resolve(new JsTable(cts.getConnection(), cts)));
     }
 
@@ -239,7 +238,7 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
                     .build();
             connection.partitionedTableServiceClient().merge(requestMessage, c);
         }, "partitioned table merged table")
-                .refetch(this)
+                .refetch()
                 .then(cts -> Promise.resolve(new JsTable(cts.getConnection(), cts)));
     }
 
@@ -303,7 +302,7 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
                         .build();
                 connection.tableServiceClient().view(view, c);
             }, "view only key columns")
-                    .refetch(this)
+                    .refetch()
                     .then(state -> Promise.resolve(new JsTable(state.getConnection(), state)));
         }
         return keys.then(JsTable::copy);

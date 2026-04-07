@@ -196,7 +196,7 @@ public final class ClientTableState extends TableConfig {
         }
 
         // revive!
-        return refetch(null);
+        return refetch();
     }
 
     private JsLazy<Map<String, Column>> resetLookup() {
@@ -934,11 +934,7 @@ public final class ClientTableState extends TableConfig {
         return (a, b) -> (int) Math.signum(b.getLastTouched() - a.getLastTouched());
     }
 
-    public Promise<JsTable> fetchTable(HasEventHandling failHandler) {
-        return refetch(failHandler).then(cts -> Promise.resolve(new JsTable(connection, cts)));
-    }
-
-    public Promise<ClientTableState> refetch(HasEventHandling failHandler) {
+    public Promise<ClientTableState> refetch() {
         if (fetch == null) {
             if (failMsg != null) {
                 return Promise.reject(failMsg);
@@ -952,7 +948,7 @@ public final class ClientTableState extends TableConfig {
             if (resolution == ResolutionState.RELEASED) {
                 // was released before we managed to finish the fetch, ignore
                 // noinspection rawtypes,unchecked
-                return (Promise) Promise.reject(
+                return Promise.reject(
                         "Table already released, cannot process incoming table definition, this can be safely ignored.");
             }
             applyTableCreationResponse(def);

@@ -174,7 +174,7 @@ public class IdeSession extends HasEventHandling {
     }
 
     public Promise<JsTable> newTable(String[] columnNames, String[] types, String[][] data, String userTimeZone) {
-        return connection.newTable(columnNames, types, data, userTimeZone, this).then(table -> {
+        return connection.newTable(columnNames, types, data, userTimeZone).then(table -> {
             fireEvent(EVENT_TABLE_OPENED, table);
 
             return Promise.resolve(table);

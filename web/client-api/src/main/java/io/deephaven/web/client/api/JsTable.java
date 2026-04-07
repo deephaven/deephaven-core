@@ -435,7 +435,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
             throw new UnsupportedOperationException("getAttribute");
         },
                 "reading table from attribute with name " + attributeName)
-                .refetch(this)
+                .refetch()
                 .then(cts -> Promise.resolve(new JsTable(workerConnection, cts)));
     }
 
@@ -990,7 +990,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
             workerConnection.tableServiceClient().selectDistinct(request, c);
         },
                 "selectDistinct " + columnNames);
-        return distinct.refetch(this)
+        return distinct.refetch()
                 .then(cts -> Promise.resolve(new JsTable(workerConnection, cts)));
     }
 
@@ -1131,7 +1131,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
         final ClientTableState totals = workerConnection.newState(totalsFactory, summary);
         final LazyPromise<JsTotalsTable> result = new LazyPromise<>();
         boolean[] downsample = {true};
-        return totals.refetch(this) // lastGood will always be non-null after this
+        return totals.refetch() // lastGood will always be non-null after this
                 .then(ready -> {
                     JsTable wrapped = new JsTable(workerConnection, ready);
                     // technically this is overkill, but it is more future-proofed than only listening for column
@@ -1176,7 +1176,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                                             return null;
                                         };
                                         final Promise<ClientTableState> promise =
-                                                nextState.refetch(this);
+                                                nextState.refetch();
                                         if (needsMutation) { // nextState will be empty, so we might want to test for
                                                              // isEmpty() instead
                                             wrapped.batch(b -> b.setConfig(existing)).then(restoreVp);
@@ -1328,7 +1328,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                     .setResultId(state.getHandle().makeTicket())
                     .build();
             workerConnection.tableServiceClient().snapshot(request, c);
-        }, "freeze").refetch(this)
+        }, "freeze").refetch()
                 .then(state -> Promise.resolve(new JsTable(workerConnection, state)));
     }
 
@@ -1357,7 +1357,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
             }
 
             workerConnection.tableServiceClient().snapshotWhen(request.build(), c);
-        }, fetchSummary).refetch(this)
+        }, fetchSummary).refetch()
                 .then(state -> Promise.resolve(new JsTable(workerConnection, state)));
     }
 
@@ -1403,7 +1403,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
             }
             workerConnection.tableServiceClient().asOfJoinTables(request.build(), c);
         }, "asOfJoin(" + rightTable + ", " + columnsToMatch + ", " + columnsToAdd + "," + asOfMatchRule + ")")
-                .refetch(this)
+                .refetch()
                 .then(state -> Promise.resolve(new JsTable(workerConnection, state)));
     }
 
@@ -1427,7 +1427,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
             }
             workerConnection.tableServiceClient().crossJoinTables(request.build(), c);
         }, "join(" + rightTable + ", " + columnsToMatch + ", " + columnsToAdd + "," + reserveBits + ")")
-                .refetch(this)
+                .refetch()
                 .then(state -> Promise.resolve(new JsTable(workerConnection, state)));
     }
 
@@ -1449,7 +1449,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                     .build();
             workerConnection.tableServiceClient().exactJoinTables(request, c);
         }, "exactJoin(" + rightTable + ", " + columnsToMatch + ", " + columnsToAdd + ")")
-                .refetch(this)
+                .refetch()
                 .then(state -> Promise.resolve(new JsTable(workerConnection, state)));
     }
 
@@ -1471,7 +1471,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                     .build();
             workerConnection.tableServiceClient().naturalJoinTables(request, c);
         }, "naturalJoin(" + rightTable + ", " + columnsToMatch + ", " + columnsToAdd + ")")
-                .refetch(this)
+                .refetch()
                 .then(state -> Promise.resolve(new JsTable(workerConnection, state)));
     }
 
@@ -1546,7 +1546,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                     .build();
             workerConnection.tableServiceClient().computeColumnStatistics(req, c);
         }, "get column statistics")
-                .refetch(this)
+                .refetch()
                 .then(state -> {
                     JsTable table = new JsTable(workerConnection, state);
                     toRelease.add(table::close);
@@ -1683,7 +1683,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
             downsampleRequest.setSourceId(state().getHandle().makeTableReference());
             downsampleRequest.setResultId(state.getHandle().makeTicket());
             workerConnection.tableServiceClient().runChartDownsample(downsampleRequest.build(), c);
-        }, fetchSummary).refetch(this)
+        }, fetchSummary).refetch()
                 .then(state -> Promise.resolve(new JsTable(workerConnection, state)));
     }
 

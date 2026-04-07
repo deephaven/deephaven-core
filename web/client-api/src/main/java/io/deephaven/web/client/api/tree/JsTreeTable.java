@@ -32,7 +32,6 @@ import io.deephaven.web.client.api.barrage.WebBarrageUtils;
 import io.deephaven.web.client.api.barrage.data.WebBarrageSubscription;
 import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
 import io.deephaven.web.client.api.barrage.def.InitialTableDefinition;
-import io.deephaven.web.client.api.barrage.stream.ResponseStreamWrapper;
 import io.deephaven.web.client.api.console.JsVariableType;
 import io.deephaven.web.client.api.event.Event;
 import io.deephaven.web.client.api.filter.FilterCondition;
@@ -220,7 +219,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
         keyTableData = new Object[keyColumns.length + 2][0];
 
         sourceTable = JsLazy.of(() -> workerConnection
-                .newState(this, (c, newState) -> {
+                .newState((c, newState) -> {
                     HierarchicalTableSourceExportRequest exportRequest =
                             HierarchicalTableSourceExportRequest.newBuilder()
                                     .setResultTableId(newState.getHandle().makeTicket())
@@ -228,6 +227,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
                                     .build();
                     connection.hierarchicalTableServiceClient().exportSource(exportRequest, c);
                 }, "source for hierarchical table")
+                .refetch()
                 .then(cts -> Promise.resolve(new JsTable(connection, cts))));
     }
 
@@ -453,7 +453,6 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
                 Js.uncheckedCast(keyTableColumns.map((p0, p1) -> p0.getName())),
                 Js.uncheckedCast(keyTableColumns.map((p0, p1) -> p0.getType())),
                 keyTableData,
-                null,
                 null);
         return keyTable;
     }

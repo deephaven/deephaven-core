@@ -71,12 +71,12 @@ public class WebBarrageUtils {
     }
 
     /**
-     * Reads the buffer into a Message and unwraps the Schema within. The buffer's contents are consumed.
-     * We expect this payload to consist of
+     * Reads the buffer into a Message and unwraps the Schema within. The buffer's contents are consumed. We expect this
+     * payload to consist of
      * <ul>
-     *     <li>IPC_CONTINUATION_TOKEN (4-byte int of -1)</li>
-     *     <li>message size (4-byte int)</li>
-     *     <li>a Message wrapping the schema</li>
+     * <li>IPC_CONTINUATION_TOKEN (4-byte int of -1)</li>
+     * <li>message size (4-byte int)</li>
+     * <li>a Message wrapping the schema</li>
      * </ul>
      */
     public static Schema readSchemaMessage(ByteBuffer flightSchemaMessage) {
@@ -86,12 +86,14 @@ public class WebBarrageUtils {
         }
         int size = flightSchemaMessage.getInt();
         if (size > flightSchemaMessage.remaining()) {
-            throw new IllegalStateException("Schema message size " + size + " is larger than remaining buffer " + flightSchemaMessage.remaining());
+            throw new IllegalStateException("Schema message size " + size + " is larger than remaining buffer "
+                    + flightSchemaMessage.remaining());
         }
         Message headerMessage = Message.getRootAsMessage(flightSchemaMessage);
 
         if (headerMessage.headerType() != MessageHeader.Schema) {
-            throw new IllegalStateException("Expected a schema payload, got " + MessageHeader.name(headerMessage.headerType()));
+            throw new IllegalStateException(
+                    "Expected a schema payload, got " + MessageHeader.name(headerMessage.headerType()));
         }
         Schema schema = new Schema();
         headerMessage.header(schema);

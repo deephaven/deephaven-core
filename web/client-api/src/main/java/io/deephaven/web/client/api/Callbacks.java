@@ -8,7 +8,6 @@ import elemental2.promise.Promise;
 import elemental2.promise.Promise.PromiseExecutorCallbackFn.RejectCallbackFn;
 import io.deephaven.web.client.api.barrage.stream.TrailersCapturingInterceptor;
 import io.deephaven.web.client.api.event.HasEventHandling;
-import io.deephaven.web.shared.fu.JsBiConsumer;
 import io.grpc.Context;
 import io.grpc.Metadata;
 import io.grpc.StatusRuntimeException;
@@ -66,16 +65,6 @@ public interface Callbacks {
         };
     }
 
-    static <S> Callback<S, String> of(@Nullable HasEventHandling failHandler, Consumer<S> from) {
-        return of((v, f) -> {
-            if (f == null) {
-                from.accept(v);
-            } else {
-                failLog(failHandler, from, f);
-            }
-        });
-    }
-
     static <S, F> void failLog(HasEventHandling failHandler, Consumer<S> from, F failure) {
         if (failHandler != null) {
             failHandler.failureHandled(failure == null ? null : String.valueOf(failure));
@@ -107,8 +96,8 @@ public interface Callbacks {
 
     /**
      * Propagates the message and the context into a Promise, as a promise's microtask will result in losing the
-     * context. Does not resolve until the unary stream is closed, in order to read the trailers, in contrast
-     * with {@link #grpcUnaryPromise(Consumer)}.
+     * context. Does not resolve until the unary stream is closed, in order to read the trailers, in contrast with
+     * {@link #grpcUnaryPromise(Consumer)}.
      */
     static <S> Promise<Response<S>> grpcUnaryPromiseWrapped(Consumer<StreamObserver<S>> t) {
         return new Promise<>((resolve, reject) -> {
@@ -140,9 +129,9 @@ public interface Callbacks {
     }
 
     /**
-     * Returns a promise that resolves when the first payload arrives from a unary request. Because
-     * promises resolve on a microtask, the later called promise will not necessarily share the same
-     * Context as the call, use {@link #grpcUnaryPromiseWrapped(Consumer)} for that.
+     * Returns a promise that resolves when the first payload arrives from a unary request. Because promises resolve on
+     * a microtask, the later called promise will not necessarily share the same Context as the call, use
+     * {@link #grpcUnaryPromiseWrapped(Consumer)} for that.
      */
     static <S> Promise<S> grpcUnaryPromise(Consumer<StreamObserver<S>> t) {
         return new Promise<>((resolve, reject) -> {

@@ -673,15 +673,6 @@ public class WorkerConnection {
         info.logout();
     }
 
-    public void setSessionTimeoutMs(double sessionTimeoutMs) {
-        this.sessionTimeoutMs = sessionTimeoutMs;
-    }
-
-    // @Override
-    public void onError(Throwable throwable) {
-        info.failureHandled(throwable.toString());
-    }
-
     public Promise<JsVariableDefinition> getVariableDefinition(String name, String type) {
         LazyPromise<JsVariableDefinition> promise = new LazyPromise<>();
 
@@ -729,25 +720,26 @@ public class WorkerConnection {
         }
         return whenServerReady("get a table").then(serve -> {
             JsLog.debug("innerGetTable", varDef.getTitle(), " started");
-            return newState(info,
-                    (c, cts) -> {
-                        JsLog.debug("performing fetch for ", varDef.getTitle(), " / ", cts,
-                                " (" + cts.getHandle() + ")");
-                        // Only apply preview if specifically requested
-                        if (applyPreviewColumns != null && applyPreviewColumns) {
-                            ApplyPreviewColumnsRequest req = ApplyPreviewColumnsRequest.newBuilder()
-                                    .setSourceId(Tickets.createTableRef(varDef))
-                                    .setResultId(cts.getHandle().makeTicket())
-                                    .build();
-                            tableServiceClient.applyPreviewColumns(req, c);
-                        } else {
-                            FetchTableRequest req = FetchTableRequest.newBuilder()
-                                    .setSourceId(Tickets.createTableRef(varDef))
-                                    .setResultId(cts.getHandle().makeTicket())
-                                    .build();
-                            tableServiceClient.fetchTable(req, c);
-                        }
-                    }, "fetch table " + varDef.getTitle()).then(cts -> {
+            return newState((c, cts) -> {
+                JsLog.debug("performing fetch for ", varDef.getTitle(), " / ", cts,
+                        " (" + cts.getHandle() + ")");
+                // Only apply preview if specifically requested
+                if (applyPreviewColumns != null && applyPreviewColumns) {
+                    ApplyPreviewColumnsRequest req = ApplyPreviewColumnsRequest.newBuilder()
+                            .setSourceId(Tickets.createTableRef(varDef))
+                            .setResultId(cts.getHandle().makeTicket())
+                            .build();
+                    tableServiceClient.applyPreviewColumns(req, c);
+                } else {
+                    FetchTableRequest req = FetchTableRequest.newBuilder()
+                            .setSourceId(Tickets.createTableRef(varDef))
+                            .setResultId(cts.getHandle().makeTicket())
+                            .build();
+                    tableServiceClient.fetchTable(req, c);
+                }
+            }, "fetch table " + varDef.getTitle())
+                    .refetch()
+                    .then(cts -> {
                         JsLog.debug("innerGetTable", varDef.getTitle(), " succeeded ", cts);
                         JsTable table = new JsTable(this, cts);
                         return Promise.resolve(table);
@@ -890,7 +882,7 @@ public class WorkerConnection {
                 });
 
             }, "getSharedObject")
-                    .refetch(null)
+                    .refetch()
                     .then(state -> Promise.resolve(new JsTable(this, state)));
         }
 
@@ -1123,12 +1115,11 @@ public class WorkerConnection {
         return new BiDiStream.Factory<>(info.supportsClientStreaming(), tickets::newTicketInt);
     }
 
-    public Promise<JsTable> newTable(String[] columnNames, String[] types, Object[][] data, String userTimeZone,
-            HasEventHandling failHandler) {
+    public Promise<JsTable> newTable(String[] columnNames, String[] types, Object[][] data, String userTimeZone) {
         // Store the ref to the data using an array we can clear out, so the data is garbage collected later
         // This means the table can only be created once, but that's probably what we want in this case anyway
         final Object[][][] dataRef = new Object[][][] {data};
-        return newState(failHandler, (c, cts) -> {
+        return newState((c, cts) -> {
             final Object[][] d = dataRef[0];
             if (d == null) {
                 c.onError(new IllegalStateException("Data already released, cannot re-create table"));
@@ -1263,7 +1254,9 @@ public class WorkerConnection {
 
             stream.send(bodyMessage.build());
             stream.end();
-        }, "creating new table").then(cts -> Promise.resolve(new JsTable(this, cts)));
+        }, "creating new table")
+                .refetch()
+                .then(cts -> Promise.resolve(new JsTable(this, cts)));
     }
 
     private ByteBuffer padAndConcat(List<Uint8Array> buffers, int length) {
@@ -1286,7 +1279,7 @@ public class WorkerConnection {
     }
 
     public Promise<JsTable> mergeTables(JsTable[] tables, HasEventHandling failHandler) {
-        return newState(failHandler, (c, cts) -> {
+        return newState((c, cts) -> {
             final List<TableReference> tableHandles = new ArrayList<>();
             for (int i = 0; i < tables.length; i++) {
                 final JsTable table = tables[i];
@@ -1304,7 +1297,9 @@ public class WorkerConnection {
                     .addAllSourceIds(tableHandles)
                     .build();
             tableServiceClient.mergeTables(requestMessage, c);
-        }, "merging tables").then(cts -> Promise.resolve(new JsTable(this, cts)));
+        }, "merging tables")
+                .refetch()
+                .then(cts -> Promise.resolve(new JsTable(this, cts)));
     }
 
     /**
@@ -1357,19 +1352,6 @@ public class WorkerConnection {
     public ClientTableState newState(JsTableFetch fetcher, String fetchSummary) {
         return cache.create(tickets.newTableTicket(),
                 handle -> new ClientTableState(this, handle, fetcher, fetchSummary));
-    }
-
-    /**
-     *
-     * @param fetcher The lambda to perform the fetch of the table's definition.
-     * @return A promise that will resolve when the ClientTableState is RUNNING (and fail if anything goes awry).
-     *
-     *         TODO: consider a fetch timeout.
-     */
-    public Promise<ClientTableState> newState(HasEventHandling failHandler, JsTableFetch fetcher, String fetchSummary) {
-        final TableTicket handle = tickets.newTableTicket();
-        final ClientTableState s = cache.create(handle, h -> new ClientTableState(this, h, fetcher, fetchSummary));
-        return s.refetch(failHandler);
     }
 
     public ClientTableState newState(ClientTableState from, TableConfig to) {
@@ -1550,25 +1532,26 @@ public class WorkerConnection {
     }
 
     public Promise<JsTable> emptyTable(double size) {
-        return whenServerReady("create emptyTable").then(server -> newState(info, (c, cts) -> {
+        return whenServerReady("create emptyTable").then(server -> newState((c, cts) -> {
             EmptyTableRequest emptyTableRequest = EmptyTableRequest.newBuilder()
                     .setResultId(cts.getHandle().makeTicket())
                     .setSize((long) size)
                     .build();
             tableServiceClient.emptyTable(emptyTableRequest, c);
-        }, "emptyTable(" + size + ")")).then(cts -> Promise.resolve(new JsTable(this, cts)));
+        }, "emptyTable(" + size + ")").refetch())
+                .then(cts -> Promise.resolve(new JsTable(this, cts)));
     }
 
     public Promise<JsTable> timeTable(double periodNanos, DateWrapper startTime) {
         final long startTimeNanos = startTime == null ? -1 : startTime.getWrapped();
-        return whenServerReady("create timetable").then(server -> newState(info, (c, cts) -> {
+        return whenServerReady("create timetable").then(server -> newState((c, cts) -> {
             TimeTableRequest timeTableRequest = TimeTableRequest.newBuilder()
                     .setResultId(cts.getHandle().makeTicket())
                     .setPeriodNanos((long) periodNanos)
                     .setStartTimeNanos(startTimeNanos)
                     .build();
             tableServiceClient.timeTable(timeTableRequest, c);
-        }, "create timetable(" + periodNanos + ", " + startTime + ")"))
+        }, "create timetable(" + periodNanos + ", " + startTime + ")").refetch())
                 .then(cts -> Promise.resolve(new JsTable(this, cts)));
     }
 }

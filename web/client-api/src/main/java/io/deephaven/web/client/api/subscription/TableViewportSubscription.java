@@ -84,7 +84,7 @@ public class TableViewportSubscription extends AbstractTableSubscription {
                         .build();
                 connection.tableServiceClient().flatten(flatten, callback);
             }, "flatten");
-            stateToSubscribe.refetch(null).then(result -> null, err -> null);
+            stateToSubscribe.refetch().then(result -> null, err -> null);
         } else {
             stateToSubscribe = previewedState;
         }
