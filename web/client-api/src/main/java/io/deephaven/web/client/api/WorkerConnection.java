@@ -41,7 +41,6 @@ import io.deephaven.proto.backplane.grpc.PartitionedTableServiceGrpc;
 import io.deephaven.proto.backplane.grpc.PublishRequest;
 import io.deephaven.proto.backplane.grpc.PublishResponse;
 import io.deephaven.proto.backplane.grpc.ReleaseRequest;
-import io.deephaven.proto.backplane.grpc.ReleaseResponse;
 import io.deephaven.proto.backplane.grpc.SessionServiceGrpc;
 import io.deephaven.proto.backplane.grpc.StorageServiceGrpc;
 import io.deephaven.proto.backplane.grpc.TableReference;
@@ -808,12 +807,9 @@ public class WorkerConnection {
         if (JsVariableType.TABLE.equalsIgnoreCase(typedTicket.getType())) {
             throw new IllegalArgumentException("wrong way to get a table from a ticket");
         } else if (JsVariableType.FIGURE.equalsIgnoreCase(typedTicket.getType())) {
-            return new JsFigure(this, c -> {
+            return new JsFigure(this, () -> {
                 JsWidget widget = new JsWidget(this, typedTicket);
-                widget.refetch().then(ignore -> {
-                    c.apply(null, makeFigureFetchResponse(widget));
-                    return null;
-                });
+                return widget.refetch().then(ignore -> Promise.resolve(makeFigureFetchResponse(widget)));
             }).refetch();
         } else if (JsVariableType.PANDAS.equalsIgnoreCase(typedTicket.getType())) {
             return getWidget(typedTicket)
@@ -1029,14 +1025,11 @@ public class WorkerConnection {
         }
         return whenServerReady("get a figure")
                 .then(server -> new JsFigure(this,
-                        c -> {
-                            getWidget(varDef).then(JsWidget::refetch).then(widget -> {
-                                c.apply(null, makeFigureFetchResponse(widget));
+                        () -> {
+                            return getWidget(varDef).then(JsWidget::refetch).then(widget -> {
+                                FetchObjectResponse result = makeFigureFetchResponse(widget);
                                 widget.close();
-                                return null;
-                            }, error -> {
-                                c.apply(error, null);
-                                return null;
+                                return Promise.resolve(result);
                             });
                         }).refetch());
     }

@@ -89,7 +89,7 @@ public interface Callbacks {
      * appropriate.
      */
     static <S, F> Callback<S, F> of(BiConsumer<S, F> from) {
-        return new Callback<S, F>() {
+        return new Callback<>() {
             F fail;
 
             @Override
@@ -103,19 +103,6 @@ public interface Callbacks {
                 from.accept(result, fail);
             }
         };
-    }
-
-    @Deprecated
-    static <S, F> Promise<S> grpcUnaryPromiseOld(Consumer<JsBiConsumer<F, S>> t) {
-        return new Promise<>((resolve, reject) -> {
-            t.accept((fail, success) -> {
-                if (fail == null) {
-                    resolve.onInvoke(success);
-                } else {
-                    reject.onInvoke(fail);
-                }
-            });
-        });
     }
 
     /**

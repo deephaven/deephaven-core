@@ -21,7 +21,6 @@ import io.deephaven.web.client.api.widget.JsWidget;
 import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.client.fu.LazyPromise;
 import io.deephaven.web.client.state.ClientTableState;
-import io.deephaven.web.shared.fu.JsBiConsumer;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsOptional;
@@ -37,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -114,10 +114,6 @@ public class JsFigure extends HasLifecycle {
              */
             EVENT_DOWNSAMPLENEEDED = "downsampleneeded";
 
-    public interface FigureFetch {
-        void fetch(JsBiConsumer<Object, FetchObjectResponse> callback);
-    }
-
     public interface FigureTableFetch {
         Promise<FigureTableFetchData> fetch(JsFigure figure, FetchObjectResponse descriptor);
     }
@@ -158,7 +154,7 @@ public class JsFigure extends HasLifecycle {
         }
     }
 
-    private final FigureFetch fetch;
+    private final Supplier<Promise<FetchObjectResponse>> fetch;
     private final FigureTableFetch tableFetch;
     private FigureClose onClose;
 
@@ -181,12 +177,12 @@ public class JsFigure extends HasLifecycle {
     private boolean subCheckEnqueued = false;
 
     @JsIgnore
-    public JsFigure(WorkerConnection connection, FigureFetch fetch) {
+    public JsFigure(WorkerConnection connection, Supplier<Promise<FetchObjectResponse>> fetch) {
         this(fetch, new DefaultFigureTableFetch(connection));
     }
 
     @JsIgnore
-    public JsFigure(FigureFetch fetch, FigureTableFetch tableFetch) {
+    public JsFigure(Supplier<Promise<FetchObjectResponse>> fetch, FigureTableFetch tableFetch) {
         this.fetch = fetch;
         this.tableFetch = tableFetch;
     }
@@ -196,7 +192,7 @@ public class JsFigure extends HasLifecycle {
         plotHandlesToTables = new HashMap<>();
         plotHandlesToPartitionedTables = new HashMap<>();
 
-        return Callbacks.grpcUnaryPromiseOld(fetch::fetch).then(response -> {
+        return fetch.get().then(response -> {
             try {
                 this.descriptor = FigureDescriptor.parseFrom(response.getData());
             } catch (InvalidProtocolBufferException e) {

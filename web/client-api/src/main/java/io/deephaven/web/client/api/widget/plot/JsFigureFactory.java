@@ -47,7 +47,7 @@ public class JsFigureFactory {
                     JsArray<JsTable> jsTableCopies = Js.cast(unknownTableCopies);
                     JsTable[] tableCopies = jsTableCopies.asArray(new JsTable[0]);
                     return new JsFigure(
-                            c -> c.apply(null, response.build()),
+                            () -> Promise.resolve(response.build()),
                             (figure, descriptor1) -> {
                                 // We need to listen for disconnects and reconnects
                                 boolean[] isTableDisconnected = new boolean[tableCopies.length];
