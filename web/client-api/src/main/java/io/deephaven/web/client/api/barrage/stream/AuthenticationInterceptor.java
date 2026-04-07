@@ -17,10 +17,8 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Logger;
 
 public class AuthenticationInterceptor implements ClientInterceptor {
-    private static final Logger log = Logger.getLogger(AuthenticationInterceptor.class.getName());
     public static final Metadata.Key<String> AUTHORIZATION_HEADER =
             Metadata.Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER);
     public static final Context.Key<Boolean> SESSION_CREATED = Context.keyWithDefault("session-created", false);
@@ -51,7 +49,6 @@ public class AuthenticationInterceptor implements ClientInterceptor {
     }
 
     private void setState(State state) {
-        log.info("state set from " + this.state + " to " + state);
         if (this.state == state) {
             return;
         }
@@ -77,7 +74,6 @@ public class AuthenticationInterceptor implements ClientInterceptor {
     }
 
     private Context handleMetadata(@Nullable Status status, Metadata metadata) {
-        log.info("Handling metadata with status " + status + " and headers " + metadata);
         String authHeader = metadata.get(AUTHORIZATION_HEADER);
         if (authHeader == null && status == null) {
             return Context.current();
@@ -127,7 +123,6 @@ public class AuthenticationInterceptor implements ClientInterceptor {
 
         @Override
         public void start(Listener<RespT> responseListener, Metadata headers) {
-            log.info("BearerCall.start state=" + state + ", headers= " + headers);
             if (state == State.PENDING) {
                 // queue this call until we have a result
                 pending.add(() -> start(new BearerListener<>(responseListener), headers));
