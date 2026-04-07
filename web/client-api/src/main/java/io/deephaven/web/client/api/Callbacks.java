@@ -11,6 +11,7 @@ import io.deephaven.web.client.api.event.HasEventHandling;
 import io.deephaven.web.shared.fu.JsBiConsumer;
 import io.grpc.Context;
 import io.grpc.Metadata;
+import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 
 import javax.annotation.Nullable;
@@ -26,17 +27,14 @@ public interface Callbacks {
         return new StreamObserver<T>() {
             @Override
             public void onNext(T value) {
-
             }
 
             @Override
             public void onError(Throwable t) {
-
             }
 
             @Override
             public void onCompleted() {
-
             }
         };
     }
@@ -87,7 +85,6 @@ public interface Callbacks {
         } else {
             DomGlobal.console.error("Request ", from, " failed with reason ", failure);
         }
-
     }
 
     /**
@@ -140,7 +137,7 @@ public interface Callbacks {
                 @Override
                 public void onError(Throwable throwable) {
                     assert success == null;
-                    reject.onInvoke(throwable);
+                    reject.onInvoke(getError(throwable));
                 }
 
                 @Override
@@ -167,7 +164,7 @@ public interface Callbacks {
 
                 @Override
                 public void onError(Throwable throwable) {
-                    reject.onInvoke(throwable);
+                    reject.onInvoke(getError(throwable));
                 }
 
                 @Override
@@ -178,20 +175,15 @@ public interface Callbacks {
         });
     }
 
-    record Response<M>(M message, Context context, Metadata trailers) {
+    private static Object getError(Throwable throwable) {
+        if (throwable instanceof StatusRuntimeException sre) {
+            String description = sre.getStatus().getDescription();
+            return "Error: " + (description == null ? sre.getMessage() : description);
+        } else {
+            return "Error: " + throwable;
+        }
     }
 
-    static <S, F> void translateCallback(Callback<S, String> callback, Consumer<JsBiConsumer<F, S>> t) {
-        try {
-            t.accept((fail, success) -> {
-                if (fail != null) {
-                    callback.onSuccess(success);
-                } else {
-                    callback.onFailure(fail.toString());
-                }
-            });
-        } catch (Exception exception) {
-            callback.onFailure(exception.getMessage());
-        }
+    record Response<M>(M message, Context context, Metadata trailers) {
     }
 }

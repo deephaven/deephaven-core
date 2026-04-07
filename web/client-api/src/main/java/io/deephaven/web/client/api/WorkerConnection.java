@@ -887,7 +887,11 @@ public class WorkerConnection {
                     tableServiceClient().getExportedTableCreationResponse(ticket, callback);
                     return null;
                 }, err -> {
-                    callback.onError((Throwable) err);
+                    if (err instanceof Throwable t) {
+                        callback.onError(t);
+                    } else {
+                        callback.onError(new RuntimeException(String.valueOf(err)));
+                    }
                     return null;
                 });
 
