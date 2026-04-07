@@ -26,16 +26,13 @@ public interface Callbacks {
     static <T> StreamObserver<T> ignore() {
         return new StreamObserver<T>() {
             @Override
-            public void onNext(T value) {
-            }
+            public void onNext(T value) {}
 
             @Override
-            public void onError(Throwable t) {
-            }
+            public void onError(Throwable t) {}
 
             @Override
-            public void onCompleted() {
-            }
+            public void onCompleted() {}
         };
     }
 

@@ -277,7 +277,8 @@ public abstract class QueryConnectable<Self extends QueryConnectable<Self>> exte
     public <T> T createStub(Function<Channel, T> constructor) {
         CustomTransportChannel channel =
                 new CustomTransportChannel(new URL(getServerUrl()), getOptions().transportFactory);
-        return constructor.apply(ClientInterceptors.intercept(channel, authenticationInterceptor, new ClientBrowserStreamInterceptor()));
+        return constructor.apply(
+                ClientInterceptors.intercept(channel, authenticationInterceptor, new ClientBrowserStreamInterceptor()));
     }
 
     public <T> T createStubNoAuth(Function<Channel, T> constructor) {

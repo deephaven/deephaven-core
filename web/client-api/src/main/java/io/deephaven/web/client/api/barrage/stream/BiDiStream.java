@@ -67,6 +67,7 @@ public abstract class BiDiStream<Req, Resp> {
         static class RealBidiStream<ReqT, RespT> extends BiDiStream<ReqT, RespT> {
             private final ResponseStreamWrapper<RespT> wrapper;
             private StreamObserver<ReqT> observer;
+
             RealBidiStream(BiDiStreamFactory<ReqT, RespT> factory) {
                 wrapper = ResponseStreamWrapper.of(o -> {
                     observer = factory.openBiDiStream(o);

@@ -44,7 +44,7 @@ public class ClientBrowserStreamInterceptor implements ClientInterceptor {
 
     @Override
     public <ReqT, RespT> ClientCall<ReqT, RespT> interceptCall(MethodDescriptor<ReqT, RespT> method,
-                                                               CallOptions callOptions, Channel next) {
+            CallOptions callOptions, Channel next) {
         // Ticket must always be set, or this isn't an emulated call
         Integer ticket = TICKET_KEY.get();
         if (ticket != null) {
@@ -56,10 +56,12 @@ public class ClientBrowserStreamInterceptor implements ClientInterceptor {
         return next.newCall(method, callOptions);
     }
 
-    private final class EmulatedBiDiCall<ReqT, RespT> extends ForwardingClientCall.SimpleForwardingClientCall<ReqT, RespT> {
+    private final class EmulatedBiDiCall<ReqT, RespT>
+            extends ForwardingClientCall.SimpleForwardingClientCall<ReqT, RespT> {
         private final int ticket;
         private final int seq;
         private final boolean halfClose;
+
         private EmulatedBiDiCall(ClientCall<ReqT, RespT> delegate, int ticket, int seq, boolean halfClose) {
             super(delegate);
             this.ticket = ticket;

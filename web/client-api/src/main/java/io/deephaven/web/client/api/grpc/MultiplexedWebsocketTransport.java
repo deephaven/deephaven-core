@@ -400,6 +400,7 @@ public class MultiplexedWebsocketTransport implements GrpcTransport {
             }
         }
     }
+
     private void sendOrEnqueue(QueuedEntry e) {
         if (transport.webSocket.readyState == WebSocket.CONNECTING) {
             sendQueue.add(e);

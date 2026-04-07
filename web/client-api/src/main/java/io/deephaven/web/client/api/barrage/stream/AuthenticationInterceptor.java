@@ -89,7 +89,7 @@ public class AuthenticationInterceptor implements ClientInterceptor {
                 created = true;
             }
             // either way, continue with pending calls
-            //TODO probably only in the two above cases
+            // TODO probably only in the two above cases
             flushPending();
 
             if (created) {

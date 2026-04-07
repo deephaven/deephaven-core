@@ -5,15 +5,19 @@ package io.deephaven.web.client.api.filter;
 
 import elemental2.core.JsArray;
 import io.deephaven.proto.backplane.grpc.AndCondition;
+import io.deephaven.proto.backplane.grpc.CompareCondition;
 import io.deephaven.proto.backplane.grpc.Condition;
+import io.deephaven.proto.backplane.grpc.InCondition;
 import io.deephaven.proto.backplane.grpc.InvokeCondition;
 import io.deephaven.proto.backplane.grpc.NotCondition;
 import io.deephaven.proto.backplane.grpc.OrCondition;
 import io.deephaven.proto.backplane.grpc.SearchCondition;
+import io.deephaven.proto.backplane.grpc.Value;
 import io.deephaven.web.client.api.Column;
 import jsinterop.annotations.*;
 
 import java.util.Arrays;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -174,13 +178,65 @@ public class FilterCondition {
 
     /**
      * a string suitable for debugging showing the details of this condition.
-     * 
+     *
      * @return String.
      */
     @JsMethod
     public String toString() {
-        // TODO (deephaven-core#723) implement a readable tostring rather than turning the pb object into a string
-        return descriptor.toString();
+        return toString(descriptor);
+    }
+
+    private static String toString(Condition descriptor) {
+        Function<Condition, String> condString = FilterCondition::toString;
+        Function<Value, String> valueString = FilterCondition::toString;
+        return switch (descriptor.getDataCase()) {
+            case AND -> descriptor.getAnd().getFiltersList().stream()
+                    .map(condString)
+                    .collect(Collectors.joining(" && "));
+            case OR -> descriptor.getOr().getFiltersList().stream()
+                    .map(condString)
+                    .collect(Collectors.joining(" || "));
+            case NOT -> "!(" + toString(descriptor.getNot().getFilter()) + ")";
+            case COMPARE -> {
+                CompareCondition compare = descriptor.getCompare();
+                yield toString(compare.getLhs()) + " " + compare.getCaseSensitivity() + " " + compare.getOperation()
+                        + " " + toString(compare.getRhs());
+            }
+            case IN -> {
+                InCondition in = descriptor.getIn();
+                yield toString(in.getTarget()) + " " + in.getMatchType() + " " + in.getCaseSensitivity() + " "
+                        + in.getNanComparison() + " in "
+                        + in.getCandidatesList().stream().map(valueString).collect(Collectors.joining(", "));
+            }
+            case INVOKE -> {
+                InvokeCondition invoke = descriptor.getInvoke();
+                if (invoke.hasTarget()) {
+                    yield toString(invoke.getTarget()) + "." + invoke.getMethod() + "("
+                            + invoke.getArgumentsList().stream().map(valueString).collect(Collectors.joining(", "))
+                            + ")";
+                }
+                yield invoke.getMethod() + "("
+                        + invoke.getArgumentsList().stream().map(valueString).collect(Collectors.joining(", ")) + ")";
+            }
+            case IS_NULL -> "isNull(" + descriptor.getIsNull().getReference().getColumnName() + ")";
+            case MATCHES -> "matches(" + descriptor.getMatches().getReference().getColumnName() + ", "
+                    + descriptor.getMatches().getRegex() + ", " + descriptor.getMatches().getCaseSensitivity() + ", "
+                    + descriptor.getMatches().getMatchType() + ")";
+            case CONTAINS -> "contains(" + descriptor.getContains().getReference().getColumnName() + ", "
+                    + descriptor.getContains().getSearchString() + ", " + descriptor.getContains().getCaseSensitivity()
+                    + ", " + descriptor.getContains().getMatchType() + ")";
+            case SEARCH -> "searchTableColumns(" + descriptor.getSearch().getSearchString() + ", "
+                    + descriptor.getSearch().getOptionalReferencesList() + ")";
+            case IS_NAN -> "isNaN(" + descriptor.getIsNan().getReference().getColumnName() + ")";
+            case DATA_NOT_SET -> "unknown";
+        };
+    }
+
+    private static String toString(Value value) {
+        if (value.hasReference()) {
+            return value.getReference().getColumnName();
+        }
+        return value.getLiteral().getStringValue();
     }
 
     @JsProperty
