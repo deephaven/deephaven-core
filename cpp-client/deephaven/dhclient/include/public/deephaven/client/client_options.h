@@ -4,16 +4,15 @@
 #pragma once
 
 #include <string>
-#include <string_view>
 #include <utility>
 #include <vector>
 
 namespace deephaven::client {
 
 // Header/option key constants
-inline constexpr std::string_view kAuthorizationHeader = "authorization";
-inline constexpr std::string_view kBearerPrefix = "Bearer ";
-inline constexpr std::string_view kEnvoyPrefixHeader = "envoy-prefix";
+inline constexpr const char *kAuthorizationHeader = "authorization";
+inline constexpr const char *kBearerPrefix = "Bearer ";
+inline constexpr const char *kEnvoyPrefixHeader = "envoy-prefix";
 
 class Client;
 

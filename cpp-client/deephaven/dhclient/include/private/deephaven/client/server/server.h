@@ -14,6 +14,7 @@
 #include <arrow/flight/client.h>
 
 #include "deephaven/client/client_options.h"
+#include "deephaven/client/server/server_shared_state.h"
 #include "deephaven/client/utility/executor.h"
 #include "deephaven/client/utility/misc_types.h"
 #include "deephaven/dhcore/utility/utility.h"
@@ -34,26 +35,9 @@
 
 namespace deephaven::client::server {
 
-// Forward declaration
-class BearerMiddlewareFactory;
-
-namespace internal {
-struct TicketLess {
-  using Ticket = io::deephaven::proto::backplane::grpc::Ticket;
-
-  bool operator()(const Ticket &lhs, const Ticket &rhs) const {
-    return lhs.ticket() < rhs.ticket();
-  }
-};
-
-}  // namespace internal
-
 class Server : public std::enable_shared_from_this<Server> {
   struct Private {
   };
-
-  // Allow BearerMiddlewareFactory to access sessionToken_ and mutex_
-  friend class BearerMiddlewareFactory;
 
   using ApplicationService = io::deephaven::proto::backplane::grpc::ApplicationService;
   using AddTableResponse = io::deephaven::proto::backplane::grpc::AddTableResponse;
@@ -96,10 +80,7 @@ public:
       std::unique_ptr<ConfigService::Stub> config_stub,
       std::unique_ptr<InputTableService::Stub> input_table_stub,
       std::unique_ptr<arrow::flight::FlightClient> flight_client,
-      ClientOptions::extra_headers_t extra_headers,
-      std::string session_token,
-      std::chrono::milliseconds expiration_interval,
-      std::chrono::system_clock::time_point next_handshake_time);
+      std::shared_ptr<ServerSharedState> shared_state);
   ~Server();
 
   [[nodiscard]]
@@ -165,17 +146,7 @@ private:
   std::unique_ptr<ConfigService::Stub> configStub_;
   std::unique_ptr<InputTableService::Stub> input_table_stub_;
   std::unique_ptr<arrow::flight::FlightClient> flightClient_;
-  const ClientOptions::extra_headers_t extraHeaders_;
 
-
-  std::mutex mutex_;
-  std::condition_variable condVar_;
-  int32_t nextFreeTicketId_ = 1;
-  bool cancelled_ = false;
-  std::set<Ticket, internal::TicketLess> outstanding_tickets_;
-  std::string sessionToken_;
-  std::chrono::milliseconds expirationInterval_;
-  std::chrono::system_clock::time_point nextHandshakeTime_;
-  std::thread keepAliveThread_;
+  std::shared_ptr<ServerSharedState> shared_state_;
 };
 }  // namespace deephaven::client::server
