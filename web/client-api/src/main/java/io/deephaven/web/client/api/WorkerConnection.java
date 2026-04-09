@@ -479,18 +479,21 @@ public class WorkerConnection {
             }, sessionTimeoutMs / 2);
             return Promise.resolve(AuthenticationInterceptor.SESSION_CREATED.get(response.context()));
         }, err -> {
-            StatusRuntimeException ex = (StatusRuntimeException) err;
-            if (ex.getStatus().getCode() == Status.Code.UNAUTHENTICATED) {
-                // Fire an event for the UI to attempt to re-auth
-                info.fireCriticalEvent(CoreClient.EVENT_RECONNECT_AUTH_FAILED);
-                return Promise.reject("Authentication failed, please reconnect");
-            }
-            checkStatus(ex);
-            if (ex.getMessage() != null && !ex.getMessage().isEmpty()) {
-                return Promise.reject(ex.getMessage());
+            if (err instanceof StatusRuntimeException ex) {
+                if (ex.getStatus().getCode() == Status.Code.UNAUTHENTICATED) {
+                    // Fire an event for the UI to attempt to re-auth
+                    info.fireCriticalEvent(CoreClient.EVENT_RECONNECT_AUTH_FAILED);
+                    return Promise.reject("Authentication failed, please reconnect");
+                }
+                checkStatus(ex);
+                if (ex.getMessage() != null && !ex.getMessage().isEmpty()) {
+                    return Promise.reject(ex.getMessage());
+                } else {
+                    return Promise
+                            .reject("Error occurred while authenticating, gRPC status " + ex.getStatus().getCode().name());
+                }
             } else {
-                return Promise
-                        .reject("Error occurred while authenticating, gRPC status " + ex.getStatus().getCode().name());
+                return Promise.reject("err");
             }
         });
         // return UnaryWithHeaders.<ConfigurationConstantsRequest, ConfigurationConstantsResponse>call(

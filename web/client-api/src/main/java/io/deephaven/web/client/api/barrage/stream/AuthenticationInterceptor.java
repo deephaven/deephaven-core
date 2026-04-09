@@ -84,6 +84,7 @@ public class AuthenticationInterceptor implements ClientInterceptor {
                 // Server sent us a bearer token to use in future calls, mark as authenticated
                 this.state = State.AUTHENTICATED;
                 lastHeaderValue = authHeader;
+                headerToSet = null;
                 created = true;
             } else {
                 // With no auth response, we must have a status of some kind. Since we're still pending though, it means
@@ -93,6 +94,10 @@ public class AuthenticationInterceptor implements ClientInterceptor {
                 assert status != null;
                 this.state = State.UNAUTHENTICATED;
                 lastHeaderValue = null;
+                if (status.getCode() == Status.Code.UNAUTHENTICATED) {
+                    // Auth failed, clear out the header so we don't try it again
+                    headerToSet = null;
+                }
             }
 
             // Continue with pending calls
@@ -136,11 +141,9 @@ public class AuthenticationInterceptor implements ClientInterceptor {
             }
 
             if (state == State.UNAUTHENTICATED) {
-                assert headerToSet != null;
                 assert lastHeaderValue == null;
                 headers.put(AUTHORIZATION_HEADER, headerToSet);
                 state = State.PENDING;
-                headerToSet = null;
             } else if (state == State.AUTHENTICATED) {
                 assert headerToSet == null;
                 assert lastHeaderValue != null;
