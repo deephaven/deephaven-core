@@ -497,22 +497,35 @@ result2 = compute(table, int2)
 
 For more information, see the [scoping rules](../../how-to-guides/query-scope.md).
 
-When Deephaven parallelizes a query, rows may be processed in any order across multiple CPU cores. Functions that work correctly regardless of execution order can run in parallel. This function works in parallel because each call is independent:
+When Deephaven parallelizes a query, rows may be processed in any order across multiple CPU cores. **Stateless** functions - those whose output depends only on their inputs - produce correct results regardless of execution order. This function is stateless because each call is independent:
 
 ```groovy test-set=2
 myList = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 
 
-getElement = { idx ->
+getElementStateless = { idx ->
     return myList[idx]
 }
 
-t = emptyTable(10).update("X = getElement(ii)")
+t = emptyTable(10).update("X = getElementStateless(ii)")
 ```
 
-This works because each row's result depends only on the input `idx` - it doesn't matter which row is processed first.
+**Stateful** functions - those that read or modify external state - produce **incorrect results** when parallelized. Deephaven cannot automatically detect whether your code is stateful; it's your responsibility to identify stateful functions and force sequential execution.
 
-Some functions require rows to be processed one at a time, in order. This function increments a counter, so it needs [`.withSerial()`](../../conceptual/query-engine/parallelization.md#serialization) to force sequential execution:
+This stateful function increments a counter. Without [`withSerial()`](../../reference/query-language/types/Selectable.md#withserial), parallel execution corrupts the results:
+
+```groovy skip-test
+myList = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+idx = 0
+
+getNextElementStateful = {
+    idx += 1  // Each call changes idx
+    return myList[idx - 1]
+}
+
+// WRONG: parallel execution causes race conditions
+tWrong = emptyTable(10).update("X = getNextElementStateful()")
+```
 
 ```groovy test-set=2
 import io.deephaven.api.Selectable
@@ -520,23 +533,32 @@ import io.deephaven.api.Selectable
 myList = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 idx = 0
 
-getNextElement = {
-    idx += 1  // Each call changes idx
+getNextElementStateful = {
+    idx += 1
     return myList[idx - 1]
 }
 
-// Use .withSerial() to ensure sequential execution
-col = Selectable.parse("X = getNextElement()").withSerial()
-t = emptyTable(10).update([col])
+// CORRECT: withSerial() ensures rows are processed one at a time, in order
+col = Selectable.parse("X = getNextElementStateful()").withSerial()
+tCorrect = emptyTable(10).update([col])
 ```
 
-Print `idx` to verify it's been changed.
+| Without `withSerial()` (wrong) | With `withSerial()` (correct) |
+| ------------------------------ | ----------------------------- |
+| 0                              | 0                             |
+| 1                              | 1                             |
+| 2                              | 2                             |
+| 2                              | 3                             |
+| 4                              | 4                             |
+| 5                              | 5                             |
+| 5                              | 6                             |
+| 7                              | 7                             |
+| 8                              | 8                             |
+| 8                              | 9                             |
 
-```groovy test-set=2
-println idx
-```
+The wrong output has duplicates (two 2s, two 5s, two 8s) and missing values (no 3, 6, or 9) because multiple cores incremented `idx` simultaneously.
 
-Without `.withSerial()`, multiple cores might increment `idx` simultaneously, causing incorrect results. Serial execution is slower (one core instead of many), so use it only when correctness requires it.
+Serial execution is slower (one core instead of many), so use it only when correctness requires it.
 
 Queries run faster when they can be parallelized. To enable parallelization:
 

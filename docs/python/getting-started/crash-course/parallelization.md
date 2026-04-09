@@ -154,9 +154,9 @@ The intent is for each row to get a unique ID: 1, 2, 3, and so on. But with para
 
 Two cores might both read `counter = 5`, both add 1 to get 6, and both return 6. The result: duplicate IDs and skipped numbers.
 
-### The fix: force sequential processing with `.with_serial`
+### The fix: force sequential processing with `with_serial`
 
-The [`.with_serial`](../../conceptual/query-engine/parallelization.md#serialization) method tells Deephaven to process this formula on a single core, one row at a time, in order:
+The [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial) method tells Deephaven to process this formula on a single core, one row at a time, in order:
 
 ```python test-set=serial order=result
 from deephaven import empty_table
@@ -176,12 +176,12 @@ col = Selectable.parse("ID = get_next_id()").with_serial()
 result = empty_table(100).update(col)
 ```
 
-**Trade-off**: Sequential processing uses only one core, so it's slower than parallel processing. Only use `.with_serial` when your formula requires it for correctness.
+**Trade-off**: Sequential processing uses only one core, so it's slower than parallel processing. Only use `with_serial` when your formula requires it for correctness.
 
 ## Key takeaways
 
 - Deephaven runs formulas in parallel by default — this is fast but requires stateless code.
 - Shared state or row-order dependencies cause silent errors with parallelization.
-- Use `.with_serial` to force sequential execution when your formula needs it.
+- Use `with_serial` to force sequential execution when your formula needs it.
 
 Most queries just work. If your formulas use only column values and built-in functions, parallelization handles everything automatically — no extra code required.

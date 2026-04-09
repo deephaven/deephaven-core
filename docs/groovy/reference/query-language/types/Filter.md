@@ -4,21 +4,24 @@ title: Filter
 
 A [`Filter`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html) represents a filter condition used in [`where`](../../table-operations/filter/where.md) operations. Use `Filter` objects when you need to control how Deephaven evaluates filter conditions - specifically, to force sequential (serial) execution or to coordinate execution order with barriers.
 
-> [!NOTE]
-> `Filter` extends [`ConcurrencyControl`](https://deephaven.io/core/javadoc/io/deephaven/api/ConcurrencyControl.html), which defines the concurrency methods. You may see these methods documented in multiple places in the Javadoc (including `FilterSerial`, `WhereFilter`) - use the `Filter` interface for filter operations.
-
 ## Creating a Filter
 
+There are two ways to create a `Filter` object: from a condition string or using filter combinators for boolean logic.
+
 ### From a condition string
+
+Use `Filter.from()` when you have filter conditions as strings. Note that `Filter.from()` returns an array, so use `[0]` to get a single filter.
 
 ```groovy syntax
 import io.deephaven.api.filter.Filter
 
 // Filter.from() returns an array; use [0] to get the single filter
-f = Filter.from("X > 5")[0]
+myFilter = Filter.from("X > 5")[0]
 ```
 
 ### Using filter combinators
+
+Use `FilterOr` and `FilterAnd` to combine multiple filters with boolean logic. These accept arrays of filters created with `Filter.from()`.
 
 ```groovy syntax
 import io.deephaven.api.filter.Filter
@@ -26,13 +29,15 @@ import io.deephaven.api.filter.FilterOr
 import io.deephaven.api.filter.FilterAnd
 
 // Multiple conditions with OR
-fOr = FilterOr.of(Filter.from("X > 5", "Y < 10"))
+orFilter = FilterOr.of(Filter.from("X > 5", "Y < 10"))
 
 // Multiple conditions with AND
-fAnd = FilterAnd.of(Filter.from("X > 5", "Y < 10"))
+andFilter = FilterAnd.of(Filter.from("X > 5", "Y < 10"))
 ```
 
 ## Methods
+
+These methods control how Deephaven evaluates the filter. By default, Deephaven parallelizes filter evaluation across multiple CPU cores. Use these methods when your filter has side effects or requires coordination with other filters.
 
 ### `withSerial`
 
@@ -53,58 +58,27 @@ source = emptyTable(100).update("X = i")
 
 // Use .withSerial because the filter has side effects
 // Filter.from() returns an array; [0] gets the single filter
-f = Filter.from("(boolean)checkValue(X)")[0].withSerial()
-result = source.where(f)
+myFilter = Filter.from("(boolean)checkValue(X)")[0].withSerial()
+result = source.where(myFilter)
 ```
 
 > [!NOTE]
-> Most filters don't need serial execution. Use `.withSerial` only when the filter modifies external state or has side effects.
+> Most filters don't need serial execution. Use `withSerial` only when the filter modifies external state or has side effects.
 
-### `withDeclaredBarriers`
+### `withDeclaredBarriers` and `withRespectedBarriers`
 
-Declares that this filter creates a barrier - other filters that respect this barrier will wait until this filter finishes evaluating all rows.
+These two methods work together to enforce execution order between filters. One filter **declares** the barrier (goes first), and another filter **respects** the barrier (waits).
 
-```groovy syntax
-import io.deephaven.api.filter.Filter
+A barrier is a synchronization object you create and share between filters. In Groovy, any Java object can serve as a barrier:
 
-// Any Java object can serve as a barrier
-barrier = new Object()
-filter1 = Filter.from("X > 5")[0].withDeclaredBarriers(barrier)
-```
+- `withDeclaredBarriers(barrier)` — This filter **goes first**. All rows are evaluated before any respecting filter begins.
+- `withRespectedBarriers(barrier)` — This filter **waits**. It does not start until all declaring filters finish.
 
-### `withRespectedBarriers`
-
-Declares that this filter respects a barrier - it will not begin evaluating until all filters that declare the same barrier have finished.
-
-```groovy syntax
-import io.deephaven.api.filter.Filter
-
-// Use the same barrier object
-filter2 = Filter.from("Y < 10")[0].withRespectedBarriers(barrier)
-```
-
-### Barriers example
-
-Use barriers when one filter must complete before another starts:
-
-```groovy order=result
-import io.deephaven.api.filter.Filter
-
-// Any Java object can serve as a barrier
-barrier = new Object()
-
-// filter1 declares the barrier (must finish first)
-filter1 = Filter.from("X > 50")[0].withDeclaredBarriers(barrier)
-
-// filter2 respects the barrier (waits for filter1 to finish)
-filter2 = Filter.from("Y < 50")[0].withRespectedBarriers(barrier)
-
-result = emptyTable(100)
-    .update("X = i", "Y = 100 - i")
-    .where(Filter.and(filter1, filter2))
-```
+For examples and detailed usage, see [Barriers](../../../conceptual/query-engine/parallelization.md#barriers) in the parallelization guide.
 
 ## When to use Filter objects
+
+Most queries don't need `Filter` objects — string conditions work fine for simple filters. Use `Filter` when you need explicit control over evaluation or complex boolean logic.
 
 | Scenario                             | Approach                                                |
 | ------------------------------------ | ------------------------------------------------------- |

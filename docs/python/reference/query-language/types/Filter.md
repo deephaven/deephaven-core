@@ -4,31 +4,36 @@ title: Filter
 
 A [`Filter`](https://docs.deephaven.io/core/pydoc/code/deephaven.filters.html) represents a filter condition used in [`where`](../../table-operations/filter/where.md) operations. Use `Filter` objects when you need to control how Deephaven evaluates filter conditions — specifically, to force sequential (serial) execution or to coordinate execution order with barriers.
 
-> [!NOTE]
-> `Filter` extends [`ConcurrencyControl`](https://docs.deephaven.io/core/pydoc/code/deephaven.concurrency_control.html#deephaven.concurrency_control.ConcurrencyControl), which defines the concurrency methods. You may see these methods documented in multiple places in the Pydoc — use the `Filter` class for filter operations.
-
 ## Creating a Filter
 
+There are two ways to create a `Filter` object: from a condition string or using filter functions for null checks and boolean logic.
+
 ### From a condition string
+
+Use `Filter.from_()` when you have a filter condition as a string. This is the most direct approach.
 
 ```python syntax
 from deephaven.filters import Filter
 
-f = Filter.from_("X > 5")
+my_filter = Filter.from_("X > 5")
 ```
 
 ### Using filter functions
 
+Use the filter functions for null checks, boolean combinations, and special value tests. These functions return `Filter` objects that you can combine or modify.
+
 ```python syntax
 from deephaven.filters import is_null, not_, and_, or_
 
-f1 = is_null("X")
-f2 = not_(is_null("Y"))
-f3 = and_([Filter.from_("X > 5"), Filter.from_("Y < 10")])
-f4 = or_([Filter.from_("X > 5"), Filter.from_("Y < 10")])
+null_filter = is_null("X")
+not_null_filter = not_(is_null("Y"))
+and_filter = and_([Filter.from_("X > 5"), Filter.from_("Y < 10")])
+or_filter = or_([Filter.from_("X > 5"), Filter.from_("Y < 10")])
 ```
 
 ## Methods
+
+These methods control how Deephaven evaluates the filter. By default, Deephaven parallelizes filter evaluation across multiple CPU cores. Use these methods when your filter has side effects or requires coordination with other filters.
 
 ### `with_serial`
 
@@ -50,64 +55,27 @@ def check_value(x) -> bool:
 source = empty_table(100).update("X = i")
 
 # Use .with_serial because the filter has side effects
-f = Filter.from_("(boolean)check_value(X)").with_serial()
-result = source.where(f)
+my_filter = Filter.from_("(boolean)check_value(X)").with_serial()
+result = source.where(my_filter)
 ```
 
 > [!NOTE]
-> Most filters don't need serial execution. Use `.with_serial` only when the filter modifies external state or has side effects.
+> Most filters don't need serial execution. Use `with_serial` only when the filter modifies external state or has side effects.
 
-### `with_declared_barriers`
+### `with_declared_barriers` and `with_respected_barriers`
 
-Declares that this filter creates a barrier — other filters that respect this barrier will wait until this filter finishes evaluating all rows.
+These two methods work together to enforce execution order between filters. One filter **declares** the barrier (goes first), and another filter **respects** the barrier (waits).
 
-```python syntax
-from deephaven.filters import is_null
-from deephaven.concurrency_control import Barrier
+A [`Barrier`](https://docs.deephaven.io/core/pydoc/code/deephaven.concurrency_control.html#deephaven.concurrency_control.Barrier) is a synchronization object you create and share between filters:
 
-barrier = Barrier()
-filter1 = is_null("X").with_declared_barriers(barrier)
-```
+- `with_declared_barriers(barrier)` — This filter **goes first**. All rows are evaluated before any respecting filter begins.
+- `with_respected_barriers(barrier)` — This filter **waits**. It does not start until all declaring filters finish.
 
-### `with_respected_barriers`
-
-Declares that this filter respects a barrier — it will not begin evaluating until all filters that declare the same barrier have finished.
-
-```python syntax
-from deephaven.filters import is_null
-from deephaven.concurrency_control import Barrier
-
-barrier = Barrier()
-filter2 = is_null("Y").with_respected_barriers(barrier)
-```
-
-### Barriers example
-
-Use barriers when one filter must complete before another starts:
-
-```python order=result
-from deephaven.filters import is_null
-from deephaven.concurrency_control import Barrier
-from deephaven import empty_table
-
-barrier = Barrier()
-
-# filter1 declares the barrier (must finish first)
-filter1 = is_null("X").with_declared_barriers(barrier)
-
-# filter2 respects the barrier (waits for filter1 to finish)
-filter2 = is_null("Y").with_respected_barriers(barrier)
-
-result = (
-    empty_table(100)
-    .update(["X = i % 5 == 0 ? null : i", "Y = i % 7 == 0 ? null : i"])
-    .where([filter1, filter2])
-)
-```
+For examples and detailed usage, see [Barriers](../../../conceptual/query-engine/parallelization.md#barriers) in the parallelization guide.
 
 ## Filter functions
 
-The `deephaven.filters` module provides these filter constructors:
+The `deephaven.filters` module provides functions for creating filters. These return `Filter` objects that you can use with `where()` or modify with concurrency methods.
 
 | Function                       | Description                                     |
 | ------------------------------ | ----------------------------------------------- |
@@ -122,6 +90,8 @@ The `deephaven.filters` module provides these filter constructors:
 | `is_normal(column)`            | True if value is a normal floating-point number |
 
 ## When to use Filter objects
+
+Most queries don't need `Filter` objects — string conditions work fine for simple filters. Use `Filter` when you need explicit control over evaluation or complex boolean logic.
 
 | Scenario                             | Approach                                                |
 | ------------------------------------ | ------------------------------------------------------- |

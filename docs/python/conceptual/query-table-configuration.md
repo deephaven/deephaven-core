@@ -206,7 +206,7 @@ The recycler capacity determines how many array blocks are kept in memory for po
 
 ## Stateless by default
 
-Starting in Deephaven 41, the engine assumes that Filters and Selectables can be executed in parallel by default (unless the Filter or Selectable is [marked serial or has barriers](./query-engine/parallelization.md#serialization)).
+Starting in Deephaven 0.41, the engine assumes that filter and select operations can be executed in parallel by default. To force sequential execution, use the [`Filter`](../reference/query-language/types/Filter.md) or [`Selectable`](../reference/query-language/types/Selectable.md) classes with [serialization methods](./query-engine/parallelization.md#serialization).
 
 | Property Name                          | Default Value | Description                                                                                         |
 | -------------------------------------- | ------------- | --------------------------------------------------------------------------------------------------- |

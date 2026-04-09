@@ -4,12 +4,13 @@ title: Selectable
 
 A [`Selectable`](https://docs.deephaven.io/core/pydoc/code/deephaven.table.html#deephaven.table.Selectable) represents a column expression used in [`select`](../../table-operations/select/select.md) and [`update`](../../table-operations/select/update.md) operations. Use `Selectable` objects when you need to control how Deephaven processes column calculations — specifically, to force sequential (serial) execution or to coordinate execution order with barriers.
 
-> [!NOTE]
-> `Selectable` extends [`ConcurrencyControl`](https://docs.deephaven.io/core/pydoc/code/deephaven.concurrency_control.html#deephaven.concurrency_control.ConcurrencyControl), which defines the concurrency methods. You may see these methods documented in multiple places in the Pydoc — use the `Selectable` class for column expressions.
-
 ## Creating a Selectable
 
+There are two ways to create a `Selectable` object, depending on whether you want to parse a complete formula string or build one from separate components.
+
 ### From a formula string
+
+Use `Selectable.parse()` when you have a complete column assignment as a string. This is the most common approach.
 
 ```python syntax
 from deephaven.table import Selectable
@@ -19,6 +20,8 @@ col = Selectable.parse("NewColumn = ExistingColumn * 2")
 
 ### From column name and expression
 
+Use `Selectable.of_str()` when the column name and expression are separate values, such as when they come from variables or user input.
+
 ```python syntax
 from deephaven.table import Selectable
 
@@ -27,7 +30,9 @@ col = Selectable.of_str("NewColumn", "ExistingColumn * 2")
 
 ## Methods
 
-### `.with_serial`
+These methods control how Deephaven executes the column calculation. By default, Deephaven parallelizes calculations across multiple CPU cores. Use these methods when your formula requires sequential processing or coordination between columns.
+
+### `with_serial`
 
 Forces the column calculation to execute sequentially on a single core, processing rows one at a time in order. Use this when the formula modifies global state or depends on row order.
 
@@ -49,64 +54,22 @@ result = empty_table(10).update(col)
 ```
 
 > [!IMPORTANT]
-> `.with_serial` cannot be used with [`view`](../../table-operations/select/view.md) or [`update_view`](../../table-operations/select/update-view.md). These operations compute values on-demand and cannot guarantee processing order.
+> `Selectable` objects can only be used with [`select`](../../table-operations/select/select.md) and [`update`](../../table-operations/select/update.md). The [`view`](../../table-operations/select/view.md), [`update_view`](../../table-operations/select/update-view.md), and [`lazy_update`](../../table-operations/select/lazy-update.md) methods do not accept `Selectable` objects because they compute values on-demand and cannot guarantee processing order.
 
-### `.with_declared_barriers`
+### `with_declared_barriers` and `with_respected_barriers`
 
-Declares that this column creates a barrier - other columns that respect this barrier will wait until this column finishes processing all rows.
+These two methods work together to enforce execution order between columns. One column **declares** the barrier (goes first), and another column **respects** the barrier (waits).
 
-```python syntax
-from deephaven.table import Selectable
-from deephaven.concurrency_control import Barrier
+A [`Barrier`](https://docs.deephaven.io/core/pydoc/code/deephaven.concurrency_control.html#deephaven.concurrency_control.Barrier) is a synchronization object you create and share between columns:
 
-barrier = Barrier()
-col_a = Selectable.parse("A = compute_first()").with_declared_barriers(barrier)
-```
+- `with_declared_barriers(barrier)` — This column **goes first**. All rows are computed before any respecting column begins.
+- `with_respected_barriers(barrier)` — This column **waits**. It does not start until all declaring columns finish.
 
-### `.with_respected_barriers`
-
-Declares that this column respects a barrier - it will not begin processing until all columns that declare the same barrier have finished.
-
-```python syntax
-from deephaven.table import Selectable
-from deephaven.concurrency_control import Barrier
-
-barrier = Barrier()
-col_b = Selectable.parse("B = compute_second()").with_respected_barriers(barrier)
-```
-
-### Barriers example
-
-Use barriers when one column must complete before another starts:
-
-```python order=result
-from deephaven.table import Selectable
-from deephaven.concurrency_control import Barrier
-from deephaven import empty_table
-
-counter = 0
-
-
-def get_and_increment():
-    global counter
-    counter += 1
-    return counter
-
-
-barrier = Barrier()
-
-# Column A declares the barrier (must finish first)
-col_a = Selectable.parse("A = get_and_increment()").with_declared_barriers(barrier)
-
-# Column B respects the barrier (waits for A to finish)
-col_b = Selectable.parse("B = get_and_increment()").with_respected_barriers(barrier)
-
-result = empty_table(10).update([col_a, col_b])
-```
-
-All rows of column `A` are processed before any rows of column `B` begin.
+For examples and detailed usage, see [Barriers](../../../conceptual/query-engine/parallelization.md#barriers) in the parallelization guide.
 
 ## When to use Selectable
+
+Most queries don't need `Selectable` objects — string formulas work fine for stateless calculations. Use `Selectable` when you need explicit control over execution.
 
 | Scenario                             | Approach                                              |
 | ------------------------------------ | ----------------------------------------------------- |

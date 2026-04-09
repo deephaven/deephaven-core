@@ -563,22 +563,37 @@ result2 = compute(source, 3)
 
 For more information, see [scoping rules](../../how-to-guides/query-scope.md).
 
-When Deephaven parallelizes a query, rows may be processed in any order across multiple CPU cores. Functions that work correctly regardless of execution order can run in parallel. This function works in parallel because each call is independent:
+When Deephaven parallelizes a query, rows may be processed in any order across multiple CPU cores. **Stateless** functions - those whose output depends only on their inputs - produce correct results regardless of execution order. This function is stateless because each call is independent:
 
 ```python test-set=2
 my_list = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 
 
-def get_element(idx) -> int:
+def get_element_stateless(idx) -> int:
     return my_list[idx]
 
 
-t = empty_table(10).update("X = get_element(ii)")
+t = empty_table(10).update("X = get_element_stateless(ii)")
 ```
 
-This works because each row's result depends only on the input `idx` - it doesn't matter which row is processed first.
+**Stateful** functions - those that read or modify external state - produce **incorrect results** when parallelized. Deephaven cannot automatically detect whether your code is stateful; it's your responsibility to identify stateful functions and force sequential execution.
 
-Some functions require rows to be processed one at a time, in order. This function increments a counter, so it needs [`.with_serial()`](../../conceptual/query-engine/parallelization.md#serialization) to force sequential execution:
+This stateful function increments a counter. Without [`with_serial()`](../../reference/query-language/types/Selectable.md#with_serial), parallel execution corrupts the results:
+
+```python skip-test
+my_list = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+idx = 0
+
+
+def get_next_element_stateful() -> int:
+    global idx
+    idx += 1  # Each call changes idx
+    return my_list[idx - 1]
+
+
+# WRONG: parallel execution causes race conditions
+t_wrong = empty_table(10).update("X = get_next_element_stateful()")
+```
 
 ```python test-set=2
 from deephaven.table import Selectable
@@ -587,24 +602,33 @@ my_list = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 idx = 0
 
 
-def get_next_element() -> int:
+def get_next_element_stateful() -> int:
     global idx
-    idx += 1  # Each call changes idx
+    idx += 1
     return my_list[idx - 1]
 
 
-# Use .with_serial() to ensure sequential execution
-col = Selectable.parse("X = get_next_element()").with_serial()
-t = empty_table(10).update(col)
+# CORRECT: with_serial() ensures rows are processed one at a time, in order
+col = Selectable.parse("X = get_next_element_stateful()").with_serial()
+t_correct = empty_table(10).update(col)
 ```
 
-Print `idx` to verify it's been changed.
+| Without `with_serial()` (wrong) | With `with_serial()` (correct) |
+| ------------------------------- | ------------------------------ |
+| 0                               | 0                              |
+| 1                               | 1                              |
+| 2                               | 2                              |
+| 2                               | 3                              |
+| 4                               | 4                              |
+| 5                               | 5                              |
+| 5                               | 6                              |
+| 7                               | 7                              |
+| 8                               | 8                              |
+| 8                               | 9                              |
 
-```python test-set=2
-print(idx)
-```
+The wrong output has duplicates (two 2s, two 5s, two 8s) and missing values (no 3, 6, or 9) because multiple cores incremented `idx` simultaneously.
 
-Without `.with_serial()`, multiple cores might increment `idx` simultaneously, causing incorrect results. Serial execution is slower (one core instead of many), so use it only when correctness requires it.
+Serial execution is slower (one core instead of many), so use it only when correctness requires it.
 
 Queries run faster when they can be parallelized. To enable parallelization:
 

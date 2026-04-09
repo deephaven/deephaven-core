@@ -204,12 +204,12 @@ The recycler capacity determines how many array blocks are kept in memory for po
 
 ## Stateless by default
 
-Starting in Deephaven 41, the engine assumes that Filters and Selectables can be executed in parallel by default (unless the Filter or Selectable is [marked serial or has barriers](./query-engine/parallelization.md#serialization)).
+Starting in Deephaven 0.41, the engine assumes that filter and select operations can be executed in parallel by default. To force sequential execution, use the [`Filter`](../reference/query-language/types/Filter.md) or [`Selectable`](../reference/query-language/types/Selectable.md) classes with [serialization methods](./query-engine/parallelization.md#serialization).
 
-| Property Name                          | Default Value | Description                                                                                             |
-| -------------------------------------- | ------------- | ------------------------------------------------------------------------------------------------------- |
-| `QueryTable.statelessFiltersByDefault` | true          | Enables the engine to assume that filters are stateless by default, allowing for more optimizations     |
-| `QueryTable.statelessSelectByDefault`  | true          | Enables the engine to assume that Selectables are stateless by default, allowing for more optimizations |
+| Property Name                          | Default Value | Description                                                                                                   |
+| -------------------------------------- | ------------- | ------------------------------------------------------------------------------------------------------------- |
+| `QueryTable.statelessFiltersByDefault` | true          | Enables the engine to assume that filters are stateless by default, allowing for more optimizations           |
+| `QueryTable.statelessSelectByDefault`  | true          | Enables the engine to assume that select operations are stateless by default, allowing for more optimizations |
 
 For more details, see the Javadoc on [io.deephaven.api.ConcurrencyControl](https://docs.deephaven.io/core/javadoc/io/deephaven/api/ConcurrencyControl.html).
 
