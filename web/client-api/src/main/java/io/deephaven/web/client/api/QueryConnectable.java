@@ -297,7 +297,7 @@ public abstract class QueryConnectable<Self extends QueryConnectable<Self>> exte
     public abstract void notifyServerShutdown(TerminationNotificationResponse success);
 
     public boolean supportsClientStreaming() {
-        return getOptions().transportFactory.getSupportsClientStreaming();
+        return getOptions().transportFactory != null && getOptions().transportFactory.getSupportsClientStreaming();
     }
 
     /**

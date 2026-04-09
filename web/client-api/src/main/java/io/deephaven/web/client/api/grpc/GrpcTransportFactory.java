@@ -12,7 +12,7 @@ import jsinterop.annotations.JsType;
  * Factory for creating gRPC transports.
  */
 @TsInterface
-@JsType(namespace = "dh.grpc")
+@JsType(namespace = "dh.grpc", isNative = true)
 public interface GrpcTransportFactory {
     /**
      * Create a new transport instance.
