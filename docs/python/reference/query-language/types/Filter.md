@@ -68,8 +68,8 @@ These two methods work together to enforce execution order between filters. One 
 
 A [`Barrier`](https://docs.deephaven.io/core/pydoc/code/deephaven.concurrency_control.html#deephaven.concurrency_control.Barrier) is a synchronization object you create and share between filters:
 
-- `with_declared_barriers(barrier)` — This filter **goes first**. All rows are evaluated before any respecting filter begins.
-- `with_respected_barriers(barrier)` — This filter **waits**. It does not start until all declaring filters finish.
+- `with_declared_barriers(barrier)` — This filter **goes first**. All rows are evaluated by this filter before any respecting filter's rows are evaluated.
+- `with_respected_barriers(barrier)` — This filter **waits**. Its rows are not evaluated until all declaring filters have finished.
 
 For examples and detailed usage, see [Barriers](../../../conceptual/query-engine/parallelization.md#barriers) in the parallelization guide.
 
@@ -91,14 +91,24 @@ The `deephaven.filters` module provides functions for creating filters. These re
 
 ## When to use Filter objects
 
-Most queries don't need `Filter` objects — string conditions work fine for simple filters. Use `Filter` when you need explicit control over evaluation or complex boolean logic.
+### Do you need a Filter object at all?
 
-| Scenario                             | Approach                                                |
-| ------------------------------------ | ------------------------------------------------------- |
-| Simple conditions                    | Use string filters directly - no `Filter` object needed |
-| Filter with side effects             | `Filter.from_(...).with_serial()`                       |
-| Filter A must finish before Filter B | Use barriers                                            |
-| Complex boolean logic                | Use `and_()`, `or_()`, `not_()`                         |
+Most of the time, no. When you pass a string condition to [`where`](../../table-operations/filter/where.md), Deephaven creates a `Filter` internally and parallelizes its evaluation across multiple cores. This works well for any condition that:
+
+- Only examines values in the current row (e.g., `"Price > 100"`).
+- Has no side effects — it doesn't modify global variables, write to files, or depend on evaluation order.
+
+If both of those are true, use string conditions directly. There is no benefit to constructing a `Filter` object.
+
+### When you need explicit control
+
+You need a `Filter` object in two situations:
+
+**Stateful filters**: If your filter modifies shared state (e.g., counting how many rows pass), use `with_serial` to force sequential evaluation. Without it, multiple threads evaluating rows simultaneously could corrupt the shared state.
+
+**Complex boolean logic**: Use `and_()`, `or_()`, and `not_()` to compose filters programmatically. This is useful when building filter conditions dynamically or combining multiple conditions that are easier to express as separate objects.
+
+**Barriers between filters** are rarely needed — most filters are stateless. If you do have filters with shared state where one must complete before another, see the [Barriers](../../../conceptual/query-engine/parallelization.md#barriers) section in the parallelization guide.
 
 ## Related documentation
 
