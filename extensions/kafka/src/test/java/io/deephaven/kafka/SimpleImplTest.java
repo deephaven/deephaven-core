@@ -8,14 +8,13 @@ import io.deephaven.kafka.KafkaTools.KeyOrValue;
 import io.deephaven.kafka.SimpleImpl.SimpleConsume;
 import io.deephaven.qst.type.Type;
 import org.apache.kafka.common.serialization.Deserializer;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Map;
 import java.util.Map.Entry;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
-import static org.assertj.core.api.Assertions.from;
 
 public class SimpleImplTest {
     @Test

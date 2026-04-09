@@ -40,8 +40,10 @@ dependencies {
     compileOnly project(':util-immutables')
     annotationProcessor libs.immutables.value
 
-    testImplementation project(':engine-test-utils')
-    testImplementation libs.junit4
+    testImplementation platform(libs.junit.bom)
+    testImplementation libs.junit.jupiter
+    testRuntimeOnly libs.junit.jupiter.engine
+    testRuntimeOnly libs.junit.platform.launcher
 
     testRuntimeOnly project(':log-to-slf4j')
     testRuntimeOnly project(':configs')
@@ -49,4 +51,8 @@ dependencies {
     testRuntimeOnly libs.slf4j.simple
 
     testImplementation libs.assertj
+}
+
+test {
+    useJUnitPlatform()
 }
