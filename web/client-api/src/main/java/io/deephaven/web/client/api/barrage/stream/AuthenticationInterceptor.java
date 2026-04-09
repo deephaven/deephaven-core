@@ -22,17 +22,38 @@ public class AuthenticationInterceptor implements ClientInterceptor {
     public static final Metadata.Key<String> AUTHORIZATION_HEADER =
             Metadata.Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER);
     public static final Context.Key<Boolean> SESSION_CREATED = Context.keyWithDefault("session-created", false);
-    /**
-     * If set, this must go out on the next request, and later requests must wait for this to return so we have an auth
-     * token (or an auth failure).
-     */
-    private String headerToSet;
 
+    public enum State {
+        /**
+         * Haven't tried to authenticate, or failed last call due to auth reasons, so new auth attempt is required to
+         * continue. "lastHeaderValue" is null, and "pending" is empty. "headerToSet" may be non-null, and will be
+         * consumed on the next call.
+         */
+        UNAUTHENTICATED,
+        /**
+         * The provided "headerToSet" creds have been consumed, and a call is ongoing. Other calls made while this call
+         * is pending are queued until it is complete. "lastHeaderValue" is null.
+         */
+        PENDING,
+
+        /**
+         * At least one call to the server has succeeded, and an auth token returned. "headerToSet" is now null, and
+         * "lastHeaderValue" is non-null. "pending" is empty.
+         */
+        AUTHENTICATED
+    }
+
+    private String headerToSet;
     private String lastHeaderValue;
 
     private final List<Runnable> pending = new ArrayList<>();
 
     private State state = State.UNAUTHENTICATED;
+
+    public void login(String authType, String authToken) {
+        this.headerToSet = (authType + " " + authToken).trim();
+        lastHeaderValue = null;
+    }
 
     public void deauth() {
         assert state != State.PENDING || pending.isEmpty();
@@ -40,32 +61,6 @@ public class AuthenticationInterceptor implements ClientInterceptor {
         flushPending();
     }
 
-    public enum State {
-        UNAUTHENTICATED, PENDING, AUTHENTICATED;
-    }
-
-    public State getState() {
-        return state;
-    }
-
-    private void setState(State state) {
-        if (this.state == state) {
-            return;
-        }
-        if (state == State.UNAUTHENTICATED) {
-            fireAuthFailed();
-        }
-        this.state = state;
-    }
-
-    private void fireAuthFailed() {
-        // maybe we don't need this?
-    }
-
-    public void login(String authType, String authToken) {
-        this.headerToSet = (authType + " " + authToken).trim();
-        lastHeaderValue = null;
-    }
 
     @Override
     public <ReqT, RespT> ClientCall<ReqT, RespT> interceptCall(MethodDescriptor<ReqT, RespT> method,
@@ -73,23 +68,34 @@ public class AuthenticationInterceptor implements ClientInterceptor {
         return new BearerCall<>(next.newCall(method, callOptions));
     }
 
+    /**
+     * Handles the response info from the server, returning a context to signal if a session was created as a result or
+     * not.
+     */
     private Context handleMetadata(@Nullable Status status, Metadata metadata) {
         String authHeader = metadata.get(AUTHORIZATION_HEADER);
         if (authHeader == null && status == null) {
+            // No useful response, ignore - probably looking at initial headers.
             return Context.current();
         }
         if (state == State.PENDING) {
             boolean created = false;
-            if (status != null && status.getCode().equals(Status.Code.UNAUTHENTICATED)) {
-                setState(State.UNAUTHENTICATED);
-                lastHeaderValue = null;
-            } else if (authHeader != null) {
-                setState(State.AUTHENTICATED);
+            if (authHeader != null) {
+                // Server sent us a bearer token to use in future calls, mark as authenticated
+                this.state = State.AUTHENTICATED;
                 lastHeaderValue = authHeader;
                 created = true;
+            } else {
+                // With no auth response, we must have a status of some kind. Since we're still pending though, it means
+                // auth failed in some way. We'll let later calls continue in case we have new creds, or the failure was
+                // just a transport issue.
+                // noinspection ConstantValue
+                assert status != null;
+                this.state = State.UNAUTHENTICATED;
+                lastHeaderValue = null;
             }
-            // either way, continue with pending calls
-            // TODO probably only in the two above cases
+
+            // Continue with pending calls
             flushPending();
 
             if (created) {
@@ -98,10 +104,10 @@ public class AuthenticationInterceptor implements ClientInterceptor {
         } else {
             assert pending.isEmpty();
             if (status != null && status.getCode().equals(Status.Code.UNAUTHENTICATED)) {
-                setState(State.UNAUTHENTICATED);
+                this.state = State.UNAUTHENTICATED;
                 lastHeaderValue = null;
             } else if (authHeader != null) {
-                setState(State.AUTHENTICATED);
+                this.state = State.AUTHENTICATED;
                 lastHeaderValue = authHeader;
             }
         }
@@ -136,7 +142,6 @@ public class AuthenticationInterceptor implements ClientInterceptor {
                 state = State.PENDING;
                 headerToSet = null;
             } else if (state == State.AUTHENTICATED) {
-                // assert pending.isEmpty();
                 assert headerToSet == null;
                 assert lastHeaderValue != null;
                 headers.put(AUTHORIZATION_HEADER, lastHeaderValue);
@@ -153,17 +158,12 @@ public class AuthenticationInterceptor implements ClientInterceptor {
 
         @Override
         public void onHeaders(Metadata headers) {
-            handleMetadata(null, headers).run(() -> {
-                super.onHeaders(headers);
-            });
+            handleMetadata(null, headers).run(() -> super.onHeaders(headers));
         }
 
         @Override
         public void onClose(Status status, Metadata trailers) {
-            handleMetadata(status, trailers).run(() -> {
-                super.onClose(status, trailers);
-            });
+            handleMetadata(status, trailers).run(() -> super.onClose(status, trailers));
         }
     }
-
 }
