@@ -490,7 +490,8 @@ public class WorkerConnection {
                     return Promise.reject(ex.getMessage());
                 } else {
                     return Promise
-                            .reject("Error occurred while authenticating, gRPC status " + ex.getStatus().getCode().name());
+                            .reject("Error occurred while authenticating, gRPC status "
+                                    + ex.getStatus().getCode().name());
                 }
             } else {
                 return Promise.reject("err");
