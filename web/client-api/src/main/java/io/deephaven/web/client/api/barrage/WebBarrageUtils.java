@@ -16,6 +16,7 @@ import org.apache.arrow.flatbuf.MessageHeader;
 import org.apache.arrow.flatbuf.Schema;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -80,6 +81,7 @@ public class WebBarrageUtils {
      * </ul>
      */
     public static Schema readSchemaMessage(ByteBuffer flightSchemaMessage) {
+        flightSchemaMessage.order(ByteOrder.LITTLE_ENDIAN);
         int contToken = flightSchemaMessage.getInt();
         if (contToken != -1) {
             throw new IllegalStateException("Expected -1 for first four bytes of schema payload");

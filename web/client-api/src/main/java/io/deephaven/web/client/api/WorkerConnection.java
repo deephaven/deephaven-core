@@ -106,6 +106,7 @@ import org.gwtproject.nio.TypedArrayHelper;
 
 import javax.annotation.Nullable;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -1178,6 +1179,7 @@ public class WorkerConnection {
             stream.onEnd(status -> {
                 if (status.isOk()) {
                     ByteBuffer schemaPlusHeader = ByteBuffer.allocate(schemaMessagePayload.remaining() + 8);
+                    schemaPlusHeader.order(ByteOrder.LITTLE_ENDIAN);
                     schemaPlusHeader.putInt(-1);
                     schemaPlusHeader.putInt(schemaMessagePayload.remaining());
                     schemaPlusHeader.put(schemaMessagePayload);
