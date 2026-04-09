@@ -68,20 +68,6 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
             // assign a default transport factory
             if (options.useWebsockets == Boolean.TRUE || !serverUrl.startsWith("https:")) {
                 options.transportFactory = new MultiplexedWebsocketTransport.Factory();
-            } else {
-                // options.transportFactory = new GrpcTransportFactory() {
-                // @Override
-                // public GrpcTransport create(GrpcTransportOptions options) {
-                // return GrpcTransport
-                // .from((Transport) Grpc.FetchReadableStreamTransport.onInvoke(new Object())
-                // .onInvoke((TransportOptions) options));
-                // }
-                //
-                // @Override
-                // public boolean getSupportsClientStreaming() {
-                // return false;
-                // }
-                // };
             }
         }
     }
@@ -247,7 +233,7 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
         fireEvent(EVENT_SHUTDOWN, details);
 
         // fire deprecated event
-        notifyConnectionError(new StatusRuntimeException(Status.UNKNOWN.withDescription(details)));
+        notifyConnectionError(new StatusRuntimeException(Status.UNAVAILABLE.withDescription(details)));
     }
 
     public Promise<JsTable> newTable(String[] columnNames, String[] types, String[][] data, String userTimeZone) {

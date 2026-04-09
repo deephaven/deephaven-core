@@ -11,7 +11,6 @@ import elemental2.core.JsObject;
 import elemental2.core.JsSet;
 import elemental2.dom.URL;
 import elemental2.promise.Promise;
-import io.deephaven.javascript.proto.dhinternal.grpcweb.client.RpcOptions;
 import io.deephaven.proto.backplane.grpc.TerminationNotificationResponse;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.backplane.script.grpc.GetConsoleTypesRequest;

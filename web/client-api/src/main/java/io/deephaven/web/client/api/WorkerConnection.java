@@ -246,14 +246,7 @@ public class WorkerConnection {
      */
     private void connectToWorker() {
         info.onReady()
-                .then(queryWorkerRunning -> {
-                    // TODO cannot merge without supporting custom headers for envoy-prefix
-                    // JsObject.keys(info.getOptions().headers).forEach((key, index) -> {
-                    // metadata.set(key, info.getOptions().headers.get(key));
-                    // return null;
-                    // });
-                    return authUpdate();
-                }).then(newSession -> {
+                .then(queryWorkerRunning -> authUpdate()).then(newSession -> {
                     // subscribe to fatal errors
                     subscribeToTerminationNotification();
 
