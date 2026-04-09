@@ -9,6 +9,7 @@ import elemental2.core.JsArray;
 import elemental2.core.JsObject;
 import io.deephaven.proto.backplane.script.grpc.FigureDescriptor;
 import io.deephaven.web.client.api.LocalDateWrapper;
+import io.deephaven.web.client.fu.JsCollectors;
 import jsinterop.annotations.JsProperty;
 import jsinterop.base.Js;
 
@@ -21,10 +22,9 @@ public class JsHoliday {
     public JsHoliday(FigureDescriptor.BusinessCalendarDescriptor.Holiday holiday) {
         date = new LocalDateWrapper(holiday.getDate().getYear(), holiday.getDate().getMonth(),
                 holiday.getDate().getDay());
-        businessPeriods = Js.uncheckedCast(holiday.getBusinessPeriodsList().stream()
+        businessPeriods = holiday.getBusinessPeriodsList().stream()
                 .map((p0) -> new JsBusinessPeriod(p0))
-                .toArray());
-        JsObject.freeze(businessPeriods);
+                .collect(JsCollectors.toFrozenJsArray());
     }
 
     /**

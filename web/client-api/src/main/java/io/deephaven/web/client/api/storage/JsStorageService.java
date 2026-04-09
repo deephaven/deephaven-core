@@ -24,15 +24,13 @@ import io.deephaven.proto.backplane.grpc.SaveFileResponse;
 import io.deephaven.proto.backplane.grpc.StorageServiceGrpc;
 import io.deephaven.web.client.api.Callbacks;
 import io.deephaven.web.client.api.WorkerConnection;
+import io.deephaven.web.client.fu.JsCollectors;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsOptional;
 import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsType;
-import jsinterop.base.Js;
 import org.gwtproject.nio.TypedArrayHelper;
-
-import static io.deephaven.web.client.api.tree.JsRollupConfig.toJsArray;
 
 /**
  * Remote service to read and write files on the server. Paths use "/" as a separator, and should not start with "/".
@@ -71,7 +69,7 @@ public class JsStorageService {
                         .resolve(response.getItemsList()
                                 .stream()
                                 .map(item -> JsItemDetails.fromProto(response.getCanonicalPath(), item))
-                                .collect(toJsArray())));
+                                .collect(JsCollectors.toFrozenJsArray())));
     }
 
     /**

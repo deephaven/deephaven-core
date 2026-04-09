@@ -10,6 +10,7 @@ import elemental2.core.JsObject;
 import io.deephaven.proto.backplane.script.grpc.FigureDescriptor;
 import io.deephaven.web.client.api.i18n.JsTimeZone;
 import io.deephaven.web.client.api.widget.calendar.enums.JsDayOfWeek;
+import io.deephaven.web.client.fu.JsCollectors;
 import jsinterop.annotations.JsProperty;
 import jsinterop.base.Js;
 
@@ -28,12 +29,12 @@ public class JsBusinessCalendar {
         this.businessCalendarDescriptor = businessCalendarDescriptor;
         JsObject.freeze(this.businessCalendarDescriptor);
         timeZone = JsTimeZone.getTimeZone(businessCalendarDescriptor.getTimeZone());
-        businessPeriods = Js.uncheckedCast(businessCalendarDescriptor.getBusinessPeriodsList().stream()
-                .map((p0) -> new JsBusinessPeriod(p0)).toArray());
-        JsObject.freeze(businessPeriods);
-        holidays = Js.uncheckedCast(
-                businessCalendarDescriptor.getHolidaysList().stream().map((p0) -> new JsHoliday(p0)).toArray());
-        JsObject.freeze(holidays);
+        businessPeriods = businessCalendarDescriptor.getBusinessPeriodsList().stream()
+                .map(JsBusinessPeriod::new)
+                .collect(JsCollectors.toFrozenJsArray());
+        holidays = businessCalendarDescriptor.getHolidaysList().stream()
+                .map(JsHoliday::new)
+                .collect(JsCollectors.toFrozenJsArray());
     }
 
     /**

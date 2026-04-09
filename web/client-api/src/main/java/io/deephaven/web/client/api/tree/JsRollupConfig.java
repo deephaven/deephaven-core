@@ -18,7 +18,6 @@ import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsType;
 import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -27,7 +26,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 /**
@@ -288,14 +286,6 @@ public class JsRollupConfig {
             }
             return col;
         }).collect(Collectors.toList());
-    }
-
-    @NotNull
-    public static <T> Collector<T, JsArray<T>, JsArray<T>> toJsArray() {
-        return Collector.of(
-                JsArray::new,
-                JsArray::push,
-                (arr1, arr2) -> arr1.concat(arr2.asArray(Js.uncheckedCast(JsArray.of()))));
     }
 
     private String unusedColumnName(JsArray<Column> existingColumns, String... suggestedNames) {
