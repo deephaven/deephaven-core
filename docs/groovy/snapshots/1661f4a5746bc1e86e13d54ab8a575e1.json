@@ -1,1 +1,1 @@
-{"file":"tutorials/crash-course/query-strings.md","objects":{"addVarsClass":{"type":"Table","data":{"columns":[{"name":"Sum1","type":"int"},{"name":"Sum2","type":"int"},{"name":"Sum3","type":"int"}],"rows":[[{"value":"3"},{"value":"3"},{"value":"3"}]]}}}}
+{"file":"getting-started/crash-course/query-strings.md","objects":{"addVarsClass":{"type":"Table","data":{"columns":[{"name":"Sum1","type":"int"},{"name":"Sum2","type":"int"},{"name":"Sum3","type":"int"}],"rows":[[{"value":"3"},{"value":"3"},{"value":"3"}]]}}}}

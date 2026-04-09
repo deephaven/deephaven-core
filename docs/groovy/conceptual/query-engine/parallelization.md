@@ -12,7 +12,7 @@ Parallelization is running multiple calculations at the same time on different C
 
 ## How Deephaven parallelizes queries
 
-Deephaven uses all available CPU cores to process queries faster. You don't need to configure anything - parallelization happens automatically.
+Deephaven uses all available CPU cores to process queries faster. You don't need to configure anything — parallelization happens automatically.
 
 Parallelization occurs at two levels:
 
@@ -60,7 +60,7 @@ Deephaven also parallelizes calculations within a single table. When you run `so
 
 ## Controlling parallelization
 
-Most queries work correctly with automatic parallelization. However, some code requires sequential processing - for example, code that uses a counter or modifies shared state.
+Most queries work correctly with automatic parallelization. However, some code requires sequential processing — for example, code that uses a counter or modifies shared state.
 
 Deephaven provides two mechanisms:
 
@@ -75,7 +75,7 @@ Queries execute in two phases, and parallelization works differently in each.
 
 ### Initialization
 
-When you first create a table operation (like `.where()` or `.update()`), Deephaven computes the initial result using all existing data. During initialization, Deephaven divides the rows among CPU cores so each core processes a portion simultaneously.
+When you first create a table operation (like `.where` or `.update`), Deephaven computes the initial result using all existing data. During initialization, Deephaven divides the rows among CPU cores so each core processes a portion simultaneously.
 
 For live (refreshing) tables, Deephaven also registers the table in the [update graph](../dag.md) so it can receive future updates.
 
@@ -128,7 +128,7 @@ This section explains when and how to override automatic parallelization for cod
 
 ### Parallelization (default)
 
-By default, Deephaven parallelizes operations that are **stateless** - meaning each row's result depends only on that row's input values.
+By default, Deephaven parallelizes operations that are **stateless** — meaning each row's result depends only on that row's input values.
 
 **An operation is stateless if it**:
 
@@ -184,7 +184,7 @@ Serialization forces Deephaven to process rows one at a time, in order, on a sin
 > [!NOTE]
 > Most queries don't need serial execution. Use `withSerial` only when parallelization causes incorrect results.
 
-The `ConcurrencyControl` interface provides the `withSerial` method for `Filter` (`where`) and `Selectable` (`update` and `select`).
+The [`ConcurrencyControl`](https://deephaven.io/core/javadoc/io/deephaven/api/ConcurrencyControl.html) interface provides the `withSerial` method for `Filter` (`where`) and `Selectable` (`update` and `select`).
 
 > [!IMPORTANT]
 > You cannot use `withSerial` with `view` or `updateView`. These operations compute values on-demand (when cells are accessed), so they cannot guarantee processing order. Use `select` or `update` instead when you need serial execution.
@@ -242,7 +242,7 @@ When a Selectable is serial:
 - Only one thread processes the column at a time.
 - Global state updates happen sequentially without race conditions.
 
-#### Stateful Partition Filters
+#### Stateful partition filters
 
 When you mark a _partition filter_ (a filter that only accesses partitioning columns) as serial, Deephaven cannot reorder it and must evaluate it on all rows of the table. However, if you don't explicitly mark a partition filter as serial, the engine treats it as stateless for performance reasons — even when Deephaven is configured to treat filters as stateful by default.
 
@@ -273,7 +273,7 @@ When a [`Filter`](https://docs.deephaven.io/core/javadoc/io/deephaven/api/filter
 
 ### Barriers
 
-`withSerial` controls row order *within* a single column. **Barriers** control the order *between* columns or filters. Use barriers when one operation must finish all its rows before another operation begins.
+`withSerial` controls row order _within_ a single column. **Barriers** control the order _between_ columns or filters. Use barriers when one operation must finish all its rows before another operation begins.
 
 **When you need barriers**:
 
@@ -291,6 +291,7 @@ These solve different problems:
 - **Barriers**: One column finishes all its rows before another column starts. Rows within each column can still be parallelized.
 
 When shared state is involved, you often need both:
+
 - `withSerial` to protect row-level access to the shared state
 - Barriers to ensure one column is completely done before the other starts
 
@@ -301,6 +302,8 @@ In Groovy, any Java object can serve as a barrier. A barrier object creates an o
 1. One operation **declares** the barrier — it goes first
 2. Another operation **respects** the barrier — it waits
 3. Deephaven guarantees the declaring operation completes all rows before the respecting operation begins
+
+Each barrier can only be declared by one operation. Multiple operations can respect the same barrier.
 
 #### Example: shared counter
 
@@ -362,6 +365,7 @@ t = emptyTable(10).update([colA, colB, colC, colD])
 ```
 
 Execution order:
+
 - A and B run in parallel (they don't depend on each other)
 - D starts after A finishes (doesn't wait for B)
 - C starts after both A and B finish
@@ -372,12 +376,12 @@ Barriers work the same way for [`Filter`](../../reference/query-language/types/F
 
 #### Implicit barriers
 
-By default, serial operations automatically create barriers between each other. If you have two serial columns in the same `update`, the first one finishes completely before the second one starts. You don't need to create explicit barriers in this case.
+When `QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS` is enabled, serial operations automatically create barriers between each other — two serial columns in the same `update` will execute one after the other without explicit barriers.
 
-This behavior is controlled by `QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS`:
+This behavior is controlled by the `QueryTable.serialSelectImplicitBarriers` configuration property:
 
-- **Stateful mode (default)**: Serial operations automatically wait for each other. This is usually what you want when operations share global state.
-- **Stateless mode**: Serial operations only enforce row order within themselves, not between each other. Use explicit barriers if you need cross-operation ordering.
+- **Stateless mode (default)**: Serial operations only enforce row order within themselves, not between each other. Use explicit barriers if you need cross-operation ordering.
+- **Stateful mode**: Serial operations automatically wait for each other. This is useful when operations share global state. Enable by setting `QueryTable.serialSelectImplicitBarriers=true`.
 
 Most users don't need to change this setting.
 
@@ -467,8 +471,8 @@ counter = new AtomicInteger(0)
 // Create a barrier - any Java object works
 barrier = new Object()
 
-// A must complete before B starts - A sets values, B uses them
-colA = Selectable.parse("A = counter.getAndIncrement()").withDeclaredBarriers(barrier)
+// A must complete before B starts - A sets values, B reads the final count
+colA = Selectable.parse("A = counter.getAndIncrement()").withSerial().withDeclaredBarriers(barrier)
 colB = Selectable.parse("B = counter.get()").withRespectedBarriers(barrier)
 
 source = emptyTable(10)
@@ -480,11 +484,11 @@ result = source.update([colA, colB])
 | Scenario                             | Solution                      | Why                                 |
 | ------------------------------------ | ----------------------------- | ----------------------------------- |
 | Pure column math                     | Default (parallel)            | Thread-safe, no shared state        |
-| Global counter                       | `withSerial`                 | Needs sequential row processing     |
+| Global counter                       | `withSerial`                  | Needs sequential row processing     |
 | Column A must finish before Column B | Barriers                      | Controls cross-operation ordering   |
-| File I/O or logging                  | `withSerial`                 | Serialize access to shared resource |
+| File I/O or logging                  | `withSerial`                  | Serialize access to shared resource |
 | Multiple operations sharing state    | Barriers or implicit barriers | Coordinates access to shared state  |
-| Non-thread-safe library              | `withSerial`                 | Forces single-threaded access       |
+| Non-thread-safe library              | `withSerial`                  | Forces single-threaded access       |
 
 ## Key takeaways
 

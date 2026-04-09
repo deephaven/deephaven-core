@@ -12,7 +12,7 @@ Parallelization is running multiple calculations at the same time on different C
 
 ## How Deephaven parallelizes queries
 
-Deephaven uses all available CPU cores to process queries faster. You don't need to configure anything - parallelization happens automatically.
+Deephaven uses all available CPU cores to process queries faster. You don't need to configure anything — parallelization happens automatically.
 
 Parallelization occurs at two levels:
 
@@ -67,7 +67,7 @@ Deephaven also parallelizes calculations within a single table. When you run `so
 
 ## Controlling parallelization
 
-Most queries work correctly with automatic parallelization. However, some code requires sequential processing - for example, code that uses a counter or modifies shared state.
+Most queries work correctly with automatic parallelization. However, some code requires sequential processing — for example, code that uses a counter or modifies shared state.
 
 Deephaven provides two mechanisms:
 
@@ -82,7 +82,7 @@ Queries execute in two phases, and parallelization works differently in each.
 
 ### Initialization
 
-When you first create a table operation (like `.where()` or `.update()`), Deephaven computes the initial result using all existing data. During initialization, Deephaven divides the rows among CPU cores so each core processes a portion simultaneously.
+When you first create a table operation (like `.where` or `.update`), Deephaven computes the initial result using all existing data. During initialization, Deephaven divides the rows among CPU cores so each core processes a portion simultaneously.
 
 For live (refreshing) tables, Deephaven also registers the table in the [update graph](../dag.md) so it can receive future updates.
 
@@ -135,7 +135,7 @@ This section explains when and how to override automatic parallelization for cod
 
 ### Parallelization (default)
 
-By default, Deephaven parallelizes operations that are **stateless** - meaning each row's result depends only on that row's input values.
+By default, Deephaven parallelizes operations that are **stateless** — meaning each row's result depends only on that row's input values.
 
 **An operation is stateless if it**:
 
@@ -307,7 +307,7 @@ When a [`Filter`](https://docs.deephaven.io/core/pydoc/code/deephaven.filters.ht
 
 ### Barriers
 
-`with_serial` controls row order *within* a single column. **Barriers** control the order *between* columns or filters. Use barriers when one operation must finish all its rows before another operation begins.
+`with_serial` controls row order _within_ a single column. **Barriers** control the order _between_ columns or filters. Use barriers when one operation must finish all its rows before another operation begins.
 
 **When you need barriers**:
 
@@ -325,6 +325,7 @@ These solve different problems:
 - **Barriers**: One column finishes all its rows before another column starts. Rows within each column can still be parallelized.
 
 When shared state is involved, you often need both:
+
 - `with_serial` to protect row-level access to the shared state
 - Barriers to ensure one column is completely done before the other starts
 
@@ -335,6 +336,8 @@ A [`Barrier`](https://docs.deephaven.io/core/pydoc/code/deephaven.concurrency_co
 1. One operation **declares** the barrier — it goes first
 2. Another operation **respects** the barrier — it waits
 3. Deephaven guarantees the declaring operation completes all rows before the respecting operation begins
+
+Each barrier can only be declared by one operation. Multiple operations can respect the same barrier.
 
 #### Example: shared counter
 
@@ -402,7 +405,7 @@ col_a = Selectable.parse("A = i * 2").with_declared_barriers(barrier_a)
 col_b = Selectable.parse("B = i * 3").with_declared_barriers(barrier_b)
 
 # Column C respects BOTH barriers — waits for A and B to finish
-col_c = Selectable.parse("C = i * 4").with_respected_barriers(barrier_a, barrier_b)
+col_c = Selectable.parse("C = i * 4").with_respected_barriers([barrier_a, barrier_b])
 
 # Column D respects only barrier_a — waits for A, but not B
 col_d = Selectable.parse("D = i * 5").with_respected_barriers(barrier_a)
@@ -411,6 +414,7 @@ t = empty_table(10).update([col_a, col_b, col_c, col_d])
 ```
 
 Execution order:
+
 - A and B run in parallel (they don't depend on each other)
 - D starts after A finishes (doesn't wait for B)
 - C starts after both A and B finish
@@ -421,12 +425,12 @@ Barriers work the same way for [`Filter`](../../reference/query-language/types/F
 
 #### Implicit barriers
 
-By default, serial operations automatically create barriers between each other. If you have two serial columns in the same `update`, the first one finishes completely before the second one starts. You don't need to create explicit barriers in this case.
+When `QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS` is enabled, serial operations automatically create barriers between each other — two serial columns in the same `update` will execute one after the other without explicit barriers.
 
-This behavior is controlled by `QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS`:
+This behavior is controlled by the `QueryTable.serialSelectImplicitBarriers` configuration property:
 
-- **Stateful mode (default)**: Serial operations automatically wait for each other. This is usually what you want when operations share global state.
-- **Stateless mode**: Serial operations only enforce row order within themselves, not between each other. Use explicit barriers if you need cross-operation ordering.
+- **Stateless mode (default)**: Serial operations only enforce row order within themselves, not between each other. Use explicit barriers if you need cross-operation ordering.
+- **Stateful mode**: Serial operations automatically wait for each other. This is useful when operations share global state. Enable by setting `QueryTable.serialSelectImplicitBarriers=true`.
 
 Most users don't need to change this setting.
 
@@ -535,15 +539,19 @@ def use_cache(key):
 
 barrier = Barrier()
 
-# A must complete before B starts
-col_a = Selectable.parse("A = init_cache(Key)").with_declared_barriers(barrier)
+# A must complete before B starts (serial because dict writes aren't thread-safe)
+col_a = (
+    Selectable.parse("A = init_cache(Key)")
+    .with_serial()
+    .with_declared_barriers(barrier)
+)
 col_b = Selectable.parse("B = use_cache(Key)").with_respected_barriers(barrier)
 
 source = empty_table(10).update("Key = i")
 result = source.update([col_a, col_b])
 ```
 
-#### Stateful Partition Filters
+#### Stateful partition filters
 
 When you mark a _partition filter_ (a filter that only accesses partitioning columns) as serial, Deephaven cannot reorder it and must evaluate it on all rows of the table. However, if you don't explicitly mark a partition filter as serial, the engine treats it as stateless for performance reasons — even when Deephaven is configured to treat filters as stateful by default.
 
@@ -554,11 +562,11 @@ Specifically, Deephaven may relax ordering constraints for filters on partitioni
 | Scenario                             | Solution                      | Why                                 |
 | ------------------------------------ | ----------------------------- | ----------------------------------- |
 | Pure column math                     | Default (parallel)            | Thread-safe, no shared state        |
-| Global counter                       | `with_serial`                | Needs sequential row processing     |
+| Global counter                       | `with_serial`                 | Needs sequential row processing     |
 | Column A must finish before Column B | Barriers                      | Controls cross-operation ordering   |
-| File I/O or logging                  | `with_serial`                | Serialize access to shared resource |
+| File I/O or logging                  | `with_serial`                 | Serialize access to shared resource |
 | Multiple operations sharing state    | Barriers or implicit barriers | Coordinates access to shared state  |
-| Non-thread-safe library              | `with_serial`                | Forces single-threaded access       |
+| Non-thread-safe library              | `with_serial`                 | Forces single-threaded access       |
 
 ## Key takeaways
 

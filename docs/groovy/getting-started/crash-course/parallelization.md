@@ -53,7 +53,7 @@ With 1 million rows and 4 cores, Deephaven assigns roughly 250,000 rows to each 
 
 ## When it works
 
-Parallelization produces correct results when each row can be computed independently. This means the formula for row 50 doesn't need to know anything about row 49 or row 51 - it only uses values from its own row.
+Parallelization produces correct results when each row can be computed independently. This means the formula for row 50 doesn't need to know anything about row 49 or row 51 — it only uses values from its own row.
 
 These patterns are always safe to parallelize:
 
@@ -100,7 +100,7 @@ result = source.update(
 )
 ```
 
-All of these examples share the same property: each row's result depends only on values in that same row. It doesn't matter whether row 50 is computed before or after row 49, or whether they're computed on the same core or different cores - the results are identical either way.
+All of these examples share the same property: each row's result depends only on values in that same row. It doesn't matter whether row 50 is computed before or after row 49, or whether they're computed on the same core or different cores — the results are identical either way.
 
 ## When it breaks
 

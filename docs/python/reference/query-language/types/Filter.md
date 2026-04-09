@@ -75,19 +75,20 @@ For examples and detailed usage, see [Barriers](../../../conceptual/query-engine
 
 ## Filter functions
 
-The `deephaven.filters` module provides functions for creating filters. These return `Filter` objects that you can use with `where()` or modify with concurrency methods.
+The `deephaven.filters` module provides functions for creating filters. These return `Filter` objects that you can use with `where` or modify with concurrency methods.
 
-| Function                       | Description                                     |
-| ------------------------------ | ----------------------------------------------- |
-| `Filter.from_(condition)`      | Create from condition string                    |
-| `is_null(column)`              | True if column value is null                    |
-| `not_(filter)`                 | Logical NOT                                     |
-| `and_(filters)`                | Logical AND of multiple filters                 |
-| `or_(filters)`                 | Logical OR of multiple filters                  |
-| `pattern(column, regex, mode)` | Regex pattern match                             |
-| `is_inf(column)`               | True if value is infinite                       |
-| `is_nan(column)`               | True if value is NaN                            |
-| `is_normal(column)`            | True if value is a normal floating-point number |
+| Function                                       | Description                                       |
+| ---------------------------------------------- | ------------------------------------------------- |
+| `Filter.from_(condition)`                      | Create from condition string                      |
+| `is_null(col)`                                 | True if column value is null                      |
+| `is_not_null(col)`                             | True if column value is not null                  |
+| `not_(filter)`                                 | Logical NOT                                       |
+| `and_(filters)`                                | Logical AND of multiple filters                   |
+| `or_(filters)`                                 | Logical OR of multiple filters                    |
+| `in_(col, values)`                             | True if column value is in the given values       |
+| `pattern(mode, col, regex, invert_pattern)`    | Regex pattern match                               |
+| `eq`, `ne`, `lt`, `le`, `gt`, `ge`             | Comparison filters (e.g., `eq(left, right)`)      |
+| `incremental_release(initial_rows, increment)` | Progressively release rows from an add-only table |
 
 ## When to use Filter objects
 
@@ -106,7 +107,7 @@ You need a `Filter` object in two situations:
 
 **Stateful filters**: If your filter modifies shared state (e.g., counting how many rows pass), use `with_serial` to force sequential evaluation. Without it, multiple threads evaluating rows simultaneously could corrupt the shared state.
 
-**Complex boolean logic**: Use `and_()`, `or_()`, and `not_()` to compose filters programmatically. This is useful when building filter conditions dynamically or combining multiple conditions that are easier to express as separate objects.
+**Complex boolean logic**: Use `and_`, `or_`, and `not_` to compose filters programmatically. This is useful when building filter conditions dynamically or combining multiple conditions that are easier to express as separate objects.
 
 **Barriers between filters** are rarely needed — most filters are stateless. If you do have filters with shared state where one must complete before another, see the [Barriers](../../../conceptual/query-engine/parallelization.md#barriers) section in the parallelization guide.
 

@@ -2,7 +2,7 @@
 title: Selectable
 ---
 
-A [`Selectable`](https://deephaven.io/core/javadoc/io/deephaven/api/Selectable.html) represents a column expression used in [`select`](../../table-operations/select/select.md) and [`update`](../../table-operations/select/update.md) operations. Use `Selectable` objects when you need to control how Deephaven processes column calculations - specifically, to force sequential (serial) execution or to coordinate execution order with barriers.
+A [`Selectable`](https://deephaven.io/core/javadoc/io/deephaven/api/Selectable.html) represents a column expression used in [`select`](../../table-operations/select/select.md) and [`update`](../../table-operations/select/update.md) operations. Use `Selectable` objects when you need to control how Deephaven processes column calculations — specifically, to force sequential (serial) execution or to coordinate execution order with barriers.
 
 ## Creating a Selectable
 
@@ -10,7 +10,7 @@ There are two ways to create a `Selectable` object, depending on whether you wan
 
 ### From a formula string
 
-Use `Selectable.parse()` when you have a complete column assignment as a string. This is the most common approach.
+Use `Selectable.parse` when you have a complete column assignment as a string. This is the most common approach.
 
 ```groovy syntax
 import io.deephaven.api.Selectable
@@ -20,7 +20,7 @@ col = Selectable.parse("NewColumn = ExistingColumn * 2")
 
 ### From column name and expression
 
-Use `Selectable.of()` with `ColumnName` and `RawString` when the column name and expression are separate values, such as when they come from variables or user input.
+Use `Selectable.of` with `ColumnName` and `RawString` when the column name and expression are separate values, such as when they come from variables or user input.
 
 ```groovy syntax
 import io.deephaven.api.Selectable
@@ -36,7 +36,7 @@ These methods control how Deephaven executes the column calculation. By default,
 
 ### `withSerial`
 
-Forces the column calculation to execute sequentially on a single core, processing rows one at a time in order. Use this when the formula modifies global state or depends on row order.
+Forces the column calculation to execute sequentially on a single core, processing rows one at a time in order. Use this when the formula has side effects or depends on row order.
 
 ```groovy order=result
 import io.deephaven.api.Selectable

@@ -6,26 +6,12 @@ A [`Selectable`](https://docs.deephaven.io/core/pydoc/code/deephaven.table.html#
 
 ## Creating a Selectable
 
-There are two ways to create a `Selectable` object, depending on whether you want to parse a complete formula string or build one from separate components.
-
-### From a formula string
-
-Use `Selectable.parse()` when you have a complete column assignment as a string. This is the most common approach.
+Use `Selectable.parse` to create a `Selectable` from a formula string:
 
 ```python syntax
 from deephaven.table import Selectable
 
 col = Selectable.parse("NewColumn = ExistingColumn * 2")
-```
-
-### From column name and expression
-
-Use `Selectable.of_str()` when the column name and expression are separate values, such as when they come from variables or user input.
-
-```python syntax
-from deephaven.table import Selectable
-
-col = Selectable.of_str("NewColumn", "ExistingColumn * 2")
 ```
 
 ## Methods
@@ -34,7 +20,7 @@ These methods control how Deephaven executes the column calculation. By default,
 
 ### `with_serial`
 
-Forces the column calculation to execute sequentially on a single core, processing rows one at a time in order. Use this when the formula modifies global state or depends on row order.
+Forces the column calculation to execute sequentially on a single core, processing rows one at a time in order. Use this when the formula has side effects or depends on row order.
 
 ```python order=result
 from deephaven.table import Selectable
