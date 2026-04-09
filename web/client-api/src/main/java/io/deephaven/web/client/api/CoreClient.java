@@ -19,6 +19,7 @@ import io.deephaven.web.client.ide.IdeConnection;
 import io.deephaven.web.shared.data.ConnectToken;
 import io.deephaven.web.shared.fu.JsFunction;
 import io.grpc.stub.StreamObserver;
+import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsOptional;
 import jsinterop.annotations.JsType;
 import jsinterop.base.Js;
@@ -45,7 +46,8 @@ public class CoreClient extends HasEventHandling {
 
     private final IdeConnection ideConnection;
 
-    public CoreClient(String serverUrl, @TsTypeRef(ConnectOptions.class) @JsOptional Object connectOptions) {
+    public CoreClient(String serverUrl,
+            @TsTypeRef(ConnectOptions.class) @JsOptional @JsNullable Object connectOptions) {
         ideConnection = new IdeConnection(serverUrl, connectOptions);
     }
 
@@ -128,7 +130,7 @@ public class CoreClient extends HasEventHandling {
         return login(Js.cast(LoginCredentials.reconnect(JsRefreshToken.fromObject(token).getBytes())));
     }
 
-    public Promise<Void> onConnected(@JsOptional Double timeoutInMillis) {
+    public Promise<Void> onConnected(@JsOptional @JsNullable Double timeoutInMillis) {
         return ideConnection.onConnected();
     }
 

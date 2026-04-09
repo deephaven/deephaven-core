@@ -88,7 +88,7 @@ public class FilterCondition {
      * @return dh.FilterCondition
      */
     @JsMethod(namespace = "dh.FilterCondition")
-    public static FilterCondition search(FilterValue value, @JsOptional FilterValue[] columns) {
+    public static FilterCondition search(FilterValue value, @JsOptional @JsNullable FilterValue[] columns) {
         SearchCondition.Builder search = SearchCondition.newBuilder();
         search.setSearchString(value.descriptor.getLiteral().getStringValue());
         if (columns != null) {

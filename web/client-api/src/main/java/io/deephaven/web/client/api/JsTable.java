@@ -802,7 +802,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
      */
     @JsMethod
     @Deprecated
-    public TableSubscription subscribe(JsArray<Column> columns, @JsOptional Double updateIntervalMs) {
+    public TableSubscription subscribe(JsArray<Column> columns, @JsOptional @JsNullable Double updateIntervalMs) {
         DataOptions.SubscriptionOptions options = new DataOptions.SubscriptionOptions();
         options.previewOptions = new DataOptions.PreviewOptions();
         options.previewOptions.convertArrayToString = true;
@@ -1334,8 +1334,8 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
 
     @Override
     @JsMethod
-    public Promise<JsTable> snapshot(JsTable baseTable, @JsOptional Boolean doInitialSnapshot,
-            @JsOptional String[] stampColumns) {
+    public Promise<JsTable> snapshot(JsTable baseTable, @JsOptional @JsNullable Boolean doInitialSnapshot,
+            @JsOptional @JsNullable String[] stampColumns) {
         Objects.requireNonNull(baseTable, "Snapshot base table");
         final boolean realDoInitialSnapshot;
         if (doInitialSnapshot != null) {
@@ -1397,7 +1397,9 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
             request.setRightId(rightTable.state().getHandle().makeTableReference());
             request.setResultId(state.getHandle().makeTicket());
             request.addAllColumnsToMatch(columnsToMatch.asList());
-            request.addAllColumnsToAdd(columnsToAdd.asList());
+            if (columnsToAdd != null) {
+                request.addAllColumnsToAdd(columnsToAdd.asList());
+            }
             if (asOfMatchRule != null) {
                 request.setAsOfMatchRule(AsOfJoinTablesRequest.MatchRule.valueOf(asOfMatchRule));
             }
@@ -1421,7 +1423,9 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
             request.setRightId(rightTable.state().getHandle().makeTableReference());
             request.setResultId(state.getHandle().makeTicket());
             request.addAllColumnsToMatch(columnsToMatch.asList());
-            request.addAllColumnsToAdd(columnsToAdd.asList());
+            if (columnsToAdd != null) {
+                request.addAllColumnsToAdd(columnsToAdd.asList());
+            }
             if (reserveBits != null) {
                 request.setReserveBits((int) (double) reserveBits);
             }
@@ -1434,20 +1438,21 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     @Override
     @JsMethod
     public Promise<JsTable> exactJoin(JoinableTable rightTable, JsArray<String> columnsToMatch,
-            @JsOptional JsArray<String> columnsToAdd) {
+            @JsOptional @JsNullable JsArray<String> columnsToAdd) {
         if (rightTable.state().getConnection() != workerConnection) {
             throw new IllegalStateException(
                     "Table argument passed to join is not from the same worker as current table");
         }
         return workerConnection.newState((c, state) -> {
-            ExactJoinTablesRequest request = ExactJoinTablesRequest.newBuilder()
+            ExactJoinTablesRequest.Builder request = ExactJoinTablesRequest.newBuilder()
                     .setLeftId(state().getHandle().makeTableReference())
                     .setRightId(rightTable.state().getHandle().makeTableReference())
                     .setResultId(state.getHandle().makeTicket())
-                    .addAllColumnsToMatch(columnsToMatch.asList())
-                    .addAllColumnsToAdd(columnsToAdd.asList())
-                    .build();
-            workerConnection.tableServiceClient().exactJoinTables(request, c);
+                    .addAllColumnsToMatch(columnsToMatch.asList());
+            if (columnsToAdd != null) {
+                request.addAllColumnsToAdd(columnsToAdd.asList());
+            }
+            workerConnection.tableServiceClient().exactJoinTables(request.build(), c);
         }, "exactJoin(" + rightTable + ", " + columnsToMatch + ", " + columnsToAdd + ")")
                 .refetch()
                 .then(state -> Promise.resolve(new JsTable(workerConnection, state)));
@@ -1456,27 +1461,28 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     @Override
     @JsMethod
     public Promise<JsTable> naturalJoin(JoinableTable rightTable, JsArray<String> columnsToMatch,
-            @JsOptional JsArray<String> columnsToAdd) {
+            @JsOptional @JsNullable JsArray<String> columnsToAdd) {
         if (rightTable.state().getConnection() != workerConnection) {
             throw new IllegalStateException(
                     "Table argument passed to join is not from the same worker as current table");
         }
         return workerConnection.newState((c, state) -> {
-            NaturalJoinTablesRequest request = NaturalJoinTablesRequest.newBuilder()
+            NaturalJoinTablesRequest.Builder request = NaturalJoinTablesRequest.newBuilder()
                     .setLeftId(state().getHandle().makeTableReference())
                     .setRightId(rightTable.state().getHandle().makeTableReference())
                     .setResultId(state.getHandle().makeTicket())
-                    .addAllColumnsToMatch(columnsToMatch.asList())
-                    .addAllColumnsToAdd(columnsToAdd.asList())
-                    .build();
-            workerConnection.tableServiceClient().naturalJoinTables(request, c);
+                    .addAllColumnsToMatch(columnsToMatch.asList());
+            if (columnsToAdd != null) {
+                request.addAllColumnsToAdd(columnsToAdd.asList());
+            }
+            workerConnection.tableServiceClient().naturalJoinTables(request.build(), c);
         }, "naturalJoin(" + rightTable + ", " + columnsToMatch + ", " + columnsToAdd + ")")
                 .refetch()
                 .then(state -> Promise.resolve(new JsTable(workerConnection, state)));
     }
 
     @JsMethod
-    public Promise<JsPartitionedTable> byExternal(Object keys, @JsOptional Boolean dropKeys) {
+    public Promise<JsPartitionedTable> byExternal(Object keys, @JsOptional @JsNullable Boolean dropKeys) {
         return partitionBy(keys, dropKeys);
     }
 
@@ -1490,7 +1496,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
      * @return Promise dh.PartitionedTable
      */
     @JsMethod
-    public Promise<JsPartitionedTable> partitionBy(Object keys, @JsOptional Boolean dropKeys) {
+    public Promise<JsPartitionedTable> partitionBy(Object keys, @JsOptional @JsNullable Boolean dropKeys) {
         final List<String> actualKeys;
         if (keys instanceof String) {
             actualKeys = List.of((String) keys);

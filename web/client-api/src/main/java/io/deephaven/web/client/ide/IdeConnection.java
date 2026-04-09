@@ -23,6 +23,7 @@ import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsOptional;
+import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsType;
 import jsinterop.base.JsPropertyMap;
 
@@ -127,7 +128,7 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
      * @deprecated Added to resolve a specific issue, in the future preview will be applied as part of the subscription.
      */
     @Deprecated
-    public Promise<JsTable> getTable(String name, @JsOptional Boolean applyPreviewColumns) {
+    public Promise<JsTable> getTable(String name, @JsOptional @JsNullable Boolean applyPreviewColumns) {
         if (applyPreviewColumns == Boolean.FALSE) {
             JsLog.warn(
                     "getTable is deprecated, please use getObject instead. The applyPreviewColumns parameter no longer applies, the new APIs to access data from the resulting Table should be used instead.");

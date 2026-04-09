@@ -34,6 +34,7 @@ import io.deephaven.web.shared.fu.JsRunnable;
 import io.grpc.Channel;
 import io.grpc.ClientInterceptor;
 import io.grpc.ClientInterceptors;
+import io.grpc.InternalMetadata;
 import io.grpc.Metadata;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
@@ -42,8 +43,8 @@ import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
 import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
-import org.jetbrains.annotations.NotNull;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
@@ -97,10 +98,29 @@ public abstract class QueryConnectable<Self extends QueryConnectable<Self>> exte
         fireEvent(HACK_CONNECTION_FAILURE, JsPropertyMap.of(
                 "status", sre.getStatus().getCode().value(),
                 "details", sre.getStatus().getDescription(),
-                "metadata", sre.getTrailers()));// TODO unpack this
+                "metadata", makeHeaders(sre.getTrailers())));
         JsLog.warn(
                 "The event dh.IdeConnection.HACK_CONNECTION_FAILURE is deprecated and will be removed in a later release");
     }
+
+    private static JsPropertyMap<String> makeHeaders(final Metadata metadata) {
+        final BaseEncoding base64 = BaseEncoding.base64().omitPadding();
+
+        final JsPropertyMap<String> result = JsPropertyMap.of();
+        final byte[][] bytes = InternalMetadata.serialize(metadata);
+        for (int i = 0; i < bytes.length; i += 2) {
+            final String key = new String(bytes[i], StandardCharsets.UTF_8);
+            final String value;
+            if (key.endsWith("-bin")) {
+                value = base64.encode(bytes[i + 1]);
+            } else {
+                value = new String(bytes[i + 1], StandardCharsets.UTF_8);
+            }
+            result.set(key, value);
+        }
+        return result;
+    }
+
 
     protected Promise<Void> onConnected() {
         if (connected) {
@@ -281,16 +301,16 @@ public abstract class QueryConnectable<Self extends QueryConnectable<Self>> exte
     }
 
     /**
-     * Factory to produce grpc stubs with the configured transport, including authentication, support for emulated
-     * bidi streams, and user-requested headers.
+     * Factory to produce grpc stubs with the configured transport, including authentication, support for emulated bidi
+     * streams, and user-requested headers.
      */
     public <T> T createStub(Function<Channel, T> constructor) {
         return makeChannel(constructor, authenticationInterceptor, new ClientBrowserStreamInterceptor());
     }
 
     /**
-     * Factory to produce grpc stubs with the configured transport and user-requested headers. No auth is provided,
-     * and emulated streams cannot be available without auth.
+     * Factory to produce grpc stubs with the configured transport and user-requested headers. No auth is provided, and
+     * emulated streams cannot be available without auth.
      */
     public <T> T createStubNoAuth(Function<Channel, T> constructor) {
         return makeChannel(constructor);
@@ -306,19 +326,19 @@ public abstract class QueryConnectable<Self extends QueryConnectable<Self>> exte
             channel = new FetchChannel(new URL(getServerUrl()));
         }
         if (getOptions().headers != null) {
-            interceptors[interceptors.length] = MetadataUtils.newAttachHeadersInterceptor(makeMetadata(getOptions().headers));
+            interceptors[interceptors.length] =
+                    MetadataUtils.newAttachHeadersInterceptor(makeMetadata(getOptions().headers));
         }
         return constructor.apply(ClientInterceptors.intercept(
                 channel,
-                interceptors
-        ));
+                interceptors));
     }
 
     private Metadata makeMetadata(JsPropertyMap<String> headers) {
         Metadata result = new Metadata();
         JsArray<String> keys = JsObject.keys(headers);
         BaseEncoding base64 = BaseEncoding.base64().omitPadding();
-        for(int i = 0; i < keys.length; ++i) {
+        for (int i = 0; i < keys.length; ++i) {
             String key = keys.getAt(i);
             String value = headers.get(key);
             if (value != null) {

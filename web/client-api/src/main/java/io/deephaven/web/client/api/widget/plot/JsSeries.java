@@ -84,7 +84,7 @@ public class JsSeries {
         subscribe(null);
     }
 
-    public void subscribe(@JsOptional DownsampleOptions forceDisableDownsample) {
+    public void subscribe(@JsOptional @JsNullable DownsampleOptions forceDisableDownsample) {
         this.downsample = forceDisableDownsample == null ? DownsampleOptions.DEFAULT : forceDisableDownsample;
         subscribed = true;
         jsFigure.enqueueSubscriptionCheck();

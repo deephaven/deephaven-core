@@ -89,6 +89,7 @@ import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsOptional;
+import jsinterop.annotations.JsNullable;
 import jsinterop.base.JsPropertyMap;
 import org.apache.arrow.flatbuf.Buffer;
 import org.apache.arrow.flatbuf.Field;
@@ -1472,7 +1473,7 @@ public class WorkerConnection {
     }
 
     @JsMethod
-    public String dump(@JsOptional String graphName) {
+    public String dump(@JsOptional @JsNullable String graphName) {
         if (graphName == null) {
             graphName = "states";
         }

@@ -121,8 +121,8 @@ public class JsTotalsTable implements JoinableTable, ServerObject {
      */
     @JsMethod
     @Deprecated
-    public void setViewport(double firstRow, double lastRow, @JsOptional JsArray<Column> columns,
-            @JsOptional Double updateIntervalMs, @JsOptional @JsNullable Boolean isReverseViewport) {
+    public void setViewport(double firstRow, double lastRow, @JsOptional @JsNullable JsArray<Column> columns,
+            @JsOptional @JsNullable Double updateIntervalMs, @JsOptional @JsNullable Boolean isReverseViewport) {
         this.firstRow = firstRow;
         this.lastRow = lastRow;
         this.columns = columns != null ? Js.uncheckedCast(columns.slice()) : null;
@@ -381,7 +381,7 @@ public class JsTotalsTable implements JoinableTable, ServerObject {
     @Override
     @JsMethod
     public Promise<JsTable> join(String joinType, JoinableTable rightTable, JsArray<String> columnsToMatch,
-            @JsOptional JsArray<String> columnsToAdd, @JsOptional String asOfMatchRule) {
+            @JsOptional @JsNullable JsArray<String> columnsToAdd, @JsOptional @JsNullable String asOfMatchRule) {
         return wrappedTable.join(joinType, rightTable, columnsToMatch, columnsToAdd, asOfMatchRule);
     }
 

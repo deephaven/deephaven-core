@@ -15,6 +15,7 @@ import io.deephaven.web.client.fu.LazyPromise;
 import io.deephaven.web.shared.fu.RemoverFn;
 import javaemul.internal.annotations.DoNotAutobox;
 import jsinterop.annotations.JsMethod;
+import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsOptional;
 import jsinterop.base.Js;
 import jsinterop.base.JsArrayLike;
@@ -105,7 +106,7 @@ public class HasEventHandling {
     }
 
     @JsMethod
-    public <T> Promise<Event<T>> nextEvent(String eventName, @JsOptional Double timeoutInMillis) {
+    public <T> Promise<Event<T>> nextEvent(String eventName, @JsOptional @JsNullable Double timeoutInMillis) {
         LazyPromise<Event<T>> promise = new LazyPromise<>();
 
         addEventListenerOneShot(eventName, promise::succeed);

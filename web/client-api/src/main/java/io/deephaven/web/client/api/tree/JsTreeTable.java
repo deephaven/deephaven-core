@@ -921,7 +921,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
      * @param row
      * @param expandDescendants
      */
-    public void expand(RowReferenceUnion row, @JsOptional Boolean expandDescendants) {
+    public void expand(RowReferenceUnion row, @JsOptional @JsNullable Boolean expandDescendants) {
         setExpanded(row, true, expandDescendants);
     }
 
@@ -976,7 +976,8 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
      * @param expandDescendants {@code true} to expand the row and all descendants, {@code false} to expand only the
      *        row. Defaults to {@code false}.
      */
-    public void setExpanded(RowReferenceUnion row, boolean isExpanded, @JsOptional Boolean expandDescendants) {
+    public void setExpanded(RowReferenceUnion row, boolean isExpanded,
+            @JsOptional @JsNullable Boolean expandDescendants) {
         // TODO check row number is within bounds
         final double action;
         if (!isExpanded) {
@@ -1361,7 +1362,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
         return sourceTable.get().then(t -> Promise.resolve(t.getTotalsTableConfig()));
     }
 
-    public Promise<JsTotalsTable> getTotalsTable(@JsOptional Object config) {
+    public Promise<JsTotalsTable> getTotalsTable(@JsOptional @JsNullable Object config) {
         return sourceTable.get().then(t -> {
             // if this is the first time it is used, it might not be filtered correctly, so check that the filters match
             // up.
@@ -1372,7 +1373,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
         });
     }
 
-    public Promise<JsTotalsTable> getGrandTotalsTable(@JsOptional Object config) {
+    public Promise<JsTotalsTable> getGrandTotalsTable(@JsOptional @JsNullable Object config) {
         return sourceTable.get().then(t -> Promise.resolve(t.getGrandTotalsTable(config)));
     }
 

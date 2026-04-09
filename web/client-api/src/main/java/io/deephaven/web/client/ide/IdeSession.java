@@ -52,6 +52,7 @@ import io.deephaven.web.shared.ide.lsp.CompletionItem;
 import io.deephaven.web.shared.ide.lsp.SignatureInformation;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsOptional;
+import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsType;
 import jsinterop.base.Any;
 import jsinterop.base.Js;
@@ -125,7 +126,7 @@ public class IdeSession extends HasEventHandling {
      * @deprecated Added to resolve a specific issue, in the future preview will be applied as part of the subscription.
      */
     @Deprecated
-    public Promise<JsTable> getTable(String name, @JsOptional Boolean applyPreviewColumns) {
+    public Promise<JsTable> getTable(String name, @JsOptional @JsNullable Boolean applyPreviewColumns) {
         if (applyPreviewColumns == Boolean.FALSE) {
             JsLog.warn(
                     "getTable is deprecated, please use getObject instead. The applyPreviewColumns parameter no longer applies, the new APIs to access data from the resulting Table should be used instead.");
@@ -553,7 +554,7 @@ public class IdeSession extends HasEventHandling {
      * @param startTime
      * @return {@link Promise} of {@link JsTable}
      */
-    public Promise<JsTable> timeTable(double periodNanos, @JsOptional DateWrapper startTime) {
+    public Promise<JsTable> timeTable(double periodNanos, @JsOptional @JsNullable DateWrapper startTime) {
         return connection.timeTable(periodNanos, startTime);
     }
 }

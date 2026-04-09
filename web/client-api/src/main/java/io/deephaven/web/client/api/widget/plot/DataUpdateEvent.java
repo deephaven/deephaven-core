@@ -11,6 +11,7 @@ import io.deephaven.web.client.api.TableData;
 import io.deephaven.web.shared.fu.JsFunction;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsOptional;
+import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsProperty;
 import jsinterop.base.Any;
 
@@ -22,7 +23,7 @@ public class DataUpdateEvent {
         return new DataUpdateEvent(series, null, null) {
             @Override
             public JsArray<Any> getArray(JsSeries series, int sourceType,
-                    @JsOptional JsFunction<Any, Any> mappingFunc) {
+                    @JsOptional @JsNullable JsFunction<Any, Any> mappingFunc) {
                 return new JsArray<>();
             }
         };
@@ -48,7 +49,8 @@ public class DataUpdateEvent {
     }
 
     @JsMethod
-    public JsArray<Any> getArray(JsSeries series, int sourceType, @JsOptional JsFunction<Any, Any> mappingFunc) {
+    public JsArray<Any> getArray(JsSeries series, int sourceType,
+            @JsOptional @JsNullable JsFunction<Any, Any> mappingFunc) {
         String columnName = getColumnName(series, FigureDescriptor.SourceType.forNumber(sourceType));
 
         return data.getColumn(columnName, mappingFunc, currentUpdate);

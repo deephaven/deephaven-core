@@ -336,7 +336,7 @@ public class JsFigure extends HasLifecycle {
         subscribe(null);
     }
 
-    public void subscribe(@JsOptional DownsampleOptions forceDisableDownsample) {
+    public void subscribe(@JsOptional @JsNullable DownsampleOptions forceDisableDownsample) {
         // iterate all series, mark all as subscribed, will enqueue a check automatically
         Arrays.stream(charts).flatMap(c -> Arrays.stream(c.getSeries()))
                 .forEach(s -> s.subscribe(forceDisableDownsample));

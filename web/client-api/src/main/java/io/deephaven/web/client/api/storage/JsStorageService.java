@@ -27,6 +27,7 @@ import io.deephaven.web.client.api.WorkerConnection;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsOptional;
+import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsType;
 import jsinterop.base.Js;
 import org.gwtproject.nio.TypedArrayHelper;
@@ -59,7 +60,7 @@ public class JsStorageService {
      *         error.
      */
     @JsMethod
-    public Promise<JsArray<JsItemDetails>> listItems(String path, @JsOptional String glob) {
+    public Promise<JsArray<JsItemDetails>> listItems(String path, @JsOptional @JsNullable String glob) {
         ListItemsRequest.Builder builder = ListItemsRequest.newBuilder()
                 .setPath(path);
         if (glob != null) {
@@ -81,7 +82,7 @@ public class JsStorageService {
      * @return a promise containing details about the file's contents, or an error.
      */
     @JsMethod
-    public Promise<JsFileContents> loadFile(String path, @JsOptional String etag) {
+    public Promise<JsFileContents> loadFile(String path, @JsOptional @JsNullable String etag) {
         FetchFileRequest.Builder req = FetchFileRequest.newBuilder();
         req.setPath(path);
         if (etag != null) {
@@ -134,7 +135,8 @@ public class JsStorageService {
      *         error.
      */
     @JsMethod
-    public Promise<JsFileContents> saveFile(String path, JsFileContents contents, @JsOptional Boolean allowOverwrite) {
+    public Promise<JsFileContents> saveFile(String path, JsFileContents contents,
+            @JsOptional @JsNullable Boolean allowOverwrite) {
         return contents.arrayBuffer().then(ab -> {
             SaveFileRequest.Builder req = SaveFileRequest.newBuilder();
             req.setContents(ByteStringAccess.wrap(TypedArrayHelper.wrap(ab)));
@@ -162,7 +164,7 @@ public class JsStorageService {
      * @return a promise with no value on success, or an error.
      */
     @JsMethod
-    public Promise<Void> moveItem(String oldPath, String newPath, @JsOptional Boolean allowOverwrite) {
+    public Promise<Void> moveItem(String oldPath, String newPath, @JsOptional @JsNullable Boolean allowOverwrite) {
         MoveItemRequest.Builder req = MoveItemRequest.newBuilder();
         req.setOldPath(oldPath);
         req.setNewPath(newPath);

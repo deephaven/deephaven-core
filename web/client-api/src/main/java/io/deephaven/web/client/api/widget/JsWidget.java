@@ -31,6 +31,7 @@ import io.deephaven.web.client.api.barrage.stream.BiDiStream;
 import io.deephaven.web.client.api.event.HasEventHandling;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsOptional;
+import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsOverlay;
 import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsProperty;
@@ -322,7 +323,7 @@ public class JsWidget extends HasEventHandling implements ServerObject, WidgetMe
      * @param references an array of objects that can be safely sent to the server
      */
     @JsMethod
-    public void sendMessage(MessageUnion msg, @JsOptional JsArray<ServerObject.Union> references) {
+    public void sendMessage(MessageUnion msg, @JsOptional @JsNullable JsArray<ServerObject.Union> references) {
         if (messageStream == null) {
             return;
         }

@@ -23,6 +23,7 @@ import io.deephaven.web.client.api.barrage.stream.ResponseStreamWrapper;
 import io.deephaven.web.shared.fu.JsRunnable;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsOptional;
+import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
 import jsinterop.base.JsPropertyMap;
@@ -115,7 +116,7 @@ public class JsInputTable {
      * @param userTimeZone
      * @return Promise of dh.InputTable
      */
-    public Promise<JsInputTable> addRow(JsPropertyMap<?> row, @JsOptional String userTimeZone) {
+    public Promise<JsInputTable> addRow(JsPropertyMap<?> row, @JsOptional @JsNullable String userTimeZone) {
         return addRows(new JsPropertyMap[] {row}, userTimeZone);
     }
 
@@ -126,7 +127,7 @@ public class JsInputTable {
      * @param userTimeZone
      * @return Promise of dh.InputTable
      */
-    public Promise<JsInputTable> addRows(JsPropertyMap<?>[] rows, @JsOptional String userTimeZone) {
+    public Promise<JsInputTable> addRows(JsPropertyMap<?>[] rows, @JsOptional @JsNullable String userTimeZone) {
         // Filter out columns that are not keys or values of the input table
         Column[] filteredColumns = Arrays.stream(table.lastVisibleState().getColumns())
                 .filter(column -> column.isInputTableKeyColumn() || column.isInputTableValueColumn())
