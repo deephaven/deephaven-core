@@ -74,8 +74,6 @@ public class CoreClient extends HasEventHandling {
     }
 
     public Promise<String[][]> getAuthConfigValues() {
-        JsPropertyMap<String> headers = ideConnection.getOptions().headers;
-        // TODO pass metadata to this call
         ConfigServiceGrpc.ConfigServiceStub configService = ideConnection.createStubNoAuth(ConfigServiceGrpc::newStub);
         return this.getConfigs(
                 // Explicitly creating a new client, and not passing auth details, so this works pre-connection

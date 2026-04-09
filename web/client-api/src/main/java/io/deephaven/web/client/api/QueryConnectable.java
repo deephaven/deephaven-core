@@ -3,8 +3,11 @@
 //
 package io.deephaven.web.client.api;
 
+import com.google.common.io.BaseEncoding;
+import com.vertispan.grpc.fetch.FetchChannel;
 import com.vertispan.tsdefs.annotations.TsIgnore;
 import elemental2.core.JsArray;
+import elemental2.core.JsObject;
 import elemental2.core.JsSet;
 import elemental2.dom.URL;
 import elemental2.promise.Promise;
@@ -30,13 +33,17 @@ import io.deephaven.web.shared.data.ConnectToken;
 import io.deephaven.web.shared.fu.JsConsumer;
 import io.deephaven.web.shared.fu.JsRunnable;
 import io.grpc.Channel;
+import io.grpc.ClientInterceptor;
 import io.grpc.ClientInterceptors;
+import io.grpc.Metadata;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
+import io.grpc.stub.MetadataUtils;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
 import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -274,15 +281,57 @@ public abstract class QueryConnectable<Self extends QueryConnectable<Self>> exte
         return getOptions().transportFactory.getSupportsClientStreaming();
     }
 
+    /**
+     * Factory to produce grpc stubs with the configured transport, including authentication, support for emulated
+     * bidi streams, and user-requested headers.
+     */
     public <T> T createStub(Function<Channel, T> constructor) {
-        CustomTransportChannel channel =
-                new CustomTransportChannel(new URL(getServerUrl()), getOptions().transportFactory);
-        return constructor.apply(
-                ClientInterceptors.intercept(channel, authenticationInterceptor, new ClientBrowserStreamInterceptor()));
+        return makeChannel(constructor, authenticationInterceptor, new ClientBrowserStreamInterceptor());
     }
 
+    /**
+     * Factory to produce grpc stubs with the configured transport and user-requested headers. No auth is provided,
+     * and emulated streams cannot be available without auth.
+     */
     public <T> T createStubNoAuth(Function<Channel, T> constructor) {
-        return constructor.apply(new CustomTransportChannel(new URL(getServerUrl()), getOptions().transportFactory));
+        return makeChannel(constructor);
+    }
+
+    private <T> T makeChannel(Function<Channel, T> constructor, ClientInterceptor... interceptors) {
+        GrpcTransportFactory transportFactory = getOptions().transportFactory;
+
+        Channel channel;
+        if (transportFactory != null) {
+            channel = new CustomTransportChannel(new URL(getServerUrl()), transportFactory);
+        } else {
+            channel = new FetchChannel(new URL(getServerUrl()));
+        }
+        if (getOptions().headers != null) {
+            interceptors[interceptors.length] = MetadataUtils.newAttachHeadersInterceptor(makeMetadata(getOptions().headers));
+        }
+        return constructor.apply(ClientInterceptors.intercept(
+                channel,
+                interceptors
+        ));
+    }
+
+    private Metadata makeMetadata(JsPropertyMap<String> headers) {
+        Metadata result = new Metadata();
+        JsArray<String> keys = JsObject.keys(headers);
+        BaseEncoding base64 = BaseEncoding.base64().omitPadding();
+        for(int i = 0; i < keys.length; ++i) {
+            String key = keys.getAt(i);
+            String value = headers.get(key);
+            if (value != null) {
+                if (key.endsWith("-bin")) {
+                    result.put(Metadata.Key.of(key, Metadata.BINARY_BYTE_MARSHALLER), base64.decode(value));
+                } else {
+                    result.put(Metadata.Key.of(key, Metadata.ASCII_STRING_MARSHALLER), value);
+                }
+            }
+        }
+
+        return result;
     }
 
     public void login(String type, String token) {
