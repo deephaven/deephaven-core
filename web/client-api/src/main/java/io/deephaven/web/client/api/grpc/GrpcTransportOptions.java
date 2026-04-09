@@ -6,9 +6,7 @@ package io.deephaven.web.client.api.grpc;
 import elemental2.core.JsError;
 import elemental2.core.Uint8Array;
 import elemental2.dom.URL;
-import io.deephaven.javascript.proto.dhinternal.grpcweb.transports.transport.TransportOptions;
 import jsinterop.annotations.JsFunction;
-import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsOptional;
 import jsinterop.annotations.JsType;
@@ -63,11 +61,4 @@ public class GrpcTransportOptions {
      * implementation does not consume errors, even if provided.
      */
     public OnEndCallback onEnd;
-
-    /**
-     * Internal copy of options, to be used for fallback.
-     */
-    @JsIgnore
-    @Deprecated // remove before merge
-    public TransportOptions originalOptions;
 }

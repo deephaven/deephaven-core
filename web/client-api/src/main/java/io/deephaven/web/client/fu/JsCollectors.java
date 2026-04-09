@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.web.client.fu;
 
 import elemental2.core.JsArray;
@@ -16,7 +19,6 @@ public class JsCollectors {
                         JsArray::new,
                         JsArray::push,
                         (arr1, arr2) -> arr1.concat(arr2.asArray(Js.uncheckedCast(JsArray.of())))),
-                JsObject::freeze
-        );
+                JsObject::freeze);
     }
 }

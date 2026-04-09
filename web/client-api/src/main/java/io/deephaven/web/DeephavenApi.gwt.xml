@@ -25,8 +25,6 @@
   <super-source path="super" />
   <set-property name="dh.dev" value="false" />
 
-  <inherits name="io.deephaven.javascript.proto.dhinternal.DeephavenInternal" />
-
   <inherits name="com.google.gwt.i18n.I18N" />
   <inherits name="io.deephaven.web.DeephavenSharedApi" />
 

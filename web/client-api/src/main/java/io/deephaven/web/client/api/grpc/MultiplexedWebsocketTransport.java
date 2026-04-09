@@ -9,15 +9,12 @@ import elemental2.core.Int8Array;
 import elemental2.core.JsError;
 import elemental2.core.Uint8Array;
 import elemental2.dom.CloseEvent;
+import elemental2.dom.DomGlobal;
 import elemental2.dom.Event;
 import elemental2.dom.EventListener;
 import elemental2.dom.MessageEvent;
 import elemental2.dom.URL;
 import elemental2.dom.WebSocket;
-import io.deephaven.javascript.proto.dhinternal.browserheaders.BrowserHeaders;
-import io.deephaven.javascript.proto.dhinternal.grpcweb.Grpc;
-import io.deephaven.javascript.proto.dhinternal.grpcweb.transports.transport.Transport;
-import io.deephaven.web.client.api.JsLazy;
 import io.deephaven.web.shared.fu.JsRunnable;
 import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
@@ -61,8 +58,6 @@ public class MultiplexedWebsocketTransport implements GrpcTransport {
 
     private interface QueuedEntry {
         void send(WebSocket webSocket, int streamId);
-
-        void sendFallback(Transport transport);
     }
 
     public static class HeaderFrame implements QueuedEntry {
@@ -93,11 +88,6 @@ public class MultiplexedWebsocketTransport implements GrpcTransport {
             payload.set(headerBytes, 4);
             webSocket.send(payload);
         }
-
-        @Override
-        public void sendFallback(Transport transport) {
-            transport.start(new BrowserHeaders(metadata));
-        }
     }
 
     private static class GrpcMessageFrame implements QueuedEntry {
@@ -115,11 +105,6 @@ public class MultiplexedWebsocketTransport implements GrpcTransport {
             payload.set(msgBytes, 5);
             webSocket.send(payload);
         }
-
-        @Override
-        public void sendFallback(Transport transport) {
-            transport.sendMessage(msgBytes);
-        }
     }
 
     private static class WebsocketFinishSignal implements QueuedEntry {
@@ -129,11 +114,6 @@ public class MultiplexedWebsocketTransport implements GrpcTransport {
             streamId = streamId ^ (1 << 31);
             new DataView(data.buffer).setInt32(0, streamId);
             webSocket.send(data);
-        }
-
-        @Override
-        public void sendFallback(Transport transport) {
-            transport.finishSend();
         }
     }
 
@@ -221,8 +201,6 @@ public class MultiplexedWebsocketTransport implements GrpcTransport {
     private final GrpcTransportOptions options;
     private final String path;
 
-    private final JsLazy<Transport> alternativeTransport;
-
     private JsRunnable cleanup = JsRunnable.doNothing();
 
     private boolean sawHeaders = false;
@@ -237,17 +215,10 @@ public class MultiplexedWebsocketTransport implements GrpcTransport {
         // note that we connect to the actual url so the server can inform us via subprotocols that it isn't supported,
         // but the global map removes the path as the key for each websocket
         transport = ActiveTransport.get(url);
-
-        // prepare a fallback
-        alternativeTransport = new JsLazy<>(() -> Grpc.WebsocketTransport.onInvoke().onInvoke(options.originalOptions));
     }
 
     @Override
     public void start(JsPropertyMap<HeaderValueUnion> metadata) {
-        if (alternativeTransport.isAvailable()) {
-            alternativeTransport.get().start(new BrowserHeaders(metadata));
-            return;
-        }
         this.transport.retain();
 
         if (transport.webSocket.readyState == WebSocket.CONNECTING) {
@@ -271,24 +242,16 @@ public class MultiplexedWebsocketTransport implements GrpcTransport {
     private void onOpen(Event event) {
         Object protocol = Js.asPropertyMap(transport.webSocket).get("protocol");
 
-        if (protocol.equals(SOCKET_PER_STREAM_PROTOCOL)) {
-            // delegate to plain websocket impl, try to dissuade future users of this server
-            Transport transport = alternativeTransport.get();
-
-            // close our own websocket
-            this.transport.webSocket.close();
-
-            // flush the queued items, which are now the new transport's problems - we'll forward all future work there
-            // as well automatically
-            for (int i = 0; i < sendQueue.size(); i++) {
-                sendQueue.get(i).sendFallback(transport);
-            }
-            sendQueue.clear();
-            return;
-        } else if (!protocol.equals(MULTIPLEX_PROTOCOL)) {
-            // give up, no way to handle this
-            // TODO throw so the user can see this
-            return;
+        if (SOCKET_PER_STREAM_PROTOCOL.equals(protocol)) {
+            DomGlobal.console.error("Deephaven JS API client no longer supports " + SOCKET_PER_STREAM_PROTOCOL);
+            throw new IllegalStateException(SOCKET_PER_STREAM_PROTOCOL
+                    + " is not supported, but was negotiated by the server. Please update your server to support "
+                    + MULTIPLEX_PROTOCOL);
+        } else if (!MULTIPLEX_PROTOCOL.equals(protocol)) {
+            DomGlobal.console.error("Specified server does not support " + MULTIPLEX_PROTOCOL
+                    + ", only reports support for '" + protocol + "'. Make sure this is the right server.");
+            throw new IllegalStateException("Server does not support " + MULTIPLEX_PROTOCOL
+                    + ", only reports support for '" + protocol + "'. Make sure this is the right server.");
         }
         for (int i = 0; i < sendQueue.size(); i++) {
             sendQueue.get(i).send(transport.webSocket, streamId);
@@ -298,30 +261,16 @@ public class MultiplexedWebsocketTransport implements GrpcTransport {
 
     @Override
     public void sendMessage(Uint8Array msgBytes) {
-        if (alternativeTransport.isAvailable()) {
-            alternativeTransport.get().sendMessage(msgBytes);
-            return;
-        }
-
         sendOrEnqueue(new GrpcMessageFrame(msgBytes));
     }
 
     @Override
     public void finishSend() {
-        if (alternativeTransport.isAvailable()) {
-            alternativeTransport.get().finishSend();
-            return;
-        }
-
         sendOrEnqueue(new WebsocketFinishSignal());
     }
 
     @Override
     public void cancel() {
-        if (alternativeTransport.isAvailable()) {
-            alternativeTransport.get().cancel();
-            return;
-        }
         removeHandlers();
     }
 
@@ -337,10 +286,6 @@ public class MultiplexedWebsocketTransport implements GrpcTransport {
     }
 
     private void onClose(Event event) {
-        if (alternativeTransport.isAvailable()) {
-            // must be downgrading to fallback
-            return;
-        }
         // each grpc transport will handle this as an error
         options.onEnd.onEnd(new JsError("Unexpectedly closed " + Js.<CloseEvent>uncheckedCast(event).reason));
         removeHandlers();
