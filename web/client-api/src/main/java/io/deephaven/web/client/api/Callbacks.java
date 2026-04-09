@@ -164,6 +164,7 @@ public interface Callbacks {
         }
     }
 
+    @SuppressWarnings("unusable-by-js")
     record Response<M>(M message, Context context, Metadata trailers) {
     }
 }

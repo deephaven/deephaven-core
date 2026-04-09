@@ -40,4 +40,9 @@
   <set-property name="gwt.uncaughtexceptionhandler.windowonerror" value="IGNORE"/>
 
   <set-property name="jsinterop.checks" value="ENABLED"/>
+
+  <!-- Limit to one permutation, which we'll assume to be "safari" - this is what chromium registers as as well,
+       and for our purposes firefox will be compatible too.
+   -->
+  <set-property name="user.agent" value="safari" />
 </module>
