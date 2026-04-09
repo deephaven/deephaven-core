@@ -212,7 +212,7 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
 
                             @Override
                             public void onCompleted() {
-
+                                c.onCompleted();
                             }
                         });
                         return null;
