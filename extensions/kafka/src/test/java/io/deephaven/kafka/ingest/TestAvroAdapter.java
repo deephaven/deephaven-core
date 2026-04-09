@@ -166,7 +166,7 @@ public class TestAvroAdapter {
                 adapter.handleChunk(inputValues, output);
 
                 for (int ii = 0; ii < 7; ++ii) {
-                    assertThat(output[0].size()).isEqualTo(3);
+                    assertThat(output[ii].size()).isEqualTo(3);
                 }
 
                 assertThat(output[0].asObjectChunk().get(0)).isEqualTo("LN1");
