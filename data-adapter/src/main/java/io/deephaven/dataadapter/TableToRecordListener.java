@@ -12,6 +12,8 @@ import io.deephaven.dataadapter.datafetch.bulk.TableDataArrayRetriever;
 import io.deephaven.dataadapter.rec.MultiRowRecordAdapter;
 import io.deephaven.dataadapter.rec.desc.RecordAdapterDescriptor;
 import io.deephaven.engine.updategraph.TerminalNotification;
+import io.deephaven.internal.log.LoggerFactory;
+import io.deephaven.io.logger.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -27,6 +29,8 @@ import java.util.function.IntConsumer;
  * @param <T> The data type for the records.
  */
 public class TableToRecordListener<T> extends InstrumentedTableUpdateListenerAdapter {
+
+    private static final Logger log = LoggerFactory.getLogger(TableToRecordListener.class);
 
     private final MultiRowRecordAdapter<T> recordAdapter;
 
@@ -103,16 +107,18 @@ public class TableToRecordListener<T> extends InstrumentedTableUpdateListenerAda
             processingThread = new Thread(() -> {
                 while (!isShutdown.get()) {
                     // Drain the queue to an array, then process the updates without
-                    // holding the lock (so LTM isn't blocked for long)
+                    // holding the lock (so update graph isn't blocked for long)
                     final TableUpdates[] tableUpdates;
                     synchronized (recordsQueue) {
                         if (recordsQueue.isEmpty()) {
                             try {
                                 recordsQueue.wait();
                             } catch (InterruptedException e) {
+                                Thread.currentThread().interrupt();
                                 isShutdown.set(true);
                                 recordsQueue.clear();
-                                throw new RuntimeException(e);
+                                log.error(new RuntimeException("TableToRecordListener[" + description + "]: " + Thread.currentThread().getName() + " interrupted", e));
+                                return;
                             }
                         }
 
@@ -145,9 +151,7 @@ public class TableToRecordListener<T> extends InstrumentedTableUpdateListenerAda
         if (processInitialData) {
             if (!getUpdateGraph().sharedLock().isHeldByCurrentThread()
                     && !getUpdateGraph().exclusiveLock().isHeldByCurrentThread()) {
-                throw new IllegalStateException("Cannot process initial if UpdateGraphProcessor is not locked! " +
-                        "Create the TableToRecordListener in a different context or use " +
-                        "UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked() to instantiate under the lock.");
+                throw new IllegalStateException("Cannot process initial data if UpdateGraph lock is not held!");
             }
 
             final RowSet rowSet = table.getRowSet();
@@ -225,11 +229,12 @@ public class TableToRecordListener<T> extends InstrumentedTableUpdateListenerAda
             dataArraysRemoved = tableDataArrayRetriever.createDataArrays(removedRecordsSize);
             tableDataArrayRetriever.fillDataArrays(true, dataArraysRemoved, removedRecordsIndex);
         } else {
-            removedRecordsSize = Integer.MIN_VALUE;
+            removedRecordsSize = 0;
             dataArraysRemoved = null;
         }
 
         if (recordsQueue != null) {
+            // if record listener is async, enqueue the records
             synchronized (recordsQueue) {
                 Assert.eqFalse(isShutdown.get(), "isShutdown");
                 recordsQueue.add(new TableUpdates(UpdateType.ADDED_UPDATED, newRecordsSize, dataArraysAddModify));
@@ -240,6 +245,7 @@ public class TableToRecordListener<T> extends InstrumentedTableUpdateListenerAda
                 recordsQueue.notify();
             }
         } else {
+            // if record listener is synchronous, process them immediately
             processUpdateRecords(UpdateType.ADDED_UPDATED, newRecordsSize, dataArraysAddModify);
             if (processRemoved) {
                 processUpdateRecords(UpdateType.REMOVED_REPLACED, removedRecordsSize, dataArraysRemoved);
@@ -271,6 +277,9 @@ public class TableToRecordListener<T> extends InstrumentedTableUpdateListenerAda
         super.source.removeUpdateListener(this);
         if (isShutdown != null) {
             isShutdown.set(true);
+            synchronized (recordsQueue) {
+                recordsQueue.notifyAll();
+            }
         }
     }
 
@@ -280,7 +289,7 @@ public class TableToRecordListener<T> extends InstrumentedTableUpdateListenerAda
          */
         ADDED_UPDATED,
         /**
-         * Records from the previous data in the table, i.e. removed rows or the 'old' values in rows that were modified
+         * Records from the previous data in the table, i.e. removed rows or the previous values in rows that were modified
          */
         REMOVED_REPLACED
     }
