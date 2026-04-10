@@ -321,7 +321,6 @@ public class KafkaTools {
          */
         public static abstract class KeyOrValueSpec implements SchemaProviderProvider {
 
-
             protected abstract Deserializer<?> getDeserializer(
                     KeyOrValue keyOrValue,
                     SchemaRegistryClient schemaRegistryClient,
@@ -1706,13 +1705,12 @@ public class KafkaTools {
     }
 
     public static class KeyOrValueIngestData {
-
         public Map<String, String> fieldPathToColumnName;
         public int simpleColumnIndex = NULL_COLUMN_INDEX;
         public Function<Object, Object> toObjectChunkMapper = Function.identity();
         public Object extra;
 
-        public boolean isSimple() {
+        private boolean isSimple() {
             return simpleColumnIndex != NULL_COLUMN_INDEX;
         }
     }
