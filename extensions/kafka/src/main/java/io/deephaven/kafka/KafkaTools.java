@@ -336,6 +336,20 @@ public class KafkaTools {
             protected abstract KeyOrValueProcessor getProcessor(
                     TableDefinition tableDef,
                     KeyOrValueIngestData data);
+
+            private KeyOrValueIngestData ingestDataAndIncrement(
+                    KeyOrValue keyOrValue,
+                    SchemaRegistryClient schemaRegistryClient,
+                    Map<String, ?> configs,
+                    MutableInt nextColumnIndexMut,
+                    List<ColumnDefinition<?>> columnDefinitionsOut) {
+                final KeyOrValueIngestData ingestData = getIngestData(keyOrValue, schemaRegistryClient, configs,
+                        nextColumnIndexMut, columnDefinitionsOut);
+                if (ingestData != null && !ingestData.isSimple()) {
+                    nextColumnIndexMut.getAndAdd(ingestData.fieldPathToColumnName.size());
+                }
+                return ingestData;
+            }
         }
 
         private static final KeyOrValueSpec FROM_PROPERTIES = new SimpleConsume(null, null);
@@ -1273,9 +1287,9 @@ public class KafkaTools {
                     cc.setColumnIndex.setColumnIndex(publisherParametersBuilder, nextColumnIndex.getAndIncrement());
                 });
 
-        final KeyOrValueIngestData keyIngestData = keySpec.getIngestData(KeyOrValue.KEY,
+        final KeyOrValueIngestData keyIngestData = keySpec.ingestDataAndIncrement(KeyOrValue.KEY,
                 schemaRegistryClient, configs, nextColumnIndex, columnDefinitions);
-        final KeyOrValueIngestData valueIngestData = valueSpec.getIngestData(KeyOrValue.VALUE,
+        final KeyOrValueIngestData valueIngestData = valueSpec.ingestDataAndIncrement(KeyOrValue.VALUE,
                 schemaRegistryClient, configs, nextColumnIndex, columnDefinitions);
 
         final TableDefinition tableDefinition = TableDefinition.of(columnDefinitions);
@@ -1670,6 +1684,10 @@ public class KafkaTools {
         public int simpleColumnIndex = NULL_COLUMN_INDEX;
         public Function<Object, Object> toObjectChunkMapper = Function.identity();
         public Object extra;
+
+        private boolean isSimple() {
+            return simpleColumnIndex != NULL_COLUMN_INDEX;
+        }
     }
 
     private interface SetColumnIndex {
