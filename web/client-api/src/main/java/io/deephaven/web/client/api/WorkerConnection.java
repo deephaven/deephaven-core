@@ -497,57 +497,6 @@ public class WorkerConnection {
                 return Promise.reject("err");
             }
         });
-        // return UnaryWithHeaders.<ConfigurationConstantsRequest, ConfigurationConstantsResponse>call(
-        // info.getServerUrl(),
-        // metadata(), info.makeRpcOptions(), ConfigService.GetConfigurationConstants,
-        // ConfigurationConstantsRequest.getDefaultInstance())
-        // .then(result -> {
-        // BrowserHeaders headers = result.getHeaders();
-        // // unchecked cast is required here due to "aliasing" in ts/webpack resulting in BrowserHeaders !=
-        // // Metadata
-        // JsArray<String> authorization =
-        // Js.<BrowserHeaders>uncheckedCast(headers).get(FLIGHT_AUTH_HEADER_NAME);
-        // if (authorization.length > 0) {
-        // JsArray<String> existing = metadata().get(FLIGHT_AUTH_HEADER_NAME);
-        // if (!existing.getAt(0).equals(authorization.getAt(0))) {
-        // // use this new token
-        // metadata().set(FLIGHT_AUTH_HEADER_NAME, authorization);
-        // }
-        // }
-        //
-        // // Read the timeout from the server, we'll refresh at less than that
-        // constants = result.getMessage();
-        // ConfigValue sessionDuration = constants.getConfigValuesMap().get("http.session.durationMs");
-        // if (sessionDuration != null && sessionDuration.hasStringValue()) {
-        // sessionTimeoutMs = Double.parseDouble(sessionDuration.getStringValue());
-        // }
-        //
-        // // schedule an update based on our currently configured delay
-        // scheduledAuthUpdate = DomGlobal.setTimeout(ignore -> {
-        // authUpdate();
-        // }, sessionTimeoutMs / 2);
-        //
-        // return Promise.resolve((Void) null);
-        // }).catch_(err -> {
-        // UnaryOutput<?> result = (UnaryOutput<?>) err;
-        // if (result.getStatus() == Code.Unauthenticated) {
-        // // explicitly clear out any metadata for authentication, and signal that auth failed
-        // metadata.delete(FLIGHT_AUTH_HEADER_NAME);
-        //
-        // // Fire an event for the UI to attempt to re-auth
-        // info.fireCriticalEvent(CoreClient.EVENT_RECONNECT_AUTH_FAILED);
-        //
-        // // We return here rather than continue and call checkStatus()
-        // return Promise.reject("Authentication failed, please reconnect");
-        // }
-        // checkStatus(ResponseStreamWrapper.Status.of(result.getStatus(), result.getStatusMessage(),
-        // result.getTrailers()));
-        // if (result.getStatusMessage() != null && !result.getStatusMessage().isEmpty()) {
-        // return Promise.reject(result.getStatusMessage());
-        // } else {
-        // return Promise.reject("Error occurred while authenticating, gRPC status " + result.getStatus());
-        // }
-        // });
     }
 
     private void subscribeToTerminationNotification() {
