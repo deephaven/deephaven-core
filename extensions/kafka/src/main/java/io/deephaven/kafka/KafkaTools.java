@@ -337,42 +337,66 @@ public class KafkaTools {
                     TableDefinition tableDef,
                     KeyOrValueIngestData data);
 
-            private KeyOrValueIngestData ingestDataAndIncrement(
-                    KeyOrValue keyOrValue,
-                    SchemaRegistryClient schemaRegistryClient,
-                    Map<String, ?> configs,
-                    MutableInt nextColumnIndexMut,
-                    List<ColumnDefinition<?>> columnDefinitionsOut) {
+            private KeyOrValueIngestData getIngestDataAndIncrementColumnIndex(
+                    final KeyOrValue keyOrValue,
+                    final SchemaRegistryClient schemaRegistryClient,
+                    final Map<String, ?> configs,
+                    final MutableInt nextColumnIndexMut,
+                    final List<ColumnDefinition<?>> columnDefinitionsOut) {
                 final int ixPre = nextColumnIndexMut.get();
                 final int sizePre = columnDefinitionsOut.size();
                 // It's unfortunate we have to do this; but the getIngestData signature and design of KeyOrValueSpec
-                // would need a breaking change to improve in these regards.
+                // would need a breaking change to improve in these regards. We are trying to be "lenient" for impls
+                // that improperly update nextColumnIndexMut, or setting the wrong index on simpleColumnIndex, and
+                // warn them that it appears they are doing something wrong. If an implementation is improperly adding
+                // to columnsDefinitionOut though, this is a more serious error.
                 final KeyOrValueIngestData ingestData = getIngestData(keyOrValue, schemaRegistryClient, configs,
                         nextColumnIndexMut, columnDefinitionsOut);
                 final int addedIx = nextColumnIndexMut.get() - ixPre;
                 final int addedColumns = columnDefinitionsOut.size() - sizePre;
                 if (ingestData == null) {
-                    // ignore case (or, possible a complex impl that chooses to return null when it's empty):
+                    // ignore case (or, possibly a complex impl that chooses to return null when it's empty):
                     // expecting no modifications
-                    if (addedIx != 0 || addedColumns != 0) {
+                    if (addedColumns != 0) {
                         throw new IllegalStateException(
                                 "KeyOrValueSpec getIngestData is modifying out-variables without returning ingest data");
+                    }
+                    if (addedIx != 0) {
+                        log.warn().append(
+                                "Ignore KeyOrValueSpec getIngestData is improperly mutating the index; manually correcting...")
+                                .endl();
                     }
                 } else if (ingestData.isSimple()) {
                     // simple case:
                     // expecting exactly one increment and one column
-                    if (addedIx != 1 || addedColumns != 1) {
+                    if (addedColumns != 1) {
                         throw new IllegalStateException(
-                                "Simple KeyOrValueSpec getIngestData is not adding exactly one index or one column");
+                                "Simple KeyOrValueSpec getIngestData is not adding exactly one index and one column");
                     }
+                    if (addedIx != 1) {
+                        log.warn().append(
+                                "Simple KeyOrValueSpec did not properly mutate the index by 1; manually correcting...")
+                                .endl();
+                    }
+                    if (ingestData.simpleColumnIndex != ixPre) {
+                        log.warn().append("Simple KeyOrValueSpec set a bad simpleColumnIndex; manually correcting...")
+                                .endl();
+                    }
+                    // The fact that we are setting this here means that this would ideally not be the responsibility of
+                    // the implementation...
+                    ingestData.simpleColumnIndex = ixPre;
                 } else {
                     // complex case:
                     // expecting no increments - we'll increase the index based on any columns that were added
                     if (addedIx != 0) {
-                        throw new IllegalStateException("Complex KeyOrValueSpec getIngestData is mutating the index");
+                        log.warn().append(
+                                "Complex KeyOrValueSpec getIngestData is improperly mutating the index; manually correcting...")
+                                .endl();
                     }
-                    nextColumnIndexMut.getAndAdd(addedColumns);
                 }
+                // The fact that we are setting this here means that this would ideally not be the responsibility of the
+                // implementation...
+                nextColumnIndexMut.set(ixPre + addedColumns);
                 return ingestData;
             }
         }
@@ -1312,9 +1336,9 @@ public class KafkaTools {
                     cc.setColumnIndex.setColumnIndex(publisherParametersBuilder, nextColumnIndex.getAndIncrement());
                 });
 
-        final KeyOrValueIngestData keyIngestData = keySpec.ingestDataAndIncrement(
+        final KeyOrValueIngestData keyIngestData = keySpec.getIngestDataAndIncrementColumnIndex(
                 KeyOrValue.KEY, schemaRegistryClient, configs, nextColumnIndex, columnDefinitions);
-        final KeyOrValueIngestData valueIngestData = valueSpec.ingestDataAndIncrement(
+        final KeyOrValueIngestData valueIngestData = valueSpec.getIngestDataAndIncrementColumnIndex(
                 KeyOrValue.VALUE, schemaRegistryClient, configs, nextColumnIndex, columnDefinitions);
 
         final TableDefinition tableDefinition = TableDefinition.of(columnDefinitions);
