@@ -321,6 +321,7 @@ public class KafkaTools {
          */
         public static abstract class KeyOrValueSpec implements SchemaProviderProvider {
 
+
             protected abstract Deserializer<?> getDeserializer(
                     KeyOrValue keyOrValue,
                     SchemaRegistryClient schemaRegistryClient,
@@ -343,10 +344,35 @@ public class KafkaTools {
                     Map<String, ?> configs,
                     MutableInt nextColumnIndexMut,
                     List<ColumnDefinition<?>> columnDefinitionsOut) {
+                final int ixPre = nextColumnIndexMut.get();
+                final int sizePre = columnDefinitionsOut.size();
+                // It's unfortunate we have to do this; but the getIngestData signature and design of KeyOrValueSpec
+                // would need a breaking change to improve in these regards.
                 final KeyOrValueIngestData ingestData = getIngestData(keyOrValue, schemaRegistryClient, configs,
                         nextColumnIndexMut, columnDefinitionsOut);
-                if (ingestData != null && !ingestData.isSimple()) {
-                    nextColumnIndexMut.getAndAdd(ingestData.fieldPathToColumnName.size());
+                final int addedIx = nextColumnIndexMut.get() - ixPre;
+                final int addedColumns = columnDefinitionsOut.size() - sizePre;
+                if (ingestData == null) {
+                    // ignore case (or, possible a complex impl that chooses to return null when it's empty):
+                    // expecting no modifications
+                    if (addedIx != 0 || addedColumns != 0) {
+                        throw new IllegalStateException(
+                                "KeyOrValueSpec getIngestData is modifying out-variables without returning ingest data");
+                    }
+                } else if (ingestData.isSimple()) {
+                    // simple case:
+                    // expecting exactly one increment and one column
+                    if (addedIx != 1 || addedColumns != 1) {
+                        throw new IllegalStateException(
+                                "Simple KeyOrValueSpec getIngestData is not adding exactly one index or one column");
+                    }
+                } else {
+                    // complex case:
+                    // expecting no increments - we'll increase the index based on any columns that were added
+                    if (addedIx != 0) {
+                        throw new IllegalStateException("Complex KeyOrValueSpec getIngestData is mutating the index");
+                    }
+                    nextColumnIndexMut.getAndAdd(addedColumns);
                 }
                 return ingestData;
             }
@@ -1287,10 +1313,10 @@ public class KafkaTools {
                     cc.setColumnIndex.setColumnIndex(publisherParametersBuilder, nextColumnIndex.getAndIncrement());
                 });
 
-        final KeyOrValueIngestData keyIngestData = keySpec.ingestDataAndIncrement(KeyOrValue.KEY,
-                schemaRegistryClient, configs, nextColumnIndex, columnDefinitions);
-        final KeyOrValueIngestData valueIngestData = valueSpec.ingestDataAndIncrement(KeyOrValue.VALUE,
-                schemaRegistryClient, configs, nextColumnIndex, columnDefinitions);
+        final KeyOrValueIngestData keyIngestData = keySpec.ingestDataAndIncrement(
+                KeyOrValue.KEY, schemaRegistryClient, configs, nextColumnIndex, columnDefinitions);
+        final KeyOrValueIngestData valueIngestData = valueSpec.ingestDataAndIncrement(
+                KeyOrValue.VALUE, schemaRegistryClient, configs, nextColumnIndex, columnDefinitions);
 
         final TableDefinition tableDefinition = TableDefinition.of(columnDefinitions);
         publisherParametersBuilder.setTableDefinition(tableDefinition);
@@ -1680,12 +1706,13 @@ public class KafkaTools {
     }
 
     public static class KeyOrValueIngestData {
+
         public Map<String, String> fieldPathToColumnName;
         public int simpleColumnIndex = NULL_COLUMN_INDEX;
         public Function<Object, Object> toObjectChunkMapper = Function.identity();
         public Object extra;
 
-        private boolean isSimple() {
+        public boolean isSimple() {
             return simpleColumnIndex != NULL_COLUMN_INDEX;
         }
     }
