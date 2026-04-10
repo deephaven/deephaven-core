@@ -742,9 +742,9 @@ public class KeyedRecordAdapter<K, T> {
         // data fetched from the engine into user-friendly row data)
         final int nRetrievedRecords = recordDataRowKeys.size();
         final T[] recordsArr =
-                multiRowRecordAdapter.createRecordsFromData(recordDataArrsRef.getValue(), nRetrievedRecords);
+                multiRowRecordAdapter.createRecordsFromData(recordDataArrsRef.get(), nRetrievedRecords);
 
-        return new Result<>(recordDataRowKeys, dbRowKeyToDataKeyPositionalIndexRef.getValue(), nRetrievedRecords,
+        return new Result<>(recordDataRowKeys, dbRowKeyToDataKeyPositionalIndexRef.get(), nRetrievedRecords,
                 recordsArr);
     }
 
