@@ -71,10 +71,10 @@ class KafkaToolsIntegrationTest {
         framework.tearDown();
     }
 
-    // @ParameterizedTest(name = "simpleCheck {0}")
-    // @EnumSource
-    // @Timeout(10)
-    void simpleCheck(final KafkaService kafkaService, final TestInfo testInfo) throws Exception {
+    @ParameterizedTest(name = "simpleKeySimpleValue {0}")
+    @EnumSource
+    @Timeout(10)
+    void simpleKeySimpleValue(final KafkaService kafkaService, final TestInfo testInfo) throws Exception {
         kafkaService.init();
         final String topic = sanitizedTopicName(testInfo);
         final String keyName = "Key";
