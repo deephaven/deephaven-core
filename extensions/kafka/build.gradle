@@ -3,6 +3,11 @@ plugins {
     id 'io.deephaven.project.register'
 }
 
+evaluationDependsOn Docker.registryProject('cp-kafka')
+evaluationDependsOn Docker.registryProject('kafka')
+evaluationDependsOn Docker.registryProject('kafka-native')
+evaluationDependsOn Docker.registryProject('redpanda')
+
 description 'Kafka: Integrating Engine tables with Kafka'
 
 dependencies {
@@ -40,8 +45,17 @@ dependencies {
     compileOnly project(':util-immutables')
     annotationProcessor libs.immutables.value
 
+    testImplementation libs.testcontainers
+    testImplementation libs.testcontainers.kafka
+    testImplementation libs.testcontainers.redpanda
+
+    testImplementation project(':engine-test-utils')
+
+    testImplementation project(':extensions-json-jackson')
+
     testImplementation platform(libs.junit.bom)
     testImplementation libs.junit.jupiter
+    testImplementation libs.junit.jupiter.params
     testRuntimeOnly libs.junit.jupiter.engine
     testRuntimeOnly libs.junit.platform.launcher
 
@@ -54,5 +68,28 @@ dependencies {
 }
 
 test {
-    useJUnitPlatform()
+    useJUnitPlatform {
+        excludeTags("testcontainers")
+    }
+}
+
+tasks.register('testOutOfBand', Test) {
+    useJUnitPlatform {
+        includeTags("testcontainers")
+    }
+
+    dependsOn Docker.registryTask(project, 'cp-kafka')
+    systemProperty 'testcontainers.cp-kafka.image', Docker.localImageName('cp-kafka')
+
+    dependsOn Docker.registryTask(project, 'kafka')
+    systemProperty 'testcontainers.kafka.image', Docker.localImageName('kafka')
+
+    dependsOn Docker.registryTask(project, 'kafka-native')
+    systemProperty 'testcontainers.kafka-native.image', Docker.localImageName('kafka-native')
+
+    dependsOn Docker.registryTask(project, 'redpanda')
+    systemProperty 'testcontainers.redpanda.image', Docker.localImageName('redpanda')
+
+    // Kafka client logging is very verbose; tune it down to only log warn or more severe
+    systemProperty 'org.slf4j.simpleLogger.log.org.apache.kafka', 'warn'
 }

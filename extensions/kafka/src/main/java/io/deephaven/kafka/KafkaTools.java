@@ -113,6 +113,7 @@ import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.VisibleForTesting;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -1034,7 +1035,20 @@ public class KafkaTools {
             @NotNull final Consume.KeyOrValueSpec keySpec,
             @NotNull final Consume.KeyOrValueSpec valueSpec,
             @NotNull final TableType tableType) {
-        final MutableObject<Table> resultHolder = new MutableObject<>();
+        return consumeToTableAndAdapter(kafkaProperties, topic, partitionFilter, partitionToInitialOffset, keySpec,
+                valueSpec, tableType).table();
+    }
+
+    @VisibleForTesting
+    static TableAndAdapter consumeToTableAndAdapter(
+            @NotNull final Properties kafkaProperties,
+            @NotNull final String topic,
+            @NotNull final IntPredicate partitionFilter,
+            @NotNull final IntToLongFunction partitionToInitialOffset,
+            @NotNull final Consume.KeyOrValueSpec keySpec,
+            @NotNull final Consume.KeyOrValueSpec valueSpec,
+            @NotNull final TableType tableType) {
+        final MutableObject<TableAndAdapter> resultHolder = new MutableObject<>();
         final ExecutionContext enclosingExecutionContext = ExecutionContext.getContext();
         final LivenessManager enclosingLivenessManager = LivenessScopeStack.peek();
 
@@ -1052,14 +1066,35 @@ public class KafkaTools {
                         final Table blinkTable = streamToBlinkTableAdapter.table();
                         final Table result = tableType.walk(new BlinkTableOperation(blinkTable));
                         enclosingLivenessManager.manage(result);
-                        resultHolder.setValue(result);
+                        // Note: not adding streamToBlinkTableAdapter to liveness manager; liveness is expected to be
+                        // retained through the result table. This is only relevant for testing.
+                        resultHolder.setValue(new TableAndAdapter(result, streamToBlinkTableAdapter));
                     }
                 };
 
         consume(kafkaProperties, topic, partitionFilter,
                 InitialOffsetLookup.adapt(partitionToInitialOffset), keySpec, valueSpec,
                 StreamConsumerRegistrarProvider.single(registrar), null);
-        return resultHolder.getValue();
+        return resultHolder.get();
+    }
+
+    @VisibleForTesting
+    static class TableAndAdapter {
+        private final Table table;
+        private final StreamToBlinkTableAdapter adapter;
+
+        private TableAndAdapter(Table table, StreamToBlinkTableAdapter adapter) {
+            this.table = Objects.requireNonNull(table);
+            this.adapter = Objects.requireNonNull(adapter);
+        }
+
+        public Table table() {
+            return table;
+        }
+
+        public StreamToBlinkTableAdapter adapter() {
+            return adapter;
+        }
     }
 
     /**
