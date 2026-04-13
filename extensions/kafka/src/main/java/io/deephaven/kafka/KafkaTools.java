@@ -353,47 +353,49 @@ public class KafkaTools {
                 // to columnsDefinitionOut though, this is a more serious error.
                 final KeyOrValueIngestData ingestData = getIngestData(keyOrValue, schemaRegistryClient, configs,
                         nextColumnIndexMut, columnDefinitionsOut);
-                final int addedIx = nextColumnIndexMut.get() - ixPre;
+                // Note: choosing to _not_ log warning when caller is mutating the index "incorrectly", but keeping code
+                // commented out here for future reference.
+                // final int addedIx = nextColumnIndexMut.get() - ixPre;
                 final int addedColumns = columnDefinitionsOut.size() - sizePre;
                 if (ingestData == null) {
                     // ignore case (or, possibly a complex impl that chooses to return null when it's empty):
                     // expecting no modifications
                     if (addedColumns != 0) {
                         throw new IllegalStateException(
-                                "KeyOrValueSpec getIngestData is modifying out-variables without returning ingest data");
+                                "KeyOrValueSpec getIngestData is modifying columnDefinitionsOut without returning ingest data");
                     }
-                    if (addedIx != 0) {
-                        log.warn().append(
-                                "Ignore KeyOrValueSpec getIngestData is improperly mutating the index; manually correcting...")
-                                .endl();
-                    }
+                    // if (addedIx != 0) {
+                    // log.warn().append(
+                    // "Ignore KeyOrValueSpec getIngestData is improperly mutating the index; manually correcting...")
+                    // .endl();
+                    // }
                 } else if (ingestData.isSimple()) {
                     // simple case:
                     // expecting exactly one increment and one column
                     if (addedColumns != 1) {
                         throw new IllegalStateException(
-                                "Simple KeyOrValueSpec getIngestData is not adding exactly one index and one column");
+                                "Simple KeyOrValueSpec getIngestData is not adding exactly one column");
                     }
-                    if (addedIx != 1) {
-                        log.warn().append(
-                                "Simple KeyOrValueSpec did not properly mutate the index by 1; manually correcting...")
-                                .endl();
-                    }
-                    if (ingestData.simpleColumnIndex != ixPre) {
-                        log.warn().append("Simple KeyOrValueSpec set a bad simpleColumnIndex; manually correcting...")
-                                .endl();
-                    }
+                    // if (addedIx != 1) {
+                    // log.warn().append(
+                    // "Simple KeyOrValueSpec did not properly mutate the index by 1; manually correcting...")
+                    // .endl();
+                    // }
+                    // if (ingestData.simpleColumnIndex != ixPre) {
+                    // log.warn().append("Simple KeyOrValueSpec set a bad simpleColumnIndex; manually correcting...")
+                    // .endl();
+                    // }
                     // The fact that we are setting this here means that this would ideally not be the responsibility of
                     // the implementation...
                     ingestData.simpleColumnIndex = ixPre;
                 } else {
                     // complex case:
                     // expecting no increments - we'll increase the index based on any columns that were added
-                    if (addedIx != 0) {
-                        log.warn().append(
-                                "Complex KeyOrValueSpec getIngestData is improperly mutating the index; manually correcting...")
-                                .endl();
-                    }
+                    // if (addedIx != 0) {
+                    // log.warn().append(
+                    // "Complex KeyOrValueSpec getIngestData is improperly mutating the index; manually correcting...")
+                    // .endl();
+                    // }
                 }
                 // The fact that we are setting this here means that this would ideally not be the responsibility of the
                 // implementation...
