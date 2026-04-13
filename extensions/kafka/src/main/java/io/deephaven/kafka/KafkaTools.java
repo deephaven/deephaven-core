@@ -1093,7 +1093,7 @@ public class KafkaTools {
                         final Table result = tableType.walk(new BlinkTableOperation(blinkTable));
                         enclosingLivenessManager.manage(result);
                         // Note: not adding streamToBlinkTableAdapter to liveness manager; liveness is expected to be
-                        // retained through the result table. This is only relevant for testing.
+                        // retained through the result table. The extra result (the adapter) is only used for testing.
                         resultHolder.setValue(new TableAndAdapter(result, streamToBlinkTableAdapter));
                     }
                 };
