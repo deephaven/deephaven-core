@@ -143,6 +143,10 @@
                 "path": "conceptual/column-types.md"
               },
               {
+                "label": "Deephaven Vectors",
+                "path": "conceptual/arrays-vs-vectors.md"
+              },
+              {
                 "label": "Core API design",
                 "path": "conceptual/deephaven-core-api.md"
               },
@@ -893,6 +897,10 @@
               {
                 "label": "Create your own plugin",
                 "path": "how-to-guides/create-plugins.md"
+              },
+              {
+                "label": "Create a JavaScript plugin",
+                "path": "how-to-guides/create-js-plugins.md"
               }
             ]
           },
