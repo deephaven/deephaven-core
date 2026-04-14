@@ -117,7 +117,8 @@ public class TableToRecordListener<T> extends InstrumentedTableUpdateListenerAda
                                 Thread.currentThread().interrupt();
                                 isShutdown.set(true);
                                 recordsQueue.clear();
-                                log.error(new RuntimeException("TableToRecordListener[" + description + "]: " + Thread.currentThread().getName() + " interrupted", e));
+                                log.error(new RuntimeException("TableToRecordListener[" + description + "]: "
+                                        + Thread.currentThread().getName() + " interrupted", e));
                                 return;
                             }
                         }
@@ -289,7 +290,8 @@ public class TableToRecordListener<T> extends InstrumentedTableUpdateListenerAda
          */
         ADDED_UPDATED,
         /**
-         * Records from the previous data in the table, i.e. removed rows or the previous values in rows that were modified
+         * Records from the previous data in the table, i.e. removed rows or the previous values in rows that were
+         * modified
          */
         REMOVED_REPLACED
     }

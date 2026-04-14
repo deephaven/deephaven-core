@@ -22,10 +22,17 @@ import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.util.codegen.CodeGenerator;
 import org.jetbrains.annotations.NotNull;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
+
 import static io.deephaven.dataadapter.rec.json.JsonRecordAdapterUtil.CONVERTIBLE_TO_STRING_CLASSES;
 
 /**
  * Generates a class that efficiently populates JSON ObjectNodes with data from arrays.
+ * <p>
+ * Supported column types include primitives, strings, CharSequence, selected temporal types (see
+ * {@link JsonRecordAdapterUtil#CONVERTIBLE_TO_STRING_CLASSES}), and ObjectNode-compatible reference types such as
+ * {@code Boolean}, {@code BigInteger}, {@code BigDecimal}, and {@code byte[]}.
  */
 public class JsonRecordAdapterGenerator {
 
@@ -210,24 +217,38 @@ public class JsonRecordAdapterGenerator {
         return g.freeze();
     }
 
+    /**
+     * Determines whether a column value requires mapping (e.g., {@code char} to string or {@code toString()} for
+     * specific reference types) before insertion into an {@link ObjectNode}. Returns {@code null} when the value can be
+     * passed directly to {@link ObjectNode#put} or the primitive overloads.
+     *
+     * @param colType The column's data type.
+     * @return A {@link Pair} of mapped type name and mapping expression, or {@code null} for direct puts.
+     */
     private static Pair<String, String> getValMapper(@NotNull final Class<?> colType) {
         final boolean isString = String.class.equals(colType);
+        final boolean isDirectObjectNodePut = isString
+                || Boolean.class.equals(colType)
+                || byte[].class.equals(colType)
+                || BigDecimal.class.equals(colType)
+                || BigInteger.class.equals(colType);
 
-        final boolean isConvertibleToString = !isString &&
-                (CharSequence.class.isAssignableFrom(colType) || CONVERTIBLE_TO_STRING_CLASSES.contains(colType));
+        final boolean isConvertibleToString = !isDirectObjectNodePut
+                && (CharSequence.class.isAssignableFrom(colType)
+                        || CONVERTIBLE_TO_STRING_CLASSES.contains(colType));
 
         if (isConvertibleToString) {
             return new Pair<>("String", "val.toString()");
-        } else if (!isString && !colType.isPrimitive()) {
-            // Other reference type are unsupported
-            throw new IllegalArgumentException(
-                    "Could not update ObjectNode with column of type: " + colType.getCanonicalName());
-        } else if (char.class.equals(colType)) {
+        }
+        if (char.class.equals(colType)) {
             return new Pair<>("String", "Character.toString(val)");
-        } else {
-            // strings and other primitive types are supported directly
+        }
+        if (isDirectObjectNodePut || colType.isPrimitive()) {
             return null;
         }
+        // Other reference type are unsupported
+        throw new IllegalArgumentException(
+                "Could not update ObjectNode with column of type: " + colType.getCanonicalName());
     }
 
 }
