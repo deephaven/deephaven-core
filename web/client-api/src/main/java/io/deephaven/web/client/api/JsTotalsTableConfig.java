@@ -26,7 +26,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 /**
@@ -258,11 +257,17 @@ public class JsTotalsTableConfig {
                             .setColumnName("Count")
                             .build();
                     agg.setCount(count);
-                    aggColumns.forEach((p0) -> {
-                        String colName = p0.split("=")[0].trim();
+                    boolean dropCount = true;
+                    for (String pair : aggColumns) {
+                        String colName = pair.split("=")[0].trim();
+                        if (colName.equals("Count")) {
+                            dropCount = false;
+                        }
                         customColumns.push(colName + " = Count");
-                    });
-                    dropColumns.push("Count");
+                    }
+                    if (dropCount) {
+                        dropColumns.push("Count");
+                    }
                     break;
                 }
                 case JsAggregationOperation.COUNT_DISTINCT: {

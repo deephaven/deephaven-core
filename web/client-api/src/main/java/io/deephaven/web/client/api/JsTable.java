@@ -1076,39 +1076,30 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
             List<String> updateViewExprs = directive.getCustomColumns().asList();
             List<String> dropColumns = directive.getDropColumns().asList();
             requestMessage.setSourceId(target.getHandle().makeTableReference());
-            requestMessage.setResultId(newState.getHandle().makeTicket());
+            Ticket resultTicket = newState.getHandle().makeTicket();
             if (!updateViewExprs.isEmpty()) {
-                SelectOrUpdateRequest.Builder columnExpr = SelectOrUpdateRequest.newBuilder()
-                        .setResultId(requestMessage.getResultId())
-                        .addAllColumnSpecs(updateViewExprs)
-                        .setSourceId(TableReference.newBuilder().setBatchOffset(0));
                 BatchTableRequest.Builder batch = BatchTableRequest.newBuilder();
 
+                batch.addOps(BatchTableRequest.Operation.newBuilder()
+                        .setAggregate(requestMessage));
+
+                SelectOrUpdateRequest.Builder columnExpr = SelectOrUpdateRequest.newBuilder()
+                        .addAllColumnSpecs(updateViewExprs)
+                        .setSourceId(TableReference.newBuilder().setBatchOffset(0));
+
                 if (!dropColumns.isEmpty()) {
-                    columnExpr.clearResultId();
-                    DropColumnsRequest drop = DropColumnsRequest.newBuilder()
-                            .addAllColumnNames(dropColumns)
-                            .setResultId(requestMessage.getResultId())
-                            .setSourceId(TableReference.newBuilder().setBatchOffset(1))
-                            .build();
-
-                    BatchTableRequest.Operation.Builder dropOp = BatchTableRequest.Operation.newBuilder()
-                            .setDropColumns(drop);
-                    batch.addOps(dropOp);
+                    batch.addOps(BatchTableRequest.Operation.newBuilder()
+                            .setUpdateView(columnExpr));
+                    batch.addOps(BatchTableRequest.Operation.newBuilder()
+                            .setDropColumns(DropColumnsRequest.newBuilder()
+                                    .addAllColumnNames(dropColumns)
+                                    .setResultId(resultTicket)
+                                    .setSourceId(TableReference.newBuilder().setBatchOffset(1))));
+                } else {
+                    batch.addOps(BatchTableRequest.Operation.newBuilder()
+                            .setUpdateView(columnExpr
+                                    .setResultId(resultTicket)));
                 }
-
-                // TODO read this whole change more carefully, builder/immutable semantics make this different than
-                // before
-                requestMessage.clearResultId();
-                BatchTableRequest.Operation aggOp = BatchTableRequest.Operation.newBuilder()
-                        .setAggregate(requestMessage)
-                        .build();
-                BatchTableRequest.Operation colsOp = BatchTableRequest.Operation.newBuilder()
-                        .setUpdateView(columnExpr)
-                        .build();
-
-                batch.addOps(aggOp);
-                batch.addOps(colsOp);
                 ResponseStreamWrapper<ExportedTableCreationResponse> stream = ResponseStreamWrapper
                         .of(observer -> workerConnection.tableServiceClient().batch(batch.build(), observer));
                 stream.onData(creationResponse -> {
@@ -1124,6 +1115,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                     }
                 });
             } else {
+                requestMessage.setResultId(resultTicket);
                 workerConnection.tableServiceClient().aggregate(requestMessage.build(), callback);
             }
         };

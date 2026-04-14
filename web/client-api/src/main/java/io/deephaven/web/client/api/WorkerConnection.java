@@ -616,7 +616,7 @@ public class WorkerConnection {
         // Flag is temporary, as long as we're sure there are no ill effects from the feature.
         ConfigValue disableCloseOnDisconnect = getServerConfigValue("web.disableCloseSessionOnDisconnect");
         if (disableCloseOnDisconnect == null || !disableCloseOnDisconnect.hasStringValue()) {
-            sessionServiceClient.closeSession(HandshakeRequest.getDefaultInstance(), null);
+            sessionServiceClient.closeSession(HandshakeRequest.getDefaultInstance(), Callbacks.ignore());
         }
         info.logout();
     }
