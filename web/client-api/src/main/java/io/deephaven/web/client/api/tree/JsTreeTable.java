@@ -432,12 +432,12 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
         }
         Ticket ticket = connection.getTickets().newExportTicket();
         sortedTable = new TicketAndPromise<>(ticket, Callbacks.<HierarchicalTableApplyResponse>grpcUnaryPromise(c -> {
-            HierarchicalTableApplyRequest applyFilter = HierarchicalTableApplyRequest.newBuilder()
+            HierarchicalTableApplyRequest applySort = HierarchicalTableApplyRequest.newBuilder()
                     .addAllSorts(nextSort.stream().map(Sort::makeDescriptor).collect(Collectors.toList()))
                     .setInputHierarchicalTableId(prevTicket.ticket())
                     .setResultHierarchicalTableId(ticket)
                     .build();
-            connection.hierarchicalTableServiceClient().apply(applyFilter, c);
+            connection.hierarchicalTableServiceClient().apply(applySort, c);
         }), connection);
         return sortedTable;
     }
