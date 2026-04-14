@@ -3,10 +3,17 @@ plugins {
     id 'io.deephaven.project.register'
 }
 
-evaluationDependsOn Docker.registryProject('cp-kafka')
-evaluationDependsOn Docker.registryProject('kafka')
-evaluationDependsOn Docker.registryProject('kafka-native')
-evaluationDependsOn Docker.registryProject('redpanda')
+def kafka_images = [
+        'cp-kafka',
+        'kafka',
+        // Disabling kafka-native for now, as it occasionally has segmentation fault on startup
+        // https://issues.apache.org/jira/browse/KAFKA-20314
+        // 'kafka-native',
+        'redpanda'
+]
+kafka_images.each { name ->
+    evaluationDependsOn Docker.registryProject(name)
+}
 
 description 'Kafka: Integrating Engine tables with Kafka'
 
@@ -78,17 +85,10 @@ tasks.register('testOutOfBand', Test) {
         includeTags("testcontainers")
     }
 
-    dependsOn Docker.registryTask(project, 'cp-kafka')
-    systemProperty 'testcontainers.cp-kafka.image', Docker.localImageName('cp-kafka')
-
-    dependsOn Docker.registryTask(project, 'kafka')
-    systemProperty 'testcontainers.kafka.image', Docker.localImageName('kafka')
-
-    dependsOn Docker.registryTask(project, 'kafka-native')
-    systemProperty 'testcontainers.kafka-native.image', Docker.localImageName('kafka-native')
-
-    dependsOn Docker.registryTask(project, 'redpanda')
-    systemProperty 'testcontainers.redpanda.image', Docker.localImageName('redpanda')
+    kafka_images.each { name ->
+        dependsOn Docker.registryTask(project, name)
+        systemProperty "testcontainers.${name}.image", Docker.localImageName(name)
+    }
 
     // Kafka client logging is very verbose; tune it down to only log warn or more severe
     systemProperty 'org.slf4j.simpleLogger.log.org.apache.kafka', 'warn'

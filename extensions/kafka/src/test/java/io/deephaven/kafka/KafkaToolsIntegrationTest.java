@@ -22,6 +22,7 @@ import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestInfo;
@@ -75,6 +76,7 @@ class KafkaToolsIntegrationTest {
     @EnumSource
     @Timeout(10)
     void simpleKeySimpleValue(final KafkaService kafkaService, final TestInfo testInfo) throws Exception {
+        Assumptions.assumeTrue(kafkaService.isEnabled());
         kafkaService.init();
         final String topic = sanitizedTopicName(testInfo);
         final String keyName = "Key";
@@ -136,6 +138,7 @@ class KafkaToolsIntegrationTest {
     @EnumSource
     @Timeout(10)
     void jsonKeySimpleValue(final KafkaService kafkaService, final TestInfo testInfo) throws Exception {
+        Assumptions.assumeTrue(kafkaService.isEnabled());
         kafkaService.init();
         final String topic = sanitizedTopicName(testInfo);
         final String keyName = "Foo";
@@ -198,6 +201,7 @@ class KafkaToolsIntegrationTest {
     @EnumSource
     @Timeout(10)
     void jsonKeyJsonValue(final KafkaService kafkaService, final TestInfo testInfo) throws Exception {
+        Assumptions.assumeTrue(kafkaService.isEnabled());
         kafkaService.init();
         final String topic = sanitizedTopicName(testInfo);
         final String fooName = "Foo";

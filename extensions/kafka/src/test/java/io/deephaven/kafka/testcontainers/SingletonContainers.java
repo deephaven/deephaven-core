@@ -11,6 +11,7 @@ import org.testcontainers.redpanda.RedpandaContainer;
 import org.testcontainers.utility.DockerImageName;
 
 import java.util.Map;
+import java.util.Objects;
 
 final class SingletonContainers {
 
@@ -20,7 +21,7 @@ final class SingletonContainers {
      * an ad-hoc basis (by setting the appropriate system property, or by temporarily updating the docker/registry/), or
      * more permanently by adding variants with explicit versions, ie, KAFKA_3_9, KAFKA_4_0, KAFKA_4_1, etc.
      */
-    private enum Name {
+    public enum Name {
         // @formatter:off
         CONFLUENT_KAFKA("cp-kafka", "confluentinc/cp-kafka"),
         KAFKA("kafka", "apache/kafka"),
@@ -28,11 +29,20 @@ final class SingletonContainers {
         REDPANDA("redpanda", "redpandadata/redpanda");
         // @formatter:on
 
-        private final DockerImageName imageName;
+        private final String deephavenImageName;
+        private final String canonicalImageName;
 
-        Name(String deephavenName, String imageName) {
-            final String value = System.getProperty(String.format("testcontainers.%s.image", deephavenName));
-            this.imageName = DockerImageName.parse(value).asCompatibleSubstituteFor(imageName);
+        Name(String deephavenName, String canonicalImageName) {
+            this.deephavenImageName = System.getProperty(String.format("testcontainers.%s.image", deephavenName));
+            this.canonicalImageName = Objects.requireNonNull(canonicalImageName);
+        }
+
+        public boolean isEnabled() {
+            return deephavenImageName != null;
+        }
+
+        public DockerImageName imageName() {
+            return DockerImageName.parse(deephavenImageName).asCompatibleSubstituteFor(canonicalImageName);
         }
     }
 
@@ -49,7 +59,7 @@ final class SingletonContainers {
 
     public static final class ConfluentKafka {
         private static final ConfluentKafkaContainer CONTAINER =
-                new ConfluentKafkaContainer(Name.CONFLUENT_KAFKA.imageName);
+                new ConfluentKafkaContainer(Name.CONFLUENT_KAFKA.imageName());
 
         static {
             startAndAddShutdownHook(CONTAINER);
@@ -71,7 +81,7 @@ final class SingletonContainers {
     }
 
     public static final class Kafka {
-        private static final KafkaContainer CONTAINER = new KafkaContainer(Name.KAFKA.imageName);
+        private static final KafkaContainer CONTAINER = new KafkaContainer(Name.KAFKA.imageName());
 
         static {
             startAndAddShutdownHook(CONTAINER);
@@ -93,7 +103,7 @@ final class SingletonContainers {
     }
 
     public static final class KafkaNative {
-        private static final KafkaContainer CONTAINER = new KafkaContainer(Name.KAFKA_NATIVE.imageName);
+        private static final KafkaContainer CONTAINER = new KafkaContainer(Name.KAFKA_NATIVE.imageName());
 
         static {
             startAndAddShutdownHook(CONTAINER);
@@ -115,7 +125,7 @@ final class SingletonContainers {
     }
 
     public static final class Redpanda {
-        private static final RedpandaContainer CONTAINER = new RedpandaContainer(Name.REDPANDA.imageName);
+        private static final RedpandaContainer CONTAINER = new RedpandaContainer(Name.REDPANDA.imageName());
 
         static {
             startAndAddShutdownHook(CONTAINER);
