@@ -194,7 +194,11 @@ public class BatchBuilder {
             }
 
             // Each BatchOp is assumed to have one source table and a list of specific ordered operations to produce
-            // a target. Intermediate items each use the offset before them
+            // a target. The first operation always references its source by ticket (not batchOffset), and subsequent
+            // operations within the same BatchOp chain each other via batchOffset. Because each BatchOp independently
+            // references an exported source ticket, internalOffset correctly restarts at -1 for each BatchOp — the
+            // batchOffset values are only used within a single chain, and the intermediate result between chains is
+            // exported with its own ticket (see maybeInsertInterimTable / insertOp in RequestBatcher).
             Supplier<TableReference> prevTableSupplier = new Supplier<>() {
                 // initialize as -1 because a reference to the "first" will be zero
                 int internalOffset = -1;
