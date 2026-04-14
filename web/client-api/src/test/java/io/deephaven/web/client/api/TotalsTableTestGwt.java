@@ -396,8 +396,8 @@ public class TotalsTableTestGwt extends AbstractAsyncGwtTestCase {
 
     /**
      * Count aggregation triggers the batch path in fetchTotals: aggregate creates a synthetic "Count" column,
-     * updateView renames it to each target column (e.g. "I = Count"), then drop removes "Count". With incorrect
-     * batch ordering (drop before updateView), the updateView fails because "Count" was already removed.
+     * updateView renames it to each target column (e.g. "I = Count"), then drop removes "Count". With incorrect batch
+     * ordering (drop before updateView), the updateView fails because "Count" was already removed.
      */
     public void testCountAggBatchOrdering() {
         connect(tables)
@@ -434,9 +434,8 @@ public class TotalsTableTestGwt extends AbstractAsyncGwtTestCase {
     }
 
     /**
-     * Tests that a user column literally named "Count" survives Count aggregation. The COUNT case in
-     * JsTotalsTableConfig.buildRequest hardcodes dropColumns.push("Count") to remove its synthetic intermediate
-     * column, but this also drops any user column with the same name.
+     * Tests that a user column literally named "Count" survives Count aggregation, despite being a hardcoded column
+     * name.
      */
     public void testColumnNamedCountNotDropped() {
         connect(tables)
