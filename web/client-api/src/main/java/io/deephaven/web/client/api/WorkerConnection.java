@@ -494,7 +494,7 @@ public class WorkerConnection {
                                     + ex.getStatus().getCode().name());
                 }
             } else {
-                return Promise.reject("err");
+                return Promise.reject(err);
             }
         });
     }

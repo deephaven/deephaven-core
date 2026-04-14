@@ -142,8 +142,10 @@ public class AuthenticationInterceptor implements ClientInterceptor {
 
             if (state == State.UNAUTHENTICATED) {
                 assert lastHeaderValue == null;
-                headers.put(AUTHORIZATION_HEADER, headerToSet);
-                state = State.PENDING;
+                if (headerToSet != null) {
+                    headers.put(AUTHORIZATION_HEADER, headerToSet);
+                    state = State.PENDING;
+                }
             } else if (state == State.AUTHENTICATED) {
                 assert headerToSet == null;
                 assert lastHeaderValue != null;
