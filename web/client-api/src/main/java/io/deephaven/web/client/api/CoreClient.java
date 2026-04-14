@@ -130,6 +130,12 @@ public class CoreClient extends HasEventHandling {
         return login(Js.cast(LoginCredentials.reconnect(JsRefreshToken.fromObject(token).getBytes())));
     }
 
+    /**
+     * Resolves when the client is connected.
+     *
+     * @param timeoutInMillis ignored, only exists for legacy callers
+     * @return a promise that resolves when connection is established, or rejects if connection fails
+     */
     public Promise<Void> onConnected(@JsOptional @JsNullable Double timeoutInMillis) {
         return ideConnection.onConnected();
     }
