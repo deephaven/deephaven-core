@@ -14,6 +14,7 @@ import io.deephaven.web.client.api.WorkerConnection;
 import io.deephaven.web.client.api.console.JsVariableChanges;
 import io.deephaven.web.client.api.console.JsVariableDescriptor;
 import io.deephaven.web.client.api.console.JsVariableType;
+import io.deephaven.web.client.api.grpc.FetchTransport;
 import io.deephaven.web.client.api.grpc.MultiplexedWebsocketTransport;
 import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.shared.data.ConnectToken;
@@ -69,6 +70,8 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
             // assign a default transport factory
             if (options.useWebsockets == Boolean.TRUE || !serverUrl.startsWith("https:")) {
                 options.transportFactory = new MultiplexedWebsocketTransport.Factory();
+            } else {
+                options.transportFactory = new FetchTransport.Factory();
             }
         }
     }

@@ -237,7 +237,7 @@ public class RequestBatcher {
             final ClientTableState source = operationHead.getAppendTo();
             assert source != null : "A non-empty request must have a source state!";
 
-            JsLog.debug("Sending request", LazyString.of(request), request, " based on ", this);
+            JsLog.debug("Sending request based on ", this);
 
 
             ResponseStreamWrapper<ExportedTableCreationResponse> batchStream =

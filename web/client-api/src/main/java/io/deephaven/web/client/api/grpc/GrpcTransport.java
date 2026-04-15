@@ -11,7 +11,7 @@ import jsinterop.base.JsPropertyMap;
 /**
  * gRPC transport implementation.
  */
-@JsType(namespace = "dh.grpc", isNative = true)
+@JsType(namespace = "dh.grpc")
 @TsInterface
 public interface GrpcTransport {
     /**
