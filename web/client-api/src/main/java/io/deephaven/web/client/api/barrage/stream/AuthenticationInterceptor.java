@@ -51,13 +51,18 @@ public class AuthenticationInterceptor implements ClientInterceptor {
     private State state = State.UNAUTHENTICATED;
 
     public void login(String authType, String authToken) {
-        this.headerToSet = (authType + " " + authToken).trim();
+        if (authToken == null) {
+            this.headerToSet = authType;
+        } else {
+            this.headerToSet = (authType + " " + authToken).trim();
+        }
         lastHeaderValue = null;
     }
 
     public void deauth() {
-        assert state != State.PENDING || pending.isEmpty();
         state = State.UNAUTHENTICATED;
+
+        // If there were any pending calls, let them complete (and fail) now.
         flushPending();
     }
 
