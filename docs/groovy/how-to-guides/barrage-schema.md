@@ -18,7 +18,7 @@ Use this when your Deephaven column type is too generic for the intended wire ty
 
 ## Example: Annotate `Union<String, Double>` Columns
 
-The following example creates a table with a column of Objects (limited for this example to `String` and `Double`). The Arrow schema created annotates the column as a dense union with `String` and `Double` branches. The final table can be exported over Flight / Barrage without error. 
+The following example creates a table with a column of Objects (limited for this example to `String` and `Double`). The Arrow schema created annotates the column as a dense union with `String` and `Double` branches. The final table can be exported over Flight / Barrage without error.
 
 ```groovy
 /////////////////////////////////////////////////////////
@@ -334,4 +334,3 @@ def new_schema = new Schema(fields)
 // 7. Apply attributes, creating a new table reference which can be used for export
 map_union_table_w_attributes = map_union_table.withAttributes(java.util.Map.of(Table.BARRAGE_SCHEMA_ATTRIBUTE, new_schema))
 ```
-
