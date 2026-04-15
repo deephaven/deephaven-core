@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.web.client.api.grpc;
 
 import elemental2.core.JsArray;
@@ -99,7 +102,7 @@ public class FetchTransport implements GrpcTransport {
 
             options.onChunk.onChunk(result.getValue());
 
-            //read the next chunk
+            // read the next chunk
             readFromStream(reader);
             return null;
         }, fail -> {
