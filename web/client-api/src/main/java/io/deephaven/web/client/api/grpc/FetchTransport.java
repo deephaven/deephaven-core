@@ -59,12 +59,18 @@ public class FetchTransport implements GrpcTransport {
         DomGlobal.fetch(options.url, init).then(response -> {
             if (!abortController.signal.aborted) {
                 options.onHeaders.onHeaders(readHeaders(response.headers), response.status);
-                assert response.body != null : "Browser should always include a response body";
                 if (response.status != 200) {
+                    // Not a gRPC response
                     options.onEnd.onEnd(new JsError("HTTP error " + response.status + ": " + response.statusText));
                 } else {
-                    // gRPC server only sends a body with 200 status
-                    this.readFromStream(response.body.getReader().asReadableStreamDefaultReader());
+                    // 200 means the call was handled by a gRPC server. In theory a browser can omit
+                    // the body, but at this time they never do
+                    if (response.body == null) {
+                        // Emit an error if we weren't expecting this (otherwise we just end)
+                        options.onEnd.onEnd(new JsError("Response body is null"));
+                    } else {
+                        this.readFromStream(response.body.getReader().asReadableStreamDefaultReader());
+                    }
                 }
             }
             return null;
