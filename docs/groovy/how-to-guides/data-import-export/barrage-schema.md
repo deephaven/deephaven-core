@@ -20,7 +20,7 @@ Use this when your Deephaven column type is too generic for the intended wire ty
 
 The following example creates a table with a column of Objects (limited for this example to `String` and `Double`). The Arrow schema created annotates the column as a dense union with `String` and `Double` branches. The final table can be exported over Flight / Barrage without error.
 
-```groovy
+```groovy order=union_table,union_table_w_attributes
 /////////////////////////////////////////////////////////
 // Table creation
 /////////////////////////////////////////////////////////
@@ -88,7 +88,7 @@ union_table_w_attributes = union_table.withAttributes(java.util.Map.of(Table.BAR
 
 The following example creates a table with a column of `Map<String, Double>`. The Arrow schema created annotates the column as an Arrow `Map` with the correct types for key and values. The final table can be exported over Flight / Barrage without error.
 
-```groovy
+```groovy order=map_string_table,map_string_table_w_attributes
 /////////////////////////////////////////////////////////
 // Table creation
 /////////////////////////////////////////////////////////
@@ -161,7 +161,7 @@ map_string_table_w_attributes = map_string_table.withAttributes(java.util.Map.of
 
 The following example creates a table with a column of `Map<String, Integer>`. The Arrow schema created annotates the column as an Arrow `Map` with `String` keys and `Integer` values. The final table can be exported over Flight / Barrage without error.
 
-```groovy
+```groovy order=map_string_integer_table,map_string_integer_table_w_attributes
 /////////////////////////////////////////////////////////
 // Table creation
 /////////////////////////////////////////////////////////
@@ -234,7 +234,7 @@ map_string_integer_table_w_attributes = map_string_integer_table.withAttributes(
 
 This example demonstrates the use of `Union` for values in a `Map` with `String` keys. The `Union` can contain a `Double`, `String`, `Long`, or `Integer`.
 
-```groovy
+```groovy order=map_union_table,map_union_table_w_attributes
 /////////////////////////////////////////////////////////
 // Table creation
 /////////////////////////////////////////////////////////
