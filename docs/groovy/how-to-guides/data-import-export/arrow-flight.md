@@ -121,7 +121,7 @@ Schema new_schema = new Schema(new_fields, curr_schema.getCustomMetadata())
 t = t.withAttributes(Map.of(Table.BARRAGE_SCHEMA_ATTRIBUTE, new_schema))
 ```
 
-For focused Groovy examples of using `Table.BARRAGE_SCHEMA_ATTRIBUTE` for Union and Map wire types, see [Barrage Schema Annotation](../barrage-schema.md).
+For focused Groovy examples of using `Table.BARRAGE_SCHEMA_ATTRIBUTE` for Union and Map wire types, see [Barrage Schema Annotation](barrage-schema.md).
 
 ## Custom Mappings
 

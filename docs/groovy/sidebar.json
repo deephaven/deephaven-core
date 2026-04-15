@@ -186,6 +186,10 @@
                 "path": "how-to-guides/data-import-export/arrow-flight.md"
               },
               {
+                "label": "Arrow/Barrage Schema",
+                "path": "how-to-guides/data-import-export/barrage-schema.md"
+              },
+              {
                 "label": "Iceberg",
                 "path": "how-to-guides/data-import-export/iceberg.md"
               },
