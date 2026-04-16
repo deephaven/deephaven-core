@@ -3,9 +3,9 @@ title: Barrage Schema Annotation
 sidebar_label: Barrage Schema Annotation
 ---
 
-Deephaven tables support Object-typed columns that can hold arbitrary Java objects. When exporting these tables over Flight using the Barrage format, Deephaven uses Apache Arrow schemas to describe the data. By default, if a column is typed as `Object`, the Arrow schema may not capture the intended structure of the data, which can lead to inefficient serialization or loss of type information. We can inject explicit Arrow schema information using the `Table.BARRAGE_SCHEMA_ATTRIBUTE` to ensure that the Flight export uses the correct wire format.
+Deephaven tables support Object-typed columns that can hold arbitrary Java objects. When exporting these tables over Flight using the Barrage format, Deephaven uses Apache Arrow schemas to describe the data. By default, if a column is typed as `Object`, the Arrow schema may not capture the intended structure of the data, which can lead to inefficient serialization or loss of type information. Use the `Table.BARRAGE_SCHEMA_ATTRIBUTE` to inject explicit Arrow schema information, which ensures that the Flight export uses the correct wire format.
 
-Use this when your Deephaven column type is too generic for the intended wire type (for example, `Object` columns that should be exported as Union or Map). Currently, Deephaven supports Union and Map and this guide will show examples.
+Use this when your Deephaven column type is too generic for the intended wire type (for example, `Object` columns that should be exported as `Union` or `Map`). This guide includes examples of the `Union` and `Map` types, which are currently supported by Deephaven.
 
 ## How It Works
 
@@ -18,12 +18,10 @@ Use this when your Deephaven column type is too generic for the intended wire ty
 
 ## Example: Annotate `Union<String, Double>` Columns
 
-The following example creates a table with a column of Objects (limited for this example to `String` and `Double`). The Arrow schema created annotates the column as a dense union with `String` and `Double` branches. The final table can be exported over Flight / Barrage without error.
+The following example creates a table with a column of Objects (limited for this example to `String` and `Double`). The Arrow schema annotates the column as a dense union with `String` and `Double` branches. The final table can be exported over Flight / Barrage without error.
 
 ```groovy order=union_table,union_table_w_attributes
-/////////////////////////////////////////////////////////
 // Table creation
-/////////////////////////////////////////////////////////
 
 import java.util.Random
 
@@ -46,9 +44,7 @@ QueryScope.addParam("rndObject", () -> {
 })
 union_table = emptyTable(20).update("row = ii", "rnd = rndObject()")
 
-/////////////////////////////////////////////////////////
 // Schema annotation
-/////////////////////////////////////////////////////////
 
 import io.deephaven.extensions.barrage.util.BarrageUtil
 import org.apache.arrow.vector.types.pojo.Field
@@ -86,12 +82,10 @@ union_table_w_attributes = union_table.withAttributes(java.util.Map.of(Table.BAR
 
 ## Example: Annotate `Map<String, String>` Columns
 
-The following example creates a table with a column of `Map<String, Double>`. The Arrow schema created annotates the column as an Arrow `Map` with the correct types for key and values. The final table can be exported over Flight / Barrage without error.
+The following example creates a table with a column of `Map<String, Double>`. The Arrow schema annotates the column as an Arrow `Map` with the correct types for key and values. The final table can be exported over Flight / Barrage without error.
 
 ```groovy order=map_string_table,map_string_table_w_attributes
-/////////////////////////////////////////////////////////
 // Table creation
-/////////////////////////////////////////////////////////
 
 import java.util.Random
 
@@ -115,9 +109,7 @@ QueryScope.addParam("rndMapStringString", () -> {
 
 map_string_table = emptyTable(20).update("row = ii", "map = rndMapStringString()")
 
-/////////////////////////////////////////////////////////
 // Schema annotation
-/////////////////////////////////////////////////////////
 
 import io.deephaven.extensions.barrage.util.BarrageUtil
 import org.apache.arrow.vector.types.pojo.Field
@@ -159,12 +151,10 @@ map_string_table_w_attributes = map_string_table.withAttributes(java.util.Map.of
 
 ## Example: Annotate `Map<String, Integer>` Columns
 
-The following example creates a table with a column of `Map<String, Integer>`. The Arrow schema created annotates the column as an Arrow `Map` with `String` keys and `Integer` values. The final table can be exported over Flight / Barrage without error.
+The following example creates a table with a column of `Map<String, Integer>`. The Arrow schema annotates the column as an Arrow `Map` with `String` keys and `Integer` values. The final table can be exported over Flight / Barrage without error.
 
 ```groovy order=map_string_integer_table,map_string_integer_table_w_attributes
-/////////////////////////////////////////////////////////
 // Table creation
-/////////////////////////////////////////////////////////
 
 import java.util.Random
 
@@ -188,9 +178,7 @@ QueryScope.addParam("rndMapStringInteger", () -> {
 
 map_string_integer_table = emptyTable(20).update("row = ii", "map = rndMapStringInteger()")
 
-/////////////////////////////////////////////////////////
 // Schema annotation
-/////////////////////////////////////////////////////////
 
 import io.deephaven.extensions.barrage.util.BarrageUtil
 import org.apache.arrow.vector.types.pojo.Field
@@ -235,9 +223,7 @@ map_string_integer_table_w_attributes = map_string_integer_table.withAttributes(
 This example demonstrates the use of `Union` for values in a `Map` with `String` keys. The `Union` can contain a `Double`, `String`, `Long`, or `Integer`.
 
 ```groovy order=map_union_table,map_union_table_w_attributes
-/////////////////////////////////////////////////////////
 // Table creation
-/////////////////////////////////////////////////////////
 
 import java.util.Random
 
@@ -278,9 +264,7 @@ QueryScope.addParam("rndMapStringUnion", (len) -> {
 
 map_union_table = emptyTable(20).update("row = ii", "map = rndMapStringUnion()")
 
-/////////////////////////////////////////////////////////
 // Schema annotation
-/////////////////////////////////////////////////////////
 
 import io.deephaven.extensions.barrage.util.BarrageUtil
 import org.apache.arrow.vector.types.pojo.Field
