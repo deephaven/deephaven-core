@@ -7,6 +7,9 @@ import com.vertispan.tsdefs.annotations.TsTypeDef;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.figuredescriptor.AxisDescriptor;
 import jsinterop.annotations.JsType;
 
+/**
+ * A numeric enum indicating the role of an axis within a chart.
+ */
 @JsType(name = "AxisType", namespace = "dh.plot")
 @TsTypeDef(tsType = "number")
 public class JsAxisType {
