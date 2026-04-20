@@ -8,6 +8,8 @@ import elemental2.core.*;
 import elemental2.dom.DomGlobal;
 import io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.inputtable_pb.DeephavenTableMetadata;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.inputtable_pb.InputTableColumnInfo;
 import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
 import io.deephaven.web.client.api.barrage.def.InitialTableDefinition;
 import io.deephaven.web.client.api.barrage.def.InputTableMetadata;
@@ -37,6 +39,7 @@ public class WebBarrageUtils {
     private static final Map<String, ColumnRestrictionConverter> restrictionConverters = new HashMap<>();
 
     static {
+
         // Register default converters
         registerColumnRestrictionConverter("IntegerRangeRestriction", ColumnRestrictionUtils::convertIntegerRangeRestriction);
         registerColumnRestrictionConverter("DoubleRangeRestriction", ColumnRestrictionUtils::convertDoubleRangeRestriction);
@@ -53,16 +56,6 @@ public class WebBarrageUtils {
      */
     public static void registerColumnRestrictionConverter(String restrictionType, ColumnRestrictionConverter converter) {
         restrictionConverters.put(restrictionType, converter);
-    }
-
-    /**
-     * Get the converter for a specific restriction type.
-     *
-     * @param restrictionType The type name of the restriction
-     * @return The converter, or null if none is registered
-     */
-    static ColumnRestrictionConverter getColumnRestrictionConverter(String restrictionType) {
-        return restrictionConverters.get(restrictionType);
     }
 
     public static Uint8Array wrapMessage(FlatBufferBuilder innerBuilder, byte messageType) {
@@ -124,56 +117,91 @@ public class WebBarrageUtils {
         InputTableMetadata metadata = new InputTableMetadata();
 
         try {
-            // Decode base64 to Uint8Array (like Java's Base64.getDecoder().decode())
+            JsLog.warn("parseInputTableMetadata: Decoding base64...");
+            // Decode base64 to Uint8Array
             Uint8Array bytes = decodeBase64(tableMetadataBase64);
+            JsLog.warn("parseInputTableMetadata: Decoded " + bytes.length + " bytes");
 
-            // The issue: JavaScript protobuf deserialization fails on google.protobuf.Any types
-            // Solution: Parse the protobuf manually at the binary level to extract what we need
-            jsinterop.base.Any result = ColumnRestrictionUtils.parseProtoManually(bytes);
+            JsLog.warn("parseInputTableMetadata: Deserializing DeephavenTableMetadata...");
+            // Deserialize using generated protobuf class (google.protobuf.Any stub is now available)
+            DeephavenTableMetadata tableMetadata = DeephavenTableMetadata.deserializeBinary(bytes);
+            JsLog.warn("parseInputTableMetadata: Successfully deserialized DeephavenTableMetadata");
 
-            if (result == null) {
+            if (!tableMetadata.hasInputTableMetadata()) {
+                JsLog.warn("parseInputTableMetadata: No input table metadata present");
                 return metadata;
             }
 
-            // Extract column restrictions from the manually parsed data
+            io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.inputtable_pb.InputTableMetadata protoInputTableMetadata =
+                tableMetadata.getInputTableMetadata();
+            JsLog.warn("parseInputTableMetadata: Got InputTableMetadata");
+
+            // Get the column info map
+            Object columnInfoMapRaw = protoInputTableMetadata.getColumnInfoMap();
+
+            if (columnInfoMapRaw == null) {
+                JsLog.warn("parseInputTableMetadata: columnInfoMap is null");
+                return metadata;
+            }
+
+            JsLog.warn("parseInputTableMetadata: Processing " + cols.length + " columns");
+            // Extract column restrictions from the column info map
             for (ColumnDefinition col : cols) {
                 String columnName = col.getName();
-                jsinterop.base.Any columnInfo = getPropertyFromMap(result, columnName);
+                InputTableColumnInfo columnInfo = getColumnInfoFromMap(columnInfoMapRaw, columnName);
 
                 if (columnInfo != null) {
-                    // Get restrictions array if available
-                    jsinterop.base.Any restrictionsList = getProperty(columnInfo, "restrictions");
-                    if (restrictionsList != null && isArray(restrictionsList)) {
-                        elemental2.core.JsArray<jsinterop.base.Any> restrictions =
-                            jsinterop.base.Js.uncheckedCast(restrictionsList);
+                    JsLog.warn("parseInputTableMetadata: Found column info for: " + columnName);
+                    JsArray<Object> restrictionsList = columnInfo.getRestrictionsList();
 
-                        if (restrictions.length > 0) {
-                            InputTableMetadata.ColumnRestrictions colRestrictions =
-                                new InputTableMetadata.ColumnRestrictions();
-                            for (int i = 0; i < restrictions.length; i++) {
-                                jsinterop.base.Any restrictionData = restrictions.getAt(i);
+                    if (restrictionsList != null && restrictionsList.length > 0) {
+                        JsLog.warn("parseInputTableMetadata: Column " + columnName + " has " + restrictionsList.length + " restrictions");
+                        InputTableMetadata.ColumnRestrictions colRestrictions =
+                            new InputTableMetadata.ColumnRestrictions();
 
-                                // Get the restriction type and convert it
-                                String restrictionType = getRestrictionType(restrictionData);
-                                if (restrictionType != null) {
-                                    ColumnRestrictionConverter converter = getColumnRestrictionConverter(restrictionType);
-                                    if (converter != null) {
-                                        io.deephaven.web.client.api.ColumnRestriction restriction = converter.convert(restrictionData);
+                        for (int i = 0; i < restrictionsList.length; i++) {
+                            Object restrictionAny = restrictionsList.getAt(i);
+
+                            // Get the restriction type and look up the converter
+                            String restrictionType = ColumnRestrictionUtils.getRestrictionType(restrictionAny);
+                            JsLog.warn("parseInputTableMetadata: Restriction " + i + " type: " + restrictionType);
+
+                            if (restrictionType != null) {
+                                ColumnRestrictionConverter converter = restrictionConverters.get(restrictionType);
+
+                                if (converter != null) {
+                                    JsLog.warn("parseInputTableMetadata: Converting restriction...");
+                                    io.deephaven.web.client.api.ColumnRestriction restriction =
+                                        converter.convert(jsinterop.base.Js.cast(restrictionAny));
+                                    if (restriction != null) {
                                         colRestrictions.addRestriction(restriction);
+                                        JsLog.warn("parseInputTableMetadata: Successfully added restriction");
+                                    } else {
+                                        JsLog.warn("parseInputTableMetadata: Converter returned null for " + restrictionType);
                                     }
+                                } else {
+                                    JsLog.warn("No converter registered for restriction type: " + restrictionType);
                                 }
                             }
-                            metadata.addColumnRestrictions(columnName, colRestrictions);
                         }
+
+                        metadata.addColumnRestrictions(columnName, colRestrictions);
                     }
                 }
             }
+            JsLog.warn("parseInputTableMetadata: Successfully parsed all restrictions");
         } catch (Exception e) {
             JsLog.warn("Failed to parse input table metadata:", e);
         }
 
         return metadata;
     }
+
+    // Helper method to extract InputTableColumnInfo from the map
+    private static native InputTableColumnInfo getColumnInfoFromMap(Object map, String key) /*-{
+        if (!map || !map.get) return null;
+        return map.get(key);
+    }-*/;
 
     // Decode base64 string to Uint8Array using elemental2
     private static Uint8Array decodeBase64(String base64) {
@@ -188,29 +216,6 @@ public class WebBarrageUtils {
         return bytes;
     }
 
-    private static native String getRestrictionType(jsinterop.base.Any restrictionData) /*-{
-        if (!restrictionData) return null;
-        return restrictionData.type || null;
-    }-*/;
-
-    private static native jsinterop.base.Any getPropertyFromMap(jsinterop.base.Any map, String key) /*-{
-        if (map == null) return null;
-        return map[key] || null;
-    }-*/;
-
-    private static native jsinterop.base.Any getProperty(jsinterop.base.Any obj, String propertyName) /*-{
-        if (obj == null) return null;
-        var getter = 'get' + propertyName.charAt(0).toUpperCase() + propertyName.slice(1);
-        if (typeof obj[getter] === 'function') {
-            return obj[getter]();
-        }
-        return obj[propertyName];
-    }-*/;
-
-
-    private static native boolean isArray(jsinterop.base.Any obj) /*-{
-        return Array.isArray(obj);
-    }-*/;
 
 
     private static ColumnDefinition[] readColumnDefinitions(Schema schema) {
