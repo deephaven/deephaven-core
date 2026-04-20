@@ -7,11 +7,22 @@ import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.engine.page.PagingContextHolder;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.impl.BasePushdownFilterContext;
+import io.deephaven.engine.table.impl.PushdownFilterContext;
+import io.deephaven.engine.table.impl.PushdownResult;
+import io.deephaven.engine.table.impl.select.WhereFilter;
+import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
+import io.deephaven.engine.table.impl.sources.SingleValuePushdownHelper;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.FinalDefault;
+import org.jetbrains.annotations.MustBeInvokedByOverriders;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * Column region interface for regions that support fetching primitive bytes.
@@ -90,6 +101,15 @@ public interface ColumnRegionByte<ATTR extends Any> extends ColumnRegion<ATTR> {
             extends GenericColumnRegionBase<ATTR>
             implements ColumnRegionByte<ATTR>, WithDefaultsForRepeatingValues<ATTR> {
 
+        final static RegionedPushdownAction.Region CONSTANT_COLUMN_REGION =
+                new RegionedPushdownAction.Region(
+                        () -> false,
+                        PushdownResult.REGION_SINGLE_VALUE_COST,
+                        (ctx) -> true,
+                        (tl) -> true,
+                        (cr) -> cr instanceof Constant);
+        private static final List<RegionedPushdownAction> SUPPORTED_ACTIONS = List.of(CONSTANT_COLUMN_REGION);
+
         private final byte value;
 
         public Constant(final long pageMask, final byte value) {
@@ -115,6 +135,60 @@ public interface ColumnRegionByte<ATTR extends Any> extends ColumnRegion<ATTR> {
                 final int destinationOffset, final int length) {
             Arrays.fill(destination, destinationOffset, destinationOffset + length, value);
             return destination;
+        }
+
+        @Override
+        public List<RegionedPushdownAction> supportedActions() {
+            return SUPPORTED_ACTIONS;
+        }
+
+        @Override
+        @MustBeInvokedByOverriders
+        public long estimatePushdownAction(
+                final RegionedPushdownAction action,
+                final WhereFilter filter,
+                final RowSet selection,
+                final boolean usePrev,
+                final PushdownFilterContext filterContext,
+                final RegionedPushdownAction.EstimateContext estimateContext) {
+            return action == CONSTANT_COLUMN_REGION ? CONSTANT_COLUMN_REGION.filterCost() : Long.MAX_VALUE;
+        }
+
+        @Override
+        @MustBeInvokedByOverriders
+        public PushdownResult performPushdownAction(
+                final RegionedPushdownAction action,
+                final WhereFilter filter,
+                final RowSet selection,
+                final PushdownResult input,
+                final boolean usePrev,
+                final PushdownFilterContext filterContext,
+                final RegionedPushdownAction.ActionContext actionContext) {
+            final BasePushdownFilterContext filterCtx = (BasePushdownFilterContext) filterContext;
+
+            final boolean matches;
+            if (value == QueryConstants.NULL_BYTE) {
+                final BasePushdownFilterContext.FilterNullBehavior nullBehavior = filterCtx.filterNullBehavior();
+                if (nullBehavior == BasePushdownFilterContext.FilterNullBehavior.FAILS_ON_NULLS) {
+                    // Bad-behaving filter, but not our responsibility to handle during pushdown.
+                    return input.copy();
+                }
+                matches = nullBehavior == BasePushdownFilterContext.FilterNullBehavior.INCLUDES_NULLS;
+            } else {
+                if (filterCtx.supportsChunkFiltering()) {
+                    matches = SingleValuePushdownHelper.chunkFilter(filterCtx,
+                            () -> SingleValuePushdownHelper.makeChunk(value));
+                } else {
+                    final ColumnSource<?> columnSource =
+                            InMemoryColumnSource.makeImmutableConstantSource(byte.class, null, value);
+                    matches = SingleValuePushdownHelper.tableFilter(filter, selection, false, columnSource);
+                }
+            }
+            return matches
+                    // Promote all maybe rows to match.
+                    ? PushdownResult.of(selection, input.match().union(input.maybeMatch()), RowSetFactory.empty())
+                    // None of these rows match, return the original match rows.
+                    : PushdownResult.of(selection, input.match(), RowSetFactory.empty());
         }
     }
 

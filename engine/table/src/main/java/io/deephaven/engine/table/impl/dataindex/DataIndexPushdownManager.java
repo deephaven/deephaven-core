@@ -62,7 +62,7 @@ public class DataIndexPushdownManager implements PushdownPredicateManager {
 
         final long dataIndexCost = selection.size() < selectionThreshold
                 ? Long.MAX_VALUE
-                : PushdownResult.TABLE_LEVEL_DATA_INDEX_COST;
+                : PushdownResult.TABLE_IN_MEMORY_DATA_INDEX_COST;
 
         if (wrappedMatcher != null) {
             // Retrieve the wrapped cost and return the minimum of it and the data index cost.
@@ -89,7 +89,7 @@ public class DataIndexPushdownManager implements PushdownPredicateManager {
 
         final DataIndexPushdownContext ctx = (DataIndexPushdownContext) context;
 
-        if (costCeiling < PushdownResult.TABLE_LEVEL_DATA_INDEX_COST) {
+        if (costCeiling < PushdownResult.TABLE_IN_MEMORY_DATA_INDEX_COST) {
             // Run the wrapped matcher if we have one.
             if (wrappedMatcher != null) {
                 wrappedMatcher.pushdownFilter(filter, selection, usePrev, ctx.wrappedContext, costCeiling, jobScheduler,
@@ -107,7 +107,7 @@ public class DataIndexPushdownManager implements PushdownPredicateManager {
                     selection,
                     usePrev,
                     ctx.wrappedContext,
-                    PushdownResult.TABLE_LEVEL_DATA_INDEX_COST - 1,
+                    PushdownResult.TABLE_IN_MEMORY_DATA_INDEX_COST - 1,
                     jobScheduler,
                     result -> {
                         // Run the data index filter if under the threshold.

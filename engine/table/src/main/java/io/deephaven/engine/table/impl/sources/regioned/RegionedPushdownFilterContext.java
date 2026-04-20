@@ -14,12 +14,18 @@ import java.util.Map;
  * A pushdown filter context for regioned column sources that handles column name mappings and definitions.
  */
 public interface RegionedPushdownFilterContext extends BasePushdownFilterContext {
+    /**
+     * Get the column definitions for the columns involved in this filter.
+     */
     List<ColumnDefinition<?>> columnDefinitions();
 
-    Map<String, String> renameMap();
+    /**
+     * Get the mapping from column names used in the filter to the actual column names in the manager.
+     */
+    Map<String, String> filterColumnToManagerColumnName();
 
     /**
-     * Create a wrapper of this context with the given table location set to the supplied value.
+     * Create a wrapper of this context that knows its TableLocation.
      */
     RegionedPushdownFilterLocationContext withTableLocation(final TableLocation tableLocation);
 }

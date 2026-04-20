@@ -10,23 +10,23 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.BasePushdownFilterContext;
-import io.deephaven.engine.table.impl.BasePushdownFilterContextImpl;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.util.SafeCloseable;
 
-import java.util.List;
-import java.util.Map;
+import java.util.LinkedHashMap;
 import java.util.function.Supplier;
 
 public class SingleValuePushdownHelper {
     private static final long[] singleRowKeyArray = new long[] {0};
     private static final LongChunk<OrderedRowKeys> singleRowKeyChunk = LongChunk.chunkWrap(singleRowKeyArray);
 
-    public static LongChunk<OrderedRowKeys> singleRowKeyChunk() {
+    private static LongChunk<OrderedRowKeys> singleRowKeyChunk() {
         return singleRowKeyChunk;
     }
 
@@ -103,17 +103,6 @@ public class SingleValuePushdownHelper {
     }
 
     /**
-     * A pushdown filter context for row key agnostic chunk sources.
-     */
-    public static class FilterContext extends BasePushdownFilterContextImpl {
-        public FilterContext(
-                final WhereFilter filter,
-                final List<ColumnSource<?>> columnSources) {
-            super(filter, columnSources);
-        }
-    }
-
-    /**
      * Execute the {@link #chunkFilter(BasePushdownFilterContext, Supplier)} or
      * {@link #tableFilter(WhereFilter, RowSet, boolean, ColumnSource)} to test whether the single value matches the
      * supplied filter.
@@ -162,8 +151,12 @@ public class SingleValuePushdownHelper {
                 final TrackingWritableRowSet rowSet = RowSetFactory.fromKeys(selection.firstRowKey()).toTracking()) {
 
             // Create a dummy table containing only this column source.
-            final Map<String, ColumnSource<?>> columnSourceMap = Map.of(columnName, columnSource);
-            final Table dummyTable = new QueryTable(rowSet, columnSourceMap);
+            final ColumnDefinition<?> columnDefinition = ColumnDefinition.fromGenericType(columnName,
+                    columnSource.getType(), columnSource.getComponentType());
+            final TableDefinition tableDefinition = TableDefinition.of(columnDefinition);
+            final LinkedHashMap<String, ColumnSource<?>> columnSourceMap = new LinkedHashMap<>();
+            columnSourceMap.put(columnName, columnSource);
+            final Table dummyTable = new QueryTable(tableDefinition, rowSet, columnSourceMap, null, null);
 
             // Execute the filter on the dummy table.
             try (final RowSet result = filter.filter(rowSet, rowSet, dummyTable, usePrev)) {

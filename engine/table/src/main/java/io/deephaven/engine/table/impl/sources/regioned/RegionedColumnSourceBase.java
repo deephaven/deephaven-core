@@ -3,25 +3,20 @@
 //
 package io.deephaven.engine.table.impl.sources.regioned;
 
-import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.util.JobScheduler;
-import io.deephaven.util.SafeCloseableArray;
 import io.deephaven.util.annotations.TestUseOnly;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 
@@ -120,39 +115,23 @@ abstract class RegionedColumnSourceBase<DATA_TYPE, ATTR extends Values, REGION_T
             final LongConsumer onComplete,
             final Consumer<Exception> onError) {
         final RegionedPushdownFilterContext filterContext = (RegionedPushdownFilterContext) context;
-        final List<RegionedColumnSourceManager.IncludedTableLocationEntry> tleList =
-                manager.includedLocationEntries();
-
-        // Sample a few regions and return the lowest cost
-        final int[] regionIndices = RegionedColumnSourceManager.regionIndices(selection,
-                RegionedColumnSourceManager.PUSHDOWN_LOCATION_SAMPLES);
-
-        final AtomicLong minCost = new AtomicLong(Long.MAX_VALUE);
-
-        jobScheduler.iterateParallel(
-                ExecutionContext.getContext(),
-                (LogOutput output) -> output.append("RegionedColumnSourceBase#estimatePushdownFilterCost"),
-                RegionedPushdownHelper.RegionThreadContext::new,
-                0,
-                regionIndices.length,
-                (ctx, idx, nec, resume) -> {
-                    ctx.reset();
-                    final int regionIndex = regionIndices[idx];
-
+        manager.estimatePushdownFilterCostHelper(
+                selection,
+                "RegionedColumnSourceBase#estimatePushdownFilterCost",
+                jobScheduler,
+                (regionIndex, tle, shiftedRowSet, onCost, nec) -> {
                     // Create a local pushdown context that can provide the table location to the ColumnRegion
-                    final RegionedColumnSourceManager.IncludedTableLocationEntry tle = tleList.get(regionIndex);
-                    final RegionedPushdownFilterLocationContext newCtx = filterContext.withTableLocation(tle.location);
+                    final RegionedPushdownFilterLocationContext newCtx =
+                            filterContext.withTableLocation(tle.location);
                     try {
-                        ctx.shiftedRowSet = tle.subsetAndShiftIntoLocationSpace(selection);
                         getRegion(regionIndex).estimatePushdownFilterCost(
                                 filter,
-                                ctx.shiftedRowSet,
+                                shiftedRowSet,
                                 usePrev,
                                 newCtx,
                                 jobScheduler,
                                 regionCost -> {
-                                    minCost.updateAndGet(old -> Math.min(old, regionCost));
-                                    resume.run();
+                                    onCost.accept(regionCost);
                                     newCtx.close();
                                 },
                                 nec);
@@ -162,9 +141,7 @@ abstract class RegionedColumnSourceBase<DATA_TYPE, ATTR extends Values, REGION_T
                         throw e;
                     }
                 },
-                () -> onComplete.accept(minCost.get()),
-                () -> {
-                },
+                onComplete,
                 onError);
     }
 
@@ -179,45 +156,24 @@ abstract class RegionedColumnSourceBase<DATA_TYPE, ATTR extends Values, REGION_T
             final Consumer<PushdownResult> onComplete,
             final Consumer<Exception> onError) {
         final RegionedPushdownFilterContext filterContext = (RegionedPushdownFilterContext) context;
-
-        final List<RegionedColumnSourceManager.IncludedTableLocationEntry> tleList =
-                manager.includedLocationEntries();
-
-        final int[] regionIndices = RegionedColumnSourceManager.regionIndices(selection, Integer.MAX_VALUE);
-
-        final WritableRowSet[] matches = new WritableRowSet[regionIndices.length];
-        final WritableRowSet[] maybeMatches = new WritableRowSet[regionIndices.length];
-
-        jobScheduler.iterateParallel(
-                ExecutionContext.getContext(),
-                (LogOutput output) -> output.append("RegionedColumnSourceBase#pushdownFilter"),
-                RegionedPushdownHelper.RegionThreadContext::new,
-                0,
-                regionIndices.length,
-                (ctx, idx, nec, resume) -> {
-                    ctx.reset();
-                    final int regionIndex = regionIndices[idx];
-
-                    final RegionedColumnSourceManager.IncludedTableLocationEntry tle = tleList.get(regionIndex);
+        manager.pushdownFilterHelper(
+                selection,
+                "RegionedColumnSourceBase#pushdownFilter",
+                jobScheduler,
+                (regionIndex, tle, shiftedRowSet, onResult, nec) -> {
                     // Create a local pushdown context that can provide the table location to the ColumnRegion
                     final RegionedPushdownFilterLocationContext newCtx =
                             filterContext.withTableLocation(tle.location);
-
-                    ctx.shiftedRowSet = tle.subsetAndShiftIntoLocationSpace(selection);
-
                     try {
                         getRegion(regionIndex).pushdownFilter(
                                 filter,
-                                ctx.shiftedRowSet,
+                                shiftedRowSet,
                                 usePrev,
                                 newCtx,
                                 costCeiling,
                                 jobScheduler,
                                 result -> {
-                                    tle.unshiftIntoRegionSpace(result);
-                                    matches[idx] = result.match();
-                                    maybeMatches[idx] = result.maybeMatch();
-                                    resume.run();
+                                    onResult.accept(result);
                                     newCtx.close();
                                 },
                                 nec);
@@ -227,11 +183,7 @@ abstract class RegionedColumnSourceBase<DATA_TYPE, ATTR extends Values, REGION_T
                         throw e;
                     }
                 },
-                () -> onComplete.accept(RegionedPushdownHelper.buildResults(matches, maybeMatches, selection)),
-                () -> {
-                    SafeCloseableArray.close(matches);
-                    SafeCloseableArray.close(maybeMatches);
-                },
+                onComplete,
                 onError);
     }
 

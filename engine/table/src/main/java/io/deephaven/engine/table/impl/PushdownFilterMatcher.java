@@ -28,8 +28,8 @@ public interface PushdownFilterMatcher {
     /**
      * Estimate the cost of pushing down the next pushdown filter. This returns a unitless value to compare the cost of
      * executing different filters. Common costs are listed in {@link PushdownResult} (such as
-     * {@link PushdownResult#METADATA_STATS_COST}) and should be used as a baseline for estimating the cost of newly
-     * implemented pushdown operations.
+     * {@link PushdownResult#REGION_METADATA_STATS_COST}) and should be used as a baseline for estimating the cost of
+     * newly implemented pushdown operations.
      *
      * <p>
      * A no-op implementation should simply complete with {@link Long#MAX_VALUE}.

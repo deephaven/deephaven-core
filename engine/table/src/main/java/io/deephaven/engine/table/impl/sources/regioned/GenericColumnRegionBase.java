@@ -69,45 +69,51 @@ public abstract class GenericColumnRegionBase<ATTR extends Any> implements Colum
 
         final TableLocation tableLocation = filterCtx.tableLocation();
 
-        // We must consider all the actions from this region and from the AbstractTableLocation and execute them in
+        // We must consider all the actions from this region and from the TableLocation and execute them in
         // minimal cost order.
-        final List<RegionedPushdownAction> sortedRegion = supportedActions()
-                .stream()
-                .filter(action -> ((RegionedPushdownAction.Region) action).allows(tableLocation, this, filterCtx))
-                .sorted(Comparator.comparingLong(RegionedPushdownAction::filterCost))
-                .collect(Collectors.toList());
+        final List<RegionedPushdownAction> sorted =
+                Stream.concat(supportedActions().stream(), tableLocation.supportedActions().stream())
+                        .filter(action -> action instanceof RegionedPushdownAction.Region
+                                ? ((RegionedPushdownAction.Region) action).allows(tableLocation, this, filterCtx)
+                                : action.allows(tableLocation, filterCtx))
+                        .sorted(Comparator.comparingLong(RegionedPushdownAction::filterCost))
+                        .collect(Collectors.toList());
 
-        final long regionCost;
-        if (!sortedRegion.isEmpty()) {
-            try (final RegionedPushdownAction.EstimateContext estimateCtx = makeEstimateContext(filter, filterCtx)) {
-                regionCost = estimatePushdownAction(sortedRegion, filter, selection, usePrev, filterCtx, estimateCtx);
-            }
-        } else {
-            regionCost = Long.MAX_VALUE;
+        if (sorted.isEmpty()) {
+            onComplete.accept(Long.MAX_VALUE);
+            return;
         }
 
-        // Consider the location actions that are less expensive than the lowest cost region action.
-        final List<RegionedPushdownAction> sortedLocation = tableLocation.supportedActions()
-                .stream()
-                .filter(action -> action.allows(tableLocation, filterCtx))
-                .filter(action -> action.filterCost() < regionCost)
-                .sorted(Comparator.comparingLong(RegionedPushdownAction::filterCost))
-                .collect(Collectors.toList());
+        // Deferred contexts, to be created only when needed.
+        RegionedPushdownAction.EstimateContext regionEstimateCtx = null;
+        RegionedPushdownAction.EstimateContext locationEstimateCtx = null;
 
-        final long locationCost;
-        if (!sortedLocation.isEmpty()) {
-            try (final RegionedPushdownAction.EstimateContext estimateCtx =
-                    tableLocation.makeEstimateContext(filter, filterCtx)) {
-                locationCost =
-                        tableLocation.estimatePushdownAction(sortedLocation, filter, selection, usePrev, filterCtx,
-                                estimateCtx);
+        // The list is sorted by filterCost, so the first supported action is the minimum cost.
+        long minCost = Long.MAX_VALUE;
+        for (final RegionedPushdownAction action : sorted) {
+            final long cost;
+            if (action instanceof RegionedPushdownAction.Location) {
+                cost = tableLocation.estimatePushdownAction(action, filter, selection, usePrev, filterCtx,
+                        locationEstimateCtx == null
+                                ? (locationEstimateCtx = tableLocation.makeEstimateContext(filter, filterCtx))
+                                : locationEstimateCtx);
+            } else {
+                cost = estimatePushdownAction(action, filter, selection, usePrev, filterCtx,
+                        regionEstimateCtx == null
+                                ? (regionEstimateCtx = makeEstimateContext(filter, filterCtx))
+                                : regionEstimateCtx);
             }
-        } else {
-            locationCost = Long.MAX_VALUE;
+            if (cost != Long.MAX_VALUE) {
+                minCost = cost;
+                break;
+            }
         }
+
+        // noinspection ConstantConditions
+        SafeCloseable.closeAll(regionEstimateCtx, locationEstimateCtx);
 
         // Return the lowest cost operation.
-        onComplete.accept(Math.min(regionCost, locationCost));
+        onComplete.accept(minCost);
     }
 
     @Override
@@ -122,7 +128,7 @@ public abstract class GenericColumnRegionBase<ATTR extends Any> implements Colum
             final Consumer<Exception> onError) {
         if (selection.isEmpty()) {
             // If the selection is empty, we can skip all pushdown filtering.
-            onComplete.accept(PushdownResult.allMaybeMatch(selection));
+            onComplete.accept(PushdownResult.allNoMatch(selection));
             return;
         }
 

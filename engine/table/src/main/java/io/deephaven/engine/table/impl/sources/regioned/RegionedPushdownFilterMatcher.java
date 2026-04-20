@@ -31,11 +31,11 @@ public interface RegionedPushdownFilterMatcher extends PushdownFilterMatcher {
     }
 
     /**
-     * Given a list of actions, estimate the cost of the next pushdown action. This is not always the first action in
-     * the list because this matcher may not support every allowed action.
+     * Estimate the cost of the given pushdown {@code action}. Returns {@link Long#MAX_VALUE} if the action is not
+     * supported by this matcher.
      */
     default long estimatePushdownAction(
-            final List<RegionedPushdownAction> actions,
+            final RegionedPushdownAction action,
             final WhereFilter filter,
             final RowSet selection,
             final boolean usePrev,
@@ -48,7 +48,6 @@ public interface RegionedPushdownFilterMatcher extends PushdownFilterMatcher {
      * Create a context for processing the given filter and filter context. This context can be used to provide
      * additional information to the {@link #performPushdownAction} function
      */
-
     default RegionedPushdownAction.ActionContext makeActionContext(
             final WhereFilter filter,
             final PushdownFilterContext context) {

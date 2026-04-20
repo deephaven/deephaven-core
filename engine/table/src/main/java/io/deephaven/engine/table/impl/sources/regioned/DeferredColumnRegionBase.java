@@ -106,13 +106,13 @@ public abstract class DeferredColumnRegionBase<ATTR extends Any, REGION_TYPE ext
 
     @Override
     public long estimatePushdownAction(
-            final List<RegionedPushdownAction> actions,
+            final RegionedPushdownAction action,
             final WhereFilter filter,
             final RowSet selection,
             final boolean usePrev,
             final PushdownFilterContext filterContext,
             final RegionedPushdownAction.EstimateContext estimateContext) {
-        return getResultRegion().estimatePushdownAction(actions, filter, selection, usePrev, filterContext,
+        return getResultRegion().estimatePushdownAction(action, filter, selection, usePrev, filterContext,
                 estimateContext);
     }
 

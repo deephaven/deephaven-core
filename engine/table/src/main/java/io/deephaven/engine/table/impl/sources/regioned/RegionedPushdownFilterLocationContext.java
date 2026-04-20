@@ -96,7 +96,7 @@ public class RegionedPushdownFilterLocationContext implements RegionedPushdownFi
 
     @Override
     public void updateExecutedFilterCost(long executedFilterCost) {
-        // These wrapped context are transient, should not be called.
+        // This should never be called on the wrapped context.
         throw new UnsupportedOperationException("Should not update executed filter cost on wrapped context");
     }
 
@@ -106,8 +106,8 @@ public class RegionedPushdownFilterLocationContext implements RegionedPushdownFi
     }
 
     @Override
-    public Map<String, String> renameMap() {
-        return wrapped.renameMap();
+    public Map<String, String> filterColumnToManagerColumnName() {
+        return wrapped.filterColumnToManagerColumnName();
     }
 
     @Override

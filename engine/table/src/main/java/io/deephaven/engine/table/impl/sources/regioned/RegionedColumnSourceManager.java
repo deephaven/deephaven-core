@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl.sources.regioned;
 
+import io.deephaven.base.AtomicUtil;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
@@ -832,86 +833,35 @@ public class RegionedColumnSourceManager
         }
     }
 
-    @Override
-    public void estimatePushdownFilterCost(
-            final WhereFilter filter,
+    @FunctionalInterface
+    interface PerRegionCostEstimator {
+        void estimate(
+                int regionIndex,
+                IncludedTableLocationEntry tle,
+                RowSet shiftedRowSet,
+                LongConsumer onCost,
+                Consumer<Exception> onError);
+    }
+
+    /**
+     * Common helper for estimating pushdown filter cost by sampling regions in parallel and returning the minimum cost.
+     * Also used by {@link RegionedColumnSourceBase}.
+     */
+    void estimatePushdownFilterCostHelper(
             final RowSet selection,
-            final boolean usePrev,
-            final io.deephaven.engine.table.impl.PushdownFilterContext context,
+            final String logIdentity,
             final JobScheduler jobScheduler,
+            final PerRegionCostEstimator estimator,
             final LongConsumer onComplete,
             final Consumer<Exception> onError) {
         // Sample a few regions and return the lowest cost
-        final int[] regionIndices = RegionedColumnSourceManager.regionIndices(selection,
-                RegionedColumnSourceManager.PUSHDOWN_LOCATION_SAMPLES);
+        final int[] regionIndices = regionIndices(selection, PUSHDOWN_LOCATION_SAMPLES);
 
-        final RowSet localSelection = selection.copy();
         final AtomicLong minCost = new AtomicLong(Long.MAX_VALUE);
 
-        final class RegionContext implements JobScheduler.JobThreadContext {
-            RowSet shiftedRowSet;
-
-            @Override
-            public void close() {
-                SafeCloseable.closeAll(shiftedRowSet);
-            }
-
-            public void reset() {
-                if (shiftedRowSet != null) {
-                    shiftedRowSet.close();
-                    shiftedRowSet = null;
-                }
-            }
-        }
-
         jobScheduler.iterateParallel(
                 ExecutionContext.getContext(),
-                (LogOutput output) -> output.append("RegionedColumnSourceManager#estimatePushdownFilterCost"),
-                RegionContext::new,
-                0,
-                regionIndices.length,
-                (ctx, idx, nec, resume) -> {
-                    ctx.reset();
-                    final int regionIndex = regionIndices[idx];
-
-                    final IncludedTableLocationEntry tle = orderedIncludedTableLocations.get(regionIndex);
-                    ctx.shiftedRowSet = tle.subsetAndShiftIntoLocationSpace(localSelection);
-
-                    tle.location.estimatePushdownFilterCost(
-                            filter,
-                            ctx.shiftedRowSet,
-                            usePrev,
-                            context,
-                            jobScheduler,
-                            cost -> {
-                                minCost.updateAndGet(old -> Math.min(old, cost));
-                                resume.run();
-                            },
-                            nec);
-                },
-                () -> onComplete.accept(minCost.get()),
-                localSelection::close,
-                onError);
-    }
-
-    @Override
-    public void pushdownFilter(
-            final WhereFilter filter,
-            final RowSet selection,
-            final boolean usePrev,
-            final io.deephaven.engine.table.impl.PushdownFilterContext context,
-            final long costCeiling,
-            final JobScheduler jobScheduler,
-            final Consumer<PushdownResult> onComplete,
-            final Consumer<Exception> onError) {
-        final int[] regionIndices = RegionedColumnSourceManager.regionIndices(selection, Integer.MAX_VALUE);
-
-        final WritableRowSet[] matches = new WritableRowSet[regionIndices.length];
-        final WritableRowSet[] maybeMatches = new WritableRowSet[regionIndices.length];
-
-        jobScheduler.iterateParallel(
-                ExecutionContext.getContext(),
-                (LogOutput output) -> output.append("RegionedColumnSourceManager#pushdownFilter"),
+                (LogOutput output) -> output.append(logIdentity),
                 RegionedPushdownHelper.RegionThreadContext::new,
                 0,
                 regionIndices.length,
@@ -922,13 +872,84 @@ public class RegionedColumnSourceManager
                     final IncludedTableLocationEntry tle = orderedIncludedTableLocations.get(regionIndex);
                     ctx.shiftedRowSet = tle.subsetAndShiftIntoLocationSpace(selection);
 
-                    tle.location.pushdownFilter(
-                            filter,
-                            ctx.shiftedRowSet,
-                            usePrev,
-                            context,
-                            costCeiling,
-                            jobScheduler,
+                    estimator.estimate(regionIndex, tle, ctx.shiftedRowSet,
+                            cost -> {
+                                AtomicUtil.setIfGreaterThan(minCost, cost, cost);
+                                resume.run();
+                            },
+                            nec);
+                },
+                () -> onComplete.accept(minCost.get()),
+                () -> {
+                },
+                onError);
+    }
+
+    @Override
+    public void estimatePushdownFilterCost(
+            final WhereFilter filter,
+            final RowSet selection,
+            final boolean usePrev,
+            final io.deephaven.engine.table.impl.PushdownFilterContext context,
+            final JobScheduler jobScheduler,
+            final LongConsumer onComplete,
+            final Consumer<Exception> onError) {
+        estimatePushdownFilterCostHelper(
+                selection,
+                "RegionedColumnSourceManager#estimatePushdownFilterCost",
+                jobScheduler,
+                (regionIndex, tle, shiftedRowSet, onCost, nec) -> tle.location.estimatePushdownFilterCost(
+                        filter,
+                        shiftedRowSet,
+                        usePrev,
+                        context,
+                        jobScheduler,
+                        onCost,
+                        nec),
+                onComplete,
+                onError);
+    }
+
+    @FunctionalInterface
+    interface PerRegionPushdownAction {
+        void pushdown(
+                int regionIndex,
+                IncludedTableLocationEntry tle,
+                RowSet shiftedRowSet,
+                Consumer<PushdownResult> onResult,
+                Consumer<Exception> onError);
+    }
+
+    /**
+     * Common helper for pushing down a filter across all regions in parallel and combining the results. Also used by
+     * {@link RegionedColumnSourceBase}.
+     */
+    void pushdownFilterHelper(
+            final RowSet selection,
+            final String logIdentity,
+            final JobScheduler jobScheduler,
+            final PerRegionPushdownAction action,
+            final Consumer<PushdownResult> onComplete,
+            final Consumer<Exception> onError) {
+        final int[] regionIndices = regionIndices(selection, Integer.MAX_VALUE);
+
+        final WritableRowSet[] matches = new WritableRowSet[regionIndices.length];
+        final WritableRowSet[] maybeMatches = new WritableRowSet[regionIndices.length];
+
+        jobScheduler.iterateParallel(
+                ExecutionContext.getContext(),
+                (LogOutput output) -> output.append(logIdentity),
+                RegionedPushdownHelper.RegionThreadContext::new,
+                0,
+                regionIndices.length,
+                (ctx, idx, nec, resume) -> {
+                    ctx.reset();
+                    final int regionIndex = regionIndices[idx];
+
+                    final IncludedTableLocationEntry tle = orderedIncludedTableLocations.get(regionIndex);
+                    ctx.shiftedRowSet = tle.subsetAndShiftIntoLocationSpace(selection);
+
+                    action.pushdown(regionIndex, tle, ctx.shiftedRowSet,
                             result -> {
                                 tle.unshiftIntoRegionSpace(result);
                                 matches[idx] = result.match();
@@ -945,6 +966,33 @@ public class RegionedColumnSourceManager
                 onError);
     }
 
+    @Override
+    public void pushdownFilter(
+            final WhereFilter filter,
+            final RowSet selection,
+            final boolean usePrev,
+            final io.deephaven.engine.table.impl.PushdownFilterContext context,
+            final long costCeiling,
+            final JobScheduler jobScheduler,
+            final Consumer<PushdownResult> onComplete,
+            final Consumer<Exception> onError) {
+        pushdownFilterHelper(
+                selection,
+                "RegionedColumnSourceManager#pushdownFilter",
+                jobScheduler,
+                (regionIndex, tle, shiftedRowSet, onResult, nec) -> tle.location.pushdownFilter(
+                        filter,
+                        shiftedRowSet,
+                        usePrev,
+                        context,
+                        costCeiling,
+                        jobScheduler,
+                        onResult,
+                        nec),
+                onComplete,
+                onError);
+    }
+
     /**
      * Get (or create) a map from column source to column name.
      */
@@ -954,9 +1002,11 @@ public class RegionedColumnSourceManager
             synchronized (this) {
                 local = columnSourceToName;
                 if (local == null) {
-                    final IdentityHashMap<ColumnSource<?>, String> tmp = new IdentityHashMap<>(columnSources.size());
-                    columnSources.forEach((name, src) -> tmp.put(src, name));
-                    columnSourceToName = local = tmp;
+                    local = new IdentityHashMap<>(columnSources.size());
+                    for (Map.Entry<String, RegionedColumnSource<?>> entry : columnSources.entrySet()) {
+                        local.put(entry.getValue(), entry.getKey());
+                    }
+                    columnSourceToName = local;
                 }
             }
         }

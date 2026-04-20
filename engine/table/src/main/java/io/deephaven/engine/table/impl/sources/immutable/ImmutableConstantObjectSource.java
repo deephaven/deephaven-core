@@ -104,7 +104,7 @@ public class ImmutableConstantObjectSource<T>
     public PushdownFilterContext makePushdownFilterContext(
             final WhereFilter filter,
             final List<ColumnSource<?>> filterSources) {
-        return new SingleValuePushdownHelper.FilterContext(filter, filterSources);
+        return new BasePushdownFilterContextImpl(filter, filterSources);
     }
 
     @Override
@@ -116,7 +116,7 @@ public class ImmutableConstantObjectSource<T>
             final JobScheduler jobScheduler,
             final LongConsumer onComplete,
             final Consumer<Exception> onError) {
-        onComplete.accept(PushdownResult.SINGLE_VALUE_COLUMN_COST);
+        onComplete.accept(PushdownResult.TABLE_SINGLE_VALUE_COLUMN_COST);
     }
 
     @Override
@@ -130,10 +130,11 @@ public class ImmutableConstantObjectSource<T>
             final Consumer<PushdownResult> onComplete,
             final Consumer<Exception> onError) {
         if (selection.isEmpty()) {
+            // If the selection is empty, we can skip all pushdown filtering.
             onComplete.accept(PushdownResult.allNoMatch(selection));
             return;
         }
-        final SingleValuePushdownHelper.FilterContext filterCtx = (SingleValuePushdownHelper.FilterContext) context;
+        final BasePushdownFilterContext filterCtx = (BasePushdownFilterContext) context;
 
         final Supplier<Chunk<Values>> chunkSupplier = () -> SingleValuePushdownHelper.makeChunk(get(0));
         final boolean matches =

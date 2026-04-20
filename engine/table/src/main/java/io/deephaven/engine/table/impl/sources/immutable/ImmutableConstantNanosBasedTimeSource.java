@@ -13,9 +13,7 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.impl.AbstractColumnSource;
-import io.deephaven.engine.table.impl.PushdownFilterContext;
-import io.deephaven.engine.table.impl.PushdownResult;
+import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.table.impl.util.JobScheduler;
@@ -29,7 +27,6 @@ import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
-import java.util.function.Supplier;
 
 public abstract class ImmutableConstantNanosBasedTimeSource<TIME_TYPE> extends AbstractColumnSource<TIME_TYPE>
         implements InMemoryColumnSource, RowKeyAgnosticChunkSource<Values>,
@@ -183,7 +180,7 @@ public abstract class ImmutableConstantNanosBasedTimeSource<TIME_TYPE> extends A
     public PushdownFilterContext makePushdownFilterContext(
             final WhereFilter filter,
             final List<ColumnSource<?>> filterSources) {
-        return new SingleValuePushdownHelper.FilterContext(filter, filterSources);
+        return new BasePushdownFilterContextImpl(filter, filterSources);
     }
 
     @Override
@@ -195,7 +192,7 @@ public abstract class ImmutableConstantNanosBasedTimeSource<TIME_TYPE> extends A
             final JobScheduler jobScheduler,
             final LongConsumer onComplete,
             final Consumer<Exception> onError) {
-        onComplete.accept(PushdownResult.SINGLE_VALUE_COLUMN_COST);
+        onComplete.accept(PushdownResult.TABLE_SINGLE_VALUE_COLUMN_COST);
     }
 
     @Override
@@ -209,11 +206,12 @@ public abstract class ImmutableConstantNanosBasedTimeSource<TIME_TYPE> extends A
             final Consumer<PushdownResult> onComplete,
             final Consumer<Exception> onError) {
         if (selection.isEmpty()) {
+            // If the selection is empty, we can skip all pushdown filtering.
             onComplete.accept(PushdownResult.allNoMatch(selection));
             return;
         }
 
-        final SingleValuePushdownHelper.FilterContext filterCtx = (SingleValuePushdownHelper.FilterContext) context;
+        final BasePushdownFilterContext filterCtx = (BasePushdownFilterContext) context;
         final boolean matches =
                 SingleValuePushdownHelper.filter(selection, usePrev, filterCtx, this::getValueChunk, this);
         onComplete.accept(matches ? PushdownResult.allMatch(selection) : PushdownResult.allNoMatch(selection));

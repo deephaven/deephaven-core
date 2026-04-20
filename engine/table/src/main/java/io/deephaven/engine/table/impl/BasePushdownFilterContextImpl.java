@@ -28,7 +28,7 @@ import java.util.Optional;
 /**
  * Base class for {@link BasePushdownFilterContext} to help with execution cost tracking.
  */
-public abstract class BasePushdownFilterContextImpl implements BasePushdownFilterContext {
+public class BasePushdownFilterContextImpl implements BasePushdownFilterContext {
 
     private final WhereFilter filter;
 

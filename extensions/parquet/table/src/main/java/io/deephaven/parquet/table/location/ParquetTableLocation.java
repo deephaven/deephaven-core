@@ -457,28 +457,28 @@ public class ParquetTableLocation extends AbstractTableLocation {
     private static final RegionedPushdownAction.Location ParquetRowGroupMetadata =
             new RegionedPushdownAction.Location(
                     () -> QueryTable.DISABLE_WHERE_PUSHDOWN_PARQUET_ROW_GROUP_METADATA,
-                    PushdownResult.METADATA_STATS_COST,
+                    PushdownResult.REGION_METADATA_STATS_COST,
                     BasePushdownFilterContext::supportsMetadataFiltering,
                     (tl) -> ((ParquetTableLocation) tl).supportsMetadataFiltering());
 
     private static final RegionedPushdownAction.Location InMemoryDataIndex =
             new RegionedPushdownAction.Location(
                     () -> QueryTable.DISABLE_WHERE_PUSHDOWN_DATA_INDEX,
-                    PushdownResult.IN_MEMORY_DATA_INDEX_COST,
+                    PushdownResult.LOCATION_IN_MEMORY_DATA_INDEX_COST,
                     BasePushdownFilterContext::supportsInMemoryDataIndexFiltering,
                     (tl) -> ((ParquetTableLocation) tl).supportsInMemoryDataIndexFiltering());
 
     private static final RegionedPushdownAction.Location ParquetDictionary =
             new RegionedPushdownAction.Location(
                     () -> QueryTable.DISABLE_WHERE_PUSHDOWN_PARQUET_DICTIONARY,
-                    PushdownResult.DICTIONARY_DATA_COST,
+                    PushdownResult.REGION_DICTIONARY_DATA_COST,
                     BasePushdownFilterContext::supportsChunkFiltering,
                     (tl) -> ((ParquetTableLocation) tl).supportsDictionaryFiltering());
 
     private static final RegionedPushdownAction.Location DeferredDataIndex =
             new RegionedPushdownAction.Location(
                     () -> QueryTable.DISABLE_WHERE_PUSHDOWN_DATA_INDEX,
-                    PushdownResult.DEFERRED_DATA_INDEX_COST,
+                    PushdownResult.LOCATION_DEFERRED_DATA_INDEX_COST,
                     BasePushdownFilterContext::supportsDeferredDataIndexFiltering,
                     (tl) -> ((ParquetTableLocation) tl).supportsDeferredDataIndexFiltering());
 
@@ -543,7 +543,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
         // We must have an initialized location to create this estimate context.
         initialize();
 
-        final Optional<List<ResolvedColumnInfo>> maybeResolvedColumns = resolveColumns(filter, filterCtx.renameMap());
+        final Optional<List<ResolvedColumnInfo>> maybeResolvedColumns =
+                resolveColumns(filter, filterCtx.filterColumnToManagerColumnName());
         if (maybeResolvedColumns.isEmpty()) {
             return new EstimateContext(EstimateContext.ResolveState.FAILED, null);
         }
@@ -558,7 +559,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
 
     @Override
     public long estimatePushdownAction(
-            final List<RegionedPushdownAction> actions,
+            final RegionedPushdownAction action,
             final WhereFilter filter,
             final RowSet selection,
             final boolean usePrev,
@@ -573,28 +574,22 @@ public class ParquetTableLocation extends AbstractTableLocation {
         }
 
         // Apply a more specific check that depends on materializing parquet metadata
-        for (final RegionedPushdownAction action : actions) {
-            final boolean isApplicable;
-            if (action == ParquetRowGroupMetadata) {
-                // Note: it should be possible to check if there is any statistics
-                isApplicable = true;
-            } else if (action == InMemoryDataIndex) {
-                isApplicable = hasCachedDataIndex(estimateCtx.parquetColumnNames);
-            } else if (action == ParquetDictionary) {
-                isApplicable =
-                        hasDictionaryPage(estimateCtx.parquetColumnNames[0], filterCtx.columnDefinitions().get(0));
-            } else if (action == DeferredDataIndex) {
-                isApplicable = hasDataIndex(estimateCtx.parquetColumnNames);
-            } else {
-                throw new IllegalStateException("Unexpected value: " + action);
-            }
-            if (isApplicable) {
-                return action.filterCost();
-            }
+        final boolean isApplicable;
+        if (action == ParquetRowGroupMetadata) {
+            // Note: it should be possible to check if there are any statistics
+            isApplicable = true;
+        } else if (action == InMemoryDataIndex) {
+            isApplicable = hasCachedDataIndex(estimateCtx.parquetColumnNames);
+        } else if (action == ParquetDictionary) {
+            isApplicable = hasDictionaryPage(estimateCtx.parquetColumnNames[0], filterCtx.columnDefinitions().get(0));
+        } else if (action == DeferredDataIndex) {
+            isApplicable = hasDataIndex(estimateCtx.parquetColumnNames);
+        } else {
+            // TODO(DH-19666): Add support for bloom filters, sortedness, etc.
+            return Long.MAX_VALUE;
         }
 
-        // TODO(DH-19666): Add support for bloom filters, sortedness, etc.
-        return Long.MAX_VALUE; // No benefit to pushing down.
+        return isApplicable ? action.filterCost() : Long.MAX_VALUE;
     }
 
     public static class ActionContext implements RegionedPushdownAction.ActionContext {
@@ -628,7 +623,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
         // We must have an initialized location to create this action context.
         initialize();
 
-        final Map<String, String> renameMap = filterCtx.renameMap();
+        final Map<String, String> renameMap = filterCtx.filterColumnToManagerColumnName();
         final Optional<List<ResolvedColumnInfo>> maybeResolvedColumns = resolveColumns(filter, renameMap);
         if (maybeResolvedColumns.isEmpty()) {
             return new ActionContext(ActionContext.ResolveState.FAILED, null, null);
@@ -677,7 +672,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
             if (dataIndex == null) {
                 return input.copy();
             }
-            return pushdownDataIndex(selection, filter, filterCtx.renameMap(), dataIndex, input);
+            return pushdownDataIndex(selection, filter, filterCtx.filterColumnToManagerColumnName(), dataIndex, input);
         }
         if (action == ParquetDictionary) {
             if (!hasDictionaryPage(actionCtx.parquetColumnNames[0], filterCtx.columnDefinitions().get(0))) {
@@ -691,7 +686,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
             if (dataIndex == null) {
                 return input.copy();
             }
-            return pushdownDataIndex(selection, filter, filterCtx.renameMap(), dataIndex, input);
+            return pushdownDataIndex(selection, filter, filterCtx.filterColumnToManagerColumnName(), dataIndex, input);
         }
         throw new IllegalStateException("Unexpected value: " + action);
     }

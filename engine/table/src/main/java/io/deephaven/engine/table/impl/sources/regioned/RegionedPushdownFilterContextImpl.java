@@ -18,29 +18,27 @@ import java.util.Map;
 public class RegionedPushdownFilterContextImpl extends BasePushdownFilterContextImpl
         implements RegionedPushdownFilterContext {
     private final List<ColumnDefinition<?>> columnDefinitions;
-    private final Map<String, String> renameMap;
+    private final Map<String, String> filterColumnToManagerColumnName;
 
     public RegionedPushdownFilterContextImpl(
             final WhereFilter filter,
             final List<ColumnSource<?>> columnSources,
             final List<ColumnDefinition<?>> columnDefinitions,
-            final Map<String, String> renameMap) {
+            final Map<String, String> filterColumnToManagerColumnName) {
         super(filter, columnSources);
         this.columnDefinitions = columnDefinitions;
-        this.renameMap = renameMap;
+        this.filterColumnToManagerColumnName = filterColumnToManagerColumnName;
     }
 
     public List<ColumnDefinition<?>> columnDefinitions() {
         return columnDefinitions;
     }
 
-    public Map<String, String> renameMap() {
-        return renameMap;
+    public Map<String, String> filterColumnToManagerColumnName() {
+        return filterColumnToManagerColumnName;
     }
 
-    /**
-     * Create a copy of this context with the given table location set to the supplied value.
-     */
+
     public RegionedPushdownFilterLocationContext withTableLocation(final TableLocation tableLocation) {
         return new RegionedPushdownFilterLocationContext(this, tableLocation);
     }

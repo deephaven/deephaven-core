@@ -15,10 +15,7 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.WritableColumnSource;
-import io.deephaven.engine.table.impl.AbstractColumnSource;
-import io.deephaven.engine.table.impl.BasePushdownFilterContext;
-import io.deephaven.engine.table.impl.PushdownFilterContext;
-import io.deephaven.engine.table.impl.PushdownResult;
+import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.hash.KeyedObjectHashMap;
@@ -325,7 +322,7 @@ public final class NullValueColumnSource<T> extends AbstractColumnSource<T>
             final WhereFilter filter,
             final List<ColumnSource<?>> filterSources) {
         // Delegate to the shared code for SingleValuePushdownHelper
-        return new SingleValuePushdownHelper.FilterContext(filter, filterSources);
+        return new BasePushdownFilterContextImpl(filter, filterSources);
     }
 
     @Override
@@ -337,7 +334,7 @@ public final class NullValueColumnSource<T> extends AbstractColumnSource<T>
             final JobScheduler jobScheduler,
             final LongConsumer onComplete,
             final Consumer<Exception> onError) {
-        onComplete.accept(PushdownResult.SINGLE_VALUE_COLUMN_COST);
+        onComplete.accept(PushdownResult.TABLE_SINGLE_VALUE_COLUMN_COST);
     }
 
     @Override
@@ -351,11 +348,12 @@ public final class NullValueColumnSource<T> extends AbstractColumnSource<T>
             final Consumer<PushdownResult> onComplete,
             final Consumer<Exception> onError) {
         if (selection.isEmpty()) {
+            // If the selection is empty, we can skip all pushdown filtering.
             onComplete.accept(PushdownResult.allNoMatch(selection));
             return;
         }
 
-        final SingleValuePushdownHelper.FilterContext filterCtx = (SingleValuePushdownHelper.FilterContext) context;
+        final BasePushdownFilterContext filterCtx = (BasePushdownFilterContext) context;
         final BasePushdownFilterContext.FilterNullBehavior nullBehavior = filterCtx.filterNullBehavior();
 
         if (nullBehavior == BasePushdownFilterContext.FilterNullBehavior.INCLUDES_NULLS) {

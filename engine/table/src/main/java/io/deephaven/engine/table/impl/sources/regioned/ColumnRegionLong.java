@@ -85,7 +85,7 @@ public interface ColumnRegionLong<ATTR extends Any> extends ColumnRegion<ATTR> {
         final static RegionedPushdownAction.Region CONSTANT_COLUMN_REGION =
                 new RegionedPushdownAction.Region(
                         () -> false,
-                        PushdownResult.SINGLE_VALUE_REGION_COST,
+                        PushdownResult.REGION_SINGLE_VALUE_COST,
                         (ctx) -> true,
                         (tl) -> true,
                         (cr) -> cr instanceof Constant);
@@ -119,13 +119,13 @@ public interface ColumnRegionLong<ATTR extends Any> extends ColumnRegion<ATTR> {
         @Override
         @MustBeInvokedByOverriders
         public long estimatePushdownAction(
-                final List<RegionedPushdownAction> actions,
+                final RegionedPushdownAction action,
                 final WhereFilter filter,
                 final RowSet selection,
                 final boolean usePrev,
                 final PushdownFilterContext filterContext,
                 final RegionedPushdownAction.EstimateContext estimateContext) {
-            return CONSTANT_COLUMN_REGION.filterCost();
+            return action == CONSTANT_COLUMN_REGION ? CONSTANT_COLUMN_REGION.filterCost() : Long.MAX_VALUE;
         }
 
         @Override

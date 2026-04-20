@@ -43,6 +43,15 @@ public interface BasePushdownFilterContext extends PushdownFilterContext {
      * the underlying filter is a {@link ExposesChunkFilter} or a {@link ConditionFilter}.
      */
     interface UnifiedChunkFilter extends SafeCloseable {
+        /**
+         * Applies the filter to a chunk of data. The size of this chunk must be less than or equal to
+         * {@code maxChunkSize} passed to {@link BasePushdownFilterContext#createChunkFilter} during creation.
+         *
+         * @param values the chunk of values to evaluate against the filter
+         * @param keys the ordered row keys associated with the values
+         * @return a chunk of keys that passed the filter. This chunk is owned by the filter and should not be closed by
+         *         the caller. It will be automatically released when the {@link UnifiedChunkFilter} is closed.
+         */
         LongChunk<OrderedRowKeys> filter(Chunk<? extends Values> values, LongChunk<OrderedRowKeys> keys);
     }
 
@@ -74,7 +83,7 @@ public interface BasePushdownFilterContext extends PushdownFilterContext {
     boolean supportsChunkFiltering();
 
     /**
-     * Whether this filter supports filtering based on parquet metadata.
+     * Whether this filter supports filtering based on metadata.
      */
     boolean supportsMetadataFiltering();
 
@@ -89,7 +98,7 @@ public interface BasePushdownFilterContext extends PushdownFilterContext {
     boolean supportsDeferredDataIndexFiltering();
 
     /**
-     * The filter to use for parquet metadata filtering. Can only call when {@link #supportsMetadataFiltering()} is
+     * The filter to use for metadata filtering. Can only call when {@link #supportsMetadataFiltering()} is
      * {@code true}.
      */
     WhereFilter filterForMetadataFiltering();
