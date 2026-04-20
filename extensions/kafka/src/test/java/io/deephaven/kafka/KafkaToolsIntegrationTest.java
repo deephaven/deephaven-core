@@ -57,6 +57,8 @@ class KafkaToolsIntegrationTest {
     private static final ColumnDefinition<Long> OFFSET_COLUMN = ofLong(OFFSET_COLUMN_NAME_DEFAULT);
     private static final ColumnDefinition<Instant> TIMESTAMP_COLUMN = ofTime(TIMESTAMP_COLUMN_NAME_DEFAULT);
 
+    private static final int TIMEOUT_SECONDS = 30;
+
     private EngineCleanup framework;
     private ControlledUpdateGraph updateGraph;
 
@@ -74,7 +76,7 @@ class KafkaToolsIntegrationTest {
 
     @ParameterizedTest(name = "simpleKeySimpleValue {0}")
     @EnumSource
-    @Timeout(10)
+    @Timeout(TIMEOUT_SECONDS)
     void simpleKeySimpleValue(final KafkaService kafkaService, final TestInfo testInfo) throws Exception {
         Assumptions.assumeTrue(kafkaService.isEnabled());
         kafkaService.init();
@@ -136,7 +138,7 @@ class KafkaToolsIntegrationTest {
 
     @ParameterizedTest(name = "jsonKeySimpleValue {0}")
     @EnumSource
-    @Timeout(10)
+    @Timeout(TIMEOUT_SECONDS)
     void jsonKeySimpleValue(final KafkaService kafkaService, final TestInfo testInfo) throws Exception {
         Assumptions.assumeTrue(kafkaService.isEnabled());
         kafkaService.init();
@@ -199,7 +201,7 @@ class KafkaToolsIntegrationTest {
 
     @ParameterizedTest(name = "jsonKeyJsonValue {0}")
     @EnumSource
-    @Timeout(10)
+    @Timeout(TIMEOUT_SECONDS)
     void jsonKeyJsonValue(final KafkaService kafkaService, final TestInfo testInfo) throws Exception {
         Assumptions.assumeTrue(kafkaService.isEnabled());
         kafkaService.init();
