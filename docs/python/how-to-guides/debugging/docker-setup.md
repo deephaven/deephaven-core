@@ -148,7 +148,7 @@ Once connected, you can use the PyCharm debugger in two ways:
 1. **Set breakpoints in PyCharm**: Click in the left margin of your code editor to set breakpoints on any line
 2. **Use `pydevd.settrace()` in code**: Call this function to programmatically pause execution at that point
 
-After the initial connection (step 4), you no longer need to pass parameters to `settrace()`. Here's an example using it as a breakpoint:
+After the initial connection (step 4), you no longer need to pass parameters to `settrace`. Here's an example using it as a breakpoint:
 
 ```python skip-test
 from deephaven import empty_table
@@ -181,7 +181,7 @@ Navigating over to PyCharm, the debugger's full suite of capabilities is on offe
 - Verify the PyCharm debug server is running (green bug icon should be active).
 - Check that port 4444 is not blocked by a firewall.
 - On Linux, verify `host.docker.internal` is correctly configured.
-- Ensure the port in `settrace()` matches the PyCharm configuration.
+- Ensure the port in `settrace` matches the PyCharm configuration.
 
 ### Path mapping not working
 

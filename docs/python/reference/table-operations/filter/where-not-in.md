@@ -63,7 +63,7 @@ filter = new_table([string_col("Colors", ["blue", "red", "purple", "white"])])
 result = source.where_not_in(filter_table=filter, cols=["Color = Colors"])
 ```
 
-The following example creates a table containing only the colors and codes present in the `filter` table. When using multiple matches, the resulting table will include only values that are in _both_ matches. In this example, only one row matches both color AND codes. This results in a new table that has one matching value.
+The following example creates a table containing only the colors and codes not present in the `filter` table. When using multiple matches, the resulting table will exclude only values that are _not_ in _both_ matches. In this example, only one row matches both color AND codes. This results in a new table that has all but one matching value.
 
 ```python order=source,filter,result
 from deephaven import new_table

@@ -13,12 +13,9 @@ import jsinterop.base.JsPropertyMap;
 
 @JsType(name = "AxisDescriptor", namespace = "dh.plot")
 public class JsAxisDescriptor {
-    // TODO (deephaven-core#3442) change to some kind of String+int union type
-    public String formatType;
-    // TODO (deephaven-core#3442) change to some kind of String+int union type
-    public String type;
-    // TODO (deephaven-core#3442) change to some kind of String+int union type
-    public String position;
+    public StringOrNumber formatType;
+    public StringOrNumber type;
+    public StringOrNumber position;
 
     @JsNullable
     public boolean log = false;
@@ -60,9 +57,9 @@ public class JsAxisDescriptor {
     public JsAxisDescriptor(JsPropertyMap<Object> source) {
         this();
 
-        formatType = JsData.getRequiredStringProperty(source, "formatType");
-        type = JsData.getRequiredStringProperty(source, "type");
-        position = JsData.getRequiredStringProperty(source, "position");
+        formatType = JsData.getRequiredStringOrIntProperty(source, "formatType");
+        type = JsData.getRequiredStringOrIntProperty(source, "type");
+        position = JsData.getRequiredStringOrIntProperty(source, "position");
         log = JsData.getBooleanProperty(source, "log");
         label = JsData.getStringProperty(source, "label");
         labelFont = JsData.getStringProperty(source, "labelFont");

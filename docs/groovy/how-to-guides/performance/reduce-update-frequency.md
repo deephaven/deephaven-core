@@ -1,5 +1,6 @@
 ---
-title: Dial down the update frequency of ticking tables
+title: How to dial down the update frequency of ticking tables
+sidebar_label: Dial down the update frequency of ticking tables
 ---
 
 This guide will show you how to reduce the update frequency of ticking tables.
@@ -21,7 +22,7 @@ result = source.snapshotWhen(trigger, options)
 > The trigger table is often a [time table](../../reference/table-operations/create/timeTable.md), a special type of table that adds new rows at a regular, user-defined interval. The sole column of a time table is `Timestamp`.
 
 > [!CAUTION]
-> Columns from the trigger table appear in the result table. If the trigger and source tables have any columns of the same name, an error will occur. To avoid this, either rename conflicting columns, or omit duplicates in the trigger table via stamp columns.
+> Columns from the trigger table appear in the result table. If the trigger and source tables have columns with the same name, an error will be raised. To avoid this, either rename conflicting columns, or omit duplicates in the trigger table via stamp columns.
 
 The [`snapshot`](../../reference/table-operations/snapshot/snapshot.md) operation produces a static snapshot of a table at a specific point in time.
 
@@ -31,15 +32,17 @@ result = source.snapshot()
 
 ## Sample at a regular interval
 
-In this example, the `source` table updates every 0.5 seconds with new data. The `trigger` table updates every 5 seconds, triggering a new snapshot of the `source` table (`result`). This design pattern is useful for reducing the amount of data that must be processed.
+In this example, the `source` table updates every second with new data. The `trigger` table updates every 5 seconds, triggering a new snapshot of the `source` table (`result`). This design pattern is useful for reducing the amount of data that must be processed.
 
 ```groovy ticking-table order=null
-source = timeTable("PT00:00:00.5").update("X = new Random().nextInt(100)", "Y = sqrt(X)")
+source = timeTable("PT1S").update("X = new Random().nextInt(100)", "Y = sqrt(X)")
 
-trigger = timeTable("PT00:00:05").renameColumns("TriggerTimestamp = Timestamp")
+trigger = timeTable("PT5S").renameColumns("TriggerTimestamp = Timestamp")
 
 result = source.snapshotWhen(trigger)
 ```
+
+![The ticking `source`, `trigger`, and `result` tables above](../../assets/how-to/snapshot-when-basic.gif)
 
 ## Create a static snapshot
 
@@ -48,11 +51,13 @@ Creating a static snapshot of a ticking table is as easy as calling [`snapshot`]
 This example creates a ticking table, and then after some time, calls [`snapshot`](../../reference/table-operations/snapshot/snapshot.md) to capture a moment in the table's history.
 
 ```groovy ticking-table order=null
-source = timeTable("PT00:00:01").updateView("X = 0.1 * i", "Y = Math.sin(X)")
+source = timeTable("PT0.1S").updateView("X = 0.1 * i", "Y = Math.sin(X)")
 
 // After some time
 result = source.snapshot()
 ```
+
+![The ticking `source` and static `result`](../../assets/how-to/snapshot-static.gif)
 
 ## Related documentation
 

@@ -1,1 +1,0 @@
-{"file":"core/docs/reference/uris/uri.md","objects":{"source":{"type":"Table","data":{"columns":[{"name":"Timestamp","type":"java.time.Instant"},{"name":"X","type":"double"},{"name":"Y","type":"double"}],"rows":[[{"value":"1686877367000000000"},{"value":"0.0000"},{"value":"0.0000"}]]}}}}

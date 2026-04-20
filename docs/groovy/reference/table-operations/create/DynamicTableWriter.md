@@ -55,13 +55,13 @@ A `TableWriter`. <!-- TODO: https://github.com/deephaven/deephaven.io/issues/497
 
 `DynamicTableWriter` supports the following methods:
 
-- [`close()`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/util/DynamicTableWriter.html#close()) - Closes the `TableWriter`.
-- [`flush()`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/util/DynamicTableWriter.html#flush()) - Flushes the `TableWriter`.
-- [`getColumnNames()`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/util/DynamicTableWriter.html#getColumnNames()) - Returns a list of column names.
-- [`getColumnTypes()`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/util/DynamicTableWriter.html#getColumnTypes()) - Returns a list of column types.
-- [`getTable()`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/util/DynamicTableWriter.html#getTable()) - Returns a real-time, in-memory table.
+- [`close`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/util/DynamicTableWriter.html#close()) - Closes the `TableWriter`.
+- [`flush`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/util/DynamicTableWriter.html#flush()) - Flushes the `TableWriter`.
+- [`getColumnNames`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/util/DynamicTableWriter.html#getColumnNames()) - Returns a list of column names.
+- [`getColumnTypes`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/util/DynamicTableWriter.html#getColumnTypes()) - Returns a list of column types.
+- [`getTable`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/util/DynamicTableWriter.html#getTable()) - Returns a real-time, in-memory table.
 - [`logRow(values...)`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/util/DynamicTableWriter.html#logRow(java.lang.Object...)) - Writes a row of values to the table.
-- [`size()`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/util/DynamicTableWriter.html#size()) - Returns the number of rows in the table.
+- [`size`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/util/DynamicTableWriter.html#size()) - Returns the number of rows in the table.
 
 ## Examples
 

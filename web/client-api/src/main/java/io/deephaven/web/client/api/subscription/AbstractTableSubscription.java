@@ -4,13 +4,14 @@
 package io.deephaven.web.client.api.subscription;
 
 import com.google.flatbuffers.FlatBufferBuilder;
+import com.google.protobuf.ByteStringAccess;
 import com.vertispan.tsdefs.annotations.TsIgnore;
 import elemental2.core.JsArray;
 import io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
-import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.FlightData;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.ApplyPreviewColumnsRequest;
+import io.deephaven.flightjs.protocol.BrowserFlight;
+import io.deephaven.proto.backplane.grpc.ApplyPreviewColumnsRequest;
 import io.deephaven.web.client.api.Column;
 import io.deephaven.web.client.api.Format;
 import io.deephaven.web.client.api.JsRangeSet;
@@ -23,7 +24,6 @@ import io.deephaven.web.client.api.barrage.WebBarrageMessageReader;
 import io.deephaven.web.client.api.barrage.WebBarrageUtils;
 import io.deephaven.web.client.api.barrage.data.WebBarrageSubscription;
 import io.deephaven.web.client.api.barrage.stream.BiDiStream;
-import io.deephaven.web.client.api.barrage.stream.ResponseStreamWrapper;
 import io.deephaven.web.client.api.event.HasEventHandling;
 import io.deephaven.web.client.fu.JsSettings;
 import io.deephaven.web.client.state.ClientTableState;
@@ -34,9 +34,11 @@ import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsProperty;
 import jsinterop.base.Any;
 import jsinterop.base.Js;
+import org.apache.arrow.flight.impl.Flight;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.BitSet;
 
 /**
@@ -64,16 +66,16 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
 
     public static ClientTableState createPreview(WorkerConnection connection, ClientTableState tableState,
             DataOptions.PreviewOptions previewOptions) {
-        ClientTableState previewedState = connection.newState((callback, newState, metadata) -> {
-            ApplyPreviewColumnsRequest applyPreviewRequest = new ApplyPreviewColumnsRequest();
-            applyPreviewRequest.setSourceId(tableState.getHandle().makeTableReference());
-            applyPreviewRequest.setResultId(newState.getHandle().makeTicket());
+        ClientTableState previewedState = connection.newState((callback, newState) -> {
+            ApplyPreviewColumnsRequest.Builder applyPreviewRequest = ApplyPreviewColumnsRequest.newBuilder()
+                    .setSourceId(tableState.getHandle().makeTableReference())
+                    .setResultId(newState.getHandle().makeTicket());
 
             if (previewOptions != null && previewOptions.convertArrayToString != null
                     && previewOptions.convertArrayToString) {
                 applyPreviewRequest.setConvertArrays(true);
             }
-            applyPreviewRequest.setUnpreviewedTypesList(JsArray.of(
+            applyPreviewRequest.addAllUnpreviewedTypes(Arrays.asList(
                     "byte",
                     "java.lang.Byte",
                     "char",
@@ -97,9 +99,9 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
                     "java.time.LocalDate",
                     "java.time.ZonedDateTime"));
 
-            connection.tableServiceClient().applyPreviewColumns(applyPreviewRequest, metadata, callback::apply);
+            connection.tableServiceClient().applyPreviewColumns(applyPreviewRequest.build(), callback);
         }, "preview");
-        previewedState.refetch(null, connection.metadata()).then(result -> null, err -> null);
+        previewedState.refetch().then(result -> null, err -> null);
         return previewedState;
     }
 
@@ -133,7 +135,7 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
     private boolean isReverseViewport;
     private BarrageSubscriptionOptions options;
 
-    private BiDiStream<FlightData, FlightData> doExchange;
+    private BiDiStream<Flight.FlightData, Flight.FlightData> doExchange;
     protected WebBarrageSubscription barrageSubscription;
 
     protected Status status = Status.STARTING;
@@ -178,12 +180,12 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
             this.barrageSubscription = WebBarrageSubscription.subscribe(
                     subscriptionType, state, viewportChangedHandler, dataChangedHandler);
 
-            doExchange = connection.<FlightData, FlightData>streamFactory().create(
-                    headers -> connection.flightServiceClient().doExchange(headers),
-                    (first, headers) -> connection.browserFlightServiceClient().openDoExchange(first, headers),
-                    (next, headers, c) -> connection.browserFlightServiceClient().nextDoExchange(next, headers,
-                            c::apply),
-                    new FlightData());
+            doExchange =
+                    connection.<Flight.FlightData, Flight.FlightData>streamFactory().<BrowserFlight.BrowserNextResponse>create(
+                            headers -> connection.flightServiceClient().doExchange(headers),
+                            (first, callback) -> connection.browserFlightServiceClient().openDoExchange(first,
+                                    callback),
+                            (next, callback) -> connection.browserFlightServiceClient().nextDoExchange(next, callback));
 
             doExchange.onData(this::onFlightData);
             doExchange.onEnd(this::onStreamEnd);
@@ -246,14 +248,15 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
                 .previewListLengthLimit(previewListLengthLimit)
                 .build();
         FlatBufferBuilder request = subscriptionRequest(
-                Js.uncheckedCast(state.getHandle().getTicket()),
+                state.getHandle().getTicket().getTicket().toByteArray(),
                 columnBitSet,
                 viewport,
                 options,
                 isReverseViewport);
-        FlightData subscriptionRequest = new FlightData();
-        subscriptionRequest
-                .setAppMetadata(WebBarrageUtils.wrapMessage(request, BarrageMessageType.BarrageSubscriptionRequest));
+        Flight.FlightData subscriptionRequest = Flight.FlightData.newBuilder()
+                .setAppMetadata(ByteStringAccess
+                        .wrap(WebBarrageUtils.wrapMessage(request, BarrageMessageType.BarrageSubscriptionRequest)))
+                .build();
         doExchange.send(subscriptionRequest);
     }
 
@@ -570,7 +573,7 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
 
     private final WebBarrageMessageReader reader = new WebBarrageMessageReader();
 
-    private void onFlightData(FlightData data) {
+    private void onFlightData(Flight.FlightData data) {
         WebBarrageMessage message;
         try {
             message = reader.parseFrom(options, state.columnTypes(), state.componentTypes(), data);
@@ -583,16 +586,16 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
         }
     }
 
-    protected void onStreamEnd(ResponseStreamWrapper.Status status) {
+    protected void onStreamEnd(io.grpc.Status status) {
         if (isClosed()) {
             return;
         }
-        if (status.isTransportError()) {
+        if (WorkerConnection.isTransportError(status)) {
             // If the subscription isn't closed and we hit a transport error, allow it to restart
             this.status = Status.STARTING;
         } else {
             // Subscription failed somehow, fire an event
-            fail(status.getDetails());
+            fail(status.getDescription());
         }
     }
 

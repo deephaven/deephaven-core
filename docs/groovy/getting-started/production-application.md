@@ -3,7 +3,7 @@ title: Install and run the Deephaven production application
 sidebar_label: Production application
 ---
 
-This guide will show you how to install and launch the Deephaven Community Core production application. The production application runs Deephaven from artifacts produced during each release cycle. It runs Deephaven without installing Docker or building from source code. It is the recommended way to run production applications that use Deephaven, hence its name. This guide only covers getting started with the production application. For more advanced configuration options, see [Configure the production application](../how-to-guides/configuration/configure-production-application.md).
+This guide shows you how to install and launch the Deephaven Community Core production application. The production application runs Deephaven from artifacts produced during each release cycle. It runs Deephaven without installing Docker or building from source code. It is the recommended way to run production applications that use Deephaven, hence its name. This guide only covers getting started with the production application. For more advanced configuration options, see [Configure the production application](../how-to-guides/configuration/configure-production-application.md).
 
 ## Supported operating systems
 
@@ -21,14 +21,13 @@ Deephaven is only supported on:
 | ------- | ------------------- | ---------------- |
 | java    | latest LTS          | >= 17            |
 
-## Get the artifact
+## Get the artifacts
 
-The Deephaven artifacts are attached to each [Deephaven release](https://github.com/deephaven/deephaven-core/releases).
-The latest release is available at [https://github.com/deephaven/deephaven-core/releases/latest](https://github.com/deephaven/deephaven-core/releases/latest). Only one of the artifacts is required to run the production application:
+The Deephaven artifacts are attached to each [Deephaven release](https://github.com/deephaven/deephaven-core/releases). The latest release is available at [https://github.com/deephaven/deephaven-core/releases/latest](https://github.com/deephaven/deephaven-core/releases/latest). Only one of the artifacts is required to run the production application:
 
 - The server artifact in tar format.
 
-It's recommended to set your preferred version with an environment variable. The shell commands in this guide set and use the `DH_VERSION` environment variable:
+It's recommended that you set your preferred version with an environment variable. The shell commands in this guide set and use the `DH_VERSION` environment variable:
 
 ```bash
 export DH_VERSION=0.39.2
@@ -62,11 +61,11 @@ You can stop the server with `ctrl+C` or `cmd+C`.
 
 ### Authentication
 
-Deephaven, by default, uses [pre-shared key authentication](../how-to-guides/authentication/auth-psk.md). If no key is set, a randomly generated key will be used to log into the server each time it starts. The randomly generated key is printed to the Docker logs like this:
+Deephaven, by default, uses [pre-shared key authentication](../how-to-guides/authentication/auth-psk.md). If no key is set, a randomly generated key is used to log into the server each time it starts. The randomly generated key is printed to the Docker logs like this:
 
 ![Logs display a randomly generated key](../assets/tutorials/default-psk.png)
 
-To set your own pre-shared key, add `-Dauthentication.psk=<YourPasswordHere>` to the `START_OPTS`. The following command uses `YOUR_PASSWORD_HERE` as the pre-shared key.
+To set your own pre-shared key, add `-Dauthentication.psk=<YourPasswordHere>` to the `START_OPTS`. The following command uses `YOUR_PASSWORD_HERE` as the pre-shared key:
 
 ```bash
 START_OPTS="-Dauthentication.psk=YOUR_PASSWORD_HERE -Ddeephaven.console.type=groovy" server-jetty-${DH_VERSION}/bin/start
@@ -86,7 +85,7 @@ START_OPTS="-DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler -Dde
 import { TutorialCTA } from '@theme/deephaven/CTA';
 
 <div className="row">
-<TutorialCTA to="/core/groovy/docs/tutorials/crash-course/architecture-overview" />
+<TutorialCTA to="/core/groovy/docs/getting-started/crash-course/overview" />
 </div>
 
 ## Related documentation

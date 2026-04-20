@@ -1,5 +1,4 @@
 ---
-id: gcp-linux
 title: Use Deephaven in a GCP Linux instance
 sidebar_label: GCP
 ---

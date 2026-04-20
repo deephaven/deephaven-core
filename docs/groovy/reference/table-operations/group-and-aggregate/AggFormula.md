@@ -122,7 +122,7 @@ result = source.aggBy(myAgg, "Letter")
 
 ## Related documentation
 
-- [How to create an empty table](../../../how-to-guides/new-and-empty-table.md#emptytable)
+- [How to create static tables](../../../how-to-guides/new-and-empty-table.md)
 - [How to create multiple summary statistics for groups](../../../how-to-guides/combined-aggregations.md)
 - [`AggMin`](./AggMin.md)
 - [Javadoc](https://deephaven.io/core/javadoc/io/deephaven/api/agg/Aggregation.html#AggFormula(java.lang.String,java.lang.String,java.lang.String...))

@@ -234,8 +234,10 @@ public class RegionedColumnSourceManager
         } else {
             // This RCSM will be managing table locations to prevent them from being de-scoped but will not otherwise
             // participate in the liveness management process.
-            livenessNode = new ReferenceCountedLivenessNode(false) {};
-            livenessNode.retainReference();
+            final ReferenceCountedLivenessNode staticLivenessNode = new ReferenceCountedLivenessNode(false) {};
+            staticLivenessNode.retainReference();
+            staticLivenessNode.ensureCleanupOnGC();
+            livenessNode = staticLivenessNode;
         }
 
         try (final SafeCloseable ignored = isRefreshing ? LivenessScopeStack.open() : null) {

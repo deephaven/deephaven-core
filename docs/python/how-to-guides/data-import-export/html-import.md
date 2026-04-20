@@ -2,7 +2,7 @@
 title: Read HTML files into Deephaven tables
 ---
 
-While Deephaven does not have its own methods for reading HTML tables, it's easy to do with [`pandas`](https://pandas.pydata.org/pandas-docs/stable/index.html) or [BeautifulSoup](https://www.crummy.com/software/BeautifulSoup/bs4/doc/). This guide will demonstrate multiple ways to pull data from online HTML tables into Deephaven tables.
+While Deephaven does not have its own methods for reading HTML tables, it's easy to do with [`pandas`](https://pandas.pydata.org/docs/index.html) or [BeautifulSoup](https://www.crummy.com/software/BeautifulSoup/bs4/doc/). This guide will demonstrate multiple ways to pull data from online HTML tables into Deephaven tables.
 
 ## HTML table
 
@@ -140,9 +140,9 @@ We'll use this HTML table in the examples below:
 
 ## `pandas.read_html`
 
-[`pandas.read_html`](https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.read_html.html) is a convenient method for reading HTML tables into a list of pandas DataFrames. The method can be used to read tables from a URL or a local file.
+[`pandas.read_html`](https://pandas.pydata.org/docs/reference/api/pandas.read_html.html) is a convenient method for reading HTML tables into a list of pandas DataFrames. The method can be used to read tables from a URL or a local file.
 
-We'll start with an example of how to use [`pandas.read_html`](https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.read_html.html) to read an HTML table from a URL and convert it to a Deephaven table. This approach is simple and easy, but has some limitations - for instance, it does not handle the non-numerical values in this table gracefully:
+We'll start with an example of how to use [`pandas.read_html`](https://pandas.pydata.org/docs/reference/api/pandas.read_html.html) to read an HTML table from a URL and convert it to a Deephaven table. This approach is simple and easy, but has some limitations - for instance, it does not handle the non-numerical values in this table gracefully:
 
 ```python order=deephaven_theme_colors
 from deephaven import pandas as dhpd
@@ -224,7 +224,7 @@ deephaven_theme_colors = new_table(
 
 Since HTML tables store all data as plain text and have no concept of data types, some care must be taken when importing HTML tables into Deephaven to ensure that you end up with correct data types for each column. Deephaven's [`to_table`](../../reference/pandas/to-table.md) method will automatically infer types as long as `infer_objects=True`, but to guarantee that the types are correct, manual specification is recommended.
 
-Whether you are using [`pandas`](https://pandas.pydata.org/pandas-docs/stable/index.html) or [BeautifulSoup](https://www.crummy.com/software/BeautifulSoup/bs4/doc/), you can specify the data type of each column at either the DataFrame stage or by calling [`update`](../../reference/table-operations/select/update.md) to typecast columns after the Deephaven table has been created. This can be done by using the [`astype`](https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.astype.html#pandas.DataFrame.astype) method in [`pandas`](https://pandas.pydata.org/pandas-docs/stable/index.html) or by using one of Deephaven's [selection](../use-select-view-update.md) methods.
+Whether you are using [`pandas`](https://pandas.pydata.org/docs/index.html) or [BeautifulSoup](https://www.crummy.com/software/BeautifulSoup/bs4/doc/), you can specify the data type of each column at either the DataFrame stage or by calling [`update`](../../reference/table-operations/select/update.md) to typecast columns after the Deephaven table has been created. This can be done by using the [`astype`](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.astype.html#pandas.DataFrame.astype) method in [`pandas`](https://pandas.pydata.org/docs/index.html) or by using one of Deephaven's [selection](../use-select-view-update.md) methods.
 
 ### Typing with selection methods
 
@@ -295,11 +295,11 @@ table_typed = deephaven_theme_colors.update(
 )
 ```
 
-Note that the Pandas [`DataFrame.astype`](https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.astype.html#pandas.DataFrame.astype) method can also be used to restore typing. However, it does not handle Deephaven's datetime types effectively, so the [`update`](../../reference/table-operations/select/update.md) method is recommended in those cases.
+Note that the Pandas [`DataFrame.astype`](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.astype.html#pandas.DataFrame.astype) method can also be used to restore typing. However, it does not handle Deephaven's datetime types effectively, so the [`update`](../../reference/table-operations/select/update.md) method is recommended in those cases.
 
 ### Typing with `astype`
 
-This example demonstrates how to add typing to the `deephaven_theme_colors` table created above, using [`astype`](https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.astype.html#pandas.DataFrame.astype):
+This example demonstrates how to add typing to the `deephaven_theme_colors` table created above, using [`astype`](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.astype.html#pandas.DataFrame.astype):
 
 ```python order=deephaven_theme_colors
 from deephaven import pandas as dhpd

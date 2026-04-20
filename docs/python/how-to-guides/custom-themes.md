@@ -7,16 +7,17 @@ This guide will show you how to create a custom theme for the Deephaven UI. Them
 
 ![An example theme that emulates the look of the Financial Times website](../assets/how-to/example-theme.jpg)
 
-## Install the plugin
+## Development setup
 
-In order to design and preview your theme, you will need a running Deephaven server, and to clone and install the [Deephaven plugins](https://github.com/deephaven/deephaven-plugins/tree/main) and [Deephaven web-client-ui](https://github.com/deephaven/web-client-ui) repositories.
+To design and preview your theme during development, you will need a running Deephaven server, and to clone and install the [Deephaven plugins](https://github.com/deephaven/deephaven-plugins/tree/main) and [Deephaven web-client-ui](https://github.com/deephaven/web-client-ui) repositories.
+
+> [!NOTE]
+> This setup is for **development only**. Once your theme is complete, you install it like any other JS plugin — see [Install and use plugins](./install-use-plugins.md). The plugin server and web-client-ui dev server described below provide hot-reloading during development so you can iterate quickly.
 
 1. A Deephaven server.
-
    - Start a deephaven-core server on port 10000. You can follow the instructions here in the [Quickstart](../getting-started/quickstart.md).
 
-2. A plugin server. This server will proxy your plugins, which allows you to develop your theme without needing to reinstall the plugin every time you make a change.
-
+2. A plugin development server. This server proxies your plugins during development, allowing you to iterate on your theme without reinstalling the plugin after every change.
    - Clone the [deephaven-plugins project](https://github.com/deephaven/deephaven-plugins/tree/main).
    - Open a separate terminal from where you are running deephaven-core. From the deephaven-plugins project repository root directory, run:
 
@@ -215,15 +216,12 @@ Next, you'll want to override colors and other variables to create your custom t
   /* Chart colorway is special in that it contains a space separated 
   list of colors to assign in order for each series in a chart. 
   Consider including at least 10 colors. */
-  --dh-color-chart-colorway: var(--dh-color-accent-bg) var(
-      --dh-color-visual-green
-    )
-    var(--dh-color-visual-yellow) var(--dh-color-visual-purple) var(
-      --dh-color-visual-orange
-    ) var(--dh-color-visual-red) var(--dh-color-visual-chartreuse) var(
-      --dh-color-visual-fuchsia
-    )
-    var(--dh-color-visual-blue) var(--dh-color-visual-magenta) var(--dh-color-white);
+  --dh-color-chart-colorway: var(--dh-color-accent-bg)
+    var(--dh-color-visual-green) var(--dh-color-visual-yellow)
+    var(--dh-color-visual-purple) var(--dh-color-visual-orange)
+    var(--dh-color-visual-red) var(--dh-color-visual-chartreuse)
+    var(--dh-color-visual-fuchsia) var(--dh-color-visual-blue)
+    var(--dh-color-visual-magenta) var(--dh-color-white);
 }
 
 /*

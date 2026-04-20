@@ -113,6 +113,7 @@ import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.VisibleForTesting;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -336,6 +337,71 @@ public class KafkaTools {
             protected abstract KeyOrValueProcessor getProcessor(
                     TableDefinition tableDef,
                     KeyOrValueIngestData data);
+
+            private KeyOrValueIngestData getIngestDataAndIncrementColumnIndex(
+                    final KeyOrValue keyOrValue,
+                    final SchemaRegistryClient schemaRegistryClient,
+                    final Map<String, ?> configs,
+                    final MutableInt nextColumnIndexMut,
+                    final List<ColumnDefinition<?>> columnDefinitionsOut) {
+                final int ixPre = nextColumnIndexMut.get();
+                final int sizePre = columnDefinitionsOut.size();
+                // It's unfortunate we have to do this; but the getIngestData signature and design of KeyOrValueSpec
+                // would need a breaking change to improve in these regards. We are trying to be "lenient" for impls
+                // that improperly update nextColumnIndexMut, or setting the wrong index on simpleColumnIndex, and
+                // warn them that it appears they are doing something wrong. If an implementation is improperly adding
+                // to columnsDefinitionOut though, this is a more serious error.
+                final KeyOrValueIngestData ingestData = getIngestData(keyOrValue, schemaRegistryClient, configs,
+                        nextColumnIndexMut, columnDefinitionsOut);
+                // Note: choosing to _not_ log warning when caller is mutating the index "incorrectly", but keeping code
+                // commented out here for future reference.
+                // final int addedIx = nextColumnIndexMut.get() - ixPre;
+                final int addedColumns = columnDefinitionsOut.size() - sizePre;
+                if (ingestData == null) {
+                    // ignore case (or, possibly a complex impl that chooses to return null when it's empty):
+                    // expecting no modifications
+                    if (addedColumns != 0) {
+                        throw new IllegalStateException(
+                                "KeyOrValueSpec getIngestData is modifying columnDefinitionsOut without returning ingest data");
+                    }
+                    // if (addedIx != 0) {
+                    // log.warn().append(
+                    // "Ignore KeyOrValueSpec getIngestData is improperly mutating the index; manually correcting...")
+                    // .endl();
+                    // }
+                } else if (ingestData.isSimple()) {
+                    // simple case:
+                    // expecting exactly one increment and one column
+                    if (addedColumns != 1) {
+                        throw new IllegalStateException(
+                                "Simple KeyOrValueSpec getIngestData is not adding exactly one column");
+                    }
+                    // if (addedIx != 1) {
+                    // log.warn().append(
+                    // "Simple KeyOrValueSpec did not properly mutate the index by 1; manually correcting...")
+                    // .endl();
+                    // }
+                    // if (ingestData.simpleColumnIndex != ixPre) {
+                    // log.warn().append("Simple KeyOrValueSpec set a bad simpleColumnIndex; manually correcting...")
+                    // .endl();
+                    // }
+                    // The fact that we are setting this here means that this would ideally not be the responsibility of
+                    // the implementation...
+                    ingestData.simpleColumnIndex = ixPre;
+                } else {
+                    // complex case:
+                    // expecting no increments - we'll increase the index based on any columns that were added
+                    // if (addedIx != 0) {
+                    // log.warn().append(
+                    // "Complex KeyOrValueSpec getIngestData is improperly mutating the index; manually correcting...")
+                    // .endl();
+                    // }
+                }
+                // The fact that we are setting this here means that this would ideally not be the responsibility of the
+                // implementation...
+                nextColumnIndexMut.set(ixPre + addedColumns);
+                return ingestData;
+            }
         }
 
         private static final KeyOrValueSpec FROM_PROPERTIES = new SimpleConsume(null, null);
@@ -995,7 +1061,20 @@ public class KafkaTools {
             @NotNull final Consume.KeyOrValueSpec keySpec,
             @NotNull final Consume.KeyOrValueSpec valueSpec,
             @NotNull final TableType tableType) {
-        final MutableObject<Table> resultHolder = new MutableObject<>();
+        return consumeToTableAndAdapter(kafkaProperties, topic, partitionFilter, partitionToInitialOffset, keySpec,
+                valueSpec, tableType).table();
+    }
+
+    @VisibleForTesting
+    static TableAndAdapter consumeToTableAndAdapter(
+            @NotNull final Properties kafkaProperties,
+            @NotNull final String topic,
+            @NotNull final IntPredicate partitionFilter,
+            @NotNull final IntToLongFunction partitionToInitialOffset,
+            @NotNull final Consume.KeyOrValueSpec keySpec,
+            @NotNull final Consume.KeyOrValueSpec valueSpec,
+            @NotNull final TableType tableType) {
+        final MutableObject<TableAndAdapter> resultHolder = new MutableObject<>();
         final ExecutionContext enclosingExecutionContext = ExecutionContext.getContext();
         final LivenessManager enclosingLivenessManager = LivenessScopeStack.peek();
 
@@ -1013,14 +1092,35 @@ public class KafkaTools {
                         final Table blinkTable = streamToBlinkTableAdapter.table();
                         final Table result = tableType.walk(new BlinkTableOperation(blinkTable));
                         enclosingLivenessManager.manage(result);
-                        resultHolder.setValue(result);
+                        // Note: not adding streamToBlinkTableAdapter to liveness manager; liveness is expected to be
+                        // retained through the result table. The extra result (the adapter) is only used for testing.
+                        resultHolder.setValue(new TableAndAdapter(result, streamToBlinkTableAdapter));
                     }
                 };
 
         consume(kafkaProperties, topic, partitionFilter,
                 InitialOffsetLookup.adapt(partitionToInitialOffset), keySpec, valueSpec,
                 StreamConsumerRegistrarProvider.single(registrar), null);
-        return resultHolder.getValue();
+        return resultHolder.get();
+    }
+
+    @VisibleForTesting
+    static class TableAndAdapter {
+        private final Table table;
+        private final StreamToBlinkTableAdapter adapter;
+
+        private TableAndAdapter(Table table, StreamToBlinkTableAdapter adapter) {
+            this.table = Objects.requireNonNull(table);
+            this.adapter = Objects.requireNonNull(adapter);
+        }
+
+        public Table table() {
+            return table;
+        }
+
+        public StreamToBlinkTableAdapter adapter() {
+            return adapter;
+        }
     }
 
     /**
@@ -1273,10 +1373,10 @@ public class KafkaTools {
                     cc.setColumnIndex.setColumnIndex(publisherParametersBuilder, nextColumnIndex.getAndIncrement());
                 });
 
-        final KeyOrValueIngestData keyIngestData = keySpec.getIngestData(KeyOrValue.KEY,
-                schemaRegistryClient, configs, nextColumnIndex, columnDefinitions);
-        final KeyOrValueIngestData valueIngestData = valueSpec.getIngestData(KeyOrValue.VALUE,
-                schemaRegistryClient, configs, nextColumnIndex, columnDefinitions);
+        final KeyOrValueIngestData keyIngestData = keySpec.getIngestDataAndIncrementColumnIndex(
+                KeyOrValue.KEY, schemaRegistryClient, configs, nextColumnIndex, columnDefinitions);
+        final KeyOrValueIngestData valueIngestData = valueSpec.getIngestDataAndIncrementColumnIndex(
+                KeyOrValue.VALUE, schemaRegistryClient, configs, nextColumnIndex, columnDefinitions);
 
         final TableDefinition tableDefinition = TableDefinition.of(columnDefinitions);
         publisherParametersBuilder.setTableDefinition(tableDefinition);
@@ -1670,6 +1770,10 @@ public class KafkaTools {
         public int simpleColumnIndex = NULL_COLUMN_INDEX;
         public Function<Object, Object> toObjectChunkMapper = Function.identity();
         public Object extra;
+
+        private boolean isSimple() {
+            return simpleColumnIndex != NULL_COLUMN_INDEX;
+        }
     }
 
     private interface SetColumnIndex {

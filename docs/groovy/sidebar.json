@@ -106,6 +106,14 @@
                 "path": "conceptual/table-types.md"
               },
               {
+                "label": "Initialization and updates",
+                "path": "how-to-guides/initialization-and-updates.md"
+              },
+              {
+                "label": "Deephaven Vectors",
+                "path": "conceptual/arrays-vs-vectors.md"
+              },
+              {
                 "label": "Core API design",
                 "path": "conceptual/deephaven-core-api.md"
               },
@@ -176,6 +184,10 @@
               {
                 "label": "Arrow Flight",
                 "path": "how-to-guides/data-import-export/arrow-flight.md"
+              },
+              {
+                "label": "Arrow/Barrage Schema",
+                "path": "how-to-guides/data-import-export/barrage-schema.md"
               },
               {
                 "label": "Iceberg",
@@ -506,6 +518,10 @@
                     "path": "how-to-guides/user-interface/navigating-the-ui.md"
                   },
                   {
+                    "label": "Upload a table from a file",
+                    "path": "how-to-guides/user-interface/upload-table-from-file.md"
+                  },
+                  {
                     "label": "Set date-time format",
                     "path": "how-to-guides/set-date-time-format.md"
                   },
@@ -827,15 +843,6 @@
                 ]
               },
               {
-                "label": "Imports",
-                "items": [
-                  {
-                    "label": "Auto-imported functions",
-                    "path": "reference/query-language/query-library/auto-imported-functions.md"
-                  }
-                ]
-              },
-              {
                 "label": "Errors and troubleshooting",
                 "items": [
                   {
@@ -1008,6 +1015,10 @@
                 "path": "reference/cheat-sheets/csv.md"
               },
               {
+                "label": "Kafka",
+                "path": "reference/cheat-sheets/kafka.md"
+              },
+              {
                 "label": "Parquet",
                 "path": "reference/cheat-sheets/parquet.md"
               },
@@ -1091,6 +1102,10 @@
           {
             "label": "Create your own plugin",
             "path": "how-to-guides/create-plugins.md"
+          },
+          {
+            "label": "Create a JavaScript plugin",
+            "path": "how-to-guides/create-js-plugins.md"
           }
         ]
       },
@@ -1224,6 +1239,14 @@
                 "label": "Advanced table constructors",
                 "items": [
                   {
+                    "label": "addOnlyToBlink",
+                    "path": "reference/table-operations/create/addOnlyToBlink.md"
+                  },
+                  {
+                    "label": "blinkToAppendOnly",
+                    "path": "reference/table-operations/create/blink-to-append-only.md"
+                  },
+                  {
                     "label": "FunctionGeneratedTableFactory",
                     "path": "reference/table-operations/create/create.md"
                   },
@@ -1240,16 +1263,12 @@
                     "path": "reference/table-operations/create/TablePublisher.md"
                   },
                   {
-                    "label": "blinkToAppendOnly",
-                    "path": "reference/table-operations/create/blink-to-append-only.md"
+                    "label": "removeBlink",
+                    "path": "reference/table-operations/create/remove-blink.md"
                   },
                   {
                     "label": "toBlink",
                     "path": "reference/table-operations/create/toBlink.md"
-                  },
-                  {
-                    "label": "removeBlink",
-                    "path": "reference/table-operations/create/remove-blink.md"
                   }
                 ]
               },
@@ -1401,6 +1420,10 @@
                   {
                     "label": "hasColumns",
                     "path": "reference/table-operations/metadata/hasColumns.md"
+                  },
+                  {
+                    "label": "isBlink",
+                    "path": "reference/table-operations/metadata/isBlink.md"
                   },
                   {
                     "label": "isEmpty",
@@ -2665,7 +2688,56 @@
             "items": [
               {
                 "label": "Auto-imported functions",
-                "path": "reference/query-language/formulas/auto-imported-functions.md"
+                "items": [
+                  {
+                    "label": "Overview",
+                    "path": "reference/query-language/query-library/auto-imported/index.md"
+                  },
+                  {
+                    "label": "Basic",
+                    "path": "reference/query-language/query-library/auto-imported/basic.md"
+                  },
+                  {
+                    "label": "Math",
+                    "path": "reference/query-language/query-library/auto-imported/math.md"
+                  },
+                  {
+                    "label": "Time",
+                    "path": "reference/query-language/query-library/auto-imported/time.md"
+                  },
+                  {
+                    "label": "Logic",
+                    "path": "reference/query-language/query-library/auto-imported/logic.md"
+                  },
+                  {
+                    "label": "Parse",
+                    "path": "reference/query-language/query-library/auto-imported/parse.md"
+                  },
+                  {
+                    "label": "Sort",
+                    "path": "reference/query-language/query-library/auto-imported/sort.md"
+                  },
+                  {
+                    "label": "Search",
+                    "path": "reference/query-language/query-library/auto-imported/search.md"
+                  },
+                  {
+                    "label": "GUI",
+                    "path": "reference/query-language/query-library/auto-imported/gui.md"
+                  },
+                  {
+                    "label": "Constants",
+                    "path": "reference/query-language/query-library/auto-imported/constants.md"
+                  },
+                  {
+                    "label": "Java",
+                    "path": "reference/query-language/query-library/auto-imported/java.md"
+                  },
+                  {
+                    "label": "Data types",
+                    "path": "reference/query-language/query-library/auto-imported/data-types.md"
+                  }
+                ]
               },
               {
                 "label": "Automatic Groovy Imports",
@@ -2788,6 +2860,10 @@
                     "path": "reference/community-questions/blink-ring.md"
                   },
                   {
+                    "label": "How do I create a partitioned blink table?",
+                    "path": "reference/community-questions/partitioned-blink-tables-drop-attribute.md"
+                  },
+                  {
                     "label": "How do I filter by time of day across all dates?",
                     "path": "reference/community-questions/filter-time-window-all-dates.md"
                   }
@@ -2884,6 +2960,10 @@
               {
                 "label": "Integrations: AWS",
                 "items": [
+                  {
+                    "label": "How do I run Deephaven behind AWS ALB?",
+                    "path": "reference/community-questions/aws-alb-configuration.md"
+                  },
                   {
                     "label": "Why can't I read from S3?",
                     "path": "reference/community-questions/aws-timeout.md"

@@ -19,9 +19,9 @@ import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.locations.TableKey;
 import io.deephaven.engine.table.impl.select.SortedClockFilter;
 import io.deephaven.engine.table.impl.select.UnsortedClockFilter;
+import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedTableComponentFactoryImpl;
 import io.deephaven.engine.testutil.StepClock;
-import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.filters.ReindexingRowSetCapturingFilter;
 import io.deephaven.engine.testutil.filters.RowSetCapturingFilter;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
@@ -41,7 +41,9 @@ import java.util.Collections;
 
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 import static io.deephaven.engine.util.TableTools.stringCol;
+import static junit.framework.TestCase.assertFalse;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class TestPartitionAwareSourceTableNoMocks {
     @Rule
@@ -133,7 +135,7 @@ public class TestPartitionAwareSourceTableNoMocks {
         final RowSetCapturingFilter filter0 = new RowSetCapturingFilter(RawString.of("II < 64"));
         final RowSetCapturingFilter filter1 = new RowSetCapturingFilter(FilterIn.of(
                 ColumnName.of("partition"), Literal.of("A"), Literal.of("B")));
-        final Table res0 = testFilterVisibility(partitionSize, filter0, filter1);
+        final Table res0 = testFilterVisibility(partitionSize, false, filter0, filter1);
 
         // ensure the inner filter sees only the two partitions' data
         Assert.eq(filter0.numRowsProcessed(), "filter0.numRowsProcessed()", 2 * partitionSize);
@@ -144,7 +146,7 @@ public class TestPartitionAwareSourceTableNoMocks {
         filter1.reset();
 
         // do the same test, but make the inner filter a serial filter; partitioning filter checks all rows
-        final Table res1 = testFilterVisibility(partitionSize, filter0.withSerial(), filter1);
+        final Table res1 = testFilterVisibility(partitionSize, false, filter0.withSerial(), filter1);
 
         // ensure the inner filter sees all four partitions' data
         Assert.eq(filter0.numRowsProcessed(), "filter0.numRowsProcessed()", 4 * partitionSize);
@@ -156,13 +158,61 @@ public class TestPartitionAwareSourceTableNoMocks {
     }
 
     @Test
+    public void testPartitioningFilterDoesNotRespectSerialWithStatefulDefault() {
+        testPartitioningFilterDoesNotRespectSerialWithStatefulDefault(false, false);
+        testPartitioningFilterDoesNotRespectSerialWithStatefulDefault(true, false);
+        testPartitioningFilterDoesNotRespectSerialWithStatefulDefault(false, true);
+        testPartitioningFilterDoesNotRespectSerialWithStatefulDefault(true, true);
+    }
+
+    public void testPartitioningFilterDoesNotRespectSerialWithStatefulDefault(boolean statelessByDefault,
+            boolean iterateFilters) {
+        final boolean oldStatefulDefault = QueryTable.STATELESS_FILTERS_BY_DEFAULT;
+        try (final SafeCloseable ignored = () -> {
+            QueryTable.STATELESS_FILTERS_BY_DEFAULT = oldStatefulDefault;
+        }) {
+            QueryTable.STATELESS_FILTERS_BY_DEFAULT = statelessByDefault;
+
+            final long partitionSize = 128;
+            final RowSetCapturingFilter filter0 = new RowSetCapturingFilter(RawString.of("II < 64"));
+            final RowSetCapturingFilter filter1 = new RowSetCapturingFilter(
+                    RawString.of("partition.equalsIgnoreCase(`A`) || partition.equalsIgnoreCase(`B`)"));
+
+            final Table res0 = testFilterVisibility(partitionSize, iterateFilters, filter0, filter1);
+
+
+            // ensure the inner filter sees only the two partitions' data
+            Assert.eq(filter0.numRowsProcessed(), "filter0.numRowsProcessed()", 2 * partitionSize);
+            // ensure we see the partition filter as filtering only the partitioned rows
+            Assert.eq(filter1.numRowsProcessed(), "filter1.numRowsProcessed()", 4);
+
+            filter0.reset();
+            filter1.reset();
+
+            // do the same test, but make the inner filter a serial filter; partitioning filter checks all rows
+            final WhereFilter explicitSerial = filter1.withSerial();
+            final Table res1 = testFilterVisibility(partitionSize, iterateFilters, filter0, explicitSerial);
+            assertTrue(filter0.permitParallelization());
+            assertFalse(explicitSerial.permitParallelization());
+
+            // ensure the inner filter sees all four partitions' data
+            Assert.eq(filter0.numRowsProcessed(), "filter0.numRowsProcessed()", 4 * partitionSize);
+            // ensure the partitioning filter sees all the values
+            Assert.eq(filter1.numRowsProcessed(), "filter1.numRowsProcessed()", 2 * partitionSize);
+
+            assertTableEquals(res0, res1);
+            Assert.eq(res0.size(), "res0.size()", 2 * (partitionSize / 2));
+        }
+    }
+
+    @Test
     public void testPartitioningFilterWithRespectsBarrier() {
         final Object barrier = new Object();
         final long partitionSize = 128;
         final RowSetCapturingFilter filter0 = new RowSetCapturingFilter(RawString.of("II < 64"));
         final RowSetCapturingFilter filter1 = new RowSetCapturingFilter(FilterIn.of(
                 ColumnName.of("partition"), Literal.of("A"), Literal.of("B")));
-        final Table res0 = testFilterVisibility(partitionSize, filter0.withDeclaredBarriers(barrier), filter1);
+        final Table res0 = testFilterVisibility(partitionSize, false, filter0.withDeclaredBarriers(barrier), filter1);
 
         // ensure the inner filter sees only the two partitions' data
         Assert.eq(filter0.numRowsProcessed(), "filter0.numRowsProcessed()", 2 * partitionSize);
@@ -174,7 +224,7 @@ public class TestPartitionAwareSourceTableNoMocks {
 
         // do the same test, but make the outer filter respect the barrier on the inner filter
         final Table res1 = testFilterVisibility(
-                partitionSize, filter0.withDeclaredBarriers(barrier), filter1.withRespectedBarriers(barrier));
+                partitionSize, false, filter0.withDeclaredBarriers(barrier), filter1.withRespectedBarriers(barrier));
 
         // ensure the inner filter sees all four partitions' data
         Assert.eq(filter0.numRowsProcessed(), "filter0.numRowsProcessed()", 4 * partitionSize);
@@ -196,7 +246,8 @@ public class TestPartitionAwareSourceTableNoMocks {
         final RowSetCapturingFilter filter2 = new RowSetCapturingFilter(FilterIn.of(
                 ColumnName.of("partition"), Literal.of("B")));
         final Table res0 = testFilterVisibility(
-                partitionSize, filter0, filter1.withDeclaredBarriers(barrier), filter2.withRespectedBarriers(barrier));
+                partitionSize, false, filter0, filter1.withDeclaredBarriers(barrier),
+                filter2.withRespectedBarriers(barrier));
 
         // ensure the inner filter sees only the one partitions' data
         Assert.eq(filter0.numRowsProcessed(), "filter0.numRowsProcessed()", partitionSize);
@@ -219,7 +270,7 @@ public class TestPartitionAwareSourceTableNoMocks {
         final RowSetCapturingFilter filter2 = new RowSetCapturingFilter(FilterIn.of(
                 ColumnName.of("partition"), Literal.of("B")));
         final Table res0 = testFilterVisibility(
-                partitionSize, filter1.withDeclaredBarriers(barrier), filter0.withSerial(),
+                partitionSize, false, filter1.withDeclaredBarriers(barrier), filter0.withSerial(),
                 filter2.withRespectedBarriers(barrier));
 
         // ensure the inner filter sees two partitions' data
@@ -233,7 +284,7 @@ public class TestPartitionAwareSourceTableNoMocks {
         Assert.eq(res0.size(), "res0.size()", partitionSize / 2);
     }
 
-    private Table testFilterVisibility(final long partitionSize, final Filter... filters) {
+    private Table testFilterVisibility(final long partitionSize, boolean iterateFilters, final Filter... filters) {
         final PartitionAwareSourceTableTestUtils.TestTDS tds =
                 new PartitionAwareSourceTableTestUtils.TestTDS();
         final TableKey tableKey = new PartitionAwareSourceTableTestUtils.TableKeyImpl();
@@ -259,7 +310,15 @@ public class TestPartitionAwareSourceTableNoMocks {
         final DataIndex dataIndex = DataIndexer.getDataIndex(source, "partition");
         Assert.neqNull(dataIndex, "dataIndex");
 
-        return source.where(Filter.and(filters)).coalesce();
+        if (iterateFilters) {
+            Table result = source;
+            for (Filter filter : filters) {
+                result = result.where(filter);
+            }
+            return result.coalesce();
+        } else {
+            return source.where(Filter.and(filters)).coalesce();
+        }
     }
 
     @Test
@@ -795,5 +854,53 @@ public class TestPartitionAwareSourceTableNoMocks {
 
         assertTableEquals(TableTools.newTable(stringCol("partition", "A_x", "B_x", "C_x", "D_x")), selectDistinct1);
         assertTableEquals(TableTools.emptyTable(partitionSize).updateView("II=ii"), selectDistinct2);
+    }
+
+    @Test
+    public void testVirtualRowVariablesBeforeFilter() {
+        final long partitionSize = 128;
+
+        final PartitionAwareSourceTableTestUtils.TestTDS tds =
+                new PartitionAwareSourceTableTestUtils.TestTDS();
+
+        final TableKey tableKey = new PartitionAwareSourceTableTestUtils.TableKeyImpl();
+        final PartitionAwareSourceTableTestUtils.TableLocationProviderImpl tableLocationProvider =
+                (PartitionAwareSourceTableTestUtils.TableLocationProviderImpl) tds
+                        .getTableLocationProvider(tableKey);
+
+        // create 4 partitions;
+        for (char partition = 'A'; partition <= 'D'; partition++) {
+            tableLocationProvider.appendLocation(
+                    new PartitionAwareSourceTableTestUtils.TableLocationKeyImpl(String.valueOf(partition)));
+        }
+        tableLocationProvider.locations.values().forEach(location -> location.setSize(partitionSize));
+
+        final Table source = new PartitionAwareSourceTable(
+                TableDefinition.of(
+                        ColumnDefinition.ofString("partition").withPartitioning(),
+                        ColumnDefinition.ofLong("II")),
+                tableKey.toString(),
+                RegionedTableComponentFactoryImpl.INSTANCE,
+                tableLocationProvider,
+                null);
+
+        final Table withRowVariables = source.updateView("X=ii + 1");
+        Assertions.assertThat(withRowVariables).isInstanceOf(QueryTable.class);
+        final Table filtered = withRowVariables.where("II % 2 == 0");
+
+        Table expected = TableTools.emptyTable(partitionSize * 4).updateView("X=ii + 1").where("ii % 2 == 0");
+        assertTableEquals(expected, filtered.view("X"));
+
+        final Table withRowVariablesView = source.view("II", "X=ii + 1");
+        Assertions.assertThat(withRowVariablesView).isInstanceOf(QueryTable.class);
+        final Table viewFiltered = withRowVariablesView.where("II % 2 == 0");
+        assertTableEquals(expected, viewFiltered.view("X"));
+
+        // column arrays also coalesce
+        final Table withArray = source.view("II", "X=II_.size()");
+        Assertions.assertThat(withArray).isInstanceOf(QueryTable.class);
+        final Table withArrayFiltered = withArray.where("II % 2 == 0");
+        assertTableEquals(TableTools.emptyTable(partitionSize * 2).view("X=" + (partitionSize * 4) + "L"),
+                withArrayFiltered.view("X"));
     }
 }

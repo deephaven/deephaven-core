@@ -160,7 +160,7 @@ public class DeferredViewTableTest {
                 ArrayTypeUtils.EMPTY_STRING_ARRAY,
                 SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY,
                 WhereFilter.ZERO_LENGTH_WHERE_FILTER_ARRAY)
-                .updateView("Y = ii")
+                .updateView("Y = X")
                 .where(ConjunctiveFilter.of(serialFilter, freeFilter))
                 .coalesce();
 
@@ -180,7 +180,7 @@ public class DeferredViewTableTest {
                 ArrayTypeUtils.EMPTY_STRING_ARRAY,
                 SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY,
                 WhereFilter.ZERO_LENGTH_WHERE_FILTER_ARRAY)
-                .updateView("Y = ii")
+                .updateView("Y = X")
                 .where(ConjunctiveFilter.of(notSerialFilter, freeFilter))
                 .coalesce();
 
@@ -212,7 +212,7 @@ public class DeferredViewTableTest {
                 ArrayTypeUtils.EMPTY_STRING_ARRAY,
                 SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY,
                 WhereFilter.ZERO_LENGTH_WHERE_FILTER_ARRAY)
-                .updateView("Y = ii")
+                .updateView("Y = X")
                 .where(ConjunctiveFilter.of(
                         filter2,
                         filter0.withDeclaredBarriers(barrier),
@@ -248,7 +248,7 @@ public class DeferredViewTableTest {
                 ArrayTypeUtils.EMPTY_STRING_ARRAY,
                 SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY,
                 WhereFilter.ZERO_LENGTH_WHERE_FILTER_ARRAY)
-                .updateView("Y = ii")
+                .updateView("Y = X")
                 .where(ConjunctiveFilter.of(
                         filter0.withDeclaredBarriers(barrier),
                         filter1.withRespectedBarriers(barrier),

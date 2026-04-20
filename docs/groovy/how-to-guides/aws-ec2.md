@@ -53,8 +53,8 @@ With Deephaven running on your AWS instance, all that's left to do is to connect
 ## Related documentation
 
 - [Docker quickstart](../getting-started/docker-install.md)
-- [Deephaven production application](../getting-started/production-application.md)
 - [How to build from source](../getting-started/launch-build.md)
+- [Deephaven production application](../getting-started/production-application.md)
 
 <!-- - [How to use AWS ECS with Deephaven] -->
 

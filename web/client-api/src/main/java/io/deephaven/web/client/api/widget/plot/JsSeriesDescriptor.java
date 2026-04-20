@@ -15,8 +15,7 @@ import java.util.Map;
 
 @JsType(name = "SeriesDescriptor", namespace = "dh.plot")
 public class JsSeriesDescriptor {
-    // TODO (deephaven-core#3442) change to some kind of String+int union type
-    public String plotStyle;
+    public StringOrNumber plotStyle;
     @JsNullable
     public String name;
 
@@ -54,7 +53,7 @@ public class JsSeriesDescriptor {
     public JsSeriesDescriptor(JsPropertyMap<Object> source, Map<Object, JsAxisDescriptor> axisMap) {
         this();
 
-        plotStyle = JsData.getRequiredStringProperty(source, "plotStyle");
+        plotStyle = JsData.getRequiredStringOrIntProperty(source, "plotStyle");
         name = JsData.getStringProperty(source, "name");
         JsArray<JsPropertyMap<Object>> dataSources = JsData.getRequiredProperty(source, "dataSources").cast();
         this.dataSources = dataSources.map((sourceSource, index) -> new JsSourceDescriptor(sourceSource, axisMap));

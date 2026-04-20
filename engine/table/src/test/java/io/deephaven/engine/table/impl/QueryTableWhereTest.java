@@ -8,6 +8,7 @@ import gnu.trove.list.TLongList;
 import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.api.RawString;
 import io.deephaven.api.filter.Filter;
+import io.deephaven.base.FileUtils;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
@@ -40,6 +41,7 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.gui.table.filters.Condition;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
@@ -53,8 +55,11 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.File;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.nio.file.Files;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.*;
@@ -2975,6 +2980,28 @@ public abstract class QueryTableWhereTest {
         final Table fa2 = a2.where(Filter.or(whereFilters3));
         assertTableEquals(a2.where("Y in 1"), fa2);
 
+    }
+
+    @Test
+    public void testFilterType() throws IOException {
+        final Table t1 =
+                newTable(stringCol("Key", "A", "B", "C"), longCol("Value", 1, 2, 3), intCol("Sentinel", 101, 102, 103));
+        // The type doesn't match here, when we try to compare the long to a String we get a false
+        final Table t2 = t1.where("Value = `2`");
+        assertTableEquals(t1.head(0), t2);
+
+        final File tmpDir = Files.createTempDirectory("QueryTableWhereTest-FilterType").toFile();
+        try {
+            ParquetTools.writeTable(t1, tmpDir + "/Partition=p0/data.parquet");
+
+            final Table fromDisk = ParquetTools.readTable(tmpDir.getPath());
+
+            final Table t3 = fromDisk.where("Value = `2`").coalesce();
+            // make sure we have the same behavior for the regioned column sources
+            assertTableEquals(t1.view("Partition=`p0`", "Key", "Value", "Sentinel").head(0), t3);
+        } finally {
+            FileUtils.deleteRecursively(tmpDir);
+        }
     }
 
     /**

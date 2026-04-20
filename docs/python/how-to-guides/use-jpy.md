@@ -579,6 +579,9 @@ from deephaven import empty_table
 
 ### Python approach
 import random
+import os
+
+os.system("pip install numba")
 from numba import jit
 
 random.seed(12345)

@@ -52,4 +52,4 @@ print(type(result))
 
 ## Related documentation
 
-- [Pydoc](/core/pydoc/code/deephaven.numpy.html#deephaven.numpy.to_np_busdaycalendar)
+- [Pydoc](https://docs.deephaven.io/core/pydoc/code/deephaven.numpy.html#deephaven.numpy.to_np_busdaycalendar)

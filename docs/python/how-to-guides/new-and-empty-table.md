@@ -48,7 +48,7 @@ source = empty_table(100).update(
 )
 ```
 
-DQL is a powerful, versatile tool for table transformations. For more information, see the [Query string overview](./query-string-overview.md) for more.
+DQL is a powerful, versatile tool for table transformations. For more information, see the [Query string overview](./query-string-overview.md).
 
 ## `new_table`
 
@@ -69,7 +69,7 @@ result = new_table(
 )
 ```
 
-Here, we create an example with two integer columns. Then, we update the table to add a new column `X` via a [formula](./formulas.md) that uses a [variable](./python-variables.md), a [Python function](./python-functions.md), an [auto-imported Java function](../reference/query-language/query-library/auto-imported-functions.md), and various [operators](./operators.md):
+Here, we create an example with two integer columns. Then, we update the table to add a new column `X` via a [formula](./formulas.md) that uses a [variable](./python-variables.md), a [Python function](./python-functions.md), an [auto-imported Java function](../reference/query-language/query-library/auto-imported/index.md), and various [operators](./operators.md):
 
 ```python order=source,result
 from deephaven import new_table
@@ -109,7 +109,7 @@ source = new_table([int_array_col])
 
 Here, we will go into detail on creating new columns in your tables.
 
-[Selection methods](./use-select-view-update.md) -- such as [`select`](../reference/table-operations/select/select.md), [`view`](../reference/table-operations/select/view.md), [`update`](../reference/table-operations/select/update.md), [`update_view`](../reference/table-operations/select/update-view.md), and [`lazy_update`](../reference/table-operations/select/lazy-update.md) -- and [formulas](./formulas.md) are used to create new columns:
+[Selection methods](./use-select-view-update.md) - such as [`select`](../reference/table-operations/select/select.md), [`view`](../reference/table-operations/select/view.md), [`update`](../reference/table-operations/select/update.md), [`update_view`](../reference/table-operations/select/update-view.md), and [`lazy_update`](../reference/table-operations/select/lazy-update.md) - and [formulas](./formulas.md) are used to create new columns:
 
 - The [selection method](./use-select-view-update.md) determines which columns will be in the output table and how the values are computed.
 - The [formulas](./formulas.md) are the recipes for computing the cell values.
@@ -212,7 +212,7 @@ As demonstrated above, Deephaven can handle types outside of this list by using 
 - [Built-in query language functions](./built-in-functions.md)
 - [Formulas in query strings](./formulas.md)
 - [Operators in query strings](./operators.md)
-- [How to use select, view, and update](./use-select-view-update.md)
+- [How to use `select`, `view`, and `update`](./use-select-view-update.md)
 - [Query string overview](./query-string-overview.md)
 - [`empty_table`](../reference/table-operations/create/emptyTable.md)
 - [`new_table`](../reference/table-operations/create/newTable.md)

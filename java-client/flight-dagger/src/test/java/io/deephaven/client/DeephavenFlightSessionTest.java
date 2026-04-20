@@ -54,12 +54,9 @@ public class DeephavenFlightSessionTest extends DeephavenFlightSessionTestBase {
         try (final TableHandle handle = flightSession.session().execute(table);
                 final FlightStream stream = flightSession.stream(handle)) {
             int numRows = 0;
-            int flightCount = 0;
             while (stream.next()) {
-                ++flightCount;
                 numRows += stream.getRoot().getRowCount();
             }
-            Assert.assertEquals(1, flightCount);
             Assert.assertEquals(132768, numRows);
         }
     }

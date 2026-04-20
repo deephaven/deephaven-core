@@ -35,7 +35,7 @@ It's recommended that you set your preferred version with an environment variabl
 export DH_VERSION=0.39.2
 ```
 
-You can download these artifacts from your browser of choice or via the command line:
+You can download release artifacts from your browser of choice or via the command line:
 
 ```bash
 wget https://github.com/deephaven/deephaven-core/releases/download/v${DH_VERSION}/server-jetty-${DH_VERSION}.tar
@@ -44,7 +44,7 @@ wget https://github.com/deephaven/deephaven-core/releases/download/v${DH_VERSION
 
 ## Unpack the server
 
-Once downloaded, the server artifact needs to be unpacked. You can do this from your file explorer or the command line.
+Once downloaded, the server artifact needs to be unpacked. You can do this from your file explorer or via the command line.
 
 ```bash
 tar xvf server-jetty-${DH_VERSION}.tar

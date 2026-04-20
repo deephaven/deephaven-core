@@ -25,7 +25,7 @@ public class CustomColumn {
     private static final String TABLE_DATE_FORMAT_SUFFIX = "__TABLE_DATE_FORMAT";
 
     /**
-     * Get the suffix to append to the name for the provided type
+     * Get the suffix to append to the name for the provided type.
      * 
      * @param type The type of format, see TYPE_*
      * @return The suffix to append to the name for the provided type

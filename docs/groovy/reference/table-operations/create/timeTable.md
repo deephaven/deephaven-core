@@ -72,7 +72,7 @@ source = timeTable(startTime, "PT1S")
 
 <!--TODO: add more code examples. Given the large number of overloads, that would be helpful. Esp. the one using a clock. -->
 
-![The above `source` table](../../../assets/reference/create/timeTable2.gif)
+![The above time table](../../../assets/reference/create/timeTable2.gif)
 
 ## Details on the `startTime` parameter
 

@@ -1,5 +1,4 @@
 ---
-id: work-with-strings
 title: Strings
 ---
 
@@ -44,7 +43,7 @@ result = source.update(
 
 ### String filtering
 
-A common use of string methods is for [string filtering](./filters.md#string-filters):
+A common use of string methods is for [string filtering](./use-filters.md#string-filters):
 
 ```groovy order=source,result
 source = newTable(
@@ -76,7 +75,7 @@ resultMeta = result.meta()
 
 ## Related documentation
 
-- [Filter table data](./filters.md)
+- [Filter table data](./use-filters.md)
 - [New and empty table](./new-and-empty-table.md#newtable)
 - [Query strings](./query-string-overview.md)
 - [String literals in query strings](./string-char-literals.md)

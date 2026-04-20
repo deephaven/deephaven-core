@@ -28,7 +28,9 @@ public abstract class WhereFilterDelegatingBase
 
     protected WhereFilterDelegatingBase(WhereFilter filter) {
         this.filter = Objects.requireNonNull(filter);
-        if (filter instanceof LivenessArtifact && filter.isRefreshing()) {
+        if (filter instanceof LivenessArtifact) {
+            // We manage all LivenessArtifact filters; we do not know if they are refreshing at the time of
+            // construction.
             manage((LivenessArtifact) filter);
         }
     }
@@ -126,6 +128,11 @@ public abstract class WhereFilterDelegatingBase
     @Override
     public boolean permitParallelization() {
         return filter.permitParallelization();
+    }
+
+    @Override
+    public boolean isSerial() {
+        return filter.isSerial();
     }
 
     @Override

@@ -6,11 +6,11 @@ This guide discusses common performance issues in queries, as well as some steps
 
 ## Concepts
 
-It's important to understand some Deephaven-specific concepts before continuing. Each subsection below describes concepts relevant to query performance that are important to understand for the [troubleshooting steps](#troubleshooting-steps) that follow.
+It's important to understand some Deephaven-specific concepts before continuing. Each subsection below describes a concept relevant to query performance that is important to understand for the [troubleshooting steps](#troubleshooting-steps) that follow.
 
 ### Column types
 
-There are three different types of columns in tables that you need to understand. These are not the only three column types in Deephaven, but they are the most common and are created from table operations. They are:
+There are three different types of columns in tables that you should be familiar with. These are not the only three column types in Deephaven, but they are the most common and are created from table operations. They are:
 
 - In-memory
   - An in-memory column has all of its values computed immediately and stored in memory.
@@ -25,7 +25,7 @@ A deeper dive on these column types and the table operations that produce them c
 
 Deephaven performs calculations in update cycles. Each cycle lasts a certain amount of time, which is one second by default. During each update cycle, the engine spends a portion of that time performing various operations such as adding columns, performing aggregations, and so on. The fraction of time spent on all operations in a given update cycle is called the "ratio". So, the ratio is a measurement of the percentage of time spent doing data processing during each update cycle. For example, if the engine spends 200 ms processing data during a one-second update cycle, the ratio is 0.2 (or 20%).
 
-The ratio can be calculated from data found in Deephaven's performance tables. For an example showing the calculation, see [Performance tables](../how-to-guides/performance/performance-tables.md).
+The ratio can be calculated from data found in Deephaven's performance tables. For an example showing the calculation, see [Performance tables](../how-to-guides/performance/performance-tables.md#example-use-case).
 
 ### Row change notification
 
@@ -35,7 +35,7 @@ In static tables, a formula need not be re-evaluated because the table does not 
 
 ### Tick amplification
 
-There are certain operations in Deephaven where the engine can't know exactly which cells in a table will change. As a result, the engine _must_ check every cell that could possibly change to ensure the results are correct. For instance, a grouping and ungrouping operation may only change a single value, but every single member of the group must be checked to ensure the results are correct.
+Tick amplification occurs any time an operation produces a downstream update that changes a larger number of cells than the upstream update it is processing. There are certain operations in Deephaven where the engine can't know exactly which cells in a table will change. As a result, the engine _must_ check every cell that could possibly change to ensure the results are correct. For instance, a grouping and ungrouping operation may only change a single value, but every single member of the group must be checked to ensure the results are correct.
 
 For an example, see [Tick amplification](../how-to-guides/partitioned-tables.md#tick-amplification).
 
@@ -100,7 +100,7 @@ result = (
 Consider each case:
 
 1. In this case, `tableB` is joined first, which ticks 50x more than `tableA`. Not only that, but the [`update`](../reference/table-operations/select/update.md) operation is performed on the result of the join, which means that the formula is evaluated 50x more often than needed.
-2. In this case, `tableA` is joined first. Then, the [`update`](../reference/table-operations/select/update.md) operation is applied, which means it gets evaluated once per 5 seconds. Lastly, `tableB` is joined.
+2. In this case, `tableA` is joined first. Then, the [`update`](../reference/table-operations/select/update.md) operation is applied, which means it gets evaluated once every 5 seconds. Lastly, `tableB` is joined.
 
 The second case is _much_ more performant for two reasons:
 
@@ -113,9 +113,17 @@ You can reduce computational load by applying dynamic filters in your queries vi
 
 #### Avoid tick amplification
 
-As previously mentioned, [tick amplification](#tick-amplification) occurs when the engine must check every cell in a table to ensure the results are correct. It's most common during grouping and ungrouping, but can occur in other operations such as joins.
+Tick amplification can take place in some of the following operations:
 
-Tick amplification can usually be avoided with [partitioned tables](../how-to-guides/partitioned-tables.md). See the link for more information.
+- [Grouping and ungrouping](../how-to-guides/grouping-data.md)
+  - Very small parent changes may unnecessarily mark the entire table as changed.
+- [Cross joins](../reference/table-operations/join/join.md) (if the `on` parameter is not given)
+  - Even when the left table is static, any right table changes affect k-times as many cells as the original right table update.
+
+You can typically minimize the effect of tick amplification with [partitioned tables](../how-to-guides/partitioned-tables.md). For each case mentioned above, they help in the following way:
+
+- In grouping and ungrouping, partitioned tables group smaller sets of data, meaning parent changes affect fewer cells.
+- In cross joins, each partition can be processed in parallel. Additionally, the working size of each partition is smaller than the whole. This means that the number of cells affected by a right table change is smaller than the whole table.
 
 ### Insufficient memory
 
@@ -130,7 +138,7 @@ Unlike [in-memory columns](#create-in-memory-columns), formula columns store onl
 - It allows you to create tables far larger than the amount of memory would typically allow you to.
 - It leads to slower performance if formulas are complex or reused often.
 - It can lead to more row change notifications, which can also degrade performance.
-- It can lead to incorrect results if a formula is not deterministic.
+- It can lead to inconsistent results if a formula is not deterministic.
 
 High memory usage is often unavoidable when working with large datasets. Deephaven offers two operations to create formula columns in tables:
 

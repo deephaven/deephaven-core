@@ -18,7 +18,7 @@ We'll show you how to create and use both types in this guide.
 
 ## Create an input table
 
-First, you need to import the `input_table` method from the `deephaven` module.
+First, you need to import the `input_table` method from the `deephaven` module:
 
 ```python
 from deephaven import input_table

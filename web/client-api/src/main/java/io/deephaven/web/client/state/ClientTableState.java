@@ -6,12 +6,9 @@ package io.deephaven.web.client.state;
 import elemental2.core.JsMap;
 import elemental2.core.JsObject;
 import elemental2.core.JsSet;
-import elemental2.core.Uint8Array;
 import elemental2.promise.Promise;
-import io.deephaven.chunk.ChunkType;
 import io.deephaven.extensions.barrage.BarrageTypeInfo;
-import io.deephaven.javascript.proto.dhinternal.browserheaders.BrowserHeaders;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.ExportedTableCreationResponse;
+import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
 import io.deephaven.web.client.api.*;
 import io.deephaven.web.client.api.barrage.WebBarrageUtils;
 import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
@@ -28,6 +25,7 @@ import io.deephaven.web.shared.data.*;
 import io.deephaven.web.shared.fu.*;
 import jsinterop.base.Js;
 
+import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -186,7 +184,7 @@ public final class ClientTableState extends TableConfig {
         this.fetchSummary = fetchSummary;
     }
 
-    public Promise<ClientTableState> maybeRevive(BrowserHeaders metadata) {
+    public Promise<ClientTableState> maybeRevive() {
         connection.scheduleCheck(this);
         if (isEmpty()) {
             JsLog.debug("Skipping revive as state is empty");
@@ -198,7 +196,7 @@ public final class ClientTableState extends TableConfig {
         }
 
         // revive!
-        return refetch(null, metadata);
+        return refetch();
     }
 
     private JsLazy<Map<String, Column>> resetLookup() {
@@ -936,11 +934,7 @@ public final class ClientTableState extends TableConfig {
         return (a, b) -> (int) Math.signum(b.getLastTouched() - a.getLastTouched());
     }
 
-    public Promise<JsTable> fetchTable(HasEventHandling failHandler, BrowserHeaders metadata) {
-        return refetch(failHandler, metadata).then(cts -> Promise.resolve(new JsTable(connection, cts)));
-    }
-
-    public Promise<ClientTableState> refetch(HasEventHandling failHandler, BrowserHeaders metadata) {
+    public Promise<ClientTableState> refetch() {
         if (fetch == null) {
             if (failMsg != null) {
                 return Promise.reject(failMsg);
@@ -948,13 +942,13 @@ public final class ClientTableState extends TableConfig {
             return Promise.resolve(this);
         }
         final Promise<ExportedTableCreationResponse> promise =
-                Callbacks.grpcUnaryPromise(c -> fetch.fetch(c, this, metadata));
+                Callbacks.grpcUnaryPromise(c -> fetch.fetch(c, this));
         // noinspection unchecked
         return promise.then(def -> {
             if (resolution == ResolutionState.RELEASED) {
                 // was released before we managed to finish the fetch, ignore
                 // noinspection rawtypes,unchecked
-                return (Promise) Promise.reject(
+                return Promise.reject(
                         "Table already released, cannot process incoming table definition, this can be safely ignored.");
             }
             applyTableCreationResponse(def);
@@ -963,19 +957,19 @@ public final class ClientTableState extends TableConfig {
     }
 
     public void applyTableCreationResponse(ExportedTableCreationResponse def) {
-        assert def.getResultId().getTicket().getTicket_asB64().equals(getHandle().makeTicket().getTicket_asB64())
+        assert def.getResultId().getTicket().equals(getHandle().makeTicket())
                 : "Ticket is incompatible with the table details";
         // by definition, the ticket is now exported and connected
         handle.setState(TableTicket.State.EXPORTED);
         handle.setConnected(true);
 
-        Uint8Array flightSchemaMessage = def.getSchemaHeader_asU8();
+        ByteBuffer flightSchemaMessage = def.getSchemaHeader().asReadOnlyByteBuffer();
         isStatic = def.getIsStatic();
 
         setTableDef(WebBarrageUtils.readTableDefinition(WebBarrageUtils.readSchemaMessage(flightSchemaMessage)));
 
         setResolution(ResolutionState.RUNNING);
-        setSize(Long.parseLong(def.getSize()));
+        setSize(def.getSize());
     }
 
     public boolean isAncestor(ClientTableState was) {

@@ -17,7 +17,7 @@ public class TestLiveAttributeMap {
     private static final class AttrMap extends LiveAttributeMap<AttrMap, AttrMap> {
 
         private AttrMap(@Nullable final Map<String, Object> initialAttributes) {
-            super(initialAttributes);
+            super(initialAttributes, false);
         }
 
         @Override
