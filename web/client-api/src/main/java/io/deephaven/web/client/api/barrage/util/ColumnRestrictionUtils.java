@@ -3,6 +3,7 @@
 //
 package io.deephaven.web.client.api.barrage.util;
 
+import com.google.protobuf.Any;
 import elemental2.core.JsArray;
 import elemental2.core.Uint8Array;
 import io.deephaven.proto.backplane.grpc.NonEmptyRestriction;
@@ -12,9 +13,7 @@ import io.deephaven.proto.backplane.grpc.IntegerRangeRestriction;
 import io.deephaven.proto.backplane.grpc.StringListRestriction;
 import io.deephaven.web.client.api.ColumnRestriction;
 import io.deephaven.web.client.fu.JsLog;
-import jsinterop.base.Any;
 import jsinterop.base.Js;
-import org.gwtproject.nio.TypedArrayHelper;
 
 import java.nio.ByteBuffer;
 
@@ -42,52 +41,11 @@ public class ColumnRestrictionUtils {
     }
 
     /**
-     * Extract the value bytes from a google.protobuf.Any object.
-     */
-    private static native Uint8Array getValue(Object anyObj) /*-{
-        if (!anyObj) return null;
-
-        // Try Java protobuf structure (value_.bytes_0)
-        if (anyObj.value_ && anyObj.value_.bytes_0) {
-            // Convert byte array to Uint8Array
-            var bytes = anyObj.value_.bytes_0;
-            if (Array.isArray(bytes)) {
-                return new Uint8Array(bytes);
-            }
-            if (bytes instanceof Uint8Array) {
-                return bytes;
-            }
-        }
-
-        // Try method accessor
-        if (typeof anyObj.getValue_asU8 === 'function') {
-            return anyObj.getValue_asU8();
-        }
-        if (typeof anyObj.getValue === 'function') {
-            var value = anyObj.getValue();
-            if (value) return value;
-        }
-
-        // Try direct value field
-        if (anyObj.value && anyObj.value instanceof Uint8Array) {
-            return anyObj.value;
-        }
-
-        return null;
-    }-*/;
-
-    /**
      * Convert IntegerRangeRestriction data into a ColumnRestriction object.
      */
     public static ColumnRestriction convertIntegerRangeRestriction(Any restrictionAny) {
         try {
-            Uint8Array valueBytes = getValue(Js.cast(restrictionAny));
-            if (valueBytes == null) {
-                JsLog.warn("No value bytes found in IntegerRangeRestriction Any object");
-                return null;
-            }
-
-            ByteBuffer buffer = TypedArrayHelper.wrap(valueBytes);
+            ByteBuffer buffer = restrictionAny.getValue().asReadOnlyByteBuffer();
             IntegerRangeRestriction restriction = IntegerRangeRestriction.parseFrom(buffer);
             double minValue = restriction.hasMinInclusive() ? restriction.getMinInclusive() : Double.NaN;
             double maxValue = restriction.hasMaxInclusive() ? restriction.getMaxInclusive() : Double.NaN;
@@ -104,13 +62,7 @@ public class ColumnRestrictionUtils {
      */
     public static ColumnRestriction convertDoubleRangeRestriction(Any restrictionAny) {
         try {
-            Uint8Array valueBytes = getValue(Js.cast(restrictionAny));
-            if (valueBytes == null) {
-                JsLog.warn("No value bytes found in DoubleRangeRestriction Any object");
-                return null;
-            }
-
-            ByteBuffer buffer = TypedArrayHelper.wrap(valueBytes);
+            ByteBuffer buffer = restrictionAny.getValue().asReadOnlyByteBuffer();
             DoubleRangeRestriction restriction = DoubleRangeRestriction.parseFrom(buffer);
             double minValue = restriction.hasMinInclusive() ? restriction.getMinInclusive() : Double.NaN;
             double maxValue = restriction.hasMaxInclusive() ? restriction.getMaxInclusive() : Double.NaN;
@@ -127,13 +79,7 @@ public class ColumnRestrictionUtils {
      */
     public static ColumnRestriction convertNotNullRestriction(Any restrictionAny) {
         try {
-            Uint8Array valueBytes = getValue(Js.cast(restrictionAny));
-            if (valueBytes == null) {
-                JsLog.warn("No value bytes found in NotNullRestriction Any object");
-                return null;
-            }
-
-            ByteBuffer buffer = TypedArrayHelper.wrap(valueBytes);
+            ByteBuffer buffer = restrictionAny.getValue().asReadOnlyByteBuffer();
             NotNullRestriction.parseFrom(buffer); // Just to validate
             return new ColumnRestriction("NotNullRestriction");
         } catch (Exception e) {
@@ -147,13 +93,7 @@ public class ColumnRestrictionUtils {
      */
     public static ColumnRestriction convertNonEmptyRestriction(Any restrictionAny) {
         try {
-            Uint8Array valueBytes = getValue(Js.cast(restrictionAny));
-            if (valueBytes == null) {
-                JsLog.warn("No value bytes found in NonEmptyRestriction Any object");
-                return null;
-            }
-
-            ByteBuffer buffer = TypedArrayHelper.wrap(valueBytes);
+            ByteBuffer buffer = restrictionAny.getValue().asReadOnlyByteBuffer();
             NonEmptyRestriction.parseFrom(buffer); // Just to validate
             return new ColumnRestriction("NonEmptyRestriction");
         } catch (Exception e) {
@@ -167,17 +107,11 @@ public class ColumnRestrictionUtils {
      */
     public static ColumnRestriction convertStringListRestriction(Any restrictionAny) {
         try {
-            Uint8Array valueBytes = getValue(Js.cast(restrictionAny));
-            if (valueBytes == null) {
-                JsLog.warn("No value bytes found in StringListRestriction Any object");
-                return null;
-            }
-
-            ByteBuffer buffer = TypedArrayHelper.wrap(valueBytes);
+            ByteBuffer buffer = restrictionAny.getValue().asReadOnlyByteBuffer();
             StringListRestriction restriction = StringListRestriction.parseFrom(buffer);
 
             // Convert ProtocolStringList to JsArray<Any>
-            JsArray<Any> allowedValuesAsAny = new JsArray<>();
+            JsArray<jsinterop.base.Any> allowedValuesAsAny = new JsArray<>();
             for (String value : restriction.getAllowedValuesList()) {
                 allowedValuesAsAny.push(Js.cast(value));
             }

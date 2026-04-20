@@ -3,8 +3,8 @@
 //
 package io.deephaven.web.client.api.barrage.util;
 
+import com.google.protobuf.Any;
 import io.deephaven.web.client.api.ColumnRestriction;
-import jsinterop.base.Any;
 
 /**
  * Functional interface for converting parsed restriction data into a ColumnRestriction object.
