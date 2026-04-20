@@ -28,17 +28,12 @@ public class ColumnRestrictionUtils {
     }
 
     /**
-     * Extract the restriction type short name from a google.protobuf.Any object.
+     * Extract the restriction type short name from a google.protobuf.Any object type url.
      *
-     * @param restrictionAny The google.protobuf.Any object containing the restriction
+     * @param typeUrl The type URL from the Any object (e.g., "type.googleapis.com/io.deephaven.proto.backplane.grpc.IntegerRangeRestriction")
      * @return The short type name (e.g., "IntegerRangeRestriction"), or null if not found
      */
-    public static String getRestrictionType(Object restrictionAny) {
-        String typeUrl = getTypeUrl(restrictionAny);
-        if (typeUrl == null) {
-            return null;
-        }
-
+    public static String getRestrictionType(String typeUrl) {
         // Extract the restriction type from the type URL
         // Format: "type.googleapis.com/io.deephaven.proto.backplane.grpc.IntegerRangeRestriction"
         // or "docs.deephaven.io/io.deephaven.proto.backplane.grpc.IntegerRangeRestriction"
@@ -47,24 +42,24 @@ public class ColumnRestrictionUtils {
     }
 
     /**
-     * Extract the type URL from a google.protobuf.Any object.
-     */
-    private static native String getTypeUrl(Object anyObj) /*-{
-        if (!anyObj) return null;
-        if (typeof anyObj.getTypeUrl === 'function') {
-            return anyObj.getTypeUrl();
-        }
-        if (anyObj.type_url) {
-            return anyObj.type_url;
-        }
-        return null;
-    }-*/;
-
-    /**
      * Extract the value bytes from a google.protobuf.Any object.
      */
     private static native Uint8Array getValue(Object anyObj) /*-{
         if (!anyObj) return null;
+
+        // Try Java protobuf structure (value_.bytes_0)
+        if (anyObj.value_ && anyObj.value_.bytes_0) {
+            // Convert byte array to Uint8Array
+            var bytes = anyObj.value_.bytes_0;
+            if (Array.isArray(bytes)) {
+                return new Uint8Array(bytes);
+            }
+            if (bytes instanceof Uint8Array) {
+                return bytes;
+            }
+        }
+
+        // Try method accessor
         if (typeof anyObj.getValue_asU8 === 'function') {
             return anyObj.getValue_asU8();
         }
@@ -72,9 +67,12 @@ public class ColumnRestrictionUtils {
             var value = anyObj.getValue();
             if (value) return value;
         }
+
+        // Try direct value field
         if (anyObj.value && anyObj.value instanceof Uint8Array) {
             return anyObj.value;
         }
+
         return null;
     }-*/;
 

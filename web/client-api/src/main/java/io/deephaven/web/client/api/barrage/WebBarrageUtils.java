@@ -155,12 +155,12 @@ public class WebBarrageUtils {
                                 new InputTableMetadata.ColumnRestrictions();
 
                         for (int i = 0; i < restrictionsList.size(); i++) {
-                            Object restrictionAny = restrictionsList.get(i);
+                            Any restrictionAny = restrictionsList.get(i);
 
                             JsLog.warn("parseInputTableMetadata: Processing restriction " + i + " for column " + columnName, restrictionAny);
 
                             // Get the restriction type and look up the converter
-                            String restrictionType = ColumnRestrictionUtils.getRestrictionType(restrictionAny);
+                            String restrictionType = ColumnRestrictionUtils.getRestrictionType(restrictionAny.getTypeUrl());
                             JsLog.warn("parseInputTableMetadata: Restriction " + i + " type: " + restrictionType);
 
                             if (restrictionType != null) {
