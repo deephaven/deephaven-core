@@ -123,7 +123,7 @@ public class WebBarrageUtils {
             // Convert Uint8Array to ByteBuffer and deserialize using Java protobuf parseFrom
             ByteBuffer buffer = TypedArrayHelper.wrap(bytes);
             DeephavenTableMetadata tableMetadata = DeephavenTableMetadata.parseFrom(buffer);
-            JsLog.warn("parseInputTableMetadata: Successfully deserialized DeephavenTableMetadata");
+            JsLog.warn("parseInputTableMetadata: Successfully deserialized DeephavenTableMetadata", tableMetadata);
 
             if (!tableMetadata.hasInputTableMetadata()) {
                 JsLog.warn("parseInputTableMetadata: No input table metadata present");
@@ -132,21 +132,18 @@ public class WebBarrageUtils {
 
             io.deephaven.proto.backplane.grpc.InputTableMetadata protoInputTableMetadata =
                     tableMetadata.getInputTableMetadata();
-            JsLog.warn("parseInputTableMetadata: Got InputTableMetadata");
+            JsLog.warn("parseInputTableMetadata: Got InputTableMetadata", protoInputTableMetadata);
 
             // Get the column info map
-            Object columnInfoMapRaw = protoInputTableMetadata.getColumnInfoMap();
+            Map<String, InputTableColumnInfo> columnInfoMap = protoInputTableMetadata.getColumnInfoMap();
 
-            if (columnInfoMapRaw == null) {
-                JsLog.warn("parseInputTableMetadata: columnInfoMap is null");
-                return metadata;
-            }
+//            JsLog.warn("parseInputTableMetadata: Retrieved column info map  " + columnInfoMap);
 
             JsLog.warn("parseInputTableMetadata: Processing " + cols.length + " columns");
             // Extract column restrictions from the column info map
             for (ColumnDefinition col : cols) {
                 String columnName = col.getName();
-                InputTableColumnInfo columnInfo = getColumnInfoFromMap(columnInfoMapRaw, columnName);
+                InputTableColumnInfo columnInfo = columnInfoMap.get(columnName);
 
                 if (columnInfo != null) {
                     JsLog.warn("parseInputTableMetadata: Found column info for: " + columnName);
@@ -159,6 +156,8 @@ public class WebBarrageUtils {
 
                         for (int i = 0; i < restrictionsList.size(); i++) {
                             Object restrictionAny = restrictionsList.get(i);
+
+                            JsLog.warn("parseInputTableMetadata: Processing restriction " + i + " for column " + columnName, restrictionAny);
 
                             // Get the restriction type and look up the converter
                             String restrictionType = ColumnRestrictionUtils.getRestrictionType(restrictionAny);
