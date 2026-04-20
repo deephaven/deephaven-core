@@ -14,6 +14,12 @@ import jsinterop.annotations.JsOptional;
 import jsinterop.annotations.JsProperty;
 import jsinterop.base.Any;
 
+/**
+ * Event detail for a figure data update.
+ *
+ * <p>
+ * Provides access to the updated data for one or more related series.
+ */
 @TsInterface
 @TsName(name = "FigureDataUpdatedEvent", namespace = "dh.plot")
 public class DataUpdateEvent {
@@ -38,15 +44,33 @@ public class DataUpdateEvent {
         this.currentUpdate = currentUpdate;
     }
 
+    /**
+     * The series related to this update.
+     */
     @JsProperty
     public JsSeries[] getSeries() {
         return series;
     }
 
+    /**
+     * Gets a contiguous JS array of values for the given series and data source type.
+     */
     public JsArray<Any> getArray(JsSeries series, int sourceName) {
         return getArray(series, sourceName, null);
     }
 
+    /**
+     * Gets a contiguous JS array of values for the given series and data source type.
+     *
+     * <p>
+     * If provided, {@code mappingFunc} is applied to each value. To re-use cached data across calls, use the same
+     * {@code mappingFunc} instance each time.
+     *
+     * @param series the series to read data for
+     * @param sourceType the data source type, as defined by the series descriptor
+     * @param mappingFunc an optional mapping function applied to each value; {@code null} returns the raw values
+     * @return a contiguous JS array of values
+     */
     @JsMethod
     public JsArray<Any> getArray(JsSeries series, int sourceType, @JsOptional JsFunction<Any, Any> mappingFunc) {
         String columnName = getColumnName(series, sourceType);
