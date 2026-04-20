@@ -141,12 +141,27 @@ public interface TableData {
      */
     @JsType(namespace = "dh")
     interface Row {
+        /**
+         * Returns the row key for this row.
+         */
         @JsProperty
         LongWrapper getIndex();
 
+        /**
+         * Returns the value for the given column in this row.
+         *
+         * @param column the column to read
+         * @return the value in this row for the specified column
+         */
         @JsMethod
         Any get(Column column);
 
+        /**
+         * Returns the server-specified {@link Format} for the given column in this row.
+         *
+         * @param column the column to read
+         * @return the format details for the specified column in this row
+         */
         @JsMethod
         Format getFormat(Column column);
     }
