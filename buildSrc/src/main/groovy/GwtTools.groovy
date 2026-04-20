@@ -92,6 +92,7 @@ class GwtTools {
                 sub.substitute(sub.module("com.google.gwt:gwt-dev"))
                         .using(sub.module("org.gwtproject:gwt-dev:${gwtVersion}"))
             }
+            c.resolutionStrategy.force('org.osgi:org.osgi.service.prefs:1.1.2')
         }
         String warPath = new File(p.buildDir, 'gwt').absolutePath
 
