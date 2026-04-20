@@ -56,8 +56,6 @@ testing {
                 }
             }
             dependencies {
-                implementation project(':extensions-parquet-base')
-
                 runtimeOnly libs.woodstox.core
                 runtimeOnly libs.commons.collections4
                 // runtimeOnly libs.hadoop.shaded.guava
