@@ -245,6 +245,16 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
     @Override
     public Optional<ChunkFilter> chunkFilter() {
         if (chunkFilter == null) {
+            final WhereFilter failover = getFailoverFilterIfCached();
+            if (failover != null) {
+                if (failover instanceof ExposesChunkFilter) {
+                    return ((ExposesChunkFilter) failover).chunkFilter();
+                }
+                return Optional.empty();
+            }
+            if (values == null) {
+                return Optional.empty();
+            }
             chunkFilter = ChunkMatchFilterFactory.getChunkFilter(columnType, matchOptions, values);
         }
         return Optional.of(chunkFilter);

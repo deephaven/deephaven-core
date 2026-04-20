@@ -6,7 +6,7 @@ sidebar_label: Read CSV files
 This guide will show you how to read data from CSV (and other delimited) files into in-memory Deephaven tables by using the [`readCsv`](../../reference/data-import-export/CSV/readCsv.md) method.
 
 > [!TIP]
-> CSV files can also be uploaded into Deephaven with drag-and-drop in the UI.
+> To upload a CSV without writing code, see [Upload a table from a file](../../how-to-guides/user-interface/upload-table-from-file.md).
 
 ## `readCsv`
 
@@ -186,3 +186,4 @@ For a complete list of optional arguments, see the [`readCsv` reference document
 
 - [How to export CSV files](./csv-export.md)
 - [`readCsv`](../../reference/data-import-export/CSV/readCsv.md)
+- [Navigate the GUI](../../how-to-guides/user-interface/navigating-the-ui.md)

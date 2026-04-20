@@ -4,7 +4,7 @@
 package io.deephaven.web.client.api;
 
 import com.vertispan.tsdefs.annotations.TsName;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.SortDescriptor;
+import io.deephaven.proto.backplane.grpc.SortDescriptor;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsProperty;
 
@@ -110,21 +110,21 @@ public class Sort {
         if (direction == null) {
             throw new IllegalStateException("Cannot perform a sort without a direction, please call desc() or asc()");
         }
-        SortDescriptor descriptor = new SortDescriptor();
+        SortDescriptor.Builder descriptor = SortDescriptor.newBuilder();
         descriptor.setIsAbsolute(isAbs());
         descriptor.setColumnName(getColumn().getName());
         switch (direction) {
             case ASCENDING:
-                descriptor.setDirection(SortDescriptor.SortDirection.getASCENDING());
+                descriptor.setDirection(SortDescriptor.SortDirection.ASCENDING);
                 break;
             case DESCENDING:
-                descriptor.setDirection(SortDescriptor.SortDirection.getDESCENDING());
+                descriptor.setDirection(SortDescriptor.SortDirection.DESCENDING);
                 break;
             case REVERSE:
-                descriptor.setDirection(SortDescriptor.SortDirection.getREVERSE());
+                descriptor.setDirection(SortDescriptor.SortDirection.REVERSE);
                 break;
         }
-        return descriptor;
+        return descriptor.build();
     }
 
     @JsMethod

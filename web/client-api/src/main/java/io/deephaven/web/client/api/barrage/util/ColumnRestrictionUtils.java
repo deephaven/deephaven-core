@@ -5,15 +5,18 @@ package io.deephaven.web.client.api.barrage.util;
 
 import elemental2.core.JsArray;
 import elemental2.core.Uint8Array;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.inputtable_pb.DoubleRangeRestriction;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.inputtable_pb.IntegerRangeRestriction;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.inputtable_pb.NonEmptyRestriction;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.inputtable_pb.NotNullRestriction;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.inputtable_pb.StringListRestriction;
+import io.deephaven.proto.backplane.grpc.NonEmptyRestriction;
+import io.deephaven.proto.backplane.grpc.NotNullRestriction;
+import io.deephaven.proto.backplane.grpc.DoubleRangeRestriction;
+import io.deephaven.proto.backplane.grpc.IntegerRangeRestriction;
+import io.deephaven.proto.backplane.grpc.StringListRestriction;
 import io.deephaven.web.client.api.ColumnRestriction;
 import io.deephaven.web.client.fu.JsLog;
 import jsinterop.base.Any;
 import jsinterop.base.Js;
+import org.gwtproject.nio.TypedArrayHelper;
+
+import java.nio.ByteBuffer;
 
 /**
  * Utility class for converting protobuf column restrictions to ColumnRestriction objects.
@@ -86,7 +89,8 @@ public class ColumnRestrictionUtils {
                 return null;
             }
 
-            IntegerRangeRestriction restriction = IntegerRangeRestriction.deserializeBinary(valueBytes);
+            ByteBuffer buffer = TypedArrayHelper.wrap(valueBytes);
+            IntegerRangeRestriction restriction = IntegerRangeRestriction.parseFrom(buffer);
             double minValue = restriction.hasMinInclusive() ? restriction.getMinInclusive() : Double.NaN;
             double maxValue = restriction.hasMaxInclusive() ? restriction.getMaxInclusive() : Double.NaN;
 
@@ -108,7 +112,8 @@ public class ColumnRestrictionUtils {
                 return null;
             }
 
-            DoubleRangeRestriction restriction = DoubleRangeRestriction.deserializeBinary(valueBytes);
+            ByteBuffer buffer = TypedArrayHelper.wrap(valueBytes);
+            DoubleRangeRestriction restriction = DoubleRangeRestriction.parseFrom(buffer);
             double minValue = restriction.hasMinInclusive() ? restriction.getMinInclusive() : Double.NaN;
             double maxValue = restriction.hasMaxInclusive() ? restriction.getMaxInclusive() : Double.NaN;
 
@@ -130,7 +135,8 @@ public class ColumnRestrictionUtils {
                 return null;
             }
 
-            NotNullRestriction.deserializeBinary(valueBytes); // Just to validate
+            ByteBuffer buffer = TypedArrayHelper.wrap(valueBytes);
+            NotNullRestriction.parseFrom(buffer); // Just to validate
             return new ColumnRestriction("NotNullRestriction");
         } catch (Exception e) {
             JsLog.warn("Failed to convert NotNullRestriction:", e);
@@ -149,7 +155,8 @@ public class ColumnRestrictionUtils {
                 return null;
             }
 
-            NonEmptyRestriction.deserializeBinary(valueBytes); // Just to validate
+            ByteBuffer buffer = TypedArrayHelper.wrap(valueBytes);
+            NonEmptyRestriction.parseFrom(buffer); // Just to validate
             return new ColumnRestriction("NonEmptyRestriction");
         } catch (Exception e) {
             JsLog.warn("Failed to convert NonEmptyRestriction:", e);
@@ -168,11 +175,14 @@ public class ColumnRestrictionUtils {
                 return null;
             }
 
-            StringListRestriction restriction = StringListRestriction.deserializeBinary(valueBytes);
-            JsArray<String> allowedValues = restriction.getAllowedValuesList();
+            ByteBuffer buffer = TypedArrayHelper.wrap(valueBytes);
+            StringListRestriction restriction = StringListRestriction.parseFrom(buffer);
 
-            // Cast JsArray<String> to JsArray<Any> to match constructor signature
-            JsArray<Any> allowedValuesAsAny = Js.uncheckedCast(allowedValues);
+            // Convert ProtocolStringList to JsArray<Any>
+            JsArray<Any> allowedValuesAsAny = new JsArray<>();
+            for (String value : restriction.getAllowedValuesList()) {
+                allowedValuesAsAny.push(Js.cast(value));
+            }
 
             return new ColumnRestriction("StringListRestriction", allowedValuesAsAny);
         } catch (Exception e) {

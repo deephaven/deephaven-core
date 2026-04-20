@@ -10,6 +10,7 @@ import io.deephaven.base.formatters.FormatBitSet;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.util.pools.ChunkPoolConstants;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.exceptions.ColumnSnapshotUnsuccessfulException;
@@ -85,10 +86,9 @@ public class ConstructSnapshot {
     private static final int MAX_CONCURRENT_ATTEMPT_DURATION_MILLIS = Configuration.getInstance()
             .getIntegerWithDefault("ConstructSnapshot.maxConcurrentAttemptDurationMillis", 5000);
 
-    // TODO (deephaven-core#188): use ChunkPoolConstants.LARGEST_POOL_CHUNK_CAPACITY when JS API allows multiple batches
-    // default enables more than 100MB of 8-byte values in a single record batch
     public static final int SNAPSHOT_CHUNK_SIZE = Configuration.getInstance()
-            .getIntegerWithDefault("ConstructSnapshot.snapshotChunkSize", 1 << 24);
+            .getIntegerWithDefault("ConstructSnapshot.snapshotChunkSize",
+                    ChunkPoolConstants.LARGEST_POOLED_CHUNK_CAPACITY);
 
     public interface State {
 
@@ -617,7 +617,7 @@ public class ConstructSnapshot {
             };
             final long clockStep =
                     callDataSnapshotFunction(System.identityHashCode(logIdentityObject), control, doSnapshot);
-            final BarrageMessage snapshot = snapshotMsg.getValue();
+            final BarrageMessage snapshot = snapshotMsg.get();
             snapshot.firstSeq = snapshot.lastSeq = clockStep;
             return snapshot;
         }

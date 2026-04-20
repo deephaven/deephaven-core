@@ -18,6 +18,8 @@ docker run --rm --name deephaven -p 10000:10000 -v data:/data --env START_OPTS=-
 
 Open the Deephaven IDE at `http://localhost:10000/ide/`, enter your password in the password field, and you're ready to go!
 
+Once you're in, the **Console** on the left is where you write and run code. Results — tables, plots, and more — open as panels in the workspace to the right. The **Tables** dropdown at the top lists everything in your session. See [Navigate the GUI](../../how-to-guides/user-interface/navigating-the-ui.md) for a full tour of the interface.
+
 The Docker command above creates a directory in your local working directory called `data`. Any files that you save in Deephaven will be stored there, ensuring you won't lose any valuable work. To learn more about mounting directories in Docker, check out [this guide](../../conceptual/docker-data-volumes.md).
 
 Deephaven can be configured and run in many different ways. More information on configuration options are discussed at the [end of this crash course](./configure.md).

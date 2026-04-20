@@ -862,9 +862,6 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
         final int clientMaxMessageSize = view.options().maxMessageSize();
         final int maxMessageSize = clientMaxMessageSize > 0 ? clientMaxMessageSize : DEFAULT_MESSAGE_SIZE_LIMIT;
 
-        // TODO (deephaven-core#188): remove this when JS API can accept multiple batches
-        boolean sendAllowed = numRows <= batchSize;
-
         while (offset < numRows) {
             try {
                 final DefensiveDrainable is =
@@ -877,7 +874,7 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
 
                 // treat this as a hard limit, exceeding fails a client or w2w (unless we are sending a single
                 // row then we must send and let it potentially fail)
-                if (sendAllowed && (bytesToWrite < maxMessageSize || batchSize == 1)) {
+                if (bytesToWrite < maxMessageSize || batchSize == 1) {
                     // let's write the data
                     visitor.accept(is);
 
@@ -887,7 +884,6 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
                 } else {
                     // can't write this, so close the input stream and retry
                     is.close();
-                    sendAllowed = true;
                 }
 
                 // recompute the batch limit for the next message
@@ -970,7 +966,6 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
         if (endPos == RowSet.NULL_ROW_KEY) {
             endPos = Long.MAX_VALUE;
         }
-        final long baseEndPos = endPos;
         if (addColumnData[0].chunks().length != 0) {
             final ChunkWriter.Context writer = addColumnData[0].chunks()[chunkIdx];
             endPos = Math.min(endPos, writer.getLastRowOffset());
@@ -1084,6 +1079,9 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
                 startPos = modOffsets.get(startRange);
                 final long endRange = startRange + maxLength - 1;
                 endPos = endRange >= modOffsets.size() ? modOffsets.lastRowKey() : modOffsets.get(endRange);
+                if (context != null) {
+                    endPos = Math.min(endPos, context.getLastRowOffset());
+                }
             } else if (startRange >= mcd.rowsModified.original.size()) {
                 startPos = RowSet.NULL_ROW_KEY;
                 endPos = RowSet.NULL_ROW_KEY;

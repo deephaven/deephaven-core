@@ -17,7 +17,6 @@ import io.deephaven.extensions.barrage.chunk.ChunkWriter;
 import io.deephaven.extensions.barrage.chunk.ChunkReader;
 import io.deephaven.extensions.barrage.util.FlatBufferIteratorAdapter;
 import io.deephaven.io.streams.ByteBufferInputStream;
-import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.FlightData;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.shared.data.RangeSet;
@@ -27,6 +26,7 @@ import org.apache.arrow.flatbuf.Message;
 import org.apache.arrow.flatbuf.MessageHeader;
 import org.apache.arrow.flatbuf.RecordBatch;
 import org.apache.arrow.flatbuf.Schema;
+import org.apache.arrow.flight.impl.Flight;
 import org.gwtproject.nio.TypedArrayHelper;
 
 import java.io.IOException;
@@ -61,11 +61,11 @@ public class WebBarrageMessageReader {
             final BarrageOptions options,
             Class<?>[] columnTypes,
             Class<?>[] componentTypes,
-            FlightData flightData) throws IOException {
-        ByteBuffer headerAsBB = TypedArrayHelper.wrap(flightData.getDataHeader_asU8());
+            Flight.FlightData flightData) throws IOException {
+        ByteBuffer headerAsBB = flightData.getDataHeader().asReadOnlyByteBuffer();
         Message header = headerAsBB.hasRemaining() ? Message.getRootAsMessage(headerAsBB) : null;
 
-        ByteBuffer msgAsBB = TypedArrayHelper.wrap(flightData.getAppMetadata_asU8());
+        ByteBuffer msgAsBB = flightData.getAppMetadata().asReadOnlyByteBuffer();
         if (msgAsBB.hasRemaining()) {
             BarrageMessageWrapper wrapper =
                     BarrageMessageWrapper.getRootAsBarrageMessageWrapper(msgAsBB);
@@ -175,7 +175,7 @@ public class WebBarrageMessageReader {
 
         final RecordBatch batch = (RecordBatch) header.header(new RecordBatch());
         msg.length = batch.length();
-        ByteBuffer body = TypedArrayHelper.wrap(flightData.getDataBody_asU8());
+        ByteBuffer body = flightData.getDataBody().asReadOnlyByteBuffer();
         final LittleEndianDataInputStream ois =
                 new LittleEndianDataInputStream(new ByteBufferInputStream(body));
         final Iterator<ChunkWriter.FieldNodeInfo> fieldNodeIter =

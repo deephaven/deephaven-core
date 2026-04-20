@@ -4068,6 +4068,16 @@ public class QueryTableTest extends QueryTableTestBase {
         }
 
         @Override
+        public long cycleStartNanoTime() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Instant cycleStartTime() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
         public int parallelismFactor() {
             return 1;
         }

@@ -110,6 +110,10 @@
                 "path": "how-to-guides/initialization-and-updates.md"
               },
               {
+                "label": "Deephaven Vectors",
+                "path": "conceptual/arrays-vs-vectors.md"
+              },
+              {
                 "label": "Core API design",
                 "path": "conceptual/deephaven-core-api.md"
               },
@@ -180,6 +184,10 @@
               {
                 "label": "Arrow Flight",
                 "path": "how-to-guides/data-import-export/arrow-flight.md"
+              },
+              {
+                "label": "Arrow/Barrage Schema",
+                "path": "how-to-guides/data-import-export/barrage-schema.md"
               },
               {
                 "label": "Iceberg",
@@ -508,6 +516,10 @@
                   {
                     "label": "Navigate the GUI",
                     "path": "how-to-guides/user-interface/navigating-the-ui.md"
+                  },
+                  {
+                    "label": "Upload a table from a file",
+                    "path": "how-to-guides/user-interface/upload-table-from-file.md"
                   },
                   {
                     "label": "Set date-time format",
@@ -1003,6 +1015,10 @@
                 "path": "reference/cheat-sheets/csv.md"
               },
               {
+                "label": "Kafka",
+                "path": "reference/cheat-sheets/kafka.md"
+              },
+              {
                 "label": "Parquet",
                 "path": "reference/cheat-sheets/parquet.md"
               },
@@ -1086,6 +1102,10 @@
           {
             "label": "Create your own plugin",
             "path": "how-to-guides/create-plugins.md"
+          },
+          {
+            "label": "Create a JavaScript plugin",
+            "path": "how-to-guides/create-js-plugins.md"
           }
         ]
       },

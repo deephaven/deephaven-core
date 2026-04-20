@@ -1444,12 +1444,30 @@ public class BarrageUtil {
             return;
         }
 
+        final Map<String, org.apache.arrow.flatbuf.Field> fieldFor;
+        if (table.hasAttribute(Table.BARRAGE_SCHEMA_ATTRIBUTE)) {
+            fieldFor = new HashMap<>();
+            // Extract the target schema from the table attributes
+            final Schema targetSchema = (Schema) table.getAttribute(Table.BARRAGE_SCHEMA_ATTRIBUTE);
+            // noinspection DataFlowIssue
+            // Iterate over each field, serialize it to a FlatBuffer, and store it in the map
+            targetSchema.getFields().forEach(f -> {
+                final FlatBufferBuilder fbb = new FlatBufferBuilder();
+                final int offset = f.getField(fbb);
+                fbb.finish(offset);
+                fieldFor.put(f.getName(), org.apache.arrow.flatbuf.Field.getRootAsField(fbb.dataBuffer()));
+            });
+        } else {
+            // No custom schema provided, keep the map null to rely on default field generation
+            fieldFor = null;
+        }
+
         // noinspection unchecked
         final ChunkWriter<Chunk<Values>>[] chunkWriters = table.getDefinition().getColumns().stream()
                 .map(cd -> DefaultChunkWriterFactory.INSTANCE.newWriter(BarrageTypeInfo.make(
                         ReinterpretUtils.maybeConvertToPrimitiveDataType(cd.getDataType()),
                         cd.getComponentType(),
-                        flatbufFieldFor(cd, Map.of()))))
+                        fieldFor != null ? fieldFor.get(cd.getName()) : flatbufFieldFor(cd, Map.of()))))
                 .toArray(ChunkWriter[]::new);
 
         // otherwise snapshot the entire request and send to the client

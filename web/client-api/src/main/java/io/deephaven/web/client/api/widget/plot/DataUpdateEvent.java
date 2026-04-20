@@ -6,11 +6,12 @@ package io.deephaven.web.client.api.widget.plot;
 import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
 import elemental2.core.JsArray;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.figuredescriptor.SourceDescriptor;
+import io.deephaven.proto.backplane.script.grpc.FigureDescriptor;
 import io.deephaven.web.client.api.TableData;
 import io.deephaven.web.shared.fu.JsFunction;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsOptional;
+import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsProperty;
 import jsinterop.base.Any;
 
@@ -22,7 +23,7 @@ public class DataUpdateEvent {
         return new DataUpdateEvent(series, null, null) {
             @Override
             public JsArray<Any> getArray(JsSeries series, int sourceType,
-                    @JsOptional JsFunction<Any, Any> mappingFunc) {
+                    @JsOptional @JsNullable JsFunction<Any, Any> mappingFunc) {
                 return new JsArray<>();
             }
         };
@@ -48,16 +49,17 @@ public class DataUpdateEvent {
     }
 
     @JsMethod
-    public JsArray<Any> getArray(JsSeries series, int sourceType, @JsOptional JsFunction<Any, Any> mappingFunc) {
-        String columnName = getColumnName(series, sourceType);
+    public JsArray<Any> getArray(JsSeries series, int sourceType,
+            @JsOptional @JsNullable JsFunction<Any, Any> mappingFunc) {
+        String columnName = getColumnName(series, FigureDescriptor.SourceType.forNumber(sourceType));
 
         return data.getColumn(columnName, mappingFunc, currentUpdate);
     }
 
-    private String getColumnName(JsSeries series, int sourceType) {
-        return series.getDescriptor().getDataSourcesList().asList().stream()
+    private String getColumnName(JsSeries series, FigureDescriptor.SourceType sourceType) {
+        return series.getDescriptor().getDataSourcesList().stream()
                 .filter(sd -> sd.getType() == sourceType)
-                .findFirst().map(SourceDescriptor::getColumnName)
+                .findFirst().map(FigureDescriptor.SourceDescriptor::getColumnName)
                 .orElseThrow(() -> new IllegalArgumentException("No sourceType " + sourceType + " in provided series"));
     }
 }

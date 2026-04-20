@@ -6,17 +6,18 @@ package io.deephaven.web.client.api.filter;
 import com.vertispan.tsdefs.annotations.TsTypeRef;
 import com.vertispan.tsdefs.annotations.TsUnion;
 import com.vertispan.tsdefs.annotations.TsUnionMember;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.Table_pb;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.CompareCondition;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.Condition;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.ContainsCondition;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.InCondition;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.InvokeCondition;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.IsNullCondition;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.Literal;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.MatchesCondition;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.Reference;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.Value;
+import io.deephaven.proto.backplane.grpc.CaseSensitivity;
+import io.deephaven.proto.backplane.grpc.CompareCondition;
+import io.deephaven.proto.backplane.grpc.Condition;
+import io.deephaven.proto.backplane.grpc.ContainsCondition;
+import io.deephaven.proto.backplane.grpc.InCondition;
+import io.deephaven.proto.backplane.grpc.InvokeCondition;
+import io.deephaven.proto.backplane.grpc.IsNullCondition;
+import io.deephaven.proto.backplane.grpc.Literal;
+import io.deephaven.proto.backplane.grpc.MatchType;
+import io.deephaven.proto.backplane.grpc.MatchesCondition;
+import io.deephaven.proto.backplane.grpc.Reference;
+import io.deephaven.proto.backplane.grpc.Value;
 import io.deephaven.web.client.api.Column;
 import io.deephaven.web.client.api.DateWrapper;
 import io.deephaven.web.client.api.LongWrapper;
@@ -33,6 +34,7 @@ import jsinterop.base.Js;
 
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * Describes data that can be filtered - either a column reference or a literal value. Used this way, the type of a
@@ -60,8 +62,9 @@ public class FilterValue {
         } else {
             string = input.toString();
         }
-        Literal lit = new Literal();
-        lit.setStringValue(string);
+        Literal lit = Literal.newBuilder()
+                .setStringValue(string)
+                .build();
         return new FilterValue(lit);
     }
 
@@ -116,22 +119,26 @@ public class FilterValue {
         if (input.isLongWrapper()) {
             LongWrapper value = input.asLongWrapper();
             if (value instanceof DateWrapper) {
-                Literal lit = new Literal();
-                lit.setNanoTimeValue(((DateWrapper) input).valueOf());
+                Literal lit = Literal.newBuilder()
+                        .setNanoTimeValue(((DateWrapper) input).getWrapped())
+                        .build();
                 return new FilterValue(lit);
             } else {
-                Literal lit = new Literal();
-                lit.setLongValue(((LongWrapper) input).valueOf());
+                Literal lit = Literal.newBuilder()
+                        .setLongValue(((LongWrapper) input).getWrapped())
+                        .build();
                 return new FilterValue(lit);
             }
         } else if (input.isNumber()) {
-            Literal lit = new Literal();
-            lit.setDoubleValue(input.asNumber());
+            Literal lit = Literal.newBuilder()
+                    .setDoubleValue(input.asNumber())
+                    .build();
             return new FilterValue(lit);
         } else {
             // not sure what the input is, try to toString(), then parse to Double, and use that
-            Literal lit = new Literal();
-            lit.setDoubleValue(Double.parseDouble(input.toString()));
+            Literal lit = Literal.newBuilder()
+                    .setDoubleValue(Double.parseDouble(input.toString()))
+                    .build();
             return new FilterValue(lit);
         }
     }
@@ -146,23 +153,22 @@ public class FilterValue {
     public static FilterValue ofBoolean(Boolean b) {
         Objects.requireNonNull(b);
 
-        Literal lit = new Literal();
-        lit.setBoolValue(b);
+        Literal lit = Literal.newBuilder()
+                .setBoolValue(b)
+                .build();
         return new FilterValue(lit);
     }
 
     private FilterValue(Literal literal) {
-        descriptor = new Value();
-        descriptor.setLiteral(literal);
+        descriptor = Value.newBuilder().setLiteral(literal).build();
     }
 
     @JsIgnore
     public FilterValue(Column column) {
-        Reference ref = new Reference();
-        ref.setColumnName(column.getName());
-
-        descriptor = new Value();
-        descriptor.setReference(ref);
+        descriptor = Value.newBuilder()
+                .setReference(Reference.newBuilder()
+                        .setColumnName(column.getName()))
+                .build();
     }
 
     @JsIgnore // hidden until implemented
@@ -178,18 +184,20 @@ public class FilterValue {
      * @return {@link FilterCondition}
      */
     public FilterCondition eq(FilterValue term) {
-        return makeCompare(term, CompareCondition.CompareOperation.getEQUALS());
+        return makeCompare(term, CompareCondition.CompareOperation.EQUALS);
     }
 
-    private FilterCondition makeCompare(FilterValue term, double operation) {
-        CompareCondition compare = new CompareCondition();
-        compare.setLhs(descriptor);
-        compare.setRhs(term.descriptor);
+    private FilterCondition makeCompare(FilterValue term, CompareCondition.CompareOperation operation) {
+        CompareCondition compare = CompareCondition.newBuilder()
+                .setLhs(descriptor)
+                .setRhs(term.descriptor)
 
-        compare.setOperation(operation);
+                .setOperation(operation)
+                .build();
 
-        Condition c = new Condition();
-        c.setCompare(compare);
+        Condition c = Condition.newBuilder()
+                .setCompare(compare)
+                .build();
 
         return FilterCondition.createAndValidate(c);
     }
@@ -212,7 +220,7 @@ public class FilterValue {
      * @return {@link FilterCondition}
      */
     public FilterCondition notEq(FilterValue term) {
-        return makeCompare(term, CompareCondition.CompareOperation.getNOT_EQUALS());
+        return makeCompare(term, CompareCondition.CompareOperation.NOT_EQUALS);
     }
 
     /**
@@ -233,7 +241,7 @@ public class FilterValue {
      * @return {@link FilterCondition}
      */
     public FilterCondition greaterThan(FilterValue term) {
-        return makeCompare(term, CompareCondition.CompareOperation.getGREATER_THAN());
+        return makeCompare(term, CompareCondition.CompareOperation.GREATER_THAN);
     }
 
     /**
@@ -243,7 +251,7 @@ public class FilterValue {
      * @return {@link FilterCondition}
      */
     public FilterCondition lessThan(FilterValue term) {
-        return makeCompare(term, CompareCondition.CompareOperation.getLESS_THAN());
+        return makeCompare(term, CompareCondition.CompareOperation.LESS_THAN);
     }
 
     /**
@@ -253,7 +261,7 @@ public class FilterValue {
      * @return {@link FilterCondition}
      */
     public FilterCondition greaterThanOrEqualTo(FilterValue term) {
-        return makeCompare(term, CompareCondition.CompareOperation.getGREATER_THAN_OR_EQUAL());
+        return makeCompare(term, CompareCondition.CompareOperation.GREATER_THAN_OR_EQUAL);
     }
 
     /**
@@ -263,7 +271,7 @@ public class FilterValue {
      * @return {@link FilterCondition}
      */
     public FilterCondition lessThanOrEqualTo(FilterValue term) {
-        return makeCompare(term, CompareCondition.CompareOperation.getLESS_THAN_OR_EQUAL());
+        return makeCompare(term, CompareCondition.CompareOperation.LESS_THAN_OR_EQUAL);
     }
 
     /**
@@ -273,18 +281,20 @@ public class FilterValue {
      * @return {@link FilterCondition}
      */
     public FilterCondition in(FilterValue[] terms) {
-        return makeIn(terms, Table_pb.MatchType.getREGULAR(), Table_pb.CaseSensitivity.getMATCH_CASE());
+        return makeIn(terms, MatchType.REGULAR, CaseSensitivity.MATCH_CASE);
     }
 
-    private FilterCondition makeIn(FilterValue[] terms, double matchType, double casesensitivity) {
-        InCondition value = new InCondition();
-        value.setTarget(descriptor);
-        value.setMatchType(matchType);
-        value.setCaseSensitivity(casesensitivity);
-        value.setCandidatesList(Arrays.stream(terms).map(v -> v.descriptor).toArray(Value[]::new));
+    private FilterCondition makeIn(FilterValue[] terms, MatchType matchType, CaseSensitivity casesensitivity) {
+        InCondition value = InCondition.newBuilder()
+                .setTarget(descriptor)
+                .setMatchType(matchType)
+                .setCaseSensitivity(casesensitivity)
+                .addAllCandidates(Arrays.stream(terms).map(v -> v.descriptor).collect(Collectors.toList()))
+                .build();
 
-        Condition c = new Condition();
-        c.setIn(value);
+        Condition c = Condition.newBuilder()
+                .setIn(value)
+                .build();
         return FilterCondition.createAndValidate(c);
     }
 
@@ -296,7 +306,7 @@ public class FilterValue {
      * @return {@link FilterCondition}
      */
     public FilterCondition inIgnoreCase(FilterValue[] terms) {
-        return makeIn(terms, Table_pb.MatchType.getREGULAR(), Table_pb.CaseSensitivity.getIGNORE_CASE());
+        return makeIn(terms, MatchType.REGULAR, CaseSensitivity.IGNORE_CASE);
     }
 
     /**
@@ -306,7 +316,7 @@ public class FilterValue {
      * @return {@link FilterCondition}
      */
     public FilterCondition notIn(FilterValue[] terms) {
-        return makeIn(terms, Table_pb.MatchType.getINVERTED(), Table_pb.CaseSensitivity.getMATCH_CASE());
+        return makeIn(terms, MatchType.INVERTED, CaseSensitivity.MATCH_CASE);
     }
 
     /**
@@ -317,7 +327,7 @@ public class FilterValue {
      * @return {@link FilterCondition}
      */
     public FilterCondition notInIgnoreCase(FilterValue[] terms) {
-        return makeIn(terms, Table_pb.MatchType.getINVERTED(), Table_pb.CaseSensitivity.getIGNORE_CASE());
+        return makeIn(terms, MatchType.INVERTED, CaseSensitivity.IGNORE_CASE);
     }
 
     /**
@@ -327,7 +337,7 @@ public class FilterValue {
      * @return {@link FilterCondition}
      */
     public FilterCondition contains(FilterValue term) {
-        return makeContains(term, Table_pb.CaseSensitivity.getMATCH_CASE());
+        return makeContains(term, CaseSensitivity.MATCH_CASE);
     }
 
     /**
@@ -338,17 +348,19 @@ public class FilterValue {
      * @return {@link FilterCondition}
      */
     public FilterCondition containsIgnoreCase(FilterValue term) {
-        return makeContains(term, Table_pb.CaseSensitivity.getIGNORE_CASE());
+        return makeContains(term, CaseSensitivity.IGNORE_CASE);
     }
 
-    private FilterCondition makeContains(FilterValue term, double casesensitivity) {
-        ContainsCondition contains = new ContainsCondition();
-        contains.setReference(this.descriptor.getReference());
-        contains.setSearchString(term.descriptor.getLiteral().getStringValue());
-        contains.setCaseSensitivity(casesensitivity);
+    private FilterCondition makeContains(FilterValue term, CaseSensitivity caseSensitivity) {
+        ContainsCondition contains = ContainsCondition.newBuilder()
+                .setReference(this.descriptor.getReference())
+                .setSearchString(term.descriptor.getLiteral().getStringValue())
+                .setCaseSensitivity(caseSensitivity)
+                .build();
 
-        Condition c = new Condition();
-        c.setContains(contains);
+        Condition c = Condition.newBuilder()
+                .setContains(contains)
+                .build();
         return FilterCondition.createAndValidate(c);
     }
 
@@ -360,7 +372,7 @@ public class FilterValue {
      * @return {@link FilterCondition}
      */
     public FilterCondition matches(FilterValue pattern) {
-        return makeMatches(pattern, Table_pb.CaseSensitivity.getMATCH_CASE());
+        return makeMatches(pattern, CaseSensitivity.MATCH_CASE);
     }
 
     /**
@@ -371,18 +383,19 @@ public class FilterValue {
      * @return {@link FilterCondition}
      */
     public FilterCondition matchesIgnoreCase(FilterValue pattern) {
-        return makeMatches(pattern, Table_pb.CaseSensitivity.getIGNORE_CASE());
+        return makeMatches(pattern, CaseSensitivity.IGNORE_CASE);
     }
 
-    private FilterCondition makeMatches(FilterValue term, double casesensitivity) {
-        MatchesCondition contains = new MatchesCondition();
+    private FilterCondition makeMatches(FilterValue term, CaseSensitivity caseSensitivity) {
+        MatchesCondition contains = MatchesCondition.newBuilder()
+                .setReference(this.descriptor.getReference())
+                .setRegex(term.descriptor.getLiteral().getStringValue())
+                .setCaseSensitivity(caseSensitivity)
+                .build();
 
-        contains.setReference(this.descriptor.getReference());
-        contains.setRegex(term.descriptor.getLiteral().getStringValue());
-        contains.setCaseSensitivity(casesensitivity);
-
-        Condition c = new Condition();
-        c.setMatches(contains);
+        Condition c = Condition.newBuilder()
+                .setMatches(contains)
+                .build();
         return FilterCondition.createAndValidate(c);
     }
 
@@ -410,11 +423,13 @@ public class FilterValue {
      * @return {@link FilterCondition}
      */
     public FilterCondition isNull() {
-        IsNullCondition isNull = new IsNullCondition();
-        isNull.setReference(this.descriptor.getReference());
+        IsNullCondition isNull = IsNullCondition.newBuilder()
+                .setReference(this.descriptor.getReference())
+                .build();
 
-        Condition c = new Condition();
-        c.setIsNull(isNull);
+        Condition c = Condition.newBuilder()
+                .setIsNull(isNull)
+                .build();
         return FilterCondition.createAndValidate(c);
     }
 
@@ -440,13 +455,15 @@ public class FilterValue {
      * @return
      */
     public FilterCondition invoke(String method, FilterValue... args) {
-        InvokeCondition invoke = new InvokeCondition();
-        invoke.setMethod(method);
-        invoke.setTarget(descriptor);
-        invoke.setArgumentsList(Arrays.stream(args).map(v -> v.descriptor).toArray(Value[]::new));
+        InvokeCondition invoke = InvokeCondition.newBuilder()
+                .setMethod(method)
+                .setTarget(descriptor)
+                .addAllArguments(Arrays.stream(args).map(v -> v.descriptor).collect(Collectors.toList()))
+                .build();
 
-        Condition c = new Condition();
-        c.setInvoke(invoke);
+        Condition c = Condition.newBuilder()
+                .setInvoke(invoke)
+                .build();
         return FilterCondition.createAndValidate(c);
     }
 
