@@ -42,7 +42,7 @@ groovy = "3.0.25"
 grpc = "1.76.2"
 netty = "4.1.132.Final"
 
-guava = "33.4.8-jre"
+guava = "33.6.0-jre"
 gwt = "2.12.2"
 # used by GwtTools
 gwtJetty = "9.4.44.v20210927"
