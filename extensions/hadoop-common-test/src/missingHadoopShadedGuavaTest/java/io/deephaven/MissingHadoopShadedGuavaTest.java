@@ -4,12 +4,12 @@
 package io.deephaven;
 
 import org.apache.hadoop.conf.Configuration;
-import org.assertj.core.api.Assumptions;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.ThreadLocalRandom;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 import static org.assertj.core.api.Assumptions.assumeThat;
 
 class MissingHadoopShadedGuavaTest {
@@ -37,6 +37,7 @@ class MissingHadoopShadedGuavaTest {
         final Configuration configuration = new Configuration();
         try {
             configuration.get("some.property");
+            failBecauseExceptionWasNotThrown(NoClassDefFoundError.class);
         } catch (final NoClassDefFoundError e) {
             assertThat(e).hasMessage("org/apache/hadoop/thirdparty/com/google/common/collect/Interners");
             assertThat(e).hasCauseInstanceOf(ClassNotFoundException.class);
@@ -53,6 +54,7 @@ class MissingHadoopShadedGuavaTest {
         final Configuration configuration = new Configuration();
         try {
             configuration.set("some.property", "some.value");
+            failBecauseExceptionWasNotThrown(NoClassDefFoundError.class);
         } catch (final NoClassDefFoundError e) {
             assertThat(e).hasMessage("org/apache/hadoop/thirdparty/com/google/common/collect/Interners");
             assertThat(e).hasCauseInstanceOf(ClassNotFoundException.class);

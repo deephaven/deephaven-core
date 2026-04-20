@@ -16,6 +16,11 @@ testing {
                 implementation libs.assertj
                 implementation libs.slf4j.api
                 runtimeOnly libs.slf4j.simple
+
+                implementation platform(libs.junit.bom)
+                implementation libs.junit.jupiter
+                runtimeOnly libs.junit.jupiter.engine
+                runtimeOnly libs.junit.platform.launcher
             }
         }
         test {
