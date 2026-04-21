@@ -16,7 +16,8 @@ public interface ColumnRestrictionConverter {
      *
      * @param restrictionData The parsed restriction data from protobuf
      * @return A ColumnRestriction object, or null if conversion fails
+     * @throws ColumnRestrictionConverterException if the restriction data cannot be converted to a ColumnRestriction
      */
-    ColumnRestriction convert(Any restrictionData);
+    ColumnRestriction convert(Any restrictionData) throws ColumnRestrictionConverterException;
 }
 

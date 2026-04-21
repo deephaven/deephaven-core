@@ -10,7 +10,6 @@ import io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
 import io.deephaven.proto.backplane.grpc.DeephavenTableMetadata;
 import io.deephaven.proto.backplane.grpc.InputTableColumnInfo;
-import io.deephaven.web.client.api.ColumnRestriction;
 import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
 import io.deephaven.web.client.api.barrage.def.InitialTableDefinition;
 import io.deephaven.web.client.api.barrage.def.InputTableMetadata;
@@ -127,11 +126,8 @@ public class WebBarrageUtils {
                 return metadata;
             }
 
-            io.deephaven.proto.backplane.grpc.InputTableMetadata protoInputTableMetadata =
-                    tableMetadata.getInputTableMetadata();
-
             // Get the column info map
-            Map<String, InputTableColumnInfo> columnInfoMap = protoInputTableMetadata.getColumnInfoMap();
+            Map<String, InputTableColumnInfo> columnInfoMap = tableMetadata.getInputTableMetadata().getColumnInfoMap();
 
             // Extract column restrictions from the column info map
             for (ColumnDefinition col : cols) {
@@ -152,15 +148,9 @@ public class WebBarrageUtils {
                     for (Any restrictionAny : restrictionsList) {
                         // Get the restriction type and look up the converter
                         String restrictionType = ColumnRestrictionUtils.getRestrictionType(restrictionAny.getTypeUrl());
-
                         ColumnRestrictionConverter converter = restrictionConverters.get(restrictionType);
-
                         if (converter != null) {
-                            // TODO make this throw
-                            ColumnRestriction restriction = converter.convert(restrictionAny);
-                            if (restriction != null) {
-                                colRestrictions.addRestriction(restriction);
-                            }
+                            colRestrictions.addRestriction(converter.convert(restrictionAny));
                         } else {
                             JsLog.error("No converter registered for restriction type: " + restrictionType);
                         }

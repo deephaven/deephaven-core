@@ -41,69 +41,63 @@ public class ColumnRestrictionUtils {
     /**
      * Convert IntegerRangeRestriction data into a ColumnRestriction object.
      */
-    public static ColumnRestriction convertIntegerRangeRestriction(Any restrictionAny) {
+    public static ColumnRestriction convertIntegerRangeRestriction(Any restrictionAny) throws ColumnRestrictionConverterException {
         try {
             ByteBuffer buffer = restrictionAny.getValue().asReadOnlyByteBuffer();
             IntegerRangeRestriction restriction = IntegerRangeRestriction.parseFrom(buffer);
             double minValue = restriction.hasMinInclusive() ? restriction.getMinInclusive() : Double.NaN;
             double maxValue = restriction.hasMaxInclusive() ? restriction.getMaxInclusive() : Double.NaN;
-
             return new ColumnRestriction("IntegerRangeRestriction", minValue, maxValue);
         } catch (Exception e) {
-            JsLog.error("Failed to convert IntegerRangeRestriction:", e);
-            return null;
+            throw new ColumnRestrictionConverterException("Failed to convert IntegerRangeRestriction", e);
         }
     }
 
     /**
      * Convert DoubleRangeRestriction data into a ColumnRestriction object.
      */
-    public static ColumnRestriction convertDoubleRangeRestriction(Any restrictionAny) {
+    public static ColumnRestriction convertDoubleRangeRestriction(Any restrictionAny) throws ColumnRestrictionConverterException {
         try {
             ByteBuffer buffer = restrictionAny.getValue().asReadOnlyByteBuffer();
             DoubleRangeRestriction restriction = DoubleRangeRestriction.parseFrom(buffer);
             double minValue = restriction.hasMinInclusive() ? restriction.getMinInclusive() : Double.NaN;
             double maxValue = restriction.hasMaxInclusive() ? restriction.getMaxInclusive() : Double.NaN;
-
             return new ColumnRestriction("DoubleRangeRestriction", minValue, maxValue);
         } catch (Exception e) {
-            JsLog.error("Failed to convert DoubleRangeRestriction:", e);
-            return null;
+            throw new ColumnRestrictionConverterException("Failed to convert DoubleRangeRestriction", e);
         }
     }
 
     /**
      * Convert NotNullRestriction data into a ColumnRestriction object.
      */
-    public static ColumnRestriction convertNotNullRestriction(Any restrictionAny) {
+    public static ColumnRestriction convertNotNullRestriction(Any restrictionAny) throws ColumnRestrictionConverterException {
         try {
             ByteBuffer buffer = restrictionAny.getValue().asReadOnlyByteBuffer();
             NotNullRestriction.parseFrom(buffer); // Just to validate
             return new ColumnRestriction("NotNullRestriction");
         } catch (Exception e) {
-            JsLog.error("Failed to convert NotNullRestriction:", e);
-            return null;
+            throw new ColumnRestrictionConverterException("Failed to convert NotNullRestriction", e);
         }
     }
 
     /**
      * Convert NonEmptyRestriction data into a ColumnRestriction object.
      */
-    public static ColumnRestriction convertNonEmptyRestriction(Any restrictionAny) {
+    public static ColumnRestriction convertNonEmptyRestriction(Any restrictionAny) throws ColumnRestrictionConverterException {
         try {
             ByteBuffer buffer = restrictionAny.getValue().asReadOnlyByteBuffer();
             NonEmptyRestriction.parseFrom(buffer); // Just to validate
             return new ColumnRestriction("NonEmptyRestriction");
         } catch (Exception e) {
-            JsLog.error("Failed to convert NonEmptyRestriction:", e);
-            return null;
+            throw new ColumnRestrictionConverterException("Failed to convert NonEmptyRestriction", e);
         }
     }
 
     /**
      * Convert StringListRestriction data into a ColumnRestriction object.
      */
-    public static ColumnRestriction convertStringListRestriction(Any restrictionAny) {
+    public static ColumnRestriction convertStringListRestriction(Any restrictionAny) throws ColumnRestrictionConverterException {
         try {
             ByteBuffer buffer = restrictionAny.getValue().asReadOnlyByteBuffer();
             StringListRestriction restriction = StringListRestriction.parseFrom(buffer);
@@ -115,8 +109,7 @@ public class ColumnRestrictionUtils {
 
             return new ColumnRestriction("StringListRestriction", allowedValuesAsAny);
         } catch (Exception e) {
-            JsLog.error("Failed to convert StringListRestriction:", e);
-            return null;
+            throw new ColumnRestrictionConverterException("Failed to convert StringListRestriction", e);
         }
     }
 }
