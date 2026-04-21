@@ -23,10 +23,10 @@ import org.apache.arrow.flatbuf.Message;
 import org.apache.arrow.flatbuf.MessageHeader;
 import org.apache.arrow.flatbuf.Schema;
 import com.google.protobuf.Any;
-import org.gwtproject.nio.TypedArrayHelper;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -114,14 +114,12 @@ public class WebBarrageUtils {
         InputTableMetadata metadata = new InputTableMetadata();
 
         try {
-            JsLog.warn("parseInputTableMetadata: Decoding base64...");
-            // Decode base64 to Uint8Array
-            Uint8Array bytes = decodeBase64(tableMetadataBase64);
-            JsLog.warn("parseInputTableMetadata: Decoded " + bytes.length + " bytes");
-
             JsLog.warn("parseInputTableMetadata: Deserializing DeephavenTableMetadata...");
-            // Convert Uint8Array to ByteBuffer and deserialize using Java protobuf parseFrom
-            ByteBuffer buffer = TypedArrayHelper.wrap(bytes);
+            // Decode the base64 string to bytes and parse the DeephavenTableMetadata
+            final byte[] bytes = DomGlobal.atob(tableMetadataBase64).getBytes(StandardCharsets.ISO_8859_1);
+            ByteBuffer buffer = ByteBuffer.allocateDirect(bytes.length);
+            buffer.put(bytes);
+            buffer.flip();
             DeephavenTableMetadata tableMetadata = DeephavenTableMetadata.parseFrom(buffer);
             JsLog.warn("parseInputTableMetadata: Successfully deserialized DeephavenTableMetadata", tableMetadata);
 
@@ -136,8 +134,6 @@ public class WebBarrageUtils {
 
             // Get the column info map
             Map<String, InputTableColumnInfo> columnInfoMap = protoInputTableMetadata.getColumnInfoMap();
-
-//            JsLog.warn("parseInputTableMetadata: Retrieved column info map  " + columnInfoMap);
 
             JsLog.warn("parseInputTableMetadata: Processing " + cols.length + " columns");
             // Extract column restrictions from the column info map
@@ -193,27 +189,6 @@ public class WebBarrageUtils {
 
         return metadata;
     }
-
-    // Helper method to extract InputTableColumnInfo from the map
-    private static native InputTableColumnInfo getColumnInfoFromMap(Object map, String key) /*-{
-        if (!map || !map.get) return null;
-        return map.get(key);
-    }-*/;
-
-    // Decode base64 string to Uint8Array using elemental2
-    private static Uint8Array decodeBase64(String base64) {
-        // Use DomGlobal.atob() to decode base64 to binary string
-        String binaryString = DomGlobal.atob(base64);
-
-        // Convert binary string to Uint8Array
-        Uint8Array bytes = new Uint8Array(binaryString.length());
-        for (int i = 0; i < binaryString.length(); i++) {
-            bytes.setAt(i, (double) (binaryString.charAt(i) & 0xff));
-        }
-        return bytes;
-    }
-
-
 
     private static ColumnDefinition[] readColumnDefinitions(Schema schema) {
         ColumnDefinition[] cols = new ColumnDefinition[(int) schema.fieldsLength()];
