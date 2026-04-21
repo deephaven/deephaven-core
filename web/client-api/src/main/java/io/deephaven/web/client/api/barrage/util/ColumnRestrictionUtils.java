@@ -5,7 +5,6 @@ package io.deephaven.web.client.api.barrage.util;
 
 import com.google.protobuf.Any;
 import elemental2.core.JsArray;
-import elemental2.core.Uint8Array;
 import io.deephaven.proto.backplane.grpc.NonEmptyRestriction;
 import io.deephaven.proto.backplane.grpc.NotNullRestriction;
 import io.deephaven.proto.backplane.grpc.DoubleRangeRestriction;
@@ -13,7 +12,6 @@ import io.deephaven.proto.backplane.grpc.IntegerRangeRestriction;
 import io.deephaven.proto.backplane.grpc.StringListRestriction;
 import io.deephaven.web.client.api.ColumnRestriction;
 import io.deephaven.web.client.fu.JsLog;
-import jsinterop.base.Js;
 
 import java.nio.ByteBuffer;
 
@@ -52,7 +50,7 @@ public class ColumnRestrictionUtils {
 
             return new ColumnRestriction("IntegerRangeRestriction", minValue, maxValue);
         } catch (Exception e) {
-            JsLog.warn("Failed to convert IntegerRangeRestriction:", e);
+            JsLog.error("Failed to convert IntegerRangeRestriction:", e);
             return null;
         }
     }
@@ -69,7 +67,7 @@ public class ColumnRestrictionUtils {
 
             return new ColumnRestriction("DoubleRangeRestriction", minValue, maxValue);
         } catch (Exception e) {
-            JsLog.warn("Failed to convert DoubleRangeRestriction:", e);
+            JsLog.error("Failed to convert DoubleRangeRestriction:", e);
             return null;
         }
     }
@@ -83,7 +81,7 @@ public class ColumnRestrictionUtils {
             NotNullRestriction.parseFrom(buffer); // Just to validate
             return new ColumnRestriction("NotNullRestriction");
         } catch (Exception e) {
-            JsLog.warn("Failed to convert NotNullRestriction:", e);
+            JsLog.error("Failed to convert NotNullRestriction:", e);
             return null;
         }
     }
@@ -97,7 +95,7 @@ public class ColumnRestrictionUtils {
             NonEmptyRestriction.parseFrom(buffer); // Just to validate
             return new ColumnRestriction("NonEmptyRestriction");
         } catch (Exception e) {
-            JsLog.warn("Failed to convert NonEmptyRestriction:", e);
+            JsLog.error("Failed to convert NonEmptyRestriction:", e);
             return null;
         }
     }
@@ -117,7 +115,7 @@ public class ColumnRestrictionUtils {
 
             return new ColumnRestriction("StringListRestriction", allowedValuesAsAny);
         } catch (Exception e) {
-            JsLog.warn("Failed to convert StringListRestriction:", e);
+            JsLog.error("Failed to convert StringListRestriction:", e);
             return null;
         }
     }

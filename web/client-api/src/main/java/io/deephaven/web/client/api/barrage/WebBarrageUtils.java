@@ -10,6 +10,7 @@ import io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
 import io.deephaven.proto.backplane.grpc.DeephavenTableMetadata;
 import io.deephaven.proto.backplane.grpc.InputTableColumnInfo;
+import io.deephaven.web.client.api.ColumnRestriction;
 import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
 import io.deephaven.web.client.api.barrage.def.InitialTableDefinition;
 import io.deephaven.web.client.api.barrage.def.InputTableMetadata;
@@ -114,77 +115,63 @@ public class WebBarrageUtils {
         InputTableMetadata metadata = new InputTableMetadata();
 
         try {
-            JsLog.warn("parseInputTableMetadata: Deserializing DeephavenTableMetadata...");
             // Decode the base64 string to bytes and parse the DeephavenTableMetadata
             final byte[] bytes = DomGlobal.atob(tableMetadataBase64).getBytes(StandardCharsets.ISO_8859_1);
             ByteBuffer buffer = ByteBuffer.allocateDirect(bytes.length);
             buffer.put(bytes);
             buffer.flip();
             DeephavenTableMetadata tableMetadata = DeephavenTableMetadata.parseFrom(buffer);
-            JsLog.warn("parseInputTableMetadata: Successfully deserialized DeephavenTableMetadata", tableMetadata);
 
             if (!tableMetadata.hasInputTableMetadata()) {
-                JsLog.warn("parseInputTableMetadata: No input table metadata present");
+                // TODO what to do in this case?
                 return metadata;
             }
 
             io.deephaven.proto.backplane.grpc.InputTableMetadata protoInputTableMetadata =
                     tableMetadata.getInputTableMetadata();
-            JsLog.warn("parseInputTableMetadata: Got InputTableMetadata", protoInputTableMetadata);
 
             // Get the column info map
             Map<String, InputTableColumnInfo> columnInfoMap = protoInputTableMetadata.getColumnInfoMap();
 
-            JsLog.warn("parseInputTableMetadata: Processing " + cols.length + " columns");
             // Extract column restrictions from the column info map
             for (ColumnDefinition col : cols) {
                 String columnName = col.getName();
                 InputTableColumnInfo columnInfo = columnInfoMap.get(columnName);
 
-                if (columnInfo != null) {
-                    JsLog.warn("parseInputTableMetadata: Found column info for: " + columnName);
-                    List<Any> restrictionsList = columnInfo.getRestrictionsList();
-
-                    if (restrictionsList != null && !restrictionsList.isEmpty()) {
-                        JsLog.warn("parseInputTableMetadata: Column " + columnName + " has " + restrictionsList.size() + " restrictions");
-                        InputTableMetadata.ColumnRestrictions colRestrictions =
-                                new InputTableMetadata.ColumnRestrictions();
-
-                        for (int i = 0; i < restrictionsList.size(); i++) {
-                            Any restrictionAny = restrictionsList.get(i);
-
-                            JsLog.warn("parseInputTableMetadata: Processing restriction " + i + " for column " + columnName, restrictionAny);
-
-                            // Get the restriction type and look up the converter
-                            String restrictionType = ColumnRestrictionUtils.getRestrictionType(restrictionAny.getTypeUrl());
-                            JsLog.warn("parseInputTableMetadata: Restriction " + i + " type: " + restrictionType);
-
-                            if (restrictionType != null) {
-                                ColumnRestrictionConverter converter = restrictionConverters.get(restrictionType);
-
-                                if (converter != null) {
-                                    JsLog.warn("parseInputTableMetadata: Converting restriction...");
-                                    io.deephaven.web.client.api.ColumnRestriction restriction =
-                                            converter.convert(jsinterop.base.Js.cast(restrictionAny));
-                                    if (restriction != null) {
-                                        colRestrictions.addRestriction(restriction);
-                                        JsLog.warn("parseInputTableMetadata: Successfully added restriction");
-                                    } else {
-                                        JsLog.warn("parseInputTableMetadata: Converter returned null for " + restrictionType);
-                                    }
-                                } else {
-                                    JsLog.warn("No converter registered for restriction type: " + restrictionType);
-                                }
-                            }
-                        }
-
-                        metadata.addColumnRestrictions(columnName, colRestrictions);
-                    }
+                if (columnInfo == null) {
+                    JsLog.warn("parseInputTableMetadata: No column info found for column " + columnName);
+                    continue;
                 }
+
+                List<Any> restrictionsList = columnInfo.getRestrictionsList();
+
+                if (!restrictionsList.isEmpty()) {
+                    InputTableMetadata.ColumnRestrictions colRestrictions =
+                            new InputTableMetadata.ColumnRestrictions();
+
+                    for (Any restrictionAny : restrictionsList) {
+                        // Get the restriction type and look up the converter
+                        String restrictionType = ColumnRestrictionUtils.getRestrictionType(restrictionAny.getTypeUrl());
+
+                        ColumnRestrictionConverter converter = restrictionConverters.get(restrictionType);
+
+                        if (converter != null) {
+                            // TODO make this throw
+                            ColumnRestriction restriction = converter.convert(restrictionAny);
+                            if (restriction != null) {
+                                colRestrictions.addRestriction(restriction);
+                            }
+                        } else {
+                            JsLog.error("No converter registered for restriction type: " + restrictionType);
+                        }
+                    }
+
+                    metadata.addColumnRestrictions(columnName, colRestrictions);
+                }
+
             }
-            JsLog.warn("parseInputTableMetadata: Successfully parsed all restrictions");
         } catch (Exception e) {
-            JsLog.warn("Failed to parse input table metadata:", e);
+            JsLog.error("Failed to parse input table metadata:", e);
         }
 
         return metadata;
