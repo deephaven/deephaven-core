@@ -3,21 +3,18 @@
 //
 package io.deephaven.engine.rowset.impl;
 
-import gnu.trove.procedure.TLongProcedure;
-import gnu.trove.set.TLongSet;
-import gnu.trove.set.hash.TLongHashSet;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 
 import java.util.Arrays;
-import java.util.function.BiFunction;
 
 public class ValidationSet {
 
-    public static TLongSet make(final int sz) {
-        return new TLongHashSet(sz, 0.5f, -1L);
+    public static LongOpenHashSet make(final int sz) {
+        return new LongOpenHashSet(sz, 0.5f);
     }
 
-    public static String set2str(final String pfx, final TLongSet set) {
-        final long[] es = set.toArray();
+    public static String set2str(final String pfx, final LongOpenHashSet set) {
+        final long[] es = set.toLongArray();
         Arrays.sort(es);
         StringBuilder sb = new StringBuilder(pfx);
         sb.append("{ ");
@@ -34,111 +31,40 @@ public class ValidationSet {
     }
 
     public interface Op {
-        TLongSet apply(TLongSet h1, TLongSet h2);
+        LongOpenHashSet apply(LongOpenHashSet h1, LongOpenHashSet h2);
     }
 
     public static final Op unionOp = new Op() {
         @Override
-        public TLongSet apply(final TLongSet h1, final TLongSet h2) {
-            final TLongSet r = make(h1.size() + h2.size());
-            h1.forEach(new TLongProcedure() {
-                @Override
-                public boolean execute(final long v) {
-                    r.add(v);
-                    return true;
-                }
-            });
-            h2.forEach(new TLongProcedure() {
-                @Override
-                public boolean execute(final long v) {
-                    r.add(v);
-                    return true;
-                }
-            });
+        public LongOpenHashSet apply(final LongOpenHashSet h1, final LongOpenHashSet h2) {
+            final LongOpenHashSet r = make(h1.size() + h2.size());
+            h1.forEach(v -> r.add(v));
+            h2.forEach(v -> r.add(v));
             return r;
         }
     };
-
-    public static final Op intersectOp = new Op() {
-        @Override
-        public TLongSet apply(final TLongSet h1, final TLongSet h2) {
-            final TLongSet r = make(Math.min(h1.size(), h2.size()));
-            final TLongSet driver;
-            final TLongSet other;
-            if (h1.size() <= h2.size()) {
-                driver = h1;
-                other = h2;
-            } else {
-                driver = h2;
-                other = h1;
-            }
-            driver.forEach(new TLongProcedure() {
-                @Override
-                public boolean execute(final long v) {
-                    if (other.contains(v))
-                        r.add(v);
-                    return true;
-                }
-            });
-            return r;
-        }
-    };
-
-    public static final BiFunction<TLongSet, TLongSet, Boolean> overlapOp =
-            (h1, h2) -> !h1.forEach(v -> !h2.contains(v));
-    public static final BiFunction<TLongSet, TLongSet, Boolean> subsetOfOp = (h1, h2) -> h1.forEach(h2::contains);
 
     public static final Op subtractOp = new Op() {
         @Override
-        public TLongSet apply(final TLongSet h1, final TLongSet h2) {
-            final TLongSet r = make(h1.size());
-            h1.forEach(new TLongProcedure() {
-                @Override
-                public boolean execute(final long v) {
-                    if (!h2.contains(v))
-                        r.add(v);
-                    return true;
-                }
+        public LongOpenHashSet apply(final LongOpenHashSet h1, final LongOpenHashSet h2) {
+            final LongOpenHashSet r = make(h1.size());
+            h1.forEach(v -> {
+                if (!h2.contains(v))
+                    r.add(v);
             });
             return r;
         }
     };
 
-    public static final Op inverseSubtractOp = new Op() {
-        @Override
-        public TLongSet apply(final TLongSet h1, final TLongSet h2) {
-            final TLongSet r = make(h2.size());
-            h2.forEach(new TLongProcedure() {
-                @Override
-                public boolean execute(final long v) {
-                    if (!h1.contains(v))
-                        r.add(v);
-                    return true;
-                }
-            });
-            return r;
-        }
-    };
-
-    public interface TriOp {
-        TLongSet apply(TLongSet h1, TLongSet h2, TLongSet h3);
-    }
-
-    public static final TriOp updateOp = new TriOp() {
-        @Override
-        public TLongSet apply(TLongSet h1, TLongSet h2, TLongSet h3) {
-            return unionOp.apply(subtractOp.apply(h1, h3), h2);
-        }
-    };
-
-    public static void dump(final String label, final TLongSet set, final int sizeDumpThreshold) {
+    @SuppressWarnings("unused")
+    public static void dump(final String label, final LongOpenHashSet set, final int sizeDumpThreshold) {
         System.out.print("*** " + label + " ==> sz = " + set.size() + "|");
         if (set.size() > sizeDumpThreshold) {
             System.out.println("...");
             return;
         }
         final StringBuilder sb = new StringBuilder();
-        final long[] a = set.toArray();
+        final long[] a = set.toLongArray();
         Arrays.sort(a);
         appendLongArray(sb, a);
         System.out.println(sb.toString());
