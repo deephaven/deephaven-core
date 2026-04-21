@@ -4,7 +4,11 @@
 package io.deephaven.extensions.s3;
 
 import io.deephaven.base.reference.CleanupReference;
+import io.deephaven.base.stats.State;
+import io.deephaven.base.stats.Stats;
+import io.deephaven.base.stats.Value;
 import io.deephaven.base.verify.Require;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorderState;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.reference.CleanupReferenceProcessor;
@@ -29,6 +33,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.BiConsumer;
 
 import static io.deephaven.extensions.s3.S3Utils.addTimeout;
@@ -44,6 +49,11 @@ import static io.deephaven.extensions.s3.S3Utils.addTimeout;
 final class S3ReadRequest extends SoftReference<ByteBuffer>
         implements AsyncResponseTransformer<GetObjectResponse, Boolean>, BiConsumer<Boolean, Throwable>,
         CleanupReference<ByteBuffer> {
+
+    private static final Value READ_DURATION_NANOS =
+            Stats.makeItem("S3ReadRequest", "readDurationNanos", State.FACTORY).getValue();
+    private static final Value READ_SIZE_BYTES =
+            Stats.makeItem("S3ReadRequest", "readSizeBytes", State.FACTORY).getValue();
 
     /**
      * A unique identifier for a request, consisting of the URI and fragment index.
@@ -79,6 +89,11 @@ final class S3ReadRequest extends SoftReference<ByteBuffer>
 
     private static final Logger log = LoggerFactory.getLogger(S3ReadRequest.class);
 
+    private static final AtomicIntegerFieldUpdater<S3ReadRequest> READ_RECORDED_UPDATER =
+            AtomicIntegerFieldUpdater.newUpdater(S3ReadRequest.class, "readRecorded");
+    private static final int READ_NOT_RECORDED = 0;
+    private static final int READ_RECORDED = 1;
+
     private final S3Uri s3Uri;
     private final ID id;
     private final S3Instructions instructions;
@@ -89,6 +104,12 @@ final class S3ReadRequest extends SoftReference<ByteBuffer>
     private final Instant createdAt;
     private volatile CompletableFuture<Boolean> consumerFuture;
     private volatile CompletableFuture<Boolean> producerFuture;
+    /**
+     * The System.nanoTime at which we sent this request.
+     */
+    private long startNanos;
+    private long endNanos;
+    private volatile int readRecorded = READ_NOT_RECORDED;
     private int fillCount;
     private long fillBytes;
     private final S3ReadRequestCache sharedCache;
@@ -166,6 +187,7 @@ final class S3ReadRequest extends SoftReference<ByteBuffer>
                     if (log.isDebugEnabled()) {
                         log.debug().append("Sending: ").append(requestStr()).endl();
                     }
+                    startNanos = System.nanoTime();
                     final CompletableFuture<Boolean> ret = client.getObject(getObjectRequest(), this);
                     ret.whenComplete(this);
                     consumerFuture = ret;
@@ -225,6 +247,13 @@ final class S3ReadRequest extends SoftReference<ByteBuffer>
             return resultLength;
         }
 
+        void recordRead() {
+            // only record the read one time
+            if (READ_RECORDED_UPDATER.compareAndSet(S3ReadRequest.this, READ_NOT_RECORDED, READ_RECORDED)) {
+                QueryPerformanceRecorderState.recordRead(endNanos - startNanos, requestLength());
+            }
+        }
+
         private ByteBuffer getFilledBuffer() throws IOException {
             // Giving our own get() a bit of overhead - the clients should already be constructed with appropriate
             // apiCallTimeout.
@@ -271,6 +300,16 @@ final class S3ReadRequest extends SoftReference<ByteBuffer>
 
     @Override
     public void accept(final Boolean isComplete, final Throwable throwable) {
+        // we record the endNanos, but do not sample into the QueryPerformanceRecorderState as this method is dispatched
+        // asynchronously and we need to account for the read on the thread that is waiting for it.  What this in part
+        // means is that any read-ahead performed but not waited for is not accounted for in our read statistics for the
+        // query or update.  We do however include all of the requests in our statistics objects.
+        endNanos = System.nanoTime();
+        final long durationNanos = endNanos - startNanos;
+        READ_DURATION_NANOS.sample(durationNanos);
+        READ_SIZE_BYTES.sample(requestLength());
+        // We could discriminate between isComplete and not-complete; but it seems reasonable to count both
+        // successful and not successful reads into our statistics.
         if (log.isDebugEnabled()) {
             final Instant completedAt = Instant.now();
             if (Boolean.TRUE.equals(isComplete)) {

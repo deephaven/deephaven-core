@@ -3,6 +3,7 @@
 //
 package io.deephaven.extensions.s3;
 
+import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorderState;
 import io.deephaven.extensions.s3.testlib.S3SeekableChannelTestSetup;
 import io.deephaven.util.channel.CachedChannelProvider;
 import io.deephaven.util.channel.CompletableOutputStream;
@@ -86,6 +87,7 @@ abstract class S3SeekableChannelSimpleTestBase extends S3SeekableChannelTestSetu
         }, (long) numBytes, executor));
         final URI uri = uri("32MiB.bin");
         final ByteBuffer buffer = ByteBuffer.allocate(1);
+        final long startReadBytes = QueryPerformanceRecorderState.getDataReadBytesForCurrentThread();
         try (
                 final SeekableChannelsProvider providerImpl = providerImpl();
                 final SeekableChannelsProvider provider = CachedChannelProvider.create(providerImpl, 32);
@@ -98,6 +100,8 @@ abstract class S3SeekableChannelSimpleTestBase extends S3SeekableChannelTestSetu
             }
             assertThat(readChannel.read(buffer)).isEqualTo(-1);
         }
+        final long endReadBytes = QueryPerformanceRecorderState.getDataReadBytesForCurrentThread();
+        assertThat(endReadBytes - startReadBytes).isEqualTo(numBytes);
     }
 
     @Test

@@ -6,6 +6,7 @@ package io.deephaven.extensions.s3;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorderState;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.internal.log.LoggerFactory;
@@ -328,11 +329,15 @@ class S3SeekableChannelProvider implements SeekableChannelsProvider {
         final Duration readTimeout = s3Instructions.readTimeout();
         requestBuilder.overrideConfiguration(b -> addTimeout(b, readTimeout));
         final CompletableFuture<HeadObjectResponse> responseFuture = s3AsyncClient.headObject(requestBuilder.build());
+        final long start = System.nanoTime();
         try {
             headObjectResponse = responseFuture.get(readTimeout.toNanos(), TimeUnit.NANOSECONDS);
         } catch (final InterruptedException | ExecutionException | TimeoutException | CancellationException e) {
             responseFuture.cancel(true);
             throw handleS3Exception(e, String.format("fetching HEAD for file %s", s3Uri), s3Instructions);
+        } finally {
+            final long duration = System.nanoTime() - start;
+            QueryPerformanceRecorderState.recordMetadataOperation("size", duration);
         }
         final long fileSize = headObjectResponse.contentLength();
         updateFileSizeCache(s3Uri.uri(), fileSize);

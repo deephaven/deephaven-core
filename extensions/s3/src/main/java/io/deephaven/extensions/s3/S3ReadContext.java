@@ -3,6 +3,7 @@
 //
 package io.deephaven.extensions.s3;
 
+import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorderState;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.channel.SeekableChannelContext;
@@ -122,6 +123,8 @@ final class S3ReadContext extends BaseSeekableChannelContext implements Seekable
             }
             // blocking
             filled = acquiredRequest.fill(position, dest);
+            // we've completed blocking so can record the read
+            acquiredRequest.recordRead();
         }
         for (int i = 0; dest.hasRemaining(); ++i) {
             final S3ReadRequest.Acquired readAheadRequest = sharedReadCache.getRequest(uri, firstFragmentIx + i + 1);
