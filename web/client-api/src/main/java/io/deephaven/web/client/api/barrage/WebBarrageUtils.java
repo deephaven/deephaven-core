@@ -44,11 +44,14 @@ public class WebBarrageUtils {
     static {
 
         // Register default converters
-        registerColumnRestrictionConverter("IntegerRangeRestriction", ColumnRestrictionUtils::convertIntegerRangeRestriction);
-        registerColumnRestrictionConverter("DoubleRangeRestriction", ColumnRestrictionUtils::convertDoubleRangeRestriction);
+        registerColumnRestrictionConverter("IntegerRangeRestriction",
+                ColumnRestrictionUtils::convertIntegerRangeRestriction);
+        registerColumnRestrictionConverter("DoubleRangeRestriction",
+                ColumnRestrictionUtils::convertDoubleRangeRestriction);
         registerColumnRestrictionConverter("NotNullRestriction", ColumnRestrictionUtils::convertNotNullRestriction);
         registerColumnRestrictionConverter("NonEmptyRestriction", ColumnRestrictionUtils::convertNonEmptyRestriction);
-        registerColumnRestrictionConverter("StringListRestriction", ColumnRestrictionUtils::convertStringListRestriction);
+        registerColumnRestrictionConverter("StringListRestriction",
+                ColumnRestrictionUtils::convertStringListRestriction);
     }
 
     /**
@@ -57,7 +60,8 @@ public class WebBarrageUtils {
      * @param restrictionType The type name of the restriction (e.g., "IntegerRangeRestriction")
      * @param converter The converter function to convert the restriction data
      */
-    public static void registerColumnRestrictionConverter(String restrictionType, ColumnRestrictionConverter converter) {
+    public static void registerColumnRestrictionConverter(String restrictionType,
+            ColumnRestrictionConverter converter) {
         restrictionConverters.put(restrictionType, converter);
     }
 
@@ -132,7 +136,8 @@ public class WebBarrageUtils {
             }
 
             // Get the column info map
-            final Map<String, InputTableColumnInfo> columnInfoMap = tableMetadata.getInputTableMetadata().getColumnInfoMap();
+            final Map<String, InputTableColumnInfo> columnInfoMap =
+                    tableMetadata.getInputTableMetadata().getColumnInfoMap();
 
             // Extract column restrictions from the column info map
             for (ColumnDefinition col : cols) {
@@ -145,7 +150,8 @@ public class WebBarrageUtils {
                 }
 
                 final List<Any> restrictionsList = columnInfo.getRestrictionsList();
-                final InputTableMetadata.ColumnRestrictions colRestrictions = new InputTableMetadata.ColumnRestrictions();
+                final InputTableMetadata.ColumnRestrictions colRestrictions =
+                        new InputTableMetadata.ColumnRestrictions();
 
                 for (Any restrictionAny : restrictionsList) {
                     // Get the restriction type and look up the converter
@@ -210,7 +216,7 @@ public class WebBarrageUtils {
     }
 
     public static Map<String, String> keyValuePairs(String filterPrefix, double count,
-                                                    IntFunction<KeyValue> accessor) {
+            IntFunction<KeyValue> accessor) {
         Map<String, String> map = new HashMap<>();
         for (int i = 0; i < count; i++) {
             KeyValue pair = accessor.apply(i);

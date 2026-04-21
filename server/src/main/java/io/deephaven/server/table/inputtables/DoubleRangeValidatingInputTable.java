@@ -52,7 +52,8 @@ public class DoubleRangeValidatingInputTable extends AbstractBaseValidatingInput
             final double min,
             final double max) {
         final InputTableUpdater updater = (InputTableUpdater) input.getAttribute(Table.INPUT_TABLE_ATTRIBUTE);
-        final DoubleRangeValidatingInputTable validatedUpdater = new DoubleRangeValidatingInputTable(updater, column, min, max);
+        final DoubleRangeValidatingInputTable validatedUpdater =
+                new DoubleRangeValidatingInputTable(updater, column, min, max);
         return input.withAttributes(Map.of(Table.INPUT_TABLE_ATTRIBUTE, validatedUpdater));
     }
 

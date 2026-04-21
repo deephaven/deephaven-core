@@ -51,19 +51,22 @@ public class StringListValidatingInputTable extends AbstractBaseValidatingInputT
      */
     public static Table make(Table input, final String column, final String... allowedValues) {
         final InputTableUpdater updater = (InputTableUpdater) input.getAttribute(Table.INPUT_TABLE_ATTRIBUTE);
-        final StringListValidatingInputTable validatedUpdater = new StringListValidatingInputTable(updater, column, allowedValues);
+        final StringListValidatingInputTable validatedUpdater =
+                new StringListValidatingInputTable(updater, column, allowedValues);
         return input.withAttributes(Map.of(Table.INPUT_TABLE_ATTRIBUTE, validatedUpdater));
     }
 
 
-    private StringListValidatingInputTable(InputTableUpdater wrapped, final String column, final String... allowedValues) {
+    private StringListValidatingInputTable(InputTableUpdater wrapped, final String column,
+            final String... allowedValues) {
         super(wrapped);
         this.column = column;
         this.allowedValuesList = List.of(allowedValues);
         this.allowedValues = Set.of(allowedValues);
         final Class<?> dataType = getTableDefinition().getColumn(column).getDataType();
         if (dataType != String.class) {
-            throw new IllegalArgumentException("String list validation only applies to String columns, but " + column + " is " + dataType);
+            throw new IllegalArgumentException(
+                    "String list validation only applies to String columns, but " + column + " is " + dataType);
         }
     }
 
@@ -92,7 +95,8 @@ public class StringListValidatingInputTable extends AbstractBaseValidatingInputT
         final MutableInt position = new MutableInt(0);
         final ColumnSource<String> columnSource = tableToApply.getColumnSource(column, String.class);
 
-        try (final RowSequence rowSequence = tableToApply.getRowSet().getRowSequenceByPosition(0, tableToApply.size())) {
+        try (final RowSequence rowSequence =
+                tableToApply.getRowSet().getRowSequenceByPosition(0, tableToApply.size())) {
             rowSequence.forAllRowKeys(rowKey -> {
                 final String value = columnSource.get(rowKey);
                 if (!allowedValues.contains(value)) {

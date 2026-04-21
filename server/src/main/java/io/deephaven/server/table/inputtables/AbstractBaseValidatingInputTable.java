@@ -18,9 +18,9 @@ import java.util.List;
  * An abstract base class for {@link InputTableUpdater} implementations that wrap an existing input table.
  *
  * <p>
- * This class provides a default implementation for most methods by delegating to the wrapped input table.
- * Subclasses should override {@link #getColumnRestrictions(String)} and {@link #validateAddOrModify(Table)}
- * to provide custom validation logic.
+ * This class provides a default implementation for most methods by delegating to the wrapped input table. Subclasses
+ * should override {@link #getColumnRestrictions(String)} and {@link #validateAddOrModify(Table)} to provide custom
+ * validation logic.
  * </p>
  *
  * <p>

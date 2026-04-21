@@ -80,7 +80,8 @@ public class NotNullValidatingInputTable extends AbstractBaseValidatingInputTabl
         final MutableInt position = new MutableInt(0);
         final ColumnSource<?> columnSource = tableToApply.getColumnSource(column);
 
-        try (final RowSequence rowSequence = tableToApply.getRowSet().getRowSequenceByPosition(0, tableToApply.size())) {
+        try (final RowSequence rowSequence =
+                tableToApply.getRowSet().getRowSequenceByPosition(0, tableToApply.size())) {
             rowSequence.forAllRowKeys(rowKey -> {
                 final Object value = columnSource.get(rowKey);
                 if (value == null) {

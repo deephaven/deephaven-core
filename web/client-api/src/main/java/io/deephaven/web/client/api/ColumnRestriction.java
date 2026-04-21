@@ -9,8 +9,8 @@ import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsProperty;
 
 /**
- * Represents a restriction on an input table column. Restrictions define constraints that the server enforces on
- * column values. There are several types of restrictions:
+ * Represents a restriction on an input table column. Restrictions define constraints that the server enforces on column
+ * values. There are several types of restrictions:
  * <ul>
  * <li>IntegerRangeRestriction - validates integer values are within a range</li>
  * <li>DoubleRangeRestriction - validates double values are within a range</li>

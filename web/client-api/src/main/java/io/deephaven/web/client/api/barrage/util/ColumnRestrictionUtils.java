@@ -27,7 +27,8 @@ public class ColumnRestrictionUtils {
     /**
      * Extract the restriction type short name from a google.protobuf.Any object type url.
      *
-     * @param typeUrl The type URL from the Any object (e.g., "type.googleapis.com/io.deephaven.proto.backplane.grpc.IntegerRangeRestriction")
+     * @param typeUrl The type URL from the Any object (e.g.,
+     *        "type.googleapis.com/io.deephaven.proto.backplane.grpc.IntegerRangeRestriction")
      * @return The short type name (e.g., "IntegerRangeRestriction"), or null if not found
      */
     public static String getRestrictionType(String typeUrl) {
@@ -41,7 +42,8 @@ public class ColumnRestrictionUtils {
     /**
      * Convert IntegerRangeRestriction data into a ColumnRestriction object.
      */
-    public static ColumnRestriction convertIntegerRangeRestriction(Any restrictionAny) throws ColumnRestrictionConverterException {
+    public static ColumnRestriction convertIntegerRangeRestriction(Any restrictionAny)
+            throws ColumnRestrictionConverterException {
         try {
             ByteBuffer buffer = restrictionAny.getValue().asReadOnlyByteBuffer();
             IntegerRangeRestriction restriction = IntegerRangeRestriction.parseFrom(buffer);
@@ -56,7 +58,8 @@ public class ColumnRestrictionUtils {
     /**
      * Convert DoubleRangeRestriction data into a ColumnRestriction object.
      */
-    public static ColumnRestriction convertDoubleRangeRestriction(Any restrictionAny) throws ColumnRestrictionConverterException {
+    public static ColumnRestriction convertDoubleRangeRestriction(Any restrictionAny)
+            throws ColumnRestrictionConverterException {
         try {
             ByteBuffer buffer = restrictionAny.getValue().asReadOnlyByteBuffer();
             DoubleRangeRestriction restriction = DoubleRangeRestriction.parseFrom(buffer);
@@ -71,7 +74,8 @@ public class ColumnRestrictionUtils {
     /**
      * Convert NotNullRestriction data into a ColumnRestriction object.
      */
-    public static ColumnRestriction convertNotNullRestriction(Any restrictionAny) throws ColumnRestrictionConverterException {
+    public static ColumnRestriction convertNotNullRestriction(Any restrictionAny)
+            throws ColumnRestrictionConverterException {
         try {
             ByteBuffer buffer = restrictionAny.getValue().asReadOnlyByteBuffer();
             NotNullRestriction.parseFrom(buffer); // Just to validate
@@ -84,7 +88,8 @@ public class ColumnRestrictionUtils {
     /**
      * Convert NonEmptyRestriction data into a ColumnRestriction object.
      */
-    public static ColumnRestriction convertNonEmptyRestriction(Any restrictionAny) throws ColumnRestrictionConverterException {
+    public static ColumnRestriction convertNonEmptyRestriction(Any restrictionAny)
+            throws ColumnRestrictionConverterException {
         try {
             ByteBuffer buffer = restrictionAny.getValue().asReadOnlyByteBuffer();
             NonEmptyRestriction.parseFrom(buffer); // Just to validate
@@ -97,7 +102,8 @@ public class ColumnRestrictionUtils {
     /**
      * Convert StringListRestriction data into a ColumnRestriction object.
      */
-    public static ColumnRestriction convertStringListRestriction(Any restrictionAny) throws ColumnRestrictionConverterException {
+    public static ColumnRestriction convertStringListRestriction(Any restrictionAny)
+            throws ColumnRestrictionConverterException {
         try {
             ByteBuffer buffer = restrictionAny.getValue().asReadOnlyByteBuffer();
             StringListRestriction restriction = StringListRestriction.parseFrom(buffer);

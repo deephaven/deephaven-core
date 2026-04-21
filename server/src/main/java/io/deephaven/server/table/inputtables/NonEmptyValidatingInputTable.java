@@ -56,7 +56,8 @@ public class NonEmptyValidatingInputTable extends AbstractBaseValidatingInputTab
         this.column = column;
         final Class<?> dataType = getTableDefinition().getColumn(column).getDataType();
         if (dataType != String.class) {
-            throw new IllegalArgumentException("Non-empty validation only applies to String columns, but " + column + " is " + dataType);
+            throw new IllegalArgumentException(
+                    "Non-empty validation only applies to String columns, but " + column + " is " + dataType);
         }
     }
 
@@ -84,7 +85,8 @@ public class NonEmptyValidatingInputTable extends AbstractBaseValidatingInputTab
         final MutableInt position = new MutableInt(0);
         final ColumnSource<String> columnSource = tableToApply.getColumnSource(column, String.class);
 
-        try (final RowSequence rowSequence = tableToApply.getRowSet().getRowSequenceByPosition(0, tableToApply.size())) {
+        try (final RowSequence rowSequence =
+                tableToApply.getRowSet().getRowSequenceByPosition(0, tableToApply.size())) {
             rowSequence.forAllRowKeys(rowKey -> {
                 final String value = columnSource.get(rowKey);
                 if (value != null && value.isEmpty()) {

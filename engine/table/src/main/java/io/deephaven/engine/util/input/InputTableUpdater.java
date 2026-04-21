@@ -61,13 +61,13 @@ public interface InputTableUpdater {
      * These restrictions are used by the client for properly displaying and validating the edit field.
      *
      * <p>
-     * The restrictions are packed as {@code google.protobuf.Any} messages, which allows for different restriction
-     * types (e.g., {@code IntegerRangeRestriction}, {@code DoubleRangeRestriction}, {@code StringListRestriction},
-     * etc.) to be sent to the client. The client is responsible for unpacking and interpreting these restrictions.
+     * The restrictions are packed as {@code google.protobuf.Any} messages, which allows for different restriction types
+     * (e.g., {@code IntegerRangeRestriction}, {@code DoubleRangeRestriction}, {@code StringListRestriction}, etc.) to
+     * be sent to the client. The client is responsible for unpacking and interpreting these restrictions.
      *
      * @param columnName the column name to query
-     * @return a list of protobuf Any messages representing the restrictions for this column, or null if no
-     *         client-side restrictions are supplied for this column
+     * @return a list of protobuf Any messages representing the restrictions for this column, or null if no client-side
+     *         restrictions are supplied for this column
      */
     @Nullable
     default List<Any> getColumnRestrictions(final String columnName) {

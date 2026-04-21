@@ -108,7 +108,7 @@ public class Column {
             boolean isPartitionColumn, Integer formatStringColumnIndex, String description,
             boolean inputTableKeyColumn, boolean inputTableValueColumn, boolean isSortable) {
         this(jsIndex, index, formatColumnIndex, styleColumnIndex, type, name, isPartitionColumn,
-             formatStringColumnIndex, description, inputTableKeyColumn, inputTableValueColumn, isSortable, null);
+                formatStringColumnIndex, description, inputTableKeyColumn, inputTableValueColumn, isSortable, null);
     }
 
     /**
@@ -238,9 +238,9 @@ public class Column {
     }
 
     /**
-     * Returns the column restrictions for input table columns, or null if this is not an input table column
-     * or if no restrictions are defined. The restrictions are implementation-specific constraints that the
-     * server enforces on column values.
+     * Returns the column restrictions for input table columns, or null if this is not an input table column or if no
+     * restrictions are defined. The restrictions are implementation-specific constraints that the server enforces on
+     * column values.
      *
      * @return Array of column restrictions, or null if none are defined
      */
