@@ -3,10 +3,8 @@
 //
 package io.deephaven.engine.rowset;
 
-import gnu.trove.list.TIntList;
-import gnu.trove.list.TLongList;
-import gnu.trove.list.array.TIntArrayList;
-import gnu.trove.list.array.TLongArrayList;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.verify.Assert;
@@ -35,17 +33,17 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
      * {@code payload} is organized into triplets of (rangeStart, rangeEnd, shiftDelta). Triplets are ordered by
      * rangeStart. This is not the order that will apply shifts without losing data.
      */
-    private final TLongList payload;
+    private final LongArrayList payload;
 
     /**
      * {@code polaritySwapIndices} are indices into {@code payload} where the previous and current range's
      * {@code shiftDelta} swap between positive and negative shifts.
      */
-    private final TIntList polaritySwapIndices;
+    private final IntArrayList polaritySwapIndices;
 
     private RowSetShiftData() {
-        this.payload = new TLongArrayList();
-        this.polaritySwapIndices = new TIntArrayList();
+        this.payload = new LongArrayList();
+        this.polaritySwapIndices = new IntArrayList();
     }
 
     /**
@@ -104,7 +102,7 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
      * @return the offset
      */
     public long getBeginRange(int idx) {
-        return payload.get(idx * NUM_ATTR + BEGIN_RANGE_ATTR);
+        return payload.getLong(idx * NUM_ATTR + BEGIN_RANGE_ATTR);
     }
 
     /**
@@ -114,7 +112,7 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
      * @return the offset
      */
     public long getEndRange(int idx) {
-        return payload.get(idx * NUM_ATTR + END_RANGE_ATTR);
+        return payload.getLong(idx * NUM_ATTR + END_RANGE_ATTR);
     }
 
     /**
@@ -124,7 +122,7 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
      * @return the shift
      */
     public long getShiftDelta(int idx) {
-        return payload.get(idx * NUM_ATTR + SHIFT_DELTA_ATTR);
+        return payload.getLong(idx * NUM_ATTR + SHIFT_DELTA_ATTR);
     }
 
     /**
@@ -155,7 +153,8 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
             final int currShiftSign = getShiftDelta(idx) < 0 ? -1 : 1;
             if (prevShiftSign != currShiftSign) {
                 Assert.gt(polaritySwapIndices.size(), "polaritySwapIndices.size()", polarOffset, "polarOffset");
-                Assert.eq(polaritySwapIndices.get(polarOffset), "polaritySwapIndices.get(polarOffset)", idx, "idx");
+                Assert.eq(polaritySwapIndices.getInt(polarOffset), "polaritySwapIndices.getInt(polarOffset)", idx,
+                        "idx");
                 ++polarOffset;
             }
         }
@@ -235,9 +234,9 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
     public void apply(final RowKeyRangeShiftCallback shiftCallback) {
         final int polaritySwapSize = polaritySwapIndices.size();
         for (int idx = 0; idx < polaritySwapSize; ++idx) {
-            int start = (idx == 0) ? 0 : polaritySwapIndices.get(idx - 1);
-            int end = polaritySwapIndices.get(idx) - 1;
-            final long dir = getShiftDelta(start) > 0 ? -1 : 1;
+            int start = (idx == 0) ? 0 : polaritySwapIndices.getInt(idx - 1);
+            int end = polaritySwapIndices.getInt(idx) - 1;
+            final int dir = getShiftDelta(start) > 0 ? -1 : 1;
             if (dir < 0) {
                 final int tmp = start;
                 start = end;
@@ -259,9 +258,9 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
     public void unapply(final RowKeyRangeShiftCallback shiftCallback) {
         final int polaritySwapSize = polaritySwapIndices.size();
         for (int idx = 0; idx < polaritySwapSize; ++idx) {
-            int start = (idx == 0) ? 0 : polaritySwapIndices.get(idx - 1);
-            int end = polaritySwapIndices.get(idx) - 1;
-            final long dir = getShiftDelta(start) > 0 ? 1 : -1;
+            int start = (idx == 0) ? 0 : polaritySwapIndices.getInt(idx - 1);
+            int end = polaritySwapIndices.getInt(idx) - 1;
+            final int dir = getShiftDelta(start) > 0 ? 1 : -1;
             if (dir < 0) {
                 final int tmp = start;
                 start = end;
@@ -560,9 +559,9 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
                 if (psi == 0) {
                     start = 0;
                 } else {
-                    start = polaritySwapIndices.get(psi - 1);
+                    start = polaritySwapIndices.getInt(psi - 1);
                 }
-                end = polaritySwapIndices.get(psi) - 1;
+                end = polaritySwapIndices.getInt(psi) - 1;
 
                 dir = getShiftDelta(start) > 0 ? -1 : 1;
                 if (dir < 0) {
@@ -806,10 +805,10 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
 
                 if (shiftData.getEndRange(prevIdx) < shiftData.getBeginRange(prevIdx)) {
                     // remove shift completely:
-                    shiftData.payload.remove(shiftData.payload.size() - 3, 3);
+                    shiftData.payload.removeElements(shiftData.payload.size() - 3, shiftData.payload.size());
                     final int numSwaps = shiftData.polaritySwapIndices.size();
-                    if (numSwaps > 0 && shiftData.polaritySwapIndices.get(numSwaps - 1) >= shiftData.size()) {
-                        shiftData.polaritySwapIndices.removeAt(numSwaps - 1);
+                    if (numSwaps > 0 && shiftData.polaritySwapIndices.getInt(numSwaps - 1) >= shiftData.size()) {
+                        shiftData.polaritySwapIndices.removeInt(numSwaps - 1);
                     }
                 } else {
                     return;
@@ -1076,13 +1075,13 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
                     final int firstIdx = (rangeToReverseStart + ii) * 3;
                     final int lastIdx = (rangeToReverseStart + runLength - ii - 1) * 3;
 
-                    final long tmpStart = shiftData.payload.get(firstIdx);
-                    final long tmpEnd = shiftData.payload.get(firstIdx + 1);
-                    final long tmpDelta = shiftData.payload.get(firstIdx + 2);
+                    final long tmpStart = shiftData.payload.getLong(firstIdx);
+                    final long tmpEnd = shiftData.payload.getLong(firstIdx + 1);
+                    final long tmpDelta = shiftData.payload.getLong(firstIdx + 2);
 
-                    shiftData.payload.set(firstIdx, shiftData.payload.get(lastIdx));
-                    shiftData.payload.set(firstIdx + 1, shiftData.payload.get(lastIdx + 1));
-                    shiftData.payload.set(firstIdx + 2, shiftData.payload.get(lastIdx + 2));
+                    shiftData.payload.set(firstIdx, shiftData.payload.getLong(lastIdx));
+                    shiftData.payload.set(firstIdx + 1, shiftData.payload.getLong(lastIdx + 1));
+                    shiftData.payload.set(firstIdx + 2, shiftData.payload.getLong(lastIdx + 2));
 
 
                     shiftData.payload.set(lastIdx, tmpStart);
