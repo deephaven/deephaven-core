@@ -51,7 +51,6 @@ public class InputTableMetadata {
             }
         }
 
-
         @JsIgnore
         public JsArray<ColumnRestriction> getRestrictions() {
             return restrictions;
