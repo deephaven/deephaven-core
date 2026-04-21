@@ -9,6 +9,7 @@ dependencies {
     api project(':engine-chunk')
     api project(':Base')
     implementation libs.trove
+    implementation libs.dsi.fastutil
 
     implementation project(':Container')
     implementation project(':engine-context')
