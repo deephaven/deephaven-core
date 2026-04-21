@@ -7,7 +7,6 @@ import com.vertispan.tsdefs.annotations.TsName;
 import elemental2.core.JsArray;
 import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsProperty;
-import jsinterop.base.Any;
 
 /**
  * Represents a restriction on an input table column. Restrictions define constraints that the server enforces on
@@ -25,7 +24,7 @@ public class ColumnRestriction {
     private final String type;
     private final double minValue;
     private final double maxValue;
-    private final JsArray<Any> allowedValues;
+    private final JsArray<String> allowedValues;
 
     /**
      * Creates a range restriction (IntegerRangeRestriction or DoubleRangeRestriction).
@@ -44,10 +43,10 @@ public class ColumnRestriction {
     /**
      * Creates a string list restriction (StringListRestriction).
      *
-     * @param type The type of restriction (should be "StringListRestriction")
+     * @param type The type of restriction (e.g. "StringListRestriction")
      * @param allowedValues The array of allowed values
      */
-    public ColumnRestriction(String type, JsArray<Any> allowedValues) {
+    public ColumnRestriction(String type, JsArray<String> allowedValues) {
         this.type = type;
         this.minValue = Double.NaN;
         this.maxValue = Double.NaN;
@@ -108,7 +107,7 @@ public class ColumnRestriction {
      */
     @JsProperty
     @JsNullable
-    public JsArray<Any> getValues() {
+    public JsArray<String> getValues() {
         return allowedValues;
     }
 

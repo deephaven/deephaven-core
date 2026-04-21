@@ -110,10 +110,9 @@ public class ColumnRestrictionUtils {
             ByteBuffer buffer = restrictionAny.getValue().asReadOnlyByteBuffer();
             StringListRestriction restriction = StringListRestriction.parseFrom(buffer);
 
-            // Convert ProtocolStringList to JsArray<Any>
-            JsArray<jsinterop.base.Any> allowedValuesAsAny = new JsArray<>();
+            JsArray<String> allowedValuesAsAny = new JsArray<>();
             for (String value : restriction.getAllowedValuesList()) {
-                allowedValuesAsAny.push(Js.cast(value));
+                allowedValuesAsAny.push(value);
             }
 
             return new ColumnRestriction("StringListRestriction", allowedValuesAsAny);
