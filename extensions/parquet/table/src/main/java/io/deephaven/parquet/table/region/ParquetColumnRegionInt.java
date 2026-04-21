@@ -43,7 +43,7 @@ public final class ParquetColumnRegionInt<ATTR extends Any> extends ParquetColum
     private static final RegionedPushdownAction.Region SORTED_REGION_ACTION =
             new RegionedPushdownAction.Region(
                     () -> QueryTable.DISABLE_WHERE_PUSHDOWN_SORTED_COLUMN_LOCATION,
-                    PushdownResult.DICTIONARY_DATA_COST,
+                    PushdownResult.REGION_DICTIONARY_DATA_COST,
                     (ctx) -> ctx.isMatchFilter() || ctx.isRangeFilter(),
                     (tl) -> true,
                     (cr) -> true);
@@ -74,26 +74,24 @@ public final class ParquetColumnRegionInt<ATTR extends Any> extends ParquetColum
     @Override
     @MustBeInvokedByOverriders
     public long estimatePushdownAction(
-            final List<RegionedPushdownAction> actions,
+            final RegionedPushdownAction action,
             final WhereFilter filter,
             final RowSet selection,
             final boolean usePrev,
             final PushdownFilterContext filterContext,
             final RegionedPushdownAction.EstimateContext estimateContext) {
         final RegionedPushdownFilterLocationContext ctx = (RegionedPushdownFilterLocationContext) filterContext;
-        for (RegionedPushdownAction action : actions) {
-            if (action.equals(SORTED_REGION_ACTION)) {
-                if (!ctx.isMatchFilter() && !ctx.isRangeFilter()) {
-                    continue;
-                }
+        if (action.equals(SORTED_REGION_ACTION)) {
+            if (!ctx.isMatchFilter() && !ctx.isRangeFilter()) {
+                return Long.MAX_VALUE;
+            }
 
-                // Only range and match filers can benefit from sorted column data.
-                final SortColumn firstSortedColumn = ctx.tableLocation().getSortedColumns().isEmpty()
-                        ? null
-                        : ctx.tableLocation().getSortedColumns().get(0);
-                if (firstSortedColumn != null && firstSortedColumn.column().name().equals(filter.getColumns().get(0))) {
-                    return action.filterCost();
-                }
+            // Only range and match filers can benefit from sorted column data.
+            final SortColumn firstSortedColumn = ctx.tableLocation().getSortedColumns().isEmpty()
+                    ? null
+                    : ctx.tableLocation().getSortedColumns().get(0);
+            if (firstSortedColumn != null && firstSortedColumn.column().name().equals(filter.getColumns().get(0))) {
+                return action.filterCost();
             }
         }
         return Long.MAX_VALUE;
@@ -132,7 +130,10 @@ public final class ParquetColumnRegionInt<ATTR extends Any> extends ParquetColum
                         selection.lastRowKey(),
                         firstSortedColumn,
                         matchFilter.getValues())) {
-                    return PushdownResult.of(selection, matches.intersect(selection), RowSetFactory.empty());
+                    // Handle normal / inverted match filters:
+                    return PushdownResult.of(selection, matchFilter.getMatchOptions().inverted()
+                            ? selection.minus(matches)
+                            : matches.intersect(selection), RowSetFactory.empty());
                 }
             }
 
@@ -161,14 +162,14 @@ public final class ParquetColumnRegionInt<ATTR extends Any> extends ParquetColum
                 } else {
                     // Find the lower and upper bounds.
                     matches = IntRegionBinarySearchKernel.binarySearchMinMax(
-                        this,
-                        selection.firstRowKey(),
-                        selection.lastRowKey(),
-                        firstSortedColumn,
-                        rangeFilter.getLower(),
-                        rangeFilter.getUpper(),
-                        rangeFilter.isLowerInclusive(),
-                        rangeFilter.isUpperInclusive());
+                            this,
+                            selection.firstRowKey(),
+                            selection.lastRowKey(),
+                            firstSortedColumn,
+                            rangeFilter.getLower(),
+                            rangeFilter.getUpper(),
+                            rangeFilter.isLowerInclusive(),
+                            rangeFilter.isUpperInclusive());
                 }
                 try (final RowSet ignored = matches) {
                     return PushdownResult.of(

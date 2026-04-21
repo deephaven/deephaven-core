@@ -2053,47 +2053,61 @@ public final class ParquetTableFilterTest {
         final List<RowSetCapturingFilter> allFilters = List.of(filterA, filterB);
 
         Table result;
+        Filter f;
 
         // Test with no barrier, expect A then B
-        result = diskTable.where(Filter.and(filterA, filterB));
-        assertEquals(97, filterA.numRowsProcessed()); // only indexA rows
+        f = Filter.and(filterA, filterB);
+        result = diskTable.where(f).coalesce();
+        // A has an index, stored as sorted data. Applying to the index results in bin search, bypassing filter
+        // row set capture.
+        assertEquals(0, filterA.numRowsProcessed());
         assertEquals(51550, filterB.numRowsProcessed());
 
         assertEquals(23435, result.size());
+        assertTableEquals(memTable.where(f).coalesce(), result);
         allFilters.forEach(RowSetCapturingFilter::reset);
 
         // Test with no barrier, expect A then B despite user ordering
-        result = diskTable.where(Filter.and(filterB, filterA));
-        assertEquals(97, filterA.numRowsProcessed()); // only indexA rows
+        f = Filter.and(filterB, filterA);
+        result = diskTable.where(f).coalesce();
+        assertEquals(0, filterA.numRowsProcessed());
         assertEquals(51550, filterB.numRowsProcessed());
 
         assertEquals(23435, result.size());
+        assertTableEquals(memTable.where(f).coalesce(), result);
         allFilters.forEach(RowSetCapturingFilter::reset);
 
         // Barrier to force B then A
-        result = diskTable.where(Filter.and(filterB.withDeclaredBarriers("b1"), filterA.withRespectedBarriers("b1")));
-        assertEquals(97, filterA.numRowsProcessed()); // only indexA rows
+        f = Filter.and(filterB.withDeclaredBarriers("b1"), filterA.withRespectedBarriers("b1"));
+        result = diskTable.where(f).coalesce();
+        assertEquals(0, filterA.numRowsProcessed());
         assertEquals(100_000, filterB.numRowsProcessed());
 
         assertEquals(23435, result.size());
+        assertTableEquals(memTable.where(f).coalesce(), result);
         allFilters.forEach(RowSetCapturingFilter::reset);
 
         // Barrier to force B then A
-        result = diskTable.where(Filter.and(filterB.withSerial(), filterA));
-        assertEquals(97, filterA.numRowsProcessed()); // only indexA rows
+        f = Filter.and(filterB.withSerial(), filterA);
+        result = diskTable.where(f).coalesce();
+        assertEquals(0, filterA.numRowsProcessed());
         assertEquals(100_000, filterB.numRowsProcessed());
 
         assertEquals(23435, result.size());
+        assertTableEquals(memTable.where(f).coalesce(), result);
         allFilters.forEach(RowSetCapturingFilter::reset);
 
         // Inverted - Barrier to force B then A
-        result = diskTable.where(Filter.and(
+        f = Filter.and(
                 WhereFilterInvertedImpl.of(filterB.withDeclaredBarriers("b1")),
-                WhereFilterInvertedImpl.of(filterA.withRespectedBarriers("b1"))));
-        assertEquals(97, filterA.numRowsProcessed()); // only indexA rows
+                WhereFilterInvertedImpl.of(filterA.withRespectedBarriers("b1")));
+        result = diskTable.where(f).coalesce();
+        // filterA not recognized as a range filter (because of the inversion), so applied to index table rows.
+        assertEquals(97, filterA.numRowsProcessed());
         assertEquals(100_000, filterB.numRowsProcessed());
 
         assertEquals(26430, result.size());
+        assertTableEquals(memTable.where(f).coalesce(), result);
         allFilters.forEach(RowSetCapturingFilter::reset);
     }
 
