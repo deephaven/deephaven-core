@@ -27,62 +27,76 @@ public final class PushdownResult implements SafeCloseable {
 
     /**
      * The entire column contains a single in memory value, so a single read is sufficient to determine matches.
+     * <p>
      * Complexity/access: O(1) / In-Memory Data, resolves "yes", "no", "maybe"
      */
     public static final long TABLE_SINGLE_VALUE_COLUMN_COST =
             Configuration.getInstance().getLongWithDefault("PredicatePushdown.tableSingleValueColumnCost", 5_000L);
 
     /**
-     * Filters an already-materialized Table-level index. Complexity/access: O(rows / 4) / In-Memory Data, resolves
-     * "yes", "no", "maybe"
+     * Filters an already-materialized Table-level index.
+     * <p>
+     * Complexity/access: O(rows / 4) / In-Memory Data, resolves "yes", "no", "maybe"
      */
     public static final long TABLE_IN_MEMORY_DATA_INDEX_COST =
             Configuration.getInstance().getLongWithDefault("PredicatePushdown.tableInMemoryDataIndexCost", 10_000L);
 
     /**
      * The entire region contains a single value, so a single read is sufficient to determine matches. Requires
-     * additional overhead in applying the filter (e.g. chunk/context/dummy table creation). Complexity/access:
-     * O(regions) / In-Memory Data, resolves "yes", "no", "maybe"
+     * additional overhead in applying the filter (e.g. chunk/context/dummy table creation).
+     * <p>
+     * Complexity/access: O(regions) / In-Memory Data, resolves "yes", "no", "maybe"
      */
     public static final long REGION_SINGLE_VALUE_COST =
             Configuration.getInstance().getLongWithDefault("PredicatePushdown.regionSingleValueCost", 15_000L);
 
     /**
      * Filters an already-materialized location-level index. Requires filter copying and initialization per region
-     * compared to table-level. Complexity/access: O(rows / 4) / In-Memory Access, resolves "yes", "no", "maybe"
+     * compared to table-level.
+     * <p>
+     * Complexity/access: O(rows / 4) / In-Memory Access, resolves "yes", "no", "maybe"
      */
     public static final long LOCATION_IN_MEMORY_DATA_INDEX_COST =
             Configuration.getInstance().getLongWithDefault("PredicatePushdown.locationInMemoryDataIndexCost", 20_000L);
 
     /**
-     * Loads and uses region metadata (min/max/null_count, etc.). Complexity/access: O(regions) / Storage Data, resolves
-     * "no"
+     * Loads and uses region metadata (min/max/null_count, etc.).
+     * <p>
+     * Complexity/access: O(regions) / Storage Data, resolves "no"
      */
     public static final long REGION_METADATA_STATS_COST =
             Configuration.getInstance().getLongWithDefault("PredicatePushdown.regionMetadataStatsCost", 25_000L);
 
     /**
-     * Loads and uses Bloom filters. Complexity/access: O(regions) / Storage Data, resolves "no"
+     * Loads and uses Bloom filters.
+     * <p>
+     * Complexity/access: O(regions) / Storage Data, resolves "no"
      */
     public static final long REGION_BLOOM_FILTER_COST =
             Configuration.getInstance().getLongWithDefault("PredicatePushdown.regionBloomFilterCost", 30_000L);
 
     /**
      * Loads and filters a location-level index. Requires additional filter copying and initialization per region
-     * compared to table-level. Complexity/access: O(rows / 4) / Storage Data, resolves "yes", "no", "maybe"
+     * compared to table-level.
+     * <p>
+     * Complexity/access: O(rows / 4) / Storage Data, resolves "yes", "no", "maybe"
      */
     public static final long LOCATION_DEFERRED_DATA_INDEX_COST =
             Configuration.getInstance().getLongWithDefault("PredicatePushdown.locationDeferredDataIndexCost", 35_000L);
 
     /**
-     * Binary searches sorted data. Complexity/access: O(log(rows)) / Storage Data, resolves "yes", "no", "maybe"
+     * Binary searches sorted data.
+     * <p>
+     * Complexity/access: O(log(rows)) / Storage Data, resolves "yes", "no", "maybe"
      */
     public static final long REGION_SORTED_DATA_COST =
             Configuration.getInstance().getLongWithDefault("PredicatePushdown.regionSortedDataCost", 40_000L);
 
     /**
-     * Loads and reads a dictionary to determine matches. Complexity/access: O(rows) / Storage Data, resolves "yes",
-     * "no", "maybe" for regions with dictionaries (returns "maybe" otherwise)
+     * Loads and reads a dictionary to determine matches.
+     * <p>
+     * Complexity/access: O(rows) / Storage Data, resolves "yes", "no", "maybe" for regions with dictionaries (returns
+     * "maybe" otherwise)
      */
     public static final long REGION_DICTIONARY_DATA_COST =
             Configuration.getInstance().getLongWithDefault("PredicatePushdown.regionDictionaryDataCost", 45_000L);

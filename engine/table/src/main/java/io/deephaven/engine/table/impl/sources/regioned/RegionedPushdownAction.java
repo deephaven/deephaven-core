@@ -70,7 +70,8 @@ public abstract class RegionedPushdownAction {
     }
 
     /**
-     * Determine which actions are not specifically prohibited by configuration and the cost ceiling
+     * Determine which actions are not specifically prohibited by configuration and the cost ceiling. Note that
+     * {@code location} may be null (when evaluating constant regions for example).
      */
     public boolean allows(
             final TableLocation location,

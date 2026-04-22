@@ -837,7 +837,7 @@ public class RegionedColumnSourceManager
     interface PerRegionCostEstimator {
         void estimate(
                 int regionIndex,
-                IncludedTableLocationEntry tle,
+                TableLocation location,
                 RowSet shiftedRowSet,
                 LongConsumer onCost,
                 Consumer<Exception> onError);
@@ -872,7 +872,7 @@ public class RegionedColumnSourceManager
                     final IncludedTableLocationEntry tle = orderedIncludedTableLocations.get(regionIndex);
                     ctx.shiftedRowSet = tle.subsetAndShiftIntoLocationSpace(selection);
 
-                    estimator.estimate(regionIndex, tle, ctx.shiftedRowSet,
+                    estimator.estimate(regionIndex, tle.location, ctx.shiftedRowSet,
                             cost -> {
                                 AtomicUtil.setIfGreaterThan(minCost, cost, cost);
                                 resume.run();
@@ -898,7 +898,7 @@ public class RegionedColumnSourceManager
                 selection,
                 "RegionedColumnSourceManager#estimatePushdownFilterCost",
                 jobScheduler,
-                (regionIndex, tle, shiftedRowSet, onCost, nec) -> tle.location.estimatePushdownFilterCost(
+                (regionIndex, location, shiftedRowSet, onCost, nec) -> location.estimatePushdownFilterCost(
                         filter,
                         shiftedRowSet,
                         usePrev,
@@ -914,7 +914,7 @@ public class RegionedColumnSourceManager
     interface PerRegionPushdownAction {
         void pushdown(
                 int regionIndex,
-                IncludedTableLocationEntry tle,
+                TableLocation location,
                 RowSet shiftedRowSet,
                 Consumer<PushdownResult> onResult,
                 Consumer<Exception> onError);
@@ -949,7 +949,7 @@ public class RegionedColumnSourceManager
                     final IncludedTableLocationEntry tle = orderedIncludedTableLocations.get(regionIndex);
                     ctx.shiftedRowSet = tle.subsetAndShiftIntoLocationSpace(selection);
 
-                    action.pushdown(regionIndex, tle, ctx.shiftedRowSet,
+                    action.pushdown(regionIndex, tle.location, ctx.shiftedRowSet,
                             result -> {
                                 tle.unshiftIntoRegionSpace(result);
                                 matches[idx] = result.match();
@@ -980,7 +980,7 @@ public class RegionedColumnSourceManager
                 selection,
                 "RegionedColumnSourceManager#pushdownFilter",
                 jobScheduler,
-                (regionIndex, tle, shiftedRowSet, onResult, nec) -> tle.location.pushdownFilter(
+                (regionIndex, location, shiftedRowSet, onResult, nec) -> location.pushdownFilter(
                         filter,
                         shiftedRowSet,
                         usePrev,

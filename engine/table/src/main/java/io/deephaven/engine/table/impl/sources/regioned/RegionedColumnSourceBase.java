@@ -119,7 +119,7 @@ abstract class RegionedColumnSourceBase<DATA_TYPE, ATTR extends Values, REGION_T
                 selection,
                 "RegionedColumnSourceBase#estimatePushdownFilterCost",
                 jobScheduler,
-                (regionIndex, tle, shiftedRowSet, onCost, nec) -> {
+                (regionIndex, location, shiftedRowSet, onCost, nec) -> {
                     getRegion(regionIndex).estimatePushdownFilterCost(
                             filter,
                             shiftedRowSet,
@@ -148,7 +148,7 @@ abstract class RegionedColumnSourceBase<DATA_TYPE, ATTR extends Values, REGION_T
                 selection,
                 "RegionedColumnSourceBase#pushdownFilter",
                 jobScheduler,
-                (regionIndex, tle, shiftedRowSet, onResult, nec) -> {
+                (regionIndex, location, shiftedRowSet, onResult, nec) -> {
                     getRegion(regionIndex).pushdownFilter(
                             filter,
                             shiftedRowSet,
