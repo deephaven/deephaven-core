@@ -26,9 +26,14 @@ public final class PushdownResult implements SafeCloseable {
     // are strictly relative.
 
     /**
+     * The estimated cost when the filter cannot or should not be pushed down.
+     */
+    public static final long UNSUPPORTED_ACTION_COST = Long.MAX_VALUE;
+
+    /**
      * The entire column contains a single in memory value, so a single read is sufficient to determine matches.
      * <p>
-     * Complexity/access: O(1) / In-Memory Data, resolves "yes", "no", "maybe"
+     * Complexity/access: O(1) / In-Memory Data, resolves "yes", "no"
      */
     public static final long TABLE_SINGLE_VALUE_COLUMN_COST =
             Configuration.getInstance().getLongWithDefault("PredicatePushdown.tableSingleValueColumnCost", 5_000L);
@@ -36,7 +41,7 @@ public final class PushdownResult implements SafeCloseable {
     /**
      * Filters an already-materialized Table-level index.
      * <p>
-     * Complexity/access: O(rows / 4) / In-Memory Data, resolves "yes", "no", "maybe"
+     * Complexity/access: O(rows / 4) / In-Memory Data, resolves "yes", "no"
      */
     public static final long TABLE_IN_MEMORY_DATA_INDEX_COST =
             Configuration.getInstance().getLongWithDefault("PredicatePushdown.tableInMemoryDataIndexCost", 10_000L);
@@ -45,7 +50,7 @@ public final class PushdownResult implements SafeCloseable {
      * The entire region contains a single value, so a single read is sufficient to determine matches. Requires
      * additional overhead in applying the filter (e.g. chunk/context/dummy table creation).
      * <p>
-     * Complexity/access: O(regions) / In-Memory Data, resolves "yes", "no", "maybe"
+     * Complexity/access: O(regions) / In-Memory Data, resolves "yes", "no"
      */
     public static final long REGION_SINGLE_VALUE_COST =
             Configuration.getInstance().getLongWithDefault("PredicatePushdown.regionSingleValueCost", 15_000L);
@@ -54,7 +59,7 @@ public final class PushdownResult implements SafeCloseable {
      * Filters an already-materialized location-level index. Requires filter copying and initialization per region
      * compared to table-level.
      * <p>
-     * Complexity/access: O(rows / 4) / In-Memory Access, resolves "yes", "no", "maybe"
+     * Complexity/access: O(rows / 4) / In-Memory Access, resolves "yes", "no"
      */
     public static final long LOCATION_IN_MEMORY_DATA_INDEX_COST =
             Configuration.getInstance().getLongWithDefault("PredicatePushdown.locationInMemoryDataIndexCost", 20_000L);
@@ -62,7 +67,7 @@ public final class PushdownResult implements SafeCloseable {
     /**
      * Loads and uses region metadata (min/max/null_count, etc.).
      * <p>
-     * Complexity/access: O(regions) / Storage Data, resolves "no"
+     * Complexity/access: O(regions) / Storage Data, resolves "no", "maybe"
      */
     public static final long REGION_METADATA_STATS_COST =
             Configuration.getInstance().getLongWithDefault("PredicatePushdown.regionMetadataStatsCost", 25_000L);
@@ -70,7 +75,7 @@ public final class PushdownResult implements SafeCloseable {
     /**
      * Loads and uses Bloom filters.
      * <p>
-     * Complexity/access: O(regions) / Storage Data, resolves "no"
+     * Complexity/access: O(regions) / Storage Data, resolves "no", "maybe"
      */
     public static final long REGION_BLOOM_FILTER_COST =
             Configuration.getInstance().getLongWithDefault("PredicatePushdown.regionBloomFilterCost", 30_000L);
@@ -79,7 +84,7 @@ public final class PushdownResult implements SafeCloseable {
      * Loads and filters a location-level index. Requires additional filter copying and initialization per region
      * compared to table-level.
      * <p>
-     * Complexity/access: O(rows / 4) / Storage Data, resolves "yes", "no", "maybe"
+     * Complexity/access: O(rows / 4) / Storage Data, resolves "yes", "no"
      */
     public static final long LOCATION_DEFERRED_DATA_INDEX_COST =
             Configuration.getInstance().getLongWithDefault("PredicatePushdown.locationDeferredDataIndexCost", 35_000L);
@@ -87,7 +92,7 @@ public final class PushdownResult implements SafeCloseable {
     /**
      * Binary searches sorted data.
      * <p>
-     * Complexity/access: O(log(rows)) / Storage Data, resolves "yes", "no", "maybe"
+     * Complexity/access: O(log(rows)) / Storage Data, resolves "yes", "no"
      */
     public static final long REGION_SORTED_DATA_COST =
             Configuration.getInstance().getLongWithDefault("PredicatePushdown.regionSortedDataCost", 40_000L);
@@ -95,8 +100,7 @@ public final class PushdownResult implements SafeCloseable {
     /**
      * Loads and reads a dictionary to determine matches.
      * <p>
-     * Complexity/access: O(rows) / Storage Data, resolves "yes", "no", "maybe" for regions with dictionaries (returns
-     * "maybe" otherwise)
+     * Complexity/access: O(rows) / Storage Data, resolves "yes", "no" for dictionary regions ("maybe" otherwise)
      */
     public static final long REGION_DICTIONARY_DATA_COST =
             Configuration.getInstance().getLongWithDefault("PredicatePushdown.regionDictionaryDataCost", 45_000L);
@@ -161,7 +165,7 @@ public final class PushdownResult implements SafeCloseable {
      * @return the result
      * @see #of(RowSet, RowSet, RowSet)
      */
-    public static PushdownResult allNoMatch(@SuppressWarnings("unused") @NotNull final RowSet selection) {
+    public static PushdownResult noneMatch(@SuppressWarnings("unused") @NotNull final RowSet selection) {
         try (final WritableRowSet empty = RowSetFactory.empty()) {
             return copy(empty, empty);
         }

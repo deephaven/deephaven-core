@@ -365,7 +365,7 @@ public abstract class AbstractTableLocation
             final Consumer<Exception> onError) {
         if (selection.isEmpty()) {
             // If the selection is empty, we can skip all pushdown filtering.
-            onComplete.accept(PushdownResult.allNoMatch(selection));
+            onComplete.accept(PushdownResult.noneMatch(selection));
             return;
         }
 

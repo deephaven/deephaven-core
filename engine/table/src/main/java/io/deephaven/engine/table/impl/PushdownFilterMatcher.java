@@ -14,6 +14,8 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 
+import static io.deephaven.engine.table.impl.PushdownResult.UNSUPPORTED_ACTION_COST;
+
 /**
  * Interface for entities that support pushdown filtering. Must implement a filter cost estimation function that allows
  * comparison of filter pushdown execution costs. These costs determine the order in which filters are executed.
@@ -52,7 +54,7 @@ public interface PushdownFilterMatcher {
             final LongConsumer onComplete,
             final Consumer<Exception> onError) {
         // Default to having no benefit by pushing down.
-        onComplete.accept(Long.MAX_VALUE);
+        onComplete.accept(UNSUPPORTED_ACTION_COST);
     }
 
     /**

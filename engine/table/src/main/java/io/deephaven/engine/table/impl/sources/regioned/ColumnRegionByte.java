@@ -19,7 +19,6 @@ import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.SingleValuePushdownHelper;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.FinalDefault;
-import org.jetbrains.annotations.MustBeInvokedByOverriders;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
@@ -145,7 +144,6 @@ public interface ColumnRegionByte<ATTR extends Any> extends ColumnRegion<ATTR> {
         }
 
         @Override
-        @MustBeInvokedByOverriders
         public long estimatePushdownAction(
                 final RegionedPushdownAction action,
                 final WhereFilter filter,
@@ -157,7 +155,6 @@ public interface ColumnRegionByte<ATTR extends Any> extends ColumnRegion<ATTR> {
         }
 
         @Override
-        @MustBeInvokedByOverriders
         public PushdownResult performPushdownAction(
                 final RegionedPushdownAction action,
                 final WhereFilter filter,

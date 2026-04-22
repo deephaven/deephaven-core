@@ -36,6 +36,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.LongConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -56,7 +57,7 @@ public class RegionedColumnSourceManager
      * How many locations to test for data index or other location-level metadata before we give up and assume the
      * location has no useful information for push-down purposes.
      */
-    static final int PUSHDOWN_LOCATION_SAMPLES = Configuration.getInstance()
+    private static final int PUSHDOWN_LOCATION_SAMPLES = Configuration.getInstance()
             .getIntegerForClassWithDefault(RegionedColumnSourceManager.class, "pushdownLocationSamples", 5);
 
     /**
@@ -75,20 +76,21 @@ public class RegionedColumnSourceManager
     private final List<ColumnDefinition<?>> columnDefinitions;
 
     /**
-     * The column definitions of this table as a map from column name.
-     */
-    private volatile Map<String, ColumnDefinition<?>> columnNameToDefinition;
-
-    /**
      * The column sources that make up this table.
      */
     private final Map<String, RegionedColumnSource<?>> columnSources = new LinkedHashMap<>();
 
     /**
+     * The column definitions of this table as a map from column name. This map should not be accessed directly, but
+     * rather through {@link #columnNameToDefinition()}.
+     */
+    private Map<String, ColumnDefinition<?>> columnNameToDefinition;
+
+    /**
      * The column sources of this table as a map from column source to column name. This map should not be accessed
      * directly, but rather through {@link #columnSourceToName()}.
      */
-    private volatile IdentityHashMap<ColumnSource<?>, String> columnSourceToName;
+    private Map<ColumnSource<?>, String> columnSourceToName;
 
     /**
      * An unmodifiable view of columnSources.
@@ -552,7 +554,7 @@ public class RegionedColumnSourceManager
                 .collect(Collectors.toCollection(ArrayList::new));
     }
 
-    synchronized ArrayList<IncludedTableLocationEntry> includedLocationEntries() {
+    private synchronized ArrayList<IncludedTableLocationEntry> includedLocationEntries() {
         return new ArrayList<>(orderedIncludedTableLocations);
     }
 
@@ -637,9 +639,9 @@ public class RegionedColumnSourceManager
     /**
      * State-keeper for a table location and its column locations, once it's been found to have a positive size.
      */
-    class IncludedTableLocationEntry implements Comparable<IncludedTableLocationEntry> {
+    private class IncludedTableLocationEntry implements Comparable<IncludedTableLocationEntry> {
 
-        final TableLocation location;
+        private final TableLocation location;
         private final TableLocationUpdateSubscriptionBuffer subscriptionBuffer;
 
         // New regions indices are assigned in order of insertion, starting from 0 with no re-use of removed indices.
@@ -761,7 +763,7 @@ public class RegionedColumnSourceManager
             return Integer.compare(regionIndex, other.regionIndex);
         }
 
-        WritableRowSet subsetAndShiftIntoLocationSpace(final RowSet selection) {
+        private WritableRowSet subsetAndShiftIntoLocationSpace(final RowSet selection) {
             final long locationStartKey = firstRowKey();
             // Extract the portion of selection that overlaps this region.
             final WritableRowSet overlappingRows = selection.subSetByKeyRange(locationStartKey, lastRowKey());
@@ -823,7 +825,7 @@ public class RegionedColumnSourceManager
         return attributes;
     }
 
-    static int[] regionIndices(final RowSet selection, final int maxCount) {
+    private static int[] regionIndices(final RowSet selection, final int maxCount) {
         try (final RegionIndexIterator rit = RegionIndexIterator.of(selection)) {
             final IntStream.Builder builder = IntStream.builder();
             for (int i = 0; i < maxCount && rit.hasNext(); ++i) {
@@ -996,42 +998,24 @@ public class RegionedColumnSourceManager
     /**
      * Get (or create) a map from column source to column name.
      */
-    private IdentityHashMap<ColumnSource<?>, String> columnSourceToName() {
-        IdentityHashMap<ColumnSource<?>, String> local = columnSourceToName;
-        if (local == null) {
-            synchronized (this) {
-                local = columnSourceToName;
-                if (local == null) {
-                    local = new IdentityHashMap<>(columnSources.size());
-                    for (Map.Entry<String, RegionedColumnSource<?>> entry : columnSources.entrySet()) {
-                        local.put(entry.getValue(), entry.getKey());
-                    }
-                    columnSourceToName = local;
-                }
-            }
+    private Map<ColumnSource<?>, String> columnSourceToName() {
+        if (columnSourceToName != null) {
+            return columnSourceToName;
         }
-        return local;
+        return columnSourceToName = columnSources.entrySet().stream().collect(Collectors.toMap(
+                Map.Entry::getValue, Map.Entry::getKey, Assert::neverInvoked, IdentityHashMap::new));
     }
 
     /**
      * Get (or create) a map from column name to column definition.
      */
     private Map<String, ColumnDefinition<?>> columnNameToDefinition() {
-        Map<String, ColumnDefinition<?>> local = columnNameToDefinition;
-        if (local == null) {
-            synchronized (this) {
-                local = columnNameToDefinition;
-                if (local == null) {
-                    local = new HashMap<>(columnDefinitions.size());
-                    for (final ColumnDefinition<?> columnDefinition : columnDefinitions) {
-                        final String columnName = columnDefinition.getName();
-                        local.put(columnName, columnDefinition);
-                    }
-                    columnNameToDefinition = local;
-                }
-            }
+        if (columnNameToDefinition != null) {
+            return columnNameToDefinition;
         }
-        return local;
+        // RegionedColumnSourceManager has no TableDefinition, build the map from the column definitions.
+        return columnNameToDefinition = columnDefinitions.stream().collect(Collectors.toMap(
+                ColumnDefinition::getName, Function.identity(), Assert::neverInvoked, HashMap::new));
     }
 
     @Override
@@ -1045,7 +1029,7 @@ public class RegionedColumnSourceManager
         final List<ColumnDefinition<?>> columnDefinitions = new ArrayList<>(filterSources.size());
         final Map<String, String> renameMap = new HashMap<>();
 
-        final IdentityHashMap<ColumnSource<?>, String> columnSourceToName = columnSourceToName();
+        final Map<ColumnSource<?>, String> columnSourceToName = columnSourceToName();
         final Map<String, ColumnDefinition<?>> columnNameToDefinition = columnNameToDefinition();
 
         for (int ii = 0; ii < filterColumns.size(); ii++) {

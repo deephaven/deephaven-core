@@ -349,7 +349,7 @@ public final class NullValueColumnSource<T> extends AbstractColumnSource<T>
             final Consumer<Exception> onError) {
         if (selection.isEmpty()) {
             // If the selection is empty, we can skip all pushdown filtering.
-            onComplete.accept(PushdownResult.allNoMatch(selection));
+            onComplete.accept(PushdownResult.noneMatch(selection));
             return;
         }
 
@@ -361,7 +361,7 @@ public final class NullValueColumnSource<T> extends AbstractColumnSource<T>
             return;
         }
         if (nullBehavior == BasePushdownFilterContext.FilterNullBehavior.EXCLUDES_NULLS) {
-            onComplete.accept(PushdownResult.allNoMatch(selection));
+            onComplete.accept(PushdownResult.noneMatch(selection));
             return;
         }
 

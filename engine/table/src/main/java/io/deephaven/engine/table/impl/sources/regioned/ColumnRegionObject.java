@@ -22,7 +22,6 @@ import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.SingleValuePushdownHelper;
 import io.deephaven.util.annotations.FinalDefault;
-import org.jetbrains.annotations.MustBeInvokedByOverriders;
 import org.jetbrains.annotations.NotNull;
 
 import io.deephaven.engine.table.impl.locations.ColumnLocation;
@@ -253,7 +252,6 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
         }
 
         @Override
-        @MustBeInvokedByOverriders
         public long estimatePushdownAction(
                 final RegionedPushdownAction action,
                 final WhereFilter filter,
@@ -265,7 +263,6 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
         }
 
         @Override
-        @MustBeInvokedByOverriders
         public PushdownResult performPushdownAction(
                 final RegionedPushdownAction action,
                 final WhereFilter filter,

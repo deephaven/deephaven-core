@@ -51,7 +51,7 @@ public class RegionedPushdownHelper {
             return PushdownResult.allMaybeMatch(selection);
         }
         if (totalMatchSize == 0 && totalMaybeMatchSize == 0) {
-            return PushdownResult.allNoMatch(selection);
+            return PushdownResult.noneMatch(selection);
         }
         // Note: it's not obvious what the best approach for building these RowSets is; that is, sequential
         // insertion vs sequential builder. We know that the individual results are ordered and non-overlapping.

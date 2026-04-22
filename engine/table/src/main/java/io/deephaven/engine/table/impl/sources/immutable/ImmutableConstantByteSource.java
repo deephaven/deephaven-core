@@ -17,7 +17,6 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.sources.*;
@@ -134,7 +133,7 @@ public class ImmutableConstantByteSource
             final Consumer<Exception> onError) {
         if (selection.isEmpty()) {
             // If the selection is empty, we can skip all pushdown filtering.
-            onComplete.accept(PushdownResult.allNoMatch(selection));
+            onComplete.accept(PushdownResult.noneMatch(selection));
             return;
         }
         final BasePushdownFilterContext filterCtx = (BasePushdownFilterContext) context;
@@ -142,7 +141,7 @@ public class ImmutableConstantByteSource
         final Supplier<Chunk<Values>> chunkSupplier = () -> SingleValuePushdownHelper.makeChunk(getByte(0));
         final boolean matches =
                 SingleValuePushdownHelper.filter(selection, usePrev, filterCtx, chunkSupplier, this);
-        onComplete.accept(matches ? PushdownResult.allMatch(selection) : PushdownResult.allNoMatch(selection));
+        onComplete.accept(matches ? PushdownResult.allMatch(selection) : PushdownResult.noneMatch(selection));
     }
 
     // region reinterpretation

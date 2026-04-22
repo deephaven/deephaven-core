@@ -19,7 +19,6 @@ import io.deephaven.engine.table.impl.sources.SingleValuePushdownHelper;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.table.impl.locations.ColumnLocation;
 import io.deephaven.util.annotations.FinalDefault;
-import org.jetbrains.annotations.MustBeInvokedByOverriders;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
@@ -80,7 +79,7 @@ public interface ColumnRegionChar<ATTR extends Any> extends ColumnRegion<ATTR> {
             extends GenericColumnRegionBase<ATTR>
             implements ColumnRegionChar<ATTR>, WithDefaultsForRepeatingValues<ATTR> {
 
-        final static RegionedPushdownAction.Region CONSTANT_COLUMN_REGION =
+        private final static RegionedPushdownAction.Region CONSTANT_COLUMN_REGION =
                 new RegionedPushdownAction.Region(
                         () -> false,
                         PushdownResult.REGION_SINGLE_VALUE_COST,
@@ -115,7 +114,6 @@ public interface ColumnRegionChar<ATTR extends Any> extends ColumnRegion<ATTR> {
         }
 
         @Override
-        @MustBeInvokedByOverriders
         public long estimatePushdownAction(
                 final RegionedPushdownAction action,
                 final WhereFilter filter,
@@ -127,7 +125,6 @@ public interface ColumnRegionChar<ATTR extends Any> extends ColumnRegion<ATTR> {
         }
 
         @Override
-        @MustBeInvokedByOverriders
         public PushdownResult performPushdownAction(
                 final RegionedPushdownAction action,
                 final WhereFilter filter,

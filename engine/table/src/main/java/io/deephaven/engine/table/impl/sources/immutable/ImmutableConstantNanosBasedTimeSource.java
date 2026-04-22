@@ -207,13 +207,13 @@ public abstract class ImmutableConstantNanosBasedTimeSource<TIME_TYPE> extends A
             final Consumer<Exception> onError) {
         if (selection.isEmpty()) {
             // If the selection is empty, we can skip all pushdown filtering.
-            onComplete.accept(PushdownResult.allNoMatch(selection));
+            onComplete.accept(PushdownResult.noneMatch(selection));
             return;
         }
 
         final BasePushdownFilterContext filterCtx = (BasePushdownFilterContext) context;
         final boolean matches =
                 SingleValuePushdownHelper.filter(selection, usePrev, filterCtx, this::getValueChunk, this);
-        onComplete.accept(matches ? PushdownResult.allMatch(selection) : PushdownResult.allNoMatch(selection));
+        onComplete.accept(matches ? PushdownResult.allMatch(selection) : PushdownResult.noneMatch(selection));
     }
 }
