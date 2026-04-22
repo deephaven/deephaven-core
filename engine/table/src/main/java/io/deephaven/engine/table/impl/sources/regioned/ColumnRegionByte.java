@@ -13,6 +13,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.BasePushdownFilterContext;
 import io.deephaven.engine.table.impl.PushdownFilterContext;
 import io.deephaven.engine.table.impl.PushdownResult;
+import io.deephaven.engine.table.impl.locations.ColumnLocation;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.SingleValuePushdownHelper;
@@ -23,6 +24,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Column region interface for regions that support fetching primitive bytes.
@@ -196,8 +198,17 @@ public interface ColumnRegionByte<ATTR extends Any> extends ColumnRegion<ATTR> {
             extends RegionedPageStore.Static<ATTR, ATTR, ColumnRegionByte<ATTR>>
             implements ColumnRegionByte<ATTR> {
 
-        public StaticPageStore(@NotNull final Parameters parameters, @NotNull final ColumnRegionByte<ATTR>[] regions) {
+        private final ColumnLocation columnLocation;
+
+        public StaticPageStore(@NotNull final Parameters parameters, @NotNull final ColumnRegionByte<ATTR>[] regions,
+                @NotNull final ColumnLocation columnLocation) {
             super(parameters, regions);
+            this.columnLocation = columnLocation;
+        }
+
+        @Override
+        public Optional<ColumnLocation> getColumnLocation() {
+            return Optional.of(columnLocation);
         }
 
         @Override

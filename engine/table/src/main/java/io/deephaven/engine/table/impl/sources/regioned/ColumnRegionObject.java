@@ -25,8 +25,11 @@ import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.MustBeInvokedByOverriders;
 import org.jetbrains.annotations.NotNull;
 
+import io.deephaven.engine.table.impl.locations.ColumnLocation;
+
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.IntStream;
 
 import static io.deephaven.util.QueryConstants.NULL_LONG;
@@ -306,12 +309,20 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
             extends RegionedPageStore.Static<ATTR, ATTR, ColumnRegionObject<DATA_TYPE, ATTR>>
             implements ColumnRegionObject<DATA_TYPE, ATTR> {
 
+        private final ColumnLocation columnLocation;
         private ColumnRegionLong<DictionaryKeys> dictionaryKeysRegion;
         private ColumnRegionObject<DATA_TYPE, ATTR> dictionaryValuesRegion;
 
         public StaticPageStore(@NotNull final Parameters parameters,
-                @NotNull final ColumnRegionObject<DATA_TYPE, ATTR>[] regions) {
+                @NotNull final ColumnRegionObject<DATA_TYPE, ATTR>[] regions,
+                @NotNull final ColumnLocation columnLocation) {
             super(parameters, regions);
+            this.columnLocation = columnLocation;
+        }
+
+        @Override
+        public Optional<ColumnLocation> getColumnLocation() {
+            return Optional.of(columnLocation);
         }
 
         @Override
@@ -358,7 +369,8 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
         public ColumnRegionLong<DictionaryKeys> getDictionaryKeysRegion() {
             return dictionaryKeysRegion == null
                     ? dictionaryKeysRegion =
-                            new ColumnRegionLong.StaticPageStore<>(parameters(), mapRegionsToDictionaryKeys())
+                            new ColumnRegionLong.StaticPageStore<>(parameters(), mapRegionsToDictionaryKeys(),
+                                    columnLocation)
                     : dictionaryKeysRegion;
         }
 
@@ -366,7 +378,8 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
         public ColumnRegionObject<DATA_TYPE, ATTR> getDictionaryValuesRegion() {
             return dictionaryValuesRegion == null
                     ? dictionaryValuesRegion =
-                            new ColumnRegionObject.StaticPageStore<>(parameters(), mapRegionsToDictionaryValues())
+                            new ColumnRegionObject.StaticPageStore<>(parameters(), mapRegionsToDictionaryValues(),
+                                    columnLocation)
                     : dictionaryValuesRegion;
         }
 

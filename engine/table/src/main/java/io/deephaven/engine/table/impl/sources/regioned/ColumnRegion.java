@@ -12,12 +12,14 @@ import io.deephaven.engine.page.Page;
 import io.deephaven.engine.table.impl.BasePushdownFilterContext;
 import io.deephaven.engine.table.impl.PushdownFilterContext;
 import io.deephaven.engine.table.impl.PushdownResult;
+import io.deephaven.engine.table.impl.locations.ColumnLocation;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.MustBeInvokedByOverriders;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface ColumnRegion<ATTR extends Any> extends Page<ATTR>, Releasable, RegionedPushdownFilterMatcher {
 
@@ -25,6 +27,10 @@ public interface ColumnRegion<ATTR extends Any> extends Page<ATTR>, Releasable, 
     @FinalDefault
     default long firstRowOffset() {
         return 0;
+    }
+
+    default Optional<ColumnLocation> getColumnLocation() {
+        return Optional.empty();
     }
 
     /**

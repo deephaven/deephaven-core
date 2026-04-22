@@ -180,9 +180,9 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
             @NotNull final ColumnDefinition<?> columnDefinition) {
         // noinspection unchecked
         return (ColumnRegionChar<Values>) makeColumnRegion(this::getPageStores, columnDefinition,
-                ColumnRegionChar::createNull, ParquetColumnRegionChar::new,
+                ColumnRegionChar::createNull, cs -> new ParquetColumnRegionChar<>(cs, this),
                 rs -> new ColumnRegionChar.StaticPageStore<>(tl().getRegionParameters(),
-                        rs.toArray(ColumnRegionChar[]::new)));
+                        rs.toArray(ColumnRegionChar[]::new), this));
     }
 
     @Override
@@ -190,9 +190,9 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
             @NotNull final ColumnDefinition<?> columnDefinition) {
         // noinspection unchecked
         return (ColumnRegionByte<Values>) makeColumnRegion(this::getPageStores, columnDefinition,
-                ColumnRegionByte::createNull, ParquetColumnRegionByte::new,
+                ColumnRegionByte::createNull, cs -> new ParquetColumnRegionByte<>(cs, this),
                 rs -> new ColumnRegionByte.StaticPageStore<>(tl().getRegionParameters(),
-                        rs.toArray(ColumnRegionByte[]::new)));
+                        rs.toArray(ColumnRegionByte[]::new), this));
     }
 
     @Override
@@ -200,9 +200,9 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
             @NotNull final ColumnDefinition<?> columnDefinition) {
         // noinspection unchecked
         return (ColumnRegionShort<Values>) makeColumnRegion(this::getPageStores, columnDefinition,
-                ColumnRegionShort::createNull, ParquetColumnRegionShort::new,
+                ColumnRegionShort::createNull, cs -> new ParquetColumnRegionShort<>(cs, this),
                 rs -> new ColumnRegionShort.StaticPageStore<>(tl().getRegionParameters(),
-                        rs.toArray(ColumnRegionShort[]::new)));
+                        rs.toArray(ColumnRegionShort[]::new), this));
     }
 
     @Override
@@ -210,9 +210,9 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
             @NotNull final ColumnDefinition<?> columnDefinition) {
         // noinspection unchecked
         return (ColumnRegionInt<Values>) makeColumnRegion(this::getPageStores, columnDefinition,
-                ColumnRegionInt::createNull, ParquetColumnRegionInt::new,
+                ColumnRegionInt::createNull, cs -> new ParquetColumnRegionInt<>(cs, this),
                 rs -> new ColumnRegionInt.StaticPageStore<>(tl().getRegionParameters(),
-                        rs.toArray(ColumnRegionInt[]::new)));
+                        rs.toArray(ColumnRegionInt[]::new), this));
     }
 
     @Override
@@ -220,9 +220,9 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
             @NotNull final ColumnDefinition<?> columnDefinition) {
         // noinspection unchecked
         return (ColumnRegionLong<Values>) makeColumnRegion(this::getPageStores, columnDefinition,
-                ColumnRegionLong::createNull, ParquetColumnRegionLong::new,
+                ColumnRegionLong::createNull, cs -> new ParquetColumnRegionLong<>(cs, this),
                 rs -> new ColumnRegionLong.StaticPageStore<>(tl().getRegionParameters(),
-                        rs.toArray(ColumnRegionLong[]::new)));
+                        rs.toArray(ColumnRegionLong[]::new), this));
     }
 
     @Override
@@ -230,9 +230,9 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
             @NotNull final ColumnDefinition<?> columnDefinition) {
         // noinspection unchecked
         return (ColumnRegionFloat<Values>) makeColumnRegion(this::getPageStores, columnDefinition,
-                ColumnRegionFloat::createNull, ParquetColumnRegionFloat::new,
+                ColumnRegionFloat::createNull, cs -> new ParquetColumnRegionFloat<>(cs, this),
                 rs -> new ColumnRegionFloat.StaticPageStore<>(tl().getRegionParameters(),
-                        rs.toArray(ColumnRegionFloat[]::new)));
+                        rs.toArray(ColumnRegionFloat[]::new), this));
     }
 
     @Override
@@ -240,9 +240,9 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
             @NotNull final ColumnDefinition<?> columnDefinition) {
         // noinspection unchecked
         return (ColumnRegionDouble<Values>) makeColumnRegion(this::getPageStores, columnDefinition,
-                ColumnRegionDouble::createNull, ParquetColumnRegionDouble::new,
+                ColumnRegionDouble::createNull, cs -> new ParquetColumnRegionDouble<>(cs, this),
                 rs -> new ColumnRegionDouble.StaticPageStore<>(tl().getRegionParameters(),
-                        rs.toArray(ColumnRegionDouble[]::new)));
+                        rs.toArray(ColumnRegionDouble[]::new), this));
     }
 
     @Override
@@ -265,7 +265,8 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
                 IntStream.range(0, sources.length)
                         .mapToObj(ri -> makeSingleColumnRegionObject(dataType, sources[ri],
                                 dictKeySources[ri], dictionaryChunkSuppliers[ri]))
-                        .toArray(ColumnRegionObject[]::new));
+                        .toArray(ColumnRegionObject[]::new),
+                this);
     }
 
     private <TYPE> ColumnRegionObject<TYPE, ATTR> makeSingleColumnRegionObject(
@@ -277,9 +278,10 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
             return ColumnRegionObject.createNull(tl().getRegionParameters().regionMask);
         }
         return new ParquetColumnRegionObject<>(source,
-                () -> new ParquetColumnRegionLong<>(Require.neqNull(dictKeySource, "dictKeySource")),
+                () -> new ParquetColumnRegionLong<>(Require.neqNull(dictKeySource, "dictKeySource"), this),
                 () -> ColumnRegionChunkDictionary.create(tl().getRegionParameters().regionMask,
-                        dataType, Require.neqNull(dictValuesSupplier, "dictValuesSupplier")));
+                        dataType, Require.neqNull(dictValuesSupplier, "dictValuesSupplier")),
+                this);
     }
 
     /**
