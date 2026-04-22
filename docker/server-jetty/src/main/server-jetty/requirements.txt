@@ -9,11 +9,13 @@ jedi==0.19.1
 jpy==1.4.0
 llvmlite==0.47.0
 numba==0.65.0
-numpy==2.4.4
+numpy==2.3.5
 packaging==26.1
-pandas==3.0.2
+pandas==2.3.3
 parso==0.8.6
 pyarrow==24.0.0
 python-dateutil==2.9.0.post0
+pytz==2026.1.post1
 six==1.17.0
 typing_extensions==4.15.0
+tzdata==2026.1
