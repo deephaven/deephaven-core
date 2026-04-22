@@ -21,8 +21,9 @@ public abstract class ParquetColumnRegionBase<ATTR extends Any>
         extends GenericColumnRegionBase<ATTR>
         implements ParquetColumnRegion<ATTR> {
 
-    private final ColumnLocation columnLocation;
     final ColumnChunkPageStore<ATTR> columnChunkPageStore;
+
+    private final ColumnLocation columnLocation;
 
     ParquetColumnRegionBase(final long pageMask, @NotNull final ColumnChunkPageStore<ATTR> columnChunkPageStore,
             @NotNull final ColumnLocation columnLocation) {

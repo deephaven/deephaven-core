@@ -120,26 +120,14 @@ abstract class RegionedColumnSourceBase<DATA_TYPE, ATTR extends Values, REGION_T
                 "RegionedColumnSourceBase#estimatePushdownFilterCost",
                 jobScheduler,
                 (regionIndex, tle, shiftedRowSet, onCost, nec) -> {
-                    // Create a local pushdown context that can provide the table location to the ColumnRegion
-                    final RegionedPushdownFilterLocationContext newCtx =
-                            filterContext.withTableLocation(tle.location);
-                    try {
-                        getRegion(regionIndex).estimatePushdownFilterCost(
-                                filter,
-                                shiftedRowSet,
-                                usePrev,
-                                newCtx,
-                                jobScheduler,
-                                regionCost -> {
-                                    onCost.accept(regionCost);
-                                    newCtx.close();
-                                },
-                                nec);
-                    } catch (final Exception e) {
-                        // In the case of an exception, clean up the temporary context.
-                        newCtx.close();
-                        throw e;
-                    }
+                    getRegion(regionIndex).estimatePushdownFilterCost(
+                            filter,
+                            shiftedRowSet,
+                            usePrev,
+                            filterContext,
+                            jobScheduler,
+                            onCost,
+                            nec);
                 },
                 onComplete,
                 onError);
@@ -161,27 +149,15 @@ abstract class RegionedColumnSourceBase<DATA_TYPE, ATTR extends Values, REGION_T
                 "RegionedColumnSourceBase#pushdownFilter",
                 jobScheduler,
                 (regionIndex, tle, shiftedRowSet, onResult, nec) -> {
-                    // Create a local pushdown context that can provide the table location to the ColumnRegion
-                    final RegionedPushdownFilterLocationContext newCtx =
-                            filterContext.withTableLocation(tle.location);
-                    try {
-                        getRegion(regionIndex).pushdownFilter(
-                                filter,
-                                shiftedRowSet,
-                                usePrev,
-                                newCtx,
-                                costCeiling,
-                                jobScheduler,
-                                result -> {
-                                    onResult.accept(result);
-                                    newCtx.close();
-                                },
-                                nec);
-                    } catch (final Exception e) {
-                        // In the case of an exception, clean up the temporary context.
-                        newCtx.close();
-                        throw e;
-                    }
+                    getRegion(regionIndex).pushdownFilter(
+                            filter,
+                            shiftedRowSet,
+                            usePrev,
+                            filterContext,
+                            costCeiling,
+                            jobScheduler,
+                            onResult,
+                            nec);
                 },
                 onComplete,
                 onError);

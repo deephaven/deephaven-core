@@ -5,7 +5,6 @@ package io.deephaven.engine.table.impl.sources.regioned;
 
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.impl.BasePushdownFilterContext;
-import io.deephaven.engine.table.impl.locations.TableLocation;
 
 import java.util.List;
 import java.util.Map;
@@ -24,8 +23,4 @@ public interface RegionedPushdownFilterContext extends BasePushdownFilterContext
      */
     Map<String, String> filterColumnToManagerColumnName();
 
-    /**
-     * Create a wrapper of this context that knows its TableLocation.
-     */
-    RegionedPushdownFilterLocationContext withTableLocation(final TableLocation tableLocation);
 }
