@@ -175,7 +175,7 @@ public class TestPartitionAwareSourceTableNoRemoval extends RefreshingTableTestC
             {
                 oneOf(componentFactory).createColumnSourceManager(with(true), with(false),
                         with(ColumnToCodecMappings.EMPTY),
-                        with(equal(TABLE_DEFINITION.getColumns())));
+                        with(equal(TABLE_DEFINITION)));
                 will(returnValue(columnSourceManager));
                 allowing(columnSourceManager).tryRetainReference();
                 will(returnValue(true));

@@ -4,7 +4,6 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.Pair;
-import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LiveSupplier;
@@ -12,13 +11,11 @@ import io.deephaven.engine.liveness.ReferenceCountedLivenessNode;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.perf.PerformanceEntry;
-import io.deephaven.engine.table.impl.select.SourceColumn;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedTableComponentFactoryImpl;
 import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.TestErrorNotification;
 import io.deephaven.engine.testutil.TestNotification;
-import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.locations.TableBackedTableLocationProvider;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.table.impl.locations.*;
@@ -29,7 +26,6 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableIntChunk;
-import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.qst.column.Column;
 import io.deephaven.util.type.ArrayTypeUtils;
@@ -197,7 +193,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
             {
                 oneOf(componentFactory).createColumnSourceManager(with(true), with(true),
                         with(ColumnToCodecMappings.EMPTY),
-                        with(equal(TABLE_DEFINITION.getColumns())));
+                        with(equal(TABLE_DEFINITION)));
                 will(returnValue(columnSourceManager));
                 allowing(columnSourceManager).tryRetainReference();
                 will(returnValue(true));
@@ -510,6 +506,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
                 CHARACTER_COLUMN_DEFINITION,
                 INTEGER_COLUMN_DEFINITION,
                 DOUBLE_COLUMN_DEFINITION);
+        final TableDefinition includedTableDefinition1 = TableDefinition.of(includedColumns1);
 
         final Map<Class, ColumnSource> dataTypeToColumnSource = new HashMap<>();
         includedColumns1.forEach((final ColumnDefinition columnDefinition) -> {
@@ -534,7 +531,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
             {
                 oneOf(componentFactory).createColumnSourceManager(with(true), with(true),
                         with(ColumnToCodecMappings.EMPTY),
-                        with(equal(includedColumns1)));
+                        with(equal(includedTableDefinition1)));
                 will(returnValue(columnSourceManager));
             }
         });
@@ -572,11 +569,12 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
                 PARTITIONING_COLUMN_DEFINITION,
                 INTEGER_COLUMN_DEFINITION,
                 DOUBLE_COLUMN_DEFINITION);
+        final TableDefinition includedTableDefinition2 = TableDefinition.of(includedColumns2);
         checking(new Expectations() {
             {
                 oneOf(componentFactory).createColumnSourceManager(with(true), with(true),
                         with(ColumnToCodecMappings.EMPTY),
-                        with(equal(includedColumns2)));
+                        with(equal(includedTableDefinition2)));
                 will(returnValue(columnSourceManager));
             }
         });
@@ -623,11 +621,12 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
         final List<ColumnDefinition<?>> includedColumns3 = List.of(
                 INTEGER_COLUMN_DEFINITION,
                 PARTITIONING_COLUMN_DEFINITION);
+        final TableDefinition includedTableDefinition3 = TableDefinition.of(includedColumns3);
         checking(new Expectations() {
             {
                 oneOf(componentFactory).createColumnSourceManager(with(true), with(true),
                         with(ColumnToCodecMappings.EMPTY),
-                        with(equal(includedColumns3)));
+                        with(equal(includedTableDefinition3)));
                 will(returnValue(columnSourceManager));
             }
         });
@@ -764,7 +763,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
         checking(new Expectations() {
             {
                 oneOf(componentFactory).createColumnSourceManager(true, true, ColumnToCodecMappings.EMPTY,
-                        TABLE_DEFINITION.getColumns());
+                        TABLE_DEFINITION);
                 will(returnValue(columnSourceManager));
             }
         });
@@ -825,7 +824,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
         checking(new Expectations() {
             {
                 oneOf(componentFactory).createColumnSourceManager(true, true, ColumnToCodecMappings.EMPTY,
-                        TABLE_DEFINITION.getColumns());
+                        TABLE_DEFINITION);
                 will(returnValue(columnSourceManager));
                 allowing(columnSources[3]).getInt(with(any(long.class)));
                 will(returnValue(1));

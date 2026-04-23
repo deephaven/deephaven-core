@@ -17,6 +17,7 @@ import io.deephaven.engine.table.impl.locations.ColumnLocation;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.SingleValuePushdownHelper;
+import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
@@ -24,6 +25,8 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Consumer;
+import java.util.function.LongConsumer;
 
 /**
  * Column region interface for regions that support fetching primitive bytes.
@@ -229,5 +232,67 @@ public interface ColumnRegionByte<ATTR extends Any> extends ColumnRegion<ATTR> {
                 final int destinationOffset, final int length) {
             return lookupRegion(firstElementIndex).getBytes(firstElementIndex, destination, destinationOffset, length);
         }
+
+        // region pushdown support
+        @Override
+        public void estimatePushdownFilterCost(
+                final WhereFilter filter,
+                final RowSet selection,
+                final boolean usePrev,
+                final PushdownFilterContext context,
+                final JobScheduler jobScheduler,
+                final LongConsumer onComplete,
+                final Consumer<Exception> onError) {
+            final RegionedPushdownFilterContext filterCtx = (RegionedPushdownFilterContext) context;
+            onComplete.accept(
+                    ColumnRegionPushdownHelper.estimatePushdownFilterCost(this, filter, selection, usePrev, filterCtx));
+        }
+
+        @Override
+        public void pushdownFilter(
+                final WhereFilter filter,
+                final RowSet selection,
+                final boolean usePrev,
+                final PushdownFilterContext context,
+                final long costCeiling,
+                final JobScheduler jobScheduler,
+                final Consumer<PushdownResult> onComplete,
+                final Consumer<Exception> onError) {
+            final RegionedPushdownFilterContext filterCtx = (RegionedPushdownFilterContext) context;
+            onComplete.accept(ColumnRegionPushdownHelper.pushdownFilter(this, filter, selection, usePrev, filterCtx,
+                    costCeiling));
+        }
+
+        @Override
+        public List<RegionedPushdownAction> supportedActions() {
+            return ColumnRegionPushdownHelper.pageStoreSupportedActions(this);
+        }
+
+        @Override
+        public long estimatePushdownAction(
+                final RegionedPushdownAction action,
+                final WhereFilter filter,
+                final RowSet selection,
+                final boolean usePrev,
+                final PushdownFilterContext filterContext,
+                final RegionedPushdownAction.EstimateContext estimateContext) {
+            return ColumnRegionPushdownHelper.estimatePageStorePushdownAction(
+                    this, action, filter, selection, usePrev, filterContext, estimateContext);
+        }
+
+        @Override
+        public PushdownResult performPushdownAction(
+                final RegionedPushdownAction action,
+                final WhereFilter filter,
+                final RowSet selection,
+                final PushdownResult input,
+                final boolean usePrev,
+                final PushdownFilterContext filterContext,
+                final RegionedPushdownAction.ActionContext actionContext) {
+            return ColumnRegionPushdownHelper.performPageStorePushdownAction(
+                    this, action, filter, selection, input, usePrev, filterContext, actionContext);
+        }
+
+        // endregion pushdown support
     }
 }

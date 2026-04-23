@@ -1920,7 +1920,7 @@ public final class ParquetTableFilterTest {
                 .setWriteRowGroupStatistics(false)
                 .build();
 
-        final String destPath = Path.of(rootFile.getPath(), "multiColumnConditionalFilters") + ".parquet";
+        final String destPath = Path.of(rootFile.getPath(), "singleColumnConditionalFilters") + ".parquet";
         writeTable(source, destPath, writeInstructions);
 
         // Read back and test filtering
@@ -1931,6 +1931,30 @@ public final class ParquetTableFilterTest {
                 ConditionFilter.createStateless("legs >= 4 && legs <= 100"));
         filterAndVerifyResults(diskTable, memTable,
                 ConditionFilter.createStateless("weight > 1000"));
+    }
+
+    @Test
+    public void singleColumnSortedMultipleRowGroupFilters() {
+        final int targetRows = 50000;
+        final Table source = TableTools.emptyTable(targetRows)
+                .update("ID = ii", "Value = Math.random()")
+                .sort("ID");
+
+        final ParquetInstructions writeInstructions = new ParquetInstructions.Builder()
+                .setRowGroupInfo(RowGroupInfo.maxRows(1_000))
+                .build();
+
+        final String destPath = Path.of(rootFile.getPath(), "singleColumnSortedMultipleRowGroupFilters") + ".parquet";
+        writeTable(source, destPath, writeInstructions);
+
+        // Read back and test filtering
+        final Table diskTable = ParquetTools.readTable(destPath);
+        final Table memTable = diskTable.select();
+
+        filterAndVerifyResults(diskTable, memTable,
+                ConditionFilter.createStateless("ID < 25000"));
+        filterAndVerifyResults(diskTable, memTable,
+                ConditionFilter.createStateless("ID = 22000"));
     }
 
     @Test

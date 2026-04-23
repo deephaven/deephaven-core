@@ -36,7 +36,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.function.LongConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -71,20 +70,14 @@ public class RegionedColumnSourceManager
     private final boolean isRefreshing;
 
     /**
-     * The column definitions that define our column sources.
+     * The table definitions that define our column sources.
      */
-    private final List<ColumnDefinition<?>> columnDefinitions;
+    private final TableDefinition tableDefinition;
 
     /**
      * The column sources that make up this table.
      */
     private final Map<String, RegionedColumnSource<?>> columnSources = new LinkedHashMap<>();
-
-    /**
-     * The column definitions of this table as a map from column name. This map should not be accessed directly, but
-     * rather through {@link #columnNameToDefinition()}.
-     */
-    private Map<String, ColumnDefinition<?>> columnNameToDefinition;
 
     /**
      * The column sources of this table as a map from column source to column name. This map should not be accessed
@@ -179,18 +172,18 @@ public class RegionedColumnSourceManager
      * @param isRefreshing Whether the table using this column source manager is refreshing
      * @param removeAllowed Whether the table using this column source manager may remove locations
      * @param componentFactory The component factory
-     * @param columnDefinitions The column definitions
+     * @param tableDefinition The table definition that contains the column definitions for this column source manager.
      */
     RegionedColumnSourceManager(
             final boolean isRefreshing,
             final boolean removeAllowed,
             @NotNull final RegionedTableComponentFactory componentFactory,
             @NotNull final ColumnToCodecMappings codecMappings,
-            @NotNull final List<ColumnDefinition<?>> columnDefinitions) {
+            @NotNull final TableDefinition tableDefinition) {
 
         this.isRefreshing = isRefreshing;
-        this.columnDefinitions = columnDefinitions;
-        for (final ColumnDefinition<?> columnDefinition : columnDefinitions) {
+        this.tableDefinition = tableDefinition;
+        for (final ColumnDefinition<?> columnDefinition : tableDefinition.getColumns()) {
             final String columnName = columnDefinition.getName();
             columnSources.put(
                     columnName,
@@ -198,7 +191,7 @@ public class RegionedColumnSourceManager
         }
 
         // Create the table that will hold the location data
-        partitioningColumnValueSources = columnDefinitions.stream()
+        partitioningColumnValueSources = tableDefinition.getColumns().stream()
                 .filter(ColumnDefinition::isPartitioning)
                 .collect(Collectors.toMap(
                         ColumnDefinition::getName,
@@ -347,7 +340,7 @@ public class RegionedColumnSourceManager
         update.release();
 
         // Add single-column data indexes for all partitioning columns, whether refreshing or not
-        columnDefinitions.stream().filter(ColumnDefinition::isPartitioning).forEach(cd -> {
+        tableDefinition.getColumns().stream().filter(ColumnDefinition::isPartitioning).forEach(cd -> {
             try (final SafeCloseable ignored = isRefreshing ? LivenessScopeStack.open() : null) {
                 final DataIndex partitioningIndex =
                         new PartitioningColumnDataIndex<>(cd.getName(), columnSources.get(cd.getName()), this);
@@ -673,7 +666,7 @@ public class RegionedColumnSourceManager
             initialRowSet.forAllRowKeyRanges((subRegionFirstKey, subRegionLastKey) -> addedRowSetBuilder
                     .appendRange(regionFirstKey + subRegionFirstKey, regionFirstKey + subRegionLastKey));
 
-            for (final ColumnDefinition<?> columnDefinition : columnDefinitions) {
+            for (final ColumnDefinition<?> columnDefinition : tableDefinition.getColumns()) {
                 final RegionedColumnSource<?> regionedColumnSource = columnSources.get(columnDefinition.getName());
                 final ColumnLocation columnLocation = location.getColumnLocation(columnDefinition.getName());
                 Assert.eq(regionIndex, "regionIndex", regionedColumnSource.addRegion(columnDefinition, columnLocation),
@@ -1006,18 +999,6 @@ public class RegionedColumnSourceManager
                 Map.Entry::getValue, Map.Entry::getKey, Assert::neverInvoked, IdentityHashMap::new));
     }
 
-    /**
-     * Get (or create) a map from column name to column definition.
-     */
-    private Map<String, ColumnDefinition<?>> columnNameToDefinition() {
-        if (columnNameToDefinition != null) {
-            return columnNameToDefinition;
-        }
-        // RegionedColumnSourceManager has no TableDefinition, build the map from the column definitions.
-        return columnNameToDefinition = columnDefinitions.stream().collect(Collectors.toMap(
-                ColumnDefinition::getName, Function.identity(), Assert::neverInvoked, HashMap::new));
-    }
-
     @Override
     public PushdownFilterContext makePushdownFilterContext(
             final WhereFilter filter,
@@ -1030,7 +1011,7 @@ public class RegionedColumnSourceManager
         final Map<String, String> renameMap = new HashMap<>();
 
         final Map<ColumnSource<?>, String> columnSourceToName = columnSourceToName();
-        final Map<String, ColumnDefinition<?>> columnNameToDefinition = columnNameToDefinition();
+        final Map<String, ColumnDefinition<?>> columnNameToDefinition = tableDefinition.getColumnNameMap();
 
         for (int ii = 0; ii < filterColumns.size(); ii++) {
             final String filterColumnName = filterColumns.get(ii);
