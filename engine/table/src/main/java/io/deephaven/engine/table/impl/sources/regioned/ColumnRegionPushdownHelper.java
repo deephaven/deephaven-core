@@ -197,7 +197,7 @@ final class ColumnRegionPushdownHelper {
             while (selectionIt.hasMore()) {
                 final int regionIndex = pageStore.getRegionIndex(selectionIt.peekNextKey());
                 final REGION_TYPE region = pageStore.getRegion(regionIndex);
-                final long regionMinKey = region.firstRowOffset();
+                final long regionMinKey = (long) regionIndex << pageStore.regionMaskNumBits();
                 final long regionMaxKey = regionMinKey + pageStore.regionMask();
 
                 final RowSequence batch = selectionIt.getNextRowSequenceThrough(regionMaxKey);
