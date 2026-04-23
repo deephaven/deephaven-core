@@ -319,7 +319,9 @@ def _np_dtype_char(t: Union[type, str]) -> str:
         ):  # np.dtype() returns np.dtype('O') for unrecognized types
             return "X"
         return np_dtype.char
-    except TypeError:
+    except (
+        Exception
+    ):  # numpy raise different types of exceptions for unrecognized types
         return "X"
 
 
