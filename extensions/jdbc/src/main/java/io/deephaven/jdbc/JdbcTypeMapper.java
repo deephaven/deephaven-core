@@ -31,6 +31,7 @@ import java.sql.Date;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.*;
 
 public class JdbcTypeMapper {
@@ -47,8 +48,8 @@ public class JdbcTypeMapper {
         private final ArrayParser arrayParser;
         private final boolean strict;
 
-        private Context(TimeZone sourceTimeZone, String arrayDelimiter, boolean strict) {
-            this.sourceCalendar = Calendar.getInstance(sourceTimeZone);
+        private Context(ZoneId sourceTimeZone, String arrayDelimiter, boolean strict) {
+            this.sourceCalendar = Calendar.getInstance(TimeZone.getTimeZone(sourceTimeZone));
             this.arrayParser = ArrayParser.getInstance(arrayDelimiter);
             this.strict = strict;
         }
@@ -67,7 +68,7 @@ public class JdbcTypeMapper {
          * @param arrayDelimiter necessary when encoding/decoding arrays as strings
          * @param strict indicates how forgiving to be with malformed/unexpected input data
          */
-        public static Context of(TimeZone sourceTimeZone, String arrayDelimiter, boolean strict) {
+        public static Context of(ZoneId sourceTimeZone, String arrayDelimiter, boolean strict) {
             return new Context(sourceTimeZone, arrayDelimiter, strict);
         }
 
@@ -145,21 +146,21 @@ public class JdbcTypeMapper {
      */
     public static abstract class DataTypeMapping<T> {
         final int sqlType;
-        private final Class<T> dbType;
+        private final Class<T> deephavenType;
         private final Class<?> inputType;
 
         DataTypeMapping(int sqlType, @NotNull final Class<T> type) {
             this(sqlType, type, type);
         }
 
-        DataTypeMapping(int sqlType, @NotNull final Class<T> dbType, @NotNull final Class<?> inputType) {
+        DataTypeMapping(final int sqlType, @NotNull final Class<T> deephavenType, @NotNull final Class<?> inputType) {
             this.sqlType = sqlType;
-            this.dbType = dbType;
+            this.deephavenType = deephavenType;
             this.inputType = inputType;
         }
 
         public Class<T> getDeephavenType() {
-            return dbType;
+            return deephavenType;
         }
 
         public Class<?> getInputType() {
@@ -181,7 +182,6 @@ public class JdbcTypeMapper {
         public abstract void bindToChunk(
                 WritableChunk<Values> destChunk, int destOffset,
                 ResultSet resultSet, int columnIndex, Context context) throws SQLException;
-
 
         /**
          * Bind the given value from the chunk in the given prepared statement.
@@ -1087,7 +1087,7 @@ public class JdbcTypeMapper {
      * @param columnIndex the index of the JDBC ResultSet column
      * @return The default mapping for the specified column
      */
-    static public <T> DataTypeMapping<T> getDefaultColumnTypeMapping(final ResultSet rs, final int columnIndex) {
+    public static <T> DataTypeMapping<T> getDefaultColumnTypeMapping(final ResultSet rs, final int columnIndex) {
         return getColumnTypeMapping(rs, columnIndex, null);
     }
 
@@ -1099,7 +1099,7 @@ public class JdbcTypeMapper {
      * @param columnIndex the index of the JDBC ResultSet column
      * @return a mapping object that can be used to map SQL/JDBC ResultSet values to and from Deephaven column values
      */
-    static public <T> DataTypeMapping<T> getDefaultColumnTypeMapping(final Connection connection,
+    public static <T> DataTypeMapping<T> getDefaultColumnTypeMapping(final Connection connection,
             final ResultSetMetaData metaData, final int columnIndex) {
         return getColumnTypeMapping(connection, metaData, columnIndex, null);
     }
@@ -1114,7 +1114,7 @@ public class JdbcTypeMapper {
      * @param <T> the target Deephaven type
      * @return a mapping object that can be used to map SQL/JDBC ResultSet values to and from Deephaven column values
      */
-    static public <T> DataTypeMapping<T> getColumnTypeMapping(final ResultSet rs, final int columnIndex,
+    public static <T> DataTypeMapping<T> getColumnTypeMapping(final ResultSet rs, final int columnIndex,
             Class<T> deephavenDataType) {
         try {
             return getColumnTypeMapping(rs.getStatement() == null ? null : rs.getStatement().getConnection(),
@@ -1135,7 +1135,7 @@ public class JdbcTypeMapper {
      * @param <T> the target Deephaven type
      * @return a mapping object that can be used to map SQL/JDBC ResultSet values to and from Deephaven column values
      */
-    static public <T> DataTypeMapping<T> getColumnTypeMapping(final Connection connection,
+    public static <T> DataTypeMapping<T> getColumnTypeMapping(final Connection connection,
             final ResultSetMetaData rs, final int columnIndex, Class<T> deephavenDataType) {
         final int type;
         Class<? extends Connection> connClass = null;
@@ -1163,7 +1163,7 @@ public class JdbcTypeMapper {
      * @param <T> the target Deephaven type
      * @return a mapping object that can be used to map SQL/JDBC ResultSet values to and from Deephaven column values
      */
-    static public <T> DataTypeMapping<T> getColumnTypeMapping(final Class<? extends Connection> connClass, int type,
+    public static <T> DataTypeMapping<T> getColumnTypeMapping(final Class<? extends Connection> connClass, int type,
             Class<? extends T> deephavenDataType) {
 
         // First, see if there is a driver-specific mapping that matches the specified SQL and Deephaven types.

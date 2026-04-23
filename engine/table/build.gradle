@@ -56,9 +56,6 @@ dependencies {
     compileOnly libs.autoservice
     annotationProcessor libs.autoservice.compiler
 
-    compileOnly project(':util-immutables')
-    annotationProcessor libs.immutables.value
-
     compileOnly libs.google.findbugs.jsr305
 
     runtimeOnly project(':engine-tuplesource')
