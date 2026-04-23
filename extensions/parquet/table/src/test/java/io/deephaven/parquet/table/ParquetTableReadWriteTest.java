@@ -4215,7 +4215,7 @@ public final class ParquetTableReadWriteTest {
         verifyMakeHandleException(() -> nonExistentColumnLocation.makeColumnRegionDouble(
                 ColumnDefinition.ofDouble("A")));
         verifyMakeHandleException(() -> nonExistentColumnLocation.makeColumnRegionObject(
-                ColumnDefinition.ofShort("A")));
+                ColumnDefinition.ofString("A")));
     }
 
     @Test
