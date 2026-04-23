@@ -9,6 +9,7 @@ import io.deephaven.base.ClassUtil;
 import io.deephaven.base.Pair;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.parquet.impl.ParquetSchemaUtil;
+import io.deephaven.qst.type.Type;
 import io.deephaven.stringset.StringSet;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.parquet.table.metadata.CodecInfo;
@@ -325,7 +326,7 @@ public class ParquetSchemaReader {
             } else {
                 if (parquetColDef.isArray) {
                     if (baseType == byte.class && parquetColDef.noLogicalType) {
-                        colDef = ColumnDefinition.fromGenericType(parquetColDef.name, byte[].class, byte.class);
+                        colDef = ColumnDefinition.of(parquetColDef.name, Type.byteType().arrayType());
                     } else {
                         // TODO: ParquetInstruction.loadAsVector
                         final Class<?> componentType = baseType;

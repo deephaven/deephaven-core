@@ -4090,7 +4090,7 @@ public final class ParquetTableReadWriteTest {
                 .build();
 
         final ColumnDefinition<byte[]> columnDefinition =
-                ColumnDefinition.fromGenericType("VariableWidthByteArrayColumn", byte[].class, byte.class);
+                ColumnDefinition.of("VariableWidthByteArrayColumn", Type.byteType().arrayType());
         final TableDefinition tableDefinition = TableDefinition.of(columnDefinition);
         final byte[] byteArray = new byte[pageSize / 2];
         final Table table = newTable(tableDefinition,
@@ -4201,21 +4201,21 @@ public final class ParquetTableReadWriteTest {
         // APIs from ColumnLocation
         verifyMakeHandleException(nonExistentColumnLocation::exists);
         verifyMakeHandleException(() -> nonExistentColumnLocation.makeColumnRegionChar(
-                ColumnDefinition.fromGenericType("A", char.class, Character.class)));
+                ColumnDefinition.ofChar("A")));
         verifyMakeHandleException(() -> nonExistentColumnLocation.makeColumnRegionByte(
-                ColumnDefinition.fromGenericType("A", byte.class, Byte.class)));
+                ColumnDefinition.ofByte("A")));
         verifyMakeHandleException(() -> nonExistentColumnLocation.makeColumnRegionShort(
-                ColumnDefinition.fromGenericType("A", short.class, Short.class)));
+                ColumnDefinition.ofShort("A")));
         verifyMakeHandleException(() -> nonExistentColumnLocation.makeColumnRegionInt(
-                ColumnDefinition.fromGenericType("A", int.class, Integer.class)));
+                ColumnDefinition.ofInt("A")));
         verifyMakeHandleException(() -> nonExistentColumnLocation.makeColumnRegionLong(
-                ColumnDefinition.fromGenericType("A", long.class, Long.class)));
+                ColumnDefinition.ofLong("A")));
         verifyMakeHandleException(() -> nonExistentColumnLocation.makeColumnRegionFloat(
-                ColumnDefinition.fromGenericType("A", float.class, Float.class)));
+                ColumnDefinition.ofFloat("A")));
         verifyMakeHandleException(() -> nonExistentColumnLocation.makeColumnRegionDouble(
-                ColumnDefinition.fromGenericType("A", double.class, Double.class)));
+                ColumnDefinition.ofDouble("A")));
         verifyMakeHandleException(() -> nonExistentColumnLocation.makeColumnRegionObject(
-                ColumnDefinition.fromGenericType("A", String.class, String.class)));
+                ColumnDefinition.ofShort("A")));
     }
 
     @Test
@@ -4256,7 +4256,7 @@ public final class ParquetTableReadWriteTest {
     public void readWriteStatisticsTest() {
         // Test simple structured table.
         final ColumnDefinition<byte[]> columnDefinition =
-                ColumnDefinition.fromGenericType("VariableWidthByteArrayColumn", byte[].class, byte.class);
+                ColumnDefinition.of("VariableWidthByteArrayColumn", Type.byteType().arrayType());
         final TableDefinition tableDefinition = TableDefinition.of(columnDefinition);
         final byte[] byteArray = new byte[] {1, 2, 3, 4, NULL_BYTE, 6, 7, 8, 9, NULL_BYTE, 11, 12, 13};
         final Table simpleTable = newTable(tableDefinition,

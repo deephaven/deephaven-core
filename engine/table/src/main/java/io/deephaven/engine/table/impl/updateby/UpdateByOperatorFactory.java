@@ -1617,10 +1617,8 @@ public class UpdateByOperatorFactory {
                         ColumnDefinition::getName,
                         (final ColumnDefinition<?> cd) -> groupByColumnSet.contains(cd.getName())
                                 ? cd
-                                : ColumnDefinition.fromGenericType(
-                                        cd.getName(),
-                                        VectorFactory.forElementType(cd.getDataType()).vectorType(),
-                                        cd.getDataType())));
+                                : ColumnDefinition.ofVector(cd.getName(),
+                                        VectorFactory.forElementType(cd.getDataType()).vectorType())));
             }
 
             // Get the input column names from the formula and provide them to the rolling formula operator

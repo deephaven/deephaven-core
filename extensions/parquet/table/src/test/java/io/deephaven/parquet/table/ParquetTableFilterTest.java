@@ -1279,7 +1279,7 @@ public final class ParquetTableFilterTest {
         final ParquetInstructions instructions = ParquetInstructions.builder()
                 .setTableDefinition(TableDefinition.of(
                         ColumnDefinition.ofInt("Baz"),
-                        ColumnDefinition.fromGenericType("Longs", long[].class, long.class)))
+                        ColumnDefinition.of("Longs", io.deephaven.qst.type.Type.longType().arrayType())))
                 .build();
         nestedStructsFilterImpl(instructions);
     }
@@ -1292,7 +1292,7 @@ public final class ParquetTableFilterTest {
         final ParquetInstructions instructions = ParquetInstructions.builder()
                 .setTableDefinition(TableDefinition.of(
                         ColumnDefinition.ofInt("Baz"),
-                        ColumnDefinition.fromGenericType("Longs", long[].class, long.class)))
+                        ColumnDefinition.of("Longs", io.deephaven.qst.type.Type.longType().arrayType())))
                 .setColumnResolverFactory((tk, tlk) -> ParquetColumnResolverMap.builder()
                         .putMap("Baz", List.of("Baz"))
                         .putMap("Longs", List.of("Longs", "list", "element"))
