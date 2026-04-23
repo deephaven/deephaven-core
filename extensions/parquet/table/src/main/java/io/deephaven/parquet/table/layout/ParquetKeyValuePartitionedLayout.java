@@ -12,6 +12,7 @@ import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
 import io.deephaven.engine.table.impl.locations.local.LocationTableBuilderDefinition;
 import io.deephaven.engine.table.impl.locations.local.URIStreamKeyValuePartitionLayout;
 import io.deephaven.engine.table.impl.locations.local.KeyValuePartitionLayout;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorderState;
 import io.deephaven.parquet.base.ParquetUtils;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
@@ -127,10 +128,13 @@ public class ParquetKeyValuePartitionedLayout
         } else {
             uriFilter = uri -> uri.getPath().endsWith(ParquetUtils.PARQUET_FILE_EXTENSION);
         }
+        final long start = System.nanoTime();
         try (final Stream<URI> filteredUriStream = channelsProvider.walk(tableRootDirectory).filter(uriFilter)) {
             findKeys(filteredUriStream, locationKeyObserver);
         } catch (final IOException e) {
             throw new TableDataException("Error finding parquet locations under " + tableRootDirectory, e);
+        } finally {
+            QueryPerformanceRecorderState.recordMetadataOperation("walk", System.nanoTime() - start);
         }
     }
 }

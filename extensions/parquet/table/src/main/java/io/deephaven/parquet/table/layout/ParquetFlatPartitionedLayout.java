@@ -5,6 +5,7 @@ package io.deephaven.parquet.table.layout;
 
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorderState;
 import io.deephaven.parquet.base.ParquetUtils;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
@@ -60,6 +61,7 @@ public final class ParquetFlatPartitionedLayout implements TableLocationKeyFinde
         } else {
             uriFilter = uri -> uri.getPath().endsWith(ParquetUtils.PARQUET_FILE_EXTENSION);
         }
+        final long start = System.nanoTime();
         try (final Stream<URI> stream = channelsProvider.list(tableRootDirectory)) {
             stream.filter(uriFilter).forEach(uri -> {
                 cache.compute(uri, (key, existingLocationKey) -> {
@@ -74,6 +76,8 @@ public final class ParquetFlatPartitionedLayout implements TableLocationKeyFinde
             });
         } catch (final IOException e) {
             throw new TableDataException("Error finding parquet locations under " + tableRootDirectory, e);
+        } finally {
+            QueryPerformanceRecorderState.recordMetadataOperation("list", System.nanoTime() - start);
         }
     }
 
