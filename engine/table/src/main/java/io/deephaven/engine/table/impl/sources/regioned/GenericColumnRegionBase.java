@@ -71,14 +71,12 @@ public abstract class GenericColumnRegionBase<ATTR extends Any> implements Colum
 
         // We must consider all the actions from this region and from the TableLocation (if present) and execute them
         // in minimal cost order.
-        final Stream<RegionedPushdownAction> regionActions = supportedActions().stream()
-                .filter(action -> ((RegionedPushdownAction.Region) action).allows(tableLocation, this, filterCtx));
-        final Stream<RegionedPushdownAction> locationActions = tableLocation == null
-                ? Stream.empty()
-                : tableLocation.supportedActions().stream()
-                        .filter(action -> action.allows(tableLocation, filterCtx));
         final List<RegionedPushdownAction> sorted =
-                Stream.concat(regionActions, locationActions)
+                Stream.concat(supportedActions().stream(),
+                        tableLocation == null ? Stream.empty() : tableLocation.supportedActions().stream())
+                        .filter(action -> action instanceof RegionedPushdownAction.Location
+                                ? action.allows(tableLocation, this, filterCtx)
+                                : ((RegionedPushdownAction.Region) action).allows(tableLocation, this, filterCtx))
                         .sorted(Comparator.comparingLong(RegionedPushdownAction::filterCost))
                         .collect(Collectors.toList());
 
@@ -141,15 +139,10 @@ public abstract class GenericColumnRegionBase<ATTR extends Any> implements Colum
 
         // We must consider all the actions from this region and from the AbstractTableLocation (if present) and
         // execute them in minimal cost order.
-        final Stream<RegionedPushdownAction> regionActions = supportedActions().stream()
-                .filter(action -> ((RegionedPushdownAction.Region) action).allows(tableLocation, this, filterCtx,
-                        costCeiling));
-        final Stream<RegionedPushdownAction> locationActions = tableLocation == null
-                ? Stream.empty()
-                : tableLocation.supportedActions().stream()
-                        .filter(action -> action.allows(tableLocation, filterCtx, costCeiling));
         final List<RegionedPushdownAction> sorted =
-                Stream.concat(regionActions, locationActions)
+                Stream.concat(supportedActions().stream(),
+                        tableLocation == null ? Stream.empty() : tableLocation.supportedActions().stream())
+                        .filter(action -> action.allows(tableLocation, this, filterCtx, costCeiling))
                         .sorted(Comparator.comparingLong(RegionedPushdownAction::filterCost))
                         .collect(Collectors.toList());
 

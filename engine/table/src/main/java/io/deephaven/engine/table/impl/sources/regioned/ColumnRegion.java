@@ -42,13 +42,12 @@ public interface ColumnRegion<ATTR extends Any> extends Page<ATTR>, Releasable, 
             extends GenericColumnRegionBase<ATTR>
             implements ColumnRegion<ATTR>, WithDefaultsForRepeatingValues<ATTR> {
 
-        private static final RegionedPushdownAction.Region NULL_COLUMN_REGION =
+        private static final RegionedPushdownAction NULL_COLUMN_REGION =
                 new RegionedPushdownAction.Region(
                         () -> false,
                         PushdownResult.REGION_SINGLE_VALUE_COST,
                         (ctx) -> true,
-                        (tl) -> true,
-                        (cr) -> cr instanceof Null);
+                        (tl, cr) -> cr instanceof Null);
         private static final List<RegionedPushdownAction> SUPPORTED_ACTIONS = List.of(NULL_COLUMN_REGION);
 
         Null(final long pageMask) {

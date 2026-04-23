@@ -446,7 +446,7 @@ abstract class AbstractFilterExecution {
         };
 
         final RowSet input = localInput.get();
-        if (sf.pushdownMatcher != null && sf.pushdownFilterCost < UNSUPPORTED_ACTION_COST) {
+        if (sf.pushdownMatcher != null && sf.pushdownFilterCost != UNSUPPORTED_ACTION_COST) {
             // Execute the pushdown filter and return.
             sf.pushdownMatcher.pushdownFilter(sf.filter, input, usePrev, sf.context,
                     costCeiling, jobScheduler(), onPushdownComplete, filterNec);

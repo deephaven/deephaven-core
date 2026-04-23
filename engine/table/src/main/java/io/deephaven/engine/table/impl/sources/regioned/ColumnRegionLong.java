@@ -83,13 +83,12 @@ public interface ColumnRegionLong<ATTR extends Any> extends ColumnRegion<ATTR> {
             extends GenericColumnRegionBase<ATTR>
             implements ColumnRegionLong<ATTR>, WithDefaultsForRepeatingValues<ATTR> {
 
-        private final static RegionedPushdownAction.Region CONSTANT_COLUMN_REGION =
+        private static final RegionedPushdownAction.Region CONSTANT_COLUMN_REGION =
                 new RegionedPushdownAction.Region(
                         () -> false,
                         PushdownResult.REGION_SINGLE_VALUE_COST,
                         (ctx) -> true,
-                        (tl) -> true,
-                        (cr) -> cr instanceof Constant);
+                        (tl, cr) -> cr instanceof Constant);
         private static final List<RegionedPushdownAction> SUPPORTED_ACTIONS = List.of(CONSTANT_COLUMN_REGION);
 
         private final long value;

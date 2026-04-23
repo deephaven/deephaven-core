@@ -454,39 +454,39 @@ public class ParquetTableLocation extends AbstractTableLocation {
 
     // region Pushdown Filtering
 
-    private static final RegionedPushdownAction.Location ParquetRowGroupMetadata =
+    private static final RegionedPushdownAction.Location ROW_GROUP_METADATA =
             new RegionedPushdownAction.Location(
                     () -> QueryTable.DISABLE_WHERE_PUSHDOWN_PARQUET_ROW_GROUP_METADATA,
                     PushdownResult.REGION_METADATA_STATS_COST,
                     BasePushdownFilterContext::supportsMetadataFiltering,
-                    (tl) -> ((ParquetTableLocation) tl).supportsMetadataFiltering());
+                    (tl, cr) -> ((ParquetTableLocation) tl).supportsMetadataFiltering());
 
-    private static final RegionedPushdownAction.Location InMemoryDataIndex =
+    private static final RegionedPushdownAction.Location IN_MEMORY_DATA_INDEX =
             new RegionedPushdownAction.Location(
                     () -> QueryTable.DISABLE_WHERE_PUSHDOWN_DATA_INDEX,
                     PushdownResult.LOCATION_IN_MEMORY_DATA_INDEX_COST,
                     BasePushdownFilterContext::supportsInMemoryDataIndexFiltering,
-                    (tl) -> ((ParquetTableLocation) tl).supportsInMemoryDataIndexFiltering());
+                    (tl, cr) -> ((ParquetTableLocation) tl).supportsInMemoryDataIndexFiltering());
 
-    private static final RegionedPushdownAction.Location ParquetDictionary =
+    private static final RegionedPushdownAction.Location PARQUET_DICTIONARY =
             new RegionedPushdownAction.Location(
                     () -> QueryTable.DISABLE_WHERE_PUSHDOWN_PARQUET_DICTIONARY,
                     PushdownResult.REGION_DICTIONARY_DATA_COST,
                     BasePushdownFilterContext::supportsChunkFiltering,
-                    (tl) -> ((ParquetTableLocation) tl).supportsDictionaryFiltering());
+                    (tl, cr) -> ((ParquetTableLocation) tl).supportsDictionaryFiltering());
 
-    private static final RegionedPushdownAction.Location DeferredDataIndex =
+    private static final RegionedPushdownAction.Location DEFERRED_DATA_INDEX =
             new RegionedPushdownAction.Location(
                     () -> QueryTable.DISABLE_WHERE_PUSHDOWN_DATA_INDEX,
                     PushdownResult.LOCATION_DEFERRED_DATA_INDEX_COST,
                     BasePushdownFilterContext::supportsDeferredDataIndexFiltering,
-                    (tl) -> ((ParquetTableLocation) tl).supportsDeferredDataIndexFiltering());
+                    (tl, cr) -> ((ParquetTableLocation) tl).supportsDeferredDataIndexFiltering());
 
     private static final List<RegionedPushdownAction> supportedActions = List.of(
-            ParquetRowGroupMetadata,
-            InMemoryDataIndex,
-            ParquetDictionary,
-            DeferredDataIndex);
+            ROW_GROUP_METADATA,
+            IN_MEMORY_DATA_INDEX,
+            PARQUET_DICTIONARY,
+            DEFERRED_DATA_INDEX);
 
     @Override
     public List<RegionedPushdownAction> supportedActions() {
@@ -575,14 +575,14 @@ public class ParquetTableLocation extends AbstractTableLocation {
 
         // Apply a more specific check that depends on materializing parquet metadata
         final boolean isApplicable;
-        if (action == ParquetRowGroupMetadata) {
+        if (action == ROW_GROUP_METADATA) {
             // Note: it should be possible to check if there are any statistics
             isApplicable = true;
-        } else if (action == InMemoryDataIndex) {
+        } else if (action == IN_MEMORY_DATA_INDEX) {
             isApplicable = hasCachedDataIndex(estimateCtx.parquetColumnNames);
-        } else if (action == ParquetDictionary) {
+        } else if (action == PARQUET_DICTIONARY) {
             isApplicable = hasDictionaryPage(estimateCtx.parquetColumnNames[0], filterCtx.columnDefinitions().get(0));
-        } else if (action == DeferredDataIndex) {
+        } else if (action == DEFERRED_DATA_INDEX) {
             isApplicable = hasDataIndex(estimateCtx.parquetColumnNames);
         } else {
             // TODO(DH-19666): Add support for bloom filters, sortedness, etc.
@@ -661,11 +661,11 @@ public class ParquetTableLocation extends AbstractTableLocation {
             return input.copy();
         }
 
-        if (action == ParquetRowGroupMetadata) {
+        if (action == ROW_GROUP_METADATA) {
             return pushdownRowGroupMetadata(selection, filterCtx.filterForMetadataFiltering(), actionCtx.columnIndices,
                     input);
         }
-        if (action == InMemoryDataIndex) {
+        if (action == IN_MEMORY_DATA_INDEX) {
             final BasicDataIndex dataIndex =
                     hasCachedDataIndex(actionCtx.parquetColumnNames) ? getDataIndex(actionCtx.parquetColumnNames)
                             : null;
@@ -674,13 +674,13 @@ public class ParquetTableLocation extends AbstractTableLocation {
             }
             return pushdownDataIndex(selection, filter, filterCtx.filterColumnToManagerColumnName(), dataIndex, input);
         }
-        if (action == ParquetDictionary) {
+        if (action == PARQUET_DICTIONARY) {
             if (!hasDictionaryPage(actionCtx.parquetColumnNames[0], filterCtx.columnDefinitions().get(0))) {
                 return input.copy();
             }
             return pushdownFilterDictionary(selection, filterCtx, actionCtx.parquetColumnNames, input);
         }
-        if (action == DeferredDataIndex) {
+        if (action == DEFERRED_DATA_INDEX) {
             final BasicDataIndex dataIndex =
                     hasDataIndex(actionCtx.parquetColumnNames) ? getDataIndex(actionCtx.parquetColumnNames) : null;
             if (dataIndex == null) {

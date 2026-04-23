@@ -1908,6 +1908,32 @@ public final class ParquetTableFilterTest {
     }
 
     @Test
+    public void singleColumnConditionalFilters() {
+        final Table source = TableTools.newTable(
+                stringCol("animal", "Centipede", "Lion", "Elephant", "Cat", "Whale"),
+                intCol("legs", 100, 4, 4, 4, 0),
+                intCol("weight", 1, 420, 6000, 10, 150000));
+
+        // Disable writing row group statistics to verify filtering using dictionary
+        final ParquetInstructions writeInstructions = new ParquetInstructions.Builder()
+                .setRowGroupInfo(RowGroupInfo.maxRows(2))
+                .setWriteRowGroupStatistics(false)
+                .build();
+
+        final String destPath = Path.of(rootFile.getPath(), "multiColumnConditionalFilters") + ".parquet";
+        writeTable(source, destPath, writeInstructions);
+
+        // Read back and test filtering
+        final Table diskTable = ParquetTools.readTable(destPath);
+        final Table memTable = diskTable.select();
+
+        filterAndVerifyResults(diskTable, memTable,
+                ConditionFilter.createStateless("legs >= 4 && legs <= 100"));
+        filterAndVerifyResults(diskTable, memTable,
+                ConditionFilter.createStateless("weight > 1000"));
+    }
+
+    @Test
     public void duplicatedColumnsConditionalFilter() {
         final Table source = TableTools.emptyTable(10).update("X = `` + ii");
         final String destPath = Path.of(rootFile.getPath(), "multiColumnConditionalFilters") + ".parquet";
