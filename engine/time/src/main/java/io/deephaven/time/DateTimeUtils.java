@@ -2256,6 +2256,42 @@ public class DateTimeUtils {
     }
 
     /**
+     * Multiply a period by a scalar.
+     *
+     * @param period the period to multiply
+     * @param scalar the scalar to multiply by
+     * @return {@code null} if either input is {@code null}; otherwise the period multiplied by the scalar
+     * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows
+     */
+    public static Period multiply(final Period period, final long scalar) {
+        if (period == null || scalar == NULL_LONG) {
+            return null;
+        }
+
+        if (scalar > Integer.MAX_VALUE || scalar < Integer.MIN_VALUE) {
+            throw new DateTimeOverflowException("Scalar value is too large to be cast to an int");
+        }
+
+        try {
+            return period.multipliedBy((int) scalar);
+        } catch (DateTimeException | ArithmeticException ex) {
+            throw new DateTimeOverflowException(ex);
+        }
+    }
+
+    /**
+     * Multiply a period by a scalar.
+     *
+     * @param period the period to multiply
+     * @param scalar the scalar to multiply by
+     * @return {@code null} if either input is {@code null}; otherwise the period multiplied by the scalar
+     * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows
+     */
+    public static Period multiply(final long scalar, final Period period) {
+        return multiply(period, scalar);
+    }
+
+    /**
      * Divide a duration by a scalar.
      *
      * @param duration the duration to divide
