@@ -10,15 +10,15 @@ import io.deephaven.engine.table.impl.PushdownFilterContext;
 import io.deephaven.engine.table.impl.PushdownResult;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.locations.ColumnLocation;
-import io.deephaven.engine.table.impl.locations.ColumnLocation;
 import io.deephaven.engine.table.impl.locations.TableDataException;
+import io.deephaven.engine.table.impl.locations.TableLocation;
 import io.deephaven.engine.table.impl.select.CharRangeFilter;
 import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.engine.table.impl.select.RangeFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.sources.regioned.ColumnRegionChar;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedPushdownAction;
-import io.deephaven.engine.table.impl.sources.regioned.RegionedPushdownFilterLocationContext;
+import io.deephaven.engine.table.impl.sources.regioned.RegionedPushdownFilterContext;
 import io.deephaven.engine.table.impl.sources.regioned.kernel.CharRegionBinarySearchKernel;
 import io.deephaven.parquet.table.pagestore.ColumnChunkPageStore;
 import io.deephaven.chunk.attributes.Any;
@@ -43,12 +43,11 @@ public final class ParquetColumnRegionChar<ATTR extends Any> extends ParquetColu
                     () -> QueryTable.DISABLE_WHERE_PUSHDOWN_SORTED_COLUMN_LOCATION,
                     PushdownResult.REGION_DICTIONARY_DATA_COST,
                     (ctx) -> ctx.isMatchFilter() || ctx.isRangeFilter(),
-                    (tl) -> true,
-                    (cr) -> true);
+                    (tl, cr) -> true);
     private static final List<RegionedPushdownAction> SUPPORTED_ACTIONS = List.of(SORTED_REGION_ACTION);
 
     public ParquetColumnRegionChar(@NotNull final ColumnChunkPageStore<ATTR> columnChunkPageStore,
-                                   @NotNull final ColumnLocation columnLocation) {
+            @NotNull final ColumnLocation columnLocation) {
         super(columnChunkPageStore.mask(), columnChunkPageStore, columnLocation);
     }
     // region getBytes
@@ -78,21 +77,27 @@ public final class ParquetColumnRegionChar<ATTR extends Any> extends ParquetColu
             final boolean usePrev,
             final PushdownFilterContext filterContext,
             final RegionedPushdownAction.EstimateContext estimateContext) {
-        final RegionedPushdownFilterLocationContext ctx = (RegionedPushdownFilterLocationContext) filterContext;
         if (action.equals(SORTED_REGION_ACTION)) {
-            if (!ctx.isMatchFilter() && !ctx.isRangeFilter()) {
-                return Long.MAX_VALUE;
+            final RegionedPushdownFilterContext ctx = (RegionedPushdownFilterContext) filterContext;
+            final TableLocation tableLocation = getColumnLocation().map(ColumnLocation::getTableLocation).orElse(null);
+            if (tableLocation == null || (ctx.isMatchFilter() && !ctx.isRangeFilter())) {
+                return PushdownResult.UNSUPPORTED_ACTION_COST;
             }
-
             // Only range and match filers can benefit from sorted column data.
-            final SortColumn firstSortedColumn = ctx.tableLocation().getSortedColumns().isEmpty()
+            final SortColumn firstSortedColumn = tableLocation.getSortedColumns().isEmpty()
                     ? null
-                    : ctx.tableLocation().getSortedColumns().get(0);
-            if (firstSortedColumn != null && firstSortedColumn.column().name().equals(filter.getColumns().get(0))) {
-                return action.filterCost();
+                    : tableLocation.getSortedColumns().get(0);
+
+            if (firstSortedColumn != null) {
+                // Handle renames
+                final String col = filter.getColumns().get(0);
+                final String renamedCol = ctx.filterColumnToManagerColumnName().getOrDefault(col, col);
+                if (firstSortedColumn.column().name().equals(renamedCol)) {
+                    return action.filterCost();
+                }
             }
         }
-        return Long.MAX_VALUE;
+        return PushdownResult.UNSUPPORTED_ACTION_COST;
     }
 
     @Override
@@ -105,14 +110,25 @@ public final class ParquetColumnRegionChar<ATTR extends Any> extends ParquetColu
             final boolean usePrev,
             final PushdownFilterContext filterContext,
             final RegionedPushdownAction.ActionContext actionContext) {
-        final RegionedPushdownFilterLocationContext ctx = (RegionedPushdownFilterLocationContext) filterContext;
-
         if (action.equals(SORTED_REGION_ACTION)) {
-            final SortColumn firstSortedColumn = ctx.tableLocation().getSortedColumns().isEmpty()
+            final RegionedPushdownFilterContext ctx = (RegionedPushdownFilterContext) filterContext;
+
+            final TableLocation tableLocation = getColumnLocation().map(ColumnLocation::getTableLocation).orElse(null);
+            if (tableLocation == null || (!ctx.isMatchFilter() && !ctx.isRangeFilter())) {
+                return input.copy();
+            }
+            // Only range and match filers can benefit from sorted column data.
+            final SortColumn firstSortedColumn = tableLocation.getSortedColumns().isEmpty()
                     ? null
-                    : ctx.tableLocation().getSortedColumns().get(0);
-            if (firstSortedColumn == null || (!ctx.isMatchFilter() && !ctx.isRangeFilter()) ||
-                    !firstSortedColumn.column().name().equals(filter.getColumns().get(0))) {
+                    : tableLocation.getSortedColumns().get(0);
+            if (firstSortedColumn == null) {
+                return input.copy();
+            }
+
+            // Handle renames
+            final String col = filter.getColumns().get(0);
+            final String renamedCol = ctx.filterColumnToManagerColumnName().getOrDefault(col, col);
+            if (!firstSortedColumn.column().name().equals(renamedCol)) {
                 return input.copy();
             }
 
