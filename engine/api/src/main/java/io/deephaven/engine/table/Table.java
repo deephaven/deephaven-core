@@ -270,8 +270,8 @@ public interface Table extends
     <T> ColumnSource<T> getColumnSource(String sourceName, Class<? extends T> clazz);
 
     /**
-     * Retrieves a {@code ColumnSource} and {@link ColumnSource#cast(Class, Class, String)} casts} it to the target
-     * class {@code clazz} and {@code componentType}.
+     * Retrieves a {@code ColumnSource} and {@link ColumnSource#cast(Class, Class, String) casts} it to the target class
+     * {@code clazz} and {@code componentType}.
      *
      * <p>
      * The success of this call is equivalent to
@@ -290,7 +290,7 @@ public interface Table extends
     <T> ColumnSource<T> getColumnSource(String sourceName, Class<? extends T> clazz, @Nullable Class<?> componentType);
 
     /**
-     * Retrieves a {@code ColumnSource} and {@link ColumnSource#cast(Class, Class, String)} casts} it to the target
+     * Retrieves a {@code ColumnSource} and {@link ColumnSource#cast(Class, Class, String) casts} it to the target
      * {@link ColumnDefinition#getDataType() dataType} and {@link ColumnDefinition#getComponentType() componentType}.
      *
      * <p>
@@ -300,7 +300,7 @@ public interface Table extends
      *
      * @param columnDefinition the column definition
      * @param <T> The target type, as a type parameter.
-     * @return The column source for {@code sourceName}, parameterized by {@code T}
+     * @return The column source for {@code columnDefinition.getName()}, parameterized by {@code T}
      * @see ColumnSource#cast(Class, Class, String)
      * @see TableDefinition#checkHasColumn(ColumnDefinition)
      */

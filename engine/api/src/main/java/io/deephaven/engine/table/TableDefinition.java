@@ -364,9 +364,10 @@ public class TableDefinition implements LogOutputAppendable {
     }
 
     /**
-     * Checks if {@code columnName} exists and supports {@link ColumnDefinition#checkCastTo(Class, Class)} with
-     * {@link ColumnDefinition#getDataType() dataType} and {@link ColumnDefinition#getComponentType() componentType}.
-     * Otherwise, throws a {@link NoSuchColumnException} or a {@link ClassCastException}.
+     * Checks if the provided {@code columnDefinition}'s {@link ColumnDefinition#getName() name} exists and supports
+     * {@link ColumnDefinition#checkCastTo(Class, Class)} with {@link ColumnDefinition#getDataType() dataType} and
+     * {@link ColumnDefinition#getComponentType() componentType}. Otherwise, throws a {@link NoSuchColumnException} or a
+     * {@link ClassCastException}.
      *
      * @param columnDefinition the column definition
      * @see ColumnDefinition#checkCastTo(Class, Class)
