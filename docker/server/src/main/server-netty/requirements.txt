@@ -1,9 +1,9 @@
-adbc-driver-manager==1.9.0
-adbc-driver-postgresql==1.9.0
-connectorx==0.4.4; platform.machine == 'x86_64'
+adbc-driver-manager==1.11.0
+adbc-driver-postgresql==1.11.0
+connectorx==0.4.5; platform.machine == 'x86_64'
 deephaven-plugin==0.6.0
-docstring_parser==0.17.0
-importlib_resources==6.5.2
+docstring_parser==0.18.0
+importlib_resources==7.1.0
 java-utilities==0.3.0
 jedi==0.19.1
 jpy==2.0.0
