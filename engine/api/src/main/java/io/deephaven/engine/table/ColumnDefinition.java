@@ -140,8 +140,8 @@ public class ColumnDefinition<TYPE> implements LogOutputAppendable {
             @NotNull final String name,
             @NotNull final Class<T> vectorType,
             @Nullable final Class<?> componentType) {
-        return new ColumnDefinition<>(name, vectorType, checkAndMaybeInferComponentType(vectorType, componentType),
-                ColumnType.Normal);
+        return new ColumnDefinition<>(name, vectorType,
+                checkAndMaybeInferVectorComponentType(vectorType, componentType), ColumnType.Normal);
     }
 
     public static <T> ColumnDefinition<T> fromGenericType(
@@ -212,21 +212,7 @@ public class ColumnDefinition<TYPE> implements LogOutputAppendable {
         }
         if (Vector.class.isAssignableFrom(dataType)) {
             // noinspection unchecked
-            final Class<?> vectorComponentType =
-                    baseComponentTypeForVector((Class<? extends Vector<?>>) dataType);
-            if (inputComponentType == null) {
-                /*
-                 * TODO (https://github.com/deephaven/deephaven-core/issues/817): Allow formula results returning Vector
-                 * to know component type if (Vector.class.isAssignableFrom(dataType)) { throw new
-                 * IllegalArgumentException("Missing required component type for Vector data type " + dataType); }
-                 */
-                return vectorComponentType;
-            }
-            if (!vectorComponentType.isAssignableFrom(inputComponentType)) {
-                throw new IllegalArgumentException(
-                        "Invalid component type " + inputComponentType + " for Vector data type " + dataType);
-            }
-            return inputComponentType;
+            return checkAndMaybeInferVectorComponentType((Class<? extends Vector<?>>) dataType, inputComponentType);
         }
         // Note: some testing currently depends on being able to create Collection + componentType definitions:
         // io.deephaven.server.jetty.BarrageChunkFactoryTest.testNotAListDestinationPropagation
@@ -235,6 +221,25 @@ public class ColumnDefinition<TYPE> implements LogOutputAppendable {
         // "Invalid componentType %s for non-array, non-Vector dataType %s", inputComponentType, dataType));
         // }
         // return null;
+        return inputComponentType;
+    }
+
+    private static Class<?> checkAndMaybeInferVectorComponentType(
+            @NotNull final Class<? extends Vector<?>> dataType,
+            @Nullable final Class<?> inputComponentType) {
+        final Class<?> vectorComponentType = baseComponentTypeForVector(dataType);
+        if (inputComponentType == null) {
+            /*
+             * TODO (https://github.com/deephaven/deephaven-core/issues/817): Allow formula results returning Vector to
+             * know component type if (Vector.class.isAssignableFrom(dataType)) { throw new
+             * IllegalArgumentException("Missing required component type for Vector data type " + dataType); }
+             */
+            return vectorComponentType;
+        }
+        if (!vectorComponentType.isAssignableFrom(inputComponentType)) {
+            throw new IllegalArgumentException(
+                    "Invalid component type " + inputComponentType + " for Vector data type " + dataType);
+        }
         return inputComponentType;
     }
 
