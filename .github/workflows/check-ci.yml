@@ -53,6 +53,7 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: |
+            25
             21
 
       - name: Setup Gradle
@@ -60,7 +61,7 @@ jobs:
 
       - name: Setup gradle properties
         run: |
-          .github/scripts/gradle-properties.sh 21 >> gradle.properties
+          .github/scripts/gradle-properties.sh 21 25 >> gradle.properties
           cat gradle.properties
 
       - name: Check
