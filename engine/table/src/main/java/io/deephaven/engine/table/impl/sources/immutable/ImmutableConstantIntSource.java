@@ -132,7 +132,7 @@ public class ImmutableConstantIntSource
             final Consumer<Exception> onError) {
         if (selection.isEmpty()) {
             // If the selection is empty, we can skip all pushdown filtering.
-            onComplete.accept(PushdownResult.allNoMatch(selection));
+            onComplete.accept(PushdownResult.noneMatch(selection));
             return;
         }
         final BasePushdownFilterContext filterCtx = (BasePushdownFilterContext) context;
@@ -140,7 +140,7 @@ public class ImmutableConstantIntSource
         final Supplier<Chunk<Values>> chunkSupplier = () -> SingleValuePushdownHelper.makeChunk(getInt(0));
         final boolean matches =
                 SingleValuePushdownHelper.filter(selection, usePrev, filterCtx, chunkSupplier, this);
-        onComplete.accept(matches ? PushdownResult.allMatch(selection) : PushdownResult.allNoMatch(selection));
+        onComplete.accept(matches ? PushdownResult.allMatch(selection) : PushdownResult.noneMatch(selection));
     }
 
     // region reinterpretation

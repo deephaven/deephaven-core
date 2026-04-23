@@ -12,6 +12,7 @@ import io.deephaven.chunk.WritableChunk;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSequenceFactory;
 
+import io.deephaven.engine.table.impl.locations.ColumnLocation;
 import io.deephaven.api.SortColumn;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -45,6 +46,9 @@ import static io.deephaven.util.QueryConstants.NULL_BYTE;
 public final class ParquetColumnRegionByte<ATTR extends Any> extends ParquetColumnRegionBase<ATTR>
         implements ColumnRegionByte<ATTR>, ParquetColumnRegion<ATTR> {
 
+    public ParquetColumnRegionByte(@NotNull final ColumnChunkPageStore<ATTR> columnChunkPageStore,
+            @NotNull final ColumnLocation columnLocation) {
+        super(columnChunkPageStore.mask(), columnChunkPageStore, columnLocation);
     private static final RegionedPushdownAction.Region SORTED_REGION_ACTION =
             new RegionedPushdownAction.Region(
                     () -> QueryTable.DISABLE_WHERE_PUSHDOWN_SORTED_COLUMN_LOCATION,
@@ -54,8 +58,9 @@ public final class ParquetColumnRegionByte<ATTR extends Any> extends ParquetColu
                     (cr) -> true);
     private static final List<RegionedPushdownAction> SUPPORTED_ACTIONS = List.of(SORTED_REGION_ACTION);
 
-    public ParquetColumnRegionByte(@NotNull final ColumnChunkPageStore<ATTR> columnChunkPageStore) {
-        super(columnChunkPageStore.mask(), columnChunkPageStore);
+    public ParquetColumnRegionByte(@NotNull final ColumnChunkPageStore<ATTR> columnChunkPageStore,
+        @NotNull final ColumnLocation columnLocation) {
+        super(columnChunkPageStore.mask(), columnChunkPageStore, columnLocation);
     }
 
     // region getBytes

@@ -9,6 +9,8 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.impl.PushdownFilterContext;
 import io.deephaven.engine.table.impl.PushdownResult;
 import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.locations.ColumnLocation;
+import io.deephaven.engine.table.impl.locations.ColumnLocation;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.select.CharRangeFilter;
 import io.deephaven.engine.table.impl.select.MatchFilter;
@@ -45,10 +47,10 @@ public final class ParquetColumnRegionChar<ATTR extends Any> extends ParquetColu
                     (cr) -> true);
     private static final List<RegionedPushdownAction> SUPPORTED_ACTIONS = List.of(SORTED_REGION_ACTION);
 
-    public ParquetColumnRegionChar(@NotNull final ColumnChunkPageStore<ATTR> columnChunkPageStore) {
-        super(columnChunkPageStore.mask(), columnChunkPageStore);
+    public ParquetColumnRegionChar(@NotNull final ColumnChunkPageStore<ATTR> columnChunkPageStore,
+                                   @NotNull final ColumnLocation columnLocation) {
+        super(columnChunkPageStore.mask(), columnChunkPageStore, columnLocation);
     }
-
     // region getBytes
     // endregion getBytes
 

@@ -8,6 +8,7 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.impl.PushdownFilterContext;
 import io.deephaven.engine.table.impl.PushdownResult;
 import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.locations.ColumnLocation;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.engine.table.impl.sources.regioned.*;
@@ -47,8 +48,9 @@ public final class ParquetColumnRegionObject<DATA_TYPE, ATTR extends Any> extend
 
     public ParquetColumnRegionObject(@NotNull final ColumnChunkPageStore<ATTR> columnChunkPageStore,
             @NotNull final Supplier<ColumnRegionLong<DictionaryKeys>> dictionaryKeysRegionSupplier,
-            @NotNull final Supplier<ColumnRegionObject<DATA_TYPE, ATTR>> dictionaryValuesRegionSupplier) {
-        super(columnChunkPageStore.mask(), columnChunkPageStore);
+            @NotNull final Supplier<ColumnRegionObject<DATA_TYPE, ATTR>> dictionaryValuesRegionSupplier,
+            @NotNull final ColumnLocation columnLocation) {
+        super(columnChunkPageStore.mask(), columnChunkPageStore, columnLocation);
         this.dictionaryKeysRegionSupplier = dictionaryKeysRegionSupplier;
         this.dictionaryValuesRegionSupplier = dictionaryValuesRegionSupplier;
     }

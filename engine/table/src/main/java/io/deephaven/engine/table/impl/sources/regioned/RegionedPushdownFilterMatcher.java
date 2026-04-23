@@ -41,7 +41,7 @@ public interface RegionedPushdownFilterMatcher extends PushdownFilterMatcher {
             final boolean usePrev,
             final PushdownFilterContext filterContext,
             final RegionedPushdownAction.EstimateContext estimateContext) {
-        return Long.MAX_VALUE;
+        return PushdownResult.UNSUPPORTED_ACTION_COST;
     }
 
     /**

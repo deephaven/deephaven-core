@@ -328,7 +328,7 @@ public abstract class AbstractTableLocation
         // Generate a list of all the allowed actions, sorted by minimum cost.
         final List<RegionedPushdownAction> sorted = supportedActions()
                 .stream()
-                .filter(action -> action.allows(this, filterCtx))
+                .filter(action -> action.allows(this, null, filterCtx))
                 .sorted(Comparator.comparingLong(RegionedPushdownAction::filterCost))
                 .collect(Collectors.toList());
 
@@ -365,7 +365,7 @@ public abstract class AbstractTableLocation
             final Consumer<Exception> onError) {
         if (selection.isEmpty()) {
             // If the selection is empty, we can skip all pushdown filtering.
-            onComplete.accept(PushdownResult.allNoMatch(selection));
+            onComplete.accept(PushdownResult.noneMatch(selection));
             return;
         }
 
@@ -374,7 +374,7 @@ public abstract class AbstractTableLocation
         // Generate a list of all the supported allowed actions, sorted by minimum cost.
         final List<RegionedPushdownAction> sorted = supportedActions()
                 .stream()
-                .filter(action -> action.allows(this, filterCtx, costCeiling))
+                .filter(action -> action.allows(this, null, filterCtx, costCeiling))
                 .sorted(Comparator.comparingLong(RegionedPushdownAction::filterCost))
                 .collect(Collectors.toList());
 

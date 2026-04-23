@@ -21,12 +21,17 @@ import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.SingleValuePushdownHelper;
+import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.util.annotations.FinalDefault;
-import org.jetbrains.annotations.MustBeInvokedByOverriders;
 import org.jetbrains.annotations.NotNull;
+
+import io.deephaven.engine.table.impl.locations.ColumnLocation;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.function.Consumer;
+import java.util.function.LongConsumer;
 import java.util.stream.IntStream;
 
 import static io.deephaven.util.QueryConstants.NULL_LONG;
@@ -195,13 +200,12 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
         /**
          * The supported pushdown action for constant object regions.
          */
-        final static RegionedPushdownAction.Region CONSTANT_COLUMN_REGION =
+        private static final RegionedPushdownAction.Region CONSTANT_COLUMN_REGION =
                 new RegionedPushdownAction.Region(
                         () -> false,
                         PushdownResult.REGION_SINGLE_VALUE_COST,
                         (ctx) -> true,
-                        (tl) -> true,
-                        (cr) -> cr instanceof Constant);
+                        (tl, cr) -> cr instanceof Constant);
         private static final List<RegionedPushdownAction> SUPPORTED_ACTIONS = List.of(CONSTANT_COLUMN_REGION);
 
         private final DATA_TYPE value;
@@ -250,7 +254,6 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
         }
 
         @Override
-        @MustBeInvokedByOverriders
         public long estimatePushdownAction(
                 final RegionedPushdownAction action,
                 final WhereFilter filter,
@@ -262,7 +265,6 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
         }
 
         @Override
-        @MustBeInvokedByOverriders
         public PushdownResult performPushdownAction(
                 final RegionedPushdownAction action,
                 final WhereFilter filter,
@@ -306,12 +308,20 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
             extends RegionedPageStore.Static<ATTR, ATTR, ColumnRegionObject<DATA_TYPE, ATTR>>
             implements ColumnRegionObject<DATA_TYPE, ATTR> {
 
+        private final ColumnLocation columnLocation;
         private ColumnRegionLong<DictionaryKeys> dictionaryKeysRegion;
         private ColumnRegionObject<DATA_TYPE, ATTR> dictionaryValuesRegion;
 
         public StaticPageStore(@NotNull final Parameters parameters,
-                @NotNull final ColumnRegionObject<DATA_TYPE, ATTR>[] regions) {
+                @NotNull final ColumnRegionObject<DATA_TYPE, ATTR>[] regions,
+                @NotNull final ColumnLocation columnLocation) {
             super(parameters, regions);
+            this.columnLocation = columnLocation;
+        }
+
+        @Override
+        public Optional<ColumnLocation> getColumnLocation() {
+            return Optional.of(columnLocation);
         }
 
         @Override
@@ -358,7 +368,8 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
         public ColumnRegionLong<DictionaryKeys> getDictionaryKeysRegion() {
             return dictionaryKeysRegion == null
                     ? dictionaryKeysRegion =
-                            new ColumnRegionLong.StaticPageStore<>(parameters(), mapRegionsToDictionaryKeys())
+                            new ColumnRegionLong.StaticPageStore<>(parameters(), mapRegionsToDictionaryKeys(),
+                                    columnLocation)
                     : dictionaryKeysRegion;
         }
 
@@ -366,7 +377,8 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
         public ColumnRegionObject<DATA_TYPE, ATTR> getDictionaryValuesRegion() {
             return dictionaryValuesRegion == null
                     ? dictionaryValuesRegion =
-                            new ColumnRegionObject.StaticPageStore<>(parameters(), mapRegionsToDictionaryValues())
+                            new ColumnRegionObject.StaticPageStore<>(parameters(), mapRegionsToDictionaryValues(),
+                                    columnLocation)
                     : dictionaryValuesRegion;
         }
 
@@ -383,6 +395,68 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
                     .mapToObj(ri -> getRegion(ri).getDictionaryValuesRegion())
                     .toArray(ColumnRegionObject[]::new);
         }
+
+        // region pushdown support
+        @Override
+        public void estimatePushdownFilterCost(
+                final WhereFilter filter,
+                final RowSet selection,
+                final boolean usePrev,
+                final PushdownFilterContext context,
+                final JobScheduler jobScheduler,
+                final LongConsumer onComplete,
+                final Consumer<Exception> onError) {
+            final RegionedPushdownFilterContext filterCtx = (RegionedPushdownFilterContext) context;
+            onComplete.accept(
+                    ColumnRegionPushdownHelper.estimatePushdownFilterCost(this, filter, selection, usePrev, filterCtx));
+        }
+
+        @Override
+        public void pushdownFilter(
+                final WhereFilter filter,
+                final RowSet selection,
+                final boolean usePrev,
+                final PushdownFilterContext context,
+                final long costCeiling,
+                final JobScheduler jobScheduler,
+                final Consumer<PushdownResult> onComplete,
+                final Consumer<Exception> onError) {
+            final RegionedPushdownFilterContext filterCtx = (RegionedPushdownFilterContext) context;
+            onComplete.accept(ColumnRegionPushdownHelper.pushdownFilter(this, filter, selection, usePrev, filterCtx,
+                    costCeiling));
+        }
+
+        @Override
+        public List<RegionedPushdownAction> supportedActions() {
+            return ColumnRegionPushdownHelper.pageStoreSupportedActions(this);
+        }
+
+        @Override
+        public long estimatePushdownAction(
+                final RegionedPushdownAction action,
+                final WhereFilter filter,
+                final RowSet selection,
+                final boolean usePrev,
+                final PushdownFilterContext filterContext,
+                final RegionedPushdownAction.EstimateContext estimateContext) {
+            return ColumnRegionPushdownHelper.estimatePageStorePushdownAction(
+                    this, action, filter, selection, usePrev, filterContext, estimateContext);
+        }
+
+        @Override
+        public PushdownResult performPushdownAction(
+                final RegionedPushdownAction action,
+                final WhereFilter filter,
+                final RowSet selection,
+                final PushdownResult input,
+                final boolean usePrev,
+                final PushdownFilterContext filterContext,
+                final RegionedPushdownAction.ActionContext actionContext) {
+            return ColumnRegionPushdownHelper.performPageStorePushdownAction(
+                    this, action, filter, selection, input, usePrev, filterContext, actionContext);
+        }
+
+        // endregion pushdown support
     }
 
     final class DictionaryKeysWrapper implements ColumnRegionLong<DictionaryKeys>, Page.WithDefaults<DictionaryKeys> {

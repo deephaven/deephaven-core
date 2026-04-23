@@ -56,7 +56,7 @@ public class RegionedColumnSourceManager
      * How many locations to test for data index or other location-level metadata before we give up and assume the
      * location has no useful information for push-down purposes.
      */
-    static final int PUSHDOWN_LOCATION_SAMPLES = Configuration.getInstance()
+    private static final int PUSHDOWN_LOCATION_SAMPLES = Configuration.getInstance()
             .getIntegerForClassWithDefault(RegionedColumnSourceManager.class, "pushdownLocationSamples", 5);
 
     /**
@@ -70,14 +70,9 @@ public class RegionedColumnSourceManager
     private final boolean isRefreshing;
 
     /**
-     * The column definitions that define our column sources.
+     * The table definitions that define our column sources.
      */
-    private final List<ColumnDefinition<?>> columnDefinitions;
-
-    /**
-     * The column definitions of this table as a map from column name.
-     */
-    private volatile Map<String, ColumnDefinition<?>> columnNameToDefinition;
+    private final TableDefinition tableDefinition;
 
     /**
      * The column sources that make up this table.
@@ -88,7 +83,7 @@ public class RegionedColumnSourceManager
      * The column sources of this table as a map from column source to column name. This map should not be accessed
      * directly, but rather through {@link #columnSourceToName()}.
      */
-    private volatile IdentityHashMap<ColumnSource<?>, String> columnSourceToName;
+    private Map<ColumnSource<?>, String> columnSourceToName;
 
     /**
      * An unmodifiable view of columnSources.
@@ -177,18 +172,18 @@ public class RegionedColumnSourceManager
      * @param isRefreshing Whether the table using this column source manager is refreshing
      * @param removeAllowed Whether the table using this column source manager may remove locations
      * @param componentFactory The component factory
-     * @param columnDefinitions The column definitions
+     * @param tableDefinition The table definition that contains the column definitions for this column source manager.
      */
     RegionedColumnSourceManager(
             final boolean isRefreshing,
             final boolean removeAllowed,
             @NotNull final RegionedTableComponentFactory componentFactory,
             @NotNull final ColumnToCodecMappings codecMappings,
-            @NotNull final List<ColumnDefinition<?>> columnDefinitions) {
+            @NotNull final TableDefinition tableDefinition) {
 
         this.isRefreshing = isRefreshing;
-        this.columnDefinitions = columnDefinitions;
-        for (final ColumnDefinition<?> columnDefinition : columnDefinitions) {
+        this.tableDefinition = tableDefinition;
+        for (final ColumnDefinition<?> columnDefinition : tableDefinition.getColumns()) {
             final String columnName = columnDefinition.getName();
             columnSources.put(
                     columnName,
@@ -196,7 +191,7 @@ public class RegionedColumnSourceManager
         }
 
         // Create the table that will hold the location data
-        partitioningColumnValueSources = columnDefinitions.stream()
+        partitioningColumnValueSources = tableDefinition.getColumns().stream()
                 .filter(ColumnDefinition::isPartitioning)
                 .collect(Collectors.toMap(
                         ColumnDefinition::getName,
@@ -345,7 +340,7 @@ public class RegionedColumnSourceManager
         update.release();
 
         // Add single-column data indexes for all partitioning columns, whether refreshing or not
-        columnDefinitions.stream().filter(ColumnDefinition::isPartitioning).forEach(cd -> {
+        tableDefinition.getColumns().stream().filter(ColumnDefinition::isPartitioning).forEach(cd -> {
             try (final SafeCloseable ignored = isRefreshing ? LivenessScopeStack.open() : null) {
                 final DataIndex partitioningIndex =
                         new PartitioningColumnDataIndex<>(cd.getName(), columnSources.get(cd.getName()), this);
@@ -552,7 +547,7 @@ public class RegionedColumnSourceManager
                 .collect(Collectors.toCollection(ArrayList::new));
     }
 
-    synchronized ArrayList<IncludedTableLocationEntry> includedLocationEntries() {
+    private synchronized ArrayList<IncludedTableLocationEntry> includedLocationEntries() {
         return new ArrayList<>(orderedIncludedTableLocations);
     }
 
@@ -637,9 +632,9 @@ public class RegionedColumnSourceManager
     /**
      * State-keeper for a table location and its column locations, once it's been found to have a positive size.
      */
-    class IncludedTableLocationEntry implements Comparable<IncludedTableLocationEntry> {
+    private class IncludedTableLocationEntry implements Comparable<IncludedTableLocationEntry> {
 
-        final TableLocation location;
+        private final TableLocation location;
         private final TableLocationUpdateSubscriptionBuffer subscriptionBuffer;
 
         // New regions indices are assigned in order of insertion, starting from 0 with no re-use of removed indices.
@@ -671,7 +666,7 @@ public class RegionedColumnSourceManager
             initialRowSet.forAllRowKeyRanges((subRegionFirstKey, subRegionLastKey) -> addedRowSetBuilder
                     .appendRange(regionFirstKey + subRegionFirstKey, regionFirstKey + subRegionLastKey));
 
-            for (final ColumnDefinition<?> columnDefinition : columnDefinitions) {
+            for (final ColumnDefinition<?> columnDefinition : tableDefinition.getColumns()) {
                 final RegionedColumnSource<?> regionedColumnSource = columnSources.get(columnDefinition.getName());
                 final ColumnLocation columnLocation = location.getColumnLocation(columnDefinition.getName());
                 Assert.eq(regionIndex, "regionIndex", regionedColumnSource.addRegion(columnDefinition, columnLocation),
@@ -761,7 +756,7 @@ public class RegionedColumnSourceManager
             return Integer.compare(regionIndex, other.regionIndex);
         }
 
-        WritableRowSet subsetAndShiftIntoLocationSpace(final RowSet selection) {
+        private WritableRowSet subsetAndShiftIntoLocationSpace(final RowSet selection) {
             final long locationStartKey = firstRowKey();
             // Extract the portion of selection that overlaps this region.
             final WritableRowSet overlappingRows = selection.subSetByKeyRange(locationStartKey, lastRowKey());
@@ -823,7 +818,7 @@ public class RegionedColumnSourceManager
         return attributes;
     }
 
-    static int[] regionIndices(final RowSet selection, final int maxCount) {
+    private static int[] regionIndices(final RowSet selection, final int maxCount) {
         try (final RegionIndexIterator rit = RegionIndexIterator.of(selection)) {
             final IntStream.Builder builder = IntStream.builder();
             for (int i = 0; i < maxCount && rit.hasNext(); ++i) {
@@ -837,7 +832,7 @@ public class RegionedColumnSourceManager
     interface PerRegionCostEstimator {
         void estimate(
                 int regionIndex,
-                IncludedTableLocationEntry tle,
+                TableLocation location,
                 RowSet shiftedRowSet,
                 LongConsumer onCost,
                 Consumer<Exception> onError);
@@ -872,7 +867,7 @@ public class RegionedColumnSourceManager
                     final IncludedTableLocationEntry tle = orderedIncludedTableLocations.get(regionIndex);
                     ctx.shiftedRowSet = tle.subsetAndShiftIntoLocationSpace(selection);
 
-                    estimator.estimate(regionIndex, tle, ctx.shiftedRowSet,
+                    estimator.estimate(regionIndex, tle.location, ctx.shiftedRowSet,
                             cost -> {
                                 AtomicUtil.setIfGreaterThan(minCost, cost, cost);
                                 resume.run();
@@ -898,7 +893,7 @@ public class RegionedColumnSourceManager
                 selection,
                 "RegionedColumnSourceManager#estimatePushdownFilterCost",
                 jobScheduler,
-                (regionIndex, tle, shiftedRowSet, onCost, nec) -> tle.location.estimatePushdownFilterCost(
+                (regionIndex, location, shiftedRowSet, onCost, nec) -> location.estimatePushdownFilterCost(
                         filter,
                         shiftedRowSet,
                         usePrev,
@@ -914,7 +909,7 @@ public class RegionedColumnSourceManager
     interface PerRegionPushdownAction {
         void pushdown(
                 int regionIndex,
-                IncludedTableLocationEntry tle,
+                TableLocation location,
                 RowSet shiftedRowSet,
                 Consumer<PushdownResult> onResult,
                 Consumer<Exception> onError);
@@ -949,7 +944,7 @@ public class RegionedColumnSourceManager
                     final IncludedTableLocationEntry tle = orderedIncludedTableLocations.get(regionIndex);
                     ctx.shiftedRowSet = tle.subsetAndShiftIntoLocationSpace(selection);
 
-                    action.pushdown(regionIndex, tle, ctx.shiftedRowSet,
+                    action.pushdown(regionIndex, tle.location, ctx.shiftedRowSet,
                             result -> {
                                 tle.unshiftIntoRegionSpace(result);
                                 matches[idx] = result.match();
@@ -980,7 +975,7 @@ public class RegionedColumnSourceManager
                 selection,
                 "RegionedColumnSourceManager#pushdownFilter",
                 jobScheduler,
-                (regionIndex, tle, shiftedRowSet, onResult, nec) -> tle.location.pushdownFilter(
+                (regionIndex, location, shiftedRowSet, onResult, nec) -> location.pushdownFilter(
                         filter,
                         shiftedRowSet,
                         usePrev,
@@ -996,42 +991,12 @@ public class RegionedColumnSourceManager
     /**
      * Get (or create) a map from column source to column name.
      */
-    private IdentityHashMap<ColumnSource<?>, String> columnSourceToName() {
-        IdentityHashMap<ColumnSource<?>, String> local = columnSourceToName;
-        if (local == null) {
-            synchronized (this) {
-                local = columnSourceToName;
-                if (local == null) {
-                    local = new IdentityHashMap<>(columnSources.size());
-                    for (Map.Entry<String, RegionedColumnSource<?>> entry : columnSources.entrySet()) {
-                        local.put(entry.getValue(), entry.getKey());
-                    }
-                    columnSourceToName = local;
-                }
-            }
+    private Map<ColumnSource<?>, String> columnSourceToName() {
+        if (columnSourceToName != null) {
+            return columnSourceToName;
         }
-        return local;
-    }
-
-    /**
-     * Get (or create) a map from column name to column definition.
-     */
-    private Map<String, ColumnDefinition<?>> columnNameToDefinition() {
-        Map<String, ColumnDefinition<?>> local = columnNameToDefinition;
-        if (local == null) {
-            synchronized (this) {
-                local = columnNameToDefinition;
-                if (local == null) {
-                    local = new HashMap<>(columnDefinitions.size());
-                    for (final ColumnDefinition<?> columnDefinition : columnDefinitions) {
-                        final String columnName = columnDefinition.getName();
-                        local.put(columnName, columnDefinition);
-                    }
-                    columnNameToDefinition = local;
-                }
-            }
-        }
-        return local;
+        return columnSourceToName = columnSources.entrySet().stream().collect(Collectors.toMap(
+                Map.Entry::getValue, Map.Entry::getKey, Assert::neverInvoked, IdentityHashMap::new));
     }
 
     @Override
@@ -1045,8 +1010,8 @@ public class RegionedColumnSourceManager
         final List<ColumnDefinition<?>> columnDefinitions = new ArrayList<>(filterSources.size());
         final Map<String, String> renameMap = new HashMap<>();
 
-        final IdentityHashMap<ColumnSource<?>, String> columnSourceToName = columnSourceToName();
-        final Map<String, ColumnDefinition<?>> columnNameToDefinition = columnNameToDefinition();
+        final Map<ColumnSource<?>, String> columnSourceToName = columnSourceToName();
+        final Map<String, ColumnDefinition<?>> columnNameToDefinition = tableDefinition.getColumnNameMap();
 
         for (int ii = 0; ii < filterColumns.size(); ii++) {
             final String filterColumnName = filterColumns.get(ii);

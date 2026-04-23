@@ -20,12 +20,16 @@ import io.deephaven.engine.table.impl.PushdownResult;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.SingleValuePushdownHelper;
+import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.engine.table.impl.locations.ColumnLocation;
 import io.deephaven.util.annotations.FinalDefault;
-import org.jetbrains.annotations.MustBeInvokedByOverriders;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.function.Consumer;
+import java.util.function.LongConsumer;
 
 /**
  * Column region interface for regions that support fetching primitive doubles.
@@ -82,13 +86,12 @@ public interface ColumnRegionDouble<ATTR extends Any> extends ColumnRegion<ATTR>
             extends GenericColumnRegionBase<ATTR>
             implements ColumnRegionDouble<ATTR>, WithDefaultsForRepeatingValues<ATTR> {
 
-        final static RegionedPushdownAction.Region CONSTANT_COLUMN_REGION =
+        private static final RegionedPushdownAction.Region CONSTANT_COLUMN_REGION =
                 new RegionedPushdownAction.Region(
                         () -> false,
                         PushdownResult.REGION_SINGLE_VALUE_COST,
                         (ctx) -> true,
-                        (tl) -> true,
-                        (cr) -> cr instanceof Constant);
+                        (tl, cr) -> cr instanceof Constant);
         private static final List<RegionedPushdownAction> SUPPORTED_ACTIONS = List.of(CONSTANT_COLUMN_REGION);
 
         private final double value;
@@ -117,7 +120,6 @@ public interface ColumnRegionDouble<ATTR extends Any> extends ColumnRegion<ATTR>
         }
 
         @Override
-        @MustBeInvokedByOverriders
         public long estimatePushdownAction(
                 final RegionedPushdownAction action,
                 final WhereFilter filter,
@@ -129,7 +131,6 @@ public interface ColumnRegionDouble<ATTR extends Any> extends ColumnRegion<ATTR>
         }
 
         @Override
-        @MustBeInvokedByOverriders
         public PushdownResult performPushdownAction(
                 final RegionedPushdownAction action,
                 final WhereFilter filter,
@@ -170,8 +171,17 @@ public interface ColumnRegionDouble<ATTR extends Any> extends ColumnRegion<ATTR>
             extends RegionedPageStore.Static<ATTR, ATTR, ColumnRegionDouble<ATTR>>
             implements ColumnRegionDouble<ATTR> {
 
-        public StaticPageStore(@NotNull final Parameters parameters, @NotNull final ColumnRegionDouble<ATTR>[] regions) {
+        private final ColumnLocation columnLocation;
+
+        public StaticPageStore(@NotNull final Parameters parameters, @NotNull final ColumnRegionDouble<ATTR>[] regions,
+                @NotNull final ColumnLocation columnLocation) {
             super(parameters, regions);
+            this.columnLocation = columnLocation;
+        }
+
+        @Override
+        public Optional<ColumnLocation> getColumnLocation() {
+            return Optional.of(columnLocation);
         }
 
         @Override
@@ -190,5 +200,67 @@ public interface ColumnRegionDouble<ATTR extends Any> extends ColumnRegion<ATTR>
         public double getDouble(@NotNull final FillContext context, final long elementIndex) {
             return lookupRegion(elementIndex).getDouble(context, elementIndex);
         }
+
+        // region pushdown support
+        @Override
+        public void estimatePushdownFilterCost(
+                final WhereFilter filter,
+                final RowSet selection,
+                final boolean usePrev,
+                final PushdownFilterContext context,
+                final JobScheduler jobScheduler,
+                final LongConsumer onComplete,
+                final Consumer<Exception> onError) {
+            final RegionedPushdownFilterContext filterCtx = (RegionedPushdownFilterContext) context;
+            onComplete.accept(
+                    ColumnRegionPushdownHelper.estimatePushdownFilterCost(this, filter, selection, usePrev, filterCtx));
+        }
+
+        @Override
+        public void pushdownFilter(
+                final WhereFilter filter,
+                final RowSet selection,
+                final boolean usePrev,
+                final PushdownFilterContext context,
+                final long costCeiling,
+                final JobScheduler jobScheduler,
+                final Consumer<PushdownResult> onComplete,
+                final Consumer<Exception> onError) {
+            final RegionedPushdownFilterContext filterCtx = (RegionedPushdownFilterContext) context;
+            onComplete.accept(ColumnRegionPushdownHelper.pushdownFilter(this, filter, selection, usePrev, filterCtx,
+                    costCeiling));
+        }
+
+        @Override
+        public List<RegionedPushdownAction> supportedActions() {
+            return ColumnRegionPushdownHelper.pageStoreSupportedActions(this);
+        }
+
+        @Override
+        public long estimatePushdownAction(
+                final RegionedPushdownAction action,
+                final WhereFilter filter,
+                final RowSet selection,
+                final boolean usePrev,
+                final PushdownFilterContext filterContext,
+                final RegionedPushdownAction.EstimateContext estimateContext) {
+            return ColumnRegionPushdownHelper.estimatePageStorePushdownAction(
+                    this, action, filter, selection, usePrev, filterContext, estimateContext);
+        }
+
+        @Override
+        public PushdownResult performPushdownAction(
+                final RegionedPushdownAction action,
+                final WhereFilter filter,
+                final RowSet selection,
+                final PushdownResult input,
+                final boolean usePrev,
+                final PushdownFilterContext filterContext,
+                final RegionedPushdownAction.ActionContext actionContext) {
+            return ColumnRegionPushdownHelper.performPageStorePushdownAction(
+                    this, action, filter, selection, input, usePrev, filterContext, actionContext);
+        }
+
+        // endregion pushdown support
     }
 }

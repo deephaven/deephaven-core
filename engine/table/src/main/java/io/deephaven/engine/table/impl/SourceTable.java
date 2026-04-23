@@ -30,7 +30,6 @@ import org.jetbrains.annotations.NotNull;
 import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
 /**
@@ -107,8 +106,7 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
                     isRefreshing,
                     removeAllowed,
                     ColumnToCodecMappings.EMPTY,
-                    definition.getColumns() // This is the *re-written* definition passed to the super-class constructor
-            );
+                    definition);
             if (isRefreshing) {
                 manage(columnSourceManager);
             }
@@ -346,7 +344,7 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
             return true;
         });
 
-        return result.getValue();
+        return result.get();
     }
 
     @OverridingMethodsMustInvokeSuper

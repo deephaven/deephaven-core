@@ -49,8 +49,9 @@ public interface BasePushdownFilterContext extends PushdownFilterContext {
          *
          * @param values the chunk of values to evaluate against the filter
          * @param keys the ordered row keys associated with the values
-         * @return a chunk of keys that passed the filter. This chunk is owned by the filter and should not be closed by
-         *         the caller. It will be automatically released when the {@link UnifiedChunkFilter} is closed.
+         * @return a chunk of keys that passed the filter. This chunk is owned by the filter and will be modified by
+         *         each invocation. This chunk should not be closed by the caller; it will be automatically released
+         *         when the {@link UnifiedChunkFilter} is closed.
          */
         LongChunk<OrderedRowKeys> filter(Chunk<? extends Values> values, LongChunk<OrderedRowKeys> keys);
     }
