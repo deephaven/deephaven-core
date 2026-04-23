@@ -6,8 +6,8 @@ package io.deephaven.engine.table.impl.sources.regioned;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.impl.PushdownFilterContext;
 import io.deephaven.engine.table.impl.PushdownResult;
 import io.deephaven.engine.table.impl.locations.ColumnLocation;
@@ -15,7 +15,6 @@ import io.deephaven.engine.table.impl.locations.TableLocation;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.util.SafeCloseable;
 
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -44,7 +43,7 @@ final class ColumnRegionPushdownHelper {
 
         final List<RegionedPushdownAction> sorted =
                 Stream.concat(region.supportedActions().stream(),
-                        tableLocation == null ? Stream.empty() : tableLocation.supportedActions().stream())
+                                tableLocation == null ? Stream.empty() : tableLocation.supportedActions().stream())
                         .filter(action -> action.allows(tableLocation, region, filterCtx))
                         .sorted(Comparator.comparingLong(RegionedPushdownAction::filterCost))
                         .collect(Collectors.toList());
@@ -99,7 +98,7 @@ final class ColumnRegionPushdownHelper {
 
         final List<RegionedPushdownAction> sorted =
                 Stream.concat(region.supportedActions().stream(),
-                        tableLocation == null ? Stream.empty() : tableLocation.supportedActions().stream())
+                                tableLocation == null ? Stream.empty() : tableLocation.supportedActions().stream())
                         .filter(action -> action.allows(tableLocation, region, filterCtx, costCeiling))
                         .sorted(Comparator.comparingLong(RegionedPushdownAction::filterCost))
                         .collect(Collectors.toList());
@@ -189,48 +188,48 @@ final class ColumnRegionPushdownHelper {
             return PushdownResult.of(selection, RowSetFactory.empty(), RowSetFactory.empty());
         }
 
-        final WritableRowSet[] matches = new WritableRowSet[regionCount];
-        final WritableRowSet[] maybeMatches = new WritableRowSet[regionCount];
-        int visitedRegionCount = 0;
+        final RowSetBuilderSequential maybeBuilder = RowSetFactory.builderSequential();
+        final RowSetBuilderSequential matchBuilder = RowSetFactory.builderSequential();
 
-        try (final RowSequence.Iterator selectionIt = selection.getRowSequenceIterator()) {
-            while (selectionIt.hasMore()) {
-                final int regionIndex = pageStore.getRegionIndex(selectionIt.peekNextKey());
+        final long regionSize = pageStore.regionMask();
+
+        // Only testing "maybe" rows
+        try (final RowSequence.Iterator maybeIt = input.maybeMatch().getRowSequenceIterator()) {
+            for (int regionIndex = 0; regionIndex < regionCount; regionIndex++) {
                 final REGION_TYPE region = pageStore.getRegion(regionIndex);
-                final long regionMinKey = (long) regionIndex << pageStore.regionMaskNumBits();
-                final long regionMaxKey = regionMinKey + pageStore.regionMask();
+                final long regionFirstKey = (long) regionIndex << pageStore.regionMaskNumBits();
+                final long regionLastKey = regionFirstKey + regionSize - 1;
 
-                final RowSequence batch = selectionIt.getNextRowSequenceThrough(regionMaxKey);
-                try (final RowSet batchRowSet = batch.asRowSet();
-                        final RowSet shiftedSelection = batchRowSet.shift(-regionMinKey);
-                        final WritableRowSet shiftedMatch =
-                                input.match().subSetByKeyRange(regionMinKey, regionMaxKey);
-                        final WritableRowSet shiftedMaybeMatch =
-                                input.maybeMatch().subSetByKeyRange(regionMinKey, regionMaxKey)) {
-                    shiftedMatch.shiftInPlace(-regionMinKey);
-                    shiftedMaybeMatch.shiftInPlace(-regionMinKey);
-                    try (final PushdownResult shiftedInput =
-                            PushdownResult.of(shiftedSelection, shiftedMatch, shiftedMaybeMatch);
-                            final PushdownResult result = region.performPushdownAction(
-                                    action,
-                                    filter,
-                                    shiftedSelection,
-                                    shiftedInput,
-                                    usePrev,
-                                    filterContext,
-                                    actionContext)) {
-                        // Store the results for this region, shifting back to the page-store key space.
-                        matches[visitedRegionCount] = result.match().shift(regionMinKey);
-                        maybeMatches[visitedRegionCount] = result.maybeMatch().shift(regionMinKey);
-                        visitedRegionCount++;
-                    }
+                final RowSequence rs = maybeIt.getNextRowSequenceThrough(regionLastKey);
+                if (rs.isEmpty()) {
+                    continue;
+                }
+
+                // Create a PushdownResult restricted to the "maybe" from this region
+                try (final RowSet shifted = rs.asRowSet().shift(-regionFirstKey);
+                     final PushdownResult localInput = PushdownResult.allMaybeMatch(shifted)) {
+                    // Perform the pushdown action on the region, accumulate the results
+                    final PushdownResult localResult = region.performPushdownAction(
+                            action,
+                            filter,
+                            shifted,
+                            localInput,
+                            usePrev,
+                            filterContext,
+                            actionContext);
+                    localResult.match().shiftInPlace(regionFirstKey);
+                    matchBuilder.appendRowSequence(localResult.match());
+                    localResult.maybeMatch().shiftInPlace(regionFirstKey);
+                    maybeBuilder.appendRowSequence(localResult.maybeMatch());
                 }
             }
-        }
 
-        return RegionedPushdownHelper.buildResults(
-                Arrays.copyOf(matches, visitedRegionCount),
-                Arrays.copyOf(maybeMatches, visitedRegionCount),
-                selection);
+            // Return a new PushdownResult with the results from the subregions
+            try (final RowSet maybe = maybeBuilder.build();
+                 final RowSet match = matchBuilder.build();
+                 final RowSet unionedMatch = match.union(input.match())) {
+                return PushdownResult.of(selection, unionedMatch, maybe);
+            }
+        }
     }
 }
