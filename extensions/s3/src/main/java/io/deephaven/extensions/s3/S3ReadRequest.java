@@ -301,9 +301,9 @@ final class S3ReadRequest extends SoftReference<ByteBuffer>
     @Override
     public void accept(final Boolean isComplete, final Throwable throwable) {
         // we record the endNanos, but do not sample into the QueryPerformanceRecorderState as this method is dispatched
-        // asynchronously and we need to account for the read on the thread that is waiting for it.  What this in part
+        // asynchronously and we need to account for the read on the thread that is waiting for it. What this in part
         // means is that any read-ahead performed but not waited for is not accounted for in our read statistics for the
-        // query or update.  We do however include all of the requests in our statistics objects.
+        // query or update. We do however include all of the requests in our statistics objects.
         endNanos = System.nanoTime();
         final long durationNanos = endNanos - startNanos;
         READ_DURATION_NANOS.sample(durationNanos);
