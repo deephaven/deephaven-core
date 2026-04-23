@@ -117,7 +117,7 @@ abstract class BaseRollingFormulaOperator extends UpdateByOperator {
             final FormulaColumn tmp = FormulaColumn.createFormulaColumn(outputColumnName,
                     FormulaUtil.replaceFormulaTokens(formula, paramToken, PARAM_COLUMN_NAME));
             final ColumnDefinition<?> inputColumnDefinition =
-                    ColumnDefinition.ofVector(PARAM_COLUMN_NAME, inputVectorType);
+                    ColumnDefinition.ofVector(PARAM_COLUMN_NAME, inputVectorType, inputColumnType);
             tmp.initDef(Collections.singletonMap(PARAM_COLUMN_NAME, inputColumnDefinition), compilationProcessor);
             return tmp;
         });

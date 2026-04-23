@@ -136,6 +136,14 @@ public class ColumnDefinition<TYPE> implements LogOutputAppendable {
         return new ColumnDefinition<>(name, vectorType, baseComponentTypeForVector(vectorType), ColumnType.Normal);
     }
 
+    public static <T extends Vector<?>> ColumnDefinition<T> ofVector(
+            @NotNull final String name,
+            @NotNull final Class<T> vectorType,
+            @Nullable final Class<?> componentType) {
+        return new ColumnDefinition<>(name, vectorType, checkAndMaybeInferComponentType(vectorType, componentType),
+                ColumnType.Normal);
+    }
+
     public static <T> ColumnDefinition<T> fromGenericType(
             @NotNull final String name,
             @NotNull final Class<T> dataType) {

@@ -27,4 +27,6 @@ final class Types {
             PrimitiveVectorType.of(FloatVector.class, FloatType.of());
     public static final PrimitiveVectorType<DoubleVector, Double> DOUBLE_VECTOR_TYPE =
             PrimitiveVectorType.of(DoubleVector.class, DoubleType.of());
+
+    private Types() {}
 }
