@@ -13,13 +13,21 @@ import io.deephaven.engine.table.impl.BasePushdownFilterContext;
 import io.deephaven.engine.table.impl.PushdownFilterContext;
 import io.deephaven.engine.table.impl.PushdownResult;
 import io.deephaven.engine.table.impl.locations.ColumnLocation;
+import io.deephaven.engine.table.impl.locations.TableLocation;
 import io.deephaven.engine.table.impl.select.WhereFilter;
+import io.deephaven.engine.table.impl.util.JobScheduler;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.MustBeInvokedByOverriders;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Consumer;
+import java.util.function.LongConsumer;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public interface ColumnRegion<ATTR extends Any> extends Page<ATTR>, Releasable, RegionedPushdownFilterMatcher {
 
@@ -37,6 +45,126 @@ public interface ColumnRegion<ATTR extends Any> extends Page<ATTR>, Releasable, 
      * Invalidate the region -- any further reads that cannot be completed consistently and correctly will fail.
      */
     void invalidate();
+
+    @Override
+    default void estimatePushdownFilterCost(
+            final WhereFilter filter,
+            final RowSet selection,
+            final boolean usePrev,
+            final PushdownFilterContext context,
+            final JobScheduler jobScheduler,
+            final LongConsumer onComplete,
+            final Consumer<Exception> onError) {
+        if (selection.isEmpty()) {
+            onComplete.accept(PushdownResult.UNSUPPORTED_ACTION_COST);
+            return;
+        }
+
+        final RegionedPushdownFilterContext filterCtx = (RegionedPushdownFilterContext) context;
+        final Optional<ColumnLocation> columnLocation = getColumnLocation();
+        final TableLocation tableLocation = columnLocation.map(ColumnLocation::getTableLocation).orElse(null);
+
+        final List<RegionedPushdownAction> sorted =
+                Stream.concat(supportedActions().stream(),
+                        tableLocation == null ? Stream.empty() : tableLocation.supportedActions().stream())
+                        .filter(action -> action.allows(tableLocation, this, filterCtx))
+                        .sorted(Comparator.comparingLong(RegionedPushdownAction::filterCost))
+                        .collect(Collectors.toList());
+
+        if (sorted.isEmpty()) {
+            onComplete.accept(PushdownResult.UNSUPPORTED_ACTION_COST);
+            return;
+        }
+
+        RegionedPushdownAction.EstimateContext regionEstimateCtx = null;
+        RegionedPushdownAction.EstimateContext locationEstimateCtx = null;
+
+        long minCost = PushdownResult.UNSUPPORTED_ACTION_COST;
+        try {
+            for (final RegionedPushdownAction action : sorted) {
+                final long cost;
+                if (action instanceof RegionedPushdownAction.Location) {
+                    cost = tableLocation.estimatePushdownAction(action, filter, selection, usePrev, filterCtx,
+                            locationEstimateCtx == null
+                                    ? (locationEstimateCtx = tableLocation.makeEstimateContext(filter, filterCtx))
+                                    : locationEstimateCtx);
+                } else {
+                    cost = estimatePushdownAction(action, filter, selection, usePrev, filterCtx,
+                            regionEstimateCtx == null
+                                    ? (regionEstimateCtx = makeEstimateContext(filter, filterCtx))
+                                    : regionEstimateCtx);
+                }
+                if (cost != PushdownResult.UNSUPPORTED_ACTION_COST) {
+                    minCost = cost;
+                    break;
+                }
+            }
+        } finally {
+            SafeCloseable.closeAll(regionEstimateCtx, locationEstimateCtx);
+        }
+        onComplete.accept(minCost);
+    }
+
+    @Override
+    default void pushdownFilter(
+            final WhereFilter filter,
+            final RowSet selection,
+            final boolean usePrev,
+            final PushdownFilterContext context,
+            final long costCeiling,
+            final JobScheduler jobScheduler,
+            final Consumer<PushdownResult> onComplete,
+            final Consumer<Exception> onError) {
+        if (selection.isEmpty()) {
+            onComplete.accept(PushdownResult.noneMatch(selection));
+            return;
+        }
+
+        final RegionedPushdownFilterContext filterCtx = (RegionedPushdownFilterContext) context;
+        final Optional<ColumnLocation> columnLocation = getColumnLocation();
+        final TableLocation tableLocation = columnLocation.map(ColumnLocation::getTableLocation).orElse(null);
+
+        final List<RegionedPushdownAction> sorted =
+                Stream.concat(supportedActions().stream(),
+                        tableLocation == null ? Stream.empty() : tableLocation.supportedActions().stream())
+                        .filter(action -> action.allows(tableLocation, this, filterCtx, costCeiling))
+                        .sorted(Comparator.comparingLong(RegionedPushdownAction::filterCost))
+                        .collect(Collectors.toList());
+
+        if (sorted.isEmpty()) {
+            onComplete.accept(PushdownResult.allMaybeMatch(selection));
+            return;
+        }
+
+        PushdownResult result = PushdownResult.allMaybeMatch(selection);
+        RegionedPushdownAction.ActionContext regionCtx = null;
+        RegionedPushdownAction.ActionContext locationCtx = null;
+
+        try {
+            for (final RegionedPushdownAction action : sorted) {
+                try (final PushdownResult ignored = result) {
+                    if (action instanceof RegionedPushdownAction.Location) {
+                        result = tableLocation.performPushdownAction(action, filter, selection, result, usePrev,
+                                filterCtx,
+                                locationCtx == null
+                                        ? (locationCtx = tableLocation.makeActionContext(filter, filterCtx))
+                                        : locationCtx);
+                    } else {
+                        result = performPushdownAction(action, filter, selection, result, usePrev, filterCtx,
+                                regionCtx == null
+                                        ? (regionCtx = makeActionContext(filter, filterCtx))
+                                        : regionCtx);
+                    }
+                }
+                if (result.maybeMatch().isEmpty()) {
+                    break;
+                }
+            }
+            onComplete.accept(result);
+        } finally {
+            SafeCloseable.closeAll(regionCtx, locationCtx);
+        }
+    }
 
     abstract class Null<ATTR extends Any>
             extends GenericColumnRegionBase<ATTR>
