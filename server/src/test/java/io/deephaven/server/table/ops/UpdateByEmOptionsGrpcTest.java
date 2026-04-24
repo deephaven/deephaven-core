@@ -17,14 +17,16 @@ import io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.Updat
 import io.deephaven.proto.backplane.grpc.UpdateByWindowScale;
 import io.deephaven.proto.backplane.grpc.UpdateByWindowScale.UpdateByWindowTicks;
 import io.deephaven.proto.util.ExportTicketHelper;
+import io.grpc.StatusRuntimeException;
 import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * Tests for the four on_null_value / on_nan_value option combinations in adaptEmOptions. The original code had two
- * bugs: the null-value guard read getOnNanValue() instead of getOnNullValue(), and both guards used == (apply when
- * NOT_SPECIFIED) instead of != (apply when specified).
+ * Tests for the on_null_value / on_nan_value option handling in adaptEmOptions. The original code had two bugs: the
+ * null-value guard read getOnNanValue() instead of getOnNullValue(), and both guards used == (apply when NOT_SPECIFIED)
+ * instead of != (apply when specified).
  */
 public class UpdateByEmOptionsGrpcTest extends GrpcTableOperationTestBase<UpdateByRequest> {
 
@@ -78,26 +80,12 @@ public class UpdateByEmOptionsGrpcTest extends GrpcTableOperationTestBase<Update
     }
 
     // -----------------------------------------------------------------------
-    // tests — four option combinations, exercised via EMA and EmStd
+    // Bug A: null guard read getOnNanValue() instead of getOnNullValue()
     // -----------------------------------------------------------------------
 
     /**
-     * Neither on_null_value nor on_nan_value set (the common default). The server should use its own defaults and
-     * succeed. Bug (A) caused adaptBadDataBehavior(NOT_SPECIFIED) to be called → IllegalArgumentException.
-     */
-    @Test
-    public void emaWithNoOptions() {
-        final TableReference ref =
-                ref(TableTools.emptyTable(10).update("Value = (double) ii"));
-        final ExportedTableCreationResponse response =
-                send(buildRequest(1, ref, emaOperation(null, "Ema")));
-        assertThat(response.getSuccess()).isTrue();
-        release(response);
-    }
-
-    /**
-     * Only on_null_value set. The server should apply it and succeed. Before the fix: bug (A) meant the wrong field was
-     * guarded, bug (B) threw on NOT_SPECIFIED for nan.
+     * on_null_value set, on_nan_value absent (NOT_SPECIFIED). Old null guard: getOnNanValue()==NOT_SPECIFIED → true →
+     * nan branch also fires → adaptBadDataBehavior(NOT_SPECIFIED) → IllegalArgumentException.
      */
     @Test
     public void emaWithOnlyOnNullValue() {
@@ -108,54 +96,6 @@ public class UpdateByEmOptionsGrpcTest extends GrpcTableOperationTestBase<Update
                 .build();
         final ExportedTableCreationResponse response =
                 send(buildRequest(1, ref, emaOperation(options, "Ema")));
-        assertThat(response.getSuccess()).isTrue();
-        release(response);
-    }
-
-    /**
-     * Only on_nan_value set. The server should apply it and succeed. Bug (B) previously dropped it silently when the
-     * guard was `==`.
-     */
-    @Test
-    public void emaWithOnlyOnNanValue() {
-        final TableReference ref =
-                ref(TableTools.emptyTable(10).update("Value = (double) ii"));
-        final UpdateByEmOptions options = UpdateByEmOptions.newBuilder()
-                .setOnNanValue(BadDataBehavior.RESET)
-                .build();
-        final ExportedTableCreationResponse response =
-                send(buildRequest(1, ref, emaOperation(options, "Ema")));
-        assertThat(response.getSuccess()).isTrue();
-        release(response);
-    }
-
-    /**
-     * Both on_null_value and on_nan_value set. The server should apply both and succeed. Bug caused both guards to be
-     * false → both options silently dropped.
-     */
-    @Test
-    public void emaWithBothOptions() {
-        final TableReference ref =
-                ref(TableTools.emptyTable(10).update("Value = (double) ii"));
-        final UpdateByEmOptions options = UpdateByEmOptions.newBuilder()
-                .setOnNullValue(BadDataBehavior.SKIP)
-                .setOnNanValue(BadDataBehavior.RESET)
-                .build();
-        final ExportedTableCreationResponse response =
-                send(buildRequest(1, ref, emaOperation(options, "Ema")));
-        assertThat(response.getSuccess()).isTrue();
-        release(response);
-    }
-
-    /**
-     * Same four cases via EmStd to verify the fix applies to all EM aggregations.
-     */
-    @Test
-    public void emStdWithNoOptions() {
-        final TableReference ref =
-                ref(TableTools.emptyTable(10).update("Value = (double) ii"));
-        final ExportedTableCreationResponse response =
-                send(buildRequest(1, ref, emStdOperation(null, "EmStd")));
         assertThat(response.getSuccess()).isTrue();
         release(response);
     }
@@ -173,30 +113,63 @@ public class UpdateByEmOptionsGrpcTest extends GrpcTableOperationTestBase<Update
         release(response);
     }
 
+    /**
+     * Empty UpdateByEmOptions message (hasOptions=true, all fields NOT_SPECIFIED). Old guards both fired →
+     * adaptBadDataBehavior(NOT_SPECIFIED) → IllegalArgumentException.
+     */
     @Test
-    public void emStdWithOnlyOnNanValue() {
+    public void emaWithEmptyOptions() {
         final TableReference ref =
                 ref(TableTools.emptyTable(10).update("Value = (double) ii"));
-        final UpdateByEmOptions options = UpdateByEmOptions.newBuilder()
-                .setOnNanValue(BadDataBehavior.RESET)
-                .build();
         final ExportedTableCreationResponse response =
-                send(buildRequest(1, ref, emStdOperation(options, "EmStd")));
+                send(buildRequest(1, ref, emaOperation(UpdateByEmOptions.getDefaultInstance(), "Ema")));
         assertThat(response.getSuccess()).isTrue();
         release(response);
     }
 
     @Test
-    public void emStdWithBothOptions() {
+    public void emStdWithEmptyOptions() {
         final TableReference ref =
                 ref(TableTools.emptyTable(10).update("Value = (double) ii"));
-        final UpdateByEmOptions options = UpdateByEmOptions.newBuilder()
-                .setOnNullValue(BadDataBehavior.SKIP)
-                .setOnNanValue(BadDataBehavior.RESET)
-                .build();
         final ExportedTableCreationResponse response =
-                send(buildRequest(1, ref, emStdOperation(options, "EmStd")));
+                send(buildRequest(1, ref, emStdOperation(UpdateByEmOptions.getDefaultInstance(), "EmStd")));
         assertThat(response.getSuccess()).isTrue();
         release(response);
+    }
+
+    /**
+     * Regression for Bug A when both options are set: old null guard used getOnNanValue(), so with onNanValue=SKIP
+     * (non-NOT_SPECIFIED) the guard was false and onNullValue=THROW was silently dropped. The operation then succeeded
+     * on null input instead of throwing.
+     */
+    @Test
+    public void emaThrowsOnNullValueWhenBothOptionsSetAndNullInput() {
+        final TableReference ref = ref(TableTools.emptyTable(3)
+                .update("Value = (double) io.deephaven.util.QueryConstants.NULL_DOUBLE"));
+        assertThatThrownBy(() -> send(buildRequest(1, ref,
+                emaOperation(UpdateByEmOptions.newBuilder()
+                        .setOnNullValue(BadDataBehavior.THROW)
+                        .setOnNanValue(BadDataBehavior.SKIP)
+                        .build(), "Ema"))))
+                .isInstanceOf(StatusRuntimeException.class);
+    }
+
+    // -----------------------------------------------------------------------
+    // Bug B: nan guard used == instead of !=, silently dropping explicit values
+    // -----------------------------------------------------------------------
+
+    /**
+     * Regression for Bug B: old nan guard getOnNanValue()==NOT_SPECIFIED was false when onNanValue=THROW, so THROW was
+     * silently dropped and the default SKIP applied. The operation then succeeded on NaN input instead of throwing.
+     */
+    @Test
+    public void emaThrowsOnNanValueWhenOnNanValueIsThrow() {
+        final TableReference ref =
+                ref(TableTools.emptyTable(3).update("Value = Double.NaN"));
+        assertThatThrownBy(() -> send(buildRequest(1, ref,
+                emaOperation(UpdateByEmOptions.newBuilder()
+                        .setOnNanValue(BadDataBehavior.THROW)
+                        .build(), "Ema"))))
+                .isInstanceOf(StatusRuntimeException.class);
     }
 }
