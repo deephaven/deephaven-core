@@ -24,7 +24,7 @@ import java.util.stream.Stream;
 /**
  * Helper utilities for column regions that support pushdown operations.
  */
-final class ColumnRegionPushdownHelper {
+abstract class ColumnRegionPushdownHelper {
 
     private ColumnRegionPushdownHelper() {}
 
@@ -35,7 +35,7 @@ final class ColumnRegionPushdownHelper {
             final boolean usePrev,
             final RegionedPushdownFilterContext filterCtx) {
         if (selection.isEmpty()) {
-            return Long.MAX_VALUE;
+            return PushdownResult.UNSUPPORTED_ACTION_COST;
         }
 
         final Optional<ColumnLocation> columnLocation = region.getColumnLocation();
@@ -49,13 +49,13 @@ final class ColumnRegionPushdownHelper {
                         .collect(Collectors.toList());
 
         if (sorted.isEmpty()) {
-            return Long.MAX_VALUE;
+            return PushdownResult.UNSUPPORTED_ACTION_COST;
         }
 
         RegionedPushdownAction.EstimateContext regionEstimateCtx = null;
         RegionedPushdownAction.EstimateContext locationEstimateCtx = null;
 
-        long minCost = Long.MAX_VALUE;
+        long minCost = PushdownResult.UNSUPPORTED_ACTION_COST;
         try {
             for (final RegionedPushdownAction action : sorted) {
                 final long cost;
@@ -70,7 +70,7 @@ final class ColumnRegionPushdownHelper {
                                     ? (regionEstimateCtx = region.makeEstimateContext(filter, filterCtx))
                                     : regionEstimateCtx);
                 }
-                if (cost != Long.MAX_VALUE) {
+                if (cost != PushdownResult.UNSUPPORTED_ACTION_COST) {
                     minCost = cost;
                     break;
                 }
@@ -185,7 +185,7 @@ final class ColumnRegionPushdownHelper {
         final int regionCount = pageStore.getRegionCount();
         if (regionCount == 0) {
             // No regions, no matches.
-            return PushdownResult.of(selection, RowSetFactory.empty(), RowSetFactory.empty());
+            return PushdownResult.noneMatch(selection);
         }
 
         final RowSetBuilderSequential maybeBuilder = RowSetFactory.builderSequential();
@@ -195,28 +195,24 @@ final class ColumnRegionPushdownHelper {
 
         // Only testing "maybe" rows
         try (final RowSequence.Iterator maybeIt = input.maybeMatch().getRowSequenceIterator()) {
-            for (int regionIndex = 0; regionIndex < regionCount; regionIndex++) {
-                final REGION_TYPE region = pageStore.getRegion(regionIndex);
-                final long regionFirstKey = (long) regionIndex << pageStore.regionMaskNumBits();
-                final long regionLastKey = regionFirstKey + regionSize - 1;
-
-                final RowSequence rs = maybeIt.getNextRowSequenceThrough(regionLastKey);
-                if (rs.isEmpty()) {
-                    continue;
-                }
+            while (maybeIt.hasMore()) {
+                final long regionFirstIncludedKey = maybeIt.peekNextKey();
+                final REGION_TYPE region = pageStore.lookupRegion(regionFirstIncludedKey);
+                final RowSequence regionRows = maybeIt.getNextRowSequenceThrough(region.maxRow(regionFirstIncludedKey));
+                final long regionFirstKey = regionFirstIncludedKey & pageStore.mask();
 
                 // Create a PushdownResult restricted to the "maybe" from this region
-                try (final RowSet shifted = rs.asRowSet().shift(-regionFirstKey);
-                        final PushdownResult localInput = PushdownResult.allMaybeMatch(shifted)) {
+                try (final RowSet shifted = regionRows.asRowSet().shift(-regionFirstKey);
+                        final PushdownResult localInput = PushdownResult.allMaybeMatch(shifted);
+                        final PushdownResult localResult = region.performPushdownAction(
+                                action,
+                                filter,
+                                shifted,
+                                localInput,
+                                usePrev,
+                                filterContext,
+                                actionContext)) {
                     // Perform the pushdown action on the region, accumulate the results
-                    final PushdownResult localResult = region.performPushdownAction(
-                            action,
-                            filter,
-                            shifted,
-                            localInput,
-                            usePrev,
-                            filterContext,
-                            actionContext);
                     localResult.match().shiftInPlace(regionFirstKey);
                     matchBuilder.appendRowSequence(localResult.match());
                     localResult.maybeMatch().shiftInPlace(regionFirstKey);

@@ -12,6 +12,7 @@ import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.PushdownFilterContext;
+import io.deephaven.engine.table.impl.PushdownResult;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.select.*;
@@ -1380,7 +1381,7 @@ public final class ParquetTableFilterTest {
                 costFuture::complete,
                 costFuture::completeExceptionally);
         Assert.assertTrue(costFuture.isDone());
-        Assert.assertEquals(Long.MAX_VALUE, (long) costFuture.join());
+        Assert.assertEquals(PushdownResult.UNSUPPORTED_ACTION_COST, (long) costFuture.join());
     }
 
     /**

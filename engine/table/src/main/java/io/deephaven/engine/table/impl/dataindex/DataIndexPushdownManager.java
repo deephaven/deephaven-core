@@ -61,7 +61,7 @@ public class DataIndexPushdownManager implements PushdownPredicateManager {
         final DataIndexPushdownContext ctx = (DataIndexPushdownContext) context;
 
         final long dataIndexCost = selection.size() < selectionThreshold
-                ? Long.MAX_VALUE
+                ? PushdownResult.UNSUPPORTED_ACTION_COST
                 : PushdownResult.TABLE_IN_MEMORY_DATA_INDEX_COST;
 
         if (wrappedMatcher != null) {

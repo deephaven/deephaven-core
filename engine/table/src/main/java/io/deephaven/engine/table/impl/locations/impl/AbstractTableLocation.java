@@ -319,7 +319,7 @@ public abstract class AbstractTableLocation
             final Consumer<Exception> onError) {
         if (selection.isEmpty()) {
             // If the selection is empty, we can skip all pushdown filtering.
-            onComplete.accept(Long.MAX_VALUE);
+            onComplete.accept(PushdownResult.UNSUPPORTED_ACTION_COST);
             return;
         }
 
@@ -334,17 +334,17 @@ public abstract class AbstractTableLocation
 
         // If no modes are allowed, we can skip all pushdown filtering.
         if (sorted.isEmpty()) {
-            onComplete.accept(Long.MAX_VALUE);
+            onComplete.accept(PushdownResult.UNSUPPORTED_ACTION_COST);
             return;
         }
 
         // Delegate to TableLocation to determine which of the supported actions applies to this particular location.
         // The list is sorted by filterCost, so the first supported action is the minimum cost.
         try (final RegionedPushdownAction.EstimateContext estimateCtx = makeEstimateContext(filter, filterCtx)) {
-            long minCost = Long.MAX_VALUE;
+            long minCost = PushdownResult.UNSUPPORTED_ACTION_COST;
             for (final RegionedPushdownAction action : sorted) {
                 final long cost = estimatePushdownAction(action, filter, selection, usePrev, filterCtx, estimateCtx);
-                if (cost != Long.MAX_VALUE) {
+                if (cost != PushdownResult.UNSUPPORTED_ACTION_COST) {
                     minCost = cost;
                     break;
                 }

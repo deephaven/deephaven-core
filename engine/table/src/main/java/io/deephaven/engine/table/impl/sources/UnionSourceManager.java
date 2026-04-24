@@ -794,7 +794,7 @@ public class UnionSourceManager implements PushdownPredicateManager {
 
         final UnionSourcePushdownFilterContext ctx = (UnionSourcePushdownFilterContext) context;
         ctx.initialize(selection, usePrev);
-        final MutableLong minCost = new MutableLong(Long.MAX_VALUE);
+        final MutableLong minCost = new MutableLong(PushdownResult.UNSUPPORTED_ACTION_COST);
 
         jobScheduler.iterateParallel(
                 ExecutionContext.getContext(),

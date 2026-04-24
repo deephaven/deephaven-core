@@ -76,7 +76,8 @@ public interface ColumnRegion<ATTR extends Any> extends Page<ATTR>, Releasable, 
                 final boolean usePrev,
                 final PushdownFilterContext filterContext,
                 final RegionedPushdownAction.EstimateContext estimateContext) {
-            return action == NULL_COLUMN_REGION ? NULL_COLUMN_REGION.filterCost() : Long.MAX_VALUE;
+            return action == NULL_COLUMN_REGION ? NULL_COLUMN_REGION.filterCost()
+                    : PushdownResult.UNSUPPORTED_ACTION_COST;
         }
 
         @Override
@@ -96,11 +97,14 @@ public interface ColumnRegion<ATTR extends Any> extends Page<ATTR>, Releasable, 
                 // Bad-behaving filter, but not our responsibility to handle during pushdown.
                 return input.copy();
             }
-            return nullBehavior == BasePushdownFilterContext.FilterNullBehavior.INCLUDES_NULLS
-                    // Promote all maybe rows to match.
-                    ? PushdownResult.of(selection, input.match().union(input.maybeMatch()), RowSetFactory.empty())
-                    // None of these rows match, return the original match rows.
-                    : PushdownResult.of(selection, input.match(), RowSetFactory.empty());
+            if (nullBehavior == BasePushdownFilterContext.FilterNullBehavior.INCLUDES_NULLS) {
+                // Promote all maybe rows to match.
+                try (final RowSet allMatch = input.match().union(input.maybeMatch())) {
+                    return PushdownResult.of(selection, allMatch, RowSetFactory.empty());
+                }
+            }
+            // None of these rows match, return the original match rows.
+            return PushdownResult.of(selection, input.match(), RowSetFactory.empty());
         }
     }
 }
