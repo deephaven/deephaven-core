@@ -3,14 +3,14 @@
 //
 package io.deephaven.engine.rowset;
 
-import it.unimi.dsi.fastutil.ints.IntArrayList;
-import it.unimi.dsi.fastutil.longs.LongArrayList;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseablePair;
+import io.deephaven.util.datastructures.primitives.IntArrayList;
+import io.deephaven.util.datastructures.primitives.LongArrayList;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.Serializable;

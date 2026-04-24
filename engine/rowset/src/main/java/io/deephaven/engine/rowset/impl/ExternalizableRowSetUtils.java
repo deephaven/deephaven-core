@@ -3,10 +3,10 @@
 //
 package io.deephaven.engine.rowset.impl;
 
-import it.unimi.dsi.fastutil.shorts.ShortArrayList;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.util.datastructures.primitives.ShortArrayList;
 import io.deephaven.util.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 
