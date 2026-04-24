@@ -39,8 +39,10 @@ configurations {
 
 dependencies {
     gwt libs.gwt.user
-    gwt platform(libs.grpc.bom)
-    gwt libs.grpc.api
+    api libs.protobuf.gwt
+    api libs.grpc.gwt
+    api libs.grpc.gwt.fetch
+    api libs.guava.gwt
 
     gwt project(':engine-chunk')
     gwt project(':extensions-barrage')
@@ -63,9 +65,12 @@ dependencies {
     gwt libs.vertispan.nio.gwt
     gwt libs.vertispan.flatbuffers.gwt
 
-    js project(path: ':proto:raw-js-openapi', configuration: 'js')
+    gwt project(':proto:proto-backplane-grpc')
+
+    gwt libs.arrow.flight.core
 
     gwt libs.guava
+    gwt libs.guava.gwt
 
     gwt libs.elemental.core
     gwt libs.elemental.promise

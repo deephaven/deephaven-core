@@ -44,6 +44,7 @@ import org.apache.arrow.flatbuf.Field;
 import org.apache.arrow.flatbuf.Schema;
 import org.apache.arrow.vector.types.TimeUnit;
 import org.apache.arrow.vector.types.Types;
+import org.apache.arrow.vector.types.UnionMode;
 import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.FieldType;
 import org.jetbrains.annotations.Nullable;
@@ -108,6 +109,76 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         return DefaultChunkReaderFactory.INSTANCE
                 .newReader(BarrageTypeInfo.make(type, componentType, field), options)
                 .readChunk(fieldNodeIter, bufferInfoIter, is, outChunk, offset, totalRows);
+    }
+
+    public void testDenseUnionChunkSerialization() throws IOException {
+        final Random random = new Random(0);
+        for (final BarrageSubscriptionOptions opts : OPTIONS) {
+            testRoundTripSerialization(SpecialMode.DENSE_UNION, opts, Object.class, (utO) -> {
+                final WritableObjectChunk<Object, Values> chunk = utO.asWritableObjectChunk();
+                for (int i = 0; i < chunk.size(); ++i) {
+                    if (i % 7 == 0) {
+                        chunk.set(i, null);
+                    } else if (i % 2 == 0) {
+                        chunk.set(i, (long) random.nextInt(1000));
+                    } else {
+                        chunk.set(i, "value" + random.nextInt(1000));
+                    }
+                }
+            }, (utO, utC, subset, offset) -> {
+                final WritableObjectChunk<Object, Values> original = utO.asWritableObjectChunk();
+                final WritableObjectChunk<Object, Values> computed = utC.asWritableObjectChunk();
+                if (subset == null) {
+                    for (int i = 0; i < original.size(); i++) {
+                        final Object orig = original.get(i);
+                        final Object comp = computed.get(offset + i);
+                        Assert.nullSafeEquals(orig, "orig", comp, "comp");
+                    }
+                } else {
+                    final MutableInt off = new MutableInt();
+                    subset.forAllRowKeys(key -> {
+                        final Object orig = original.get((int) key);
+                        final Object comp = computed.get(offset + off.getAndIncrement());
+                        Assert.nullSafeEquals(orig, "orig", comp, "comp");
+                    });
+                }
+            });
+        }
+    }
+
+    public void testSparseUnionChunkSerialization() throws IOException {
+        final Random random = new Random(0);
+        for (final BarrageSubscriptionOptions opts : OPTIONS) {
+            testRoundTripSerialization(SpecialMode.SPARSE_UNION, opts, Object.class, (utO) -> {
+                final WritableObjectChunk<Object, Values> chunk = utO.asWritableObjectChunk();
+                for (int i = 0; i < chunk.size(); ++i) {
+                    if (i % 7 == 0) {
+                        chunk.set(i, null);
+                    } else if (i % 2 == 0) {
+                        chunk.set(i, (long) random.nextInt(1000));
+                    } else {
+                        chunk.set(i, "value" + random.nextInt(1000));
+                    }
+                }
+            }, (utO, utC, subset, offset) -> {
+                final WritableObjectChunk<Object, Values> original = utO.asWritableObjectChunk();
+                final WritableObjectChunk<Object, Values> computed = utC.asWritableObjectChunk();
+                if (subset == null) {
+                    for (int i = 0; i < original.size(); i++) {
+                        final Object orig = original.get(i);
+                        final Object comp = computed.get(offset + i);
+                        Assert.nullSafeEquals(orig, "orig", comp, "comp");
+                    }
+                } else {
+                    final MutableInt off = new MutableInt();
+                    subset.forAllRowKeys(key -> {
+                        final Object orig = original.get((int) key);
+                        final Object comp = computed.get(offset + off.getAndIncrement());
+                        Assert.nullSafeEquals(orig, "orig", comp, "comp");
+                    });
+                }
+            });
+        }
     }
 
     public void testMapChunkSerialization() throws IOException {
@@ -936,7 +1007,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
     }
 
     private enum SpecialMode {
-        NONE, MAP, VAR_LEN_LIST, FIXED_LEN_LIST, ZDT, ZDT_WITH_FACTOR
+        NONE, MAP, VAR_LEN_LIST, FIXED_LEN_LIST, ZDT, ZDT_WITH_FACTOR, SPARSE_UNION, DENSE_UNION
     }
 
     private static <T> void testRoundTripSerialization(
@@ -1034,6 +1105,30 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
             final org.apache.arrow.vector.types.pojo.Schema pojoSchema =
                     new org.apache.arrow.vector.types.pojo.Schema(Collections.singletonList(
                             new org.apache.arrow.vector.types.pojo.Field("col", fieldType, List.of())));
+
+            byte[] schemaBytes = pojoSchema.serializeAsMessage();
+            Schema schema = SchemaHelper.flatbufSchema(ByteBuffer.wrap(schemaBytes));
+            writerField = schema.fields(0);
+        } else if (mode == SpecialMode.DENSE_UNION || mode == SpecialMode.SPARSE_UNION) {
+            final Map<String, String> attributes = new LinkedHashMap<>();
+            attributes.put(DH_TYPE_TAG, Object.class.getCanonicalName());
+
+            final int[] typeIds = new int[] {0, 1};
+            final UnionMode unionMode = (mode == SpecialMode.DENSE_UNION)
+                    ? UnionMode.Dense
+                    : UnionMode.Sparse;
+            final FieldType fieldType =
+                    new FieldType(true, new ArrowType.Union(unionMode, typeIds), null, attributes);
+
+            final List<org.apache.arrow.vector.types.pojo.Field> children = new ArrayList<>();
+            children.add(new org.apache.arrow.vector.types.pojo.Field("longs",
+                    new FieldType(true, new ArrowType.Int(64, true), null, null), null));
+            children.add(new org.apache.arrow.vector.types.pojo.Field("strings",
+                    new FieldType(true, ArrowType.Utf8.INSTANCE, null, null), null));
+
+            final org.apache.arrow.vector.types.pojo.Schema pojoSchema =
+                    new org.apache.arrow.vector.types.pojo.Schema(Collections.singletonList(
+                            new org.apache.arrow.vector.types.pojo.Field("col", fieldType, children)));
 
             byte[] schemaBytes = pojoSchema.serializeAsMessage();
             Schema schema = SchemaHelper.flatbufSchema(ByteBuffer.wrap(schemaBytes));

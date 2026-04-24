@@ -64,7 +64,8 @@ specialVars = emptyTable(10).update("IdxInt = i", "IdxLong = ii")
 specialMeta = specialVars.meta()
 ```
 
-> **_NOTE:_** The special variables `i` and `ii` can only be used in [append-only](../../conceptual/table-types.md#specialization-1-append-only) tables.
+> [!NOTE]
+> The special variables `i` and `ii` can only be used in [append-only](../../conceptual/table-types.md#specialization-1-append-only) tables.
 
 Additionally, Deephaven provides a range of common constants that can be accessed from query strings. These constants are always written with snake case in capital letters. They include [minimum and maximum values for various data types](/core/javadoc/io/deephaven/util/QueryConstants.html), [conversion factors for time types](/core/javadoc/io/deephaven/time/DateTimeUtils.html), and more. Of particular interest are the null constants for primitive types.
 
@@ -163,7 +164,7 @@ There are many more such operators supported in Deephaven. See the [guide on ope
 
 ## Built-in functions
 
-Aside from the common operations, Deephaven hosts a large library of functions known as [built-in or auto-imported functions](../../reference/query-language/formulas/auto-imported-functions.md) that can be used in query strings.
+Aside from the common operations, Deephaven hosts a large library of functions known as [built-in or auto-imported functions](../../reference/query-language/query-library/auto-imported/index.md) that can be used in query strings.
 
 The [numeric subset of this library](/core/javadoc/io/deephaven/function/package-summary.html) is full of functions that perform common mathematical operations on numeric types. These include exponentials, trigonometric functions, random number generators, and more.
 
@@ -251,7 +252,7 @@ lastByBin = binnedTimestamps.lastBy("Last5Mins")
 
 The [time user guide](../../conceptual/time-in-deephaven.md) provides a comprehensive overview of working with date-time data in Deephaven.
 
-These functions provide only a glimpse of what the built-in library offers. There are modules for [sorting](/core/javadoc/io/deephaven/function/Sort.html), [searching](/core/javadoc/io/deephaven/function/BinSearch.html), [string parsing](/core/javadoc/io/deephaven/function/Parse.html), [null handling](https://deephaven.io/core/javadoc/io/deephaven/function/Basic.html#isNull(byte)), and much more. See the document on [auto-imported functions](../../reference/query-language/formulas/auto-imported-functions.md) for a comprehensive list of what's available or the [module summary page](/core/javadoc/io/deephaven/function/package-summary.html) for a high-level overview of what's offered.
+These functions provide only a glimpse of what the built-in library offers. There are modules for [sorting](/core/javadoc/io/deephaven/function/Sort.html), [searching](/core/javadoc/io/deephaven/function/BinSearch.html), [string parsing](/core/javadoc/io/deephaven/function/Parse.html), [null handling](https://deephaven.io/core/javadoc/io/deephaven/function/Basic.html#isNull(byte)), and much more. See the document on [auto-imported functions](../../reference/query-language/query-library/auto-imported/index.md) for a comprehensive list of what's available or the [module summary page](/core/javadoc/io/deephaven/function/package-summary.html) for a high-level overview of what's offered.
 
 ## Java methods
 
@@ -317,7 +318,8 @@ These results can then be ungrouped with [`ungroup`](../../reference/table-opera
 tArrayFuncsUngrouped = tArrayFuncs.ungroup()
 ```
 
-> **_NOTE:_** Aggregations done with Deephaven's [Aggregations](../../how-to-guides/combined-aggregations.md) are more performant than with array functions.
+> [!NOTE]
+> Aggregations done with Deephaven's [Aggregations](../../how-to-guides/combined-aggregations.md) are more performant than with array functions.
 
 Deephaven provides array indexing and slicing operations.
 
@@ -376,8 +378,6 @@ addVarsFunc = emptyTable(1).update("Sum1 = mySum(1, 2)", "Sum2 = mySum(a, b)")
 ```
 
 So can classes.
-
-<!--TODO: next two examples, there is supposed to be a static and a non-static sum. I could not get the static method to work.-->
 
 ```groovy test-set=1
 public class MyMathClass {

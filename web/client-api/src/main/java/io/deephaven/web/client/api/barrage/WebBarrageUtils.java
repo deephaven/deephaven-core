@@ -4,7 +4,6 @@
 package io.deephaven.web.client.api.barrage;
 
 import com.google.flatbuffers.FlatBufferBuilder;
-import elemental2.core.*;
 import io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
 import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
@@ -15,9 +14,9 @@ import org.apache.arrow.flatbuf.KeyValue;
 import org.apache.arrow.flatbuf.Message;
 import org.apache.arrow.flatbuf.MessageHeader;
 import org.apache.arrow.flatbuf.Schema;
-import org.gwtproject.nio.TypedArrayHelper;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -29,31 +28,25 @@ import java.util.function.IntFunction;
 public class WebBarrageUtils {
     public static final int FLATBUFFER_MAGIC = 0x6E687064;
 
-    public static Uint8Array wrapMessage(FlatBufferBuilder innerBuilder, byte messageType) {
+    public static ByteBuffer wrapMessage(FlatBufferBuilder innerBuilder, byte messageType) {
         FlatBufferBuilder outerBuilder = new FlatBufferBuilder(1024);
         int messageOffset = BarrageMessageWrapper.createMsgPayloadVector(outerBuilder, innerBuilder.dataBuffer());
         int offset =
                 BarrageMessageWrapper.createBarrageMessageWrapper(outerBuilder, FLATBUFFER_MAGIC, messageType,
                         messageOffset);
         outerBuilder.finish(offset);
-        ByteBuffer byteBuffer = outerBuilder.dataBuffer();
-        return bbToUint8ArrayView(byteBuffer);
+        return outerBuilder.dataBuffer();
     }
 
-    public static Uint8Array bbToUint8ArrayView(ByteBuffer byteBuffer) {
-        ArrayBufferView view = TypedArrayHelper.unwrap(byteBuffer);
-        return new Uint8Array(view.buffer, byteBuffer.position() + view.byteOffset, byteBuffer.remaining());
-    }
-
-    public static Uint8Array emptyMessage() {
+    public static ByteBuffer emptyMessage() {
         FlatBufferBuilder builder = new FlatBufferBuilder(1024);
         int offset = BarrageMessageWrapper.createBarrageMessageWrapper(builder, FLATBUFFER_MAGIC,
                 BarrageMessageType.None, 0);
         builder.finish(offset);
-        return bbToUint8ArrayView(builder.dataBuffer());
+        return builder.dataBuffer();
     }
 
-    public static InitialTableDefinition readTableDefinition(Uint8Array flightSchemaMessage) {
+    public static InitialTableDefinition readTableDefinition(ByteBuffer flightSchemaMessage) {
         return readTableDefinition(readSchemaMessage(flightSchemaMessage));
     }
 
@@ -78,17 +71,35 @@ public class WebBarrageUtils {
         return cols;
     }
 
-    public static Schema readSchemaMessage(Uint8Array flightSchemaMessage) {
-        // we conform to flight's schema representation of:
-        // - IPC_CONTINUATION_TOKEN (4-byte int of -1)
-        // - message size (4-byte int)
-        // - a Message wrapping the schema
-        ByteBuffer bb = TypedArrayHelper.wrap(flightSchemaMessage);
-        bb.position(bb.position() + 8);
-        Message headerMessage = Message.getRootAsMessage(bb);
+    /**
+     * Reads the buffer into a Message and unwraps the Schema within. The buffer's contents are consumed. We expect this
+     * payload to consist of
+     * <ul>
+     * <li>IPC_CONTINUATION_TOKEN (4-byte int of -1)</li>
+     * <li>message size (4-byte int)</li>
+     * <li>a Message wrapping the schema</li>
+     * </ul>
+     */
+    public static Schema readSchemaMessage(ByteBuffer flightSchemaMessage) {
+        flightSchemaMessage.order(ByteOrder.LITTLE_ENDIAN);
+        int contToken = flightSchemaMessage.getInt();
+        if (contToken != -1) {
+            throw new IllegalStateException("Expected -1 for first four bytes of schema payload");
+        }
+        int size = flightSchemaMessage.getInt();
+        if (size > flightSchemaMessage.remaining()) {
+            throw new IllegalStateException("Schema message size " + size + " is larger than remaining buffer "
+                    + flightSchemaMessage.remaining());
+        }
+        Message headerMessage = Message.getRootAsMessage(flightSchemaMessage);
 
-        assert headerMessage.headerType() == MessageHeader.Schema;
-        return (Schema) headerMessage.header(new Schema());
+        if (headerMessage.headerType() != MessageHeader.Schema) {
+            throw new IllegalStateException(
+                    "Expected a schema payload, got " + MessageHeader.name(headerMessage.headerType()));
+        }
+        Schema schema = new Schema();
+        headerMessage.header(schema);
+        return schema;
     }
 
     public static Map<String, String> keyValuePairs(String filterPrefix, double count,

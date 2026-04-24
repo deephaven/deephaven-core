@@ -170,7 +170,7 @@ These properties have the following consequences:
 
 Blink tables are the default table type for Kafka ingestion within Deephaven because they use little memory. They are most useful for low-memory aggregations, deriving downstream tables, or using programmatic listeners to react to data.
 
-Check whether a table is a blink table with the [`isBlink`](../reference/table-operations)(https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/BlinkTableTools.html#isBlink(io.deephaven.engine.table.Table)) method:
+Check whether a table is a blink table with the [`isBlink`](../reference/table-operations/metadata/isBlink.md) method:
 
 ```groovy test-set=3 ticking-table order=null
 import io.deephaven.engine.table.impl.BlinkTableTools
@@ -258,6 +258,25 @@ tAppendOnly = BlinkTableTools.blinkToAppendOnly(t)
 ```
 
 ![An append-only table that preserves the data from table 't' as it ticks](../assets/conceptual/table-types/table-types-5.gif)
+
+### Create a blink table from an add-only table
+
+It may be useful to create a blink table from an add-only table. This will only provide real benefit if the upstream add-only table is not fully in-memory. If the upstream add-only table is already fully in-memory, the operation will not fail, but there will be no memory savings. Use [`AddOnlyToBlinkTableAdapter.toBlink`](../reference/table-operations/create/addOnlyToBlink.md) to accomplish this:
+
+```groovy ticking-table order=null
+import io.deephaven.engine.table.impl.AddOnlyToBlinkTableAdapter
+import io.deephaven.engine.table.impl.TimeTable.Builder
+
+builder = new Builder().period("PT0.5s")
+
+// t is append-only, which is a subset of add-only
+t = builder.build()
+
+// get a blink table from t
+tBlink = AddOnlyToBlinkTableAdapter.toBlink(t)
+```
+
+![Two Deephaven tables. Table 'tBlink' creates a blink table from the data in table 't'](../assets/conceptual/table-types/table-types-5.5.gif)
 
 ### Partition a blink table
 
@@ -347,7 +366,7 @@ t = merge(tStatic, tDynamic)
 tRingWithInitial = RingTableTools.of(t, 10)
 ```
 
-![An append-only time table and a 5-row ring table](../assets/conceptual/table-types/table-types-8.gif)
+![A ring table initializes with the rows that are already present in the source append-only table](../assets/conceptual/table-types/table-types-8.gif)
 
 To disable this behavior, set `initialize = false`:
 

@@ -50,8 +50,12 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.util.file.TrackedFileHandleFactory;
 import io.deephaven.parquet.base.BigDecimalParquetBytesCodec;
 import io.deephaven.parquet.base.BigIntegerParquetBytesCodec;
+import io.deephaven.parquet.base.ColumnWriter;
 import io.deephaven.parquet.base.InvalidParquetFileException;
+import io.deephaven.parquet.base.NullParquetMetadataFileWriter;
 import io.deephaven.parquet.base.NullStatistics;
+import io.deephaven.parquet.base.ParquetFileWriter;
+import io.deephaven.parquet.base.RowGroupWriter;
 import io.deephaven.parquet.base.materializers.ParquetMaterializerUtils;
 import io.deephaven.parquet.table.location.ParquetTableLocation;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
@@ -76,6 +80,7 @@ import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableDouble;
 import org.apache.commons.lang3.mutable.MutableFloat;
 import org.apache.commons.lang3.mutable.MutableObject;
+import org.apache.parquet.bytes.HeapByteBufferAllocator;
 import org.apache.parquet.column.Encoding;
 import org.apache.parquet.column.statistics.DoubleStatistics;
 import org.apache.parquet.column.statistics.IntStatistics;
@@ -133,6 +138,7 @@ import static io.deephaven.parquet.table.ParquetTools.writeTables;
 import static io.deephaven.util.QueryConstants.*;
 import static org.apache.parquet.schema.LogicalTypeAnnotation.decimalType;
 import static org.apache.parquet.schema.LogicalTypeAnnotation.intType;
+import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.BINARY;
 import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.FIXED_LEN_BYTE_ARRAY;
 import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.INT32;
 import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.INT64;
@@ -5000,6 +5006,31 @@ public final class ParquetTableReadWriteTest {
         assertTrue(result.getDefinition().getColumn("String").isDirect());
         assertTrue(result.getDefinition().getColumn("Int").isDirect());
         assertTrue(result.getDefinition().getColumn("Double").isDirect());
+    }
+
+    @Test
+    public void testReadEnumLogicalTypeAsString() throws IOException {
+        final MessageType schema = Types.buildMessage()
+                .required(BINARY).as(LogicalTypeAnnotation.enumType()).named("status")
+                .named("schema");
+        final File dest = new File(rootFile, "enum_logical_type.parquet");
+        final Binary[] values = {Binary.fromString("RED"), Binary.fromString("GREEN"), Binary.fromString("BLUE")};
+        final Statistics<?> stats = Statistics.createStats(schema.getType("status"));
+        for (final Binary v : values) {
+            stats.updateStats(v);
+        }
+        // ParquetFileWriter is AutoCloseable, so nest it in its own try-with-resources to
+        // guarantee the file is finalised even if an exception is thrown mid-write.
+        try (final java.io.OutputStream os = Files.newOutputStream(dest.toPath());
+                final ParquetFileWriter fileWriter = new ParquetFileWriter(dest.toURI(), os,
+                        ParquetInstructions.EMPTY.getTargetPageSize(), new HeapByteBufferAllocator(), schema,
+                        "UNCOMPRESSED", Collections.emptyMap(), NullParquetMetadataFileWriter.INSTANCE, true)) {
+            final RowGroupWriter rowGroupWriter = fileWriter.addRowGroup(values.length);
+            try (final ColumnWriter columnWriter = rowGroupWriter.addColumn("status")) {
+                columnWriter.addPageNoNulls(values, values.length, stats);
+            }
+        }
+        checkSingleTable(newTable(stringCol("status", "RED", "GREEN", "BLUE")), dest);
     }
 
     private void assertTableStatistics(Table inputTable, File dest) {

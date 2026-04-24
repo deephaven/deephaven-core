@@ -252,7 +252,7 @@ public class RspBitmapTest {
             nalmost = 0;
             int nempty = 0;
             for (int i = 0; i < nblocks + nempty; ++i) {
-                if (nempty < nEmptyBlocks && r.nextInt(nblocks + nempty) < nempty) {
+                if (nempty < nEmptyBlocks && r.nextInt(nblocks + nEmptyBlocks) < nEmptyBlocks) {
                     // empty;
                     ++nempty;
                     continue;
@@ -1670,7 +1670,7 @@ public class RspBitmapTest {
         final int nblocks1 = 60;
         final int nblocks2 = 30;
         final RspBitmap rb1 = getRandomRspBitmap(nblocks1, r, 0.90f, 2000, 0, nblocks1 / 5);
-        final RspBitmap rb2 = getRandomRspBitmap(nblocks2, r, 0.90f, 2000, nblocks1 + 1, nblocks2 / 5);
+        final RspBitmap rb2 = getRandomRspBitmap(nblocks2, r, 0.90f, 2000, nblocks1 + nblocks1 / 5 + 1, nblocks2 / 5);
         assertFalse(rb1.overlaps(rb2));
         final int nadds = 200;
         final String m = "seed=" + seed;
@@ -1685,7 +1685,7 @@ public class RspBitmapTest {
             if (doFull) {
                 final long start = blockStart(firstBlock);
                 rb2copy.addRangeExclusiveEnd(start, start + BLOCK_SIZE);
-                expectOverlap = true;
+                expectOverlap = rb1.overlapsRange(start, start + BLOCK_SIZE - 1);
             } else {
                 final long start = blockStart(firstBlock) + r.nextInt(BLOCK_SIZE);
                 final long end = start + 1 + r.nextInt(3); // note end may span a block boundary, if so, so be it.

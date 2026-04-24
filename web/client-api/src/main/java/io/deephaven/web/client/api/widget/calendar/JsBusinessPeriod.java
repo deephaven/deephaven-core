@@ -5,15 +5,15 @@ package io.deephaven.web.client.api.widget.calendar;
 
 import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.figuredescriptor.businesscalendardescriptor.BusinessPeriod;
+import io.deephaven.proto.backplane.script.grpc.FigureDescriptor;
 import jsinterop.annotations.JsProperty;
 
 @TsInterface
 @TsName(namespace = "dh.calendar", name = "BusinessPeriod")
 public class JsBusinessPeriod {
-    private final BusinessPeriod businessPeriod;
+    private final FigureDescriptor.BusinessCalendarDescriptor.BusinessPeriod businessPeriod;
 
-    public JsBusinessPeriod(BusinessPeriod businessPeriod) {
+    public JsBusinessPeriod(FigureDescriptor.BusinessCalendarDescriptor.BusinessPeriod businessPeriod) {
         this.businessPeriod = businessPeriod;
     }
 

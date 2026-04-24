@@ -34,7 +34,7 @@ The `QueryTable` has the following user-configurable properties:
 | [Ungroup operations](#ungroup-operations)                           | `QueryTable.minimumUngroupBase`                          | 10         |
 | [SoftRecycler configuration](#softrecycler-configuration)           | `array.recycler.capacity.*`                              | 1024       |
 | [SoftRecycler configuration](#softrecycler-configuration)           | `sparsearray.recycler.capacity.*`                        | 1024       |
-| [Stateless filters by default](#stateless-by-default-experimental)  | `QueryTable.statelessFiltersByDefault`                   | false      |
+| [Stateless filters by default](#stateless-by-default)               | `QueryTable.statelessFiltersByDefault`                   | false      |
 
 Each property is described below, roughly categorized by similarity.
 
@@ -75,10 +75,13 @@ A Deephaven [DataIndex](../how-to-guides/data-indexes.md) is an index that can i
 
 Pushdown predicates refer to the mechanism whereby filtering conditions are applied as early as possible, ideally at the data source (e.g., Parquet or other columnar formats), before loading data into the system. By annotating source reads with predicates, the engine pulls in only the rows that satisfy the conditions, significantly reducing I/O and improving performance.
 
-| Property Name                                            | Default Value | Description                                                                                           |
-| -------------------------------------------------------- | ------------- | ----------------------------------------------------------------------------------------------------- |
-| `QueryTable.disableWherePushdownDataIndex`               | false         | Disables the use of [data index](../how-to-guides/data-indexes.md) within where's pushdown predicates |
-| `QueryTable.disableWherePushdownParquetRowGroupMetadata` | false         | Disables the usage of Parquet row group metadata during push-down filtering                           |
+| Property Name                                            | Default Value | Description                                                                                               |
+| -------------------------------------------------------- | ------------- | --------------------------------------------------------------------------------------------------------- |
+| `QueryTable.useDataIndexForWhere`                        | true          | Enables the uses of table-level [data index](../how-to-guides/data-indexes.md) during `where` operations. |
+| `QueryTable.disableWherePushdownDataIndex`               | false         | Disables the use of [data index](../how-to-guides/data-indexes.md) within `where`'s predicate pushdown.   |
+| `QueryTable.disableWherePushdownParquetRowGroupMetadata` | false         | Disables the usage of Parquet row group metadata during push-down filtering.                              |
+| `QueryTable.disableWherePushdownMergedTables`            | false         | Disable predicate pushdown when filtering merged tables.                                                  |
+| `QueryTable.disableWherePushdownParquetDictionary`       | false         | Disables dictionary-encoding predicate pushdown operations.                                               |
 
 ## Parallel processing with `where`
 
@@ -201,15 +204,13 @@ The recycler capacity determines how many array blocks are kept in memory for po
 - **High throughput environments**: Consider increasing capacities to reduce allocation/deallocation overhead.
 - **Type-specific tuning**: If certain types are used more frequently, you can increase their capacity while reducing others.
 
-## Stateless by default (experimental)
+## Stateless by default
 
-In a future release of Deephaven, the flags in this category will change from a default of false to a default of true. These flags enable the engine to assume more often that a given Filter or Selectable can be executed in parallel (unless the Filter or Selectable is [marked serial or has barriers](./query-engine/parallelization.md#controlling-concurrency-for-select-update-and-where) interface).
-
-This is experimental; more details can be learned by reading the Javadoc on io.deephaven.api.ConcurrencyControl.
+These flags enable the engine to assume more often that a given Filter or Selectable can be executed in parallel (unless the Filter or Selectable is [marked serial or has barriers](./query-engine/parallelization.md#controlling-concurrency-for-select-update-and-where) interface).
 
 | Property Name                          | Default Value | Description                                                                                         |
 | -------------------------------------- | ------------- | --------------------------------------------------------------------------------------------------- |
-| `QueryTable.statelessFiltersByDefault` | false         | Enables the engine to assume that filters are stateless by default, allowing for more optimizations |
+| `QueryTable.statelessFiltersByDefault` | true          | Enables the engine to assume that filters are stateless by default, allowing for more optimizations |
 
 ## Related documentation
 

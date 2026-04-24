@@ -46,3 +46,4 @@ println mtTable.keyColumns()
 
 - [`newTable`](../create/newTable.md)
 - [Multi-Join](./multijoin.md)
+- [Javadoc](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/MultiJoinTable.html)

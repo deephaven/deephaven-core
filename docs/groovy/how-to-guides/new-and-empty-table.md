@@ -53,7 +53,7 @@ result = newTable(
 )
 ```
 
-Here, we create an example with two integer columns. Then, we update the table to add a new column `X` via a [formula](./formulas.md) that uses a [variable](../reference/query-language/variables/scope.md), a [user-defined closure](../how-to-guides/groovy-closures.md), an [auto-imported Java function](../reference/query-language/formulas/auto-imported-functions.md), and various [operators](../how-to-guides/operators.md):
+Here, we create an example with two integer columns. Then, we update the table to add a new column `X` via a [formula](./formulas.md) that uses a [variable](../reference/query-language/variables/scope.md), a [user-defined closure](../how-to-guides/groovy-closures.md), an [auto-imported Java function](../reference/query-language/query-library/auto-imported/index.md), and various [operators](../how-to-guides/operators.md):
 
 ```groovy order=source,result
 var = 3

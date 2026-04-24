@@ -37,7 +37,7 @@ public abstract class RedefinableTable<IMPL_TYPE extends RedefinableTable<IMPL_T
 
     private Table viewInternal(Collection<? extends Selectable> selectables, boolean isUpdate) {
         if (selectables == null || selectables.isEmpty()) {
-            return this;
+            return prepareReturnThis();
         }
 
         final SelectColumn[] columns = Stream.concat(
@@ -45,7 +45,7 @@ public abstract class RedefinableTable<IMPL_TYPE extends RedefinableTable<IMPL_T
                 selectables.stream().map(SelectColumn::of))
                 .toArray(SelectColumn[]::new);
 
-        final Set<ColumnDefinition<?>> resultColumnsInternal = new HashSet<>();
+        final Set<ColumnDefinition<?>> resultColumnsInternal = new LinkedHashSet<>();
         final Map<String, ColumnDefinition<?>> resultColumnsExternal = new LinkedHashMap<>();
         final Map<String, ColumnDefinition<?>> allColumns = new HashMap<>(definition.getColumnNameMap());
         boolean simpleRetain = true;
@@ -54,6 +54,16 @@ public abstract class RedefinableTable<IMPL_TYPE extends RedefinableTable<IMPL_T
         for (final SelectColumn selectColumn : columns) {
             final List<String> usedColumnNames = new ArrayList<>(
                     selectColumn.initDef(allColumns, compilationProcessor));
+            if (selectColumn.hasVirtualRowVariables() || !selectColumn.getColumnArrays().isEmpty()) {
+                // It is not strictly necessary to coalesce; we could instead mark that we have views with a row
+                // variable or array. But if we were to ever filter the table, we would be required to coalesce
+                // at that point to get correct handling of the pre-filtered rowset in the formula.
+                if (isUpdate) {
+                    return coalesce().updateView(selectables);
+                } else {
+                    return coalesce().view(selectables);
+                }
+            }
             usedColumnNames.addAll(selectColumn.getColumnArrays());
             resultColumnsInternal.addAll(usedColumnNames.stream()
                     .filter(usedColumnName -> !resultColumnsExternal.containsKey(usedColumnName))
@@ -86,7 +96,7 @@ public abstract class RedefinableTable<IMPL_TYPE extends RedefinableTable<IMPL_T
     @Override
     public Table dropColumns(final String... columnNames) {
         if (columnNames == null || columnNames.length == 0) {
-            return this;
+            return prepareReturnThis();
         }
         final Set<String> columnNamesToDrop = new HashSet<>(Arrays.asList(columnNames));
         definition.checkHasColumns(columnNamesToDrop);
@@ -139,12 +149,26 @@ public abstract class RedefinableTable<IMPL_TYPE extends RedefinableTable<IMPL_T
     }
 
     /**
-     * Redefine this table with a subset of its current columns.
+     * Redefine this table with a subset of its current columns. If {@code newDefinition} has the same column names in
+     * the same order as {@code this} table, {@link #prepareReturnThis()} will be returned. Delegates to
+     * {@link #redefineImpl(TableDefinition)} otherwise.
      *
      * @param newDefinition A TableDefinition with a subset of this RedefinableTable's ColumnDefinitions.
      * @return the redefined table
      */
-    protected abstract Table redefine(TableDefinition newDefinition);
+    protected final BaseTable<?> redefine(TableDefinition newDefinition) {
+        return newDefinition.getColumnNames().equals(definition.getColumnNames())
+                ? (BaseTable<?>) prepareReturnThis()
+                : redefineImpl(newDefinition);
+    }
+
+    /**
+     * Redefine this table with a proper-subset, or re-ordering, of its current columns.
+     *
+     * @param newDefinition A TableDefinition with a proper-subset of this RedefinableTable's ColumnDefinitions.
+     * @return the redefined table
+     */
+    protected abstract BaseTable<?> redefineImpl(TableDefinition newDefinition);
 
     /**
      * Redefine this table with a subset of its current columns, with a potentially-differing definition to present to

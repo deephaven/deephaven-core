@@ -15,7 +15,7 @@ import java.util.Map;
 /**
  * Represents the timezones supported by Deephaven. Can be used to format dates, taking into account the offset changing
  * throughout the year (potentially changing each year). These instances mostly are useful at this time to pass to the
- * <b>DateTimeFormat.format()</b> methods, though also support a few properties at this time to see details about each
+ * {@code DateTimeFormat.format} methods, though also support a few properties at this time to see details about each
  * instance.
  *
  *
@@ -617,7 +617,7 @@ public class JsTimeZone {
     }
 
     /**
-     * Create a time zone from the JSON provided and add to the map with all IDs and known names
+     * Create a time zone from the JSON provided and add to the map with all IDs and known names.
      * 
      * @param json The JSON to add the time zone for
      */
@@ -627,7 +627,7 @@ public class JsTimeZone {
     }
 
     /**
-     * Add a time zone to the map. Throws if there already exists an entry for that key
+     * Add a time zone to the map. Throws if an entry for that key already exists.
      *
      * @param key The key to map from
      * @param tz The TimeZone to map to
@@ -637,7 +637,7 @@ public class JsTimeZone {
     }
 
     /**
-     * Add a time zone to the map. Throws if there already exists an entry for that key
+     * Add a time zone to the map. Throws if an entry for that key already exists.
      * 
      * @param key The key to map from
      * @param tz The JsTimeZone to map to
@@ -689,7 +689,7 @@ public class JsTimeZone {
     }
 
     /**
-     * the timezone code that represents this `TimeZone`, usually the same key as was use to create this instance
+     * The timezone code that represents this {@code TimeZone}, usually the same key as was use to create this instance.
      * 
      * @return String
      */
@@ -699,7 +699,7 @@ public class JsTimeZone {
     }
 
     /**
-     * the standard offset of this timezone, in minutes
+     * The standard offset of this timezone, in minutes.
      * 
      * @return int
      */

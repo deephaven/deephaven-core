@@ -189,6 +189,26 @@ public abstract class QueryPerformanceRecorderState {
     }
 
     /**
+     * See {@link QueryPerformanceRecorder#setCallsiteWithCloseable()}.
+     */
+    static SafeCloseable setCallSiteWithCloseable() {
+        if (setCallsite()) {
+            return QueryPerformanceRecorder::clearCallsite;
+        }
+        return null;
+    }
+
+    /**
+     * See {@link QueryPerformanceRecorder#setCallsiteWithCloseable(String)}.
+     */
+    static SafeCloseable setCallSiteWithCloseable(final String callsite) {
+        if (setCallsite(callsite)) {
+            return QueryPerformanceRecorder::clearCallsite;
+        }
+        return null;
+    }
+
+    /**
      * Clear any previously set callsite. See {@link #setCallsite(String)}
      */
     static void clearCallsite() {

@@ -3,10 +3,12 @@
 //
 package io.deephaven.web.client.api;
 
-import elemental2.core.Uint8Array;
-import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.FlightDescriptor;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.ticket_pb.Ticket;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.TableReference;
+import com.google.protobuf.ByteString;
+import io.deephaven.proto.backplane.grpc.TableReference;
+import io.deephaven.proto.backplane.grpc.Ticket;
+import org.apache.arrow.flight.impl.Flight;
+
+import java.util.Arrays;
 
 /**
  * Replacement for TableHandle, wraps up export tickets plus current export state. We only consider the lower bytes for
@@ -22,22 +24,24 @@ public class TableTicket {
         UNKNOWN, PENDING, PUBLISHING, QUEUED, RUNNING, EXPORTED, RELEASED, CANCELLED, FAILED, DEPENDENCY_FAILED, DEPENDENCY_NEVER_FOUND, DEPENDENCY_CANCELLED, DEPENDENCY_RELEASED;
     }
 
-    private final Uint8Array ticket;
+    private final Ticket ticket;
     private final int exportId;
     private State state = State.PENDING;
     private boolean isConnected = true;
 
-    public TableTicket(final Uint8Array ticket) {
+    public TableTicket(final Ticket ticket) {
         this.ticket = ticket;
+
+        ByteString bytes = ticket.getTicket();
 
         int id = 0;
         for (int ii = 4; ii >= 1; --ii) {
-            id = (id << 8) | ticket.getAt(ii).intValue();
+            id = (id << 8) | bytes.byteAt(ii);
         }
         this.exportId = id;
     }
 
-    public Uint8Array getTicket() {
+    public Ticket getTicket() {
         return ticket;
     }
 
@@ -67,29 +71,24 @@ public class TableTicket {
     }
 
     public Ticket makeTicket() {
-        Ticket ticket = new Ticket();
-        ticket.setTicket(getTicket());
-        return ticket;
+        return getTicket();
     }
 
     public TableReference makeTableReference() {
-        TableReference reference = new TableReference();
-        reference.setTicket(makeTicket());
-        return reference;
+        return TableReference.newBuilder().setTicket(makeTicket()).build();
     }
 
-    public FlightDescriptor makeFlightDescriptor() {
-        FlightDescriptor flightDescriptor = new FlightDescriptor();
-        flightDescriptor.setType(FlightDescriptor.DescriptorType.getPATH());
-        flightDescriptor.setPathList(new String[] {"export", exportId + ""});
-
-        return flightDescriptor;
+    public Flight.FlightDescriptor makeFlightDescriptor() {
+        return Flight.FlightDescriptor.newBuilder()
+                .setType(Flight.FlightDescriptor.DescriptorType.PATH)
+                .addAllPath(Arrays.asList("export", exportId + ""))
+                .build();
     }
 
     @Override
     public String toString() {
         return "TableTicket{" +
-                "ticket=" + ticket +
+                "ticket=" + ticket.getTicket() +
                 ", state=" + state +
                 ", isConnected=" + isConnected +
                 '}';

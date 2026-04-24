@@ -6,8 +6,7 @@ package io.deephaven.web.client.api.widget.plot;
 import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
 import com.vertispan.tsdefs.annotations.TsTypeRef;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.figuredescriptor.AxisDescriptor;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.figuredescriptor.BusinessCalendarDescriptor;
+import io.deephaven.proto.backplane.script.grpc.FigureDescriptor;
 import io.deephaven.web.client.api.i18n.JsDateTimeFormat;
 import io.deephaven.web.client.api.widget.calendar.JsBusinessCalendar;
 import io.deephaven.web.client.api.widget.plot.enums.JsAxisFormatType;
@@ -18,13 +17,13 @@ import jsinterop.annotations.*;
 import jsinterop.base.Js;
 
 /**
- * Defines one axis used with by series. These instances will be found both on the Chart and the Series instances, and
- * may be shared between Series instances.
+ * Defines one axis used by series. These instances will be found both on the Chart and the Series instances, and may be
+ * shared between Series instances.
  */
 @TsInterface
 @TsName(namespace = "dh.plot", name = "Axis")
 public class JsAxis {
-    private final AxisDescriptor axis;
+    private final FigureDescriptor.AxisDescriptor axis;
     private final JsFigure jsFigure;
     private final JsBusinessCalendar businessCalendar;
 
@@ -32,11 +31,12 @@ public class JsAxis {
     private Long min;
     private Long max;
 
-    public JsAxis(AxisDescriptor descriptor, JsFigure jsFigure) {
+    public JsAxis(FigureDescriptor.AxisDescriptor descriptor, JsFigure jsFigure) {
         this.axis = descriptor;
         this.jsFigure = jsFigure;
 
-        final BusinessCalendarDescriptor businessCalendarDescriptor = descriptor.getBusinessCalendarDescriptor();
+        final FigureDescriptor.BusinessCalendarDescriptor businessCalendarDescriptor =
+                descriptor.getBusinessCalendarDescriptor();
         if (businessCalendarDescriptor != null) {
             businessCalendar = new JsBusinessCalendar(businessCalendarDescriptor);
         } else {
@@ -67,36 +67,36 @@ public class JsAxis {
     }
 
     /**
-     * The type for this axis. See <b>AxisFormatType</b> enum for more details.
+     * The type for this axis. See {@code AxisFormatType} enum for more details.
      * 
      * @return int
      */
     @JsProperty
     @TsTypeRef(JsAxisFormatType.class)
     public int getFormatType() {
-        return axis.getFormatType();
+        return axis.getFormatType().getNumber();
     }
 
     /**
-     * The type for this axis, indicating how it will be drawn. See <b>AxisType</b> enum for more details.
+     * The type for this axis, indicating how it will be drawn. See {@code AxisType} enum for more details.
      * 
      * @return int
      */
     @JsProperty
     @TsTypeRef(JsAxisType.class)
     public int getType() {
-        return axis.getType();
+        return axis.getType().getNumber();
     }
 
     /**
-     * The position for this axis. See <b>AxisPosition</b> enum for more details.
+     * The position for this axis. See {@code AxisPosition} enum for more details.
      * 
      * @return int
      */
     @JsProperty
     @TsTypeRef(JsAxisPosition.class)
     public int getPosition() {
-        return axis.getPosition();
+        return axis.getPosition().getNumber();
     }
 
     @JsProperty
@@ -185,7 +185,7 @@ public class JsAxis {
 
     @JsProperty
     public double[] getMajorTickLocations() {
-        return Js.uncheckedCast(axis.getMajorTickLocationsList().slice());
+        return Js.uncheckedCast(axis.getMajorTickLocationsList().stream().mapToDouble(Double::doubleValue).toArray());
     }
 
     // TODO (deephaven-core#774) finish this field or remove it from the DSL
@@ -210,11 +210,11 @@ public class JsAxis {
     }
 
     /**
-     * Indicates that this axis is only `widthInPixels` wide, so any extra data can be downsampled out, if this can be
-     * done losslessly. The second two arguments represent the current zoom range of this axis, and if provided, most of
-     * the data outside of this range will be filtered out automatically and the visible width mapped to that range.
-     * When the UI zooms, pans, or resizes, this method should be called again to update these three values to ensure
-     * that data is correct and current.
+     * Indicates that this axis is only {@code widthInPixels} wide, so any extra data can be downsampled out, if this
+     * can be done losslessly. The second two arguments represent the current zoom range of this axis, and if provided,
+     * most of the data outside of this range will be filtered out automatically and the visible width mapped to that
+     * range. When the UI zooms, pans, or resizes, this method should be called again to update these three values to
+     * ensure that data is correct and current.
      *
      * @param pixelCount
      * @param min
@@ -257,7 +257,7 @@ public class JsAxis {
         jsFigure.updateDownsampleRange(axis, this.pixels, this.min, this.max);
     }
 
-    public AxisDescriptor getDescriptor() {
+    public FigureDescriptor.AxisDescriptor getDescriptor() {
         return this.axis;
     }
 }

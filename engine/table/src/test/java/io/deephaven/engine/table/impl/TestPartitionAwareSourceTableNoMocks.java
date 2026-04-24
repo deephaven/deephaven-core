@@ -855,4 +855,52 @@ public class TestPartitionAwareSourceTableNoMocks {
         assertTableEquals(TableTools.newTable(stringCol("partition", "A_x", "B_x", "C_x", "D_x")), selectDistinct1);
         assertTableEquals(TableTools.emptyTable(partitionSize).updateView("II=ii"), selectDistinct2);
     }
+
+    @Test
+    public void testVirtualRowVariablesBeforeFilter() {
+        final long partitionSize = 128;
+
+        final PartitionAwareSourceTableTestUtils.TestTDS tds =
+                new PartitionAwareSourceTableTestUtils.TestTDS();
+
+        final TableKey tableKey = new PartitionAwareSourceTableTestUtils.TableKeyImpl();
+        final PartitionAwareSourceTableTestUtils.TableLocationProviderImpl tableLocationProvider =
+                (PartitionAwareSourceTableTestUtils.TableLocationProviderImpl) tds
+                        .getTableLocationProvider(tableKey);
+
+        // create 4 partitions;
+        for (char partition = 'A'; partition <= 'D'; partition++) {
+            tableLocationProvider.appendLocation(
+                    new PartitionAwareSourceTableTestUtils.TableLocationKeyImpl(String.valueOf(partition)));
+        }
+        tableLocationProvider.locations.values().forEach(location -> location.setSize(partitionSize));
+
+        final Table source = new PartitionAwareSourceTable(
+                TableDefinition.of(
+                        ColumnDefinition.ofString("partition").withPartitioning(),
+                        ColumnDefinition.ofLong("II")),
+                tableKey.toString(),
+                RegionedTableComponentFactoryImpl.INSTANCE,
+                tableLocationProvider,
+                null);
+
+        final Table withRowVariables = source.updateView("X=ii + 1");
+        Assertions.assertThat(withRowVariables).isInstanceOf(QueryTable.class);
+        final Table filtered = withRowVariables.where("II % 2 == 0");
+
+        Table expected = TableTools.emptyTable(partitionSize * 4).updateView("X=ii + 1").where("ii % 2 == 0");
+        assertTableEquals(expected, filtered.view("X"));
+
+        final Table withRowVariablesView = source.view("II", "X=ii + 1");
+        Assertions.assertThat(withRowVariablesView).isInstanceOf(QueryTable.class);
+        final Table viewFiltered = withRowVariablesView.where("II % 2 == 0");
+        assertTableEquals(expected, viewFiltered.view("X"));
+
+        // column arrays also coalesce
+        final Table withArray = source.view("II", "X=II_.size()");
+        Assertions.assertThat(withArray).isInstanceOf(QueryTable.class);
+        final Table withArrayFiltered = withArray.where("II % 2 == 0");
+        assertTableEquals(TableTools.emptyTable(partitionSize * 2).view("X=" + (partitionSize * 4) + "L"),
+                withArrayFiltered.view("X"));
+    }
 }
