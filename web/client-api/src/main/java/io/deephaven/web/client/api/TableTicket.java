@@ -36,7 +36,7 @@ public class TableTicket {
 
         int id = 0;
         for (int ii = 4; ii >= 1; --ii) {
-            id = (id << 8) | bytes.byteAt(ii);
+            id = (id << 8) | (bytes.byteAt(ii) & 0xFF);
         }
         this.exportId = id;
     }
