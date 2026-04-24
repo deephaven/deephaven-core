@@ -116,6 +116,9 @@ http.add.header.Cross-Origin-Embedder-Policy.value = require-corp
 http.add.header.Cross-Origin-Opener-Policy.enabled = true
 http.add.header.Cross-Origin-Opener-Policy.value = same-origin
 
+# Enabled
+envoy.add.header.X-Deephaven-Community-Version.enabled = true
+
 # As of Core 0.40.0, the ColumnExpressionValidator defaults to "parsed", which is configured below.  In versions 0.39.0
 # and earlier, the "method_name" validator was used.  To restore the older behavior, set ColumnExpressionValidator to
 # "method_name".    
