@@ -43,7 +43,7 @@ final class ColumnRegionPushdownHelper {
 
         final List<RegionedPushdownAction> sorted =
                 Stream.concat(region.supportedActions().stream(),
-                                tableLocation == null ? Stream.empty() : tableLocation.supportedActions().stream())
+                        tableLocation == null ? Stream.empty() : tableLocation.supportedActions().stream())
                         .filter(action -> action.allows(tableLocation, region, filterCtx))
                         .sorted(Comparator.comparingLong(RegionedPushdownAction::filterCost))
                         .collect(Collectors.toList());
@@ -98,7 +98,7 @@ final class ColumnRegionPushdownHelper {
 
         final List<RegionedPushdownAction> sorted =
                 Stream.concat(region.supportedActions().stream(),
-                                tableLocation == null ? Stream.empty() : tableLocation.supportedActions().stream())
+                        tableLocation == null ? Stream.empty() : tableLocation.supportedActions().stream())
                         .filter(action -> action.allows(tableLocation, region, filterCtx, costCeiling))
                         .sorted(Comparator.comparingLong(RegionedPushdownAction::filterCost))
                         .collect(Collectors.toList());
@@ -207,7 +207,7 @@ final class ColumnRegionPushdownHelper {
 
                 // Create a PushdownResult restricted to the "maybe" from this region
                 try (final RowSet shifted = rs.asRowSet().shift(-regionFirstKey);
-                     final PushdownResult localInput = PushdownResult.allMaybeMatch(shifted)) {
+                        final PushdownResult localInput = PushdownResult.allMaybeMatch(shifted)) {
                     // Perform the pushdown action on the region, accumulate the results
                     final PushdownResult localResult = region.performPushdownAction(
                             action,
@@ -226,8 +226,8 @@ final class ColumnRegionPushdownHelper {
 
             // Return a new PushdownResult with the results from the subregions
             try (final RowSet maybe = maybeBuilder.build();
-                 final RowSet match = matchBuilder.build();
-                 final RowSet unionedMatch = match.union(input.match())) {
+                    final RowSet match = matchBuilder.build();
+                    final RowSet unionedMatch = match.union(input.match())) {
                 return PushdownResult.of(selection, unionedMatch, maybe);
             }
         }
