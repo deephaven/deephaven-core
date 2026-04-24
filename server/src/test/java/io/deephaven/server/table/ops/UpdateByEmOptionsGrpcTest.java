@@ -161,6 +161,32 @@ public class UpdateByEmOptionsGrpcTest extends GrpcTableOperationTestBase<Update
     }
 
     @Test
+    public void emStdWithOnlyOnNullValue() {
+        final TableReference ref =
+                ref(TableTools.emptyTable(10).update("Value = (double) ii"));
+        final UpdateByEmOptions options = UpdateByEmOptions.newBuilder()
+                .setOnNullValue(BadDataBehavior.SKIP)
+                .build();
+        final ExportedTableCreationResponse response =
+                send(buildRequest(1, ref, emStdOperation(options, "EmStd")));
+        assertThat(response.getSuccess()).isTrue();
+        release(response);
+    }
+
+    @Test
+    public void emStdWithOnlyOnNanValue() {
+        final TableReference ref =
+                ref(TableTools.emptyTable(10).update("Value = (double) ii"));
+        final UpdateByEmOptions options = UpdateByEmOptions.newBuilder()
+                .setOnNanValue(BadDataBehavior.RESET)
+                .build();
+        final ExportedTableCreationResponse response =
+                send(buildRequest(1, ref, emStdOperation(options, "EmStd")));
+        assertThat(response.getSuccess()).isTrue();
+        release(response);
+    }
+
+    @Test
     public void emStdWithBothOptions() {
         final TableReference ref =
                 ref(TableTools.emptyTable(10).update("Value = (double) ii"));
