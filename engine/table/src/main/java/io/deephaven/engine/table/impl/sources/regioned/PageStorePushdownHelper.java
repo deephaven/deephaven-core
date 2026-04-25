@@ -82,7 +82,7 @@ abstract class PageStorePushdownHelper {
                 final long regionFirstIncludedKey = maybeIt.peekNextKey();
                 final REGION_TYPE region = pageStore.lookupRegion(regionFirstIncludedKey);
                 final RowSequence regionRows = maybeIt.getNextRowSequenceThrough(region.maxRow(regionFirstIncludedKey));
-                final long regionFirstKey = regionFirstIncludedKey & pageStore.mask();
+                final long regionFirstKey = region.firstRow(regionFirstIncludedKey);
 
                 // Create a PushdownResult restricted to the "maybe" from this region
                 try (final RowSet shifted = regionRows.asRowSet().shift(-regionFirstKey);
