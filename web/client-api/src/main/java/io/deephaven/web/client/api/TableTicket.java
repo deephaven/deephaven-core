@@ -34,9 +34,13 @@ public class TableTicket {
 
         ByteString bytes = ticket.getTicket();
 
+        // Convert the bytes into an int. Export tickets start with byte 'e', then encode a 32bit
+        // little-endian signed int. Negative values represent "server-created" tickets, while
+        // positive values are the default, created by the client and can have multiple calls raced
+        // on them at a time.
         int id = 0;
         for (int ii = 4; ii >= 1; --ii) {
-            id = (id << 8) | bytes.byteAt(ii);
+            id = (id << 8) | (bytes.byteAt(ii) & 0xFF);
         }
         this.exportId = id;
     }

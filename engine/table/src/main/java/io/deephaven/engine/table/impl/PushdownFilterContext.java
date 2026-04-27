@@ -5,6 +5,8 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.util.SafeCloseable;
 
+import static io.deephaven.engine.table.impl.PushdownResult.UNSUPPORTED_ACTION_COST;
+
 /**
  * Helper class to manage filters and their associated execution cost.
  */
@@ -12,7 +14,7 @@ public interface PushdownFilterContext extends SafeCloseable {
     PushdownFilterContext NO_PUSHDOWN_CONTEXT = new PushdownFilterContext() {
         @Override
         public long executedFilterCost() {
-            return Long.MAX_VALUE;
+            return UNSUPPORTED_ACTION_COST;
         }
 
         @Override

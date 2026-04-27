@@ -12,6 +12,7 @@ import io.deephaven.chunk.WritableChunk;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSequenceFactory;
 
+import io.deephaven.engine.table.impl.locations.ColumnLocation;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.sources.regioned.ColumnRegionByte;
 import io.deephaven.parquet.table.pagestore.ColumnChunkPageStore;
@@ -26,8 +27,9 @@ import org.jetbrains.annotations.NotNull;
 public final class ParquetColumnRegionByte<ATTR extends Any> extends ParquetColumnRegionBase<ATTR>
         implements ColumnRegionByte<ATTR>, ParquetColumnRegion<ATTR> {
 
-    public ParquetColumnRegionByte(@NotNull final ColumnChunkPageStore<ATTR> columnChunkPageStore) {
-        super(columnChunkPageStore.mask(), columnChunkPageStore);
+    public ParquetColumnRegionByte(@NotNull final ColumnChunkPageStore<ATTR> columnChunkPageStore,
+            @NotNull final ColumnLocation columnLocation) {
+        super(columnChunkPageStore.mask(), columnChunkPageStore, columnLocation);
     }
 
     // region getBytes

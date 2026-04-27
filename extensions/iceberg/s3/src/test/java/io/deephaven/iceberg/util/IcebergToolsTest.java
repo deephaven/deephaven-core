@@ -13,6 +13,7 @@ import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.extensions.s3.S3Instructions;
 import io.deephaven.iceberg.TestCatalog.IcebergTestCatalog;
+import io.deephaven.qst.type.Type;
 import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.Snapshot;
@@ -177,8 +178,8 @@ public abstract class IcebergToolsTest {
             ColumnDefinition.fromGenericType("timeField", LocalTime.class),
             ColumnDefinition.fromGenericType("timestampField", LocalDateTime.class),
             ColumnDefinition.fromGenericType("decimalField", BigDecimal.class),
-            ColumnDefinition.fromGenericType("fixedField", byte[].class),
-            ColumnDefinition.fromGenericType("binaryField", byte[].class),
+            ColumnDefinition.of("fixedField", Type.byteType().arrayType()),
+            ColumnDefinition.of("binaryField", Type.byteType().arrayType()),
             ColumnDefinition.ofTime("instantField"));
 
     private static final TableDefinition META_DEF = TableDefinition.of(

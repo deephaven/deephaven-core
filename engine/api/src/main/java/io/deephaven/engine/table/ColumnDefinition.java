@@ -107,19 +107,41 @@ public class ColumnDefinition<TYPE> implements LogOutputAppendable {
     }
 
     public static ColumnDefinition<?> of(String name, PrimitiveType<?> type) {
-        final PrimitiveType.Visitor<ColumnDefinition<?>> adapter = new Adapter(name);
-        return type.walk(adapter);
+        return type.walk((PrimitiveType.Visitor<ColumnDefinition<?>>) new Adapter(name));
     }
 
     public static ColumnDefinition<?> of(String name, GenericType<?> type) {
-        final GenericType.Visitor<ColumnDefinition<?>> adapter = new Adapter(name);
-        return type.walk(adapter);
+        return type.walk((GenericType.Visitor<ColumnDefinition<?>>) new Adapter(name));
+    }
+
+    public static <T> ColumnDefinition<T> of(String name, ArrayType<T, ?> type) {
+        return type.walk(new ArrayAdapter<>(name));
+    }
+
+    public static <T> ColumnDefinition<T> of(String name, PrimitiveVectorType<T, ?> type) {
+        return new ColumnDefinition<>(name, type.clazz(), type.componentType().clazz(), ColumnType.Normal);
+    }
+
+    public static <T> ColumnDefinition<T> of(String name, GenericVectorType<T, ?> type) {
+        return new ColumnDefinition<>(name, type.clazz(), type.componentType().clazz(), ColumnType.Normal);
+    }
+
+    public static <T> ColumnDefinition<T> of(String name, NativeArrayType<T, ?> type) {
+        return new ColumnDefinition<>(name, type.clazz(), type.componentType().clazz(), ColumnType.Normal);
     }
 
     public static <T extends Vector<?>> ColumnDefinition<T> ofVector(
             @NotNull final String name,
             @NotNull final Class<T> vectorType) {
         return new ColumnDefinition<>(name, vectorType, baseComponentTypeForVector(vectorType), ColumnType.Normal);
+    }
+
+    public static <T extends Vector<?>> ColumnDefinition<T> ofVector(
+            @NotNull final String name,
+            @NotNull final Class<T> vectorType,
+            @Nullable final Class<?> componentType) {
+        return new ColumnDefinition<>(name, vectorType,
+                checkAndMaybeInferVectorComponentType(vectorType, componentType), ColumnType.Normal);
     }
 
     public static <T> ColumnDefinition<T> fromGenericType(
@@ -175,30 +197,6 @@ public class ColumnDefinition<TYPE> implements LogOutputAppendable {
         throw new IllegalArgumentException("Unrecognized Vector type " + vectorType);
     }
 
-    private static void assertComponentTypeValid(
-            @NotNull final Class<?> dataType, @Nullable final Class<?> componentType) {
-        if (!Vector.class.isAssignableFrom(dataType) && !dataType.isArray()) {
-            return;
-        }
-        if (componentType == null) {
-            throw new IllegalArgumentException("Required component type not specified for data type " + dataType);
-        }
-        if (dataType.isArray()) {
-            final Class<?> arrayComponentType = dataType.getComponentType();
-            if (!arrayComponentType.isAssignableFrom(componentType)) {
-                throw new IllegalArgumentException(
-                        "Invalid component type " + componentType + " for array data type " + dataType);
-            }
-            return;
-        }
-        // noinspection unchecked
-        final Class<?> baseComponentType = baseComponentTypeForVector((Class<? extends Vector<?>>) dataType);
-        if (!baseComponentType.isAssignableFrom(componentType)) {
-            throw new IllegalArgumentException(
-                    "Invalid component type " + componentType + " for Vector data type " + dataType);
-        }
-    }
-
     private static Class<?> checkAndMaybeInferComponentType(
             @NotNull final Class<?> dataType, @Nullable final Class<?> inputComponentType) {
         if (dataType.isArray()) {
@@ -214,21 +212,33 @@ public class ColumnDefinition<TYPE> implements LogOutputAppendable {
         }
         if (Vector.class.isAssignableFrom(dataType)) {
             // noinspection unchecked
-            final Class<?> vectorComponentType =
-                    baseComponentTypeForVector((Class<? extends Vector<?>>) dataType);
-            if (inputComponentType == null) {
-                /*
-                 * TODO (https://github.com/deephaven/deephaven-core/issues/817): Allow formula results returning Vector
-                 * to know component type if (Vector.class.isAssignableFrom(dataType)) { throw new
-                 * IllegalArgumentException("Missing required component type for Vector data type " + dataType); }
-                 */
-                return vectorComponentType;
-            }
-            if (!vectorComponentType.isAssignableFrom(inputComponentType)) {
-                throw new IllegalArgumentException(
-                        "Invalid component type " + inputComponentType + " for Vector data type " + dataType);
-            }
-            return inputComponentType;
+            return checkAndMaybeInferVectorComponentType((Class<? extends Vector<?>>) dataType, inputComponentType);
+        }
+        // Note: some testing currently depends on being able to create Collection + componentType definitions:
+        // io.deephaven.server.jetty.BarrageChunkFactoryTest.testNotAListDestinationPropagation
+        // if (inputComponentType != null) {
+        // throw new IllegalArgumentException(String.format(
+        // "Invalid componentType %s for non-array, non-Vector dataType %s", inputComponentType, dataType));
+        // }
+        // return null;
+        return inputComponentType;
+    }
+
+    private static Class<?> checkAndMaybeInferVectorComponentType(
+            @NotNull final Class<? extends Vector<?>> dataType,
+            @Nullable final Class<?> inputComponentType) {
+        final Class<?> vectorComponentType = baseComponentTypeForVector(dataType);
+        if (inputComponentType == null) {
+            /*
+             * TODO (https://github.com/deephaven/deephaven-core/issues/817): Allow formula results returning Vector to
+             * know component type if (Vector.class.isAssignableFrom(dataType)) { throw new
+             * IllegalArgumentException("Missing required component type for Vector data type " + dataType); }
+             */
+            return vectorComponentType;
+        }
+        if (!vectorComponentType.isAssignableFrom(inputComponentType)) {
+            throw new IllegalArgumentException(
+                    "Invalid component type " + inputComponentType + " for Vector data type " + dataType);
         }
         return inputComponentType;
     }
@@ -314,28 +324,39 @@ public class ColumnDefinition<TYPE> implements LogOutputAppendable {
 
         @Override
         public ColumnDefinition<?> visit(ArrayType<?, ?> arrayType) {
-            return arrayType.walk(new ArrayType.Visitor<>() {
-                @Override
-                public ColumnDefinition<?> visit(NativeArrayType<?, ?> nativeArrayType) {
-                    return fromGenericType(name, nativeArrayType.clazz(), nativeArrayType.componentType().clazz());
-                }
-
-                @Override
-                public ColumnDefinition<?> visit(PrimitiveVectorType<?, ?> vectorPrimitiveType) {
-                    // noinspection unchecked
-                    return ofVector(name, (Class<? extends Vector<?>>) vectorPrimitiveType.clazz());
-                }
-
-                @Override
-                public ColumnDefinition<?> visit(GenericVectorType<?, ?> genericVectorType) {
-                    return fromGenericType(name, ObjectVector.class, genericVectorType.componentType().clazz());
-                }
-            });
+            return of(name, arrayType);
         }
 
         @Override
         public ColumnDefinition<?> visit(CustomType<?> customType) {
             return fromGenericType(name, customType.clazz());
+        }
+    }
+
+    private static class ArrayAdapter<T> implements ArrayType.Visitor<ColumnDefinition<T>> {
+
+        private final String name;
+
+        public ArrayAdapter(String name) {
+            this.name = Objects.requireNonNull(name);
+        }
+
+        @Override
+        public ColumnDefinition<T> visit(NativeArrayType<?, ?> nativeArrayType) {
+            // noinspection unchecked
+            return of(name, (NativeArrayType<T, ?>) nativeArrayType);
+        }
+
+        @Override
+        public ColumnDefinition<T> visit(PrimitiveVectorType<?, ?> vectorPrimitiveType) {
+            // noinspection unchecked
+            return of(name, (PrimitiveVectorType<T, ?>) vectorPrimitiveType);
+        }
+
+        @Override
+        public ColumnDefinition<T> visit(GenericVectorType<?, ?> genericVectorType) {
+            // noinspection unchecked
+            return of(name, (GenericVectorType<T, ?>) genericVectorType);
         }
     }
 
@@ -397,7 +418,8 @@ public class ColumnDefinition<TYPE> implements LogOutputAppendable {
         // noinspection unchecked
         return dataType == newDataType
                 ? (ColumnDefinition<Other>) this
-                : fromGenericType(name, newDataType, componentType, columnType);
+                // Do not pass along the existing component-type; it will be inferred
+                : fromGenericType(name, newDataType, null, columnType);
     }
 
     public <Other> ColumnDefinition<Other> withDataType(
