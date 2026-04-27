@@ -19,7 +19,6 @@ import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.table.impl.chunkattributes.DictionaryKeys;
 import io.deephaven.engine.page.ChunkPage;
 import io.deephaven.engine.rowset.RowSet;
-import org.jetbrains.annotations.MustBeInvokedByOverriders;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
@@ -105,7 +104,6 @@ public final class ParquetColumnRegionObject<DATA_TYPE, ATTR extends Any> extend
     }
 
     @Override
-    @MustBeInvokedByOverriders
     public long estimatePushdownAction(
             final RegionedPushdownAction action,
             final WhereFilter filter,
@@ -142,7 +140,6 @@ public final class ParquetColumnRegionObject<DATA_TYPE, ATTR extends Any> extend
     }
 
     @Override
-    @MustBeInvokedByOverriders
     public PushdownResult performPushdownAction(
             final RegionedPushdownAction action,
             final WhereFilter filter,

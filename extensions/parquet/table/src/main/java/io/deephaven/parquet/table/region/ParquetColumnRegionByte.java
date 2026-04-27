@@ -32,7 +32,6 @@ import io.deephaven.engine.table.impl.sources.regioned.kernel.ByteRegionBinarySe
 import io.deephaven.parquet.table.pagestore.ColumnChunkPageStore;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.page.ChunkPage;
-import org.jetbrains.annotations.MustBeInvokedByOverriders;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
@@ -62,7 +61,7 @@ public final class ParquetColumnRegionByte<ATTR extends Any> extends ParquetColu
     // region getBytes
     public byte[] getBytes(
             final long firstRowKey,
-            @NotNull final byte[] destination,
+            final byte[] destination,
             final int destinationOffset,
             final int length
     ) {
@@ -90,7 +89,6 @@ public final class ParquetColumnRegionByte<ATTR extends Any> extends ParquetColu
     }
 
     @Override
-    @MustBeInvokedByOverriders
     public long estimatePushdownAction(
             final RegionedPushdownAction action,
             final WhereFilter filter,
@@ -122,7 +120,6 @@ public final class ParquetColumnRegionByte<ATTR extends Any> extends ParquetColu
     }
 
     @Override
-    @MustBeInvokedByOverriders
     public PushdownResult performPushdownAction(
             final RegionedPushdownAction action,
             final WhereFilter filter,

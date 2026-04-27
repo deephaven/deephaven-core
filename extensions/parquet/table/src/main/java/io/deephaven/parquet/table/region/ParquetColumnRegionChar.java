@@ -23,7 +23,6 @@ import io.deephaven.engine.table.impl.sources.regioned.kernel.CharRegionBinarySe
 import io.deephaven.parquet.table.pagestore.ColumnChunkPageStore;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.page.ChunkPage;
-import org.jetbrains.annotations.MustBeInvokedByOverriders;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
@@ -69,7 +68,6 @@ public final class ParquetColumnRegionChar<ATTR extends Any> extends ParquetColu
     }
 
     @Override
-    @MustBeInvokedByOverriders
     public long estimatePushdownAction(
             final RegionedPushdownAction action,
             final WhereFilter filter,
@@ -101,7 +99,6 @@ public final class ParquetColumnRegionChar<ATTR extends Any> extends ParquetColu
     }
 
     @Override
-    @MustBeInvokedByOverriders
     public PushdownResult performPushdownAction(
             final RegionedPushdownAction action,
             final WhereFilter filter,
