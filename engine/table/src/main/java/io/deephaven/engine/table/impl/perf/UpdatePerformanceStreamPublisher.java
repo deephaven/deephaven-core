@@ -41,6 +41,11 @@ class UpdatePerformanceStreamPublisher implements StreamPublisher {
             ColumnDefinition.ofLong("CollectionTimeNanos"),
             ColumnDefinition.ofLong("AllocatedBytes"),
             ColumnDefinition.ofLong("PoolAllocatedBytes"),
+            ColumnDefinition.ofLong("DataReadNanos"),
+            ColumnDefinition.ofLong("DataReadCount"),
+            ColumnDefinition.ofLong("DataReadBytes"),
+            ColumnDefinition.ofLong("MetadataReadNanos"),
+            ColumnDefinition.ofLong("MetadataReadCount"),
             ColumnDefinition.ofString("AuthContext"),
             ColumnDefinition.ofString("UpdateGraph"),
             ColumnDefinition.ofLong("WorkerHeapSize"));
@@ -69,54 +74,65 @@ class UpdatePerformanceStreamPublisher implements StreamPublisher {
     }
 
     public synchronized void add(IntervalLevelDetails intervalLevelDetails, PerformanceEntry performanceEntry) {
-        // ColumnDefinition.ofInt("EntryId"),
-        chunks[0].asWritableLongChunk().add(performanceEntry.getId());
+        int ci = 0;
+        // ColumnDefinition.ofLong("EntryId"),
+        chunks[ci++].asWritableLongChunk().add(performanceEntry.getId());
         // ColumnDefinition.ofLong("EvaluationNumber"),
-        chunks[1].asWritableLongChunk().add(performanceEntry.getEvaluationNumber());
+        chunks[ci++].asWritableLongChunk().add(performanceEntry.getEvaluationNumber());
         // ColumnDefinition.ofInt("OperationNumber"),
-        chunks[2].asWritableIntChunk().add(performanceEntry.getOperationNumber());
+        chunks[ci++].asWritableIntChunk().add(performanceEntry.getOperationNumber());
         // ColumnDefinition.ofString("EntryDescription"),
-        chunks[3].<String>asWritableObjectChunk().add(performanceEntry.getDescription());
+        chunks[ci++].<String>asWritableObjectChunk().add(performanceEntry.getDescription());
         // ColumnDefinition.ofString("EntryCallerLine"),
-        chunks[4].<String>asWritableObjectChunk().add(performanceEntry.getCallerLine());
+        chunks[ci++].<String>asWritableObjectChunk().add(performanceEntry.getCallerLine());
         // ColumnDefinition.ofTime("IntervalStartTime"),
-        chunks[5].asWritableLongChunk().add(intervalLevelDetails.getIntervalStartTimeEpochNanos());
+        chunks[ci++].asWritableLongChunk().add(intervalLevelDetails.getIntervalStartTimeEpochNanos());
         // ColumnDefinition.ofTime("IntervalEndTime"),
-        chunks[6].asWritableLongChunk().add(intervalLevelDetails.getIntervalEndTimeEpochNanos());
+        chunks[ci++].asWritableLongChunk().add(intervalLevelDetails.getIntervalEndTimeEpochNanos());
         // ColumnDefinition.ofLong("UsageNanos"),
-        chunks[7].asWritableLongChunk().add(performanceEntry.getUsageNanos());
+        chunks[ci++].asWritableLongChunk().add(performanceEntry.getUsageNanos());
         // ColumnDefinition.ofLong("CpuNanos"),
-        chunks[8].asWritableLongChunk().add(performanceEntry.getCpuNanos());
+        chunks[ci++].asWritableLongChunk().add(performanceEntry.getCpuNanos());
         // ColumnDefinition.ofLong("UserCpuNanos"),
-        chunks[9].asWritableLongChunk().add(performanceEntry.getUserCpuNanos());
+        chunks[ci++].asWritableLongChunk().add(performanceEntry.getUserCpuNanos());
         // ColumnDefinition.ofLong("RowsAdded"),
-        chunks[10].asWritableLongChunk().add(performanceEntry.getRowsAdded());
+        chunks[ci++].asWritableLongChunk().add(performanceEntry.getRowsAdded());
         // ColumnDefinition.ofLong("RowsRemoved"),
-        chunks[11].asWritableLongChunk().add(performanceEntry.getRowsRemoved());
+        chunks[ci++].asWritableLongChunk().add(performanceEntry.getRowsRemoved());
         // ColumnDefinition.ofLong("RowsModified"),
-        chunks[12].asWritableLongChunk().add(performanceEntry.getRowsModified());
+        chunks[ci++].asWritableLongChunk().add(performanceEntry.getRowsModified());
         // ColumnDefinition.ofLong("RowsShifted"),
-        chunks[13].asWritableLongChunk().add(performanceEntry.getRowsShifted());
+        chunks[ci++].asWritableLongChunk().add(performanceEntry.getRowsShifted());
         // ColumnDefinition.ofLong("InvocationCount"),
-        chunks[14].asWritableLongChunk().add(performanceEntry.getInvocationCount());
+        chunks[ci++].asWritableLongChunk().add(performanceEntry.getInvocationCount());
         // ColumnDefinition.ofLong("MinFreeMemory"),
-        chunks[15].asWritableLongChunk().add(performanceEntry.getMinFreeMemory());
+        chunks[ci++].asWritableLongChunk().add(performanceEntry.getMinFreeMemory());
         // ColumnDefinition.ofLong("MaxTotalMemory"),
-        chunks[16].asWritableLongChunk().add(performanceEntry.getMaxTotalMemory());
+        chunks[ci++].asWritableLongChunk().add(performanceEntry.getMaxTotalMemory());
         // ColumnDefinition.ofLong("Collections"),
-        chunks[17].asWritableLongChunk().add(performanceEntry.getCollections());
+        chunks[ci++].asWritableLongChunk().add(performanceEntry.getCollections());
         // ColumnDefinition.ofLong("CollectionTimeNanos"),
-        chunks[18].asWritableLongChunk().add(performanceEntry.getCollectionTimeNanos());
+        chunks[ci++].asWritableLongChunk().add(performanceEntry.getCollectionTimeNanos());
         // ColumnDefinition.ofLong("AllocatedBytes"),
-        chunks[19].asWritableLongChunk().add(performanceEntry.getAllocatedBytes());
+        chunks[ci++].asWritableLongChunk().add(performanceEntry.getAllocatedBytes());
         // ColumnDefinition.ofLong("PoolAllocatedBytes"),
-        chunks[20].asWritableLongChunk().add(performanceEntry.getPoolAllocatedBytes());
+        chunks[ci++].asWritableLongChunk().add(performanceEntry.getPoolAllocatedBytes());
+        // ColumnDefinition.ofLong("DataReadNanos"),
+        chunks[ci++].asWritableLongChunk().add(performanceEntry.getDataReadNanos());
+        // ColumnDefinition.ofLong("DataReadCount"),
+        chunks[ci++].asWritableLongChunk().add(performanceEntry.getDataReadCount());
+        // ColumnDefinition.ofLong("DataReadBytes"),
+        chunks[ci++].asWritableLongChunk().add(performanceEntry.getDataReadBytes());
+        // ColumnDefinition.ofLong("MetadataReadNanos"),
+        chunks[ci++].asWritableLongChunk().add(performanceEntry.getMetadataReadNanos());
+        // ColumnDefinition.ofLong("MetadataReadCount"),
+        chunks[ci++].asWritableLongChunk().add(performanceEntry.getMetadataReadCount());
         // ColumnDefinition.ofString("AuthContext"),
-        chunks[21].<String>asWritableObjectChunk().add(Objects.toString(performanceEntry.getAuthContext()));
+        chunks[ci++].<String>asWritableObjectChunk().add(Objects.toString(performanceEntry.getAuthContext()));
         // ColumnDefinition.ofString("UpdateGraph"));
-        chunks[22].<String>asWritableObjectChunk().add(Objects.toString(performanceEntry.getUpdateGraphName()));
+        chunks[ci++].<String>asWritableObjectChunk().add(Objects.toString(performanceEntry.getUpdateGraphName()));
         // ColumnDefinition.ofLong("WorkerHeapSize")
-        chunks[23].asWritableLongChunk().add(heapSize);
+        chunks[ci++].asWritableLongChunk().add(heapSize);
 
         if (chunks[0].size() == CHUNK_SIZE) {
             flushInternal();
