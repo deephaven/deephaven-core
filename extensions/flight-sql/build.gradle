@@ -37,6 +37,17 @@ dependencies {
             because 'CVE-2024-57699'
         }
     }
+    constraints {
+        implementation(libs.bcprov.jdk18on) {
+            because 'CVE-2026-5598'
+        }
+        implementation(libs.bcutil.jdk18on) {
+            because 'CVE-2026-5598'
+        }
+        implementation(libs.bcpkix.jdk18on) {
+            because 'CVE-2026-5598'
+        }
+    }
 
     implementation libs.dagger
     implementation libs.arrow.flight.sql
