@@ -170,7 +170,7 @@ public abstract class QueryPerformanceRecorderState {
      * @param bytesRead number of bytes read
      */
     public static void recordRead(final long nanos, final long bytesRead) {
-        if (bytesRead >= 0) {
+        if (bytesRead < 0) {
             return;
         }
         DATA_READ_NANOS.get().add(nanos);
