@@ -132,7 +132,7 @@ class UpdatePerformanceStreamPublisher implements StreamPublisher {
         // ColumnDefinition.ofString("UpdateGraph"));
         chunks[ci++].<String>asWritableObjectChunk().add(Objects.toString(performanceEntry.getUpdateGraphName()));
         // ColumnDefinition.ofLong("WorkerHeapSize")
-        chunks[23].asWritableLongChunk().add(heapSize);
+        chunks[ci++].asWritableLongChunk().add(heapSize);
 
         if (chunks[0].size() == CHUNK_SIZE) {
             flushInternal();
