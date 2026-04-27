@@ -100,7 +100,7 @@ final class S3ReadRequest extends SoftReference<ByteBuffer>
     /**
      * The System.nanoTime at which we sent this request.
      */
-    private long startNanos;
+    private volatile long startNanos;
     private int fillCount;
     private long fillBytes;
     private final S3ReadRequestCache sharedCache;
