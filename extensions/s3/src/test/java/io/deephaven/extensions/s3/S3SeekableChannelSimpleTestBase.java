@@ -90,7 +90,6 @@ abstract class S3SeekableChannelSimpleTestBase extends S3SeekableChannelTestSetu
         final long startTime = System.nanoTime();
         final long startReadBytes = QueryPerformanceRecorderState.getDataReadBytesForCurrentThread();
         final long startReadNanos = QueryPerformanceRecorderState.getDataReadNanosForCurrentThread();
-        System.out.println("Start read bytes: " + startReadBytes);
         try (
                 final SeekableChannelsProvider providerImpl = providerImpl();
                 final SeekableChannelsProvider provider = CachedChannelProvider.create(providerImpl, 32);
