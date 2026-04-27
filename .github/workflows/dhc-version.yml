@@ -1,0 +1,39 @@
+name: "Get DHC version"
+on:
+  workflow_call:
+    outputs:
+      dhc_version:
+        description: "The detected version of Deephaven Core"
+        value: ${{ jobs.version_job.outputs.dhc_version }}
+
+jobs:
+  #=============================================================================
+  # Identify version of Deephaven Core by running awk on gradle.properties
+  #=============================================================================
+  version_job:
+    name: "Get DHC version"
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        shell: bash
+
+    outputs:
+      dhc_version: ${{ steps.get-dhc-version.outputs.dhc_version }}
+
+    steps:
+      - name: Check out this repo
+        uses: actions/checkout@v6
+
+      - name: Output Deephaven Version
+        id: get-dhc-version
+        run: |
+          DHC_VERSION=$(awk -F= '
+            /^[^#]/ { props[$1] = $2 }
+            END {
+              v = props["deephavenMajorVersion"] "." props["deephavenMinorVersion"]
+              if (props["deephavenBaseQualifier"] != "") v = v "-" props["deephavenBaseQualifier"]
+              print v
+            }
+          ' gradle.properties)
+          echo "dhc_version=$DHC_VERSION" >> $GITHUB_OUTPUT
+          echo FYI dhc_version is $DHC_VERSION

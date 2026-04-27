@@ -1,0 +1,382 @@
+name: "C++/Python"
+on:
+  pull_request:
+    branches: [ 'main', 'rc/v*' ]
+  push:
+    branches: [ 'main', 'check/**', 'release/v*' ]
+  workflow_dispatch:
+    inputs:
+      force_build:
+        description: "Force a full C++ rebuild even if cpp-client/ and proto/ are unchanged"
+        type: boolean
+        default: false
+permissions:
+  contents: read
+
+#===============================================================================
+# Background: in this workflow there are three different kinds of caching going
+# on:
+#
+# 1. The outputs are Github Build artifacts, attached to every action run.
+#    These artifacts can be downloaded from e.g.
+#    https://github.com/deephaven/deephaven-core/actions/runs/17416308139
+#    but the specific URL depends on the build.
+#    We use this to upload:
+#    - The C++ install directory
+#    - The .whl file for the static Python client
+#    - The .whl file for the ticking Python client
+#
+# 2. Github Packages, which is a NuGet-compatible repo accessible from
+#    https://github.com/orgs/deephaven/packages?repo_name=deephaven-core
+#    and controlled via the NuGet API. We use this package repository to hold
+#    the binaries for the C++ dependencies we build (grpc, arrow, etc.). It is
+#    managed automatically for us by cmake/vcpkg/nuget. This optimization is
+#    important because building the C++ dependencies takes significant time
+#    (a couple of hours for the Windows build)
+#
+# 3. caching of our {{ env.DHINSTALL }} directory. If the source files are
+#    unchanged (cpp_client/** and proto/**), then we reuse the prior results
+#    rather than rebuilding them.
+#===============================================================================
+
+env:
+  GH_PACKAGES_USERNAME: ${{ github.repository_owner }}
+  GH_PACKAGES_FEED: https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json
+  DHINSTALL: ${{ github.workspace }}/dhinstall
+
+jobs:
+  #=============================================================================
+  # Identify version of Deephaven Core
+  #=============================================================================
+  version_job:
+    uses: ./.github/workflows/dhc-version.yml
+
+  #=============================================================================
+  # Build the C++ Client
+  #=============================================================================
+  cpp_job:
+    name: "Build C++"
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            target_triplet: x64-linux-dynamic-release
+          - os: windows-2025
+            # We once had a custom triplet x64-windows-release here,
+            # but it seemed to interact poorly with certain Google packages
+            # like grpc and protobuf. Those packages, on Windows only,
+            # don't seem to honor our triplet and they end up both building
+            # too much and then not caching it. So every build takes a long time.
+            # We will try to investigate this further. Until then, we use the
+            # standard triplet "x64-windows". By the way, for historical reasons
+            # they are called triplets even if they don't have three parts.
+            target_triplet: x64-windows
+      fail-fast: false
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        # This gets you Git Bash on Windows
+        shell: bash
+
+    steps:
+      - name: Check out this repo
+        uses: actions/checkout@v6
+
+      # If the C++ sources (cpp-client/) and proto definitions (proto/) are
+      # unchanged since a prior run, restore the previously built install
+      # directory instead of doing the expensive (~2 hour on Windows)
+      # dependency + client build.
+      #
+      # The cache key is content-based (hashFiles) and deliberately does NOT
+      # include the compiler/toolchain. The hosted-runner compiler drifts
+      # constantly -- GitHub re-patches cl.exe in place under a fixed toolset
+      # version on roughly every image refresh -- which made vcpkg's ABI-keyed
+      # binary cache miss repeatedly. Since MSVC v14.x is ABI-compatible, reusing
+      # an install built by a slightly different compiler patch is safe, so we
+      # key on what we actually care about (our source) and ignore the compiler.
+      - name: Restore/cache C++ install directory
+        id: cpp-cache
+        uses: actions/cache@v5
+        with:
+          path: ${{ env.DHINSTALL }}
+          key: cpp-install-${{ matrix.os }}-${{ hashFiles('cpp-client/**', 'proto/**') }}
+
+      # Build on a cache miss, or when a run is manually forced via
+      # workflow_dispatch. Otherwise reuse the restored install dir and skip the
+      # build. (Touching any file under cpp-client/ or proto/ changes the cache
+      # key above, so an ordinary source change forces a rebuild naturally.)
+      - name: Decide whether to build C++
+        id: decide
+        run: |
+          if [ "${{ github.event.inputs.force_build }}" = "true" ] || [ "${{ steps.cpp-cache.outputs.cache-hit }}" != "true" ]; then
+            echo "Will build C++ (forced run or cache miss)."
+            echo "build=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "C++ sources unchanged and install dir restored from cache; skipping build."
+            echo "build=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Make sure we check out the same version of the vcpkg tool that we
+      # have configured as our registry baseline. This (we suppose) will help
+      # improve the problem we have with our package hash drift.
+
+      - name: Extract vcpkg baseline
+        id: vcpkg-baseline
+        if: steps.decide.outputs.build == 'true'
+        run: |
+          baseline=$(jq -r '.["default-registry"].baseline' ./cpp-client/deephaven/vcpkg-configuration.json)
+          echo "baseline=$baseline"
+          echo "baseline=$baseline" >> "$GITHUB_OUTPUT"
+
+      # Check out vcpkg
+
+      - name: Check out vcpkg
+        id: checkout-vcpkg
+        if: steps.decide.outputs.build == 'true'
+        uses: actions/checkout@v6
+        with:
+          repository: microsoft/vcpkg
+          ref: ${{ steps.vcpkg-baseline.outputs.baseline }}
+          path: vcpkg
+
+      # Bootstrap vcpkg
+
+      - name: Bootstrap vcpkg
+        if: steps.decide.outputs.build == 'true'
+        run: "$GITHUB_WORKSPACE/vcpkg/bootstrap-vcpkg.sh"
+
+      # [Note: Linux only]
+      # Get mono so that we can run nuget. This is because the nuget.exe that
+      # ships with vcpkg is an old .NET Framework binary (Windows format), and
+      # only mono knows how to run such a thing on Linux. Some day the
+      # maintainers will fix this so it runs with the cross-platform "dotnet".
+
+      - name: Install mono (Linux)
+        if: steps.decide.outputs.build == 'true' && runner.os == 'Linux'
+        run: sudo apt install -y mono-complete
+
+      # Adapted from
+      # https://learn.microsoft.com/en-us/vcpkg/consume/binary-caching-github-packages?pivots=linux-runner
+      # Configure nuget to know how to download (or upload) each cached
+      # package that we need (or create)
+
+      - name: "Configure nuget (Linux)"
+        if: steps.decide.outputs.build == 'true' && runner.os == 'Linux'
+        run: |
+          vcpkg_exe=${{ github.workspace }}/vcpkg/vcpkg
+          nuget_dotnet=$($vcpkg_exe fetch nuget | tail -n 1)
+          mono $nuget_dotnet \
+            sources add \
+            -Source "${{ env.GH_PACKAGES_FEED }}" \
+            -StorePasswordInClearText \
+            -Name GitHubPackages \
+            -UserName "${{ env.GH_PACKAGES_USERNAME }}" \
+            -Password "${{ secrets.GITHUB_TOKEN }}"
+          mono $nuget_dotnet \
+            setapikey "${{ secrets.GITHUB_TOKEN }}" \
+            -Source "${{ env.GH_PACKAGES_FEED }}"
+
+      - name: "Configure nuget (Windows)"
+        if: steps.decide.outputs.build == 'true' && runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $nuget_exe = & ./vcpkg/vcpkg.exe fetch nuget
+          & $nuget_exe sources add `
+          -Source "${{ env.GH_PACKAGES_FEED }}" `
+          -StorePasswordInClearText `
+          -Name GitHubPackages `
+          -UserName "${{ env.GH_PACKAGES_USERNAME }}" `
+          -Password "${{ secrets.GITHUB_TOKEN }}"
+          & $nuget_exe setapikey "${{ secrets.GITHUB_TOKEN }}" -Source "${{ env.GH_PACKAGES_FEED }}"
+
+      # Build packages and configure cmake. Check nupkg cache for existing
+      # packages, otherwise build and upload.
+      # 1. Invoke vcpkg to:
+      #    a) Try to fetch each of the dependent libraries from the nuget cache
+      #    b) If not found, build them and insert them in the nuget cache
+      # 2. Configure cmake to prepare for the build/install step, which comes next
+
+      - name: "Build/cache dependencies"
+        if: steps.decide.outputs.build == 'true'
+        env:
+          VCPKG_BINARY_SOURCES: "clear;nuget,${{ env.GH_PACKAGES_FEED }},readwrite"
+        run: |
+          cmake -S cpp-client/deephaven -B cpp-client/deephaven/build \
+          --toolchain "$GITHUB_WORKSPACE/vcpkg/scripts/buildsystems/vcpkg.cmake" \
+          -DVCPKG_INSTALL_OPTIONS="--x-abi-tools-use-exact-versions" \
+          -DCMAKE_INSTALL_PREFIX="$DHINSTALL" \
+          -DVCPKG_TARGET_TRIPLET="${{ matrix.target_triplet }}" \
+          -DVCPKG_OVERLAY_TRIPLETS=cpp-client/deephaven/custom-triplets \
+          2>&1 | tee configure.log
+
+      # Diagnostic: Upload the configure.log to help debug caching issues.
+      # Only meaningful when we actually built, so gate on the build decision.
+      - name: Upload vcpkg debug log
+        if: always() && steps.decide.outputs.build == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: vcpkg-debug-${{ matrix.os }}-${{ github.run_id }}
+          path: configure.log
+
+      # Diagnostic: collect the ABI info, in case we need to debug
+      # cache issues.
+      - name: Collect ABI info
+        if: always() && steps.decide.outputs.build == 'true'
+        run: |
+          mkdir -p abi-dump
+          find cpp-client/deephaven/build/vcpkg_installed \
+            -path '*/share/*/vcpkg_abi_info.txt' \
+            -exec sh -c 'cp "$1" "abi-dump/$(echo "$1" | tr "/" "_")"' _ {} \;
+
+      # Diagnostic: upload the ABI info we collected in the previous step.
+      - name: Upload ABI info
+        if: always() && steps.decide.outputs.build == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: abi-info-${{ matrix.os }}-${{ github.run_id }}
+          path: abi-dump/
+
+      # Build our executables and install them in the configured install
+      # directory {{ env.DHINSTALL }}
+
+      - name: Build and install
+        if: steps.decide.outputs.build == 'true'
+        run: cmake --build cpp-client/deephaven/build --config RelWithDebInfo --target install --parallel
+
+      # Upload results as build artifact.
+
+      - name: Upload install dir
+        id: upload-install-directory
+        uses: actions/upload-artifact@v7
+        with:
+          name: cpp-client-install-${{ matrix.os }}
+          path: ${{ env.DHINSTALL }}
+
+  #=============================================================================
+  # Build the Python Static Client (not OS dependent)
+  #=============================================================================
+
+  python_static_job:
+    name: Python static
+    runs-on: ubuntu-24.04
+    needs: [version_job]
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Check out this repo
+        uses: actions/checkout@v6
+
+      - name: Install Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.10'
+
+      - name: Install the 'wheel' package
+        run: pip3 install wheel
+
+      - name: Install requirements-dev.txt
+        run: |
+          cd ./py/client
+          pip3 install -r requirements-dev.txt
+
+      - name: Run setup.py
+        env:
+          DEEPHAVEN_VERSION: ${{ needs.version_job.outputs.dhc_version }}
+        run: |
+          cd ./py/client
+          python setup.py bdist_wheel
+
+      # Upload static .whl file as build artifact, to be used directly or by
+      # dependent clients like Python ticking
+      - name: Upload .whl file
+        uses: actions/upload-artifact@v7
+        with:
+          name: py-static-wheel
+          path: ./py/client/dist/*.whl
+
+  #=============================================================================
+  # Build the Python Ticking Client (OS dependent)
+  #=============================================================================
+
+  python_ticking_job:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-2025]
+    name: Python ticking
+    runs-on: ${{ matrix.os }}
+    needs: [cpp_job, python_static_job, version_job]
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Check out this repo
+        uses: actions/checkout@v6
+
+      # Get the C++ installation as a build artifact
+      - name: Fetch C++ installation
+        uses: actions/download-artifact@v8
+        with:
+          name: cpp-client-install-${{ matrix.os }}
+          path: ${{ env.DHINSTALL }}
+
+      # Get the Python static installation as a build artifact
+      - name: Fetch Python static installation
+        uses: actions/download-artifact@v8
+        with:
+          name: py-static-wheel
+          path: ./py/client/dist/
+
+      - name: Install Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.10'
+
+      - name: Install the 'wheel' and 'cython' packages
+        run: pip3 install wheel cython
+
+      - name: Install requirements-dev.txt
+        run: |
+          cd ./py/client
+          pip3 install -r requirements-dev.txt
+
+      - name: Install static client
+        run: pip3 install --force --no-deps ./py/client/dist/*.whl
+
+      # Pinned to a specific SHA to avoid future surprises
+      - name: set up PATH for cl.exe
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756
+
+      - name: Build our Cython code (Linux)
+        if: runner.os == 'Linux'
+        env:
+          DEEPHAVEN_VERSION: ${{ needs.version_job.outputs.dhc_version }}
+          CPPFLAGS: -I${{ env.DHINSTALL }}/include
+          LDFLAGS: -L${{ env.DHINSTALL }}/lib
+        run: |
+          cd ./py/client-ticking
+          python setup.py build_ext -i
+          python setup.py bdist_wheel
+
+      - name: Build our Cython code (Windows)
+        if: runner.os == 'Windows'
+        shell: cmd
+        env:
+          DEEPHAVEN_VERSION: ${{ needs.version_job.outputs.dhc_version }}
+        run: |
+          cd .\py\client-ticking
+          python setup.py build_ext -i
+          python setup.py bdist_wheel
+
+      - name: Upload ticking .whl file as build artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: py-ticking-wheel-${{ matrix.os }}
+          path: ./py/client-ticking/dist/*.whl

@@ -1,0 +1,58 @@
+name: ".NET Client"
+on:
+  pull_request:
+    branches: [ 'main', 'rc/v*' ]
+  push:
+    branches: [ 'main', 'check/**', 'release/v*' ]
+permissions:
+  packages: write
+
+env:
+  GH_PACKAGES_USERNAME: ${{ github.repository_owner }}
+  GH_PACKAGES_FEED: https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json
+  DHINSTALL: ${{ github.workspace }}/dhinstall
+
+jobs:
+  #=============================================================================
+  # Identify version of Deephaven Core
+  #=============================================================================
+  version_job:
+    uses: ./.github/workflows/dhc-version.yml
+    
+  #=============================================================================
+  # Build the .NET Client (cross-platform, but we use the Ubuntu runner)
+  #=============================================================================
+  dotnet_job:
+    name: Build .NET client
+    runs-on: ubuntu-24.04
+    needs: version_job
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Check out this repo
+        uses: actions/checkout@v6
+
+      - name: Setup dotnet
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Build Deephaven Core C# Client
+        run: |
+          cd csharp/client/Dh_NetClient
+          dotnet build -c Release
+
+      - name: Create unsigned NuGet package
+        env:
+          DHC_VERSION: ${{ needs.version_job.outputs.dhc_version }}
+        run: |
+          cd csharp/client/Dh_NetClient
+          dotnet pack --no-build -c Release /p:Platform="Any CPU" /p:PackageVersion=$DHC_VERSION
+
+      - name: Upload unsigned NuGet package as build artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: dotnet-client
+          path: ./csharp/client/Dh_NetClient/bin/Release/*.nupkg
