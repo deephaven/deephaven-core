@@ -17,23 +17,22 @@ import io.deephaven.qst.table.TableSpec;
 import io.deephaven.server.runner.RecordingErrorTransformer;
 import io.deephaven.server.util.TestDataUtil;
 import org.apache.arrow.flight.FlightStream;
+import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.vector.BigIntVector;
 import org.apache.arrow.vector.FieldVector;
 import org.apache.arrow.vector.VectorSchemaRoot;
 import org.apache.arrow.vector.types.Types.MinorType;
-import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.arrow.vector.types.pojo.FieldType;
 import org.apache.arrow.vector.types.pojo.Schema;
+import org.apache.arrow.vector.util.TransferPair;
 import org.apache.arrow.vector.util.Validator;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -51,7 +50,7 @@ public class DeephavenFlightSessionTest extends DeephavenFlightSessionTestBase {
             final Schema schema = flightSession.schema(handle.export());
             final Schema expected = new Schema(Collections.singletonList(
                     new Field("I", new FieldType(true, MinorType.INT.getType(), null, null), Collections.emptyList())));
-            assertThat(metadataLess(schema)).isEqualTo(expected);
+            assertThat(stripMetadata(schema)).isEqualTo(expected);
         }
     }
 
@@ -365,162 +364,60 @@ public class DeephavenFlightSessionTest extends DeephavenFlightSessionTestBase {
             assertThat(stream.next()).isTrue();
             final VectorSchemaRoot retrievedRoot = stream.getRoot();
 
-            compareVectorSchemaRoot(expectedRoot, retrievedRoot);
+            try (final VectorSchemaRoot expectedRootNoMetadata =
+                    transferStrippingMetadata(expectedRoot, bufferAllocator);
+                    final VectorSchemaRoot retrievedRootNoMetadata =
+                            transferStrippingMetadata(retrievedRoot, bufferAllocator)) {
+                // Server-side metadata can differ while values are equivalent.
+                Validator.compareVectorSchemaRoot(retrievedRootNoMetadata, expectedRootNoMetadata);
+            }
 
             assertThat(stream.next()).isFalse();
         }
     }
 
     /**
-     * Cannot use {@link Validator#compareVectorSchemaRoot} because the result we pull has extra metadata. So here is a
-     * tweaked implementation that ignores metadata.
-     * 
-     * @param expectedRoot The baseline expected {@code VectorSchemaRoot}.
-     * @param root The one to compare to {@code expectedRoot}.
+     * Creates a new {@link VectorSchemaRoot} backed by the same data buffers as {@code root}, but with all Arrow
+     * metadata removed from the schema and fields. Ownership of the underlying buffers is <em>transferred</em> from
+     * {@code root} to the returned root (zero-copy move via {@link TransferPair#transfer()}); {@code root} should not
+     * be used after this call.
      */
-    private static void compareVectorSchemaRoot(VectorSchemaRoot expectedRoot, VectorSchemaRoot root) {
-        final VectorSchemaRoot root1 = expectedRoot;
-        final VectorSchemaRoot root2 = root;
-
-        // Strip metadata from both the schema itself and the fields
-        final Schema expectedSchemaNoMetadata = new Schema(root1.getSchema().getFields().stream().map(f -> {
-            final FieldType fieldType = f.getFieldType();
-            return new Field(f.getName(),
-                    new FieldType(fieldType.isNullable(), fieldType.getType(), fieldType.getDictionary()),
-                    f.getChildren());
-        }).collect(Collectors.toList()));
-
-        final Schema retrievedSchemaNoMetadata = new Schema(root2.getSchema().getFields().stream().map(f -> {
-            final FieldType fieldType = f.getFieldType();
-            return new Field(f.getName(),
-                    new FieldType(fieldType.isNullable(), fieldType.getType(), fieldType.getDictionary()),
-                    f.getChildren());
-        }).collect(Collectors.toList()));
-
-        Validator.compareSchemas(retrievedSchemaNoMetadata, expectedSchemaNoMetadata);
-        if (root1.getRowCount() != root2.getRowCount()) {
-            throw new IllegalArgumentException(
-                    "Different row count:\n" + root1.getRowCount() + " != " + root2.getRowCount());
+    private static VectorSchemaRoot transferStrippingMetadata(VectorSchemaRoot root, BufferAllocator allocator) {
+        final VectorSchemaRoot dest = VectorSchemaRoot.create(stripMetadata(root.getSchema()), allocator);
+        final List<FieldVector> sourceVectors = root.getFieldVectors();
+        final List<FieldVector> destVectors = dest.getFieldVectors();
+        for (int i = 0; i < sourceVectors.size(); i++) {
+            final TransferPair tp = sourceVectors.get(i).makeTransferPair(destVectors.get(i));
+            tp.transfer();
         }
-
-        List<FieldVector> vectors1 = root1.getFieldVectors();
-        List<FieldVector> vectors2 = root2.getFieldVectors();
-        if (vectors1.size() != vectors2.size()) {
-            throw new IllegalArgumentException(
-                    "Different column count:\n" + vectors1.toString() + "\n!=\n" + vectors2.toString());
-        }
-        for (int i = 0; i < vectors1.size(); i++) {
-            // Similarly, we cannot use Validator.compareFieldVectors becaues it compares the Fields themselves, which
-            // have different metadata
-
-            final FieldVector vector1 = vectors1.get(i);
-            final FieldVector vector2 = vectors2.get(i);
-            final Field field1 = vector1.getField();
-
-
-            int valueCount = vector1.getValueCount();
-            if (valueCount != vector2.getValueCount()) {
-                throw new IllegalArgumentException(
-                        "Different value count for field "
-                                + field1
-                                + " : "
-                                + valueCount
-                                + " != "
-                                + vector2.getValueCount());
-            }
-            for (int j = 0; j < valueCount; j++) {
-                Object obj1 = vector1.getObject(j);
-                Object obj2 = vector2.getObject(j);
-                if (!equals(field1.getType(), obj1, obj2)) {
-                    throw new IllegalArgumentException(
-                            "Different values in column:\n"
-                                    + field1
-                                    + " at index "
-                                    + j
-                                    + ": "
-                                    + obj1
-                                    + " != "
-                                    + obj2);
-                }
-            }
-        }
+        dest.setRowCount(root.getRowCount());
+        return dest;
     }
 
     /**
-     * See package-private method
-     * org.apache.arrow.vector.util.Validator#equals(org.apache.arrow.vector.types.pojo.ArrowType, java.lang.Object,
-     * java.lang.Object)
+     * Returns a copy of {@code schema} with all key-value metadata removed from the schema itself and every field
+     * (recursively).
      */
-    private static boolean equals(ArrowType type, final Object o1, final Object o2) {
-        if (type instanceof ArrowType.FloatingPoint) {
-            ArrowType.FloatingPoint fpType = (ArrowType.FloatingPoint) type;
-            switch (fpType.getPrecision()) {
-                case DOUBLE:
-                    return arrowValidatorEqualEnough((Double) o1, (Double) o2);
-                case SINGLE:
-                    return arrowValidatorEqualEnough((Float) o1, (Float) o2);
-                case HALF:
-                default:
-                    throw new UnsupportedOperationException("unsupported precision: " + fpType);
-            }
-        } else if (type instanceof ArrowType.Binary
-                || type instanceof ArrowType.LargeBinary
-                || type instanceof ArrowType.FixedSizeBinary) {
-            return Arrays.equals((byte[]) o1, (byte[]) o2);
-        } else if (o1 instanceof byte[] && o2 instanceof byte[]) {
-            return Arrays.equals((byte[]) o1, (byte[]) o2);
-        }
-
-        return Objects.equals(o1, o2);
-    }
-
-    /**
-     * See package-private method org.apache.arrow.vector.util.Validator#equalEnough(java.lang.Float, java.lang.Float)
-     */
-    private static boolean arrowValidatorEqualEnough(Float f1, Float f2) {
-        if (f1 == null || f2 == null) {
-            return f1 == null && f2 == null;
-        }
-        if (f1.isNaN()) {
-            return f2.isNaN();
-        }
-        if (f1.isInfinite()) {
-            return f2.isInfinite() && Math.signum(f1) == Math.signum(f2);
-        }
-        float average = Math.abs((f1 + f2) / 2);
-        float differenceScaled = Math.abs(f1 - f2) / (average == 0.0f ? 1f : average);
-        return differenceScaled < 1.0E-6f;
-    }
-
-    /**
-     * See package-private method org.apache.arrow.vector.util.Validator#equalEnough(java.lang.Double, java.lang.Double)
-     */
-    private static boolean arrowValidatorEqualEnough(Double f1, Double f2) {
-        if (f1 == null || f2 == null) {
-            return f1 == null && f2 == null;
-        }
-        if (f1.isNaN()) {
-            return f2.isNaN();
-        }
-        if (f1.isInfinite()) {
-            return f2.isInfinite() && Math.signum(f1) == Math.signum(f2);
-        }
-        double average = Math.abs((f1 + f2) / 2);
-        double differenceScaled = Math.abs(f1 - f2) / (average == 0.0d ? 1d : average);
-        return differenceScaled < 1.0E-12d;
-    }
-
-    private static Schema metadataLess(Schema schema) {
+    private static Schema stripMetadata(Schema schema) {
         return new Schema(
-                schema.getFields().stream().map(DeephavenFlightSessionTest::metadataLess).collect(Collectors.toList()),
+                schema.getFields().stream().map(DeephavenFlightSessionTest::stripMetadata).collect(Collectors.toList()),
                 null);
     }
 
-    private static Field metadataLess(Field field) {
-        return new Field(field.getName(), metadataLess(field.getFieldType()), field.getChildren());
+    /**
+     * Returns a copy of {@code field} with key-value metadata removed, applied recursively to child fields.
+     */
+    private static Field stripMetadata(Field field) {
+        return new Field(field.getName(), stripMetadata(field.getFieldType()),
+                field.getChildren().stream().map(DeephavenFlightSessionTest::stripMetadata)
+                        .collect(Collectors.toList()));
     }
 
-    private static FieldType metadataLess(FieldType fieldType) {
+    /**
+     * Returns a copy of {@code fieldType} with key-value metadata removed, preserving nullability, Arrow type, and
+     * dictionary encoding.
+     */
+    private static FieldType stripMetadata(FieldType fieldType) {
         return new FieldType(fieldType.isNullable(), fieldType.getType(), fieldType.getDictionary(), null);
     }
 
