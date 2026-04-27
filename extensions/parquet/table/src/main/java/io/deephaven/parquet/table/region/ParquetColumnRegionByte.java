@@ -59,7 +59,6 @@ public final class ParquetColumnRegionByte<ATTR extends Any> extends ParquetColu
             @NotNull final ColumnLocation columnLocation) {
         super(columnChunkPageStore.mask(), columnChunkPageStore, columnLocation);
     }
-
     // region getBytes
     public byte[] getBytes(
             final long firstRowKey,

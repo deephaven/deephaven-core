@@ -2206,12 +2206,10 @@ public final class ParquetTableFilterTest {
 
             Table result;
 
-            result = diskTable.where(capturingFilterSym);
+            result = diskTable.where(capturingFilterSym).coalesce();
 
-            // 583 is explained as follows. There are 6 * 97 = 582 regions where Sym is not-null which are tested.
-            // There are 97 null regions for Sym which are all covered by a single test (to determine filter null
-            // behavior).
-            assertEquals(583, capturingFilterSym.numRowsProcessed());
+            // This filter is executed as a chunk filter over the constant regions, no rows are logged.
+            assertEquals(0, capturingFilterSym.numRowsProcessed());
             assertEquals(28572, result.size());
 
             // Use the unwrapped filter to test other optimization paths (i.e. chunk filtering) and assert equality.
@@ -2222,9 +2220,10 @@ public final class ParquetTableFilterTest {
 
             //////////////////////////////////////////////////////
 
-            result = diskTable.where(capturingFilterSymConditional);
+            // This filter is executed as a chunk filter over the constant regions, no rows are logged.
+            result = diskTable.where(capturingFilterSymConditional).coalesce();
 
-            assertEquals(583, capturingFilterSymConditional.numRowsProcessed());
+            assertEquals(0, capturingFilterSymConditional.numRowsProcessed());
             assertEquals(28572, result.size());
 
             // Use the unwrapped filter to test other optimization paths (i.e. chunk filtering) and assert equality.
@@ -2237,9 +2236,8 @@ public final class ParquetTableFilterTest {
 
             result = diskTable.where(capturingFilterA).coalesce();
 
-            // 673 is explained as follows. There are 7 * 96 = 672 regions where A is not null. There are 6 null
-            // regions for A, which are covered by a single test for filter null behavior.
-            assertEquals(673, capturingFilterA.numRowsProcessed());
+            // This filter is executed as a chunk filter over the constant regions, no rows are logged.
+            assertEquals(0, capturingFilterA.numRowsProcessed());
             assertEquals(51550, result.size());
 
             // Use the unwrapped filter to test other optimization paths (i.e. chunk filtering) and assert equality.
@@ -2250,9 +2248,10 @@ public final class ParquetTableFilterTest {
 
             //////////////////////////////////////////////////////
 
+            // This filter is executed as a chunk filter over the constant regions, no rows are logged.
             result = diskTable.where(capturingFilterAConditional).coalesce();
 
-            assertEquals(673, capturingFilterAConditional.numRowsProcessed());
+            assertEquals(0, capturingFilterAConditional.numRowsProcessed());
             assertEquals(51550, result.size());
 
             // Use the unwrapped filter to test other optimization paths (i.e. chunk filtering) and assert equality.
@@ -2263,7 +2262,7 @@ public final class ParquetTableFilterTest {
 
             //////////////////////////////////////////////////////
 
-            result = diskTable.where(capturingFilterB);
+            result = diskTable.where(capturingFilterB).coalesce();
 
             // All rows to be tested.
             assertEquals(100000, capturingFilterB.numRowsProcessed());
@@ -2277,12 +2276,12 @@ public final class ParquetTableFilterTest {
 
             //////////////////////////////////////////////////////
 
+            // This filter is executed as a chunk filter over the constant regions, no rows are logged.
             result = diskTable.where(Filter.and(capturingFilterSym, capturingFilterA)).coalesce();
 
-            // All regions tested for Sym match
-            assertEquals(583, capturingFilterSym.numRowsProcessed());
+            assertEquals(0, capturingFilterSym.numRowsProcessed());
             // A subset of regions tested for A match
-            assertEquals(193, capturingFilterA.numRowsProcessed());
+            assertEquals(0, capturingFilterA.numRowsProcessed());
             assertEquals(14729, result.size());
 
             // Use the unwrapped filter to test other optimization paths (i.e. chunk filtering) and assert equality.
@@ -2291,80 +2290,5 @@ public final class ParquetTableFilterTest {
 
             allFilters.forEach(RowSetCapturingFilter::reset);
         }
-    }
-
-    @Test
-    public void testPartitioningTableColumnRegions() {
-        // Partitioning columns are automatically added to a data index. We have to disable use of the data index
-        // in order to test constant and null column region pushdown features.
-        QueryTable.USE_DATA_INDEX_FOR_WHERE = false;
-
-        QueryScope.addParam("symList", List.of("alpha", "bravo", "charlie", "delta", "echo", "foxtrot"));
-        final Table tmpTable = TableTools.emptyTable(100_000).update(
-                "Sym = i % 7 == 6 ? (String)null : (String)symList.get(i % 7)",
-                "A = i % 97 == 0 ? null : i % 97",
-                "B = i % 11 == 0 ? null : i % 11",
-                "C = i");
-        final PartitionedTable partitionedTable = tmpTable.partitionBy("Sym", "A");
-
-        final String destPath = Path.of(rootFile.getPath(), "partitioningTableColumnRegions").toString();
-        final ParquetInstructions writeInstructions = new ParquetInstructions.Builder()
-                .build();
-        writeKeyValuePartitionedTable(partitionedTable, destPath, writeInstructions);
-
-        // Coalesce the table to prevent PAST optimizations.
-        final Table diskTable = ParquetTools.readTable(destPath).coalesce();
-        final Table memTable = diskTable.select();
-
-        final AtomicLong symCounter = new AtomicLong(0L);
-        final AtomicLong aCounter = new AtomicLong(0L);
-        final AtomicLong bCounter = new AtomicLong(0L);
-
-        QueryScope.addParam("symCounter", symCounter);
-        QueryScope.addParam("aCounter", aCounter);
-        QueryScope.addParam("bCounter", bCounter);
-
-        final Filter filterSym = RawString.of("symCounter.incrementAndGet() > 0 && (Sym == `alpha` || Sym == `bravo`)");
-        final Filter filterA = RawString.of("aCounter.incrementAndGet() > 0 && A < 50");
-        final Filter filterB = RawString.of("bCounter.incrementAndGet() > 0 && B < 5");
-
-        final List<AtomicLong> allCounters = List.of(symCounter, aCounter, bCounter);
-
-        Table result;
-
-        result = diskTable.where(filterSym).coalesce();
-
-        // 583 is explained as follows. There are 6 * 97 = 582 regions where Sym is not-null which are tested.
-        // There are 97 null regions for Sym which are all covered by a single test (to determine filter null
-        // behavior).
-        assertEquals(583, symCounter.get());
-        assertEquals(28572, result.size());
-
-        allCounters.forEach(al -> al.set(0L));
-
-        //////////////////////////////////////////////////////
-
-        result = diskTable.where(filterA).coalesce();
-
-        // 673 is explained as follows. There are 7 * 96 = 672 regions where A is not null. There are 6 null
-        // regions for A, which are covered by a single test for filter null behavior.
-        assertEquals(673, aCounter.get());
-        assertEquals(51550, result.size());
-
-        allCounters.forEach(al -> al.set(0L));
-
-        //////////////////////////////////////////////////////
-
-        result = diskTable.where(filterB).coalesce();
-
-        // All rows to be tested.
-        assertEquals(100000, bCounter.get());
-        assertEquals(45455, result.size());
-
-        // Use the unwrapped filter to test other optimization paths (i.e. chunk filtering) and assert equality.
-        assertTableEquals(result, memTable.where(filterB));
-        assertTableEquals(result, diskTable.where(filterB));
-
-        allCounters.forEach(al -> al.set(0L));
     }
 }

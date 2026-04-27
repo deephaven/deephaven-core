@@ -9,7 +9,6 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.impl.PushdownFilterContext;
 import io.deephaven.engine.table.impl.PushdownResult;
 import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.locations.ColumnLocation;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.TableLocation;
 import io.deephaven.engine.table.impl.select.*;
@@ -130,6 +129,11 @@ public final class ParquetColumnRegionObject<DATA_TYPE, ATTR extends Any> extend
                 final String col = filter.getColumns().get(0);
                 final String renamedCol = ctx.filterColumnToManagerColumnName().getOrDefault(col, col);
                 if (firstSortedColumn.column().name().equals(renamedCol)) {
+                    // Can't push down case-insensitive match filters to binary search
+                    if (ctx.isMatchFilter() && ctx.filter() instanceof MatchFilter &&
+                            ((MatchFilter) ctx.filter()).getMatchOptions().caseInsensitive()) {
+                        return PushdownResult.UNSUPPORTED_ACTION_COST;
+                    }
                     return action.filterCost();
                 }
             }
@@ -166,6 +170,12 @@ public final class ParquetColumnRegionObject<DATA_TYPE, ATTR extends Any> extend
             final String col = filter.getColumns().get(0);
             final String renamedCol = ctx.filterColumnToManagerColumnName().getOrDefault(col, col);
             if (!firstSortedColumn.column().name().equals(renamedCol)) {
+                return input.copy();
+            }
+
+            // Can't push down case-insensitive match filters to binary search
+            if (ctx.isMatchFilter() && ctx.filter() instanceof MatchFilter &&
+                    ((MatchFilter) ctx.filter()).getMatchOptions().caseInsensitive()) {
                 return input.copy();
             }
 
