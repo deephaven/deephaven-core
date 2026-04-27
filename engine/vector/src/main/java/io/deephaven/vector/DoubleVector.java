@@ -13,11 +13,9 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.util.annotations.UserInvocationPermitted;
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfDouble;
 import io.deephaven.engine.primitive.value.iterator.ValueIteratorOfDouble;
-import io.deephaven.qst.type.DoubleType;
 import io.deephaven.qst.type.PrimitiveVectorType;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.FinalDefault;
-import io.deephaven.util.compare.DoubleComparisons;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -31,7 +29,7 @@ public interface DoubleVector extends Vector<DoubleVector>, Iterable<Double> {
     long serialVersionUID = -1373264425081841175L;
 
     static PrimitiveVectorType<DoubleVector, Double> type() {
-        return PrimitiveVectorType.of(DoubleVector.class, DoubleType.of());
+        return Types.DOUBLE_VECTOR_TYPE;
     }
 
     /**

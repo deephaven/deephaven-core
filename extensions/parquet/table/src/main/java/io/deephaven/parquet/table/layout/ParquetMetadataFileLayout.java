@@ -274,8 +274,7 @@ public class ParquetMetadataFileLayout implements TableLocationKeyFinder<Parquet
         // Primitive booleans should be boxed
         final Class<?> dataType = columnDefinition.getDataType();
         if (dataType == boolean.class) {
-            return ColumnDefinition.fromGenericType(
-                    columnDefinition.getName(), Boolean.class, null, ColumnDefinition.ColumnType.Partitioning);
+            return ColumnDefinition.ofBoolean(columnDefinition.getName()).withPartitioning();
         }
 
         // Non-boolean primitives and boxed Booleans are supported as-is
@@ -296,8 +295,7 @@ public class ParquetMetadataFileLayout implements TableLocationKeyFinder<Parquet
         }
 
         // Fall back to String for all other types
-        return ColumnDefinition.fromGenericType(
-                columnDefinition.getName(), String.class, null, ColumnDefinition.ColumnType.Partitioning);
+        return ColumnDefinition.ofString(columnDefinition.getName()).withPartitioning();
     }
 
     public TableDefinition getTableDefinition() {

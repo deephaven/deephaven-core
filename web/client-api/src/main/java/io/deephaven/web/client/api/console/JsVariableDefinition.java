@@ -3,10 +3,11 @@
 //
 package io.deephaven.web.client.api.console;
 
+import com.google.common.io.BaseEncoding;
 import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
 import com.vertispan.tsdefs.annotations.TsTypeRef;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.application_pb.FieldInfo;
+import io.deephaven.proto.backplane.grpc.FieldInfo;
 import io.deephaven.web.client.api.Tickets;
 import jsinterop.annotations.JsProperty;
 
@@ -14,7 +15,8 @@ import jsinterop.annotations.JsProperty;
  * A format to describe a variable available to be read from the server. Application fields are optional, and only
  * populated when a variable is provided by application mode.
  * <p>
- * APIs which take a VariableDefinition must at least be provided an object with a <b>type</b> and <b>id</b> field.
+ * APIs which take a {@link JsVariableDefinition} must at least be provided an object with a {@code type} and {@code id}
+ * field.
  */
 @TsInterface
 @TsName(namespace = "dh.ide", name = "VariableDefinition")
@@ -23,6 +25,7 @@ public class JsVariableDefinition {
 
     private final String type;
     private final String title;
+    // The ticket in base64
     private final String id;
     private final String description;
     private final String applicationId;
@@ -40,7 +43,7 @@ public class JsVariableDefinition {
 
     public JsVariableDefinition(FieldInfo field) {
         this.type = field.getTypedTicket().getType();
-        this.id = field.getTypedTicket().getTicket().getTicket_asB64();
+        this.id = BaseEncoding.base64().encode(field.getTypedTicket().getTicket().getTicket().toByteArray());
         this.title = field.getFieldName();
         this.description = field.getFieldDescription();
         this.applicationId = field.getApplicationId();
@@ -48,7 +51,7 @@ public class JsVariableDefinition {
     }
 
     /**
-     * The type of the variable, one of <b>dh.VariableType</b>
+     * The type of the variable, one of {@code dh.VariableType}.
      * 
      * @return dh.VariableType.
      */
@@ -65,7 +68,7 @@ public class JsVariableDefinition {
     }
 
     /**
-     * The name of the variable, to be used when rendering it to a user
+     * The name of the variable, to be used when rendering it to a user.
      * 
      * @return String
      */
@@ -75,7 +78,7 @@ public class JsVariableDefinition {
     }
 
     /**
-     * An opaque identifier for this variable
+     * An opaque identifier for this variable.
      * 
      * @return String
      */
@@ -86,7 +89,7 @@ public class JsVariableDefinition {
 
     /**
      * Optional description for the variable's contents, typically used to provide more detail that wouldn't be
-     * reasonable to put in the title
+     * reasonable to put in the title.
      * 
      * @return String
      */
@@ -97,7 +100,7 @@ public class JsVariableDefinition {
 
     /**
      * Optional description for the variable's contents, typically used to provide more detail that wouldn't be
-     * reasonable to put in the title
+     * reasonable to put in the title.
      * 
      * @return String
      */
@@ -107,7 +110,7 @@ public class JsVariableDefinition {
     }
 
     /**
-     * The name of the application which provided this variable
+     * The name of the application which provided this variable.
      * 
      * @return String
      */

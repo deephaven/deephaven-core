@@ -19,11 +19,11 @@ Each Deephaven table consists of:
 - A [`RowSet`](/core/javadoc/io/deephaven/engine/rowset/RowSet.html) - An ordered set of long keys representing valid row addresses.
 - Named [`ColumnSources`](/core/javadoc/io/deephaven/engine/table/ColumnSource.html) - A map from column name to ColumnSource, which acts as a dictionary from row key to cell value.
 
-In Python, you typically use higher-level APIs like `new_table()`, `DynamicTableWriter`, or pandas integration rather than working directly with RowSets and ColumnSources.
+In Python, you typically use higher-level APIs like `new_table`, `DynamicTableWriter`, or pandas integration rather than working directly with RowSets and ColumnSources.
 
 ## Static in-memory tables
 
-For simple static data sources, use `new_table()` to create tables from Python data structures.
+For simple static data sources, use `new_table` to create tables from Python data structures.
 
 Here's an example of creating a static table from custom data:
 
@@ -46,7 +46,7 @@ custom_table = new_table(
 )
 ```
 
-The `new_table()` function automatically infers column types from the provided data.
+The `new_table` function automatically infers column types from the provided data.
 
 ### Alternative: Using pandas
 
@@ -133,7 +133,7 @@ replayer.start()
 For advanced use cases requiring custom data loading logic, you can use Java interop to create custom ColumnSources. This approach is similar to the Groovy examples but uses Python's Java integration.
 
 > [!WARNING]
-> This is an advanced technique requiring knowledge of Deephaven's Java internals. For most use cases, `new_table()`, `DynamicTableWriter`, or pandas integration are recommended.
+> This is an advanced technique requiring knowledge of Deephaven's Java internals. For most use cases, `new_table`, `DynamicTableWriter`, or pandas integration are recommended.
 
 ```python order=custom_table
 from deephaven.jcompat import j_hashmap
@@ -176,7 +176,7 @@ custom_table = QueryTable(row_set, column_sources)
 
 ### Reading from custom file formats
 
-For custom file formats, read the data into Python structures and use `new_table()`:
+For custom file formats, read the data into Python structures and use `new_table`:
 
 ```python skip-test
 import struct

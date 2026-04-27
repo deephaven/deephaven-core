@@ -17,7 +17,7 @@ If an operation's source table is [refreshing](https://deephaven.io/core/javadoc
 
 ### Query updates
 
-After initialization, the Update Graph Processor monitors source tables for changes and process _updates_ to any table. For example, if 25,000 rows are added to `myTable`, the Update Graph will run the `random()` method 25,000 more times, calculating the value of column `X` for each of the new rows.
+After initialization, the Update Graph Processor monitors source tables for changes and process _updates_ to any table. For example, if 25,000 rows are added to `myTable`, the Update Graph will run the `random` method 25,000 more times, calculating the value of column `X` for each of the new rows.
 
 ## Parallelizing queries
 

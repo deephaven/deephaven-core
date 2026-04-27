@@ -193,7 +193,7 @@ result = OuterJoinTools.fullOuterJoin(left, right, "I")
 
 ## Join three or more tables
 
-The [`multijoin`](../reference/table-operations/join/multijoin.md) joins three or more tables. It was developed to improve the join speed by taking advantage of the potential to share a single hash table and exploit concurrency.
+The [`multijoin`](../reference/table-operations/join/multijoin.md) operation joins three or more tables. It was developed to improve the join speed by taking advantage of the potential to share a single hash table and exploit concurrency.
 
 [`MultiJoin.of`](../reference/table-operations/join/multijoin.md) joins three or more tables together in the same way that [`naturalJoin`](../reference/table-operations/join/natural-join.md) joins two tables together. The result of [`MultiJoin.of`](../reference/table-operations/join/multijoin.md) is not a typical table, but rather a `MultiJoinTable` object, so calling the `table` method is necessary for most use cases.
 
@@ -201,7 +201,7 @@ There are two ways to use [`MultiJoin.of`](../reference/table-operations/join/mu
 
 ### With constituent tables
 
-Using constituent tables is the simplest option, and can be accomplished with one line of code - however, it requires that all of the `MultiJoinTable`'s constituent tables have identical key column names and that _all_ of the tables' output rows are desired. The syntax is as follows:
+Using constituent tables is syntactically simple. The syntax is as follows:
 
 ```groovy syntax
 MultiJoinTable mjTable = MultiJoinFactory.of(keys, tables...)
@@ -210,11 +210,9 @@ MultiJoinTable mjTable = MultiJoinFactory.of(keys, tables...)
 - `keys` is a single string of comma-separated key column names; for example, `"key1, key2"`.
 - `tables` is any number of tables to merge; for example, `table1, table2, table3`.
 
-The following example demonstrates the simple version of the syntax.
+Using constituent tables requires that all tables have identical key column names and that _all_ of the tables' output rows are desired.
 
-- First, we create three tables, each containing a list of students' names and associated grades.
-- Then, we create a `MultiJoinTable` object, which joins the three tables on the `Name` and `Grade` columns.
-- Finally, we call `table()` to access the `MultiJoinTable` object's underlying table.
+The following example joins three tables that correspond to letter grades for students at three different grade levels.
 
 ```groovy order=result,Grade5,Grade6,Grade7
 // import multijoin classes
@@ -246,7 +244,7 @@ result = mtTable.table()
 
 ### With `MultiJoinInput` objects
 
-`MultiJoin.of` can also take a list of `MultiJoinInput` objects as input. This method is more complex, but allows for more flexibility. The syntax for creating a `MultiJoinInput` object is as follows:
+Using `MultiJoinInput` objects as inputs for [`MultiJoin.of`](../reference/table-operations/join/multijoin.md) is syntactically more complex than using [constituent tables](#with-constituent-tables), but allows for more flexibility. The syntax for creating a `MultiJoinInput` object is as follows:
 
 ```groovy syntax
 // create a MultiJoinInput array

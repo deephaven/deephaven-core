@@ -124,16 +124,19 @@ public class BarrageSubscriptionRequestHandler implements ArrowFlightUtil.DoExch
         }
     }
 
-    private synchronized void onExportResolved(final SessionState.ExportObject<Object> parent) {
-        onExportResolvedContinuation = null;
+    private void onExportResolved(final SessionState.ExportObject<Object> parent) {
+        final BarrageSubscriptionRequest subscriptionRequest;
+        synchronized (this) {
+            onExportResolvedContinuation = null;
 
-        if (marshaller.isClosed()) {
-            preExportSubscriptions = null;
-            return;
+            if (marshaller.isClosed()) {
+                preExportSubscriptions = null;
+                return;
+            }
+
+            // we know there is at least one request; it was put there when we knew which parent to wait on
+            subscriptionRequest = preExportSubscriptions.remove();
         }
-
-        // we know there is at least one request; it was put there when we knew which parent to wait on
-        final BarrageSubscriptionRequest subscriptionRequest = preExportSubscriptions.remove();
 
         final Object export = parent.get();
 
@@ -148,20 +151,33 @@ public class BarrageSubscriptionRequestHandler implements ArrowFlightUtil.DoExch
 
         final BarrageSubscriptionOptions options = BarrageSubscriptionOptions.of(subscriptionRequest);
 
-        subscriptionObject =
+        final ExchangeMarshaller.Subscription newSubscriptionObject =
                 marshallerForExport.subscribe(subscriptionRequest, options, export, listener);
 
-        final LivenessReferent subscriptionManagedReference = subscriptionObject.toManage();
-        if (subscriptionManagedReference != null) {
-            marshaller.manage(subscriptionManagedReference);
-        }
+        synchronized (this) {
+            if (marshaller.isClosed()) {
+                newSubscriptionObject.close();
+                preExportSubscriptions = null;
+                return;
+            }
 
-        for (final BarrageSubscriptionRequest request : preExportSubscriptions) {
-            apply(request);
-        }
+            subscriptionObject = newSubscriptionObject;
 
-        // we will now process requests as they are received
-        preExportSubscriptions = null;
+            final LivenessReferent subscriptionManagedReference = subscriptionObject.toManage();
+            if (subscriptionManagedReference != null) {
+                marshaller.manage(subscriptionManagedReference);
+            }
+
+            // preExportSubscriptions could have been changed out from under us if subscribe called close()
+            if (preExportSubscriptions != null) {
+                for (final BarrageSubscriptionRequest request : preExportSubscriptions) {
+                    apply(request);
+                }
+            }
+
+            // we will now process requests as they are received
+            preExportSubscriptions = null;
+        }
     }
 
     /**

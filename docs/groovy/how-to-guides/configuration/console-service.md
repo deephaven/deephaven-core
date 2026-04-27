@@ -26,7 +26,7 @@ jedi_settings.mode = Mode.OFF
 
 Valid options for `mode` are one of:
 
-- `STRONG`: (default) Looks in the user's `globals()` for answers to autocomplete and analyzes runtime Python objects.
+- `STRONG`: (default) Looks in the user's `globals` for answers to autocomplete and analyzes runtime Python objects.
 - `OFF`: Turns off autocomplete.
 - `SAFE`: Uses static analysis of source files. No code can be executed.
 

@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl.sources.regioned;
 import io.deephaven.engine.table.impl.locations.TableLocation;
 import io.deephaven.util.SafeCloseable;
 
+import javax.annotation.Nullable;
 import java.util.Objects;
 import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
@@ -34,11 +35,10 @@ public abstract class RegionedPushdownAction {
 
     /**
      * A predicate that can be used to determine if a pushdown action is valid for a given table location and column
-     * region. Either parameter may be null, the predicate implementation is responsible for handling this
-     * appropriately.
+     * region.
      */
     public interface LocationRegionPredicate {
-        boolean test(TableLocation location, ColumnRegion<?> region);
+        boolean test(@Nullable TableLocation location, @Nullable ColumnRegion<?> region);
     }
 
     // Note: the disabled static configuration values are _not_ currently final and we must test them on each call
@@ -68,7 +68,8 @@ public abstract class RegionedPushdownAction {
     }
 
     /**
-     * Determine if this action is allowed for the given table location, column region, and filter context.
+     * Determine if this action is allowed for the given table location, column region, and the filter context
+     * (including comparison against already-executed filter costs).
      */
     public boolean allows(
             final TableLocation location,
@@ -80,8 +81,8 @@ public abstract class RegionedPushdownAction {
     }
 
     /**
-     * Determine if this action is allowed for the given table location, column region, filter context, and cost
-     * ceiling.
+     * Determine if this action is allowed for the given table location, column region, filter context (including
+     * comparison against already-executed filter costs), and the cost ceiling.
      */
     public boolean allows(
             final TableLocation location,
@@ -99,7 +100,7 @@ public abstract class RegionedPushdownAction {
     }
 
     /**
-     * Determine if this action is allowed based on the current executed filter cost and the filter context predicate.
+     * Determine if this action is allowed based on the already-executed filter cost and the filter context predicate.
      */
     private boolean contextAllows(final RegionedPushdownFilterContext context) {
         return context.executedFilterCost() < filterCost && contextAllows.test(context);

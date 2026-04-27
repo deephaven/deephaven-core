@@ -4,14 +4,14 @@
 package io.deephaven.web.client.api;
 
 import com.vertispan.tsdefs.annotations.TsName;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.SortDescriptor;
+import io.deephaven.proto.backplane.grpc.SortDescriptor;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsProperty;
 
 /**
- * Describes a Sort present on the table. No visible constructor, created through the use of Column.sort(), will be tied
- * to that particular column data. Sort instances are immutable, and use a builder pattern to make modifications. All
- * methods return a new Sort instance.
+ * Describes a {@link Sort} present on the table. No visible constructor, created through the use of
+ * {@link Column#sort()}, will be tied to that particular column data. {@link Sort} instances are immutable, and use a
+ * builder pattern to make modifications. All methods return a new {@link Sort} instance.
  */
 @TsName(namespace = "dh")
 public class Sort {
@@ -48,7 +48,7 @@ public class Sort {
     }
 
     /**
-     * The direction of this sort, either <b>ASC</b>, <b>DESC</b>, or <b>REVERSE</b>.
+     * The direction of this sort, either {@code ASC}, {@code DESC}, or {@code REVERSE}.
      * 
      * @return String
      */
@@ -58,7 +58,7 @@ public class Sort {
     }
 
     /**
-     * True if the absolute value of the column should be used when sorting; defaults to false.
+     * Set to {@code true} if the absolute value of the column should be used when sorting; defaults to {@code false}.
      * 
      * @return boolean
      */
@@ -68,7 +68,7 @@ public class Sort {
     }
 
     /**
-     * Builds a Sort instance to sort values in ascending order.
+     * Builds a {@link Sort} instance to sort values in ascending order.
      * 
      * @return {@link Sort}
      */
@@ -81,7 +81,7 @@ public class Sort {
     }
 
     /**
-     * Builds a Sort instance to sort values in descending order.
+     * Builds a {@link Sort} instance to sort values in descending order.
      * 
      * @return {@link Sort}
      */
@@ -94,7 +94,7 @@ public class Sort {
     }
 
     /**
-     * Builds a Sort instance which takes the absolute value before applying order.
+     * Builds a {@link Sort} instance which takes the absolute value before applying order.
      * 
      * @return {@link Sort}
      */
@@ -110,21 +110,21 @@ public class Sort {
         if (direction == null) {
             throw new IllegalStateException("Cannot perform a sort without a direction, please call desc() or asc()");
         }
-        SortDescriptor descriptor = new SortDescriptor();
+        SortDescriptor.Builder descriptor = SortDescriptor.newBuilder();
         descriptor.setIsAbsolute(isAbs());
         descriptor.setColumnName(getColumn().getName());
         switch (direction) {
             case ASCENDING:
-                descriptor.setDirection(SortDescriptor.SortDirection.getASCENDING());
+                descriptor.setDirection(SortDescriptor.SortDirection.ASCENDING);
                 break;
             case DESCENDING:
-                descriptor.setDirection(SortDescriptor.SortDirection.getDESCENDING());
+                descriptor.setDirection(SortDescriptor.SortDirection.DESCENDING);
                 break;
             case REVERSE:
-                descriptor.setDirection(SortDescriptor.SortDirection.getREVERSE());
+                descriptor.setDirection(SortDescriptor.SortDirection.REVERSE);
                 break;
         }
-        return descriptor;
+        return descriptor.build();
     }
 
     @JsMethod

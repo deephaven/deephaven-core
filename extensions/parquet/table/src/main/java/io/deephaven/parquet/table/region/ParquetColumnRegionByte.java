@@ -12,13 +12,13 @@ import io.deephaven.chunk.WritableChunk;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSequenceFactory;
 
+import io.deephaven.engine.table.impl.locations.ColumnLocation;
 import io.deephaven.api.SortColumn;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.impl.PushdownFilterContext;
 import io.deephaven.engine.table.impl.PushdownResult;
 import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.locations.ColumnLocation;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.TableLocation;
 import io.deephaven.engine.table.impl.select.ByteRangeFilter;
@@ -59,6 +59,7 @@ public final class ParquetColumnRegionByte<ATTR extends Any> extends ParquetColu
             @NotNull final ColumnLocation columnLocation) {
         super(columnChunkPageStore.mask(), columnChunkPageStore, columnLocation);
     }
+
     // region getBytes
     public byte[] getBytes(
             final long firstRowKey,

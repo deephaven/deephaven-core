@@ -17,7 +17,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * A descriptor used with JsFigureFactory.create to create a figure from JS.
+ * A descriptor used with {@code JsFigureFactory.create} to create a figure from JS.
  */
 @JsType(name = "FigureDescriptor", namespace = "dh.plot")
 public class JsFigureDescriptor {

@@ -50,8 +50,12 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.util.file.TrackedFileHandleFactory;
 import io.deephaven.parquet.base.BigDecimalParquetBytesCodec;
 import io.deephaven.parquet.base.BigIntegerParquetBytesCodec;
+import io.deephaven.parquet.base.ColumnWriter;
 import io.deephaven.parquet.base.InvalidParquetFileException;
+import io.deephaven.parquet.base.NullParquetMetadataFileWriter;
 import io.deephaven.parquet.base.NullStatistics;
+import io.deephaven.parquet.base.ParquetFileWriter;
+import io.deephaven.parquet.base.RowGroupWriter;
 import io.deephaven.parquet.base.materializers.ParquetMaterializerUtils;
 import io.deephaven.parquet.table.location.ParquetTableLocation;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
@@ -76,6 +80,7 @@ import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableDouble;
 import org.apache.commons.lang3.mutable.MutableFloat;
 import org.apache.commons.lang3.mutable.MutableObject;
+import org.apache.parquet.bytes.HeapByteBufferAllocator;
 import org.apache.parquet.column.Encoding;
 import org.apache.parquet.column.statistics.DoubleStatistics;
 import org.apache.parquet.column.statistics.IntStatistics;
@@ -133,6 +138,7 @@ import static io.deephaven.parquet.table.ParquetTools.writeTables;
 import static io.deephaven.util.QueryConstants.*;
 import static org.apache.parquet.schema.LogicalTypeAnnotation.decimalType;
 import static org.apache.parquet.schema.LogicalTypeAnnotation.intType;
+import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.BINARY;
 import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.FIXED_LEN_BYTE_ARRAY;
 import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.INT32;
 import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.INT64;
@@ -4090,7 +4096,7 @@ public final class ParquetTableReadWriteTest {
                 .build();
 
         final ColumnDefinition<byte[]> columnDefinition =
-                ColumnDefinition.fromGenericType("VariableWidthByteArrayColumn", byte[].class, byte.class);
+                ColumnDefinition.of("VariableWidthByteArrayColumn", Type.byteType().arrayType());
         final TableDefinition tableDefinition = TableDefinition.of(columnDefinition);
         final byte[] byteArray = new byte[pageSize / 2];
         final Table table = newTable(tableDefinition,
@@ -4201,21 +4207,21 @@ public final class ParquetTableReadWriteTest {
         // APIs from ColumnLocation
         verifyMakeHandleException(nonExistentColumnLocation::exists);
         verifyMakeHandleException(() -> nonExistentColumnLocation.makeColumnRegionChar(
-                ColumnDefinition.fromGenericType("A", char.class, Character.class)));
+                ColumnDefinition.ofChar("A")));
         verifyMakeHandleException(() -> nonExistentColumnLocation.makeColumnRegionByte(
-                ColumnDefinition.fromGenericType("A", byte.class, Byte.class)));
+                ColumnDefinition.ofByte("A")));
         verifyMakeHandleException(() -> nonExistentColumnLocation.makeColumnRegionShort(
-                ColumnDefinition.fromGenericType("A", short.class, Short.class)));
+                ColumnDefinition.ofShort("A")));
         verifyMakeHandleException(() -> nonExistentColumnLocation.makeColumnRegionInt(
-                ColumnDefinition.fromGenericType("A", int.class, Integer.class)));
+                ColumnDefinition.ofInt("A")));
         verifyMakeHandleException(() -> nonExistentColumnLocation.makeColumnRegionLong(
-                ColumnDefinition.fromGenericType("A", long.class, Long.class)));
+                ColumnDefinition.ofLong("A")));
         verifyMakeHandleException(() -> nonExistentColumnLocation.makeColumnRegionFloat(
-                ColumnDefinition.fromGenericType("A", float.class, Float.class)));
+                ColumnDefinition.ofFloat("A")));
         verifyMakeHandleException(() -> nonExistentColumnLocation.makeColumnRegionDouble(
-                ColumnDefinition.fromGenericType("A", double.class, Double.class)));
+                ColumnDefinition.ofDouble("A")));
         verifyMakeHandleException(() -> nonExistentColumnLocation.makeColumnRegionObject(
-                ColumnDefinition.fromGenericType("A", String.class, String.class)));
+                ColumnDefinition.ofString("A")));
     }
 
     @Test
@@ -4256,7 +4262,7 @@ public final class ParquetTableReadWriteTest {
     public void readWriteStatisticsTest() {
         // Test simple structured table.
         final ColumnDefinition<byte[]> columnDefinition =
-                ColumnDefinition.fromGenericType("VariableWidthByteArrayColumn", byte[].class, byte.class);
+                ColumnDefinition.of("VariableWidthByteArrayColumn", Type.byteType().arrayType());
         final TableDefinition tableDefinition = TableDefinition.of(columnDefinition);
         final byte[] byteArray = new byte[] {1, 2, 3, 4, NULL_BYTE, 6, 7, 8, 9, NULL_BYTE, 11, 12, 13};
         final Table simpleTable = newTable(tableDefinition,
@@ -5000,6 +5006,31 @@ public final class ParquetTableReadWriteTest {
         assertTrue(result.getDefinition().getColumn("String").isDirect());
         assertTrue(result.getDefinition().getColumn("Int").isDirect());
         assertTrue(result.getDefinition().getColumn("Double").isDirect());
+    }
+
+    @Test
+    public void testReadEnumLogicalTypeAsString() throws IOException {
+        final MessageType schema = Types.buildMessage()
+                .required(BINARY).as(LogicalTypeAnnotation.enumType()).named("status")
+                .named("schema");
+        final File dest = new File(rootFile, "enum_logical_type.parquet");
+        final Binary[] values = {Binary.fromString("RED"), Binary.fromString("GREEN"), Binary.fromString("BLUE")};
+        final Statistics<?> stats = Statistics.createStats(schema.getType("status"));
+        for (final Binary v : values) {
+            stats.updateStats(v);
+        }
+        // ParquetFileWriter is AutoCloseable, so nest it in its own try-with-resources to
+        // guarantee the file is finalised even if an exception is thrown mid-write.
+        try (final java.io.OutputStream os = Files.newOutputStream(dest.toPath());
+                final ParquetFileWriter fileWriter = new ParquetFileWriter(dest.toURI(), os,
+                        ParquetInstructions.EMPTY.getTargetPageSize(), new HeapByteBufferAllocator(), schema,
+                        "UNCOMPRESSED", Collections.emptyMap(), NullParquetMetadataFileWriter.INSTANCE, true)) {
+            final RowGroupWriter rowGroupWriter = fileWriter.addRowGroup(values.length);
+            try (final ColumnWriter columnWriter = rowGroupWriter.addColumn("status")) {
+                columnWriter.addPageNoNulls(values, values.length, stats);
+            }
+        }
+        checkSingleTable(newTable(stringCol("status", "RED", "GREEN", "BLUE")), dest);
     }
 
     private void testSortedFilteringInternal(final Table table, final String columnName, final String filter) {

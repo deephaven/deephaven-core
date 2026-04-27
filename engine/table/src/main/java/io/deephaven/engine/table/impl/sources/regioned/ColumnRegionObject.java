@@ -21,7 +21,6 @@ import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.SingleValuePushdownHelper;
-import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 
@@ -30,8 +29,6 @@ import io.deephaven.engine.table.impl.locations.ColumnLocation;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Consumer;
-import java.util.function.LongConsumer;
 import java.util.stream.IntStream;
 
 import static io.deephaven.util.QueryConstants.NULL_LONG;
@@ -261,7 +258,8 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
                 final boolean usePrev,
                 final PushdownFilterContext filterContext,
                 final RegionedPushdownAction.EstimateContext estimateContext) {
-            return action == CONSTANT_COLUMN_REGION ? CONSTANT_COLUMN_REGION.filterCost() : Long.MAX_VALUE;
+            return action == CONSTANT_COLUMN_REGION ? CONSTANT_COLUMN_REGION.filterCost()
+                    : PushdownResult.UNSUPPORTED_ACTION_COST;
         }
 
         @Override
@@ -296,11 +294,14 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
                     matches = SingleValuePushdownHelper.tableFilter(filter, selection, false, columnSource);
                 }
             }
-            return matches
-                    // Promote all maybe rows to match.
-                    ? PushdownResult.of(selection, input.match().union(input.maybeMatch()), RowSetFactory.empty())
-                    // None of these rows match, return the original match rows.
-                    : PushdownResult.of(selection, input.match(), RowSetFactory.empty());
+            if (matches) {
+                // Promote all maybe rows to match.
+                try (final RowSet allMatch = input.match().union(input.maybeMatch())) {
+                    return PushdownResult.of(selection, allMatch, RowSetFactory.empty());
+                }
+            }
+            // None of these rows match, return the original match rows.
+            return PushdownResult.of(selection, input.match(), RowSetFactory.empty());
         }
     }
 
@@ -397,38 +398,10 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
         }
 
         // region pushdown support
-        @Override
-        public void estimatePushdownFilterCost(
-                final WhereFilter filter,
-                final RowSet selection,
-                final boolean usePrev,
-                final PushdownFilterContext context,
-                final JobScheduler jobScheduler,
-                final LongConsumer onComplete,
-                final Consumer<Exception> onError) {
-            final RegionedPushdownFilterContext filterCtx = (RegionedPushdownFilterContext) context;
-            onComplete.accept(
-                    ColumnRegionPushdownHelper.estimatePushdownFilterCost(this, filter, selection, usePrev, filterCtx));
-        }
-
-        @Override
-        public void pushdownFilter(
-                final WhereFilter filter,
-                final RowSet selection,
-                final boolean usePrev,
-                final PushdownFilterContext context,
-                final long costCeiling,
-                final JobScheduler jobScheduler,
-                final Consumer<PushdownResult> onComplete,
-                final Consumer<Exception> onError) {
-            final RegionedPushdownFilterContext filterCtx = (RegionedPushdownFilterContext) context;
-            onComplete.accept(ColumnRegionPushdownHelper.pushdownFilter(this, filter, selection, usePrev, filterCtx,
-                    costCeiling));
-        }
 
         @Override
         public List<RegionedPushdownAction> supportedActions() {
-            return ColumnRegionPushdownHelper.pageStoreSupportedActions(this);
+            return PageStorePushdownHelper.supportedActions(this);
         }
 
         @Override
@@ -439,7 +412,7 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
                 final boolean usePrev,
                 final PushdownFilterContext filterContext,
                 final RegionedPushdownAction.EstimateContext estimateContext) {
-            return ColumnRegionPushdownHelper.estimatePageStorePushdownAction(
+            return PageStorePushdownHelper.estimatePushdownAction(
                     this, action, filter, selection, usePrev, filterContext, estimateContext);
         }
 
@@ -452,7 +425,7 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
                 final boolean usePrev,
                 final PushdownFilterContext filterContext,
                 final RegionedPushdownAction.ActionContext actionContext) {
-            return ColumnRegionPushdownHelper.performPageStorePushdownAction(
+            return PageStorePushdownHelper.performPushdownAction(
                     this, action, filter, selection, input, usePrev, filterContext, actionContext);
         }
 

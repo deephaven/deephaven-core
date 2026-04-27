@@ -570,7 +570,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
 
         if (estimateCtx.resolveState == EstimateContext.ResolveState.FAILED) {
             // One or more columns could not be resolved, so no benefit to pushing down.
-            return Long.MAX_VALUE;
+            return PushdownResult.UNSUPPORTED_ACTION_COST;
         }
 
         // Apply a more specific check that depends on materializing parquet metadata
@@ -586,10 +586,10 @@ public class ParquetTableLocation extends AbstractTableLocation {
             isApplicable = hasDataIndex(estimateCtx.parquetColumnNames);
         } else {
             // TODO(DH-19666): Add support for bloom filters, sortedness, etc.
-            return Long.MAX_VALUE;
+            return PushdownResult.UNSUPPORTED_ACTION_COST;
         }
 
-        return isApplicable ? action.filterCost() : Long.MAX_VALUE;
+        return isApplicable ? action.filterCost() : PushdownResult.UNSUPPORTED_ACTION_COST;
     }
 
     public static class ActionContext implements RegionedPushdownAction.ActionContext {

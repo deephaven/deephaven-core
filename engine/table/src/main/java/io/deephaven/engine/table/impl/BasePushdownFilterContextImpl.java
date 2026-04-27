@@ -60,12 +60,18 @@ public class BasePushdownFilterContextImpl implements BasePushdownFilterContext 
                     "filter must be stateless, but does not permit parallelization: " + filter);
         }
 
+        this.filter = filter;
         this.columnSources = columnSources;
+
         executedFilterCost = 0;
 
         // Extract the effective filter and use it for populating the context.
         final WhereFilter effectiveFilter = WhereFilterDelegating.maybeUnwrapFilter(filter);
         this.filter = effectiveFilter;
+        isRangeFilter = filter instanceof RangeFilter
+                && ((RangeFilter) filter).getRealFilter() instanceof AbstractRangeFilter;
+        isMatchFilter = filter instanceof MatchFilter &&
+                ((MatchFilter) filter).getFailoverFilterIfCached() == null;
 
         isRangeFilter = effectiveFilter instanceof RangeFilter
                 && ((RangeFilter) effectiveFilter).getRealFilter() instanceof AbstractRangeFilter;
@@ -73,9 +79,11 @@ public class BasePushdownFilterContextImpl implements BasePushdownFilterContext 
                 ((MatchFilter) effectiveFilter).getFailoverFilterIfCached() == null;
 
         final Optional<ChunkFilter> chunkFilter = ExposesChunkFilter.chunkFilter(effectiveFilter);
+        final Optional<ChunkFilter> chunkFilter = ExposesChunkFilter.chunkFilter(filter);
         supportsChunkFiltering = chunkFilter.isPresent()
                 || (effectiveFilter instanceof ConditionFilter
                         && ((ConditionFilter) effectiveFilter).getNumInputsUsed() == 1);
+                || (filter instanceof ConditionFilter && ((ConditionFilter) filter).getNumInputsUsed() == 1);
 
         conditionalFilterInitTable = null; // lazily initialized
         filterNullBehavior = null; // lazily initialized

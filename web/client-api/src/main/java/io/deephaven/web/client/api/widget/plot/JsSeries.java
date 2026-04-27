@@ -6,8 +6,7 @@ package io.deephaven.web.client.api.widget.plot;
 import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsTypeRef;
 import elemental2.core.JsObject;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.figuredescriptor.SeriesDescriptor;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.figuredescriptor.SourceDescriptor;
+import io.deephaven.proto.backplane.script.grpc.FigureDescriptor;
 import io.deephaven.web.client.api.JsPartitionedTable;
 import io.deephaven.web.client.api.JsTable;
 import io.deephaven.web.client.api.widget.plot.enums.JsSeriesPlotStyle;
@@ -27,7 +26,7 @@ import java.util.Map;
 @JsType(namespace = "dh.plot", name = "Series")
 public class JsSeries {
 
-    private final SeriesDescriptor descriptor;
+    private final FigureDescriptor.SeriesDescriptor descriptor;
     private final JsFigure jsFigure;
 
     private final SeriesDataSource[] sources;
@@ -40,15 +39,15 @@ public class JsSeries {
     private OneClick oneClick;
 
     @JsIgnore
-    public JsSeries(SeriesDescriptor series, JsFigure jsFigure, Map<String, JsAxis> axes) {
+    public JsSeries(FigureDescriptor.SeriesDescriptor series, JsFigure jsFigure, Map<String, JsAxis> axes) {
         this.descriptor = series;
         this.jsFigure = jsFigure;
 
-        this.sources = new SeriesDataSource[0];
+        this.sources = new SeriesDataSource[series.getDataSourcesCount()];
 
-        for (int i = 0; i < series.getDataSourcesList().length; i++) {
-            SourceDescriptor dataSource = series.getDataSourcesList().getAt(i);
-            sources[sources.length] = new SeriesDataSource(axes.get(dataSource.getAxisId()), dataSource);
+        for (int i = 0; i < series.getDataSourcesCount(); i++) {
+            FigureDescriptor.SourceDescriptor dataSource = series.getDataSources(i);
+            sources[i] = new SeriesDataSource(axes.get(dataSource.getAxisId()), dataSource);
 
             // set up oneclick if needed, make sure series make sense
             if (oneClick == null) {
@@ -85,7 +84,7 @@ public class JsSeries {
         subscribe(null);
     }
 
-    public void subscribe(@JsOptional DownsampleOptions forceDisableDownsample) {
+    public void subscribe(@JsOptional @JsNullable DownsampleOptions forceDisableDownsample) {
         this.downsample = forceDisableDownsample == null ? DownsampleOptions.DEFAULT : forceDisableDownsample;
         subscribed = true;
         jsFigure.enqueueSubscriptionCheck();
@@ -122,7 +121,7 @@ public class JsSeries {
     @JsProperty
     @TsTypeRef(JsSeriesPlotStyle.class)
     public int getPlotStyle() {
-        return descriptor.getPlotStyle();
+        return descriptor.getPlotStyle().getNumber();
     }
 
     /**
@@ -233,7 +232,7 @@ public class JsSeries {
     }
 
     @JsIgnore
-    public SeriesDescriptor getDescriptor() {
+    public FigureDescriptor.SeriesDescriptor getDescriptor() {
         return descriptor;
     }
 

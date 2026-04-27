@@ -17,10 +17,11 @@
 #include <thread>
 #include <utility>
 #include <vector>
-#include <grpc/support/log.h>
+#include <absl/log/log.h>
 #include "deephaven/client/arrowutil/arrow_column_source.h"
 #include "deephaven/client/arrowutil/arrow_array_converter.h"
 #include "deephaven/client/server/server.h"
+#include "deephaven/client/client_options.h"
 #include "deephaven/client/utility/arrow_util.h"
 #include "deephaven/client/utility/executor.h"
 #include "deephaven/dhcore/chunk/chunk.h"
@@ -159,8 +160,19 @@ void SubscribeState::Invoke() {
 
 std::shared_ptr<SubscriptionHandle> SubscribeState::InvokeHelper() {
   arrow::flight::FlightCallOptions fco;
+  // Note: Authorization and envoy-prefix headers are automatically added by BearerMiddleware
+  // Only add OTHER extra headers here (if any)
   server_->ForEachHeaderNameAndValue(
       [&fco](const std::string &name, const std::string &value) {
+        // Skip authorization (handled by middleware)
+        if (name == deephaven::client::kAuthorizationHeader) {
+          return;
+        }
+        // Skip envoy-prefix (handled by middleware)
+        if (name == deephaven::client::kEnvoyPrefixHeader) {
+          return;
+        }
+        // Add any other extra headers
         fco.headers.emplace_back(name, value);
       }
   );
@@ -211,11 +223,11 @@ UpdateProcessor::~UpdateProcessor() {
 
 void UpdateProcessor::Cancel() {
   constexpr const char *const kMe = "UpdateProcessor::Cancel";
-  gpr_log(GPR_INFO, "%s: Subscription Shutdown requested.", kMe);
+  LOG(INFO) << kMe << ": Subscription Shutdown requested.";
   std::unique_lock guard(mutex_);
   if (cancelled_) {
     guard.unlock(); // to be nice
-    gpr_log(GPR_ERROR, "%s: Already cancelled.", kMe);
+    LOG(ERROR) << kMe << ": Already cancelled.";
     return;
   }
   cancelled_ = true;
