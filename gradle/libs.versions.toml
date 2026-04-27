@@ -221,7 +221,7 @@ hadoop-common = { module = "org.apache.hadoop:hadoop-common", version.ref = "had
 # These are transitive, inlined versions; see io.deephaven.hadoop-common-dependencies
 woodstox-core = { module = "com.fasterxml.woodstox:woodstox-core", version = "6.6.2" }
 hadoop-shaded-guava = { module = "org.apache.hadoop.thirdparty:hadoop-shaded-guava", version = "1.5.0" }
-commons-collections4 = { module = "org.apache.commons:commons-collections4", version = "4.4" }
+commons-collections4 = { module = "org.apache.commons:commons-collections4", version = "4.5.0" }
 
 hdrhistogram = { module = "org.hdrhistogram:HdrHistogram", version.ref = "hdrhistogram" }
 
