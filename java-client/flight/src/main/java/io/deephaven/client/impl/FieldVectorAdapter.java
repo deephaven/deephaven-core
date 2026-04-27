@@ -495,9 +495,7 @@ public class FieldVectorAdapter implements Array.Visitor<FieldVector>, Primitive
             if (d == null) {
                 vector.setNull(index);
             } else {
-                final long epochSecond = d.getSeconds();
-                final int nano = d.getNano();
-                final long totalNanos = Math.addExact(Math.multiplyExact(epochSecond, 1_000_000_000L), nano);
+                final long totalNanos = d.toNanos();
                 vector.set(index, totalNanos);
             }
             index++;
@@ -791,9 +789,7 @@ public class FieldVectorAdapter implements Array.Visitor<FieldVector>, Primitive
                     if (x == null) {
                         writer.writeNull();
                     } else {
-                        final long epochSecond = x.getSeconds();
-                        final int nano = x.getNano();
-                        final long totalNanos = Math.addExact(Math.multiplyExact(epochSecond, 1_000_000_000L), nano);
+                        final long totalNanos = x.toNanos();
                         final DurationHolder durationHolder = new DurationHolder();
                         durationHolder.value = totalNanos;
                         durationHolder.unit = TimeUnit.NANOSECOND;
