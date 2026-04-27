@@ -370,6 +370,11 @@ public class DeephavenFlightSessionTest extends DeephavenFlightSessionTestBase {
                             transferStrippingMetadata(retrievedRoot, bufferAllocator)) {
                 // Server-side metadata can differ while values are equivalent.
                 Validator.compareVectorSchemaRoot(retrievedRootNoMetadata, expectedRootNoMetadata);
+
+                // Validator.compareVectorSchemaRoot provides helpful error messages but performs approximate
+                // comparisons for some field types (e.g. floating point numbers). Validate again with
+                // VectorSchemaRoot.equals() to ensure the data matches exactly.
+                assertThat(retrievedRootNoMetadata.equals(expectedRootNoMetadata)).isTrue();
             }
 
             assertThat(stream.next()).isFalse();
