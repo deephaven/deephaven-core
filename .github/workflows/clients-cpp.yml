@@ -1,0 +1,282 @@
+name: "C++"
+on:
+  pull_request:
+    branches: [ 'main', 'rc/v*' ]
+  push:
+    branches: [ 'main', 'check/**', 'release/v*' ]
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+#===============================================================================
+# Background: in this workflow there are three different kinds of caching
+# going on:
+#
+# 1. The outputs are GitHub Build artifacts, attached to every action run.
+#    These artifacts can be downloaded from e.g.
+#    https://github.com/deephaven/deephaven-core/actions/runs/17416308139
+#    but the specific URL depends on the build.
+#    We use this to upload the C++ install directory (later PRs will add
+#    Python client wheels built on top of it).
+#
+# 2. GitHub Packages, which is a NuGet-compatible repo accessible from
+#    https://github.com/orgs/deephaven/packages?repo_name=deephaven-core
+#    and controlled via the NuGet API. We use this package repository to hold
+#    the binaries for the C++ dependencies we build (grpc, arrow, etc.). It is
+#    managed automatically for us by cmake/vcpkg/nuget. This optimization is
+#    important because building the C++ dependencies takes significant time
+#    (a couple of hours for the Windows build). Reading requires
+#    authentication (GitHub Packages nuget feeds have no anonymous access),
+#    so this cache is only usable by CI, not by developers.
+#
+# 3. [Linux only] The C++ dependencies image on ghcr.io
+#    (ghcr.io/deephaven/deephaven-core-cpp-deps), a Docker image holding the
+#    pinned C++ toolchain plus all vcpkg-built dependencies, tagged with a
+#    hash of its inputs (vcpkg.json, baseline, triplets, Dockerfile). Unlike
+#    the nuget feed, ghcr.io allows anonymous public pulls, so the
+#    :cpp-client:cppClient Gradle task gives developers prebuilt dependencies
+#    with no credentials. This workflow publishes that image on pushes to
+#    main whenever its tag does not exist yet.
+#===============================================================================
+
+env:
+  GH_PACKAGES_USERNAME: ${{ github.repository_owner }}
+  GH_PACKAGES_FEED: https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json
+  DHINSTALL: ${{ github.workspace }}/dhinstall
+
+jobs:
+  #=============================================================================
+  # Build the C++ Client (Linux)
+  #
+  # Delegates to the same Gradle task developers use locally:
+  # :cpp-client:cppClient builds the client in Docker on top of a
+  # content-addressed dependencies image (see cpp-client/docker/deps.Dockerfile).
+  # This job additionally holds write credentials: on pushes it lets vcpkg
+  # publish newly built packages to the GitHub Packages nuget feed and pushes
+  # the deps image to ghcr.io, so developers (and PR builds) get cache hits
+  # with anonymous pulls.
+  #=============================================================================
+  cpp_linux_job:
+    name: "Build C++ (Linux)"
+    permissions:
+      contents: read
+      packages: write
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        shell: bash
+
+    env:
+      DEEPHAVEN_CPP_DEPS_IMAGE_REPO: ghcr.io/${{ github.repository_owner }}/deephaven-core-cpp-deps
+
+    steps:
+      - name: Check out this repo
+        uses: actions/checkout@v6
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      # Needed only to push the deps image; pulls are anonymous.
+      - name: Login to GitHub Container Registry
+        if: github.event_name == 'push'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Pulls the deps image when it exists; on a miss (deps inputs changed)
+      # builds it with vcpkg, using the nuget binary cache so only changed
+      # packages are rebuilt (readwrite on push, read on PRs).
+      - name: Build C++ client
+        env:
+          GH_PACKAGES_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VCPKG_NUGET_MODE: ${{ github.event_name == 'push' && 'readwrite' || 'read' }}
+        run: ./gradlew :cpp-client:cppClient
+
+      # Only exists when the deps image was built here (cache miss); most
+      # useful when that build failed.
+      - name: Upload deps build log
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: cpp-deps-build-log-${{ github.run_id }}
+          path: cpp-client/build/cppDepsImage-build.log
+          if-no-files-found: ignore
+
+      - name: Publish C++ deps image
+        if: github.event_name == 'push'
+        run: ./gradlew :cpp-client:cppDepsImagePublish
+
+      # Export the install tree from the image as a build artifact (a future
+      # PR adds a Python ticking-client job that consumes it).
+      # -h dereferences symlinks (the deps image links /opt/deephaven/{include,lib}
+      # into the vcpkg install tree) so the tarball is self-contained; the
+      # transform renames the top-level directory to dhinstall, the layout the
+      # downstream job expects.
+      - name: Tar install dir
+        run: |
+          docker run --rm deephaven/cpp-client:local-build \
+            tar -czh -f - \
+            --exclude=deephaven/src --exclude=deephaven/proto --exclude=deephaven/log \
+            --transform 's,^deephaven,dhinstall,' \
+            -C /opt deephaven > cpp-client-install.tar.gz
+
+      - name: Upload install dir
+        uses: actions/upload-artifact@v7
+        with:
+          name: cpp-client-install-ubuntu-24.04
+          path: cpp-client-install.tar.gz
+
+  #=============================================================================
+  # Build the C++ Client (Windows)
+  #
+  # Still a host-side vcpkg build; not yet unified with the Gradle/Docker
+  # path used for Linux.
+  #=============================================================================
+  cpp_windows_job:
+    name: "Build C++ (Windows)"
+    permissions:
+      contents: read
+      packages: write
+    runs-on: windows-2025
+    env:
+      # We once had a custom triplet x64-windows-release here,
+      # but it seemed to interact poorly with certain Google packages
+      # like grpc and protobuf. Those packages, on Windows only,
+      # don't seem to honor our triplet and they end up both building
+      # too much and then not caching it. So every build takes a long time.
+      # We will try to investigate this further. Until then, we use the
+      # standard triplet "x64-windows". By the way, for historical reasons
+      # they are called triplets even if they don't have three parts.
+      TARGET_TRIPLET: x64-windows
+    defaults:
+      run:
+        # This gets you Git Bash on Windows
+        shell: bash
+
+    steps:
+      - name: Check out this repo
+        uses: actions/checkout@v6
+
+      # Make sure we check out the same version of the vcpkg tool that we
+      # have configured as our builtin-baseline. This (we suppose) will help
+      # improve the problem we have with our package hash drift.
+
+      - name: Extract vcpkg baseline
+        id: vcpkg-baseline
+        run: |
+          baseline=$(jq -r '.["builtin-baseline"]' ./cpp-client/deephaven/vcpkg.json)
+          echo "baseline=$baseline"
+          echo "baseline=$baseline" >> "$GITHUB_OUTPUT"
+
+      # Check out vcpkg
+
+      - name: Check out vcpkg
+        id: checkout-vcpkg
+        uses: actions/checkout@v6
+        with:
+          repository: microsoft/vcpkg
+          ref: ${{ steps.vcpkg-baseline.outputs.baseline }}
+          path: vcpkg
+          # Full history on purpose: builtin-baseline versioning resolves
+          # port versions through the clone's own git history; a shallow
+          # clone fails with "failed to unpack tree object".
+          fetch-depth: 0
+
+      # Bootstrap vcpkg
+
+      - name: Bootstrap vcpkg
+        run: "$GITHUB_WORKSPACE/vcpkg/bootstrap-vcpkg.sh"
+
+      # Adapted from
+      # https://learn.microsoft.com/en-us/vcpkg/consume/binary-caching-github-packages
+      # Configure nuget to know how to download (or upload) each cached
+      # package that we need (or create)
+
+      - name: Configure nuget
+        shell: pwsh
+        run: |
+          $nuget_exe = & ./vcpkg/vcpkg.exe fetch nuget
+          & $nuget_exe sources add `
+          -Source "${{ env.GH_PACKAGES_FEED }}" `
+          -StorePasswordInClearText `
+          -Name GitHubPackages `
+          -UserName "${{ env.GH_PACKAGES_USERNAME }}" `
+          -Password "${{ secrets.GITHUB_TOKEN }}"
+          & $nuget_exe setapikey "${{ secrets.GITHUB_TOKEN }}" -Source "${{ env.GH_PACKAGES_FEED }}"
+
+      # Build packages and configure cmake. Check nupkg cache for existing
+      # packages, otherwise build and upload.
+      # 1. Invoke vcpkg to:
+      #    a) Try to fetch each of the dependent libraries from the nuget cache
+      #    b) If not found, build them and insert them in the nuget cache
+      # 2. Configure cmake to prepare for the build/install step, which comes next
+
+      - name: "Build/cache dependencies"
+        env:
+          VCPKG_BINARY_SOURCES: "clear;nuget,${{ env.GH_PACKAGES_FEED }},${{ github.event_name == 'push' && 'readwrite' || 'read' }}"
+        run: |
+          cmake -S cpp-client/deephaven -B cpp-client/deephaven/build \
+          --toolchain "$GITHUB_WORKSPACE/vcpkg/scripts/buildsystems/vcpkg.cmake" \
+          -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+          -DVCPKG_INSTALL_OPTIONS="--x-abi-tools-use-exact-versions" \
+          -DX_VCPKG_APPLOCAL_DEPS_INSTALL=ON \
+          -DCMAKE_INSTALL_PREFIX="$DHINSTALL" \
+          -DVCPKG_TARGET_TRIPLET="${{ env.TARGET_TRIPLET }}" \
+          -DVCPKG_OVERLAY_TRIPLETS=cpp-client/deephaven/custom-triplets \
+          2>&1 | tee configure.log
+
+      # Diagnostic: Upload the configure.log to help debug caching issues.
+      # Uploaded even on failure, since that's when it's most useful.
+      - name: Upload vcpkg debug log
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: vcpkg-debug-windows-2025-${{ github.run_id }}
+          path: configure.log
+
+      # Diagnostic: collect the ABI info, in case we need to debug
+      # cache issues.
+      - name: Collect ABI info
+        if: always()
+        run: |
+          mkdir -p abi-dump
+          find cpp-client/deephaven/build/vcpkg_installed \
+            -path '*/share/*/vcpkg_abi_info.txt' \
+            -exec sh -c 'cp "$1" "abi-dump/$(echo "$1" | tr "/" "_")"' _ {} \;
+
+      # Diagnostic: upload the ABI info we collected in the previous step.
+      - name: Upload ABI info
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: abi-info-windows-2025-${{ github.run_id }}
+          path: abi-dump/
+
+      # Build our executables and install them in the configured install
+      # directory ${{ env.DHINSTALL }}
+
+      - name: Build and install
+        run: cmake --build cpp-client/deephaven/build --config RelWithDebInfo --target install --parallel
+
+      # Upload results as build artifact.
+      # We tar the install tree to preserve Unix file modes and symlinks
+      # (upload-artifact restores files as 0644 and dereferences symlinks).
+      # Note: run steps start in the workspace directory, which contains
+      # dhinstall, so relative paths are fine here. Avoid passing the
+      # workspace path to tar: on Windows it is backslashed, which Git
+      # Bash's tar cannot parse.
+
+      - name: Tar install dir
+        run: tar -czf cpp-client-install.tar.gz dhinstall
+
+      - name: Upload install dir
+        id: upload-install-directory
+        uses: actions/upload-artifact@v7
+        with:
+          name: cpp-client-install-windows-2025
+          path: cpp-client-install.tar.gz

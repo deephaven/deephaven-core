@@ -10,6 +10,75 @@ We have used the instructions in the past to build
 for older Ubuntu versions (20.04) and for some Fedora versions, but we don't regularly test
 on them anymore so we do not guarantee they are current for those platforms.
 
+# The easy way: build in Docker via Gradle
+
+If you just need a working C++ client build (e.g. to run the tests, or as a
+base for the R client), you don't need to follow the manual instructions
+below. From the repository root:
+
+```
+./gradlew :cpp-client:cppClient
+```
+
+builds the client into a Docker image (`deephaven/cpp-client:local-build`)
+on top of a prebuilt dependencies image that is pulled anonymously from
+`ghcr.io/deephaven/deephaven-core-cpp-deps`. The dependencies image is
+content-addressed: its tag is a hash of `deephaven/vcpkg.json` (which pins
+the vcpkg baseline), the custom triplets and `docker/deps.Dockerfile`. CI publishes it on every push to `main`, so unless
+you have locally modified one of those files, no dependency is ever compiled
+on your machine. If you *have* modified them, the Gradle task falls back to
+building the dependencies locally with vcpkg (slow, but automatic); once your
+change lands on `main`, CI publishes the matching image and everyone else
+gets pulls again.
+
+To run the C++ client unit tests against a Deephaven server, all in Docker:
+
+```
+./gradlew :cpp-client:testCppClient
+```
+
+The manual instructions below remain useful when you want a native
+(non-Docker) build on your host, e.g. for local development against a
+debugger.
+
+## Where the logs are
+
+Everything streams to your console live; nothing waits silently. If you need
+to dig after the fact:
+
+* Dependencies build (only happens on a cache miss): the full vcpkg output is
+  written to `cpp-client/build/cppDepsImage-build.log` as it happens. It is
+  plain text, it survives failures, and its last line is the last thing that
+  happened.
+* Client compile: streamed live during the build, and the full ninja log is
+  kept (plain text) inside the image:
+  ```
+  docker run --rm deephaven/cpp-client:local-build cat /opt/deephaven/log/ninja-install.log
+  ```
+
+## Clearing the caches
+
+Three caches are involved in the Docker/Gradle path, cleared separately:
+
+* The dependencies image itself: `docker rmi <the ghcr.io/...-cpp-deps image>`
+  (it will be re-pulled on the next build; find it with `docker images`).
+* When you build dependencies locally (i.e. you changed `vcpkg.json` or the
+  deps Dockerfile), vcpkg saves each successfully built package in a BuildKit
+  cache mount, so a failed or repeated build only rebuilds what changed.
+  Entries are keyed by vcpkg's ABI hash, so stale entries are never wrongly
+  reused; clear it to reclaim disk or to force a full from-source rebuild:
+  ```
+  docker builder prune --filter type=exec.cachemount
+  ```
+  (This clears *all* BuildKit cache mounts on the machine, not just vcpkg's.
+  `docker buildx du --verbose` shows what is in the build cache.)
+* Docker's ordinary layer cache for the toolchain/R stages of the deps image:
+  `docker builder prune` (unfiltered) drops it along with the cache mounts.
+
+The maximally blunt instrument, `docker system prune -a`, clears all of the
+above plus every unused image on the machine — effective, but the next build
+re-downloads and rebuilds considerably more than necessary.
+
 # Before you build the client
 
 To actually use Deephaven, for example running these examples and unit

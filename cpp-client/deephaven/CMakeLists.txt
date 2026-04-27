@@ -52,6 +52,24 @@ if(NOT DHCORE_ONLY)
         INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
         )
 
+    if(VCPKG_TOOLCHAIN)
+        if(WIN32)
+            install(DIRECTORY ${CMAKE_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/bin/
+                DESTINATION ${CMAKE_INSTALL_BINDIR}
+                FILES_MATCHING PATTERN "*.dll"
+            )
+        else()
+            install(DIRECTORY ${CMAKE_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/lib/
+                DESTINATION ${CMAKE_INSTALL_LIBDIR}
+                FILES_MATCHING
+                    PATTERN "*.so"
+                    PATTERN "*.so.*"
+                    PATTERN "pkgconfig" EXCLUDE
+                    PATTERN "cmake" EXCLUDE
+            )
+        endif()
+    endif()
+
       include(CMakePackageConfigHelpers)
       write_basic_package_version_file(
         "${CMAKE_CURRENT_BINARY_DIR}/deephaven/deephavenConfigVersion.cmake"
@@ -86,5 +104,21 @@ if(NOT DHCORE_ONLY)
         COMPONENT
         Devel
         )
-      
+
+      # Publish our vcpkg manifest next to the CMake package config so that
+      # downstream consumers (e.g. the enterprise client) can verify at their
+      # configure time that they build with the same vcpkg baseline and
+      # version overrides. Mismatched pins mean the two projects install
+      # incompatible copies of shared third-party DLLs (abseil, protobuf,
+      # arrow, ...) into the same prefix, which fails at load time with
+      # "Entry Point Not Found".
+      install(
+        FILES
+        vcpkg.json
+        DESTINATION
+        ${ConfigPackageLocation}
+        COMPONENT
+        Devel
+        )
+
 endif()

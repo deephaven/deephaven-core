@@ -1,3 +1,7 @@
+import java.security.MessageDigest
+import javax.inject.Inject
+import org.gradle.process.ExecOperations
+
 plugins {
     id 'com.bmuschko.docker-remote-api'
     id 'io.deephaven.project.register'
@@ -15,11 +19,6 @@ spotless {
     }
 }
 
-// We use the cpp-clients-multi-base image instead of the cpp-client-base,
-// so that the test tasks in py/client-ticking and R can in turn use the
-// image we will generate here as a base.
-// See https://github.com/deephaven/deephaven-base-images/tree/main/cpp-clients-multi
-evaluationDependsOn Docker.registryProject('cpp-clients-multi-base')
 evaluationDependsOn Docker.registryProject('manylinux2014_x86_64')
 
 // start a grpc-api server
@@ -35,14 +34,156 @@ deephavenDocker {
 def prefix = '/opt/deephaven'
 def build_type = 'RelWithDebInfo'
 
+//=============================================================================
+// C++ dependencies image
+//
+// The C++ client's dependencies (arrow, grpc, protobuf, ...) are built with
+// vcpkg inside a Docker image whose tag is a hash of everything that could
+// affect the result: the Dockerfile (which pins the base image and toolchain
+// by digest), the vcpkg manifest, the registry baseline and the custom
+// triplets. CI publishes that image to ghcr.io on pushes to main, so the
+// cppDepsImage task normally just pulls it (anonymously); it only builds
+// locally when no prebuilt image exists for the current hash — i.e. when you
+// have changed one of those inputs and CI has not caught up yet.
+//
+// Environment variables (all optional, mainly for CI):
+//   DEEPHAVEN_CPP_DEPS_IMAGE_REPO  image repo to pull/push
+//   GH_PACKAGES_TOKEN              enables vcpkg's nuget binary cache against
+//                                  GitHub Packages during a local deps build
+//                                  (GitHub requires auth even for reads)
+//   GH_PACKAGES_FEED, GH_PACKAGES_USERNAME, VCPKG_NUGET_MODE (read|readwrite)
+//=============================================================================
+
+def cppDepsTriplet = 'x64-linux-dynamic-release'
+
+def cppDepsVcpkgBaseline = new groovy.json.JsonSlurper()
+        .parse(file('deephaven/vcpkg.json'))['builtin-baseline']
+
+def cppDepsHash = {
+    def md = MessageDigest.getInstance('SHA-256')
+    md.update(cppDepsTriplet.getBytes('UTF-8'))
+    def hashInputs = [file('docker/deps.Dockerfile'),
+                      file('deephaven/vcpkg.json')]
+    hashInputs += fileTree(dir: 'deephaven/custom-triplets').files.sort { it.name }
+    hashInputs.each { f ->
+        md.update(f.name.getBytes('UTF-8'))
+        md.update(f.bytes)
+    }
+    md.digest().encodeHex().toString().substring(0, 12)
+}()
+
+def cppDepsImageRepo = System.getenv('DEEPHAVEN_CPP_DEPS_IMAGE_REPO') ?: 'ghcr.io/deephaven/deephaven-core-cpp-deps'
+def cppDepsImageRef = "${cppDepsImageRepo}:${cppDepsTriplet}-${cppDepsHash}".toString()
+
+abstract class CppDepsImageTask extends DefaultTask {
+    @Input abstract Property<String> getImageRef()
+    @Input abstract Property<String> getVcpkgBaseline()
+    @Input abstract Property<String> getTargetTriplet()
+    @InputDirectory abstract DirectoryProperty getContextDir()
+    @OutputFile abstract RegularFileProperty getMarkerFile()
+    @Inject abstract ExecOperations getExecOperations()
+
+    @TaskAction
+    void pullOrBuild() {
+        String ref = imageRef.get()
+        if (tryExec(['docker', 'image', 'inspect', ref])) {
+            logger.lifecycle("C++ deps image ${ref} already present locally.")
+        } else if (tryExec(['docker', 'pull', ref])) {
+            logger.lifecycle("C++ deps image ${ref} pulled.")
+        } else {
+            File logFile = new File(markerFile.get().asFile.parentFile, 'cppDepsImage-build.log')
+            logger.lifecycle("C++ deps image ${ref} is not available remotely " +
+                    "(usually because vcpkg.json or its Dockerfile changed and CI has not built it yet). " +
+                    "Building it locally with vcpkg; this can take a long time (tens of minutes cold, " +
+                    "much less when the local package cache has entries).")
+            logger.lifecycle("Full build log (kept for post-mortems): ${logFile}")
+            def args = ['docker', 'buildx', 'build', '--load', '--progress=plain',
+                        '-f', new File(contextDir.get().asFile, 'deps.Dockerfile').absolutePath,
+                        '-t', ref,
+                        '--build-arg', "VCPKG_BASELINE=${vcpkgBaseline.get()}".toString(),
+                        '--build-arg', "TARGET_TRIPLET=${targetTriplet.get()}".toString()]
+            if (System.getenv('GH_PACKAGES_TOKEN')) {
+                def feed = System.getenv('GH_PACKAGES_FEED') ?: 'https://nuget.pkg.github.com/deephaven/index.json'
+                def username = System.getenv('GH_PACKAGES_USERNAME') ?: 'deephaven'
+                def nugetMode = System.getenv('VCPKG_NUGET_MODE') ?: 'read'
+                args += ['--secret', 'id=gh_packages_token,env=GH_PACKAGES_TOKEN',
+                         '--build-arg', "GH_PACKAGES_FEED=${feed}".toString(),
+                         '--build-arg', "GH_PACKAGES_USERNAME=${username}".toString(),
+                         '--build-arg', "VCPKG_NUGET_MODE=${nugetMode}".toString()]
+            }
+            args += [contextDir.get().asFile.absolutePath]
+            // Tee the build output: the console keeps its live stream, and the
+            // log file survives for post-mortems after the scrollback is gone.
+            logFile.parentFile.mkdirs()
+            new FileOutputStream(logFile).withCloseable { fileOut ->
+                def tee = new org.apache.tools.ant.util.TeeOutputStream(System.out, fileOut)
+                execOperations.exec {
+                    it.commandLine args
+                    it.standardOutput = tee
+                    it.errorOutput = tee
+                }
+            }
+        }
+        markerFile.get().asFile.text = ref + '\n'
+    }
+
+    private boolean tryExec(List<String> cmd) {
+        def discard = new ByteArrayOutputStream()
+        def result = execOperations.exec {
+            it.commandLine cmd
+            it.ignoreExitValue = true
+            it.standardOutput = discard
+            it.errorOutput = discard
+        }
+        return result.exitValue == 0
+    }
+}
+
+def cppDepsContext = tasks.register('cppDepsContext', Sync) {
+    description = 'Assembles the Docker build context for the C++ dependencies image.'
+    from 'docker/deps.Dockerfile'
+    from('deephaven') {
+        include 'vcpkg.json'
+        include 'custom-triplets/**'
+    }
+    into layout.buildDirectory.dir('cppDepsContext')
+}
+
+def cppDepsImage = tasks.register('cppDepsImage', CppDepsImageTask) {
+    description = "Ensures the C++ deps image ${cppDepsImageRef} is available locally (local hit, anonymous pull, or vcpkg build)."
+    dependsOn cppDepsContext
+    imageRef = cppDepsImageRef
+    vcpkgBaseline = cppDepsVcpkgBaseline
+    targetTriplet = cppDepsTriplet
+    contextDir = layout.buildDirectory.dir('cppDepsContext')
+    markerFile = layout.buildDirectory.file('cppDepsImage.txt')
+    // The real output is an image in the local docker daemon, which gradle
+    // cannot track (and which the user can prune at any time); the local-hit
+    // check is cheap, so just always run.
+    outputs.upToDateWhen { false }
+}
+
+tasks.register('cppDepsImagePublish', Exec) {
+    description = "Pushes the C++ deps image to ${cppDepsImageRepo} (CI only; requires docker login to the registry)."
+    dependsOn cppDepsImage
+    commandLine 'docker', 'push', cppDepsImageRef
+}
+
+//=============================================================================
+// C++ client image
+//=============================================================================
+
 def buildCppClientImage = Docker.registerDockerTask(project, 'cppClient') {
     // Only tested on x86-64, and we only build dependencies for x86-64
     platform = 'linux/amd64'
     copyIn {
         from(layout.projectDirectory) {
             include 'cpp-tests-to-junit.sh'
-            include 'build-dependencies.sh'
             include 'deephaven/CMakeLists.txt'
+            // Installed next to the CMake package config for downstream
+            // pin-verification; see the install(FILES vcpkg.json) block in
+            // CMakeLists.txt.
+            include 'deephaven/vcpkg.json'
             include 'deephaven/cmake/**'
             include 'deephaven/dhcore/**'
             include 'deephaven/dhclient/**'
@@ -55,8 +196,13 @@ def buildCppClientImage = Docker.registerDockerTask(project, 'cppClient') {
     }
 
     dockerfile {
-        // See comment at the beginning of this file for why we use this base image.
-        from(Docker.localImageName('cpp-clients-multi-base'))
+        // The deps image ships the pinned toolchain, the vcpkg-built
+        // dependencies, and the R toolchain (for :R:rClient, which builds
+        // FROM the image we generate here).
+        from(cppDepsImageRef)
+        // bash with pipefail so 'ninja ... | tee' below fails when ninja
+        // fails, not when tee does.
+        instruction('SHELL ["/bin/bash", "-euo", "pipefail", "-c"]')
         //
         // Build and install client.
         //
@@ -66,6 +212,7 @@ def buildCppClientImage = Docker.registerDockerTask(project, 'cppClient') {
                         ${prefix}/log
                    """)
         copyFile('deephaven/CMakeLists.txt',  "${prefix}/src/deephaven/")
+        copyFile('deephaven/vcpkg.json',  "${prefix}/src/deephaven/")
         copyFile('deephaven/cmake/',   "${prefix}/src/deephaven/cmake/")
         copyFile('deephaven/dhcore/',  "${prefix}/src/deephaven/dhcore/")
         copyFile('deephaven/dhclient/', "${prefix}/src/deephaven/dhclient/")
@@ -73,21 +220,23 @@ def buildCppClientImage = Docker.registerDockerTask(project, 'cppClient') {
         copyFile('deephaven/tests/', "${prefix}/src/deephaven/tests/")
         copyFile('proto/', "${prefix}/proto/proto-backplane-grpc/src/main/proto/")
         copyFile('cpp-tests-to-junit.sh', "${prefix}/bin/dhcpp")
-        copyFile('build-dependencies.sh', "/tmp")
         runCommand("PREFIX='${prefix}'; BUILD_TYPE='${build_type}'; " +
                    '''set -eux; \\
-                      cmp /tmp/build-dependencies.sh "${PREFIX}/build-dependencies.sh"; \\
-                      rm -f /tmp/build-dependencies.sh; \\
                       rm -fr "${PREFIX}/src/deephaven/build"; \\
                       mkdir -p "${PREFIX}/src/deephaven/build"; \\
                       cd "${PREFIX}/src/deephaven/build"; \\
                       . "${PREFIX}/env.sh"; \\
                       cmake \\
+                        -GNinja \\
+                        -DCMAKE_TOOLCHAIN_FILE="${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" \\
+                        -DVCPKG_TARGET_TRIPLET="${DH_VCPKG_TARGET_TRIPLET}" \\
+                        -DVCPKG_INSTALLED_DIR="${DH_VCPKG_INSTALLED}" \\
+                        -DVCPKG_MANIFEST_INSTALL=OFF \\
                         -DCMAKE_INSTALL_PREFIX="${PREFIX}" \\
                         -DCMAKE_BUILD_TYPE="${BUILD_TYPE}" \\
                         -DBUILD_SHARED_LIBS=ON \\
                         .. ; \\
-                      VERBOSE=1 make "-j${NCPUS}" install 2>&1 | gzip > "${PREFIX}/log/make-install.log.gz"; \\
+                      ninja -v install 2>&1 | tee "${PREFIX}/log/ninja-install.log"; \\
                       cd ..; \\
                       rm -fr "${PREFIX}/src/deephaven/build"
                    ''')
@@ -96,7 +245,7 @@ def buildCppClientImage = Docker.registerDockerTask(project, 'cppClient') {
         environmentVariable 'DH_PREFIX', prefix
         environmentVariable 'LD_LIBRARY_PATH', "${prefix}/lib"
     }
-    parentContainers = [ Docker.registryTask(project, 'cpp-clients-multi-base') ]
+    parentContainers = [ cppDepsImage.get() ]
 }
 
 def testCppClient = Docker.registerDockerTask(project, 'testCppClient') {

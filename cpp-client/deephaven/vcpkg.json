@@ -1,4 +1,5 @@
 {
+  "builtin-baseline": "443dda0f876acb0baf87a907e6d64e25a1184c16",
   "dependencies": [
     "immer",
     "grpc",
@@ -8,12 +9,5 @@
         "flight"
       ]
     }
-  ],
-
-  "overrides": [
-    { "name": "arrow", "version": "23.0.1" },
-    { "name": "grpc", "version": "1.71.0" },
-    { "name": "protobuf", "version": "5.29.3" },
-    { "name": "abseil", "version": "20250127.0" }
   ]
 }
