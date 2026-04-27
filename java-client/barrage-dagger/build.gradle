@@ -19,8 +19,6 @@ dependencies {
     testImplementation project(':server-test-utils')
     testImplementation project(':engine-test-utils')
     testImplementation project(':log-to-slf4j')
-    testCompileOnly libs.autoservice
-    testAnnotationProcessor libs.autoservice.compiler
 }
 
 test {
