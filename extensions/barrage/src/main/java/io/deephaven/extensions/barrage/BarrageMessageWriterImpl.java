@@ -81,7 +81,7 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
         public BarrageMessageWriter newMessageWriter(
                 @NotNull final BarrageMessage message,
                 @NotNull final ChunkWriter<Chunk<Values>>[] chunkWriters,
-                @NotNull final BarragePerformanceLog.WriteMetricsConsumer metricsConsumer) {
+                @NotNull final BarrageMessageWriter.WriteMetricsConsumer metricsConsumer) {
             return new BarrageMessageWriterImpl(message, chunkWriters, metricsConsumer);
         }
 
@@ -103,7 +103,7 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
         public BarrageMessageWriter newMessageWriter(
                 @NotNull final BarrageMessage message,
                 @NotNull final ChunkWriter<Chunk<Values>>[] chunkWriters,
-                @NotNull final BarragePerformanceLog.WriteMetricsConsumer metricsConsumer) {
+                @NotNull final BarrageMessageWriter.WriteMetricsConsumer metricsConsumer) {
             return new BarrageMessageWriterImpl(message, chunkWriters, metricsConsumer) {
                 @Override
                 protected void writeHeader(
@@ -135,7 +135,7 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
     }
 
     private final BarrageMessage message;
-    private final BarragePerformanceLog.WriteMetricsConsumer writeConsumer;
+    private final WriteMetricsConsumer writeConsumer;
 
     private final long firstSeq;
     private final long lastSeq;
@@ -160,7 +160,7 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
     public BarrageMessageWriterImpl(
             @NotNull final BarrageMessage message,
             @NotNull final ChunkWriter<Chunk<Values>>[] chunkWriters,
-            @NotNull final BarragePerformanceLog.WriteMetricsConsumer writeConsumer) {
+            @NotNull final BarrageMessageWriter.WriteMetricsConsumer writeConsumer) {
         this.message = message;
         this.writeConsumer = writeConsumer;
         try {

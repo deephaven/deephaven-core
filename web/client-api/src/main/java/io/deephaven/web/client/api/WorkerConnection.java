@@ -13,6 +13,7 @@ import elemental2.core.TypedArray;
 import elemental2.core.Uint8Array;
 import elemental2.dom.DomGlobal;
 import elemental2.promise.Promise;
+import io.deephaven.extensions.barrage.BarrageMessageWriterImpl;
 import io.deephaven.flightjs.protocol.BrowserFlight;
 import io.deephaven.flightjs.protocol.BrowserFlightServiceGrpc;
 import io.deephaven.proto.backplane.grpc.ApplicationServiceGrpc;
@@ -139,6 +140,7 @@ import java.util.stream.Collectors;
 public class WorkerConnection {
 
     private Double scheduledAuthUpdate;
+    private BarrageMessageWriterImpl writer;
     // default to 10s, the actual value is almost certainly higher than that
     private double sessionTimeoutMs = 10_000;
 

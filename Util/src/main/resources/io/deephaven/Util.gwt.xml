@@ -1,9 +1,18 @@
 <module>
     <inherits name="io.deephaven.base.Base" />
-    <source path="util" includes="SafeCloseable.java,SimpleTypeMap.java,QueryConstants.java,BooleanUtils.java" />
+    <source path="util">
+        <include name="SafeCloseable.java" />
+        <include name="SafeCloseableArray.java" />
+        <include name="SafeCloseableList.java" />
+        <include name="SafeCloseablePair.java" />
+        <include name="SimpleTypeMap.java" />
+        <include name="QueryConstants.java" />
+        <include name="BooleanUtils.java" />
+    </source>
     <source path="util/type" includes="ArrayTypeUtils.java,TypeUtils.java" />
     <source path="util/codec" includes="ObjectDecoder.java" />
     <source path="util/datastructures" includes="LongAbortableConsumer.java,LongRangeAbortableConsumer.java,LongRangeIterator.java,LongRangeConsumer.java,LongSizedDataStructure.java,SizeException.java,SegmentedSoftPool.java" />
+    <source path="util/datastructures/primitives" />
     <source path="util/mutable" />
     <source path="util/compare" />
     <source path="" includes="UncheckedDeephavenException.java" />

@@ -1,3 +1,6 @@
 <module>
+    <source path="log/impl" >
+        <include name="LogOutputStringImpl.java"/>
+    </source>
     <source path="streams" includes="ByteBufferInputStream.java" />
 </module>

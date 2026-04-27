@@ -43,7 +43,7 @@ public interface BarrageMessageWriter extends SafeCloseable {
         BarrageMessageWriter newMessageWriter(
                 @NotNull BarrageMessage message,
                 @NotNull ChunkWriter<Chunk<Values>>[] chunkWriters,
-                @NotNull BarragePerformanceLog.WriteMetricsConsumer metricsConsumer);
+                @NotNull BarrageMessageWriter.WriteMetricsConsumer metricsConsumer);
 
         /**
          * Create a {@link MessageView} of the Schema to send as the initial message to a new subscriber.
@@ -121,4 +121,7 @@ public interface BarrageMessageWriter extends SafeCloseable {
             boolean reverseViewport,
             @Nullable RowSet keyspaceViewport, BitSet snapshotColumns);
 
+    interface WriteMetricsConsumer {
+        void onWrite(long bytes, long cpuNanos);
+    }
 }
