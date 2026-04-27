@@ -328,8 +328,8 @@ class S3SeekableChannelProvider implements SeekableChannelsProvider {
                 .key(s3Uri.key().orElseThrow());
         final Duration readTimeout = s3Instructions.readTimeout();
         requestBuilder.overrideConfiguration(b -> addTimeout(b, readTimeout));
-        final CompletableFuture<HeadObjectResponse> responseFuture = s3AsyncClient.headObject(requestBuilder.build());
         final long start = System.nanoTime();
+        final CompletableFuture<HeadObjectResponse> responseFuture = s3AsyncClient.headObject(requestBuilder.build());
         try {
             headObjectResponse = responseFuture.get(readTimeout.toNanos(), TimeUnit.NANOSECONDS);
         } catch (final InterruptedException | ExecutionException | TimeoutException | CancellationException e) {

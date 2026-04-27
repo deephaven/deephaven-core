@@ -54,16 +54,11 @@ public abstract class QueryPerformanceRecorderState {
      */
     private static final ConcurrentHashMap<String, Item<State>> METADATA_OP_STATS = new ConcurrentHashMap<>();
 
-    private static final ThreadLocal<MutableLong> DATA_READ_NANOS =
-            ThreadLocal.withInitial(() -> new MutableLong(0));
-    private static final ThreadLocal<MutableLong> DATA_READ_COUNT =
-            ThreadLocal.withInitial(() -> new MutableLong(0));
-    private static final ThreadLocal<MutableLong> DATA_READ_BYTES =
-            ThreadLocal.withInitial(() -> new MutableLong(0));
-    private static final ThreadLocal<MutableLong> METADATA_READ_NANOS =
-            ThreadLocal.withInitial(() -> new MutableLong(0));
-    private static final ThreadLocal<MutableLong> METADATA_READ_COUNT =
-            ThreadLocal.withInitial(() -> new MutableLong(0));
+    /**
+     * An object that contains the cumulative data read and metadata read counters for the current thread.
+     */
+    private static final ThreadLocal<ReadTracker> READ_TRACKER = ThreadLocal.withInitial(ReadTracker::new);
+
 
     static {
         // initialize the packages to skip when determining the callsite
@@ -173,9 +168,7 @@ public abstract class QueryPerformanceRecorderState {
         if (bytesRead < 0) {
             return;
         }
-        DATA_READ_NANOS.get().add(nanos);
-        DATA_READ_COUNT.get().add(1);
-        DATA_READ_BYTES.get().add(bytesRead);
+        READ_TRACKER.get().recordRead(nanos, bytesRead);
     }
 
     /**
@@ -187,8 +180,7 @@ public abstract class QueryPerformanceRecorderState {
      */
     public static void recordMetadataOperation(
             @NotNull final String type, final long nanos) {
-        METADATA_READ_NANOS.get().add(nanos);
-        METADATA_READ_COUNT.get().add(1);
+        READ_TRACKER.get().recordMeta(nanos);
         METADATA_OP_STATS.computeIfAbsent(type,
                 t -> Stats.makeItem(METADATA_OP_STATS_GROUP, t, State.FACTORY,
                         "Metadata operation timing (nanos) for type: " + t))
@@ -201,7 +193,7 @@ public abstract class QueryPerformanceRecorderState {
      * @return total data read nanos accumulated on this thread
      */
     public static long getDataReadNanosForCurrentThread() {
-        return DATA_READ_NANOS.get().get();
+        return READ_TRACKER.get().readNanos;
     }
 
     /**
@@ -210,7 +202,7 @@ public abstract class QueryPerformanceRecorderState {
      * @return total data read count accumulated on this thread
      */
     static long getDataReadCountForCurrentThread() {
-        return DATA_READ_COUNT.get().get();
+        return READ_TRACKER.get().readCount;
     }
 
     /**
@@ -219,7 +211,7 @@ public abstract class QueryPerformanceRecorderState {
      * @return total data read bytes accumulated on this thread
      */
     public static long getDataReadBytesForCurrentThread() {
-        return DATA_READ_BYTES.get().get();
+        return READ_TRACKER.get().readBytes;
     }
 
     /**
@@ -228,7 +220,7 @@ public abstract class QueryPerformanceRecorderState {
      * @return total metadata read nanos accumulated on this thread
      */
     static long getMetadataReadNanosForCurrentThread() {
-        return METADATA_READ_NANOS.get().get();
+        return READ_TRACKER.get().metadataReadNanos;
     }
 
     /**
@@ -237,7 +229,7 @@ public abstract class QueryPerformanceRecorderState {
      * @return total metadata read count accumulated on this thread
      */
     static long getMetadataReadCountForCurrentThread() {
-        return METADATA_READ_COUNT.get().get();
+        return READ_TRACKER.get().metadataReadCount;
     }
 
     /**
@@ -388,6 +380,29 @@ public abstract class QueryPerformanceRecorderState {
         @Override
         public void abortQuery() {
             throw new UnsupportedOperationException("Dummy recorder does not support abortQuery()");
+        }
+    }
+
+    /**
+     * Thread local read tracker; no synchronization is required because multiple threads are never permitted to access
+     * it simultaneously.
+     */
+    private static class ReadTracker {
+        long readCount;
+        long readNanos;
+        long readBytes;
+        long metadataReadCount;
+        long metadataReadNanos;
+
+        private void recordRead(long nanos, long bytesRead) {
+            readCount++;
+            readNanos += nanos;
+            readBytes += bytesRead;
+        }
+
+        private void recordMeta(long nanos) {
+            metadataReadCount++;
+            metadataReadNanos += nanos;
         }
     }
 }
