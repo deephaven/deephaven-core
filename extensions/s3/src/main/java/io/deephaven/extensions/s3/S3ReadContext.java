@@ -113,6 +113,7 @@ final class S3ReadContext extends BaseSeekableChannelContext implements Seekable
             final long totalRemainingFragments = numFragments - firstFragmentIx - 1;
             readAhead = Math.min(Math.max(impliedReadAhead, desiredReadAhead), totalRemainingFragments);
         }
+        final long startNanos = System.nanoTime();
         int filled;
         {
             // Hold a reference to the first request to ensure it is not evicted from the cache
@@ -123,8 +124,6 @@ final class S3ReadContext extends BaseSeekableChannelContext implements Seekable
             }
             // blocking
             filled = acquiredRequest.fill(position, dest);
-            // we've completed blocking so can record the read
-            acquiredRequest.recordRead();
         }
         for (int i = 0; dest.hasRemaining(); ++i) {
             final S3ReadRequest.Acquired readAheadRequest = sharedReadCache.getRequest(uri, firstFragmentIx + i + 1);
@@ -134,6 +133,10 @@ final class S3ReadContext extends BaseSeekableChannelContext implements Seekable
             // non-blocking since we know isDone
             filled += readAheadRequest.fill(position + filled, dest);
         }
+        // We only record the time we spent on blocking reads. We record the bytes that we've read either in the first
+        // fragment or in the non-blocking read-ahead fragments.
+        final long durationNanos = System.nanoTime() - startNanos;
+        QueryPerformanceRecorderState.recordRead(durationNanos, filled);
         return filled;
     }
 

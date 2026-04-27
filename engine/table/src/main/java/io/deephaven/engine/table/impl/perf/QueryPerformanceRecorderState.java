@@ -197,7 +197,7 @@ public abstract class QueryPerformanceRecorderState {
      *
      * @return total data read nanos accumulated on this thread
      */
-    static long getDataReadNanosForCurrentThread() {
+    public static long getDataReadNanosForCurrentThread() {
         return DATA_READ_NANOS.get().get();
     }
 
