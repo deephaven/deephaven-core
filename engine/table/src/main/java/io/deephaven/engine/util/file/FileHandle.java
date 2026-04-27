@@ -271,15 +271,14 @@ public final class FileHandle implements SeekableByteChannel {
     public final int read(@NotNull final ByteBuffer destination, final long position) throws IOException {
         try {
             final long startTimeNanos = System.nanoTime();
-            final int sizeBytes = destination.remaining();
-            try {
-                return fileChannel.read(destination, position);
-            } finally {
-                final long duration = System.nanoTime() - startTimeNanos;
-                QueryPerformanceRecorderState.recordRead(duration, sizeBytes);
-                READ_DURATION_NANOS.sample(duration);
-                READ_SIZE_BYTES.sample(sizeBytes);
-            }
+            final int readSize = fileChannel.read(destination, position);
+
+            final long duration = System.nanoTime() - startTimeNanos;
+            QueryPerformanceRecorderState.recordRead(duration, readSize);
+            READ_DURATION_NANOS.sample(duration);
+            READ_SIZE_BYTES.sample(readSize);
+
+            return readSize;
         } catch (ClosedChannelException e) {
             postCloseProcedure.run();
             throw e;
@@ -300,15 +299,12 @@ public final class FileHandle implements SeekableByteChannel {
     public final int read(@NotNull final ByteBuffer destination) throws IOException {
         try {
             final long startTimeNanos = System.nanoTime();
-            final int sizeBytes = destination.remaining();
-            try {
-                return fileChannel.read(destination);
-            } finally {
-                final long duration = System.nanoTime() - startTimeNanos;
-                QueryPerformanceRecorderState.recordRead(duration, sizeBytes);
-                READ_DURATION_NANOS.sample(duration);
-                READ_SIZE_BYTES.sample(sizeBytes);
-            }
+            final int readSize = fileChannel.read(destination);
+            final long duration = System.nanoTime() - startTimeNanos;
+            QueryPerformanceRecorderState.recordRead(duration, readSize);
+            READ_DURATION_NANOS.sample(duration);
+            READ_SIZE_BYTES.sample(readSize);
+            return readSize;
         } catch (ClosedChannelException e) {
             postCloseProcedure.run();
             throw e;
