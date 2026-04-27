@@ -10,7 +10,6 @@ import io.deephaven.client.impl.TableHandle;
 import io.deephaven.client.impl.VectorSchemaRootAdapter;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.qst.TableCreator;
-import io.deephaven.qst.column.header.ColumnHeader;
 import io.deephaven.qst.table.NewTable;
 import io.deephaven.qst.table.TableCreatorImpl;
 import io.deephaven.qst.table.TableSpec;
@@ -30,7 +29,6 @@ import org.apache.arrow.vector.util.Validator;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -374,7 +372,10 @@ public class DeephavenFlightSessionTest extends DeephavenFlightSessionTestBase {
                 // Validator.compareVectorSchemaRoot provides helpful error messages but performs approximate
                 // comparisons for some field types (e.g. floating point numbers). Validate again with
                 // VectorSchemaRoot.equals() to ensure the data matches exactly.
-                assertThat(retrievedRootNoMetadata.equals(expectedRootNoMetadata)).isTrue();
+                assertThat(retrievedRootNoMetadata)
+                        // Specify comparison method explicitly; VectorSchemaRoot does not implement equals(Object)
+                        .usingEquals(VectorSchemaRoot::equals)
+                        .isEqualTo(expectedRootNoMetadata);
             }
 
             assertThat(stream.next()).isFalse();
