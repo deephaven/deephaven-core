@@ -455,52 +455,21 @@ public class FieldVectorAdapter implements Array.Visitor<FieldVector>, Primitive
     private FieldVector visitLocalTimeElements(Collection<LocalTime> elements) {
         Field field = FieldAdapter.localTimeField(name);
         TimeNanoVector vector = new TimeNanoVector(field, allocator);
-        vector.allocateNew(elements.size());
-        int index = 0;
-        for (LocalTime lt : elements) {
-            if (lt == null) {
-                vector.setNull(index);
-            } else {
-                vector.set(index, lt.toNanoOfDay());
-            }
-            index++;
-        }
-        vector.setValueCount(elements.size());
+        VectorHelper.fill(vector, elements);
         return vector;
     }
 
     private FieldVector visitLocalDateElements(Collection<LocalDate> elements) {
         Field field = FieldAdapter.localDateField(name);
         DateDayVector vector = new DateDayVector(field, allocator);
-        vector.allocateNew(elements.size());
-        int index = 0;
-        for (LocalDate ld : elements) {
-            if (ld == null) {
-                vector.setNull(index);
-            } else {
-                vector.set(index, Math.toIntExact(ld.toEpochDay()));
-            }
-            index++;
-        }
-        vector.setValueCount(elements.size());
+        VectorHelper.fill(vector, elements);
         return vector;
     }
 
     private FieldVector visitDurationElements(Collection<Duration> elements) {
         Field field = FieldAdapter.durationField(name);
         DurationVector vector = new DurationVector(field, allocator);
-        vector.allocateNew(elements.size());
-        int index = 0;
-        for (Duration d : elements) {
-            if (d == null) {
-                vector.setNull(index);
-            } else {
-                final long totalNanos = d.toNanos();
-                vector.set(index, totalNanos);
-            }
-            index++;
-        }
-        vector.setValueCount(elements.size());
+        VectorHelper.fill(vector, elements);
         return vector;
     }
 
