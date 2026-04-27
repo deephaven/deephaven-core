@@ -44,7 +44,8 @@ class QueryOperationPerformanceStreamPublisher implements StreamPublisher {
             ColumnDefinition.ofLong("PoolAllocatedBytes"),
             ColumnDefinition.ofLong("InputSizeLong"),
             ColumnDefinition.ofBoolean("WasInterrupted"),
-            ColumnDefinition.ofString("AuthContext"));
+            ColumnDefinition.ofString("AuthContext"),
+            ColumnDefinition.ofLong("WorkerHeapSize"));
     private static final int CHUNK_SIZE = ArrayBackedColumnSource.BLOCK_SIZE;
 
     public static TableDefinition definition() {
@@ -53,9 +54,11 @@ class QueryOperationPerformanceStreamPublisher implements StreamPublisher {
 
     private WritableChunk<Values>[] chunks;
     private StreamConsumer consumer;
+    private final long heapSize;
 
     QueryOperationPerformanceStreamPublisher() {
         chunks = StreamChunkUtils.makeChunksForDefinition(DEFINITION, CHUNK_SIZE);
+        heapSize = HeapSize.getMaximumHeapSizeBytes();
     }
 
     @Override
@@ -142,6 +145,9 @@ class QueryOperationPerformanceStreamPublisher implements StreamPublisher {
 
         // ColumnDefinition.ofString("AuthContext")
         chunks[24].<String>asWritableObjectChunk().add(Objects.toString(nugget.getAuthContext()));
+
+        // ColumnDefinition.ofLong("WorkerHeapSize")
+        chunks[25].asWritableLongChunk().add(heapSize);
 
         if (chunks[0].size() == CHUNK_SIZE) {
             flushInternal();
