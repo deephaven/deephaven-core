@@ -44,6 +44,12 @@ try (SafeCloseable ignored = LivenessScopeStack.open(scope, false)) {
 }
 ```
 
+Once `tableFromFunc` is no longer needed, call `scope.release()` to release it. This drops the scope's reference to the table and stops `tableFromFunc` from updating.
+
+```groovy ticking-table order=null
+scope.release()
+```
+
 ## Related documentation
 
 - [How to use Liveness Scopes](../../conceptual/liveness-scope-concept.md)

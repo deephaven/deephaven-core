@@ -16,11 +16,15 @@ None.
 
 ## Returns
 
-A [`LivenessScope`](./LivenessScope.md).
+A `SimpleLivenessScope`, which shares the `preserve`, `manage`, and `unmanage` interface of [`LivenessScope`](./LivenessScope.md).
 
 ## Examples
 
-Use `liveness_scope` in a `with` block when you need to create intermediate ticking tables that should stop updating after the block exits. In this example, a function-generated blink table is created to compute a snapshot, then stops updating when the block exits:
+Liveness scopes give you fine-grained control over when ticking tables and their dependencies are removed from the update graph. The primary use case is limiting the lifetime of intermediate objects: when the scope is released (on block exit for a `with` statement), anything the scope manages that is no longer needed stops ticking.
+
+`preserve` transfers ownership of an object to the next outer scope — typically the script session itself — so that it outlives the inner scope. Preserved objects keep their own parents and dependencies live for as long as the preserved object itself is live. Intermediate objects that are _not_ preserved stop being live when the scope is released, but only if they are truly no longer needed at that point.
+
+In this example, a function-generated blink table and an intermediate aggregation are created inside the scope. Only the final `result` is preserved; ownership transfers to the outer scope (typically the script session). `blink_table` and `aggregated` remain live because `result` depends on them — but they are now managed through `result`'s liveness rather than the scope's. When `result` is eventually released, `blink_table` and `aggregated` stop updating too:
 
 ```python skip-test
 from deephaven.liveness_scope import liveness_scope
@@ -37,16 +41,17 @@ with liveness_scope() as scope:
     blink_table = function_generated_table(
         table_generator=random_data, refresh_interval_ms=1000
     )
-    snapshot = blink_table.snapshot()  # Static snapshot
-    scope.preserve(snapshot)  # Keep snapshot alive after scope exits
+    aggregated = blink_table.last_by("X")
+    result = aggregated.where("Y > 0")
+    scope.preserve(result)  # Transfer ownership to the next outer scope
 
-# blink_table stops updating here; snapshot is still available
-result = snapshot
+# scope is released here; result continues ticking, with blink_table and
+# aggregated remaining live as its dependencies
 ```
 
-Use `preserve` to keep specific objects alive after the scope exits. Everything else stops updating.
+You can also create a [`LivenessScope`](./LivenessScope.md) explicitly when you need to release it programmatically rather than at block exit.
 
-As a decorator, the scope wraps the entire function — all ticking tables created inside stop updating when the function returns:
+Using `liveness_scope` as a decorator automatically manages all liveness referents created during the function call — they stop updating when the function returns:
 
 ```python skip-test
 import deephaven.numpy as dhnp
