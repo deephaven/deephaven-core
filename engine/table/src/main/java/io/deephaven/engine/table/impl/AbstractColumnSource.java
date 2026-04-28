@@ -164,7 +164,7 @@ public abstract class AbstractColumnSource<T> implements
             final LongConsumer onComplete,
             final Consumer<Exception> onError) {
         // Default to having no benefit by pushing down.
-        onComplete.accept(Long.MAX_VALUE);
+        onComplete.accept(PushdownResult.UNSUPPORTED_ACTION_COST);
     }
 
     @Override

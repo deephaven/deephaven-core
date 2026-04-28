@@ -13,7 +13,7 @@ json-smart = "2.5.2"
 
 classgraph = "4.8.184"
 commons-compress = "1.28.0"
-commons-io = "2.21.0"
+commons-io = "2.22.0"
 commons-lang3 = "3.20.0"
 commons-math3 = "3.6.1"
 commons-text = "1.15.0"
@@ -34,7 +34,7 @@ freemarker = "2.3.34"
 google-findbugs = "3.0.2"
 google-java-allocation-instrumenter = "3.3.4"
 google-rpc-protos="2.70.0"
-graalvm = "25.0.2"
+graalvm = "25.0.3"
 groovy = "3.0.25"
 
 # Only bump this in concert with netty (which will update boringssl). See the dependency matrix
@@ -48,10 +48,10 @@ grpc-gwt='1.76.2-2'
 grpc-web-gwt-fetch='1.2.0'
 
 guava = "33.5.0-jre"
-gwt = "2.12.2"
+gwt = "2.13.0"
 # used by GwtTools
 gwtJetty = "9.4.44.v20210927"
-hadoop = "3.4.1"
+hadoop = "3.4.3"
 hdrhistogram = "2.2.2"
 iceberg = "1.10.1"
 immutables = "2.12.1"
@@ -67,7 +67,7 @@ jdom2 = "2.0.6.1"
 jetbrains = "26.1.0"
 jetty = "12.0.33"
 jetty11 = "11.0.20"
-jpy = "1.3.0"
+jpy = "1.4.0"
 jsinterop = "2.1.0"
 # google is annoying, and have different versions released for the same groupId
 jsinterop-base = "1.1.1"
@@ -75,15 +75,15 @@ logback = "1.5.32"
 lz4 = "1.11.0"
 mindrot = "0.4"
 nidi = "0.18.1"
-oshi = "6.11.1"
+oshi = "6.12.0"
 pac4j = "5.7.9"
-parquet = "1.16.0"
+parquet = "1.17.0"
 picocli = "4.7.7"
 postgresql = "42.7.10"
 protobuf = "4.33.2"
 randelshofer = "2.0.1"
 rdblue = "0.1.1"
-rewrite-java = "8.79.6"
+rewrite-java = "8.80.1"
 selenium = "4.43.0"
 slf4j = "2.0.17"
 snappy = "1.1.10.8"
@@ -220,8 +220,8 @@ gwt-user = { module = "org.gwtproject:gwt-user", version.ref = "gwt" }
 hadoop-common = { module = "org.apache.hadoop:hadoop-common", version.ref = "hadoop" }
 # These are transitive, inlined versions; see io.deephaven.hadoop-common-dependencies
 woodstox-core = { module = "com.fasterxml.woodstox:woodstox-core", version = "6.6.2" }
-hadoop-shaded-guava = { module = "org.apache.hadoop.thirdparty:hadoop-shaded-guava", version = "1.3.0" }
-commons-collections = { module = "commons-collections:commons-collections", version = "3.2.2" }
+hadoop-shaded-guava = { module = "org.apache.hadoop.thirdparty:hadoop-shaded-guava", version = "1.5.0" }
+commons-collections4 = { module = "org.apache.commons:commons-collections4", version = "4.5.0" }
 
 hdrhistogram = { module = "org.hdrhistogram:HdrHistogram", version.ref = "hdrhistogram" }
 

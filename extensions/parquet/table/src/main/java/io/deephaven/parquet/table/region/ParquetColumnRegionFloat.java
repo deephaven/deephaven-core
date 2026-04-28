@@ -7,6 +7,7 @@
 // @formatter:off
 package io.deephaven.parquet.table.region;
 
+import io.deephaven.engine.table.impl.locations.ColumnLocation;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.sources.regioned.ColumnRegionFloat;
 import io.deephaven.parquet.table.pagestore.ColumnChunkPageStore;
@@ -21,8 +22,9 @@ import org.jetbrains.annotations.NotNull;
 public final class ParquetColumnRegionFloat<ATTR extends Any> extends ParquetColumnRegionBase<ATTR>
         implements ColumnRegionFloat<ATTR>, ParquetColumnRegion<ATTR> {
 
-    public ParquetColumnRegionFloat(@NotNull final ColumnChunkPageStore<ATTR> columnChunkPageStore) {
-        super(columnChunkPageStore.mask(), columnChunkPageStore);
+    public ParquetColumnRegionFloat(@NotNull final ColumnChunkPageStore<ATTR> columnChunkPageStore,
+            @NotNull final ColumnLocation columnLocation) {
+        super(columnChunkPageStore.mask(), columnChunkPageStore, columnLocation);
     }
 
     // region getBytes

@@ -41,7 +41,6 @@ import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.util.*;
 import java.util.function.Function;
 import java.util.function.LongUnaryOperator;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
@@ -189,7 +188,7 @@ public abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable
         // region Per-attempt and intra-attempt parameters and state
         private boolean usePrev;
         private int currentDepth = NULL_INT;
-        private boolean expandingAll;
+        private int expandingDepthRemaining;
         private long visitedSize = NULL_LONG;
         private int includedSize = NULL_INT;
         // endregion Per-attempt and intra-attempt parameters and state
@@ -281,7 +280,7 @@ public abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable
         private void beginSnapshotAttempt(final boolean usePrev) {
             this.usePrev = usePrev;
             currentDepth = 0; // We always start at the root depth, which is zero by convention
-            expandingAll = false;
+            expandingDepthRemaining = 0;
             visitedSize = 0;
             includedSize = 0;
             snapshotClock++;
@@ -309,6 +308,7 @@ public abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable
 
         private void updateExpansionTypeAndValidateAction(
                 @NotNull final VisitAction action,
+                final int expandToDepth,
                 final boolean levelExpandable) {
             switch (action) {
                 case Expand:
@@ -317,18 +317,27 @@ public abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable
                     // (2) have them turn off expand-all for the subtree rooted at their node.
                     // We've opted for option 2, as it creates a mechanism for coarse-grained control of expansions
                     // that is richer than only supporting fine-grained contraction when under expand-all.
-                    expandingAll = false;
+                    expandingDepthRemaining = 0;
                     break;
                 case ExpandAll:
                     // Ignore moot directives to expand-all when we've reached a leaf
-                    expandingAll = levelExpandable;
+                    expandingDepthRemaining = levelExpandable ? Integer.MAX_VALUE : 0;
+                    break;
+                case ExpandToDepth:
+                    // Set the remaining depth counter; Linkage visits will decrement as we descend levels
+                    expandingDepthRemaining = levelExpandable ? expandToDepth : 0;
                     break;
                 case Linkage:
-                    Assert.assertion(expandingAll, "expanding all",
-                            "visited a linkage node when not expanding all");
-                    if (expandingAll) {
-                        // If we're at a leaf, be sure to not try to expand children
-                        expandingAll = levelExpandable;
+                    Assert.assertion(expandingDepthRemaining > 0, "expanding depth remaining > 0",
+                            "visited a linkage node when not expanding");
+                    if (expandingDepthRemaining > 0) {
+                        if (!levelExpandable) {
+                            // If we're at a leaf, be sure to not try to expand children
+                            expandingDepthRemaining = 0;
+                        } else if (expandingDepthRemaining != Integer.MAX_VALUE) {
+                            // Decrement remaining depth (but don't decrement MAX_VALUE, which means "all")
+                            expandingDepthRemaining--;
+                        }
                     }
                     break;
                 case Contract:
@@ -353,7 +362,7 @@ public abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable
          * for all rows that don't have a directive with action Contract. If we're visiting a node with no directive, we
          * visit with action Linkage.</li>
          * <li>If we're not expanding all, we can ignore directives with action Linkage and Contract; we just want to
-         * visit the nodes for directives with action Expand or ExpandAll.</li>
+         * visit the nodes for directives with action Expand, ExpandAll, or ExpandToDepth.</li>
          * </ul>
          *
          * @param childDirective The {@link LinkedDirective} to evaluate
@@ -366,7 +375,7 @@ public abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable
                 Assert.statementNeverExecuted("encounter undefined child directive during visit");
                 return true;
             }
-            if (expandingAll) {
+            if (expandingDepthRemaining > 0) {
                 return false;
             }
             return action == Linkage || action == Contract;
@@ -397,7 +406,7 @@ public abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable
         private void releaseSnapshotResources() {
             usePrev = false;
             currentDepth = NULL_INT;
-            expandingAll = false;
+            expandingDepthRemaining = 0;
             visitedSize = NULL_LONG;
             includedSize = NULL_INT;
             columns = null;
@@ -665,8 +674,8 @@ public abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable
 
     enum VisitAction {
         /**
-         * Expand a node. Only expand descendants if they have their own directives with action {@code Expand} or
-         * {@code ExpandAll}.
+         * Expand a node. Only expand descendants if they have their own directives with action {@code Expand},
+         * {@code ExpandAll}, or {@code ExpandToDepth}.
          */
         Expand,
         /**
@@ -674,6 +683,14 @@ public abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable
          * direct parent has a directive with action {@code Expand} .
          */
         ExpandAll,
+        /**
+         * Expand a node and its descendants to a specified depth. The depth is stored separately, and is relative to
+         * the current node. Behaves like {@code ExpandAll} but stops auto-expanding after the specified number of
+         * levels. A depth of 1 is equivalent to {@code Expand}. A depth of 2 expands the node and its children, etc.
+         * Descendants with a directive of action {@code Contract} or whose direct parent has a directive with action
+         * {@code Expand} are not expanded, same as {@code ExpandAll}.
+         */
+        ExpandToDepth,
         /**
          * Take no action. Allows descendant {@code Expand} or {@code Contract} directives to be linked to an ancestor
          * with action {@code ExpandAll}.
@@ -690,6 +707,9 @@ public abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable
         Undefined;
 
         static VisitAction lookup(final byte wireValue) {
+            if (wireValue >= KEY_TABLE_ACTION_EXPAND_TO_DEPTH_BASE) {
+                return ExpandToDepth;
+            }
             switch (wireValue) {
                 case KEY_TABLE_ACTION_EXPAND:
                     return Expand;
@@ -700,6 +720,13 @@ public abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable
                 default:
                     throw new IllegalArgumentException("Unrecognized key table action " + wireValue);
             }
+        }
+
+        static int lookupDepth(final byte wireValue) {
+            if (wireValue >= KEY_TABLE_ACTION_EXPAND_TO_DEPTH_BASE) {
+                return wireValue - KEY_TABLE_ACTION_EXPAND_TO_DEPTH_BASE;
+            }
+            return 0;
         }
     }
 
@@ -775,9 +802,16 @@ public abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable
          */
         private final VisitAction action;
 
-        private KeyTableDirective(@Nullable final Object nodeKey, @NotNull final VisitAction action) {
+        /**
+         * The depth to expand to, only meaningful when {@link #action} is {@link VisitAction#ExpandToDepth}.
+         */
+        private final int expandToDepth;
+
+        private KeyTableDirective(@Nullable final Object nodeKey, @NotNull final VisitAction action,
+                final int expandToDepth) {
             this.nodeKey = nodeKey;
             this.action = action;
+            this.expandToDepth = expandToDepth;
         }
 
         Object getNodeKey() {
@@ -786,6 +820,10 @@ public abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable
 
         VisitAction getAction() {
             return action;
+        }
+
+        int getExpandToDepth() {
+            return expandToDepth;
         }
     }
 
@@ -829,6 +867,11 @@ public abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable
         private VisitAction action = Undefined;
 
         /**
+         * The depth to expand to, only meaningful when {@link #action} is {@link VisitAction#ExpandToDepth}.
+         */
+        private int expandToDepth;
+
+        /**
          * This is not a complete list of children, just those that occur in the key table for the current snapshot, or
          * are found in order to provide ancestors for such directives.
          */
@@ -859,13 +902,14 @@ public abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable
             return rowKeyInParentUnsorted;
         }
 
-        private void setAction(@NotNull final VisitAction action) {
+        private void setAction(@NotNull final VisitAction action, final int expandToDepth) {
             Assert.neq(action, "action", Undefined, "Undefined");
             if (actionDefined()) {
                 Assert.neq(action, "action", Linkage, "Linkage");
             }
             // Allow repeats, accept last
             this.action = action;
+            this.expandToDepth = expandToDepth;
         }
 
         private boolean actionDefined() {
@@ -874,6 +918,10 @@ public abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable
 
         private VisitAction getAction() {
             return action;
+        }
+
+        private int getExpandToDepth() {
+            return expandToDepth;
         }
 
         private LinkedDirective addOrReplaceChild(
@@ -1031,7 +1079,7 @@ public abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable
 
         // We always expand certain nodes by default
         getDefaultExpansionNodeKeys().forEach((final Object nodeKey) -> accumulateKeyTableDirective(
-                nodeKey, Expand, directivesByNodeKey, orderedDirectives));
+                nodeKey, Expand, 0, directivesByNodeKey, orderedDirectives));
 
         final RowSequence rowsToExtract = usePrev
                 ? keyTable.getRowSet().prev()
@@ -1041,12 +1089,20 @@ public abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable
              final ByteColumnIterator actionIter =
                         actionSource == null ? null : new ChunkedByteColumnIterator(actionSource, rowsToExtract)) {
             // @formatter:on
-            // If no action source is supplied, we default to "Expand"
-            final Supplier<VisitAction> nextAction = actionIter == null
-                    ? () -> Expand
-                    : () -> lookup(actionIter.nextByte());
-            nodeKeyIter.forEachRemaining((final Object nodeKey) -> accumulateKeyTableDirective(
-                    nodeKey, nextAction.get(), directivesByNodeKey, orderedDirectives));
+            while (nodeKeyIter.hasNext()) {
+                final Object nodeKey = nodeKeyIter.next();
+                final VisitAction action;
+                final int depth;
+                if (actionIter != null) {
+                    final byte wireValue = actionIter.nextByte();
+                    action = lookup(wireValue);
+                    depth = VisitAction.lookupDepth(wireValue);
+                } else {
+                    action = Expand;
+                    depth = 0;
+                }
+                accumulateKeyTableDirective(nodeKey, action, depth, directivesByNodeKey, orderedDirectives);
+            }
         }
         return orderedDirectives.stream().collect(Collectors.toList());
     }
@@ -1058,15 +1114,17 @@ public abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable
      *
      * @param nodeKey The node key for the new directive
      * @param visitAction The {@link VisitAction} for the new directive
+     * @param expandToDepth The depth for {@link VisitAction#ExpandToDepth} directives (0 otherwise)
      * @param directivesByNodeKey A mapping from node key to existing directive
      * @param orderedDirectives An ordered queue of existing directive
      */
     private static void accumulateKeyTableDirective(
             @Nullable final Object nodeKey,
             @NotNull final VisitAction visitAction,
+            final int expandToDepth,
             @NotNull final KeyedObjectHashMap<Object, KeyTableDirective> directivesByNodeKey,
             @NotNull final IntrusiveDoublyLinkedQueue<KeyTableDirective> orderedDirectives) {
-        final KeyTableDirective newDirectiveForKey = new KeyTableDirective(nodeKey, visitAction);
+        final KeyTableDirective newDirectiveForKey = new KeyTableDirective(nodeKey, visitAction, expandToDepth);
         final KeyTableDirective oldDirectiveForKey = directivesByNodeKey.put(nodeKey, newDirectiveForKey);
         if (oldDirectiveForKey != null) {
             orderedDirectives.remove(oldDirectiveForKey);
@@ -1110,7 +1168,7 @@ public abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable
             }
             LinkedDirective removed = linkedDirectives.put(nodeKey, linked);
             removeOldChildren(removed, linkedDirectives);
-            linked.setAction(fromKeyTable.getAction());
+            linked.setAction(fromKeyTable.getAction(), fromKeyTable.getExpandToDepth());
             // Find ancestors iteratively until we hit the root or a node directive that already exists
             boolean needToFindAncestors = true;
             do {
@@ -1139,7 +1197,7 @@ public abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable
                         // Newly-created parent node directive, assume it's only here to provide linkage unless it's
                         // found in the fromKeyTable node directives later. We need to find its ancestors to connect to
                         // the root.
-                        linked.setAction(Linkage);
+                        linked.setAction(Linkage, 0);
                     }
                 } else {
                     // This node is orphaned, there are no ancestors to be found.
@@ -1208,32 +1266,35 @@ public abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable
             return;
         }
 
-        final VisitAction rootNodeAction;
-        if ((rootNodeAction = rootNodeDirective.getAction()) != Expand && rootNodeAction != ExpandAll) {
+        final VisitAction rootNodeAction = rootNodeDirective.getAction();
+        if (rootNodeAction != Expand && rootNodeAction != ExpandAll && rootNodeAction != ExpandToDepth) {
             // We *could* auto-expand the root, instead, but for now let's treat this as empty for consistency
             return;
         }
 
         // Depth-first traversal of expanded nodes
-        visitExpandedNode(snapshotState, rootNodeId(), rootNodeAction, rootNodeDirective.getChildren());
+        visitExpandedNode(snapshotState, rootNodeId(), rootNodeAction,
+                rootNodeDirective.getExpandToDepth(), rootNodeDirective.getChildren());
     }
 
     private void visitExpandedNode(
             @NotNull final SnapshotStateImpl snapshotState,
             @NotNull final LinkedDirective directive) {
-        visitExpandedNode(snapshotState, directive.getNodeId(), directive.getAction(), directive.getChildren());
+        visitExpandedNode(snapshotState, directive.getNodeId(), directive.getAction(),
+                directive.getExpandToDepth(), directive.getChildren());
     }
 
     private void visitExpandedNode(
             @NotNull final SnapshotStateImpl snapshotState,
             final long nodeId,
             @NotNull final VisitAction action,
+            final int expandToDepth,
             @Nullable final List<LinkedDirective> childDirectives) {
         try {
             // Get our node-table state, and the correct table instance to expand.
             final SnapshotStateImpl.NodeTableState nodeTableState = snapshotState.getNodeTableState(nodeId);
             if (nodeTableState == null) {
-                if (snapshotState.expandingAll) {
+                if (snapshotState.expandingDepthRemaining > 0) {
                     return;
                 }
                 failIfConcurrentAttemptInconsistent();
@@ -1247,12 +1308,13 @@ public abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable
                 return;
             }
 
-            // Establish whether we are expanding or expanding-all, and update our depth.
-            final boolean oldExpandingAll = snapshotState.expandingAll;
+            // Establish whether we are expanding or expanding-all/to-depth, and update our depth.
+            final int oldExpandingDepthRemaining = snapshotState.expandingDepthRemaining;
             ++snapshotState.currentDepth;
             try {
                 final LevelExpandable levelExpandable = levelExpandable(snapshotState);
-                snapshotState.updateExpansionTypeAndValidateAction(action, levelExpandable != None);
+                snapshotState.updateExpansionTypeAndValidateAction(action, expandToDepth,
+                        levelExpandable != None);
                 final int numChildDirectives;
                 if (levelExpandable != None && childDirectives != null) {
                     // If we have child directives that we might need to expand for, we need to know where they fit in
@@ -1271,7 +1333,8 @@ public abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable
                      final NodeFillContext filler = filling
                              ? new NodeFillContext(snapshotState, nodeTableState, rowsToVisit.size())
                              : null;
-                     final RowSet contractedRowKeys = snapshotState.expandingAll && numChildDirectives > 0
+                     final RowSet contractedRowKeys = snapshotState.expandingDepthRemaining > 0
+                             && numChildDirectives > 0
                              ? buildContractedRowKeys(childDirectives)
                              : null;
                      final RowSet contractedRowPositions = contractedRowKeys != null && contractedRowKeys.isNonempty()
@@ -1294,7 +1357,7 @@ public abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable
                         final boolean expandLastRowToConsume;
                         final long lastRowKeyToConsume;
                         final LinkedDirective childDirectiveToExpand;
-                        if (snapshotState.expandingAll) {
+                        if (snapshotState.expandingDepthRemaining > 0) {
                             if (nextContractedPosition == rowsToVisitIter.getRelativePosition()
                                     - firstRelativePosition) {
                                 assert contractedRowPositionsIter != null;
@@ -1329,7 +1392,7 @@ public abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable
                                 childDirectiveToExpand = nextChildDirective;
                                 nextChildDirective = ++cdi < numChildDirectives ? childDirectives.get(cdi) : null;
                             } else {
-                                // We're expanding-all; just visit with no child information.
+                                // We're expanding-all/to-depth; just visit with no child information.
                                 childDirectiveToExpand = null;
                             }
                         } else {
@@ -1356,13 +1419,13 @@ public abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable
                             visitExpandedNode(snapshotState, childDirectiveToExpand);
                         } else {
                             visitExpandedNode(snapshotState,
-                                    rowKeyToNodeId.applyAsLong(lastRowKeyToConsume), Linkage, null);
+                                    rowKeyToNodeId.applyAsLong(lastRowKeyToConsume), Linkage, 0, null);
                         }
                     }
                 }
             } finally {
                 --snapshotState.currentDepth;
-                snapshotState.expandingAll = oldExpandingAll;
+                snapshotState.expandingDepthRemaining = oldExpandingDepthRemaining;
             }
         } catch (SnapshotInconsistentException | HierarchicalTableSnapshotException snapshotException) {
             throw snapshotException;

@@ -111,9 +111,10 @@ class GwtTools {
                 sub.substitute(sub.module('io.grpc:grpc-protobuf-stub'))
                         .using(sub.module("com.vertispan.grpc:grpc-gwt:${grpcVers}"))
             }
-
             c.exclude(group: 'io.grpc', module: 'grpc-netty')
             c.exclude(group: 'com.google.protobuf', module: 'protobuf-java-util')
+
+            c.resolutionStrategy.force('org.osgi:org.osgi.service.prefs:1.1.2')
         }
         String warPath = new File(p.buildDir, 'gwt').absolutePath
 

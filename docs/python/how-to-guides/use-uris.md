@@ -10,6 +10,14 @@ A URI, short for [Uniform Resource Identifier](https://en.wikipedia.org/wiki/Uni
 > [!NOTE]
 > URIs can be used to share tables across Groovy and Python instances interchangeably. For how to use URIs in Groovy, see [the equivalent guide](/core/groovy/docs/how-to-guides/use-uris).
 
+> [!NOTE]
+> URI and Shared Tickets are two different ways to pull tables. Both work on static or dynamic tables. URI pulls tables already on the server via a URL-like string. Shared Tickets let you pull tables you create or access via the Python Client. Learn more about using Shared Tickets with Deephaven in the [Shared Tickets guide](../how-to-guides/capture-tables.md).
+
+> [!IMPORTANT]
+> URI resolution in Deephaven Community (Core) requires **anonymous authentication**. PSK (pre-shared key) authentication is not currently supported — attempting to resolve a URI when PSK is enabled will fail. This is a known limitation tracked in GitHub issues [#5383](https://github.com/deephaven/deephaven-core/issues/5383) and [#3421](https://github.com/deephaven/deephaven-core/issues/3421).
+>
+> If you found this page while looking for `ui.resolve`, note that the [Deephaven UI URI component](https://deephaven.io/core/ui/docs/components/uri/) is a separate, **Deephaven Enterprise**-only feature for Persistent Queries (PQ). It is not the same as `deephaven.uri.resolve` documented here.
+
 ## Why use URIs?
 
 Deephaven URIs provide several key benefits:
@@ -23,9 +31,6 @@ Deephaven URIs provide several key benefits:
 - **Environmental isolation**: Access data across different containers, servers, or networks.
 
 By using URIs, you enable others to directly access your tables without needing to replicate your data pipeline, understand your query logic, or maintain duplicate datasets. This is particularly valuable in collaborative environments and distributed systems.
-
-> [!NOTE]
-> URI and Shared Tickets are two different ways to pull tables. Both work on static or dynamic tables. URI pulls tables already on the server via a URL-like string. Shared Tickets let you pull tables you create or access via the Python Client. Learn more about using Shared Tickets with Deephaven in the [Shared Tickets guide](../how-to-guides/capture-tables.md).
 
 ## Syntax
 
@@ -108,6 +113,9 @@ services:
 ```
 
 After a `docker compose pull` and `docker compose up --build -d`, both instances are up and running.
+
+> [!NOTE]
+> PSK authentication is intentionally omitted from this configuration. URI resolution requires anonymous authentication — adding `START_OPTS=-Dauthentication.psk=...` to either container will prevent URI resolution from working.
 
 ### Create a table
 

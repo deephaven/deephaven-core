@@ -31,6 +31,16 @@ import java.util.function.Consumer;
 
 @JsType(namespace = "dh")
 public class CoreClient extends HasEventHandling {
+    /**
+     * A collection of feature flags that the JS API advertises. All must be nullable booleans, and if listed, the value
+     * is true.
+     * <p>
+     * Marked as nullable as past releases will not have this property, be sure to test for null if an older release
+     * might be in use.
+     */
+    @JsNullable
+    public static final Features FEATURES = new Features();
+
     public static final String EVENT_CONNECT = "connect",
             EVENT_DISCONNECT = "disconnect",
             EVENT_RECONNECT = "reconnect",

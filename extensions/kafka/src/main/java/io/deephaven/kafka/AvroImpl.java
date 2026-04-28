@@ -540,7 +540,7 @@ class AvroImpl {
                     columnsOut.add(ColumnDefinition.fromGenericType(mappedNameForColumn, BigDecimal.class));
                     break;
                 }
-                columnsOut.add(ColumnDefinition.ofVector(mappedNameForColumn, ByteVector.class));
+                columnsOut.add(ColumnDefinition.of(mappedNameForColumn, ByteVector.type()));
                 break;
             }
             case ARRAY: {
@@ -552,7 +552,7 @@ class AvroImpl {
                 }
                 switch (elementTypeType) {
                     case INT:
-                        columnsOut.add(ColumnDefinition.fromGenericType(mappedNameForColumn, int[].class));
+                        columnsOut.add(ColumnDefinition.of(mappedNameForColumn, Type.intType().arrayType()));
                         break;
                     case LONG:
                         final LogicalType logicalType = getEffectiveLogicalType(fieldName, elementTypeSchema);
@@ -560,14 +560,14 @@ class AvroImpl {
                                 LogicalTypes.timestampMillis().equals(logicalType)) {
                             columnsOut.add(ColumnDefinition.fromGenericType(mappedNameForColumn, Instant[].class));
                         } else {
-                            columnsOut.add(ColumnDefinition.fromGenericType(mappedNameForColumn, long[].class));
+                            columnsOut.add(ColumnDefinition.of(mappedNameForColumn, Type.longType().arrayType()));
                         }
                         break;
                     case FLOAT:
-                        columnsOut.add(ColumnDefinition.fromGenericType(mappedNameForColumn, float[].class));
+                        columnsOut.add(ColumnDefinition.of(mappedNameForColumn, Type.floatType().arrayType()));
                         break;
                     case DOUBLE:
-                        columnsOut.add(ColumnDefinition.fromGenericType(mappedNameForColumn, double[].class));
+                        columnsOut.add(ColumnDefinition.of(mappedNameForColumn, Type.doubleType().arrayType()));
                         break;
                     case BOOLEAN:
                         columnsOut.add(ColumnDefinition.fromGenericType(mappedNameForColumn, Boolean[].class));

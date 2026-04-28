@@ -9,6 +9,7 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker.IntervalLevelDetails;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
+import io.deephaven.engine.table.impl.util.HeapSize;
 import io.deephaven.stream.StreamChunkUtils;
 import io.deephaven.stream.StreamConsumer;
 import io.deephaven.stream.StreamPublisher;
@@ -41,7 +42,8 @@ class UpdatePerformanceStreamPublisher implements StreamPublisher {
             ColumnDefinition.ofLong("AllocatedBytes"),
             ColumnDefinition.ofLong("PoolAllocatedBytes"),
             ColumnDefinition.ofString("AuthContext"),
-            ColumnDefinition.ofString("UpdateGraph"));
+            ColumnDefinition.ofString("UpdateGraph"),
+            ColumnDefinition.ofLong("WorkerHeapSize"));
 
     public static TableDefinition definition() {
         return DEFINITION;
@@ -51,9 +53,11 @@ class UpdatePerformanceStreamPublisher implements StreamPublisher {
 
     private WritableChunk<Values>[] chunks;
     private StreamConsumer consumer;
+    private final long heapSize;
 
     public UpdatePerformanceStreamPublisher() {
         chunks = StreamChunkUtils.makeChunksForDefinition(DEFINITION, CHUNK_SIZE);
+        heapSize = HeapSize.getMaximumHeapSizeBytes();
     }
 
     @Override
@@ -111,6 +115,8 @@ class UpdatePerformanceStreamPublisher implements StreamPublisher {
         chunks[21].<String>asWritableObjectChunk().add(Objects.toString(performanceEntry.getAuthContext()));
         // ColumnDefinition.ofString("UpdateGraph"));
         chunks[22].<String>asWritableObjectChunk().add(Objects.toString(performanceEntry.getUpdateGraphName()));
+        // ColumnDefinition.ofLong("WorkerHeapSize")
+        chunks[23].asWritableLongChunk().add(heapSize);
 
         if (chunks[0].size() == CHUNK_SIZE) {
             flushInternal();
