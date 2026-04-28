@@ -49,11 +49,14 @@ public class BasePerformanceEntry implements LogOutputAppendable {
         startAllocatedBytes = ThreadProfiler.DEFAULT.getCurrentThreadAllocatedBytes();
         startPoolAllocatedBytes = QueryPerformanceRecorderState.getPoolAllocatedBytesForCurrentThread();
 
-        startDataReadNanos = QueryPerformanceRecorderState.getDataReadNanosForCurrentThread();
-        startDataReadCount = QueryPerformanceRecorderState.getDataReadCountForCurrentThread();
-        startDataReadBytes = QueryPerformanceRecorderState.getDataReadBytesForCurrentThread();
-        startMetadataReadNanos = QueryPerformanceRecorderState.getMetadataReadNanosForCurrentThread();
-        startMetadataReadCount = QueryPerformanceRecorderState.getMetadataReadCountForCurrentThread();
+        final QueryPerformanceRecorderState.ReadTracker readTracker =
+                QueryPerformanceRecorderState.getReadTrackerForCurrentThread();
+
+        startDataReadNanos = readTracker.getDataReadNanos();
+        startDataReadCount = readTracker.getDataReadCount();
+        startDataReadBytes = readTracker.getDataReadBytes();
+        startMetadataReadNanos = readTracker.getMetadataReadNano();
+        startMetadataReadCount = readTracker.getMetadataReadCount();
 
         startUserCpuNanos = ThreadProfiler.DEFAULT.getCurrentThreadUserTime();
         startCpuNanos = ThreadProfiler.DEFAULT.getCurrentThreadCpuTime();
@@ -73,13 +76,14 @@ public class BasePerformanceEntry implements LogOutputAppendable {
         allocatedBytes = plus(allocatedBytes,
                 minus(ThreadProfiler.DEFAULT.getCurrentThreadAllocatedBytes(), startAllocatedBytes));
 
-        dataReadNanos += QueryPerformanceRecorderState.getDataReadNanosForCurrentThread() - startDataReadNanos;
-        dataReadCount += QueryPerformanceRecorderState.getDataReadCountForCurrentThread() - startDataReadCount;
-        dataReadBytes += QueryPerformanceRecorderState.getDataReadBytesForCurrentThread() - startDataReadBytes;
-        metadataReadNanos +=
-                QueryPerformanceRecorderState.getMetadataReadNanosForCurrentThread() - startMetadataReadNanos;
-        metadataReadCount +=
-                QueryPerformanceRecorderState.getMetadataReadCountForCurrentThread() - startMetadataReadCount;
+        final QueryPerformanceRecorderState.ReadTracker readTracker =
+                QueryPerformanceRecorderState.getReadTrackerForCurrentThread();
+
+        dataReadNanos += readTracker.getDataReadNanos() - startDataReadNanos;
+        dataReadCount += readTracker.getDataReadCount() - startDataReadCount;
+        dataReadBytes += readTracker.getDataReadBytes() - startDataReadBytes;
+        metadataReadNanos += readTracker.getMetadataReadNano() - startMetadataReadNanos;
+        metadataReadCount += readTracker.getMetadataReadCount() - startMetadataReadCount;
 
         startAllocatedBytes = 0;
         startPoolAllocatedBytes = 0;
