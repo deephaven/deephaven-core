@@ -153,6 +153,9 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
         if (sortedKeys.size() == 0) {
             return true;
         }
+        if (sortedKeys instanceof SortHelpers.IdentitySortMapping) {
+            return true;
+        }
         try (RowSet.Iterator it = parent.getRowSet().iterator()) {
             return sortedKeys.forEachLong(currentKey -> currentKey == it.nextLong());
         }
@@ -164,7 +167,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
             return withSorted(parent);
         }
 
-        final WritableRowRedirection sortMapping = sortedKeys.makeHistoricalRowRedirection();
+        final RowRedirection sortMapping = sortedKeys.makeHistoricalRowRedirection();
         final TrackingRowSet resultRowSet = RowSetFactory.flat(sortedKeys.size()).toTracking();
 
         final Map<String, ColumnSource<?>> resultMap = new LinkedHashMap<>();
