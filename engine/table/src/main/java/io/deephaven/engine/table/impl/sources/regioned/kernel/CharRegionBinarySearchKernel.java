@@ -120,7 +120,7 @@ public class CharRegionBinarySearchKernel {
         }
 
         // Validate that a logical range was found and the bounds didn't cross
-        if (start != -1 && end != -1) {
+        if (start != -1 && end != -1 && start <= end) {
             return RowSetFactory.fromRange(start, end);
         }
 
@@ -152,9 +152,9 @@ public class CharRegionBinarySearchKernel {
 
         if (sortColumn.isAscending()) {
             start = findStartIndexAscending(region, firstKey, lastKey, min, minInc);
-            end = (int) lastKey;
+            end = Math.toIntExact(lastKey);
         } else {
-            start = (int) firstKey;
+            start = Math.toIntExact(firstKey);
             end = findEndIndexDescending(region, firstKey, lastKey, min, minInc);
         }
 
@@ -189,11 +189,11 @@ public class CharRegionBinarySearchKernel {
         final int end;
 
         if (sortColumn.isAscending()) {
-            start = (int) firstKey;
+            start = Math.toIntExact(firstKey);
             end = findEndIndexAscending(region, firstKey, lastKey, max, maxInc);
         } else {
             start = findStartIndexDescending(region, firstKey, lastKey, max, maxInc);
-            end = (int) lastKey;
+            end = Math.toIntExact(lastKey);
         }
 
         if (start != -1 && end != -1 && start <= end) {

@@ -44,7 +44,7 @@ public final class ParquetColumnRegionInt<ATTR extends Any> extends ParquetColum
     private static final RegionedPushdownAction.Region SORTED_REGION_ACTION =
             new RegionedPushdownAction.Region(
                     () -> QueryTable.DISABLE_WHERE_PUSHDOWN_SORTED_COLUMN_LOCATION,
-                    PushdownResult.REGION_DICTIONARY_DATA_COST,
+                    PushdownResult.REGION_SORTED_DATA_COST,
                     (ctx) -> ctx.isMatchFilter() || ctx.isRangeFilter(),
                     (tl, cr) -> true);
     private static final List<RegionedPushdownAction> SUPPORTED_ACTIONS = List.of(SORTED_REGION_ACTION);
@@ -82,10 +82,10 @@ public final class ParquetColumnRegionInt<ATTR extends Any> extends ParquetColum
         if (action.equals(SORTED_REGION_ACTION)) {
             final RegionedPushdownFilterContext ctx = (RegionedPushdownFilterContext) filterContext;
             final TableLocation tableLocation = getColumnLocation().map(ColumnLocation::getTableLocation).orElse(null);
-            if (tableLocation == null || (ctx.isMatchFilter() && !ctx.isRangeFilter())) {
+            if (tableLocation == null || (!ctx.isMatchFilter() && !ctx.isRangeFilter())) {
                 return PushdownResult.UNSUPPORTED_ACTION_COST;
             }
-            // Only range and match filers can benefit from sorted column data.
+            // Only range and match filters can benefit from sorted column data.
             final SortColumn firstSortedColumn = tableLocation.getSortedColumns().isEmpty()
                     ? null
                     : tableLocation.getSortedColumns().get(0);

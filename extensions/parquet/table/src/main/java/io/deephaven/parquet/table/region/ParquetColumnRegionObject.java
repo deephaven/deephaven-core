@@ -34,7 +34,7 @@ public final class ParquetColumnRegionObject<DATA_TYPE, ATTR extends Any> extend
     private static final RegionedPushdownAction.Region SORTED_REGION_ACTION =
             new RegionedPushdownAction.Region(
                     () -> QueryTable.DISABLE_WHERE_PUSHDOWN_SORTED_COLUMN_LOCATION,
-                    PushdownResult.REGION_DICTIONARY_DATA_COST,
+                    PushdownResult.REGION_SORTED_DATA_COST,
                     (ctx) -> ctx.isMatchFilter() || ctx.isRangeFilter(),
                     (tl, cr) -> true);
     private static final List<RegionedPushdownAction> SUPPORTED_ACTIONS = List.of(SORTED_REGION_ACTION);

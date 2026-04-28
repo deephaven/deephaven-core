@@ -5068,54 +5068,60 @@ public final class ParquetTableReadWriteTest {
 
     @Test
     public void testSortedColumnFiltering() {
-        final Table testTable = TableTools.emptyTable(10_000)
-                .update(
-                        "byteCol = i % 97 == 0 ? null : (byte)(i % 97)",
-                        "charCol = i % 997 == 0 ? null : (char)(i % 997)",
-                        "shortCol = i % 997 == 0 ? null : (short)(i % 997)",
-                        "intCol = i % 997 == 0 ? null : i % 997",
-                        "longCol = i % 997 == 0 ? null : ii % 997",
-                        "floatCol = (i % 997 == 0) ? null : (i % 997 == 996) ? Float.NaN : (i % 997 == 995) ? Float.POSITIVE_INFINITY : (i % 997 == 994) ? Float.NEGATIVE_INFINITY : (float)(i % 997)",
-                        "doubleCol = (i % 997 == 0) ? null : (i % 997 == 996) ? Double.NaN : (i % 997 == 995) ? Double.POSITIVE_INFINITY : (i % 997 == 994) ? Double.NEGATIVE_INFINITY : (double)(i % 997)",
-                        "stringCol = i % 997 == 0 ? null : `Str` + (i % 997)");
+        // Need to disable metadata to trigger the estimation action on the regions and force coverage.
+        final boolean restore = QueryTable.DISABLE_WHERE_PUSHDOWN_PARQUET_ROW_GROUP_METADATA;
+        try (final SafeCloseable ignored =
+                () -> QueryTable.DISABLE_WHERE_PUSHDOWN_PARQUET_ROW_GROUP_METADATA = restore) {
+            QueryTable.DISABLE_WHERE_PUSHDOWN_PARQUET_ROW_GROUP_METADATA = true;
+            final Table testTable = TableTools.emptyTable(10_000)
+                    .update(
+                            "byteCol = i % 97 == 0 ? null : (byte)(i % 97)",
+                            "charCol = i % 997 == 0 ? null : (char)(i % 997)",
+                            "shortCol = i % 997 == 0 ? null : (short)(i % 997)",
+                            "intCol = i % 997 == 0 ? null : i % 997",
+                            "longCol = i % 997 == 0 ? null : ii % 997",
+                            "floatCol = (i % 997 == 0) ? null : (i % 997 == 996) ? Float.NaN : (i % 997 == 995) ? Float.POSITIVE_INFINITY : (i % 997 == 994) ? Float.NEGATIVE_INFINITY : (float)(i % 997)",
+                            "doubleCol = (i % 997 == 0) ? null : (i % 997 == 996) ? Double.NaN : (i % 997 == 995) ? Double.POSITIVE_INFINITY : (i % 997 == 994) ? Double.NEGATIVE_INFINITY : (double)(i % 997)",
+                            "stringCol = i % 997 == 0 ? null : `Str` + (i % 997)");
 
-        testSortedFilteringInternal(testTable, "byteCol", "byteCol in 30, 50, 70");
-        testSortedFilteringInternal(testTable, "byteCol", "byteCol > 30");
-        testSortedFilteringInternal(testTable, "byteCol", "byteCol <= 50");
+            testSortedFilteringInternal(testTable, "byteCol", "byteCol in 30, 50, 70");
+            testSortedFilteringInternal(testTable, "byteCol", "byteCol > 30");
+            testSortedFilteringInternal(testTable, "byteCol", "byteCol <= 50");
 
-        testSortedFilteringInternal(testTable, "charCol", "charCol in 'a', 'b', 'c'");
-        testSortedFilteringInternal(testTable, "charCol", "charCol > 'a'");
-        testSortedFilteringInternal(testTable, "charCol", "charCol <= 'b'");
+            testSortedFilteringInternal(testTable, "charCol", "charCol in 'a', 'b', 'c'");
+            testSortedFilteringInternal(testTable, "charCol", "charCol > 'a'");
+            testSortedFilteringInternal(testTable, "charCol", "charCol <= 'b'");
 
-        testSortedFilteringInternal(testTable, "shortCol", "shortCol in 300, 500, 700");
-        testSortedFilteringInternal(testTable, "shortCol", "shortCol > 300");
-        testSortedFilteringInternal(testTable, "shortCol", "shortCol <= 500");
+            testSortedFilteringInternal(testTable, "shortCol", "shortCol in 300, 500, 700");
+            testSortedFilteringInternal(testTable, "shortCol", "shortCol > 300");
+            testSortedFilteringInternal(testTable, "shortCol", "shortCol <= 500");
 
-        testSortedFilteringInternal(testTable, "intCol", "intCol in 300, 500, 700");
-        testSortedFilteringInternal(testTable, "intCol", "intCol > 300");
-        testSortedFilteringInternal(testTable, "intCol", "intCol <= 500");
+            testSortedFilteringInternal(testTable, "intCol", "intCol in 300, 500, 700");
+            testSortedFilteringInternal(testTable, "intCol", "intCol > 300");
+            testSortedFilteringInternal(testTable, "intCol", "intCol <= 500");
 
-        testSortedFilteringInternal(testTable, "longCol", "longCol in 300, 500, 700");
-        testSortedFilteringInternal(testTable, "longCol", "longCol > 300");
-        testSortedFilteringInternal(testTable, "longCol", "longCol <= 500");
+            testSortedFilteringInternal(testTable, "longCol", "longCol in 300, 500, 700");
+            testSortedFilteringInternal(testTable, "longCol", "longCol > 300");
+            testSortedFilteringInternal(testTable, "longCol", "longCol <= 500");
 
-        testSortedFilteringInternal(testTable, "floatCol", "floatCol in 300.0, 500.0, 700.0");
-        testSortedFilteringInternal(testTable, "floatCol", "floatCol in NaN");
-        testSortedFilteringInternal(testTable, "floatCol", "floatCol > 300.0");
-        testSortedFilteringInternal(testTable, "floatCol", "floatCol <= 500.0");
-        testSortedFilteringInternal(testTable, "floatCol", "floatCol > Float.POSITIVE_INFINITY");
-        testSortedFilteringInternal(testTable, "floatCol", "floatCol >= NaN");
+            testSortedFilteringInternal(testTable, "floatCol", "floatCol in 300.0, 500.0, 700.0");
+            testSortedFilteringInternal(testTable, "floatCol", "floatCol in NaN");
+            testSortedFilteringInternal(testTable, "floatCol", "floatCol > 300.0");
+            testSortedFilteringInternal(testTable, "floatCol", "floatCol <= 500.0");
+            testSortedFilteringInternal(testTable, "floatCol", "floatCol > Float.POSITIVE_INFINITY");
+            testSortedFilteringInternal(testTable, "floatCol", "floatCol >= NaN");
 
-        testSortedFilteringInternal(testTable, "doubleCol", "doubleCol in 300.0, 500.0, 700.0");
-        testSortedFilteringInternal(testTable, "doubleCol", "doubleCol in NaN");
-        testSortedFilteringInternal(testTable, "doubleCol", "doubleCol > 300.0");
-        testSortedFilteringInternal(testTable, "doubleCol", "doubleCol <= 500.0");
-        testSortedFilteringInternal(testTable, "doubleCol", "doubleCol > Float.POSITIVE_INFINITY");
-        testSortedFilteringInternal(testTable, "doubleCol", "doubleCol >= NaN");
+            testSortedFilteringInternal(testTable, "doubleCol", "doubleCol in 300.0, 500.0, 700.0");
+            testSortedFilteringInternal(testTable, "doubleCol", "doubleCol in NaN");
+            testSortedFilteringInternal(testTable, "doubleCol", "doubleCol > 300.0");
+            testSortedFilteringInternal(testTable, "doubleCol", "doubleCol <= 500.0");
+            testSortedFilteringInternal(testTable, "doubleCol", "doubleCol > Float.POSITIVE_INFINITY");
+            testSortedFilteringInternal(testTable, "doubleCol", "doubleCol >= NaN");
 
-        testSortedFilteringInternal(testTable, "stringCol", "stringCol in `Str300`, `Str500`, `Str700`");
-        testSortedFilteringInternal(testTable, "stringCol", "stringCol > `Str300`");
-        testSortedFilteringInternal(testTable, "stringCol", "stringCol <= `Str500`");
+            testSortedFilteringInternal(testTable, "stringCol", "stringCol in `Str300`, `Str500`, `Str700`");
+            testSortedFilteringInternal(testTable, "stringCol", "stringCol > `Str300`");
+            testSortedFilteringInternal(testTable, "stringCol", "stringCol <= `Str500`");
+        }
     }
 
     @Test

@@ -18,7 +18,7 @@ public interface WhereFilterDelegating {
 
     /**
      * If the provided filter is an instance of {@code WhereFilterDelegating}, returns the effective wrapped filter of
-     * that filter. Otherwise, returns the filter itself wrapped in an Optional.
+     * that filter. Otherwise, returns the filter itself.
      */
     static WhereFilter maybeUnwrapFilter(WhereFilter filter) {
         if (filter instanceof WhereFilterDelegating) {

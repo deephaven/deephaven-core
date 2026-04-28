@@ -2726,7 +2726,7 @@ public abstract class QueryTableWhereTest {
                 filter1.withRespectedBarriers("1").withDeclaredBarriers("2"),
                 postFilter.withRespectedBarriers("2")));
         assertEquals(200_000, preFilter.numRowsProcessed());
-        assertEquals(100_000, filter0.numRowsProcessed()); // 100_000 from source1, 0 from source2
+        assertEquals(100_000, filter1.numRowsProcessed()); // 100_000 from source1, 0 from source2
         assertEquals(99_999, postFilter.numRowsProcessed()); // 99_000 from source1, 0 from source2
 
         assertEquals(99_999, res1.size());
