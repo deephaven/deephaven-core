@@ -88,8 +88,8 @@ abstract class S3SeekableChannelSimpleTestBase extends S3SeekableChannelTestSetu
         final URI uri = uri("32MiB.bin");
         final ByteBuffer buffer = ByteBuffer.allocate(1);
         final long startTime = System.nanoTime();
-        final long startReadBytes = QueryPerformanceRecorderState.getDataReadBytesForCurrentThread();
-        final long startReadNanos = QueryPerformanceRecorderState.getDataReadNanosForCurrentThread();
+        final long startReadBytes = QueryPerformanceRecorderState.getReadTrackerForCurrentThread().getDataReadBytes();
+        final long startReadNanos = QueryPerformanceRecorderState.getReadTrackerForCurrentThread().getDataReadNanos();
         try (
                 final SeekableChannelsProvider providerImpl = providerImpl();
                 final SeekableChannelsProvider provider = CachedChannelProvider.create(providerImpl, 32);
@@ -103,8 +103,8 @@ abstract class S3SeekableChannelSimpleTestBase extends S3SeekableChannelTestSetu
             assertThat(readChannel.read(buffer)).isEqualTo(-1);
         }
         final long endTime = System.nanoTime();
-        final long endReadBytes = QueryPerformanceRecorderState.getDataReadBytesForCurrentThread();
-        final long endReadNanos = QueryPerformanceRecorderState.getDataReadNanosForCurrentThread();
+        final long endReadBytes = QueryPerformanceRecorderState.getReadTrackerForCurrentThread().getDataReadBytes();
+        final long endReadNanos = QueryPerformanceRecorderState.getReadTrackerForCurrentThread().getDataReadNanos();
         assertThat(endReadBytes - startReadBytes).isEqualTo(numBytes);
         final long duration = endReadNanos - startReadNanos;
         // we need to record some time

@@ -188,48 +188,13 @@ public abstract class QueryPerformanceRecorderState {
     }
 
     /**
-     * Get the cumulative data read nanos for the current thread.
-     *
-     * @return total data read nanos accumulated on this thread
+     * Gets the tracker for the current thread. The tracker is not thread-safe and is mutable. You must capture any
+     * values from the tracker rather than holding a reference to the returned object.
+     * 
+     * @return the tracker for the current thread
      */
-    public static long getDataReadNanosForCurrentThread() {
-        return READ_TRACKER.get().readNanos;
-    }
-
-    /**
-     * Get the cumulative data read count for the current thread.
-     *
-     * @return total data read count accumulated on this thread
-     */
-    static long getDataReadCountForCurrentThread() {
-        return READ_TRACKER.get().readCount;
-    }
-
-    /**
-     * Get the cumulative data read bytes for the current thread.
-     *
-     * @return total data read bytes accumulated on this thread
-     */
-    public static long getDataReadBytesForCurrentThread() {
-        return READ_TRACKER.get().readBytes;
-    }
-
-    /**
-     * Get the cumulative metadata read nanos for the current thread.
-     *
-     * @return total metadata read nanos accumulated on this thread
-     */
-    static long getMetadataReadNanosForCurrentThread() {
-        return READ_TRACKER.get().metadataReadNanos;
-    }
-
-    /**
-     * Get the cumulative metadata read count for the current thread.
-     *
-     * @return total metadata read count accumulated on this thread
-     */
-    static long getMetadataReadCountForCurrentThread() {
-        return READ_TRACKER.get().metadataReadCount;
+    public static ReadTracker getReadTrackerForCurrentThread() {
+        return READ_TRACKER.get();
     }
 
     /**
@@ -387,7 +352,7 @@ public abstract class QueryPerformanceRecorderState {
      * Thread local read tracker; no synchronization is required because multiple threads are never permitted to access
      * it simultaneously.
      */
-    private static class ReadTracker {
+    public static class ReadTracker {
         long readCount;
         long readNanos;
         long readBytes;
@@ -403,6 +368,51 @@ public abstract class QueryPerformanceRecorderState {
         private void recordMeta(long nanos) {
             metadataReadCount++;
             metadataReadNanos += nanos;
+        }
+
+        /**
+         * Get the cumulative data read nanos for this tracker.
+         *
+         * @return total data read nanos accumulated for this tracker
+         */
+        public long getDataReadNanos() {
+            return readNanos;
+        }
+
+        /**
+         * Get the cumulative data read count for this tracker.
+         *
+         * @return total data read count accumulated on this tracker
+         */
+        long getDataReadCount() {
+            return readCount;
+        }
+
+        /**
+         * Get the cumulative data read bytes for this tracker.
+         *
+         * @return total data read bytes accumulated on this tracker
+         */
+        public long getDataReadBytes() {
+            return readBytes;
+        }
+
+        /**
+         * Get the cumulative metadata read nanos for this tracker.
+         *
+         * @return total metadata read nanos accumulated on this tracker
+         */
+        long getMetadataReadNano() {
+            return metadataReadNanos;
+        }
+
+        /**
+         * Get the cumulative metadata read count for this tracker.
+         *
+         * @return total metadata read count accumulated on this tracker
+         */
+        long getMetadataReadCount() {
+            return metadataReadCount;
         }
     }
 }
