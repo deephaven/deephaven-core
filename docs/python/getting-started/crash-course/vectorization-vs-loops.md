@@ -11,55 +11,30 @@ If you're coming from pandas, traditional Python, or other data processing tools
 In pandas or traditional Python, you tell the computer **exactly how** to process each row:
 
 ```python skip-test
-import pandas as pd
-
-# Pandas approach: explicit loop over rows
-time_index = pd.date_range(start="2025-01-01 00:00:00", periods=5, freq="h")
-df = pd.DataFrame(
-    {
-        "time": time_index,
-        "value": range(5),
-    }
-)
-
-# Converting values with a list comprehension - WRONG for Deephaven!
-df["value_squared"] = [v * v for v in df["value"]]
+# A loop applied to data — common habit, but wrong for Deephaven!
+values = [0, 1, 2, 3, 4]
+values_squared = [v * v for v in values]
 ```
 
-This list comprehension loops over every row, processes it, and builds a new list. You're giving **step-by-step instructions** for how to process the data.
+This loop processes one element at a time and builds a new list. You're giving **step-by-step instructions** for how to process the data.
 
 ### How to think in Deephaven
 
 In Deephaven, you specify **what** you want, not **how** to compute it. You write a **recipe** that describes the transformation, and the Deephaven engine figures out the optimal way to execute it:
 
-```python order=t1,t2,t3 test-set=recipe-example
+```python order=result test-set=recipe-example
 from deephaven import empty_table
 
-# Create a table with 5 rows of timestamps
-t1 = empty_table(5).update([
-    "Timestamp = now() + i * SECOND",
-    "TsEpochNs = epochNanos(Timestamp)"
-])
-
-# Add a column using a Deephaven recipe - NO LOOP!
-t2 = t1.update("TS2 = epochNanosToInstant(TsEpochNs)")
-
-# Do more time operations - still no loops
-t3 = t2.update(
-    [
-        "TS3 = epochNanosToInstant(TsEpochNs + 2*SECOND)",
-        "TS4 = Timestamp + 'PT2s'",
-        "D3 = TS3-Timestamp",
-        "D4 = TS4-Timestamp",
-    ]
-)
+# No loop — just describe what you want
+result = empty_table(5).update(["X = i", "XSquared = X * X"])
 ```
 
 Notice:
 
-- **No loops** - You write `.update("TS2 = epochNanosToInstant(TsEpochNs)")`.
+- **No loops** — you describe the relationship (`XSquared = X * X`) and the engine applies it to every row.
 - You specify **what** to compute, not **how** to iterate.
 - The engine applies this recipe to all rows automatically.
+- This works the same way for arbitrarily complex operations.
 
 ## Why this matters
 
@@ -133,7 +108,7 @@ The engine decides:
 2. **Computes incrementally** - Only new or changed rows are processed.
 3. **Updates automatically** - Results update without you doing anything.
 
-This is fundamentally impossible with loops!
+This requires significant additional infrastructure with loops — a loop executes once and stops, so you would need to build your own subscription and recomputation logic.
 
 ## Bridging pandas and Deephaven
 
@@ -202,7 +177,13 @@ See the [table iteration guide](../../how-to-guides/iterate-table-data.md) for d
 
 ### ✅ Control flow in your Python code
 
-```python skip-test
+```python order=null test-set=control-flow
+from deephaven import empty_table
+
+source = empty_table(100).update(
+    ["Symbol = (i % 3 == 0) ? `AAPL` : (i % 3 == 1) ? `GOOGL` : `MSFT`", "X = i"]
+)
+
 # Creating multiple similar tables - fine!
 tables = []
 for symbol in ["AAPL", "GOOGL", "MSFT"]:
@@ -212,7 +193,11 @@ for symbol in ["AAPL", "GOOGL", "MSFT"]:
 
 ### ❌ Transforming table columns
 
-```python skip-test
+```python order=source test-set=antipattern-transform
+from deephaven import empty_table
+
+source = empty_table(10).update("X = i")
+
 # NEVER do this!
 result_data = []
 for row in source.iter_tuple():
@@ -225,7 +210,11 @@ for row in source.iter_tuple():
 
 ❌ **Wrong** (loop approach):
 
-```python skip-test
+```python order=source test-set=antipattern-col
+from deephaven import empty_table
+
+source = empty_table(10).update("X = i")
+
 # Don't do this!
 values = []
 for row in source.iter_tuple():
@@ -245,7 +234,11 @@ result = empty_table(10).update(["X = i", "XSquared = X * X"])
 
 ❌ **Wrong** (loop approach):
 
-```python skip-test
+```python order=source test-set=antipattern-conditional
+from deephaven import empty_table
+
+source = empty_table(10).update("X = i")
+
 # Don't do this!
 results = []
 for row in source.iter_tuple():
@@ -267,7 +260,11 @@ result = empty_table(10).update(["X = i", "Label = (X % 2 == 0) ? `Even` : `Odd`
 
 ❌ **Wrong** (loop with accumulator):
 
-```python skip-test
+```python order=source test-set=antipattern-running
+from deephaven import empty_table
+
+source = empty_table(10).update("X = i")
+
 # Don't do this!
 running_sum = 0
 results = []

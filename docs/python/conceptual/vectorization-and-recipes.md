@@ -4,13 +4,13 @@ title: Vectorization and the recipe paradigm
 
 Deephaven's query engine uses vectorized operations and a declarative "recipe" paradigm to achieve high performance on both static and real-time data. This guide explains the technical foundations of this approach and why it matters for your queries.
 
-**The recipe paradigm**: Instead of writing step-by-step instructions that process data one element at a time, you define _what_ result you want — like a recipe that describes the finished dish. Deephaven's engine then figures out _how_ to compute it efficiently, processing data in optimized batches.
+**The recipe paradigm**: Instead of writing step-by-step instructions that process data one element at a time, you define what result you want — like a recipe that describes the finished dish. Deephaven's engine then figures out how to compute it efficiently, processing data in optimized batches.
 
 ## The paradigm shift: Imperative vs declarative
 
 ### Traditional programming: Imperative SISD
 
-In traditional programming languages like Python, C, or Java, you write **imperative** code that specifies step-by-step instructions. This is Single Instruction, Single Data (SISD) - one instruction processes one piece of data at a time:
+In traditional Python, you write **imperative** code that processes one data element at a time. This is Single Instruction, Single Data (SISD) — each instruction operates on a single value:
 
 ```python skip-test
 # Traditional Python: Imperative, SISD
@@ -30,12 +30,12 @@ This approach:
 
 ### Deephaven: Declarative SIMD
 
-Deephaven uses a **declarative** approach based on Single Instruction, Multiple Data (SIMD) - one instruction processes multiple data elements simultaneously:
+Deephaven uses a **declarative** approach. The engine processes data in chunks — Single Instruction, Multiple Data (SIMD) — applying one operation across many values at once:
 
 ```python order=result test-set=simd-example
 from deephaven import empty_table
 
-# Deephaven: Declarative, SIMD-capable
+# Deephaven: Declarative, SIMD
 result = empty_table(5).update(["X = i + 1", "XSquared = X * X"])
 ```
 
@@ -46,42 +46,9 @@ This approach:
 - Enables CPU-level SIMD instructions when available.
 - Avoids intermediate Python objects.
 
-### Performance comparison
+### Why the recipe approach is faster
 
-Let's compare the approaches with timing:
-
-```python order=:log,dh_result test-set=performance-comparison
-import time
-import numpy as np
-from deephaven import empty_table
-from deephaven.numpy import to_numpy
-
-# Create test data
-size = 1_000_000
-
-# Time the loop approach (via NumPy for fair comparison)
-start = time.time()
-x_array = np.arange(size)
-result_array = np.empty(size)
-for i in range(size):
-    result_array[i] = x_array[i] * x_array[i]
-loop_time = time.time() - start
-print(f"Loop approach: {loop_time:.4f} seconds")
-
-# Time the Deephaven recipe approach
-start = time.time()
-dh_result = empty_table(size).update(["X = (long)i", "XSquared = X * X"])
-# Force computation by reading a value
-_ = dh_result.head(1)
-recipe_time = time.time() - start
-print(f"Recipe approach: {recipe_time:.4f} seconds")
-print(f"Speedup: {loop_time / recipe_time:.2f}x")
-
-# Store results for display
-pandas_result = f"Loop: {loop_time:.4f}s"
-```
-
-The recipe approach is typically **much faster** because:
+The recipe approach avoids the overhead of the Python interpreter for data-processing work:
 
 1. **Vectorization** - Processes multiple values per CPU instruction.
 2. **No Python overhead** - Computation stays in compiled code.
@@ -113,7 +80,7 @@ Deephaven's engine is designed to enable CPU vectorization:
 3. **Type-specific operations** - Specialized code for each data type avoids type checks in inner loops.
 4. **JIT compilation** - The JVM can optimize and vectorize hot code paths.
 
-> By structuring our engine operations as chunk-oriented kernels, we allow the JVM's JIT compiler to vectorize computations where possible.
+By structuring engine operations as chunk-oriented kernels, Deephaven allows the JVM's JIT compiler to vectorize computations where possible.
 
 ### The Chunk architecture
 
@@ -174,7 +141,7 @@ When data ticks:
 3. Engine automatically computes `Y` for the new rows.
 4. Updates propagate through the DAG.
 
-This is **fundamentally impossible** with imperative loops - a loop executes once and stops!
+This requires significant additional infrastructure with imperative loops — a loop executes once and stops, so you would need to build your own subscription and recomputation logic.
 
 ### Update propagation example
 
@@ -357,7 +324,9 @@ results = [x * x for x in range(1_000_000)]
 
 Recipe approach stays in native memory:
 
-```python skip-test
+```python order=null test-set=memory-no-objects
+from deephaven import empty_table
+
 # No Python objects created for data!
 result = empty_table(1_000_000).update("XSquared = i * i")
 ```
@@ -378,7 +347,7 @@ t2 = t1.update("Y = X * 2")
 t3 = t1.where("X > 500000")
 ```
 
-> A table may share its RowSet with any other table in its update graph that contains the same row keys... This sharing capability represents an important optimization that avoids some data processing or copying work.
+Deephaven tables can share their RowSet with other tables in the same update graph that contain the same row keys. This sharing avoids copying data unnecessarily.
 
 ### Columnar vs row-oriented storage
 
@@ -436,11 +405,7 @@ result = empty_table(10).update(
 )
 ```
 
-The ternary operator compiles to:
-
-- Efficient branch prediction.
-- No Python if/else overhead.
-- Vectorized where possible.
+The ternary operator compiles to generated Java code with no Python interpreter overhead.
 
 ### Pattern: Cross-row operations
 
@@ -459,7 +424,7 @@ These operations:
 
 - Maintain state efficiently.
 - Update incrementally when data ticks.
-- Cannot be expressed with simple loops.
+- Would require significantly more code to implement with loops, and would lose automatic real-time propagation.
 - Are highly optimized in the engine.
 
 ## When loops ARE appropriate
@@ -481,7 +446,7 @@ This is **extraction**, not **transformation**. The data is leaving Deephaven.
 
 ### Valid use case: Control flow
 
-```python skip-test test-set=valid-control
+```python order=null test-set=valid-control
 from deephaven import empty_table
 
 source = empty_table(100).update(
