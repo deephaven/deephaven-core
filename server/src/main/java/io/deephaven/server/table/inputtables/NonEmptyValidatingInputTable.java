@@ -4,6 +4,7 @@
 package io.deephaven.server.table.inputtables;
 
 import com.google.protobuf.Any;
+import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
@@ -85,10 +86,8 @@ public class NonEmptyValidatingInputTable extends AbstractBaseValidatingInputTab
         final MutableInt position = new MutableInt(0);
         final ColumnSource<String> columnSource = tableToApply.getColumnSource(column, String.class);
 
-        try (final RowSequence rowSequence =
-                tableToApply.getRowSet().getRowSequenceByPosition(0, tableToApply.size())) {
-            rowSequence.forAllRowKeys(rowKey -> {
-                final String value = columnSource.get(rowKey);
+        try (final CloseableIterator<String> it = tableToApply.columnIterator(column)) {
+            it.forEachRemaining(value -> {
                 if (value != null && value.isEmpty()) {
                     errors.add(new StructuredErrorImpl(
                             "Value must not be empty",

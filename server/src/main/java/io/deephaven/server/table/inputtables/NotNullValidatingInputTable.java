@@ -4,7 +4,7 @@
 package io.deephaven.server.table.inputtables;
 
 import com.google.protobuf.Any;
-import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.util.input.InputTableUpdater;
@@ -80,10 +80,8 @@ public class NotNullValidatingInputTable extends AbstractBaseValidatingInputTabl
         final MutableInt position = new MutableInt(0);
         final ColumnSource<?> columnSource = tableToApply.getColumnSource(column);
 
-        try (final RowSequence rowSequence =
-                tableToApply.getRowSet().getRowSequenceByPosition(0, tableToApply.size())) {
-            rowSequence.forAllRowKeys(rowKey -> {
-                final Object value = columnSource.get(rowKey);
+        try (final CloseableIterator<Object> it = tableToApply.columnIterator(column)) {
+            it.forEachRemaining(value -> {
                 if (value == null) {
                     errors.add(new StructuredErrorImpl(
                             "Value must not be null",
@@ -92,6 +90,7 @@ public class NotNullValidatingInputTable extends AbstractBaseValidatingInputTabl
                 position.increment();
             });
         }
+
 
         if (!errors.isEmpty()) {
             throw new InputTableValidationException(errors);
