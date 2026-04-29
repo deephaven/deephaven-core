@@ -7,7 +7,7 @@ import com.google.rpc.Code;
 import dagger.assisted.Assisted;
 import dagger.assisted.AssistedFactory;
 import dagger.assisted.AssistedInject;
-import gnu.trove.map.hash.TByteObjectHashMap;
+import it.unimi.dsi.fastutil.bytes.Byte2ObjectOpenHashMap;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
@@ -369,7 +369,7 @@ public class ArrowFlightUtil {
         /**
          * A map from the wire request type to the handler factory for a DoExchange request.
          */
-        private final TByteObjectHashMap<ExchangeRequestHandlerFactory> requestHandlerFactories;
+        private final Byte2ObjectOpenHashMap<ExchangeRequestHandlerFactory> requestHandlerFactories;
 
 
         /**
@@ -414,7 +414,7 @@ public class ArrowFlightUtil {
             this.errorTransformer = errorTransformer;
             this.marshallers = exchangeMarshallers;
 
-            this.requestHandlerFactories = new TByteObjectHashMap<>(requestHandlerFactories.size());
+            this.requestHandlerFactories = new Byte2ObjectOpenHashMap<>(requestHandlerFactories.size());
             for (final ExchangeRequestHandlerFactory factory : requestHandlerFactories) {
                 final ExchangeRequestHandlerFactory old = this.requestHandlerFactories.put(factory.type(), factory);
                 if (old != null) {
