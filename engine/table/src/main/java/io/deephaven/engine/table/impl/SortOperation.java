@@ -16,7 +16,6 @@ import io.deephaven.engine.table.impl.sources.SwitchColumnSource;
 import io.deephaven.engine.table.impl.sources.chunkcolumnsource.LongChunkColumnSource;
 import io.deephaven.engine.table.impl.util.LongColumnSourceRowRedirection;
 import io.deephaven.engine.table.impl.util.RowRedirection;
-import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import io.deephaven.engine.table.iterators.ChunkedLongColumnIterator;
 import io.deephaven.engine.table.iterators.LongColumnIterator;
 import io.deephaven.util.SafeCloseableList;
