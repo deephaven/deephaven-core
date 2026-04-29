@@ -54,6 +54,7 @@ dependencies {
     annotationProcessor libs.autoservice.compiler
 
     testImplementation project(':engine-test-utils')
+    testImplementation libs.trove
 
     testImplementation libs.testcontainers
     testImplementation libs.testcontainers.junit.jupiter

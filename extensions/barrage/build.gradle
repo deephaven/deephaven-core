@@ -12,6 +12,7 @@ dependencies {
     implementation project(':Configuration')
     implementation project(':util-function')
     implementation libs.commons.lang3
+    implementation libs.trove
 
     api project(':engine-table')
     implementation project(':proto:proto-backplane-grpc-flight')
