@@ -26,11 +26,6 @@ import java.util.Set;
  * This class wraps an existing input table, and before performing the underlying validation performs its own validation
  * that the column values are in the allowed set (or null).
  * </p>
- *
- * <p>
- * <b>This class is intended for testing and demonstrating validation functionality, it is not production ready and may
- * be changed or removed at any time.</b>
- * </p>
  */
 @TestUseOnly
 public class StringListValidatingInputTable extends AbstractBaseValidatingInputTable {

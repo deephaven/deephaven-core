@@ -24,11 +24,6 @@ import java.util.function.UnaryOperator;
  * should override {@link #getColumnRestrictions(String)} and {@link #validateAddOrModify(Table)} to provide custom
  * validation logic.
  * </p>
- *
- * <p>
- * <b>This class is intended for testing and demonstrating validation functionality, it is not production ready and may
- * be changed or removed at any time.</b>
- * </p>
  */
 @TestUseOnly
 public abstract class AbstractBaseValidatingInputTable implements InputTableUpdater {
