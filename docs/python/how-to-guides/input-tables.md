@@ -243,61 +243,67 @@ from deephaven import new_table, input_table
 from deephaven.column import string_col, int_col, double_col
 
 # Create source table with various column types
-source = new_table([
-    string_col("Key", ["Apple", "Banana", "Carrot", "Date", "Eggplant"]),
-    int_col("IntValue", [1, 2, 3, 50, 75]),
-    double_col("DoubleValue", [1.5, 2.5, 3.5, 50.5, 75.5]),
-    string_col("Category", ["Fruit", "Fruit", "Vegetable", "Fruit", "Vegetable"]),
-    string_col("Description", ["Red", "Yellow", "Orange", "Sweet", "Purple"])
-])
+source = new_table(
+    [
+        string_col("Key", ["Apple", "Banana", "Carrot", "Date", "Eggplant"]),
+        int_col("IntValue", [1, 2, 3, 50, 75]),
+        double_col("DoubleValue", [1.5, 2.5, 3.5, 50.5, 75.5]),
+        string_col("Category", ["Fruit", "Fruit", "Vegetable", "Fruit", "Vegetable"]),
+        string_col("Description", ["Red", "Yellow", "Orange", "Sweet", "Purple"]),
+    ]
+)
 
 # Import Java classes for validators (not available in Python API yet)
 import jpy
-range_validating_input_table = jpy.get_type("io.deephaven.server.table.inputtables.RangeValidatingInputTable")
-double_range_validating_input_table = jpy.get_type("io.deephaven.server.table.inputtables.DoubleRangeValidatingInputTable")
-not_null_validating_input_table = jpy.get_type("io.deephaven.server.table.inputtables.NotNullValidatingInputTable")
-non_empty_validating_input_table = jpy.get_type("io.deephaven.server.table.inputtables.NonEmptyValidatingInputTable")
-string_list_validating_input_table = jpy.get_type("io.deephaven.server.table.inputtables.StringListValidatingInputTable")
+
+range_validating_input_table = jpy.get_type(
+    "io.deephaven.server.table.inputtables.RangeValidatingInputTable"
+)
+double_range_validating_input_table = jpy.get_type(
+    "io.deephaven.server.table.inputtables.DoubleRangeValidatingInputTable"
+)
+not_null_validating_input_table = jpy.get_type(
+    "io.deephaven.server.table.inputtables.NotNullValidatingInputTable"
+)
+non_empty_validating_input_table = jpy.get_type(
+    "io.deephaven.server.table.inputtables.NonEmptyValidatingInputTable"
+)
+string_list_validating_input_table = jpy.get_type(
+    "io.deephaven.server.table.inputtables.StringListValidatingInputTable"
+)
 
 # Example 1: Integer Range Validator (0-100)
 int_range_validator = range_validating_input_table.make(
-    input_table(init_table=source, key_cols="Key").j_table,
-    "IntValue", 
-    0, 
-    100
+    input_table(init_table=source, key_cols="Key").j_table, "IntValue", 0, 100
 )
 
 # Example 2: Double Range Validator (0.0-100.0)
 double_range_validator = double_range_validating_input_table.make(
-    input_table(init_table=source, key_cols="Key").j_table,
-    "DoubleValue", 
-    0.0, 
-    100.0
+    input_table(init_table=source, key_cols="Key").j_table, "DoubleValue", 0.0, 100.0
 )
 
 # Example 3: Not Null Validator on Category column
 not_null_validator = not_null_validating_input_table.make(
-    input_table(init_table=source, key_cols="Key").j_table,
-    "Category"
+    input_table(init_table=source, key_cols="Key").j_table, "Category"
 )
 
 # Example 3.1: Not Null Validator on IntValue column
 not_null_validator_int = not_null_validating_input_table.make(
-    input_table(init_table=source, key_cols="Key").j_table,
-    "IntValue"
+    input_table(init_table=source, key_cols="Key").j_table, "IntValue"
 )
 
 # Example 4: Non-Empty Validator on Description column
 non_empty_validator = non_empty_validating_input_table.make(
-    input_table(init_table=source, key_cols="Key").j_table,
-    "Description"
+    input_table(init_table=source, key_cols="Key").j_table, "Description"
 )
 
 # Example 5: String List Validator - Category must be "Fruit" or "Vegetable"
 string_list_validator = string_list_validating_input_table.make(
     input_table(init_table=source, key_cols="Key").j_table,
-    "Category", 
-    "Fruit", "Vegetable", "Grain"
+    "Category",
+    "Fruit",
+    "Vegetable",
+    "Grain",
 )
 ```
 
