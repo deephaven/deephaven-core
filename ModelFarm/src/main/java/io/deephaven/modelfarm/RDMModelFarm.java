@@ -10,9 +10,10 @@ import io.deephaven.engine.table.impl.ShiftObliviousInstrumentedListenerAdapter;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
-import gnu.trove.map.TObjectLongMap;
-import gnu.trove.map.hash.TObjectLongHashMap;
 import io.deephaven.util.function.ThrowingBiConsumer;
+import it.unimi.dsi.fastutil.objects.Object2LongMap;
+import it.unimi.dsi.fastutil.objects.Object2LongMaps;
+import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap;
 
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -39,8 +40,14 @@ public abstract class RDMModelFarm<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends
 
     private final ReadWriteLock keyIndexCurrentLock = new ReentrantReadWriteLock();
     private final ReadWriteLock keyIndexPrevLock = new ReentrantReadWriteLock();
-    private final TObjectLongMap<KEYTYPE> keyIndexPrev = new TObjectLongHashMap<>(10, 0.5f, NO_ENTRY_VALUE);
-    private final TObjectLongMap<KEYTYPE> keyIndexDelta = new TObjectLongHashMap<>(10, 0.5f, NO_ENTRY_VALUE);
+    private final Object2LongMap<KEYTYPE> keyIndexPrev = newKeyIndexMap();
+    private final Object2LongMap<KEYTYPE> keyIndexDelta = newKeyIndexMap();
+
+    private static <K> Object2LongMap<K> newKeyIndexMap() {
+        final Object2LongOpenHashMap<K> m = new Object2LongOpenHashMap<>(10, 0.5f);
+        m.defaultReturnValue(NO_ENTRY_VALUE);
+        return m;
+    }
 
     // keep the listener so that it doesn't get garbage collected
     @SuppressWarnings("FieldCanBeLocal")
@@ -70,14 +77,14 @@ public abstract class RDMModelFarm<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends
                 keyIndexCurrentLock.writeLock().lock();
                 keyIndexPrevLock.writeLock().lock();
 
-                keyIndexDelta.forEachEntry((key, idx) -> {
+                Object2LongMaps.fastForEach(keyIndexDelta, entry -> {
+                    final KEYTYPE key = entry.getKey();
+                    final long idx = entry.getLongValue();
                     if (idx == REMOVED_ENTRY_VALUE) {
-                        keyIndexPrev.remove(key);
+                        keyIndexPrev.removeLong(key);
                     } else {
                         keyIndexPrev.put(key, idx);
                     }
-
-                    return true;
                 });
 
                 keyIndexPrevLock.writeLock().unlock();
@@ -136,17 +143,17 @@ public abstract class RDMModelFarm<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends
 
         if (usePrev) {
             keyIndexPrevLock.readLock().lock();
-            i = keyIndexPrev.get(key);
+            i = keyIndexPrev.getLong(key);
             keyIndexPrevLock.readLock().unlock();
         } else {
             keyIndexCurrentLock.readLock().lock();
-            i = keyIndexDelta.get(key);
+            i = keyIndexDelta.getLong(key);
 
             if (i == REMOVED_ENTRY_VALUE) {
                 i = NO_ENTRY_VALUE;
             } else if (i == NO_ENTRY_VALUE) {
                 keyIndexPrevLock.readLock().lock();
-                i = keyIndexPrev.get(key);
+                i = keyIndexPrev.getLong(key);
                 keyIndexPrevLock.readLock().unlock();
             }
 
