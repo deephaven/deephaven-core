@@ -27,7 +27,7 @@ jobs:
 
       - name: Setup Crane
         if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
-        uses: imjasonh/setup-crane@v0.4
+        uses: imjasonh/setup-crane@v0.5
 
       - name: Setup gradle properties
         run: |
