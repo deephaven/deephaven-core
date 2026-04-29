@@ -4,10 +4,10 @@
 package io.deephaven.engine.table;
 
 import com.google.common.collect.Iterators;
-import gnu.trove.impl.Constants;
-import gnu.trove.map.hash.TObjectIntHashMap;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.util.type.ArrayTypeUtils;
+import it.unimi.dsi.fastutil.objects.Object2IntMap;
+import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 
 import java.util.BitSet;
 import java.util.Map;
@@ -210,7 +210,7 @@ public class ModifiedColumnSet {
     // We'll use this to fail-fast when two incompatible MCSs interact.
     private final Map<String, ColumnSource<?>> columns;
     private final String[] columnNames;
-    private final TObjectIntHashMap<String> idMap;
+    private final Object2IntMap<String> idMap;
 
     // Represents which columns are dirty.
     private final BitSet dirtyColumns;
@@ -264,10 +264,12 @@ public class ModifiedColumnSet {
     public ModifiedColumnSet(final Map<String, ColumnSource<?>> columns) {
         this.columns = columns;
         columnNames = columns.keySet().toArray(String[]::new);
-        idMap = new TObjectIntHashMap<>(columnNames.length, Constants.DEFAULT_LOAD_FACTOR, -1);
+        final Object2IntOpenHashMap<String> idMapImpl = new Object2IntOpenHashMap<>(columnNames.length);
+        idMapImpl.defaultReturnValue(-1);
         for (int i = 0; i < columnNames.length; ++i) {
-            idMap.put(columnNames[i], i);
+            idMapImpl.put(columnNames[i], i);
         }
+        idMap = idMapImpl;
         dirtyColumns = new BitSet(columnNames.length);
     }
 
@@ -304,8 +306,8 @@ public class ModifiedColumnSet {
 
         final int[] columnBits = new int[columnNames.length];
         for (int i = 0; i < columnNames.length; ++i) {
-            final int bitIndex = idMap.get(columnNames[i]);
-            if (bitIndex == idMap.getNoEntryValue()) {
+            final int bitIndex = idMap.getInt(columnNames[i]);
+            if (bitIndex == idMap.defaultReturnValue()) {
                 throw new IllegalArgumentException(
                         "Unknown column while constructing ModifiedColumnSet: " + columnNames[i]);
             }
@@ -465,8 +467,8 @@ public class ModifiedColumnSet {
      */
     public void setAll(final String... columnNames) {
         for (final String column : columnNames) {
-            final int bitIndex = idMap.get(column);
-            if (bitIndex == idMap.getNoEntryValue()) {
+            final int bitIndex = idMap.getInt(column);
+            if (bitIndex == idMap.defaultReturnValue()) {
                 throw new IllegalArgumentException("Unknown column while constructing ModifiedColumnSet: " + column);
             }
             this.dirtyColumns.set(bitIndex);
@@ -516,8 +518,8 @@ public class ModifiedColumnSet {
      */
     public void clearAll(final String... columnNames) {
         for (final String column : columnNames) {
-            final int bitIndex = idMap.get(column);
-            if (bitIndex == idMap.getNoEntryValue()) {
+            final int bitIndex = idMap.getInt(column);
+            if (bitIndex == idMap.defaultReturnValue()) {
                 throw new IllegalArgumentException("Unknown column while constructing ModifiedColumnSet: " + column);
             }
             this.dirtyColumns.clear(bitIndex);
