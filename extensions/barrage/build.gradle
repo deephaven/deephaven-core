@@ -13,6 +13,7 @@ dependencies {
     implementation project(':util-function')
     implementation libs.commons.lang3
     implementation libs.trove
+    implementation libs.dsi.fastutil
 
     api project(':engine-table')
     implementation project(':proto:proto-backplane-grpc-flight')

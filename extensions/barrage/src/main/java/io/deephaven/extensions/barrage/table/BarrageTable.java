@@ -4,8 +4,6 @@
 package io.deephaven.extensions.barrage.table;
 
 import com.google.common.annotations.VisibleForTesting;
-import gnu.trove.list.TLongList;
-import gnu.trove.list.linked.TLongLinkedList;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.util.pools.ChunkPoolConstants;
@@ -36,6 +34,7 @@ import io.deephaven.io.log.LogLevel;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.annotations.InternalUseOnly;
+import it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue;
 import org.HdrHistogram.Histogram;
 import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.Field;
@@ -145,7 +144,7 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
             AtomicIntegerFieldUpdater.newUpdater(BarrageTable.class, "prevTrackingEnabled");
 
     private final List<Object> processedData;
-    private final TLongList processedStep;
+    private final LongArrayFIFOQueue processedStep;
 
     private final SourceRefresher refresher;
 
@@ -195,7 +194,7 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
 
         if (DEBUG_ENABLED) {
             processedData = new LinkedList<>();
-            processedStep = new TLongLinkedList();
+            processedStep = new LongArrayFIFOQueue();
         } else {
             processedData = null;
             processedStep = null;
@@ -576,10 +575,10 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
         if (processedData.size() > 10) {
             final BarrageMessage msg = (BarrageMessage) processedData.remove(0);
             msg.close();
-            processedStep.remove(0);
+            processedStep.dequeueLong();
         }
         processedData.add(snapshotOrDelta.clone());
-        processedStep.add(getUpdateGraph().clock().currentStep());
+        processedStep.enqueue(getUpdateGraph().clock().currentStep());
     }
 
     protected boolean maybeEnablePrevTracking() {
