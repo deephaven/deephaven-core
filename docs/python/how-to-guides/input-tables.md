@@ -238,12 +238,12 @@ Deephaven provides several built-in validators:
 
 To create a validated input table, first create a base input table, then wrap it with one or more validators. Here's an example showing all available validators:
 
-```python order=intRangeValidator,doubleRangeValidator,notNullValidator,notNullValidatorInt,nonEmptyValidator,stringListValidator
+```python order=int_range_validator,double_range_validator,not_null_validator,not_null_validator_int,non_empty_validator,string_list_validator
 from deephaven import new_table, input_table
 from deephaven.column import string_col, int_col, double_col
 
 # Create source table with various column types
-_source = new_table([
+source = new_table([
     string_col("Key", ["Apple", "Banana", "Carrot", "Date", "Eggplant"]),
     int_col("IntValue", [1, 2, 3, 50, 75]),
     double_col("DoubleValue", [1.5, 2.5, 3.5, 50.5, 75.5]),
@@ -253,49 +253,49 @@ _source = new_table([
 
 # Import Java classes for validators (not available in Python API yet)
 import jpy
-RangeValidatingInputTable = jpy.get_type("io.deephaven.server.table.inputtables.RangeValidatingInputTable")
-DoubleRangeValidatingInputTable = jpy.get_type("io.deephaven.server.table.inputtables.DoubleRangeValidatingInputTable")
-NotNullValidatingInputTable = jpy.get_type("io.deephaven.server.table.inputtables.NotNullValidatingInputTable")
-NonEmptyValidatingInputTable = jpy.get_type("io.deephaven.server.table.inputtables.NonEmptyValidatingInputTable")
-StringListValidatingInputTable = jpy.get_type("io.deephaven.server.table.inputtables.StringListValidatingInputTable")
+range_validating_input_table = jpy.get_type("io.deephaven.server.table.inputtables.RangeValidatingInputTable")
+double_range_validating_input_table = jpy.get_type("io.deephaven.server.table.inputtables.DoubleRangeValidatingInputTable")
+not_null_validating_input_table = jpy.get_type("io.deephaven.server.table.inputtables.NotNullValidatingInputTable")
+non_empty_validating_input_table = jpy.get_type("io.deephaven.server.table.inputtables.NonEmptyValidatingInputTable")
+string_list_validating_input_table = jpy.get_type("io.deephaven.server.table.inputtables.StringListValidatingInputTable")
 
 # Example 1: Integer Range Validator (0-100)
-intRangeValidator = RangeValidatingInputTable.make(
-    input_table(init_table=_source, key_cols="Key").j_table,
+int_range_validator = range_validating_input_table.make(
+    input_table(init_table=source, key_cols="Key").j_table,
     "IntValue", 
     0, 
     100
 )
 
 # Example 2: Double Range Validator (0.0-100.0)
-doubleRangeValidator = DoubleRangeValidatingInputTable.make(
-    input_table(init_table=_source, key_cols="Key").j_table,
+double_range_validator = double_range_validating_input_table.make(
+    input_table(init_table=source, key_cols="Key").j_table,
     "DoubleValue", 
     0.0, 
     100.0
 )
 
 # Example 3: Not Null Validator on Category column
-notNullValidator = NotNullValidatingInputTable.make(
-    input_table(init_table=_source, key_cols="Key").j_table,
+not_null_validator = not_null_validating_input_table.make(
+    input_table(init_table=source, key_cols="Key").j_table,
     "Category"
 )
 
 # Example 3.1: Not Null Validator on IntValue column
-notNullValidatorInt = NotNullValidatingInputTable.make(
-    input_table(init_table=_source, key_cols="Key").j_table,
+not_null_validator_int = not_null_validating_input_table.make(
+    input_table(init_table=source, key_cols="Key").j_table,
     "IntValue"
 )
 
 # Example 4: Non-Empty Validator on Description column
-nonEmptyValidator = NonEmptyValidatingInputTable.make(
-    input_table(init_table=_source, key_cols="Key").j_table,
+non_empty_validator = non_empty_validating_input_table.make(
+    input_table(init_table=source, key_cols="Key").j_table,
     "Description"
 )
 
 # Example 5: String List Validator - Category must be "Fruit" or "Vegetable"
-stringListValidator = StringListValidatingInputTable.make(
-    input_table(init_table=_source, key_cols="Key").j_table,
+string_list_validator = string_list_validating_input_table.make(
+    input_table(init_table=source, key_cols="Key").j_table,
     "Category", 
     "Fruit", "Vegetable", "Grain"
 )
