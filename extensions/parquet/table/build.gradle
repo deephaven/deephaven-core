@@ -38,7 +38,7 @@ dependencies {
     implementation project(':codec-cache')
 
     implementation libs.commons.lang3
-    implementation libs.trove
+    implementation libs.dsi.fastutil
     implementation libs.commons.text
     implementation libs.commons.compress
 
