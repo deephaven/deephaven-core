@@ -3,7 +3,7 @@
 //
 package io.deephaven.engine.testutil.generator;
 
-import gnu.trove.list.array.TIntArrayList;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
@@ -11,7 +11,7 @@ import io.deephaven.chunk.attributes.Values;
 import java.util.List;
 import java.util.Random;
 
-public class UniqueIntArrayGenerator extends AbstractAdaptableUniqueGenerator<TIntArrayList, int[]> {
+public class UniqueIntArrayGenerator extends AbstractAdaptableUniqueGenerator<IntArrayList, int[]> {
     private final int minSize;
     private final int maxSize;
     private final int min;
@@ -35,9 +35,9 @@ public class UniqueIntArrayGenerator extends AbstractAdaptableUniqueGenerator<TI
     }
 
     @Override
-    TIntArrayList nextValue(long key, Random random) {
+    IntArrayList nextValue(long key, Random random) {
         final int size = random.nextInt(maxSize - minSize) + minSize;
-        final TIntArrayList list = new TIntArrayList(size);
+        final IntArrayList list = new IntArrayList(size);
         for (int ii = 0; ii < size; ii++) {
             list.add(random.nextInt(max - min) + min);
         }
@@ -45,12 +45,12 @@ public class UniqueIntArrayGenerator extends AbstractAdaptableUniqueGenerator<TI
     }
 
     @Override
-    int[] adapt(TIntArrayList value) {
-        return value.toArray();
+    int[] adapt(IntArrayList value) {
+        return value.toIntArray();
     }
 
     @Override
-    TIntArrayList invert(int[] value) {
-        return new TIntArrayList(value);
+    IntArrayList invert(int[] value) {
+        return new IntArrayList(value);
     }
 }

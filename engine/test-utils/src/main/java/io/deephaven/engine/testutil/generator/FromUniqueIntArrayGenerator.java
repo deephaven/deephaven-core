@@ -3,13 +3,13 @@
 //
 package io.deephaven.engine.testutil.generator;
 
-import gnu.trove.list.array.TIntArrayList;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
 
-public class FromUniqueIntArrayGenerator extends AbstractFromUniqueAdaptableGenerator<TIntArrayList, int[]> {
+public class FromUniqueIntArrayGenerator extends AbstractFromUniqueAdaptableGenerator<IntArrayList, int[]> {
     public FromUniqueIntArrayGenerator(
             UniqueIntArrayGenerator uniqueStringArrayGenerator,
             IntArrayGenerator defaultGenerator,
             double existingFraction) {
-        super(int[].class, uniqueStringArrayGenerator, defaultGenerator, TIntArrayList[]::new, existingFraction);
+        super(int[].class, uniqueStringArrayGenerator, defaultGenerator, IntArrayList[]::new, existingFraction);
     }
 }
