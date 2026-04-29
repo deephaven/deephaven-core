@@ -178,11 +178,11 @@ Input table validators allow you to add validation rules to input tables, ensuri
 
 Deephaven provides several built-in validators:
 
-- **RangeValidatingInputTable** - Validates that integer values fall within a specified range (min/max inclusive)
-- **DoubleRangeValidatingInputTable** - Validates that double values fall within a specified range (min/max inclusive)
-- **NotNullValidatingInputTable** - Validates that values in a column are not null
-- **NonEmptyValidatingInputTable** - Validates that string values are not empty
-- **StringListValidatingInputTable** - Validates that string values belong to a predefined set of allowed values
+- **`RangeValidatingInputTable`** - Validates that integer values fall within a specified range (min/max inclusive).
+- **`DoubleRangeValidatingInputTable`** - Validates that double values fall within a specified range (min/max inclusive).
+- **`NotNullValidatingInputTable`** - Validates that values in a column are not null.
+- **`NonEmptyValidatingInputTable`** - Validates that string values are not empty.
+- **`StringListValidatingInputTable`** - Validates that string values belong to a predefined set of allowed values.
 
 ### Creating validated input tables
 
