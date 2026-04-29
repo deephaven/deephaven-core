@@ -5,8 +5,6 @@ package io.deephaven.server.table.inputtables;
 
 import com.google.protobuf.Any;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
-import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.util.input.InputTableUpdater;
 import io.deephaven.engine.util.input.InputTableValidationException;
@@ -18,7 +16,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 /**
  * This is an example of an {@link InputTableUpdater} that validates that the values in a String column are not empty.
@@ -46,9 +43,7 @@ public class NonEmptyValidatingInputTable extends AbstractBaseValidatingInputTab
      * @return a new input table that validates {@code column} is not empty
      */
     public static Table make(Table input, final String column) {
-        final InputTableUpdater updater = (InputTableUpdater) input.getAttribute(Table.INPUT_TABLE_ATTRIBUTE);
-        final NonEmptyValidatingInputTable validatedUpdater = new NonEmptyValidatingInputTable(updater, column);
-        return input.withAttributes(Map.of(Table.INPUT_TABLE_ATTRIBUTE, validatedUpdater));
+        return wrapUpdater(input, updater -> new NonEmptyValidatingInputTable(updater, column));
     }
 
 
@@ -84,7 +79,6 @@ public class NonEmptyValidatingInputTable extends AbstractBaseValidatingInputTab
     public void validateAddOrModify(Table tableToApply) {
         final List<InputTableValidationException.StructuredError> errors = new ArrayList<>();
         final MutableInt position = new MutableInt(0);
-        final ColumnSource<String> columnSource = tableToApply.getColumnSource(column, String.class);
 
         try (final CloseableIterator<String> it = tableToApply.columnIterator(column)) {
             it.forEachRemaining(value -> {

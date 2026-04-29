@@ -13,6 +13,8 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
+import java.util.function.UnaryOperator;
 
 /**
  * An abstract base class for {@link InputTableUpdater} implementations that wrap an existing input table.
@@ -31,6 +33,20 @@ import java.util.List;
 @TestUseOnly
 public abstract class AbstractBaseValidatingInputTable implements InputTableUpdater {
     protected final InputTableUpdater wrapped;
+
+    /**
+     * Wraps an existing input table updater with a new validating updater created by the provided {@code createUpdater}
+     * function.
+     *
+     * @param input the input table, must have an {@link InputTableUpdater} as its {@link Table#INPUT_TABLE_ATTRIBUTE}
+     * @param createUpdater a function that takes the existing input table's updater and returns a new validating
+     *        updater
+     * @return a new input table that validates according to the provided {@code createUpdater} function
+     */
+    protected static Table wrapUpdater(final Table input, final UnaryOperator<InputTableUpdater> createUpdater) {
+        final InputTableUpdater updater = (InputTableUpdater) input.getAttribute(Table.INPUT_TABLE_ATTRIBUTE);
+        return input.withAttributes(Map.of(Table.INPUT_TABLE_ATTRIBUTE, createUpdater.apply(updater)));
+    }
 
     /**
      * Construct a new validating input table that wraps the given input table.

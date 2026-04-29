@@ -5,8 +5,6 @@ package io.deephaven.server.table.inputtables;
 
 import com.google.protobuf.Any;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
-import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.util.input.InputTableUpdater;
 import io.deephaven.engine.util.input.InputTableValidationException;
@@ -18,7 +16,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -51,10 +48,7 @@ public class StringListValidatingInputTable extends AbstractBaseValidatingInputT
      * @return a new input table that validates {@code column} values are in the allowed set
      */
     public static Table make(Table input, final String column, final String... allowedValues) {
-        final InputTableUpdater updater = (InputTableUpdater) input.getAttribute(Table.INPUT_TABLE_ATTRIBUTE);
-        final StringListValidatingInputTable validatedUpdater =
-                new StringListValidatingInputTable(updater, column, allowedValues);
-        return input.withAttributes(Map.of(Table.INPUT_TABLE_ATTRIBUTE, validatedUpdater));
+        return wrapUpdater(input, updater -> new StringListValidatingInputTable(updater, column, allowedValues));
     }
 
 
@@ -94,7 +88,6 @@ public class StringListValidatingInputTable extends AbstractBaseValidatingInputT
     public void validateAddOrModify(Table tableToApply) {
         final List<InputTableValidationException.StructuredError> errors = new ArrayList<>();
         final MutableInt position = new MutableInt(0);
-        final ColumnSource<String> columnSource = tableToApply.getColumnSource(column, String.class);
 
         try (final CloseableIterator<String> it = tableToApply.columnIterator(column)) {
             it.forEachRemaining(value -> {

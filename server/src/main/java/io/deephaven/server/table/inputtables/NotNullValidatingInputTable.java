@@ -5,7 +5,6 @@ package io.deephaven.server.table.inputtables;
 
 import com.google.protobuf.Any;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.util.input.InputTableUpdater;
 import io.deephaven.engine.util.input.InputTableValidationException;
@@ -17,7 +16,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 /**
  * This is an example of an {@link InputTableUpdater} that validates that the values in a column are not null.
@@ -45,9 +43,7 @@ public class NotNullValidatingInputTable extends AbstractBaseValidatingInputTabl
      * @return a new input table that validates {@code column} is not null
      */
     public static Table make(Table input, final String column) {
-        final InputTableUpdater updater = (InputTableUpdater) input.getAttribute(Table.INPUT_TABLE_ATTRIBUTE);
-        final NotNullValidatingInputTable validatedUpdater = new NotNullValidatingInputTable(updater, column);
-        return input.withAttributes(Map.of(Table.INPUT_TABLE_ATTRIBUTE, validatedUpdater));
+        return wrapUpdater(input, updater -> new NotNullValidatingInputTable(updater, column));
     }
 
 
@@ -78,7 +74,6 @@ public class NotNullValidatingInputTable extends AbstractBaseValidatingInputTabl
     public void validateAddOrModify(Table tableToApply) {
         final List<InputTableValidationException.StructuredError> errors = new ArrayList<>();
         final MutableInt position = new MutableInt(0);
-        final ColumnSource<?> columnSource = tableToApply.getColumnSource(column);
 
         try (final CloseableIterator<Object> it = tableToApply.columnIterator(column)) {
             it.forEachRemaining(value -> {

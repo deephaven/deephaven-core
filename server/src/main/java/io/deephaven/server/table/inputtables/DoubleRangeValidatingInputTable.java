@@ -16,7 +16,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 /**
  * This is an example of an {@link InputTableUpdater} that validates that the values in a Double column are within a
@@ -51,10 +50,7 @@ public class DoubleRangeValidatingInputTable extends AbstractBaseValidatingInput
     public static Table make(Table input, final String column,
             final double min,
             final double max) {
-        final InputTableUpdater updater = (InputTableUpdater) input.getAttribute(Table.INPUT_TABLE_ATTRIBUTE);
-        final DoubleRangeValidatingInputTable validatedUpdater =
-                new DoubleRangeValidatingInputTable(updater, column, min, max);
-        return input.withAttributes(Map.of(Table.INPUT_TABLE_ATTRIBUTE, validatedUpdater));
+        return wrapUpdater(input, updater -> new DoubleRangeValidatingInputTable(updater, column, min, max));
     }
 
 
