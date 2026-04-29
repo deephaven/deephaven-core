@@ -172,6 +172,81 @@ result = AppendOnlyArrayBackedInputTable.make(definition)
 
 ![Manually adding a clickable link to an input table](../assets/how-to/groovy-input-table-link.gif)
 
+## Input table validators
+
+Input table validators allow you to add validation rules to input tables, ensuring that data entered (either programmatically or manually through the UI) meets specific criteria. Validators wrap an existing input table and check data before it's added, throwing validation exceptions if the data doesn't meet the requirements.
+
+Deephaven provides several built-in validators:
+
+- **RangeValidatingInputTable** - Validates that integer values fall within a specified range (min/max inclusive)
+- **DoubleRangeValidatingInputTable** - Validates that double values fall within a specified range (min/max inclusive)
+- **NotNullValidatingInputTable** - Validates that values in a column are not null
+- **NonEmptyValidatingInputTable** - Validates that string values are not empty
+- **StringListValidatingInputTable** - Validates that string values belong to a predefined set of allowed values
+
+### Creating validated input tables
+
+To create a validated input table, first create a base input table, then wrap it with one or more validators. Here's an example showing all available validators:
+
+```groovy order=intRangeValidator,doubleRangeValidator,notNullValidator,notNullValidatorInt,nonEmptyValidator,stringListValidator
+import io.deephaven.engine.table.impl.util.KeyedArrayBackedInputTable
+import io.deephaven.server.table.inputtables.RangeValidatingInputTable
+import io.deephaven.server.table.inputtables.DoubleRangeValidatingInputTable
+import io.deephaven.server.table.inputtables.NotNullValidatingInputTable
+import io.deephaven.server.table.inputtables.NonEmptyValidatingInputTable
+import io.deephaven.server.table.inputtables.StringListValidatingInputTable
+
+// Create source table with various column types
+_source = newTable(
+    stringCol("Key", "Apple", "Banana", "Carrot", "Date", "Eggplant"),
+    intCol("IntValue", 1, 2, 3, 50, 75),
+    doubleCol("DoubleValue", 1.5, 2.5, 3.5, 50.5, 75.5),
+    stringCol("Category", "Fruit", "Fruit", "Vegetable", "Fruit", "Vegetable"),
+    stringCol("Description", "Red", "Yellow", "Orange", "Sweet", "Purple")
+)
+
+// Example 1: Integer Range Validator (0-100)
+intRangeValidator = RangeValidatingInputTable.make(
+    KeyedArrayBackedInputTable.make(_source, "Key"), 
+    "IntValue", 
+    0, 
+    100
+)
+
+// Example 2: Double Range Validator (0.0-100.0)
+doubleRangeValidator = DoubleRangeValidatingInputTable.make(
+    KeyedArrayBackedInputTable.make(_source, "Key"), 
+    "DoubleValue", 
+    0.0, 
+    100.0
+)
+
+// Example 3: Not Null Validator on Category column
+notNullValidator = NotNullValidatingInputTable.make(
+    KeyedArrayBackedInputTable.make(_source, "Key"), 
+    "Category"
+)
+
+// Example 3.1: Not Null Validator on IntValue column
+notNullValidatorInt = NotNullValidatingInputTable.make(
+    KeyedArrayBackedInputTable.make(_source, "Key"), 
+    "IntValue"
+)
+
+// Example 4: Non-Empty Validator on Description column
+nonEmptyValidator = NonEmptyValidatingInputTable.make(
+    KeyedArrayBackedInputTable.make(_source, "Key"), 
+    "Description"
+)
+
+// Example 5: String List Validator - Category must be "Fruit", "Vegetable", or "Grain"
+stringListValidator = StringListValidatingInputTable.make(
+    KeyedArrayBackedInputTable.make(_source, "Key"), 
+    "Category", 
+    "Fruit", "Vegetable", "Grain"
+)
+```
+
 ## Related documentation
 
 - [Input Table](../reference/table-operations/create/InputTable.md)
