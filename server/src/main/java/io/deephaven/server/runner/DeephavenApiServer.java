@@ -177,6 +177,19 @@ public class DeephavenApiServer {
             }
         });
 
+        // https://deephaven.atlassian.net/browse/DH-22428: Explicitly manage the lifecycle of logback
+        // There is not currently a way to orchestrate more complex orderings between shutdown tasks currently.
+        // It would be nice if there was a way to say "this should come 'last'". Alternatively, this logic could be
+        // orchestrated as the responsibility of the caller, with the main's potentially blocking on shutdown manager
+        // completion, and then closing the LoggerContext themselves.
+        // https://logback.qos.ch/manual/configuration.html#stopContext
+        // ProcessEnvironment.getGlobalShutdownManager().registerTask(..., () -> {
+        // ILoggerFactory iLoggerFactory = org.slf4j.LoggerFactory.getILoggerFactory();
+        // if (iLoggerFactory instanceof LifeCycle) {
+        // ((LifeCycle)iLoggerFactory).stop();
+        // }
+        // });
+
         // Ensure that our logging is configured no later than this point
         log.info().append("Configuring logging...").endl();
         logInit.get();
