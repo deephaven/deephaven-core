@@ -71,6 +71,12 @@ dependencies {
 
     implementation project(':ClientSupport')
 
+    // Technically, we don't require downstream code to use logback. Our own downstream usages _does_ use logback though,
+    // and in the case where logback is on the classpath, we'll provide some default utility.
+    compileOnly(libs.logback.classic) {
+        because 'we want to provide MainHelper.installLogbackStopAsPostShutdownManagerHook by default'
+    }
+
     if ('true' == project.findProperty('extensions.classgraph.enabled')) {
         runtimeOnly project(':extensions-classgraph')
     }

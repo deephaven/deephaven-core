@@ -13,9 +13,11 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.util.thread.ThreadDump;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.VisibleForTesting;
 
 import java.io.PrintStream;
 import java.util.*;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -55,6 +57,7 @@ public class ShutdownManagerImpl implements ShutdownManager {
      * Allow the implementation to ensure that shutdown processing is only invoked once.
      */
     private final AtomicBoolean shutdownTasksInvoked = new AtomicBoolean(false);
+    private final CountDownLatch tasksFinished = new CountDownLatch(1);
 
     /**
      * Construct a new ShutdownManager.
@@ -63,7 +66,23 @@ public class ShutdownManagerImpl implements ShutdownManager {
 
     @Override
     public void addShutdownHookToRuntime() {
-        Runtime.getRuntime().addShutdownHook(new Thread(this::maybeInvokeTasks));
+        Runtime.getRuntime().addShutdownHook(newShutdownHookThread());
+    }
+
+    @VisibleForTesting
+    Thread newShutdownHookThread() {
+        return new Thread(() -> {
+            final boolean didInvokeTasks = maybeInvokeTasks();
+            // If some other thread has already invoked maybeInvokeTasks, we still want to block shutdown on completion
+            // of those tasks.
+            if (!didInvokeTasks) {
+                try {
+                    awaitTasksFinished();
+                } catch (final InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+        });
     }
 
     @Override
@@ -92,22 +111,31 @@ public class ShutdownManagerImpl implements ShutdownManager {
         if (!shutdownTasksInvoked.compareAndSet(false, true)) {
             return false;
         }
-        logShutdown(LogLevel.WARN, "Initiating shutdown processing");
-        installTerminator();
-        tasksByOrderingCategory.forEach((oc, tasks) -> {
-            logShutdown(LogLevel.WARN, "Starting to invoke ", oc, " shutdown tasks");
-            Task task;
-            while ((task = tasks.pop()) != null) {
-                try {
-                    task.invoke();
-                } catch (Throwable t) {
-                    logShutdown(LogLevel.ERROR, "Shutdown task ", task, " threw ", t);
+        try {
+            logShutdown(LogLevel.WARN, "Initiating shutdown processing");
+            installTerminator();
+            tasksByOrderingCategory.forEach((oc, tasks) -> {
+                logShutdown(LogLevel.WARN, "Starting to invoke ", oc, " shutdown tasks");
+                Task task;
+                while ((task = tasks.pop()) != null) {
+                    try {
+                        task.invoke();
+                    } catch (Throwable t) {
+                        logShutdown(LogLevel.ERROR, "Shutdown task ", task, " threw ", t);
+                    }
                 }
-            }
-            logShutdown(LogLevel.WARN, "Done invoking ", oc, " shutdown tasks");
-        });
-        logShutdown(LogLevel.WARN, "Finished shutdown processing");
-        return true;
+                logShutdown(LogLevel.WARN, "Done invoking ", oc, " shutdown tasks");
+            });
+            logShutdown(LogLevel.WARN, "Finished shutdown processing");
+            return true;
+        } finally {
+            tasksFinished.countDown();
+        }
+    }
+
+    @Override
+    public void awaitTasksFinished() throws InterruptedException {
+        tasksFinished.await();
     }
 
     /**

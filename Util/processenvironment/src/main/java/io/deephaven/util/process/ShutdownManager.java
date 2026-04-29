@@ -46,7 +46,7 @@ public interface ShutdownManager {
 
     /**
      * Add a shutdown hook to the runtime that will invoke all registered shutdown tasks, if they haven't previously
-     * been invoked.
+     * been invoked. If the tasks have already been invoked, the shutdown hook will {@link #awaitTasksFinished()}.
      */
     void addShutdownHookToRuntime();
 
@@ -84,4 +84,11 @@ public interface ShutdownManager {
      * @return True if shutdown task invocation was performed by this call
      */
     boolean maybeInvokeTasks();
+
+    /**
+     * Waits for the shutdown tasks to be finished. Does not invoke the shutdown tasks.
+     *
+     * @throws InterruptedException if the current thread is interrupted while waiting
+     */
+    void awaitTasksFinished() throws InterruptedException;
 }

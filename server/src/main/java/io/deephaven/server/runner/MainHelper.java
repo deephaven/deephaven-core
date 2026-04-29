@@ -23,7 +23,9 @@ import io.deephaven.ssl.config.TrustCertificates;
 import io.deephaven.util.HeapDump;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.process.ProcessEnvironment;
+import io.deephaven.util.process.ShutdownManager;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.ILoggerFactory;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 
 import java.io.IOException;
@@ -132,6 +134,7 @@ public class MainHelper {
         Thread.setDefaultUncaughtExceptionHandler(processEnvironment.getFatalErrorReporter());
         HeapDump.setupHeapDumpWithDefaults(config,
                 (final RuntimeException unused) -> ConstructSnapshot.concurrentAttemptInconsistent(), log);
+        installLogbackStopAsPostShutdownManagerHook(processEnvironment.getShutdownManager(), log);
         return config;
     }
 
@@ -222,5 +225,52 @@ public class MainHelper {
 
     private static Optional<String> applicationEnvironmentVariable() {
         return Optional.ofNullable(System.getenv(DEEPHAVEN_APPLICATION_ENV));
+    }
+
+
+    private static void installLogbackStopAsPostShutdownManagerHook(
+            final ShutdownManager globalShutdownManager,
+            final Logger logger) {
+        final ILoggerFactory iLoggerFactory = org.slf4j.LoggerFactory.getILoggerFactory();
+        final boolean installedHook;
+        try {
+            installedHook = installLogbackStopAsPostShutdownManagerHookImpl(globalShutdownManager, iLoggerFactory);
+        } catch (final NoClassDefFoundError e) {
+            if (e.getMessage() != null && e.getMessage().contains("LoggerContext")) {
+                logger.info()
+                        .append("Skipped installing logback-classic shutdown hook, logback-classic is not on classpath")
+                        .endl();
+                return;
+            }
+            throw e;
+        }
+        if (installedHook) {
+            logger.info().append("Installed logback-classic shutdown hook").endl();
+        } else {
+            logger.warn().append(
+                    "Skipped installing logback-classic shutdown hook, logback-classic is not registered via SLF4J")
+                    .endl();
+        }
+    }
+
+    private static boolean installLogbackStopAsPostShutdownManagerHookImpl(
+            final ShutdownManager globalShutdownManager,
+            final ILoggerFactory iLoggerFactory) {
+        // https://logback.qos.ch/manual/configuration.html#stopContext
+        if (!(iLoggerFactory instanceof ch.qos.logback.classic.LoggerContext)) {
+            return false;
+        }
+        final Thread thread = new Thread(() -> {
+            // We want logback stop to come _after_ all ShutdownManager tasks have finished.
+            try {
+                globalShutdownManager.awaitTasksFinished();
+            } catch (final InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            ((ch.qos.logback.classic.LoggerContext) iLoggerFactory).stop();
+        });
+        thread.setName("logback-classic-stop-shutdown-hook");
+        Runtime.getRuntime().addShutdownHook(thread);
+        return true;
     }
 }
