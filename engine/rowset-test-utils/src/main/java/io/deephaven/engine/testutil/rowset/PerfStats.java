@@ -3,17 +3,17 @@
 //
 package io.deephaven.engine.testutil.rowset;
 
-import gnu.trove.list.array.TLongArrayList;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
 
 import java.text.NumberFormat;
 
 public class PerfStats {
-    private TLongArrayList samples;
+    private LongArrayList samples;
     private double avg;
     private double stddev;
 
     public PerfStats(final int nsamples) {
-        samples = new TLongArrayList(nsamples);
+        samples = new LongArrayList(nsamples);
     }
 
     public void sample(final long v) {
@@ -44,7 +44,7 @@ public class PerfStats {
         avg = sumx / (double) n;
         final double stddev2 = sumsqx / n + avg * avg;
         stddev = Math.sqrt(stddev2);
-        samples.sort();
+        samples.sort(null);
     }
 
     // assumption: before calling percentile compute was called (and thus the array is sorted).
