@@ -61,6 +61,7 @@ public class AuthenticationInterceptor implements ClientInterceptor {
 
     public void deauth() {
         state = State.UNAUTHENTICATED;
+        lastHeaderValue = null;
 
         // If there were any pending calls, let them complete (and fail) now.
         flushPending();

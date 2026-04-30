@@ -61,6 +61,7 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
     private RegionedTableComponentFactory componentFactory;
 
     private List<ColumnDefinition<?>> columnDefinitions;
+    private TableDefinition tableDefinition;
     private ColumnDefinition<?> partitioningColumnDefinition;
     private ColumnDefinition<?> groupingColumnDefinition;
     private ColumnDefinition<?> normalColumnDefinition;
@@ -108,6 +109,7 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
         normalColumnDefinition = ColumnDefinition.ofString("RCS_2");
 
         columnDefinitions = List.of(partitioningColumnDefinition, groupingColumnDefinition, normalColumnDefinition);
+        tableDefinition = TableDefinition.of(columnDefinitions);
 
         columnSources = columnDefinitions.stream()
                 .map(cd -> mock(RegionedColumnSource.class, cd.getName()))
@@ -398,7 +400,7 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
 
     private void testStaticBasics(final DataIndexOptions options) {
         SUT = new RegionedColumnSourceManager(false, false, componentFactory, ColumnToCodecMappings.EMPTY,
-                columnDefinitions);
+                tableDefinition);
         assertEquals(makeColumnSourceMap(), SUT.getColumnSources());
 
         assertTrue(SUT.isEmpty());
@@ -514,7 +516,7 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
     @Test
     public void testStaticOverflow() {
         SUT = new RegionedColumnSourceManager(false, false, componentFactory, ColumnToCodecMappings.EMPTY,
-                columnDefinitions);
+                tableDefinition);
 
         // Add a location
         SUT.addLocation(tableLocation0A);
@@ -540,7 +542,7 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
     @Test
     public void testRefreshing() {
         SUT = new RegionedColumnSourceManager(true, false, componentFactory, ColumnToCodecMappings.EMPTY,
-                columnDefinitions);
+                tableDefinition);
         assertEquals(makeColumnSourceMap(), SUT.getColumnSources());
 
         assertTrue(SUT.isEmpty());

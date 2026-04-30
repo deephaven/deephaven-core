@@ -1203,7 +1203,7 @@ public class AggregationProcessor implements AggregationContextFactory {
             if (groupByColumnSet.contains(cd.getName())) {
                 resultDefinition = cd;
             } else {
-                resultDefinition = ColumnDefinition.fromGenericType(
+                resultDefinition = ColumnDefinition.ofVector(
                         cd.getName(),
                         VectorFactory.forElementType(cd.getDataType()).vectorType(),
                         cd.getDataType());

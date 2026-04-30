@@ -144,7 +144,7 @@ public class TestSimpleSourceTable extends RefreshingTableTestCase {
                         with(false),
                         with(false),
                         with(ColumnToCodecMappings.EMPTY),
-                        with(equal(TABLE_DEFINITION.getColumns())));
+                        with(equal(TABLE_DEFINITION)));
                 will(returnValue(columnSourceManager));
             }
         });
@@ -250,13 +250,15 @@ public class TestSimpleSourceTable extends RefreshingTableTestCase {
         // Test 1: Drop a column
         // Setup the table
         final int[] includedColumnIndices1 = new int[] {1, 2, 3};
+        final TableDefinition includeTableDefinition1 =
+                TableDefinition.of(getIncludedColumnDefs(includedColumnIndices1));
         checking(new Expectations() {
             {
                 oneOf(componentFactory).createColumnSourceManager(
                         with(false),
                         with(false),
                         with(ColumnToCodecMappings.EMPTY),
-                        with(equal(getIncludedColumnDefs(includedColumnIndices1))));
+                        with(equal(includeTableDefinition1)));
                 will(returnValue(columnSourceManager));
             }
         });
@@ -284,13 +286,15 @@ public class TestSimpleSourceTable extends RefreshingTableTestCase {
         // Test 2: Drop another column
         // Setup the table
         final int[] includedColumnIndices2 = new int[] {2, 3};
+        final TableDefinition includeTableDefinition2 =
+                TableDefinition.of(getIncludedColumnDefs(includedColumnIndices2));
         checking(new Expectations() {
             {
                 oneOf(componentFactory).createColumnSourceManager(
                         with(false),
                         with(false),
                         with(ColumnToCodecMappings.EMPTY),
-                        with(equal(getIncludedColumnDefs(includedColumnIndices2))));
+                        with(equal(includeTableDefinition2)));
                 will(returnValue(columnSourceManager));
             }
         });
@@ -328,13 +332,15 @@ public class TestSimpleSourceTable extends RefreshingTableTestCase {
         // Test 4: Use view to slice us down to one column
         // Setup the table
         final int[] includedColumnIndices3 = new int[] {2};
+        final TableDefinition includeTableDefinition3 =
+                TableDefinition.of(getIncludedColumnDefs(includedColumnIndices3));
         checking(new Expectations() {
             {
                 oneOf(componentFactory).createColumnSourceManager(
                         with(false),
                         with(false),
                         with(ColumnToCodecMappings.EMPTY),
-                        with(equal(getIncludedColumnDefs(includedColumnIndices3))));
+                        with(equal(includeTableDefinition3)));
                 will(returnValue(columnSourceManager));
             }
         });

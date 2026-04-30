@@ -170,7 +170,6 @@ The best way to learn JS plugin development is to study existing plugins. The [d
 
 - [`plotly-express`](https://github.com/deephaven/deephaven-plugins/tree/main/plugins/plotly-express): Plotly visualization integration.
 - [`matplotlib`](https://github.com/deephaven/deephaven-plugins/tree/main/plugins/matplotlib): Matplotlib figure support.
-- [`json`](https://github.com/deephaven/deephaven-plugins/tree/main/plugins/json): JSON viewer component.
 - [`ui`](https://github.com/deephaven/deephaven-plugins/tree/main/plugins/ui): The deephaven.ui framework itself.
 
 Each plugin demonstrates:

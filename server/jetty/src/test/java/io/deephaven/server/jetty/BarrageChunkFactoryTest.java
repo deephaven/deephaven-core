@@ -1104,6 +1104,7 @@ public class BarrageChunkFactoryTest {
     @Test
     public void testInterval() throws Exception {
         new IntervalRoundTripTest(Duration.class, IntervalUnit.DAY_TIME).isDefaultUpload().runTest();
+        // TODO: MONTH_DAY_NANO is probably a better choice (captures full precision of Period)
         new IntervalRoundTripTest(Period.class, IntervalUnit.YEAR_MONTH).isDefault().runTest();
         new IntervalRoundTripTest(PeriodDuration.class, IntervalUnit.MONTH_DAY_NANO).isDefault().runTest();
 

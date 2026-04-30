@@ -1276,6 +1276,8 @@ public class BarrageUtil {
                         return NANO_DURATION_TYPE;
                     }
                     if (type == Period.class) {
+                        // TODO: DH-22159: Period support with Flight/barrage. (MONTH_DAY_NANO is probably a better
+                        // choice; captures full precision of Period.)
                         return new ArrowType.Interval(IntervalUnit.YEAR_MONTH);
                     }
                     if (type == PeriodDuration.class) {

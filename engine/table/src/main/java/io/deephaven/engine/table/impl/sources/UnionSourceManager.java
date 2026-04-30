@@ -793,7 +793,7 @@ public class UnionSourceManager implements PushdownPredicateManager {
 
         final UnionSourcePushdownFilterContext ctx = (UnionSourcePushdownFilterContext) context;
         ctx.initialize(selection, usePrev);
-        final MutableLong minCost = new MutableLong(Long.MAX_VALUE);
+        final MutableLong minCost = new MutableLong(PushdownResult.UNSUPPORTED_ACTION_COST);
 
         jobScheduler.iterateParallel(
                 ExecutionContext.getContext(),
@@ -900,7 +900,7 @@ public class UnionSourceManager implements PushdownPredicateManager {
                 onError);
     }
 
-    public static class UnionSourcePushdownFilterContext extends BasePushdownFilterContext {
+    public static class UnionSourcePushdownFilterContext extends BasePushdownFilterContextImpl {
         final UnionSourceManager manager;
         final WritableRowSet maybeMatch;
         final Map<String, String> renameMap;
@@ -969,16 +969,16 @@ public class UnionSourceManager implements PushdownPredicateManager {
 
                     // If there is no overlap, we can ignore this table completely.
                     if (selection.overlapsRange(firstKey, lastKey)) {
-                        final List<ColumnSource<?>> filterSources = filter.getColumns().stream()
+                        final List<ColumnSource<?>> filterSources = filter().getColumns().stream()
                                 .map(cn -> renameMap.getOrDefault(cn, cn))
                                 .map(constituent::getColumnSource).collect(Collectors.toList());
 
                         final PushdownFilterMatcher matcher =
-                                PushdownFilterMatcher.getPushdownFilterMatcher(filter, filterSources);
+                                PushdownFilterMatcher.getPushdownFilterMatcher(filter(), filterSources);
 
                         if (matcher != null) {
                             matchers.add(matcher);
-                            contexts.add(matcher.makePushdownFilterContext(filter, filterSources));
+                            contexts.add(matcher.makePushdownFilterContext(filter(), filterSources));
                             firstRowKeys.add(firstKey);
                             lastRowKeys.add(lastKey);
                         } else {

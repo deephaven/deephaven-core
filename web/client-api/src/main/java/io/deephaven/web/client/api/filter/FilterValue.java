@@ -469,7 +469,33 @@ public class FilterValue {
 
     @Override
     public String toString() {
-        // TODO (deephaven-core#723) implement a readable tostring rather than turning the pb object into a string
-        return descriptor.toString();
+        switch (descriptor.getDataCase()) {
+            case LITERAL -> {
+                Literal lit = descriptor.getLiteral();
+                switch (lit.getValueCase()) {
+                    case STRING_VALUE -> {
+                        return "\"" + lit.getStringValue() + "\"";
+                    }
+                    case DOUBLE_VALUE -> {
+                        return Double.toString(lit.getDoubleValue());
+                    }
+                    case LONG_VALUE -> {
+                        return Long.toString(lit.getLongValue());
+                    }
+                    case BOOL_VALUE -> {
+                        return Boolean.toString(lit.getBoolValue());
+                    }
+                    case NANO_TIME_VALUE -> {
+                        return "Date(" + lit.getNanoTimeValue() + ")";
+                    }
+                    default -> throw new IllegalStateException("Unexpected literal type: " + lit.getValueCase());
+                }
+            }
+            case REFERENCE -> {
+                Reference ref = descriptor.getReference();
+                return ref.getColumnName();
+            }
+            default -> throw new IllegalStateException("Unsupported value type: " + descriptor.getDataCase());
+        }
     }
 }

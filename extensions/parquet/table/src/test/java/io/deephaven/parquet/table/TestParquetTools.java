@@ -393,10 +393,8 @@ public class TestParquetTools {
                 "Date=2021-07-21" + File.separator + "Num=300" + File.separator + "file3.parquet").getPath());
 
         final List<ColumnDefinition<?>> allColumns = new ArrayList<>();
-        allColumns.add(
-                ColumnDefinition.fromGenericType("Date", String.class, null, ColumnDefinition.ColumnType.Partitioning));
-        allColumns.add(
-                ColumnDefinition.fromGenericType("Num", int.class, null, ColumnDefinition.ColumnType.Partitioning));
+        allColumns.add(ColumnDefinition.ofString("Date").withPartitioning());
+        allColumns.add(ColumnDefinition.ofInt("Num").withPartitioning());
         allColumns.addAll(table1.getDefinition().getColumns());
         final TableDefinition partitionedDefinition = TableDefinition.of(allColumns);
 
