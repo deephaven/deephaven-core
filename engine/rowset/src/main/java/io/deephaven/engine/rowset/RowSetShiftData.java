@@ -9,8 +9,8 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseablePair;
-import io.deephaven.util.datastructures.primitives.IntArrayList;
-import io.deephaven.util.datastructures.primitives.LongArrayList;
+import io.deephaven.util.datastructures.list.IntArrayList;
+import io.deephaven.util.datastructures.list.LongArrayList;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.Serializable;

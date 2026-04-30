@@ -1,14 +1,18 @@
 //
 // Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
-package io.deephaven.util.datastructures.primitives;
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharArrayList and run "./gradlew replicatePrimitiveArrayLists" to regenerate
+//
+// @formatter:off
+package io.deephaven.util.datastructures.list;
 
 import io.deephaven.base.verify.Require;
+import io.deephaven.util.compare.LongComparisons;
 import io.deephaven.util.type.ArrayTypeUtils;
 
 /**
- * Limited implementation of a growable/shrinkable List-like structure that holds longs, based roughly on the
- * capabilities of fastUtils IntLongList and trove's TLongArrayList.
+ * Limited implementation of a growable/shrinkable List-like structure that holds longs.
  */
 public class LongArrayList {
     private long[] arr = ArrayTypeUtils.EMPTY_LONG_ARRAY;
@@ -55,7 +59,7 @@ public class LongArrayList {
 
     /**
      * At this time, limited to only removing the last element.
-     * 
+     *
      * @param position the position of the element to remove
      */
     public void removeLong(int position) {
@@ -65,5 +69,34 @@ public class LongArrayList {
 
     public void clear() {
         size = 0;
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        if (this == other) {
+            return true;
+        }
+        if (!(other instanceof LongArrayList)) {
+            return false;
+        }
+        final LongArrayList that = (LongArrayList) other;
+        if (size != that.size) {
+            return false;
+        }
+        for (int i = 0; i < size; ++i) {
+            if (arr[i] != that.arr[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = 1;
+        for (int i = 0; i < size; ++i) {
+            result = 31 * result + LongComparisons.hashCode(arr[i]);
+        }
+        return result;
     }
 }

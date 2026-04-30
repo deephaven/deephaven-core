@@ -1,14 +1,18 @@
 //
 // Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
-package io.deephaven.util.datastructures.primitives;
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharArrayList and run "./gradlew replicatePrimitiveArrayLists" to regenerate
+//
+// @formatter:off
+package io.deephaven.util.datastructures.list;
 
 import io.deephaven.base.verify.Require;
+import io.deephaven.util.compare.IntComparisons;
 import io.deephaven.util.type.ArrayTypeUtils;
 
 /**
- * Limited implementation of a growable/shrinkable List-like structure that holds ints, based roughly on the
- * capabilities of fastUtils IntArrayList and trove's TIntArrayList.
+ * Limited implementation of a growable/shrinkable List-like structure that holds ints.
  */
 public class IntArrayList {
     private int[] arr = ArrayTypeUtils.EMPTY_INT_ARRAY;
@@ -55,7 +59,7 @@ public class IntArrayList {
 
     /**
      * At this time, limited to only removing the last element.
-     * 
+     *
      * @param position the position of the element to remove
      */
     public void removeInt(int position) {
@@ -65,5 +69,34 @@ public class IntArrayList {
 
     public void clear() {
         size = 0;
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        if (this == other) {
+            return true;
+        }
+        if (!(other instanceof IntArrayList)) {
+            return false;
+        }
+        final IntArrayList that = (IntArrayList) other;
+        if (size != that.size) {
+            return false;
+        }
+        for (int i = 0; i < size; ++i) {
+            if (arr[i] != that.arr[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = 1;
+        for (int i = 0; i < size; ++i) {
+            result = 31 * result + IntComparisons.hashCode(arr[i]);
+        }
+        return result;
     }
 }
