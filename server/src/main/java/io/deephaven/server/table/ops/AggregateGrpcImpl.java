@@ -3,8 +3,10 @@
 //
 package io.deephaven.server.table.ops;
 
+import com.google.rpc.Code;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.Pair;
+import io.deephaven.api.util.NameValidator;
 import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.Table;
@@ -13,6 +15,7 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.validation.ColumnExpressionValidator;
 import io.deephaven.proto.backplane.grpc.*;
 import io.deephaven.proto.backplane.grpc.Aggregation;
+import io.deephaven.proto.util.Exceptions;
 import io.deephaven.server.grpc.Common;
 import io.deephaven.server.grpc.GrpcErrorHelper;
 import io.deephaven.server.session.SessionState.ExportObject;
@@ -102,10 +105,15 @@ public final class AggregateGrpcImpl extends GrpcTableOperation<AggregateRequest
         if (agg.hasColumns()) {
             final AggSpec innerSpec = agg.getColumns().getSpec();
             if (innerSpec.getTypeCase() == AggSpec.TypeCase.FORMULA) {
-                final List<String> inputNames = agg.getColumns().getMatchPairsList().stream()
-                        .map(Pair::parse)
-                        .map(pair -> pair.input().name())
-                        .collect(Collectors.toList());
+                final List<String> inputNames;
+                try {
+                    inputNames = agg.getColumns().getMatchPairsList().stream()
+                            .map(Pair::parse)
+                            .map(pair -> pair.input().name())
+                            .collect(Collectors.toList());
+                } catch (NameValidator.InvalidNameException ine) {
+                    throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, ine.getMessage());
+                }
                 AggSpecFormulaValidator.validate(innerSpec.getFormula(), parent, groupByColumns, inputNames,
                         expressionValidator);
             }
