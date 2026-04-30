@@ -46,3 +46,15 @@ jobs:
       - name: Run sync check (scheduled/manual only)
         if: ${{ github.event_name != 'pull_request' }}
         run: ./gradlew :engine-table:checkAutoImportSync
+
+      - name: Notify on drift
+        if: ${{ failure() && github.repository_owner == 'deephaven' }}
+        uses: slackapi/slack-github-action@v2.1.0
+        with:
+          webhook-type: webhook-trigger
+          payload: |
+            {
+              "slack_message": "Auto-import documentation is out of sync with QueryLibraryImportsDefaults. See: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_DDL_DEVREL }}

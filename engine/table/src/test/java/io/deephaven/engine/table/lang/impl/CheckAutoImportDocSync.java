@@ -67,9 +67,16 @@ public class CheckAutoImportDocSync {
         }
 
         Path docsDir = Paths.get(args[0]);
-        Set<String> codeNames = buildCodeNames();
-        System.out.println("Unique method/field names in QueryLibraryImportsDefaults.statics(): "
-                + codeNames.size());
+
+        // documentedNames: only from DOCUMENTED_CLASS_PREFIXES — used to detect methods that are
+        // in scope for the generator but missing from the docs.
+        Set<String> documentedNames = buildCodeNames(true);
+        // allStaticsNames: from every class in statics() — used to detect doc entries that are
+        // completely absent from the codebase (not just outside the documented set).
+        Set<String> allStaticsNames = buildCodeNames(false);
+
+        System.out.println("Documented-scope method/field names: " + documentedNames.size());
+        System.out.println("All statics() method/field names:    " + allStaticsNames.size());
 
         boolean failed = false;
         for (String lang : new String[] {"python", "groovy"}) {
@@ -86,13 +93,15 @@ public class CheckAutoImportDocSync {
             Set<String> docNames = buildDocNames(autoImportedDir);
             System.out.println(lang + " docs unique method/field names: " + docNames.size());
 
-            Set<String> missing = new TreeSet<>(codeNames);
+            // Methods the generator would produce but the docs don't have
+            Set<String> missing = new TreeSet<>(documentedNames);
             missing.removeAll(docNames);
 
-            Set<String> extra = new TreeSet<>(docNames);
-            extra.removeAll(codeNames);
+            // Methods the docs reference that don't exist anywhere in statics()
+            Set<String> phantom = new TreeSet<>(docNames);
+            phantom.removeAll(allStaticsNames);
 
-            if (missing.isEmpty() && extra.isEmpty()) {
+            if (missing.isEmpty() && phantom.isEmpty()) {
                 System.out.println("=== " + lang + ": in sync ===");
             } else {
                 System.err.println("=== " + lang + ": OUT OF SYNC ===");
@@ -100,9 +109,10 @@ public class CheckAutoImportDocSync {
                     System.err.println("  In code but missing from docs (" + missing.size() + "): "
                             + missing);
                 }
-                if (!extra.isEmpty()) {
-                    System.err.println("  In docs but not in code (" + extra.size() + "): "
-                            + extra);
+                if (!phantom.isEmpty()) {
+                    System.err.println(
+                            "  In docs but absent from all statics() (" + phantom.size() + "): "
+                                    + phantom);
                 }
                 failed = true;
             }
@@ -117,15 +127,18 @@ public class CheckAutoImportDocSync {
     }
 
     /**
-     * Reflects on every class in {@link QueryLibraryImportsDefaults#statics()} that matches
-     * {@link #DOCUMENTED_CLASS_PREFIXES} and collects the names of all public static methods and
-     * public static fields, excluding {@link #EXCLUDED_METHOD_NAMES}.
+     * Reflects on every class in {@link QueryLibraryImportsDefaults#statics()} and collects the
+     * names of all public static methods and public static fields, excluding
+     * {@link #EXCLUDED_METHOD_NAMES}.
+     *
+     * @param filteredOnly if {@code true}, only includes classes matching
+     *        {@link #DOCUMENTED_CLASS_PREFIXES}; if {@code false}, includes all statics() classes
      */
-    private static Set<String> buildCodeNames() {
+    private static Set<String> buildCodeNames(boolean filteredOnly) {
         QueryLibraryImportsDefaults defaults = new QueryLibraryImportsDefaults();
         Set<String> names = new TreeSet<>();
         for (Class<?> cls : defaults.statics()) {
-            if (!isDocumented(cls)) {
+            if (filteredOnly && !isDocumented(cls)) {
                 continue;
             }
             for (Method m : cls.getDeclaredMethods()) {
