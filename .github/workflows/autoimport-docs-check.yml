@@ -5,16 +5,6 @@ on:
     # Run weekly on Sundays at 3AM UTC
     - cron: "0 3 * * 0"
   workflow_dispatch:
-    inputs:
-      target:
-        description: "Which docs to check"
-        required: false
-        default: "both"
-        type: choice
-        options:
-          - python
-          - groovy
-          - both
   pull_request:
     paths:
       - "engine/table/src/main/java/io/deephaven/engine/table/lang/impl/QueryLibraryImportsDefaults.java"
@@ -46,32 +36,13 @@ jobs:
           echo "  4. Copy the output to docs/groovy/reference/query-language/query-library/auto-imported/"
           echo "  5. Run ./docs/format && ./docs/updateSnapshots"
 
+      - name: Set up Java
+        if: ${{ github.event_name != 'pull_request' }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
       - name: Run sync check (scheduled/manual only)
         if: ${{ github.event_name != 'pull_request' }}
-        id: sync-check
-        run: |
-          chmod +x docs/tools/autoimport/check_autoimport_sync.sh
-          TARGET="${{ github.event.inputs.target || 'both' }}"
-          if ! docs/tools/autoimport/check_autoimport_sync.sh "$TARGET"; then
-            echo "sync_failed=true" >> $GITHUB_OUTPUT
-          else
-            echo "sync_failed=false" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Slack notification on sync failure
-        if: ${{ github.event_name == 'schedule' && steps.sync-check.outputs.sync_failed == 'true' && github.repository_owner == 'deephaven' }}
-        uses: slackapi/slack-github-action@v2.1.0
-        with:
-          webhook-type: webhook-trigger
-          payload: |
-            {
-              "slack_message": "Auto-import documentation sync check failed. Documentation may be out of sync with QueryLibraryImportsDefaults. See: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-            }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_DDL_DEVREL }}
-
-      - name: Fail if sync check failed
-        if: ${{ github.event_name != 'pull_request' && steps.sync-check.outputs.sync_failed == 'true' }}
-        run: |
-          echo "Auto-import documentation is out of sync!"
-          exit 1
+        run: ./gradlew :engine-table:checkAutoImportSync

@@ -136,3 +136,13 @@ jmhJar {
 // No need to assemble the jar by default on build
 // assemble.dependsOn(jmhJar)
 check.dependsOn(jmhClasses)
+
+tasks.register('checkAutoImportSync', JavaExec) {
+    dependsOn compileTestJava
+    group = 'verification'
+    description = 'Checks that auto-import docs are in sync with QueryLibraryImportsDefaults. ' +
+            'Run: ./gradlew :engine-table:checkAutoImportSync'
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'io.deephaven.engine.table.lang.impl.CheckAutoImportDocSync'
+    args rootProject.file('docs').absolutePath
+}

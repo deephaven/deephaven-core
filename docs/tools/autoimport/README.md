@@ -137,26 +137,20 @@ You can manually run the sync check from the GitHub Actions tab:
 
 1. Go to Actions → "Auto-Import Docs Sync Check"
 2. Click "Run workflow"
-3. Select which docs to check (python, groovy, or both)
 
 ### Local sync check
 
 To check locally if docs are in sync:
 
 ```bash
-./docs/tools/autoimport/check_autoimport_sync.sh
+./gradlew :engine-table:checkAutoImportSync
 ```
 
-This requires Docker to be running.
+This requires Java 17+ and compares against the current checked-out code without needing Docker or a running server.
 
 ### What happens on failure
 
-- **Scheduled runs**: Sends a Slack notification to #ddl-devrel
-- **Manual runs**: Fails the workflow with details about which files differ
-
-### Required secrets
-
-The workflow requires a `SLACK_WEBHOOK_DDL_DEVREL` secret configured in the repository settings for Slack notifications.
+- **Scheduled/manual runs**: Fails the workflow with details about which method names differ
 
 ## Notes
 
