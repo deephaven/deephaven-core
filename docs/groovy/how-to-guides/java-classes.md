@@ -66,7 +66,7 @@ sourceMeta = source.meta()
 
 ## Nested (inner) classes
 
-Java allows classes to be defined inside other classes. In Groovy, you access these nested (inner) classes using dot notation — `OuterClass.InnerClass` — which is standard Java syntax.
+Java allows users to define classes inside other classes. In Groovy, you access these nested (inner) classes using dot notation — `OuterClass.InnerClass` — which is standard Java syntax.
 
 ```groovy order=null test-set=inner-classes-groovy
 import io.deephaven.engine.table.impl.util.SyncTableFilter
