@@ -182,6 +182,19 @@
                 ]
               },
               {
+                "label": "HTML",
+                "items": [
+                  {
+                    "label": "Read HTML files",
+                    "path": "how-to-guides/data-import-export/html-import.md"
+                  },
+                  {
+                    "label": "Export HTML files",
+                    "path": "how-to-guides/data-import-export/html-export.md"
+                  }
+                ]
+              },
+              {
                 "label": "Arrow Flight",
                 "path": "how-to-guides/data-import-export/arrow-flight.md"
               },
