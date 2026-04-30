@@ -690,6 +690,6 @@ transformed_t = Table(_j_transformed_t)
 
 - [Python-Java Boundary](../conceptual/python-java-boundary.md)
 - [jpy GitHub](https://github.com/jpy-consortium/jpy)
-- [Jpy Javadoc](/core/javadoc/io/deephaven/jpy/package-summary.html)
+- [jpy documentation](https://jpy.readthedocs.io/en/latest/)
 - [Jpy Pydoc](/core/pydoc/code/jpy.html#module-jpy)
 - [Type signatures](https://docs.oracle.com/en/java/javase/17/docs/specs/jni/types.html)
