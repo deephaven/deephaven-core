@@ -1,0 +1,1 @@
+Hello, a change in this (or any) file spoils the cache.
