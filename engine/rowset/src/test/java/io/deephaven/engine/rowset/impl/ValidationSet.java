@@ -38,8 +38,8 @@ public class ValidationSet {
         @Override
         public LongOpenHashSet apply(final LongOpenHashSet h1, final LongOpenHashSet h2) {
             final LongOpenHashSet r = make(h1.size() + h2.size());
-            h1.forEach(r::add);
-            h2.forEach(r::add);
+            h1.forEach((long v) -> r.add(v));
+            h2.forEach((long v) -> r.add(v));
             return r;
         }
     };
