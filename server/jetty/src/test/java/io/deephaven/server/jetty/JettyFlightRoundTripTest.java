@@ -128,7 +128,7 @@ public class JettyFlightRoundTripTest extends FlightMessageRoundTripTest {
 
     @Test
     public void servletContainerInitializerCalled() {
-        // Note: our setup in does involve org.eclipse.jetty.webapp.WebAppContext, so
+        // Note: our setup in does involve org.eclipse.jetty.ee10.webapp.WebAppContext, so
         // jakarta.servlet.ServletContainerInitializer is invoked. If this changes in the future, we can consider
         // removing the "logbackDisableServletContainerInitializer" workaround.
         assertThat(MyInitializer.initialized).isTrue();
