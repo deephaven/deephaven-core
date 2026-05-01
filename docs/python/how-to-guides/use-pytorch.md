@@ -97,7 +97,7 @@ class IrisANN(nn.Module):
 model = IrisANN()
 ```
 
-Now comes the fun bit: training our network. We'll calculate loss using [cross entropy](https://pytorch.org/docs/stable/generated/torch.nn.CrossEntropyLoss.html), and we'll optimize the network with the [Adam algorithm](https://pytorch.org/docs/stable/generated/torch.optim.Adam.html#adam).
+Now comes the fun bit: training our network. We'll calculate loss using [cross entropy](https://pytorch.org/docs/stable/generated/torch.nn.CrossEntropyLoss.html), and we'll optimize the network with the [Adam algorithm](https://pytorch.org/docs/stable/generated/torch.optim.Adam.html).
 
 ```python test-set=1 order=null skip-test
 # Set our loss computation and optimization algorithms
