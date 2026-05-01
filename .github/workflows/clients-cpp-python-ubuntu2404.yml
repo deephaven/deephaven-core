@@ -129,7 +129,7 @@ jobs:
       #    b) If not found, build them and insert them in the nuget cache
       # 2. Configure cmake to prepare for the build/install step, which comes next
 
-      - name: build packages and configure cmake. Cached packages will be found, or stored in github's nuget repo
+      - name: "Build packages and configure cmake. Check nupkg cache for existing packages, otherwise build and upload."
         if: steps.cache-cpp-install.outputs.cache-hit != 'true'
         env:
           VCPKG_BINARY_SOURCES: "clear;nuget,${{ env.GH_PACKAGES_FEED }},readwrite"
