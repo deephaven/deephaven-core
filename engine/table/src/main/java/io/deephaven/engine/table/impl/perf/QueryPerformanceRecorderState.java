@@ -3,9 +3,6 @@
 //
 package io.deephaven.engine.table.impl.perf;
 
-import io.deephaven.base.stats.Item;
-import io.deephaven.base.stats.State;
-import io.deephaven.base.stats.Stats;
 import io.deephaven.chunk.util.pools.ChunkPoolInstrumentation;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.updategraph.UpdateGraphLock;
@@ -26,7 +23,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 
@@ -45,14 +41,6 @@ public abstract class QueryPerformanceRecorderState {
             () -> new MutableLong(ThreadProfiler.DEFAULT.memoryProfilingAvailable()
                     ? 0L
                     : io.deephaven.util.QueryConstants.NULL_LONG));
-
-    private static final String METADATA_OP_STATS_GROUP = "MetadataOp";
-
-    /**
-     * Cache of Stats items keyed by metadata operation type. Avoids repeated synchronized lookup in
-     * {@link Stats#makeItem} on every I/O operation.
-     */
-    private static final ConcurrentHashMap<String, Item<State>> METADATA_OP_STATS = new ConcurrentHashMap<>();
 
     /**
      * An object that contains the cumulative data read and metadata read counters for the current thread.
@@ -161,6 +149,10 @@ public abstract class QueryPerformanceRecorderState {
     /**
      * Record a data read operation. Accumulates into the current thread's cumulative counters.
      *
+     * <p>
+     * If the bytes read is less than zero, the read is not recorded.
+     * </p>
+     *
      * @param nanos time spent on the read in nanoseconds
      * @param bytesRead number of bytes read
      */
@@ -173,18 +165,12 @@ public abstract class QueryPerformanceRecorderState {
 
     /**
      * Record a metadata operation (e.g. listing files, checking existence, determining file sizes). Accumulates into
-     * the current thread's cumulative counters and records a Stats histogram sample.
+     * the current thread's cumulative counters.
      *
-     * @param type the type of metadata operation (e.g. "exists", "list", "walk", "size")
      * @param nanos time spent on the metadata operation in nanoseconds
      */
-    public static void recordMetadataOperation(
-            @NotNull final String type, final long nanos) {
+    public static void recordMetadataOperation(final long nanos) {
         READ_TRACKER.get().recordMetadataOperation(nanos);
-        METADATA_OP_STATS.computeIfAbsent(type,
-                t -> Stats.makeItem(METADATA_OP_STATS_GROUP, t, State.FACTORY,
-                        "Metadata operation timing (nanos) for type: " + t))
-                .getValue().sample(nanos);
     }
 
     /**

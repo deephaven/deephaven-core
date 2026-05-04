@@ -4,6 +4,9 @@
 package io.deephaven.extensions.s3;
 
 import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.base.stats.State;
+import io.deephaven.base.stats.Stats;
+import io.deephaven.base.stats.Value;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorderState;
@@ -75,6 +78,9 @@ class S3SeekableChannelProvider implements SeekableChannelsProvider {
     private static final AtomicReferenceFieldUpdater<S3SeekableChannelProvider, SoftReference> FILE_SIZE_CACHE_REF_UPDATER =
             AtomicReferenceFieldUpdater.newUpdater(S3SeekableChannelProvider.class, SoftReference.class,
                     "fileSizeCacheRef");
+
+    private static final Value FETCH_FILE_SIZE_DURATION_NANOS =
+            Stats.makeItem("S3SeekableChannelProvider", "fetchFileSize", State.FACTORY).getValue();
 
     private volatile SoftReference<Map<URI, FileSizeInfo>> fileSizeCacheRef;
 
@@ -337,7 +343,8 @@ class S3SeekableChannelProvider implements SeekableChannelsProvider {
             throw handleS3Exception(e, String.format("fetching HEAD for file %s", s3Uri), s3Instructions);
         } finally {
             final long duration = System.nanoTime() - start;
-            QueryPerformanceRecorderState.recordMetadataOperation("size", duration);
+            QueryPerformanceRecorderState.recordMetadataOperation(duration);
+            FETCH_FILE_SIZE_DURATION_NANOS.sample(duration);
         }
         final long fileSize = headObjectResponse.contentLength();
         updateFileSizeCache(s3Uri.uri(), fileSize);

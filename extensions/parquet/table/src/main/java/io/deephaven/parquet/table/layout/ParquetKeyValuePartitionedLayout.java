@@ -4,6 +4,9 @@
 package io.deephaven.parquet.table.layout;
 
 import io.deephaven.api.util.NameValidator;
+import io.deephaven.base.stats.State;
+import io.deephaven.base.stats.Stats;
+import io.deephaven.base.stats.Value;
 import io.deephaven.csv.CsvTools;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
@@ -49,6 +52,9 @@ public class ParquetKeyValuePartitionedLayout
         implements TableLocationKeyFinder<ParquetTableLocationKey> {
 
     private final SeekableChannelsProvider channelsProvider;
+
+    private static final Value WALK_DURATION_NANOS =
+            Stats.makeItem("ParquetKeyValuePartitionedLayout", "walk", State.FACTORY).getValue();
 
     /**
      * Create a new {@link ParquetKeyValuePartitionedLayout} for the given {@code tableRootDirectory} and
@@ -134,7 +140,9 @@ public class ParquetKeyValuePartitionedLayout
         } catch (final IOException e) {
             throw new TableDataException("Error finding parquet locations under " + tableRootDirectory, e);
         } finally {
-            QueryPerformanceRecorderState.recordMetadataOperation("walk", System.nanoTime() - start);
+            final long duration = System.nanoTime() - start;
+            WALK_DURATION_NANOS.sample(duration);
+            QueryPerformanceRecorderState.recordMetadataOperation(duration);
         }
     }
 }

@@ -201,7 +201,7 @@ public final class FileHandle implements SeekableByteChannel {
             } finally {
                 final long duration = System.nanoTime() - startTimeNanos;
                 SIZE_DURATION_NANOS.sample(duration);
-                QueryPerformanceRecorderState.recordMetadataOperation("size", duration);
+                QueryPerformanceRecorderState.recordMetadataOperation(duration);
             }
         } catch (ClosedChannelException e) {
             postCloseProcedure.run();
@@ -272,7 +272,7 @@ public final class FileHandle implements SeekableByteChannel {
         try {
             final long startTimeNanos = System.nanoTime();
             final int readSize = fileChannel.read(destination, position);
-            if (readSize > 0) {
+            if (readSize >= 0) {
                 final long duration = System.nanoTime() - startTimeNanos;
                 QueryPerformanceRecorderState.recordRead(duration, readSize);
                 READ_DURATION_NANOS.sample(duration);
