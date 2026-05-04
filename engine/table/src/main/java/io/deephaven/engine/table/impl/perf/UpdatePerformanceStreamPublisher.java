@@ -44,8 +44,8 @@ class UpdatePerformanceStreamPublisher implements StreamPublisher {
             ColumnDefinition.ofLong("DataReadNanos"),
             ColumnDefinition.ofLong("DataReadCount"),
             ColumnDefinition.ofLong("DataReadBytes"),
-            ColumnDefinition.ofLong("MetadataReadNanos"),
-            ColumnDefinition.ofLong("MetadataReadCount"),
+            ColumnDefinition.ofLong("MetadataOperationNanos"),
+            ColumnDefinition.ofLong("MetadataOperationCount"),
             ColumnDefinition.ofString("AuthContext"),
             ColumnDefinition.ofString("UpdateGraph"),
             ColumnDefinition.ofLong("WorkerHeapSize"));
@@ -123,10 +123,10 @@ class UpdatePerformanceStreamPublisher implements StreamPublisher {
         chunks[ci++].asWritableLongChunk().add(performanceEntry.getDataReadCount());
         // ColumnDefinition.ofLong("DataReadBytes"),
         chunks[ci++].asWritableLongChunk().add(performanceEntry.getDataReadBytes());
-        // ColumnDefinition.ofLong("MetadataReadNanos"),
-        chunks[ci++].asWritableLongChunk().add(performanceEntry.getMetadataReadNanos());
-        // ColumnDefinition.ofLong("MetadataReadCount"),
-        chunks[ci++].asWritableLongChunk().add(performanceEntry.getMetadataReadCount());
+        // ColumnDefinition.ofLong("MetadataOperationNanos"),
+        chunks[ci++].asWritableLongChunk().add(performanceEntry.getMetadataOperationNanos());
+        // ColumnDefinition.ofLong("MetadataOperationCount"),
+        chunks[ci++].asWritableLongChunk().add(performanceEntry.getMetadataOperationCount());
         // ColumnDefinition.ofString("AuthContext"),
         chunks[ci++].<String>asWritableObjectChunk().add(Objects.toString(performanceEntry.getAuthContext()));
         // ColumnDefinition.ofString("UpdateGraph"));

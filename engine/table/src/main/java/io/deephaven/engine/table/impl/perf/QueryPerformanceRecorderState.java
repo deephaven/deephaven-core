@@ -180,7 +180,7 @@ public abstract class QueryPerformanceRecorderState {
      */
     public static void recordMetadataOperation(
             @NotNull final String type, final long nanos) {
-        READ_TRACKER.get().recordMeta(nanos);
+        READ_TRACKER.get().recordMetadataOperation(nanos);
         METADATA_OP_STATS.computeIfAbsent(type,
                 t -> Stats.makeItem(METADATA_OP_STATS_GROUP, t, State.FACTORY,
                         "Metadata operation timing (nanos) for type: " + t))
@@ -356,8 +356,8 @@ public abstract class QueryPerformanceRecorderState {
         long readCount;
         long readNanos;
         long readBytes;
-        long metadataReadCount;
-        long metadataReadNanos;
+        long metadataOperationCount;
+        long metadataOperationNanos;
 
         private void recordRead(long nanos, long bytesRead) {
             readCount++;
@@ -365,9 +365,9 @@ public abstract class QueryPerformanceRecorderState {
             readBytes += bytesRead;
         }
 
-        private void recordMeta(long nanos) {
-            metadataReadCount++;
-            metadataReadNanos += nanos;
+        private void recordMetadataOperation(long nanos) {
+            metadataOperationCount++;
+            metadataOperationNanos += nanos;
         }
 
         /**
@@ -402,8 +402,8 @@ public abstract class QueryPerformanceRecorderState {
          *
          * @return total metadata read nanos accumulated on this tracker
          */
-        long getMetadataReadNano() {
-            return metadataReadNanos;
+        long getMetadataOperationNanos() {
+            return metadataOperationNanos;
         }
 
         /**
@@ -411,8 +411,8 @@ public abstract class QueryPerformanceRecorderState {
          *
          * @return total metadata read count accumulated on this tracker
          */
-        long getMetadataReadCount() {
-            return metadataReadCount;
+        long getMetadataOperationCount() {
+            return metadataOperationCount;
         }
     }
 }

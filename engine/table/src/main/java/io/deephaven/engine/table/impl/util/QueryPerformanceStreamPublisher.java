@@ -41,8 +41,8 @@ class QueryPerformanceStreamPublisher implements StreamPublisher {
             ColumnDefinition.ofLong("DataReadNanos"),
             ColumnDefinition.ofLong("DataReadCount"),
             ColumnDefinition.ofLong("DataReadBytes"),
-            ColumnDefinition.ofLong("MetadataReadNanos"),
-            ColumnDefinition.ofLong("MetadataReadCount"),
+            ColumnDefinition.ofLong("MetadataOperationNanos"),
+            ColumnDefinition.ofLong("MetadataOperationCount"),
             ColumnDefinition.ofBoolean("WasInterrupted"),
             ColumnDefinition.ofString("Exception"),
             ColumnDefinition.ofString("AuthContext"),
@@ -135,11 +135,11 @@ class QueryPerformanceStreamPublisher implements StreamPublisher {
         // ColumnDefinition.ofLong("DataReadBytes")
         chunks[chunkIdx++].asWritableLongChunk().add(nugget.getDataReadBytes());
 
-        // ColumnDefinition.ofLong("MetadataReadNanos")
-        chunks[chunkIdx++].asWritableLongChunk().add(nugget.getMetadataReadNanos());
+        // ColumnDefinition.ofLong("MetadataOperationNanos")
+        chunks[chunkIdx++].asWritableLongChunk().add(nugget.getMetadataOperationNanos());
 
-        // ColumnDefinition.ofLong("MetadataReadCount")
-        chunks[chunkIdx++].asWritableLongChunk().add(nugget.getMetadataReadCount());
+        // ColumnDefinition.ofLong("MetadataOperationCount")
+        chunks[chunkIdx++].asWritableLongChunk().add(nugget.getMetadataOperationCount());
 
         // ColumnDefinition.ofBoolean("WasInterrupted")
         chunks[chunkIdx++].asWritableByteChunk().add(BooleanUtils.booleanAsByte(nugget.wasInterrupted()));
