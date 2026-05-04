@@ -9,7 +9,7 @@ import io.deephaven.base.stats.Stats;
 import io.deephaven.base.stats.Value;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
-import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorderState;
+import io.deephaven.engine.readtracker.impl.QueryPerformanceReadTracker;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.internal.log.LoggerFactory;
@@ -343,7 +343,7 @@ class S3SeekableChannelProvider implements SeekableChannelsProvider {
             throw handleS3Exception(e, String.format("fetching HEAD for file %s", s3Uri), s3Instructions);
         } finally {
             final long duration = System.nanoTime() - start;
-            QueryPerformanceRecorderState.recordMetadataOperation(duration);
+            QueryPerformanceReadTracker.recordMetadataOperation(duration);
             FETCH_FILE_SIZE_DURATION_NANOS.sample(duration);
         }
         final long fileSize = headObjectResponse.contentLength();

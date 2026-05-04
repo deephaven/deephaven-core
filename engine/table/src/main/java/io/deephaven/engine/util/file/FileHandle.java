@@ -8,7 +8,7 @@ import io.deephaven.base.stats.Stats;
 import io.deephaven.base.stats.Value;
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorderState;
+import io.deephaven.engine.readtracker.impl.QueryPerformanceReadTracker;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -201,7 +201,7 @@ public final class FileHandle implements SeekableByteChannel {
             } finally {
                 final long duration = System.nanoTime() - startTimeNanos;
                 SIZE_DURATION_NANOS.sample(duration);
-                QueryPerformanceRecorderState.recordMetadataOperation(duration);
+                QueryPerformanceReadTracker.recordMetadataOperation(duration);
             }
         } catch (ClosedChannelException e) {
             postCloseProcedure.run();
@@ -274,7 +274,7 @@ public final class FileHandle implements SeekableByteChannel {
             final int readSize = fileChannel.read(destination, position);
             if (readSize >= 0) {
                 final long duration = System.nanoTime() - startTimeNanos;
-                QueryPerformanceRecorderState.recordRead(duration, readSize);
+                QueryPerformanceReadTracker.recordRead(duration, readSize);
                 READ_DURATION_NANOS.sample(duration);
                 READ_SIZE_BYTES.sample(readSize);
             }
@@ -303,7 +303,7 @@ public final class FileHandle implements SeekableByteChannel {
             final int readSize = fileChannel.read(destination);
             if (readSize >= 0) {
                 final long duration = System.nanoTime() - startTimeNanos;
-                QueryPerformanceRecorderState.recordRead(duration, readSize);
+                QueryPerformanceReadTracker.recordRead(duration, readSize);
                 READ_DURATION_NANOS.sample(duration);
                 READ_SIZE_BYTES.sample(readSize);
             }

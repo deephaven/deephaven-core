@@ -15,7 +15,7 @@ import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
 import io.deephaven.engine.table.impl.locations.local.LocationTableBuilderDefinition;
 import io.deephaven.engine.table.impl.locations.local.URIStreamKeyValuePartitionLayout;
 import io.deephaven.engine.table.impl.locations.local.KeyValuePartitionLayout;
-import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorderState;
+import io.deephaven.engine.readtracker.impl.QueryPerformanceReadTracker;
 import io.deephaven.parquet.base.ParquetUtils;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
@@ -142,7 +142,7 @@ public class ParquetKeyValuePartitionedLayout
         } finally {
             final long duration = System.nanoTime() - start;
             WALK_DURATION_NANOS.sample(duration);
-            QueryPerformanceRecorderState.recordMetadataOperation(duration);
+            QueryPerformanceReadTracker.recordMetadataOperation(duration);
         }
     }
 }
