@@ -111,6 +111,7 @@ public class ParquetTools {
      * Reads in a table from a single parquet file, metadata file, or directory with recognized layout. The source
      * provided can be a local file path or a URI to be resolved.
      *
+     *
      * <p>
      * If the {@link ParquetFileLayout} is not provided in the {@link ParquetInstructions instructions}, this method
      * attempts to "do the right thing." It examines the source to determine if it's a single parquet file, a metadata
@@ -128,23 +129,35 @@ public class ParquetTools {
     public static Table readTable(
             @NotNull final String source,
             @NotNull final ParquetInstructions readInstructions) {
-        return QueryPerformanceRecorder.withNugget("ParquetTools.readTable", () -> {
-            final boolean isParquetFile = ParquetUtils.isParquetFile(source);
-            final boolean isMetadataFile = !isParquetFile && ParquetUtils.isMetadataFile(source);
-            final boolean isDirectory = !isParquetFile && !isMetadataFile;
-            final URI sourceURI = convertToURI(source, isDirectory);
-            if (readInstructions.getFileLayout().isPresent()) {
-                switch (readInstructions.getFileLayout().get()) {
-                    case SINGLE_FILE:
-                        return readSingleFileTable(sourceURI, readInstructions);
-                    case FLAT_PARTITIONED:
-                        return readFlatPartitionedTable(sourceURI, readInstructions);
-                    case KV_PARTITIONED:
-                        return readKeyValuePartitionedTable(sourceURI, readInstructions, null);
-                    case METADATA_PARTITIONED:
-                        return readPartitionedTableWithMetadata(sourceURI, readInstructions, null);
-                }
+        final boolean isParquetFile = ParquetUtils.isParquetFile(source);
+        final boolean isMetadataFile = !isParquetFile && ParquetUtils.isMetadataFile(source);
+        final boolean isDirectory = !isParquetFile && !isMetadataFile;
+        final URI sourceURI = convertToURI(source, isDirectory);
+        if (readInstructions.getFileLayout().isPresent()) {
+            switch (readInstructions.getFileLayout().get()) {
+                case SINGLE_FILE:
+                    return readSingleFileTable(sourceURI, readInstructions);
+                case FLAT_PARTITIONED:
+                    return readFlatPartitionedTable(sourceURI, readInstructions);
+                case KV_PARTITIONED:
+                    return readKeyValuePartitionedTable(sourceURI, readInstructions, null);
+                case METADATA_PARTITIONED:
+                    return readPartitionedTableWithMetadata(sourceURI, readInstructions, null);
             }
+        }
+        final StringBuilder displayPath = new StringBuilder();
+        if (sourceURI.isOpaque()) {
+            displayPath.append(sourceURI);
+        } else {
+            displayPath.append(sourceURI.getScheme()).append("://");
+            if (sourceURI.getAuthority() != null) {
+                displayPath.append(sourceURI.getAuthority());
+            }
+            if (sourceURI.getPath() != null) {
+                displayPath.append(sourceURI.getPath());
+            }
+        }
+        return QueryPerformanceRecorder.withNugget("ParquetTools.readTable(" + displayPath + ")", () -> {
             if (isParquetFile) {
                 return readSingleFileTable(sourceURI, readInstructions);
             }
