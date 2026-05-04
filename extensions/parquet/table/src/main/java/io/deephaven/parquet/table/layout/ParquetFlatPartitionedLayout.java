@@ -8,7 +8,7 @@ import io.deephaven.base.stats.Stats;
 import io.deephaven.base.stats.Value;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
-import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorderState;
+import io.deephaven.engine.readtracker.impl.QueryPerformanceReadTracker;
 import io.deephaven.parquet.base.ParquetUtils;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
@@ -85,7 +85,7 @@ public final class ParquetFlatPartitionedLayout implements TableLocationKeyFinde
         } finally {
             final long duration = System.nanoTime() - start;
             LIST_DURATION_NANOS.sample(duration);
-            QueryPerformanceRecorderState.recordMetadataOperation(duration);
+            QueryPerformanceReadTracker.recordMetadataOperation(duration);
         }
     }
 

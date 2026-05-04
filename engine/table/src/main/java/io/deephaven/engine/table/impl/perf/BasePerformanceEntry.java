@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl.perf;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.readtracker.impl.QueryPerformanceReadTracker;
 import io.deephaven.util.profiling.ThreadProfiler;
 import org.jetbrains.annotations.NotNull;
 
@@ -49,8 +50,8 @@ public class BasePerformanceEntry implements LogOutputAppendable {
         startAllocatedBytes = ThreadProfiler.DEFAULT.getCurrentThreadAllocatedBytes();
         startPoolAllocatedBytes = QueryPerformanceRecorderState.getPoolAllocatedBytesForCurrentThread();
 
-        final QueryPerformanceRecorderState.ReadTracker readTracker =
-                QueryPerformanceRecorderState.getReadTrackerForCurrentThread();
+        final QueryPerformanceReadTracker.ReadTracker readTracker =
+                QueryPerformanceReadTracker.getReadTrackerForCurrentThread();
 
         startDataReadNanos = readTracker.getDataReadNanos();
         startDataReadCount = readTracker.getDataReadCount();
@@ -76,8 +77,8 @@ public class BasePerformanceEntry implements LogOutputAppendable {
         allocatedBytes = plus(allocatedBytes,
                 minus(ThreadProfiler.DEFAULT.getCurrentThreadAllocatedBytes(), startAllocatedBytes));
 
-        final QueryPerformanceRecorderState.ReadTracker readTracker =
-                QueryPerformanceRecorderState.getReadTrackerForCurrentThread();
+        final QueryPerformanceReadTracker.ReadTracker readTracker =
+                QueryPerformanceReadTracker.getReadTrackerForCurrentThread();
 
         dataReadNanos += readTracker.getDataReadNanos() - startDataReadNanos;
         dataReadCount += readTracker.getDataReadCount() - startDataReadCount;

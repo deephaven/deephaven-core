@@ -3,7 +3,7 @@
 //
 package io.deephaven.extensions.s3;
 
-import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorderState;
+import io.deephaven.engine.readtracker.impl.QueryPerformanceReadTracker;
 import io.deephaven.extensions.s3.testlib.S3SeekableChannelTestSetup;
 import io.deephaven.util.channel.CachedChannelProvider;
 import io.deephaven.util.channel.CompletableOutputStream;
@@ -88,8 +88,8 @@ abstract class S3SeekableChannelSimpleTestBase extends S3SeekableChannelTestSetu
         final URI uri = uri("32MiB.bin");
         final ByteBuffer buffer = ByteBuffer.allocate(1);
         final long startTime = System.nanoTime();
-        final long startReadBytes = QueryPerformanceRecorderState.getReadTrackerForCurrentThread().getDataReadBytes();
-        final long startReadNanos = QueryPerformanceRecorderState.getReadTrackerForCurrentThread().getDataReadNanos();
+        final long startReadBytes = QueryPerformanceReadTracker.getReadTrackerForCurrentThread().getDataReadBytes();
+        final long startReadNanos = QueryPerformanceReadTracker.getReadTrackerForCurrentThread().getDataReadNanos();
         try (
                 final SeekableChannelsProvider providerImpl = providerImpl();
                 final SeekableChannelsProvider provider = CachedChannelProvider.create(providerImpl, 32);
@@ -103,8 +103,8 @@ abstract class S3SeekableChannelSimpleTestBase extends S3SeekableChannelTestSetu
             assertThat(readChannel.read(buffer)).isEqualTo(-1);
         }
         final long endTime = System.nanoTime();
-        final long endReadBytes = QueryPerformanceRecorderState.getReadTrackerForCurrentThread().getDataReadBytes();
-        final long endReadNanos = QueryPerformanceRecorderState.getReadTrackerForCurrentThread().getDataReadNanos();
+        final long endReadBytes = QueryPerformanceReadTracker.getReadTrackerForCurrentThread().getDataReadBytes();
+        final long endReadNanos = QueryPerformanceReadTracker.getReadTrackerForCurrentThread().getDataReadNanos();
         assertThat(endReadBytes - startReadBytes).isEqualTo(numBytes);
         final long duration = endReadNanos - startReadNanos;
         // we need to record some time
