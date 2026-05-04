@@ -35,10 +35,8 @@ public class JsAxis {
         this.axis = descriptor;
         this.jsFigure = jsFigure;
 
-        final FigureDescriptor.BusinessCalendarDescriptor businessCalendarDescriptor =
-                descriptor.getBusinessCalendarDescriptor();
-        if (businessCalendarDescriptor != null) {
-            businessCalendar = new JsBusinessCalendar(businessCalendarDescriptor);
+        if (descriptor.hasBusinessCalendarDescriptor()) {
+            businessCalendar = new JsBusinessCalendar(descriptor.getBusinessCalendarDescriptor());
         } else {
             businessCalendar = null;
         }

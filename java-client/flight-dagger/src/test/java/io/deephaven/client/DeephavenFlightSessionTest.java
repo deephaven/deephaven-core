@@ -7,24 +7,28 @@ import io.deephaven.api.TableOperations;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.client.impl.TableHandle;
+import io.deephaven.client.impl.VectorSchemaRootAdapter;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.qst.TableCreator;
-import io.deephaven.qst.column.header.ColumnHeader;
 import io.deephaven.qst.table.NewTable;
 import io.deephaven.qst.table.TableCreatorImpl;
 import io.deephaven.qst.table.TableSpec;
 import io.deephaven.server.runner.RecordingErrorTransformer;
+import io.deephaven.server.util.TestDataUtil;
 import org.apache.arrow.flight.FlightStream;
+import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.vector.BigIntVector;
+import org.apache.arrow.vector.FieldVector;
 import org.apache.arrow.vector.VectorSchemaRoot;
 import org.apache.arrow.vector.types.Types.MinorType;
 import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.arrow.vector.types.pojo.FieldType;
 import org.apache.arrow.vector.types.pojo.Schema;
+import org.apache.arrow.vector.util.TransferPair;
+import org.apache.arrow.vector.util.Validator;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -44,7 +48,7 @@ public class DeephavenFlightSessionTest extends DeephavenFlightSessionTestBase {
             final Schema schema = flightSession.schema(handle.export());
             final Schema expected = new Schema(Collections.singletonList(
                     new Field("I", new FieldType(true, MinorType.INT.getType(), null, null), Collections.emptyList())));
-            assertThat(metadataLess(schema)).isEqualTo(expected);
+            assertThat(stripMetadata(schema)).isEqualTo(expected);
         }
     }
 
@@ -341,46 +345,83 @@ public class DeephavenFlightSessionTest extends DeephavenFlightSessionTestBase {
         }
     }
 
+    /**
+     * Send a table to the server, pull it back to the client, and verify that the data is the same.
+     */
     @Test
-    public void doPutNewTable() throws TableHandle.TableHandleException, InterruptedException {
-        try (final TableHandle newTableHandle = flightSession.putExport(newTable(), bufferAllocator)) {
-            // ignore
+    public void doPutNewTable() throws Exception {
+        final NewTable newTable = TestDataUtil.getTestDataNewTable();
+
+        try (final TableHandle newTableHandle = flightSession.putExport(newTable, bufferAllocator);
+                final FlightStream stream = flightSession.stream(newTableHandle);
+                final VectorSchemaRoot expectedRoot = VectorSchemaRootAdapter.of(newTable, bufferAllocator)) {
+
+            assertThat(stream.next()).isTrue();
+            final VectorSchemaRoot retrievedRoot = stream.getRoot();
+
+            try (final VectorSchemaRoot expectedRootNoMetadata =
+                    transferStrippingMetadata(expectedRoot, bufferAllocator);
+                    final VectorSchemaRoot retrievedRootNoMetadata =
+                            transferStrippingMetadata(retrievedRoot, bufferAllocator)) {
+                // Server-side metadata can differ while values are equivalent.
+                Validator.compareVectorSchemaRoot(retrievedRootNoMetadata, expectedRootNoMetadata);
+
+                // Validator.compareVectorSchemaRoot provides helpful error messages but performs approximate
+                // comparisons for some field types (e.g. floating point numbers). Validate again with
+                // VectorSchemaRoot.equals() to ensure the data matches exactly.
+                assertThat(retrievedRootNoMetadata)
+                        // Specify comparison method explicitly; VectorSchemaRoot does not implement equals(Object)
+                        .usingEquals(VectorSchemaRoot::equals)
+                        .isEqualTo(expectedRootNoMetadata);
+            }
+
+            assertThat(stream.next()).isFalse();
         }
     }
 
-    private static Schema metadataLess(Schema schema) {
+    /**
+     * Creates a new {@link VectorSchemaRoot} backed by the same data buffers as {@code root}, but with all Arrow
+     * metadata removed from the schema and fields. Ownership of the underlying buffers is <em>transferred</em> from
+     * {@code root} to the returned root (zero-copy move via {@link TransferPair#transfer()}); {@code root} should not
+     * be used after this call.
+     */
+    private static VectorSchemaRoot transferStrippingMetadata(VectorSchemaRoot root, BufferAllocator allocator) {
+        final VectorSchemaRoot dest = VectorSchemaRoot.create(stripMetadata(root.getSchema()), allocator);
+        final List<FieldVector> sourceVectors = root.getFieldVectors();
+        final List<FieldVector> destVectors = dest.getFieldVectors();
+        for (int i = 0; i < sourceVectors.size(); i++) {
+            final TransferPair tp = sourceVectors.get(i).makeTransferPair(destVectors.get(i));
+            tp.transfer();
+        }
+        dest.setRowCount(root.getRowCount());
+        return dest;
+    }
+
+    /**
+     * Returns a copy of {@code schema} with all key-value metadata removed from the schema itself and every field
+     * (recursively).
+     */
+    private static Schema stripMetadata(Schema schema) {
         return new Schema(
-                schema.getFields().stream().map(DeephavenFlightSessionTest::metadataLess).collect(Collectors.toList()),
+                schema.getFields().stream().map(DeephavenFlightSessionTest::stripMetadata).collect(Collectors.toList()),
                 null);
     }
 
-    private static Field metadataLess(Field field) {
-        return new Field(field.getName(), metadataLess(field.getFieldType()), field.getChildren());
+    /**
+     * Returns a copy of {@code field} with key-value metadata removed, applied recursively to child fields.
+     */
+    private static Field stripMetadata(Field field) {
+        return new Field(field.getName(), stripMetadata(field.getFieldType()),
+                field.getChildren().stream().map(DeephavenFlightSessionTest::stripMetadata)
+                        .collect(Collectors.toList()));
     }
 
-    private static FieldType metadataLess(FieldType fieldType) {
+    /**
+     * Returns a copy of {@code fieldType} with key-value metadata removed, preserving nullability, Arrow type, and
+     * dictionary encoding.
+     */
+    private static FieldType stripMetadata(FieldType fieldType) {
         return new FieldType(fieldType.isNullable(), fieldType.getType(), fieldType.getDictionary(), null);
     }
 
-    private NewTable newTable() {
-        return ColumnHeader.of(
-                ColumnHeader.ofBoolean("Boolean"),
-                ColumnHeader.ofByte("Byte"),
-                ColumnHeader.ofChar("Char"),
-                ColumnHeader.ofShort("Short"),
-                ColumnHeader.ofInt("Int"),
-                ColumnHeader.ofLong("Long"),
-                ColumnHeader.ofFloat("Float"),
-                ColumnHeader.ofDouble("Double"),
-                ColumnHeader.ofString("String"),
-                ColumnHeader.ofInstant("Instant"),
-                ColumnHeader.of("ByteVector", byte[].class))
-                .start(3)
-                .row(true, (byte) 42, 'a', (short) 32_000, 1234567, 1234567890123L, 3.14f, 3.14d, "Hello, World",
-                        Instant.now(), "abc".getBytes())
-                .row(null, null, null, null, null, null, null, null, null, (Instant) null, (byte[]) null)
-                .row(false, (byte) -42, 'b', (short) -32_000, -1234567, -1234567890123L, -3.14f, -3.14d, "Goodbye.",
-                        Instant.ofEpochMilli(0), new byte[] {0x32, 0x02, 0x17, 0x42})
-                .newTable();
-    }
 }

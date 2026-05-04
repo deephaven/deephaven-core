@@ -7,6 +7,8 @@ on:
     paths:
       - 'docs/python/**'
       - 'docs/groovy/**'
+      - '!docs/python/snapshots/**'
+      - '!docs/groovy/snapshots/**'
 
 jobs:
   docs-sync:
@@ -25,6 +27,9 @@ jobs:
           files: |
             docs/python/**
             docs/groovy/**
+          files_ignore: |
+            docs/python/snapshots/**
+            docs/groovy/snapshots/**
 
       - name: Check Python/Groovy Docs Sync
         env:

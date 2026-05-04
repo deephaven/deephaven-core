@@ -8,8 +8,13 @@ import io.deephaven.api.ColumnName;
 import io.deephaven.api.SortSpec;
 import io.deephaven.api.SortColumn;
 import io.deephaven.benchmarking.generator.ColumnGenerator;
+import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
+import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
+import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
+import io.deephaven.engine.table.impl.sources.SingleValueColumnSource;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.generator.*;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
@@ -23,6 +28,7 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.math.BigInteger;
+import java.time.Instant;
 import java.util.*;
 
 import static io.deephaven.engine.testutil.TstUtils.getTable;
@@ -306,6 +312,146 @@ public class MultiColumnSortTest {
 
             checkSort(sorted, SortColumn.asc(ColumnName.of("Enum1")), SortColumn.asc(ColumnName.of("L1")));
         }
+    }
+
+    @Test
+    public void testSkipConstantSingleValueSortColumn() {
+        final int size = 200;
+        final long[] varying = new long[size];
+        for (int ii = 0; ii < size; ++ii) {
+            varying[ii] = (ii * 31L) % 17;
+        }
+
+        final SingleValueColumnSource<Integer> constSrc =
+                SingleValueColumnSource.getSingleValueColumnSource(int.class);
+        constSrc.set(42);
+
+        final Map<String, ColumnSource<?>> columnSourceMap = new LinkedHashMap<>();
+        columnSourceMap.put("Const", constSrc);
+        columnSourceMap.put("Var", InMemoryColumnSource.getImmutableMemoryColumnSource(varying, long.class, null));
+        final QueryTable table = new QueryTable(RowSetFactory.flat(size).toTracking(), columnSourceMap);
+
+        // (Const, Var) sort must produce same row content as (Var) sort, because Const is constant.
+        final Table sortedBoth = table.sort("Const", "Var");
+        final Table sortedVarOnly = table.sort("Var");
+        TstUtils.assertTableEquals(sortedVarOnly, sortedBoth);
+        checkSort(sortedBoth, SortColumn.asc(ColumnName.of("Const")), SortColumn.asc(ColumnName.of("Var")));
+
+        // (Var, Const) sort must also produce same row content as (Var) sort.
+        final Table sortedVarThenConst = table.sort("Var", "Const");
+        TstUtils.assertTableEquals(sortedVarOnly, sortedVarThenConst);
+        checkSort(sortedVarThenConst, SortColumn.asc(ColumnName.of("Var")), SortColumn.asc(ColumnName.of("Const")));
+    }
+
+    @Test
+    public void testSkipConstantInteriorSortColumn() {
+        final int size = 200;
+        final int[] outer = new int[size];
+        final long[] inner = new long[size];
+        for (int ii = 0; ii < size; ++ii) {
+            outer[ii] = ii % 5;
+            inner[ii] = (ii * 31L) % 17;
+        }
+
+        final SingleValueColumnSource<Integer> constSrc =
+                SingleValueColumnSource.getSingleValueColumnSource(int.class);
+        constSrc.set(7);
+
+        final Map<String, ColumnSource<?>> columnSourceMap = new LinkedHashMap<>();
+        columnSourceMap.put("Outer", InMemoryColumnSource.getImmutableMemoryColumnSource(outer, int.class, null));
+        columnSourceMap.put("Const", constSrc);
+        columnSourceMap.put("Inner", InMemoryColumnSource.getImmutableMemoryColumnSource(inner, long.class, null));
+        final QueryTable table = new QueryTable(RowSetFactory.flat(size).toTracking(), columnSourceMap);
+
+        final Table sortedAll = table.sort("Outer", "Const", "Inner");
+        final Table sortedSkipConst = table.sort("Outer", "Inner");
+        TstUtils.assertTableEquals(sortedSkipConst, sortedAll);
+        checkSort(sortedAll, SortColumn.asc(ColumnName.of("Outer")), SortColumn.asc(ColumnName.of("Const")),
+                SortColumn.asc(ColumnName.of("Inner")));
+    }
+
+    @Test
+    public void testSkipNullValueSortColumn() {
+        final int size = 100;
+        final int[] varying = new int[size];
+        for (int ii = 0; ii < size; ++ii) {
+            varying[ii] = (ii * 13) % 7;
+        }
+
+        final Map<String, ColumnSource<?>> columnSourceMap = new LinkedHashMap<>();
+        columnSourceMap.put("NullCol", NullValueColumnSource.getInstance(int.class, null));
+        columnSourceMap.put("Var", InMemoryColumnSource.getImmutableMemoryColumnSource(varying, int.class, null));
+        final QueryTable table = new QueryTable(RowSetFactory.flat(size).toTracking(), columnSourceMap);
+
+        final Table sortedBoth = table.sort("NullCol", "Var");
+        final Table sortedVarOnly = table.sort("Var");
+        TstUtils.assertTableEquals(sortedVarOnly, sortedBoth);
+    }
+
+    @Test
+    public void testSkipImmutableConstantInstantSortColumn() {
+        final int size = 100;
+        final int[] varying = new int[size];
+        for (int ii = 0; ii < size; ++ii) {
+            varying[ii] = (ii * 13) % 7;
+        }
+
+        final ColumnSource<Instant> constInstant = InMemoryColumnSource.makeImmutableConstantSource(
+                Instant.class, null, Instant.parse("2026-01-01T00:00:00Z"));
+
+        final Map<String, ColumnSource<?>> columnSourceMap = new LinkedHashMap<>();
+        columnSourceMap.put("ConstInstant", constInstant);
+        columnSourceMap.put("Var", InMemoryColumnSource.getImmutableMemoryColumnSource(varying, int.class, null));
+        final QueryTable table = new QueryTable(RowSetFactory.flat(size).toTracking(), columnSourceMap);
+
+        final Table sortedBoth = table.sort("ConstInstant", "Var");
+        final Table sortedVarOnly = table.sort("Var");
+        TstUtils.assertTableEquals(sortedVarOnly, sortedBoth);
+    }
+
+    @Test
+    public void testAllConstantSortIsIdentity() {
+        final int size = 50;
+        final SingleValueColumnSource<Integer> constSrc =
+                SingleValueColumnSource.getSingleValueColumnSource(int.class);
+        constSrc.set(99);
+
+        final Map<String, ColumnSource<?>> columnSourceMap = new LinkedHashMap<>();
+        columnSourceMap.put("Const", constSrc);
+        columnSourceMap.put("AlsoConst",
+                InMemoryColumnSource.makeImmutableConstantSource(String.class, null, "x"));
+        final QueryTable table = new QueryTable(RowSetFactory.flat(size).toTracking(), columnSourceMap);
+
+        final Table sorted = table.sort("Const", "AlsoConst");
+        // Sorting an all-constant key set is a no-op: result should match the original table row-for-row.
+        TstUtils.assertTableEquals(table, sorted);
+    }
+
+    @Test
+    public void testNonEqualityRespectingComparatorOnConstantNotSkipped() {
+        final int size = 100;
+        final int[] varying = new int[size];
+        for (int ii = 0; ii < size; ++ii) {
+            varying[ii] = (ii * 13) % 7;
+        }
+
+        final SingleValueColumnSource<String> constSrc =
+                SingleValueColumnSource.getSingleValueColumnSource(String.class);
+        constSrc.set("apple");
+
+        final Map<String, ColumnSource<?>> columnSourceMap = new LinkedHashMap<>();
+        columnSourceMap.put("ConstStr", constSrc);
+        columnSourceMap.put("Var", InMemoryColumnSource.getImmutableMemoryColumnSource(varying, int.class, null));
+        final QueryTable table = new QueryTable(RowSetFactory.flat(size).toTracking(), columnSourceMap);
+
+        // respectsEquality=false: optimization MUST NOT drop the column. Result must still be a valid sort.
+        final Table sortedWithComparator = table.sort(
+                ComparatorSortColumn.asc("ConstStr", String.CASE_INSENSITIVE_ORDER, false),
+                SortColumn.asc(ColumnName.of("Var")));
+        checkSort(sortedWithComparator,
+                SortColumn.asc(ColumnName.of("ConstStr")), SortColumn.asc(ColumnName.of("Var")));
+        // Row content (independent of order on the constant column) must equal sorting by Var alone.
+        TstUtils.assertTableEquals(table.sort("Var"), sortedWithComparator);
     }
 
     @Test

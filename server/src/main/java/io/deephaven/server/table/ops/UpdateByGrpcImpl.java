@@ -365,10 +365,10 @@ public final class UpdateByGrpcImpl extends GrpcTableOperation<UpdateByRequest> 
 
     private static OperationControl adaptEmOptions(UpdateByEmOptions options) {
         final OperationControl.Builder builder = OperationControl.builder();
-        if (options.getOnNanValue() == BAD_DATA_BEHAVIOR_NOT_SPECIFIED) {
+        if (options.getOnNullValue() != BAD_DATA_BEHAVIOR_NOT_SPECIFIED) {
             builder.onNullValue(adaptBadDataBehavior(options.getOnNullValue()));
         }
-        if (options.getOnNanValue() == BAD_DATA_BEHAVIOR_NOT_SPECIFIED) {
+        if (options.getOnNanValue() != BAD_DATA_BEHAVIOR_NOT_SPECIFIED) {
             builder.onNanValue(adaptBadDataBehavior(options.getOnNanValue()));
         }
         if (options.hasBigValueContext()) {
