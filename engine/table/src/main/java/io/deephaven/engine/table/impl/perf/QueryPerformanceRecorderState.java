@@ -359,13 +359,13 @@ public abstract class QueryPerformanceRecorderState {
         long metadataOperationCount;
         long metadataOperationNanos;
 
-        private void recordRead(long nanos, long bytesRead) {
+        private void recordRead(final long nanos, final long bytesRead) {
             readCount++;
             readNanos += nanos;
             readBytes += bytesRead;
         }
 
-        private void recordMetadataOperation(long nanos) {
+        private void recordMetadataOperation(final long nanos) {
             metadataOperationCount++;
             metadataOperationNanos += nanos;
         }
