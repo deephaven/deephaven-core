@@ -2,5 +2,6 @@
     <source path="log/impl" >
         <include name="LogOutputStringImpl.java"/>
     </source>
+    <define-property name="line.separator" values="newline" />
     <source path="streams" includes="ByteBufferInputStream.java" />
 </module>

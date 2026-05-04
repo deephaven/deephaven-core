@@ -131,7 +131,7 @@ public class WebBarrageMessageReader {
                 msg.modColumnData = new WebBarrageMessage.ModColumnData[metadata.modColumnNodesLength()];
                 for (int ci = 0; ci < msg.modColumnData.length; ++ci) {
                     msg.modColumnData[ci] = new WebBarrageMessage.ModColumnData();
-                    // msg.modColumnData[ci].type = columnTypes[ci];
+                    // msg.modColumnData[ci].type = columnTypes[wci];
                     // msg.modColumnData[ci].componentType = componentTypes[ci];
                     msg.modColumnData[ci].data = new ArrayList<>();
 

@@ -240,42 +240,7 @@ public final class ClientTableState extends TableConfig {
     public Class<?>[] columnTypes() {
         return Arrays.stream(tableDef.getColumns())
                 .map(ColumnDefinition::getType)
-                .map(t -> {
-                    switch (t) {
-                        case "boolean":
-                        case "java.lang.Boolean":
-                            return boolean.class;
-                        case "char":
-                        case "java.lang.Character":
-                            return char.class;
-                        case "byte":
-                        case "java.lang.Byte":
-                            return byte.class;
-                        case "int":
-                        case "java.lang.Integer":
-                            return int.class;
-                        case "short":
-                        case "java.lang.Short":
-                            return short.class;
-                        case "long":
-                        case "java.lang.Long":
-                            return long.class;
-                        case "java.lang.Float":
-                        case "float":
-                            return float.class;
-                        case "java.lang.Double":
-                        case "double":
-                            return double.class;
-                        case "java.time.Instant":
-                            return DateWrapper.class;
-                        case "java.math.BigInteger":
-                            return BigIntegerWrapper.class;
-                        case "java.math.BigDecimal":
-                            return BigDecimalWrapper.class;
-                        default:
-                            return Object.class;
-                    }
-                })
+                .map(WebBarrageUtils::stringToClass)
                 .toArray(Class<?>[]::new);
     }
 
