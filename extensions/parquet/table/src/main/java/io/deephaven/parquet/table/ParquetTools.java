@@ -128,7 +128,7 @@ public class ParquetTools {
     public static Table readTable(
             @NotNull final String source,
             @NotNull final ParquetInstructions readInstructions) {
-        return QueryPerformanceRecorder.withNugget("ParquetTools.readTable(" + source + ")", () -> {
+        return QueryPerformanceRecorder.withNugget("ParquetTools.readTable", () -> {
             final boolean isParquetFile = ParquetUtils.isParquetFile(source);
             final boolean isMetadataFile = !isParquetFile && ParquetUtils.isMetadataFile(source);
             final boolean isDirectory = !isParquetFile && !isMetadataFile;
