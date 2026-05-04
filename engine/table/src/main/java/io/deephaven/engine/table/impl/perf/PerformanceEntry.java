@@ -238,7 +238,8 @@ public class PerformanceEntry extends BasePerformanceEntry implements TableListe
             return true;
         }
         return invocationCount > 0
-                && UpdatePerformanceTracker.LOG_THRESHOLD.shouldLog(getUsageNanos(), getDataReadCount());
+                && UpdatePerformanceTracker.LOG_THRESHOLD.shouldLog(getUsageNanos(), getDataReadCount(),
+                        getMetadataOperationCount());
     }
 
     public void accumulate(PerformanceEntry entry) {
