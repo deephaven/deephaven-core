@@ -37,7 +37,6 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Safe
             // non-synchronized no-op override
         }
 
-
         @Override
         public boolean shouldLog() {
             return false;
