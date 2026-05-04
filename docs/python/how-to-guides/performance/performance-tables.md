@@ -192,11 +192,11 @@ qop = pm.query_performance(n)
 | `CollectionTimeNanos`    | `long`    | The number of nanoseconds spent in the garbage collector while executing this operation.                                                   |
 | `AllocatedBytes`         | `long`    | The number of bytes allocated by this operation.                                                                                           |
 | `PoolAllocatedBytes`     | `long`    | The number of bytes allocated from pools by this operation.                                                                                |
-| `DataReadNanos`          | `long`    | How long, in nanoseconds, this operation spent synchronously reading data in this interval.                                                                                         |
-| `DataReadCount`          | `long`    | The number of synchronous data reads that by this operation in this interval.                                                                                                       |
-| `DataReadBytes`          | `long`    | How many bytes this operation synchronously read in this interval.                                                                                                                  |
-| `MetadataOperationNanos` | `long`    | How long, in nanoseconds, this operation spent on synchronous metadata operations in this interval.                                                                                 |
-| `MetadataOperationCount` | `long`    | The number of synchronous metadata operations that occurred during this operation in this interval.                                                                                 |
+| `DataReadNanos`          | `long`    | How long, in nanoseconds, this operation spent synchronously reading data in this interval.                                                |
+| `DataReadCount`          | `long`    | The number of synchronous data reads that by this operation in this interval.                                                              |
+| `DataReadBytes`          | `long`    | How many bytes this operation synchronously read in this interval.                                                                         |
+| `MetadataOperationNanos` | `long`    | How long, in nanoseconds, this operation spent on synchronous metadata operations in this interval.                                        |
+| `MetadataOperationCount` | `long`    | The number of synchronous metadata operations that occurred during this operation in this interval.                                        |
 | `WasInterrupted`         | `boolean` | Was this operation interrupted?                                                                                                            |
 | `Exception`              | `String`  | If this query produced an exception, the Exception information. Otherwise null.                                                            |
 | `AuthContext`            | `String`  | The authentication context used for executing this operation.                                                                              |
