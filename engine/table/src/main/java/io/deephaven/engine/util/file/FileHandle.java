@@ -8,6 +8,7 @@ import io.deephaven.base.stats.Stats;
 import io.deephaven.base.stats.Value;
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.readtracker.impl.QueryPerformanceReadTracker;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -198,7 +199,9 @@ public final class FileHandle implements SeekableByteChannel {
             try {
                 return fileChannel.size();
             } finally {
-                SIZE_DURATION_NANOS.sample(System.nanoTime() - startTimeNanos);
+                final long duration = System.nanoTime() - startTimeNanos;
+                SIZE_DURATION_NANOS.sample(duration);
+                QueryPerformanceReadTracker.recordMetadataOperation(duration);
             }
         } catch (ClosedChannelException e) {
             postCloseProcedure.run();
@@ -268,13 +271,15 @@ public final class FileHandle implements SeekableByteChannel {
     public final int read(@NotNull final ByteBuffer destination, final long position) throws IOException {
         try {
             final long startTimeNanos = System.nanoTime();
-            final int sizeBytes = destination.remaining();
-            try {
-                return fileChannel.read(destination, position);
-            } finally {
-                READ_DURATION_NANOS.sample(System.nanoTime() - startTimeNanos);
-                READ_SIZE_BYTES.sample(sizeBytes);
+            final int readSize = fileChannel.read(destination, position);
+            if (readSize >= 0) {
+                final long duration = System.nanoTime() - startTimeNanos;
+                QueryPerformanceReadTracker.recordRead(duration, readSize);
+                READ_DURATION_NANOS.sample(duration);
+                READ_SIZE_BYTES.sample(readSize);
             }
+
+            return readSize;
         } catch (ClosedChannelException e) {
             postCloseProcedure.run();
             throw e;
@@ -295,13 +300,14 @@ public final class FileHandle implements SeekableByteChannel {
     public final int read(@NotNull final ByteBuffer destination) throws IOException {
         try {
             final long startTimeNanos = System.nanoTime();
-            final int sizeBytes = destination.remaining();
-            try {
-                return fileChannel.read(destination);
-            } finally {
-                READ_DURATION_NANOS.sample(System.nanoTime() - startTimeNanos);
-                READ_SIZE_BYTES.sample(sizeBytes);
+            final int readSize = fileChannel.read(destination);
+            if (readSize >= 0) {
+                final long duration = System.nanoTime() - startTimeNanos;
+                QueryPerformanceReadTracker.recordRead(duration, readSize);
+                READ_DURATION_NANOS.sample(duration);
+                READ_SIZE_BYTES.sample(readSize);
             }
+            return readSize;
         } catch (ClosedChannelException e) {
             postCloseProcedure.run();
             throw e;

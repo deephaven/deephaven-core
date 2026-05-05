@@ -178,6 +178,9 @@ project(':engine-primitive').projectDir = file('engine/primitive')
 include(':engine-vector')
 project(':engine-vector').projectDir = file('engine/vector')
 
+include(':engine-readtracker')
+project(':engine-readtracker').projectDir = file('engine/read-tracker')
+
 include(':engine-stringset')
 project(':engine-stringset').projectDir = file('engine/stringset')
 

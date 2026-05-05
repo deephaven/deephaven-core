@@ -4,6 +4,9 @@
 package io.deephaven.parquet.table.layout;
 
 import io.deephaven.api.util.NameValidator;
+import io.deephaven.base.stats.State;
+import io.deephaven.base.stats.Stats;
+import io.deephaven.base.stats.Value;
 import io.deephaven.csv.CsvTools;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
@@ -12,6 +15,7 @@ import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
 import io.deephaven.engine.table.impl.locations.local.LocationTableBuilderDefinition;
 import io.deephaven.engine.table.impl.locations.local.URIStreamKeyValuePartitionLayout;
 import io.deephaven.engine.table.impl.locations.local.KeyValuePartitionLayout;
+import io.deephaven.engine.readtracker.impl.QueryPerformanceReadTracker;
 import io.deephaven.parquet.base.ParquetUtils;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
@@ -48,6 +52,9 @@ public class ParquetKeyValuePartitionedLayout
         implements TableLocationKeyFinder<ParquetTableLocationKey> {
 
     private final SeekableChannelsProvider channelsProvider;
+
+    private static final Value WALK_DURATION_NANOS =
+            Stats.makeItem("ParquetKeyValuePartitionedLayout", "walk", State.FACTORY).getValue();
 
     /**
      * Create a new {@link ParquetKeyValuePartitionedLayout} for the given {@code tableRootDirectory} and
@@ -127,10 +134,15 @@ public class ParquetKeyValuePartitionedLayout
         } else {
             uriFilter = uri -> uri.getPath().endsWith(ParquetUtils.PARQUET_FILE_EXTENSION);
         }
+        final long start = System.nanoTime();
         try (final Stream<URI> filteredUriStream = channelsProvider.walk(tableRootDirectory).filter(uriFilter)) {
             findKeys(filteredUriStream, locationKeyObserver);
         } catch (final IOException e) {
             throw new TableDataException("Error finding parquet locations under " + tableRootDirectory, e);
+        } finally {
+            final long duration = System.nanoTime() - start;
+            WALK_DURATION_NANOS.sample(duration);
+            QueryPerformanceReadTracker.recordMetadataOperation(duration);
         }
     }
 }

@@ -3,8 +3,12 @@
 //
 package io.deephaven.parquet.table.layout;
 
+import io.deephaven.base.stats.State;
+import io.deephaven.base.stats.Stats;
+import io.deephaven.base.stats.Value;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
+import io.deephaven.engine.readtracker.impl.QueryPerformanceReadTracker;
 import io.deephaven.parquet.base.ParquetUtils;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
@@ -28,6 +32,9 @@ import static io.deephaven.parquet.base.ParquetFileReader.FILE_URI_SCHEME;
  * Parquet {@link TableLocationKeyFinder location finder} that will discover multiple files in a single directory.
  */
 public final class ParquetFlatPartitionedLayout implements TableLocationKeyFinder<ParquetTableLocationKey> {
+
+    private static final Value LIST_DURATION_NANOS =
+            Stats.makeItem("ParquetFlatPartitionedLayout", "list", State.FACTORY).getValue();
 
     private final URI tableRootDirectory;
     private final Map<URI, ParquetTableLocationKey> cache;
@@ -60,6 +67,7 @@ public final class ParquetFlatPartitionedLayout implements TableLocationKeyFinde
         } else {
             uriFilter = uri -> uri.getPath().endsWith(ParquetUtils.PARQUET_FILE_EXTENSION);
         }
+        final long start = System.nanoTime();
         try (final Stream<URI> stream = channelsProvider.list(tableRootDirectory)) {
             stream.filter(uriFilter).forEach(uri -> {
                 cache.compute(uri, (key, existingLocationKey) -> {
@@ -74,6 +82,10 @@ public final class ParquetFlatPartitionedLayout implements TableLocationKeyFinde
             });
         } catch (final IOException e) {
             throw new TableDataException("Error finding parquet locations under " + tableRootDirectory, e);
+        } finally {
+            final long duration = System.nanoTime() - start;
+            LIST_DURATION_NANOS.sample(duration);
+            QueryPerformanceReadTracker.recordMetadataOperation(duration);
         }
     }
 
