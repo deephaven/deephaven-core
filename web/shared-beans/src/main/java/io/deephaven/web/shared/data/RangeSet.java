@@ -771,13 +771,12 @@ public class RangeSet {
         return result;
     }
 
-
     public long get(long key) {
+        if (key >= size() || key < 0) {
+            return -1;
+        }
         if (key == 0) {
             return getFirstRow();
-        }
-        if (key >= size()) {
-            return -1;
         }
         ensureCardinalityCache();
 

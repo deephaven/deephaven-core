@@ -6,7 +6,10 @@ package io.deephaven.web.client.api.barrage;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.ObjectChunk;
+import io.deephaven.chunk.WritableByteChunk;
 import io.deephaven.chunk.WritableCharChunk;
+import io.deephaven.chunk.WritableDoubleChunk;
+import io.deephaven.chunk.WritableFloatChunk;
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.WritableShortChunk;
@@ -52,7 +55,16 @@ public class WebChunkWriterFactory implements ChunkWriter.Factory {
                 final Int t = new Int();
                 typeInfo.arrowField().type(t);
                 return (ChunkWriter<T>) switch (t.bitWidth()) {
-                    case 8 -> ByteChunkWriter.getIdentity(true);
+                    case 8 -> new ByteChunkWriter<>((ObjectChunk<Any, Values> objChunk) -> {
+                        WritableByteChunk<Values> output = WritableByteChunk.makeWritableChunk(objChunk.size());
+                        for (int i = 0; i < objChunk.size(); i++) {
+                            Any val = objChunk.get(i);
+                            if (val != null) {
+                                output.set(i, (byte) val.asInt());
+                            }
+                        }
+                        return output;
+                    }, empty(), true);
                     case 16 -> {
                         if (t.isSigned()) {
                             yield new ShortChunkWriter<>((ObjectChunk<Any, Values> objChunk) -> {
@@ -105,8 +117,26 @@ public class WebChunkWriterFactory implements ChunkWriter.Factory {
                 FloatingPoint t = new FloatingPoint();
                 typeInfo.arrowField().type(t);
                 return (ChunkWriter<T>) switch (t.precision()) {
-                    case Precision.SINGLE -> FloatChunkWriter.getIdentity(true);
-                    case Precision.DOUBLE -> DoubleChunkWriter.getIdentity(true);
+                    case Precision.SINGLE -> new FloatChunkWriter<>((ObjectChunk<Any, Values> objChunk) -> {
+                        WritableFloatChunk<Values> output = WritableFloatChunk.makeWritableChunk(objChunk.size());
+                        for (int i = 0; i < objChunk.size(); i++) {
+                            Any val = objChunk.get(i);
+                            if (val != null) {
+                                output.set(i, (float) val.asDouble());
+                            }
+                        }
+                        return output;
+                    }, empty(), true);
+                    case Precision.DOUBLE -> new DoubleChunkWriter<>((ObjectChunk<Any, Values> objChunk) -> {
+                        WritableDoubleChunk<Values> output = WritableDoubleChunk.makeWritableChunk(objChunk.size());
+                        for (int i = 0; i < objChunk.size(); i++) {
+                            Any val = objChunk.get(i);
+                            if (val != null) {
+                                output.set(i, val.asDouble());
+                            }
+                        }
+                        return output;
+                    }, empty(), true);
                     default -> throw new UnsupportedOperationException(
                             "Unsupported floating point precision: " + t.precision());
                 };
