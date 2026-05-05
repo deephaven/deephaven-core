@@ -3,4 +3,4 @@ plugins {
     id 'io.deephaven.project.register'
 }
 
-description 'Engine Read Tracker: Engine Read Tracker for UPL, QPL, and QOPL'
+description 'Engine Read Tracker: I/O performance instrumentation for UPL, QPL, and QOPL'
