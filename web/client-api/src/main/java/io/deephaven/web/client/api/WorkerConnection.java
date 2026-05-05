@@ -23,7 +23,6 @@ import io.deephaven.extensions.barrage.BarrageMessageWriter;
 import io.deephaven.extensions.barrage.BarrageMessageWriterImpl;
 import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
 import io.deephaven.extensions.barrage.BarrageTypeInfo;
-import io.deephaven.extensions.barrage.DrainableByteArrayInputStream;
 import io.deephaven.extensions.barrage.chunk.ChunkWriter;
 import io.deephaven.flightjs.protocol.BrowserFlightServiceGrpc;
 import io.deephaven.proto.backplane.grpc.ApplicationServiceGrpc;
@@ -111,9 +110,7 @@ import org.apache.arrow.flatbuf.Field;
 import org.apache.arrow.flatbuf.KeyValue;
 import org.apache.arrow.flatbuf.Message;
 import org.apache.arrow.flatbuf.MessageHeader;
-import org.apache.arrow.flatbuf.MetadataVersion;
 import org.apache.arrow.flatbuf.Schema;
-import org.apache.arrow.flatbuf.Type;
 import org.apache.arrow.flight.impl.Flight;
 import org.apache.arrow.flight.impl.FlightServiceGrpc;
 
