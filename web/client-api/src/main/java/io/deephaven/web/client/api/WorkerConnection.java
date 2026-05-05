@@ -114,6 +114,7 @@ import org.apache.arrow.flatbuf.MessageHeader;
 import org.apache.arrow.flatbuf.MetadataVersion;
 import org.apache.arrow.flatbuf.Schema;
 import org.apache.arrow.flatbuf.Type;
+import org.apache.arrow.flight.impl.Flight;
 import org.apache.arrow.flight.impl.FlightServiceGrpc;
 
 import javax.annotation.Nullable;
@@ -1097,17 +1098,19 @@ public class WorkerConnection {
             Field field = Field.getRootAsField(b.dataBuffer());
             Class<?> componentType = null;
             if (types[i].endsWith("[]")) {
-                componentType = WebBarrageUtils.stringToClass(handler.deephavenType().substring(0, handler.deephavenType().length() - 2));
+                componentType = WebBarrageUtils
+                        .stringToClass(handler.deephavenType().substring(0, handler.deephavenType().length() - 2));
             }
             typeInfos[i] = BarrageTypeInfo.make(type, componentType, field);
 
-            //TODO extract to a method to handle parsing strings, don't assume we already have nicely formatted data
+            // TODO extract to a method to handle parsing strings, don't assume we already have nicely formatted data
             chunks[i] = ObjectChunk.chunkWrap(Js.uncheckedCast(data[i]));
         }
         return newTable(columnNames, types, typeInfos, chunks);
     }
 
-    public Promise<JsTable> newTable(String[] columnNames, String[] types, BarrageTypeInfo<Field>[] typeInfos, Chunk<Values>[] data) {
+    public Promise<JsTable> newTable(String[] columnNames, String[] types, BarrageTypeInfo<Field>[] typeInfos,
+            Chunk<Values>[] data) {
         // Store the data using a refernce we can clear out, so the data is garbage collected later
         // This means the table can only be created once, but that's probably what we want in this case anyway
         AtomicReference<Chunk<Values>[]> chunkRef = new AtomicReference<>(data);
@@ -1129,7 +1132,7 @@ public class WorkerConnection {
 
                     int nameOffset = fb.createString(columnName);
                     int typeOffset = writer.writeType(fb);
-                    int metadataOffset = Field.createCustomMetadataVector(fb, new int[]{
+                    int metadataOffset = Field.createCustomMetadataVector(fb, new int[] {
                             KeyValue.createKeyValue(fb, fb.createString("deephaven:type"),
                                     fb.createString(writer.deephavenType()))
                     });
@@ -1219,7 +1222,8 @@ public class WorkerConnection {
             };
             ChunkWriter.Factory f = new WebChunkWriterFactory();
 
-            listener.onNext(bmwFactory.getSchemaView(schemaWriter));
+            Flight.FlightDescriptor flightDescriptor = cts.getHandle().makeFlightDescriptor();
+            listener.onNext(bmwFactory.getSchemaView(schemaWriter, flightDescriptor));
 
             ChunkWriter<Chunk<Values>>[] chunkWriters = new ChunkWriter[columnNames.length];
             for (int i = 0; i < typeInfos.length; i++) {
@@ -1240,7 +1244,9 @@ public class WorkerConnection {
             msg.modColumnData = BarrageMessage.ZERO_MOD_COLUMNS;
             msg.shifted = RowSetShiftData.EMPTY;
 
-            BarrageMessageWriter barrageMessageWriter = bmwFactory.newMessageWriter(msg, chunkWriters, (bytes, nanos) -> {});
+            BarrageMessageWriter barrageMessageWriter =
+                    bmwFactory.newMessageWriter(msg, chunkWriters, (bytes, nanos) -> {
+                    });
             listener.onNext(barrageMessageWriter.getSnapshotView(BarrageSnapshotOptions.builder().build()));
 
             listener.onCompleted();
@@ -1252,33 +1258,34 @@ public class WorkerConnection {
     private StreamObserver<InputStream> doPut(StreamObserver<InputStream> observer) throws Exception {
         MethodDescriptor<InputStream, InputStream> nextDoPut = BrowserFlightServiceGrpc.getNextDoPutMethod().toBuilder(
                 new InputStreamMarshaller(),
-                new InputStreamMarshaller()
-        ).build();
+                new InputStreamMarshaller()).build();
         MethodDescriptor<InputStream, InputStream> openDoPut = BrowserFlightServiceGrpc.getOpenDoPutMethod().toBuilder(
                 new InputStreamMarshaller(),
-                new InputStreamMarshaller()
-        ).build();
+                new InputStreamMarshaller()).build();
 
         return bidiStream(observer, openDoPut, nextDoPut);
     }
 
-    private <Req, Resp, BrowserNext> StreamObserver<Req> bidiStream(StreamObserver<Resp> observer, MethodDescriptor<Req, Resp> openDoPut, MethodDescriptor<Req, BrowserNext> nextDoPut) throws Exception {
+    private <Req, Resp, BrowserNext> StreamObserver<Req> bidiStream(StreamObserver<Resp> observer,
+            MethodDescriptor<Req, Resp> openDoPut, MethodDescriptor<Req, BrowserNext> nextDoPut) throws Exception {
         AtomicInteger nextMsgId = new AtomicInteger();
         Context ctx = Context.current().withValue(ClientBrowserStreamInterceptor.TICKET_KEY, tickets.newTicketInt());
         return new StreamObserver<>() {
             private boolean started = false;
+
             @Override
             public void onNext(Req value) {
                 ctx.withValue(
-                        ClientBrowserStreamInterceptor.SEQUENCE_KEY, nextMsgId.getAndIncrement()
-                ).run(() -> {
-                    if (!started) {
-                        started = true;
-                        ClientCalls.asyncServerStreamingCall(flightServiceClient.getChannel().newCall(openDoPut, null), value, observer);
-                    } else {
-                        ClientCalls.asyncUnaryCall(flightServiceClient.getChannel().newCall(nextDoPut, null), value, Callbacks.ignore());
-                    }
-                });
+                        ClientBrowserStreamInterceptor.SEQUENCE_KEY, nextMsgId.getAndIncrement()).run(() -> {
+                            if (!started) {
+                                started = true;
+                                ClientCalls.asyncServerStreamingCall(
+                                        flightServiceClient.getChannel().newCall(openDoPut, null), value, observer);
+                            } else {
+                                ClientCalls.asyncUnaryCall(flightServiceClient.getChannel().newCall(nextDoPut, null),
+                                        value, Callbacks.ignore());
+                            }
+                        });
             }
 
             @Override
@@ -1290,10 +1297,10 @@ public class WorkerConnection {
             public void onCompleted() {
                 ctx.withValues(
                         ClientBrowserStreamInterceptor.SEQUENCE_KEY, nextMsgId.getAndIncrement(),
-                        ClientBrowserStreamInterceptor.HALFCLOSE_KEY, true
-                ).run(() -> {
-                    ClientCalls.asyncUnaryCall(flightServiceClient.getChannel().newCall(nextDoPut, null), null, Callbacks.ignore());
-                });
+                        ClientBrowserStreamInterceptor.HALFCLOSE_KEY, true).run(() -> {
+                            ClientCalls.asyncUnaryCall(flightServiceClient.getChannel().newCall(nextDoPut, null), null,
+                                    Callbacks.ignore());
+                        });
             };
         };
     }

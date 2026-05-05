@@ -44,7 +44,7 @@ public class WebBarrageMessage {
     public RangeSet rowsRemoved;
     public ShiftedRange[] shifted;
     public RowSetShiftData shifted2;
-    private  BarrageMessage message;
+    private BarrageMessage message;
 
     public AddColumnData[] addColumnData;
     public ModColumnData[] modColumnData;

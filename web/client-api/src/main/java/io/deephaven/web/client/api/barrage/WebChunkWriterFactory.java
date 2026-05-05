@@ -95,7 +95,7 @@ public class WebChunkWriterFactory implements ChunkWriter.Factory {
                     fixedSizeLength = list.listSize();
                 }
                 Class<?> componentType = typeInfo.componentType();
-                //TODO special case for byte[]?
+                // TODO special case for byte[]?
 
                 final BarrageTypeInfo<Field> componentTypeInfo = new BarrageTypeInfo<>(
                         componentType,
