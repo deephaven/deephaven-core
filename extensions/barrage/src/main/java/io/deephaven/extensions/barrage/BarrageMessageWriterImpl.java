@@ -8,7 +8,6 @@ import com.google.flatbuffers.FlatBufferBuilder;
 import com.google.protobuf.ByteStringAccess;
 import com.google.protobuf.CodedOutputStream;
 import com.google.protobuf.WireFormat;
-import gnu.trove.list.array.TIntArrayList;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
@@ -484,7 +483,7 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
             }
 
             // now add mod-column streams, and write the mod column indexes
-            final TIntArrayList modOffsets = new TIntArrayList(modColumnData.length);
+            final int[] modOffsets = new int[modColumnData.length];
             for (int ii = 0; ii < modColumnData.length; ++ii) {
                 final int myModRowOffset;
                 if (hasViewport) {
@@ -494,14 +493,13 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
                 } else {
                     myModRowOffset = modColumnData[ii].rowsModified.addToFlatBuffer(metadata);
                 }
-                modOffsets.add(BarrageModColumnMetadata.createBarrageModColumnMetadata(metadata, myModRowOffset));
+                modOffsets[ii] = BarrageModColumnMetadata.createBarrageModColumnMetadata(metadata, myModRowOffset);
             }
 
-            BarrageUpdateMetadata.startModColumnNodesVector(metadata, modOffsets.size());
-            modOffsets.forEachDescending(offset -> {
-                metadata.addOffset(offset);
-                return true;
-            });
+            BarrageUpdateMetadata.startModColumnNodesVector(metadata, modOffsets.length);
+            for (int ii = modOffsets.length - 1; ii >= 0; --ii) {
+                metadata.addOffset(modOffsets[ii]);
+            }
             final int nodesOffset = metadata.endVector();
 
             BarrageUpdateMetadata.startBarrageUpdateMetadata(metadata);
