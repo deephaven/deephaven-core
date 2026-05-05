@@ -1259,54 +1259,43 @@ public class WorkerConnection {
                 new InputStreamMarshaller()
         ).build();
 
-        return this.bidiStream(observer, openDoPut, nextDoPut);
+        return bidiStream(observer, openDoPut, nextDoPut);
     }
 
     private <Req, Resp, BrowserNext> StreamObserver<Req> bidiStream(StreamObserver<Resp> observer, MethodDescriptor<Req, Resp> openDoPut, MethodDescriptor<Req, BrowserNext> nextDoPut) throws Exception {
         AtomicInteger nextMsgId = new AtomicInteger();
         Context ctx = Context.current().withValue(ClientBrowserStreamInterceptor.TICKET_KEY, tickets.newTicketInt());
-        return ctx.withValue(
-                ClientBrowserStreamInterceptor.SEQUENCE_KEY, nextMsgId.getAndIncrement()
-        ).call(() -> {
-            return new StreamObserver<Req>() {
-                private boolean started = false;
-                @Override
-                public void onNext(Req value) {
-                    ctx.withValue(
-                            ClientBrowserStreamInterceptor.SEQUENCE_KEY, nextMsgId.getAndIncrement()
-                    ).run(() -> {
-                        if (!started) {
-                            started = true;
-                            ClientCalls.asyncServerStreamingCall(flightServiceClient.getChannel().newCall(openDoPut, null), value, observer);
-                        } else {
-                            ClientCalls.asyncUnaryCall(flightServiceClient.getChannel().newCall(nextDoPut, null), value, Callbacks.ignore());
-                        }
-                    });
-                }
+        return new StreamObserver<>() {
+            private boolean started = false;
+            @Override
+            public void onNext(Req value) {
+                ctx.withValue(
+                        ClientBrowserStreamInterceptor.SEQUENCE_KEY, nextMsgId.getAndIncrement()
+                ).run(() -> {
+                    if (!started) {
+                        started = true;
+                        ClientCalls.asyncServerStreamingCall(flightServiceClient.getChannel().newCall(openDoPut, null), value, observer);
+                    } else {
+                        ClientCalls.asyncUnaryCall(flightServiceClient.getChannel().newCall(nextDoPut, null), value, Callbacks.ignore());
+                    }
+                });
+            }
 
-                @Override
-                public void onError(Throwable t) {
-                    JsLog.error("Error in doPut stream", t);
-                }
+            @Override
+            public void onError(Throwable t) {
+                observer.onError(t);
+            }
 
-                @Override
-                public void onCompleted() {
-                    ctx.withValues(
-                            ClientBrowserStreamInterceptor.SEQUENCE_KEY, nextMsgId.getAndIncrement(),
-                            ClientBrowserStreamInterceptor.HALFCLOSE_KEY, true
-                    ).run(() -> {
-                        ClientCalls.asyncUnaryCall(flightServiceClient.getChannel().newCall(nextDoPut, null), null, Callbacks.ignore());
-                    });
-                };
+            @Override
+            public void onCompleted() {
+                ctx.withValues(
+                        ClientBrowserStreamInterceptor.SEQUENCE_KEY, nextMsgId.getAndIncrement(),
+                        ClientBrowserStreamInterceptor.HALFCLOSE_KEY, true
+                ).run(() -> {
+                    ClientCalls.asyncUnaryCall(flightServiceClient.getChannel().newCall(nextDoPut, null), null, Callbacks.ignore());
+                });
             };
-        });
-    }
-
-    private static ByteBuffer createMessage(FlatBufferBuilder payload, byte messageHeaderType, int messageHeaderOffset,
-            int bodyLength, int customMetadataOffset) {
-        payload.finish(Message.createMessage(payload, MetadataVersion.V5, messageHeaderType, messageHeaderOffset,
-                bodyLength, customMetadataOffset));
-        return payload.dataBuffer();
+        };
     }
 
     public Promise<JsTable> mergeTables(JsTable[] tables, HasEventHandling failHandler) {
