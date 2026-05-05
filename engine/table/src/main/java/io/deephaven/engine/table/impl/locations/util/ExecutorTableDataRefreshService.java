@@ -56,10 +56,10 @@ public class ExecutorTableDataRefreshService implements TableDataRefreshService 
 
         providerSubscriptions = Stats.makeItem(NAME_PREFIX + name, "providerSubscriptions", Counter.FACTORY).getValue();
         providerSubscriptionRefreshDurationNanos = Stats
-                .makeItem(NAME_PREFIX + name, "providerSubscriptionRefreshDurationNanos", State.FACTORY).getValue();
+                .makeItem(NAME_PREFIX + name, "providerSubscriptionRefreshDurationNanos", Counter.FACTORY).getValue();
         locationSubscriptions = Stats.makeItem(NAME_PREFIX + name, "locationSubscriptions", Counter.FACTORY).getValue();
         locationSubscriptionRefreshDurationNanos = Stats
-                .makeItem(NAME_PREFIX + name, "locationSubscriptionRefreshDurationNanos", State.FACTORY).getValue();
+                .makeItem(NAME_PREFIX + name, "locationSubscriptionRefreshDurationNanos", Counter.FACTORY).getValue();
     }
 
     @Override

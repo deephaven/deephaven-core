@@ -4,7 +4,7 @@
 package io.deephaven.extensions.s3;
 
 import io.deephaven.UncheckedDeephavenException;
-import io.deephaven.base.stats.State;
+import io.deephaven.base.stats.Counter;
 import io.deephaven.base.stats.Stats;
 import io.deephaven.base.stats.Value;
 import io.deephaven.base.verify.Assert;
@@ -80,7 +80,7 @@ class S3SeekableChannelProvider implements SeekableChannelsProvider {
                     "fileSizeCacheRef");
 
     private static final Value FETCH_FILE_SIZE_DURATION_NANOS =
-            Stats.makeItem("S3SeekableChannelProvider", "fetchFileSize", State.FACTORY).getValue();
+            Stats.makeItem("S3SeekableChannelProvider", "fetchFileSize", Counter.FACTORY).getValue();
 
     private volatile SoftReference<Map<URI, FileSizeInfo>> fileSizeCacheRef;
 

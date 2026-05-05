@@ -16,7 +16,7 @@ dependencies {
     implementation project(':Configuration')
     implementation project(':log-factory')
     implementation project(':util-thread')
-    implementation project(':engine-readtracker')
+    implementation project(':engine-read-tracker')
 
     implementation platform(libs.awssdk.bom)
     implementation libs.awssdk.s3

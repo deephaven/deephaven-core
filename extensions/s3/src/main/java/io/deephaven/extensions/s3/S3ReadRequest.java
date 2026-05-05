@@ -4,7 +4,7 @@
 package io.deephaven.extensions.s3;
 
 import io.deephaven.base.reference.CleanupReference;
-import io.deephaven.base.stats.State;
+import io.deephaven.base.stats.Counter;
 import io.deephaven.base.stats.Stats;
 import io.deephaven.base.stats.Value;
 import io.deephaven.base.verify.Require;
@@ -49,9 +49,9 @@ final class S3ReadRequest extends SoftReference<ByteBuffer>
         CleanupReference<ByteBuffer> {
 
     private static final Value READ_DURATION_NANOS =
-            Stats.makeItem("S3ReadRequest", "readDurationNanos", State.FACTORY).getValue();
+            Stats.makeItem("S3ReadRequest", "readDurationNanos", Counter.FACTORY).getValue();
     private static final Value READ_SIZE_BYTES =
-            Stats.makeItem("S3ReadRequest", "readSizeBytes", State.FACTORY).getValue();
+            Stats.makeItem("S3ReadRequest", "readSizeBytes", Counter.FACTORY).getValue();
 
     /**
      * A unique identifier for a request, consisting of the URI and fragment index.
@@ -284,7 +284,7 @@ final class S3ReadRequest extends SoftReference<ByteBuffer>
 
     @Override
     public void accept(final Boolean isComplete, final Throwable throwable) {
-        // we record the endNanos, but do not sample into the QueryPerformanceRecorderState as this method is dispatched
+        // we record the endNanos, but do not sample into the QueryPerformanceReadTracker as this method is dispatched
         // asynchronously and we need to account for the read on the thread that is waiting for it. This in part means
         // that any read-ahead performed but not waited for is not accounted for in our read statistics for the query
         // or update. We do however include all of the requests in our statistics objects.

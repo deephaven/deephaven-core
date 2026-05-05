@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.util.file;
 
+import io.deephaven.base.stats.Counter;
 import io.deephaven.base.stats.State;
 import io.deephaven.base.stats.Stats;
 import io.deephaven.base.stats.Value;
@@ -47,24 +48,26 @@ import java.util.function.Supplier;
  */
 public final class FileHandle implements SeekableByteChannel {
 
+    private static final Value OPEN_DURATION_NANOS =
+            Stats.makeItem("FileHandle", "open", Counter.FACTORY).getValue();
     private static final Value SIZE_DURATION_NANOS =
-            Stats.makeItem("FileHandle", "sizeDurationNanos", State.FACTORY).getValue();
+            Stats.makeItem("FileHandle", "sizeDurationNanos", Counter.FACTORY).getValue();
     private static final Value GET_POSITION_DURATION_NANOS =
-            Stats.makeItem("FileHandle", "getPositionDurationNanos", State.FACTORY).getValue();
+            Stats.makeItem("FileHandle", "getPositionDurationNanos", Counter.FACTORY).getValue();
     private static final Value SET_POSITION_DURATION_NANOS =
-            Stats.makeItem("FileHandle", "setPositionDurationNanos", State.FACTORY).getValue();
+            Stats.makeItem("FileHandle", "setPositionDurationNanos", Counter.FACTORY).getValue();
     private static final Value READ_DURATION_NANOS =
-            Stats.makeItem("FileHandle", "readDurationNanos", State.FACTORY).getValue();
+            Stats.makeItem("FileHandle", "readDurationNanos", Counter.FACTORY).getValue();
     private static final Value READ_SIZE_BYTES =
-            Stats.makeItem("FileHandle", "readSizeBytes", State.FACTORY).getValue();
+            Stats.makeItem("FileHandle", "readSizeBytes", Counter.FACTORY).getValue();
     private static final Value WRITE_DURATION_NANOS =
-            Stats.makeItem("FileHandle", "writeDurationNanos", State.FACTORY).getValue();
+            Stats.makeItem("FileHandle", "writeDurationNanos", Counter.FACTORY).getValue();
     private static final Value WRITE_SIZE_BYTES =
-            Stats.makeItem("FileHandle", "writeSizeBytes", State.FACTORY).getValue();
+            Stats.makeItem("FileHandle", "writeSizeBytes", Counter.FACTORY).getValue();
     private static final Value TRUNCATE_DURATION_NANOS =
-            Stats.makeItem("FileHandle", "truncateDurationNanos", State.FACTORY).getValue();
+            Stats.makeItem("FileHandle", "truncateDurationNanos", Counter.FACTORY).getValue();
     private static final Value FORCE_DURATION_NANOS =
-            Stats.makeItem("FileHandle", "forceDurationNanos", State.FACTORY).getValue();
+            Stats.makeItem("FileHandle", "forceDurationNanos", Counter.FACTORY).getValue();
 
     static final String SAFETY_CHECK_PROPERTY = "FileHandle.safetyCheckEnabled";
 
@@ -100,7 +103,15 @@ public final class FileHandle implements SeekableByteChannel {
             @NotNull final Supplier<Runnable> postCloseProcedureSupplier,
             @NotNull final OpenOption... options)
             throws IOException {
-        final FileChannel fileChannel = FileChannel.open(path, options);
+        final long start = System.nanoTime();
+        final FileChannel fileChannel;
+        try {
+            fileChannel = FileChannel.open(path, options);
+        } finally {
+            final long duration = System.nanoTime() - start;
+            OPEN_DURATION_NANOS.sample(duration);
+            QueryPerformanceReadTracker.recordMetadataOperation(duration);
+        }
         final Object fileKey;
         if (!SAFETY_CHECK_ENABLED) {
             fileKey = null;

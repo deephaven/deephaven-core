@@ -3,6 +3,7 @@
 //
 package io.deephaven.parquet.table.layout;
 
+import io.deephaven.base.stats.Counter;
 import io.deephaven.base.stats.State;
 import io.deephaven.base.stats.Stats;
 import io.deephaven.base.stats.Value;
@@ -34,7 +35,7 @@ import static io.deephaven.parquet.base.ParquetFileReader.FILE_URI_SCHEME;
 public final class ParquetFlatPartitionedLayout implements TableLocationKeyFinder<ParquetTableLocationKey> {
 
     private static final Value LIST_DURATION_NANOS =
-            Stats.makeItem("ParquetFlatPartitionedLayout", "list", State.FACTORY).getValue();
+            Stats.makeItem("ParquetFlatPartitionedLayout", "list", Counter.FACTORY).getValue();
 
     private final URI tableRootDirectory;
     private final Map<URI, ParquetTableLocationKey> cache;

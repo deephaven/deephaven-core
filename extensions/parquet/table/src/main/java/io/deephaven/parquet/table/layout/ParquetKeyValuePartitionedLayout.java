@@ -4,6 +4,7 @@
 package io.deephaven.parquet.table.layout;
 
 import io.deephaven.api.util.NameValidator;
+import io.deephaven.base.stats.Counter;
 import io.deephaven.base.stats.State;
 import io.deephaven.base.stats.Stats;
 import io.deephaven.base.stats.Value;
@@ -54,7 +55,7 @@ public class ParquetKeyValuePartitionedLayout
     private final SeekableChannelsProvider channelsProvider;
 
     private static final Value WALK_DURATION_NANOS =
-            Stats.makeItem("ParquetKeyValuePartitionedLayout", "walk", State.FACTORY).getValue();
+            Stats.makeItem("ParquetKeyValuePartitionedLayout", "walk", Counter.FACTORY).getValue();
 
     /**
      * Create a new {@link ParquetKeyValuePartitionedLayout} for the given {@code tableRootDirectory} and

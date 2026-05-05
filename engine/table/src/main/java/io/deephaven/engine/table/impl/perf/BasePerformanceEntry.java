@@ -50,8 +50,7 @@ public class BasePerformanceEntry implements LogOutputAppendable {
         startAllocatedBytes = ThreadProfiler.DEFAULT.getCurrentThreadAllocatedBytes();
         startPoolAllocatedBytes = QueryPerformanceRecorderState.getPoolAllocatedBytesForCurrentThread();
 
-        final QueryPerformanceReadTracker.ReadTracker readTracker =
-                QueryPerformanceReadTracker.getReadTrackerForCurrentThread();
+        final QueryPerformanceReadTracker readTracker = QueryPerformanceReadTracker.forCurrentThread();
 
         startDataReadNanos = readTracker.getDataReadNanos();
         startDataReadCount = readTracker.getDataReadCount();
@@ -77,8 +76,7 @@ public class BasePerformanceEntry implements LogOutputAppendable {
         allocatedBytes = plus(allocatedBytes,
                 minus(ThreadProfiler.DEFAULT.getCurrentThreadAllocatedBytes(), startAllocatedBytes));
 
-        final QueryPerformanceReadTracker.ReadTracker readTracker =
-                QueryPerformanceReadTracker.getReadTrackerForCurrentThread();
+        final QueryPerformanceReadTracker readTracker = QueryPerformanceReadTracker.forCurrentThread();
 
         dataReadNanos += readTracker.getDataReadNanos() - startDataReadNanos;
         dataReadCount += readTracker.getDataReadCount() - startDataReadCount;
