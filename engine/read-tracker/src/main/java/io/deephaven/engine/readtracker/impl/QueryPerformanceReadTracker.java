@@ -27,6 +27,9 @@ public class QueryPerformanceReadTracker {
     private long metadataOperationCount;
     private long metadataOperationNanos;
 
+    // static use only
+    private QueryPerformanceReadTracker() {}
+
     /**
      * Record a data read operation. Accumulates into the current thread's cumulative counters.
      *
