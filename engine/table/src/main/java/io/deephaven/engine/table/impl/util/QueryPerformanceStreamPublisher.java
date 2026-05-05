@@ -38,11 +38,6 @@ class QueryPerformanceStreamPublisher implements StreamPublisher {
             ColumnDefinition.ofLong("CollectionTimeNanos"),
             ColumnDefinition.ofLong("AllocatedBytes"),
             ColumnDefinition.ofLong("PoolAllocatedBytes"),
-            ColumnDefinition.ofLong("DataReadNanos"),
-            ColumnDefinition.ofLong("DataReadCount"),
-            ColumnDefinition.ofLong("DataReadBytes"),
-            ColumnDefinition.ofLong("MetadataOperationNanos"),
-            ColumnDefinition.ofLong("MetadataOperationCount"),
             ColumnDefinition.ofBoolean("WasInterrupted"),
             ColumnDefinition.ofString("Exception"),
             ColumnDefinition.ofString("AuthContext"),
@@ -73,85 +68,69 @@ class QueryPerformanceStreamPublisher implements StreamPublisher {
     public synchronized void add(
             @NotNull final QueryPerformanceNugget nugget,
             @Nullable final Exception exception) {
-        int chunkIdx = 0;
 
         // ColumnDefinition.ofLong("EvaluationNumber")
-        chunks[chunkIdx++].asWritableLongChunk().add(nugget.getEvaluationNumber());
+        chunks[0].asWritableLongChunk().add(nugget.getEvaluationNumber());
 
         // ColumnDefinition.ofLong("ParentEvaluationNumber")
-        chunks[chunkIdx++].asWritableLongChunk().add(nugget.getParentEvaluationNumber());
+        chunks[1].asWritableLongChunk().add(nugget.getParentEvaluationNumber());
 
         // ColumnDefinition.ofString("SessionId")
-        chunks[chunkIdx++].<String>asWritableObjectChunk().add(nugget.getSessionId());
+        chunks[2].<String>asWritableObjectChunk().add(nugget.getSessionId());
 
         // ColumnDefinition.ofString("Description")
-        chunks[chunkIdx++].<String>asWritableObjectChunk().add(nugget.getDescription());
+        chunks[3].<String>asWritableObjectChunk().add(nugget.getDescription());
 
         // ColumnDefinition.ofTime("StartTime");
-        chunks[chunkIdx++].asWritableLongChunk().add(nugget.getStartClockEpochNanos());
+        chunks[4].asWritableLongChunk().add(nugget.getStartClockEpochNanos());
 
         // ColumnDefinition.ofTime("EndTime")
-        chunks[chunkIdx++].asWritableLongChunk().add(nugget.getEndClockEpochNanos());
+        chunks[5].asWritableLongChunk().add(nugget.getEndClockEpochNanos());
 
         // ColumnDefinition.ofLong("UsageNanos")
-        chunks[chunkIdx++].asWritableLongChunk().add(nugget.getUsageNanos());
+        chunks[6].asWritableLongChunk().add(nugget.getUsageNanos());
 
         // ColumnDefinition.ofLong("CpuNanos")
-        chunks[chunkIdx++].asWritableLongChunk().add(nugget.getCpuNanos());
+        chunks[7].asWritableLongChunk().add(nugget.getCpuNanos());
 
         // ColumnDefinition.ofLong("UserCpuNanos")
-        chunks[chunkIdx++].asWritableLongChunk().add(nugget.getUserCpuNanos());
+        chunks[8].asWritableLongChunk().add(nugget.getUserCpuNanos());
 
         // ColumnDefinition.ofLong("FreeMemory")
-        chunks[chunkIdx++].asWritableLongChunk().add(nugget.getEndFreeMemory());
+        chunks[9].asWritableLongChunk().add(nugget.getEndFreeMemory());
 
         // ColumnDefinition.ofLong("TotalMemory")
-        chunks[chunkIdx++].asWritableLongChunk().add(nugget.getEndTotalMemory());
+        chunks[10].asWritableLongChunk().add(nugget.getEndTotalMemory());
 
         // ColumnDefinition.ofLong("FreeMemoryChange")
-        chunks[chunkIdx++].asWritableLongChunk().add(nugget.getDiffFreeMemory());
+        chunks[11].asWritableLongChunk().add(nugget.getDiffFreeMemory());
 
         // ColumnDefinition.ofLong("TotalMemoryChange")
-        chunks[chunkIdx++].asWritableLongChunk().add(nugget.getDiffTotalMemory());
+        chunks[12].asWritableLongChunk().add(nugget.getDiffTotalMemory());
 
         // ColumnDefinition.ofLong("Collections")
-        chunks[chunkIdx++].asWritableLongChunk().add(nugget.getDiffCollections());
+        chunks[13].asWritableLongChunk().add(nugget.getDiffCollections());
 
         // ColumnDefinition.ofLong("CollectionTimeNanos")
-        chunks[chunkIdx++].asWritableLongChunk().add(nugget.getDiffCollectionTimeNanos());
+        chunks[14].asWritableLongChunk().add(nugget.getDiffCollectionTimeNanos());
 
         // ColumnDefinition.ofLong("AllocatedBytes")
-        chunks[chunkIdx++].asWritableLongChunk().add(nugget.getAllocatedBytes());
+        chunks[15].asWritableLongChunk().add(nugget.getAllocatedBytes());
 
         // ColumnDefinition.ofLong("PoolAllocatedBytes")
-        chunks[chunkIdx++].asWritableLongChunk().add(nugget.getPoolAllocatedBytes());
-
-        // ColumnDefinition.ofLong("DataReadNanos")
-        chunks[chunkIdx++].asWritableLongChunk().add(nugget.getDataReadNanos());
-
-        // ColumnDefinition.ofLong("DataReadCount")
-        chunks[chunkIdx++].asWritableLongChunk().add(nugget.getDataReadCount());
-
-        // ColumnDefinition.ofLong("DataReadBytes")
-        chunks[chunkIdx++].asWritableLongChunk().add(nugget.getDataReadBytes());
-
-        // ColumnDefinition.ofLong("MetadataOperationNanos")
-        chunks[chunkIdx++].asWritableLongChunk().add(nugget.getMetadataOperationNanos());
-
-        // ColumnDefinition.ofLong("MetadataOperationCount")
-        chunks[chunkIdx++].asWritableLongChunk().add(nugget.getMetadataOperationCount());
+        chunks[16].asWritableLongChunk().add(nugget.getPoolAllocatedBytes());
 
         // ColumnDefinition.ofBoolean("WasInterrupted")
-        chunks[chunkIdx++].asWritableByteChunk().add(BooleanUtils.booleanAsByte(nugget.wasInterrupted()));
+        chunks[17].asWritableByteChunk().add(BooleanUtils.booleanAsByte(nugget.wasInterrupted()));
 
         // ColumnDefinition.ofString("Exception")
-        chunks[chunkIdx++].<String>asWritableObjectChunk().add(exception == null ? null : exception.getMessage());
+        chunks[18].<String>asWritableObjectChunk().add(exception == null ? null : exception.getMessage());
 
         // ColumnDefinition.ofString("AuthContext")
-        chunks[chunkIdx++].<String>asWritableObjectChunk().add(Objects.toString(nugget.getAuthContext()));
+        chunks[19].<String>asWritableObjectChunk().add(Objects.toString(nugget.getAuthContext()));
 
         // ColumnDefinition.ofLong("WorkerHeapSize")
-        chunks[chunkIdx++].asWritableLongChunk().add(heapSize);
+        chunks[20].asWritableLongChunk().add(heapSize);
 
         if (chunks[0].size() == CHUNK_SIZE) {
             flushInternal();

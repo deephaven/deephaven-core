@@ -3,7 +3,6 @@
 //
 package io.deephaven.extensions.s3;
 
-import io.deephaven.engine.readtracker.impl.QueryPerformanceReadTracker;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.channel.SeekableChannelContext;
@@ -113,7 +112,6 @@ final class S3ReadContext extends BaseSeekableChannelContext implements Seekable
             final long totalRemainingFragments = numFragments - firstFragmentIx - 1;
             readAhead = Math.min(Math.max(impliedReadAhead, desiredReadAhead), totalRemainingFragments);
         }
-        final long startNanos = System.nanoTime();
         int filled;
         {
             // Hold a reference to the first request to ensure it is not evicted from the cache
@@ -133,10 +131,6 @@ final class S3ReadContext extends BaseSeekableChannelContext implements Seekable
             // non-blocking since we know isDone
             filled += readAheadRequest.fill(position + filled, dest);
         }
-        // We only record the time we spent on blocking reads. We record the bytes that we've read either in the first
-        // fragment or in the non-blocking read-ahead fragments.
-        final long durationNanos = System.nanoTime() - startNanos;
-        QueryPerformanceReadTracker.recordRead(durationNanos, filled);
         return filled;
     }
 
