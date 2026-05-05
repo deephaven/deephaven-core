@@ -53,9 +53,11 @@ import java.io.ByteArrayInputStream;
 import java.io.DataInput;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.Period;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -716,6 +718,12 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
                 new LocalTimeIdentityValidator());
     }
 
+    public void testDurationSerialization() throws IOException {
+        testRoundTripSerialization(SpecialMode.NONE, OPT_DEFAULT, Duration.class,
+                BarrageColumnRoundTripTest::initDurationChunk,
+                new DurationIdentityValidator());
+    }
+
     private static class Unique {
         final int value;
 
@@ -752,12 +760,13 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         final WritableObjectChunk<String[], Values> chunk = untypedChunk.asWritableObjectChunk();
 
         for (int i = 0; i < chunk.size(); ++i) {
-            final int j = random.nextInt(20) - 1;
-            if (j < 0) {
+            final boolean setNull = random.nextDouble() < 0.05;
+            if (setNull) {
                 chunk.set(i, null);
             } else {
-                final String[] entry = new String[j];
-                for (int k = 0; k < j; ++k) {
+                final int arrLen = random.nextInt(20);
+                final String[] entry = new String[arrLen];
+                for (int k = 0; k < arrLen; ++k) {
                     entry[k] = i + ":" + k;
                 }
                 chunk.set(i, entry);
@@ -770,12 +779,13 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         final WritableObjectChunk<long[], Values> chunk = untypedChunk.asWritableObjectChunk();
 
         for (int i = 0; i < chunk.size(); ++i) {
-            final int j = random.nextInt(20) - 1;
-            if (j < 0) {
+            final boolean setNull = random.nextDouble() < 0.05;
+            if (setNull) {
                 chunk.set(i, null);
             } else {
-                final long[] entry = new long[j];
-                for (int k = 0; k < j; ++k) {
+                final int arrLen = random.nextInt(20);
+                final long[] entry = new long[arrLen];
+                for (int k = 0; k < arrLen; ++k) {
                     entry[k] = i * 10000L + k;
                 }
                 chunk.set(i, entry);
@@ -788,12 +798,13 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         final WritableObjectChunk<LongVector, Values> chunk = untypedChunk.asWritableObjectChunk();
 
         for (int i = 0; i < chunk.size(); ++i) {
-            final int j = random.nextInt(20) - 1;
-            if (j < 0) {
+            final boolean setNull = random.nextDouble() < 0.05;
+            if (setNull) {
                 chunk.set(i, null);
             } else {
-                final long[] entry = new long[j];
-                for (int k = 0; k < j; ++k) {
+                final int arrLen = random.nextInt(20);
+                final long[] entry = new long[arrLen];
+                for (int k = 0; k < arrLen; ++k) {
                     entry[k] = i * 10000L + k;
                 }
                 chunk.set(i, new LongVectorDirect(entry));
@@ -806,8 +817,8 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         final WritableObjectChunk<LocalDate, Values> chunk = untypedChunk.asWritableObjectChunk();
 
         for (int i = 0; i < chunk.size(); ++i) {
-            final int j = random.nextInt(20) - 1;
-            if (j < 0) {
+            final boolean setNull = random.nextDouble() < 0.05;
+            if (setNull) {
                 chunk.set(i, null);
             } else {
                 chunk.set(i, LocalDate.ofEpochDay((i * 17L) % 365));
@@ -820,11 +831,25 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         final WritableObjectChunk<LocalTime, Values> chunk = untypedChunk.asWritableObjectChunk();
 
         for (int i = 0; i < chunk.size(); ++i) {
-            final int j = random.nextInt(20) - 1;
-            if (j < 0) {
+            final boolean setNull = random.nextDouble() < 0.05;
+            if (setNull) {
                 chunk.set(i, null);
             } else {
                 chunk.set(i, LocalTime.ofNanoOfDay(i * 1700000L));
+            }
+        }
+    }
+
+    private static void initDurationChunk(final WritableChunk<Values> untypedChunk) {
+        final Random random = new Random(0);
+        final WritableObjectChunk<Duration, Values> chunk = untypedChunk.asWritableObjectChunk();
+
+        for (int i = 0; i < chunk.size(); ++i) {
+            final boolean setNull = random.nextDouble() < 0.05;
+            if (setNull) {
+                chunk.set(i, null);
+            } else {
+                chunk.set(i, Duration.ofSeconds(i * 3600L, i * 123456789L % 1_000_000_000));
             }
         }
     }
@@ -1001,6 +1026,30 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
                     Assert.eqNull(computed.get(offset + off.getAndIncrement()), "computed");
                 } else {
                     Assert.equals(lt, "lt", computed.get(offset + off.getAndIncrement()), "computed");
+                }
+            });
+        }
+    }
+
+    private static final class DurationIdentityValidator implements Validator {
+        @Override
+        public void assertExpected(
+                final WritableChunk<Values> untypedOriginal,
+                final WritableChunk<Values> unTypedComputed,
+                @Nullable RowSequence subset,
+                final int offset) {
+            final WritableObjectChunk<Duration, Values> original = untypedOriginal.asWritableObjectChunk();
+            final WritableObjectChunk<Duration, Values> computed = unTypedComputed.asWritableObjectChunk();
+            if (subset == null) {
+                subset = RowSetFactory.flat(original.size());
+            }
+            final MutableInt off = new MutableInt();
+            subset.forAllRowKeys(i -> {
+                final Duration d = original.get((int) i);
+                if (d == null) {
+                    Assert.eqNull(computed.get(offset + off.getAndIncrement()), "computed");
+                } else {
+                    Assert.equals(d, "d", computed.get(offset + off.getAndIncrement()), "computed");
                 }
             });
         }

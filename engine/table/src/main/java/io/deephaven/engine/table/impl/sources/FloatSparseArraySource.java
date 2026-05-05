@@ -48,14 +48,18 @@ import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.*;
 public class FloatSparseArraySource extends SparseArrayColumnSource<Float>
         implements MutableColumnSourceGetDefaults.ForFloat /* MIXIN_IMPLS */ {
     // region recyclers
-    private static final SoftRecycler<float[]> recycler = new SoftRecycler<>(SparseArrayColumnSourceConfiguration.FLOAT_RECYCLER_CAPACITY,
-            () -> new float[BLOCK_SIZE], null);
-    private static final SoftRecycler<float[][]> recycler2 = new SoftRecycler<>(SparseArrayColumnSourceConfiguration.FLOAT_RECYCLER_CAPACITY2,
-            () -> new float[BLOCK2_SIZE][], null);
-    private static final SoftRecycler<FloatOneOrN.Block2[]> recycler1 = new SoftRecycler<>(SparseArrayColumnSourceConfiguration.FLOAT_RECYCLER_CAPACITY1,
-            () -> new FloatOneOrN.Block2[BLOCK1_SIZE], null);
-    private static final SoftRecycler<FloatOneOrN.Block1[]> recycler0 = new SoftRecycler<>(SparseArrayColumnSourceConfiguration.FLOAT_RECYCLER_CAPACITY0,
-            () -> new FloatOneOrN.Block1[BLOCK0_SIZE], null);
+    private static final SoftRecycler<float[]> recycler =
+            new SoftRecycler<>(SparseArrayColumnSourceConfiguration.FLOAT_RECYCLER_CAPACITY,
+                    () -> new float[BLOCK_SIZE], null);
+    private static final SoftRecycler<float[][]> recycler2 =
+            new SoftRecycler<>(SparseArrayColumnSourceConfiguration.FLOAT_RECYCLER_CAPACITY2,
+                    () -> new float[BLOCK2_SIZE][], null);
+    private static final SoftRecycler<FloatOneOrN.Block2[]> recycler1 =
+            new SoftRecycler<>(SparseArrayColumnSourceConfiguration.FLOAT_RECYCLER_CAPACITY1,
+                    () -> new FloatOneOrN.Block2[BLOCK1_SIZE], null);
+    private static final SoftRecycler<FloatOneOrN.Block1[]> recycler0 =
+            new SoftRecycler<>(SparseArrayColumnSourceConfiguration.FLOAT_RECYCLER_CAPACITY0,
+                    () -> new FloatOneOrN.Block1[BLOCK0_SIZE], null);
     // endregion recyclers
 
     /**

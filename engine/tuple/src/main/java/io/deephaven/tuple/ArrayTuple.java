@@ -5,9 +5,9 @@ package io.deephaven.tuple;
 
 import io.deephaven.tuple.serialization.SerializationUtils;
 import io.deephaven.tuple.serialization.StreamingExternalizable;
-import gnu.trove.map.TIntObjectMap;
 import io.deephaven.util.compare.ObjectComparisons;
 import io.deephaven.util.type.ArrayTypeUtils;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
@@ -132,7 +132,7 @@ public class ArrayTuple
 
     @Override
     public void writeExternalStreaming(@NotNull final ObjectOutput out,
-            @NotNull final TIntObjectMap<SerializationUtils.Writer> cachedWriters) throws IOException {
+            @NotNull final Int2ObjectMap<SerializationUtils.Writer> cachedWriters) throws IOException {
         final int length = elements.length;
         out.writeInt(length);
         for (int ei = 0; ei < length; ++ei) {
@@ -142,7 +142,7 @@ public class ArrayTuple
 
     @Override
     public void readExternalStreaming(@NotNull final ObjectInput in,
-            @NotNull final TIntObjectMap<SerializationUtils.Reader> cachedReaders) throws Exception {
+            @NotNull final Int2ObjectMap<SerializationUtils.Reader> cachedReaders) throws Exception {
         final int inLength = in.readInt();
         final Object[] inElements = new Object[inLength];
         for (int ei = 0; ei < inLength; ++ei) {

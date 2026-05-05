@@ -114,9 +114,23 @@ abstract class RegionedColumnSourceBase<DATA_TYPE, ATTR extends Values, REGION_T
             final JobScheduler jobScheduler,
             final LongConsumer onComplete,
             final Consumer<Exception> onError) {
-        // Delegate to the manager.
-        manager.estimatePushdownFilterCost(filter, selection, usePrev, context, jobScheduler,
-                onComplete, onError);
+        final RegionedPushdownFilterContext filterContext = (RegionedPushdownFilterContext) context;
+        manager.estimatePushdownFilterCostHelper(
+                selection,
+                "RegionedColumnSourceBase#estimatePushdownFilterCost",
+                jobScheduler,
+                (regionIndex, location, shiftedRowSet, onCost, nec) -> {
+                    getRegion(regionIndex).estimatePushdownFilterCost(
+                            filter,
+                            shiftedRowSet,
+                            usePrev,
+                            filterContext,
+                            jobScheduler,
+                            onCost,
+                            nec);
+                },
+                onComplete,
+                onError);
     }
 
     @Override
@@ -129,9 +143,24 @@ abstract class RegionedColumnSourceBase<DATA_TYPE, ATTR extends Values, REGION_T
             final JobScheduler jobScheduler,
             final Consumer<PushdownResult> onComplete,
             final Consumer<Exception> onError) {
-        // Delegate to the manager.
-        manager.pushdownFilter(filter, selection, usePrev, context, costCeiling, jobScheduler,
-                onComplete, onError);
+        final RegionedPushdownFilterContext filterContext = (RegionedPushdownFilterContext) context;
+        manager.pushdownFilterHelper(
+                selection,
+                "RegionedColumnSourceBase#pushdownFilter",
+                jobScheduler,
+                (regionIndex, location, shiftedRowSet, onResult, nec) -> {
+                    getRegion(regionIndex).pushdownFilter(
+                            filter,
+                            shiftedRowSet,
+                            usePrev,
+                            filterContext,
+                            costCeiling,
+                            jobScheduler,
+                            onResult,
+                            nec);
+                },
+                onComplete,
+                onError);
     }
 
     @Override

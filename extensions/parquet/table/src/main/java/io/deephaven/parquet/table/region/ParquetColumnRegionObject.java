@@ -3,6 +3,7 @@
 //
 package io.deephaven.parquet.table.region;
 
+import io.deephaven.engine.table.impl.locations.ColumnLocation;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.sources.regioned.ColumnRegionLong;
 import io.deephaven.engine.table.impl.sources.regioned.ColumnRegionObject;
@@ -31,8 +32,9 @@ public final class ParquetColumnRegionObject<DATA_TYPE, ATTR extends Any> extend
 
     public ParquetColumnRegionObject(@NotNull final ColumnChunkPageStore<ATTR> columnChunkPageStore,
             @NotNull final Supplier<ColumnRegionLong<DictionaryKeys>> dictionaryKeysRegionSupplier,
-            @NotNull final Supplier<ColumnRegionObject<DATA_TYPE, ATTR>> dictionaryValuesRegionSupplier) {
-        super(columnChunkPageStore.mask(), columnChunkPageStore);
+            @NotNull final Supplier<ColumnRegionObject<DATA_TYPE, ATTR>> dictionaryValuesRegionSupplier,
+            @NotNull final ColumnLocation columnLocation) {
+        super(columnChunkPageStore.mask(), columnChunkPageStore, columnLocation);
         this.dictionaryKeysRegionSupplier = dictionaryKeysRegionSupplier;
         this.dictionaryValuesRegionSupplier = dictionaryValuesRegionSupplier;
     }

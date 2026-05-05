@@ -36,6 +36,8 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static io.deephaven.engine.table.impl.PushdownResult.UNSUPPORTED_ACTION_COST;
+
 /**
  * The AbstractFilterExecution incorporates the idea that we have an added and modified RowSet to filter and that there
  * are a resulting pair of added and modified rows representing what was filtered. There is also the possibility that we
@@ -210,7 +212,7 @@ abstract class AbstractFilterExecution {
         /**
          * The cost of the pushdown filter operation.
          */
-        public long pushdownFilterCost = Long.MAX_VALUE;
+        public long pushdownFilterCost = UNSUPPORTED_ACTION_COST;
         /**
          * The result of the pushdown filter operation, or null if pushdown is not supported.
          */
@@ -250,12 +252,13 @@ abstract class AbstractFilterExecution {
 
         /**
          * Schedules pushdown filter cost estimation for {@link #pushdownMatcher}. After {@link #pushdownFilterCost} has
-         * been set (or set to {@link Long#MAX_VALUE} if pushdown is not supported), {@code onComplete} will be called.
+         * been set (or set to {@link PushdownResult#UNSUPPORTED_ACTION_COST} if pushdown is not supported),
+         * {@code onComplete} will be called.
          */
         public void scheduleUpdatePushdownFilterCost(final RowSet selection, final Runnable onComplete,
                 final Consumer<Exception> onError) {
             if (pushdownMatcher == null) {
-                pushdownFilterCost = Long.MAX_VALUE;
+                pushdownFilterCost = UNSUPPORTED_ACTION_COST;
                 onComplete.run();
                 return;
             }
@@ -443,7 +446,7 @@ abstract class AbstractFilterExecution {
         };
 
         final RowSet input = localInput.get();
-        if (sf.pushdownMatcher != null && sf.pushdownFilterCost < Long.MAX_VALUE) {
+        if (sf.pushdownMatcher != null && sf.pushdownFilterCost != UNSUPPORTED_ACTION_COST) {
             // Execute the pushdown filter and return.
             sf.pushdownMatcher.pushdownFilter(sf.filter, input, usePrev, sf.context,
                     costCeiling, jobScheduler(), onPushdownComplete, filterNec);
