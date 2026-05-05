@@ -6,6 +6,7 @@ import io.deephaven.web.shared.data.Range;
 import io.deephaven.web.shared.data.RangeSet;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Iterator;
 import java.util.PrimitiveIterator;
 
 final class WebRowSetImpl implements RowSet, WritableRowSet {
@@ -60,7 +61,10 @@ final class WebRowSetImpl implements RowSet, WritableRowSet {
     }
     @Override
     public WritableRowSet intersect(RowSet rowSet) {
-        throw new UnsupportedOperationException("intersect");
+        RangeSet result = new RangeSet();
+        result.addRangeSet(((WebRowSetImpl)rowSet).rangeSet);
+        result.addRangeSet(rangeSet);
+        return new WebRowSetImpl(result);
     }
 
     @Override
@@ -100,7 +104,50 @@ final class WebRowSetImpl implements RowSet, WritableRowSet {
 
     @Override
     public RangeIterator rangeIterator() {
-        throw new UnsupportedOperationException("rangeIterator");
+        java.util.Iterator<Range> iter = rangeSet.rangeIterator();
+        return new RangeIterator() {
+            long start = -1;
+            private Range current;
+            @Override
+            public void close() {
+
+            }
+
+            @Override
+            public boolean hasNext() {
+                return iter.hasNext();
+            }
+
+            @Override
+            public boolean advance(long v) {
+                throw new UnsupportedOperationException("advance");
+            }
+
+            @Override
+            public void postpone(long v) {
+                start = v;
+            }
+
+            @Override
+            public long currentRangeStart() {
+                if (start == -1) {
+                    return start;
+                }
+                return current.getFirst();
+            }
+
+            @Override
+            public long currentRangeEnd() {
+                return current.getLast();
+            }
+
+            @Override
+            public long next() {
+                current = iter.next();
+                start = -1;
+                return currentRangeStart();
+            }
+        };
     }
 
     @Override

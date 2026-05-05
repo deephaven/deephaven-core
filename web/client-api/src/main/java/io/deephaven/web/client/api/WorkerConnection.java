@@ -113,6 +113,7 @@ import org.apache.arrow.flatbuf.Message;
 import org.apache.arrow.flatbuf.MessageHeader;
 import org.apache.arrow.flatbuf.MetadataVersion;
 import org.apache.arrow.flatbuf.Schema;
+import org.apache.arrow.flatbuf.Type;
 import org.apache.arrow.flight.impl.FlightServiceGrpc;
 
 import javax.annotation.Nullable;
@@ -1088,7 +1089,11 @@ public class WorkerConnection {
             JsDataHandler handler = JsDataHandler.getHandler(types[i]);
             Class<?> type = WebBarrageUtils.stringToClass(handler.deephavenType());
             FlatBufferBuilder b = new FlatBufferBuilder();
-            b.finish(handler.writeType(b));
+            int typeOffset = handler.writeType(b);
+            Field.startField(b);
+            Field.addType(b, typeOffset);
+            Field.addTypeType(b, handler.typeType());
+            b.finish(Field.endField(b));
             Field field = Field.getRootAsField(b.dataBuffer());
             Class<?> componentType = null;
             if (types[i].endsWith("[]")) {
@@ -1246,28 +1251,36 @@ public class WorkerConnection {
 
     private StreamObserver<InputStream> doPut(StreamObserver<InputStream> observer) throws Exception {
         MethodDescriptor<InputStream, InputStream> nextDoPut = BrowserFlightServiceGrpc.getNextDoPutMethod().toBuilder(
-                InputStreamMarshaller.INSTANCE,
-                InputStreamMarshaller.INSTANCE
+                new InputStreamMarshaller(),
+                new InputStreamMarshaller()
         ).build();
         MethodDescriptor<InputStream, InputStream> openDoPut = BrowserFlightServiceGrpc.getOpenDoPutMethod().toBuilder(
-                InputStreamMarshaller.INSTANCE,
-                InputStreamMarshaller.INSTANCE
+                new InputStreamMarshaller(),
+                new InputStreamMarshaller()
         ).build();
 
+        return this.bidiStream(observer, openDoPut, nextDoPut);
+    }
+
+    private <Req, Resp, BrowserNext> StreamObserver<Req> bidiStream(StreamObserver<Resp> observer, MethodDescriptor<Req, Resp> openDoPut, MethodDescriptor<Req, BrowserNext> nextDoPut) throws Exception {
         AtomicInteger nextMsgId = new AtomicInteger();
         Context ctx = Context.current().withValue(ClientBrowserStreamInterceptor.TICKET_KEY, tickets.newTicketInt());
         return ctx.withValue(
                 ClientBrowserStreamInterceptor.SEQUENCE_KEY, nextMsgId.getAndIncrement()
         ).call(() -> {
-            DrainableByteArrayInputStream empty = new DrainableByteArrayInputStream(new byte[0], 0, 0);
-            ClientCalls.asyncServerStreamingCall(flightServiceClient.getChannel().newCall(openDoPut, null), empty, observer);
-            return new StreamObserver<InputStream>() {
+            return new StreamObserver<Req>() {
+                private boolean started = false;
                 @Override
-                public void onNext(InputStream value) {
+                public void onNext(Req value) {
                     ctx.withValue(
                             ClientBrowserStreamInterceptor.SEQUENCE_KEY, nextMsgId.getAndIncrement()
                     ).run(() -> {
-                        ClientCalls.asyncUnaryCall(flightServiceClient.getChannel().newCall(nextDoPut, null), value, observer);
+                        if (!started) {
+                            started = true;
+                            ClientCalls.asyncServerStreamingCall(flightServiceClient.getChannel().newCall(openDoPut, null), value, observer);
+                        } else {
+                            ClientCalls.asyncUnaryCall(flightServiceClient.getChannel().newCall(nextDoPut, null), value, Callbacks.ignore());
+                        }
                     });
                 }
 
@@ -1282,7 +1295,7 @@ public class WorkerConnection {
                             ClientBrowserStreamInterceptor.SEQUENCE_KEY, nextMsgId.getAndIncrement(),
                             ClientBrowserStreamInterceptor.HALFCLOSE_KEY, true
                     ).run(() -> {
-                        ClientCalls.asyncUnaryCall(flightServiceClient.getChannel().newCall(nextDoPut, null), empty, observer);
+                        ClientCalls.asyncUnaryCall(flightServiceClient.getChannel().newCall(nextDoPut, null), null, Callbacks.ignore());
                     });
                 };
             };
