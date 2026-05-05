@@ -24,10 +24,13 @@ import io.deephaven.web.shared.fu.JsFunction;
 import jsinterop.base.Js;
 import jsinterop.base.JsArrayLike;
 import org.apache.arrow.flatbuf.Binary;
-import org.apache.arrow.flatbuf.FixedSizeBinary;
+import org.apache.arrow.flatbuf.Date;
+import org.apache.arrow.flatbuf.DateUnit;
 import org.apache.arrow.flatbuf.FloatingPoint;
 import org.apache.arrow.flatbuf.Int;
 import org.apache.arrow.flatbuf.Precision;
+import org.apache.arrow.flatbuf.Time;
+import org.apache.arrow.flatbuf.TimeUnit;
 import org.apache.arrow.flatbuf.Type;
 import org.apache.arrow.flatbuf.Utf8;
 import org.gwtproject.nio.TypedArrayHelper;
@@ -450,16 +453,16 @@ public enum JsDataHandler {
             return Binary.endBinary(builder);
         }
     },
-    LOCAL_DATE(Type.FixedSizeBinary, "java.time.LocalDate", "localdate") {
+    LOCAL_DATE(Type.Date, "java.time.LocalDate", "localdate") {
         @Override
         public int writeType(FlatBufferBuilder builder) {
-            return FixedSizeBinary.createFixedSizeBinary(builder, 6);
+            return Date.createDate(builder, DateUnit.DAY);
         }
     },
-    LOCAL_TIME(Type.FixedSizeBinary, "java.time.LocalTime", "localtime") {
+    LOCAL_TIME(Type.Time, "java.time.LocalTime", "localtime") {
         @Override
         public int writeType(FlatBufferBuilder builder) {
-            return FixedSizeBinary.createFixedSizeBinary(builder, 7);
+            return Time.createTime(builder, TimeUnit.NANOSECOND, 64);
         }
     },
     // LIST(),
