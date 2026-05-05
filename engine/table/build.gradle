@@ -18,7 +18,6 @@ dependencies {
     api project(':engine-stringset')
     api project(':engine-base')
     api project(':engine-context')
-    api project(':engine-readtracker')
     api project(':deephaven-jpy-ext')
     api project(':hotspot')
     api project(':IO')

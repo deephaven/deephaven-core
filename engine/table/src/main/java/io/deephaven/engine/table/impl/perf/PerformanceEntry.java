@@ -237,9 +237,7 @@ public class PerformanceEntry extends BasePerformanceEntry implements TableListe
             loggedOnce = true;
             return true;
         }
-        return invocationCount > 0
-                && UpdatePerformanceTracker.LOG_THRESHOLD.shouldLog(getUsageNanos(), getDataReadCount(),
-                        getMetadataOperationCount());
+        return invocationCount > 0 && UpdatePerformanceTracker.LOG_THRESHOLD.shouldLog(getUsageNanos());
     }
 
     public void accumulate(PerformanceEntry entry) {
