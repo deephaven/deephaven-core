@@ -20,10 +20,10 @@ jobs:
     uses: ./.github/workflows/dhc-version.yml
     
   #=============================================================================
-  # Build the .NET Client
+  # Build the .NET Client (cross-platform, but we use the Ubuntu runner)
   #=============================================================================
   dotnet_job:
-    name: Build .NET client on Ubuntu
+    name: Build .NET client
     runs-on: ubuntu-24.04
     needs: version_job
     defaults:
