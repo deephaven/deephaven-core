@@ -6,8 +6,6 @@ package io.deephaven.web.client.api.barrage;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.rowset.RowSetShiftData;
-import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.web.shared.data.RangeSet;
 import io.deephaven.web.shared.data.ShiftedRange;
 
@@ -43,8 +41,6 @@ public class WebBarrageMessage {
     public RangeSet rowsIncluded;
     public RangeSet rowsRemoved;
     public ShiftedRange[] shifted;
-    public RowSetShiftData shifted2;
-    private BarrageMessage message;
 
     public AddColumnData[] addColumnData;
     public ModColumnData[] modColumnData;

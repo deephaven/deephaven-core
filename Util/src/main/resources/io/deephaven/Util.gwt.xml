@@ -12,7 +12,7 @@
     <source path="util/type" includes="ArrayTypeUtils.java,TypeUtils.java" />
     <source path="util/codec" includes="ObjectDecoder.java" />
     <source path="util/datastructures" includes="LongAbortableConsumer.java,LongRangeAbortableConsumer.java,LongRangeIterator.java,LongRangeConsumer.java,LongSizedDataStructure.java,SizeException.java,SegmentedSoftPool.java" />
-    <source path="util/datastructures/primitives" />
+    <source path="util/datastructures/list" />
     <source path="util/mutable" />
     <source path="util/compare" />
     <source path="" includes="UncheckedDeephavenException.java" />

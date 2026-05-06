@@ -1105,7 +1105,6 @@ public class WorkerConnection {
             }
             typeInfos[i] = BarrageTypeInfo.make(type, componentType, field);
 
-            // TODO extract to a method to handle parsing strings, don't assume we already have nicely formatted data
             chunks[i] = ObjectChunk.chunkWrap(handler.process(data[i], context));
         }
         return newTable(columnNames, types, typeInfos, chunks);
