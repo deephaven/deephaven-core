@@ -270,6 +270,7 @@ jobs:
         run: |
           cd ./py/client-ticking
           python setup.py build_ext -i
+          python setup.py bdist_wheel
 
       - name: Build our Cython code (Windows)
         if: runner.os == 'Windows'
@@ -279,12 +280,6 @@ jobs:
         run: |
           cd .\py\client-ticking
           python setup.py build_ext -i
-
-      - name: Run setup.py
-        env:
-          DEEPHAVEN_VERSION: ${{ needs.version_job.outputs.dhc_version }}
-        run: |
-          cd ./py/client-ticking
           python setup.py bdist_wheel
 
       - name: Upload ticking .whl file as build artifact

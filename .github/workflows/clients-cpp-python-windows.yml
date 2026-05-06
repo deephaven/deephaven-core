@@ -1,9 +1,10 @@
 name: "C++/Python on Windows"
 on:
-  pull_request:
-    branches: [ 'main', 'rc/v*' ]
-  push:
-    branches: [ 'main', 'check/**', 'release/v*' ]
+  workflow_dispatch:
+#  pull_request:
+#    branches: [ 'main', 'rc/v*' ]
+#  push:
+#    branches: [ 'main', 'check/**', 'release/v*' ]
 permissions:
   packages: write
 
