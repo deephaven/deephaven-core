@@ -1,4 +1,4 @@
-name: "PARTY TIME C++/Python"
+name: "C++/Python"
 on:
   pull_request:
     branches: [ 'main', 'rc/v*' ]
@@ -53,7 +53,12 @@ jobs:
     name: "Build C++ (or use cache)"
     strategy:
       matrix:
-        os: [ubuntu-24.04, windows-2025-vs2026]
+        include:
+          - os: ubuntu-24.04
+            target_triplet: x64-linux-dynamic-release
+          - os: windows-2025-vs2026
+            target-triplet: x64-windows-release
+
       fail-fast: false
     runs-on: ${{ matrix.os }}
     defaults:
@@ -89,6 +94,10 @@ jobs:
         with:
           repository: microsoft/vcpkg
           path: vcpkg
+
+      - name: Bootstrap vcpkg (test)
+        if: runner.os == 'Linux' && steps.cache-cpp-install.outputs.cache-hit != 'true'
+        run: "$GITHUB_WORKSPACE/vcpkg/bootstrap-vcpkg.sh"
 
       # [Note: skip this step if cache-cpp-install was successful]
       # Bootstrap vcpkg
@@ -160,7 +169,7 @@ jobs:
         if: steps.cache-cpp-install.outputs.cache-hit != 'true'
         env:
           VCPKG_BINARY_SOURCES: "clear;nuget,${{ env.GH_PACKAGES_FEED }},readwrite"
-        run: cmake -S cpp-client/deephaven -B cpp-client/deephaven/build --toolchain ${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake -DCMAKE_INSTALL_PREFIX=${{ env.DHINSTALL }} -DVCPKG_TARGET_TRIPLET=x64-linux-dynamic-release -DVCPKG_OVERLAY_TRIPLETS=cpp-client/deephaven/custom-triplets
+        run: cmake -S cpp-client/deephaven -B cpp-client/deephaven/build --toolchain "$GITHUB_WORKSPACE/vcpkg/scripts/buildsystems/vcpkg.cmake" -DCMAKE_INSTALL_PREFIX=${{ env.DHINSTALL }} -DVCPKG_TARGET_TRIPLET="$TARGET_TRIPLET" -DVCPKG_OVERLAY_TRIPLETS=cpp-client/deephaven/custom-triplets
 
       # [Note: skip this step if cache-cpp-install was successful]
       # Build our executables and install them in the configured install
