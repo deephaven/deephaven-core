@@ -1,4 +1,4 @@
-name: "Build C++ and Python Clients on Ubuntu 24.04"
+name: "C++/Python on Ubuntu24"
 on:
   pull_request:
     branches: [ 'main', 'rc/v*' ]
@@ -50,7 +50,7 @@ jobs:
   # Build the C++ Client
   #=============================================================================
   cpp_job:
-    name: Build C++ client on Ubuntu or fetch from cache
+    name: "Build C++ (or use cache)"
     runs-on: ubuntu-24.04
     defaults:
       run:
@@ -67,7 +67,7 @@ jobs:
       # work and just copy this cached install directory to the output artifact
       # for this run.
 
-      - name: Restore the cached installation directory, or prepare a new one
+      - name: Try to restore cached installdir
         id: cache-cpp-install
         uses: actions/cache@v5
         with:
@@ -107,7 +107,10 @@ jobs:
       # https://learn.microsoft.com/en-us/vcpkg/consume/binary-caching-github-packages?pivots=linux-runner
 
       # [Note: skip this step if cache-cpp-install was successful]
-      - name: "Configure nuget to know how to download (or upload) each cached package that we need (or create)"
+      # Configure nuget to know how to download (or upload) each cached
+      # package that we need (or create)
+
+      - name: "Configure nuget"
         if: steps.cache-cpp-install.outputs.cache-hit != 'true'
         run: |
           vcpkg_exe=${{ github.workspace }}/vcpkg/vcpkg
@@ -124,21 +127,24 @@ jobs:
             -Source "${{ env.GH_PACKAGES_FEED }}"
 
       # [Note: skip this step if cache-cpp-install was successful]
+      # Build packages and configure cmake. Check nupkg cache for existing
+      # packages, otherwise build and upload.
       # 1. Invoke vcpkg to:
       #    a) Try to fetch each of the dependent libraries from the nuget cache
       #    b) If not found, build them and insert them in the nuget cache
       # 2. Configure cmake to prepare for the build/install step, which comes next
 
-      - name: "Build packages and configure cmake. Check nupkg cache for existing packages, otherwise build and upload."
+      - name: "Build/cache dependencies"
         if: steps.cache-cpp-install.outputs.cache-hit != 'true'
         env:
           VCPKG_BINARY_SOURCES: "clear;nuget,${{ env.GH_PACKAGES_FEED }},readwrite"
         run: cmake -S cpp-client/deephaven -B cpp-client/deephaven/build --toolchain ${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake -DCMAKE_INSTALL_PREFIX=${{ env.DHINSTALL }} -DVCPKG_TARGET_TRIPLET=x64-linux-dynamic-release -DVCPKG_OVERLAY_TRIPLETS=cpp-client/deephaven/custom-triplets
 
       # [Note: skip this step if cache-cpp-install was successful]
-      # Build our executables and install them in the configured install directory {{ env.DHINSTALL }}
+      # Build our executables and install them in the configured install
+      # directory {{ env.DHINSTALL }}
 
-      - name: Run cmake build and install
+      - name: Build and install
         if: steps.cache-cpp-install.outputs.cache-hit != 'true'
         run: cmake --build cpp-client/deephaven/build --config RelWithDebInfo --target install --parallel
 
@@ -146,7 +152,7 @@ jobs:
       # then none of the intervening steps were executed. In that case,
       # this effectively just copies the cache to the build artifact.
 
-      - name: Upload install directory as build artifact
+      - name: Upload install dir
         id: upload-install-directory
         uses: actions/upload-artifact@v7
         with:
@@ -158,7 +164,7 @@ jobs:
   #=============================================================================
 
   python_static_job:
-    name: Build Python static client on Ubuntu
+    name: Python static
     runs-on: ubuntu-24.04
     needs: [version_job]
     defaults:
@@ -189,7 +195,8 @@ jobs:
           cd ./py/client
           python setup.py bdist_wheel
 
-      - name: Upload static .whl file as build artifact, to be used directly or by dependent clients like Python ticking
+      # Upload static .whl file as build artifact, to be used directly or by          # dependent clients like Python ticking
+      - name: Upload .whl file
         uses: actions/upload-artifact@v7
         with:
           name: py-static-wheel
@@ -200,7 +207,7 @@ jobs:
   #=============================================================================
 
   python_ticking_job:
-    name: Build Python ticking client on Ubuntu
+    name: Python ticking
     runs-on: ubuntu-24.04
     needs: [cpp_job, python_static_job, version_job]
     defaults:
@@ -211,13 +218,16 @@ jobs:
       - name: Check out this repo
         uses: actions/checkout@v6
 
-      - name: Get the C++ installation as a build artifact
+      # Get the C++ installation as a build artifact
+      - name: Fetch C++ installation
         uses: actions/download-artifact@v8
         with:
           name: cpp-client-install
           path: ${{ env.DHINSTALL }}
 
-      - name: Get the Python static installation as a build artifact
+
+      # Get the Python static installation as a build artifact
+      - name: Fetch Python static installation
         uses: actions/download-artifact@v8
         with:
           name: py-static-wheel
@@ -239,7 +249,7 @@ jobs:
       - name: Install the static client
         run: pip3 install --force --no-deps ./py/client/dist/*.whl
 
-      - name: Build cython code
+      - name: Build our Cython code
         env:
           DEEPHAVEN_VERSION: ${{ needs.version_job.outputs.dhc_version }}
           CPPFLAGS: -I${{ env.DHINSTALL }}/include

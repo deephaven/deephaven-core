@@ -67,7 +67,7 @@ jobs:
       # work and just copy this cached install directory to the output artifact
       # for this run.
 
-      - name: Restore the cached installation directory, or prepare a new one
+      - name: Try to restore cached installdir
         id: cache-cpp-install
         uses: actions/cache@v5
         with:
@@ -125,7 +125,8 @@ jobs:
         run: cmake -S cpp-client/deephaven -B cpp-client/deephaven/build --toolchain ${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake -DCMAKE_INSTALL_PREFIX=${{ env.DHINSTALL }} -DX_VCPKG_APPLOCAL_DEPS_INSTALL=ON -DVCPKG_TARGET_TRIPLET=x64-windows-release -DVCPKG_OVERLAY_TRIPLETS=cpp-client/deephaven/custom-triplets
 
       # [Note: skip this step if cache-cpp-install was successful]
-      # Build our executables and install them in the configured install directory {{ env.DHINSTALL }}
+      # Build our executables and install them in the configured install
+      # directory {{ env.DHINSTALL }}
 
       - name: "Build and install"
         if: steps.cache-cpp-install.outputs.cache-hit != 'true'
@@ -180,7 +181,8 @@ jobs:
           cd .\py\client
           python setup.py bdist_wheel
 
-      # Upload .whl file as build artifact, to be used directly or by dependent clients like Python ticking
+      # Upload .whl file as build artifact, to be used directly or by
+      # dependent clients like Python ticking
       - name: Upload .whl file
         uses: actions/upload-artifact@v7
         with:
@@ -240,7 +242,7 @@ jobs:
       - name: set up PATH for cl.exe
         uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756
 
-      - name: Build our Cython
+      - name: Build our Cython code
         env:
           DEEPHAVEN_VERSION: ${{ needs.version_job.outputs.dhc_version }}
         run: |
