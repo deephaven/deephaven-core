@@ -57,7 +57,7 @@ jobs:
           - os: ubuntu-24.04
             target_triplet: x64-linux-dynamic-release
           - os: windows-2025-vs2026
-            target-triplet: x64-windows-release
+            target_triplet: x64-windows-release
 
       fail-fast: false
     runs-on: ${{ matrix.os }}
