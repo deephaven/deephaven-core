@@ -5,6 +5,7 @@ package io.deephaven.kafka;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.Descriptors.Descriptor;
+import it.unimi.dsi.fastutil.ints.Int2LongMap;
 import it.unimi.dsi.fastutil.ints.Int2LongOpenHashMap;
 import io.confluent.kafka.schemaregistry.SchemaProvider;
 import io.confluent.kafka.schemaregistry.client.CachedSchemaRegistryClient;
@@ -1896,7 +1897,7 @@ public class KafkaTools {
         if (partitions.length != offsets.length) {
             throw new IllegalArgumentException("lengths of array arguments do not match");
         }
-        final Int2LongOpenHashMap map = new Int2LongOpenHashMap(partitions.length, 0.5f);
+        final Int2LongMap map = new Int2LongOpenHashMap(partitions.length, 0.5f);
         map.defaultReturnValue(KafkaIngester.DONT_SEEK);
         for (int i = 0; i < partitions.length; ++i) {
             map.put(partitions[i], offsets[i]);

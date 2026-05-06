@@ -55,7 +55,7 @@ public class ReplicateColumnStats {
                 "it\\.unimi\\.dsi\\.fastutil\\.Objects\\.", "it.unimi.dsi.fastutil.objects.",
                 "Object2LongOpenHashMap countValues", "Object2LongOpenHashMap<Object> countValues",
                 "new Object2LongOpenHashMap\\(\\)", "new Object2LongOpenHashMap<>()",
-                "ObjectOpenHashSet uniqueValues", "ObjectOpenHashSet<Object> uniqueValues",
+                "ObjectSet uniqueValues", "ObjectSet<Object> uniqueValues",
                 "new ObjectOpenHashSet\\(\\)", "new ObjectOpenHashSet<>()",
                 "new ChunkedObjectColumnIterator", "new ChunkedObjectColumnIterator<>",
                 "\\(ObjectColumnIterator", "(ObjectColumnIterator<Object>",

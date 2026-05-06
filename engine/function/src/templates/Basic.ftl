@@ -445,7 +445,7 @@ public class Basic {
             return !countNull && isNull(values.get(0)) ? 0 : 1;
         }
 
-        final ObjectOpenHashSet<T> keys = new ObjectOpenHashSet<>();
+        final ObjectSet<T> keys = new ObjectOpenHashSet<>();
 
         try (final CloseableIterator<T> vi = values.iterator()) {
             while ( vi.hasNext() ) {
@@ -538,7 +538,7 @@ public class Basic {
         }
 
         final List<T> orderedList = new ArrayList<>();
-        final ObjectOpenHashSet<T> counts = new ObjectOpenHashSet<>();
+        final ObjectSet<T> counts = new ObjectOpenHashSet<>();
 
         try (final CloseableIterator<T> vi = values.iterator()) {
             while ( vi.hasNext() ) {
@@ -1338,7 +1338,7 @@ public class Basic {
             return !includeNull && values[0] == QueryConstants.${pt.null} ? new ${pt.primitive}[0] : new ${pt.primitive}[] { values[0] };
         }
 
-        final ${pt.primitive?capitalize}ArrayList orderedList = new ${pt.primitive?capitalize}ArrayList();
+        final ${pt.primitive?capitalize}List orderedList = new ${pt.primitive?capitalize}ArrayList();
         final ${pt.primitive?capitalize}Set counts = new ${pt.primitive?capitalize}OpenHashSet();
 
         for (${pt.primitive} val : values) {
@@ -1372,7 +1372,7 @@ public class Basic {
             return !includeNull && values.get(0) == QueryConstants.${pt.null} ? new ${pt.primitive}[0] : values.copyToArray();
         }
 
-        final ${pt.primitive?capitalize}ArrayList orderedList = new ${pt.primitive?capitalize}ArrayList();
+        final ${pt.primitive?capitalize}List orderedList = new ${pt.primitive?capitalize}ArrayList();
         final ${pt.primitive?capitalize}Set counts = new ${pt.primitive?capitalize}OpenHashSet();
 
         try (final ${pt.vectorIterator} vi = values.iterator()) {

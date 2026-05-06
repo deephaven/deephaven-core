@@ -14,6 +14,7 @@ import io.deephaven.util.QueryConstants;
 import it.unimi.dsi.fastutil.chars.Char2LongMaps;
 import it.unimi.dsi.fastutil.chars.Char2LongOpenHashMap;
 import it.unimi.dsi.fastutil.chars.CharOpenHashSet;
+import it.unimi.dsi.fastutil.chars.CharSet;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -37,7 +38,7 @@ public class CharacterChunkedStats implements ChunkedStatsKernel {
 
         final Char2LongOpenHashMap countValues = new Char2LongOpenHashMap();
         boolean useSet = false;
-        final CharOpenHashSet uniqueValues = new CharOpenHashSet();
+        final CharSet uniqueValues = new CharOpenHashSet();
 
         try (CharacterColumnIterator iterator =
                 new ChunkedCharacterColumnIterator(usePrev ? columnSource.getPrevSource() : columnSource, rowSet)) {

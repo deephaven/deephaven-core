@@ -4,11 +4,12 @@
 package io.deephaven.engine.testutil.rowset;
 
 import it.unimi.dsi.fastutil.longs.LongArrayList;
+import it.unimi.dsi.fastutil.longs.LongList;
 
 import java.text.NumberFormat;
 
 public class PerfStats {
-    private LongArrayList samples;
+    private LongList samples;
     private double avg;
     private double stddev;
 

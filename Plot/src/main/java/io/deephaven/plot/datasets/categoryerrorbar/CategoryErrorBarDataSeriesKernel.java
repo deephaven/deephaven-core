@@ -6,6 +6,7 @@ package io.deephaven.plot.datasets.categoryerrorbar;
 import io.deephaven.plot.errors.PlotInfo;
 import io.deephaven.plot.util.ArgumentValidations;
 import io.deephaven.engine.table.Table;
+import it.unimi.dsi.fastutil.objects.Object2LongMap;
 import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -38,10 +39,10 @@ public class CategoryErrorBarDataSeriesKernel {
     private Collection<Comparable> categories = Collections.emptyList();
 
     /** A lookup for the index of a particular category within the series. */
-    private final Object2LongOpenHashMap<Comparable> catIndex = newCatIndex();
+    private final Object2LongMap<Comparable> catIndex = newCatIndex();
 
-    private static Object2LongOpenHashMap<Comparable> newCatIndex() {
-        final Object2LongOpenHashMap<Comparable> m = new Object2LongOpenHashMap<>(10, .75f);
+    private static Object2LongMap<Comparable> newCatIndex() {
+        final Object2LongMap<Comparable> m = new Object2LongOpenHashMap<>(10, .75f);
         m.defaultReturnValue(-1);
         return m;
     }

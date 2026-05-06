@@ -3,6 +3,7 @@
 //
 package io.deephaven.kafka.ingest;
 
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import io.deephaven.base.clock.Clock;
 import io.deephaven.base.verify.Require;
@@ -53,7 +54,7 @@ public class KafkaIngester {
     private final String logPrefix;
     private final KafkaConsumer<?, ?> kafkaConsumer;
 
-    private final Int2ObjectOpenHashMap<KafkaRecordConsumer> streamConsumers = new Int2ObjectOpenHashMap<>();
+    private final Int2ObjectMap<KafkaRecordConsumer> streamConsumers = new Int2ObjectOpenHashMap<>();
     private final KeyedIntObjectHashMap<TopicPartition> assignedPartitions =
             new KeyedIntObjectHashMap<>(new KeyedIntObjectKey.BasicStrict<>() {
                 @Override

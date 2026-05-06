@@ -22,7 +22,7 @@ public class MultiFieldChunkAdapter implements KeyOrValueProcessor {
             final TableDefinition definition,
             final Map<String, String> fieldNamesToColumnNames) {
         final String[] columnNames = definition.getColumnNamesArray();
-        final Object2IntOpenHashMap<String> deephavenColumnNameToIndex =
+        final Object2IntMap<String> deephavenColumnNameToIndex =
                 new Object2IntOpenHashMap<>(columnNames.length, 0.5f);
         deephavenColumnNameToIndex.defaultReturnValue(-1);
         for (int ii = 0; ii < columnNames.length; ++ii) {
@@ -56,7 +56,7 @@ public class MultiFieldChunkAdapter implements KeyOrValueProcessor {
         final String[] columnNames = definition.getColumnNamesArray();
         final List<ColumnDefinition<?>> columns = definition.getColumns();
 
-        final Object2IntOpenHashMap<String> deephavenColumnNameToIndex =
+        final Object2IntMap<String> deephavenColumnNameToIndex =
                 new Object2IntOpenHashMap<>(columnNames.length, 0.5f);
         deephavenColumnNameToIndex.defaultReturnValue(-1);
         for (int ii = 0; ii < columnNames.length; ++ii) {

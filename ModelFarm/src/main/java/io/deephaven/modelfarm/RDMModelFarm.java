@@ -44,7 +44,7 @@ public abstract class RDMModelFarm<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends
     private final Object2LongMap<KEYTYPE> keyIndexDelta = newKeyIndexMap();
 
     private static <K> Object2LongMap<K> newKeyIndexMap() {
-        final Object2LongOpenHashMap<K> m = new Object2LongOpenHashMap<>(10, 0.5f);
+        final Object2LongMap<K> m = new Object2LongOpenHashMap<>(10, 0.5f);
         m.defaultReturnValue(NO_ENTRY_VALUE);
         return m;
     }

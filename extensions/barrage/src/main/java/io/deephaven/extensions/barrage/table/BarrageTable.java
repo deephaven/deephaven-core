@@ -35,6 +35,7 @@ import io.deephaven.io.logger.Logger;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.annotations.InternalUseOnly;
 import it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue;
+import it.unimi.dsi.fastutil.longs.LongPriorityQueue;
 import org.HdrHistogram.Histogram;
 import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.Field;
@@ -144,7 +145,7 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
             AtomicIntegerFieldUpdater.newUpdater(BarrageTable.class, "prevTrackingEnabled");
 
     private final List<Object> processedData;
-    private final LongArrayFIFOQueue processedStep;
+    private final LongPriorityQueue processedStep;
 
     private final SourceRefresher refresher;
 

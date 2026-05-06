@@ -19,6 +19,7 @@ import io.deephaven.engine.util.TableTools;
 import it.unimi.dsi.fastutil.objects.Object2LongMaps;
 import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
+import it.unimi.dsi.fastutil.objects.ObjectSet;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -42,7 +43,7 @@ public class ObjectChunkedStats implements ChunkedStatsKernel {
 
         final Object2LongOpenHashMap<Object> countValues = new Object2LongOpenHashMap<>();
         boolean useSet = false;
-        final ObjectOpenHashSet<Object> uniqueValues = new ObjectOpenHashSet<>();
+        final ObjectSet<Object> uniqueValues = new ObjectOpenHashSet<>();
 
         try (ObjectColumnIterator<Object> iterator =
                 new ChunkedObjectColumnIterator<>(usePrev ? columnSource.getPrevSource() : columnSource, rowSet)) {

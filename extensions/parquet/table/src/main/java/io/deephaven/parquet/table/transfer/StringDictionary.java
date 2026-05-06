@@ -43,7 +43,7 @@ final public class StringDictionary {
         // Kept as a negative value since 0 is a valid position in the dictionary.
         final int NO_ENTRY_VALUE = -1;
         // Preserve the Trove default capacity (10) and load factor (0.5f) rather than fastutil's 16/0.75f.
-        final Object2IntOpenHashMap<String> keyToPosImpl = new Object2IntOpenHashMap<>(10, 0.5f);
+        final Object2IntMap<String> keyToPosImpl = new Object2IntOpenHashMap<>(10, 0.5f);
         keyToPosImpl.defaultReturnValue(NO_ENTRY_VALUE);
         this.keyToPos = keyToPosImpl;
 

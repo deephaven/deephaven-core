@@ -264,7 +264,7 @@ public class ModifiedColumnSet {
     public ModifiedColumnSet(final Map<String, ColumnSource<?>> columns) {
         this.columns = columns;
         columnNames = columns.keySet().toArray(String[]::new);
-        final Object2IntOpenHashMap<String> idMapImpl = new Object2IntOpenHashMap<>(columnNames.length);
+        final Object2IntMap<String> idMapImpl = new Object2IntOpenHashMap<>(columnNames.length);
         idMapImpl.defaultReturnValue(-1);
         for (int i = 0; i < columnNames.length; ++i) {
             idMapImpl.put(columnNames[i], i);
