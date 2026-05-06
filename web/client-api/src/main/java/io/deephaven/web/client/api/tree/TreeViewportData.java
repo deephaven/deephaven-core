@@ -35,14 +35,14 @@ public interface TreeViewportData extends TableData {
     double getOffset();
 
     /**
-     * Row implementation that also provides additional read-only properties. Represents visible rows in the table, but
-     * with additional properties to reflect the tree structure.
+     * {@link io.deephaven.web.client.api.TableData.Row} implementation that also provides additional read-only
+     * properties. Represents visible rows in the table, but with additional properties to reflect the tree structure.
      */
     @JsType
     interface TreeRow extends TableData.Row {
         /**
          * {@code true} if this node is currently expanded to show its children; {@code false} otherwise. Those children
-         * will be the rows below this one with a greater depth than this one.
+         * are the rows below this one with a greater depth than this one.
          *
          * @return boolean
          */
