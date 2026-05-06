@@ -132,10 +132,9 @@ public class BarrageUtil {
             Configuration.getInstance().getDoubleForClassWithDefault(BarrageUtil.class,
                     "targetSnapshotPercentage", 0.25);
 
-    // TODO (deephaven-core#188): drop this default to 50k once the jsapi can handle many batches
     public static final long MIN_SNAPSHOT_CELL_COUNT =
             Configuration.getInstance().getLongForClassWithDefault(BarrageUtil.class,
-                    "minSnapshotCellCount", 8_192);
+                    "minSnapshotCellCount", 1L << 13);
     public static final long MAX_SNAPSHOT_CELL_COUNT =
             Configuration.getInstance().getLongForClassWithDefault(BarrageUtil.class,
                     "maxSnapshotCellCount", 1L << 24);
