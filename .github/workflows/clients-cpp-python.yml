@@ -94,18 +94,18 @@ jobs:
           repository: microsoft/vcpkg
           path: vcpkg
 
+      # [Note: skip this step if cache-cpp-install was successful]
+      # Bootstrap vcpkg
+      - name: Bootstrap vcpkg
+        if: steps.cache-cpp-install.outputs.cache-hit != 'true'
+        run: "$GITHUB_WORKSPACE/vcpkg/bootstrap-vcpkg.sh"
+
       - name: Zamboni Time
         run: |
           nuget_tool=$("$GITHUB_WORKSPACE/vcpkg/vcpkg" fetch nuget | tail -n 1)
           echo "Path: $nuget_tool"
           file "$nuget_tool"
           ls -la "$nuget_tool"
-
-      # [Note: skip this step if cache-cpp-install was successful]
-      # Bootstrap vcpkg
-      - name: Bootstrap vcpkg
-        if: steps.cache-cpp-install.outputs.cache-hit != 'true'
-        run: "$GITHUB_WORKSPACE/vcpkg/bootstrap-vcpkg.sh"
 
       # [Note: Linux only]
       # [Note: skip this step if cache-cpp-install was successful]
