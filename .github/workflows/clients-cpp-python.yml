@@ -93,7 +93,7 @@ jobs:
       - name: Extract vcpkg baseline
         id: vcpkg-baseline
         run: |
-          baseline=$(jq -r '.["default-registry"].baseline' vcpkg-configuration.json)
+          baseline=$(jq -r '.["default-registry"].baseline' ./cpp-client/deephaven/vcpkg-configuration.json)
           echo "baseline=$baseline"
           echo "baseline=$baseline" >> "$GITHUB_OUTPUT"
 
