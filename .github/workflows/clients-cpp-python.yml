@@ -62,7 +62,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     defaults:
       run:
-        # This gets you Cygwin on Windows
+        # This gets you Git Bash on Windows
         shell: bash
 
     steps:
@@ -95,7 +95,7 @@ jobs:
           path: vcpkg
 
       - name: Bootstrap vcpkg (test)
-        if: runner.os == 'Linux' && steps.cache-cpp-install.outputs.cache-hit != 'true'
+        if: steps.cache-cpp-install.outputs.cache-hit != 'true'
         run: "$GITHUB_WORKSPACE/vcpkg/bootstrap-vcpkg.sh"
 
       # [Note: skip this step if cache-cpp-install was successful]
