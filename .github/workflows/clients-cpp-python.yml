@@ -119,8 +119,8 @@ jobs:
       # Configure nuget to know how to download (or upload) each cached
       # package that we need (or create)
 
-      - name: "Configure nuget"
-        if: steps.cache-cpp-install.outputs.cache-hit != 'true'
+      - name: "Configure nuget (Linux)"
+        if: runner.os == 'Linux' && steps.cache-cpp-install.outputs.cache-hit != 'true'
         run: |
           vcpkg_exe=${{ github.workspace }}/vcpkg/vcpkg
           nuget_dotnet=$($vcpkg_exe fetch nuget | tail -n 1)
@@ -134,6 +134,19 @@ jobs:
           mono $nuget_dotnet \
             setapikey "${{ secrets.GITHUB_TOKEN }}" \
             -Source "${{ env.GH_PACKAGES_FEED }}"
+
+      - name: "Configure nuget (Windows)"
+        if: runner.os == 'Windows' && steps.cache-cpp-install.outputs.cache-hit != 'true'
+        shell: pwsh
+        run: |
+          $nuget_exe = & ./vcpkg/vcpkg.exe fetch nuget
+          & $nuget_exe sources add `
+          -Source "${{ env.GH_PACKAGES_FEED }}" `
+          -StorePasswordInClearText `
+          -Name GitHubPackages `
+          -UserName "${{ env.GH_PACKAGES_USERNAME }}" `
+          -Password "${{ secrets.GITHUB_TOKEN }}"
+          & $nuget_exe setapikey "${{ secrets.GITHUB_TOKEN }}" -Source "${{ env.GH_PACKAGES_FEED }}"
 
       # [Note: skip this step if cache-cpp-install was successful]
       # Build packages and configure cmake. Check nupkg cache for existing
