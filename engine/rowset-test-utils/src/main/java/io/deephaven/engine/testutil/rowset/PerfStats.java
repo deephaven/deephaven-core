@@ -38,7 +38,7 @@ public class PerfStats {
         long sumx = 0;
         long sumsqx = 0;
         for (int i = 0; i < n; ++i) {
-            final long v = samples.get(i);
+            final long v = samples.getLong(i);
             sumx += v;
             sumsqx += v * v;
         }
@@ -54,7 +54,7 @@ public class PerfStats {
             return 0;
         final int n = samples.size();
         final int i = (int) Math.ceil((n * p) / 100.0);
-        return samples.get(i > 0 ? i - 1 : 0);
+        return samples.getLong(i > 0 ? i - 1 : 0);
     }
 
     public static final int defaultPrintPs[] = {0, 5, 50, 90, 95, 99};
