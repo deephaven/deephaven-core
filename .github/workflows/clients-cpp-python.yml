@@ -86,6 +86,17 @@ jobs:
           path: ${{ env.DHINSTALL }}
           key: ${{ runner.os }}-cpp-client-${{ hashFiles('cpp-client/**', 'proto/**') }}
 
+      # Make sure we check out the same version of the vcpkg tool that we
+      # have configured as our registry baseline. This (we suppose) will help
+      # improve the problem we have with our package hash drift.
+
+      - name: Extract vcpkg baseline
+        id: vcpkg-baseline
+        run: |
+        baseline=$(jq -r '.["default-registry"].baseline' vcpkg-configuration.json)
+        echo "baseline=$baseline"
+        echo "baseline=$baseline" >> "$GITHUB_OUTPUT"
+
       # [Note: skip this step if cache-cpp-install was successful]
       # Check out vcpkg
 
@@ -95,6 +106,7 @@ jobs:
         uses: actions/checkout@v6
         with:
           repository: microsoft/vcpkg
+          ref: ${{ steps.vcpkg-baseline.outputs.baseline }}
           path: vcpkg
 
       # [Note: skip this step if cache-cpp-install was successful]
