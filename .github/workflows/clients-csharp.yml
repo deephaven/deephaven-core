@@ -1,4 +1,4 @@
-name: "C# Client on Ubuntu24"
+name: "C# Client"
 on:
   pull_request:
     branches: [ 'main', 'rc/v*' ]
