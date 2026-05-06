@@ -5,7 +5,7 @@ on:
   push:
     branches: [ 'main', 'check/**', 'release/v*' ]
 permissions:
-  packages: write
+  contents: read
 
 #===============================================================================
 # Background: in this workflow there are three different kinds of caching going
@@ -51,6 +51,9 @@ jobs:
   #=============================================================================
   cpp_job:
     name: "Build C++ (or use cache)"
+    permissions:
+      contents: read
+      packages: write
     strategy:
       matrix:
         include:
@@ -108,9 +111,9 @@ jobs:
       # only mono knows how to run such a thing on Linux. Some day the
       # maintainers will fix this so it runs with the cross-platform "dotnet".
 
-      - name: Install mono
+      - name: Install mono (Linux)
         if: runner.os == 'Linux' && steps.cache-cpp-install.outputs.cache-hit != 'true'
-        run: sudo apt install mono-complete
+        run: sudo apt install -y mono-complete
 
       # [Note: skip this step if cache-cpp-install was successful]
       # Adapted from
@@ -170,8 +173,8 @@ jobs:
         run: cmake --build cpp-client/deephaven/build --config RelWithDebInfo --target install --parallel
 
       # Upload results as build artifact. Note: if cache-cpp-install was
-      # then none of the intervening steps were executed. In that case,
-      # this effectively just copies the cache to the build artifact.
+      # successful, then none of the intervening steps were executed. In that
+      # case, this effectively just copies the cache to the build artifact.
 
       - name: Upload install dir
         id: upload-install-directory
