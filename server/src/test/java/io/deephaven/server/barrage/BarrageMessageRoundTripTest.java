@@ -55,6 +55,8 @@ import javax.inject.Singleton;
 import java.io.ByteArrayInputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.*;
 import java.util.function.Consumer;
@@ -1474,7 +1476,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                             columnInfo = initColumnInfos(
                                     new String[] {"longCol", "intCol", "Sym", "byteCol", "doubleCol", "floatCol",
                                             "shortCol", "charCol", "boolCol", "strCol", "strArrCol", "datetimeCol",
-                                            "zdtCol"},
+                                            "zdtCol", "localTimeCol", "localDateCol"},
                                     new SortedLongGenerator(0, Long.MAX_VALUE - 1),
                                     new IntGenerator(10, 100, 0.1),
                                     new SetGenerator<>("a", "b", "c", "d"), // covers strings
@@ -1495,6 +1497,16 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                                                     .atZone(ZoneId.of("UTC")),
                                             DateTimeUtils.parseInstant("2025-11-14T00:00:00 NY")
                                                     .atZone(ZoneId.of("UTC")),
+                                            null),
+                                    new SetGenerator<>(
+                                            LocalTime.of(10, 30, 45),
+                                            LocalTime.of(14, 15, 30),
+                                            LocalTime.of(22, 45, 0),
+                                            null),
+                                    new SetGenerator<>(
+                                            LocalDate.of(2025, 11, 13),
+                                            LocalDate.of(2025, 11, 14),
+                                            LocalDate.of(2025, 11, 15),
                                             null));
                             sourceTable = getTable(size / 4, random, columnInfo);
                         }

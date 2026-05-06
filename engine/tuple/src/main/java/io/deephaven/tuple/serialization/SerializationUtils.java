@@ -3,9 +3,9 @@
 //
 package io.deephaven.tuple.serialization;
 
-import gnu.trove.map.TIntObjectMap;
-import gnu.trove.map.hash.TIntObjectHashMap;
 import io.deephaven.time.DateTimeUtils;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import io.deephaven.util.function.ThrowingConsumer;
 import io.deephaven.util.function.ThrowingSupplier;
 import org.jetbrains.annotations.NotNull;
@@ -69,7 +69,7 @@ public class SerializationUtils {
             return k -> out.writeLong(((Date) k).getTime());
         }
         if (StreamingExternalizable.class.isAssignableFrom(itemClass)) {
-            final TIntObjectMap<Writer> cachedWriters = new TIntObjectHashMap<>();
+            final Int2ObjectMap<Writer> cachedWriters = new Int2ObjectOpenHashMap<>();
             return k -> ((StreamingExternalizable) k).writeExternalStreaming(out, cachedWriters);
         }
         if (Externalizable.class.isAssignableFrom(itemClass)) {
@@ -132,7 +132,7 @@ public class SerializationUtils {
                 throw new UnsupportedOperationException("Can't deserialize keys of type " + itemClass
                         + ", could not get no-arg constructor for StreamingExternalizable type");
             }
-            final TIntObjectMap<Reader> cachedReaders = new TIntObjectHashMap<>();
+            final Int2ObjectMap<Reader> cachedReaders = new Int2ObjectOpenHashMap<>();
             return () -> {
                 final StreamingExternalizable key = (StreamingExternalizable) constructor.newInstance();
                 key.readExternalStreaming(in, cachedReaders);

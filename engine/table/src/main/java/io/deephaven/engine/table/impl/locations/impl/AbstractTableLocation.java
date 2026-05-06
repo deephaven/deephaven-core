@@ -209,7 +209,7 @@ public abstract class AbstractTableLocation
      * Clear all column locations (usually because a truncated location was observed).
      */
     @SuppressWarnings("unused")
-    public final void clearColumnLocations() {
+    public void clearColumnLocations() {
         columnLocations.clear();
     }
 
