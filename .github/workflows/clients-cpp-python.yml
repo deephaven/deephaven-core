@@ -96,25 +96,17 @@ jobs:
 
       # [Note: skip this step if cache-cpp-install was successful]
       # Bootstrap vcpkg
+
       - name: Bootstrap vcpkg
         if: steps.cache-cpp-install.outputs.cache-hit != 'true'
         run: "$GITHUB_WORKSPACE/vcpkg/bootstrap-vcpkg.sh"
-
-      - name: Zamboni Time
-        run: |
-          echo "$GITHUB_WORKSPACE/vcpkg/vcpkg" fetch nuget
-          "$GITHUB_WORKSPACE/vcpkg/vcpkg" fetch nuget
-          nuget_tool=$("$GITHUB_WORKSPACE/vcpkg/vcpkg" fetch nuget | tail -n 1)
-          echo "Path: $nuget_tool"
-          file "$nuget_tool"
-          ls -la "$nuget_tool"
 
       # [Note: Linux only]
       # [Note: skip this step if cache-cpp-install was successful]
       # Get mono so that we can run nuget. This is because the nuget.exe that
       # ships with vcpkg is an old .NET Framework binary (Windows format), and
-      # only mono knows how to run such a thing on Linux. Some day the maintainers
-      # will fix this so it runs with the cross-platform "dotnet".
+      # only mono knows how to run such a thing on Linux. Some day the
+      # maintainers will fix this so it runs with the cross-platform "dotnet".
 
       - name: Install mono
         if: runner.os == 'Linux' && steps.cache-cpp-install.outputs.cache-hit != 'true'
@@ -167,7 +159,7 @@ jobs:
         if: steps.cache-cpp-install.outputs.cache-hit != 'true'
         env:
           VCPKG_BINARY_SOURCES: "clear;nuget,${{ env.GH_PACKAGES_FEED }},readwrite"
-        run: cmake -S cpp-client/deephaven -B cpp-client/deephaven/build --toolchain "$GITHUB_WORKSPACE/vcpkg/scripts/buildsystems/vcpkg.cmake" -DCMAKE_INSTALL_PREFIX=${{ env.DHINSTALL }} -DVCPKG_TARGET_TRIPLET="${{ matrix.target_triplet }}" -DVCPKG_OVERLAY_TRIPLETS=cpp-client/deephaven/custom-triplets
+        run: cmake -S cpp-client/deephaven -B cpp-client/deephaven/build --toolchain "$GITHUB_WORKSPACE/vcpkg/scripts/buildsystems/vcpkg.cmake" -DCMAKE_INSTALL_PREFIX="$DHINSTALL" -DVCPKG_TARGET_TRIPLET="${{ matrix.target_triplet }}" -DVCPKG_OVERLAY_TRIPLETS=cpp-client/deephaven/custom-triplets
 
       # [Note: skip this step if cache-cpp-install was successful]
       # Build our executables and install them in the configured install
