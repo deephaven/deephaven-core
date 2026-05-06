@@ -105,8 +105,7 @@ jobs:
       # will fix this so it runs with the cross-platform "dotnet".
 
       - name: Install mono
-        if: runner.os == 'Linux'
-        if: steps.cache-cpp-install.outputs.cache-hit != 'true'
+        if: runner.os == 'Linux' && steps.cache-cpp-install.outputs.cache-hit != 'true'
         run: sudo apt install mono-complete
 
       # [Note: skip this step if cache-cpp-install was successful]
