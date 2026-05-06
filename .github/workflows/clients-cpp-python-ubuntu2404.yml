@@ -246,7 +246,7 @@ jobs:
           cd ./py/client
           pip3 install -r requirements-dev.txt
 
-      - name: Install the static client
+      - name: Install static client
         run: pip3 install --force --no-deps ./py/client/dist/*.whl
 
       - name: Build our Cython code
