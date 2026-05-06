@@ -94,21 +94,11 @@ jobs:
           repository: microsoft/vcpkg
           path: vcpkg
 
-      - name: Bootstrap vcpkg (test)
-        if: steps.cache-cpp-install.outputs.cache-hit != 'true'
-        run: "$GITHUB_WORKSPACE/vcpkg/bootstrap-vcpkg.sh"
-
       # [Note: skip this step if cache-cpp-install was successful]
       # Bootstrap vcpkg
-
-      - name: Bootstrap vcpkg (Linux)
-        if: runner.os == 'Linux' && steps.cache-cpp-install.outputs.cache-hit != 'true'
-        run: ${{ github.workspace }}/vcpkg/bootstrap-vcpkg.sh
-
-      - name: Bootstrap vcpkg (Windows)
-        shell: cmd
-        if: runner.os == 'Windows' && steps.cache-cpp-install.outputs.cache-hit != 'true'
-        run: ${{ github.workspace }}/vcpkg/bootstrap-vcpkg.bat
+      - name: Bootstrap vcpkg
+        if: steps.cache-cpp-install.outputs.cache-hit != 'true'
+        run: "$GITHUB_WORKSPACE/vcpkg/bootstrap-vcpkg.sh"
 
       # [Note: Linux only]
       # [Note: skip this step if cache-cpp-install was successful]
