@@ -233,7 +233,6 @@ jobs:
           name: cpp-client-install-${{ matrix.os }}
           path: ${{ env.DHINSTALL }}
 
-
       # Get the Python static installation as a build artifact
       - name: Fetch Python static installation
         uses: actions/download-artifact@v8
@@ -259,8 +258,9 @@ jobs:
 
       # Pinned to a specific SHA to avoid future surprises
       - name: set up PATH for cl.exe
-        if: runner.os == 'Windows'
-        uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756
+        # if: runner.os == 'Windows'
+        # uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756
+        uses: ilammy/msvc-dev-cmd@v1
 
       - name: Build our Cython code
         env:
