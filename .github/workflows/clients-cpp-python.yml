@@ -1,4 +1,4 @@
-name: "C++/Python"
+name: "PARTY TIME C++/Python"
 on:
   pull_request:
     branches: [ 'main', 'rc/v*' ]
