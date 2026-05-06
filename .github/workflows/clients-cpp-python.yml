@@ -38,7 +38,7 @@ env:
   GH_PACKAGES_USERNAME: ${{ github.repository_owner }}
   GH_PACKAGES_FEED: https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json
   # DHINSTALL: ${{ github.workspace }}/dhinstall
-  # DHINSTALL: ./dhinstall
+  DHINSTALL: ./dhinstall
 
 jobs:
   #=============================================================================
