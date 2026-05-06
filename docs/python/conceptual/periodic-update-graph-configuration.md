@@ -78,6 +78,23 @@ Use of this property is designed to reduce latency while preventing the PUG from
 
 The `PeriodicUpdateGraph` supports executing within context of a unit test. When this property is set to `true`, added sources are ignored and refresh actions are manually taken by the test harness. The PUG may not be started. This should never be used outside the context of a unit test. As such, the default value is `false`.
 
+## Manually triggering a refresh
+
+By default, the PUG runs on a periodic timer controlled by [`targetCycleDurationMillis`](#targetcycledurationmillis). In some cases, it can be appropriate to trigger the update cycle immediately rather than waiting for the next scheduled tick. A common example is when data is published within the server process — for example, via a [`TablePublisher`](../reference/table-operations/create/table-publisher.md) or a `StreamToBlinkTableAdapter` — and you want the new data handled immediately rather than waiting up to one full cycle duration.
+
+You can request an immediate refresh by calling `requestRefresh()` on the update graph:
+
+```python
+import jpy
+
+_JPeriodicUpdateGraph = jpy.get_type(
+    "io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph"
+)
+_JPeriodicUpdateGraph.getInstance("DEFAULT").requestRefresh()
+```
+
+This does not bypass the normal update cycle—it simply asks the PUG to begin the next cycle as soon as practicable. Updates are still processed in the usual order.
+
 ## Operation Initializer Thread Pool
 
 The Operation Initializer Thread Pool has one user-configurable property:
@@ -93,10 +110,12 @@ The `OperationInitializerThreadPool.threads` property allows multithreading duri
 
 ## Related documentation
 
-- [Partitioned tables](../how-to-guides/partitioned-tables.md)
-- [Deephaven's design](./deephaven-design.md)
-- [Incremental update model](./table-update-model.md)
-- [The Deephaven DAG](./dag.md)
 - [Core API design](./deephaven-core-api.md)
+- [Deephaven's design](./deephaven-design.md)
+- [The Deephaven DAG](./dag.md)
+- [Incremental update model](./table-update-model.md)
 - [Multithreading in Deephaven](./query-engine/engine-locking.md)
 - [Parallelizing queries](./query-engine/parallelization.md)
+- [Partitioned tables](../how-to-guides/partitioned-tables.md)
+- [`PeriodicUpdateGraph` Javadoc](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/updategraph/impl/PeriodicUpdateGraph.html)
+- [`TablePublisher`](../reference/table-operations/create/table-publisher.md)
