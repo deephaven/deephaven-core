@@ -94,6 +94,13 @@ jobs:
           repository: microsoft/vcpkg
           path: vcpkg
 
+      - name: Zamboni Time
+        run: |
+          nuget_tool=$("$GITHUB_WORKSPACE/vcpkg/vcpkg" fetch nuget | tail -n 1)
+          echo "Path: $nuget_tool"
+          file "$nuget_tool"
+          ls -la "$nuget_tool"
+
       # [Note: skip this step if cache-cpp-install was successful]
       # Bootstrap vcpkg
       - name: Bootstrap vcpkg
