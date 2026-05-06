@@ -257,6 +257,11 @@ jobs:
       - name: Install static client
         run: pip3 install --force --no-deps ./py/client/dist/*.whl
 
+      # Pinned to a specific SHA to avoid future surprises
+      - name: set up PATH for cl.exe
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756
+
       - name: Build our Cython code
         env:
           DEEPHAVEN_VERSION: ${{ needs.version_job.outputs.dhc_version }}
