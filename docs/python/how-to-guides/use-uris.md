@@ -255,7 +255,7 @@ When using URIs to share tables across instances, particularly over networks, th
 - [`empty_table`](../reference/table-operations/create/emptyTable.md)
 - [`time_table`](../reference/table-operations/create/timeTable.md)
 - [`update`](../reference/table-operations/select/update.md)
-- [Enterprise URIs](https://deephaven.io/enterprise/docs/deephaven-database/remote-tables-python/#uris)
 - [Capture Python client tables](./capture-tables.md)
 - [Application Mode](./application-mode.md)
+- [Enterprise URIs](https://deephaven.io/enterprise/docs/deephaven-database/remote-tables-python/#uris)
 - [Pydoc](https://deephaven.io/core/pydoc/code/deephaven.uri.html)
