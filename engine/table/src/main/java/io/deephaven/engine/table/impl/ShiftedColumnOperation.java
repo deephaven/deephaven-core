@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Tools for creating a new ShiftedColumn(s) for a given input table and a source column(s)
@@ -43,10 +44,7 @@ public class ShiftedColumnOperation {
     public static Table addShiftedColumns(
             final @NotNull Table source,
             final @NotNull ShiftedColumnDefinition... shifted) {
-        final String shiftedName = Arrays.stream(shifted)
-                .map(Object::toString)
-                .collect(Collectors.joining(","));
-        final String nuggetName = "addShiftedColumns ( " + shiftedName + ") ";
+        final String nuggetName = "addShiftedColumns( " + friendlyShiftDescription(Arrays.stream(shifted)) + ") ";
         return getShiftedColumnsUsingNugget(nuggetName, source,
                 new LinkedHashSet<>(Arrays.stream(shifted).collect(Collectors.toList())));
     }
@@ -61,11 +59,16 @@ public class ShiftedColumnOperation {
     public static Table addShiftedColumns(
             final @NotNull Table source,
             final @NotNull Set<ShiftedColumnDefinition> shifted) {
-        final String shiftedName = shifted.stream()
-                .map(Object::toString)
-                .collect(Collectors.joining(","));
-        final String nuggetName = "addShiftedColumns ( " + shiftedName + ") ";
+        final String nuggetName = "addShiftedColumns( " + friendlyShiftDescription(shifted.stream()) + ") ";
         return getShiftedColumnsUsingNugget(nuggetName, source, shifted);
+    }
+
+    private static String friendlyShiftDescription(@NotNull Stream<ShiftedColumnDefinition> shifted) {
+        final Map<Long, List<ShiftedColumnDefinition>> byShiftAmount = shifted
+                .collect(Collectors.groupingBy(ShiftedColumnDefinition::getShiftAmount, Collectors.toList()));
+        return byShiftAmount.entrySet().stream().map(e -> "["
+                + e.getValue().stream().map(ShiftedColumnDefinition::getColumnName).collect(Collectors.joining(", "))
+                + "], " + e.getKey()).collect(Collectors.joining(","));
     }
 
     /**
@@ -82,7 +85,7 @@ public class ShiftedColumnOperation {
             final @NotNull Table source,
             final @NotNull Set<ShiftedColumnDefinition> shifted) {
         return QueryPerformanceRecorder.withNugget(nuggetName, source.sizeForInstrumentation(),
-                () -> getShiftedColumns(source, shifted));
+                () -> getShiftedColumns(source, shifted, nuggetName));
     }
 
     /**
@@ -91,13 +94,15 @@ public class ShiftedColumnOperation {
      *
      * @param source the source table, used to create new table with the shifted column
      * @param shifted the shifted column definition(s) that define the operation
+     * @param listenerDescription the description to use for the listener
      * @return a new Table that has all columns from input table plus additional shifted column(s) created from the
      *         provided definition(s)
      */
     @NotNull
     private static Table getShiftedColumns(
             final @NotNull Table source,
-            final @NotNull Set<ShiftedColumnDefinition> shifted) {
+            final @NotNull Set<ShiftedColumnDefinition> shifted,
+            final @NotNull String listenerDescription) {
 
         final Map<String, ColumnSource<?>> columnSourceMap = new LinkedHashMap<>(source.getColumnSourceMap());
         final Map<String, Set<String>> sourceToShiftModColSetMap = new LinkedHashMap<>();
@@ -146,7 +151,7 @@ public class ShiftedColumnOperation {
                 source.getDefinition().getColumnNamesArray(), resultTableMCSs.toArray(ModifiedColumnSet[]::new));
 
         if (source.isRefreshing()) {
-            final BaseTable.ListenerImpl listener = new BaseTable.ListenerImpl("propagateUpdates", source, result) {
+            final BaseTable.ListenerImpl listener = new BaseTable.ListenerImpl(listenerDescription, source, result) {
                 @Override
                 public void onUpdate(TableUpdate upstream) {
                     final TableUpdateImpl downstream = TableUpdateImpl.copy(upstream, downstreamColumnSet);
