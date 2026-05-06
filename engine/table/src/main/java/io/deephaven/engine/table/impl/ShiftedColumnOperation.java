@@ -65,14 +65,15 @@ public class ShiftedColumnOperation {
 
     private static String friendlyShiftDescription(@NotNull Stream<ShiftedColumnDefinition> shifted) {
         final Map<Long, List<ShiftedColumnDefinition>> byShiftAmount = shifted
-                .collect(Collectors.groupingBy(ShiftedColumnDefinition::getShiftAmount, Collectors.toList()));
+                .collect(Collectors.groupingBy(ShiftedColumnDefinition::getShiftAmount, LinkedHashMap::new,
+                        Collectors.toList()));
         return byShiftAmount.entrySet().stream().map(e -> "["
                 + e.getValue().stream().map(ShiftedColumnDefinition::getColumnName).collect(Collectors.joining(", "))
                 + "], " + e.getKey()).collect(Collectors.joining(","));
     }
 
     /**
-     * Delegates to {@link ShiftedColumnOperation#getShiftedColumns(Table, Set)} using QueryPerformanceRecorder.
+     * Delegates to {@link ShiftedColumnOperation#getShiftedColumns(Table, Set, String)} using QueryPerformanceRecorder.
      *
      * @param source the source table, used to create new table with the shifted column
      * @param shifted the shifted column definition(s) that define the operation
