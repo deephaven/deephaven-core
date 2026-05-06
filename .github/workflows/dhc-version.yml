@@ -1,4 +1,4 @@
-name: "Determine Deephaven Core version"
+name: "Get DHC version"
 on:
   workflow_call:
     outputs:
@@ -8,10 +8,10 @@ on:
 
 jobs:
   #=============================================================================
-  # Identify version of Deephaven Core
+  # Identify version of Deephaven Core by running awk on gradle.properties
   #=============================================================================
   version_job:
-    name: Find the Deephaven version by running awk on gradle.properties
+    name: "Get DHC version"
     runs-on: ubuntu-24.04
     defaults:
       run:
