@@ -78,6 +78,7 @@ import io.deephaven.web.client.api.console.JsVariableDefinition;
 import io.deephaven.web.client.api.console.JsVariableType;
 import io.deephaven.web.client.api.event.HasEventHandling;
 import io.deephaven.web.client.api.grpc.InputStreamMarshaller;
+import io.deephaven.web.client.api.i18n.JsTimeZone;
 import io.deephaven.web.client.api.impl.TicketAndPromise;
 import io.deephaven.web.client.api.lifecycle.HasLifecycle;
 import io.deephaven.web.client.api.parse.JsDataHandler;
@@ -104,7 +105,6 @@ import io.grpc.stub.StreamObserver;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsOptional;
 import jsinterop.annotations.JsNullable;
-import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 import org.apache.arrow.flatbuf.Field;
 import org.apache.arrow.flatbuf.KeyValue;
@@ -1081,6 +1081,11 @@ public class WorkerConnection {
     }
 
     public Promise<JsTable> newTable(String[] columnNames, String[] types, Object[][] data, String userTimeZone) {
+        JsDataHandler.ParseContext context = new JsDataHandler.ParseContext();
+        if (userTimeZone != null) {
+            context.timeZone = JsTimeZone.getTimeZone(userTimeZone);
+        }
+
         BarrageTypeInfo<Field>[] typeInfos = new BarrageTypeInfo[types.length];
         Chunk<Values>[] chunks = new Chunk[types.length];
         for (int i = 0; i < types.length; i++) {
@@ -1101,7 +1106,7 @@ public class WorkerConnection {
             typeInfos[i] = BarrageTypeInfo.make(type, componentType, field);
 
             // TODO extract to a method to handle parsing strings, don't assume we already have nicely formatted data
-            chunks[i] = ObjectChunk.chunkWrap(Js.uncheckedCast(data[i]));
+            chunks[i] = ObjectChunk.chunkWrap(handler.process(data[i], context));
         }
         return newTable(columnNames, types, typeInfos, chunks);
     }
