@@ -51,9 +51,14 @@ jobs:
   #=============================================================================
   cpp_job:
     name: "Build C++ (or use cache)"
-    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        os: [ubuntu-24.04, windows-2022]
+      fail-fast: false
+    runs-on: ${{ matrix.os }}
     defaults:
       run:
+        # This gets you Cygwin on Windows
         shell: bash
 
     steps:
@@ -92,21 +97,21 @@ jobs:
         if: steps.cache-cpp-install.outputs.cache-hit != 'true'
         run: ${{ github.workspace }}/vcpkg/bootstrap-vcpkg.sh
 
+      # [Note: Linux only]
       # [Note: skip this step if cache-cpp-install was successful]
       # Get mono so that we can run nuget. This is because the nuget.exe that
       # ships with vcpkg is an old .NET Framework binary (Windows format), and
       # only mono knows how to run such a thing on Linux. Some day the maintainers
       # will fix this so it runs with the cross-platform "dotnet".
 
-      - name: Get mono so that we can run nuget
+      - name: Install mono
+        if: runner.os == 'Linux'
         if: steps.cache-cpp-install.outputs.cache-hit != 'true'
         run: sudo apt install mono-complete
 
       # [Note: skip this step if cache-cpp-install was successful]
       # Adapted from
       # https://learn.microsoft.com/en-us/vcpkg/consume/binary-caching-github-packages?pivots=linux-runner
-
-      # [Note: skip this step if cache-cpp-install was successful]
       # Configure nuget to know how to download (or upload) each cached
       # package that we need (or create)
 
@@ -156,11 +161,11 @@ jobs:
         id: upload-install-directory
         uses: actions/upload-artifact@v7
         with:
-          name: cpp-client-install
+          name: cpp-client-install-${{ matrix.os }}
           path: ${{ env.DHINSTALL }}
 
   #=============================================================================
-  # Build the Python Static Client
+  # Build the Python Static Client (not OS dependent)
   #=============================================================================
 
   python_static_job:
@@ -203,14 +208,14 @@ jobs:
           path: ./py/client/dist/*.whl
 
   #=============================================================================
-  # Build the Python Ticking Client
+  # Build the Python Ticking Client (OS dependent)
   #=============================================================================
 
   python_ticking_job:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-24.04, windows-2025]
+        os: [ubuntu-24.04, windows-2025-vs2026]
     name: Python ticking
     runs-on: ${{ matrix.os }}
     needs: [cpp_job, python_static_job, version_job]
