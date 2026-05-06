@@ -102,6 +102,8 @@ jobs:
 
       - name: Zamboni Time
         run: |
+          echo ls -l "$GITHUB_WORKSPACE/vcpkg/vcpkg"
+          ls -l "$GITHUB_WORKSPACE/vcpkg/vcpkg"
           nuget_tool=$("$GITHUB_WORKSPACE/vcpkg/vcpkg" fetch nuget | tail -n 1)
           echo "Path: $nuget_tool"
           file "$nuget_tool"
