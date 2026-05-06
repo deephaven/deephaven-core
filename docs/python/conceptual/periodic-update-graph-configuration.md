@@ -80,7 +80,7 @@ The `PeriodicUpdateGraph` supports executing within context of a unit test. When
 
 ## Manually triggering a refresh
 
-By default, the PUG runs on a periodic timer controlled by [`targetCycleDurationMillis`](#targetcycledurationmillis). In some cases, it can be appropriate to trigger the update cycle immediately rather than waiting for the next scheduled tick. A common example is when data is published within the server process — for example, via a [`TablePublisher`](../reference/table-operations/create/table-publisher.md) or a `StreamToBlinkTableAdapter` — and you want the new data handled immediately rather than waiting up to one full cycle duration.
+By default, the PUG runs on a periodic timer controlled by [`targetCycleDurationMillis`](#targetcycledurationmillis). In some cases, it can be appropriate to trigger the update cycle immediately rather than waiting for the next scheduled tick. A common example is when data is published within the server process — for example, via a [`TablePublisher`](../reference/table-operations/create/TablePublisher.md) or a `StreamToBlinkTableAdapter` — and you want the new data handled immediately rather than waiting up to one full cycle duration.
 
 You can request an immediate refresh by calling `requestRefresh()` on the update graph:
 
