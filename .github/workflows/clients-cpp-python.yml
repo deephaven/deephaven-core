@@ -106,6 +106,7 @@ jobs:
           ls -l "$GITHUB_WORKSPACE"
           ls -l "$GITHUB_WORKSPACE/vcpkg"
           ls -l "$GITHUB_WORKSPACE/vcpkg/vcpkg"
+          $GITHUB_WORKSPACE/vcpkg/vcpkg
           nuget_tool=$("$GITHUB_WORKSPACE/vcpkg/vcpkg" fetch nuget | tail -n 1)
           echo "Path: $nuget_tool"
           file "$nuget_tool"
