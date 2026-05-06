@@ -108,4 +108,4 @@ The `OperationInitializerThreadPool.threads` property allows multithreading duri
 - [Parallelizing queries](./query-engine/parallelization.md)
 - [Partitioned tables](../how-to-guides/partitioned-tables.md)
 - [`PeriodicUpdateGraph` Javadoc](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/updategraph/impl/PeriodicUpdateGraph.html)
-- [`TablePublisher`](../reference/table-operations/create/table-publisher.md)
+- [`TablePublisher`](../reference/table-operations/create/TablePublisher.md)
