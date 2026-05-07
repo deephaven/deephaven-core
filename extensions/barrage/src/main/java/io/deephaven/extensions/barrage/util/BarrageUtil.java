@@ -132,13 +132,12 @@ public class BarrageUtil {
             Configuration.getInstance().getDoubleForClassWithDefault(BarrageUtil.class,
                     "targetSnapshotPercentage", 0.25);
 
-    // TODO (deephaven-core#188): drop this default to 50k once the jsapi can handle many batches
     public static final long MIN_SNAPSHOT_CELL_COUNT =
             Configuration.getInstance().getLongForClassWithDefault(BarrageUtil.class,
-                    "minSnapshotCellCount", Long.MAX_VALUE);
+                    "minSnapshotCellCount", 1L << 13);
     public static final long MAX_SNAPSHOT_CELL_COUNT =
             Configuration.getInstance().getLongForClassWithDefault(BarrageUtil.class,
-                    "maxSnapshotCellCount", Long.MAX_VALUE);
+                    "maxSnapshotCellCount", 1L << 24);
 
     /**
      * Note that arrow's wire format states that Timestamps without timezones are not UTC -- that they are no timezone

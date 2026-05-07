@@ -90,7 +90,7 @@ public class BarrageMessageProducer extends LivenessArtifact
 
     public static final boolean SUBSCRIPTION_GROWTH_ENABLED =
             Configuration.getInstance().getBooleanForClassWithDefault(BarrageMessageProducer.class,
-                    "subscriptionGrowthEnabled", false);
+                    "subscriptionGrowthEnabled", true);
 
     private long snapshotTargetCellCount = MIN_SNAPSHOT_CELL_COUNT;
     private double snapshotNanosPerCell = 0;
