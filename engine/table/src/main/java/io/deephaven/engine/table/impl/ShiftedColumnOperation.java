@@ -44,7 +44,7 @@ public class ShiftedColumnOperation {
     public static Table addShiftedColumns(
             final @NotNull Table source,
             final @NotNull ShiftedColumnDefinition... shifted) {
-        final String nuggetName = "addShiftedColumns( " + friendlyShiftDescription(Arrays.stream(shifted)) + ") ";
+        final String nuggetName = "addShiftedColumns(" + friendlyShiftDescription(Arrays.stream(shifted)) + ")";
         return getShiftedColumnsUsingNugget(nuggetName, source,
                 new LinkedHashSet<>(Arrays.stream(shifted).collect(Collectors.toList())));
     }
@@ -59,7 +59,7 @@ public class ShiftedColumnOperation {
     public static Table addShiftedColumns(
             final @NotNull Table source,
             final @NotNull Set<ShiftedColumnDefinition> shifted) {
-        final String nuggetName = "addShiftedColumns( " + friendlyShiftDescription(shifted.stream()) + ") ";
+        final String nuggetName = "addShiftedColumns(" + friendlyShiftDescription(shifted.stream()) + ")";
         return getShiftedColumnsUsingNugget(nuggetName, source, shifted);
     }
 
