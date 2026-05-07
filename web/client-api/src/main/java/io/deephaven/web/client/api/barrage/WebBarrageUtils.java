@@ -4,7 +4,6 @@
 package io.deephaven.web.client.api.barrage;
 
 import com.google.flatbuffers.FlatBufferBuilder;
-import elemental2.core.*;
 import elemental2.dom.DomGlobal;
 import io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
@@ -16,6 +15,7 @@ import io.deephaven.web.client.api.barrage.def.InputTableMetadata;
 import io.deephaven.web.client.api.barrage.def.TableAttributesDefinition;
 import io.deephaven.web.client.api.barrage.util.ColumnRestrictionConverter;
 import io.deephaven.web.client.api.barrage.util.ColumnRestrictionUtils;
+import io.deephaven.web.client.api.barrage.util.ColumnRestrictionValidator;
 import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.shared.data.*;
 import org.apache.arrow.flatbuf.KeyValue;
@@ -40,29 +40,59 @@ public class WebBarrageUtils {
     public static final int FLATBUFFER_MAGIC = 0x6E687064;
 
     private static final Map<String, ColumnRestrictionConverter> restrictionConverters = new HashMap<>();
+    private static final Map<String, ColumnRestrictionValidator> restrictionValidators = new HashMap<>();
 
     static {
-
-        // Register default converters
-        registerColumnRestrictionConverter("IntegerRangeRestriction",
-                ColumnRestrictionUtils::convertIntegerRangeRestriction);
-        registerColumnRestrictionConverter("DoubleRangeRestriction",
-                ColumnRestrictionUtils::convertDoubleRangeRestriction);
-        registerColumnRestrictionConverter("NotNullRestriction", ColumnRestrictionUtils::convertNotNullRestriction);
-        registerColumnRestrictionConverter("NonEmptyRestriction", ColumnRestrictionUtils::convertNonEmptyRestriction);
-        registerColumnRestrictionConverter("StringListRestriction",
-                ColumnRestrictionUtils::convertStringListRestriction);
+        // Register built-in parsers and validators
+        registerColumnRestrictionType("IntegerRangeRestriction",
+                ColumnRestrictionUtils::convertIntegerRangeRestriction,
+                ColumnRestrictionUtils::validateIntegerRange);
+        registerColumnRestrictionType("DoubleRangeRestriction",
+                ColumnRestrictionUtils::convertDoubleRangeRestriction,
+                ColumnRestrictionUtils::validateDoubleRange);
+        registerColumnRestrictionType("NotNullRestriction",
+                ColumnRestrictionUtils::convertNotNullRestriction,
+                ColumnRestrictionUtils::validateNotNull);
+        registerColumnRestrictionType("NonEmptyRestriction",
+                ColumnRestrictionUtils::convertNonEmptyRestriction,
+                ColumnRestrictionUtils::validateNonEmpty);
+        registerColumnRestrictionType("StringListRestriction",
+                ColumnRestrictionUtils::convertStringListRestriction,
+                ColumnRestrictionUtils::validateStringList);
     }
 
     /**
-     * Register a converter for a specific restriction type.
+     * Register a parser and optional client-side validator for a column restriction type. Calling this from JavaScript
+     * allows downstream consumers to extend the restriction system with their own types.
      *
-     * @param restrictionType The type name of the restriction (e.g., "IntegerRangeRestriction")
-     * @param converter The converter function to convert the restriction data
+     * <p>
+     * The {@code parser} converts a raw protobuf {@code Any} message into a
+     * {@link io.deephaven.web.client.api.ColumnRestriction}. The {@code validator} (if provided) is a function that
+     * takes a proposed value and the restriction's data object and returns a human-readable error message if the value
+     * is invalid, or {@code null} if it is valid.
+     *
+     * @param restrictionType The restriction type name (e.g., "IntegerRangeRestriction")
+     * @param parser Converts protobuf bytes into a ColumnRestriction
+     * @param validator Optional client-side validation function; may be {@code null}
      */
-    public static void registerColumnRestrictionConverter(String restrictionType,
-            ColumnRestrictionConverter converter) {
-        restrictionConverters.put(restrictionType, converter);
+    public static void registerColumnRestrictionType(String restrictionType,
+            ColumnRestrictionConverter parser,
+            ColumnRestrictionValidator validator) {
+        restrictionConverters.put(restrictionType, parser);
+        if (validator != null) {
+            restrictionValidators.put(restrictionType, validator);
+        }
+    }
+
+    /**
+     * Returns the registered client-side validator for the given restriction type, or {@code null} if none is
+     * registered.
+     *
+     * @param restrictionType The restriction type name
+     * @return The validator, or {@code null}
+     */
+    public static ColumnRestrictionValidator getValidator(String restrictionType) {
+        return restrictionValidators.get(restrictionType);
     }
 
     public static ByteBuffer wrapMessage(FlatBufferBuilder innerBuilder, byte messageType) {

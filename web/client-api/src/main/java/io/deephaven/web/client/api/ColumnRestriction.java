@@ -4,78 +4,46 @@
 package io.deephaven.web.client.api;
 
 import com.vertispan.tsdefs.annotations.TsName;
-import elemental2.core.JsArray;
-import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsProperty;
+import jsinterop.base.JsPropertyMap;
 
 /**
- * Represents a restriction on an input table column. Restrictions define constraints that the server enforces on column
- * values. There are several types of restrictions:
+ * Represents a restriction on an input table column. Each restriction has a {@code type} string identifying what kind
+ * of restriction it is, and a {@code data} object whose structure depends on the type.
+ *
+ * <p>
+ * Known built-in types and their {@code data} shapes:
  * <ul>
- * <li>IntegerRangeRestriction - validates integer values are within a range</li>
- * <li>DoubleRangeRestriction - validates double values are within a range</li>
- * <li>NotNullRestriction - validates values are not null</li>
- * <li>NonEmptyRestriction - validates string values are not empty</li>
- * <li>StringListRestriction - validates string values belong to a set of allowed values</li>
+ * <li>{@code "IntegerRangeRestriction"} - {@code {min: number, max: number}}</li>
+ * <li>{@code "DoubleRangeRestriction"} - {@code {min: number, max: number}}</li>
+ * <li>{@code "NotNullRestriction"} - {@code {}}</li>
+ * <li>{@code "NonEmptyRestriction"} - {@code {}}</li>
+ * <li>{@code "StringListRestriction"} - {@code {values: string[]}}</li>
  * </ul>
+ *
+ * <p>
+ * Additional restriction types can be registered via {@code dh.registerRestrictionType}. If the client encounters a
+ * type it does not recognize, it will still pass the restriction through to the server for validation, but cannot
+ * provide proactive client-side error messages.
  */
 @TsName(namespace = "dh")
 public class ColumnRestriction {
     private final String type;
-    private final double minValue;
-    private final double maxValue;
-    private final JsArray<String> allowedValues;
+    private final JsPropertyMap<Object> data;
 
     /**
-     * Creates a range restriction (IntegerRangeRestriction or DoubleRangeRestriction).
-     *
-     * @param type The type of restriction (e.g., "IntegerRangeRestriction" or "DoubleRangeRestriction")
-     * @param minValue The minimum value (inclusive), or NaN if no minimum
-     * @param maxValue The maximum value (inclusive), or NaN if no maximum
+     * @param type The restriction type name (e.g., "IntegerRangeRestriction")
+     * @param data An opaque JS object containing the type-specific restriction data
      */
-    public ColumnRestriction(String type, double minValue, double maxValue) {
+    public ColumnRestriction(String type, JsPropertyMap<Object> data) {
         this.type = type;
-        this.minValue = minValue;
-        this.maxValue = maxValue;
-        this.allowedValues = null;
+        this.data = data;
     }
 
     /**
-     * Creates a string list restriction (StringListRestriction).
+     * The type of restriction (e.g., {@code "IntegerRangeRestriction"}, {@code "StringListRestriction"}).
      *
-     * @param type The type of restriction (e.g. "StringListRestriction")
-     * @param allowedValues The array of allowed values
-     */
-    public ColumnRestriction(String type, JsArray<String> allowedValues) {
-        this.type = type;
-        this.minValue = Double.NaN;
-        this.maxValue = Double.NaN;
-        this.allowedValues = allowedValues;
-    }
-
-    /**
-     * Creates a simple restriction with no parameters (NotNullRestriction or NonEmptyRestriction).
-     *
-     * @param type The type of restriction (e.g., "NotNullRestriction" or "NonEmptyRestriction")
-     */
-    public ColumnRestriction(String type) {
-        this.type = type;
-        this.minValue = Double.NaN;
-        this.maxValue = Double.NaN;
-        this.allowedValues = null;
-    }
-
-    /**
-     * The type of restriction. Possible values:
-     * <ul>
-     * <li>"IntegerRangeRestriction" - integer values must be within a range</li>
-     * <li>"DoubleRangeRestriction" - double values must be within a range</li>
-     * <li>"NotNullRestriction" - values must not be null</li>
-     * <li>"NonEmptyRestriction" - string values must not be empty</li>
-     * <li>"StringListRestriction" - string values must be in the allowed list</li>
-     * </ul>
-     *
-     * @return The restriction type
+     * @return The restriction type name
      */
     @JsProperty
     public String getType() {
@@ -83,45 +51,19 @@ public class ColumnRestriction {
     }
 
     /**
-     * For range restrictions (IntegerRangeRestriction or DoubleRangeRestriction), returns an array with two elements:
-     * [minValue, maxValue]. Either value may be NaN if not specified. Returns null for non-range restrictions.
+     * An opaque data object whose structure is specific to the restriction {@link #getType() type}. Known built-in
+     * shapes are documented on the class.
      *
-     * @return Array of [min, max] values for range restrictions, or null for other restriction types
+     * @return The restriction data
      */
     @JsProperty
-    @JsNullable
-    public JsArray<Double> getRange() {
-        if (Double.isNaN(minValue) && Double.isNaN(maxValue)) {
-            return null;
-        }
-        JsArray<Double> range = new JsArray<>();
-        range.push(minValue);
-        range.push(maxValue);
-        return range;
-    }
-
-    /**
-     * For StringListRestriction, returns the array of allowed values. Returns null for other restriction types.
-     *
-     * @return Array of allowed values for StringListRestriction, or null for other restriction types
-     */
-    @JsProperty
-    @JsNullable
-    public JsArray<String> getValues() {
-        return allowedValues;
+    public JsPropertyMap<Object> getData() {
+        return data;
     }
 
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder("ColumnRestriction{type='" + type + "'");
-        if (!Double.isNaN(minValue) || !Double.isNaN(maxValue)) {
-            sb.append(", range=[").append(minValue).append(", ").append(maxValue).append("]");
-        }
-        if (allowedValues != null) {
-            sb.append(", values=").append(allowedValues);
-        }
-        sb.append("}");
-        return sb.toString();
+        return "ColumnRestriction{type='" + type + "', data=" + data + "}";
     }
 }
 
