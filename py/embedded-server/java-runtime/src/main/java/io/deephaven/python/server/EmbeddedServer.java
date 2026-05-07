@@ -27,6 +27,7 @@ import io.deephaven.server.jetty.JettyConfig;
 import io.deephaven.server.jetty.JettyConfig.Builder;
 import io.deephaven.server.jetty.JettyServerComponent;
 import io.deephaven.server.jetty.JettyServerModule;
+import io.deephaven.server.plugin.AuthorizationProviderAdapterModule;
 import io.deephaven.server.plugin.python.PythonPluginsRegistration;
 import io.deephaven.server.runner.DeephavenApiConfigModule;
 import io.deephaven.server.runner.DeephavenApiServer;
@@ -83,6 +84,7 @@ public class EmbeddedServer {
             ObfuscatingErrorTransformerModule.class,
             CalendarsFromConfigurationModule.class,
             EmbeddedPythonClientChannelFactoryModule.class,
+            AuthorizationProviderAdapterModule.class
     })
     public interface PythonServerModule {
     }
