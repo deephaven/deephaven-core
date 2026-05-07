@@ -16,7 +16,7 @@ Any plugins housed in deephaven-plugins work for 3.9+ and are tested with Python
 
 We aim to support all Java LTS versions greater than or equal to our minimum Java LTS version, as well as the latest Java version, based on the timing of the specific release. A :white_check_mark: indicates that Deephaven has been tested against the JDK version.
 
-| Deephaven Version |    JDK 11 (LTS)    |    JDK 17 (LTS)    |    JDK 21 (LTS)    |  JDK 22 (latest)   |
+| Deephaven Version |    JDK 11 (LTS)    |    JDK 17 (LTS)    |    JDK 21 (LTS)    |  JDK 25 (latest)   |
 | ----------------- | :----------------: | :----------------: | :----------------: | :----------------: |
 | 0.40.x            | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
 | 0.41.x            | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
@@ -25,7 +25,7 @@ We build and test using OpenJDK packages. We do not regularly run or test with G
 
 ## Operating System and CPU architecture
 
-deephaven-core is based on OS-neutral, multiplatform technologies like Java and Python; however, package dependencies and differences in execution environments mean that guaranteeing a wide range of platforms is challenging and time-consuming. We regularly test in Linux x86_64, particularly Ubuntu 22.04. Many of our developers use MacOS with Arm CPUs. These platforms are generally well-tested, and we will notice quickly if some change in package versions in core distributions of the OS makes deephaven-core stop working.
+deephaven-core is based on OS-neutral, multiplatform technologies like Java and Python; however, package dependencies and differences in execution environments mean that guaranteeing a wide range of platforms is challenging and time-consuming. We regularly test in Linux x86_64, particularly Ubuntu 24.04. Many of our developers use MacOS with Arm CPUs. These platforms are generally well-tested, and we will notice quickly if some change in package versions in core distributions of the OS makes deephaven-core stop working.
 
 In terms of other systems where we don’t extensively test ourselves but a priori expect things to work:
 
