@@ -3,6 +3,7 @@
 //
 package io.deephaven.client.impl;
 
+import io.deephaven.client.grpc.Calls;
 import io.deephaven.client.impl.script.Changes;
 import io.deephaven.proto.DeephavenChannel;
 import io.deephaven.proto.backplane.grpc.AddTableRequest;
@@ -17,15 +18,20 @@ import io.deephaven.proto.backplane.grpc.ExportRequest;
 import io.deephaven.proto.backplane.grpc.FieldsChangeUpdate;
 import io.deephaven.proto.backplane.grpc.HandshakeRequest;
 import io.deephaven.proto.backplane.grpc.ListFieldsRequest;
+import io.deephaven.proto.backplane.grpc.ObjectServiceGrpc;
 import io.deephaven.proto.backplane.grpc.PublishRequest;
 import io.deephaven.proto.backplane.grpc.ReleaseRequest;
+import io.deephaven.proto.backplane.grpc.SessionServiceGrpc;
 import io.deephaven.proto.backplane.grpc.StreamRequest;
 import io.deephaven.proto.backplane.grpc.StreamResponse;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.backplane.script.grpc.BindTableToVariableRequest;
+import io.deephaven.proto.backplane.script.grpc.ConsoleServiceGrpc;
 import io.deephaven.proto.backplane.script.grpc.ExecuteCommandRequest;
+import io.deephaven.proto.backplane.script.grpc.ExecuteCommandResponse;
 import io.deephaven.proto.backplane.script.grpc.StartConsoleRequest;
 import io.deephaven.qst.table.TableSpec;
+import io.grpc.StatusException;
 import io.grpc.stub.ClientCallStreamObserver;
 import io.grpc.stub.ClientResponseObserver;
 import io.grpc.stub.StreamObserver;
@@ -137,7 +143,7 @@ public final class SessionImpl extends SessionBase {
     }
 
     private ExportStates newExportStates() {
-        return new ExportStates(this, bearerChannel.session(), bearerChannel.table(), exportTicketCreator);
+        return new ExportStates(this, exportTicketCreator);
     }
 
     @Override
@@ -214,15 +220,13 @@ public final class SessionImpl extends SessionBase {
         final StreamRequest connectRequest = StreamRequest.newBuilder()
                 .setConnect(ConnectRequest.newBuilder().setSourceId(tt.proto()))
                 .build();
-        return UnaryGrpcFuture.of(connectRequest, this::messageStreamConnectOnly, this::toDataAndExports);
-    }
-
-    private void messageStreamConnectOnly(
-            io.deephaven.proto.backplane.grpc.StreamRequest request,
-            io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.grpc.StreamResponse> responseObserver) {
-        final StreamObserver<StreamRequest> observer = channel().object().messageStream(responseObserver);
-        observer.onNext(request);
-        observer.onCompleted();
+        // even though this is a bidir RPC, we expect fetch to have unary semantics
+        return Calls.completableFutureUnaryCall(
+                channel().channel2(),
+                ObjectServiceGrpc.getMessageStreamMethod(),
+                channel().callOptions(),
+                connectRequest)
+                .thenApply(this::toDataAndExports);
     }
 
     private ServerData toDataAndExports(StreamResponse value) {
@@ -396,6 +400,18 @@ public final class SessionImpl extends SessionBase {
                 channel().config()::getConfigurationConstants, ConfigurationConstantsResponse::getConfigValuesMap);
     }
 
+    private static String scriptToCode(Path path) throws IOException {
+        return String.join(System.lineSeparator(), Files.readAllLines(path, StandardCharsets.UTF_8));
+    }
+
+    private static Changes toChanges(ExecuteCommandResponse response) {
+        Changes.Builder builder = Changes.builder().changes(new FieldChanges(response.getChanges()));
+        if (!response.getErrorMessage().isEmpty()) {
+            builder.errorMessage(response.getErrorMessage());
+        }
+        return builder.build();
+    }
+
     private class ConsoleSessionImpl implements ConsoleSession {
 
         private final StartConsoleRequest request;
@@ -417,62 +433,74 @@ public final class SessionImpl extends SessionBase {
         @Override
         public Changes executeCode(String code, ExecuteCodeOptions options)
                 throws InterruptedException, ExecutionException, TimeoutException {
-            return executeCodeFuture(code, options).get(config.executeTimeout().toNanos(), TimeUnit.NANOSECONDS);
+            final ExecuteCommandResponse response;
+            try {
+                response = Calls.blockingUnaryCall(
+                        channel().channel2(),
+                        ConsoleServiceGrpc.getExecuteCommandMethod(),
+                        channel().callOptions().withDeadlineAfter(config.executeTimeout()),
+                        executeCommandRequest(code, options));
+            } catch (StatusException | RuntimeException e) {
+                throw new ExecutionException(e);
+            }
+            return toChanges(response);
         }
 
         @Override
         public Changes executeScript(Path path, ExecuteCodeOptions options)
                 throws IOException, InterruptedException, ExecutionException, TimeoutException {
-            return executeScriptFuture(path, options).get(config.executeTimeout().toNanos(), TimeUnit.NANOSECONDS);
+            return executeCode(scriptToCode(path), options);
         }
 
-        @Override
-        public CompletableFuture<Changes> executeCodeFuture(String code, ExecuteCodeOptions options) {
+        private ExecuteCommandRequest executeCommandRequest(String code, ExecuteCodeOptions options) {
             final ExecuteCommandRequest.Builder requestBuilder =
                     ExecuteCommandRequest.newBuilder().setConsoleId(ticket()).setCode(code);
-
             final ExecuteCodeOptions.SystemicType systemicOption = options.executeSystemic();
             if (systemicOption != ExecuteCodeOptions.SystemicType.ServerDefault) {
                 requestBuilder.setSystemic(systemicOption == ExecuteCodeOptions.SystemicType.Systemic
                         ? ExecuteCommandRequest.SystemicType.EXECUTE_SYSTEMIC
                         : ExecuteCommandRequest.SystemicType.EXECUTE_NOT_SYSTEMIC);
             }
+            return requestBuilder.build();
+        }
 
-            return UnaryGrpcFuture.of(requestBuilder.build(), channel().console()::executeCommand,
-                    response -> {
-                        Changes.Builder builder = Changes.builder().changes(new FieldChanges(response.getChanges()));
-                        if (!response.getErrorMessage().isEmpty()) {
-                            builder.errorMessage(response.getErrorMessage());
-                        }
-                        return builder.build();
-                    });
+        @Override
+        public CompletableFuture<Changes> executeCodeFuture(String code, ExecuteCodeOptions options) {
+            return UnaryGrpcFuture.of(executeCommandRequest(code, options), channel().console()::executeCommand,
+                    SessionImpl::toChanges);
         }
 
         @Override
         public CompletableFuture<Changes> executeScriptFuture(Path path, ExecuteCodeOptions options)
                 throws IOException {
-            final String code = String.join(System.lineSeparator(), Files.readAllLines(path, StandardCharsets.UTF_8));
-            return executeCodeFuture(code, options);
+            return executeCodeFuture(scriptToCode(path), options);
+        }
+
+        private ReleaseRequest releaseRequest() {
+            return ReleaseRequest.newBuilder()
+                    .setId(this.request.getResultId())
+                    .build();
         }
 
         @Override
         public CompletableFuture<Void> closeFuture() {
-            ReleaseRequest request = ReleaseRequest.newBuilder()
-                    .setId(this.request.getResultId())
-                    .build();
-            return UnaryGrpcFuture.ignoreResponse(request, channel().session()::release);
+            return UnaryGrpcFuture.ignoreResponse(releaseRequest(), channel().session()::release);
         }
 
         @Override
         public void close() {
             try {
-                closeFuture().get(config.closeTimeout().toNanos(), TimeUnit.NANOSECONDS);
+                Calls.blockingUnaryCall(
+                        channel().channel2(),
+                        SessionServiceGrpc.getReleaseMethod(),
+                        channel().callOptions().withDeadlineAfter(config.closeTimeout()),
+                        releaseRequest());
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 log.warn("Interrupted waiting for console close");
             } catch (TimeoutException e) {
                 log.warn("Timed out waiting for console close");
-            } catch (ExecutionException e) {
+            } catch (StatusException | RuntimeException e) {
                 log.error("Exception waiting for console close", e);
             }
         }

@@ -246,6 +246,6 @@ public abstract class DeephavenApiServerTestBase {
     public DeephavenChannel createChannel() {
         ManagedChannel channel = channelBuilder().build();
         register(channel);
-        return new DeephavenChannelImpl(channel);
+        return new DeephavenChannel(channel);
     }
 }
