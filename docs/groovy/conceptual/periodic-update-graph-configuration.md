@@ -86,7 +86,7 @@ import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph
 PeriodicUpdateGraph.getInstance("DEFAULT").requestRefresh()
 ```
 
-This does not bypass the normal update cycle—it simply asks the PUG to begin the next cycle as soon as practicable. Updates are still processed in the usual order.
+This does not bypass the normal update cycle - it simply asks the PUG to begin the next cycle as soon as practicable. Updates are still processed in the usual order.
 
 ## Operation Initializer Thread Pool
 
