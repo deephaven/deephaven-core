@@ -93,6 +93,9 @@ public class MainHelper {
     /**
      * Common init method to share between main() implementations.
      *
+     * <p>
+     * Equivalent to {@code init(args, mainClass, true)}.
+     *
      * @param args the args
      * @param mainClass the main class
      * @return the current configuration instance to be used when configuring the rest of the server
@@ -100,6 +103,22 @@ public class MainHelper {
      */
     @NotNull
     public static Configuration init(String[] args, Class<?> mainClass) throws IOException {
+        return init(args, mainClass, true);
+    }
+
+    /**
+     * Common init method to share between main() implementations.
+     *
+     * @param args the args
+     * @param mainClass the main class
+     * @param installLogbackShutdownHook if {@code true}, will install a logback shutdown hook that runs after all
+     *        {@link ShutdownManager} tasks have run
+     * @return the current configuration instance to be used when configuring the rest of the server
+     * @throws IOException if an I/O exception occurs
+     */
+    @NotNull
+    public static Configuration init(String[] args, Class<?> mainClass, boolean installLogbackShutdownHook)
+            throws IOException {
         Bootstrap.printf("# Starting %s%n", mainClass.getName());
 
         // No classes should be loaded before we bootstrap additional system properties
@@ -134,7 +153,9 @@ public class MainHelper {
         Thread.setDefaultUncaughtExceptionHandler(processEnvironment.getFatalErrorReporter());
         HeapDump.setupHeapDumpWithDefaults(config,
                 (final RuntimeException unused) -> ConstructSnapshot.concurrentAttemptInconsistent(), log);
-        installLogbackStopAsPostShutdownManagerHook(processEnvironment.getShutdownManager(), log);
+        if (installLogbackShutdownHook) {
+            installLogbackStopAsPostShutdownManagerHook(processEnvironment.getShutdownManager(), log);
+        }
         return config;
     }
 
@@ -226,7 +247,6 @@ public class MainHelper {
     private static Optional<String> applicationEnvironmentVariable() {
         return Optional.ofNullable(System.getenv(DEEPHAVEN_APPLICATION_ENV));
     }
-
 
     private static void installLogbackStopAsPostShutdownManagerHook(
             final ShutdownManager globalShutdownManager,
