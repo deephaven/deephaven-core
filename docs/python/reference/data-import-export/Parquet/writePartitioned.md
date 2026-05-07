@@ -88,7 +88,7 @@ Sequence of sequences containing the column names for indexes to persist. The wr
 </Param>
 <Param name="row_group_info" type="RowGroupInfo" optional>
 
-Requested RowGroup instructions, as returned by a call to `RowGroupInfo`.
+Requested `RowGroup` instructions, as returned by a call to `RowGroupInfo`.
 
 </Param>
 <Param name="special_instructions" type="s3.S3Instructions" optional>
