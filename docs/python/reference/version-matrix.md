@@ -17,7 +17,7 @@ Any plugins housed in deephaven-plugins work for 3.9+ and are tested with Python
 We aim to support all Java LTS versions greater than or equal to our minimum Java LTS version, as well as the latest Java version, based on the timing of the specific release. A :white_check_mark: indicates that Deephaven has been tested against the JDK version.
 
 | Deephaven Version |    JDK 11 (LTS)    |    JDK 17 (LTS)    |    JDK 21 (LTS)    |  JDK 22 (latest)   |
-|-------------------| :----------------: | :----------------: | :----------------: |:------------------:|
+| ----------------- | :----------------: | :----------------: | :----------------: | :----------------: |
 | 0.40.x            | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
 | 0.41.x            | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
 
