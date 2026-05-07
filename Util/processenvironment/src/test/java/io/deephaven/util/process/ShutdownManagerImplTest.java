@@ -4,6 +4,7 @@
 package io.deephaven.util.process;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
@@ -36,7 +37,9 @@ class ShutdownManagerImplTest {
         manager.registerTask(ShutdownManager.OrderingCategory.LAST, () -> out.add("LAST-3"));
         manager.registerTask(ShutdownManager.OrderingCategory.LAST, () -> out.add("LAST-2"));
         manager.registerTask(ShutdownManager.OrderingCategory.LAST, () -> out.add("LAST-1"));
+        assertThat(manager.tasksInvoked()).isFalse();
         assertThat(manager.maybeInvokeTasks()).isTrue();
+        assertThat(manager.tasksInvoked()).isTrue();
         assertThat(out).containsExactly("FIRST-1", "FIRST-2", "FIRST-3", "MIDDLE-1", "MIDDLE-2", "MIDDLE-3", "LAST-1",
                 "LAST-2", "LAST-3");
     }
@@ -71,6 +74,9 @@ class ShutdownManagerImplTest {
             finished[0] = true;
         });
 
+        // We know nothing has invoked the tasks yet
+        assertThat(manager.tasksInvoked()).isFalse();
+
         // Invoke the shutdown tasks off-thread
         new Thread(() -> manager.maybeInvokeTasks()).start();
 
@@ -97,5 +103,8 @@ class ShutdownManagerImplTest {
             thread.join();
         }
         assertThat(finished[0]).isTrue();
+
+        // After all the tasks have been invoked, this should still be true
+        assertThat(manager.tasksInvoked()).isTrue();
     }
 }

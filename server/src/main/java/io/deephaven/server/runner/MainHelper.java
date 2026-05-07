@@ -100,6 +100,7 @@ public class MainHelper {
      * @param mainClass the main class
      * @return the current configuration instance to be used when configuring the rest of the server
      * @throws IOException if an I/O exception occurs
+     * @see #init(String[], Class, boolean)
      */
     @NotNull
     public static Configuration init(String[] args, Class<?> mainClass) throws IOException {
@@ -111,8 +112,9 @@ public class MainHelper {
      *
      * @param args the args
      * @param mainClass the main class
-     * @param installLogbackShutdownHook if {@code true}, will install a logback shutdown hook that runs after all
-     *        {@link ShutdownManager} tasks have run
+     * @param installLogbackShutdownHook if {@code true}, will try to install a logback shutdown hook that runs after
+     *        all {@link ShutdownManager} tasks have run. If logback is not on the classpath nor registered as the SLF4J
+     *        logger implementation, the shutdown hook will not be installed.
      * @return the current configuration instance to be used when configuring the rest of the server
      * @throws IOException if an I/O exception occurs
      */
