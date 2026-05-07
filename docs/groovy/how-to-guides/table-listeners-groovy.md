@@ -50,12 +50,15 @@ A [`MergedListener`](/core/javadoc/io/deephaven/engine/table/impl/MergedListener
 - `listenerDescription`: A String description of the listener.
 - `result`: a result table that uses the listener's tables as sources. Can be null.
 
-The following example listens to two time tables, one ticking every two seconds and the other ticking every three seconds. [`getUpdate`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/ListenerRecorder.html#getUpdate()) returns a [`TableUpdate`](/core/javadoc/io/deephaven/engine/table/TableUpdate.html) object for each [`ListenerRecorder`](/core/javadoc/io/deephaven/engine/table/impl/ListenerRecorder.html), and the [`MergedListener`](/core/javadoc/io/deephaven/engine/table/impl/MergedListener.html)'s `process` function is overwritten to print updates if they have been received and to do nothing otherwise.
+The following example listens to two time tables, one ticking every second and the other ticking every two seconds. [`getUpdate`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/ListenerRecorder.html#getUpdate()) returns a [`TableUpdate`](/core/javadoc/io/deephaven/engine/table/TableUpdate.html) object for each [`ListenerRecorder`](/core/javadoc/io/deephaven/engine/table/impl/ListenerRecorder.html), and the [`MergedListener`](/core/javadoc/io/deephaven/engine/table/impl/MergedListener.html)'s `process` function is overwritten to print updates if they have been received and to do nothing otherwise.
 
 ```groovy ticking-table order=null reset
 import io.deephaven.engine.table.TableUpdate
+import io.deephaven.engine.table.ColumnSource
 import io.deephaven.engine.table.impl.ListenerRecorder
 import io.deephaven.engine.table.impl.MergedListener
+import io.deephaven.engine.rowset.RowSet
+import java.time.Instant
 
 t1 = timeTable("PT1S").update("X=i").tail(5)
 t2 = timeTable("PT2S").update("X=i*2").tail(5)
@@ -69,35 +72,35 @@ h = new MergedListener([recorder1, recorder2], [], "Description", null) {
   @Override
   void process() {
     counter++
-    tu1 = recorder1.getUpdate()
-    tu2 = recorder2.getUpdate()
+    TableUpdate tu1 = recorder1.getUpdate()
+    TableUpdate tu2 = recorder2.getUpdate()
 
-    colSrc1 = t1.getColumnSource("Timestamp")
-    colSrc2 = t1.getColumnSource("X")
-    colSrc3 = t2.getColumnSource("Timestamp")
-    colSrc4 = t2.getColumnSource("X")
+    ColumnSource<Instant> colSrc1 = t1.getColumnSource("Timestamp", Instant.class)
+    ColumnSource<Integer> colSrc2 = t1.getColumnSource("X", int.class)
+    ColumnSource<Instant> colSrc3 = t2.getColumnSource("Timestamp", Instant.class)
+    ColumnSource<Integer> colSrc4 = t2.getColumnSource("X", int.class)
 
     if (tu1 != null) {
-        it1 = tu1.added().iterator()
-        while (it1.hasNext()) {
-            col1Data = DateTimeUtils.epochNanosToInstant(colSrc1.getLong(it1.next()))
-            col1Type = colSrc1.getType()
-            col2Data = colSrc2.getInt(it1.next())
-            col2Type = colSrc2.getType()
+        RowSet.Iterator iter1 = tu1.added().iterator()
+        while (iter1.hasNext()) {
+            long rowKey = iter1.next()
+            Instant col1Data = DateTimeUtils.epochNanosToInstant(colSrc1.getLong(rowKey))
+            Class col1Type = colSrc1.getType()
+            int col2Data = colSrc2.getInt(rowKey)
+            Class col2Type = colSrc2.getType()
             println "t1 updates: {'Timestamp': [data=${col1Data}, ${col1Type}], 'X': [data=${col2Data}, ${col2Type}]"
         }
-        it1 = null
     }
     if (tu2 != null) {
-        it2 = tu2.added().iterator()
-        while (it2.hasNext()) {
-            col3Data = DateTimeUtils.epochNanosToInstant(colSrc3.getLong(it2.next()))
-            col3Type = colSrc3.getType()
-            col4Data = colSrc4.getInt(it2.next())
-            col4Type = colSrc4.getType()
+        RowSet.Iterator iter2 = tu2.added().iterator()
+        while (iter2.hasNext()) {
+            long rowKey = iter2.next()
+            Instant col3Data = DateTimeUtils.epochNanosToInstant(colSrc3.getLong(rowKey))
+            Class col3Type = colSrc3.getType()
+            int col4Data = colSrc4.getInt(rowKey)
+            Class col4Type = colSrc4.getType()
             println "t2 updates: {'Timestamp': [data=${col3Data}, ${col3Type}], 'X': [data=${col4Data}, ${col4Type}]"
         }
-        it2 = null
     }
   }
 }
@@ -112,7 +115,7 @@ t2.addUpdateListener(recorder2)
 ![`t1` and `t2` update while `handle` prints updates to the log](../assets/how-to/listener-merged.gif)
 
 > [!IMPORTANT]
-> `updates` contains `null` values for any table that has not changed during the update cycle. These `null` values must be handled to avoid raising errors.
+> The `TableUpdate` returned by `getUpdate()` is `null` for any table that has not changed during the update cycle. These `null` values must be handled to avoid raising errors.
 
 ## Access table data
 
@@ -124,34 +127,35 @@ The following methods return a RowSet of the added, removed, or modified data:
 - [`added`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/TableUpdate.html#added()) - rows added during the current update cycle.
 - [`modified`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/TableUpdate.html#modified()) - rows modified during the current update cycle.
 - [`removed`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/TableUpdate.html#removed()) - rows removed during the current update cycle.
-- [`getModifiedPreShift`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/TableUpdate.html#getModifiedPreShift()) - rows modified during the previous update cycle.
+- [`getModifiedPreShift`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/TableUpdate.html#getModifiedPreShift()) - modified rows in their pre-shift row key positions (before any shifts were applied during this update cycle).
 
 The following example listens to added rows during each update cycle. It prints the data as the listener receives it.
 
 ```groovy ticking-table order=null reset
 import io.deephaven.engine.table.TableUpdate
+import io.deephaven.engine.table.ColumnSource
 import io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter
+import io.deephaven.engine.rowset.RowSet
+import java.time.Instant
 
 t1 = timeTable("PT1S").update("X=100+i").tail(5)
 
 h1 = new InstrumentedTableUpdateListenerAdapter(t1, false) {
-    def counter = 0
 
     @Override
     public void onUpdate(TableUpdate upstream) {
-        it1 = upstream.added().iterator()
-        colSrc1 = t1.getColumnSource("Timestamp")
-        colSrc2 = t1.getColumnSource("X")
+        RowSet.Iterator iter = upstream.added().iterator()
+        ColumnSource<Instant> colSrc1 = t1.getColumnSource("Timestamp", Instant.class)
+        ColumnSource<Integer> colSrc2 = t1.getColumnSource("X", int.class)
 
-        while (it1.hasNext()) {
-            it = it1.next()
-            col1data = DateTimeUtils.epochNanosToInstant(colSrc1.getLong(it))
-            col1type = colSrc1.getType()
-            col2data = colSrc2.getInt(it)
-            col2type = colSrc2.getType()
+        while (iter.hasNext()) {
+            long rowKey = iter.next()
+            Instant col1data = DateTimeUtils.epochNanosToInstant(colSrc1.getLong(rowKey))
+            Class col1type = colSrc1.getType()
+            int col2data = colSrc2.getInt(rowKey)
+            Class col2type = colSrc2.getType()
             println "{'Timestamp': [data=${col1data}, type=${col1type}], 'X': [data=${col2data}, type=${col2type}]}"
         }
-
     }
 }
 
@@ -164,33 +168,34 @@ The following example listens to modified rows during each update cycle. It uses
 
 ```groovy ticking-table order=null reset
 import io.deephaven.engine.table.TableUpdate
+import io.deephaven.engine.table.ColumnSource
 import io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter
+import io.deephaven.engine.rowset.RowSet
 
 t1 = timeTable("PT0.1s").update("X = i").lastBy()
 
-h1 = new InstrumentedTableUpdateListenerAdapter("listener", t1, null) {
+h1 = new InstrumentedTableUpdateListenerAdapter("listener", t1, false) {
     @Override
     public void onUpdate(TableUpdate upstream) {
-        prevModified = upstream.getModifiedPreShift()
-        currModified = upstream.modified()
+        RowSet prevModified = upstream.getModifiedPreShift()
+        RowSet currModified = upstream.modified()
         if (prevModified.size() == 0) {
             println "No previous values"
             return
         }
 
-        xCol = t1.getColumnSource("X")
+        ColumnSource<Integer> xCol = t1.getColumnSource("X", int.class)
 
-        prevIt = prevModified.iterator()
-        currIt = currModified.iterator()
+        RowSet.Iterator prevIt = prevModified.iterator()
+        RowSet.Iterator currIt = currModified.iterator()
 
         while (prevIt.hasNext() && currIt.hasNext()) {
-            prevRowIdx = prevIt.next()
-            currRowIdx = currIt.next()
-            prev = xCol.getPrevInt(prevRowIdx)
-            curr = xCol.getInt(currRowIdx)
+            long prevRowIdx = prevIt.next()
+            long currRowIdx = currIt.next()
+            int prev = xCol.getPrevInt(prevRowIdx)
+            int curr = xCol.getInt(currRowIdx)
             println "Change previous=${prev} current=${curr}"
         }
-
     }
 }
 
@@ -248,9 +253,12 @@ ExecutionContext.getContext().getUpdateGraph().exclusiveLock().doLocked(() -> {
 
 ## Error handling
 
-Use a try-catch block within the `onUpdate` call to define and handle errors when using table listeners.
+If a listener encounters an error, it should throw an exception rather than catching and suppressing it. When a listener throws an exception:
 
-Consider an example where a listener raises an error if it receives a value greater than 10. A try-catch block prints a message about the error to the console.
+- In a **Persistent Query**, the exception crashes the query — which is the correct behavior, as it alerts you that something is wrong.
+- In a **Code Studio**, the error appears in the logs.
+
+The following example throws a `RuntimeException` if it receives a value greater than 9. The exception propagates and causes the listener to fail, which is the expected behavior for a broken listener.
 
 ```groovy ticking-table order=null reset
 import io.deephaven.engine.table.TableUpdate
@@ -267,17 +275,13 @@ listener = new InstrumentedTableUpdateListenerAdapter("listener", source, false)
 
     @Override
     void onUpdate(TableUpdate upstream) {
-        try {
-            def added = upstream.added()
+        def added = upstream.added()
 
-            if (added == null || added.isEmpty()) {
-                return
-            }
-            if (added.any{element -> element > 9}) {
-                throw new Exception("Number exceeds 9")
-            }
-        } catch (Exception e) {
-            println "${e}"
+        if (added == null || added.isEmpty()) {
+            return
+        }
+        if (added.any{element -> element > 9}) {
+            throw new RuntimeException("Value exceeds 9")
         }
     }
 }
@@ -285,7 +289,7 @@ listener = new InstrumentedTableUpdateListenerAdapter("listener", source, false)
 source.addUpdateListener(listener)
 ```
 
-![`source` updates while `listener` prints error messages](../assets/how-to/listener-error.gif)
+![`source` updates while `listener` throws an exception when a value exceeds 9](../assets/how-to/listener-error.gif)
 
 ## Reduce data volumes
 
@@ -322,7 +326,7 @@ A table listener can listen to data that existed before the listener was registe
 
 To make a listener listen to previously existing data, set the `replayInitialImage` parameter to `true` when calling [`addUpdateListener`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/TableAdapter.html#addUpdateListener(io.deephaven.engine.table.ShiftObliviousListener,boolean)).
 
-The following example registers two listeners with a time table a few seconds after it's created. Only the one that sets `replayInitialImage` to `True` receives data when it's first registered.
+The following example registers two listeners with a time table a few seconds after it's created. Only the one that sets `replayInitialImage` to `true` receives data when it's first registered.
 
 ```groovy ticking-table order=null reset
 import io.deephaven.engine.table.TableUpdate
@@ -348,7 +352,7 @@ source.removeUpdateListener(listener)
 source.addUpdateListener(listener, true)
 ```
 
-![`handle_replay` recieves all the data the table started with, while `handle_no_replay` only receives the updates after it was registered](../assets/how-to/listener-replay.gif)
+![`handle_replay` receives all the data the table started with, while `handle_no_replay` only receives the updates after it was registered](../assets/how-to/listener-replay.gif)
 
 ## Dependent tables
 
@@ -439,5 +443,5 @@ source.addUpdateListener(listener)
 ## Related documentation
 
 - [`timeTable`](../reference/table-operations/create/timeTable.md)
-- [TableUpdate](/core/pydoc/code/deephaven.table_listener.html#deephaven.table_listener.TableUpdate)
+- [`TableUpdate`](/core/javadoc/io/deephaven/engine/table/TableUpdate.html)
 - [Table](/core/javadoc/io/deephaven/engine/table/Table.html)
