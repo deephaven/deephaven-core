@@ -130,7 +130,7 @@ final class WebRowSetImpl implements RowSet, WritableRowSet {
 
             @Override
             public long currentRangeStart() {
-                if (start == -1) {
+                if (start != -1) {
                     return start;
                 }
                 return current.getFirst();

@@ -38,7 +38,12 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
             .script("table_to_rollup",
                     "time_table('PT0.1s').update(['Y=Math.sin(i/3)', 'X=i%3', 'Z=`abc` + i']).format_columns(['Y=Y>0 ? GREEN : RED', 'Timestamp=RED'])")
             .script("ticking_rollup",
-                    "table_to_rollup.rollup(aggs=[agg.first('Y')],by=['X'],include_constituents=True)");
+                    "table_to_rollup.rollup(aggs=[agg.first('Y')],by=['X'],include_constituents=True)")
+            .script("from deephaven.query_library import import_class\n" +
+                    "from deephaven import empty_table\n" +
+                    "import_class('java.time.ZoneId')\n" +
+                    "import_class('java.time.LocalDate')\n" +
+                    "t = empty_table(100).update([\"I=i\", \"J=i%1001\", \"K=new int[i%17]\"]).ungroup(\"K\").update([\"LocalTime=LocalTime.now()\", \"LocalDate=LocalDate.now()\"])");
 
     public void testStaticTreeTable() {
         connect(tables)

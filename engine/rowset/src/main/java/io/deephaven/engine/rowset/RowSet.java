@@ -445,10 +445,10 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
     WritableRowSet subSetForReversePositions(RowSequence posRowSequence);
 
     /**
-     * Returns the row key at the given row position.
+     * Returns the row key at the given row position. If a negative position is provided,
      *
      * @param rowPosition A row position in this RowSet between {@code 0} and {@code size() - 1}.
-     * @return The row key at the supplied row position
+     * @return The row key at the supplied row position, or -1 is
      */
     long get(long rowPosition);
 

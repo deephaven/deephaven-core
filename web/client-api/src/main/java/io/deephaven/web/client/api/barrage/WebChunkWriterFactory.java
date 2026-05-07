@@ -348,13 +348,13 @@ public class WebChunkWriterFactory implements ChunkWriter.Factory {
                 int fixedSizeLength = 0;
                 if (typeInfo.arrowField().typeType() == Type.FixedSizeList) {
                     listMode = ListChunkReader.Mode.FIXED;
+                    FixedSizeList list = new FixedSizeList();
+                    typeInfo.arrowField().type(list);
+                    fixedSizeLength = list.listSize();
                 } else if (typeInfo.arrowField().typeType() == Type.ListView) {
                     listMode = ListChunkReader.Mode.VIEW;
                 } else {
                     listMode = ListChunkReader.Mode.VARIABLE;
-                    FixedSizeList list = new FixedSizeList();
-                    typeInfo.arrowField().type(list);
-                    fixedSizeLength = list.listSize();
                 }
                 Class<?> componentType = typeInfo.componentType();
                 // TODO special case for byte[]?
