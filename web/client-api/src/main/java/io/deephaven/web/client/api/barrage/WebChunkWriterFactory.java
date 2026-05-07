@@ -30,6 +30,7 @@ import io.deephaven.extensions.barrage.chunk.ShortChunkWriter;
 import io.deephaven.extensions.barrage.chunk.VarBinaryChunkWriter;
 import io.deephaven.extensions.barrage.chunk.array.ArrayExpansionKernel;
 import io.deephaven.util.BooleanUtils;
+import io.deephaven.util.QueryConstants;
 import io.deephaven.web.client.api.BigDecimalWrapper;
 import io.deephaven.web.client.api.BigIntegerWrapper;
 import io.deephaven.web.client.api.DateWrapper;
@@ -73,6 +74,8 @@ public class WebChunkWriterFactory implements ChunkWriter.Factory {
                             Any val = objChunk.get(i);
                             if (val != null) {
                                 output.set(i, (byte) val.asInt());
+                            } else {
+                                output.set(i, QueryConstants.NULL_BYTE);
                             }
                         }
                         return output;
@@ -86,6 +89,8 @@ public class WebChunkWriterFactory implements ChunkWriter.Factory {
                                     Any val = objChunk.get(i);
                                     if (val != null) {
                                         output.set(i, (short) val.asInt());
+                                    } else {
+                                        output.set(i, QueryConstants.NULL_SHORT);
                                     }
                                 }
                                 return output;
@@ -97,6 +102,8 @@ public class WebChunkWriterFactory implements ChunkWriter.Factory {
                                 Any val = objChunk.get(i);
                                 if (val != null) {
                                     output.set(i, (char) val.asInt());
+                                } else {
+                                    output.set(i, QueryConstants.NULL_CHAR);
                                 }
                             }
                             return output;
@@ -108,6 +115,8 @@ public class WebChunkWriterFactory implements ChunkWriter.Factory {
                             Any val = objChunk.get(i);
                             if (val != null) {
                                 output.set(i, val.asInt());
+                            } else {
+                                output.set(i, QueryConstants.NULL_INT);
                             }
                         }
                         return output;
@@ -118,6 +127,8 @@ public class WebChunkWriterFactory implements ChunkWriter.Factory {
                             LongWrapper val = objChunk.get(ii);
                             if (val != null) {
                                 output.set(ii, val.getWrapped());
+                            } else {
+                                output.set(ii, QueryConstants.NULL_LONG);
                             }
                         }
                         return output;
@@ -136,6 +147,8 @@ public class WebChunkWriterFactory implements ChunkWriter.Factory {
                             Any val = objChunk.get(i);
                             if (val != null) {
                                 output.set(i, (float) val.asDouble());
+                            } else {
+                                output.set(i, QueryConstants.NULL_FLOAT);
                             }
                         }
                         return output;
@@ -146,6 +159,8 @@ public class WebChunkWriterFactory implements ChunkWriter.Factory {
                             Any val = objChunk.get(i);
                             if (val != null) {
                                 output.set(i, val.asDouble());
+                            } else {
+                                output.set(i, QueryConstants.NULL_DOUBLE);
                             }
                         }
                         return output;
@@ -204,6 +219,8 @@ public class WebChunkWriterFactory implements ChunkWriter.Factory {
                                                     val.getDayOfMonth());
                                             jsDate.setUTCHours(0, 0, 0, 0);
                                             output.set(i, (long) jsDate.getTime());
+                                        } else {
+                                            output.set(i, QueryConstants.NULL_LONG);
                                         }
                                     }
                                     return output;
@@ -221,6 +238,8 @@ public class WebChunkWriterFactory implements ChunkWriter.Factory {
                                                     val.getDayOfMonth());
                                             jsDate.setUTCHours(0, 0, 0, 0);
                                             output.set(i, (int) (jsDate.getTime() / 86400000));
+                                        } else {
+                                            output.set(i, QueryConstants.NULL_INT);
                                         }
                                     }
                                     return output;
@@ -255,6 +274,8 @@ public class WebChunkWriterFactory implements ChunkWriter.Factory {
                                         LocalTimeWrapper val = objChunk.get(i);
                                         if (val != null) {
                                             output.set(i, val.toInt(unitsPerSecond));
+                                        } else {
+                                            output.set(i, QueryConstants.NULL_INT);
                                         }
                                     }
                                     return output;
@@ -281,6 +302,8 @@ public class WebChunkWriterFactory implements ChunkWriter.Factory {
                                         LocalTimeWrapper val = objChunk.get(i);
                                         if (val != null) {
                                             output.set(i, val.toLong(unitsPerSecond));
+                                        } else {
+                                            output.set(i, QueryConstants.NULL_LONG);
                                         }
                                     }
                                     return output;
@@ -306,6 +329,8 @@ public class WebChunkWriterFactory implements ChunkWriter.Factory {
                                 DateWrapper val = objChunk.get(i);
                                 if (val != null) {
                                     output.set(i, val.getWrapped());
+                                } else {
+                                    output.set(i, QueryConstants.NULL_LONG);
                                 }
                             }
                             return output;

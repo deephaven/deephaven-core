@@ -1248,7 +1248,8 @@ public class WorkerConnection {
             BarrageMessageWriter barrageMessageWriter =
                     bmwFactory.newMessageWriter(msg, chunkWriters, (bytes, nanos) -> {
                     });
-            listener.onNext(barrageMessageWriter.getSnapshotView(BarrageSnapshotOptions.builder().build()));
+            listener.onNext(barrageMessageWriter.getSnapshotView(BarrageSnapshotOptions.builder()
+                    .useDeephavenNulls(true).build()));
 
             listener.onCompleted();
         }, "creating new table")

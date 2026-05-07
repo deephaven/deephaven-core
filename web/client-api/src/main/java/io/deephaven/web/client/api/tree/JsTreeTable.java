@@ -505,7 +505,11 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
                 controller.signal.addEventListener("abort", e -> cancellation.cancel(null));
                 return null;
             }).catch_(error -> {
-                c.onError((Throwable) error);
+                if (error instanceof Throwable) {
+                    c.onError((Throwable) error);
+                } else {
+                    c.onError(new RuntimeException(String.valueOf(error)));
+                }
                 return null;
             });
         }).then(ignored -> (Promise<Object>) prevTicket.promise()).then(result -> {
