@@ -163,9 +163,16 @@ public class ColumnRestrictionUtils {
     public static String validateIntegerRange(Object value, JsPropertyMap<Object> data) {
         if (value == null)
             return null;
+        Object rawMin = data.get("min");
+        Object rawMax = data.get("max");
+        if (rawMin == null || rawMax == null) {
+            throw new IllegalStateException(
+                    "validateIntegerRange: restriction data is missing expected fields 'min' and/or 'max'. "
+                            + "This likely means the validator was attached to the wrong restriction type.");
+        }
         double num = Js.<Double>cast(value);
-        double min = Js.<Double>cast(data.get("min"));
-        double max = Js.<Double>cast(data.get("max"));
+        double min = Js.<Double>cast(rawMin);
+        double max = Js.<Double>cast(rawMax);
         if (!Double.isNaN(min) && num < min) {
             return "Value " + num + " is less than the minimum allowed value of " + min;
         }
@@ -198,15 +205,15 @@ public class ColumnRestrictionUtils {
     }
 
     /**
-     * Validate that a string value is neither {@code null} nor empty.
+     * Validate that a string value is not empty.
      *
      * @param value The proposed column value
      * @param data Restriction data (unused for this restriction type)
-     * @return An error message if the value is {@code null} or empty, or {@code null} if valid
+     * @return An error message if the value is empty, or {@code null} if valid
      */
     public static String validateNonEmpty(Object value, JsPropertyMap<Object> data) {
         if (value == null)
-            return "Value must not be null or empty";
+            return null;
         String str = Js.cast(value);
         return str.isEmpty() ? "Value must not be empty" : null;
     }
@@ -221,10 +228,16 @@ public class ColumnRestrictionUtils {
     public static String validateStringList(Object value, JsPropertyMap<Object> data) {
         if (value == null)
             return null;
+        Object rawAllowed = data.get("values");
+        if (rawAllowed == null) {
+            throw new IllegalStateException(
+                    "validateStringList: restriction data is missing expected field 'values'. "
+                            + "This likely means the validator was attached to the wrong restriction type.");
+        }
         String str = Js.cast(value);
-        JsArray<String> allowed = Js.cast(data.get("values"));
+        JsArray<String> allowed = Js.cast(rawAllowed);
         for (int i = 0; i < allowed.length; i++) {
-            if (allowed.getAt(i).equals(str))
+            if (str.equals(allowed.getAt(i)))
                 return null;
         }
         return "Value '" + str + "' is not in the allowed list: " + allowed.join(", ");

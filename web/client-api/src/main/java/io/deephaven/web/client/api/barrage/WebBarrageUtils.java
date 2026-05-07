@@ -9,6 +9,7 @@ import io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
 import io.deephaven.proto.backplane.grpc.DeephavenTableMetadata;
 import io.deephaven.proto.backplane.grpc.InputTableColumnInfo;
+import io.deephaven.web.client.api.ColumnRestriction;
 import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
 import io.deephaven.web.client.api.barrage.def.InitialTableDefinition;
 import io.deephaven.web.client.api.barrage.def.InputTableMetadata;
@@ -82,17 +83,6 @@ public class WebBarrageUtils {
         if (validator != null) {
             restrictionValidators.put(restrictionType, validator);
         }
-    }
-
-    /**
-     * Returns the registered client-side validator for the given restriction type, or {@code null} if none is
-     * registered.
-     *
-     * @param restrictionType The restriction type name
-     * @return The validator, or {@code null}
-     */
-    public static ColumnRestrictionValidator getValidator(String restrictionType) {
-        return restrictionValidators.get(restrictionType);
     }
 
     public static ByteBuffer wrapMessage(FlatBufferBuilder innerBuilder, byte messageType) {
@@ -188,7 +178,12 @@ public class WebBarrageUtils {
                     String restrictionType = ColumnRestrictionUtils.getRestrictionType(restrictionAny.getTypeUrl());
                     ColumnRestrictionConverter converter = restrictionConverters.get(restrictionType);
                     if (converter != null) {
-                        colRestrictions.addRestriction(converter.convert(restrictionAny));
+                        ColumnRestriction restriction = converter.convert(restrictionAny);
+                        ColumnRestrictionValidator validator = restrictionValidators.get(restrictionType);
+                        if (validator != null) {
+                            restriction.setValidator(validator);
+                        }
+                        colRestrictions.addRestriction(restriction);
                     } else {
                         JsLog.error("No converter registered for restriction type: " + restrictionType);
                     }

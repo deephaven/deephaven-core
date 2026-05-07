@@ -4,6 +4,10 @@
 package io.deephaven.web.client.api;
 
 import com.vertispan.tsdefs.annotations.TsName;
+import io.deephaven.web.client.api.barrage.util.ColumnRestrictionValidator;
+import jsinterop.annotations.JsIgnore;
+import jsinterop.annotations.JsMethod;
+import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsProperty;
 import jsinterop.base.JsPropertyMap;
 
@@ -30,6 +34,7 @@ import jsinterop.base.JsPropertyMap;
 public class ColumnRestriction {
     private final String type;
     private final JsPropertyMap<Object> data;
+    private ColumnRestrictionValidator validator;
 
     /**
      * @param type The restriction type name (e.g., "IntegerRangeRestriction")
@@ -38,6 +43,17 @@ public class ColumnRestriction {
     public ColumnRestriction(String type, JsPropertyMap<Object> data) {
         this.type = type;
         this.data = data;
+    }
+
+    /**
+     * Sets the client-side validator for this restriction. Called internally when a registered validator is found for
+     * the restriction type. Not exposed to JavaScript — use {@link #validate(Object)} instead.
+     *
+     * @param validator The validator to attach
+     */
+    @JsIgnore
+    public void setValidator(ColumnRestrictionValidator validator) {
+        this.validator = validator;
     }
 
     /**
@@ -59,6 +75,34 @@ public class ColumnRestriction {
     @JsProperty
     public JsPropertyMap<Object> getData() {
         return data;
+    }
+
+    /**
+     * Returns {@code true} if this restriction has a registered client-side validator. When {@code false},
+     * {@link #validate(Object)} will always return {@code null}, but the server will still enforce the restriction.
+     *
+     * @return Whether a client-side validator is available
+     */
+    @JsProperty(name = "hasValidator")
+    public boolean hasValidator() {
+        return validator != null;
+    }
+
+    /**
+     * Validates a proposed value against this restriction. Returns {@code null} either if the value is valid
+     * <em>or</em> if no client-side validator is registered — use {@link #hasValidator()} to distinguish the two cases.
+     *
+     * @param value The proposed column value to validate
+     * @return An error message if the value violates the restriction, or {@code null} if the value is valid or no
+     *         validator is registered
+     */
+    @JsMethod
+    @JsNullable
+    public String validate(Object value) {
+        if (validator == null) {
+            return null;
+        }
+        return validator.validate(value, data);
     }
 
     @Override
