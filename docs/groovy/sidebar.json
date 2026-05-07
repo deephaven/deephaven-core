@@ -1312,6 +1312,10 @@
                   {
                     "label": "writeTable",
                     "path": "reference/data-import-export/Parquet/writeTable.md"
+                  },
+                  {
+                    "label": "writeKeyValuePartitionedTable",
+                    "path": "reference/data-import-export/Parquet/writeKeyValuePartitionedTable.md"
                   }
                 ]
               },
