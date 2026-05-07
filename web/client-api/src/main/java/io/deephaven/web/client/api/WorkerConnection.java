@@ -1246,8 +1246,7 @@ public class WorkerConnection {
             msg.shifted = RowSetShiftData.EMPTY;
 
             BarrageMessageWriter barrageMessageWriter =
-                    bmwFactory.newMessageWriter(msg, chunkWriters, (bytes, nanos) -> {
-                    });
+                    bmwFactory.newMessageWriter(msg, chunkWriters, BarrageMessageWriter.WriteMetricsConsumer.NO_OP);
             listener.onNext(barrageMessageWriter.getSnapshotView(BarrageSnapshotOptions.builder()
                     .useDeephavenNulls(true).build()));
 

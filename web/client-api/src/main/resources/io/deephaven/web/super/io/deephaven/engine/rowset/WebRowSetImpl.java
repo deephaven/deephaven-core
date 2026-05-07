@@ -59,12 +59,16 @@ final class WebRowSetImpl implements RowSet, WritableRowSet {
     public long get(long position) {
         return rangeSet.get(position);
     }
+
     @Override
     public WritableRowSet intersect(RowSet rowSet) {
-        RangeSet result = new RangeSet();
-        result.addRangeSet(((WebRowSetImpl)rowSet).rangeSet);
-        result.addRangeSet(rangeSet);
-        return new WebRowSetImpl(result);
+        if (rowSet.equals(this)) {
+            return copy();
+        }
+        if (this.isEmpty() || rowSet.isEmpty()) {
+            return RowSetFactory.empty();
+        }
+        throw new UnsupportedOperationException("intersect");
     }
 
     @Override
@@ -106,7 +110,6 @@ final class WebRowSetImpl implements RowSet, WritableRowSet {
     public RangeIterator rangeIterator() {
         java.util.Iterator<Range> iter = rangeSet.rangeIterator();
         return new RangeIterator() {
-            long start = -1;
             private Range current;
             @Override
             public void close() {
@@ -125,14 +128,11 @@ final class WebRowSetImpl implements RowSet, WritableRowSet {
 
             @Override
             public void postpone(long v) {
-                start = v;
+                throw new UnsupportedOperationException("postpone");
             }
 
             @Override
             public long currentRangeStart() {
-                if (start != -1) {
-                    return start;
-                }
                 return current.getFirst();
             }
 
@@ -144,7 +144,6 @@ final class WebRowSetImpl implements RowSet, WritableRowSet {
             @Override
             public long next() {
                 current = iter.next();
-                start = -1;
                 return currentRangeStart();
             }
         };

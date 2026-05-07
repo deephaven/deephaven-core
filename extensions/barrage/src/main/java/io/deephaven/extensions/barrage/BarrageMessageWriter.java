@@ -63,11 +63,11 @@ public interface BarrageMessageWriter extends SafeCloseable {
          *
          * @param schemaPayloadWriter a function that writes schema data to a {@link FlatBufferBuilder} and returns the
          *        schema offset
-         * @param flightDescriptor the flight descriptor for the table
+         * @param flightDescriptor the flight descriptor for the table, null if it need not be set
          * @return a MessageView that can be sent to a subscriber
          */
         MessageView getSchemaView(@NotNull ToIntFunction<FlatBufferBuilder> schemaPayloadWriter,
-                Flight.FlightDescriptor flightDescriptor);
+                @Nullable Flight.FlightDescriptor flightDescriptor);
     }
 
     /**
@@ -136,7 +136,20 @@ public interface BarrageMessageWriter extends SafeCloseable {
             boolean reverseViewport,
             @Nullable RowSet keyspaceViewport, BitSet snapshotColumns);
 
+    /**
+     * Optional metrics API to track how many bytes a barrage message consumed, and how many nanoseconds it took to
+     * write it.
+     */
     interface WriteMetricsConsumer {
+        WriteMetricsConsumer NO_OP = (bytes, cpuNanos) -> {
+        };
+
+        /**
+         * Called after the entire message has been sent, with the total byte count and nanos of CPU time to send it.
+         *
+         * @param bytes number of bytes in the record batch message
+         * @param cpuNanos nanoseconds it took to serialize and send the message
+         */
         void onWrite(long bytes, long cpuNanos);
     }
 }

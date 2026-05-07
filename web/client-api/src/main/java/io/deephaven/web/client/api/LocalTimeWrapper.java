@@ -70,9 +70,7 @@ public class LocalTimeWrapper {
      * {@link #intCreator(int)} - 1 for seconds, 1_000 for milliseconds.
      */
     public int toInt(int unitsPerSecond) {
-        long totalNanos = ((long) (hour * 3600 + minute * 60 + second)) * 1_000_000_000L + nano;
-        int nanoPerUnit = 1_000_000_000 / unitsPerSecond;
-        return (int) (totalNanos / nanoPerUnit);
+        return (int) toLong(unitsPerSecond);
     }
 
     /**
