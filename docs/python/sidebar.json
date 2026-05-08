@@ -1535,6 +1535,10 @@
                   {
                     "label": "write",
                     "path": "reference/data-import-export/Parquet/writeTable.md"
+                  },
+                  {
+                    "label": "write_partitioned",
+                    "path": "reference/data-import-export/Parquet/writePartitioned.md"
                   }
                 ]
               },
