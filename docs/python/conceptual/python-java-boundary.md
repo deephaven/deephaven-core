@@ -3,7 +3,7 @@ title: The Python-Java boundary and how it affects query efficiency
 sidebar_label: Python-Java boundary
 ---
 
-This guide discusses the relationship between Python and Java in Deephaven Python queries and it how it affects query efficiency.
+This guide discusses the relationship between Python and Java in Deephaven Python queries and how it affects query efficiency.
 
 ## From Python to Java
 
@@ -21,7 +21,7 @@ The Python-Java boundary can be crossed numerous times throughout a single query
 
 Here's a screenshot showing execution times between the built-in query language [`sin`](https://deephaven.io/core/javadoc/io/deephaven/function/Numeric.html#sin(double)) function, and [`numpy.sin`](https://numpy.org/doc/stable/reference/generated/numpy.sin.html):
 
-![Print statements. The built-in sine function took 0.045 sect=onds, while Numpy's sine function took 1.341 seconds](../assets/conceptual/sine-timed.png)
+![Print statements. The built-in sine function took 0.045 seconds, while Numpy's sine function took 1.341 seconds](../assets/conceptual/sine-timed.png)
 
 That's a pretty significant difference in execution time. Below is the code that produces it:
 
@@ -32,7 +32,7 @@ from time import time
 
 n_tries = 100
 
-source = empty_table(100_000).update(["X = 0.1 * i"])
+source = empty_table(100_000).update(["X = 0.1 * ii"])
 
 start = time()
 for idx in range(n_tries):
@@ -92,6 +92,26 @@ Efficient queries typically make minimal Python-Java boundary crossings. They al
 
 **They use methods and variables built-in to the query language.**
 
+## Memory considerations
+
+When using Python user-defined functions (UDFs) in Deephaven query strings, Python memory is allocated outside the Java heap. This has important implications:
+
+- **Python memory is not bounded by the Java heap** — The `-Xmx` JVM setting controls only the Java heap size. Python objects created by UDFs exist in a separate memory space that can grow independently.
+- **Unbounded memory growth** — Python objects allocated during UDF execution can accumulate over time, especially in long-running or high-throughput queries. This can lead to resident memory far exceeding the configured Java heap size.
+- **OOM risk** — When total process memory grows too large, the Linux Out-Of-Memory (OOM) killer may terminate processes. In Deephaven Enterprise environments, this can affect the dispatcher process, potentially bringing down all child workers.
+
+> [!CAUTION]
+> A query with a 16 GB Java heap using Python UDFs heavily can grow to 100 GB or more of resident memory. Monitor system memory usage when deploying Python-heavy queries in production.
+
+### Recommendations
+
+To minimize memory risks when using Python UDFs:
+
+- **Convert performance-critical UDFs to Java** — For frequently called functions, consider implementing them in Java or using built-in query language functions instead.
+- **Avoid allocating large Python objects in UDFs** — Minimize the creation of large data structures within UDF code.
+- **Monitor resident memory** — Track total process memory, not just Java heap usage, for queries using Python UDFs.
+- **Use vectorized operations when possible** — NumPy vectorized operations on entire columns (outside query strings) are often more memory-efficient than per-row UDF calls.
+
 ## The Python API under the hood
 
 Deephaven's Python API wraps its engine, written in Java, in Python. It adds small amounts of initialization overhead all for the sake of ease of use. For example, the [`update`](../reference/table-operations/select/update.md) table operation creates a new table containing new, in-memory columns for each operation given in a list. Below is a simplified snippet of the Python source code for a Deephaven table with the `update` method.
@@ -121,4 +141,7 @@ Much of Deephaven's Python API looks like this under the hood. It serves two pri
 
 ## Related documentation
 
+- [Query string overview](../how-to-guides/query-string-overview.md)
+- [Python functions in query strings](../how-to-guides/python-functions.md)
+- [Built-in query language functions](../how-to-guides/built-in-functions.md)
 - [Time in Deephaven](../conceptual/time-in-deephaven.md)
