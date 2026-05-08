@@ -13,6 +13,11 @@ import io.deephaven.web.client.fu.JsCollectors;
 import jsinterop.annotations.JsProperty;
 import jsinterop.base.Js;
 
+/**
+ * A holiday in a {@link JsBusinessCalendar dh.calendar.BusinessCalendar}.
+ *
+ * A holiday includes a {@link #getDate() date} and may define one or more {@link JsBusinessPeriod business periods}.
+ */
 @TsInterface
 @TsName(namespace = "dh.calendar", name = "Holiday")
 public class JsHoliday {
@@ -28,7 +33,7 @@ public class JsHoliday {
     }
 
     /**
-     * The date of the Holiday.
+     * Get the date of the holiday.
      * 
      * @return {@link LocalDateWrapper}
      */
@@ -38,9 +43,9 @@ public class JsHoliday {
     }
 
     /**
-     * The business periods that are open on the holiday.
+     * Get an array of all business periods that are open on the holiday.
      * 
-     * @return dh.calendar.BusinessPeriod
+     * @return {@link JsBusinessPeriod dh.calendar.BusinessPeriod} array
      */
     @JsProperty
     public JsArray<JsBusinessPeriod> getBusinessPeriods() {
