@@ -19,6 +19,7 @@ import org.apache.arrow.flatbuf.Int;
 import org.apache.arrow.flatbuf.Precision;
 import org.apache.arrow.flatbuf.Time;
 import org.apache.arrow.flatbuf.TimeUnit;
+import org.apache.arrow.flatbuf.Timestamp;
 import org.apache.arrow.flatbuf.Type;
 import org.apache.arrow.flatbuf.Utf8;
 
@@ -64,7 +65,7 @@ public enum JsDataHandler {
             return result;
         }
     },
-    DATE_TIME(Type.Int, "java.time.Instant", "datetime", "java.time.ZonedDateTime") {
+    DATE_TIME(Type.Timestamp, "java.time.Instant", "datetime", "java.time.ZonedDateTime") {
         // Ensures that the 'T' separator character is in the date time
         private String ensureSeparator(String s) {
             if (s.charAt(SEPARATOR_INDEX) == ' ') {
@@ -129,7 +130,8 @@ public enum JsDataHandler {
 
         @Override
         public int writeType(FlatBufferBuilder builder) {
-            return Int.createInt(builder, 64, true);
+            int utc = builder.createString("UTC");
+            return Timestamp.createTimestamp(builder, TimeUnit.NANOSECOND, utc);
         }
 
         @Override
@@ -273,7 +275,7 @@ public enum JsDataHandler {
             return writeSimpleNumbers(data);
         }
     },
-    BOOLEAN(Type.Bool, "boolean", "bool", "java.lang.Boolean") {
+    BOOLEAN(Type.Bool, "java.lang.Boolean", "boolean", "bool") {
         @Override
         public int writeType(FlatBufferBuilder builder) {
             return Int.createInt(builder, 8, true);
@@ -336,14 +338,14 @@ public enum JsDataHandler {
             return result;
         }
     },
-    BIG_DECIMAL(Type.Binary, "java.util.BigDecimal") {
+    BIG_DECIMAL(Type.Binary, "java.math.BigDecimal") {
         @Override
         public int writeType(FlatBufferBuilder builder) {
             Binary.startBinary(builder);
             return Binary.endBinary(builder);
         }
     },
-    BIG_INTEGER(Type.Binary, "java.util.BigInteger") {
+    BIG_INTEGER(Type.Binary, "java.math.BigInteger") {
         @Override
         public int writeType(FlatBufferBuilder builder) {
             Binary.startBinary(builder);
