@@ -13,7 +13,17 @@ import elemental2.core.TypedArray;
 import elemental2.core.Uint8Array;
 import elemental2.dom.DomGlobal;
 import elemental2.promise.Promise;
-import io.deephaven.flightjs.protocol.BrowserFlight;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.ObjectChunk;
+import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.RowSetShiftData;
+import io.deephaven.engine.table.impl.util.BarrageMessage;
+import io.deephaven.extensions.barrage.BarrageMessageWriter;
+import io.deephaven.extensions.barrage.BarrageMessageWriterImpl;
+import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
+import io.deephaven.extensions.barrage.BarrageTypeInfo;
+import io.deephaven.extensions.barrage.chunk.ChunkWriter;
 import io.deephaven.flightjs.protocol.BrowserFlightServiceGrpc;
 import io.deephaven.proto.backplane.grpc.ApplicationServiceGrpc;
 import io.deephaven.proto.backplane.grpc.ApplyPreviewColumnsRequest;
@@ -54,9 +64,11 @@ import io.deephaven.proto.backplane.script.grpc.ConsoleServiceGrpc;
 import io.deephaven.proto.backplane.script.grpc.LogSubscriptionData;
 import io.deephaven.proto.backplane.script.grpc.LogSubscriptionRequest;
 import io.deephaven.web.client.api.barrage.WebBarrageUtils;
+import io.deephaven.web.client.api.barrage.WebChunkWriterFactory;
 import io.deephaven.web.client.api.barrage.def.InitialTableDefinition;
 import io.deephaven.web.client.api.barrage.stream.AuthenticationInterceptor;
 import io.deephaven.web.client.api.barrage.stream.BiDiStream;
+import io.deephaven.web.client.api.barrage.stream.ClientBrowserStreamInterceptor;
 import io.deephaven.web.client.api.barrage.stream.ResponseStreamWrapper;
 import io.deephaven.web.client.api.barrage.stream.TrailersCapturingInterceptor;
 import io.deephaven.web.client.api.batch.RequestBatcher;
@@ -65,6 +77,7 @@ import io.deephaven.web.client.api.console.JsVariableChanges;
 import io.deephaven.web.client.api.console.JsVariableDefinition;
 import io.deephaven.web.client.api.console.JsVariableType;
 import io.deephaven.web.client.api.event.HasEventHandling;
+import io.deephaven.web.client.api.grpc.InputStreamMarshaller;
 import io.deephaven.web.client.api.i18n.JsTimeZone;
 import io.deephaven.web.client.api.impl.TicketAndPromise;
 import io.deephaven.web.client.api.lifecycle.HasLifecycle;
@@ -84,40 +97,43 @@ import io.deephaven.web.client.state.TableReviver;
 import io.deephaven.web.shared.fu.JsConsumer;
 import io.deephaven.web.shared.fu.JsRunnable;
 import io.grpc.Context;
+import io.grpc.MethodDescriptor;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
+import io.grpc.stub.ClientCalls;
 import io.grpc.stub.StreamObserver;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsOptional;
 import jsinterop.annotations.JsNullable;
 import jsinterop.base.JsPropertyMap;
-import org.apache.arrow.flatbuf.Buffer;
 import org.apache.arrow.flatbuf.Field;
-import org.apache.arrow.flatbuf.FieldNode;
 import org.apache.arrow.flatbuf.KeyValue;
 import org.apache.arrow.flatbuf.Message;
 import org.apache.arrow.flatbuf.MessageHeader;
-import org.apache.arrow.flatbuf.MetadataVersion;
-import org.apache.arrow.flatbuf.RecordBatch;
 import org.apache.arrow.flatbuf.Schema;
 import org.apache.arrow.flight.impl.Flight;
 import org.apache.arrow.flight.impl.FlightServiceGrpc;
-import org.gwtproject.nio.TypedArrayHelper;
 
 import javax.annotation.Nullable;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
 
 /**
@@ -139,6 +155,7 @@ import java.util.stream.Collectors;
 public class WorkerConnection {
 
     private Double scheduledAuthUpdate;
+    private final BarrageMessageWriter.Factory bmwFactory = new BarrageMessageWriterImpl.Factory();
     // default to 10s, the actual value is almost certainly higher than that
     private double sessionTimeoutMs = 10_000;
 
@@ -1064,167 +1081,229 @@ public class WorkerConnection {
     }
 
     public Promise<JsTable> newTable(String[] columnNames, String[] types, Object[][] data, String userTimeZone) {
-        // Store the ref to the data using an array we can clear out, so the data is garbage collected later
+        JsDataHandler.ParseContext context = new JsDataHandler.ParseContext();
+        if (userTimeZone != null) {
+            context.timeZone = JsTimeZone.getTimeZone(userTimeZone);
+        }
+
+        BarrageTypeInfo<Field>[] typeInfos = new BarrageTypeInfo[types.length];
+        Chunk<Values>[] chunks = new Chunk[types.length];
+        for (int i = 0; i < types.length; i++) {
+            JsDataHandler handler = JsDataHandler.getHandler(types[i]);
+            Class<?> type = WebBarrageUtils.stringToClass(handler.deephavenType());
+            FlatBufferBuilder b = new FlatBufferBuilder();
+            int typeOffset = handler.writeType(b);
+            Field.startField(b);
+            Field.addType(b, typeOffset);
+            Field.addTypeType(b, handler.typeType());
+            b.finish(Field.endField(b));
+            Field field = Field.getRootAsField(b.dataBuffer());
+            Class<?> componentType = null;
+            if (types[i].endsWith("[]")) {
+                componentType = WebBarrageUtils
+                        .stringToClass(handler.deephavenType().substring(0, handler.deephavenType().length() - 2));
+            }
+            typeInfos[i] = BarrageTypeInfo.make(type, componentType, field);
+
+            chunks[i] = ObjectChunk.chunkWrap(handler.process(data[i], context));
+        }
+        return newTable(columnNames, types, typeInfos, chunks);
+    }
+
+    public Promise<JsTable> newTable(String[] columnNames, String[] types, BarrageTypeInfo<Field>[] typeInfos,
+            Chunk<Values>[] data) {
+        // Store the data using a refernce we can clear out, so the data is garbage collected later
         // This means the table can only be created once, but that's probably what we want in this case anyway
-        final Object[][][] dataRef = new Object[][][] {data};
+        AtomicReference<Chunk<Values>[]> chunkRef = new AtomicReference<>(data);
+
         return newState((c, cts) -> {
-            final Object[][] d = dataRef[0];
+            final Chunk<Values>[] d = chunkRef.get();
             if (d == null) {
                 c.onError(new IllegalStateException("Data already released, cannot re-create table"));
                 return;
             }
-            dataRef[0] = null;
+            chunkRef.set(null);
 
-            // make a schema that we can embed in the first DoPut message
-            FlatBufferBuilder schema = new FlatBufferBuilder(1024);
+            ToIntFunction<FlatBufferBuilder> schemaWriter = fb -> {
+                int[] fields = new int[columnNames.length];
+                for (int i = 0; i < columnNames.length; i++) {
+                    String columnName = columnNames[i];
 
-            // while we're examining columns, build the copiers for data
-            List<JsDataHandler> columns = new ArrayList<>();
+                    JsDataHandler writer = JsDataHandler.getHandler(types[i]);
 
-            int[] fields = new int[columnNames.length];
-            for (int i = 0; i < columnNames.length; i++) {
-                String columnName = columnNames[i];
-                String columnType = types[i];
+                    int nameOffset = fb.createString(columnName);
+                    int typeOffset = writer.writeType(fb);
+                    int metadataOffset = Field.createCustomMetadataVector(fb, new int[] {
+                            KeyValue.createKeyValue(fb, fb.createString("deephaven:type"),
+                                    fb.createString(writer.deephavenType()))
+                    });
 
-                JsDataHandler writer = JsDataHandler.getHandler(columnType);
-                columns.add(writer);
+                    Field.startField(fb);
+                    Field.addName(fb, nameOffset);
+                    Field.addNullable(fb, true);
 
-                int nameOffset = schema.createString(columnName);
-                int typeOffset = writer.writeType(schema);
-                int metadataOffset = Field.createCustomMetadataVector(schema, new int[] {
-                        KeyValue.createKeyValue(schema, schema.createString("deephaven:type"),
-                                schema.createString(writer.deephavenType()))
-                });
+                    Field.addTypeType(fb, writer.typeType());
+                    Field.addType(fb, typeOffset);
+                    Field.addCustomMetadata(fb, metadataOffset);
 
-                Field.startField(schema);
-                Field.addName(schema, nameOffset);
-                Field.addNullable(schema, true);
-
-                Field.addTypeType(schema, writer.typeType());
-                Field.addType(schema, typeOffset);
-                Field.addCustomMetadata(schema, metadataOffset);
-
-                fields[i] = Field.endField(schema);
-            }
-            int fieldsOffset = Schema.createFieldsVector(schema, fields);
-
-            Schema.startSchema(schema);
-            Schema.addFields(schema, fieldsOffset);
-
-            // wrap in a message and send as the first payload
-            Flight.FlightData.Builder schemaMessage = Flight.FlightData.newBuilder();
-            ByteBuffer schemaMessagePayload =
-                    createMessage(schema, MessageHeader.Schema, Schema.endSchema(schema), 0, 0);
-            schemaMessage.setDataHeader(ByteStringAccess.wrap(schemaMessagePayload.duplicate()));
-
-            schemaMessage.setAppMetadata(ByteStringAccess.wrap(WebBarrageUtils.emptyMessage()));
-            schemaMessage.setFlightDescriptor(cts.getHandle().makeFlightDescriptor());
-
-            // we wait for any errors in this response to pass to the caller, but success is determined by the eventual
-            // table's creation, which can race this
-            BiDiStream<Flight.FlightData, Flight.PutResult> stream =
-                    this.<Flight.FlightData, Flight.PutResult>streamFactory().<BrowserFlight.BrowserNextResponse>create(
-                            callback -> flightServiceClient.doPut(callback),
-                            (first, callback) -> browserFlightServiceClient.openDoPut(first, callback),
-                            (next, callback) -> browserFlightServiceClient.nextDoPut(next, callback));
-            stream.send(schemaMessage.build());
-
-            stream.onEnd(status -> {
-                if (status.isOk()) {
-                    ByteBuffer schemaPlusHeader = ByteBuffer.allocate(schemaMessagePayload.remaining() + 8);
-                    schemaPlusHeader.order(ByteOrder.LITTLE_ENDIAN);
-                    schemaPlusHeader.putInt(-1);
-                    schemaPlusHeader.putInt(schemaMessagePayload.remaining());
-                    schemaPlusHeader.put(schemaMessagePayload);
-                    schemaPlusHeader.flip();
-                    ExportedTableCreationResponse syntheticResponse = ExportedTableCreationResponse.newBuilder()
-                            .setSchemaHeader(ByteStringAccess.wrap(schemaPlusHeader))
-                            .setSize(data[0].length)
-                            .setIsStatic(true)
-                            .setSuccess(true)
-                            .setResultId(cts.getHandle().makeTableReference())
-                            .build();
-
-                    c.onNext(syntheticResponse);
-                    c.onCompleted();
-                } else {
-                    c.onError(status.asRuntimeException(TrailersCapturingInterceptor.getTrailersFromContext()));
+                    fields[i] = Field.endField(fb);
                 }
-            });
-            Flight.FlightData.Builder bodyMessage = Flight.FlightData.newBuilder();
-            bodyMessage.setAppMetadata(ByteStringAccess.wrap(WebBarrageUtils.emptyMessage()));
+                int fieldsOffset = Schema.createFieldsVector(fb, fields);
 
-            FlatBufferBuilder bodyData = new FlatBufferBuilder(1024);
+                Schema.startSchema(fb);
+                Schema.addFields(fb, fieldsOffset);
+                return Schema.endSchema(fb);
+            };
 
-            // iterate each column, building buffers and fieldnodes, as well as building the actual payload
-            List<Uint8Array> buffers = new ArrayList<>();
-            List<JsDataHandler.Node> nodes = new ArrayList<>();
-            JsDataHandler.ParseContext context = new JsDataHandler.ParseContext();
-            if (userTimeZone != null) {
-                context.timeZone = JsTimeZone.getTimeZone(userTimeZone);
+            // The "StreamObserver c" here is for a unary, so we can't just pass it directly
+            // to doPut(), but need to filter out the messages and wait for onComplete
+            final StreamObserver<InputStream> observer;
+            try {
+                observer = doPut(new StreamObserver<>() {
+                    @Override
+                    public void onNext(InputStream value) {
+                        // ignore these, we'll get an ack for each message sent, but nothing for us to act on
+                    }
+
+                    @Override
+                    public void onError(Throwable t) {
+                        // Table creation failed, notify caller
+                        c.onError(t);
+                    }
+
+                    @Override
+                    public void onCompleted() {
+                        // All done, notify caller with a synthetic ETCR
+                        FlatBufferBuilder schemaMessageBuilder = new FlatBufferBuilder();
+                        int schemaOffset = schemaWriter.applyAsInt(schemaMessageBuilder);
+                        Message.startMessage(schemaMessageBuilder);
+                        Message.addHeaderType(schemaMessageBuilder, MessageHeader.Schema);
+                        Message.addHeader(schemaMessageBuilder, schemaOffset);
+                        schemaMessageBuilder.finish(Message.endMessage(schemaMessageBuilder));
+                        ByteBuffer schemaMessagePayload = schemaMessageBuilder.dataBuffer();
+                        ByteBuffer schemaPlusHeader = ByteBuffer.allocate(schemaMessagePayload.remaining() + 8);
+                        schemaPlusHeader.order(ByteOrder.LITTLE_ENDIAN);
+                        schemaPlusHeader.putInt(-1);
+                        schemaPlusHeader.putInt(schemaMessagePayload.remaining());
+                        schemaPlusHeader.put(schemaMessagePayload);
+                        schemaPlusHeader.flip();
+                        ExportedTableCreationResponse syntheticResponse = ExportedTableCreationResponse.newBuilder()
+                                .setSchemaHeader(ByteStringAccess.wrap(schemaPlusHeader))
+                                .setSize(data[0].size())
+                                .setIsStatic(true)
+                                .setSuccess(true)
+                                .setResultId(cts.getHandle().makeTableReference())
+                                .build();
+                        c.onNext(syntheticResponse);
+                        c.onCompleted();
+                    }
+                });
+            } catch (Exception e) {
+                throw new RuntimeException(e);
             }
-            for (int i = 0; i < data.length; i++) {
-                columns.get(i).write(data[i], context, nodes::add, buffers::add);
+            StreamObserver<BarrageMessageWriter.MessageView> listener = new StreamObserver<>() {
+                @Override
+                public void onNext(BarrageMessageWriter.MessageView value) {
+                    try {
+                        value.forEachStream(observer::onNext);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+
+                @Override
+                public void onError(Throwable t) {
+                    observer.onError(t);
+                }
+
+                @Override
+                public void onCompleted() {
+                    observer.onCompleted();
+                }
+            };
+            ChunkWriter.Factory f = new WebChunkWriterFactory();
+
+            Flight.FlightDescriptor flightDescriptor = cts.getHandle().makeFlightDescriptor();
+            listener.onNext(bmwFactory.getSchemaView(schemaWriter, flightDescriptor));
+
+            ChunkWriter<Chunk<Values>>[] chunkWriters = new ChunkWriter[columnNames.length];
+            for (int i = 0; i < typeInfos.length; i++) {
+                chunkWriters[i] = f.newWriter(typeInfos[i]);
             }
 
-            // write down the buffers for the RecordBatch
-            RecordBatch.startBuffersVector(bodyData, buffers.size());
-            int length = 0;// record the size, we need to be sure all buffers are padded to full width
-            for (Uint8Array arr : buffers) {
-                assert arr.byteLength % 8 == 0;
-                length += arr.byteLength;
+            BarrageMessage msg = new BarrageMessage();
+            msg.rowsAdded = RowSetFactory.fromRange(0, data[0].size() - 1);
+            msg.rowsIncluded = msg.rowsAdded;
+            msg.rowsRemoved = RowSetFactory.empty();
+            msg.length = data[0].size();
+            msg.addColumnData = new BarrageMessage.AddColumnData[columnNames.length];
+            for (int i = 0; i < columnNames.length; i++) {
+                BarrageMessage.AddColumnData acd = new BarrageMessage.AddColumnData();
+                acd.data = Collections.singletonList(d[i]);
+                msg.addColumnData[i] = acd;
             }
-            int cumulativeOffset = length;
-            for (int i = buffers.size() - 1; i >= 0; i--) {
-                Uint8Array buffer = buffers.get(i);
-                cumulativeOffset -= buffer.byteLength;
-                Buffer.createBuffer(bodyData, cumulativeOffset, buffer.byteLength);
-            }
-            assert cumulativeOffset == 0;
-            int buffersOffset = bodyData.endVector();
+            msg.modColumnData = BarrageMessage.ZERO_MOD_COLUMNS;
+            msg.shifted = RowSetShiftData.EMPTY;
 
-            RecordBatch.startNodesVector(bodyData, nodes.size());
-            for (int i = nodes.size() - 1; i >= 0; i--) {
-                JsDataHandler.Node node = nodes.get(i);
-                FieldNode.createFieldNode(bodyData, node.length(), node.nullCount());
-            }
-            int nodesOffset = bodyData.endVector();
+            BarrageMessageWriter barrageMessageWriter =
+                    bmwFactory.newMessageWriter(msg, chunkWriters, BarrageMessageWriter.WriteMetricsConsumer.NO_OP);
+            listener.onNext(barrageMessageWriter.getSnapshotView(BarrageSnapshotOptions.builder()
+                    .useDeephavenNulls(true).build()));
 
-            RecordBatch.startRecordBatch(bodyData);
-
-            RecordBatch.addBuffers(bodyData, buffersOffset);
-            RecordBatch.addNodes(bodyData, nodesOffset);
-            RecordBatch.addLength(bodyData, data[0].length);
-
-            int recordBatchOffset = RecordBatch.endRecordBatch(bodyData);
-            bodyMessage.setDataHeader(ByteStringAccess
-                    .wrap(createMessage(bodyData, MessageHeader.RecordBatch, recordBatchOffset, length, 0)));
-            bodyMessage.setDataBody(ByteStringAccess.wrap(padAndConcat(buffers, length)));
-
-            stream.send(bodyMessage.build());
-            stream.end();
+            listener.onCompleted();
         }, "creating new table")
                 .refetch()
                 .then(cts -> Promise.resolve(new JsTable(this, cts)));
     }
 
-    private ByteBuffer padAndConcat(List<Uint8Array> buffers, int length) {
-        Uint8Array all = new Uint8Array(buffers.stream().mapToInt(b -> b.byteLength).sum());
-        int currentPosition = 0;
-        for (int i = 0; i < buffers.size(); i++) {
-            Uint8Array buffer = buffers.get(i);
-            all.set(buffer, currentPosition);
-            currentPosition += buffer.byteLength;
-        }
-        assert length == currentPosition;
-        return TypedArrayHelper.wrap(all);
+    private StreamObserver<InputStream> doPut(StreamObserver<InputStream> observer) throws Exception {
+        MethodDescriptor<InputStream, InputStream> nextDoPut = BrowserFlightServiceGrpc.getNextDoPutMethod().toBuilder(
+                new InputStreamMarshaller(),
+                new InputStreamMarshaller()).build();
+        MethodDescriptor<InputStream, InputStream> openDoPut = BrowserFlightServiceGrpc.getOpenDoPutMethod().toBuilder(
+                new InputStreamMarshaller(),
+                new InputStreamMarshaller()).build();
+
+        return bidiStream(observer, openDoPut, nextDoPut);
     }
 
-    private static ByteBuffer createMessage(FlatBufferBuilder payload, byte messageHeaderType, int messageHeaderOffset,
-            int bodyLength, int customMetadataOffset) {
-        payload.finish(Message.createMessage(payload, MetadataVersion.V5, messageHeaderType, messageHeaderOffset,
-                bodyLength, customMetadataOffset));
-        return payload.dataBuffer();
+    private <Req, Resp, BrowserNext> StreamObserver<Req> bidiStream(StreamObserver<Resp> observer,
+            MethodDescriptor<Req, Resp> openDoPut, MethodDescriptor<Req, BrowserNext> nextDoPut) throws Exception {
+        AtomicInteger nextMsgId = new AtomicInteger();
+        Context ctx = Context.current().withValue(ClientBrowserStreamInterceptor.TICKET_KEY, tickets.newTicketInt());
+        return new StreamObserver<>() {
+            private boolean started = false;
+
+            @Override
+            public void onNext(Req value) {
+                ctx.withValue(
+                        ClientBrowserStreamInterceptor.SEQUENCE_KEY, nextMsgId.getAndIncrement()).run(() -> {
+                            if (!started) {
+                                started = true;
+                                ClientCalls.asyncServerStreamingCall(
+                                        flightServiceClient.getChannel().newCall(openDoPut, null), value, observer);
+                            } else {
+                                ClientCalls.asyncUnaryCall(flightServiceClient.getChannel().newCall(nextDoPut, null),
+                                        value, Callbacks.ignore());
+                            }
+                        });
+            }
+
+            @Override
+            public void onError(Throwable t) {
+                observer.onError(t);
+            }
+
+            @Override
+            public void onCompleted() {
+                ctx.withValues(
+                        ClientBrowserStreamInterceptor.SEQUENCE_KEY, nextMsgId.getAndIncrement(),
+                        ClientBrowserStreamInterceptor.HALFCLOSE_KEY, true).run(() -> {
+                            ClientCalls.asyncUnaryCall(flightServiceClient.getChannel().newCall(nextDoPut, null), null,
+                                    Callbacks.ignore());
+                        });
+            };
+        };
     }
 
     public Promise<JsTable> mergeTables(JsTable[] tables, HasEventHandling failHandler) {

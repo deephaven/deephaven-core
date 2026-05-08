@@ -38,7 +38,12 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
             .script("table_to_rollup",
                     "time_table('PT0.1s').update(['Y=Math.sin(i/3)', 'X=i%3', 'Z=`abc` + i']).format_columns(['Y=Y>0 ? GREEN : RED', 'Timestamp=RED'])")
             .script("ticking_rollup",
-                    "table_to_rollup.rollup(aggs=[agg.first('Y')],by=['X'],include_constituents=True)");
+                    "table_to_rollup.rollup(aggs=[agg.first('Y')],by=['X'],include_constituents=True)")
+            .script("from deephaven.query_library import import_class\n" +
+                    "from deephaven import empty_table\n" +
+                    "import_class('java.time.ZoneId')\n" +
+                    "import_class('java.time.LocalDate')\n" +
+                    "times = empty_table(100).update([\"I=i\", \"J=i%1001\", \"K=new int[i%17]\"]).ungroup(\"K\").update([\"LocalTime=LocalTime.now()\", \"LocalDate=LocalDate.now()\"])");
 
     public void testStaticTreeTable() {
         connect(tables)
@@ -984,6 +989,54 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
 
                                 treeTable.close();
                                 return null;
+                            });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    public void testExpandDateAndTimeValues() {
+        connect(tables)
+                .then(table("times")).then(table -> {
+                    delayTestFinish(5000);
+                    JsRollupConfig config = new JsRollupConfig();
+                    config.groupingColumns = JsArray.of("LocalDate", "LocalTime");
+                    config.aggregations = JsPropertyMap.of(JsAggregationOperation.SUM, JsArray.of("I"));
+                    config.aggregations = JsPropertyMap.of(JsAggregationOperation.AVG, JsArray.of("J"));
+                    config.includeConstituents = true;
+                    return table.rollup(config);
+                })
+                .then(rollup -> {
+                    // Validate the schema of the rollup
+                    Column localDateCol = rollup.findColumn("LocalDate");
+                    Column localTimeCol = rollup.findColumn("LocalTime");
+                    assertEquals("java.time.LocalDate", localDateCol.getType());
+                    assertEquals("java.time.LocalTime", localTimeCol.getType());
+
+                    // Create a subscription so we can get the size (should be more than 10, less than 200)
+                    // and expand rows
+                    rollup.setViewport(0, 100, null, null);
+                    return rollup.getViewportData().then(data -> Promise.resolve(rollup));
+                }).then(rollup -> {
+                    assertEquals(2, (int) rollup.getSize());
+                    // expand the only "LocalDate" value
+                    rollup.expand(JsTreeTable.RowReferenceUnion.of(1), null);
+                    return rollup.<TreeViewportData>nextEvent(JsTreeTable.EVENT_UPDATED, 3501d)
+                            .then(data -> {
+                                // Expand rows individually
+                                double startingSize = rollup.getSize();
+                                assertTrue("startingSize=" + startingSize, startingSize > 10);
+                                for (int i = 2; i < 10; i++) {
+                                    rollup.expand(JsTreeTable.RowReferenceUnion.of(2), null);
+                                }
+                                // wait for next update, validate total size has increased
+                                return rollup.<TreeViewportData>nextEvent(JsTreeTable.EVENT_UPDATED, 3502d)
+                                        .then(data2 -> {
+                                            assertTrue(((TreeViewportData.TreeRow) data2.getDetail().getRows().getAt(2))
+                                                    .isExpanded());
+                                            assertTrue(rollup.getSize() + " > " + startingSize,
+                                                    rollup.getSize() > startingSize);
+                                            return null;
+                                        });
                             });
                 })
                 .then(this::finish).catch_(this::report);
