@@ -21,7 +21,7 @@ The Python-Java boundary can be crossed numerous times throughout a single query
 
 Here's a screenshot showing execution times between the built-in query language [`sin`](https://deephaven.io/core/javadoc/io/deephaven/function/Numeric.html#sin(double)) function, and [`numpy.sin`](https://numpy.org/doc/stable/reference/generated/numpy.sin.html):
 
-![Print statements. The built-in sine function took 0.045 seconds, while Numpy's sine function took 1.341 seconds](../assets/conceptual/sine-timed.png)
+![Print statements. The built-in sin function took 0.045 seconds, while Numpy's sine function took 1.341 seconds](../assets/conceptual/sine-timed.png)
 
 That's a pretty significant difference in execution time. Below is the code that produces it:
 
@@ -90,18 +90,18 @@ Deephaven uses the Java date-time class. Their proper and efficient use deserves
 
 Efficient queries typically make minimal Python-Java boundary crossings. They all have one thing in common:
 
-**They use methods and variables built-in to the query language.**
+**They use Java methods and variables built-in to the query language.**
+
+When there is a one-to-one translation for a function; you should prefer to use the Java equivalent. If there is no Java equivalent, simply be aware of the size of your data and the number of boundary crossings. In the above example, processing 100,000 rows took an additional 13 milliseconds. If as in this case your data is not large, then 13ms is very likely an acceptable trade-off for simple development.
 
 ## Memory considerations
 
 When using Python user-defined functions (UDFs) in Deephaven query strings, Python memory is allocated outside the Java heap. This has important implications:
 
-- **Python memory is not bounded by the Java heap** — The `-Xmx` JVM setting controls only the Java heap size. Python objects created by UDFs exist in a separate memory space that can grow independently.
+- **Configure Additional Memory** - If a query is known to use significant Python resources you should configure "Additional Memory" in the Code Studio or Advanced Settings in the Persistent Query configuration. On bare metal or podman, this setting is advisory and not enforced; it simply prevents the dispatcher from starting more queries. On Kubernetes, this permits the pod to use more memory.
+- **OOM risk** — When total process memory grows too large, the Linux Out-Of-Memory (OOM) killer may terminate processes. In a Kubernetes environment, if the worker's allocated heap and non-heap memory exceed the permitted size; that worker is terminated. In a bare metal environment, the kernel may select any process co-located with the worker on the same machine. Therefore, it is best practice to segregate infrastructure processes from query processes. It is not possible to segregate the Query Dispatcher process, which starts workers. If the OOM killer selects the dispatcher, then all workers on the machine terminate.
 - **Unbounded memory growth** — Python objects allocated during UDF execution can accumulate over time, especially in long-running or high-throughput queries. This can lead to resident memory far exceeding the configured Java heap size.
 - **OOM risk** — When total process memory grows too large, the Linux Out-Of-Memory (OOM) killer may terminate processes. In Deephaven Enterprise environments, this can affect the dispatcher process, potentially bringing down all child workers.
-
-> [!CAUTION]
-> A query with a 16 GB Java heap using Python UDFs heavily can grow to 100 GB or more of resident memory. Monitor system memory usage when deploying Python-heavy queries in production.
 
 ### Recommendations
 
@@ -110,7 +110,6 @@ To minimize memory risks when using Python UDFs:
 - **Convert performance-critical UDFs to Java** — For frequently called functions, consider implementing them in Java or using built-in query language functions instead.
 - **Avoid allocating large Python objects in UDFs** — Minimize the creation of large data structures within UDF code.
 - **Monitor resident memory** — Track total process memory, not just Java heap usage, for queries using Python UDFs.
-- **Use vectorized operations when possible** — NumPy vectorized operations on entire columns (outside query strings) are often more memory-efficient than per-row UDF calls.
 
 ## The Python API under the hood
 
