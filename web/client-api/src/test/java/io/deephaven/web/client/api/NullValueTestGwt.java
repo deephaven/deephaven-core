@@ -262,7 +262,7 @@ public class NullValueTestGwt extends AbstractAsyncGwtTestCase {
         assertEquals(BigDecimal.valueOf(1, 4),
                 valueRow.get(table.findColumn("MyBigDecimal")).<BigDecimalWrapper>cast().getWrapped());
         if (checkArrays) {
-            assertArrayEquals(new String[]{"A", "B", "C"},
+            assertArrayEquals(new String[] {"A", "B", "C"},
                     valueRow.get(table.findColumn("MyStringArray1")).<String[]>cast());
         }
 
@@ -356,42 +356,46 @@ public class NullValueTestGwt extends AbstractAsyncGwtTestCase {
     }
 
     public void testUploadNulls() {
-            connect(tables)
-                    .then(table("some_null_table"))
-                    .then(table -> {
-                        delayTestFinish(5000);
+        connect(tables)
+                .then(table("some_null_table"))
+                .then(table -> {
+                    delayTestFinish(5000);
 
-                        // Get a full table subscription, wait for data to load
-                        DataOptions.SnapshotOptions snapshotOptions = new DataOptions.SnapshotOptions();
-                        snapshotOptions.columns = table.getColumns();
-                        snapshotOptions.rows = Js.uncheckedCast(JsRangeSet.ofRange(0, 1));
-                        return table.createSnapshot(snapshotOptions)
-                                .then(s -> {
-                                    // Copy all data, send it back to the server using WorkerConnection.newTable
-                                    String[] columnNames = table.getColumns().asList().stream().filter(c -> !c.getType().endsWith("[]")).map(Column::getName).toArray(String[]::new);
-                                    String[] types = table.getColumns().asList().stream().filter(c -> !c.getType().endsWith("[]")).map(Column::getType).toArray(String[]::new);
-                                    Object[][] data = new Object[columnNames.length][];
-                                    for (int i = 0; i < data.length; i++) {
-                                        Column column = table.findColumn(columnNames[i]);
-                                        data[i] = new Object[(int)table.getSize()];
-                                        for (int j = 0; j < data[i].length; j++) {
-                                            data[i][j] = s.getData(j, column);
-                                        }
+                    // Get a full table subscription, wait for data to load
+                    DataOptions.SnapshotOptions snapshotOptions = new DataOptions.SnapshotOptions();
+                    snapshotOptions.columns = table.getColumns();
+                    snapshotOptions.rows = Js.uncheckedCast(JsRangeSet.ofRange(0, 1));
+                    return table.createSnapshot(snapshotOptions)
+                            .then(s -> {
+                                // Copy all data, send it back to the server using WorkerConnection.newTable
+                                String[] columnNames =
+                                        table.getColumns().asList().stream().filter(c -> !c.getType().endsWith("[]"))
+                                                .map(Column::getName).toArray(String[]::new);
+                                String[] types =
+                                        table.getColumns().asList().stream().filter(c -> !c.getType().endsWith("[]"))
+                                                .map(Column::getType).toArray(String[]::new);
+                                Object[][] data = new Object[columnNames.length][];
+                                for (int i = 0; i < data.length; i++) {
+                                    Column column = table.findColumn(columnNames[i]);
+                                    data[i] = new Object[(int) table.getSize()];
+                                    for (int j = 0; j < data[i].length; j++) {
+                                        data[i][j] = s.getData(j, column);
                                     }
-                                    return table.getConnection().newTable(columnNames, types, data, null);
-                                 })
-                        .then(newTable -> {
-                            // subscribe to the new table, verify it matches the existing one
-                            validateTypes(newTable, false);
-                            DataOptions.SubscriptionOptions options2 = new DataOptions.SubscriptionOptions();
-                            options2.columns = newTable.getColumns();
-                            TableSubscription sub = newTable.createSubscription(options2);
-                            return assertUpdateReceived(sub, data -> {
-                                validateSomeNulls(newTable, data, false);
-                            }, 1000).then(ignore -> Promise.resolve(table));
-                        });
-                    })
-                    .then(this::finish).catch_(this::report);
+                                }
+                                return table.getConnection().newTable(columnNames, types, data, null);
+                            })
+                            .then(newTable -> {
+                                // subscribe to the new table, verify it matches the existing one
+                                validateTypes(newTable, false);
+                                DataOptions.SubscriptionOptions options2 = new DataOptions.SubscriptionOptions();
+                                options2.columns = newTable.getColumns();
+                                TableSubscription sub = newTable.createSubscription(options2);
+                                return assertUpdateReceived(sub, data -> {
+                                    validateSomeNulls(newTable, data, false);
+                                }, 1000).then(ignore -> Promise.resolve(table));
+                            });
+                })
+                .then(this::finish).catch_(this::report);
     }
 
     @Override
