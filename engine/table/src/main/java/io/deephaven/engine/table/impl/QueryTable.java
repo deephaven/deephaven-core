@@ -1999,6 +1999,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                                         flavor == Flavor.UpdateView
                                                 ? SelectAndViewAnalyzer.UpdateFlavor.UpdateView
                                                 : SelectAndViewAnalyzer.UpdateFlavor.View;
+                                queryTable.setLastNotificationStep(getLastNotificationStep());
                                 queryTable = analyzerContext.applyShiftsAndRemainingColumns(
                                         this, queryTable, updateFlavor);
 
