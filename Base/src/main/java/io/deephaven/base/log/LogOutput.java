@@ -140,6 +140,24 @@ public interface LogOutput {
     // ---------------------------------------------------------------------------------------------
 
     /**
+     * Formats a String array
+     */
+    ObjFormatter<String[]> STRING_ARRAY_FORMATTER = (logOutput, array) -> {
+        if (array == null) {
+            logOutput.append("null");
+        } else if (array.length == 0) {
+            logOutput.append("{}");
+        } else {
+            char delim = '{';
+            for (int i = 0; i < array.length; ++i) {
+                logOutput.append(delim).append(array[i]);
+                delim = ',';
+            }
+            logOutput.append('}');
+        }
+    };
+
+    /**
      * Formats an array of LogOutputAppendable instances
      */
     ObjFormatter<LogOutputAppendable[]> APPENDABLE_ARRAY_FORMATTER =
