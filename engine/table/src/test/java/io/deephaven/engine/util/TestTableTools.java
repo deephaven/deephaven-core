@@ -28,6 +28,7 @@ import io.deephaven.engine.testutil.generator.StringGenerator;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.testutil.rowset.RowSetTstUtils;
 import io.deephaven.engine.updategraph.LogicalClockImpl;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
@@ -81,6 +82,32 @@ public class TestTableTools {
                 col("GroupedInts1", 1, 1, 2, 2, 2, 3, 3, 3, 3));
         emptyTable = testRefreshingTable(col("StringKeys", (Object) ArrayTypeUtils.EMPTY_STRING_ARRAY),
                 col("GroupedInts", (Object) ArrayTypeUtils.EMPTY_BYTE_ARRAY));
+    }
+
+    @Test
+    public void testMergeLock() {
+        final UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
+        try (final SafeCloseable ignored = new SafeCloseable() {
+            final boolean restore = updateGraph.setSerialTableOperationsSafe(false);
+
+            @Override
+            public void close() {
+                updateGraph.setSerialTableOperationsSafe(restore);
+            }
+        }) {
+            final Table t1 = TableTools.emptyTable(1).update("Col=`A`");
+            t1.setRefreshing(true);
+            final Table t2 = TableTools.emptyTable(2).update("Col=`B`");
+            t2.setRefreshing(true);
+
+            final IllegalStateException ise = Assert.assertThrows(IllegalStateException.class, () -> merge(t1, t2));
+            assertEquals(
+                    "May not initiate serial table operations for update graph TEST: exclusiveLockHeld=false, sharedLockHeld=false, currentThreadProcessesUpdates=false",
+                    ise.getMessage());
+
+            final Table m = updateGraph.sharedLock().computeLocked(() -> merge(t1, t2));
+            assertTableEquals(TableTools.newTable(stringCol("Col", "A", "B", "B")), m);
+        }
     }
 
     @Test

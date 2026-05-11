@@ -261,6 +261,91 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         TstUtils.assertTableEquals(tableUpdate, updateView3);
     }
 
+    public void testShiftedColumnsConcurrent()
+            throws ExecutionException, InterruptedException, TimeoutException {
+        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
+                col("x", 1, 2, 3));
+
+        final String shiftedColName = new ShiftedColumnDefinition("x", -1).getResultColumnName();
+        final Callable<Table> callable = () -> ShiftedColumnOperation.addShiftedColumns(
+                table, new ShiftedColumnDefinition("x", -1));
+
+        final Table tableStart = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
+                col("x", 1, 2, 3),
+                col(shiftedColName, NULL_INT, 1, 2));
+        final Table tableUpdate = TstUtils.testRefreshingTable(i(2, 3, 4, 6).toTracking(),
+                col("x", 1, 4, 2, 3),
+                col(shiftedColName, NULL_INT, 1, 4, 2));
+
+        updateGraph.startCycleForUnitTests(false);
+
+        // Mutate the source mid-cycle BEFORE the shifted operation is created.
+        // Without an OperationSnapshotControl, ShiftedColumnOperation would
+        // register its listener against state that already incorporates this
+        // addition (the result table shares the source's live TrackingRowSet)
+        // while the source still has the addition queued for notification —
+        // the listener then re-applies the update and the result is notified
+        // twice in the same step.
+        TstUtils.addToTable(table, i(3), col("x", 4));
+
+        final Table shifted = pool.submit(callable).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+
+        // Attach a FailureListener BEFORE completing the cycle so any
+        // listener-side error during cycle completion surfaces through it.
+        final FailureListener failureListener = new FailureListener();
+        shifted.addUpdateListener(failureListener);
+
+        // Pre-notification view of `shifted` should reflect the source's
+        // pre-cycle state.
+        TstUtils.assertTableEquals(tableStart, prevTable(shifted));
+
+        table.notifyListeners(i(3), i(), i());
+        updateGraph.markSourcesRefreshedForUnitTests();
+        updateGraph.completeCycleForUnitTests();
+
+        TstUtils.assertTableEquals(tableUpdate, shifted);
+    }
+
+    public void testUpdateViewShifted() throws ExecutionException, InterruptedException, TimeoutException {
+        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
+                col("x", 1, 2, 3));
+        final Table tableStart = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
+                col("x", 1, 2, 3),
+                col("y", NULL_INT, 1, 2));
+        final Table tableUpdate = TstUtils.testRefreshingTable(i(2, 3, 4, 6).toTracking(),
+                col("x", 1, 4, 2, 3),
+                col("y", NULL_INT, 1, 4, 2));
+
+        final Callable<Table> callable = () -> table.updateView("y = x_[i-1]");
+
+        updateGraph.startCycleForUnitTests(false);
+
+        final Table view1 = pool.submit(callable).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+
+        assertTableEquals(view1, tableStart);
+
+        TstUtils.addToTable(table, i(3), col("x", 4));
+
+        final Table view2 = pool.submit(callable).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+
+        TstUtils.assertTableEquals(tableStart, prevTable(view1));
+        TstUtils.assertTableEquals(tableStart, prevTable(view2));
+
+        table.notifyListeners(i(3), i(), i());
+        updateGraph.markSourcesRefreshedForUnitTests();
+
+        final Table view3 = pool.submit(callable).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+
+        TstUtils.assertTableEquals(tableStart, prevTable(view1));
+        TstUtils.assertTableEquals(tableStart, prevTable(view2));
+
+        updateGraph.completeCycleForUnitTests();
+
+        TstUtils.assertTableEquals(tableUpdate, view1);
+        TstUtils.assertTableEquals(tableUpdate, view2);
+        TstUtils.assertTableEquals(tableUpdate, view3);
+    }
+
     public void testDropColumns() throws ExecutionException, InterruptedException, TimeoutException {
         final QueryTable table =
                 TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
