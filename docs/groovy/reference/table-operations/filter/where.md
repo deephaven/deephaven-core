@@ -141,7 +141,7 @@ See [Parallelization](../../../conceptual/query-engine/parallelization.md) for m
 - [Parallelization](../../../conceptual/query-engine/parallelization.md)
 - [equals](../../query-language/match-filters/equals.md)
 - [not equals](../../query-language/match-filters/not-equals.md)
-- [icase in](../..//query-language/match-filters/icase-in.md)
+- [icase in](../../query-language/match-filters/icase-in.md)
 - [icase not in](../../query-language/match-filters/icase-not-in.md)
 - [in](../../query-language/match-filters/in.md)
 - [not in](../../query-language/match-filters/not-in.md)
