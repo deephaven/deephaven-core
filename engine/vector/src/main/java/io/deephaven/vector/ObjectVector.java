@@ -9,6 +9,7 @@ import io.deephaven.engine.primitive.value.iterator.ValueIterator;
 import io.deephaven.qst.type.GenericVectorType;
 import io.deephaven.qst.type.GenericType;
 import io.deephaven.util.annotations.FinalDefault;
+import io.deephaven.util.annotations.UserInvocationPermitted;
 import io.deephaven.util.compare.ObjectComparisons;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import org.jetbrains.annotations.NotNull;
@@ -38,6 +39,7 @@ public interface ObjectVector<COMPONENT_TYPE> extends Vector<ObjectVector<COMPON
      * @param index An offset into this ObjectVector
      * @return The element at the specified offset, or {@code null}
      */
+    @UserInvocationPermitted({"vector"})
     COMPONENT_TYPE get(long index);
 
     @Override
@@ -58,6 +60,7 @@ public interface ObjectVector<COMPONENT_TYPE> extends Vector<ObjectVector<COMPON
     @Override
     Class<COMPONENT_TYPE> getComponentType();
 
+    @UserInvocationPermitted({"vector"})
     @Override
     @FinalDefault
     default ValueIterator<COMPONENT_TYPE> iterator() {

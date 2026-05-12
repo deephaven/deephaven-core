@@ -478,6 +478,19 @@ public class TestColumnExpressionValidator {
     }
 
     @Test
+    public void testVectorAnnotationsObject() {
+        // ObjectVector<String> — produced by groupBy() on a String column
+        final Table input = TableTools.emptyTable(10).update("A=Long.toString(ii)").groupBy();
+        final ColumnExpressionValidator validator = ExpressionValidatorModule
+                .getParsingColumnExpressionValidatorFromConfiguration(Configuration.getInstance());
+        final String[] expressions =
+                new String[] {"A0=A.get(0)", "AS=A.size()", "SV=A.subVector(0, 10)", "IT=A.iterator()"};
+
+        validator.validateColumnExpressions(SelectColumnFactory.getExpressions(expressions), expressions,
+                input.getDefinition());
+    }
+
+    @Test
     public void testStructuredFiltersNameValidator() {
         testStructuredFiltersValidator(new MethodNameColumnExpressionValidator(),
                 new MethodNameColumnExpressionValidator(Set.of(), Set.of()));
