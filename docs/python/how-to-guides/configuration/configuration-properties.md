@@ -3,13 +3,25 @@ title: Configuration properties reference
 sidebar_label: Configuration properties
 ---
 
-This document provides a comprehensive reference for Deephaven Community configuration properties. Properties can be set in several ways depending on your deployment method.
+This document covers the most frequently used Deephaven Community configuration properties. Properties can be set in several ways depending on your deployment method.
 
 ## How to set properties
 
+### Configuration file
+
+Create a `deephaven.prop` file with properties (see [Deephaven configuration files](./config-file.md)):
+
+```properties
+includefiles=dh-defaults.prop
+
+# Override default properties
+http.port=8080
+AuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler
+```
+
 ### Docker Compose
 
-Set properties via the `START_OPTS` environment variable using `-D` flags:
+Mount a configuration file to `/opt/deephaven/config/deephaven.prop`:
 
 ```yaml
 services:
@@ -17,8 +29,31 @@ services:
     image: ghcr.io/deephaven/server:latest
     ports:
       - "10000:10000"
+    volumes:
+      - ./deephaven.prop:/opt/deephaven/config/deephaven.prop:ro
+    environment:
+      - START_OPTS=-Xmx4g
+```
+
+Alternatively, set properties directly via the `START_OPTS` environment variable using `-D` flags:
+
+```yaml
+services:
+  deephaven:
+    image: ghcr.io/deephaven/server:latest
+    ports:
+      - "8080:8080"
     environment:
       - START_OPTS=-Xmx4g -Dhttp.port=8080 -DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler
+```
+
+### Production application
+
+Use a configuration file for production deployments. Set JVM memory options via `START_OPTS`:
+
+```bash
+export START_OPTS="-Xmx4g"
+./bin/start
 ```
 
 ### pip install (Python)
@@ -37,18 +72,6 @@ Use the CLI with `--jvm-args`:
 
 ```bash
 deephaven server --port 10000 --jvm-args "-Xmx4g -Dauthentication.psk=MySecretKey"
-```
-
-### Configuration file
-
-Create a `deephaven.prop` file with properties (see [Deephaven configuration files](./config-file.md)):
-
-```properties
-includefiles=dh-defaults.prop
-
-# Override default properties
-http.port=8080
-AuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler
 ```
 
 ## Bootstrap configuration
@@ -102,29 +125,18 @@ These properties control how users authenticate to the server.
 
 ### Available authentication handlers
 
-| Handler class                                                   | Description                                   |
-| --------------------------------------------------------------- | --------------------------------------------- |
-| `io.deephaven.authentication.psk.PskAuthenticationHandler`      | Pre-shared key (PSK) authentication (default) |
-| `io.deephaven.auth.AnonymousAuthenticationHandler`              | No authentication required                    |
-| `io.deephaven.authentication.oidc.OidcAuthenticationHandler`    | OpenID Connect (Keycloak) authentication      |
-| `io.deephaven.authentication.mtls.MTlsAuthenticationHandler`    | Mutual TLS (mTLS) authentication              |
-| `io.deephaven.authentication.sql.BasicSqlAuthenticationHandler` | SQL-backed username/password authentication   |
+These handlers are included in the standard server images:
 
-### OIDC/Keycloak properties
+| Handler class                                                | Description                                   |
+| ------------------------------------------------------------ | --------------------------------------------- |
+| `io.deephaven.authentication.psk.PskAuthenticationHandler`   | Pre-shared key (PSK) authentication (default) |
+| `io.deephaven.auth.AnonymousAuthenticationHandler`           | No authentication required                    |
+| `io.deephaven.authentication.mtls.MTlsAuthenticationHandler` | Mutual TLS (mTLS) authentication              |
 
-| Property                                | Description                                                 |
-| --------------------------------------- | ----------------------------------------------------------- |
-| `authentication.oidc.keycloak.url`      | URL to connect to Keycloak (e.g., `http://localhost:6060/`) |
-| `authentication.oidc.keycloak.realm`    | Name of the Keycloak realm                                  |
-| `authentication.oidc.keycloak.clientId` | Client ID for HTML client and Deephaven server              |
+Additional authentication methods require custom builds:
 
-### SQL authentication properties
-
-| Property                                   | Description                              |
-| ------------------------------------------ | ---------------------------------------- |
-| `authentication.basic.sql.jdbc.connection` | JDBC connection string for user database |
-| `authentication.basic.sql.jdbc.*`          | Additional JDBC connection properties    |
-| `authentication.basic.bcrypt.rounds`       | BCrypt hashing rounds (default: `10`)    |
+- [Keycloak/OIDC authentication](../authentication/auth-keycloak.md)
+- [SQL-backed username/password authentication](../authentication/auth-uname-pw.md)
 
 ## HTTP and web server configuration
 
@@ -208,13 +220,14 @@ SSL configuration is typically done via system properties. See [mTLS authenticat
 
 ## JVM arguments
 
-These are common JVM arguments passed via `START_OPTS` or `jvm_args`:
+These are common JVM arguments passed via `START_OPTS`:
 
-| Argument               | Description           | Example                      |
-| ---------------------- | --------------------- | ---------------------------- |
-| `-Xmx`                 | Maximum heap size     | `-Xmx4g`                     |
-| `-Xms`                 | Initial heap size     | `-Xms2g`                     |
-| `-D<property>=<value>` | Set a system property | `-Dauthentication.psk=MyKey` |
+| Argument | Description       | Example  |
+| -------- | ----------------- | -------- |
+| `-Xmx`   | Maximum heap size | `-Xmx4g` |
+| `-Xms`   | Initial heap size | `-Xms2g` |
+
+Use a [configuration file](#configuration-file) rather than `-D` flags for Deephaven properties.
 
 ## Additional configuration
 
@@ -240,7 +253,7 @@ These properties are less commonly needed but available for specific use cases.
 
 ### Formula validation
 
-These properties configure query formula validation for security. See [Formula validation configuration](../../conceptual/formula-validation-configuration.md) for details.
+These properties configure query formula validation for security. See [Formula validation configuration](/groovy/conceptual/formula-validation-configuration.md) for details.
 
 | Property                                           | Description                               | Default                        |
 | -------------------------------------------------- | ----------------------------------------- | ------------------------------ |
@@ -297,5 +310,5 @@ http.add.header.Strict-Transport-Security.enabled=true
 - [Configure the production application](./configure-production-application.md)
 - [Pre-shared key authentication](../authentication/auth-psk.md)
 - [Anonymous authentication](../authentication/auth-anon.md)
-- [Formula validation configuration](../../conceptual/formula-validation-configuration.md)
+- [Formula validation configuration](/groovy/conceptual/formula-validation-configuration.md)
 - [Periodic Update Graph configuration](../../conceptual/periodic-update-graph-configuration.md)
