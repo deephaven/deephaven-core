@@ -22,6 +22,9 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 @Singleton
 public class SortTableGrpcImpl extends GrpcTableOperation<SortTableRequest> {
@@ -40,6 +43,18 @@ public class SortTableGrpcImpl extends GrpcTableOperation<SortTableRequest> {
         final Table original = sourceTables.get(0).get();
         Table result = original;
 
+        final Set<String> originalColumns = original.getDefinition().getColumnNameSet();
+        final List<String> missingColumns = request.getSortsList().stream()
+                .filter(sort -> sort.getDirection() != SortDescriptor.SortDirection.REVERSE)
+                .map(SortDescriptor::getColumnName)
+                .filter(Predicate.not(String::isEmpty))
+                .filter(Predicate.not(originalColumns::contains))
+                .collect(Collectors.toList());
+        if (!missingColumns.isEmpty()) {
+            throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
+                    "column(s) not found: " + String.join(", ", missingColumns));
+        }
+
         final List<String> absColumns = new ArrayList<>();
         final List<Selectable> absViews = new ArrayList<>();
         for (int si = request.getSortsCount() - 1; si >= 0; si--) {
@@ -56,11 +71,11 @@ public class SortTableGrpcImpl extends GrpcTableOperation<SortTableRequest> {
         }
 
         // This loop does two optimizations:
-        // 1. Consolidate all sorts into a SortPair array in order to only call one sort on the table
+        // 1. Consolidate all sorts into a List<SortColumn> to only call one sort on the table
         // 2. Move all the reverses to the back:
         // - For an odd number of reverses only call one reverse
         // - For an even number of reverses do not call reverse (they cancel out)
-        // As a reverse moves past a sort, the direction of the sort is reversed (e.g. asc -> desc)
+        // As a reverse moves past a sort, the direction of the sort is reversed (e.g., asc -> desc)
         final List<SortColumn> sortColumns = new ArrayList<>();
         boolean shouldReverse = false;
         for (int si = 0; si < request.getSortsCount(); si++) {
@@ -87,7 +102,7 @@ public class SortTableGrpcImpl extends GrpcTableOperation<SortTableRequest> {
                     ? AbsoluteSortColumnConventions.baseColumnNameToAbsoluteName(sort.getColumnName())
                     : sort.getColumnName();
 
-            // if should reverse is true, then a flip the direction of the sort
+            // if shouldReverse is true, then flip the direction of the sort
             if (shouldReverse) {
                 direction *= -1;
             }
@@ -100,7 +115,7 @@ public class SortTableGrpcImpl extends GrpcTableOperation<SortTableRequest> {
         }
 
         // Next sort if there are any sorts
-        if (sortColumns.size() > 0) {
+        if (!sortColumns.isEmpty()) {
             result = result.sort(sortColumns);
         }
 

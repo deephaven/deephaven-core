@@ -1999,6 +1999,12 @@ public class QueryTable extends BaseTable<QueryTable> {
                                         flavor == Flavor.UpdateView
                                                 ? SelectAndViewAnalyzer.UpdateFlavor.UpdateView
                                                 : SelectAndViewAnalyzer.UpdateFlavor.View;
+                                // We set the notification step to our (i.e. the parent of queryTable) step; because
+                                // the applyShiftsAndRemainingColumns does downstream operations on queryTable. The
+                                // snapshot completion normally does this, but if we don't set it, then those operations
+                                // initialize with an incorrect step. If the step ends up being wrong, we're going to
+                                // be inconsistent and throw the result away anyway.
+                                queryTable.setLastNotificationStep(getLastNotificationStep());
                                 queryTable = analyzerContext.applyShiftsAndRemainingColumns(
                                         this, queryTable, updateFlavor);
 

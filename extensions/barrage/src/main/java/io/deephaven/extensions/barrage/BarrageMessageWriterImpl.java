@@ -81,17 +81,18 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
         public BarrageMessageWriter newMessageWriter(
                 @NotNull final BarrageMessage message,
                 @NotNull final ChunkWriter<Chunk<Values>>[] chunkWriters,
-                @NotNull final BarragePerformanceLog.WriteMetricsConsumer metricsConsumer) {
+                @NotNull final BarrageMessageWriter.WriteMetricsConsumer metricsConsumer) {
             return new BarrageMessageWriterImpl(message, chunkWriters, metricsConsumer);
         }
 
         @Override
-        public MessageView getSchemaView(@NotNull final ToIntFunction<FlatBufferBuilder> schemaPayloadWriter) {
+        public MessageView getSchemaView(@NotNull final ToIntFunction<FlatBufferBuilder> schemaPayloadWriter,
+                Flight.FlightDescriptor flightDescriptor) {
             final FlatBufferBuilder builder = new FlatBufferBuilder();
             final int schemaOffset = schemaPayloadWriter.applyAsInt(builder);
             builder.finish(MessageHelper.wrapInMessage(builder, schemaOffset,
                     org.apache.arrow.flatbuf.MessageHeader.Schema));
-            return new SchemaMessageView(builder.dataBuffer());
+            return new SchemaMessageView(builder.dataBuffer(), flightDescriptor);
         }
     }
 
@@ -103,7 +104,7 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
         public BarrageMessageWriter newMessageWriter(
                 @NotNull final BarrageMessage message,
                 @NotNull final ChunkWriter<Chunk<Values>>[] chunkWriters,
-                @NotNull final BarragePerformanceLog.WriteMetricsConsumer metricsConsumer) {
+                @NotNull final BarrageMessageWriter.WriteMetricsConsumer metricsConsumer) {
             return new BarrageMessageWriterImpl(message, chunkWriters, metricsConsumer) {
                 @Override
                 protected void writeHeader(
@@ -135,7 +136,7 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
     }
 
     private final BarrageMessage message;
-    private final BarragePerformanceLog.WriteMetricsConsumer writeConsumer;
+    private final WriteMetricsConsumer writeConsumer;
 
     private final long firstSeq;
     private final long lastSeq;
@@ -160,7 +161,7 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
     public BarrageMessageWriterImpl(
             @NotNull final BarrageMessage message,
             @NotNull final ChunkWriter<Chunk<Values>>[] chunkWriters,
-            @NotNull final BarragePerformanceLog.WriteMetricsConsumer writeConsumer) {
+            @NotNull final BarrageMessageWriter.WriteMetricsConsumer writeConsumer) {
         this.message = message;
         this.writeConsumer = writeConsumer;
         try {
@@ -681,9 +682,13 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
     private static final class SchemaMessageView implements MessageView {
         private final byte[] msgBytes;
 
-        public SchemaMessageView(final ByteBuffer buffer) {
-            this.msgBytes = Flight.FlightData.newBuilder()
-                    .setDataHeader(ByteStringAccess.wrap(buffer))
+        public SchemaMessageView(final ByteBuffer buffer, Flight.FlightDescriptor flightDescriptor) {
+            Flight.FlightData.Builder builder = Flight.FlightData.newBuilder()
+                    .setDataHeader(ByteStringAccess.wrap(buffer));
+            if (flightDescriptor != null) {
+                builder.setFlightDescriptor(flightDescriptor);
+            }
+            this.msgBytes = builder
                     .build()
                     .toByteArray();
         }

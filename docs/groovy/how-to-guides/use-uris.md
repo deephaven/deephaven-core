@@ -88,6 +88,27 @@ table = resolve("dh+plain://hostname:9876/scope/table_name")
 
 The `resolve` method connects to the specified Deephaven instance, retrieves the table, and returns it as a local reference that you can use in your code.
 
+> [!CAUTION]
+> When you resolve a URI, the first update cycle of the subscribed table is empty. If you run `resolve` and immediately operate on the table data in the same execution, you may see an empty table. To work with the actual data, either:
+>
+> - **In a notebook**: Run the `resolve` call in a separate execution before operating on the table.
+> - **In a script**: Use `table.awaitUpdate()` to wait for the table to populate before accessing its data.
+
+For example, the following code often prints 0:
+
+```groovy skip-test
+remoteTable = resolve("dh+plain://hostname/scope/someTable")
+println remoteTable.size()  // Often prints 0 before the table populates
+```
+
+To get the actual table size, use `awaitUpdate()` to wait for the table to populate:
+
+```groovy skip-test
+remoteTable = resolve("dh+plain://hostname/scope/someTable")
+remoteTable.awaitUpdate()
+println remoteTable.size()  // Prints the actual size
+```
+
 Let's explore this with a couple of examples.
 
 ## Share tables locally

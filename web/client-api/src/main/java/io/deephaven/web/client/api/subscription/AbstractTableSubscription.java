@@ -97,6 +97,7 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
                     "java.math.BigInteger",
                     "java.time.Instant",
                     "java.time.LocalDate",
+                    "java.time.LocalTime",
                     "java.time.ZonedDateTime"));
 
             connection.tableServiceClient().applyPreviewColumns(applyPreviewRequest.build(), callback);
