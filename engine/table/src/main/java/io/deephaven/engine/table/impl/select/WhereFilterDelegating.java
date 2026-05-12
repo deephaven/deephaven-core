@@ -11,8 +11,9 @@ public interface WhereFilterDelegating {
     WhereFilter getWrappedFilter();
 
     /**
-     * Returns the wrapped filter if and only if the wrapped filter is functionally identical to this filter. Filters
-     * that perform a transformation (e.g. {@code not}) on their wrapped filter should return themselves.
+     * Returns the wrapped filter if and only if the wrapped filter accepts the same rows as this filter. For example,
+     * serial and barrier wrappers do not change functionality and will return the wrapped filter. Filters such as
+     * {@link WhereFilterInvertedImpl} that perform a transformation should return themselves.
      */
     WhereFilter maybeUnwrapFilter();
 

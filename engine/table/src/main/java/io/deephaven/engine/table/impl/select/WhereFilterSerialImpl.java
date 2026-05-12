@@ -23,11 +23,7 @@ public class WhereFilterSerialImpl extends WhereFilterDelegatingBase {
 
     @Override
     public WhereFilter maybeUnwrapFilter() {
-        if (filter instanceof WhereFilterDelegating) {
-            // Delegate to the wrapped filter to find the effective wrapped filter.
-            return ((WhereFilterDelegating) filter).maybeUnwrapFilter();
-        }
-        return filter;
+        return WhereFilterDelegating.maybeUnwrapFilter(filter);
     }
 
     /**

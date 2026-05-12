@@ -124,11 +124,35 @@ public class IntRegionBinarySearchKernelTest {
             }
             try (final RowSet valuesFound = IntRegionBinarySearchKernel.binarySearchMinMax(
                     region,
-                    startRow, endRow,
+                    startRow,
+                    endRow,
                     sortColumn,
                     missingValue,
-                    missingValue, false,
+                    missingValue,
+                    true,
                     false)) {
+                Assert.assertTrue(valuesFound.isEmpty());
+            }
+            try (final RowSet valuesFound = IntRegionBinarySearchKernel.binarySearchMinMax(
+                    region,
+                    startRow,
+                    endRow,
+                    sortColumn,
+                    missingValue,
+                    missingValue,
+                    false,
+                    true)) {
+                Assert.assertTrue(valuesFound.isEmpty());
+            }
+            try (final RowSet valuesFound = IntRegionBinarySearchKernel.binarySearchMinMax(
+                    region,
+                    startRow,
+                    endRow,
+                    sortColumn,
+                    missingValue,
+                    missingValue,
+                    true,
+                    true)) {
                 Assert.assertTrue(valuesFound.isEmpty());
             }
         }

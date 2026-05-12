@@ -124,8 +124,26 @@ public class FloatRegionBinarySearchKernelTest {
                     startRow, endRow,
                     sortColumn,
                     missingValue,
-                    missingValue, false,
+                    missingValue, true,
                     false)) {
+                Assert.assertTrue(valuesFound.isEmpty());
+            }
+            try (final RowSet valuesFound = FloatRegionBinarySearchKernel.binarySearchMinMax(
+                    region,
+                    startRow, endRow,
+                    sortColumn,
+                    missingValue,
+                    missingValue, false,
+                    true)) {
+                Assert.assertTrue(valuesFound.isEmpty());
+            }
+            try (final RowSet valuesFound = FloatRegionBinarySearchKernel.binarySearchMinMax(
+                    region,
+                    startRow, endRow,
+                    sortColumn,
+                    missingValue,
+                    missingValue, true,
+                    true)) {
                 Assert.assertTrue(valuesFound.isEmpty());
             }
         }

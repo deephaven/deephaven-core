@@ -61,7 +61,7 @@ public final class ParquetColumnRegionByte<ATTR extends Any> extends ParquetColu
     // region getBytes
     public byte[] getBytes(
             final long firstRowKey,
-            final byte[] destination,
+            @NotNull final byte[] destination,
             final int destinationOffset,
             final int length
     ) {

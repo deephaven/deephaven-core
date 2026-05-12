@@ -110,7 +110,7 @@ public class ObjectRegionBinarySearchKernelTest {
                             sortColumn,
                             value,
                             value, true,
-                            true);) {
+                            true)) {
                 if (startRow <= ii && ii <= endRow) {
                     Assert.assertTrue("Expected to find " + value + " at index " + ii,
                             matchesFound.containsRange(ii, ii));
@@ -142,8 +142,35 @@ public class ObjectRegionBinarySearchKernelTest {
                     startRow, endRow,
                     sortColumn,
                     missingValue,
+                    missingValue, true,
+                    false)) {
+                Assert.assertTrue(valuesFound.isEmpty());
+            }
+            try (final RowSet valuesFound = ObjectRegionBinarySearchKernel.binarySearchMinMax(
+                    region,
+                    startRow, endRow,
+                    sortColumn,
+                    missingValue,
                     missingValue, false,
                     false)) {
+                Assert.assertTrue(valuesFound.isEmpty());
+            }
+            try (final RowSet valuesFound = ObjectRegionBinarySearchKernel.binarySearchMinMax(
+                    region,
+                    startRow, endRow,
+                    sortColumn,
+                    missingValue,
+                    missingValue, false,
+                    true)) {
+                Assert.assertTrue(valuesFound.isEmpty());
+            }
+            try (final RowSet valuesFound = ObjectRegionBinarySearchKernel.binarySearchMinMax(
+                    region,
+                    startRow, endRow,
+                    sortColumn,
+                    missingValue,
+                    missingValue, true,
+                    true)) {
                 Assert.assertTrue(valuesFound.isEmpty());
             }
         }

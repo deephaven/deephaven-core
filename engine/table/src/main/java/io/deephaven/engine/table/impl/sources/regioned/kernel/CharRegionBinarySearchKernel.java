@@ -17,6 +17,8 @@ import io.deephaven.util.compare.CharComparisons;
 import io.deephaven.util.type.ArrayTypeUtils;
 import org.jetbrains.annotations.NotNull;
 
+import static io.deephaven.engine.table.impl.sources.regioned.kernel.BinarySearchKernelHelper.insertionPoint;
+
 public class CharRegionBinarySearchKernel {
     /**
      * Performs a binary search on a given column region to find the positions (row keys) of specified keys. The method
@@ -53,28 +55,33 @@ public class CharRegionBinarySearchKernel {
         final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
 
         if (order.isAscending()) {
-            for (final char toFind : unboxed) {
-                final int start = findStartIndexAscending(region, firstKey, lastKey, toFind, true);
-                if (start == -1) {
-                    // No match for this key, move to the next key.
+            for (int idx = 0; idx < unboxed.length && firstKey <= lastKey; ++idx) {
+                final char toFind = unboxed[idx];
+                final int startResult = findStartIndexAscending(region, firstKey, lastKey, toFind, true);
+                if (startResult < 0) {
+                    // Advance firstKey since we didn't find the value but eliminated some rows.
+                    firstKey = insertionPoint(startResult);
                     continue;
                 }
-                final int end = findEndIndexAscending(region, start, lastKey, toFind, true);
-                if (end != -1) {
-                    builder.appendRange(start, end);
-                    firstKey = end + 1;
+                final int endResult = findEndIndexAscending(region, startResult, lastKey, toFind, true);
+                if (endResult >= 0) {
+                    builder.appendRange(startResult, endResult);
+                    firstKey = endResult + 1;
                 }
             }
         } else {
-            for (final char toFind : unboxed) {
-                final int start = findStartIndexDescending(region, firstKey, lastKey, toFind, true);
-                if (start == -1) {
+            for (int searchIndex = 0; searchIndex < unboxed.length && firstKey <= lastKey; ++searchIndex) {
+                final char toFind = unboxed[searchIndex];
+                final int startResult = findStartIndexDescending(region, firstKey, lastKey, toFind, true);
+                if (startResult < 0) {
+                    // Advance firstKey since we didn't find the value but eliminated some rows.
+                    firstKey = insertionPoint(startResult);
                     continue;
                 }
-                final int end = findEndIndexDescending(region, start, lastKey, toFind, true);
-                if (end != -1) {
-                    builder.appendRange(start, end);
-                    firstKey = end + 1;
+                final int endResult = findEndIndexDescending(region, startResult, lastKey, toFind, true);
+                if (endResult >= 0) {
+                    builder.appendRange(startResult, endResult);
+                    firstKey = endResult + 1;
                 }
             }
         }
@@ -110,17 +117,31 @@ public class CharRegionBinarySearchKernel {
         final int end;
 
         if (sortColumn.isAscending()) {
-            start = findStartIndexAscending(region, firstKey, lastKey, min, minInc);
+            // The beginning of the range is the first row that is > or >= min (depends on minInc)
+            final int startResult = findStartIndexAscending(region, firstKey, lastKey, min, minInc);
+            start = startResult >= 0 ? startResult : insertionPoint(startResult);
+            if (start > lastKey) {
+                return RowSetFactory.empty();
+            }
             final long offset = Math.max(start, firstKey);
-            end = findEndIndexAscending(region, offset, lastKey, max, maxInc);
+            // The end of the range is the last row that is < or <= max (depends on maxInc)
+            final int endResult = findEndIndexAscending(region, offset, lastKey, max, maxInc);
+            end = endResult >= 0 ? endResult : insertionPoint(endResult) - 1;
         } else {
-            start = findStartIndexDescending(region, firstKey, lastKey, max, maxInc);
+            // The beginning of the range is the first row that is < or <= max (depends on maxInc)
+            final int startResult = findStartIndexDescending(region, firstKey, lastKey, max, maxInc);
+            start = startResult >= 0 ? startResult : insertionPoint(startResult);
+            if (start > lastKey) {
+                return RowSetFactory.empty();
+            }
             final long offset = Math.max(start, firstKey);
-            end = findEndIndexDescending(region, offset, lastKey, min, minInc);
+            // The end of the range is the last row that is > or >= min (depends on minInc)
+            final int endResult = findEndIndexDescending(region, offset, lastKey, min, minInc);
+            end = endResult >= 0 ? endResult : insertionPoint(endResult) - 1;
         }
 
         // Validate that a logical range was found and the bounds didn't cross
-        if (start != -1 && end != -1 && start <= end) {
+        if (start <= end) {
             return RowSetFactory.fromRange(start, end);
         }
 
@@ -151,14 +172,18 @@ public class CharRegionBinarySearchKernel {
         final int end;
 
         if (sortColumn.isAscending()) {
-            start = findStartIndexAscending(region, firstKey, lastKey, min, minInc);
+            // The beginning of the range is the first row that is > or >= min (depends on minInc)
+            final int startResult = findStartIndexAscending(region, firstKey, lastKey, min, minInc);
+            start = startResult >= 0 ? startResult : insertionPoint(startResult);
             end = Math.toIntExact(lastKey);
         } else {
             start = Math.toIntExact(firstKey);
-            end = findEndIndexDescending(region, firstKey, lastKey, min, minInc);
+            // The end of the range is the last row that is > or >= min (depends on minInc)
+            final int endResult = findEndIndexDescending(region, firstKey, lastKey, min, minInc);
+            end = endResult >= 0 ? endResult : insertionPoint(endResult) - 1;
         }
 
-        if (start != -1 && end != -1 && start <= end) {
+        if (start <= end) {
             return RowSetFactory.fromRange(start, end);
         }
 
@@ -190,13 +215,17 @@ public class CharRegionBinarySearchKernel {
 
         if (sortColumn.isAscending()) {
             start = Math.toIntExact(firstKey);
-            end = findEndIndexAscending(region, firstKey, lastKey, max, maxInc);
+            // The end of the range is the last row that is < or <= max (depends on maxInc)
+            final int endResult = findEndIndexAscending(region, firstKey, lastKey, max, maxInc);
+            end = endResult >= 0 ? endResult : insertionPoint(endResult) - 1;
         } else {
-            start = findStartIndexDescending(region, firstKey, lastKey, max, maxInc);
+            // The beginning of the range is the first row that is < or <= max (depends on maxInc)
+            final int startResult = findStartIndexDescending(region, firstKey, lastKey, max, maxInc);
+            start = startResult >= 0 ? startResult : insertionPoint(startResult);
             end = Math.toIntExact(lastKey);
         }
 
-        if (start != -1 && end != -1 && start <= end) {
+        if (start <= end) {
             return RowSetFactory.fromRange(start, end);
         }
 
@@ -211,7 +240,7 @@ public class CharRegionBinarySearchKernel {
      * @param lastKey The ending key of the search range.
      * @param min The value to find.
      * @param minInc If true, the search is inclusive of the value.
-     * @return The starting index, or -1 if not found.
+     * @return The starting index, or {@code -(insertionPoint) - 1} if not found.
      */
     private static int findStartIndexAscending(
             @NotNull final ColumnRegionChar<?> region,
@@ -237,7 +266,7 @@ public class CharRegionBinarySearchKernel {
                 low = mid + 1;
             }
         }
-        return ans;
+        return ans >= 0 ? ans : insertionPoint(low);
     }
 
     /**
@@ -248,7 +277,7 @@ public class CharRegionBinarySearchKernel {
      * @param lastKey The ending key of the search range.
      * @param max The value to find.
      * @param maxInc If true, the search is inclusive of the value.
-     * @return The ending index, or -1 if not found.
+     * @return The ending index, or {@code -(insertionPoint) - 1} if not found.
      */
     private static int findEndIndexAscending(
             @NotNull final ColumnRegionChar<?> region,
@@ -274,7 +303,7 @@ public class CharRegionBinarySearchKernel {
                 high = mid - 1;
             }
         }
-        return ans;
+        return ans >= 0 ? ans : insertionPoint(low);
     }
 
     /**
@@ -285,7 +314,7 @@ public class CharRegionBinarySearchKernel {
      * @param lastKey The ending key of the search range.
      * @param max The value to find.
      * @param maxInc If true, the search is inclusive of the value.
-     * @return The starting index, or -1 if not found.
+     * @return The starting index, or {@code -(insertionPoint) - 1} if not found.
      */
     private static int findStartIndexDescending(
             @NotNull final ColumnRegionChar<?> region,
@@ -311,7 +340,7 @@ public class CharRegionBinarySearchKernel {
                 low = mid + 1;
             }
         }
-        return ans;
+        return ans >= 0 ? ans : insertionPoint(low);
     }
 
     /**
@@ -322,7 +351,7 @@ public class CharRegionBinarySearchKernel {
      * @param lastKey The ending key of the search range.
      * @param min The value to find.
      * @param minInc If true, the search is inclusive of the value.
-     * @return The ending index, or -1 if not found.
+     * @return The ending index, or {@code -(insertionPoint) - 1} if not found.
      */
     private static int findEndIndexDescending(
             @NotNull final ColumnRegionChar<?> region,
@@ -348,6 +377,6 @@ public class CharRegionBinarySearchKernel {
                 high = mid - 1;
             }
         }
-        return ans;
+        return ans >= 0 ? ans : insertionPoint(low);
     }
 }
