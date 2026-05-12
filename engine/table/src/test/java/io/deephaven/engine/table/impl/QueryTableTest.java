@@ -3761,7 +3761,7 @@ public class QueryTableTest extends QueryTableTestBase {
         validatorTable.addUpdateListener(validatorTableListener);
     }
 
-    private static class MockUncoalescedTable extends UncoalescedTable<MockUncoalescedTable> {
+    private static class MockUncoalescedTable extends UncoalescedTableImpl<MockUncoalescedTable> {
 
         private final Supplier<QueryTable> supplier;
 
