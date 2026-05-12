@@ -46,7 +46,7 @@ dependencies {
     implementation project(':engine-processor-function')
     implementation project(':Configuration')
     implementation project(':log-factory')
-    implementation libs.trove
+    implementation libs.dsi.fastutil
     implementation libs.commons.lang3
 
     compileOnly project(':util-immutables')
