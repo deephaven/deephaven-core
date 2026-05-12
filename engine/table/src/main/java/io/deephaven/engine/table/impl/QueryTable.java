@@ -22,7 +22,6 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.exceptions.TableInitializationException;
-import io.deephaven.engine.liveness.Liveness;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.primitive.iterator.*;
 import io.deephaven.engine.rowset.*;
@@ -58,8 +57,6 @@ import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.IterableUtils;
 import io.deephaven.engine.util.TableTools;
-import io.deephaven.engine.util.systemicmarking.SystemicObject;
-import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.SafeCloseable;
@@ -76,7 +73,6 @@ import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.lang.ref.WeakReference;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -3238,59 +3234,6 @@ public class QueryTable extends BaseTable<QueryTable> {
             Map<MemoizedOperationKey, MemoizedResult<?>> cachedOperations) {
         // noinspection unchecked
         return (MemoizedResult<R>) cachedOperations.computeIfAbsent(memoKey, k -> new MemoizedResult<>());
-    }
-
-    private static class MemoizedResult<R> {
-        private volatile WeakReference<R> reference;
-
-        R getOrCompute(Supplier<R> operation) {
-            final R cachedResult = getIfValid();
-            if (cachedResult != null) {
-                return maybeMarkSystemic(cachedResult);
-            }
-
-            synchronized (this) {
-                final R cachedResultLocked = getIfValid();
-                if (cachedResultLocked != null) {
-                    return maybeMarkSystemic(cachedResultLocked);
-                }
-
-                final R result;
-                result = operation.get();
-
-                reference = new WeakReference<>(result);
-
-                return result;
-            }
-        }
-
-        private R maybeMarkSystemic(R cachedResult) {
-            if (cachedResult instanceof SystemicObject && SystemicObjectTracker.isSystemicThread()) {
-                // noinspection unchecked
-                return (R) ((SystemicObject) cachedResult).markSystemic();
-            }
-            return cachedResult;
-        }
-
-        R getIfValid() {
-            if (reference != null) {
-                final R cachedResult = reference.get();
-                if (!isFailed(cachedResult) && Liveness.verifyCachedObjectForReuse(cachedResult)) {
-                    return cachedResult;
-                }
-            }
-            return null;
-        }
-
-        private boolean isFailed(R cachedResult) {
-            if (cachedResult instanceof Table) {
-                return ((Table) cachedResult).isFailed();
-            }
-            if (cachedResult instanceof PartitionedTable) {
-                return ((PartitionedTable) cachedResult).table().isFailed();
-            }
-            return false;
-        }
     }
 
     public <T extends DynamicNode & NotificationStepReceiver> T getResult(final Operation<T> operation) {
