@@ -2836,6 +2836,7 @@ public class QueryTable extends BaseTable<QueryTable> {
             final boolean incremental = options.has(Flag.INCREMENTAL);
             final boolean history = options.has(Flag.HISTORY);
             final String description = options.description();
+            final QueryTable triggerQueryTable = (QueryTable) trigger.coalesce();
             if (history) {
                 if (initial || incremental) {
                     // noinspection ThrowableNotThrown
@@ -2843,13 +2844,13 @@ public class QueryTable extends BaseTable<QueryTable> {
                             "SnapshotWhenOptions should disallow history with initial or incremental");
                     return null;
                 }
-                return ((QueryTable) trigger.coalesce()).snapshotHistory(description, this, options.stampColumns());
+                return triggerQueryTable.snapshotHistory(description, this, options.stampColumns());
             }
             if (incremental) {
-                return ((QueryTable) trigger.coalesce()).snapshotIncremental(description, this, initial,
+                return triggerQueryTable.snapshotIncremental(description, this, initial,
                         options.stampColumns());
             }
-            return ((QueryTable) trigger.coalesce()).snapshot(description, this, initial, options.stampColumns());
+            return triggerQueryTable.snapshot(description, this, initial, options.stampColumns());
         }
     }
 
