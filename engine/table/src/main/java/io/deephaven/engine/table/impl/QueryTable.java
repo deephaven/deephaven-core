@@ -2843,12 +2843,13 @@ public class QueryTable extends BaseTable<QueryTable> {
                             "SnapshotWhenOptions should disallow history with initial or incremental");
                     return null;
                 }
-                return ((QueryTable) trigger).snapshotHistory(description, this, options.stampColumns());
+                return ((QueryTable) trigger.coalesce()).snapshotHistory(description, this, options.stampColumns());
             }
             if (incremental) {
-                return ((QueryTable) trigger).snapshotIncremental(description, this, initial, options.stampColumns());
+                return ((QueryTable) trigger.coalesce()).snapshotIncremental(description, this, initial,
+                        options.stampColumns());
             }
-            return ((QueryTable) trigger).snapshot(description, this, initial, options.stampColumns());
+            return ((QueryTable) trigger.coalesce()).snapshot(description, this, initial, options.stampColumns());
         }
     }
 
