@@ -244,6 +244,7 @@ public interface ObjectVector<COMPONENT_TYPE> extends Vector<ObjectVector<COMPON
      */
     abstract class Indirect<COMPONENT_TYPE> implements ObjectVector<COMPONENT_TYPE> {
 
+        @UserInvocationPermitted({"vector"})
         @Override
         public COMPONENT_TYPE[] toArray() {
             final int size = intSize("ObjectVector.toArray");
