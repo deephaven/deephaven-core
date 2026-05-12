@@ -44,7 +44,7 @@ dependencies {
     implementation libs.squareup.javapoet
     implementation libs.classgraph
     implementation libs.dsi.fastutil
-    implementation libs.trove
+    api libs.trove
 
     implementation project(':plugin')
     implementation libs.commons.lang3

@@ -1288,7 +1288,7 @@ public class Basic {
         }
 
         if (!countNull) {
-            keys.rem(QueryConstants.${pt.null});
+            keys.remove(QueryConstants.${pt.null});
         }
 
         return keys.size();
