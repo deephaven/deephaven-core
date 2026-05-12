@@ -9,7 +9,7 @@ dependencies {
     implementation project(':log-factory')
     implementation libs.jdom2
     implementation libs.commons.compress
-    implementation libs.trove
+    api libs.trove
 
     implementation project(':Configuration')
 
