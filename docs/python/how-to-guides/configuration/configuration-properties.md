@@ -253,7 +253,7 @@ These properties are less commonly needed but available for specific use cases.
 
 ### Formula validation
 
-These properties configure query formula validation for security. See [Formula validation configuration](/groovy/conceptual/formula-validation-configuration.md) for details.
+These properties configure query formula validation for security. See [Formula validation configuration](/core/groovy/docs/conceptual/formula-validation-configuration) for details.
 
 | Property                                           | Description                               | Default                        |
 | -------------------------------------------------- | ----------------------------------------- | ------------------------------ |
@@ -310,5 +310,5 @@ http.add.header.Strict-Transport-Security.enabled=true
 - [Configure the production application](./configure-production-application.md)
 - [Pre-shared key authentication](../authentication/auth-psk.md)
 - [Anonymous authentication](../authentication/auth-anon.md)
-- [Formula validation configuration](/groovy/conceptual/formula-validation-configuration.md)
+- [Formula validation configuration](/core/groovy/docs/conceptual/formula-validation-configuration)
 - [Periodic Update Graph configuration](../../conceptual/periodic-update-graph-configuration.md)
