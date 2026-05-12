@@ -468,10 +468,20 @@ public class TestColumnExpressionValidator {
 
     @Test
     public void testVectorAnnotations() {
-        final Table input = TableTools.emptyTable(10).update("A=ii").groupBy();
+        final Table input = TableTools.emptyTable(10)
+                .update("B=(byte)ii", "C=(char)ii", "S=(short)ii", "I=(int)ii", "L=(long)ii", "F=(float)ii",
+                        "D=(double)ii")
+                .groupBy();
         final ColumnExpressionValidator validator = ExpressionValidatorModule
                 .getParsingColumnExpressionValidatorFromConfiguration(Configuration.getInstance());
-        final String[] expressions = new String[] {"A0=A.get(0)", "AS=A.size()", "SV=A.subVector(0, 10)"};
+        final String[] expressions = new String[] {
+                "B0=B.get(0)", "BS=B.size()", "BSV=B.subVector(0, 10)",
+                "C0=C.get(0)", "CS=C.size()", "CSV=C.subVector(0, 10)",
+                "S0=S.get(0)", "SS=S.size()", "SSV=S.subVector(0, 10)",
+                "I0=I.get(0)", "IS=I.size()", "ISV=I.subVector(0, 10)",
+                "L0=L.get(0)", "LS=L.size()", "LSV=L.subVector(0, 10)",
+                "F0=F.get(0)", "FS=F.size()", "FSV=F.subVector(0, 10)",
+                "D0=D.get(0)", "DS=D.size()", "DSV=D.subVector(0, 10)"};
 
         validator.validateColumnExpressions(SelectColumnFactory.getExpressions(expressions), expressions,
                 input.getDefinition());
