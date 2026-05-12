@@ -137,6 +137,14 @@ public class WebBarrageUtils {
         return CompressedRangeSetReader.writeRange(s);
     }
 
+    /**
+     * Maps server-side "deephaven:type" class names to their client side equivalent Class instance for use in
+     * {@link io.deephaven.extensions.barrage.BarrageTypeInfo} construction, and comparison
+     * in readers/writers.
+     *
+     * @param t the deephaven:type string
+     * @return a client side class literal
+     */
     public static Class<?> stringToClass(String t) {
         return switch (t) {
             case "boolean", "java.lang.Boolean" -> boolean.class;

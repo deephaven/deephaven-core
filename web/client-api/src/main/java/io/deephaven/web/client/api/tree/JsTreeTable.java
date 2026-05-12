@@ -3,6 +3,7 @@
 //
 package io.deephaven.web.client.api.tree;
 
+import com.google.common.io.BaseEncoding;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.vertispan.tsdefs.annotations.TsIgnore;
 import com.vertispan.tsdefs.annotations.TsTypeRef;
@@ -1453,85 +1454,23 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
         return sourceTable.get().then(t -> Promise.resolve(t.getGrandTotalsTable(config)));
     }
 
-    // TODO core#279 restore this with protobuf once smartkey has some pb-based analog
-    // private static final int SERIALIZED_VERSION = 1;
-    //
-    // @JsMethod
-    // public String saveExpandedState() {
-    // if (expandedMap.get(Key.root()).expandedChildren.isEmpty()) {
-    // return "";//empty string means nothing expanded, don't bother with preamble
-    // }
-    // KeySerializer serializer = new KeySerializer_Impl();
-    // TypeSerializer typeSerializer = serializer.createSerializer();
-    // final StringSerializationStreamWriter writer = new StringSerializationStreamWriter(typeSerializer);
-    // writer.prepareToWrite();
-    // writer.writeInt(SERIALIZED_VERSION);
-    // writer.writeString(typeSerializer.getChecksum());
-    //
-    // // Starting from the root node, write a node, its child count, then call this recursively.
-    // // Normally we would write the key first, but the root key is a special case where we don't
-    // // do this.
-    // try {
-    // writeTreeNode(serializer, writer, Key.root());
-    // } catch (SerializationException e) {
-    // throw new IllegalStateException("Failed to serialize content: " + e.getMessage(), e);
-    // }
-    //
-    // return writer.toString();
-    // }
-    //
-    // private void writeTreeNode(KeySerializer serializer, SerializationStreamWriter writer, Key key) throws
-    // SerializationException {
-    // TreeNodeState node = expandedMap.get(key);
-    // if (node == null) {
-    // writer.writeInt(0);
-    // return;
-    // }
-    // writer.writeInt(node.expandedChildren.size());
-    // for (Key child : node.expandedChildren) {
-    // serializer.write(child, writer);
-    // writeTreeNode(serializer, writer, child);
-    // }
-    // }
-    //
-    // @JsMethod
-    // public void restoreExpandedState(String nodesToRestore) throws SerializationException {
-    // // sanity check that nothing has been expanded yet so we can safely do this
-    // if (!expandedMap.get(Key.root()).expandedChildren.isEmpty()) {
-    // throw new IllegalArgumentException("Tree already has expanded children, ignoring restoreExpandedState call");
-    // }
-    // if (nodesToRestore.isEmpty()) {
-    // // no work to do, empty set of items expanded
-    // return;
-    // }
-    // KeySerializer serializer = new KeySerializer_Impl();
-    // TypeSerializer typeSerializer = serializer.createSerializer();
-    // StringSerializationStreamReader reader = new StringSerializationStreamReader(typeSerializer, nodesToRestore);
-    // int vers = reader.readInt();
-    // if (vers != SERIALIZED_VERSION) {
-    // throw new IllegalArgumentException("Failed to deserialize, current version doesn't match the serialized data.
-    // Expected version " + SERIALIZED_VERSION + ", actual version " + vers);
-    // }
-    // String checksum = reader.readString();
-    // if (!checksum.equals(typeSerializer.getChecksum())) {
-    // throw new IllegalArgumentException("Failed to deserialize, current type definition doesn't match the serialized
-    // data. Expected: " + typeSerializer.getChecksum() + ", actual: " + checksum);
-    // }
-    //
-    // // read each key, assuming root as the first key
-    // readTreeNode(serializer, reader, Key.root());
-    // }
-    //
-    // private void readTreeNode(KeySerializer serializer, SerializationStreamReader reader, Key key) throws
-    // SerializationException {
-    // TreeNodeState node = expandedMap.get(key);
-    // int count = reader.readInt();
-    // for (int i = 0; i < count; i++) {
-    // Key child = serializer.read(reader);
-    // node.expand(child);
-    // readTreeNode(serializer, reader, child);
-    // }
-    // }
+    @JsMethod
+    public String saveExpandedState() {
+        // Serialize the key table to a flight stream, then base64 it to a string
+
+        byte[] bytes = new byte[0];
+        return BaseEncoding.base64().encode(bytes);
+    }
+
+    @JsMethod
+    public void restoreExpandedState(String nodesToRestore) {
+        // Transform string to base64, and read length-prefixed payloads. Validate the schema matches, then overwrite
+        // our key table and trigger replacing it.
+
+
+
+        byte[] bytes = BaseEncoding.base64().decode(nodesToRestore);
+     }
 
     /**
      * a new copy of this treetable, so it can be sorted and filtered separately, and maintain a different viewport.
