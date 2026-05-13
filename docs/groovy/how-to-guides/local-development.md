@@ -39,7 +39,7 @@ Add dependencies to your `pom.xml`:
 
 ```xml
 <properties>
-    <dhc.version>0.37.0</dhc.version>
+    <dhc.version>0.37.0</dhc.version> <!-- Use the version that matches your Deephaven server -->
 </properties>
 
 <dependencies>
@@ -51,6 +51,21 @@ Add dependencies to your `pom.xml`:
     <dependency>
         <groupId>io.deephaven</groupId>
         <artifactId>deephaven-engine-table</artifactId>
+        <version>${dhc.version}</version>
+    </dependency>
+    <dependency>
+        <groupId>io.deephaven</groupId>
+        <artifactId>deephaven-Configuration</artifactId>
+        <version>${dhc.version}</version>
+    </dependency>
+    <dependency>
+        <groupId>io.deephaven</groupId>
+        <artifactId>deephaven-engine-time</artifactId>
+        <version>${dhc.version}</version>
+    </dependency>
+    <dependency>
+        <groupId>io.deephaven</groupId>
+        <artifactId>deephaven-log-factory</artifactId>
         <version>${dhc.version}</version>
     </dependency>
 </dependencies>
@@ -69,7 +84,7 @@ The dependencies you need depend on what your project does. Here are common patt
 | Date/time utilities                    | `deephaven-engine-time`                          |
 | Logging                                | `deephaven-log-factory`                          |
 
-Browse all available modules on [Maven Central](https://mvnrepository.com/artifact/io.deephaven).
+Browse all available modules on [Maven Central](https://central.sonatype.com/namespace/io.deephaven).
 
 ## Local unit testing
 
@@ -104,6 +119,12 @@ Or in Maven:
 ```
 
 ### Example test setup
+
+Add `deephaven-engine-test-utils` as a test dependency to use `TestExecutionContext`:
+
+```groovy skip-test
+testImplementation "io.deephaven:deephaven-engine-test-utils:$dhcVersion"
+```
 
 Use JUnit with an `ExecutionContext` to test table operations:
 
@@ -142,6 +163,13 @@ public class MyTableUtilsTest {
 ```
 
 ### Reading test data
+
+Add the appropriate extensions as dependencies:
+
+```groovy skip-test
+implementation "io.deephaven:deephaven-extensions-csv:$dhcVersion"
+implementation "io.deephaven:deephaven-extensions-parquet-table:$dhcVersion"
+```
 
 Load test data from CSV or Parquet files in your test resources:
 
