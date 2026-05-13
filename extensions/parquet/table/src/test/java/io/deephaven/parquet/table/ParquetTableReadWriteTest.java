@@ -5064,6 +5064,25 @@ public final class ParquetTableReadWriteTest {
         // Perform the filter on an already filtered table.
         resultDesc = fromDiskDesc.where("ii % 2 == 0").where(filter);
         assertTableEquals(sortedDesc.where("ii % 2 == 0").where(filter), resultDesc);
+
+        // Force multiple row groups to get the page-store action tested.
+        final ParquetInstructions instructions = ParquetInstructions.builder()
+                .setRowGroupInfo(RowGroupInfo.maxRows(1_000))
+                .build();
+        final File destMultiRowGroupAsc =
+                new File(rootFile, "ParquetTest_sortedColumnFilteringMultipleRowGroups.parquet");
+        writeTable(sortedAsc, destMultiRowGroupAsc.getPath(), instructions);
+        final Table fromDiskMultiGroupAsc = checkSingleTable(sortedAsc, destMultiRowGroupAsc);
+        Table resultMultiGroupAsc = fromDiskMultiGroupAsc.where(filter);
+        assertTableEquals(sortedAsc.where(filter), resultMultiGroupAsc);
+
+        // Verify descending order is also verified
+        final File destMultiRowGroupDesc =
+                new File(rootFile, "ParquetTest_sortedColumnFilteringMultipleRowGroupsDesc.parquet");
+        writeTable(sortedDesc, destMultiRowGroupDesc.getPath(), instructions);
+        final Table fromDiskMultiGroupDesc = checkSingleTable(sortedDesc, destMultiRowGroupDesc);
+        Table resultMultiGroupDesc = fromDiskMultiGroupDesc.where(filter);
+        assertTableEquals(sortedDesc.where(filter), resultMultiGroupDesc);
     }
 
     @Test
@@ -5085,26 +5104,32 @@ public final class ParquetTableReadWriteTest {
                             "stringCol = i % 997 == 0 ? null : `Str` + (i % 997)");
 
             testSortedFilteringInternal(testTable, "byteCol", "byteCol in 30, 50, 70");
+            testSortedFilteringInternal(testTable, "byteCol", "byteCol not in 30, 50, 70");
             testSortedFilteringInternal(testTable, "byteCol", "byteCol > 30");
             testSortedFilteringInternal(testTable, "byteCol", "byteCol <= 50");
 
             testSortedFilteringInternal(testTable, "charCol", "charCol in 'a', 'b', 'c'");
+            testSortedFilteringInternal(testTable, "charCol", "charCol not in 'a', 'b', 'c'");
             testSortedFilteringInternal(testTable, "charCol", "charCol > 'a'");
             testSortedFilteringInternal(testTable, "charCol", "charCol <= 'b'");
 
             testSortedFilteringInternal(testTable, "shortCol", "shortCol in 300, 500, 700");
+            testSortedFilteringInternal(testTable, "shortCol", "shortCol not in 300, 500, 700");
             testSortedFilteringInternal(testTable, "shortCol", "shortCol > 300");
             testSortedFilteringInternal(testTable, "shortCol", "shortCol <= 500");
 
             testSortedFilteringInternal(testTable, "intCol", "intCol in 300, 500, 700");
+            testSortedFilteringInternal(testTable, "intCol", "intCol not in 300, 500, 700");
             testSortedFilteringInternal(testTable, "intCol", "intCol > 300");
             testSortedFilteringInternal(testTable, "intCol", "intCol <= 500");
 
             testSortedFilteringInternal(testTable, "longCol", "longCol in 300, 500, 700");
+            testSortedFilteringInternal(testTable, "longCol", "longCol not in 300, 500, 700");
             testSortedFilteringInternal(testTable, "longCol", "longCol > 300");
             testSortedFilteringInternal(testTable, "longCol", "longCol <= 500");
 
             testSortedFilteringInternal(testTable, "floatCol", "floatCol in 300.0, 500.0, 700.0");
+            testSortedFilteringInternal(testTable, "floatCol", "floatCol not in 300.0, 500.0, 700.0");
             testSortedFilteringInternal(testTable, "floatCol", "floatCol in NaN");
             testSortedFilteringInternal(testTable, "floatCol", "floatCol > 300.0");
             testSortedFilteringInternal(testTable, "floatCol", "floatCol <= 500.0");
@@ -5112,6 +5137,7 @@ public final class ParquetTableReadWriteTest {
             testSortedFilteringInternal(testTable, "floatCol", "floatCol >= NaN");
 
             testSortedFilteringInternal(testTable, "doubleCol", "doubleCol in 300.0, 500.0, 700.0");
+            testSortedFilteringInternal(testTable, "doubleCol", "doubleCol not in 300.0, 500.0, 700.0");
             testSortedFilteringInternal(testTable, "doubleCol", "doubleCol in NaN");
             testSortedFilteringInternal(testTable, "doubleCol", "doubleCol > 300.0");
             testSortedFilteringInternal(testTable, "doubleCol", "doubleCol <= 500.0");
@@ -5119,6 +5145,7 @@ public final class ParquetTableReadWriteTest {
             testSortedFilteringInternal(testTable, "doubleCol", "doubleCol >= NaN");
 
             testSortedFilteringInternal(testTable, "stringCol", "stringCol in `Str300`, `Str500`, `Str700`");
+            testSortedFilteringInternal(testTable, "stringCol", "stringCol not in `Str300`, `Str500`, `Str700`");
             testSortedFilteringInternal(testTable, "stringCol", "stringCol > `Str300`");
             testSortedFilteringInternal(testTable, "stringCol", "stringCol <= `Str500`");
         }
