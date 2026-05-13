@@ -52,6 +52,17 @@ if(NOT DHCORE_ONLY)
         INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
         )
 
+    if(VCPKG_TOOLCHAIN AND NOT WIN32)
+        install(DIRECTORY ${CMAKE_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/lib/
+            DESTINATION lib
+            FILES_MATCHING
+                PATTERN "*.so"
+                PATTERN "*.so.*"
+                PATTERN "pkgconfig" EXCLUDE
+                PATTERN "cmake" EXCLUDE
+        )
+    endif()
+
       include(CMakePackageConfigHelpers)
       write_basic_package_version_file(
         "${CMAKE_CURRENT_BINARY_DIR}/deephaven/deephavenConfigVersion.cmake"
