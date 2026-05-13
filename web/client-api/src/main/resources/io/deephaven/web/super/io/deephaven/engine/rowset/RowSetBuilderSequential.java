@@ -7,5 +7,6 @@ import io.deephaven.util.datastructures.LongRangeConsumer;
 
 public interface RowSetBuilderSequential extends LongRangeConsumer {
     void appendRange(long rangeFirstRowKey, long rangeLastRowKey);
+    void appendKey(long key);
     RowSet build();
 }

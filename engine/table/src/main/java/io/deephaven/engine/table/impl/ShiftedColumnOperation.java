@@ -15,6 +15,8 @@ import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.select.ShiftedColumnDefinition;
 import io.deephaven.engine.table.impl.sources.ShiftedColumnSource;
 import io.deephaven.util.mutable.MutableLong;
+import org.apache.commons.lang3.mutable.Mutable;
+import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
@@ -24,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Tools for creating a new ShiftedColumn(s) for a given input table and a source column(s)
@@ -43,10 +46,7 @@ public class ShiftedColumnOperation {
     public static Table addShiftedColumns(
             final @NotNull Table source,
             final @NotNull ShiftedColumnDefinition... shifted) {
-        final String shiftedName = Arrays.stream(shifted)
-                .map(Object::toString)
-                .collect(Collectors.joining(","));
-        final String nuggetName = "addShiftedColumns ( " + shiftedName + ") ";
+        final String nuggetName = "addShiftedColumns(" + friendlyShiftDescription(Arrays.stream(shifted)) + ")";
         return getShiftedColumnsUsingNugget(nuggetName, source,
                 new LinkedHashSet<>(Arrays.stream(shifted).collect(Collectors.toList())));
     }
@@ -61,15 +61,21 @@ public class ShiftedColumnOperation {
     public static Table addShiftedColumns(
             final @NotNull Table source,
             final @NotNull Set<ShiftedColumnDefinition> shifted) {
-        final String shiftedName = shifted.stream()
-                .map(Object::toString)
-                .collect(Collectors.joining(","));
-        final String nuggetName = "addShiftedColumns ( " + shiftedName + ") ";
+        final String nuggetName = "addShiftedColumns(" + friendlyShiftDescription(shifted.stream()) + ")";
         return getShiftedColumnsUsingNugget(nuggetName, source, shifted);
     }
 
+    private static String friendlyShiftDescription(@NotNull Stream<ShiftedColumnDefinition> shifted) {
+        final Map<Long, List<ShiftedColumnDefinition>> byShiftAmount = shifted
+                .collect(Collectors.groupingBy(ShiftedColumnDefinition::getShiftAmount, LinkedHashMap::new,
+                        Collectors.toList()));
+        return byShiftAmount.entrySet().stream().map(e -> "["
+                + e.getValue().stream().map(ShiftedColumnDefinition::getColumnName).collect(Collectors.joining(", "))
+                + "], " + e.getKey()).collect(Collectors.joining(","));
+    }
+
     /**
-     * Delegates to {@link ShiftedColumnOperation#getShiftedColumns(Table, Set)} using QueryPerformanceRecorder.
+     * Delegates to {@link ShiftedColumnOperation#getShiftedColumns(Table, Set, String)} using QueryPerformanceRecorder.
      *
      * @param source the source table, used to create new table with the shifted column
      * @param shifted the shifted column definition(s) that define the operation
@@ -82,7 +88,7 @@ public class ShiftedColumnOperation {
             final @NotNull Table source,
             final @NotNull Set<ShiftedColumnDefinition> shifted) {
         return QueryPerformanceRecorder.withNugget(nuggetName, source.sizeForInstrumentation(),
-                () -> getShiftedColumns(source, shifted));
+                () -> getShiftedColumns(source, shifted, nuggetName));
     }
 
     /**
@@ -91,13 +97,16 @@ public class ShiftedColumnOperation {
      *
      * @param source the source table, used to create new table with the shifted column
      * @param shifted the shifted column definition(s) that define the operation
+     * @param listenerDescription the description to use for the listener
      * @return a new Table that has all columns from input table plus additional shifted column(s) created from the
      *         provided definition(s)
      */
     @NotNull
     private static Table getShiftedColumns(
-            final @NotNull Table source,
-            final @NotNull Set<ShiftedColumnDefinition> shifted) {
+            final @NotNull Table sourceRaw,
+            final @NotNull Set<ShiftedColumnDefinition> shifted,
+            final @NotNull String listenerDescription) {
+        final QueryTable source = (QueryTable) sourceRaw.coalesce();
 
         final Map<String, ColumnSource<?>> columnSourceMap = new LinkedHashMap<>(source.getColumnSourceMap());
         final Map<String, Set<String>> sourceToShiftModColSetMap = new LinkedHashMap<>();
@@ -124,114 +133,135 @@ public class ShiftedColumnOperation {
             shiftedColumns.add(column.getResultColumnName());
         });
 
-        final QueryTable result = new QueryTable(source.getRowSet(), columnSourceMap);
-        final Set<ModifiedColumnSet> resultTableMCSs = new LinkedHashSet<>();
+        final Mutable<QueryTable> resultHolder = new MutableObject<>();
 
-        Arrays.stream(source.getDefinition().getColumnNamesArray()).forEach(colName -> {
-            if (sourceToShiftModColSetMap.containsKey(colName)) {
-                resultTableMCSs.add(result.newModifiedColumnSet(
-                        sourceToShiftModColSetMap.get(colName).toArray(String[]::new)));
-            } else {
-                // add identity mapping for all other columns
-                resultTableMCSs.add(result.newModifiedColumnSet(colName));
-            }
-        });
+        final OperationSnapshotControl snapshotControl =
+                source.createSnapshotControlIfRefreshing(OperationSnapshotControl::new);
 
-        final QueryTable sourceAsQueryTable = (QueryTable) source;
-        final ModifiedColumnSet sourceColumnSet =
-                sourceAsQueryTable.newModifiedColumnSet(sourceColumns.toArray(String[]::new));
-        final ModifiedColumnSet dirtyColumnSet = result.newModifiedColumnSet(shiftedColumns.toArray(String[]::new));
-        final ModifiedColumnSet downstreamColumnSet = result.getModifiedColumnSetForUpdates();
-        final ModifiedColumnSet.Transformer mcsTransformer = sourceAsQueryTable.newModifiedColumnSetTransformer(
-                source.getDefinition().getColumnNamesArray(), resultTableMCSs.toArray(ModifiedColumnSet[]::new));
+        BaseTable.initializeWithSnapshot("addShiftedColumns", snapshotControl,
+                (usePrev, beforeClockValue) -> {
+                    final QueryTable result = new QueryTable(source.getRowSet(), columnSourceMap);
 
-        if (source.isRefreshing()) {
-            final BaseTable.ListenerImpl listener = new BaseTable.ListenerImpl("propagateUpdates", source, result) {
-                @Override
-                public void onUpdate(TableUpdate upstream) {
-                    final TableUpdateImpl downstream = TableUpdateImpl.copy(upstream, downstreamColumnSet);
-                    mcsTransformer.clearAndTransform(
-                            upstream.modifiedColumnSet(), downstream.modifiedColumnSet);
-
-                    WritableRowSet modifiedRows = null;
-                    boolean dirtyModifiedColumnSet = false;
-
-                    if (upstream.removed().isNonempty()) {
-                        try (final RowSet prevRowSet = source.getRowSet().copyPrev();
-                                final WritableRowSet dirtyRowSet = computeDirtyModifiedRowSetInPositionSpace(
-                                        prevRowSet, upstream.removed(), minShift, maxShift)) {
-                            if (dirtyRowSet.isNonempty()) {
-                                modifiedRows = prevRowSet.subSetForPositions(dirtyRowSet);
-                                dirtyModifiedColumnSet = true;
-
-                                // move the dirty rows into current keyspace
-                                if (upstream.shifted().nonempty()) {
-                                    upstream.shifted().apply(modifiedRows);
-                                }
+                    if (snapshotControl != null) {
+                        final Set<ModifiedColumnSet> resultTableMCSs = new LinkedHashSet<>();
+                        Arrays.stream(source.getDefinition().getColumnNamesArray()).forEach(colName -> {
+                            if (sourceToShiftModColSetMap.containsKey(colName)) {
+                                resultTableMCSs.add(result.newModifiedColumnSet(
+                                        sourceToShiftModColSetMap.get(colName).toArray(String[]::new)));
+                            } else {
+                                // add identity mapping for all other columns
+                                resultTableMCSs.add(result.newModifiedColumnSet(colName));
                             }
-                        }
+                        });
+
+                        final ModifiedColumnSet sourceColumnSet =
+                                source.newModifiedColumnSet(sourceColumns.toArray(String[]::new));
+                        final ModifiedColumnSet dirtyColumnSet =
+                                result.newModifiedColumnSet(shiftedColumns.toArray(String[]::new));
+                        final ModifiedColumnSet downstreamColumnSet = result.getModifiedColumnSetForUpdates();
+                        final ModifiedColumnSet.Transformer mcsTransformer =
+                                source.newModifiedColumnSetTransformer(
+                                        source.getDefinition().getColumnNamesArray(),
+                                        resultTableMCSs.toArray(ModifiedColumnSet[]::new));
+
+                        final BaseTable.ListenerImpl listener =
+                                new BaseTable.ListenerImpl(listenerDescription, source, result) {
+                                    @Override
+                                    public void onUpdate(TableUpdate upstream) {
+                                        final TableUpdateImpl downstream =
+                                                TableUpdateImpl.copy(upstream, downstreamColumnSet);
+                                        mcsTransformer.clearAndTransform(
+                                                upstream.modifiedColumnSet(), downstream.modifiedColumnSet);
+
+                                        WritableRowSet modifiedRows = null;
+                                        boolean dirtyModifiedColumnSet = false;
+
+                                        if (upstream.removed().isNonempty()) {
+                                            try (final RowSet prevRowSet = source.getRowSet().copyPrev();
+                                                    final WritableRowSet dirtyRowSet =
+                                                            computeDirtyModifiedRowSetInPositionSpace(
+                                                                    prevRowSet, upstream.removed(), minShift,
+                                                                    maxShift)) {
+                                                if (dirtyRowSet.isNonempty()) {
+                                                    modifiedRows = prevRowSet.subSetForPositions(dirtyRowSet);
+                                                    dirtyModifiedColumnSet = true;
+
+                                                    // move the dirty rows into current keyspace
+                                                    if (upstream.shifted().nonempty()) {
+                                                        upstream.shifted().apply(modifiedRows);
+                                                    }
+                                                }
+                                            }
+                                        }
+
+                                        final boolean haveAdds = upstream.added().isNonempty();
+                                        final boolean haveMods = upstream.modified().isNonempty()
+                                                && upstream.modifiedColumnSet().containsAny(sourceColumnSet);
+
+                                        // we'll combine adds and mods to coalesce ranges prior to subSetForPositions
+                                        if (haveAdds || haveMods) {
+                                            try (final WritableRowSet dirtyFromAdds = haveAdds
+                                                    ? computeDirtyModifiedRowSetInPositionSpace(
+                                                            source.getRowSet(), upstream.added(), minShift, maxShift)
+                                                    : null;
+                                                    final WritableRowSet dirtyFromMods =
+                                                            haveMods ? computeDirtyModifiedRowSetInPositionSpace(
+                                                                    source.getRowSet(), upstream.modified(), minShift,
+                                                                    maxShift) : null) {
+
+                                                if (haveAdds && dirtyFromAdds.isNonempty()) {
+                                                    dirtyModifiedColumnSet = true;
+                                                }
+                                                // note dirtyFromMods is propagated by the mcsTransformer
+
+                                                final RowSet dirtyPositions = haveAdds ? dirtyFromAdds : dirtyFromMods;
+                                                if (haveAdds && haveMods) {
+                                                    dirtyFromAdds.insert(dirtyFromMods);
+                                                }
+
+                                                if (dirtyPositions.isNonempty()) {
+                                                    final WritableRowSet dirtyRowSet =
+                                                            source.getRowSet().subSetForPositions(dirtyPositions);
+
+                                                    if (haveAdds && haveMods) {
+                                                        // modifications might dirty added rows
+                                                        dirtyRowSet.remove(upstream.added());
+                                                    }
+
+                                                    if (dirtyRowSet.isEmpty()) {
+                                                        dirtyRowSet.close();
+                                                    } else if (modifiedRows == null) {
+                                                        modifiedRows = dirtyRowSet;
+                                                    } else {
+                                                        modifiedRows.insert(dirtyRowSet);
+                                                        dirtyRowSet.close();
+                                                    }
+                                                }
+                                            }
+                                        }
+
+                                        if (dirtyModifiedColumnSet) {
+                                            downstreamColumnSet.setAll(dirtyColumnSet);
+                                        }
+
+                                        if (modifiedRows != null) {
+                                            // close the copied upstream set
+                                            downstream.modified.close();
+                                            modifiedRows.insert(upstream.modified());
+                                            downstream.modified = modifiedRows;
+                                        } // else we can use the existing upstream modified row set
+
+                                        result.notifyListeners(downstream);
+                                    }
+                                };
+                        snapshotControl.setListenerAndResult(listener, result);
                     }
 
-                    final boolean haveAdds = upstream.added().isNonempty();
-                    final boolean haveMods = upstream.modified().isNonempty()
-                            && upstream.modifiedColumnSet().containsAny(sourceColumnSet);
+                    resultHolder.setValue(result);
+                    return true;
+                });
 
-                    // we'll combine adds and mods to coalesce ranges prior to subSetForPositions
-                    if (haveAdds || haveMods) {
-                        try (final WritableRowSet dirtyFromAdds = haveAdds ? computeDirtyModifiedRowSetInPositionSpace(
-                                source.getRowSet(), upstream.added(), minShift, maxShift) : null;
-                                final WritableRowSet dirtyFromMods =
-                                        haveMods ? computeDirtyModifiedRowSetInPositionSpace(
-                                                source.getRowSet(), upstream.modified(), minShift, maxShift) : null) {
-
-                            if (haveAdds && dirtyFromAdds.isNonempty()) {
-                                dirtyModifiedColumnSet = true;
-                            }
-                            // note dirtyFromMods is propagated by the mcsTransformer
-
-                            final RowSet dirtyPositions = haveAdds ? dirtyFromAdds : dirtyFromMods;
-                            if (haveAdds && haveMods) {
-                                dirtyFromAdds.insert(dirtyFromMods);
-                            }
-
-                            if (dirtyPositions.isNonempty()) {
-                                final WritableRowSet dirtyRowSet =
-                                        source.getRowSet().subSetForPositions(dirtyPositions);
-
-                                if (haveAdds && haveMods) {
-                                    // modifications might dirty added rows
-                                    dirtyRowSet.remove(upstream.added());
-                                }
-
-                                if (dirtyRowSet.isEmpty()) {
-                                    dirtyRowSet.close();
-                                } else if (modifiedRows == null) {
-                                    modifiedRows = dirtyRowSet;
-                                } else {
-                                    modifiedRows.insert(dirtyRowSet);
-                                    dirtyRowSet.close();
-                                }
-                            }
-                        }
-                    }
-
-                    if (dirtyModifiedColumnSet) {
-                        downstreamColumnSet.setAll(dirtyColumnSet);
-                    }
-
-                    if (modifiedRows != null) {
-                        // close the copied upstream set
-                        downstream.modified.close();
-                        modifiedRows.insert(upstream.modified());
-                        downstream.modified = modifiedRows;
-                    } // else we can use the existing upstream modified row set
-
-                    result.notifyListeners(downstream);
-                }
-            };
-            source.addUpdateListener(listener);
-        }
-        return result;
+        return resultHolder.getValue();
     }
 
     /**

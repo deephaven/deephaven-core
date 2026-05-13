@@ -14,11 +14,14 @@ import io.deephaven.qst.type.ByteType;
 import io.deephaven.qst.type.CharType;
 import io.deephaven.qst.type.CustomType;
 import io.deephaven.qst.type.DoubleType;
+import io.deephaven.qst.type.DurationType;
 import io.deephaven.qst.type.FloatType;
 import io.deephaven.qst.type.GenericType;
 import io.deephaven.qst.type.GenericVectorType;
 import io.deephaven.qst.type.InstantType;
 import io.deephaven.qst.type.IntType;
+import io.deephaven.qst.type.LocalDateType;
+import io.deephaven.qst.type.LocalTimeType;
 import io.deephaven.qst.type.LongType;
 import io.deephaven.qst.type.NativeArrayType;
 import io.deephaven.qst.type.PrimitiveType;
@@ -38,7 +41,10 @@ import io.deephaven.vector.Vector;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Objects;
 
@@ -100,6 +106,18 @@ public class ColumnDefinition<TYPE> implements LogOutputAppendable {
 
     public static ColumnDefinition<Instant> ofTime(@NotNull final String name) {
         return new ColumnDefinition<>(name, Instant.class);
+    }
+
+    public static ColumnDefinition<LocalTime> ofLocalTime(@NotNull final String name) {
+        return new ColumnDefinition<>(name, LocalTime.class);
+    }
+
+    public static ColumnDefinition<LocalDate> ofLocalDate(@NotNull final String name) {
+        return new ColumnDefinition<>(name, LocalDate.class);
+    }
+
+    public static ColumnDefinition<Duration> ofDuration(@NotNull final String name) {
+        return new ColumnDefinition<>(name, Duration.class);
     }
 
     public static ColumnDefinition<?> of(String name, Type<?> type) {
@@ -320,6 +338,21 @@ public class ColumnDefinition<TYPE> implements LogOutputAppendable {
         @Override
         public ColumnDefinition<?> visit(InstantType instantType) {
             return ofTime(name);
+        }
+
+        @Override
+        public ColumnDefinition<?> visit(LocalTimeType localTimeType) {
+            return ofLocalTime(name);
+        }
+
+        @Override
+        public ColumnDefinition<?> visit(LocalDateType localDateType) {
+            return ofLocalDate(name);
+        }
+
+        @Override
+        public ColumnDefinition<?> visit(DurationType durationType) {
+            return ofDuration(name);
         }
 
         @Override

@@ -6,6 +6,9 @@ package io.deephaven.web.client.api.barrage;
 import com.google.flatbuffers.FlatBufferBuilder;
 import io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
+import io.deephaven.web.client.api.BigDecimalWrapper;
+import io.deephaven.web.client.api.BigIntegerWrapper;
+import io.deephaven.web.client.api.DateWrapper;
 import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
 import io.deephaven.web.client.api.barrage.def.InitialTableDefinition;
 import io.deephaven.web.client.api.barrage.def.TableAttributesDefinition;
@@ -14,6 +17,7 @@ import org.apache.arrow.flatbuf.KeyValue;
 import org.apache.arrow.flatbuf.Message;
 import org.apache.arrow.flatbuf.MessageHeader;
 import org.apache.arrow.flatbuf.Schema;
+import org.jetbrains.annotations.NotNull;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -131,5 +135,22 @@ public class WebBarrageUtils {
         }
 
         return CompressedRangeSetReader.writeRange(s);
+    }
+
+    public static Class<?> stringToClass(String t) {
+        return switch (t) {
+            case "boolean", "java.lang.Boolean" -> boolean.class;
+            case "char", "java.lang.Character" -> char.class;
+            case "byte", "java.lang.Byte" -> byte.class;
+            case "int", "java.lang.Integer" -> int.class;
+            case "short", "java.lang.Short" -> short.class;
+            case "long", "java.lang.Long" -> long.class;
+            case "java.lang.Float", "float" -> float.class;
+            case "java.lang.Double", "double" -> double.class;
+            case "java.time.Instant" -> DateWrapper.class;
+            case "java.math.BigInteger" -> BigIntegerWrapper.class;
+            case "java.math.BigDecimal" -> BigDecimalWrapper.class;
+            default -> Object.class;
+        };
     }
 }

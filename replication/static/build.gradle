@@ -82,6 +82,8 @@ task replicateAllSafe {
 
     dependsOn Tasks.registerMainExecTask(project, 'replicateRingBuffers', 'io.deephaven.replicators.ReplicateRingBuffers')
 
+    dependsOn Tasks.registerMainExecTask(project, 'replicatePrimitiveArrayLists', 'io.deephaven.replicators.ReplicatePrimitiveArrayLists')
+
     dependsOn Tasks.registerMainExecTask(project, 'replicatePrimitiveInterfaces', 'io.deephaven.replicators.ReplicatePrimitiveInterfaces')
 
     dependsOn Tasks.registerMainExecTask(project, 'replicateRangeSearchKernels', 'io.deephaven.replicators.ReplicateRangeSearchKernels')

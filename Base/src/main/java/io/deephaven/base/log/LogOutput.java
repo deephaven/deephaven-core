@@ -6,11 +6,7 @@ package io.deephaven.base.log;
 import io.deephaven.base.text.TimestampBuffer;
 import io.deephaven.base.text.TimestampBufferMicros;
 
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 import java.nio.ByteBuffer;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.Collection;
 
 // --------------------------------------------------------------------
@@ -23,8 +19,6 @@ import java.util.Collection;
  * overload and promotion rules appending a byte actually appends an integer ("65") not a character ("A").
  */
 public interface LogOutput {
-
-    TimestampBuffer millisFormatter = new TimestampBuffer(ZoneId.systemDefault());
 
     LogOutput start();
 
@@ -146,56 +140,6 @@ public interface LogOutput {
     // ---------------------------------------------------------------------------------------------
 
     /**
-     * Formats an arbitrary object similar to Object.toString()
-     */
-    ObjFormatter<Object> BASIC_FORMATTER = (logOutput, o) -> {
-        if (o == null) {
-            logOutput.append("null");
-        } else {
-            logOutput.append(o.getClass().getName()).append('@').append(o.hashCode());
-        }
-    };
-
-    /**
-     * Formats an InetSocketAddress
-     */
-    ObjFormatter<SocketAddress> SOCKADDR_FORMATTER = (logOutput, sockaddr) -> {
-        if (sockaddr instanceof InetSocketAddress) {
-            InetSocketAddress addr = (InetSocketAddress) sockaddr;
-            if (addr.getAddress() == null) {
-                logOutput.append("null");
-            } else {
-                byte[] b = addr.getAddress().getAddress();
-                logOutput.append((int) b[0] & 0xff);
-                for (int i = 1; i < b.length; ++i) {
-                    logOutput.append('.').append((int) b[i] & 0xff);
-                }
-                logOutput.append(':').append(addr.getPort());
-            }
-        } else {
-            BASIC_FORMATTER.format(logOutput, sockaddr);
-        }
-    };
-
-    /**
-     * Formats an int array
-     */
-    ObjFormatter<int[]> INT_ARRAY_FORMATTER = (logOutput, array) -> {
-        if (array == null) {
-            logOutput.append("null");
-        } else if (array.length == 0) {
-            logOutput.append("{}");
-        } else {
-            char delim = '{';
-            for (int i = 0; i < array.length; ++i) {
-                logOutput.append(delim).append(array[i]);
-                delim = ',';
-            }
-            logOutput.append('}');
-        }
-    };
-
-    /**
      * Formats a String array
      */
     ObjFormatter<String[]> STRING_ARRAY_FORMATTER = (logOutput, array) -> {
@@ -207,24 +151,6 @@ public interface LogOutput {
             char delim = '{';
             for (int i = 0; i < array.length; ++i) {
                 logOutput.append(delim).append(array[i]);
-                delim = ',';
-            }
-            logOutput.append('}');
-        }
-    };
-
-    /**
-     * Formats a String Collection
-     */
-    ObjFormatter<Collection<String>> STRING_COLLECTION_FORMATTER = (logOutput, collection) -> {
-        if (collection == null) {
-            logOutput.append("null");
-        } else if (collection.isEmpty()) {
-            logOutput.append("{}");
-        } else {
-            char delim = '{';
-            for (final String elem : collection) {
-                logOutput.append(delim).append(elem);
                 delim = ',';
             }
             logOutput.append('}');
@@ -269,55 +195,6 @@ public interface LogOutput {
                 }
             };
 
-    /**
-     * Formats a boolean array
-     */
-    ObjFormatter<boolean[]> BOOLEAN_ARRAY_FORMATTER = (logOutput, array) -> {
-        if (array == null) {
-            logOutput.append("null");
-        } else if (array.length == 0) {
-            logOutput.append("{}");
-        } else {
-            char delim = '{';
-            for (int i = 0; i < array.length; ++i) {
-                logOutput.append(delim).append(array[i]);
-                delim = ',';
-            }
-            logOutput.append('}');
-        }
-    };
-
-    /**
-     * Formats byte array as a null-terminated string
-     */
-    ObjFormatter<byte[]> NULL_TERMINATED_STRING_FORMATTER = (logOutput, array) -> {
-        if (array == null) {
-            logOutput.append("null");
-        } else {
-            for (int i = 0; i < array.length && array[i] != 0; ++i) {
-                logOutput.append((char) array[i]);
-            }
-        }
-    };
-
-    /**
-     * Formats LocalDateTime based on the default timezone
-     */
-    ObjFormatter<LocalDateTime> LOCAL_DATE_TIME_FORMATTER = (logOutput, localDateTime) -> {
-        if (localDateTime == null) {
-            logOutput.append("null");
-        } else {
-            // This involves some overhead, but a timezone is really useful in logs
-            logOutput.append(millisFormatter
-                    .getTimestamp(localDateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()));
-        }
-    };
-
-    /**
-     * Formats long millis from epoch based on the default timezone
-     */
-    LongFormatter MILLIS_FROM_EPOCH_FORMATTER =
-            (logOutput, millis) -> logOutput.append(millisFormatter.getTimestamp(millis));
 
     // ---------------------------------------------------------------------------------------------
     // null implementation

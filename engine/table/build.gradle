@@ -18,6 +18,7 @@ dependencies {
     api project(':engine-stringset')
     api project(':engine-base')
     api project(':engine-context')
+    api project(':engine-read-tracker')
     api project(':deephaven-jpy-ext')
     api project(':hotspot')
     api project(':IO')
@@ -43,6 +44,7 @@ dependencies {
     implementation libs.squareup.javapoet
     implementation libs.classgraph
     implementation libs.dsi.fastutil
+    api libs.trove
 
     implementation project(':plugin')
     implementation libs.commons.lang3
