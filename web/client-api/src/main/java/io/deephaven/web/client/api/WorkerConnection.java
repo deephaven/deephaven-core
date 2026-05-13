@@ -22,7 +22,6 @@ import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.extensions.barrage.BarrageMessageWriter;
 import io.deephaven.extensions.barrage.BarrageMessageWriterImpl;
 import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
-import io.deephaven.extensions.barrage.BarrageTypeInfo;
 import io.deephaven.extensions.barrage.chunk.ChunkWriter;
 import io.deephaven.flightjs.protocol.BrowserFlightServiceGrpc;
 import io.deephaven.proto.backplane.grpc.ApplicationServiceGrpc;
@@ -63,8 +62,8 @@ import io.deephaven.proto.backplane.grpc.TypedTicket;
 import io.deephaven.proto.backplane.script.grpc.ConsoleServiceGrpc;
 import io.deephaven.proto.backplane.script.grpc.LogSubscriptionData;
 import io.deephaven.proto.backplane.script.grpc.LogSubscriptionRequest;
-import io.deephaven.web.client.api.barrage.WebBarrageUtils;
 import io.deephaven.web.client.api.barrage.WebChunkWriterFactory;
+import io.deephaven.web.client.api.barrage.data.BarrageColumnType;
 import io.deephaven.web.client.api.barrage.def.InitialTableDefinition;
 import io.deephaven.web.client.api.barrage.stream.AuthenticationInterceptor;
 import io.deephaven.web.client.api.barrage.stream.BiDiStream;
@@ -106,15 +105,14 @@ import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsOptional;
 import jsinterop.annotations.JsNullable;
 import jsinterop.base.JsPropertyMap;
-import org.apache.arrow.flatbuf.Field;
-import org.apache.arrow.flatbuf.KeyValue;
 import org.apache.arrow.flatbuf.Message;
 import org.apache.arrow.flatbuf.MessageHeader;
 import org.apache.arrow.flatbuf.Schema;
 import org.apache.arrow.flight.impl.Flight;
 import org.apache.arrow.flight.impl.FlightServiceGrpc;
+import org.jspecify.annotations.Nullable;
 
-import javax.annotation.Nullable;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
@@ -129,11 +127,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
 
 /**
@@ -1086,32 +1084,21 @@ public class WorkerConnection {
             context.timeZone = JsTimeZone.getTimeZone(userTimeZone);
         }
 
-        BarrageTypeInfo<Field>[] typeInfos = new BarrageTypeInfo[types.length];
+        List<BarrageColumnType> columnTypes = new ArrayList<>();
         Chunk<Values>[] chunks = new Chunk[types.length];
         for (int i = 0; i < types.length; i++) {
             JsDataHandler handler = JsDataHandler.getHandler(types[i]);
-            Class<?> type = WebBarrageUtils.stringToClass(handler.deephavenType());
-            FlatBufferBuilder b = new FlatBufferBuilder();
-            int typeOffset = handler.writeType(b);
-            Field.startField(b);
-            Field.addType(b, typeOffset);
-            Field.addTypeType(b, handler.typeType());
-            b.finish(Field.endField(b));
-            Field field = Field.getRootAsField(b.dataBuffer());
-            Class<?> componentType = null;
-            if (types[i].endsWith("[]")) {
-                componentType = WebBarrageUtils
-                        .stringToClass(handler.deephavenType().substring(0, handler.deephavenType().length() - 2));
+            columnTypes.add(BarrageColumnType.fromString(columnNames[i], types[i]));
+            if (handler != null) {
+                chunks[i] = ObjectChunk.chunkWrap(handler.process(data[i], context));
+            } else {
+                chunks[i] = ObjectChunk.chunkWrap(data[i]);
             }
-            typeInfos[i] = BarrageTypeInfo.make(type, componentType, field);
-
-            chunks[i] = ObjectChunk.chunkWrap(handler.process(data[i], context));
         }
-        return newTable(columnNames, types, typeInfos, chunks);
+        return newTable(columnTypes, chunks);
     }
 
-    public Promise<JsTable> newTable(String[] columnNames, String[] types, BarrageTypeInfo<Field>[] typeInfos,
-            Chunk<Values>[] data) {
+    public Promise<JsTable> newTable(List<BarrageColumnType> columnTypes, Chunk<Values>[] data) {
         // Store the data using a reference we can clear out, so the data is garbage collected later
         // This means the table can only be created once, but that's probably what we want in this case anyway
         AtomicReference<Chunk<Values>[]> chunkRef = new AtomicReference<>(data);
@@ -1124,53 +1111,91 @@ public class WorkerConnection {
             }
             chunkRef.set(null);
 
-            StreamObserver<BarrageMessageWriter.MessageView> listener = doPutStream(columnNames, types, c, cts.getHandle().makeTicket(), d[0].size());
-            ChunkWriter.Factory f = new WebChunkWriterFactory();
-
+            StreamObserver<BarrageMessageWriter.MessageView> listener = doPutStream(columnTypes, c, cts.getHandle().makeTicket(), d[0].size());
             Flight.FlightDescriptor flightDescriptor = cts.getHandle().makeFlightDescriptor();
-            listener.onNext(bmwFactory.getSchemaView(fb -> writeSimpleSchema(columnNames, types, fb), flightDescriptor));
 
-            ChunkWriter<Chunk<Values>>[] chunkWriters = new ChunkWriter[columnNames.length];
-            for (int i = 0; i < typeInfos.length; i++) {
-                chunkWriters[i] = f.newWriter(typeInfos[i]);
-            }
-
-            BarrageMessage msg = new BarrageMessage();
-            msg.rowsAdded = RowSetFactory.fromRange(0, d[0].size() - 1);
-            msg.rowsIncluded = msg.rowsAdded;
-            msg.rowsRemoved = RowSetFactory.empty();
-            msg.length = d[0].size();
-            msg.addColumnData = new BarrageMessage.AddColumnData[columnNames.length];
-            for (int i = 0; i < columnNames.length; i++) {
-                BarrageMessage.AddColumnData acd = new BarrageMessage.AddColumnData();
-                acd.data = Collections.singletonList(d[i]);
-                msg.addColumnData[i] = acd;
-            }
-            msg.modColumnData = BarrageMessage.ZERO_MOD_COLUMNS;
-            msg.shifted = RowSetShiftData.EMPTY;
-
-            BarrageMessageWriter barrageMessageWriter =
-                    bmwFactory.newMessageWriter(msg, chunkWriters, BarrageMessageWriter.WriteMetricsConsumer.NO_OP);
-            listener.onNext(barrageMessageWriter.getSnapshotView(BarrageSnapshotOptions.builder()
-                    .useDeephavenNulls(true).build()));
-
-            listener.onCompleted();
+            writeTableToStream(columnTypes, listener, flightDescriptor, d);
         }, "creating new table")
                 .refetch()
                 .then(cts -> Promise.resolve(new JsTable(this, cts)));
     }
 
+    private void writeTableToStream(List<BarrageColumnType> columnTypes, StreamObserver<BarrageMessageWriter.MessageView> listener, Flight.@Nullable FlightDescriptor flightDescriptor, Chunk<Values>[] d) {
+        ChunkWriter.Factory f = new WebChunkWriterFactory();
+        listener.onNext(bmwFactory.getSchemaView(fb -> writeSimpleSchema(columnTypes, fb), flightDescriptor));
+
+        ChunkWriter<Chunk<Values>>[] chunkWriters = new ChunkWriter[columnTypes.size()];
+        for (int i = 0; i < columnTypes.size(); i++) {
+            chunkWriters[i] = f.newWriter(columnTypes.get(i).typeInfo());
+        }
+
+        BarrageMessage msg = new BarrageMessage();
+        msg.rowsAdded = RowSetFactory.fromRange(0, d[0].size() - 1);
+        msg.rowsIncluded = msg.rowsAdded;
+        msg.rowsRemoved = RowSetFactory.empty();
+        msg.length = d[0].size();
+        msg.addColumnData = new BarrageMessage.AddColumnData[columnTypes.size()];
+        for (int i = 0; i < columnTypes.size(); i++) {
+            BarrageMessage.AddColumnData acd = new BarrageMessage.AddColumnData();
+            acd.data = Collections.singletonList(d[i]);
+            msg.addColumnData[i] = acd;
+        }
+        msg.modColumnData = BarrageMessage.ZERO_MOD_COLUMNS;
+        msg.shifted = RowSetShiftData.EMPTY;
+
+        BarrageMessageWriter barrageMessageWriter =
+                bmwFactory.newMessageWriter(msg, chunkWriters, BarrageMessageWriter.WriteMetricsConsumer.NO_OP);
+        listener.onNext(barrageMessageWriter.getSnapshotView(BarrageSnapshotOptions.builder()
+                .useDeephavenNulls(true).build()));
+
+        listener.onCompleted();
+    }
+
+    public byte[] newTableToBytes(List<BarrageColumnType> columnTypes, Chunk<Values>[] data) {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        AtomicBoolean finished = new AtomicBoolean(false);
+        StreamObserver<BarrageMessageWriter.MessageView> listener = new StreamObserver<>() {
+            @Override
+            public void onNext(BarrageMessageWriter.MessageView value) {
+                try {
+                    value.forEachStream(drainable -> {
+                        try {
+                            drainable.drainTo(out);
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
+                        }
+                    });
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+
+            @Override
+            public void onError(Throwable t) {
+
+            }
+
+            @Override
+            public void onCompleted() {
+                finished.set(true);
+            }
+        };
+        writeTableToStream(columnTypes, listener, null, data);
+        assert out.size() > 0;
+        assert finished.get();
+        return out.toByteArray();
+    }
+
     /**
      * Adapts a table schema and a unary response to a MessageView bidi stream that calls FlightService/DoPut.
      *
-     * @param columnNames the names of the columns to send
-     * @param types the types of the columns to send
+     * @param columnTypes the schema of the table
      * @param unaryObserver a unary observer to receive the final ETCR response or any error that occurs during the stream
      * @param resultTicket the ticket that will contain the table after upload
      * @param size the size of the table being uploaded
      * @return a stream observer which can be given MessageViews from a BarrageMessageWriter
      */
-    private StreamObserver<BarrageMessageWriter.MessageView> doPutStream(String[] columnNames, String[] types, StreamObserver<ExportedTableCreationResponse> unaryObserver, Ticket resultTicket, int size) {
+    private StreamObserver<BarrageMessageWriter.MessageView> doPutStream(List<BarrageColumnType> columnTypes, StreamObserver<ExportedTableCreationResponse> unaryObserver, Ticket resultTicket, int size) {
         // to doPut(), but need to filter out the messages and wait for onComplete
         final StreamObserver<InputStream> observer;
         try {
@@ -1190,7 +1215,7 @@ public class WorkerConnection {
                 public void onCompleted() {
                     // All done, notify caller with a synthetic ETCR
                     FlatBufferBuilder schemaMessageBuilder = new FlatBufferBuilder();
-                    int schemaOffset = writeSimpleSchema(columnNames, types, schemaMessageBuilder);
+                    int schemaOffset = writeSimpleSchema(columnTypes, schemaMessageBuilder);
                     Message.startMessage(schemaMessageBuilder);
                     Message.addHeaderType(schemaMessageBuilder, MessageHeader.Schema);
                     Message.addHeader(schemaMessageBuilder, schemaOffset);
@@ -1241,35 +1266,14 @@ public class WorkerConnection {
     /**
      * Writes a simple schema with the given column names and types.
      *
-     * @param columnNames
-     * @param types
+     * @param columnTypes the schema of the table
      * @param fb
      * @return
      */
-    private static int writeSimpleSchema(String[] columnNames, String[] types, FlatBufferBuilder fb) {
-        int[] fields = new int[columnNames.length];
-        int dhTypeOffset = fb.createString("deephaven:type");
-        for (int i = 0; i < columnNames.length; i++) {
-            String columnName = columnNames[i];
-
-            JsDataHandler writer = JsDataHandler.getHandler(types[i]);
-
-            int nameOffset = fb.createString(columnName);
-            int typeOffset = writer.writeType(fb);
-            int metadataOffset = Field.createCustomMetadataVector(fb, new int[] {
-                    KeyValue.createKeyValue(fb, dhTypeOffset,
-                            fb.createString(writer.deephavenType()))
-            });
-
-            Field.startField(fb);
-            Field.addName(fb, nameOffset);
-            Field.addNullable(fb, true);
-
-            Field.addTypeType(fb, writer.typeType());
-            Field.addType(fb, typeOffset);
-            Field.addCustomMetadata(fb, metadataOffset);
-
-            fields[i] = Field.endField(fb);
+    private static int writeSimpleSchema(List<BarrageColumnType> columnTypes, FlatBufferBuilder fb) {
+        int[] fields = new int[columnTypes.size()];
+        for (int i = 0; i < columnTypes.size(); i++) {
+            fields[i] = columnTypes.get(i).writeField(fb);
         }
         int fieldsOffset = Schema.createFieldsVector(fb, fields);
 

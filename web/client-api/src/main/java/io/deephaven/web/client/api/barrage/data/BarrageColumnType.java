@@ -7,13 +7,16 @@ import io.deephaven.web.client.api.BigIntegerWrapper;
 import io.deephaven.web.client.api.DateWrapper;
 import io.deephaven.web.client.api.LocalDateWrapper;
 import io.deephaven.web.client.api.LocalTimeWrapper;
+import io.deephaven.web.client.api.LongWrapper;
+import io.deephaven.web.client.api.barrage.WebBarrageUtils;
 import org.apache.arrow.flatbuf.Field;
+import org.apache.arrow.flatbuf.KeyValue;
 import org.apache.arrow.flatbuf.Type;
 import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
+import java.util.LinkedHashMap;
 
 /**
  * Type model that represents all Arrow field types and supported deephaven type metadata.
@@ -22,7 +25,7 @@ public abstract sealed class BarrageColumnType
         permits BarrageColumnType.Null, BarrageColumnType.IntType, BarrageColumnType.FloatingPoint,
         BarrageColumnType.Binary, BarrageColumnType.Utf8, BarrageColumnType.Bool,
         BarrageColumnType.Decimal, BarrageColumnType.Date, BarrageColumnType.Time,
-        BarrageColumnType.Timestamp, BarrageColumnType.Interval, BarrageColumnType.Array,
+        BarrageColumnType.Timestamp, BarrageColumnType.Interval, BarrageColumnType.List,
         BarrageColumnType.Struct, BarrageColumnType.Union, BarrageColumnType.FixedSizeBinary,
         BarrageColumnType.FixedSizeList, BarrageColumnType.Map, BarrageColumnType.Duration,
         BarrageColumnType.LargeBinary, BarrageColumnType.LargeUtf8, BarrageColumnType.LargeList,
@@ -38,7 +41,7 @@ public abstract sealed class BarrageColumnType
         if (deephavenType.endsWith("[]")) {
             String componentType = deephavenType.substring(0, deephavenType.length() - 2);
             BarrageColumnType componentColumnType = fromString(null, componentType);
-            return new Array(deephavenType, componentColumnType);
+            return new List(deephavenType, componentColumnType);
         }
 
         switch (deephavenType) {
@@ -68,9 +71,9 @@ public abstract sealed class BarrageColumnType
             case "bool":
                 return new Bool(columnName);
             case "java.math.BigDecimal":
-                return new Decimal(columnName, 128, 0, 128);
+                return new Binary(columnName, "java.math.BigDecimal");
             case "java.math.BigInteger":
-                return new Binary(columnName);
+                return new Binary(columnName, "java.math.BigInteger");
             case "java.time.LocalDate":
             case "localdate":
                 return new Date(columnName, org.apache.arrow.flatbuf.DateUnit.DAY);
@@ -83,59 +86,60 @@ public abstract sealed class BarrageColumnType
     }
 
     public static BarrageColumnType fromArrowField(Field field) {
+        java.util.Map<String, String> customMetadata = WebBarrageUtils.keyValuePairs("", field.customMetadataLength(), field::customMetadata);
         String columnName = field.name();
         switch (field.typeType()) {
             case Type.Null:
-                return new Null(columnName);
+                return new Null(columnName, customMetadata);
             case Type.Int: {
                 org.apache.arrow.flatbuf.Int intType = new org.apache.arrow.flatbuf.Int();
                 field.type(intType);
-                return new IntType(columnName, intType.bitWidth(), intType.isSigned());
+                return new IntType(columnName, intType.bitWidth(), intType.isSigned(), customMetadata);
             }
             case Type.FloatingPoint: {
                 org.apache.arrow.flatbuf.FloatingPoint fpType = new org.apache.arrow.flatbuf.FloatingPoint();
                 field.type(fpType);
-                return new FloatingPoint(columnName, fpType.precision());
+                return new FloatingPoint(columnName, fpType.precision(), customMetadata);
             }
             case Type.Binary:
-                return new Binary(columnName);
+                return new Binary(columnName, customMetadata.getOrDefault("deephaven:type", "java.lang.Object"), customMetadata);
             case Type.Utf8:
-                return new Utf8(columnName);
+                return new Utf8(columnName, customMetadata);
             case Type.Bool:
-                return new Bool(columnName);
+                return new Bool(columnName, customMetadata);
             case Type.Decimal: {
                 org.apache.arrow.flatbuf.Decimal decType = new org.apache.arrow.flatbuf.Decimal();
                 field.type(decType);
-                return new Decimal(columnName, decType.precision(), decType.scale(), decType.bitWidth());
+                return new Decimal(columnName, decType.precision(), decType.scale(), decType.bitWidth(), customMetadata);
             }
             case Type.Date: {
                 org.apache.arrow.flatbuf.Date dateType = new org.apache.arrow.flatbuf.Date();
                 field.type(dateType);
-                return new Date(columnName, dateType.unit());
+                return new Date(columnName, dateType.unit(), customMetadata);
             }
             case Type.Time: {
                 org.apache.arrow.flatbuf.Time timeType = new org.apache.arrow.flatbuf.Time();
                 field.type(timeType);
-                return new Time(columnName, timeType.unit(), timeType.bitWidth());
+                return new Time(columnName, timeType.unit(), timeType.bitWidth(), customMetadata);
             }
             case Type.Timestamp: {
                 org.apache.arrow.flatbuf.Timestamp tsType = new org.apache.arrow.flatbuf.Timestamp();
                 field.type(tsType);
-                return new Timestamp(columnName, tsType.unit(), tsType.timezone());
+                return new Timestamp(columnName, tsType.unit(), tsType.timezone(), customMetadata);
             }
             case Type.Interval: {
                 org.apache.arrow.flatbuf.Interval intervalType = new org.apache.arrow.flatbuf.Interval();
                 field.type(intervalType);
-                return new Interval(columnName, intervalType.unit());
+                return new Interval(columnName, intervalType.unit(), customMetadata);
             }
             case Type.List:
-                return new Array(columnName, fromArrowField(field.children(0)));
+                return new List(columnName, fromArrowField(field.children(0)), customMetadata);
             case Type.Struct_: {
-                List<BarrageColumnType> fields = new ArrayList<>(field.childrenLength());
+                java.util.List<BarrageColumnType> fields = new ArrayList<>(field.childrenLength());
                 for (int i = 0; i < field.childrenLength(); i++) {
                     fields.add(fromArrowField(field.children(i)));
                 }
-                return new Struct(columnName, Collections.unmodifiableList(fields));
+                return new Struct(columnName, Collections.unmodifiableList(fields), customMetadata);
             }
             case Type.Union: {
                 org.apache.arrow.flatbuf.Union unionType = new org.apache.arrow.flatbuf.Union();
@@ -144,49 +148,49 @@ public abstract sealed class BarrageColumnType
                 for (int i = 0; i < typeIds.length; i++) {
                     typeIds[i] = unionType.typeIds(i);
                 }
-                List<BarrageColumnType> fields = new ArrayList<>(field.childrenLength());
+                java.util.List<BarrageColumnType> fields = new ArrayList<>(field.childrenLength());
                 for (int i = 0; i < field.childrenLength(); i++) {
                     fields.add(fromArrowField(field.children(i)));
                 }
-                return new Union(columnName, unionType.mode(), typeIds, Collections.unmodifiableList(fields));
+                return new Union(columnName, unionType.mode(), typeIds, Collections.unmodifiableList(fields), customMetadata);
             }
             case Type.FixedSizeBinary: {
                 org.apache.arrow.flatbuf.FixedSizeBinary fsbType = new org.apache.arrow.flatbuf.FixedSizeBinary();
                 field.type(fsbType);
-                return new FixedSizeBinary(columnName, fsbType.byteWidth());
+                return new FixedSizeBinary(columnName, fsbType.byteWidth(), customMetadata);
             }
             case Type.FixedSizeList: {
                 org.apache.arrow.flatbuf.FixedSizeList fslType = new org.apache.arrow.flatbuf.FixedSizeList();
                 field.type(fslType);
-                return new FixedSizeList(columnName, fslType.listSize(), fromArrowField(field.children(0)));
+                return new FixedSizeList(columnName, fslType.listSize(), fromArrowField(field.children(0)), customMetadata);
             }
             case Type.Map: {
                 org.apache.arrow.flatbuf.Map mapType = new org.apache.arrow.flatbuf.Map();
                 field.type(mapType);
                 Field entriesField = field.children(0);
-                return new Map(columnName, mapType.keysSorted(), fromArrowField(entriesField.children(0)), fromArrowField(entriesField.children(1)));
+                return new Map(columnName, mapType.keysSorted(), fromArrowField(entriesField.children(0)), fromArrowField(entriesField.children(1)), customMetadata);
             }
             case Type.Duration: {
                 org.apache.arrow.flatbuf.Duration durType = new org.apache.arrow.flatbuf.Duration();
                 field.type(durType);
-                return new Duration(columnName, durType.unit());
+                return new Duration(columnName, durType.unit(), customMetadata);
             }
             case Type.LargeBinary:
-                return new LargeBinary(columnName);
+                return new LargeBinary(columnName, customMetadata);
             case Type.LargeUtf8:
-                return new LargeUtf8(columnName);
+                return new LargeUtf8(columnName, customMetadata);
             case Type.LargeList:
-                return new LargeList(columnName, fromArrowField(field.children(0)));
+                return new LargeList(columnName, fromArrowField(field.children(0)), customMetadata);
             case Type.RunEndEncoded:
-                return new RunEndEncoded(columnName, fromArrowField(field.children(0)), fromArrowField(field.children(1)));
+                return new RunEndEncoded(columnName, fromArrowField(field.children(0)), fromArrowField(field.children(1)), customMetadata);
             case Type.BinaryView:
-                return new BinaryView(columnName);
+                return new BinaryView(columnName, customMetadata);
             case Type.Utf8View:
-                return new Utf8View(columnName);
+                return new Utf8View(columnName, customMetadata);
             case Type.ListView:
-                return new ListView(columnName, fromArrowField(field.children(0)));
+                return new ListView(columnName, fromArrowField(field.children(0)), customMetadata);
             case Type.LargeListView:
-                return new LargeListView(columnName, fromArrowField(field.children(0)));
+                return new LargeListView(columnName, fromArrowField(field.children(0)), customMetadata);
             default:
                 throw new IllegalArgumentException("Unsupported Arrow type: " + Type.name(field.typeType()));
         }
@@ -194,13 +198,23 @@ public abstract sealed class BarrageColumnType
 
     @Nullable
     private final String columnName;
+    private final java.util.Map<String, String> customMetadata;
+
+    protected BarrageColumnType(@Nullable String columnName, java.util.Map<String, String> customMetadata) {
+        this.columnName = columnName;
+        this.customMetadata = Collections.unmodifiableMap(customMetadata);
+    }
 
     protected BarrageColumnType(@Nullable String columnName) {
-        this.columnName = columnName;
+        this(columnName, java.util.Map.of());
     }
 
     public @Nullable String getColumnName() {
         return columnName;
+    }
+
+    public java.util.Map<String, String> customMetadata() {
+        return customMetadata;
     }
 
     public abstract byte typeType();
@@ -209,6 +223,21 @@ public abstract sealed class BarrageColumnType
 
     public int writeField(FlatBufferBuilder builder) {
         int typeOffset = writeType(builder);
+
+        // Merge stored custom metadata with deephaven:type (stored metadata takes precedence)
+        java.util.LinkedHashMap<String, String> mergedMetadata = new LinkedHashMap<>(customMetadata);
+        if (!deephavenType().equals("java.lang.Object") && !mergedMetadata.containsKey("deephaven:type")) {
+            mergedMetadata.put("deephaven:type", deephavenType());
+        }
+
+        int[] kvOffsets = new int[mergedMetadata.size()];
+        int idx = 0;
+        for (java.util.Map.Entry<String, String> entry : mergedMetadata.entrySet()) {
+            kvOffsets[idx++] = KeyValue.createKeyValue(builder,
+                    builder.createString(entry.getKey()),
+                    builder.createString(entry.getValue()));
+        }
+        int metadataOffset = Field.createCustomMetadataVector(builder, kvOffsets);
 
         int[] childrenOffsets = writeChildren(builder);
         int childrenVector = Integer.MAX_VALUE;
@@ -227,7 +256,7 @@ public abstract sealed class BarrageColumnType
         }
         Field.addTypeType(builder, typeType());
         Field.addType(builder, typeOffset);
-        // TODO custom metadata, including deephaven:type
+        Field.addCustomMetadata(builder, metadataOffset);
 
         if (childrenOffsets != null) {
             Field.addChildren(builder, childrenVector);
@@ -254,8 +283,8 @@ public abstract sealed class BarrageColumnType
     }
 
     public static final class Null extends BarrageColumnType {
-        public Null(@Nullable String columnName) {
-            super(columnName);
+        public Null(@Nullable String columnName, java.util.Map<String, String> customMetadata) {
+            super(columnName, customMetadata);
         }
 
         @Override
@@ -286,6 +315,12 @@ public abstract sealed class BarrageColumnType
 
         public IntType(@Nullable String columnName, int bitWidth, boolean isSigned) {
             super(columnName);
+            this.bitWidth = bitWidth;
+            this.isSigned = isSigned;
+        }
+
+        public IntType(@Nullable String columnName, int bitWidth, boolean isSigned, java.util.Map<String, String> customMetadata) {
+            super(columnName, customMetadata);
             this.bitWidth = bitWidth;
             this.isSigned = isSigned;
         }
@@ -333,7 +368,7 @@ public abstract sealed class BarrageColumnType
                     case 8: return byte.class;
                     case 16: return short.class;
                     case 32: return int.class;
-                    case 64: return long.class;
+                    case 64: return LongWrapper.class;
                     default: throw new IllegalStateException("Unsupported signed int bitWidth: " + bitWidth);
                 }
             } else {
@@ -350,6 +385,11 @@ public abstract sealed class BarrageColumnType
 
         public FloatingPoint(@Nullable String columnName, short precision) {
             super(columnName);
+            this.precision = precision;
+        }
+
+        public FloatingPoint(@Nullable String columnName, short precision, java.util.Map<String, String> customMetadata) {
+            super(columnName, customMetadata);
             this.precision = precision;
         }
 
@@ -390,8 +430,15 @@ public abstract sealed class BarrageColumnType
     }
 
     public static final class Binary extends BarrageColumnType {
-        public Binary(@Nullable String columnName) {
+        private final String deephavenType;
+        public Binary(@Nullable String columnName, String deephavenType) {
             super(columnName);
+            this.deephavenType = deephavenType;
+        }
+
+        public Binary(@Nullable String columnName, String deephavenType, java.util.Map<String, String> customMetadata) {
+            super(columnName, customMetadata);
+            this.deephavenType = deephavenType;
         }
 
         @Override
@@ -407,18 +454,29 @@ public abstract sealed class BarrageColumnType
 
         @Override
         public String deephavenType() {
-            return "java.math.BigInteger";
+            return deephavenType;
         }
 
         @Override
         public Class<?> type() {
-            return BigIntegerWrapper.class;
+            // Only two types are explicitly supported as Binary by deephaven, interpret the rest as object
+            if (deephavenType.equals("java.math.BigDecimal")) {
+                return BigDecimalWrapper.class;
+            }
+            if (deephavenType.equals("java.math.BigInteger")) {
+                return BigIntegerWrapper.class;
+            }
+            return Object.class;
         }
     }
 
     public static final class Utf8 extends BarrageColumnType {
         public Utf8(@Nullable String columnName) {
             super(columnName);
+        }
+
+        public Utf8(@Nullable String columnName, java.util.Map<String, String> customMetadata) {
+            super(columnName, customMetadata);
         }
 
         @Override
@@ -446,6 +504,10 @@ public abstract sealed class BarrageColumnType
     public static final class Bool extends BarrageColumnType {
         public Bool(@Nullable String columnName) {
             super(columnName);
+        }
+
+        public Bool(@Nullable String columnName, java.util.Map<String, String> customMetadata) {
+            super(columnName, customMetadata);
         }
 
         @Override
@@ -477,6 +539,13 @@ public abstract sealed class BarrageColumnType
 
         public Decimal(@Nullable String columnName, int precision, int scale, int bitWidth) {
             super(columnName);
+            this.precision = precision;
+            this.scale = scale;
+            this.bitWidth = bitWidth;
+        }
+
+        public Decimal(@Nullable String columnName, int precision, int scale, int bitWidth, java.util.Map<String, String> customMetadata) {
+            super(columnName, customMetadata);
             this.precision = precision;
             this.scale = scale;
             this.bitWidth = bitWidth;
@@ -523,6 +592,11 @@ public abstract sealed class BarrageColumnType
             this.unit = unit;
         }
 
+        public Date(@Nullable String columnName, short unit, java.util.Map<String, String> customMetadata) {
+            super(columnName, customMetadata);
+            this.unit = unit;
+        }
+
         /**
          * @return unit value from {@link org.apache.arrow.flatbuf.DateUnit}
          */
@@ -557,6 +631,12 @@ public abstract sealed class BarrageColumnType
 
         public Time(@Nullable String columnName, short unit, int bitWidth) {
             super(columnName);
+            this.unit = unit;
+            this.bitWidth = bitWidth;
+        }
+
+        public Time(@Nullable String columnName, short unit, int bitWidth, java.util.Map<String, String> customMetadata) {
+            super(columnName, customMetadata);
             this.unit = unit;
             this.bitWidth = bitWidth;
         }
@@ -604,6 +684,12 @@ public abstract sealed class BarrageColumnType
             this.timezone = timezone;
         }
 
+        public Timestamp(@Nullable String columnName, short unit, @Nullable String timezone, java.util.Map<String, String> customMetadata) {
+            super(columnName, customMetadata);
+            this.unit = unit;
+            this.timezone = timezone;
+        }
+
         /**
          * @return unit value from {@link org.apache.arrow.flatbuf.TimeUnit}
          */
@@ -641,8 +727,8 @@ public abstract sealed class BarrageColumnType
     public static final class Interval extends BarrageColumnType {
         private final short unit;
 
-        public Interval(@Nullable String columnName, short unit) {
-            super(columnName);
+        public Interval(@Nullable String columnName, short unit, java.util.Map<String, String> customMetadata) {
+            super(columnName, customMetadata);
             this.unit = unit;
         }
 
@@ -674,11 +760,16 @@ public abstract sealed class BarrageColumnType
         }
     }
 
-    public static final class Array extends BarrageColumnType {
+    public static final class List extends BarrageColumnType {
         private final BarrageColumnType componentType;
 
-        public Array(@Nullable String columnName, BarrageColumnType componentType) {
+        public List(@Nullable String columnName, BarrageColumnType componentType) {
             super(columnName);
+            this.componentType = componentType;
+        }
+
+        public List(@Nullable String columnName, BarrageColumnType componentType, java.util.Map<String, String> customMetadata) {
+            super(columnName, customMetadata);
             this.componentType = componentType;
         }
 
@@ -714,19 +805,20 @@ public abstract sealed class BarrageColumnType
 
         @Override
         public @Nullable Class<?> componentType() {
-            return componentType.type();
+//            return componentType.type();
+            return Object.class;
         }
     }
 
     public static final class Struct extends BarrageColumnType {
-        private final List<BarrageColumnType> fields;
+        private final java.util.List<BarrageColumnType> fields;
 
-        public Struct(@Nullable String columnName, List<BarrageColumnType> fields) {
-            super(columnName);
+        public Struct(@Nullable String columnName, java.util.List<BarrageColumnType> fields, java.util.Map<String, String> customMetadata) {
+            super(columnName, customMetadata);
             this.fields = fields;
         }
 
-        public List<BarrageColumnType> fields() {
+        public java.util.List<BarrageColumnType> fields() {
             return fields;
         }
 
@@ -764,10 +856,17 @@ public abstract sealed class BarrageColumnType
     public static final class Union extends BarrageColumnType {
         private final short mode;
         private final int[] typeIds;
-        private final List<BarrageColumnType> fields;
+        private final java.util.List<BarrageColumnType> fields;
 
-        public Union(@Nullable String columnName, short mode, int[] typeIds, List<BarrageColumnType> fields) {
+        public Union(@Nullable String columnName, short mode, int[] typeIds, java.util.List<BarrageColumnType> fields) {
             super(columnName);
+            this.mode = mode;
+            this.typeIds = typeIds;
+            this.fields = fields;
+        }
+
+        public Union(@Nullable String columnName, short mode, int[] typeIds, java.util.List<BarrageColumnType> fields, java.util.Map<String, String> customMetadata) {
+            super(columnName, customMetadata);
             this.mode = mode;
             this.typeIds = typeIds;
             this.fields = fields;
@@ -784,7 +883,7 @@ public abstract sealed class BarrageColumnType
             return typeIds;
         }
 
-        public List<BarrageColumnType> fields() {
+        public java.util.List<BarrageColumnType> fields() {
             return fields;
         }
 
@@ -822,8 +921,8 @@ public abstract sealed class BarrageColumnType
     public static final class FixedSizeBinary extends BarrageColumnType {
         private final int byteWidth;
 
-        public FixedSizeBinary(@Nullable String columnName, int byteWidth) {
-            super(columnName);
+        public FixedSizeBinary(@Nullable String columnName, int byteWidth, java.util.Map<String, String> customMetadata) {
+            super(columnName, customMetadata);
             this.byteWidth = byteWidth;
         }
 
@@ -861,8 +960,8 @@ public abstract sealed class BarrageColumnType
         private final int listSize;
         private final BarrageColumnType componentType;
 
-        public FixedSizeList(@Nullable String columnName, int listSize, BarrageColumnType componentType) {
-            super(columnName);
+        public FixedSizeList(@Nullable String columnName, int listSize, BarrageColumnType componentType, java.util.Map<String, String> customMetadata) {
+            super(columnName, customMetadata);
             this.listSize = listSize;
             this.componentType = componentType;
         }
@@ -911,8 +1010,8 @@ public abstract sealed class BarrageColumnType
         private final BarrageColumnType keyType;
         private final BarrageColumnType valueType;
 
-        public Map(@Nullable String columnName, boolean keysSorted, BarrageColumnType keyType, BarrageColumnType valueType) {
-            super(columnName);
+        public Map(@Nullable String columnName, boolean keysSorted, BarrageColumnType keyType, BarrageColumnType valueType, java.util.Map<String, String> customMetadata) {
+            super(columnName, customMetadata);
             this.keysSorted = keysSorted;
             this.keyType = keyType;
             this.valueType = valueType;
@@ -982,6 +1081,11 @@ public abstract sealed class BarrageColumnType
             this.unit = unit;
         }
 
+        public Duration(@Nullable String columnName, short unit, java.util.Map<String, String> customMetadata) {
+            super(columnName, customMetadata);
+            this.unit = unit;
+        }
+
         /**
          * @return unit value from {@link org.apache.arrow.flatbuf.TimeUnit}
          */
@@ -1015,6 +1119,10 @@ public abstract sealed class BarrageColumnType
             super(columnName);
         }
 
+        public LargeBinary(@Nullable String columnName, java.util.Map<String, String> customMetadata) {
+            super(columnName, customMetadata);
+        }
+
         @Override
         public int writeType(FlatBufferBuilder builder) {
             org.apache.arrow.flatbuf.LargeBinary.startLargeBinary(builder);
@@ -1040,6 +1148,10 @@ public abstract sealed class BarrageColumnType
     public static final class LargeUtf8 extends BarrageColumnType {
         public LargeUtf8(@Nullable String columnName) {
             super(columnName);
+        }
+
+        public LargeUtf8(@Nullable String columnName, java.util.Map<String, String> customMetadata) {
+            super(columnName, customMetadata);
         }
 
         @Override
@@ -1069,6 +1181,11 @@ public abstract sealed class BarrageColumnType
 
         public LargeList(@Nullable String columnName, BarrageColumnType componentType) {
             super(columnName);
+            this.componentType = componentType;
+        }
+
+        public LargeList(@Nullable String columnName, BarrageColumnType componentType, java.util.Map<String, String> customMetadata) {
+            super(columnName, customMetadata);
             this.componentType = componentType;
         }
 
@@ -1118,6 +1235,12 @@ public abstract sealed class BarrageColumnType
             this.valuesType = valuesType;
         }
 
+        public RunEndEncoded(@Nullable String columnName, BarrageColumnType runEndsType, BarrageColumnType valuesType, java.util.Map<String, String> customMetadata) {
+            super(columnName, customMetadata);
+            this.runEndsType = runEndsType;
+            this.valuesType = valuesType;
+        }
+
         public BarrageColumnType runEndsType() {
             return runEndsType;
         }
@@ -1158,6 +1281,10 @@ public abstract sealed class BarrageColumnType
             super(columnName);
         }
 
+        public BinaryView(@Nullable String columnName, java.util.Map<String, String> customMetadata) {
+            super(columnName, customMetadata);
+        }
+
         @Override
         public int writeType(FlatBufferBuilder builder) {
             org.apache.arrow.flatbuf.BinaryView.startBinaryView(builder);
@@ -1190,6 +1317,10 @@ public abstract sealed class BarrageColumnType
             super(columnName);
         }
 
+        public Utf8View(@Nullable String columnName, java.util.Map<String, String> customMetadata) {
+            super(columnName, customMetadata);
+        }
+
         @Override
         public int writeType(FlatBufferBuilder builder) {
             org.apache.arrow.flatbuf.Utf8View.startUtf8View(builder);
@@ -1217,6 +1348,11 @@ public abstract sealed class BarrageColumnType
 
         public ListView(@Nullable String columnName, BarrageColumnType componentType) {
             super(columnName);
+            this.componentType = componentType;
+        }
+
+        public ListView(@Nullable String columnName, BarrageColumnType componentType, java.util.Map<String, String> customMetadata) {
+            super(columnName, customMetadata);
             this.componentType = componentType;
         }
 
@@ -1261,6 +1397,11 @@ public abstract sealed class BarrageColumnType
 
         public LargeListView(@Nullable String columnName, BarrageColumnType componentType) {
             super(columnName);
+            this.componentType = componentType;
+        }
+
+        public LargeListView(@Nullable String columnName, BarrageColumnType componentType, java.util.Map<String, String> customMetadata) {
+            super(columnName, customMetadata);
             this.componentType = componentType;
         }
 

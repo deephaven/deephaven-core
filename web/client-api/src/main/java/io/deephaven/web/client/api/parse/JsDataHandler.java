@@ -3,7 +3,6 @@
 //
 package io.deephaven.web.client.api.parse;
 
-import com.google.flatbuffers.FlatBufferBuilder;
 import com.google.gwt.i18n.client.TimeZone;
 import elemental2.core.JsDate;
 import io.deephaven.util.BooleanUtils;
@@ -11,33 +10,15 @@ import io.deephaven.web.client.api.LongWrapper;
 import io.deephaven.web.client.api.i18n.JsDateTimeFormat;
 import io.deephaven.web.client.api.i18n.JsTimeZone;
 import jsinterop.base.Js;
-import org.apache.arrow.flatbuf.Binary;
-import org.apache.arrow.flatbuf.Date;
-import org.apache.arrow.flatbuf.DateUnit;
-import org.apache.arrow.flatbuf.FloatingPoint;
-import org.apache.arrow.flatbuf.Int;
-import org.apache.arrow.flatbuf.Precision;
-import org.apache.arrow.flatbuf.Time;
-import org.apache.arrow.flatbuf.TimeUnit;
-import org.apache.arrow.flatbuf.Timestamp;
-import org.apache.arrow.flatbuf.Type;
-import org.apache.arrow.flatbuf.Utf8;
 
 import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Given the expected type of a column, pick one of the enum entries and use that to read the data into arrow buffers.
+ * Given the expected type of a column, ensure consistency in the data array
  */
 public enum JsDataHandler {
-    STRING(Type.Utf8, "java.lang.String", "string") {
-
-        @Override
-        public int writeType(FlatBufferBuilder builder) {
-            Utf8.startUtf8(builder);
-            return Utf8.endUtf8(builder);
-        }
-
+    STRING("java.lang.String", "string") {
         @Override
         public Object[] process(Object[] data, ParseContext context) {
             // Scan until we find an element that needs conversion
@@ -65,7 +46,7 @@ public enum JsDataHandler {
             return result;
         }
     },
-    DATE_TIME(Type.Timestamp, "java.time.Instant", "datetime", "java.time.ZonedDateTime") {
+    DATE_TIME("java.time.Instant", "datetime", "java.time.ZonedDateTime") {
         // Ensures that the 'T' separator character is in the date time
         private String ensureSeparator(String s) {
             if (s.charAt(SEPARATOR_INDEX) == ' ') {
@@ -129,12 +110,6 @@ public enum JsDataHandler {
         }
 
         @Override
-        public int writeType(FlatBufferBuilder builder) {
-            int utc = builder.createString("UTC");
-            return Timestamp.createTimestamp(builder, TimeUnit.NANOSECOND, utc);
-        }
-
-        @Override
         public Object[] process(Object[] data, ParseContext context) {
             // Scan until we find a non-LongWrapper (and non-null) instance
             int firstNonLong = 0;
@@ -169,34 +144,19 @@ public enum JsDataHandler {
             return result;
         }
     },
-    INTEGER(Type.Int, "int") {
-        @Override
-        public int writeType(FlatBufferBuilder builder) {
-            return Int.createInt(builder, 32, true);
-        }
-
+    INTEGER("int") {
         @Override
         public Object[] process(Object[] data, ParseContext context) {
             return writeSimpleNumbers(data);
         }
     },
-    SHORT(Type.Int, "short") {
-        @Override
-        public int writeType(FlatBufferBuilder builder) {
-            return Int.createInt(builder, 16, true);
-        }
-
+    SHORT("short") {
         @Override
         public Object[] process(Object[] data, ParseContext context) {
             return writeSimpleNumbers(data);
         }
     },
-    LONG(Type.Int, "long") {
-        @Override
-        public int writeType(FlatBufferBuilder builder) {
-            return Int.createInt(builder, 64, true);
-        }
-
+    LONG("long") {
         @Override
         public Object[] process(Object[] data, ParseContext context) {
             // Scan until we find a non-LongWrapper (and non-null) instance
@@ -231,56 +191,31 @@ public enum JsDataHandler {
             return result;
         }
     },
-    BYTE(Type.Int, "byte") {
-        @Override
-        public int writeType(FlatBufferBuilder builder) {
-            return Int.createInt(builder, 8, true);
-        }
-
+    BYTE("byte") {
         @Override
         public Object[] process(Object[] data, ParseContext context) {
             return writeSimpleNumbers(data);
         }
     },
-    CHAR(Type.Int, "char") {
-        @Override
-        public int writeType(FlatBufferBuilder builder) {
-            return Int.createInt(builder, 16, false);
-        }
-
+    CHAR("char") {
         @Override
         public Object[] process(Object[] data, ParseContext context) {
             return writeSimpleNumbers(data);
         }
     },
-    FLOAT(Type.FloatingPoint, "float") {
-        @Override
-        public int writeType(FlatBufferBuilder builder) {
-            return FloatingPoint.createFloatingPoint(builder, Precision.SINGLE);
-        }
-
+    FLOAT("float") {
         @Override
         public Object[] process(Object[] data, ParseContext context) {
             return writeSimpleNumbers(data);
         }
     },
-    DOUBLE(Type.FloatingPoint, "double") {
-        @Override
-        public int writeType(FlatBufferBuilder builder) {
-            return FloatingPoint.createFloatingPoint(builder, Precision.DOUBLE);
-        }
-
+    DOUBLE("double") {
         @Override
         public Object[] process(Object[] data, ParseContext context) {
             return writeSimpleNumbers(data);
         }
     },
-    BOOLEAN(Type.Bool, "java.lang.Boolean", "boolean", "bool") {
-        @Override
-        public int writeType(FlatBufferBuilder builder) {
-            return Int.createInt(builder, 8, true);
-        }
-
+    BOOLEAN("java.lang.Boolean", "boolean", "bool") {
         @Override
         public Object[] process(Object[] data, ParseContext context) {
             // Scan until we find a non-Boolean (and non-null) instance
@@ -338,31 +273,13 @@ public enum JsDataHandler {
             return result;
         }
     },
-    BIG_DECIMAL(Type.Binary, "java.math.BigDecimal") {
-        @Override
-        public int writeType(FlatBufferBuilder builder) {
-            Binary.startBinary(builder);
-            return Binary.endBinary(builder);
-        }
+    BIG_DECIMAL("java.math.BigDecimal") {
     },
-    BIG_INTEGER(Type.Binary, "java.math.BigInteger") {
-        @Override
-        public int writeType(FlatBufferBuilder builder) {
-            Binary.startBinary(builder);
-            return Binary.endBinary(builder);
-        }
+    BIG_INTEGER("java.math.BigInteger") {
     },
-    LOCAL_DATE(Type.Date, "java.time.LocalDate", "localdate") {
-        @Override
-        public int writeType(FlatBufferBuilder builder) {
-            return Date.createDate(builder, DateUnit.DAY);
-        }
+    LOCAL_DATE("java.time.LocalDate", "localdate") {
     },
-    LOCAL_TIME(Type.Time, "java.time.LocalTime", "localtime") {
-        @Override
-        public int writeType(FlatBufferBuilder builder) {
-            return Time.createTime(builder, TimeUnit.NANOSECOND, 64);
-        }
+    LOCAL_TIME("java.time.LocalTime", "localtime") {
     },
     // LIST(),
     ;
@@ -437,28 +354,13 @@ public enum JsDataHandler {
 
     private static final int SEPARATOR_INDEX = DEFAULT_DATE_TIME_PATTERN.indexOf('T');
 
-    private final byte arrowTypeType;
-    private final String deephavenType;
-
-    JsDataHandler(byte arrowTypeType, String... typeNames) {
-        this.arrowTypeType = arrowTypeType;
+    JsDataHandler(String... typeNames) {
         assert typeNames.length > 0 : "Must have at least one name";
-        this.deephavenType = typeNames[0];
         for (int i = 0; i < typeNames.length; i++) {
             JsDataHandler existing = HandlersHolder.HANDLERS.put(typeNames[i], this);
             assert existing == null : "Handler already registered for type " + typeNames[i] + ": " + name();
         }
     }
-
-    public byte typeType() {
-        return arrowTypeType;
-    }
-
-    public String deephavenType() {
-        return deephavenType;
-    }
-
-    public abstract int writeType(FlatBufferBuilder builder);
 
     /**
      * Normalizes data of the given type to be wrapped in chunks and sent to the server, performing any required type

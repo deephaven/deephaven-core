@@ -15,6 +15,9 @@ import elemental2.dom.AbortController;
 import elemental2.dom.DomGlobal;
 import elemental2.promise.IThenable;
 import elemental2.promise.Promise;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.ObjectChunk;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
 import io.deephaven.proto.backplane.grpc.HierarchicalTableApplyRequest;
 import io.deephaven.proto.backplane.grpc.HierarchicalTableApplyResponse;
@@ -30,6 +33,7 @@ import io.deephaven.proto.backplane.grpc.TypedTicket;
 import io.deephaven.proto.backplane.grpc.UpdateViewRequest;
 import io.deephaven.web.client.api.*;
 import io.deephaven.web.client.api.barrage.WebBarrageUtils;
+import io.deephaven.web.client.api.barrage.data.BarrageColumnType;
 import io.deephaven.web.client.api.barrage.data.WebBarrageSubscription;
 import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
 import io.deephaven.web.client.api.barrage.def.InitialTableDefinition;
@@ -1457,8 +1461,14 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
     @JsMethod
     public String saveExpandedState() {
         // Serialize the key table to a flight stream, then base64 it to a string
-
-        byte[] bytes = new byte[0];
+        List<BarrageColumnType> columnTypes = new ArrayList<>();
+        Chunk<Values>[] chunks = new Chunk[keyColumns.length];
+        for (int i = 0; i < keyColumns.length; i++) {
+            Column c = keyColumns.getAt(i);
+            columnTypes.add(BarrageColumnType.fromString(c.getName(), c.getType()));
+            chunks[i] = ObjectChunk.chunkWrap(keyTableData[i]);
+        }
+        byte[] bytes = connection.newTableToBytes(columnTypes, chunks);
         return BaseEncoding.base64().encode(bytes);
     }
 
@@ -1466,10 +1476,10 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
     public void restoreExpandedState(String nodesToRestore) {
         // Transform string to base64, and read length-prefixed payloads. Validate the schema matches, then overwrite
         // our key table and trigger replacing it.
-
-
-
         byte[] bytes = BaseEncoding.base64().decode(nodesToRestore);
+
+
+
      }
 
     /**
