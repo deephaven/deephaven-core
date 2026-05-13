@@ -35,7 +35,7 @@ public final class ParquetColumnRegionObject<DATA_TYPE, ATTR extends Any> extend
             new RegionedPushdownAction.Region(
                     () -> QueryTable.DISABLE_WHERE_PUSHDOWN_SORTED_COLUMN_LOCATION,
                     PushdownResult.REGION_SORTED_DATA_COST,
-                    (ctx) -> ctx.isMatchFilter() || ctx.isRangeFilter(),
+                    (ctx) -> ctx.rangeFilter() != null || ctx.matchFilter() != null,
                     (tl, cr) -> true);
     private static final List<RegionedPushdownAction> SUPPORTED_ACTIONS = List.of(SORTED_REGION_ACTION);
 
@@ -111,29 +111,32 @@ public final class ParquetColumnRegionObject<DATA_TYPE, ATTR extends Any> extend
             final boolean usePrev,
             final PushdownFilterContext filterContext,
             final RegionedPushdownAction.EstimateContext estimateContext) {
-        if (action.equals(SORTED_REGION_ACTION)) {
-            final RegionedPushdownFilterContext ctx = (RegionedPushdownFilterContext) filterContext;
-            final TableLocation tableLocation = getColumnLocation().map(ColumnLocation::getTableLocation).orElse(null);
-            if (tableLocation == null || (!ctx.isMatchFilter() && !ctx.isRangeFilter())) {
-                return PushdownResult.UNSUPPORTED_ACTION_COST;
-            }
-            // Only range and match filers can benefit from sorted column data.
-            final SortColumn firstSortedColumn = tableLocation.getSortedColumns().isEmpty()
-                    ? null
-                    : tableLocation.getSortedColumns().get(0);
+        // Current implementation only supports sorted region actions.
+        if (!action.equals(SORTED_REGION_ACTION)) {
+            return PushdownResult.UNSUPPORTED_ACTION_COST;
+        }
 
-            if (firstSortedColumn != null) {
-                // Handle renames
-                final String col = filter.getColumns().get(0);
-                final String renamedCol = ctx.filterColumnToManagerColumnName().getOrDefault(col, col);
-                if (firstSortedColumn.column().name().equals(renamedCol)) {
-                    // Can't push down case-insensitive match filters to binary search
-                    if (ctx.isMatchFilter() && ctx.filter() instanceof MatchFilter &&
-                            ((MatchFilter) ctx.filter()).getMatchOptions().caseInsensitive()) {
-                        return PushdownResult.UNSUPPORTED_ACTION_COST;
-                    }
-                    return action.filterCost();
+        final RegionedPushdownFilterContext ctx = (RegionedPushdownFilterContext) filterContext;
+        final TableLocation tableLocation = getColumnLocation().map(ColumnLocation::getTableLocation).orElse(null);
+
+        // Only range and match filters can benefit from sorted column data.
+        if (tableLocation == null || (ctx.rangeFilter() == null && ctx.matchFilter() == null)) {
+            return PushdownResult.UNSUPPORTED_ACTION_COST;
+        }
+        final SortColumn firstSortedColumn = tableLocation.getSortedColumns().isEmpty()
+                ? null
+                : tableLocation.getSortedColumns().get(0);
+
+        if (firstSortedColumn != null) {
+            // Need to handle column renames.
+            final String col = filter.getColumns().get(0);
+            final String renamedCol = ctx.filterColumnToManagerColumnName().getOrDefault(col, col);
+            if (firstSortedColumn.column().name().equals(renamedCol)) {
+                // Can't push down case-insensitive match filters to binary search.
+                if (ctx.matchFilter() != null && ctx.matchFilter().getMatchOptions().caseInsensitive()) {
+                    return PushdownResult.UNSUPPORTED_ACTION_COST;
                 }
+                return action.filterCost();
             }
         }
         return PushdownResult.UNSUPPORTED_ACTION_COST;
@@ -148,85 +151,81 @@ public final class ParquetColumnRegionObject<DATA_TYPE, ATTR extends Any> extend
             final boolean usePrev,
             final PushdownFilterContext filterContext,
             final RegionedPushdownAction.ActionContext actionContext) {
-        if (action.equals(SORTED_REGION_ACTION)) {
-            final RegionedPushdownFilterContext ctx = (RegionedPushdownFilterContext) filterContext;
+        // Current implementation only supports sorted region actions.
+        if (!action.equals(SORTED_REGION_ACTION)) {
+            return input.copy();
+        }
 
-            final TableLocation tableLocation = getColumnLocation().map(ColumnLocation::getTableLocation).orElse(null);
-            if (tableLocation == null || (!ctx.isMatchFilter() && !ctx.isRangeFilter())) {
-                return input.copy();
+        final RegionedPushdownFilterContext ctx = (RegionedPushdownFilterContext) filterContext;
+
+        final TableLocation tableLocation = getColumnLocation().map(ColumnLocation::getTableLocation).orElse(null);
+        // Only range and match filters can benefit from sorted column data.
+        if (tableLocation == null || (ctx.rangeFilter() == null && ctx.matchFilter() == null)) {
+            return input.copy();
+        }
+        final SortColumn firstSortedColumn = tableLocation.getSortedColumns().isEmpty()
+                ? null
+                : tableLocation.getSortedColumns().get(0);
+        if (firstSortedColumn == null) {
+            return input.copy();
+        }
+
+        // Need to handle column renames.
+        final String col = filter.getColumns().get(0);
+        final String renamedCol = ctx.filterColumnToManagerColumnName().getOrDefault(col, col);
+        if (!firstSortedColumn.column().name().equals(renamedCol)) {
+            return input.copy();
+        }
+
+        // Can't push down case-insensitive match filters to binary search.
+        if (ctx.matchFilter() != null && ctx.matchFilter().getMatchOptions().caseInsensitive()) {
+            return input.copy();
+        }
+
+        if (ctx.matchFilter() != null) {
+            final MatchFilter matchFilter = ctx.matchFilter();
+            try (final RowSet matches = ObjectRegionBinarySearchKernel.binarySearchMatch(
+                    this,
+                    selection.firstRowKey(),
+                    selection.lastRowKey(),
+                    firstSortedColumn,
+                    matchFilter.getValues())) {
+                // Handle normal / inverted match filters:
+                return PushdownResult.of(selection, matchFilter.getMatchOptions().inverted()
+                        ? selection.minus(matches)
+                        : matches.intersect(selection), RowSetFactory.empty());
             }
-            // Only range and match filers can benefit from sorted column data.
-            final SortColumn firstSortedColumn = tableLocation.getSortedColumns().isEmpty()
-                    ? null
-                    : tableLocation.getSortedColumns().get(0);
-            if (firstSortedColumn == null) {
-                return input.copy();
-            }
+        }
 
-            // Handle renames
-            final String col = filter.getColumns().get(0);
-            final String renamedCol = ctx.filterColumnToManagerColumnName().getOrDefault(col, col);
-            if (!firstSortedColumn.column().name().equals(renamedCol)) {
-                return input.copy();
-            }
-
-            // Can't push down case-insensitive match filters to binary search
-            if (ctx.isMatchFilter() && ctx.filter() instanceof MatchFilter &&
-                    ((MatchFilter) ctx.filter()).getMatchOptions().caseInsensitive()) {
-                return input.copy();
-            }
-
-            // We will use the effective filter from the context, which may bypass row tracking but provides the
-            // raw filter that we need to apply to the sorted column.
-            final WhereFilter effectiveFilter = ctx.filter();
-
-            if (ctx.isMatchFilter()) {
-                final MatchFilter matchFilter = (MatchFilter) effectiveFilter;
-                try (final RowSet matches = ObjectRegionBinarySearchKernel.binarySearchMatch(
+        if (ctx.rangeFilter() instanceof SingleSidedComparableRangeFilter) {
+            final SingleSidedComparableRangeFilter rangeFilter =
+                    (SingleSidedComparableRangeFilter) ctx.rangeFilter();
+            final RowSet matches;
+            if (rangeFilter.isGreaterThan()) {
+                // Only need to find the lower bound, as the upper bound includes all values.
+                matches = ObjectRegionBinarySearchKernel.binarySearchMin(
                         this,
                         selection.firstRowKey(),
                         selection.lastRowKey(),
                         firstSortedColumn,
-                        matchFilter.getValues())) {
-                    // Handle normal / inverted match filters:
-                    return PushdownResult.of(selection, matchFilter.getMatchOptions().inverted()
-                            ? selection.minus(matches)
-                            : matches.intersect(selection), RowSetFactory.empty());
-                }
+                        rangeFilter.getPivot(),
+                        rangeFilter.isLowerInclusive());
+            } else {
+                // Only need to find the upper bound, as the lower bound includes all values.
+                matches = ObjectRegionBinarySearchKernel.binarySearchMax(
+                        this,
+                        selection.firstRowKey(),
+                        selection.lastRowKey(),
+                        firstSortedColumn,
+                        rangeFilter.getPivot(),
+                        rangeFilter.isUpperInclusive());
             }
-
-            if (ctx.isRangeFilter() && effectiveFilter instanceof RangeFilter
-                    && ((RangeFilter) effectiveFilter).getRealFilter() instanceof SingleSidedComparableRangeFilter) {
-                final SingleSidedComparableRangeFilter rangeFilter =
-                        (SingleSidedComparableRangeFilter) ((RangeFilter) effectiveFilter).getRealFilter();
-                final RowSet matches;
-                if (rangeFilter.isGreaterThan()) {
-                    // Only need to find the lower bound, as the upper bound includes all values.
-                    matches = ObjectRegionBinarySearchKernel.binarySearchMin(
-                            this,
-                            selection.firstRowKey(),
-                            selection.lastRowKey(),
-                            firstSortedColumn,
-                            rangeFilter.getPivot(),
-                            rangeFilter.isLowerInclusive());
-                } else {
-                    // Only need to find the upper bound, as the lower bound includes all values.
-                    matches = ObjectRegionBinarySearchKernel.binarySearchMax(
-                            this,
-                            selection.firstRowKey(),
-                            selection.lastRowKey(),
-                            firstSortedColumn,
-                            rangeFilter.getPivot(),
-                            rangeFilter.isUpperInclusive());
-                }
-                try (final RowSet ignored = matches) {
-                    return PushdownResult.of(
-                            selection,
-                            selection.subSetByKeyRange(matches.firstRowKey(), matches.lastRowKey()),
-                            RowSetFactory.empty());
-                }
+            try (final RowSet ignored = matches) {
+                return PushdownResult.of(
+                        selection,
+                        matches.intersect(selection),
+                        RowSetFactory.empty());
             }
-            return input.copy();
         }
         return input.copy();
     }

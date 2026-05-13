@@ -32,6 +32,8 @@ import java.util.List;
 import java.util.Random;
 import java.util.function.IntToLongFunction;
 import static io.deephaven.util.QueryConstants.NULL_INT;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 @Category(ParallelTest.class)
 public class IntRegionBinarySearchKernelTest {
@@ -97,13 +99,13 @@ public class IntRegionBinarySearchKernelTest {
                             value, true,
                             true)) {
                 if (startRow <= ii && ii <= endRow) {
-                    Assert.assertTrue("Expected to find " + value + " at index " + ii,
+                    assertTrue("Expected to find " + value + " at index " + ii,
                             matchesFound.containsRange(ii, ii));
                 } else {
                     Assert.assertFalse("Index should not be populated.",
                             matchesFound.containsRange(ii, ii));
                 }
-                Assert.assertEquals("binarySearchMatch and binarySearchMinMax should return the same results.",
+                assertEquals("binarySearchMatch and binarySearchMinMax should return the same results.",
                         matchesFound, minMaxFound);
             }
 
@@ -120,7 +122,7 @@ public class IntRegionBinarySearchKernelTest {
                     startRow, endRow,
                     sortColumn,
                     new Integer[] {missingValue})) {
-                Assert.assertTrue(valuesFound.isEmpty());
+                assertTrue(valuesFound.isEmpty());
             }
             try (final RowSet valuesFound = IntRegionBinarySearchKernel.binarySearchMinMax(
                     region,
@@ -131,7 +133,7 @@ public class IntRegionBinarySearchKernelTest {
                     missingValue,
                     true,
                     false)) {
-                Assert.assertTrue(valuesFound.isEmpty());
+                assertTrue(valuesFound.isEmpty());
             }
             try (final RowSet valuesFound = IntRegionBinarySearchKernel.binarySearchMinMax(
                     region,
@@ -142,7 +144,7 @@ public class IntRegionBinarySearchKernelTest {
                     missingValue,
                     false,
                     true)) {
-                Assert.assertTrue(valuesFound.isEmpty());
+                assertTrue(valuesFound.isEmpty());
             }
             try (final RowSet valuesFound = IntRegionBinarySearchKernel.binarySearchMinMax(
                     region,
@@ -153,7 +155,7 @@ public class IntRegionBinarySearchKernelTest {
                     missingValue,
                     true,
                     true)) {
-                Assert.assertTrue(valuesFound.isEmpty());
+                assertTrue(valuesFound.isEmpty());
             }
         }
     }
@@ -370,6 +372,96 @@ public class IntRegionBinarySearchKernelTest {
         }
     }
 
+    // NOTE: missing 3 and 7 to create gaps in the data.
+    private static final List<Integer> GAPS_DATA = List.of(
+            (int) 0, // row 0
+            (int) 1, // row 1
+            (int) 2, // row 2
+            (int) 4, // row 3
+            (int) 5, // row 4
+            (int) 6, // row 5
+            (int) 8, // row 6
+            (int) 9); // row 7
+
+    @Test
+    public void testBinSearchWithGaps() {
+        binSearchWithGapsHelper(false);
+    }
+
+    @Test
+    public void testBinSearchWithGapsInverted() {
+        binSearchWithGapsHelper(true);
+    }
+
+    private void binSearchWithGapsHelper(boolean inverted) {
+        // From 0 to 9
+        binSearchWithGaps(inverted, (int) 0, true, (int) 9, true,8, 0, 7);
+        binSearchWithGaps(inverted, (int) 0, true, (int) 9, false, 7, 0, 6);
+        binSearchWithGaps(inverted, (int) 0, false, (int) 9, true, 7, 1, 7);
+        binSearchWithGaps(inverted, (int) 0, false, (int) 9, false, 6, 1, 6);
+        // From first to 3
+        binSearchWithGaps(inverted, (int) 0, true, (int) 3, true, 3, 0, 2);
+        binSearchWithGaps(inverted, (int) 0, true, (int) 3, false, 3, 0, 2);
+        binSearchWithGaps(inverted, (int) 0, false, (int) 3, true, 2, 1, 2);
+        binSearchWithGaps(inverted, (int) 0, false, (int) 3, false, 2, 1, 2);
+        // From first to 7
+        binSearchWithGaps(inverted, (int) 0, true, (int) 7, true, 6, 0, 5);
+        binSearchWithGaps(inverted, (int) 0, true, (int) 7, false, 6, 0, 5);
+        binSearchWithGaps(inverted, (int) 0, false, (int) 7, true, 5, 1, 5);
+        binSearchWithGaps(inverted, (int) 0, false, (int) 7, false, 5, 1, 5);
+        // From 3 to last
+        binSearchWithGaps(inverted, (int) 3, true, (int) 9, true, 5, 3, 7);
+        binSearchWithGaps(inverted, (int) 3, true, (int) 9, false, 4, 3, 6);
+        binSearchWithGaps(inverted, (int) 3, false, (int) 9, true, 5, 3, 7);
+        binSearchWithGaps(inverted, (int) 3, false, (int) 9, false, 4, 3, 6);
+        // From 7 to last
+        binSearchWithGaps(inverted, (int) 7, true, (int) 9, true, 2, 6, 7);
+        binSearchWithGaps(inverted, (int) 7, true, (int) 9, false, 1, 6, 6);
+        binSearchWithGaps(inverted, (int) 7, false, (int) 9, true, 2, 6, 7);
+        binSearchWithGaps(inverted, (int) 7, false, (int) 9, false, 1, 6, 6);
+        // From 3 to 7
+        binSearchWithGaps(inverted, (int) 3, true, (int) 7, true, 3, 3, 5);
+        binSearchWithGaps(inverted, (int) 3, true, (int) 7, false, 3, 3, 5);
+        binSearchWithGaps(inverted, (int) 3, false, (int) 7, true, 3, 3, 5);
+        binSearchWithGaps(inverted, (int) 3, false, (int) 7, false, 3, 3, 5);
+        // From 2 to 8
+        binSearchWithGaps(inverted, (int) 2, true, (int) 8, true, 5, 2, 6);
+        binSearchWithGaps(inverted, (int) 2, true, (int) 8, false, 4, 2, 5);
+        binSearchWithGaps(inverted, (int) 2, false, (int) 8, true, 4, 3, 6);
+        binSearchWithGaps(inverted, (int) 2, false, (int) 8, false, 3, 3, 5);
+    }
+
+    private void binSearchWithGaps(
+            boolean inverted,
+            int minValue, boolean minInclusive,
+            int maxValue, boolean maxInclusive,
+            int expectedSize, long expectedFirstRowAsc, long expectedLastRowAsc) {
+        final List<Integer> data;
+        final SortColumn sortColumn;
+        if (inverted) {
+            data = new ArrayList<>(GAPS_DATA);
+            Collections.reverse(data);
+            sortColumn = SortColumn.desc(ColumnName.of("test"));
+        } else {
+            data = GAPS_DATA;
+            sortColumn = SortColumn.asc(ColumnName.of("test"));
+        }
+        // Adjust the expected first and last rows for inverted case.
+        final long expectedFirstRow =
+                inverted ? data.size() - 1 - expectedLastRowAsc : expectedFirstRowAsc;
+        final long expectedLastRow =
+                inverted ? data.size() - 1 - expectedFirstRowAsc : expectedLastRowAsc;
+
+        final ColumnRegionInt<Values> region = makeColumnRegionInt(data);
+        try (final RowSet result = IntRegionBinarySearchKernel.binarySearchMinMax(
+                region, 0, data.size() - 1, sortColumn,
+                minValue, maxValue, minInclusive, maxInclusive)) {
+            assertEquals(expectedSize, result.size());
+            assertEquals(expectedFirstRow, result.firstRowKey());
+            assertEquals(expectedLastRow, result.lastRowKey());
+        }
+    }
+
     private void minMaxTestRunner(
             List<Integer> data,
             final boolean inverted,
@@ -400,33 +492,33 @@ public class IntRegionBinarySearchKernelTest {
             if (firstKey > 0) {
                 try (final RowSet excludedLow = RowSetFactory.fromRange(0, firstKey - 1);
                         final RowSet intersection = result.intersect(excludedLow)) {
-                    Assert.assertTrue(intersection.isEmpty());
+                    assertTrue(intersection.isEmpty());
                 }
             }
 
             // Go through every value in the result and ensure it is within the min/max bounds.
             result.forAllRowKeys(rowKey -> {
                 // Must be within the first/last key bounds
-                Assert.assertTrue(rowKey >= firstKey && rowKey <= lastKey);
+                assertTrue(rowKey >= firstKey && rowKey <= lastKey);
 
                 // The value at the row key must be within the min/max bounds.
                 final int value = dataToUse.get((int) rowKey);
                 if (minInclusive) {
-                    Assert.assertTrue(IntComparisons.compare(value, minValue) >= 0);
+                    assertTrue(IntComparisons.compare(value, minValue) >= 0);
                 } else {
-                    Assert.assertTrue(IntComparisons.compare(value, minValue) > 0);
+                    assertTrue(IntComparisons.compare(value, minValue) > 0);
                 }
                 if (maxInclusive) {
-                    Assert.assertTrue(IntComparisons.compare(value, maxValue) <= 0);
+                    assertTrue(IntComparisons.compare(value, maxValue) <= 0);
                 } else {
-                    Assert.assertTrue(IntComparisons.compare(value, maxValue) < 0);
+                    assertTrue(IntComparisons.compare(value, maxValue) < 0);
                 }
             });
 
             // Test from lastKey + 1 to make sure no false positives are found above the lastKey.
             try (final RowSet excludedHigh = RowSetFactory.fromRange(lastKey + 1, Long.MAX_VALUE);
                     final RowSet intersection = result.intersect(excludedHigh)) {
-                Assert.assertTrue(intersection.isEmpty());
+                assertTrue(intersection.isEmpty());
             }
         }
     }
@@ -458,28 +550,28 @@ public class IntRegionBinarySearchKernelTest {
             if (firstKey > 0) {
                 try (final RowSet excludedLow = RowSetFactory.fromRange(0, firstKey - 1);
                         final RowSet intersection = result.intersect(excludedLow)) {
-                    Assert.assertTrue(intersection.isEmpty());
+                    assertTrue(intersection.isEmpty());
                 }
             }
 
             // Go through every value in the result and ensure it is within the min/max bounds.
             result.forAllRowKeys(rowKey -> {
                 // Must be within the first/last key bounds
-                Assert.assertTrue(rowKey >= firstKey && rowKey <= lastKey);
+                assertTrue(rowKey >= firstKey && rowKey <= lastKey);
 
                 // The value at the row key must be within the min/max bounds.
                 final int value = dataToUse.get((int) rowKey);
                 if (minInclusive) {
-                    Assert.assertTrue(IntComparisons.compare(value, minValue) >= 0);
+                    assertTrue(IntComparisons.compare(value, minValue) >= 0);
                 } else {
-                    Assert.assertTrue(IntComparisons.compare(value, minValue) > 0);
+                    assertTrue(IntComparisons.compare(value, minValue) > 0);
                 }
             });
 
             // Test from lastKey + 1 to make sure no false positives are found above the lastKey.
             try (final RowSet excludedHigh = RowSetFactory.fromRange(lastKey + 1, Long.MAX_VALUE);
                     final RowSet intersection = result.intersect(excludedHigh)) {
-                Assert.assertTrue(intersection.isEmpty());
+                assertTrue(intersection.isEmpty());
             }
         }
     }
@@ -512,28 +604,28 @@ public class IntRegionBinarySearchKernelTest {
             if (firstKey > 0) {
                 try (final RowSet excludedLow = RowSetFactory.fromRange(0, firstKey - 1);
                         final RowSet intersection = result.intersect(excludedLow)) {
-                    Assert.assertTrue(intersection.isEmpty());
+                    assertTrue(intersection.isEmpty());
                 }
             }
 
             // Go through every value in the result and ensure it is within the min/max bounds.
             result.forAllRowKeys(rowKey -> {
                 // Must be within the first/last key bounds
-                Assert.assertTrue(rowKey >= firstKey && rowKey <= lastKey);
+                assertTrue(rowKey >= firstKey && rowKey <= lastKey);
 
                 // The value at the row key must be within the min/max bounds.
                 final int value = dataToUse.get((int) rowKey);
                 if (maxInclusive) {
-                    Assert.assertTrue(IntComparisons.compare(value, maxValue) <= 0);
+                    assertTrue(IntComparisons.compare(value, maxValue) <= 0);
                 } else {
-                    Assert.assertTrue(IntComparisons.compare(value, maxValue) < 0);
+                    assertTrue(IntComparisons.compare(value, maxValue) < 0);
                 }
             });
 
             // Test from lastKey + 1 to make sure no false positives are found above the lastKey.
             try (final RowSet excludedHigh = RowSetFactory.fromRange(lastKey + 1, Long.MAX_VALUE);
                     final RowSet intersection = result.intersect(excludedHigh)) {
-                Assert.assertTrue(intersection.isEmpty());
+                assertTrue(intersection.isEmpty());
             }
         }
     }

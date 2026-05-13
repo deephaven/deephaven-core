@@ -474,6 +474,96 @@ public class DoubleRegionBinarySearchKernelTest {
         }
     }
 
+    // NOTE: missing 3 and 7 to create gaps in the data.
+    private static final List<Double> GAPS_DATA = List.of(
+            (double) 0, // row 0
+            (double) 1, // row 1
+            (double) 2, // row 2
+            (double) 4, // row 3
+            (double) 5, // row 4
+            (double) 6, // row 5
+            (double) 8, // row 6
+            (double) 9); // row 7
+
+    @Test
+    public void testBinSearchWithGaps() {
+        binSearchWithGapsHelper(false);
+    }
+
+    @Test
+    public void testBinSearchWithGapsInverted() {
+        binSearchWithGapsHelper(true);
+    }
+
+    private void binSearchWithGapsHelper(boolean inverted) {
+        // From 0 to 9
+        binSearchWithGaps(inverted, (double) 0, true, (double) 9, true, 8, 0, 7);
+        binSearchWithGaps(inverted, (double) 0, true, (double) 9, false, 7, 0, 6);
+        binSearchWithGaps(inverted, (double) 0, false, (double) 9, true, 7, 1, 7);
+        binSearchWithGaps(inverted, (double) 0, false, (double) 9, false, 6, 1, 6);
+        // From first to 3
+        binSearchWithGaps(inverted, (double) 0, true, (double) 3, true, 3, 0, 2);
+        binSearchWithGaps(inverted, (double) 0, true, (double) 3, false, 3, 0, 2);
+        binSearchWithGaps(inverted, (double) 0, false, (double) 3, true, 2, 1, 2);
+        binSearchWithGaps(inverted, (double) 0, false, (double) 3, false, 2, 1, 2);
+        // From first to 7
+        binSearchWithGaps(inverted, (double) 0, true, (double) 7, true, 6, 0, 5);
+        binSearchWithGaps(inverted, (double) 0, true, (double) 7, false, 6, 0, 5);
+        binSearchWithGaps(inverted, (double) 0, false, (double) 7, true, 5, 1, 5);
+        binSearchWithGaps(inverted, (double) 0, false, (double) 7, false, 5, 1, 5);
+        // From 3 to last
+        binSearchWithGaps(inverted, (double) 3, true, (double) 9, true, 5, 3, 7);
+        binSearchWithGaps(inverted, (double) 3, true, (double) 9, false, 4, 3, 6);
+        binSearchWithGaps(inverted, (double) 3, false, (double) 9, true, 5, 3, 7);
+        binSearchWithGaps(inverted, (double) 3, false, (double) 9, false, 4, 3, 6);
+        // From 7 to last
+        binSearchWithGaps(inverted, (double) 7, true, (double) 9, true, 2, 6, 7);
+        binSearchWithGaps(inverted, (double) 7, true, (double) 9, false, 1, 6, 6);
+        binSearchWithGaps(inverted, (double) 7, false, (double) 9, true, 2, 6, 7);
+        binSearchWithGaps(inverted, (double) 7, false, (double) 9, false, 1, 6, 6);
+        // From 3 to 7
+        binSearchWithGaps(inverted, (double) 3, true, (double) 7, true, 3, 3, 5);
+        binSearchWithGaps(inverted, (double) 3, true, (double) 7, false, 3, 3, 5);
+        binSearchWithGaps(inverted, (double) 3, false, (double) 7, true, 3, 3, 5);
+        binSearchWithGaps(inverted, (double) 3, false, (double) 7, false, 3, 3, 5);
+        // From 2 to 8
+        binSearchWithGaps(inverted, (double) 2, true, (double) 8, true, 5, 2, 6);
+        binSearchWithGaps(inverted, (double) 2, true, (double) 8, false, 4, 2, 5);
+        binSearchWithGaps(inverted, (double) 2, false, (double) 8, true, 4, 3, 6);
+        binSearchWithGaps(inverted, (double) 2, false, (double) 8, false, 3, 3, 5);
+    }
+
+    private void binSearchWithGaps(
+            boolean inverted,
+            double minValue, boolean minInclusive,
+            double maxValue, boolean maxInclusive,
+            int expectedSize, long expectedFirstRowAsc, long expectedLastRowAsc) {
+        final List<Double> data;
+        final SortColumn sortColumn;
+        if (inverted) {
+            data = new ArrayList<>(GAPS_DATA);
+            Collections.reverse(data);
+            sortColumn = SortColumn.desc(ColumnName.of("test"));
+        } else {
+            data = GAPS_DATA;
+            sortColumn = SortColumn.asc(ColumnName.of("test"));
+        }
+        // Adjust the expected first and last rows for inverted case.
+        final long expectedFirstRow =
+                inverted ? data.size() - 1 - expectedLastRowAsc : expectedFirstRowAsc;
+        final long expectedLastRow =
+                inverted ? data.size() - 1 - expectedFirstRowAsc : expectedLastRowAsc;
+
+        final ColumnRegionDouble<Values> region = makeColumnRegionDouble(data);
+        try (final RowSet result = DoubleRegionBinarySearchKernel.binarySearchMinMax(
+                region, 0, data.size() - 1, sortColumn,
+                minValue, maxValue, minInclusive, maxInclusive)) {
+            Assert.assertEquals(expectedSize, result.size());
+            Assert.assertEquals(expectedFirstRow, result.firstRowKey());
+            Assert.assertEquals(expectedLastRow, result.lastRowKey());
+        }
+    }
+
     private void minMaxTestRunner(
             List<Double> data,
             final boolean inverted,
