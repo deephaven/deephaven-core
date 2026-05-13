@@ -7,7 +7,7 @@ This guide covers building Java or Groovy projects that depend on Deephaven Comm
 
 Since this involves Java/Groovy development with Gradle or Maven, see the full guide in the Groovy documentation:
 
-**[Local development with Deephaven libraries](/core/groovy/docs/how-to-guides/local-development)**
+- [Local development with Deephaven libraries](/core/groovy/docs/how-to-guides/local-development)
 
 The guide covers:
 

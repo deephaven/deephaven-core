@@ -13,7 +13,7 @@ Deephaven artifacts are published to Maven Central, so no credentials are requir
 
 Add the Maven Central repository and Deephaven dependencies to your `build.gradle`:
 
-```groovy
+```groovy skip-test
 repositories {
     mavenCentral()
 }
@@ -69,7 +69,7 @@ Browse all available modules on [Maven Central](https://mvnrepository.com/artifa
 
 ## Local unit testing
 
-To use Deephaven table operations in unit tests, you need to open an [ExecutionContext](../../conceptual/execution-context.md).
+To use Deephaven table operations in unit tests, you need to open an [`ExecutionContext`](../../conceptual/execution-context.md).
 
 ### JVM configuration
 
@@ -81,7 +81,7 @@ Deephaven logs JVM internal stats that require the following JVM argument:
 
 Add this to your Gradle test task:
 
-```groovy
+```groovy skip-test
 test {
     jvmArgs '--add-exports=java.management/sun.management=ALL-UNNAMED'
 }
@@ -103,7 +103,7 @@ Or in Maven:
 
 Use JUnit with an ExecutionContext to test table operations:
 
-```java
+```java skip-test
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.table.Table;
@@ -139,7 +139,7 @@ public class MyTableUtilsTest {
 
 Load test data from CSV or Parquet files in your test resources:
 
-```java
+```java skip-test
 import io.deephaven.csv.CsvTools;
 import io.deephaven.parquet.table.ParquetTools;
 
@@ -152,6 +152,6 @@ Table parquetTable = ParquetTools.readTable(getClass().getResource("/test-data.p
 
 ## Related documentation
 
-- [Execution context](../../conceptual/execution-context.md)
+- [Execution context](../conceptual/execution-context.md)
 - [Extract table values](./extract-table-value.md)
 - [Application mode](./application-mode.md)
