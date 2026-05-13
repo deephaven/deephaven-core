@@ -165,7 +165,7 @@ t7 = emptyTable(5).update("Index = ii", "Letter = (char)('A' + ii)")
 
 ## Time and dates
 
-Deephaven provides robust support for date and time types, all based on Java 8's `java.time` package. These types are optimized for efficient storage and time-based operations, making them ideal for time-series data and temporal analysis.
+Deephaven provides robust support for date and time types, all based on Java 8's [`java.time`](https://docs.oracle.com/javase/8/docs/api/java/time/package-summary.html) package. These types are optimized for efficient storage and time-based operations, making them ideal for time-series data and temporal analysis.
 
 ### Temporal type reference
 
@@ -265,6 +265,9 @@ t13 = emptyTable(5).update(
     "Conditional = ii % 2 == 0 ? `Even` : `Odd`"
 )
 ```
+
+> [!NOTE]
+> In DQL query strings, backticks (`` ` ``) denote string literals — the equivalent of double-quoted strings in Java. See [String and char literals](../how-to-guides/string-char-literals.md) for details.
 
 #### String operations
 
