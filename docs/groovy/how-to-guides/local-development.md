@@ -14,6 +14,10 @@ Deephaven artifacts are published to Maven Central, so no credentials are requir
 Add the Maven Central repository and Deephaven dependencies to your `build.gradle`:
 
 ```groovy skip-test
+plugins {
+    id 'java'
+}
+
 repositories {
     mavenCentral()
 }
@@ -21,10 +25,10 @@ repositories {
 def dhcVersion = '0.37.0' // Use the version that matches your Deephaven server
 
 dependencies {
-    api "io.deephaven:deephaven-engine-api:$dhcVersion"
-    api "io.deephaven:deephaven-engine-table:$dhcVersion"
-    api "io.deephaven:deephaven-Configuration:$dhcVersion"
-    api "io.deephaven:deephaven-FishUtil:$dhcVersion"
+    implementation "io.deephaven:deephaven-engine-api:$dhcVersion"
+    implementation "io.deephaven:deephaven-engine-table:$dhcVersion"
+    implementation "io.deephaven:deephaven-Configuration:$dhcVersion"
+    implementation "io.deephaven:deephaven-engine-time:$dhcVersion"
     implementation "io.deephaven:deephaven-log-factory:$dhcVersion"
 }
 ```
@@ -62,14 +66,14 @@ The dependencies you need depend on what your project does. Here are common patt
 | Read/write CSV files                   | `deephaven-extensions-csv`                       |
 | Read/write Parquet files               | `deephaven-extensions-parquet-table`             |
 | Configuration utilities                | `deephaven-Configuration`                        |
-| Date/time utilities                    | `deephaven-FishUtil`                             |
+| Date/time utilities                    | `deephaven-engine-time`                          |
 | Logging                                | `deephaven-log-factory`                          |
 
 Browse all available modules on [Maven Central](https://mvnrepository.com/artifact/io.deephaven).
 
 ## Local unit testing
 
-To use Deephaven table operations in unit tests, you need to open an [`ExecutionContext`](../../conceptual/execution-context.md).
+To use Deephaven table operations in unit tests, you need to open an [`ExecutionContext`](../conceptual/execution-context.md).
 
 ### JVM configuration
 
@@ -101,12 +105,13 @@ Or in Maven:
 
 ### Example test setup
 
-Use JUnit with an ExecutionContext to test table operations:
+Use JUnit with an `ExecutionContext` to test table operations:
 
 ```java skip-test
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.table.Table;
+import io.deephaven.util.SafeCloseable;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -116,16 +121,17 @@ import static org.junit.jupiter.api.Assertions.*;
 public class MyTableUtilsTest {
 
     private static ExecutionContext executionContext;
+    private static SafeCloseable executionContextCloseable;
 
     @BeforeAll
     public static void setUp() {
         executionContext = TestExecutionContext.createForUnitTests();
-        executionContext.open();
+        executionContextCloseable = executionContext.open();
     }
 
     @AfterAll
     public static void tearDown() {
-        executionContext.close();
+        executionContextCloseable.close();
     }
 
     @Test
@@ -143,11 +149,14 @@ Load test data from CSV or Parquet files in your test resources:
 import io.deephaven.csv.CsvTools;
 import io.deephaven.parquet.table.ParquetTools;
 
+import java.nio.file.Paths;
+
 // Read CSV from test resources
 Table csvTable = CsvTools.readCsv(getClass().getResourceAsStream("/test-data.csv"));
 
 // Read Parquet from test resources
-Table parquetTable = ParquetTools.readTable(getClass().getResource("/test-data.parquet").getPath());
+String parquetPath = Paths.get(getClass().getResource("/test-data.parquet").toURI()).toString();
+Table parquetTable = ParquetTools.readTable(parquetPath);
 ```
 
 ## Related documentation
