@@ -804,9 +804,8 @@ public abstract sealed class BarrageColumnType
         }
 
         @Override
-        public @Nullable Class<?> componentType() {
-//            return componentType.type();
-            return Object.class;
+        public Class<?> componentType() {
+            return componentType.type();
         }
     }
 
@@ -857,13 +856,6 @@ public abstract sealed class BarrageColumnType
         private final short mode;
         private final int[] typeIds;
         private final java.util.List<BarrageColumnType> fields;
-
-        public Union(@Nullable String columnName, short mode, int[] typeIds, java.util.List<BarrageColumnType> fields) {
-            super(columnName);
-            this.mode = mode;
-            this.typeIds = typeIds;
-            this.fields = fields;
-        }
 
         public Union(@Nullable String columnName, short mode, int[] typeIds, java.util.List<BarrageColumnType> fields, java.util.Map<String, String> customMetadata) {
             super(columnName, customMetadata);
@@ -951,7 +943,7 @@ public abstract sealed class BarrageColumnType
         }
 
         @Override
-        public @Nullable Class<?> componentType() {
+        public  Class<?> componentType() {
             return byte.class;
         }
     }
@@ -1000,7 +992,7 @@ public abstract sealed class BarrageColumnType
         }
 
         @Override
-        public @Nullable Class<?> componentType() {
+        public Class<?> componentType() {
             return componentType.type();
         }
     }
@@ -1076,11 +1068,6 @@ public abstract sealed class BarrageColumnType
     public static final class Duration extends BarrageColumnType {
         private final short unit;
 
-        public Duration(@Nullable String columnName, short unit) {
-            super(columnName);
-            this.unit = unit;
-        }
-
         public Duration(@Nullable String columnName, short unit, java.util.Map<String, String> customMetadata) {
             super(columnName, customMetadata);
             this.unit = unit;
@@ -1115,10 +1102,6 @@ public abstract sealed class BarrageColumnType
     }
 
     public static final class LargeBinary extends BarrageColumnType {
-        public LargeBinary(@Nullable String columnName) {
-            super(columnName);
-        }
-
         public LargeBinary(@Nullable String columnName, java.util.Map<String, String> customMetadata) {
             super(columnName, customMetadata);
         }
@@ -1146,10 +1129,6 @@ public abstract sealed class BarrageColumnType
     }
 
     public static final class LargeUtf8 extends BarrageColumnType {
-        public LargeUtf8(@Nullable String columnName) {
-            super(columnName);
-        }
-
         public LargeUtf8(@Nullable String columnName, java.util.Map<String, String> customMetadata) {
             super(columnName, customMetadata);
         }
@@ -1178,11 +1157,6 @@ public abstract sealed class BarrageColumnType
 
     public static final class LargeList extends BarrageColumnType {
         private final BarrageColumnType componentType;
-
-        public LargeList(@Nullable String columnName, BarrageColumnType componentType) {
-            super(columnName);
-            this.componentType = componentType;
-        }
 
         public LargeList(@Nullable String columnName, BarrageColumnType componentType, java.util.Map<String, String> customMetadata) {
             super(columnName, customMetadata);
@@ -1220,7 +1194,7 @@ public abstract sealed class BarrageColumnType
         }
 
         @Override
-        public @Nullable Class<?> componentType() {
+        public Class<?> componentType() {
             return componentType.type();
         }
     }
@@ -1228,12 +1202,6 @@ public abstract sealed class BarrageColumnType
     public static final class RunEndEncoded extends BarrageColumnType {
         private final BarrageColumnType runEndsType;
         private final BarrageColumnType valuesType;
-
-        public RunEndEncoded(@Nullable String columnName, BarrageColumnType runEndsType, BarrageColumnType valuesType) {
-            super(columnName);
-            this.runEndsType = runEndsType;
-            this.valuesType = valuesType;
-        }
 
         public RunEndEncoded(@Nullable String columnName, BarrageColumnType runEndsType, BarrageColumnType valuesType, java.util.Map<String, String> customMetadata) {
             super(columnName, customMetadata);
@@ -1307,7 +1275,7 @@ public abstract sealed class BarrageColumnType
         }
 
         @Override
-        public @Nullable Class<?> componentType() {
+        public Class<?> componentType() {
             return byte.class;
         }
     }
@@ -1394,11 +1362,6 @@ public abstract sealed class BarrageColumnType
 
     public static final class LargeListView extends BarrageColumnType {
         private final BarrageColumnType componentType;
-
-        public LargeListView(@Nullable String columnName, BarrageColumnType componentType) {
-            super(columnName);
-            this.componentType = componentType;
-        }
 
         public LargeListView(@Nullable String columnName, BarrageColumnType componentType, java.util.Map<String, String> customMetadata) {
             super(columnName, customMetadata);
