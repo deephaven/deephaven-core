@@ -57,7 +57,7 @@ public class DeephavenChannel {
      * @deprecated use {@link DeephavenChannel#withCallCredentials(CallCredentials)}
      */
     @Deprecated
-    static DeephavenChannel withCallCredentials(DeephavenChannel channel, CallCredentials callCredentials) {
+    public static DeephavenChannel withCallCredentials(DeephavenChannel channel, CallCredentials callCredentials) {
         return channel.withCallCredentials(callCredentials);
     }
 
@@ -65,7 +65,8 @@ public class DeephavenChannel {
      * @deprecated use {@link DeephavenChannel#withInterceptors(ClientInterceptor...)}
      */
     @Deprecated
-    static DeephavenChannel withClientInterceptors(DeephavenChannel channel, ClientInterceptor... clientInterceptors) {
+    public static DeephavenChannel withClientInterceptors(DeephavenChannel channel,
+            ClientInterceptor... clientInterceptors) {
         return channel.withInterceptors(clientInterceptors);
     }
 
@@ -103,8 +104,8 @@ public class DeephavenChannel {
 
     // Note: there is a fuzzy line between what sort of options are generally meant to be applied to all calls versus
     // single call sites. CallCredentials is the most obvious one that may be useful for all call sites. Executor,
-    // authority, and compressor may be others. Deadline though, is cleary _not_ safe to use, as it is an absolute point
-    // in time meant for a single, or single set of, call(s).
+    // authority, and compressor may be others. Deadline though, is clearly _not_ safe to use, as it is an absolute
+    // point in time meant for a single, or single set of, call(s).
     // Here are the other options available in io.grpc.CallOptions... if desirable, we could extend DeephavenChannel to
     // support `withX` methods for these options:
     // Deadline deadline;
@@ -236,7 +237,7 @@ public class DeephavenChannel {
      * Creates a new stub, with the appropriate channel and call options applied.
      *
      * @param newStubFunction the new stub function
-     * @return the stub, with appropriate channel and cal options applied
+     * @return the stub, with appropriate channel and call options applied
      * @param <S> the concrete type of the stub.
      */
     public final <S extends AbstractStub<S>> S stub(final Function<Channel, S> newStubFunction) {
@@ -259,60 +260,60 @@ public class DeephavenChannel {
     }
 
     /**
-     * Creates a new async table stub. Equivalent to {@code stub(TableServiceStub::newStub)}.
+     * Creates a new async table stub. Equivalent to {@code stub(TableServiceGrpc::newStub)}.
      *
      * @return the async table stub
-     * @see TableServiceStub#newStub(Channel)
+     * @see TableServiceGrpc#newStub(Channel)
      */
     public final TableServiceStub table() {
         return stub(TableServiceGrpc::newStub);
     }
 
     /**
-     * Creates a new async console stub. Equivalent to {@code stub(ConsoleServiceStub::newStub)}.
+     * Creates a new async console stub. Equivalent to {@code stub(ConsoleServiceGrpc::newStub)}.
      *
      * @return the async console stub
-     * @see ConsoleServiceStub#newStub(Channel)
+     * @see ConsoleServiceGrpc#newStub(Channel)
      */
     public final ConsoleServiceStub console() {
         return stub(ConsoleServiceGrpc::newStub);
     }
 
     /**
-     * Creates a new async object stub. Equivalent to {@code stub(ObjectServiceStub::newStub)}.
+     * Creates a new async object stub. Equivalent to {@code stub(ObjectServiceGrpc::newStub)}.
      *
      * @return the async object stub
-     * @see ObjectServiceStub#newStub(Channel)
+     * @see ObjectServiceGrpc#newStub(Channel)
      */
     public final ObjectServiceStub object() {
         return stub(ObjectServiceGrpc::newStub);
     }
 
     /**
-     * Creates a new async application stub. Equivalent to {@code stub(ApplicationServiceStub::newStub)}.
+     * Creates a new async application stub. Equivalent to {@code stub(ApplicationServiceGrpc::newStub)}.
      *
      * @return the async application stub
-     * @see ApplicationServiceStub#newStub(Channel)
+     * @see ApplicationServiceGrpc#newStub(Channel)
      */
     public final ApplicationServiceStub application() {
         return stub(ApplicationServiceGrpc::newStub);
     }
 
     /**
-     * Creates a new async input table stub. Equivalent to {@code stub(InputTableServiceStub::newStub)}.
+     * Creates a new async input table stub. Equivalent to {@code stub(InputTableServiceGrpc::newStub)}.
      *
      * @return the async input table stub
-     * @see InputTableServiceStub#newStub(Channel)
+     * @see InputTableServiceGrpc#newStub(Channel)
      */
     public final InputTableServiceStub inputTable() {
         return stub(InputTableServiceGrpc::newStub);
     }
 
     /**
-     * Creates a new async config stub. Equivalent to {@code stub(ConfigServiceStub::newStub)}.
+     * Creates a new async config stub. Equivalent to {@code stub(ConfigServiceGrpc::newStub)}.
      *
      * @return the async config stub
-     * @see ConfigServiceStub#newStub(Channel)
+     * @see ConfigServiceGrpc#newStub(Channel)
      */
     public final ConfigServiceStub config() {
         return stub(ConfigServiceGrpc::newStub);
@@ -329,39 +330,40 @@ public class DeephavenChannel {
     }
 
     /**
-     * Creates a new blocking table stub. Equivalent to {@code stub(TableServiceBlockingStub::newBlockingStub)}.
+     * Creates a new blocking table stub. Equivalent to {@code stub(TableServiceGrpc::newBlockingStub)}.
      *
      * @return the blocking table stub
-     * @see TableServiceBlockingStub#newBlockingStub(Channel)
+     * @see TableServiceGrpc#newBlockingStub(Channel)
      */
     public final TableServiceBlockingStub tableBlocking() {
         return stub(TableServiceGrpc::newBlockingStub);
     }
 
     /**
-     * Creates a new blocking console stub. Equivalent to {@code stub(ConsoleServiceBlockingStub::newBlockingStub)}.
+     * Creates a new blocking console stub. Equivalent to {@code stub(ConsoleServiceGrpc::newBlockingStub)}.
      *
      * @return the blocking console stub
-     * @see ConsoleServiceBlockingStub#newBlockingStub(Channel)
+     * @see ConsoleServiceGrpc#newBlockingStub(Channel)
      */
     public final ConsoleServiceBlockingStub consoleBlocking() {
         return stub(ConsoleServiceGrpc::newBlockingStub);
     }
 
     /**
-     * Creates a new blocking object stub. Equivalent to {@code stub(ObjectServiceBlockingStub::newBlockingStub)}.
+     * Creates a new blocking object stub. Equivalent to {@code stub(ObjectServiceGrpc::newBlockingStub)}.
      *
      * @return the blocking object stub
-     * @see ObjectServiceBlockingStub#newBlockingStub(Channel)
+     * @see ObjectServiceGrpc#newBlockingStub(Channel)
      */
     public final ObjectServiceBlockingStub objectBlocking() {
         return stub(ObjectServiceGrpc::newBlockingStub);
     }
 
     /**
-     * Creates a new application table stub. Equivalent to {@code stub(ApplicationServiceGrpc::newBlockingStub)}.
+     * Creates a new blocking application table stub. Equivalent to
+     * {@code stub(ApplicationServiceGrpc::newBlockingStub)}.
      *
-     * @return the application table stub
+     * @return the blocking application table stub
      * @see ApplicationServiceGrpc#newBlockingStub(Channel)
      */
     public final ApplicationServiceBlockingStub applicationBlocking() {
@@ -379,50 +381,50 @@ public class DeephavenChannel {
     }
 
     /**
-     * Creates a new blocking config stub. Equivalent to {@code stub(ConfigServiceBlockingStub::newBlockingStub)}.
+     * Creates a new blocking config stub. Equivalent to {@code stub(ConfigServiceGrpc::newBlockingStub)}.
      *
      * @return the blocking config stub
-     * @see ConfigServiceBlockingStub#newBlockingStub(Channel)
+     * @see ConfigServiceGrpc#newBlockingStub(Channel)
      */
     public final ConfigServiceBlockingStub configBlocking() {
         return stub(ConfigServiceGrpc::newBlockingStub);
     }
 
     /**
-     * Creates a new future session stub. Equivalent to {@code stub(SessionServiceFutureStub::newFutureStub)}.
+     * Creates a new future session stub. Equivalent to {@code stub(SessionServiceGrpc::newFutureStub)}.
      *
      * @return the future session stub
-     * @see SessionServiceFutureStub#newFutureStub(Channel)
+     * @see SessionServiceGrpc#newFutureStub(Channel)
      */
     public final SessionServiceFutureStub sessionFuture() {
         return stub(SessionServiceGrpc::newFutureStub);
     }
 
     /**
-     * Creates a new future table stub. Equivalent to {@code stub(TableServiceFutureStub::newFutureStub)}.
+     * Creates a new future table stub. Equivalent to {@code stub(TableServiceGrpc::newFutureStub)}.
      *
      * @return the future table stub
-     * @see TableServiceFutureStub#newFutureStub(Channel)
+     * @see TableServiceGrpc#newFutureStub(Channel)
      */
     public final TableServiceFutureStub tableFuture() {
         return stub(TableServiceGrpc::newFutureStub);
     }
 
     /**
-     * Creates a new future console stub. Equivalent to {@code stub(ConsoleServiceFutureStub::newFutureStub)}.
+     * Creates a new future console stub. Equivalent to {@code stub(ConsoleServiceGrpc::newFutureStub)}.
      *
      * @return the future console stub
-     * @see ConsoleServiceFutureStub#newFutureStub(Channel)
+     * @see ConsoleServiceGrpc#newFutureStub(Channel)
      */
     public final ConsoleServiceFutureStub consoleFuture() {
         return stub(ConsoleServiceGrpc::newFutureStub);
     }
 
     /**
-     * Creates a new future object stub. Equivalent to {@code stub(ObjectServiceFutureStub::newFutureStub)}.
+     * Creates a new future object stub. Equivalent to {@code stub(ObjectServiceGrpc::newFutureStub)}.
      *
      * @return the future object stub
-     * @see ObjectServiceFutureStub#newFutureStub(Channel)
+     * @see ObjectServiceGrpc#newFutureStub(Channel)
      */
     public final ObjectServiceFutureStub objectFuture() {
         return stub(ObjectServiceGrpc::newFutureStub);
@@ -439,20 +441,20 @@ public class DeephavenChannel {
     }
 
     /**
-     * Creates a new future input table stub. Equivalent to {@code stub(InputTableServiceFutureStub::newFutureStub)}.
+     * Creates a new future input table stub. Equivalent to {@code stub(InputTableServiceGrpc::newFutureStub)}.
      *
      * @return the future input table stub
-     * @see InputTableServiceFutureStub#newFutureStub(Channel)
+     * @see InputTableServiceGrpc#newFutureStub(Channel)
      */
     public final InputTableServiceFutureStub inputTableFuture() {
         return stub(InputTableServiceGrpc::newFutureStub);
     }
 
     /**
-     * Creates a new future config stub. Equivalent to {@code stub(ConfigServiceFutureStub::newFutureStub)}.
+     * Creates a new future config stub. Equivalent to {@code stub(ConfigServiceGrpc::newFutureStub)}.
      *
      * @return the future config stub
-     * @see ConfigServiceFutureStub#newFutureStub(Channel)
+     * @see ConfigServiceGrpc#newFutureStub(Channel)
      */
     public final ConfigServiceFutureStub configFuture() {
         return stub(ConfigServiceGrpc::newFutureStub);
