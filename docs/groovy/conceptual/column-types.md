@@ -88,19 +88,15 @@ Primitive numeric types are the most memory-efficient and performant types in De
 
 #### Creating numeric columns
 
-```python test-set=column-types order=t1
-from deephaven import empty_table
-
-# Create columns of various numeric types
-t1 = empty_table(5).update(
-    [
-        "ByteCol = (byte)(i % 100)",
-        "ShortCol = (short)(i * 1000)",
-        "IntCol = (int)(i * 1000000)",
-        "LongCol = (long)(i * 1000000000)",
-        "FloatCol = (float)(i * 1.5)",
-        "DoubleCol = i * 3.14159",
-    ]
+```groovy test-set=1 order=t1
+// Create columns of various numeric types
+t1 = emptyTable(5).update(
+    "ByteCol = (byte)(ii % 100)",
+    "ShortCol = (short)(ii * 1000)",
+    "IntCol = (int)(ii * 1000000)",
+    "LongCol = (long)(ii * 1000000000)",
+    "FloatCol = (float)(ii * 1.5)",
+    "DoubleCol = ii * 3.14159"
 )
 ```
 
@@ -108,27 +104,22 @@ t1 = empty_table(5).update(
 
 Unlike Java primitives, Deephaven's primitive columns can represent null values using special sentinel values:
 
-```python test-set=column-types order=t2
-from deephaven import empty_table
-from deephaven.constants import NULL_INT, NULL_DOUBLE
-
-# Create columns with null values
-t2 = empty_table(5).update(
-    [
-        "Value = i",
-        "WithNulls = i % 2 == 0 ? i : NULL_INT",
-        "Price = i % 2 == 0 ? i * 10.5 : NULL_DOUBLE",
-    ]
+```groovy test-set=1 order=t2
+// Create columns with null values
+t2 = emptyTable(5).update(
+    "Value = ii",
+    "WithNulls = ii % 2 == 0 ? (int)ii : NULL_INT",
+    "Price = ii % 2 == 0 ? ii * 10.5 : NULL_DOUBLE"
 )
 ```
 
 You can check for nulls using `isNull` or comparison with the null constant:
 
-```python test-set=column-types order=t3
-# Filter for non-null values
+```groovy test-set=1 order=t3
+// Filter for non-null values
 t3 = t2.where("!isNull(WithNulls)")
 
-# Alternatively, compare with null constant
+// Alternatively, compare with null constant
 t4 = t2.where("WithNulls != NULL_INT")
 ```
 
@@ -136,22 +127,18 @@ t4 = t2.where("WithNulls != NULL_INT")
 
 When performing arithmetic with mixed numeric types, Deephaven follows Java's type promotion rules. Note that DQL promotes the `/` operator to `double` regardless of operand types — unlike Java, where `int / int` truncates. Cast the result explicitly to get integer truncation:
 
-```python test-set=column-types order=t5
-from deephaven import empty_table
-
-t5 = empty_table(3).update(
-    [
-        "IntValue = (int)i + 1",
-        "LongValue = (long)i * 1000",
-        # int + long promotes to long
-        "MixedIntLong = IntValue + LongValue",
-        # int * double promotes to double
-        "MixedIntDouble = IntValue * 3.14",
-        # DQL promotes / to double: 7 / 2 = 3.5
-        "DoubleDiv = 7 / 2",  # Result: 3.5
-        # Cast to int for truncating integer division
-        "IntDiv = (int)(7 / 2)",  # Result: 3
-    ]
+```groovy test-set=1 order=t5
+t5 = emptyTable(3).update(
+    "IntValue = (int)ii + 1",
+    "LongValue = (long)ii * 1000",
+    // int + long promotes to long
+    "MixedIntLong = IntValue + LongValue",
+    // int * double promotes to double
+    "MixedIntDouble = IntValue * 3.14",
+    // DQL promotes / to double: 7 / 2 = 3.5
+    "DoubleDiv = 7 / 2", // Result: 3.5
+    // Cast to int for truncating integer division
+    "IntDiv = (int)(7 / 2)" // Result: 3
 )
 ```
 
@@ -161,20 +148,16 @@ t5 = empty_table(3).update(
 
 The `boolean` type represents true/false values:
 
-```python test-set=column-types order=t6
-from deephaven import empty_table
-
-t6 = empty_table(5).update(["Value = i", "IsEven = i % 2 == 0", "IsPositive = i > 2"])
+```groovy test-set=1 order=t6
+t6 = emptyTable(5).update("Value = ii", "IsEven = ii % 2 == 0", "IsPositive = ii > 2")
 ```
 
 #### Char type
 
 The `char` type represents a single 16-bit Unicode character:
 
-```python test-set=column-types order=t7
-from deephaven import empty_table
-
-t7 = empty_table(5).update(["Index = i", "Letter = (char)('A' + i)"])
+```groovy test-set=1 order=t7
+t7 = emptyTable(5).update("Index = ii", "Letter = (char)('A' + ii)")
 ```
 
 > [!NOTE]
@@ -182,7 +165,7 @@ t7 = empty_table(5).update(["Index = i", "Letter = (char)('A' + i)"])
 
 ## Time and dates
 
-Deephaven provides robust support for date and time types, all based on Java 8's `java.time` package. These types are optimized for efficient storage and time-based operations, making them ideal for time-series data and temporal analysis.
+Deephaven provides robust support for date and time types, all based on Java 8's [`java.time`](https://docs.oracle.com/javase/8/docs/api/java/time/package-summary.html) package. These types are optimized for efficient storage and time-based operations, making them ideal for time-series data and temporal analysis.
 
 ### Temporal type reference
 
@@ -200,15 +183,11 @@ Deephaven provides robust support for date and time types, all based on Java 8's
 
 `Instant` is the most commonly used temporal type, representing an instantaneous point on the timeline in UTC:
 
-```python test-set=column-types order=t8
-from deephaven import empty_table
-
-t8 = empty_table(5).update(
-    [
-        "Timestamp = now() + i * SECOND",
-        "HoursLater = Timestamp + 5 * HOUR",
-        "DaysBefore = Timestamp - 2 * DAY",
-    ]
+```groovy test-set=1 order=t8
+t8 = emptyTable(5).update(
+    "Timestamp = now() + ii * SECOND",
+    "HoursLater = Timestamp + 5 * HOUR",
+    "DaysBefore = Timestamp - 2 * DAY"
 )
 ```
 
@@ -216,16 +195,12 @@ t8 = empty_table(5).update(
 
 Use `ZonedDateTime` when time zone information is important:
 
-```python test-set=column-types order=t9
-from deephaven import empty_table
-
-t9 = empty_table(3).update(
-    [
-        "UTC = now()",
-        "NewYork = toZonedDateTime(UTC, timeZone(`America/New_York`))",
-        "Tokyo = toZonedDateTime(UTC, timeZone(`Asia/Tokyo`))",
-        "HourOfDay = hourOfDay(NewYork, false)",
-    ]
+```groovy test-set=1 order=t9
+t9 = emptyTable(3).update(
+    "UTC = now()",
+    "NewYork = toZonedDateTime(UTC, timeZone(`America/New_York`))",
+    "Tokyo = toZonedDateTime(UTC, timeZone(`Asia/Tokyo`))",
+    "HourOfDay = hourOfDay(NewYork, false)"
 )
 ```
 
@@ -233,17 +208,13 @@ t9 = empty_table(3).update(
 
 `LocalDate` and `LocalTime` are useful for date-only or time-only operations:
 
-```python test-set=column-types order=t10
-from deephaven import empty_table
-
-t10 = empty_table(5).update(
-    [
-        "Timestamp = now() + i * DAY",
-        "DateOnly = toLocalDate(Timestamp, timeZone(`America/New_York`))",
-        "TimeOnly = toLocalTime(Timestamp, timeZone(`America/New_York`))",
-        "DayOfWeekValue = dayOfWeekValue(DateOnly)",
-        "IsWeekend = DayOfWeekValue == 6 || DayOfWeekValue == 7",
-    ]
+```groovy test-set=1 order=t10
+t10 = emptyTable(5).update(
+    "Timestamp = now() + ii * DAY",
+    "DateOnly = toLocalDate(Timestamp, timeZone(`America/New_York`))",
+    "TimeOnly = toLocalTime(Timestamp, timeZone(`America/New_York`))",
+    "DayOfWeekValue = dayOfWeekValue(DateOnly)",
+    "IsWeekend = DayOfWeekValue == 6 || DayOfWeekValue == 7"
 )
 ```
 
@@ -251,19 +222,15 @@ t10 = empty_table(5).update(
 
 Deephaven provides constants and functions for temporal calculations:
 
-```python test-set=column-types order=t11
-from deephaven import empty_table
-
-t11 = empty_table(3).update(
-    [
-        "Now = now()",
-        # Duration constants: SECOND, MINUTE, HOUR, DAY, WEEK
-        "OneMinuteLater = Now + 1 * MINUTE",
-        "TwoHoursEarlier = Now - 2 * HOUR",
-        "ThreeDaysLater = Now + 3 * DAY",
-        # Calculate differences
-        "TimeDiff = Now - (Now - 5 * HOUR)",
-    ]
+```groovy test-set=1 order=t11
+t11 = emptyTable(3).update(
+    "Now = now()",
+    // Duration constants: SECOND, MINUTE, HOUR, DAY, WEEK
+    "OneMinuteLater = Now + 1 * MINUTE",
+    "TwoHoursEarlier = Now - 2 * HOUR",
+    "ThreeDaysLater = Now + 3 * DAY",
+    // Calculate differences
+    "TimeDiff = Now - (Now - 5 * HOUR)"
 )
 ```
 
@@ -272,19 +239,15 @@ t11 = empty_table(3).update(
 > [!IMPORTANT]
 > Always be explicit about time zones when converting between `Instant` and zone-aware types. Implicit conversions can lead to subtle bugs, especially around daylight saving time transitions.
 
-```python test-set=column-types order=t12
-from deephaven import empty_table
-
-t12 = empty_table(2).update(
-    [
-        "UTC_Time = now()",
-        # Explicit time zone conversion
-        "NY_Time = toZonedDateTime(UTC_Time, timeZone(`America/New_York`))",
-        "London_Time = toZonedDateTime(UTC_Time, timeZone(`Europe/London`))",
-        # Extract components with time zone awareness
-        "NY_Hour = hourOfDay(UTC_Time, timeZone(`America/New_York`), false)",
-        "London_Hour = hourOfDay(UTC_Time, timeZone(`Europe/London`), false)",
-    ]
+```groovy test-set=1 order=t12
+t12 = emptyTable(2).update(
+    "UTC_Time = now()",
+    // Explicit time zone conversion
+    "NY_Time = toZonedDateTime(UTC_Time, timeZone(`America/New_York`))",
+    "London_Time = toZonedDateTime(UTC_Time, timeZone(`Europe/London`))",
+    // Extract components with time zone awareness
+    "NY_Hour = hourOfDay(UTC_Time, timeZone(`America/New_York`), false)",
+    "London_Hour = hourOfDay(UTC_Time, timeZone(`Europe/London`), false)"
 )
 ```
 
@@ -294,36 +257,31 @@ The `String` type stores text data. Deephaven automatically interns strings to o
 
 #### Creating string columns
 
-```python test-set=column-types order=t13
-from deephaven import empty_table
-
-t13 = empty_table(5).update(
-    [
-        "Index = i",
-        "Letter = `A` + i",  # String concatenation
-        "Formatted = `` + i + ` items`",
-        "Conditional = i % 2 == 0 ? `Even` : `Odd`",
-    ]
+```groovy test-set=1 order=t13
+t13 = emptyTable(5).update(
+    "Index = ii",
+    "Letter = `A` + ii", // String concatenation
+    "Formatted = `` + ii + ` items`",
+    "Conditional = ii % 2 == 0 ? `Even` : `Odd`"
 )
 ```
+
+> [!NOTE]
+> In DQL query strings, backticks (`` ` ``) denote string literals — the equivalent of double-quoted strings in Java. See [String and char literals](../how-to-guides/string-char-literals.md) for details.
 
 #### String operations
 
 String columns in Deephaven are `java.lang.String` objects, which means you can use standard Java String methods directly:
 
-```python test-set=column-types order=t14
-from deephaven import empty_table
-
-t14 = empty_table(3).update(
-    [
-        "Text = i == 0 ? `Hello World` : (i == 1 ? `DEEPHAVEN` : `  spaces  `)",
-        "Length = Text.length()",
-        "Upper = Text.toUpperCase()",
-        "Lower = Text.toLowerCase()",
-        "Trimmed = Text.trim()",
-        "Substring = Text.substring(0, 5)",
-        "Contains = Text.contains(`e`)",
-    ]
+```groovy test-set=1 order=t14
+t14 = emptyTable(3).update(
+    "Text = ii == 0 ? `Hello World` : (ii == 1 ? `DEEPHAVEN` : `  spaces  `)",
+    "Length = Text.length()",
+    "Upper = Text.toUpperCase()",
+    "Lower = Text.toLowerCase()",
+    "Trimmed = Text.trim()",
+    "Substring = Text.substring(0, 5)",
+    "Contains = Text.contains(`e`)"
 )
 ```
 
@@ -331,19 +289,15 @@ t14 = empty_table(3).update(
 
 Deephaven automatically interns strings, which means identical string values share the same memory location. This is very efficient for low-cardinality columns (like categories or symbols) but less beneficial for high-cardinality data (like unique IDs or free-form text).
 
-```python test-set=column-types order=t15
-from deephaven import empty_table
-
-# Low cardinality: memory efficient (only 3 unique strings stored)
-t15 = empty_table(1000).update(
-    ["Status = i % 3 == 0 ? `Active` : (i % 3 == 1 ? `Pending` : `Closed`)"]
+```groovy test-set=1 order=t15
+// Low cardinality: memory efficient (only 3 unique strings stored)
+t15 = emptyTable(1000).update(
+    "Status = ii % 3 == 0 ? `Active` : (ii % 3 == 1 ? `Pending` : `Closed`)"
 )
 
-# High cardinality: less efficient (many unique strings)
-t16 = empty_table(1000).update(
-    [
-        "UniqueId = `ID-` + i"  # 1000 unique strings
-    ]
+// High cardinality: less efficient (many unique strings)
+t16 = emptyTable(1000).update(
+    "UniqueId = `ID-` + ii" // 1000 unique strings
 )
 ```
 
@@ -351,17 +305,13 @@ t16 = empty_table(1000).update(
 
 Strings can be null, which is different from empty strings:
 
-```python test-set=column-types order=t17
-from deephaven import empty_table
-
-t17 = empty_table(5).update(
-    [
-        "Index = i",
-        "WithNull = i % 2 == 0 ? `Valid` : (String)null",
-        "EmptyString = i % 2 == 0 ? `Valid` : ``",
-        "IsNull = isNull(WithNull)",
-        "IsEmpty = WithNull == ``",  # This checks for empty, not null
-    ]
+```groovy test-set=1 order=t17
+t17 = emptyTable(5).update(
+    "Index = ii",
+    "WithNull = ii % 2 == 0 ? `Valid` : (String)null",
+    "EmptyString = ii % 2 == 0 ? `Valid` : ``",
+    "IsNull = isNull(WithNull)",
+    "IsEmpty = WithNull == ``" // This checks for empty, not null
 )
 ```
 
@@ -389,17 +339,13 @@ Array columns store arrays as values, allowing each cell to contain a list of it
 
 #### Creating array columns
 
-```python test-set=column-types order=t20
-from deephaven import empty_table
-
-t20 = empty_table(3).update(
-    [
-        "Index = i",
-        # Create arrays of primitives
-        "IntArray = new int[]{i, i+1, i+2}",
-        "DoubleArray = new double[]{i * 1.5, i * 2.5, i * 3.5}",
-        "StringArray = new String[]{`A` + i, `B` + i, `C` + i}",
-    ]
+```groovy test-set=1 order=t20
+t20 = emptyTable(3).update(
+    "Index = ii",
+    // Create arrays of primitives
+    "IntArray = new int[]{(int)ii, (int)ii + 1, (int)ii + 2}",
+    "DoubleArray = new double[]{ii * 1.5, ii * 2.5, ii * 3.5}",
+    "StringArray = new String[]{`A` + ii, `B` + ii, `C` + ii}"
 )
 ```
 
@@ -407,14 +353,12 @@ t20 = empty_table(3).update(
 
 Access array elements and properties:
 
-```python test-set=column-types order=t21
+```groovy test-set=1 order=t21
 t21 = t20.update(
-    [
-        "ArrayLength = IntArray.length",
-        "FirstElement = IntArray[0]",
-        "LastElement = IntArray[IntArray.length - 1]",
-        "SecondDoubleValue = DoubleArray[1]",
-    ]
+    "ArrayLength = IntArray.length",
+    "FirstElement = IntArray[0]",
+    "LastElement = IntArray[IntArray.length - 1]",
+    "SecondDoubleValue = DoubleArray[1]"
 )
 ```
 
@@ -422,18 +366,14 @@ t21 = t20.update(
 
 Arrays themselves can be null, and array elements can also be null (for object arrays):
 
-```python test-set=column-types order=t22
-from deephaven import empty_table
-
-t22 = empty_table(5).update(
-    [
-        "Index = i",
-        # Null array
-        "NullArray = i % 2 == 0 ? new int[]{i, i+1} : (int[])null",
-        "IsArrayNull = isNull(NullArray)",
-        # Array with null elements (only for object arrays)
-        "StringArrayWithNulls = new String[]{i == 0 ? (String)null : `Value` + i}",
-    ]
+```groovy test-set=1 order=t22
+t22 = emptyTable(5).update(
+    "Index = ii",
+    // Null array
+    "NullArray = ii % 2 == 0 ? new int[]{(int)ii, (int)ii + 1} : (int[])null",
+    "IsArrayNull = isNull(NullArray)",
+    // Array with null elements (only for object arrays)
+    "StringArrayWithNulls = new String[]{ii == 0 ? (String)null : `Value` + ii}"
 )
 ```
 
@@ -441,18 +381,14 @@ t22 = empty_table(5).update(
 
 Deephaven provides functions for array manipulation:
 
-```python test-set=column-types order=t23
-from deephaven import empty_table
-
-t23 = empty_table(3).update(
-    [
-        "Values = new int[]{i, i * 2, i * 3, i * 4, i * 5}",
-        "Sum = sum(Values)",
-        "Average = avg(Values)",
-        "Min = min(Values)",
-        "Max = max(Values)",
-        "Count = Values.length",
-    ]
+```groovy test-set=1 order=t23
+t23 = emptyTable(3).update(
+    "Values = new int[]{(int)ii, (int)ii * 2, (int)ii * 3, (int)ii * 4, (int)ii * 5}",
+    "Sum = sum(Values)",
+    "Average = avg(Values)",
+    "Min = min(Values)",
+    "Max = max(Values)",
+    "Count = Values.length"
 )
 ```
 
@@ -462,19 +398,15 @@ t23 = empty_table(3).update(
 
 Use explicit casts when you need to convert between numeric types:
 
-```python test-set=column-types order=t24
-from deephaven import empty_table
-
-t24 = empty_table(5).update(
-    [
-        "DoubleValue = i * 3.7",
-        # Explicit casts to narrow types
-        "AsInt = (int)DoubleValue",
-        "AsLong = (long)DoubleValue",
-        "AsByte = (byte)DoubleValue",
-        # Widening (no cast needed, but allowed)
-        "BackToDouble = (double)AsInt",
-    ]
+```groovy test-set=1 order=t24
+t24 = emptyTable(5).update(
+    "DoubleValue = ii * 3.7",
+    // Explicit casts to narrow types
+    "AsInt = (int)DoubleValue",
+    "AsLong = (long)DoubleValue",
+    "AsByte = (byte)DoubleValue",
+    // Widening (no cast needed, but allowed)
+    "BackToDouble = (double)AsInt"
 )
 ```
 
@@ -482,16 +414,12 @@ t24 = empty_table(5).update(
 
 Convert strings to numeric types:
 
-```python test-set=column-types order=t25
-from deephaven import empty_table
-
-t25 = empty_table(3).update(
-    [
-        "StringNum = `` + (i * 100)",
-        "AsInt = parseInt(StringNum)",
-        "AsLong = parseLong(StringNum)",
-        "AsDouble = parseDouble(StringNum + `.5`)",
-    ]
+```groovy test-set=1 order=t25
+t25 = emptyTable(3).update(
+    "StringNum = `` + (ii * 100)",
+    "AsInt = parseInt(StringNum)",
+    "AsLong = parseLong(StringNum)",
+    "AsDouble = parseDouble(StringNum + `.5`)"
 )
 ```
 
@@ -499,17 +427,13 @@ t25 = empty_table(3).update(
 
 Convert numbers to strings:
 
-```python test-set=column-types order=t26
-from deephaven import empty_table
-
-t26 = empty_table(3).update(
-    [
-        "Value = i * 1234.567",
-        # Simple string conversion
-        "AsString = `` + Value",
-        # Formatted string (using Java's String.format)
-        "Formatted = String.format(`%.2f`, Value)",
-    ]
+```groovy test-set=1 order=t26
+t26 = emptyTable(3).update(
+    "Value = ii * 1234.567",
+    // Simple string conversion
+    "AsString = `` + Value",
+    // Formatted string (using Java's String.format)
+    "Formatted = String.format(`%.2f`, Value)"
 )
 ```
 
@@ -517,16 +441,11 @@ t26 = empty_table(3).update(
 
 Always validate input before converting to avoid runtime errors. Use conditional logic to handle cases where conversion might fail:
 
-```python test-set=column-types order=t27
-from deephaven import empty_table
-from deephaven.constants import NULL_INT
-
-t27 = empty_table(5).update(
-    [
-        "StringValue = i % 2 == 0 ? `` + i : `invalid`",
-        # Use conditional logic to handle values that can't be parsed
-        "SafeConversion = i % 2 == 0 ? parseInt(StringValue) : NULL_INT",
-    ]
+```groovy test-set=1 order=t27
+t27 = emptyTable(5).update(
+    "StringValue = ii % 2 == 0 ? `` + ii : `invalid`",
+    // Use conditional logic to handle values that can't be parsed
+    "SafeConversion = ii % 2 == 0 ? parseInt(StringValue) : NULL_INT"
 )
 ```
 
@@ -538,28 +457,26 @@ Understanding how types behave in table operations and following best practices 
 
 Different aggregation operations have type-specific behavior:
 
-```python test-set=column-types order=t28
-from deephaven import empty_table
+```groovy test-set=1 order=t28
+import static io.deephaven.api.agg.Aggregation.AggSum
+import static io.deephaven.api.agg.Aggregation.AggAvg
+import static io.deephaven.api.agg.Aggregation.AggCount
 
-source = empty_table(100).update(
-    [
-        "Group = i % 3 == 0 ? `A` : (i % 3 == 1 ? `B` : `C`)",
-        "IntValue = (int)i",
-        "DoubleValue = i * 1.5",
-    ]
+source = emptyTable(100).update(
+    "Group = ii % 3 == 0 ? `A` : (ii % 3 == 1 ? `B` : `C`)",
+    "IntValue = (int)ii",
+    "DoubleValue = ii * 1.5"
 )
 
-# Aggregations preserve or promote types
-from deephaven import agg
-
-t28 = source.agg_by(
+// Aggregations preserve or promote types
+t28 = source.aggBy(
     [
-        agg.sum_(["SumInt = IntValue"]),  # Returns long
-        agg.sum_(["SumDouble = DoubleValue"]),  # Returns double
-        agg.avg(["AvgInt = IntValue"]),  # Returns double
-        agg.count_("CountRows"),  # Returns long
+        AggSum("SumInt = IntValue"),    // Returns long
+        AggSum("SumDouble = DoubleValue"), // Returns double
+        AggAvg("AvgInt = IntValue"),    // Returns double
+        AggCount("CountRows")           // Returns long
     ],
-    by="Group",
+    "Group"
 )
 ```
 
@@ -567,67 +484,56 @@ t28 = source.agg_by(
 
 Joins require matching types in key columns:
 
-```python test-set=column-types order=t29
-from deephaven import empty_table
+```groovy test-set=1 order=t29
+left = emptyTable(5).update("IntKey = (int)ii", "LeftValue = ii * 10")
+right = emptyTable(5).update("IntKey = (int)ii", "RightValue = ii * 100")
 
-left = empty_table(5).update(["IntKey = (int)i", "LeftValue = i * 10"])
-right = empty_table(5).update(["IntKey = (int)i", "RightValue = i * 100"])
-
-# This works - types match
-t29 = left.natural_join(right, on="IntKey")
+// This works - types match
+t29 = left.naturalJoin(right, "IntKey")
 ```
 
 Type mismatches will cause errors:
 
-```python syntax
-from deephaven import empty_table
+```groovy skip-test
+left = emptyTable(5).update("Key = (int)ii")
+right = emptyTable(5).update("Key = (long)ii")
 
-left = empty_table(5).update("Key = (int)i")
-right = empty_table(5).update("Key = (long)i")
-
-# This would fail - int vs long mismatch
-# t_join = left.natural_join(right, on="Key")
+// This would fail - int vs long mismatch
+// t_join = left.naturalJoin(right, "Key")
 ```
 
 Cast to matching types when necessary:
 
-```python test-set=column-types order=t30
-from deephaven import empty_table
+```groovy test-set=1 order=t30
+left = emptyTable(5).update("Key = (int)ii", "LeftValue = ii * 10")
+right = emptyTable(5).update("LongKey = (long)ii", "RightValue = ii * 100")
 
-left = empty_table(5).update(["Key = (int)i", "LeftValue = i * 10"])
-right = empty_table(5).update(["LongKey = (long)i", "RightValue = i * 100"])
-
-# Cast to matching type
-t30 = left.update("LongKey = (long)Key").natural_join(right, on="LongKey")
+// Cast to matching type
+t30 = left.update("LongKey = (long)Key").naturalJoin(right, "LongKey")
 ```
 
 ### Sorting and type behavior
 
 Sorting behavior varies by type:
 
-```python test-set=column-types order=t31
-from deephaven import empty_table
-from deephaven.constants import NULL_INT
-
-t31 = empty_table(10).update(
-    [
-        "Number = (int)(10 - i)",
-        "Text = `` + (char)('Z' - i)",
-        "Timestamp = now() - i * HOUR",
-        "NullableInt = i % 3 == 0 ? NULL_INT : (int)i",
-    ]
+```groovy test-set=1 order=t31
+t31 = emptyTable(10).update(
+    "Number = (int)(10 - ii)",
+    "Text = `` + (char)('Z' - ii)",
+    "Timestamp = now() - ii * HOUR",
+    "NullableInt = ii % 3 == 0 ? NULL_INT : (int)ii"
 )
 
-# Numeric: ascending by value
+// Numeric: ascending by value
 sorted_numeric = t31.sort("Number")
 
-# String: lexicographic order
+// String: lexicographic order
 sorted_string = t31.sort("Text")
 
-# Temporal: chronological order
+// Temporal: chronological order
 sorted_time = t31.sort("Timestamp")
 
-# Nulls: appear first by default in ascending sort
+// Nulls: appear first by default in ascending sort
 sorted_with_nulls = t31.sort("NullableInt")
 ```
 
@@ -666,7 +572,7 @@ sorted_with_nulls = t31.sort("NullableInt")
 ## Related documentation
 
 - [Table types](./table-types.md)
-- [Data types in Deephaven and Python](../how-to-guides/data-types.md)
+- [Data types in Deephaven and Groovy](../how-to-guides/data-types.md)
 - [Work with strings](../how-to-guides/work-with-strings.md)
 - [Query language special variables](../reference/query-language/variables/special-variables.md)
 - [Built-in functions](../how-to-guides/built-in-functions.md)
