@@ -1,31 +1,28 @@
 ---
-title: Set custom environmental variables
-sidebar_label: Custom environmental variables
+title: Set custom environment variables
+sidebar_label: Custom environment variables
 ---
 
-# Environmental variables
-
-Environmental variables are commonly found amongst applications, especially when dealing with sensitive information like API keys. This guide shows how to set environmental variables for use in Deephaven via Docker.
+Applications commonly use environment variables, especially for sensitive information like API keys. This guide shows how to set environment variables for use in Deephaven via Docker.
 
 ## docker-compose.yml
 
-Environmental variables must be set in the `server` service of the `docker-compose.yml` file. The default Deephaven `docker-compose.yml` file already has an `environment` section, so you'll need to expand on this.
+Environment variables must be set in the `deephaven` service of the `docker-compose.yml` file. The default Deephaven `docker-compose.yml` file already has an `environment` section, so you'll need to expand on this.
 
-```
+```yaml
 services:
-  server:
+  deephaven:
     image: ghcr.io/deephaven/server:${VERSION:-latest}
-    expose:
-      - '8080'
+    ports:
+      - "${DEEPHAVEN_PORT:-10000}:10000"
     volumes:
       - ./data:/data
-      - api-cache:/cache
     environment:
-      - START_OPTS=-Xmx4g -Ddeephaven.console.type=python
+      - START_OPTS=-Xmx4g
       - MY_VALUE=test
 ```
 
-You can now see your environmental variables in Deephaven on launch:
+You can now see your environment variables in Deephaven on launch:
 
 ```python
 import os
@@ -33,25 +30,25 @@ import os
 print(os.environ)
 ```
 
-## Parameterizing the environmental variables
+## Parameterizing the environment variables
 
 The above example hardcodes the value of `MY_VALUE` in the `docker-compose.yml` file. This may not be ideal for sensitive information, or for easily doing deployments in different environments.
 
-Instead, we can use the bracket syntax `${MY_VALUE}` within our `docker-compose.yml` file. The value in the bracket will be filled in by the current environmental variable on the system.
+Instead, you can use the bracket syntax `${MY_VALUE}` within your `docker-compose.yml` file. Docker Compose fills in the value with the matching environment variable from the host system.
 
-```
+```yaml
 - MY_VALUE=${MY_VALUE}
 ```
 
-Now the value of `MY_VALUE` in the Deephaven server will match the value of `MY_VALUE` on the local machine.
+Now the value of `MY_VALUE` in the Deephaven server matches the value of `MY_VALUE` on the local machine.
 
-## Settings environmental variables locally
+## Setting environment variables locally
 
-There are many ways to set environmental variables locally. Covering all of them is beyond the scope of this documentation, but there are many guides out there for that information. Here we will show two primary ways to set environmental variables for use within Deephaven.
+There are many ways to set environment variables locally. Covering all of them is beyond the scope of this documentation, but many guides are available for that information. Here we show two primary ways to set environment variables for use within Deephaven.
 
 ### .env file
 
-In the same directory as your `docker-compose.yml` file, you can create a `.env` that contains key-value pairs to assign your environmental variables.
+In the same directory as your `docker-compose.yml` file, you can create a `.env` that contains key-value pairs to assign your environment variables.
 
 `.env`
 
@@ -59,13 +56,13 @@ In the same directory as your `docker-compose.yml` file, you can create a `.env`
 MY_VALUE=test
 ```
 
-These environmental variables will be set when using `docker compose up`.
+These environment variables are set when you run `docker compose up`.
 
 ### CLI parameters
 
-You can also include environmental variables when calling `docker compose up`. Simply assign the key-value pairs before the `docker compose up` command when executing it.
+You can also include environment variables when calling `docker compose up`. Simply assign the key-value pairs before the `docker compose up` command.
 
-```
+```shell
 MY_VALUE=test docker compose up
 ```
 
