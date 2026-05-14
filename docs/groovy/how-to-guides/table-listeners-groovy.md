@@ -85,9 +85,9 @@ h = new MergedListener([recorder1, recorder2], [], "Description", null) {
         while (iter1.hasNext()) {
             long rowKey = iter1.next()
             Instant col1Data = DateTimeUtils.epochNanosToInstant(colSrc1.getLong(rowKey))
-            Class col1Type = colSrc1.getType()
+            Class<?> col1Type = colSrc1.getType()
             int col2Data = colSrc2.getInt(rowKey)
-            Class col2Type = colSrc2.getType()
+            Class<?> col2Type = colSrc2.getType()
             println "t1 updates: {'Timestamp': [data=${col1Data}, ${col1Type}], 'X': [data=${col2Data}, ${col2Type}]"
         }
     }
@@ -96,9 +96,9 @@ h = new MergedListener([recorder1, recorder2], [], "Description", null) {
         while (iter2.hasNext()) {
             long rowKey = iter2.next()
             Instant col3Data = DateTimeUtils.epochNanosToInstant(colSrc3.getLong(rowKey))
-            Class col3Type = colSrc3.getType()
+            Class<?> col3Type = colSrc3.getType()
             int col4Data = colSrc4.getInt(rowKey)
-            Class col4Type = colSrc4.getType()
+            Class<?> col4Type = colSrc4.getType()
             println "t2 updates: {'Timestamp': [data=${col3Data}, ${col3Type}], 'X': [data=${col4Data}, ${col4Type}]"
         }
     }
@@ -151,9 +151,9 @@ h1 = new InstrumentedTableUpdateListenerAdapter(t1, false) {
         while (iter.hasNext()) {
             long rowKey = iter.next()
             Instant col1data = DateTimeUtils.epochNanosToInstant(colSrc1.getLong(rowKey))
-            Class col1type = colSrc1.getType()
+            Class<?> col1type = colSrc1.getType()
             int col2data = colSrc2.getInt(rowKey)
-            Class col2type = colSrc2.getType()
+            Class<?> col2type = colSrc2.getType()
             println "{'Timestamp': [data=${col1data}, type=${col1type}], 'X': [data=${col2data}, type=${col2type}]}"
         }
     }
