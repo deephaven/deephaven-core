@@ -22,19 +22,23 @@ services:
       - MY_VALUE=test
 ```
 
-You can now see your environment variables in Deephaven on launch:
+You can access your environment variables in Deephaven using `os.getenv`:
 
 ```python
 import os
 
-print(os.environ)
+my_value = os.getenv("MY_VALUE")
+print(my_value)
 ```
+
+> [!WARNING]
+> Avoid printing `os.environ` in full. It dumps all environment variables, including sensitive values like API keys and passwords, which can expose secrets in logs or shared notebooks.
 
 ## Parameterizing the environment variables
 
 The above example hardcodes the value of `MY_VALUE` in the `docker-compose.yml` file. This may not be ideal for sensitive information, or for easily doing deployments in different environments.
 
-Instead, you can use the bracket syntax `${MY_VALUE}` within your `docker-compose.yml` file. Docker Compose fills in the value with the matching environment variable from the host system.
+Instead, you can use the variable substitution syntax `${MY_VALUE}` within your `docker-compose.yml` file. Docker Compose fills in the value with the matching environment variable from the host system.
 
 ```yaml
 - MY_VALUE=${MY_VALUE}
