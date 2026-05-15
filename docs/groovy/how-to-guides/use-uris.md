@@ -11,7 +11,7 @@ A URI, short for [Uniform Resource Identifier](https://en.wikipedia.org/wiki/Uni
 > URIs can be used to share tables across Groovy and Python instances interchangably. For how to use URIs in Python, see [the equivalent guide](/core/docs/how-to-guides/use-uris).
 
 > [!NOTE]
-> URI and Shared Tickets are two different ways to pull tables. Both work on static or dynamic tables. URI pulls tables already on the server via a URL-like string. Shared Tickets let you pull tables you create or access via the Python Client. Learn more about using Shared Tickets with Deephaven in the [Shared Tickets guide](../how-to-guides/capture-tables.md).
+> URI and Shared Tickets are two different ways to pull tables. Both work on static or dynamic tables. URI pulls tables already on the server via a URL-like string. Shared Tickets let you pull tables you create or access via the Python Client. Learn more about using Shared Tickets with Deephaven in the [Shared Tickets guide](./capture-tables.md).
 
 > [!IMPORTANT]
 > URI resolution in Deephaven Community (Core) requires **anonymous authentication**. PSK (pre-shared key) authentication is not currently supported — attempting to resolve a URI when PSK is enabled will fail. This is a known limitation tracked in GitHub issues [#5383](https://github.com/deephaven/deephaven-core/issues/5383) and [#3421](https://github.com/deephaven/deephaven-core/issues/3421).
@@ -64,7 +64,7 @@ The components are:
   - The scheme identifies the protocol for accessing Deephaven resources.
   - All Deephaven URIs use one of these schemes, regardless of the application type (script, static, dynamic, qst) configured in [Application Mode](./application-mode.md).
 - **`<authority>`** is the authority, which will be either:
-  - A Docker container name (for local container-to-container communication).
+  - A Docker container name (for container-to-container communication within the same Docker network).
   - A hostname/IP address (for network communication).
 - **`<port>`** is optional and only needed when:
   - The Deephaven instance is running on a non-default port (something other than 10000).
@@ -92,7 +92,7 @@ The `resolve` method connects to the specified Deephaven instance, retrieves the
 > When you resolve a URI, the first update cycle of the subscribed table is empty. If you run `resolve` and immediately operate on the table data in the same execution, you may see an empty table. To work with the actual data, either:
 >
 > - **In a notebook**: Run the `resolve` call in a separate execution before operating on the table.
-> - **In a script**: Use `table.awaitUpdate()` to wait for the table to populate before accessing its data.
+> - **In a script**: Use [`awaitUpdate`](../reference/table-operations/table-listeners/await-update.md) to wait for the table to populate before accessing its data.
 
 For example, the following code often prints 0:
 
@@ -101,7 +101,7 @@ remoteTable = resolve("dh+plain://hostname/scope/someTable")
 println remoteTable.size()  // Often prints 0 before the table populates
 ```
 
-To get the actual table size, use `awaitUpdate()` to wait for the table to populate:
+To get the actual table size, use [`awaitUpdate`](../reference/table-operations/table-listeners/await-update.md) to wait for the table to populate:
 
 ```groovy skip-test
 remoteTable = resolve("dh+plain://hostname/scope/someTable")
@@ -119,24 +119,26 @@ For this first example, we will spin up two Docker containers that run Deephaven
 
 Spinning up multiple Deephaven instances from Docker is simple. In order to do so, we will create two containers, which we will name `table-producer`, which runs on port `10000`, and `table-consumer`, which runs on port `9999`. Our `docker-compose.yml` file will look like this:
 
-```
-version: '3'
-
+```yml
 services:
   table-producer:
     image: ghcr.io/deephaven/server-slim:0.36.0
     ports:
-      - '10000:10000'
+      - "10000:10000"
+    environment:
+      - START_OPTS=-DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler
   table-consumer:
     image: ghcr.io/deephaven/server-slim:0.36.0
     ports:
-      - '9999:10000'
+      - "9999:10000"
+    environment:
+      - START_OPTS=-DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler
 ```
 
 After a `docker compose pull` and `docker compose up --build -d`, both instances are up and running.
 
 > [!NOTE]
-> PSK authentication is intentionally omitted from this configuration. URI resolution requires anonymous authentication — adding `START_OPTS=-Dauthentication.psk=...` to either container will prevent URI resolution from working.
+> Anonymous authentication is explicitly configured because URI resolution requires it. PSK (pre-shared key) authentication is not supported for URI resolution.
 
 ### Create a table
 
@@ -159,6 +161,30 @@ resolvedTable = resolve("dh+plain://table-producer/scope/myTable")
 ![The above ticking table](../assets/how-to/resolved-table-uri.gif)
 
 By resolving the URI, we acquire `myTable` from the `table-producer` container using the syntax given above.
+
+### Alternative: Docker network without compose
+
+If you're not using Docker Compose, you can create a Docker network manually to enable container name resolution:
+
+```bash
+docker network create dh-net
+
+docker run -d --network dh-net --name table-producer -p 10000:10000 \
+  --env START_OPTS=-DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler \
+  ghcr.io/deephaven/server-slim:latest
+
+docker run -d --network dh-net --name table-consumer -p 9999:10000 \
+  --env START_OPTS=-DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler \
+  ghcr.io/deephaven/server-slim:latest
+```
+
+> [!NOTE]
+> Container names only resolve within the same Docker network. When resolving by container name, use the container port (10000), not the host port:
+>
+> ```groovy skip-test
+> // Correct: use container port
+> table = resolve("dh+plain://table-producer:10000/scope/myTable")
+> ```
 
 ## Resource scopes and paths
 
@@ -211,7 +237,7 @@ dh://hostname/app/my_application/field/my_field
 
 ## Share tables across a network
 
-Tables can also be shared across networks, public or private. Just like the previous example of sharing across a machine, this works in the same way. Rather than the container name, you only need the hostname/IP and port of the instance producing the table.
+You can also share tables across networks, public or private. Just like the previous example of sharing across a machine, this works in the same way. Rather than the container name, you only need the hostname/IP and port of the instance producing the table.
 
 > [!NOTE]
 >
