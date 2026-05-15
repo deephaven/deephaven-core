@@ -365,9 +365,9 @@ public class NullValueTestGwt extends AbstractAsyncGwtTestCase {
                             .then(s -> {
                                 // Copy all data, send it back to the server using WorkerConnection.newTable
                                 String[] columnNames = table.getColumns().asList().stream()
-                                                .map(Column::getName).toArray(String[]::new);
+                                        .map(Column::getName).toArray(String[]::new);
                                 String[] types = table.getColumns().asList().stream()
-                                                .map(Column::getType).toArray(String[]::new);
+                                        .map(Column::getType).toArray(String[]::new);
                                 Object[][] data = new Object[columnNames.length][];
                                 for (int i = 0; i < data.length; i++) {
                                     Column column = table.findColumn(columnNames[i]);

@@ -1563,7 +1563,8 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
 
         assert keyTableData.length == keyColumns.length + 2;
         if (schema.fieldsLength() != keyTableData.length) {
-            throw new RuntimeException("Expected " + keyTableData.length + " columns, but got " + schema.fieldsLength());
+            throw new RuntimeException(
+                    "Expected " + keyTableData.length + " columns, but got " + schema.fieldsLength());
         }
 
         List<BarrageColumnType> providedTypes = new ArrayList<>();
@@ -1572,17 +1573,20 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
         }
         for (int i = 0; i < keyColumns.length; i++) {
             if (!providedTypes.get(i).deephavenType().equals(keyColumns.getAt(i).getType())) {
-                throw new RuntimeException("Column " + i + " expected type " + keyColumns.getAt(i).getType() + " but got "
-                        + providedTypes.get(i).deephavenType());
+                throw new RuntimeException(
+                        "Column " + i + " expected type " + keyColumns.getAt(i).getType() + " but got "
+                                + providedTypes.get(i).deephavenType());
             }
         }
         if (!providedTypes.get(keyColumns.length).deephavenType().equals(rowDepthCol.getType())) {
-            throw new RuntimeException("Column " + keyColumns.length + " expected type " + rowDepthCol.getType() + " but got "
-                    + providedTypes.get(keyColumns.length).deephavenType());
+            throw new RuntimeException(
+                    "Column " + keyColumns.length + " expected type " + rowDepthCol.getType() + " but got "
+                            + providedTypes.get(keyColumns.length).deephavenType());
         }
         if (!providedTypes.get(keyColumns.length + 1).deephavenType().equals(actionCol.getType())) {
-            throw new RuntimeException("Column " + (keyColumns.length + 1) + " expected type " + actionCol.getType() + " but got "
-                    + providedTypes.get(keyColumns.length + 1).deephavenType());
+            throw new RuntimeException(
+                    "Column " + (keyColumns.length + 1) + " expected type " + actionCol.getType() + " but got "
+                            + providedTypes.get(keyColumns.length + 1).deephavenType());
         }
     }
 

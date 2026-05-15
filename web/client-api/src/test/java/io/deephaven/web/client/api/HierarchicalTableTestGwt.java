@@ -1064,14 +1064,14 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                                 return tree.<TreeViewportData>nextEvent(JsTreeTable.EVENT_UPDATED, 1902d);
                             }).then(e -> {
                                 // Now that we're expanded, restore the initial state
-                                assertEquals(10, (int)e.getDetail().getTreeSize());
+                                assertEquals(10, (int) e.getDetail().getTreeSize());
                                 rootExpanded.set(tree.saveExpandedState());
 
                                 tree.restoreExpandedState(empty);
                                 return tree.<TreeViewportData>nextEvent(JsTreeTable.EVENT_UPDATED, 1903d);
                             }).then(e -> {
                                 // Confirm we're back to the initial state, re-expand the root node
-                                assertEquals(startingSize, (int)e.getDetail().getTreeSize());
+                                assertEquals(startingSize, (int) e.getDetail().getTreeSize());
 
                                 tree.restoreExpandedState(rootExpanded.get());
                                 return tree.<TreeViewportData>nextEvent(JsTreeTable.EVENT_UPDATED, 1904d);
@@ -1084,12 +1084,13 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                                 outOfViewExpanded.set(tree.saveExpandedState());
                                 return tree.<TreeViewportData>nextEvent(JsTreeTable.EVENT_UPDATED, 1905d);
                             }).then(e -> {
-                                assertEquals(20, (int)e.getDetail().getTreeSize());
-                                // Restore original state again, let it load, then use the saved state to expand things we can't se
+                                assertEquals(20, (int) e.getDetail().getTreeSize());
+                                // Restore original state again, let it load, then use the saved state to expand things
+                                // we can't se
                                 tree.collapseAll();
                                 return tree.<TreeViewportData>nextEvent(JsTreeTable.EVENT_UPDATED, 1906d);
                             }).then(e -> {
-                                assertEquals(1, (int)e.getDetail().getTreeSize());
+                                assertEquals(1, (int) e.getDetail().getTreeSize());
                                 for (TableData.Row row : e.getDetail().getRows().asList()) {
                                     assertFalse(((TreeViewportData.TreeRow) row).isExpanded());
                                 }
@@ -1099,7 +1100,7 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                                 tree.setViewport(0, 5, null, null);
                                 return tree.<TreeViewportData>nextEvent(JsTreeTable.EVENT_UPDATED, 1907d);
                             }).then(e -> {
-                                assertEquals(20, (int)e.getDetail().getTreeSize());
+                                assertEquals(20, (int) e.getDetail().getTreeSize());
 
                                 JsArray<TreeViewportData.TreeRow> rows = Js.cast(e.getDetail().getRows());
                                 assertTrue(rows.getAt(0).isExpanded());
@@ -1107,7 +1108,7 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                                 assertFalse(rows.getAt(2).isExpanded());
                                 return null;
                             });
-                    })
-                    .then(this::finish).catch_(this::report);
+                })
+                .then(this::finish).catch_(this::report);
     }
 }
