@@ -3,19 +3,26 @@
 //
 package io.deephaven.kafka;
 
+import io.deephaven.chunk.util.pools.ChunkPoolReleaseTracking;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
+import io.deephaven.json.ArrayValue;
+import io.deephaven.json.DoubleValue;
+import io.deephaven.json.IntValue;
+import io.deephaven.json.LongValue;
 import io.deephaven.json.ObjectValue;
 import io.deephaven.json.StringValue;
 import io.deephaven.json.jackson.JacksonProvider;
 import io.deephaven.kafka.KafkaTools.TableType;
 import io.deephaven.kafka.testcontainers.KafkaService;
+import io.deephaven.qst.type.Type;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.producer.KafkaProducer;
@@ -40,9 +47,11 @@ import static io.deephaven.engine.table.ColumnDefinition.ofInt;
 import static io.deephaven.engine.table.ColumnDefinition.ofLong;
 import static io.deephaven.engine.table.ColumnDefinition.ofString;
 import static io.deephaven.engine.table.ColumnDefinition.ofTime;
+import static io.deephaven.engine.util.TableTools.doubleCol;
 import static io.deephaven.engine.util.TableTools.instantCol;
 import static io.deephaven.engine.util.TableTools.intCol;
 import static io.deephaven.engine.util.TableTools.longCol;
+import static io.deephaven.engine.util.TableTools.newTable;
 import static io.deephaven.engine.util.TableTools.stringCol;
 import static io.deephaven.kafka.KafkaTools.ALL_PARTITIONS;
 import static io.deephaven.kafka.KafkaTools.ALL_PARTITIONS_SEEK_TO_BEGINNING;
@@ -67,6 +76,14 @@ class KafkaToolsIntegrationTest {
         framework = new EngineCleanup();
         framework.setUp();
         updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
+        // without the following, we get an exception in `valuesFromArrayElement`. should probably be its own ticket.
+        /*
+         * Leaked 4 resources. Enable `ReleaseTracker.captureStackTraces` to further debug.
+         * io.deephaven.util.datastructures.ReleaseTracker$LeakedException: Leaked 4 resources. Enable
+         * `ReleaseTracker.captureStackTraces` to further debug.
+         */
+        ChunkPoolReleaseTracking.disable();
     }
 
     @AfterEach
@@ -279,6 +296,116 @@ class KafkaToolsIntegrationTest {
 
             awaitEquals(e3, taa);
         }
+    }
+
+    @ParameterizedTest(name = "valuesFromArrayElement {0}")
+    @EnumSource
+    @Timeout(TIMEOUT_SECONDS)
+    void valuesFromArrayElement(final KafkaService kafkaService, final TestInfo testInfo) throws Exception {
+        Assumptions.assumeTrue(kafkaService.isEnabled());
+        kafkaService.init();
+        final String topic = sanitizedTopicName(testInfo);
+        final String fooName = "Biz_Foo";
+        final String barName = "Biz_Bar";
+        final String zipName = "Buz_Zip";
+        final String zapName = "Buz_Zap";
+
+        final TableDefinition td;
+        final Table e1;
+        final Table e2;
+        final Table e3;
+        {
+            td = TableDefinition.of(
+                    PARTITION_COLUMN,
+                    OFFSET_COLUMN,
+                    TIMESTAMP_COLUMN,
+                    ColumnDefinition.of(fooName, Type.intType().arrayType()),
+                    ColumnDefinition.of(barName, Type.longType().arrayType()),
+                    ColumnDefinition.of(zipName, Type.doubleType().arrayType()),
+                    ColumnDefinition.of(zapName, Type.stringType().arrayType()));
+            e1 = TableTools.newTable(td);
+            e2 = TableTools.newTable(td,
+                    intCol(PARTITION_COLUMN.getName(), 0, 0),
+                    longCol(OFFSET_COLUMN.getName(), 0, 1),
+                    instantCol(TIMESTAMP_COLUMN.getName(), Instant.ofEpochMilli(42L), Instant.ofEpochMilli(43L)),
+                    new ColumnHolder<>(fooName, int[].class, int.class, false, new int[]{1}, new int[]{2}),
+                    new ColumnHolder<>(barName, long[].class, long.class, false, new long[]{4}, new long[]{5}),
+                    new ColumnHolder<>(zipName, double[].class, double.class, false, new double[]{7.1}, new double[]{8.2}),
+                    new ColumnHolder<>(zapName, String[].class, String.class, false, new String[]{"zap1"}, new String[]{"zap2"}));
+            e3 = TableTools.merge(e2, TableTools.newTable(td,
+                    intCol(PARTITION_COLUMN.getName(), 0),
+                    longCol(OFFSET_COLUMN.getName(), 2),
+                    instantCol(TIMESTAMP_COLUMN.getName(), Instant.ofEpochMilli(44L)),
+                    new ColumnHolder<>(fooName, int[].class, int.class, false, new int[]{3}),
+                    new ColumnHolder<>(barName, long[].class, long.class, false, new long[]{6}),
+                    new ColumnHolder<>(zipName, double[].class, double.class, false, new double[]{9.3}),
+                    new ColumnHolder<>(zapName, String[].class, String.class, false, new String[]{"zap3"})));
+        }
+
+        createTopic(kafkaService, topic);
+
+        final KafkaTools.TableAndAdapter taa = KafkaTools.consumeToTableAndAdapter(
+                kafkaService.properties(),
+                topic,
+                ALL_PARTITIONS,
+                ALL_PARTITIONS_SEEK_TO_BEGINNING,
+                KafkaTools.Consume.objectProcessorSpec(
+                        JacksonProvider.of(ObjectValue.builder()
+                                .putFields("Biz", ArrayValue.standard(
+                                        ObjectValue.builder()
+                                                .putFields("Foo", IntValue.strict())
+                                                .putFields("Bar", LongValue.strict())
+                                                .build()
+                                )).build()
+                        )
+                ),
+                KafkaTools.Consume.objectProcessorSpec(
+                        JacksonProvider.of(ObjectValue.builder()
+                                .putFields("Buz", ArrayValue.standard(
+                                        ObjectValue.builder()
+                                                .putFields("Zip", DoubleValue.strict())
+                                                .putFields("Zap", StringValue.strict())
+                                                .build()
+                                )).build()
+                        )
+                ),
+                TableType.append());
+
+        try (final KafkaProducer<String, String> producer =
+                     kafkaService.producer(new StringSerializer(), new StringSerializer())) {
+            awaitEquals(e1, taa);
+
+            producer.send(new ProducerRecord<>(topic, null, 42L, "{ \"Biz\": [ { \"Foo\": 1, \"Bar\": 4 } ] }",
+                    " {\"Buz\": [ { \"Zip\": 7.1, \"Zap\": \"zap1\" } ] }"));
+            producer.send(new ProducerRecord<>(topic, null, 43L, "{ \"Biz\": [ { \"Foo\": 2, \"Bar\": 5 } ] }",
+                    "{ \"Buz\": [ { \"Zip\": 8.2, \"Zap\": \"zap2\" } ] }"));
+            producer.flush();
+
+            awaitEquals(e2, taa);
+
+            producer.send(new ProducerRecord<>(topic, null, 44L, "{ \"Biz\": [{ \"Foo\": 3, \"Bar\": 6 } ] }",
+                    "{ \"Buz\": [ { \"Zip\": 9.3, \"Zap\": \"zap3\" } ] }"));
+            producer.flush();
+
+            awaitEquals(e3, taa);
+        }
+
+        final Table expectedTable = newTable(
+                intCol("Foo", 1, 2, 3),
+                longCol("Bar", 4, 5, 6),
+                doubleCol("Zip", 7.1, 8.2, 9.3),
+                stringCol("Zap", "zap1", "zap2", "zap3")
+        );
+        final Table elementTable = taa.table()
+                .view("Foo = Biz_Foo[0]", "Bar = Biz_Bar[0]", "Zip = Buz_Zip[0]")
+                .select();
+        TstUtils.assertTableEquals(expectedTable.dropColumns("Zap"), elementTable);
+
+        // TODO: when we figure this out, should be able to include "Zap" in `elementTable` and do basic comparison
+        final Table bustedTable = taa.table()
+                .view("Zap = Buz_Zap[0]")
+                .select();
+        TstUtils.assertTableEquals(expectedTable.view("Zap"), bustedTable);
     }
 
     private static String sanitizedTopicName(TestInfo testInfo) {
