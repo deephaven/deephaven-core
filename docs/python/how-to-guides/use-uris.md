@@ -64,7 +64,7 @@ The components are:
   - The scheme identifies the protocol for accessing Deephaven resources.
   - All Deephaven URIs use one of these schemes, regardless of the application type (script, static, dynamic, qst) configured in [Application Mode](./application-mode.md).
 - **`<authority>`** is the authority, which will be either:
-  - A Docker container name (for local container-to-container communication).
+  - A Docker container name (for container-to-container communication within the same Docker network).
   - A hostname/IP address (for network communication).
 - **`<port>`** is optional and only needed when:
   - The Deephaven instance is running on a non-default port (something other than 10000).
@@ -120,23 +120,25 @@ For this first example, we will spin up two Docker containers that run Deephaven
 Spinning up multiple Deephaven instances from Docker is simple. In order to do so, we will create two containers, which we will name `table-producer`, which runs on port `10000`, and `table-consumer`, which runs on port `9999`. Our `docker-compose.yml` file will look like this:
 
 ```yml
-version: "3"
-
 services:
   table-producer:
     image: ghcr.io/deephaven/server:0.36.0
     ports:
       - "10000:10000"
+    environment:
+      - START_OPTS=-DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler
   table-consumer:
     image: ghcr.io/deephaven/server:0.36.0
     ports:
       - "9999:10000"
+    environment:
+      - START_OPTS=-DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler
 ```
 
 After a `docker compose pull` and `docker compose up --build -d`, both instances are up and running.
 
 > [!NOTE]
-> PSK authentication is intentionally omitted from this configuration. URI resolution requires anonymous authentication — adding `START_OPTS=-Dauthentication.psk=...` to either container will prevent URI resolution from working.
+> Anonymous authentication is explicitly configured because URI resolution requires it. PSK (pre-shared key) authentication is not supported for URI resolution.
 
 ### Create a table
 
@@ -161,6 +163,30 @@ resolved_table = resolve("dh+plain://table-producer/scope/my_table")
 ![The above ticking table](../assets/how-to/resolved-table-uri.gif)
 
 By resolving the URI, we acquire `my_table` from the `table-producer` container using the syntax given above.
+
+### Alternative: Docker network without compose
+
+If you're not using Docker Compose, you can create a Docker network manually to enable container name resolution:
+
+```bash
+docker network create dh-net
+
+docker run -d --network dh-net --name table-producer -p 10000:10000 \
+  --env START_OPTS=-DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler \
+  ghcr.io/deephaven/server:latest
+
+docker run -d --network dh-net --name table-consumer -p 9999:10000 \
+  --env START_OPTS=-DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler \
+  ghcr.io/deephaven/server:latest
+```
+
+> [!NOTE]
+> Container names only resolve within the same Docker network. When resolving by container name, use the container port (10000), not the host port:
+>
+> ```python skip-test
+> # Correct: use container port
+> table = resolve("dh+plain://table-producer:10000/scope/my_table")
+> ```
 
 ## Resource scopes and paths
 
