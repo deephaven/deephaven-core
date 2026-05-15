@@ -45,7 +45,7 @@ public abstract sealed class BarrageColumnType
         if (deephavenType.endsWith("[]")) {
             String componentType = deephavenType.substring(0, deephavenType.length() - 2);
             BarrageColumnType componentColumnType = fromString(null, componentType);
-            return new List(deephavenType, componentColumnType);
+            return new List(columnName, componentColumnType);
         }
 
         switch (deephavenType) {
@@ -256,15 +256,16 @@ public abstract sealed class BarrageColumnType
             childrenVector = Field.createChildrenVector(builder, childrenOffsets);
         }
 
-        int nameOffset = Integer.MAX_VALUE;
+        final int nameOffset;
         if (columnName != null) {
             nameOffset = builder.createString(columnName);
+        } else {
+            // A name is required for nested fields by the server implementation
+            nameOffset = builder.createString("");
         }
         Field.startField(builder);
         Field.addNullable(builder, true);
-        if (columnName != null) {
-            Field.addName(builder, nameOffset);
-        }
+        Field.addName(builder, nameOffset);
         Field.addTypeType(builder, typeType());
         Field.addType(builder, typeOffset);
         Field.addCustomMetadata(builder, metadataOffset);

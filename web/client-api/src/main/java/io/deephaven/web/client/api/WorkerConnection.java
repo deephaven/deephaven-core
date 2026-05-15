@@ -1140,17 +1140,14 @@ public class WorkerConnection {
         } else {
             msg.rowsAdded = RowSetFactory.empty();
         }
-        DomGlobal.console.log(msg.rowsAdded.size() + " rows added");
         msg.rowsIncluded = msg.rowsAdded;
         msg.rowsRemoved = RowSetFactory.empty();
         msg.length = d[0].size();
-        DomGlobal.console.log(msg.length + " length");
         msg.addColumnData = new BarrageMessage.AddColumnData[columnTypes.size()];
         for (int i = 0; i < columnTypes.size(); i++) {
             BarrageMessage.AddColumnData acd = new BarrageMessage.AddColumnData();
             acd.data = Collections.singletonList(d[i]);
             msg.addColumnData[i] = acd;
-            DomGlobal.console.log(acd.data.stream().mapToInt(Chunk::size).sum() + " rows in col");
         }
         msg.modColumnData = BarrageMessage.ZERO_MOD_COLUMNS;
         msg.shifted = RowSetShiftData.EMPTY;

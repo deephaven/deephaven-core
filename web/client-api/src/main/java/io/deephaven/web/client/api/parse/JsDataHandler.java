@@ -281,9 +281,7 @@ public enum JsDataHandler {
     ;
 
     public static JsDataHandler getHandler(String deephavenType) {
-        return HandlersHolder.HANDLERS.computeIfAbsent(deephavenType, type -> {
-            throw new IllegalStateException("No handler registered for type " + type);
-        });
+        return HandlersHolder.HANDLERS.get(deephavenType);
     }
 
     /**
