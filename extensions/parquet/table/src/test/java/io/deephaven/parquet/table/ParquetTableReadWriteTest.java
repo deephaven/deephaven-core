@@ -5158,7 +5158,7 @@ public final class ParquetTableReadWriteTest {
             testSortedFilteringInternal(testTable, "bdCol", "bdCol < bd_300");
             testSortedFilteringInternal(testTable, "bdCol", "bdCol >= bd_500");
 
-            // Compsrable
+            // Comparable
             bdFilter = ComparableRangeFilter.makeForTest("bdCol",
                     BigDecimal.valueOf(300.0), BigDecimal.valueOf(500.00),
                     true, true);

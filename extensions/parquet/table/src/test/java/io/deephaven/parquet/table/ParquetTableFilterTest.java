@@ -356,7 +356,7 @@ public final class ParquetTableFilterTest {
         filterAndVerifyResults(diskTable, memTable, "boolean_col = true");
         filterAndVerifyResultsAllowEmpty(diskTable, memTable, "boolean_col = false");
 
-        // BigDecimal range filters (match is complicated with BD, given precision)ø
+        // BigDecimal range filters (match is complicated with BD, given precision)
         ExecutionContext.getContext().getQueryScope().putParam("bd_500", BigDecimal.valueOf(500.0));
         ExecutionContext.getContext().getQueryScope().putParam("bd_1000", BigDecimal.valueOf(1000.00));
 
