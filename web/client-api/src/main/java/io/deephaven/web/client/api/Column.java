@@ -5,6 +5,7 @@ package io.deephaven.web.client.api;
 
 import com.vertispan.tsdefs.annotations.TsName;
 import com.vertispan.tsdefs.annotations.TsTypeRef;
+import elemental2.core.JsArray;
 import io.deephaven.web.client.api.filter.FilterValue;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsNullable;
@@ -48,6 +49,7 @@ public class Column {
     private String description;
     private final boolean isInputTableKeyColumn;
     private final boolean isInputTableValueColumn;
+    private final JsArray<ColumnRestriction> columnRestrictions;
 
     /**
      * Format entire rows colors using the expression specified. Returns a {@code CustomColumn} object to apply to a
@@ -81,7 +83,8 @@ public class Column {
 
     public Column(int jsIndex, int index, Integer formatColumnIndex, Integer styleColumnIndex, String type, String name,
             boolean isPartitionColumn, Integer formatStringColumnIndex, String description,
-            boolean inputTableKeyColumn, boolean inputTableValueColumn, boolean isSortable) {
+            boolean inputTableKeyColumn, boolean inputTableValueColumn, boolean isSortable,
+            JsArray<ColumnRestriction> columnRestrictions) {
         this.jsIndex = jsIndex;
         this.index = index;
         assert Objects.equals(formatColumnIndex, styleColumnIndex);
@@ -94,6 +97,18 @@ public class Column {
         this.isInputTableKeyColumn = inputTableKeyColumn;
         this.isInputTableValueColumn = inputTableValueColumn;
         this.isSortable = isSortable;
+        this.columnRestrictions = columnRestrictions;
+    }
+
+    /**
+     * @deprecated Use the constructor with columnRestrictions parameter instead
+     */
+    @Deprecated
+    public Column(int jsIndex, int index, Integer formatColumnIndex, Integer styleColumnIndex, String type, String name,
+            boolean isPartitionColumn, Integer formatStringColumnIndex, String description,
+            boolean inputTableKeyColumn, boolean inputTableValueColumn, boolean isSortable) {
+        this(jsIndex, index, formatColumnIndex, styleColumnIndex, type, name, isPartitionColumn,
+                formatStringColumnIndex, description, inputTableKeyColumn, inputTableValueColumn, isSortable, null);
     }
 
     /**
@@ -223,6 +238,19 @@ public class Column {
     }
 
     /**
+     * Returns the column restrictions for input table columns, or null if this is not an input table column or if no
+     * restrictions are defined. The restrictions are implementation-specific constraints that the server enforces on
+     * column values.
+     *
+     * @return Array of column restrictions, or null if none are defined
+     */
+    @JsProperty
+    @JsNullable
+    public JsArray<ColumnRestriction> getColumnRestrictions() {
+        return columnRestrictions;
+    }
+
+    /**
      * Creates a new value for use in filters based on this column. Used either as a parameter to another filter
      * operation, or as a builder to create a filter operation.
      *
@@ -320,11 +348,13 @@ public class Column {
 
     public Column withFormatStringColumnIndex(int formatStringColumnIndex) {
         return new Column(jsIndex, index, styleColumnIndex, styleColumnIndex, type, name, isPartitionColumn,
-                formatStringColumnIndex, description, isInputTableKeyColumn, isInputTableValueColumn, isSortable);
+                formatStringColumnIndex, description, isInputTableKeyColumn, isInputTableValueColumn, isSortable,
+                columnRestrictions);
     }
 
     public Column withStyleColumnIndex(int styleColumnIndex) {
         return new Column(jsIndex, index, styleColumnIndex, styleColumnIndex, type, name, isPartitionColumn,
-                formatStringColumnIndex, description, isInputTableKeyColumn, isInputTableValueColumn, isSortable);
+                formatStringColumnIndex, description, isInputTableKeyColumn, isInputTableValueColumn, isSortable,
+                columnRestrictions);
     }
 }

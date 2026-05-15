@@ -4,24 +4,35 @@
 package io.deephaven.web.client.api.barrage;
 
 import com.google.flatbuffers.FlatBufferBuilder;
+import elemental2.dom.DomGlobal;
 import io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
+import io.deephaven.proto.backplane.grpc.DeephavenTableMetadata;
+import io.deephaven.proto.backplane.grpc.InputTableColumnInfo;
+import io.deephaven.web.client.api.ColumnRestriction;
 import io.deephaven.web.client.api.BigDecimalWrapper;
 import io.deephaven.web.client.api.BigIntegerWrapper;
 import io.deephaven.web.client.api.DateWrapper;
 import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
 import io.deephaven.web.client.api.barrage.def.InitialTableDefinition;
+import io.deephaven.web.client.api.barrage.def.InputTableMetadata;
 import io.deephaven.web.client.api.barrage.def.TableAttributesDefinition;
+import io.deephaven.web.client.api.barrage.util.ColumnRestrictionConverter;
+import io.deephaven.web.client.api.barrage.util.ColumnRestrictionUtils;
+import io.deephaven.web.client.api.barrage.util.ColumnRestrictionValidator;
+import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.shared.data.*;
 import org.apache.arrow.flatbuf.KeyValue;
 import org.apache.arrow.flatbuf.Message;
 import org.apache.arrow.flatbuf.MessageHeader;
 import org.apache.arrow.flatbuf.Schema;
-import org.jetbrains.annotations.NotNull;
+import com.google.protobuf.Any;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.IntFunction;
@@ -31,6 +42,51 @@ import java.util.function.IntFunction;
  */
 public class WebBarrageUtils {
     public static final int FLATBUFFER_MAGIC = 0x6E687064;
+
+    private static final Map<String, ColumnRestrictionConverter> restrictionConverters = new HashMap<>();
+    private static final Map<String, ColumnRestrictionValidator> restrictionValidators = new HashMap<>();
+
+    static {
+        // Register built-in parsers and validators
+        registerColumnRestrictionType("IntegerRangeRestriction",
+                ColumnRestrictionUtils::convertIntegerRangeRestriction,
+                ColumnRestrictionUtils::validateIntegerRange);
+        registerColumnRestrictionType("DoubleRangeRestriction",
+                ColumnRestrictionUtils::convertDoubleRangeRestriction,
+                ColumnRestrictionUtils::validateDoubleRange);
+        registerColumnRestrictionType("NotNullRestriction",
+                ColumnRestrictionUtils::convertNotNullRestriction,
+                ColumnRestrictionUtils::validateNotNull);
+        registerColumnRestrictionType("NonEmptyRestriction",
+                ColumnRestrictionUtils::convertNonEmptyRestriction,
+                ColumnRestrictionUtils::validateNonEmpty);
+        registerColumnRestrictionType("StringListRestriction",
+                ColumnRestrictionUtils::convertStringListRestriction,
+                ColumnRestrictionUtils::validateStringList);
+    }
+
+    /**
+     * Register a parser and optional client-side validator for a column restriction type. Calling this from JavaScript
+     * allows downstream consumers to extend the restriction system with their own types.
+     *
+     * <p>
+     * The {@code parser} converts a raw protobuf {@code Any} message into a
+     * {@link io.deephaven.web.client.api.ColumnRestriction}. The {@code validator} (if provided) is a function that
+     * takes a proposed value and the restriction's data object and returns a human-readable error message if the value
+     * is invalid, or {@code null} if it is valid.
+     *
+     * @param restrictionType The restriction type name (e.g., "IntegerRangeRestriction")
+     * @param parser Converts protobuf bytes into a ColumnRestriction
+     * @param validator Optional client-side validation function; may be {@code null}
+     */
+    public static void registerColumnRestrictionType(String restrictionType,
+            ColumnRestrictionConverter parser,
+            ColumnRestrictionValidator validator) {
+        restrictionConverters.put(restrictionType, parser);
+        if (validator != null) {
+            restrictionValidators.put(restrictionType, validator);
+        }
+    }
 
     public static ByteBuffer wrapMessage(FlatBufferBuilder innerBuilder, byte messageType) {
         FlatBufferBuilder outerBuilder = new FlatBufferBuilder(1024);
@@ -62,9 +118,90 @@ public class WebBarrageUtils {
                 keyValuePairs("deephaven:attribute_type.", schema.customMetadataLength(), schema::customMetadata),
                 keyValuePairs("deephaven:unsent.attribute.", schema.customMetadataLength(), schema::customMetadata)
                         .keySet());
+
+        // Parse input table metadata if present
+        InputTableMetadata inputTableMetadata = parseInputTableMetadata(schema, cols);
+
         return new InitialTableDefinition()
                 .setAttributes(attributes)
-                .setColumns(cols);
+                .setColumns(cols)
+                .setInputTableMetadata(inputTableMetadata);
+    }
+
+    /**
+     * Parses input table metadata from the schema's custom metadata and column definitions.
+     *
+     * @param schema the schema containing the custom metadata with the base64-encoded table metadata
+     * @param cols the column definitions to match against the column info in the table metadata
+     * @return an InputTableMetadata object containing the column restrictions, or null if no valid metadata is found
+     */
+    private static InputTableMetadata parseInputTableMetadata(Schema schema, ColumnDefinition[] cols) {
+        // Extract the tableMetadata from schema custom metadata
+        final Map<String, String> schemaMetadata =
+                keyValuePairs("deephaven:", schema.customMetadataLength(), schema::customMetadata);
+
+        final String tableMetadataBase64 = schemaMetadata.get("tableMetadata");
+        if (tableMetadataBase64 == null || tableMetadataBase64.isEmpty()) {
+            return null;
+        }
+
+        final InputTableMetadata metadata = new InputTableMetadata();
+        try {
+            // Decode the base64 string to bytes and parse the DeephavenTableMetadata
+            final byte[] bytes = DomGlobal.atob(tableMetadataBase64).getBytes(StandardCharsets.ISO_8859_1);
+            final ByteBuffer buffer = ByteBuffer.allocateDirect(bytes.length);
+            buffer.put(bytes);
+            buffer.flip();
+            final DeephavenTableMetadata tableMetadata = DeephavenTableMetadata.parseFrom(buffer);
+
+            if (!tableMetadata.hasInputTableMetadata()) {
+                return null;
+            }
+
+            // Get the column info map
+            final Map<String, InputTableColumnInfo> columnInfoMap =
+                    tableMetadata.getInputTableMetadata().getColumnInfoMap();
+
+            // Extract column restrictions from the column info map
+            for (ColumnDefinition col : cols) {
+                final String columnName = col.getName();
+                final InputTableColumnInfo columnInfo = columnInfoMap.get(columnName);
+
+                if (columnInfo == null) {
+                    JsLog.warn("parseInputTableMetadata: No column info found for column " + columnName);
+                    continue;
+                }
+
+                final List<Any> restrictionsList = columnInfo.getRestrictionsList();
+                final InputTableMetadata.ColumnRestrictions colRestrictions =
+                        new InputTableMetadata.ColumnRestrictions();
+
+                for (Any restrictionAny : restrictionsList) {
+                    // Get the restriction type and look up the converter
+                    String restrictionType = ColumnRestrictionUtils.getRestrictionType(restrictionAny.getTypeUrl());
+                    ColumnRestrictionConverter converter = restrictionConverters.get(restrictionType);
+                    if (converter != null) {
+                        ColumnRestriction restriction = converter.convert(restrictionAny);
+                        ColumnRestrictionValidator validator = restrictionValidators.get(restrictionType);
+                        if (validator != null) {
+                            restriction.setValidator(validator);
+                        }
+                        colRestrictions.addRestriction(restriction);
+                    } else {
+                        JsLog.error("No converter registered for restriction type: " + restrictionType);
+                    }
+                }
+
+                if (colRestrictions.getRestrictions().length > 0) {
+                    metadata.addColumnRestrictions(columnName, colRestrictions);
+                }
+            }
+        } catch (Exception e) {
+            JsLog.error("Failed to parse input table metadata:", e);
+            return null;
+        }
+
+        return metadata;
     }
 
     private static ColumnDefinition[] readColumnDefinitions(Schema schema) {
