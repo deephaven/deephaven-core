@@ -104,6 +104,7 @@ class SimpleUniqueStaticNaturalJoinStateManager extends StaticNaturalJoinStateMa
                 for (int ii = 0; ii < dataChunkAsInt.size(); ++ii) {
                     final int tableLocation = dataChunkAsInt.get(ii);
                     if (tableLocation < 0 || tableLocation >= tableSize) {
+                        leftRedirections.set(offset + ii, RowSequence.NULL_ROW_KEY);
                         continue;
                     }
                     final long existingRight = rightRowSetSource.getLong(tableLocation);
