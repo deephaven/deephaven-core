@@ -77,12 +77,7 @@ class KafkaToolsIntegrationTest {
         framework.setUp();
         updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
 
-        // without the following, we get an exception in `valuesFromArrayElement`. should probably be its own ticket.
-        /*
-         * Leaked 4 resources. Enable `ReleaseTracker.captureStackTraces` to further debug.
-         * io.deephaven.util.datastructures.ReleaseTracker$LeakedException: Leaked 4 resources. Enable
-         * `ReleaseTracker.captureStackTraces` to further debug.
-         */
+        // TODO without the following, we get an exception in `valuesFromArrayElement`. see DH-22657
         ChunkPoolReleaseTracking.disable();
     }
 
