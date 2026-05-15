@@ -33,6 +33,7 @@ import io.deephaven.proto.backplane.script.grpc.StartConsoleRequest;
 import io.deephaven.qst.table.TableSpec;
 import io.grpc.StatusException;
 import io.grpc.stub.ClientCallStreamObserver;
+import io.grpc.stub.ClientCalls;
 import io.grpc.stub.ClientResponseObserver;
 import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
@@ -432,16 +433,18 @@ public final class SessionImpl extends SessionBase {
 
         @Override
         public Changes executeCode(String code, ExecuteCodeOptions options)
-                throws InterruptedException, ExecutionException, TimeoutException {
+                throws InterruptedException, TimeoutException {
             final ExecuteCommandResponse response;
             try {
-                response = Calls.blockingUnaryCall(
+                response = ClientCalls.blockingV2UnaryCall(
                         channel().channel2(),
                         ConsoleServiceGrpc.getExecuteCommandMethod(),
                         channel().callOptions().withDeadlineAfter(config.executeTimeout()),
                         executeCommandRequest(code, options));
-            } catch (StatusException | RuntimeException e) {
-                throw new ExecutionException(e);
+            } catch (StatusException e) {
+                Calls.extractInterrupted(e);
+                Calls.extractTimeout(e);
+                throw Calls.asStatusRuntime(e);
             }
             return toChanges(response);
         }
@@ -490,17 +493,22 @@ public final class SessionImpl extends SessionBase {
         @Override
         public void close() {
             try {
-                Calls.blockingUnaryCall(
+                ClientCalls.blockingV2UnaryCall(
                         channel().channel2(),
                         SessionServiceGrpc.getReleaseMethod(),
                         channel().callOptions().withDeadlineAfter(config.closeTimeout()),
                         releaseRequest());
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                log.warn("Interrupted waiting for console close");
-            } catch (TimeoutException e) {
-                log.warn("Timed out waiting for console close");
-            } catch (StatusException | RuntimeException e) {
+            } catch (final StatusException e) {
+                if (Calls.isInterrupted(e)) {
+                    log.warn("Interrupted waiting for console close");
+                    return;
+                }
+                if (Calls.isTimeout(e)) {
+                    log.warn("Timed out waiting for console close");
+                    return;
+                }
+                log.error("Exception waiting for console close", e);
+            } catch (final RuntimeException e) {
                 log.error("Exception waiting for console close", e);
             }
         }
