@@ -66,24 +66,46 @@ public class JsIterator<T> {
 
     /**
      * Copied from elemental2, but has a concrete subclass to permit us to export it back to TS.
+     * 
+     * <p>
+     * This type is used as the return value of {@link JsIterator#next()} and matches the shape of JavaScript iterator
+     * results: a boolean {@code done} flag and an optional {@code value}.
      */
     @JsType(name = "IIterableResult", namespace = JsPackage.GLOBAL, isNative = true)
     @TsInterface
     public interface JsIIterableResult<T> {
+        /**
+         * Creates an empty iterator result object.
+         */
         @JsOverlay
         static <T> JsIIterableResult<T> create() {
             return Js.uncheckedCast(JsPropertyMap.of());
         }
 
+        /**
+         * The value produced by the iterator.
+         *
+         * <p>
+         * This property may be absent or {@code null} when {@link #isDone()} is {@code true}.
+         */
         @JsProperty
         T getValue();
 
+        /**
+         * Sets {@link #getValue()}.
+         */
         @JsProperty
         void setValue(T value);
 
+        /**
+         * Whether the iterator has no more values to produce.
+         */
         @JsProperty
         boolean isDone();
 
+        /**
+         * Sets {@link #isDone()}.
+         */
         @JsProperty
         void setDone(boolean done);
     }
