@@ -5101,7 +5101,8 @@ public final class ParquetTableReadWriteTest {
                             "longCol = i % 997 == 0 ? null : ii % 997",
                             "floatCol = (i % 997 == 0) ? null : (i % 997 == 996) ? Float.NaN : (i % 997 == 995) ? Float.POSITIVE_INFINITY : (i % 997 == 994) ? Float.NEGATIVE_INFINITY : (float)(i % 997)",
                             "doubleCol = (i % 997 == 0) ? null : (i % 997 == 996) ? Double.NaN : (i % 997 == 995) ? Double.POSITIVE_INFINITY : (i % 997 == 994) ? Double.NEGATIVE_INFINITY : (double)(i % 997)",
-                            "stringCol = i % 997 == 0 ? null : `Str` + (i % 997)");
+                            "stringCol = i % 997 == 0 ? null : `Str` + (i % 997)",
+                            "bdCol = i % 997 == 0 ? (java.math.BigDecimal)null : java.math.BigDecimal.valueOf(ii % 997)");
 
             testSortedFilteringInternal(testTable, "byteCol", "byteCol in 30, 50, 70");
             testSortedFilteringInternal(testTable, "byteCol", "byteCol not in 30, 50, 70");
@@ -5148,6 +5149,35 @@ public final class ParquetTableReadWriteTest {
             testSortedFilteringInternal(testTable, "stringCol", "stringCol not in `Str300`, `Str500`, `Str700`");
             testSortedFilteringInternal(testTable, "stringCol", "stringCol > `Str300`");
             testSortedFilteringInternal(testTable, "stringCol", "stringCol <= `Str500`");
+
+            Filter bdFilter;
+
+            // Single Sided
+            ExecutionContext.getContext().getQueryScope().putParam("bd_300", BigDecimal.valueOf(300.0));
+            ExecutionContext.getContext().getQueryScope().putParam("bd_500", BigDecimal.valueOf(500.00));
+            testSortedFilteringInternal(testTable, "bdCol", "bdCol < bd_300");
+            testSortedFilteringInternal(testTable, "bdCol", "bdCol >= bd_500");
+
+            // Compsrable
+            bdFilter = ComparableRangeFilter.makeForTest("bdCol",
+                    BigDecimal.valueOf(300.0), BigDecimal.valueOf(500.00),
+                    true, true);
+            testSortedFilteringInternal(testTable, "bdCol", bdFilter);
+
+            bdFilter = ComparableRangeFilter.makeForTest("bdCol",
+                    BigDecimal.valueOf(300.0), BigDecimal.valueOf(500.00),
+                    false, true);
+            testSortedFilteringInternal(testTable, "bdCol", bdFilter);
+
+            bdFilter = ComparableRangeFilter.makeForTest("bdCol",
+                    BigDecimal.valueOf(300.0), BigDecimal.valueOf(500.00),
+                    true, false);
+            testSortedFilteringInternal(testTable, "bdCol", bdFilter);
+
+            bdFilter = ComparableRangeFilter.makeForTest("bdCol",
+                    BigDecimal.valueOf(300.0), BigDecimal.valueOf(500.00),
+                    false, false);
+            testSortedFilteringInternal(testTable, "bdCol", bdFilter);
         }
     }
 

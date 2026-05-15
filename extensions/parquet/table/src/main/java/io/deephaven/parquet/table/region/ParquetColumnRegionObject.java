@@ -227,6 +227,26 @@ public final class ParquetColumnRegionObject<DATA_TYPE, ATTR extends Any> extend
                         RowSetFactory.empty());
             }
         }
+
+        if (ctx.rangeFilter() instanceof ComparableRangeFilter) {
+            final ComparableRangeFilter comparableRangeFilter = (ComparableRangeFilter) ctx.rangeFilter();
+            final RowSet matches = ObjectRegionBinarySearchKernel.binarySearchMinMax(
+                    this,
+                    selection.firstRowKey(),
+                    selection.lastRowKey(),
+                    firstSortedColumn,
+                    comparableRangeFilter.getLower(),
+                    comparableRangeFilter.getUpper(),
+                    comparableRangeFilter.isLowerInclusive(),
+                    comparableRangeFilter.isUpperInclusive());
+            try (final RowSet ignored = matches) {
+                return PushdownResult.of(
+                        selection,
+                        matches.intersect(selection),
+                        RowSetFactory.empty());
+            }
+        }
+
         return input.copy();
     }
 }

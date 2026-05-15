@@ -285,6 +285,9 @@ public class RangeFilter extends WhereFilterImpl implements ExposesChunkFilter {
                 && ((RangeFilter) filter).getRealFilter() instanceof AbstractRangeFilter) {
             return Optional.of((AbstractRangeFilter) ((RangeFilter) filter).getRealFilter());
         }
+        if (filter instanceof AbstractRangeFilter) {
+            return Optional.of((AbstractRangeFilter) filter);
+        }
         return Optional.empty();
     }
 
