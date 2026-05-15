@@ -5,8 +5,7 @@ package io.deephaven.replicators;
 
 import java.io.IOException;
 
-import static io.deephaven.replication.ReplicatePrimitiveCode.charToAllButBoolean;
-import static io.deephaven.replication.ReplicatePrimitiveCode.charToAllButBooleanAndByte;
+import static io.deephaven.replication.ReplicatePrimitiveCode.*;
 
 /**
  * Code generation for tests of {@link RegionedColumnSource} implementations as well as well as the primary region
@@ -19,7 +18,9 @@ public class ReplicateRegionAndRegionedSourceTests {
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/regioned/TestRegionedColumnSourceChar.java");
         charToAllButBooleanAndByte("replicateRegionAndRegionedSourceTests",
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/regioned/TstColumnRegionChar.java");
-        charToAllButBoolean("replicateRegionAndRegionedSourceTests",
+        charToAllButBooleanAndFloats("replicateRegionAndRegionedSourceTests",
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/regioned/kernel/CharRegionBinarySearchKernelTest.java");
+        floatToAllFloatingPoints("replicateRegionAndRegionedSourceTests",
+                "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/regioned/kernel/FloatRegionBinarySearchKernelTest.java");
     }
 }
