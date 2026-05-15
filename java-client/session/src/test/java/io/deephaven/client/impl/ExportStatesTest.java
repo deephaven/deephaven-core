@@ -90,9 +90,9 @@ public class ExportStatesTest {
         ManagedChannel channel = grpcCleanup
                 .register(InProcessChannelBuilder.forName(serverName).directExecutor().build());
 
-        DeephavenChannel deephavenChannel = new DeephavenChannelImpl(channel);
+        DeephavenChannel deephavenChannel = new DeephavenChannel(channel);
 
-        states = new ExportStates(deephavenChannel.session(), deephavenChannel.table(), new ExportTicketCreator());
+        states = new ExportStates(deephavenChannel, new ExportTicketCreator());
     }
 
     Export export(TableSpec table) {
