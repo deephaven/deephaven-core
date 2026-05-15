@@ -39,6 +39,8 @@ final class RepeaterGenericImpl<T> extends RepeaterProcessorBase<T[]> {
 
     @Override
     public T[] doneImpl(JsonParser parser, int length) {
-        return Arrays.copyOfRange(buffer, 0, length, bufferClass);
+        final T[] result = Arrays.copyOfRange(buffer, 0, length, bufferClass);
+        Arrays.fill(buffer, 0, length, null);
+        return result;
     }
 }
