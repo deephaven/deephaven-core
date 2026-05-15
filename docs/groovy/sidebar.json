@@ -987,6 +987,10 @@
                     "path": "how-to-guides/configuration/config-file.md"
                   },
                   {
+                    "label": "Configuration properties",
+                    "path": "how-to-guides/configuration/configuration-properties.md"
+                  },
+                  {
                     "label": "Web Defaults",
                     "path": "how-to-guides/configuration/configure-web.md"
                   },
