@@ -6,6 +6,7 @@ package io.deephaven.web.client.api.barrage;
 import com.google.flatbuffers.FlatBufferBuilder;
 import io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
+import io.deephaven.web.client.api.barrage.data.BarrageColumnType;
 import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
 import io.deephaven.web.client.api.barrage.def.InitialTableDefinition;
 import io.deephaven.web.client.api.barrage.def.TableAttributesDefinition;

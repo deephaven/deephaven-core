@@ -273,14 +273,10 @@ public enum JsDataHandler {
             return result;
         }
     },
-    BIG_DECIMAL("java.math.BigDecimal") {
-    },
-    BIG_INTEGER("java.math.BigInteger") {
-    },
-    LOCAL_DATE("java.time.LocalDate", "localdate") {
-    },
-    LOCAL_TIME("java.time.LocalTime", "localtime") {
-    },
+    BIG_DECIMAL("java.math.BigDecimal") {},
+    BIG_INTEGER("java.math.BigInteger") {},
+    LOCAL_DATE("java.time.LocalDate", "localdate") {},
+    LOCAL_TIME("java.time.LocalTime", "localtime") {},
     // LIST(),
     ;
 

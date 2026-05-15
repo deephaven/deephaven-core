@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.web.client.api.barrage.data;
 
 import com.google.flatbuffers.FlatBufferBuilder;
@@ -34,6 +37,7 @@ public abstract sealed class BarrageColumnType
 
     /**
      * Best effort mapping from string type info to supported Flight/Deephaven types.
+     * 
      * @param deephavenType supports deephaven:type strings, as well as some specific JS shorthand
      * @return
      */
@@ -86,7 +90,8 @@ public abstract sealed class BarrageColumnType
     }
 
     public static BarrageColumnType fromArrowField(Field field) {
-        java.util.Map<String, String> customMetadata = WebBarrageUtils.keyValuePairs("", field.customMetadataLength(), field::customMetadata);
+        java.util.Map<String, String> customMetadata =
+                WebBarrageUtils.keyValuePairs("", field.customMetadataLength(), field::customMetadata);
         String columnName = field.name();
         switch (field.typeType()) {
             case Type.Null:
@@ -102,7 +107,8 @@ public abstract sealed class BarrageColumnType
                 return new FloatingPoint(columnName, fpType.precision(), customMetadata);
             }
             case Type.Binary:
-                return new Binary(columnName, customMetadata.getOrDefault("deephaven:type", "java.lang.Object"), customMetadata);
+                return new Binary(columnName, customMetadata.getOrDefault("deephaven:type", "java.lang.Object"),
+                        customMetadata);
             case Type.Utf8:
                 return new Utf8(columnName, customMetadata);
             case Type.Bool:
@@ -110,7 +116,8 @@ public abstract sealed class BarrageColumnType
             case Type.Decimal: {
                 org.apache.arrow.flatbuf.Decimal decType = new org.apache.arrow.flatbuf.Decimal();
                 field.type(decType);
-                return new Decimal(columnName, decType.precision(), decType.scale(), decType.bitWidth(), customMetadata);
+                return new Decimal(columnName, decType.precision(), decType.scale(), decType.bitWidth(),
+                        customMetadata);
             }
             case Type.Date: {
                 org.apache.arrow.flatbuf.Date dateType = new org.apache.arrow.flatbuf.Date();
@@ -152,7 +159,8 @@ public abstract sealed class BarrageColumnType
                 for (int i = 0; i < field.childrenLength(); i++) {
                     fields.add(fromArrowField(field.children(i)));
                 }
-                return new Union(columnName, unionType.mode(), typeIds, Collections.unmodifiableList(fields), customMetadata);
+                return new Union(columnName, unionType.mode(), typeIds, Collections.unmodifiableList(fields),
+                        customMetadata);
             }
             case Type.FixedSizeBinary: {
                 org.apache.arrow.flatbuf.FixedSizeBinary fsbType = new org.apache.arrow.flatbuf.FixedSizeBinary();
@@ -162,13 +170,15 @@ public abstract sealed class BarrageColumnType
             case Type.FixedSizeList: {
                 org.apache.arrow.flatbuf.FixedSizeList fslType = new org.apache.arrow.flatbuf.FixedSizeList();
                 field.type(fslType);
-                return new FixedSizeList(columnName, fslType.listSize(), fromArrowField(field.children(0)), customMetadata);
+                return new FixedSizeList(columnName, fslType.listSize(), fromArrowField(field.children(0)),
+                        customMetadata);
             }
             case Type.Map: {
                 org.apache.arrow.flatbuf.Map mapType = new org.apache.arrow.flatbuf.Map();
                 field.type(mapType);
                 Field entriesField = field.children(0);
-                return new Map(columnName, mapType.keysSorted(), fromArrowField(entriesField.children(0)), fromArrowField(entriesField.children(1)), customMetadata);
+                return new Map(columnName, mapType.keysSorted(), fromArrowField(entriesField.children(0)),
+                        fromArrowField(entriesField.children(1)), customMetadata);
             }
             case Type.Duration: {
                 org.apache.arrow.flatbuf.Duration durType = new org.apache.arrow.flatbuf.Duration();
@@ -182,7 +192,8 @@ public abstract sealed class BarrageColumnType
             case Type.LargeList:
                 return new LargeList(columnName, fromArrowField(field.children(0)), customMetadata);
             case Type.RunEndEncoded:
-                return new RunEndEncoded(columnName, fromArrowField(field.children(0)), fromArrowField(field.children(1)), customMetadata);
+                return new RunEndEncoded(columnName, fromArrowField(field.children(0)),
+                        fromArrowField(field.children(1)), customMetadata);
             case Type.BinaryView:
                 return new BinaryView(columnName, customMetadata);
             case Type.Utf8View:
@@ -264,14 +275,17 @@ public abstract sealed class BarrageColumnType
 
         return Field.endField(builder);
     }
+
     protected int[] writeChildren(FlatBufferBuilder builder) {
         return null;
     }
 
     public abstract Class<?> type();
+
     public @Nullable Class<?> componentType() {
         return null;
     }
+
     public abstract String deephavenType();
 
     public BarrageTypeInfo<Field> typeInfo() {
@@ -280,6 +294,10 @@ public abstract sealed class BarrageColumnType
         Field f = new Field();
         Field.getRootAsField(builder.dataBuffer(), f);
         return BarrageTypeInfo.make(type(), componentType(), f);
+    }
+
+    public String getDeephavenColumnAttr(String string) {
+        return customMetadata.get("deephaven:" + string);
     }
 
     public static final class Null extends BarrageColumnType {
@@ -319,7 +337,8 @@ public abstract sealed class BarrageColumnType
             this.isSigned = isSigned;
         }
 
-        public IntType(@Nullable String columnName, int bitWidth, boolean isSigned, java.util.Map<String, String> customMetadata) {
+        public IntType(@Nullable String columnName, int bitWidth, boolean isSigned,
+                java.util.Map<String, String> customMetadata) {
             super(columnName, customMetadata);
             this.bitWidth = bitWidth;
             this.isSigned = isSigned;
@@ -347,16 +366,23 @@ public abstract sealed class BarrageColumnType
         public String deephavenType() {
             if (isSigned) {
                 switch (bitWidth) {
-                    case 8: return "byte";
-                    case 16: return "short";
-                    case 32: return "int";
-                    case 64: return "long";
-                    default: throw new IllegalStateException("Unsupported signed int bitWidth: " + bitWidth);
+                    case 8:
+                        return "byte";
+                    case 16:
+                        return "short";
+                    case 32:
+                        return "int";
+                    case 64:
+                        return "long";
+                    default:
+                        throw new IllegalStateException("Unsupported signed int bitWidth: " + bitWidth);
                 }
             } else {
                 switch (bitWidth) {
-                    case 16: return "char";
-                    default: throw new IllegalStateException("Unsupported unsigned int bitWidth: " + bitWidth);
+                    case 16:
+                        return "char";
+                    default:
+                        throw new IllegalStateException("Unsupported unsigned int bitWidth: " + bitWidth);
                 }
             }
         }
@@ -365,16 +391,23 @@ public abstract sealed class BarrageColumnType
         public Class<?> type() {
             if (isSigned) {
                 switch (bitWidth) {
-                    case 8: return byte.class;
-                    case 16: return short.class;
-                    case 32: return int.class;
-                    case 64: return LongWrapper.class;
-                    default: throw new IllegalStateException("Unsupported signed int bitWidth: " + bitWidth);
+                    case 8:
+                        return byte.class;
+                    case 16:
+                        return short.class;
+                    case 32:
+                        return int.class;
+                    case 64:
+                        return LongWrapper.class;
+                    default:
+                        throw new IllegalStateException("Unsupported signed int bitWidth: " + bitWidth);
                 }
             } else {
                 switch (bitWidth) {
-                    case 16: return char.class;
-                    default: throw new IllegalStateException("Unsupported unsigned int bitWidth: " + bitWidth);
+                    case 16:
+                        return char.class;
+                    default:
+                        throw new IllegalStateException("Unsupported unsigned int bitWidth: " + bitWidth);
                 }
             }
         }
@@ -388,7 +421,8 @@ public abstract sealed class BarrageColumnType
             this.precision = precision;
         }
 
-        public FloatingPoint(@Nullable String columnName, short precision, java.util.Map<String, String> customMetadata) {
+        public FloatingPoint(@Nullable String columnName, short precision,
+                java.util.Map<String, String> customMetadata) {
             super(columnName, customMetadata);
             this.precision = precision;
         }
@@ -413,24 +447,31 @@ public abstract sealed class BarrageColumnType
         @Override
         public String deephavenType() {
             switch (precision) {
-                case org.apache.arrow.flatbuf.Precision.SINGLE: return "float";
-                case org.apache.arrow.flatbuf.Precision.DOUBLE: return "double";
-                default: throw new IllegalStateException("Unsupported floating point precision: " + precision);
+                case org.apache.arrow.flatbuf.Precision.SINGLE:
+                    return "float";
+                case org.apache.arrow.flatbuf.Precision.DOUBLE:
+                    return "double";
+                default:
+                    throw new IllegalStateException("Unsupported floating point precision: " + precision);
             }
         }
 
         @Override
         public Class<?> type() {
             switch (precision) {
-                case org.apache.arrow.flatbuf.Precision.SINGLE: return float.class;
-                case org.apache.arrow.flatbuf.Precision.DOUBLE: return double.class;
-                default: throw new IllegalStateException("Unsupported floating point precision: " + precision);
+                case org.apache.arrow.flatbuf.Precision.SINGLE:
+                    return float.class;
+                case org.apache.arrow.flatbuf.Precision.DOUBLE:
+                    return double.class;
+                default:
+                    throw new IllegalStateException("Unsupported floating point precision: " + precision);
             }
         }
     }
 
     public static final class Binary extends BarrageColumnType {
         private final String deephavenType;
+
         public Binary(@Nullable String columnName, String deephavenType) {
             super(columnName);
             this.deephavenType = deephavenType;
@@ -544,7 +585,8 @@ public abstract sealed class BarrageColumnType
             this.bitWidth = bitWidth;
         }
 
-        public Decimal(@Nullable String columnName, int precision, int scale, int bitWidth, java.util.Map<String, String> customMetadata) {
+        public Decimal(@Nullable String columnName, int precision, int scale, int bitWidth,
+                java.util.Map<String, String> customMetadata) {
             super(columnName, customMetadata);
             this.precision = precision;
             this.scale = scale;
@@ -635,7 +677,8 @@ public abstract sealed class BarrageColumnType
             this.bitWidth = bitWidth;
         }
 
-        public Time(@Nullable String columnName, short unit, int bitWidth, java.util.Map<String, String> customMetadata) {
+        public Time(@Nullable String columnName, short unit, int bitWidth,
+                java.util.Map<String, String> customMetadata) {
             super(columnName, customMetadata);
             this.unit = unit;
             this.bitWidth = bitWidth;
@@ -684,7 +727,8 @@ public abstract sealed class BarrageColumnType
             this.timezone = timezone;
         }
 
-        public Timestamp(@Nullable String columnName, short unit, @Nullable String timezone, java.util.Map<String, String> customMetadata) {
+        public Timestamp(@Nullable String columnName, short unit, @Nullable String timezone,
+                java.util.Map<String, String> customMetadata) {
             super(columnName, customMetadata);
             this.unit = unit;
             this.timezone = timezone;
@@ -768,7 +812,8 @@ public abstract sealed class BarrageColumnType
             this.componentType = componentType;
         }
 
-        public List(@Nullable String columnName, BarrageColumnType componentType, java.util.Map<String, String> customMetadata) {
+        public List(@Nullable String columnName, BarrageColumnType componentType,
+                java.util.Map<String, String> customMetadata) {
             super(columnName, customMetadata);
             this.componentType = componentType;
         }
@@ -795,7 +840,7 @@ public abstract sealed class BarrageColumnType
 
         @Override
         protected int[] writeChildren(FlatBufferBuilder builder) {
-            return new int[] { componentType.writeField(builder) };
+            return new int[] {componentType.writeField(builder)};
         }
 
         @Override
@@ -812,7 +857,8 @@ public abstract sealed class BarrageColumnType
     public static final class Struct extends BarrageColumnType {
         private final java.util.List<BarrageColumnType> fields;
 
-        public Struct(@Nullable String columnName, java.util.List<BarrageColumnType> fields, java.util.Map<String, String> customMetadata) {
+        public Struct(@Nullable String columnName, java.util.List<BarrageColumnType> fields,
+                java.util.Map<String, String> customMetadata) {
             super(columnName, customMetadata);
             this.fields = fields;
         }
@@ -857,7 +903,8 @@ public abstract sealed class BarrageColumnType
         private final int[] typeIds;
         private final java.util.List<BarrageColumnType> fields;
 
-        public Union(@Nullable String columnName, short mode, int[] typeIds, java.util.List<BarrageColumnType> fields, java.util.Map<String, String> customMetadata) {
+        public Union(@Nullable String columnName, short mode, int[] typeIds, java.util.List<BarrageColumnType> fields,
+                java.util.Map<String, String> customMetadata) {
             super(columnName, customMetadata);
             this.mode = mode;
             this.typeIds = typeIds;
@@ -913,7 +960,8 @@ public abstract sealed class BarrageColumnType
     public static final class FixedSizeBinary extends BarrageColumnType {
         private final int byteWidth;
 
-        public FixedSizeBinary(@Nullable String columnName, int byteWidth, java.util.Map<String, String> customMetadata) {
+        public FixedSizeBinary(@Nullable String columnName, int byteWidth,
+                java.util.Map<String, String> customMetadata) {
             super(columnName, customMetadata);
             this.byteWidth = byteWidth;
         }
@@ -943,7 +991,7 @@ public abstract sealed class BarrageColumnType
         }
 
         @Override
-        public  Class<?> componentType() {
+        public Class<?> componentType() {
             return byte.class;
         }
     }
@@ -952,7 +1000,8 @@ public abstract sealed class BarrageColumnType
         private final int listSize;
         private final BarrageColumnType componentType;
 
-        public FixedSizeList(@Nullable String columnName, int listSize, BarrageColumnType componentType, java.util.Map<String, String> customMetadata) {
+        public FixedSizeList(@Nullable String columnName, int listSize, BarrageColumnType componentType,
+                java.util.Map<String, String> customMetadata) {
             super(columnName, customMetadata);
             this.listSize = listSize;
             this.componentType = componentType;
@@ -983,7 +1032,7 @@ public abstract sealed class BarrageColumnType
 
         @Override
         protected int[] writeChildren(FlatBufferBuilder builder) {
-            return new int[] { componentType.writeField(builder) };
+            return new int[] {componentType.writeField(builder)};
         }
 
         @Override
@@ -1002,7 +1051,8 @@ public abstract sealed class BarrageColumnType
         private final BarrageColumnType keyType;
         private final BarrageColumnType valueType;
 
-        public Map(@Nullable String columnName, boolean keysSorted, BarrageColumnType keyType, BarrageColumnType valueType, java.util.Map<String, String> customMetadata) {
+        public Map(@Nullable String columnName, boolean keysSorted, BarrageColumnType keyType,
+                BarrageColumnType valueType, java.util.Map<String, String> customMetadata) {
             super(columnName, customMetadata);
             this.keysSorted = keysSorted;
             this.keyType = keyType;
@@ -1041,7 +1091,8 @@ public abstract sealed class BarrageColumnType
             // Map has a single "entries" child which is a Struct with key and value children
             int keyFieldOffset = keyType.writeField(builder);
             int valueFieldOffset = valueType.writeField(builder);
-            int entriesChildrenVector = Field.createChildrenVector(builder, new int[] { keyFieldOffset, valueFieldOffset });
+            int entriesChildrenVector =
+                    Field.createChildrenVector(builder, new int[] {keyFieldOffset, valueFieldOffset});
 
             // Write the Struct_ type for the entries field
             org.apache.arrow.flatbuf.Struct_.startStruct_(builder);
@@ -1056,7 +1107,7 @@ public abstract sealed class BarrageColumnType
             Field.addChildren(builder, entriesChildrenVector);
             int entriesFieldOffset = Field.endField(builder);
 
-            return new int[] { entriesFieldOffset };
+            return new int[] {entriesFieldOffset};
         }
 
         @Override
@@ -1158,7 +1209,8 @@ public abstract sealed class BarrageColumnType
     public static final class LargeList extends BarrageColumnType {
         private final BarrageColumnType componentType;
 
-        public LargeList(@Nullable String columnName, BarrageColumnType componentType, java.util.Map<String, String> customMetadata) {
+        public LargeList(@Nullable String columnName, BarrageColumnType componentType,
+                java.util.Map<String, String> customMetadata) {
             super(columnName, customMetadata);
             this.componentType = componentType;
         }
@@ -1185,7 +1237,7 @@ public abstract sealed class BarrageColumnType
 
         @Override
         protected int[] writeChildren(FlatBufferBuilder builder) {
-            return new int[] { componentType.writeField(builder) };
+            return new int[] {componentType.writeField(builder)};
         }
 
         @Override
@@ -1203,7 +1255,8 @@ public abstract sealed class BarrageColumnType
         private final BarrageColumnType runEndsType;
         private final BarrageColumnType valuesType;
 
-        public RunEndEncoded(@Nullable String columnName, BarrageColumnType runEndsType, BarrageColumnType valuesType, java.util.Map<String, String> customMetadata) {
+        public RunEndEncoded(@Nullable String columnName, BarrageColumnType runEndsType, BarrageColumnType valuesType,
+                java.util.Map<String, String> customMetadata) {
             super(columnName, customMetadata);
             this.runEndsType = runEndsType;
             this.valuesType = valuesType;
@@ -1235,7 +1288,7 @@ public abstract sealed class BarrageColumnType
 
         @Override
         protected int[] writeChildren(FlatBufferBuilder builder) {
-            return new int[] { runEndsType.writeField(builder), valuesType.writeField(builder) };
+            return new int[] {runEndsType.writeField(builder), valuesType.writeField(builder)};
         }
 
         @Override
@@ -1319,7 +1372,8 @@ public abstract sealed class BarrageColumnType
             this.componentType = componentType;
         }
 
-        public ListView(@Nullable String columnName, BarrageColumnType componentType, java.util.Map<String, String> customMetadata) {
+        public ListView(@Nullable String columnName, BarrageColumnType componentType,
+                java.util.Map<String, String> customMetadata) {
             super(columnName, customMetadata);
             this.componentType = componentType;
         }
@@ -1346,7 +1400,7 @@ public abstract sealed class BarrageColumnType
 
         @Override
         protected int[] writeChildren(FlatBufferBuilder builder) {
-            return new int[] { componentType.writeField(builder) };
+            return new int[] {componentType.writeField(builder)};
         }
 
         @Override
@@ -1363,7 +1417,8 @@ public abstract sealed class BarrageColumnType
     public static final class LargeListView extends BarrageColumnType {
         private final BarrageColumnType componentType;
 
-        public LargeListView(@Nullable String columnName, BarrageColumnType componentType, java.util.Map<String, String> customMetadata) {
+        public LargeListView(@Nullable String columnName, BarrageColumnType componentType,
+                java.util.Map<String, String> customMetadata) {
             super(columnName, customMetadata);
             this.componentType = componentType;
         }
@@ -1390,7 +1445,7 @@ public abstract sealed class BarrageColumnType
 
         @Override
         protected int[] writeChildren(FlatBufferBuilder builder) {
-            return new int[] { componentType.writeField(builder) };
+            return new int[] {componentType.writeField(builder)};
         }
 
         @Override

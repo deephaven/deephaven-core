@@ -15,6 +15,7 @@ import jsinterop.base.JsPropertyMap;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -1040,5 +1041,73 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                             });
                 })
                 .then(this::finish).catch_(this::report);
+    }
+
+
+    public void testSaveRestoreState() {
+        connect(tables)
+                .then(treeTable("static_tree"))
+                .then(tree -> {
+                    delayTestFinish(5000);
+                    String empty = tree.saveExpandedState();
+                    AtomicReference<String> rootExpanded = new AtomicReference<>();
+                    AtomicReference<String> outOfViewExpanded = new AtomicReference<>();
+                    int startingSize = 1;
+
+                    tree.setViewport(0, 5, null, null);
+                    return tree.<TreeViewportData>nextEvent(JsTreeTable.EVENT_UPDATED, 1901d)
+                            .then(e -> {
+                                // Confirm initial state is just one node, expand root and save it to use later
+                                assertEquals(startingSize, (int) e.getDetail().getTreeSize());
+                                tree.expand(JsTreeTable.RowReferenceUnion.of(0), null);
+                                rootExpanded.set(tree.saveExpandedState());
+                                return tree.<TreeViewportData>nextEvent(JsTreeTable.EVENT_UPDATED, 1902d);
+                            }).then(e -> {
+                                // Now that we're expanded, restore the initial state
+                                assertEquals(10, (int)e.getDetail().getTreeSize());
+                                rootExpanded.set(tree.saveExpandedState());
+
+                                tree.restoreExpandedState(empty);
+                                return tree.<TreeViewportData>nextEvent(JsTreeTable.EVENT_UPDATED, 1903d);
+                            }).then(e -> {
+                                // Confirm we're back to the initial state, re-expand the root node
+                                assertEquals(startingSize, (int)e.getDetail().getTreeSize());
+
+                                tree.restoreExpandedState(rootExpanded.get());
+                                return tree.<TreeViewportData>nextEvent(JsTreeTable.EVENT_UPDATED, 1904d);
+                            }).then(e -> {
+                                assertEquals(10, (int) e.getDetail().getTreeSize());
+
+                                // With the root node expanded again, expand some other child and save the state
+                                tree.expand(JsTreeTable.RowReferenceUnion.of(1), null);
+                                tree.setViewport(6, 100, null, null);
+                                outOfViewExpanded.set(tree.saveExpandedState());
+                                return tree.<TreeViewportData>nextEvent(JsTreeTable.EVENT_UPDATED, 1905d);
+                            }).then(e -> {
+                                assertEquals(20, (int)e.getDetail().getTreeSize());
+                                // Restore original state again, let it load, then use the saved state to expand things we can't se
+                                tree.collapseAll();
+                                return tree.<TreeViewportData>nextEvent(JsTreeTable.EVENT_UPDATED, 1906d);
+                            }).then(e -> {
+                                assertEquals(1, (int)e.getDetail().getTreeSize());
+                                for (TableData.Row row : e.getDetail().getRows().asList()) {
+                                    assertFalse(((TreeViewportData.TreeRow) row).isExpanded());
+                                }
+                                tree.restoreExpandedState(outOfViewExpanded.get());
+
+                                // Scroll back up and ensure rows 0 and 1 are expanded
+                                tree.setViewport(0, 5, null, null);
+                                return tree.<TreeViewportData>nextEvent(JsTreeTable.EVENT_UPDATED, 1907d);
+                            }).then(e -> {
+                                assertEquals(20, (int)e.getDetail().getTreeSize());
+
+                                JsArray<TreeViewportData.TreeRow> rows = Js.cast(e.getDetail().getRows());
+                                assertTrue(rows.getAt(0).isExpanded());
+                                assertTrue(rows.getAt(1).isExpanded());
+                                assertFalse(rows.getAt(2).isExpanded());
+                                return null;
+                            });
+                    })
+                    .then(this::finish).catch_(this::report);
     }
 }

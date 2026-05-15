@@ -4,6 +4,7 @@
 package io.deephaven.web.client.api.tree;
 
 import com.google.common.io.BaseEncoding;
+import com.google.protobuf.CodedInputStream;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.vertispan.tsdefs.annotations.TsIgnore;
 import com.vertispan.tsdefs.annotations.TsTypeRef;
@@ -18,6 +19,7 @@ import elemental2.promise.Promise;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
 import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
 import io.deephaven.proto.backplane.grpc.HierarchicalTableApplyRequest;
 import io.deephaven.proto.backplane.grpc.HierarchicalTableApplyResponse;
@@ -32,6 +34,8 @@ import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.backplane.grpc.TypedTicket;
 import io.deephaven.proto.backplane.grpc.UpdateViewRequest;
 import io.deephaven.web.client.api.*;
+import io.deephaven.web.client.api.barrage.WebBarrageMessage;
+import io.deephaven.web.client.api.barrage.WebBarrageMessageReader;
 import io.deephaven.web.client.api.barrage.WebBarrageUtils;
 import io.deephaven.web.client.api.barrage.data.BarrageColumnType;
 import io.deephaven.web.client.api.barrage.data.WebBarrageSubscription;
@@ -64,6 +68,9 @@ import jsinterop.annotations.JsMethod;
 import jsinterop.base.Any;
 import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
+import org.apache.arrow.flatbuf.Message;
+import org.apache.arrow.flatbuf.Schema;
+import org.apache.arrow.flight.impl.Flight;
 
 import java.nio.ByteBuffer;
 import java.util.*;
@@ -235,7 +242,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
         // Load the table and column definitions from the descriptor
         extractDefinition(treeDescriptor);
 
-        actionCol = new Column(-1, -1, null, null, "byte", "__action__", false, null, null, false, false, false);
+        actionCol = new Column(-1, -1, null, "byte", "__action__", false, null, null, false, false, false);
 
         keyTableData = new Object[keyColumns.length + 2][0];
 
@@ -1458,9 +1465,14 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
         return sourceTable.get().then(t -> Promise.resolve(t.getGrandTotalsTable(config)));
     }
 
+    /**
+     * Serializes the current expand
+     * 
+     * @return
+     */
     @JsMethod
     public String saveExpandedState() {
-        // Serialize the key table to a flight stream, then base64 it to a string
+        // Serialize the key table to a length-prefixed flight stream, then base64 it to a string.
         List<BarrageColumnType> columnTypes = new ArrayList<>();
         Chunk<Values>[] chunks = new Chunk[keyColumns.length];
         for (int i = 0; i < keyColumns.length; i++) {
@@ -1468,19 +1480,93 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
             columnTypes.add(BarrageColumnType.fromString(c.getName(), c.getType()));
             chunks[i] = ObjectChunk.chunkWrap(keyTableData[i]);
         }
+        columnTypes.add(BarrageColumnType.fromString(rowDepthCol.getName(), rowDepthCol.getType()));
+        columnTypes.add(BarrageColumnType.fromString(actionCol.getName(), actionCol.getType()));
+
+        chunks[keyColumns.length] = ObjectChunk.chunkWrap(keyTableData[keyColumns.length]);
+        chunks[keyColumns.length + 1] = ObjectChunk.chunkWrap(keyTableData[keyColumns.length + 1]);
+
         byte[] bytes = connection.newTableToBytes(columnTypes, chunks);
         return BaseEncoding.base64().encode(bytes);
     }
 
+    /**
+     * Given a compatible expanded state string from {@link #saveExpandedState()}, replaces this table's expanded state
+     * with that state. This is a best-effort operation, and on error will have no effect except to log a diagnostic
+     * warning. With that said it is possible for the expand operation to fail
+     *
+     * @param nodesToRestore serialized string payload to restore
+     */
     @JsMethod
     public void restoreExpandedState(String nodesToRestore) {
-        // Transform string to base64, and read length-prefixed payloads. Validate the schema matches, then overwrite
+        // Transform string from base64, and read length-prefixed payloads. Validate the schema matches, then overwrite
         // our key table and trigger replacing it.
-        byte[] bytes = BaseEncoding.base64().decode(nodesToRestore);
+        final WebBarrageMessage payloadMessage;
+        try {
+            WebBarrageMessageReader reader = new WebBarrageMessageReader();
+            byte[] bytes = BaseEncoding.base64().decode(nodesToRestore);
+            CodedInputStream codedStream = CodedInputStream.newInstance(bytes);
+            int schemaSize = codedStream.readRawLittleEndian32();
+            int oldSchemaLimit = codedStream.pushLimit(schemaSize);
+            Flight.FlightData schema = Flight.FlightData.parseFrom(codedStream);
+            codedStream.popLimit(oldSchemaLimit);
+            WebBarrageMessage schemaMessage = reader.parseFrom(BarrageSnapshotOptions.builder().build(), schema);
+            if (schemaMessage != null) {
+                JsLog.warn("First payload unexpected provided full message, cannot restore expanded state");
+                return;
+            }
+            // Validate the schema matches expected
+//            Message message = Message.getRootAsMessage(schema.getDataHeader().asReadOnlyByteBuffer());
+//            Schema schema = new Schema();
+//            message.header(schema);
 
+//            BarrageColumnType.fromArrowField()
 
+            int dataSize = codedStream.readRawLittleEndian32();
+            int oldDataLimit = codedStream.pushLimit(dataSize);
+            Flight.FlightData data = Flight.FlightData.parseFrom(codedStream);
+            codedStream.popLimit(oldDataLimit);
+            payloadMessage = reader.parseFrom(BarrageSnapshotOptions.builder().build(), data);
+            if (payloadMessage == null) {
+                JsLog.warn("Record batch was incomplete, failed to restore expanded state");
+                return;
+            }
+            if (!codedStream.isAtEnd()) {
+                JsLog.warn("Unexpected trailing bytes in expand payload, aborting restore");
+                return;
+            }
 
-     }
+            // Validate the payload's schema
+            if (keyTableData.length != payloadMessage.addColumnData.length) {
+                JsLog.warn("Wrong number of columns in expanded state payload, expected " + keyTableData.length + " but got " + payloadMessage.addColumnData.length);
+                return;
+            }
+//            for (int i = 0; i < payloadMessage.addColumnData; i++) {
+//
+//            }
+            
+        } catch (Exception e) {
+            JsLog.warn("Failed to read expanded state", e);
+            return;
+        }
+
+        Object[][] oldKeyTableData = keyTableData;
+        try {
+            keyTableData = new Object[oldKeyTableData.length][];
+            for (int i = 0; i < payloadMessage.addColumnData.length; i++) {
+                ObjectChunk<?, ?> colData = payloadMessage.addColumnData[i].data.get(0).asObjectChunk();
+                keyTableData[i] = new Object[colData.size()];
+                for (int j = 0; j < colData.size(); j++) {
+                    keyTableData[i][j] = colData.get(j);
+                }
+            }
+        } catch (Exception e) {
+            keyTableData = oldKeyTableData;
+            JsLog.warn("Failed to replace expanded state", e);
+            return;
+        }
+        replaceKeyTable();
+    }
 
     /**
      * a new copy of this treetable, so it can be sorted and filtered separately, and maintain a different viewport.

@@ -23,7 +23,9 @@ import io.deephaven.extensions.barrage.BarrageMessageWriter;
 import io.deephaven.extensions.barrage.BarrageMessageWriterImpl;
 import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
 import io.deephaven.extensions.barrage.chunk.ChunkWriter;
+import io.deephaven.extensions.barrage.util.ExposedByteArrayOutputStream;
 import io.deephaven.flightjs.protocol.BrowserFlightServiceGrpc;
+import io.deephaven.io.streams.ByteBufferOutputStream;
 import io.deephaven.proto.backplane.grpc.ApplicationServiceGrpc;
 import io.deephaven.proto.backplane.grpc.ApplyPreviewColumnsRequest;
 import io.deephaven.proto.backplane.grpc.ConfigServiceGrpc;
@@ -1111,7 +1113,8 @@ public class WorkerConnection {
             }
             chunkRef.set(null);
 
-            StreamObserver<BarrageMessageWriter.MessageView> listener = doPutStream(columnTypes, c, cts.getHandle().makeTicket(), d[0].size());
+            StreamObserver<BarrageMessageWriter.MessageView> listener =
+                    doPutStream(columnTypes, c, cts.getHandle().makeTicket(), d[0].size());
             Flight.FlightDescriptor flightDescriptor = cts.getHandle().makeFlightDescriptor();
 
             writeTableToStream(columnTypes, listener, flightDescriptor, d);
@@ -1120,7 +1123,9 @@ public class WorkerConnection {
                 .then(cts -> Promise.resolve(new JsTable(this, cts)));
     }
 
-    private void writeTableToStream(List<BarrageColumnType> columnTypes, StreamObserver<BarrageMessageWriter.MessageView> listener, Flight.@Nullable FlightDescriptor flightDescriptor, Chunk<Values>[] d) {
+    private void writeTableToStream(List<BarrageColumnType> columnTypes,
+            StreamObserver<BarrageMessageWriter.MessageView> listener,
+            Flight.@Nullable FlightDescriptor flightDescriptor, Chunk<Values>[] d) {
         ChunkWriter.Factory f = new WebChunkWriterFactory();
         listener.onNext(bmwFactory.getSchemaView(fb -> writeSimpleSchema(columnTypes, fb), flightDescriptor));
 
@@ -1130,15 +1135,22 @@ public class WorkerConnection {
         }
 
         BarrageMessage msg = new BarrageMessage();
-        msg.rowsAdded = RowSetFactory.fromRange(0, d[0].size() - 1);
+        if (d[0].size() > 0) {
+            msg.rowsAdded = RowSetFactory.fromRange(0, d[0].size() - 1);
+        } else {
+            msg.rowsAdded = RowSetFactory.empty();
+        }
+        DomGlobal.console.log(msg.rowsAdded.size() + " rows added");
         msg.rowsIncluded = msg.rowsAdded;
         msg.rowsRemoved = RowSetFactory.empty();
         msg.length = d[0].size();
+        DomGlobal.console.log(msg.length + " length");
         msg.addColumnData = new BarrageMessage.AddColumnData[columnTypes.size()];
         for (int i = 0; i < columnTypes.size(); i++) {
             BarrageMessage.AddColumnData acd = new BarrageMessage.AddColumnData();
             acd.data = Collections.singletonList(d[i]);
             msg.addColumnData[i] = acd;
+            DomGlobal.console.log(acd.data.stream().mapToInt(Chunk::size).sum() + " rows in col");
         }
         msg.modColumnData = BarrageMessage.ZERO_MOD_COLUMNS;
         msg.shifted = RowSetShiftData.EMPTY;
@@ -1151,20 +1163,41 @@ public class WorkerConnection {
         listener.onCompleted();
     }
 
+    /**
+     * Internal API to write a table to a byte array, prefixed with each FlightData message size as a 32bit LE int.
+     * <p>
+     * Note that this is _not_ the IPC format, also used as arrow flight feather v2, as this has no support for app
+     * metadata nor the rest of the surrounding FlightData protobuf. Technically we don't need that metadata for this
+     * use case, but without the rest of the wrapping we cannot reuse the rest of our usual reading/writing code.
+     *
+     * @param columnTypes the types of each column
+     * @param data the chunks to write
+     * @return an array of bytes in the specified internal format
+     */
     public byte[] newTableToBytes(List<BarrageColumnType> columnTypes, Chunk<Values>[] data) {
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        ExposedByteArrayOutputStream out = new ExposedByteArrayOutputStream();
         AtomicBoolean finished = new AtomicBoolean(false);
+        AtomicReference<Throwable> error = new AtomicReference<>();
         StreamObserver<BarrageMessageWriter.MessageView> listener = new StreamObserver<>() {
             @Override
             public void onNext(BarrageMessageWriter.MessageView value) {
                 try {
+                    AtomicInteger bytesWritten = new AtomicInteger();
+                    int pos = out.size();
+                    // reserve space for the length
+                    out.writeBytes(new byte[4]);
                     value.forEachStream(drainable -> {
                         try {
-                            drainable.drainTo(out);
+                            bytesWritten.addAndGet(drainable.drainTo(out));
                         } catch (IOException e) {
                             throw new RuntimeException(e);
                         }
                     });
+                    // write the length at the reserved space
+                    for (int i = 0; i < 4; i++) {
+                        out.peekBuffer()[pos + i] = (byte) (0xff & bytesWritten.get() >>> (i * 8));
+                    }
+
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
@@ -1172,7 +1205,7 @@ public class WorkerConnection {
 
             @Override
             public void onError(Throwable t) {
-
+                error.set(t);
             }
 
             @Override
@@ -1181,6 +1214,9 @@ public class WorkerConnection {
             }
         };
         writeTableToStream(columnTypes, listener, null, data);
+        if (error.get() != null) {
+            throw new RuntimeException(error.get());
+        }
         assert out.size() > 0;
         assert finished.get();
         return out.toByteArray();
@@ -1190,12 +1226,14 @@ public class WorkerConnection {
      * Adapts a table schema and a unary response to a MessageView bidi stream that calls FlightService/DoPut.
      *
      * @param columnTypes the schema of the table
-     * @param unaryObserver a unary observer to receive the final ETCR response or any error that occurs during the stream
+     * @param unaryObserver a unary observer to receive the final ETCR response or any error that occurs during the
+     *        stream
      * @param resultTicket the ticket that will contain the table after upload
      * @param size the size of the table being uploaded
      * @return a stream observer which can be given MessageViews from a BarrageMessageWriter
      */
-    private StreamObserver<BarrageMessageWriter.MessageView> doPutStream(List<BarrageColumnType> columnTypes, StreamObserver<ExportedTableCreationResponse> unaryObserver, Ticket resultTicket, int size) {
+    private StreamObserver<BarrageMessageWriter.MessageView> doPutStream(List<BarrageColumnType> columnTypes,
+            StreamObserver<ExportedTableCreationResponse> unaryObserver, Ticket resultTicket, int size) {
         // to doPut(), but need to filter out the messages and wait for onComplete
         final StreamObserver<InputStream> observer;
         try {

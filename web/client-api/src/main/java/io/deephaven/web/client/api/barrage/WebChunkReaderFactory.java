@@ -281,7 +281,7 @@ public class WebChunkReaderFactory implements ChunkReader.Factory {
 
                 // Disregard the actual component type and request one that can hold Object, as all transformers
                 // will yield some kind of reference type since this is JS.
-                final BarrageTypeInfo<Field> componentTypeInfo = new BarrageTypeInfo<>(
+                final BarrageTypeInfo<Field> componentTypeInfo = BarrageTypeInfo.make(
                         Object.class,
                         null,
                         typeInfo.arrowField().children(0));
