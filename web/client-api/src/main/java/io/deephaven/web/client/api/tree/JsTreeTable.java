@@ -4,6 +4,7 @@
 package io.deephaven.web.client.api.tree;
 
 import com.google.common.io.BaseEncoding;
+import com.google.protobuf.ByteString;
 import com.google.protobuf.CodedInputStream;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.vertispan.tsdefs.annotations.TsIgnore;
@@ -1515,12 +1516,9 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
                 JsLog.warn("First payload unexpected provided full message, cannot restore expanded state");
                 return;
             }
-            // Validate the schema matches expected
-//            Message message = Message.getRootAsMessage(schema.getDataHeader().asReadOnlyByteBuffer());
-//            Schema schema = new Schema();
-//            message.header(schema);
 
-//            BarrageColumnType.fromArrowField()
+            // Validate the schema matches expected
+            validateSchemaMatchesKeyTypes(schema.getDataHeader());
 
             int dataSize = codedStream.readRawLittleEndian32();
             int oldDataLimit = codedStream.pushLimit(dataSize);
@@ -1535,16 +1533,6 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
                 JsLog.warn("Unexpected trailing bytes in expand payload, aborting restore");
                 return;
             }
-
-            // Validate the payload's schema
-            if (keyTableData.length != payloadMessage.addColumnData.length) {
-                JsLog.warn("Wrong number of columns in expanded state payload, expected " + keyTableData.length + " but got " + payloadMessage.addColumnData.length);
-                return;
-            }
-//            for (int i = 0; i < payloadMessage.addColumnData; i++) {
-//
-//            }
-            
         } catch (Exception e) {
             JsLog.warn("Failed to read expanded state", e);
             return;
@@ -1566,6 +1554,36 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
             return;
         }
         replaceKeyTable();
+    }
+
+    private void validateSchemaMatchesKeyTypes(ByteString dataHeader) {
+        Message message = Message.getRootAsMessage(dataHeader.asReadOnlyByteBuffer());
+        Schema schema = new Schema();
+        message.header(schema);
+
+        assert keyTableData.length == keyColumns.length + 2;
+        if (schema.fieldsLength() != keyTableData.length) {
+            throw new RuntimeException("Expected " + keyTableData.length + " columns, but got " + schema.fieldsLength());
+        }
+
+        List<BarrageColumnType> providedTypes = new ArrayList<>();
+        for (int i = 0; i < schema.fieldsLength(); i++) {
+            providedTypes.add(BarrageColumnType.fromArrowField(schema.fields(i)));
+        }
+        for (int i = 0; i < keyColumns.length; i++) {
+            if (!providedTypes.get(i).deephavenType().equals(keyColumns.getAt(i).getType())) {
+                throw new RuntimeException("Column " + i + " expected type " + keyColumns.getAt(i).getType() + " but got "
+                        + providedTypes.get(i).deephavenType());
+            }
+        }
+        if (!providedTypes.get(keyColumns.length).deephavenType().equals(rowDepthCol.getType())) {
+            throw new RuntimeException("Column " + keyColumns.length + " expected type " + rowDepthCol.getType() + " but got "
+                    + providedTypes.get(keyColumns.length).deephavenType());
+        }
+        if (!providedTypes.get(keyColumns.length + 1).deephavenType().equals(actionCol.getType())) {
+            throw new RuntimeException("Column " + (keyColumns.length + 1) + " expected type " + actionCol.getType() + " but got "
+                    + providedTypes.get(keyColumns.length + 1).deephavenType());
+        }
     }
 
     /**
