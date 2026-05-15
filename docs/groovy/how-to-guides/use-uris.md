@@ -11,7 +11,7 @@ A URI, short for [Uniform Resource Identifier](https://en.wikipedia.org/wiki/Uni
 > URIs can be used to share tables across Groovy and Python instances interchangably. For how to use URIs in Python, see [the equivalent guide](/core/docs/how-to-guides/use-uris).
 
 > [!NOTE]
-> URI and Shared Tickets are two different ways to pull tables. Both work on static or dynamic tables. URI pulls tables already on the server via a URL-like string. Shared Tickets let you pull tables you create or access via the Python Client. Learn more about using Shared Tickets with Deephaven in the [Shared Tickets guide](../how-to-guides/capture-tables.md).
+> URI and Shared Tickets are two different ways to pull tables. Both work on static or dynamic tables. URI pulls tables already on the server via a URL-like string. Shared Tickets let you pull tables you create or access via the Python Client. Learn more about using Shared Tickets with Deephaven in the [Shared Tickets guide](./capture-tables.md).
 
 > [!IMPORTANT]
 > URI resolution in Deephaven Community (Core) requires **anonymous authentication**. PSK (pre-shared key) authentication is not currently supported — attempting to resolve a URI when PSK is enabled will fail. This is a known limitation tracked in GitHub issues [#5383](https://github.com/deephaven/deephaven-core/issues/5383) and [#3421](https://github.com/deephaven/deephaven-core/issues/3421).
@@ -92,7 +92,7 @@ The `resolve` method connects to the specified Deephaven instance, retrieves the
 > When you resolve a URI, the first update cycle of the subscribed table is empty. If you run `resolve` and immediately operate on the table data in the same execution, you may see an empty table. To work with the actual data, either:
 >
 > - **In a notebook**: Run the `resolve` call in a separate execution before operating on the table.
-> - **In a script**: Use `table.awaitUpdate()` to wait for the table to populate before accessing its data.
+> - **In a script**: Use [`awaitUpdate`](../reference/table-operations/table-listeners/await-update.md) to wait for the table to populate before accessing its data.
 
 For example, the following code often prints 0:
 
@@ -101,7 +101,7 @@ remoteTable = resolve("dh+plain://hostname/scope/someTable")
 println remoteTable.size()  // Often prints 0 before the table populates
 ```
 
-To get the actual table size, use `awaitUpdate()` to wait for the table to populate:
+To get the actual table size, use [`awaitUpdate`](../reference/table-operations/table-listeners/await-update.md) to wait for the table to populate:
 
 ```groovy skip-test
 remoteTable = resolve("dh+plain://hostname/scope/someTable")
@@ -237,7 +237,7 @@ dh://hostname/app/my_application/field/my_field
 
 ## Share tables across a network
 
-Tables can also be shared across networks, public or private. Just like the previous example of sharing across a machine, this works in the same way. Rather than the container name, you only need the hostname/IP and port of the instance producing the table.
+You can also share tables across networks, public or private. Just like the previous example of sharing across a machine, this works in the same way. Rather than the container name, you only need the hostname/IP and port of the instance producing the table.
 
 > [!NOTE]
 >
