@@ -497,7 +497,7 @@ result2 = compute(table, int2)
 
 For more information, see the [scoping rules](../../how-to-guides/query-scope.md).
 
-Be mindful of whether or not Groovy functions are stateless or stateful. Generally, stateless functions have no side effects - they don't modify any objects outside of their scope. Also, they are invariant to execution order, so function calls can be evaluated in any order without affecting the result. This stateless function extracts elements from a list in a query string.
+When Deephaven parallelizes a query, rows may be processed in any order across multiple CPU cores. **Stateless** functions - those whose output depends only on their inputs - produce correct results regardless of execution order. This function is stateless because each call is independent:
 
 ```groovy test-set=2
 myList = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
@@ -507,35 +507,61 @@ getElementStateless = { idx ->
     return myList[idx]
 }
 
-tStateless = emptyTable(10).update("X = getElementStateless(ii)")
+t = emptyTable(10).update("X = getElementStateless(ii)")
 ```
 
-`getElementStateless` is stateless because it does not modify any objects outside its local scope. It could be evaluated in any order and give the same result.
+**Stateful** functions - those that read or modify external state - produce **incorrect results** when parallelized. Deephaven cannot automatically detect whether your code is stateful; it's your responsibility to identify stateful functions and force sequential execution.
 
-Stateful functions modify objects outside their local scope - they do not leave the world as they found it. They also may depend on execution order. This stateful function achieves the same resulting table.
+This stateful function increments a counter. Without [`withSerial()`](../../reference/query-language/types/Selectable.md#withserial), parallel execution corrupts the results:
 
-```groovy test-set=2
+```groovy skip-test
 myList = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 idx = 0
 
-getElementStateful = {
-    idx += 1  // This modifies idx!
+getNextElementStateful = {
+    idx += 1  // Each call changes idx
     return myList[idx - 1]
 }
 
-tStateful = emptyTable(10).update("X = getElementStateful()")
+// WRONG: parallel execution causes race conditions
+tWrong = emptyTable(10).update("X = getNextElementStateful()")
 ```
-
-Print `idx` to verify it's been changed.
 
 ```groovy test-set=2
-println idx
+import io.deephaven.api.Selectable
+
+myList = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+idx = 0
+
+getNextElementStateful = {
+    idx += 1
+    return myList[idx - 1]
+}
+
+// CORRECT: withSerial() ensures rows are processed one at a time, in order
+col = Selectable.parse("X = getNextElementStateful()").withSerial()
+tCorrect = emptyTable(10).update([col])
 ```
 
-Since `getElementStateful` is stateful, it must be evaluated in the correct order to give the correct result.
+| Without `withSerial()` (wrong) | With `withSerial()` (correct) |
+| ------------------------------ | ----------------------------- |
+| 0                              | 0                             |
+| 1                              | 1                             |
+| 2                              | 2                             |
+| 2                              | 3                             |
+| 4                              | 4                             |
+| 5                              | 5                             |
+| 5                              | 6                             |
+| 7                              | 7                             |
+| 8                              | 8                             |
+| 8                              | 9                             |
 
-Queries should use stateless functions whenever possible because:
+The wrong output has duplicates (two 2s, two 5s, two 8s) and missing values (no 3, 6, or 9) because multiple cores incremented `idx` simultaneously.
 
-- They minimize side effects when called.
-- They are deterministic.
-- They can be efficiently parallelized.
+Serial execution is slower (one core instead of many), so use it only when correctness requires it.
+
+Queries run faster when they can be parallelized. To enable parallelization:
+
+- Each row's result should depend only on that row's inputs.
+- Avoid modifying external variables.
+- Use Deephaven's built-in functions when possible.
