@@ -5,8 +5,8 @@ package io.deephaven.engine.table.impl.select.analyzers;
 
 import it.unimi.dsi.fastutil.ints.IntList;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
-import gnu.trove.map.TObjectIntMap;
-import gnu.trove.map.hash.TObjectIntHashMap;
+import it.unimi.dsi.fastutil.objects.Object2IntMap;
+import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.verify.Assert;
@@ -403,7 +403,7 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
         /** The sources that are published to the child table. */
         private final Map<String, ColumnSource<?>> publishedSources = new LinkedHashMap<>();
         /** A mapping from result column name to the layer index that created it. */
-        private final TObjectIntMap<String> columnToLayerIndex;
+        private final Object2IntMap<String> columnToLayerIndex;
         /** The select columns that have been processed so far. */
         private final List<SelectColumn> processedCols = new ArrayList<>();
 
@@ -423,7 +423,9 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
                 final boolean publishParentSources,
                 final boolean flatResult) {
             final Map<String, ColumnSource<?>> parentSources = parentTable.getColumnSourceMap();
-            columnToLayerIndex = new TObjectIntHashMap<>(parentSources.size(), 0.5f, Layer.UNSET_INDEX);
+            final Object2IntOpenHashMap<String> tmp = new Object2IntOpenHashMap<>(parentSources.size(), 0.5f);
+            tmp.defaultReturnValue(Layer.UNSET_INDEX);
+            columnToLayerIndex = tmp;
 
             this.flatResult = flatResult;
 
@@ -489,7 +491,7 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
          * @return the layerIndex
          */
         int getLayerIndexFor(String column) {
-            final int layerIndex = columnToLayerIndex.get(column);
+            final int layerIndex = columnToLayerIndex.getInt(column);
             if (layerIndex == Layer.UNSET_INDEX) {
                 throw new IllegalStateException("Column " + column + " not found in any layer of the analyzer");
             }

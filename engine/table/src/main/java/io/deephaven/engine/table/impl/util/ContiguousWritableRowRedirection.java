@@ -3,7 +3,7 @@
 //
 package io.deephaven.engine.table.impl.util;
 
-import gnu.trove.map.hash.TLongLongHashMap;
+import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.WritableChunk;
@@ -24,7 +24,7 @@ public class ContiguousWritableRowRedirection implements WritableRowRedirection 
     // how many entries in redirections are actually valid
     int size;
     // How things looked on the last clock tick
-    private volatile TLongLongHashMap checkpoint;
+    private volatile Long2LongOpenHashMap checkpoint;
     private UpdateCommitter<ContiguousWritableRowRedirection> updateCommitter;
 
     @SuppressWarnings("unused")
@@ -146,8 +146,8 @@ public class ContiguousWritableRowRedirection implements WritableRowRedirection 
 
     public synchronized void startTrackingPrevValues() {
         Assert.eqNull(updateCommitter, "updateCommitter");
-        checkpoint =
-                new TLongLongHashMap(Math.min(size, 1024 * 1024), 0.75f, UPDATES_KEY_NOT_FOUND, UPDATES_KEY_NOT_FOUND);
+        checkpoint = new Long2LongOpenHashMap(Math.min(size, 1024 * 1024), 0.75f);
+        checkpoint.defaultReturnValue(UPDATES_KEY_NOT_FOUND);
         updateCommitter = new UpdateCommitter<>(this,
                 ExecutionContext.getContext().getUpdateGraph(),
                 ContiguousWritableRowRedirection::commitUpdates);

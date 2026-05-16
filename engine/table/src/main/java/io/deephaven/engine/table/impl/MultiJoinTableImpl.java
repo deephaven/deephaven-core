@@ -3,7 +3,7 @@
 //
 package io.deephaven.engine.table.impl;
 
-import gnu.trove.map.hash.TObjectIntHashMap;
+import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.JoinAddition;
 import io.deephaven.api.JoinMatch;
@@ -194,8 +194,9 @@ public class MultiJoinTableImpl implements MultiJoinTable {
         // Create the join input helpers we'll use during the join creation phase.
         final MultiJoinInputHelper[] joinInputHelpers =
                 Arrays.stream(multiJoinInputs).map(MultiJoinInputHelper::new).toArray(MultiJoinInputHelper[]::new);
-        final TObjectIntHashMap<String> usedColumns =
-                new TObjectIntHashMap<>(joinInputHelpers[0].columnsToAdd.length, 0.5f, -1);
+        final Object2IntOpenHashMap<String> usedColumns =
+                new Object2IntOpenHashMap<>(joinInputHelpers[0].columnsToAdd.length, 0.5f);
+        usedColumns.defaultReturnValue(-1);
 
         for (String keyColName : joinInputHelpers[0].keyColumnNames) {
             keyColumns.add(keyColName);
@@ -212,7 +213,7 @@ public class MultiJoinTableImpl implements MultiJoinTable {
             MultiJoinInputHelper inputHelper = joinInputHelpers[ii];
             for (String columnName : inputHelper.addColumnNames) {
                 final int previouslyUsed = usedColumns.put(columnName, ii);
-                if (previouslyUsed != usedColumns.getNoEntryValue()) {
+                if (previouslyUsed != usedColumns.defaultReturnValue()) {
                     throw new IllegalArgumentException(String.format("Column %s defined in table %s and table %d",
                             columnName,
                             previouslyUsed == KEY_COLUMN_SENTINEL ? "key columns" : Integer.toString(previouslyUsed),

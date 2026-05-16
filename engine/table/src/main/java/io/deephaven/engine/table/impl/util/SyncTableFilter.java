@@ -4,8 +4,7 @@
 package io.deephaven.engine.table.impl.util;
 
 import it.unimi.dsi.fastutil.longs.LongArrayList;
-import gnu.trove.map.TObjectLongMap;
-import gnu.trove.map.hash.TObjectLongHashMap;
+import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap;
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.attributes.Any;
@@ -65,7 +64,7 @@ public class SyncTableFilter {
     private final TupleSource<?>[] keySources;
     private final List<ColumnSource<Long>> idSources;
     private final List<Map<Object, KeyState>> objectToState;
-    private final TObjectLongMap<Object> minimumid;
+    private final Object2LongOpenHashMap<Object> minimumid;
     private final HashSet<Object> pendingKeys = new HashSet<>();
     private final List<ListenerRecorder> recorders;
 
@@ -120,7 +119,8 @@ public class SyncTableFilter {
         this.idSources = new ArrayList<>(tableCount);
         this.results = new QueryTable[tableCount];
         this.resultRowSet = new TrackingWritableRowSet[tableCount];
-        this.minimumid = new TObjectLongHashMap<>(0, 0.5f, QueryConstants.NULL_LONG);
+        this.minimumid = new Object2LongOpenHashMap<>(0, 0.5f);
+        this.minimumid.defaultReturnValue(QueryConstants.NULL_LONG);
         this.recorders = new ArrayList<>(tableCount);
 
         ColumnSource<?>[] keySourcePrototype = null;
@@ -170,7 +170,7 @@ public class SyncTableFilter {
             final RowSetBuilderRandom addedBuilder = RowSetFactory.builderRandom();
             for (Object key : keysToRefilter) {
                 final KeyState state = objectToState.get(tt).get(key);
-                doMatch(tt, state, minimumid.get(key));
+                doMatch(tt, state, minimumid.getLong(key));
                 addedBuilder.addRowSet(state.matchedRows);
             }
             resultRowSet[tt].insert(addedBuilder.build());
@@ -211,7 +211,7 @@ public class SyncTableFilter {
                 for (Object key : keysToRefilter) {
                     final KeyState state = objectToState.get(tt).get(key);
                     removedBuilder.addRowSet(state.matchedRows);
-                    doMatch(tt, state, minimumid.get(key));
+                    doMatch(tt, state, minimumid.getLong(key));
                     addedBuilder.addRowSet(state.matchedRows);
                 }
 
@@ -425,7 +425,7 @@ public class SyncTableFilter {
                     if (currentState.unprocessedBuilder == null) {
                         currentState.unprocessedBuilder = RowSetFactory.builderSequential();
                     }
-                    final long minid = minimumid.get(key);
+                    final long minid = minimumid.getLong(key);
 
                     final long id = idChunk.get(ii);
                     if (id == QueryConstants.NULL_LONG || (id < minid)) {

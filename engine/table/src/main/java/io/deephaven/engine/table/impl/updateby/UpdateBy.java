@@ -4,7 +4,7 @@
 package io.deephaven.engine.table.impl.updateby;
 
 import it.unimi.dsi.fastutil.ints.IntArrayList;
-import gnu.trove.map.hash.TObjectIntHashMap;
+import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.updateby.ColumnUpdateOperation;
 import io.deephaven.api.updateby.UpdateByControl;
@@ -1249,7 +1249,7 @@ public abstract class UpdateBy {
             final Set<String> opResultColumnSet = new HashSet<>();
 
             final ArrayList<String> inputColumnList = new ArrayList<>();
-            final TObjectIntHashMap<String> inputColumnToSlotMap = new TObjectIntHashMap<>();
+            final Object2IntOpenHashMap<String> inputColumnToSlotMap = new Object2IntOpenHashMap<>();
 
             final UpdateByWindow[] windowArr = windowSpecs.stream().map(clauseList -> {
                 final UpdateByOperator[] windowOps =
@@ -1287,8 +1287,8 @@ public abstract class UpdateBy {
 
                     for (int colIdx = 0; colIdx < inputColumnNames.length; colIdx++) {
                         final String name = inputColumnNames[colIdx];
-                        final int maybeExistingSlot = inputColumnToSlotMap.get(name);
-                        if (maybeExistingSlot == inputColumnToSlotMap.getNoEntryValue()) {
+                        final int maybeExistingSlot = inputColumnToSlotMap.getInt(name);
+                        if (maybeExistingSlot == inputColumnToSlotMap.defaultReturnValue()) {
                             // create a new input source
                             final int srcIdx = inputColumnList.size();
                             inputColumnList.add(name);
