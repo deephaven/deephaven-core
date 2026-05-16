@@ -150,15 +150,15 @@ public class StaticSymbolTableChunkedOperatorAggregationStateManager implements 
             synchronized (this) {
                 if ((localKeyToPosition = keyToPosition) == null) {
                     final int length = nextPosition;
-                    final Object2IntOpenHashMap<String> builtMap = new Object2IntOpenHashMap<>(length, 0.75f);
-                    builtMap.defaultReturnValue(UNKNOWN_ROW);
+                    final Object2IntMap<String> tmpMap = new Object2IntOpenHashMap<>(length, 0.75f);
+                    tmpMap.defaultReturnValue(UNKNOWN_ROW);
                     try (final CloseableIterator<String> keyIterator = new ChunkedObjectColumnIterator<>(
                             keyColumn, RowSequenceFactory.forRange(0, length - 1))) {
                         for (int ii = 0; ii < length; ii++) {
-                            builtMap.put(keyIterator.next(), ii);
+                            tmpMap.put(keyIterator.next(), ii);
                         }
                     }
-                    localKeyToPosition = builtMap;
+                    localKeyToPosition = tmpMap;
                     keyToPosition = localKeyToPosition;
                 }
             }
