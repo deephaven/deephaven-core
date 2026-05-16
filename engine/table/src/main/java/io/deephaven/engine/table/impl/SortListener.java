@@ -190,7 +190,7 @@ public class SortListener extends BaseTable.ListenerImpl {
             final TableUpdateImpl downstream = new TableUpdateImpl();
             final boolean modifiedNeedsSorting =
                     upstream.modifiedColumnSet().containsAny(sortColumnSet) && upstream.modified().isNonempty();
-            final long REVERSE_LOOKUP_NO_ENTRY_VALUE = reverseLookup.getNoEntryValue();
+            final long REVERSE_LOOKUP_NO_ENTRY_VALUE = reverseLookup.defaultReturnValue();
 
             // We use these in enough places that we might as well just grab them (and check their sizes) here.
             upstream.added().intSize("validating added elements");

@@ -4,22 +4,20 @@
 package io.deephaven.util.datastructures.hash;
 
 import io.deephaven.base.verify.Assert;
-import gnu.trove.TLongCollection;
-import gnu.trove.function.TLongFunction;
-import gnu.trove.iterator.TLongLongIterator;
 import io.deephaven.hash.PrimeFinder;
-import gnu.trove.map.TLongLongMap;
-import gnu.trove.procedure.TLongLongProcedure;
-import gnu.trove.procedure.TLongProcedure;
-import gnu.trove.set.TLongSet;
+import it.unimi.dsi.fastutil.longs.AbstractLong2LongMap;
+import it.unimi.dsi.fastutil.longs.Long2LongMap;
+import it.unimi.dsi.fastutil.objects.AbstractObjectSet;
+import it.unimi.dsi.fastutil.objects.ObjectIterator;
+import it.unimi.dsi.fastutil.objects.ObjectSet;
 
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.Map;
+import java.util.NoSuchElementException;
 
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
-public abstract class HashMapBase implements TNullableLongLongMap {
+public abstract class HashMapBase extends AbstractLong2LongMap implements TNullableLongLongMap {
     static final int DEFAULT_INITIAL_CAPACITY = 10;
     static final long DEFAULT_NO_ENTRY_VALUE = -1;
     static final float DEFAULT_LOAD_FACTOR = 0.5f;
@@ -77,7 +75,7 @@ public abstract class HashMapBase implements TNullableLongLongMap {
 
     private final int desiredInitialCapacity;
     private final float loadFactor;
-    final long noEntryValue;
+    long noEntryValue;
     // There are three kinds of slots: empty, holding a value, and deleted (formerly holding a value).
     // 'size' is the number of slots holding a value.
     int size;
@@ -186,6 +184,16 @@ public abstract class HashMapBase implements TNullableLongLongMap {
         return size == 0;
     }
 
+    @Override
+    public final long defaultReturnValue() {
+        return noEntryValue;
+    }
+
+    @Override
+    public final void defaultReturnValue(final long rv) {
+        this.noEntryValue = rv;
+    }
+
     final int capacityImpl(long[] keysAndValues) {
         return keysAndValues == null ? 0 : keysAndValues.length / 2;
     }
@@ -201,17 +209,6 @@ public abstract class HashMapBase implements TNullableLongLongMap {
         size = 0;
         nonEmptySlots = 0;
         rehashThreshold = 0;
-    }
-
-    @Override
-    public final long getNoEntryKey() {
-        // It doesn't make sense to call this method because the caller can't observe our "noEntryKey" anyway.
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public final long getNoEntryValue() {
-        return noEntryValue;
     }
 
     /**
@@ -244,63 +241,63 @@ public abstract class HashMapBase implements TNullableLongLongMap {
         return result;
     }
 
-    final TLongLongIterator iteratorImpl(final long[] kv) {
-        return kv == null ? new NullIterator() : new Iterator(kv);
+    final ObjectSet<Long2LongMap.Entry> entrySetImpl(final long[] kv) {
+        return kv == null ? EMPTY_ENTRY_SET : new EntrySet(kv);
     }
 
-    private static class NullIterator implements TLongLongIterator {
-        @Override
-        public long key() {
-            throw new UnsupportedOperationException();
+    private static final EntrySet EMPTY_ENTRY_SET = new EntrySet(new long[0]);
+
+    /**
+     * Read-only entry set view backed by the supplied keys-and-values array. Supports iteration only.
+     */
+    private static final class EntrySet extends AbstractObjectSet<Long2LongMap.Entry>
+            implements Long2LongMap.FastEntrySet {
+        // Keep a local reference so a concurrent rehash that replaces the owning map's array does not crash us.
+        private final long[] keysAndValues;
+
+        EntrySet(final long[] kv) {
+            this.keysAndValues = kv;
         }
 
         @Override
-        public long value() {
-            throw new UnsupportedOperationException();
+        public int size() {
+            int count = 0;
+            for (int ii = 0; ii < keysAndValues.length; ii += 2) {
+                final long key = keysAndValues[ii];
+                if (key != SPECIAL_KEY_FOR_EMPTY_SLOT && key != SPECIAL_KEY_FOR_DELETED_SLOT) {
+                    ++count;
+                }
+            }
+            return count;
         }
 
         @Override
-        public long setValue(long val) {
-            throw new UnsupportedOperationException();
+        public ObjectIterator<Long2LongMap.Entry> iterator() {
+            return new EntryIterator(keysAndValues);
         }
 
         @Override
-        public void advance() {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public boolean hasNext() {
-            return false;
-        }
-
-        @Override
-        public void remove() {
-            throw new UnsupportedOperationException();
+        public ObjectIterator<Long2LongMap.Entry> fastIterator() {
+            return new EntryIterator(keysAndValues);
         }
     }
 
     /*
-     * The strategy used in this class is to keep track of: - The current position (which could be any valid position as
-     * well as one before the start) - The next position (which could be any valid position as well as one after the
-     * end). Java iterator semantics makes this annoying. Because it's Java!&trade; We also have to make sure we
-     * un-redirect the REDIRECTED_KEY_FOR_EMPTY_SLOT back to 0.
+     * Iterator over the keys-and-values array. We keep our own reference to the array so we can avoid crashing if there
+     * is an unprotected concurrent write (e.g. a rehash that reallocates the owning map's array). We also un-redirect
+     * REDIRECTED_KEY_FOR_EMPTY_SLOT back to 0 so callers see the key they originally inserted.
      */
-    private static class Iterator implements TLongLongIterator {
-        // We keep a local reference to this array so we can avoid crashing if there's an unprotected concurrent write
-        // (e.g. a rehash that reallocates the owning array).
+    private static final class EntryIterator implements ObjectIterator<Long2LongMap.Entry> {
         private final long[] keysAndValues;
-        private long currentKey;
-        private long currentValue;
         /**
          * nextIndex points to the next occupied slot (or the first occupied slot if we have just been constructed), or
          * keysAndValues.length if there is no next occupied slot.
          */
         private int nextIndex;
 
-        public Iterator(final long[] kv) {
-            keysAndValues = kv;
-            nextIndex = findOccupiedSlot(0);
+        EntryIterator(final long[] kv) {
+            this.keysAndValues = kv;
+            this.nextIndex = findOccupiedSlot(0);
         }
 
         @Override
@@ -309,20 +306,20 @@ public abstract class HashMapBase implements TNullableLongLongMap {
         }
 
         @Override
-        public void advance() {
-            // nextIndex points to some valid key and value (it cannot point past the end of the array, because you're
-            // not supposed to call advance() if hasNext() is false). So set current{Key,Value} from the array at
-            // nextIndex and then advance nextIndex to the next item or to the end of the array.
-            Assert.lt(nextIndex, "nextIndex", keysAndValues.length, "keysAndValues.length");
-            final long key = keysAndValues[nextIndex];
-            currentKey = key == REDIRECTED_KEY_FOR_EMPTY_SLOT ? SPECIAL_KEY_FOR_EMPTY_SLOT : key;
-            currentValue = keysAndValues[nextIndex + 1];
+        public Long2LongMap.Entry next() {
+            if (!hasNext()) {
+                throw new NoSuchElementException();
+            }
+            final long rawKey = keysAndValues[nextIndex];
+            final long key = rawKey == REDIRECTED_KEY_FOR_EMPTY_SLOT ? SPECIAL_KEY_FOR_EMPTY_SLOT : rawKey;
+            final long value = keysAndValues[nextIndex + 1];
             nextIndex = findOccupiedSlot(nextIndex + 2);
+            return new BasicEntry(key, value);
         }
 
         /**
          * Find next occupied slot starting at {@code beginSlot}.
-         * 
+         *
          * @param beginSlot The inclusive position from where to start looking.
          * @return The slot containing the next occupied key, or keysAndValues.length if none.
          */
@@ -335,28 +332,6 @@ public abstract class HashMapBase implements TNullableLongLongMap {
                 beginSlot += 2;
             }
             return beginSlot;
-        }
-
-        @Override
-        public long key() {
-            return currentKey;
-        }
-
-        @Override
-        public long value() {
-            return currentValue;
-        }
-
-        // I'm going to avoid implementing the mutating iterator operations for now.
-
-        @Override
-        public void remove() {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public long setValue(long val) {
-            throw new UnsupportedOperationException();
         }
     }
 
@@ -387,79 +362,6 @@ public abstract class HashMapBase implements TNullableLongLongMap {
             default:
                 throw new UnsupportedOperationException("Unexpected entriesPerBucket " + entriesPerBucket);
         }
-    }
-
-    // We don't currently call any of these methods, so I'm not going to bother implementing them. This is not a value
-    // judgment: if we want these methods, we can implement them later.
-
-    @Override
-    public boolean increment(long key) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public boolean adjustValue(long key, long amount) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public long adjustOrPutValue(long key, long adjust_amount, long put_amount) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public boolean containsValue(long val) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public boolean containsKey(long key) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public TLongSet keySet() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public boolean forEachKey(TLongProcedure procedure) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public boolean forEachValue(TLongProcedure procedure) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public boolean forEachEntry(TLongLongProcedure procedure) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void transformValues(TLongFunction function) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public boolean retainEntries(TLongLongProcedure procedure) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void putAll(Map<? extends Long, ? extends Long> map) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void putAll(TLongLongMap map) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public TLongCollection valueCollection() {
-        return null;
     }
 
     /**

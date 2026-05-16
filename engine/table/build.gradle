@@ -43,7 +43,7 @@ dependencies {
     implementation libs.tdunning.t.digest
     implementation libs.squareup.javapoet
     implementation libs.classgraph
-    implementation libs.dsi.fastutil
+    api libs.dsi.fastutil
     api libs.trove
 
     implementation project(':plugin')

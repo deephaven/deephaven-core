@@ -3,9 +3,9 @@
 //
 package io.deephaven.util.datastructures.hash;
 
-import gnu.trove.map.TLongLongMap;
+import it.unimi.dsi.fastutil.longs.Long2LongMap;
 
-public interface TNullableLongLongMap extends TLongLongMap {
+public interface TNullableLongLongMap extends Long2LongMap {
     void resetToNull();
 
     int capacity();
