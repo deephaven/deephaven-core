@@ -3,11 +3,11 @@
 //
 package io.deephaven.util.datastructures.intrusive;
 
-import gnu.trove.set.TIntSet;
-import gnu.trove.set.hash.TIntHashSet;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.util.annotations.TestUseOnly;
 import io.deephaven.util.annotations.VisibleForTesting;
+import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
+import it.unimi.dsi.fastutil.ints.IntSet;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.ref.SoftReference;
@@ -217,7 +217,7 @@ public class IntrusiveSoftLRU<T> {
     @VisibleForTesting
     synchronized boolean verifyLRU(int numStored) {
         final Set<T> refsVisited = new HashSet<>();
-        final TIntSet visited = new TIntHashSet();
+        final IntSet visited = new IntOpenHashSet();
 
         int v = tail;
 
@@ -239,7 +239,7 @@ public class IntrusiveSoftLRU<T> {
         }
 
         for (int i = 0; i < prevs.length; ++i) {
-            if (!visited.remove(v)) {
+            if (!visited.rem(v)) {
                 return false;
             }
             v = prevs[v];
