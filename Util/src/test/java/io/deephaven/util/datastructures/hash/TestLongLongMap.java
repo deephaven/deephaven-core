@@ -99,7 +99,7 @@ public class TestLongLongMap {
         if (factory == referenceFactory) {
             return;
         }
-        TNullableLongLongMap map = (TNullableLongLongMap) factory.create(initialCapacity, loadFactor);
+        NullableLongLongMap map = (NullableLongLongMap) factory.create(initialCapacity, loadFactor);
         final long noEntryValue = map.defaultReturnValue();
         map.put(0, 1);
         map.put(2, 3);
@@ -188,7 +188,7 @@ public class TestLongLongMap {
         }
         final int numIterations = 10;
         final int sizeAtWhichToClear = 10000;
-        TNullableLongLongMap map = (TNullableLongLongMap) factory.create(initialCapacity, loadFactor);
+        NullableLongLongMap map = (NullableLongLongMap) factory.create(initialCapacity, loadFactor);
         for (int iteration = 0; iteration < numIterations; ++iteration) {
             TestCase.assertEquals(map.size(), 0);
             for (long ii = 0; ii < sizeAtWhichToClear; ++ii) {
@@ -319,7 +319,7 @@ public class TestLongLongMap {
         final int iterations = 1000000;
         final long randomMod = 1000000000; // 1 billion
         // Use this interface because we want to access 'capacity'
-        TNullableLongLongMap map = (TNullableLongLongMap) factory.create(initialCapacity, loadFactor);
+        NullableLongLongMap map = (NullableLongLongMap) factory.create(initialCapacity, loadFactor);
         Random insertStream = new Random(67890);
         Random deleteStream = new Random(67890);
 
@@ -362,7 +362,7 @@ public class TestLongLongMap {
         if (factory == referenceFactory) {
             return;
         }
-        TNullableLongLongMap nullableMap = (TNullableLongLongMap) map;
+        NullableLongLongMap nullableMap = (NullableLongLongMap) map;
         nullableMap.resetToNull();
         emptyMapHelper(map);
     }

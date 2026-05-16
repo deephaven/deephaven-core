@@ -4,6 +4,8 @@
 package io.deephaven.util.datastructures.hash;
 
 import it.unimi.dsi.fastutil.longs.Long2LongMap;
+import it.unimi.dsi.fastutil.longs.LongCollection;
+import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.objects.ObjectSet;
 
 public final class HashMapLockFreeK2V2 extends HashMapK2V2 {
@@ -68,5 +70,15 @@ public final class HashMapLockFreeK2V2 extends HashMapK2V2 {
     @Override
     public final ObjectSet<Long2LongMap.Entry> long2LongEntrySet() {
         return entrySetImpl(keysAndValues);
+    }
+
+    @Override
+    public final LongSet keySet() {
+        return keySetImpl(keysAndValues);
+    }
+
+    @Override
+    public final LongCollection values() {
+        return valuesImpl(keysAndValues);
     }
 }

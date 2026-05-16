@@ -5,7 +5,7 @@ package io.deephaven.util.datastructures.hash;
 
 import it.unimi.dsi.fastutil.longs.Long2LongMap;
 
-public interface TNullableLongLongMap extends Long2LongMap {
+public interface NullableLongLongMap extends Long2LongMap {
     void resetToNull();
 
     int capacity();

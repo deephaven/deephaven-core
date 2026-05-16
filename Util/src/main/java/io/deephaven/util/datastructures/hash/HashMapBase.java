@@ -6,18 +6,24 @@ package io.deephaven.util.datastructures.hash;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.hash.PrimeFinder;
 import it.unimi.dsi.fastutil.longs.AbstractLong2LongMap;
+import it.unimi.dsi.fastutil.longs.AbstractLongCollection;
+import it.unimi.dsi.fastutil.longs.AbstractLongSet;
 import it.unimi.dsi.fastutil.longs.Long2LongMap;
+import it.unimi.dsi.fastutil.longs.LongCollection;
+import it.unimi.dsi.fastutil.longs.LongIterator;
+import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.objects.AbstractObjectSet;
 import it.unimi.dsi.fastutil.objects.ObjectIterator;
 import it.unimi.dsi.fastutil.objects.ObjectSet;
 
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.NoSuchElementException;
 
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
-public abstract class HashMapBase extends AbstractLong2LongMap implements TNullableLongLongMap {
+public abstract class HashMapBase implements NullableLongLongMap {
     static final int DEFAULT_INITIAL_CAPACITY = 10;
     static final long DEFAULT_NO_ENTRY_VALUE = -1;
     static final float DEFAULT_LOAD_FACTOR = 0.5f;
@@ -314,7 +320,7 @@ public abstract class HashMapBase extends AbstractLong2LongMap implements TNulla
             final long key = rawKey == REDIRECTED_KEY_FOR_EMPTY_SLOT ? SPECIAL_KEY_FOR_EMPTY_SLOT : rawKey;
             final long value = keysAndValues[nextIndex + 1];
             nextIndex = findOccupiedSlot(nextIndex + 2);
-            return new BasicEntry(key, value);
+            return new AbstractLong2LongMap.BasicEntry(key, value);
         }
 
         /**
@@ -333,6 +339,148 @@ public abstract class HashMapBase extends AbstractLong2LongMap implements TNulla
             }
             return beginSlot;
         }
+    }
+
+    // Manual keySet/values views backed by the supplied keys-and-values array. We provide these (rather than relying on
+    // an abstract base class's defaults) so that we control their performance characteristics. The subclass passes in
+    // its own volatile/non-volatile keysAndValues reference via keySetImpl/valuesImpl.
+
+    final LongSet keySetImpl(final long[] kv) {
+        return kv == null ? EMPTY_KEY_SET : new KeySetView(kv);
+    }
+
+    final LongCollection valuesImpl(final long[] kv) {
+        return kv == null ? EMPTY_VALUE_COLLECTION : new ValuesView(kv);
+    }
+
+    private static final LongSet EMPTY_KEY_SET = new KeySetView(new long[0]);
+    private static final LongCollection EMPTY_VALUE_COLLECTION = new ValuesView(new long[0]);
+
+    private static final class KeySetView extends AbstractLongSet {
+        private final long[] keysAndValues;
+
+        KeySetView(final long[] kv) {
+            this.keysAndValues = kv;
+        }
+
+        @Override
+        public int size() {
+            int count = 0;
+            for (int ii = 0; ii < keysAndValues.length; ii += 2) {
+                final long key = keysAndValues[ii];
+                if (key != SPECIAL_KEY_FOR_EMPTY_SLOT && key != SPECIAL_KEY_FOR_DELETED_SLOT) {
+                    ++count;
+                }
+            }
+            return count;
+        }
+
+        @Override
+        public LongIterator iterator() {
+            return new ArrayLongIterator(keysAndValues, false);
+        }
+
+        @Override
+        public boolean contains(final long k) {
+            final long needle = k == SPECIAL_KEY_FOR_EMPTY_SLOT ? REDIRECTED_KEY_FOR_EMPTY_SLOT : k;
+            for (int ii = 0; ii < keysAndValues.length; ii += 2) {
+                if (keysAndValues[ii] == needle) {
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
+
+    private static final class ValuesView extends AbstractLongCollection {
+        private final long[] keysAndValues;
+
+        ValuesView(final long[] kv) {
+            this.keysAndValues = kv;
+        }
+
+        @Override
+        public int size() {
+            int count = 0;
+            for (int ii = 0; ii < keysAndValues.length; ii += 2) {
+                final long key = keysAndValues[ii];
+                if (key != SPECIAL_KEY_FOR_EMPTY_SLOT && key != SPECIAL_KEY_FOR_DELETED_SLOT) {
+                    ++count;
+                }
+            }
+            return count;
+        }
+
+        @Override
+        public LongIterator iterator() {
+            return new ArrayLongIterator(keysAndValues, true);
+        }
+    }
+
+    /**
+     * Iterates either the keys or the values held in a keys-and-values array, skipping empty/deleted slots and
+     * un-redirecting REDIRECTED_KEY_FOR_EMPTY_SLOT back to 0 (only when iterating keys).
+     */
+    private static final class ArrayLongIterator implements LongIterator {
+        private final long[] keysAndValues;
+        private final boolean wantValues;
+        private int nextSlot;
+
+        ArrayLongIterator(final long[] kv, final boolean wantValues) {
+            this.keysAndValues = kv;
+            this.wantValues = wantValues;
+            this.nextSlot = findOccupiedSlot(0);
+        }
+
+        @Override
+        public boolean hasNext() {
+            return nextSlot < keysAndValues.length;
+        }
+
+        @Override
+        public long nextLong() {
+            if (!hasNext()) {
+                throw new NoSuchElementException();
+            }
+            final long rawKey = keysAndValues[nextSlot];
+            final long result;
+            if (wantValues) {
+                result = keysAndValues[nextSlot + 1];
+            } else {
+                result = rawKey == REDIRECTED_KEY_FOR_EMPTY_SLOT ? SPECIAL_KEY_FOR_EMPTY_SLOT : rawKey;
+            }
+            nextSlot = findOccupiedSlot(nextSlot + 2);
+            return result;
+        }
+
+        private int findOccupiedSlot(int begin) {
+            while (begin < keysAndValues.length) {
+                final long key = keysAndValues[begin];
+                if (key != SPECIAL_KEY_FOR_EMPTY_SLOT && key != SPECIAL_KEY_FOR_DELETED_SLOT) {
+                    break;
+                }
+                begin += 2;
+            }
+            return begin;
+        }
+    }
+
+    // The remaining methods follow the original upstream spirit: we don't currently call them, so we throw
+    // UnsupportedOperationException. They can be implemented manually later if needed.
+
+    @Override
+    public boolean containsKey(long key) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean containsValue(long value) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void putAll(@org.jetbrains.annotations.NotNull final Map<? extends Long, ? extends Long> m) {
+        throw new UnsupportedOperationException();
     }
 
     // Run this at class load time to confirm that the values returned by getMaxBucketCapacity aren't too large.
