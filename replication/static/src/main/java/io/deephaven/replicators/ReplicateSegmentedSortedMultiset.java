@@ -33,7 +33,7 @@ public class ReplicateSegmentedSortedMultiset {
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/ssms/CharSegmentedSortedMultiset.java");
         fixupObjectSsm(objectSsm, ReplicateSegmentedSortedMultiset::fixupNulls,
                 ReplicateSegmentedSortedMultiset::fixupObjectGeneric,
-                ReplicateSegmentedSortedMultiset::fixupTHashes,
+                ReplicateSegmentedSortedMultiset::fixupObjectHashes,
                 ReplicateSegmentedSortedMultiset::fixupSsmConstructor,
                 ReplicateSegmentedSortedMultiset::fixupObjectCompare,
                 ReplicateSegmentedSortedMultiset::fixupKeyArrayAllocation);
@@ -253,12 +253,18 @@ public class ReplicateSegmentedSortedMultiset {
         return removeImport(lines, "\\s*import static.*QueryConstants.*;");
     }
 
-    private static List<String> fixupTHashes(List<String> lines) {
-        lines = removeImport(lines, "\\s*import gnu.trove.*;");
-        // Emit the THashSet import as a literal so this replicator doesn't pull Trove onto its own
-        // compile classpath. The generated SSM source still uses Trove until engine/table is migrated.
-        lines = addImport(lines, "import gnu.trove.set.hash.THashSet;");
-        return globalReplacements(lines, "TObjectHashSet", "THashSet");
+    private static List<String> fixupObjectHashes(List<String> lines) {
+        // charToObject capitalizes the leading C in the package "chars" to "Objects"; fix back to "objects".
+        // Also fixes the leaky toCharArray/rem(char) APIs that don't exist on ObjectSet/ObjectCollection.
+        return globalReplacements(lines,
+                "it\\.unimi\\.dsi\\.fastutil\\.Objects\\.", "it.unimi.dsi.fastutil.objects.",
+                "ObjectSet added", "ObjectSet<Object> added",
+                "ObjectSet removed", "ObjectSet<Object> removed",
+                "new ObjectOpenHashSet\\(", "new ObjectOpenHashSet<>(",
+                // ObjectSet has no primitive `rem`; the boxed Set.remove(Object) is the only flavor.
+                "\\.rem\\(", ".remove(",
+                // ObjectCollection.toArray() returns Object[] already; the typed toCharArray() rename doesn't exist.
+                "\\.toObjectArray\\(", ".toArray(");
     }
 
     private static List<String> fixupSsmConstructor(List<String> lines) {

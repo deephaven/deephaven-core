@@ -22,7 +22,8 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.mutable.MutableInt;
 import io.deephaven.util.mutable.MutableLong;
-import gnu.trove.set.hash.TDoubleHashSet;
+import it.unimi.dsi.fastutil.doubles.DoubleOpenHashSet;
+import it.unimi.dsi.fastutil.doubles.DoubleSet;
 
 import java.util.Arrays;
 import java.util.Objects;
@@ -51,8 +52,8 @@ public final class DoubleSegmentedSortedMultiset implements SegmentedSortedMulti
 
     // region Deltas
     private transient boolean accumulateDeltas = false;
-    private transient TDoubleHashSet added;
-    private transient TDoubleHashSet removed;
+    private transient DoubleSet added;
+    private transient DoubleSet removed;
     private transient DoubleVector prevValues;
     // endregion Deltas
 
@@ -2232,7 +2233,7 @@ public final class DoubleSegmentedSortedMultiset implements SegmentedSortedMulti
         }
 
         if (added == null) {
-            added = new TDoubleHashSet(valuesToInsert.size());
+            added = new DoubleOpenHashSet(valuesToInsert.size());
         }
 
         if (removed == null) {
@@ -2244,7 +2245,7 @@ public final class DoubleSegmentedSortedMultiset implements SegmentedSortedMulti
                 double val = valuesToInsert.get(ii);
                 // Only add to the 'added' set if it was not removed before.
                 // if it was then this key is a net-no-change.
-                if (!removed.remove(val)) {
+                if (!removed.rem(val)) {
                     added.add(val);
                 }
             }
@@ -2261,10 +2262,10 @@ public final class DoubleSegmentedSortedMultiset implements SegmentedSortedMulti
         }
 
         if (removed == null) {
-            removed = new TDoubleHashSet();
+            removed = new DoubleOpenHashSet();
         }
 
-        if (added == null || !added.remove(valueRemoved)) {
+        if (added == null || !added.rem(valueRemoved)) {
             removed.add(valueRemoved);
         }
     }
@@ -2291,11 +2292,11 @@ public final class DoubleSegmentedSortedMultiset implements SegmentedSortedMulti
     }
 
     public void fillRemovedChunk(WritableDoubleChunk<? extends Values> chunk, int position) {
-        chunk.copyFromTypedArray(removed.toArray(), 0, position, removed.size());
+        chunk.copyFromTypedArray(removed.toDoubleArray(), 0, position, removed.size());
     }
 
     public void fillAddedChunk(WritableDoubleChunk<? extends Values> chunk, int position) {
-        chunk.copyFromTypedArray(added.toArray(), 0, position, added.size());
+        chunk.copyFromTypedArray(added.toDoubleArray(), 0, position, added.size());
     }
 
     public DoubleVector getPrevValues() {

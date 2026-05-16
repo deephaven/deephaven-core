@@ -3,11 +3,11 @@
 //
 package io.deephaven.engine.table.impl;
 
-import gnu.trove.set.TDoubleSet;
-import gnu.trove.set.TIntSet;
-import gnu.trove.set.hash.TDoubleHashSet;
-import gnu.trove.set.hash.TIntHashSet;
 import io.deephaven.api.agg.Aggregation;
+import it.unimi.dsi.fastutil.doubles.DoubleOpenHashSet;
+import it.unimi.dsi.fastutil.doubles.DoubleSet;
+import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
+import it.unimi.dsi.fastutil.ints.IntSet;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.object.UnionObject;
@@ -1072,16 +1072,16 @@ public class TestAggBy extends RefreshingTableTestCase {
             return arr.get(0);
         }
 
-        final TIntSet keys = new TIntHashSet();
+        final IntSet keys = new IntOpenHashSet();
         for (int ii = 0; ii < arr.size(); ii++) {
             keys.add(arr.get(ii));
         }
 
         if (!countNull) {
-            keys.remove(NULL_INT);
+            keys.rem(NULL_INT);
         }
 
-        return keys.size() == 1 ? keys.iterator().next() : NULL_INT;
+        return keys.size() == 1 ? keys.iterator().nextInt() : NULL_INT;
     }
 
     /**
@@ -1100,16 +1100,16 @@ public class TestAggBy extends RefreshingTableTestCase {
             return arr.get(0);
         }
 
-        final TDoubleSet keys = new TDoubleHashSet();
+        final DoubleSet keys = new DoubleOpenHashSet();
         for (int ii = 0; ii < arr.size(); ii++) {
             keys.add(arr.get(ii));
         }
 
         if (!countNull) {
-            keys.remove(NULL_DOUBLE);
+            keys.rem(NULL_DOUBLE);
         }
 
-        return keys.size() == 1 ? keys.iterator().next() : NULL_DOUBLE;
+        return keys.size() == 1 ? keys.iterator().nextDouble() : NULL_DOUBLE;
     }
 
     @Test

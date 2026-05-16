@@ -7,30 +7,30 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.select.setinclusion;
 
-import gnu.trove.iterator.TLongIterator;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.util.type.TypeUtils;
-import gnu.trove.set.TLongSet;
-import gnu.trove.set.hash.TLongHashSet;
+import it.unimi.dsi.fastutil.longs.LongIterator;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
+import it.unimi.dsi.fastutil.longs.LongSet;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
 
 public class LongSetInclusionKernel implements SetInclusionKernel {
 
-    private final TLongSet liveValues;
+    private final LongSet liveValues;
     private final boolean inclusion;
 
     LongSetInclusionKernel(@NotNull final Collection<Object> liveValues, final boolean inclusion) {
-        this.liveValues = new TLongHashSet(liveValues.size());
+        this.liveValues = new LongOpenHashSet(liveValues.size());
         liveValues.forEach(x -> this.liveValues.add(TypeUtils.unbox((Long) x)));
         this.inclusion = inclusion;
     }
 
     LongSetInclusionKernel(final boolean inclusion) {
-        this.liveValues = new TLongHashSet();
+        this.liveValues = new LongOpenHashSet();
         this.inclusion = inclusion;
     }
 
@@ -41,7 +41,7 @@ public class LongSetInclusionKernel implements SetInclusionKernel {
 
     @Override
     public boolean remove(@NotNull final Object key) {
-        return liveValues.remove(TypeUtils.unbox((Long) key));
+        return liveValues.rem(TypeUtils.unbox((Long) key));
     }
 
     @Override
@@ -51,9 +51,9 @@ public class LongSetInclusionKernel implements SetInclusionKernel {
 
     private static final class Iterator implements java.util.Iterator<Object> {
 
-        private final TLongIterator inner;
+        private final LongIterator inner;
 
-        private Iterator(@NotNull final TLongIterator inner) {
+        private Iterator(@NotNull final LongIterator inner) {
             this.inner = inner;
         }
 
@@ -64,7 +64,7 @@ public class LongSetInclusionKernel implements SetInclusionKernel {
 
         @Override
         public Long next() {
-            return TypeUtils.box(inner.next());
+            return TypeUtils.box(inner.nextLong());
         }
     }
 

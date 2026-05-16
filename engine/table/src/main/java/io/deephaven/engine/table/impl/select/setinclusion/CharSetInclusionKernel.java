@@ -3,30 +3,30 @@
 //
 package io.deephaven.engine.table.impl.select.setinclusion;
 
-import gnu.trove.iterator.TCharIterator;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.util.type.TypeUtils;
-import gnu.trove.set.TCharSet;
-import gnu.trove.set.hash.TCharHashSet;
+import it.unimi.dsi.fastutil.chars.CharIterator;
+import it.unimi.dsi.fastutil.chars.CharOpenHashSet;
+import it.unimi.dsi.fastutil.chars.CharSet;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
 
 public class CharSetInclusionKernel implements SetInclusionKernel {
 
-    private final TCharSet liveValues;
+    private final CharSet liveValues;
     private final boolean inclusion;
 
     CharSetInclusionKernel(@NotNull final Collection<Object> liveValues, final boolean inclusion) {
-        this.liveValues = new TCharHashSet(liveValues.size());
+        this.liveValues = new CharOpenHashSet(liveValues.size());
         liveValues.forEach(x -> this.liveValues.add(TypeUtils.unbox((Character) x)));
         this.inclusion = inclusion;
     }
 
     CharSetInclusionKernel(final boolean inclusion) {
-        this.liveValues = new TCharHashSet();
+        this.liveValues = new CharOpenHashSet();
         this.inclusion = inclusion;
     }
 
@@ -37,7 +37,7 @@ public class CharSetInclusionKernel implements SetInclusionKernel {
 
     @Override
     public boolean remove(@NotNull final Object key) {
-        return liveValues.remove(TypeUtils.unbox((Character) key));
+        return liveValues.rem(TypeUtils.unbox((Character) key));
     }
 
     @Override
@@ -47,9 +47,9 @@ public class CharSetInclusionKernel implements SetInclusionKernel {
 
     private static final class Iterator implements java.util.Iterator<Object> {
 
-        private final TCharIterator inner;
+        private final CharIterator inner;
 
-        private Iterator(@NotNull final TCharIterator inner) {
+        private Iterator(@NotNull final CharIterator inner) {
             this.inner = inner;
         }
 
@@ -60,7 +60,7 @@ public class CharSetInclusionKernel implements SetInclusionKernel {
 
         @Override
         public Character next() {
-            return TypeUtils.box(inner.next());
+            return TypeUtils.box(inner.nextChar());
         }
     }
 

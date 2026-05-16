@@ -54,7 +54,9 @@ public class ReplicateChunkFilters {
         lines = ReplicationUtils.globalReplacements(lines,
                 "int valueBits", "long valueBits",
                 "doubleToIntBits", "doubleToLongBits",
-                "TIntHashSet", "TLongHashSet");
+                "IntOpenHashSet", "LongOpenHashSet",
+                "IntSet", "LongSet",
+                "it\\.unimi\\.dsi\\.fastutil\\.ints", "it.unimi.dsi.fastutil.longs");
         FileUtils.writeLines(objectFile, lines);
 
         // *RangeFilter.java

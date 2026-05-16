@@ -8,9 +8,8 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.ColumnSource;
-import gnu.trove.impl.Constants;
-import gnu.trove.set.TLongSet;
-import gnu.trove.set.hash.TLongHashSet;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
+import it.unimi.dsi.fastutil.longs.LongSet;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.OverridingMethodsMustInvokeSuper;
@@ -63,12 +62,12 @@ public class UpdatableTable extends QueryTable implements Runnable {
 
     private final RowSetChangeRecorder rowSetChangeRecorder = new RowSetChangeRecorderImpl();
 
-    private final TLongSet addedSet =
-            new TLongHashSet(Constants.DEFAULT_CAPACITY, Constants.DEFAULT_LOAD_FACTOR, NULL_LONG);
-    private final TLongSet removedSet =
-            new TLongHashSet(Constants.DEFAULT_CAPACITY, Constants.DEFAULT_LOAD_FACTOR, NULL_LONG);
-    private final TLongSet modifiedSet =
-            new TLongHashSet(Constants.DEFAULT_CAPACITY, Constants.DEFAULT_LOAD_FACTOR, NULL_LONG);
+    // Preserve the Trove default capacity (10) and load factor (0.5f) rather than fastutil's 16/0.75f. fastutil sets
+    // don't have a "no entry value" concept (add/remove report success via boolean), so the Trove NULL_LONG sentinel
+    // argument has no analog and is simply dropped.
+    private final LongSet addedSet = new LongOpenHashSet(10, 0.5f);
+    private final LongSet removedSet = new LongOpenHashSet(10, 0.5f);
+    private final LongSet modifiedSet = new LongOpenHashSet(10, 0.5f);
 
     public UpdatableTable(@NotNull final TrackingRowSet rowSet,
             @NotNull final Map<String, ? extends ColumnSource<?>> nameToColumnSource,
@@ -82,7 +81,7 @@ public class UpdatableTable extends QueryTable implements Runnable {
         @Override
         public void addRowKey(final long key) {
             // if a key is removed and then added back before a run, it looks like it was modified
-            if (removedSet.remove(key)) {
+            if (removedSet.rem(key)) {
                 modifiedSet.add(key);
             } else {
                 addedSet.add(key);
@@ -95,8 +94,8 @@ public class UpdatableTable extends QueryTable implements Runnable {
                 removedSet.add(key);
             }
             // A removed key cannot be added or modified
-            addedSet.remove(key);
-            modifiedSet.remove(key);
+            addedSet.rem(key);
+            modifiedSet.rem(key);
         }
 
         @Override
@@ -108,12 +107,9 @@ public class UpdatableTable extends QueryTable implements Runnable {
         }
     }
 
-    private static RowSet setToRowSet(@NotNull final TLongSet set) {
+    private static RowSet setToRowSet(@NotNull final LongSet set) {
         final RowSetBuilderRandom builder = RowSetFactory.builderRandom();
-        set.forEach(key -> {
-            builder.addKey(key);
-            return true;
-        });
+        set.forEach((long key) -> builder.addKey(key));
         set.clear();
         return builder.build();
     }

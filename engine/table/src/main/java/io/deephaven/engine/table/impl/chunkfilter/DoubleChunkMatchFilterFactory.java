@@ -7,8 +7,10 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.chunkfilter;
 
-import gnu.trove.set.hash.TDoubleHashSet;
-import gnu.trove.set.hash.TLongHashSet;
+import it.unimi.dsi.fastutil.doubles.DoubleOpenHashSet;
+import it.unimi.dsi.fastutil.doubles.DoubleSet;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
+import it.unimi.dsi.fastutil.longs.LongSet;
 import io.deephaven.engine.table.MatchOptions;
 
 /**
@@ -165,10 +167,10 @@ public class DoubleChunkMatchFilterFactory {
     }
 
     private final static class MultiValueDoubleChunkFilter extends DoubleChunkFilter {
-        private final TDoubleHashSet values;
+        private final DoubleSet values;
 
         private MultiValueDoubleChunkFilter(double... values) {
-            this.values = new TDoubleHashSet(values);
+            this.values = new DoubleOpenHashSet(values);
         }
 
         @Override
@@ -178,10 +180,10 @@ public class DoubleChunkMatchFilterFactory {
     }
 
     private final static class InverseMultiValueDoubleChunkFilter extends DoubleChunkFilter {
-        private final TDoubleHashSet values;
+        private final DoubleSet values;
 
         private InverseMultiValueDoubleChunkFilter(double... values) {
-            this.values = new TDoubleHashSet(values);
+            this.values = new DoubleOpenHashSet(values);
         }
 
         @Override
@@ -300,10 +302,10 @@ public class DoubleChunkMatchFilterFactory {
     }
 
     private final static class MultiValueNaNDoubleChunkFilter extends DoubleChunkFilter {
-        private final TLongHashSet values;
+        private final LongSet values;
 
         private MultiValueNaNDoubleChunkFilter(double... values) {
-            this.values = new TLongHashSet(values.length);
+            this.values = new LongOpenHashSet(values.length);
             for (double v : values) {
                 this.values.add(getBits(v));
             }
@@ -317,10 +319,10 @@ public class DoubleChunkMatchFilterFactory {
     }
 
     private final static class InverseMultiValueNaNDoubleChunkFilter extends DoubleChunkFilter {
-        private final TLongHashSet values;
+        private final LongSet values;
 
         private InverseMultiValueNaNDoubleChunkFilter(double... values) {
-            this.values = new TLongHashSet(values.length);
+            this.values = new LongOpenHashSet(values.length);
             for (double v : values) {
                 this.values.add(getBits(v));
             }
