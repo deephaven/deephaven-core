@@ -782,7 +782,7 @@ public class SortListener extends BaseTable.ListenerImpl {
 
             final int lSize = lasts.size();
             if (lSize > 0) {
-                final long lastLast = lasts.get(lSize - 1);
+                final long lastLast = lasts.getLong(lSize - 1);
 
                 Assert.assertion(Long.compare(rangeLastRowKey, lastLast) * direction > 0,
                         "Long.compare(lastRowKey, lastLast) * direction > 0",
@@ -807,11 +807,11 @@ public class SortListener extends BaseTable.ListenerImpl {
             int nr = firsts.size();
             if (direction == -1) {
                 for (int ii = nr - 1; ii >= 0; --ii) {
-                    builder.appendRange(lasts.get(ii), firsts.get(ii));
+                    builder.appendRange(lasts.getLong(ii), firsts.getLong(ii));
                 }
             } else {
                 for (int ii = 0; ii < nr; ++ii) {
-                    builder.appendRange(firsts.get(ii), lasts.get(ii));
+                    builder.appendRange(firsts.getLong(ii), lasts.getLong(ii));
                 }
             }
         }
@@ -841,7 +841,7 @@ public class SortListener extends BaseTable.ListenerImpl {
 
             final int lSize = lasts.size();
             if (lSize > 0 && allowedToCoalesce) {
-                final long lastDelta = deltas.get(lSize - 1);
+                final long lastDelta = deltas.getLong(lSize - 1);
                 if (lastDelta == delta) { // we can coalesce this shift
                     lasts.set(lSize - 1, key);
                     return;
@@ -864,11 +864,11 @@ public class SortListener extends BaseTable.ListenerImpl {
             int nr = firsts.size();
             if (direction < 0) {
                 for (int ii = nr - 1; ii >= 0; --ii) {
-                    builder.shiftRange(lasts.get(ii), firsts.get(ii), deltas.get(ii));
+                    builder.shiftRange(lasts.getLong(ii), firsts.getLong(ii), deltas.getLong(ii));
                 }
             } else {
                 for (int ii = 0; ii < nr; ++ii) {
-                    builder.shiftRange(firsts.get(ii), lasts.get(ii), deltas.get(ii));
+                    builder.shiftRange(firsts.getLong(ii), lasts.getLong(ii), deltas.getLong(ii));
                 }
             }
         }

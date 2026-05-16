@@ -964,7 +964,7 @@ public final class IntSegmentedSortedArray implements SegmentedSortedArray {
                         leafSizes[firstLeaf] -= count;
 
                         final boolean hasLeft = firstLeaf > 0 && (leavesToRemove.isEmpty()
-                                || (leavesToRemove.get(leavesToRemove.size() - 1) != (firstLeaf - 1)));
+                                || (leavesToRemove.getInt(leavesToRemove.size() - 1) != (firstLeaf - 1)));
                         final boolean hasRight = firstLeaf < leafCount - 1;
 
                         // in cases where we do not have a left or right, we just set the size to leafSize so we will
@@ -1017,12 +1017,12 @@ public final class IntSegmentedSortedArray implements SegmentedSortedArray {
 
                 if (!leavesToRemove.isEmpty()) {
 
-                    int destIdx = leavesToRemove.get(0);
+                    int destIdx = leavesToRemove.getInt(0);
                     int srcIdx = destIdx + 1;
                     int removeIdx = 1;
 
                     while (removeIdx < leavesToRemove.size()) {
-                        final int nextRemoval = leavesToRemove.get(removeIdx);
+                        final int nextRemoval = leavesToRemove.getInt(removeIdx);
                         final int keepLeaves = nextRemoval - srcIdx;
                         copyLeavesAndDirectory(srcIdx, destIdx, keepLeaves);
                         srcIdx += keepLeaves + 1;

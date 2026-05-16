@@ -689,7 +689,7 @@ public class LeaderTableFilter {
             final int pendingLeaderRows = leaderKeyState.size();
             int matchedIndex = -1;
             for (int leaderRowToCheck = pendingLeaderRows - 1; leaderRowToCheck >= 0; leaderRowToCheck--) {
-                int satisfiedFollowers = leaderKeyState.satisfiedIdsByFollower.get(leaderRowToCheck);
+                int satisfiedFollowers = leaderKeyState.satisfiedIdsByFollower.getInt(leaderRowToCheck);
                 for (int tt = 0; tt < tableCount; ++tt) {
                     final int tableMask = 1 << tt;
                     if ((satisfiedFollowers & tableMask) != 0) {
@@ -746,7 +746,7 @@ public class LeaderTableFilter {
             }
 
             if (matchedIndex >= 0) {
-                final long newMatch = leaderKeyState.leaderRows.get(matchedIndex);
+                final long newMatch = leaderKeyState.leaderRows.getLong(matchedIndex);
                 leaderMatchBuilder.addKey(newMatch);
                 if (leaderKeyState.matchedRowKey != RowSet.NULL_ROW_KEY) {
                     leaderRemovedBuilder.addKey(leaderKeyState.matchedRowKey);
@@ -889,7 +889,7 @@ public class LeaderTableFilter {
                     if (unprocessedCount == 0) {
                         currentState.unprocessedIds.add(id);
                     } else {
-                        final long lastUnprocessed = currentState.unprocessedIds.get(unprocessedCount - 1);
+                        final long lastUnprocessed = currentState.unprocessedIds.getLong(unprocessedCount - 1);
                         if (lastUnprocessed != id) {
                             currentState.unprocessedIds.add(id);
                             if (lastUnprocessed >= id) {

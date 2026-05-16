@@ -1418,7 +1418,7 @@ public class ConstructSnapshot {
                 JobScheduler.DEFAULT_CONTEXT_FACTORY,
                 0, columnIndices.size(),
                 (context, colRank, nestedErrorConsumer) -> snapshotColumnsSerial(
-                        new IntArrayList(new int[] {columnIndices.get(colRank)}),
+                        new IntArrayList(new int[] {columnIndices.getInt(colRank)}),
                         columnSources.subList(colRank, colRank + 1),
                         usePrev, snapshot),
                 () -> waitForParallelSnapshot.complete(null),
@@ -1514,7 +1514,7 @@ public class ConstructSnapshot {
                 final RowSequence reducedRowSet = it.getNextRowSequenceWithLength(maxChunkSize);
                 // Populate the snapshot data for each column for the current chunk of rows
                 for (int colRank = 0; colRank < numCols; ++colRank) {
-                    final int colIdx = columnIndices.get(colRank);
+                    final int colIdx = columnIndices.getInt(colRank);
                     final ColumnSource<?> columnSource = columnSources.get(colRank);
                     final ColumnSource.FillContext fillContext = fillContexts[colRank];
                     final WritableChunk<Values> currentChunk =
