@@ -63,7 +63,7 @@ jobs:
       # This has access to secrets. If we run any code provided by the repo at this point, it could be malicious.
       # https://securitylab.github.com/resources/github-actions-preventing-pwn-requests/
       ##########
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           sparse-checkout: /docs/
