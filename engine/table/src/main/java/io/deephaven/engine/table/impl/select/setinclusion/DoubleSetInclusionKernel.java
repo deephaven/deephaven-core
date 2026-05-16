@@ -7,13 +7,14 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.select.setinclusion;
 
-import gnu.trove.iterator.TLongIterator;
-import gnu.trove.set.hash.TLongHashSet;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.impl.chunkfilter.DoubleChunkMatchFilterFactory;
 import io.deephaven.util.type.TypeUtils;
+import it.unimi.dsi.fastutil.longs.LongIterator;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
+import it.unimi.dsi.fastutil.longs.LongSet;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
@@ -21,17 +22,17 @@ import java.util.Collection;
 public class DoubleSetInclusionKernel implements SetInclusionKernel {
 
     // We store double values as their integral bits to handle NaNs and +/- 0.0 correctly.
-    private final TLongHashSet liveValues;
+    private final LongSet liveValues;
     private final boolean inclusion;
 
     DoubleSetInclusionKernel(@NotNull final Collection<Object> liveValues, final boolean inclusion) {
-        this.liveValues = new TLongHashSet(liveValues.size());
+        this.liveValues = new LongOpenHashSet(liveValues.size());
         liveValues.forEach(this::add);
         this.inclusion = inclusion;
     }
 
     DoubleSetInclusionKernel(final boolean inclusion) {
-        this.liveValues = new TLongHashSet();
+        this.liveValues = new LongOpenHashSet();
         this.inclusion = inclusion;
     }
 
@@ -46,7 +47,7 @@ public class DoubleSetInclusionKernel implements SetInclusionKernel {
     public boolean remove(@NotNull final Object key) {
         final double value = TypeUtils.unbox((Double) key);
         final long valueBits = DoubleChunkMatchFilterFactory.getBits(value);
-        return liveValues.remove(valueBits);
+        return liveValues.rem(valueBits);
     }
 
     @Override
@@ -56,9 +57,9 @@ public class DoubleSetInclusionKernel implements SetInclusionKernel {
 
     private static final class Iterator implements java.util.Iterator<Object> {
 
-        private final TLongIterator inner;
+        private final LongIterator inner;
 
-        private Iterator(@NotNull final TLongIterator inner) {
+        private Iterator(@NotNull final LongIterator inner) {
             this.inner = inner;
         }
 
@@ -70,7 +71,7 @@ public class DoubleSetInclusionKernel implements SetInclusionKernel {
         @Override
         public Double next() {
             // Convert back to Double
-            return TypeUtils.box(Double.longBitsToDouble(inner.next()));
+            return TypeUtils.box(Double.longBitsToDouble(inner.nextLong()));
         }
     }
 
