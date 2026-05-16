@@ -37,7 +37,7 @@ public class CharSetInclusionKernel implements SetInclusionKernel {
 
     @Override
     public boolean remove(@NotNull final Object key) {
-        return liveValues.rem(TypeUtils.unbox((Character) key));
+        return liveValues.remove(TypeUtils.unbox((Character) key));
     }
 
     @Override

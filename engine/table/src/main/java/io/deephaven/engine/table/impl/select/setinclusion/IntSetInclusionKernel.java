@@ -41,7 +41,7 @@ public class IntSetInclusionKernel implements SetInclusionKernel {
 
     @Override
     public boolean remove(@NotNull final Object key) {
-        return liveValues.rem(TypeUtils.unbox((Integer) key));
+        return liveValues.remove(TypeUtils.unbox((Integer) key));
     }
 
     @Override

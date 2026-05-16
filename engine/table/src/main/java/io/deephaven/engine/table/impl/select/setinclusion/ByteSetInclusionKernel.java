@@ -41,7 +41,7 @@ public class ByteSetInclusionKernel implements SetInclusionKernel {
 
     @Override
     public boolean remove(@NotNull final Object key) {
-        return liveValues.rem(TypeUtils.unbox((Byte) key));
+        return liveValues.remove(TypeUtils.unbox((Byte) key));
     }
 
     @Override

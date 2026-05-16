@@ -47,7 +47,7 @@ public class DoubleSetInclusionKernel implements SetInclusionKernel {
     public boolean remove(@NotNull final Object key) {
         final double value = TypeUtils.unbox((Double) key);
         final long valueBits = DoubleChunkMatchFilterFactory.getBits(value);
-        return liveValues.rem(valueBits);
+        return liveValues.remove(valueBits);
     }
 
     @Override

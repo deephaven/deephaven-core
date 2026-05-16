@@ -255,14 +255,12 @@ public class ReplicateSegmentedSortedMultiset {
 
     private static List<String> fixupObjectHashes(List<String> lines) {
         // charToObject capitalizes the leading C in the package "chars" to "Objects"; fix back to "objects".
-        // Also fixes the leaky toCharArray/rem(char) APIs that don't exist on ObjectSet/ObjectCollection.
+        // Also fixes the leaky toCharArray API that doesn't exist on ObjectCollection.
         return globalReplacements(lines,
                 "it\\.unimi\\.dsi\\.fastutil\\.Objects\\.", "it.unimi.dsi.fastutil.objects.",
                 "ObjectSet added", "ObjectSet<Object> added",
                 "ObjectSet removed", "ObjectSet<Object> removed",
                 "new ObjectOpenHashSet\\(", "new ObjectOpenHashSet<>(",
-                // ObjectSet has no primitive `rem`; the boxed Set.remove(Object) is the only flavor.
-                "\\.rem\\(", ".remove(",
                 // ObjectCollection.toArray() returns Object[] already; the typed toCharArray() rename doesn't exist.
                 "\\.toObjectArray\\(", ".toArray(");
     }

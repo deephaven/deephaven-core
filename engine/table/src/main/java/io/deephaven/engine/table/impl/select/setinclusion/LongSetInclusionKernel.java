@@ -41,7 +41,7 @@ public class LongSetInclusionKernel implements SetInclusionKernel {
 
     @Override
     public boolean remove(@NotNull final Object key) {
-        return liveValues.rem(TypeUtils.unbox((Long) key));
+        return liveValues.remove(TypeUtils.unbox((Long) key));
     }
 
     @Override

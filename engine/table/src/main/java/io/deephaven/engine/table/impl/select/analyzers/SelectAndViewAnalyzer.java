@@ -199,7 +199,7 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
                         throw new IllegalArgumentException(
                                 "Respected barrier, " + barrier + ", is not defined for " + sc.getName());
                     }
-                    execDeps.add(layerForBarrier);
+                    execDeps.add(layerForBarrier.intValue());
                 }
             }
 

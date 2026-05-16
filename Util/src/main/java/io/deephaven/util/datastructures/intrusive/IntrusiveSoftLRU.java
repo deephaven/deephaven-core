@@ -239,7 +239,7 @@ public class IntrusiveSoftLRU<T> {
         }
 
         for (int i = 0; i < prevs.length; ++i) {
-            if (!visited.rem(v)) {
+            if (!visited.remove(v)) {
                 return false;
             }
             v = prevs[v];

@@ -1078,7 +1078,7 @@ public class TestAggBy extends RefreshingTableTestCase {
         }
 
         if (!countNull) {
-            keys.rem(NULL_INT);
+            keys.remove(NULL_INT);
         }
 
         return keys.size() == 1 ? keys.iterator().nextInt() : NULL_INT;
@@ -1106,7 +1106,7 @@ public class TestAggBy extends RefreshingTableTestCase {
         }
 
         if (!countNull) {
-            keys.rem(NULL_DOUBLE);
+            keys.remove(NULL_DOUBLE);
         }
 
         return keys.size() == 1 ? keys.iterator().nextDouble() : NULL_DOUBLE;

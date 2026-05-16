@@ -44,7 +44,7 @@ public class FloatSetInclusionKernel implements SetInclusionKernel {
     public boolean remove(@NotNull final Object key) {
         final float value = TypeUtils.unbox((Float) key);
         final int valueBits = FloatChunkMatchFilterFactory.getBits(value);
-        return liveValues.rem(valueBits);
+        return liveValues.remove(valueBits);
     }
 
     @Override

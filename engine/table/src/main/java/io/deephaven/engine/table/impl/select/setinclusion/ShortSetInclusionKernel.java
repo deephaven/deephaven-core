@@ -41,7 +41,7 @@ public class ShortSetInclusionKernel implements SetInclusionKernel {
 
     @Override
     public boolean remove(@NotNull final Object key) {
-        return liveValues.rem(TypeUtils.unbox((Short) key));
+        return liveValues.remove(TypeUtils.unbox((Short) key));
     }
 
     @Override

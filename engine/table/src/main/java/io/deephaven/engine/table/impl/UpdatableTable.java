@@ -81,7 +81,7 @@ public class UpdatableTable extends QueryTable implements Runnable {
         @Override
         public void addRowKey(final long key) {
             // if a key is removed and then added back before a run, it looks like it was modified
-            if (removedSet.rem(key)) {
+            if (removedSet.remove(key)) {
                 modifiedSet.add(key);
             } else {
                 addedSet.add(key);
@@ -94,8 +94,8 @@ public class UpdatableTable extends QueryTable implements Runnable {
                 removedSet.add(key);
             }
             // A removed key cannot be added or modified
-            addedSet.rem(key);
-            modifiedSet.rem(key);
+            addedSet.remove(key);
+            modifiedSet.remove(key);
         }
 
         @Override

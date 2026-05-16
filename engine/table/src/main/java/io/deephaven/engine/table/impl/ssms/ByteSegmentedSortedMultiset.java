@@ -2245,7 +2245,7 @@ public final class ByteSegmentedSortedMultiset implements SegmentedSortedMultiSe
                 byte val = valuesToInsert.get(ii);
                 // Only add to the 'added' set if it was not removed before.
                 // if it was then this key is a net-no-change.
-                if (!removed.rem(val)) {
+                if (!removed.remove(val)) {
                     added.add(val);
                 }
             }
@@ -2265,7 +2265,7 @@ public final class ByteSegmentedSortedMultiset implements SegmentedSortedMultiSe
             removed = new ByteOpenHashSet();
         }
 
-        if (added == null || !added.rem(valueRemoved)) {
+        if (added == null || !added.remove(valueRemoved)) {
             removed.add(valueRemoved);
         }
     }
