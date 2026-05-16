@@ -10,6 +10,7 @@ dependencies {
     implementation libs.jdom2
     implementation libs.commons.compress
     api libs.trove
+    implementation libs.dsi.fastutil
 
     implementation project(':Configuration')
 
