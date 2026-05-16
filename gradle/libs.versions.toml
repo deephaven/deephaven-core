@@ -90,7 +90,6 @@ snappy = "1.1.10.8"
 squareup = "1.13.0"
 ayza = "10.0.4"
 tdunning = "3.3"
-trove = "3.0.3"
 undercouch = "2.18.0"
 univocity = "2.9.1"
 vertispan-nio = "1.0-alpha-2"
@@ -332,8 +331,6 @@ ayza-jetty = { module = "io.github.hakky54:ayza-for-jetty", version.ref = "ayza"
 ayza-netty = { module = "io.github.hakky54:ayza-for-netty", version.ref = "ayza" }
 
 tdunning-t-digest = { module = "com.tdunning:t-digest", version.ref = "tdunning" }
-
-trove = { module = "net.sf.trove4j:trove4j", version.ref = "trove" }
 
 undercouch-bson4jackson = { module = "de.undercouch:bson4jackson", version.ref = "undercouch" }
 
