@@ -11,7 +11,8 @@ import io.deephaven.engine.rowset.impl.rsp.RspBitmap;
 import io.deephaven.engine.rowset.impl.sortedranges.SortedRanges;
 import io.deephaven.engine.rowset.impl.sortedranges.SortedRangesInt;
 import io.deephaven.engine.rowset.impl.sortedranges.SortedRangesLong;
-import gnu.trove.set.hash.TIntHashSet;
+import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
+import it.unimi.dsi.fastutil.ints.IntSet;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
 import org.openjdk.jmh.runner.Runner;
@@ -42,7 +43,7 @@ public class SmallRowSetCreation {
 
     private static final long seed = 1;
 
-    private static final TIntHashSet workSet = new TIntHashSet();
+    private static final IntSet workSet = new IntOpenHashSet();
 
     private static void populateRandomBlockValues(
             final Random random, final int[] blockValues, final int valuesPerBlock) {
@@ -50,7 +51,7 @@ public class SmallRowSetCreation {
         while (workSet.size() < valuesPerBlock) {
             workSet.add(random.nextInt(RspArray.BLOCK_SIZE));
         }
-        workSet.toArray(blockValues);
+        workSet.toIntArray(blockValues);
         Arrays.sort(blockValues);
     }
 

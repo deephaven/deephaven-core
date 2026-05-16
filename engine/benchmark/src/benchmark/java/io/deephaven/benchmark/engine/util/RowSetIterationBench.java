@@ -6,10 +6,10 @@ package io.deephaven.benchmark.engine.util;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.impl.WritableRowSetImpl;
 import io.deephaven.engine.rowset.impl.rsp.RspBitmap;
-import io.deephaven.engine.rowset.impl.rsp.RspIterator;
-import gnu.trove.iterator.TLongIterator;
-import gnu.trove.set.hash.TLongHashSet;
 import io.deephaven.benchmarking.BenchUtil;
+import io.deephaven.engine.rowset.impl.rsp.RspIterator;
+import it.unimi.dsi.fastutil.longs.LongIterator;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
 import org.openjdk.jmh.runner.RunnerException;
@@ -31,7 +31,7 @@ public class RowSetIterationBench {
     private long[] values;
     private RspBitmap rb;
     private RowSet ix;
-    private TLongHashSet tset;
+    private LongOpenHashSet tset;
 
     @Param({"10"})
     private static int elementStep;
@@ -53,7 +53,7 @@ public class RowSetIterationBench {
         }
         rb.finishMutationsAndOptimize();
         ix = new WritableRowSetImpl(rb);
-        tset = new TLongHashSet(values);
+        tset = new LongOpenHashSet(values);
     }
 
     @Benchmark
@@ -95,20 +95,17 @@ public class RowSetIterationBench {
     }
 
     @Benchmark
-    public void b05_iterateTroveLongHashSet(final Blackhole bh) {
-        final TLongIterator it = tset.iterator();
+    public void b05_iterateLongOpenHashSet(final Blackhole bh) {
+        final LongIterator it = tset.iterator();
         while (it.hasNext()) {
-            final long v = it.next();
+            final long v = it.nextLong();
             bh.consume(v);
         }
     }
 
     @Benchmark
-    public void b06_forEachTroveLongHashSet(final Blackhole bh) {
-        tset.forEach((final long v) -> {
-            bh.consume(v);
-            return true;
-        });
+    public void b06_forEachLongOpenHashSet(final Blackhole bh) {
+        tset.forEach((final long v) -> bh.consume(v));
     }
 
     public static void main(String[] args) throws RunnerException {
