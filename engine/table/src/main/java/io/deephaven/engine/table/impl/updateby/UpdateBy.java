@@ -3,7 +3,7 @@
 //
 package io.deephaven.engine.table.impl.updateby;
 
-import gnu.trove.list.array.TIntArrayList;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
 import gnu.trove.map.hash.TObjectIntHashMap;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.updateby.ColumnUpdateOperation;
@@ -661,7 +661,7 @@ public abstract class UpdateBy {
             final Integer[] sortedDirtyOperators = ArrayUtils.addAll(dirtyConstantOperators, dirtyDynamicOperators);
 
             final List<int[]> operatorSets = new ArrayList<>(sortedDirtyOperators.length);
-            final TIntArrayList opList = new TIntArrayList(sortedDirtyOperators.length);
+            final IntArrayList opList = new IntArrayList(sortedDirtyOperators.length);
 
             opList.add(sortedDirtyOperators[0]);
             int lastOpIdx = sortedDirtyOperators[0];
@@ -670,13 +670,13 @@ public abstract class UpdateBy {
                 if (Arrays.equals(win.operatorInputSourceSlots[opIdx], win.operatorInputSourceSlots[lastOpIdx])) {
                     opList.add(opIdx);
                 } else {
-                    operatorSets.add(opList.toArray());
-                    opList.clear(sortedDirtyOperators.length);
+                    operatorSets.add(opList.toIntArray());
+                    opList.clear();
                     opList.add(opIdx);
                 }
                 lastOpIdx = opIdx;
             }
-            operatorSets.add(opList.toArray());
+            operatorSets.add(opList.toIntArray());
 
             // Process each set of similar operators in this window serially.
             jobScheduler.iterateSerial(executionContext,

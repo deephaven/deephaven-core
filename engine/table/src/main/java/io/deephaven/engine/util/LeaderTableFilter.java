@@ -3,8 +3,9 @@
 //
 package io.deephaven.engine.util;
 
-import gnu.trove.list.array.TIntArrayList;
-import gnu.trove.list.array.TLongArrayList;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
+import it.unimi.dsi.fastutil.longs.LongArrays;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.JoinAddition;
 import io.deephaven.api.JoinMatch;
@@ -157,36 +158,36 @@ public class LeaderTableFilter {
 
     private class LeaderKeyState {
         LeaderKeyState() {
-            leaderRows = new TLongArrayList();
-            pendingIdsByFollower = new TLongArrayList[followerKeySources.length];
+            leaderRows = new LongArrayList();
+            pendingIdsByFollower = new LongArrayList[followerKeySources.length];
             for (int ii = 0; ii < pendingIdsByFollower.length; ++ii) {
-                pendingIdsByFollower[ii] = new TLongArrayList();
+                pendingIdsByFollower[ii] = new LongArrayList();
             }
-            satisfiedIdsByFollower = new TIntArrayList();
+            satisfiedIdsByFollower = new IntArrayList();
         }
 
         // our currently matched row key in the leader table
         long matchedRowKey = RowSet.NULL_ROW_KEY;
 
         // an array list of pending rows in the leader that map to this state
-        TLongArrayList leaderRows;
+        LongArrayList leaderRows;
         // the corresponding ID that must be checked for each follower
-        TLongArrayList[] pendingIdsByFollower;
+        LongArrayList[] pendingIdsByFollower;
 
         // a bitmask with one value set for each of our pending row sets; bit 0 is the first follower, bit 1 the second
         // follower, etc.
-        TIntArrayList satisfiedIdsByFollower;
+        IntArrayList satisfiedIdsByFollower;
 
         private int size() {
             return leaderRows.size();
         }
 
         public void deleteHead(int matchedRowKey) {
-            leaderRows.remove(0, matchedRowKey + 1);
+            leaderRows.removeElements(0, matchedRowKey + 1);
             for (int tt = 0; tt < pendingIdsByFollower.length; ++tt) {
-                pendingIdsByFollower[tt].remove(0, matchedRowKey + 1);
+                pendingIdsByFollower[tt].removeElements(0, matchedRowKey + 1);
             }
-            satisfiedIdsByFollower.remove(0, matchedRowKey + 1);
+            satisfiedIdsByFollower.removeElements(0, matchedRowKey + 1);
         }
     }
 
@@ -195,7 +196,7 @@ public class LeaderTableFilter {
         WritableRowSet matchedRows = RowSetFactory.empty();
         RowSetBuilderSequential unprocessedBuilder = null;
         RowSetBuilderSequential currentIdBuilder = null;
-        final TLongArrayList unprocessedIds = new TLongArrayList();
+        final LongArrayList unprocessedIds = new LongArrayList();
         boolean sorted = true;
         long activeId = Long.MIN_VALUE;
         long lastMatchedId = Long.MIN_VALUE;
@@ -208,21 +209,21 @@ public class LeaderTableFilter {
             if (sorted) {
                 return;
             }
-            unprocessedIds.sort();
+            unprocessedIds.sort(null);
             sorted = true;
             int wp = 1;
             for (int rp = 1; rp < unprocessedIds.size(); ++rp) {
-                if (unprocessedIds.get(rp - 1) != unprocessedIds.get(rp)) {
-                    unprocessedIds.set(wp++, unprocessedIds.get(rp));
+                if (unprocessedIds.getLong(rp - 1) != unprocessedIds.getLong(rp)) {
+                    unprocessedIds.set(wp++, unprocessedIds.getLong(rp));
                 }
             }
             if (wp != unprocessedIds.size()) {
-                unprocessedIds.remove(wp, unprocessedIds.size() - wp);
+                unprocessedIds.removeElements(wp, unprocessedIds.size());
             }
         }
 
         public void deleteUnprocessedIds(int matchedFollowerIndex) {
-            unprocessedIds.remove(0, matchedFollowerIndex + 1);
+            unprocessedIds.removeElements(0, matchedFollowerIndex + 1);
         }
     }
 
@@ -713,7 +714,8 @@ public class LeaderTableFilter {
                     }
 
                     // we must check the pending ids in the follower
-                    final int foundIndex = followerKeyState.unprocessedIds.binarySearch(idForFollower);
+                    final int foundIndex = LongArrays.binarySearch(followerKeyState.unprocessedIds.elements(), 0,
+                            followerKeyState.unprocessedIds.size(), idForFollower);
                     if (foundIndex < 0) {
                         // not found
                         continue;

@@ -13,7 +13,7 @@ import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 import gnu.trove.iterator.TObjectLongIterator;
-import gnu.trove.list.array.TLongArrayList;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
 import gnu.trove.map.TLongLongMap;
 import gnu.trove.map.TLongObjectMap;
 import gnu.trove.map.TObjectLongMap;
@@ -51,7 +51,7 @@ public class HashSetBackedTableFactory {
     private final TLongObjectMap<ArrayTuple> indexToPreviousMap = new TLongObjectHashMap<>();
     private final TLongLongMap indexToPreviousClock = new TLongLongHashMap();
     private long lastIndex = 0;
-    private final TLongArrayList freeSet = new TLongArrayList();
+    private final LongArrayList freeSet = new LongArrayList();
     private TrackingWritableRowSet rowSet;
 
     private HashSetBackedTableFactory(Supplier<HashSet<ArrayTuple>> setGenerator, int refreshIntervalMs,
@@ -138,8 +138,8 @@ public class HashSetBackedTableFactory {
         if (freeSet.isEmpty()) {
             newIndex = lastIndex++;
         } else {
-            newIndex = freeSet.get(freeSet.size() - 1);
-            freeSet.remove(freeSet.size() - 1, 1);
+            newIndex = freeSet.getLong(freeSet.size() - 1);
+            freeSet.removeElements(freeSet.size() - 1, freeSet.size());
         }
         addedBuilder.addKey(newIndex);
         valueToIndexMap.put(value, newIndex);

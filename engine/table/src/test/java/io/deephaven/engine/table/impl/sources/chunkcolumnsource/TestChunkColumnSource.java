@@ -3,7 +3,7 @@
 //
 package io.deephaven.engine.table.impl.sources.chunkcolumnsource;
 
-import gnu.trove.list.array.TLongArrayList;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
@@ -208,7 +208,7 @@ public class TestChunkColumnSource {
             doubleChunk2.set(ii, 2000.2 * ii);
         }
 
-        final TLongArrayList offsets = new TLongArrayList();
+        final LongArrayList offsets = new LongArrayList();
 
         final ChunkColumnSource<?> longColumnSource = ChunkColumnSource.make(ChunkType.Long, long.class, offsets);
         longColumnSource.addChunk(longChunk1);

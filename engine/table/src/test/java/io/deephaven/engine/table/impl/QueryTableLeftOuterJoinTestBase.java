@@ -4,7 +4,7 @@
 package io.deephaven.engine.table.impl;
 
 import com.google.common.collect.Maps;
-import gnu.trove.list.array.TLongArrayList;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.ResettableWritableIntChunk;
 import io.deephaven.chunk.WritableIntChunk;
@@ -1180,11 +1180,11 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
 
         long nextLeftRow = 0;
         final ArrayList<String> leftKeys = new ArrayList<>();
-        final TLongArrayList leftData = new TLongArrayList();
+        final LongArrayList leftData = new LongArrayList();
 
         long nextRightRow = 0;
         final ArrayList<String> rightKeys = new ArrayList<>();
-        final TLongArrayList rightData = new TLongArrayList();
+        final LongArrayList rightData = new LongArrayList();
 
         int leftReserveSize = 0;
         for (int i = 0; i < maxLeftType; ++i) {
@@ -1232,13 +1232,13 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
 
         final QueryTable left = (QueryTable) TableTools.newTable(
                 stringCol("sharedKey", leftKeys.toArray(String[]::new)),
-                longCol("leftData", leftData.toArray()));
+                longCol("leftData", leftData.toLongArray()));
         if (leftTicking) {
             left.setRefreshing(true);
         }
         final QueryTable right = (QueryTable) TableTools.newTable(
                 stringCol("sharedKey", rightKeys.toArray(String[]::new)),
-                longCol("rightData", rightData.toArray()));
+                longCol("rightData", rightData.toLongArray()));
         if (rightTicking) {
             right.setRefreshing(true);
         }

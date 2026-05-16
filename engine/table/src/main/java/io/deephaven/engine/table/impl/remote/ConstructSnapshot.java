@@ -3,9 +3,9 @@
 //
 package io.deephaven.engine.table.impl.remote;
 
-import gnu.trove.TIntCollection;
-import gnu.trove.list.TIntList;
-import gnu.trove.list.array.TIntArrayList;
+import it.unimi.dsi.fastutil.ints.IntCollection;
+import it.unimi.dsi.fastutil.ints.IntList;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
 import io.deephaven.base.formatters.FormatBitSet;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
@@ -1332,7 +1332,7 @@ public class ConstructSnapshot {
         // Snapshot empty columns serially, and collect indices of non-empty columns
         final int numColumnsToSnapshot =
                 columnsToSnapshot != null ? columnsToSnapshot.cardinality() : columnSources.length;
-        final TIntList nonEmptyColumnIndices = new TIntArrayList(numColumnsToSnapshot);
+        final IntList nonEmptyColumnIndices = new IntArrayList(numColumnsToSnapshot);
         final List<ColumnSource<?>> nonEmptyColumnSources = new ArrayList<>(numColumnsToSnapshot);
         if (!snapshotEmptyColumns(columnSources, columnsToSnapshot, table, logIdentityObject, snapshot,
                 nonEmptyColumnIndices, nonEmptyColumnSources)) {
@@ -1405,7 +1405,7 @@ public class ConstructSnapshot {
      * Snapshot the specified columns in parallel.
      */
     private static boolean snapshotColumnsParallel(
-            @NotNull final TIntList columnIndices,
+            @NotNull final IntList columnIndices,
             @NotNull final List<ColumnSource<?>> columnSources,
             final boolean usePrev,
             final ExecutionContext executionContext,
@@ -1418,7 +1418,7 @@ public class ConstructSnapshot {
                 JobScheduler.DEFAULT_CONTEXT_FACTORY,
                 0, columnIndices.size(),
                 (context, colRank, nestedErrorConsumer) -> snapshotColumnsSerial(
-                        new TIntArrayList(new int[] {columnIndices.get(colRank)}),
+                        new IntArrayList(new int[] {columnIndices.get(colRank)}),
                         columnSources.subList(colRank, colRank + 1),
                         usePrev, snapshot),
                 () -> waitForParallelSnapshot.complete(null),
@@ -1448,7 +1448,7 @@ public class ConstructSnapshot {
             @NotNull final Table table,
             @NotNull final Object logIdentityObject,
             @NotNull final BarrageMessage snapshot,
-            @NotNull final TIntCollection nonEmptyColumnsIndices,
+            @NotNull final IntCollection nonEmptyColumnsIndices,
             @NotNull final Collection<ColumnSource<?>> nonEmptyColumnSources) {
         final boolean rowsetIsEmpty = snapshot.rowsIncluded.isEmpty();
         for (int colIdx = 0; colIdx < columnSources.length; ++colIdx) {
@@ -1493,7 +1493,7 @@ public class ConstructSnapshot {
     }
 
     private static void snapshotColumnsSerial(
-            @NotNull final TIntList columnIndices,
+            @NotNull final IntList columnIndices,
             @NotNull final List<ColumnSource<?>> columnSources,
             final boolean usePrev,
             @NotNull final BarrageMessage snapshot) {

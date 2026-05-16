@@ -22,7 +22,7 @@ import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableList;
 import io.deephaven.util.mutable.MutableInt;
-import gnu.trove.list.array.TLongArrayList;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
 import io.deephaven.util.type.ArrayTypeUtils;
 
 import java.util.*;
@@ -610,18 +610,10 @@ public class SortListener extends BaseTable.ListenerImpl {
         }
     }
 
-    private static class ExposedTLongArrayList extends TLongArrayList {
-        public ExposedTLongArrayList() {}
-
-        public long[] peekDataArray() {
-            return _data;
-        }
-    }
-
     private class SortMappingAggregator implements SafeCloseable {
         private final int chunkSize;
-        private final ExposedTLongArrayList keys;
-        private final ExposedTLongArrayList values;
+        private final LongArrayList keys;
+        private final LongArrayList values;
         @SuppressWarnings("rawtypes")
         private final WritableLongChunk valuesChunk;
         private final WritableLongChunk<OrderedRowKeys> keysChunk;
@@ -630,8 +622,8 @@ public class SortListener extends BaseTable.ListenerImpl {
         private final LongSortKernel sortKernel;
 
         SortMappingAggregator() {
-            keys = new ExposedTLongArrayList();
-            values = new ExposedTLongArrayList();
+            keys = new LongArrayList();
+            values = new LongArrayList();
             chunkSize = 4096;
             keysChunk = WritableLongChunk.makeWritableChunk(chunkSize);
             valuesChunk = WritableLongChunk.makeWritableChunk(chunkSize);
@@ -655,8 +647,8 @@ public class SortListener extends BaseTable.ListenerImpl {
             final int size = keys.size();
             for (int ii = 0; ii < size; ii += chunkSize) {
                 final int thisSize = Math.min(chunkSize, size - ii);
-                keysChunk.copyFromArray(keys.peekDataArray(), ii, 0, thisSize);
-                valuesChunk.copyFromArray(values.peekDataArray(), ii, 0, thisSize);
+                keysChunk.copyFromArray(keys.elements(), ii, 0, thisSize);
+                valuesChunk.copyFromArray(values.elements(), ii, 0, thisSize);
                 keysChunk.setSize(thisSize);
                 valuesChunk.setSize(thisSize);
 
@@ -744,8 +736,8 @@ public class SortListener extends BaseTable.ListenerImpl {
 
     private static class DirectionalResettableBuilderSequential implements RowSetBuilderSequential {
         private final int direction;
-        private final TLongArrayList firsts;
-        private final TLongArrayList lasts;
+        private final LongArrayList firsts;
+        private final LongArrayList lasts;
 
         private DirectionalResettableBuilderSequential(int direction, long[] initialItems) {
             this(direction, initialItems, direction > 0 ? 0 : initialItems.length - 1,
@@ -763,8 +755,8 @@ public class SortListener extends BaseTable.ListenerImpl {
         private DirectionalResettableBuilderSequential(int direction) {
             Assert.assertion(direction == -1 || direction == 1, "invalid direction");
             this.direction = direction;
-            this.firsts = new TLongArrayList();
-            this.lasts = new TLongArrayList();
+            this.firsts = new LongArrayList();
+            this.lasts = new LongArrayList();
         }
 
         @Override
@@ -829,16 +821,16 @@ public class SortListener extends BaseTable.ListenerImpl {
         private final int direction;
 
         private boolean allowedToCoalesce = false;
-        private final TLongArrayList firsts;
-        private final TLongArrayList lasts;
-        private final TLongArrayList deltas;
+        private final LongArrayList firsts;
+        private final LongArrayList lasts;
+        private final LongArrayList deltas;
 
         private DirectionalResettableIndexShiftDataBuilder(int direction) {
             Assert.assertion(direction == -1 || direction == 1, "invalid direction");
             this.direction = direction;
-            this.firsts = new TLongArrayList();
-            this.lasts = new TLongArrayList();
-            this.deltas = new TLongArrayList();
+            this.firsts = new LongArrayList();
+            this.lasts = new LongArrayList();
+            this.deltas = new LongArrayList();
         }
 
         private void noteRequiredShift(final long key, final long delta) {

@@ -3,8 +3,8 @@
 //
 package io.deephaven.engine.table.impl.select.analyzers;
 
-import gnu.trove.list.TIntList;
-import gnu.trove.list.array.TIntArrayList;
+import it.unimi.dsi.fastutil.ints.IntList;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
 import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
 import io.deephaven.base.log.LogOutput;
@@ -190,7 +190,7 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
 
             // execution dependencies are based on layer; the recomputation dependendencies are done by name (a barrier
             // can reach across name aliases, but the formula inputs cannot)
-            final TIntList execDeps = new TIntArrayList();
+            final IntList execDeps = new IntArrayList();
             final Object[] respectedBarriers = sc.respectedBarriers();
             if (respectedBarriers != null) {
                 for (final Object barrier : respectedBarriers) {
@@ -282,7 +282,8 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
                     maybeSetStaticColumnSourceImmutable(scs);
                     maybeCreateAlias.accept(scs);
                     layer = new SelectColumnLayer(
-                            updateGraph, rowSet, context, sc, scs, null, distinctDeps, execDeps.toArray(), mcsBuilder,
+                            updateGraph, rowSet, context, sc, scs, null, distinctDeps, execDeps.toIntArray(),
+                            mcsBuilder,
                             false, useResultKeySpace);
                     break;
                 }
@@ -293,7 +294,8 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
                     maybeSetStaticColumnSourceImmutable(scs);
                     maybeCreateAlias.accept(scs);
                     layer = new SelectColumnLayer(
-                            updateGraph, rowSet, context, sc, scs, underlyingSource, distinctDeps, execDeps.toArray(),
+                            updateGraph, rowSet, context, sc, scs, underlyingSource, distinctDeps,
+                            execDeps.toIntArray(),
                             mcsBuilder, true, useResultKeySpace);
                     break;
                 }
@@ -310,7 +312,8 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
                     }
                     maybeCreateAlias.accept(scs);
                     layer = new SelectColumnLayer(
-                            updateGraph, rowSet, context, sc, scs, underlyingSource, distinctDeps, execDeps.toArray(),
+                            updateGraph, rowSet, context, sc, scs, underlyingSource, distinctDeps,
+                            execDeps.toIntArray(),
                             mcsBuilder, rowRedirection != null, useResultKeySpace);
                     break;
                 }
