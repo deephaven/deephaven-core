@@ -3,7 +3,6 @@
 //
 package io.deephaven.replicators;
 
-import gnu.trove.set.hash.THashSet;
 import io.deephaven.replication.ReplicationUtils;
 import org.apache.commons.io.FileUtils;
 
@@ -256,7 +255,9 @@ public class ReplicateSegmentedSortedMultiset {
 
     private static List<String> fixupTHashes(List<String> lines) {
         lines = removeImport(lines, "\\s*import gnu.trove.*;");
-        lines = addImport(lines, THashSet.class);
+        // Emit the THashSet import as a literal so this replicator doesn't pull Trove onto its own
+        // compile classpath. The generated SSM source still uses Trove until engine/table is migrated.
+        lines = addImport(lines, "import gnu.trove.set.hash.THashSet;");
         return globalReplacements(lines, "TObjectHashSet", "THashSet");
     }
 
