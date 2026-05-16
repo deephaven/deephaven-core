@@ -4,6 +4,7 @@
 package io.deephaven.benchmark.engine.util;
 
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.impl.OrderedLongSetBuilderSequential;
 import io.deephaven.engine.rowset.impl.RspBitmapBuilderSequential;
 import io.deephaven.engine.rowset.impl.rsp.RspArray;
@@ -51,7 +52,8 @@ public class SmallRowSetCreation {
         while (workSet.size() < valuesPerBlock) {
             workSet.add(random.nextInt(RspArray.BLOCK_SIZE));
         }
-        workSet.toIntArray(blockValues);
+        final int[] returned = workSet.toArray(blockValues);
+        Assert.eq(returned, "returned", blockValues, "blockValues");
         Arrays.sort(blockValues);
     }
 
