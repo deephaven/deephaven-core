@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl.sources.regioned;
 
+import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
@@ -51,7 +52,7 @@ class PartitioningColumnDataIndex<KEY_TYPE> extends AbstractDataIndex implements
 
 
     /** Provides fast lookup from keys to positions in the index table **/
-    private final Object2IntOpenHashMap<Object> keyPositionMap;
+    private final Object2IntMap<Object> keyPositionMap;
 
     private final ModifiedColumnSet upstreamKeyModified;
     private final ModifiedColumnSet upstreamRowSetModified;

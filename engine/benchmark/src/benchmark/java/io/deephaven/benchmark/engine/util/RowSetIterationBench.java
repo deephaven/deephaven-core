@@ -10,6 +10,7 @@ import io.deephaven.benchmarking.BenchUtil;
 import io.deephaven.engine.rowset.impl.rsp.RspIterator;
 import it.unimi.dsi.fastutil.longs.LongIterator;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
+import it.unimi.dsi.fastutil.longs.LongSet;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
 import org.openjdk.jmh.runner.RunnerException;
@@ -31,7 +32,7 @@ public class RowSetIterationBench {
     private long[] values;
     private RspBitmap rb;
     private RowSet ix;
-    private LongOpenHashSet tset;
+    private LongSet tset;
 
     @Param({"10"})
     private static int elementStep;

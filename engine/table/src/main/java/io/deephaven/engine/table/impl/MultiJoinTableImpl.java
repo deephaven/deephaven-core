@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl;
 
+import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.JoinAddition;
@@ -194,7 +195,7 @@ public class MultiJoinTableImpl implements MultiJoinTable {
         // Create the join input helpers we'll use during the join creation phase.
         final MultiJoinInputHelper[] joinInputHelpers =
                 Arrays.stream(multiJoinInputs).map(MultiJoinInputHelper::new).toArray(MultiJoinInputHelper[]::new);
-        final Object2IntOpenHashMap<String> usedColumns =
+        final Object2IntMap<String> usedColumns =
                 new Object2IntOpenHashMap<>(joinInputHelpers[0].columnsToAdd.length, 0.5f);
         usedColumns.defaultReturnValue(-1);
 

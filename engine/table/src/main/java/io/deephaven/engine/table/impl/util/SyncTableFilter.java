@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl.util;
 
 import it.unimi.dsi.fastutil.longs.LongArrayList;
+import it.unimi.dsi.fastutil.objects.Object2LongMap;
 import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap;
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
@@ -64,7 +65,7 @@ public class SyncTableFilter {
     private final TupleSource<?>[] keySources;
     private final List<ColumnSource<Long>> idSources;
     private final List<Map<Object, KeyState>> objectToState;
-    private final Object2LongOpenHashMap<Object> minimumid;
+    private final Object2LongMap<Object> minimumid;
     private final HashSet<Object> pendingKeys = new HashSet<>();
     private final List<ListenerRecorder> recorders;
 

@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl.by;
 
+import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.LongChunk;
@@ -39,7 +40,7 @@ public class StaticSymbolTableChunkedOperatorAggregationStateManager implements 
     private final int[] keyPositions;
     private int nextPosition = 0;
 
-    private volatile Object2IntOpenHashMap<String> keyToPosition;
+    private volatile Object2IntMap<String> keyToPosition;
 
     StaticSymbolTableChunkedOperatorAggregationStateManager(final ColumnSource<?> keySource, final Table symbolTable) {
         this.symbolTable = symbolTable;
@@ -144,19 +145,20 @@ public class StaticSymbolTableChunkedOperatorAggregationStateManager implements 
     @Override
     public int findPositionForKey(final Object key) {
         // Build the map if it doesn't exist
-        Object2IntOpenHashMap<String> localKeyToPosition;
+        Object2IntMap<String> localKeyToPosition;
         if ((localKeyToPosition = keyToPosition) == null) {
             synchronized (this) {
                 if ((localKeyToPosition = keyToPosition) == null) {
                     final int length = nextPosition;
-                    localKeyToPosition = new Object2IntOpenHashMap<>(length, 0.75f);
-                    localKeyToPosition.defaultReturnValue(UNKNOWN_ROW);
+                    final Object2IntOpenHashMap<String> builtMap = new Object2IntOpenHashMap<>(length, 0.75f);
+                    builtMap.defaultReturnValue(UNKNOWN_ROW);
                     try (final CloseableIterator<String> keyIterator = new ChunkedObjectColumnIterator<>(
                             keyColumn, RowSequenceFactory.forRange(0, length - 1))) {
                         for (int ii = 0; ii < length; ii++) {
-                            localKeyToPosition.put(keyIterator.next(), ii);
+                            builtMap.put(keyIterator.next(), ii);
                         }
                     }
+                    localKeyToPosition = builtMap;
                     keyToPosition = localKeyToPosition;
                 }
             }

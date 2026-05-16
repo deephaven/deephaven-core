@@ -5,6 +5,7 @@ package io.deephaven.engine.util;
 
 import io.deephaven.gui.color.Color;
 import io.deephaven.gui.color.Colors;
+import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import io.deephaven.util.annotations.UserInvocationPermitted;
 
@@ -774,7 +775,7 @@ public class ColorUtilImpl {
      * Creates distinct and unique coloration for each unique input value.
      */
     public static class DistinctFormatter {
-        private final Object2IntOpenHashMap<Object> valueToCount = new Object2IntOpenHashMap<>();
+        private final Object2IntMap<Object> valueToCount = new Object2IntOpenHashMap<>();
         private final int noEntryValue = valueToCount.defaultReturnValue();
 
         public Long getColor(Object value) {

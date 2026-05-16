@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl.util;
 
+import it.unimi.dsi.fastutil.longs.Long2LongMap;
 import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
@@ -24,7 +25,7 @@ public class ContiguousWritableRowRedirection implements WritableRowRedirection 
     // how many entries in redirections are actually valid
     int size;
     // How things looked on the last clock tick
-    private volatile Long2LongOpenHashMap checkpoint;
+    private volatile Long2LongMap checkpoint;
     private UpdateCommitter<ContiguousWritableRowRedirection> updateCommitter;
 
     @SuppressWarnings("unused")

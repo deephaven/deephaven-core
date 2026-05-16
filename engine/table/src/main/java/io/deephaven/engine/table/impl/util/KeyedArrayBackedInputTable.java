@@ -13,6 +13,7 @@ import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.table.impl.TupleSourceFactory;
+import it.unimi.dsi.fastutil.objects.Object2LongMap;
 import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import org.jetbrains.annotations.NotNull;
@@ -33,9 +34,9 @@ public class KeyedArrayBackedInputTable extends BaseArrayBackedInputTable {
 
     protected final ObjectArraySource<?>[] arrayValueSources;
 
-    private final Object2LongOpenHashMap<Object> keyToRowMap = makeKeyToRowMap();
+    private final Object2LongMap<Object> keyToRowMap = makeKeyToRowMap();
 
-    private static Object2LongOpenHashMap<Object> makeKeyToRowMap() {
+    private static Object2LongMap<Object> makeKeyToRowMap() {
         final Object2LongOpenHashMap<Object> map = new Object2LongOpenHashMap<>();
         map.defaultReturnValue(Long.MIN_VALUE);
         return map;

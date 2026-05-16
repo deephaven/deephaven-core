@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl.updateby;
 
 import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.updateby.ColumnUpdateOperation;
@@ -1249,7 +1250,7 @@ public abstract class UpdateBy {
             final Set<String> opResultColumnSet = new HashSet<>();
 
             final ArrayList<String> inputColumnList = new ArrayList<>();
-            final Object2IntOpenHashMap<String> inputColumnToSlotMap = new Object2IntOpenHashMap<>();
+            final Object2IntMap<String> inputColumnToSlotMap = new Object2IntOpenHashMap<>();
 
             final UpdateByWindow[] windowArr = windowSpecs.stream().map(clauseList -> {
                 final UpdateByOperator[] windowOps =

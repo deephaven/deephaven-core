@@ -12,7 +12,9 @@ import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
+import it.unimi.dsi.fastutil.longs.Long2LongMap;
 import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
+import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.objects.Object2LongMap;
@@ -43,11 +45,12 @@ public class HashSetBackedTableFactory {
 
     private final UpdateGraph updateGraph;
 
+    // valueToIndexMap is declared as the concrete impl because we use object2LongEntrySet().fastIterator()
     private final Object2LongOpenHashMap<ArrayTuple> valueToIndexMap = new Object2LongOpenHashMap<>();
-    private final Long2ObjectOpenHashMap<ArrayTuple> indexToValueMap = new Long2ObjectOpenHashMap<>();
+    private final Long2ObjectMap<ArrayTuple> indexToValueMap = new Long2ObjectOpenHashMap<>();
 
-    private final Long2ObjectOpenHashMap<ArrayTuple> indexToPreviousMap = new Long2ObjectOpenHashMap<>();
-    private final Long2LongOpenHashMap indexToPreviousClock = new Long2LongOpenHashMap();
+    private final Long2ObjectMap<ArrayTuple> indexToPreviousMap = new Long2ObjectOpenHashMap<>();
+    private final Long2LongMap indexToPreviousClock = new Long2LongOpenHashMap();
     private long lastIndex = 0;
     private final LongArrayList freeSet = new LongArrayList();
     private TrackingWritableRowSet rowSet;

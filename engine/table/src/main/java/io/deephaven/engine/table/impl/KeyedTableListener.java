@@ -6,7 +6,9 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.rowset.RowSet;
+import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.objects.Object2LongMap;
 import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap;
 import io.deephaven.tuple.ArrayTuple;
 
@@ -29,8 +31,8 @@ public class KeyedTableListener {
     }
 
     private final QueryTable table;
-    private final Object2LongOpenHashMap<ArrayTuple> keyToRowKeyHashMap;
-    private final Long2ObjectOpenHashMap<ArrayTuple> rowKeyToKeyHashMap;
+    private final Object2LongMap<ArrayTuple> keyToRowKeyHashMap;
+    private final Long2ObjectMap<ArrayTuple> rowKeyToKeyHashMap;
     private final HashMap<ArrayTuple, CopyOnWriteArrayList<KeyUpdateListener>> keyListenerHashMap;
     private final String[] keyColumnNames;
     private final String[] allColumnNames;

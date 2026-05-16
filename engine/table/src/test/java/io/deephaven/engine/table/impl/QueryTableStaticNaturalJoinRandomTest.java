@@ -14,9 +14,13 @@ import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.ColumnSource;
+import it.unimi.dsi.fastutil.bytes.Byte2IntMap;
 import it.unimi.dsi.fastutil.bytes.Byte2IntOpenHashMap;
+import it.unimi.dsi.fastutil.chars.Char2IntMap;
 import it.unimi.dsi.fastutil.chars.Char2IntOpenHashMap;
+import it.unimi.dsi.fastutil.ints.Int2IntMap;
 import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
+import it.unimi.dsi.fastutil.shorts.Short2IntMap;
 import it.unimi.dsi.fastutil.shorts.Short2IntOpenHashMap;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.tuple.ArrayTuple;
@@ -95,7 +99,7 @@ public class QueryTableStaticNaturalJoinRandomTest extends QueryTableTestBase {
 
         final String updateString;
         if (dataType == int.class) {
-            final Int2IntOpenHashMap rightMap = new Int2IntOpenHashMap(rightTable.intSize(), 0.5f);
+            final Int2IntMap rightMap = new Int2IntOpenHashMap(rightTable.intSize(), 0.5f);
             rightMap.defaultReturnValue(NULL_INT);
 
             final ColumnSource<Integer> rightKey = rightTable.getColumnSource("JoinKey");
@@ -107,7 +111,7 @@ public class QueryTableStaticNaturalJoinRandomTest extends QueryTableTestBase {
             QueryScope.addParam("rightMap", rightMap);
             updateString = "RightSentinel=rightMap.get(JoinKey)";
         } else if (dataType == short.class) {
-            final Short2IntOpenHashMap rightMap = new Short2IntOpenHashMap(rightTable.intSize(), 0.5f);
+            final Short2IntMap rightMap = new Short2IntOpenHashMap(rightTable.intSize(), 0.5f);
             rightMap.defaultReturnValue(NULL_INT);
 
             final ColumnSource<Short> rightKey = rightTable.getColumnSource("JoinKey");
@@ -119,7 +123,7 @@ public class QueryTableStaticNaturalJoinRandomTest extends QueryTableTestBase {
             QueryScope.addParam("rightMap", rightMap);
             updateString = "RightSentinel=rightMap.get(JoinKey)";
         } else if (dataType == byte.class) {
-            final Byte2IntOpenHashMap rightMap = new Byte2IntOpenHashMap(rightTable.intSize(), 0.5f);
+            final Byte2IntMap rightMap = new Byte2IntOpenHashMap(rightTable.intSize(), 0.5f);
             rightMap.defaultReturnValue(NULL_INT);
 
             final ColumnSource<Byte> rightKey = rightTable.getColumnSource("JoinKey");
@@ -131,7 +135,7 @@ public class QueryTableStaticNaturalJoinRandomTest extends QueryTableTestBase {
             QueryScope.addParam("rightMap", rightMap);
             updateString = "RightSentinel=rightMap.get(JoinKey)";
         } else if (dataType == char.class) {
-            final Char2IntOpenHashMap rightMap = new Char2IntOpenHashMap(rightTable.intSize(), 0.5f);
+            final Char2IntMap rightMap = new Char2IntOpenHashMap(rightTable.intSize(), 0.5f);
             rightMap.defaultReturnValue(NULL_INT);
 
             final ColumnSource<Character> rightKey = rightTable.getColumnSource("JoinKey");

@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl;
 
+import it.unimi.dsi.fastutil.ints.Int2IntMap;
 import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 import io.deephaven.chunk.util.pools.ChunkPoolReleaseTracking;
 import io.deephaven.engine.context.ExecutionContext;
@@ -242,7 +243,7 @@ public class QueryTableMultiJoinTest extends QueryTableTestBase {
 
     private static class SeedCount implements IntUnaryOperator {
         final static int seedCount = 10;
-        final static Int2IntOpenHashMap seedCountForSize = new Int2IntOpenHashMap(1, 0.5f);
+        final static Int2IntMap seedCountForSize = new Int2IntOpenHashMap(1, 0.5f);
 
         static {
             seedCountForSize.defaultReturnValue(seedCount);
