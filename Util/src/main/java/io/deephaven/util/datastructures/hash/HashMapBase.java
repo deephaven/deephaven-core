@@ -245,10 +245,10 @@ public abstract class HashMapBase implements NullableLong2LongMap {
     }
 
     final ObjectSet<Long2LongMap.Entry> entrySetImpl(final long[] kv) {
-        return kv == null ? EMPTY_ENTRY_SET : new EntrySet(kv);
+        return kv == null ? EMPTY_ENTRY_SET : new EntrySet(kv, size);
     }
 
-    private static final EntrySet EMPTY_ENTRY_SET = new EntrySet(new long[0]);
+    private static final EntrySet EMPTY_ENTRY_SET = new EntrySet(new long[0], 0);
 
     /**
      * Read-only entry set view backed by the supplied keys-and-values array. Supports iteration only.
@@ -257,26 +257,24 @@ public abstract class HashMapBase implements NullableLong2LongMap {
             implements Long2LongMap.FastEntrySet {
         // Keep a local reference so a concurrent rehash that replaces the owning map's array does not crash us.
         private final long[] keysAndValues;
+        private final int size;
 
-        EntrySet(final long[] kv) {
+        EntrySet(final long[] kv, final int size) {
             this.keysAndValues = kv;
+            this.size = size;
         }
 
         @Override
         public int size() {
-            int count = 0;
-            for (int ii = 0; ii < keysAndValues.length; ii += 2) {
-                final long key = keysAndValues[ii];
-                if (key != SPECIAL_KEY_FOR_EMPTY_SLOT && key != SPECIAL_KEY_FOR_DELETED_SLOT) {
-                    ++count;
-                }
-            }
-            return count;
+            return size;
         }
 
         @Override
         public ObjectIterator<Long2LongMap.Entry> iterator() {
-            return new EntryIterator(keysAndValues);
+            // We only support fastIterator(), which reuses a single mutable entry to avoid per-element allocation.
+            // The plain iterator() would have to allocate a fresh entry per call to next() because the caller is
+            // allowed to retain references across iteration.
+            throw new UnsupportedOperationException("Use fastIterator()");
         }
 
         @Override
@@ -288,10 +286,12 @@ public abstract class HashMapBase implements NullableLong2LongMap {
     /*
      * Iterator over the keys-and-values array. We keep our own reference to the array so we can avoid crashing if there
      * is an unprotected concurrent write (e.g. a rehash that reallocates the owning map's array). We also un-redirect
-     * REDIRECTED_KEY_FOR_EMPTY_SLOT back to 0 so callers see the key they originally inserted.
+     * REDIRECTED_KEY_FOR_EMPTY_SLOT back to 0 so callers see the key they originally inserted. A single mutable entry
+     * is reused across calls to next() — callers must not retain the returned Entry past the next advance.
      */
     private static final class EntryIterator implements ObjectIterator<Long2LongMap.Entry> {
         private final long[] keysAndValues;
+        private final MutableEntry entry = new MutableEntry();
         /**
          * nextIndex points to the next occupied slot (or the first occupied slot if we have just been constructed), or
          * keysAndValues.length if there is no next occupied slot.
@@ -317,7 +317,8 @@ public abstract class HashMapBase implements NullableLong2LongMap {
             final long key = rawKey == REDIRECTED_KEY_FOR_EMPTY_SLOT ? SPECIAL_KEY_FOR_EMPTY_SLOT : rawKey;
             final long value = keysAndValues[nextIndex + 1];
             nextIndex = findOccupiedSlot(nextIndex + 2);
-            return new AbstractLong2LongMap.BasicEntry(key, value);
+            entry.set(key, value);
+            return entry;
         }
 
         /**
@@ -335,6 +336,17 @@ public abstract class HashMapBase implements NullableLong2LongMap {
                 beginSlot += 2;
             }
             return beginSlot;
+        }
+    }
+
+    /**
+     * Subclass of fastutil's BasicEntry that exposes the protected key/value fields for in-place mutation, so the fast
+     * iterator can reuse the same entry instance across calls to next().
+     */
+    private static final class MutableEntry extends AbstractLong2LongMap.BasicEntry {
+        void set(final long key, final long value) {
+            this.key = key;
+            this.value = value;
         }
     }
 
