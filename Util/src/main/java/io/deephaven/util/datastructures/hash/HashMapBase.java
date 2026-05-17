@@ -350,9 +350,9 @@ public abstract class HashMapBase implements NullableLong2LongMap {
         }
     }
 
-    // Following the original upstream spirit, callers should use keyArray() / valueArray() (declared on
-    // NullableLong2LongMap) rather than the Long2LongMap-inherited keySet() / values() collection views, which would
-    // require us to maintain custom collection-view objects. The collection views, containsKey, containsValue, and
+    // Callers should use keyArray() / valueArray() (declared on NullableLong2LongMap) rather than the
+    // Long2LongMap-inherited keySet() / values() collection views, which would require us to maintain custom
+    // collection-view objects. The collection views, containsKey, containsValue, and
     // putAll all throw UnsupportedOperationException; they can be implemented manually later if needed.
 
     @Override
