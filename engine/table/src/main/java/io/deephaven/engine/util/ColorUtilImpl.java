@@ -775,15 +775,19 @@ public class ColorUtilImpl {
      * Creates distinct and unique coloration for each unique input value.
      */
     public static class DistinctFormatter {
-        private final Object2IntMap<Object> valueToCount = new Object2IntOpenHashMap<>();
-        private final int noEntryValue = valueToCount.defaultReturnValue();
+        private final Object2IntMap<Object> valueToCount;
+
+        DistinctFormatter() {
+            valueToCount = new Object2IntOpenHashMap<>();
+            valueToCount.defaultReturnValue(-1);
+        }
 
         public Long getColor(Object value) {
             int count;
             synchronized (valueToCount) {
                 count = valueToCount.getInt(value);
 
-                if (count == noEntryValue) {
+                if (count == valueToCount.defaultReturnValue()) {
                     count = valueToCount.size() + 1;
 
                     valueToCount.put(value, count);

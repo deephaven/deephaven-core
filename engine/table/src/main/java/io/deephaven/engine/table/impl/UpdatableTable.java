@@ -62,9 +62,6 @@ public class UpdatableTable extends QueryTable implements Runnable {
 
     private final RowSetChangeRecorder rowSetChangeRecorder = new RowSetChangeRecorderImpl();
 
-    // Preserve the Trove default capacity (10) and load factor (0.5f) rather than fastutil's 16/0.75f. fastutil sets
-    // don't have a "no entry value" concept (add/remove report success via boolean), so the Trove NULL_LONG sentinel
-    // argument has no analog and is simply dropped.
     private final LongSet addedSet = new LongOpenHashSet(10, 0.5f);
     private final LongSet removedSet = new LongOpenHashSet(10, 0.5f);
     private final LongSet modifiedSet = new LongOpenHashSet(10, 0.5f);
@@ -109,7 +106,7 @@ public class UpdatableTable extends QueryTable implements Runnable {
 
     private static RowSet setToRowSet(@NotNull final LongSet set) {
         final RowSetBuilderRandom builder = RowSetFactory.builderRandom();
-        set.forEach((long key) -> builder.addKey(key));
+        set.forEach(builder::addKey);
         set.clear();
         return builder.build();
     }

@@ -96,7 +96,7 @@ public class MergeSortedHelper {
             if (!(table instanceof BaseTable)) {
                 throw new UnsupportedOperationException("Can not perform mergeSorted unless you pass in a BaseTable!");
             }
-            if (((BaseTable) table).isRefreshing()) {
+            if (table.isRefreshing()) {
                 throw new UnsupportedOperationException("mergeSorted does not yet support refreshing tables!");
             }
 

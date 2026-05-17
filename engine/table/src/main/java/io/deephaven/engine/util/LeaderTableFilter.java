@@ -696,7 +696,7 @@ public class LeaderTableFilter {
                         continue;
                     }
                     // we need to check if this follower has the key for this row
-                    final long idForFollower = leaderKeyState.pendingIdsByFollower[tt].get(leaderRowToCheck);
+                    final long idForFollower = leaderKeyState.pendingIdsByFollower[tt].getLong(leaderRowToCheck);
                     if (idForFollower == QueryConstants.NULL_LONG) {
                         satisfiedFollowers |= tableMask;
                         continue;
@@ -730,7 +730,7 @@ public class LeaderTableFilter {
                     matchedIndex = leaderRowToCheck;
                     for (int tt = 0; tt < tableCount; ++tt) {
                         // the followerKeyState may be null if the pending Id is null
-                        final long activeId = leaderKeyState.pendingIdsByFollower[tt].get(leaderRowToCheck);
+                        final long activeId = leaderKeyState.pendingIdsByFollower[tt].getLong(leaderRowToCheck);
                         if (followerKeyStates[tt] != null) {
                             followerKeyStates[tt].setActiveId(activeId);
                         } else {

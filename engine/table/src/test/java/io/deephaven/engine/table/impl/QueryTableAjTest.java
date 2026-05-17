@@ -1505,8 +1505,8 @@ public class QueryTableAjTest {
 
         QueryScope.addParam("__rightStampExpected", expectedStamp);
         QueryScope.addParam("__rightSentinelExpected", expectedSentinel);
-        final Table expected = leftTable.update("RightStamp=__rightStampExpected.get(i)",
-                "RightSentinel=__rightSentinelExpected.get(i)");
+        final Table expected = leftTable.update("RightStamp=__rightStampExpected.getInt(i)",
+                "RightSentinel=__rightSentinelExpected.getInt(i)");
 
         if (RefreshingTableTestCase.printTableUpdates) {
             System.out.println("Left:");

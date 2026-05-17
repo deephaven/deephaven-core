@@ -351,7 +351,7 @@ public class SyncTableFilter {
                         unprocessedIds.removeElements(wp, unprocessedIds.size());
                     }
                 }
-                if (keyState.unprocessedIds.size() == 0) {
+                if (keyState.unprocessedIds.isEmpty()) {
                     allPresent = false;
                 }
             }
