@@ -664,7 +664,7 @@ public abstract class UpdateBy {
             final List<int[]> operatorSets = new ArrayList<>(sortedDirtyOperators.length);
             final IntArrayList opList = new IntArrayList(sortedDirtyOperators.length);
 
-            opList.add(sortedDirtyOperators[0]);
+            opList.add(sortedDirtyOperators[0].intValue());
             int lastOpIdx = sortedDirtyOperators[0];
             for (int ii = 1; ii < sortedDirtyOperators.length; ii++) {
                 final int opIdx = sortedDirtyOperators[ii];
@@ -1251,6 +1251,7 @@ public abstract class UpdateBy {
 
             final ArrayList<String> inputColumnList = new ArrayList<>();
             final Object2IntMap<String> inputColumnToSlotMap = new Object2IntOpenHashMap<>();
+            inputColumnToSlotMap.defaultReturnValue(-1);
 
             final UpdateByWindow[] windowArr = windowSpecs.stream().map(clauseList -> {
                 final UpdateByOperator[] windowOps =
