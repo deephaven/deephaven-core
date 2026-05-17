@@ -6,8 +6,6 @@ package io.deephaven.util.datastructures.hash;
 import it.unimi.dsi.fastutil.longs.Long2LongMap;
 import it.unimi.dsi.fastutil.longs.Long2LongMaps;
 import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
-import it.unimi.dsi.fastutil.longs.LongCollection;
-import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.objects.ObjectIterator;
 import junit.framework.TestCase;
 import org.junit.Test;
@@ -204,9 +202,9 @@ public class TestLongLongMap {
         Long2LongMap map = factory.create(initialCapacity, loadFactor);
         final long specialKey = HashMapBase.SPECIAL_KEY_FOR_EMPTY_SLOT;
         map.put(specialKey, 12345);
-        final LongSet keys = map.keySet();
-        TestCase.assertEquals(keys.size(), 1);
-        TestCase.assertTrue(keys.contains(specialKey));
+        final long[] keys = getKeys(map);
+        TestCase.assertEquals(1, keys.length);
+        TestCase.assertEquals(specialKey, keys[0]);
     }
 
     @Test
@@ -227,13 +225,10 @@ public class TestLongLongMap {
         TestCase.assertEquals(nextIndex, reference.size());
         TestCase.assertEquals(reference.size(), test.size());
 
-        final LongSet actualKeySet = test.keySet();
-        final LongCollection actualValueCollection = test.values();
-        TestCase.assertEquals(expectedKeys.length, actualKeySet.size());
-        TestCase.assertEquals(expectedValues.length, actualValueCollection.size());
-
-        final long[] actualKeys = actualKeySet.toLongArray();
-        final long[] actualValues = actualValueCollection.toLongArray();
+        final long[] actualKeys = getKeys(test);
+        final long[] actualValues = getValues(test);
+        TestCase.assertEquals(expectedKeys.length, actualKeys.length);
+        TestCase.assertEquals(expectedValues.length, actualValues.length);
 
         Arrays.sort(expectedKeys);
         Arrays.sort(expectedValues);
@@ -242,6 +237,33 @@ public class TestLongLongMap {
 
         TestCase.assertTrue(Arrays.equals(expectedKeys, actualKeys));
         TestCase.assertTrue(Arrays.equals(expectedValues, actualValues));
+
+        if (test instanceof NullableLong2LongMap) {
+            // Also exercise the caller-provided-space overloads.
+            final NullableLong2LongMap nm = (NullableLong2LongMap) test;
+            final long[] keySpace = new long[reference.size()];
+            final long[] valueSpace = new long[reference.size()];
+            TestCase.assertSame(keySpace, nm.keyArray(keySpace));
+            TestCase.assertSame(valueSpace, nm.valueArray(valueSpace));
+            Arrays.sort(keySpace);
+            Arrays.sort(valueSpace);
+            TestCase.assertTrue(Arrays.equals(expectedKeys, keySpace));
+            TestCase.assertTrue(Arrays.equals(expectedValues, valueSpace));
+        }
+    }
+
+    private static long[] getKeys(Long2LongMap map) {
+        if (map instanceof NullableLong2LongMap) {
+            return ((NullableLong2LongMap) map).keyArray();
+        }
+        return map.keySet().toLongArray();
+    }
+
+    private static long[] getValues(Long2LongMap map) {
+        if (map instanceof NullableLong2LongMap) {
+            return ((NullableLong2LongMap) map).valueArray();
+        }
+        return map.values().toLongArray();
     }
 
     @Test
