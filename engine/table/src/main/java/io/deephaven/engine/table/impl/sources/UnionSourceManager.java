@@ -856,8 +856,8 @@ public class UnionSourceManager implements PushdownPredicateManager {
                 ctx.matchers.size(),
                 (localContext, idx, nec, resume) -> {
                     final PushdownFilterMatcher matcher = ctx.matchers.get(idx);
-                    final long firstRowKey = ctx.firstRowKeys.get(idx);
-                    final long lastRowKey = ctx.lastRowKeys.get(idx);
+                    final long firstRowKey = ctx.firstRowKeys.getLong(idx);
+                    final long lastRowKey = ctx.lastRowKeys.getLong(idx);
                     try (final WritableRowSet localSelection = selection.subSetByKeyRange(firstRowKey, lastRowKey)) {
                         if (localSelection.isEmpty()) {
                             matches[idx] = RowSetFactory.empty();

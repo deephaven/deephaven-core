@@ -313,7 +313,7 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
 
     @NotNull
     private static NullableLong2LongMap createMapWithCapacity(int initialCapacity, float loadFactor,
-                                                              long noEntryValue) {
+            long noEntryValue) {
         switch (hashBucketWidth) {
             case 1:
                 return new HashMapLockFreeK1V1(initialCapacity, loadFactor, noEntryValue);
