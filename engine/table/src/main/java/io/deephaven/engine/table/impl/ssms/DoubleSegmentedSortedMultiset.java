@@ -22,7 +22,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.mutable.MutableInt;
 import io.deephaven.util.mutable.MutableLong;
-import io.deephaven.util.compare.DoubleCompareOpenHashSet;
+import io.deephaven.engine.table.impl.ssms.DoubleCompareOpenHashSet;
 import it.unimi.dsi.fastutil.doubles.DoubleSet;
 
 import java.util.Arrays;

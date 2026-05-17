@@ -1,8 +1,9 @@
 //
 // Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
-package io.deephaven.util.compare;
+package io.deephaven.engine.table.impl.ssms;
 
+import io.deephaven.util.compare.DoubleComparisons;
 import it.unimi.dsi.fastutil.doubles.DoubleCollection;
 import it.unimi.dsi.fastutil.doubles.DoubleIterator;
 import it.unimi.dsi.fastutil.doubles.DoubleOpenHashSet;
