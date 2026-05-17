@@ -144,8 +144,7 @@ public class HashSetBackedTableFactory {
         if (freeSet.isEmpty()) {
             newIndex = lastIndex++;
         } else {
-            newIndex = freeSet.getLong(freeSet.size() - 1);
-            freeSet.removeElements(freeSet.size() - 1, freeSet.size());
+            newIndex = freeSet.removeLong(freeSet.size() - 1);
         }
         addedBuilder.addKey(newIndex);
         valueToIndexMap.put(value, newIndex);

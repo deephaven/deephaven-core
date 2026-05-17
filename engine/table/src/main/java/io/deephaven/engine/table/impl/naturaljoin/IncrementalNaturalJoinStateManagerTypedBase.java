@@ -415,10 +415,7 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
             rightSideDuplicateRowSets.ensureCapacity(nextDuplicateRightSide + 1);
             return nextDuplicateRightSide++;
         } else {
-            final int offset = freeDuplicateValues.size() - 1;
-            final long value = freeDuplicateValues.getLong(offset);
-            freeDuplicateValues.removeElements(offset, offset + 1);
-            return value;
+            return freeDuplicateValues.removeLong(freeDuplicateValues.size() - 1);
         }
     }
 
