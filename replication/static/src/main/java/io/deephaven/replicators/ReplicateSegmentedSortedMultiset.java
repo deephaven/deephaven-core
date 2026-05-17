@@ -23,8 +23,19 @@ public class ReplicateSegmentedSortedMultiset {
     private static final String TASK = "replicateSegmentedSortedMultiset";
 
     public static void main(String[] args) throws IOException {
-        charToAllButBooleanAndLong(TASK,
+        final List<String> generatedSsms = charToAllButBooleanAndLong(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/ssms/CharSegmentedSortedMultiset.java");
+
+        // Float/Double SSMs must use FloatComparisons / DoubleComparisons equality in their delta-tracking hash
+        // sets — otherwise -0.0 vs +0.0 (and any two NaN bit patterns) would be treated as distinct values, which
+        // disagrees with the SSM's own leaf-storage equality.
+        for (final String generated : generatedSsms) {
+            if (generated.contains("Float")) {
+                useCompareOpenHashSet(generated, "Float");
+            } else if (generated.contains("Double")) {
+                useCompareOpenHashSet(generated, "Double");
+            }
+        }
 
         insertInstantExtensions(charToLong(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/ssms/CharSegmentedSortedMultiset.java"));
@@ -246,6 +257,22 @@ public class ReplicateSegmentedSortedMultiset {
                 indent(Collections.singletonList(
                         "return (Object[]) Array.newInstance(getComponentType(), 0);"), 12));
         return addImport(lines, Array.class);
+    }
+
+    /**
+     * Swap the FloatOpenHashSet / DoubleOpenHashSet used by the delta-tracking hash sets in the generated Float and
+     * Double SSMs for our {@link io.deephaven.util.compare.FloatCompareOpenHashSet} /
+     * {@link io.deephaven.util.compare.DoubleCompareOpenHashSet}, so signed-zero and NaN comparisons in the delta
+     * tracker line up with the SSM's leaf-storage equality (FloatComparisons / DoubleComparisons).
+     */
+    private static void useCompareOpenHashSet(final String generatedPath, final String typeName) throws IOException {
+        final File file = new File(generatedPath);
+        List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
+        lines = globalReplacements(lines,
+                "it\\.unimi\\.dsi\\.fastutil\\." + typeName.toLowerCase() + "s\\." + typeName + "OpenHashSet",
+                "io.deephaven.util.compare." + typeName + "CompareOpenHashSet",
+                "new " + typeName + "OpenHashSet\\(", "new " + typeName + "CompareOpenHashSet(");
+        FileUtils.writeLines(file, lines);
     }
 
     private static List<String> fixupNulls(List<String> lines) {

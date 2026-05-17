@@ -14,9 +14,10 @@ import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
  * {@link io.deephaven.util.compare.FloatComparisons} treats {@code -0.0f} as equal to {@code +0.0f}.
  *
  * <p>
- * The SSM's delta-tracking added/removed sets must agree with the SSM's leaf-storage equality (FloatComparisons.eq).
- * If they disagree — e.g. because the underlying hash set treats {@code -0.0f} and {@code +0.0f} as distinct — then a
- * net-no-change insert/remove pair can leak phantom adds/removes through {@code fillAddedChunk}/{@code fillRemovedChunk}.
+ * The SSM's delta-tracking added/removed sets must agree with the SSM's leaf-storage equality (FloatComparisons.eq). If
+ * they disagree — e.g. because the underlying hash set treats {@code -0.0f} and {@code +0.0f} as distinct — then a
+ * net-no-change insert/remove pair can leak phantom adds/removes through
+ * {@code fillAddedChunk}/{@code fillRemovedChunk}.
  */
 public class TestFloatSegmentedSortedMultisetSpecialValues extends RefreshingTableTestCase {
 
@@ -55,9 +56,9 @@ public class TestFloatSegmentedSortedMultisetSpecialValues extends RefreshingTab
     }
 
     /**
-     * Insert {@code -0.0f} then remove {@code +0.0f}. FloatComparisons treats the two as equal, so the leaf empties
-     * out AND the delta-tracking should recognize that the removal cancels the prior addition, leaving both
-     * added and removed sets empty.
+     * Insert {@code -0.0f} then remove {@code +0.0f}. FloatComparisons treats the two as equal, so the leaf empties out
+     * AND the delta-tracking should recognize that the removal cancels the prior addition, leaving both added and
+     * removed sets empty.
      */
     public void testInsertNegativeZeroThenRemovePositiveZero() {
         final FloatSegmentedSortedMultiset ssm = trackingSsm();
@@ -77,8 +78,8 @@ public class TestFloatSegmentedSortedMultisetSpecialValues extends RefreshingTab
     }
 
     /**
-     * Insert {@code +0.0f} then remove {@code -0.0f} — the mirror of the previous test. Same FloatComparisons
-     * semantics apply.
+     * Insert {@code +0.0f} then remove {@code -0.0f} — the mirror of the previous test. Same FloatComparisons semantics
+     * apply.
      */
     public void testInsertPositiveZeroThenRemoveNegativeZero() {
         final FloatSegmentedSortedMultiset ssm = trackingSsm();

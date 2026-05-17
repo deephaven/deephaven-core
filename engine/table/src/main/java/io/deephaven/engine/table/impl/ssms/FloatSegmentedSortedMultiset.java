@@ -22,7 +22,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.mutable.MutableInt;
 import io.deephaven.util.mutable.MutableLong;
-import it.unimi.dsi.fastutil.floats.FloatOpenHashSet;
+import io.deephaven.util.compare.FloatCompareOpenHashSet;
 import it.unimi.dsi.fastutil.floats.FloatSet;
 
 import java.util.Arrays;
@@ -2233,7 +2233,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
         }
 
         if (added == null) {
-            added = new FloatOpenHashSet(valuesToInsert.size());
+            added = new FloatCompareOpenHashSet(valuesToInsert.size());
         }
 
         if (removed == null) {
@@ -2262,7 +2262,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
         }
 
         if (removed == null) {
-            removed = new FloatOpenHashSet();
+            removed = new FloatCompareOpenHashSet();
         }
 
         if (added == null || !added.remove(valueRemoved)) {
