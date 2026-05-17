@@ -390,7 +390,7 @@ public class TestLongLongMap {
     }
 
     private void emptyMapHelper(Long2LongMap map) {
-        final ObjectIterator<Long2LongMap.Entry> it = fastEntryIterator(map);
+        final ObjectIterator<Long2LongMap.Entry> it = Long2LongMaps.fastIterator(map);
         TestCase.assertFalse(it.hasNext());
         try {
             it.next();
@@ -398,10 +398,6 @@ public class TestLongLongMap {
         } catch (NoSuchElementException e) {
             // expected
         }
-    }
-
-    private static ObjectIterator<Long2LongMap.Entry> fastEntryIterator(Long2LongMap map) {
-        return Long2LongMaps.fastIterator(map);
     }
 
     static class Factory {
