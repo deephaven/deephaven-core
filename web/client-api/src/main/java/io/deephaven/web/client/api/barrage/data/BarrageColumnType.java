@@ -39,7 +39,7 @@ public abstract sealed class BarrageColumnType
      * Best effort mapping from string type info to supported Flight/Deephaven types.
      * 
      * @param deephavenType supports deephaven:type strings, as well as some specific JS shorthand
-     * @return
+     * @return a type with the provided name based on the given type
      */
     public static BarrageColumnType fromString(String columnName, String deephavenType) {
         if (deephavenType.endsWith("[]")) {
@@ -89,6 +89,12 @@ public abstract sealed class BarrageColumnType
         }
     }
 
+    /**
+     * Creates an instance from the provided arrow field, reading both from the type info it contains and metadata.
+     *
+     * @param field the arrow field to read
+     * @return a type with the same name and type as the argument
+     */
     public static BarrageColumnType fromArrowField(Field field) {
         java.util.Map<String, String> customMetadata =
                 WebBarrageUtils.keyValuePairs("", field.customMetadataLength(), field::customMetadata);
@@ -220,17 +226,16 @@ public abstract sealed class BarrageColumnType
         this(columnName, java.util.Map.of());
     }
 
+    /**
+     * Gets the name for the column. Never null for actual columns, only for nested arrow "fields" within columns.
+     */
     public @Nullable String getColumnName() {
         return columnName;
     }
 
-    public java.util.Map<String, String> customMetadata() {
-        return customMetadata;
-    }
+    protected abstract byte typeType();
 
-    public abstract byte typeType();
-
-    public abstract int writeType(FlatBufferBuilder builder);
+    protected abstract int writeType(FlatBufferBuilder builder);
 
     public int writeField(FlatBufferBuilder builder) {
         int typeOffset = writeType(builder);
@@ -281,13 +286,35 @@ public abstract sealed class BarrageColumnType
         return null;
     }
 
-    public abstract Class<?> type();
+    /**
+     * Returns a Class instance to use when constructing a local BarrageTypeInfo. This is presently specific to the JS
+     * client, and would need to generalized if we shared this clas.
+     */
+    protected abstract Class<?> type();
 
-    public @Nullable Class<?> componentType() {
+    /**
+     * Returns a Class instance to use if this column will be a list/array/vector as the component type, otherwise null.
+     */
+    protected @Nullable Class<?> componentType() {
         return null;
     }
 
-    public abstract String deephavenType();
+    /**
+     * Returns the type that this column represents in terms that deephaven servers/clients will recognize.
+     */
+    public final String deephavenType() {
+        // If explicitly set, read that before guessing
+        if (customMetadata.containsKey("deephaven:type")) {
+            return customMetadata.get("deephaven:type");
+        }
+        return inferDeephavenType();
+    }
+
+    /**
+     * Infer a best effort deephaven type string based on the column type information. This is only used when the
+     * metadata isn't set.
+     */
+    protected abstract String inferDeephavenType();
 
     public BarrageTypeInfo<Field> typeInfo() {
         FlatBufferBuilder builder = new FlatBufferBuilder();
@@ -318,7 +345,7 @@ public abstract sealed class BarrageColumnType
         }
 
         @Override
-        public String deephavenType() {
+        public String inferDeephavenType() {
             return "java.lang.Object";
         }
 
@@ -345,14 +372,6 @@ public abstract sealed class BarrageColumnType
             this.isSigned = isSigned;
         }
 
-        public int bitWidth() {
-            return bitWidth;
-        }
-
-        public boolean isSigned() {
-            return isSigned;
-        }
-
         @Override
         public int writeType(FlatBufferBuilder builder) {
             return org.apache.arrow.flatbuf.Int.createInt(builder, bitWidth, isSigned);
@@ -364,7 +383,7 @@ public abstract sealed class BarrageColumnType
         }
 
         @Override
-        public String deephavenType() {
+        public String inferDeephavenType() {
             if (isSigned) {
                 switch (bitWidth) {
                     case 8:
@@ -428,13 +447,6 @@ public abstract sealed class BarrageColumnType
             this.precision = precision;
         }
 
-        /**
-         * @return precision value from {@link org.apache.arrow.flatbuf.Precision}
-         */
-        public short precision() {
-            return precision;
-        }
-
         @Override
         public int writeType(FlatBufferBuilder builder) {
             return org.apache.arrow.flatbuf.FloatingPoint.createFloatingPoint(builder, precision);
@@ -446,7 +458,7 @@ public abstract sealed class BarrageColumnType
         }
 
         @Override
-        public String deephavenType() {
+        public String inferDeephavenType() {
             switch (precision) {
                 case org.apache.arrow.flatbuf.Precision.SINGLE:
                     return "float";
@@ -495,7 +507,7 @@ public abstract sealed class BarrageColumnType
         }
 
         @Override
-        public String deephavenType() {
+        public String inferDeephavenType() {
             return deephavenType;
         }
 
@@ -533,7 +545,7 @@ public abstract sealed class BarrageColumnType
         }
 
         @Override
-        public String deephavenType() {
+        public String inferDeephavenType() {
             return "java.lang.String";
         }
 
@@ -564,7 +576,7 @@ public abstract sealed class BarrageColumnType
         }
 
         @Override
-        public String deephavenType() {
+        public String inferDeephavenType() {
             return "java.lang.Boolean";
         }
 
@@ -579,31 +591,12 @@ public abstract sealed class BarrageColumnType
         private final int scale;
         private final int bitWidth;
 
-        public Decimal(@Nullable String columnName, int precision, int scale, int bitWidth) {
-            super(columnName);
-            this.precision = precision;
-            this.scale = scale;
-            this.bitWidth = bitWidth;
-        }
-
         public Decimal(@Nullable String columnName, int precision, int scale, int bitWidth,
                 java.util.Map<String, String> customMetadata) {
             super(columnName, customMetadata);
             this.precision = precision;
             this.scale = scale;
             this.bitWidth = bitWidth;
-        }
-
-        public int precision() {
-            return precision;
-        }
-
-        public int scale() {
-            return scale;
-        }
-
-        public int bitWidth() {
-            return bitWidth;
         }
 
         @Override
@@ -617,7 +610,7 @@ public abstract sealed class BarrageColumnType
         }
 
         @Override
-        public String deephavenType() {
+        public String inferDeephavenType() {
             return "java.math.BigDecimal";
         }
 
@@ -640,13 +633,6 @@ public abstract sealed class BarrageColumnType
             this.unit = unit;
         }
 
-        /**
-         * @return unit value from {@link org.apache.arrow.flatbuf.DateUnit}
-         */
-        public short unit() {
-            return unit;
-        }
-
         @Override
         public int writeType(FlatBufferBuilder builder) {
             return org.apache.arrow.flatbuf.Date.createDate(builder, unit);
@@ -658,7 +644,7 @@ public abstract sealed class BarrageColumnType
         }
 
         @Override
-        public String deephavenType() {
+        public String inferDeephavenType() {
             return "java.time.LocalDate";
         }
 
@@ -685,17 +671,6 @@ public abstract sealed class BarrageColumnType
             this.bitWidth = bitWidth;
         }
 
-        /**
-         * @return unit value from {@link org.apache.arrow.flatbuf.TimeUnit}
-         */
-        public short unit() {
-            return unit;
-        }
-
-        public int bitWidth() {
-            return bitWidth;
-        }
-
         @Override
         public int writeType(FlatBufferBuilder builder) {
             return org.apache.arrow.flatbuf.Time.createTime(builder, unit, bitWidth);
@@ -707,7 +682,7 @@ public abstract sealed class BarrageColumnType
         }
 
         @Override
-        public String deephavenType() {
+        public String inferDeephavenType() {
             return "java.time.LocalTime";
         }
 
@@ -735,18 +710,6 @@ public abstract sealed class BarrageColumnType
             this.timezone = timezone;
         }
 
-        /**
-         * @return unit value from {@link org.apache.arrow.flatbuf.TimeUnit}
-         */
-        public short unit() {
-            return unit;
-        }
-
-        @Nullable
-        public String timezone() {
-            return timezone;
-        }
-
         @Override
         public int writeType(FlatBufferBuilder builder) {
             int tzOffset = timezone != null ? builder.createString(timezone) : 0;
@@ -759,7 +722,7 @@ public abstract sealed class BarrageColumnType
         }
 
         @Override
-        public String deephavenType() {
+        public String inferDeephavenType() {
             return "java.time.Instant";
         }
 
@@ -777,13 +740,6 @@ public abstract sealed class BarrageColumnType
             this.unit = unit;
         }
 
-        /**
-         * @return unit value from {@link org.apache.arrow.flatbuf.IntervalUnit}
-         */
-        public short unit() {
-            return unit;
-        }
-
         @Override
         public int writeType(FlatBufferBuilder builder) {
             return org.apache.arrow.flatbuf.Interval.createInterval(builder, unit);
@@ -795,7 +751,7 @@ public abstract sealed class BarrageColumnType
         }
 
         @Override
-        public String deephavenType() {
+        public String inferDeephavenType() {
             return "java.time.Duration";
         }
 
@@ -819,10 +775,6 @@ public abstract sealed class BarrageColumnType
             this.componentType = componentType;
         }
 
-        public BarrageColumnType arrayComponentType() {
-            return componentType;
-        }
-
         @Override
         public int writeType(FlatBufferBuilder builder) {
             org.apache.arrow.flatbuf.List.startList(builder);
@@ -835,7 +787,7 @@ public abstract sealed class BarrageColumnType
         }
 
         @Override
-        public String deephavenType() {
+        public String inferDeephavenType() {
             return componentType.deephavenType() + "[]";
         }
 
@@ -880,7 +832,7 @@ public abstract sealed class BarrageColumnType
         }
 
         @Override
-        public String deephavenType() {
+        public String inferDeephavenType() {
             return "java.lang.Object";
         }
 
@@ -912,21 +864,6 @@ public abstract sealed class BarrageColumnType
             this.fields = fields;
         }
 
-        /**
-         * @return mode value from {@link org.apache.arrow.flatbuf.UnionMode}
-         */
-        public short mode() {
-            return mode;
-        }
-
-        public int[] typeIds() {
-            return typeIds;
-        }
-
-        public java.util.List<BarrageColumnType> fields() {
-            return fields;
-        }
-
         @Override
         public int writeType(FlatBufferBuilder builder) {
             int typeIdsOffset = org.apache.arrow.flatbuf.Union.createTypeIdsVector(builder, typeIds);
@@ -939,7 +876,7 @@ public abstract sealed class BarrageColumnType
         }
 
         @Override
-        public String deephavenType() {
+        public String inferDeephavenType() {
             return "java.lang.Object";
         }
 
@@ -967,10 +904,6 @@ public abstract sealed class BarrageColumnType
             this.byteWidth = byteWidth;
         }
 
-        public int byteWidth() {
-            return byteWidth;
-        }
-
         @Override
         public int writeType(FlatBufferBuilder builder) {
             return org.apache.arrow.flatbuf.FixedSizeBinary.createFixedSizeBinary(builder, byteWidth);
@@ -982,7 +915,7 @@ public abstract sealed class BarrageColumnType
         }
 
         @Override
-        public String deephavenType() {
+        public String inferDeephavenType() {
             return "byte[]";
         }
 
@@ -1008,14 +941,6 @@ public abstract sealed class BarrageColumnType
             this.componentType = componentType;
         }
 
-        public int listSize() {
-            return listSize;
-        }
-
-        public BarrageColumnType listComponentType() {
-            return componentType;
-        }
-
         @Override
         public int writeType(FlatBufferBuilder builder) {
             return org.apache.arrow.flatbuf.FixedSizeList.createFixedSizeList(builder, listSize);
@@ -1027,7 +952,7 @@ public abstract sealed class BarrageColumnType
         }
 
         @Override
-        public String deephavenType() {
+        public String inferDeephavenType() {
             return componentType.deephavenType() + "[]";
         }
 
@@ -1060,18 +985,6 @@ public abstract sealed class BarrageColumnType
             this.valueType = valueType;
         }
 
-        public boolean keysSorted() {
-            return keysSorted;
-        }
-
-        public BarrageColumnType keyType() {
-            return keyType;
-        }
-
-        public BarrageColumnType valueType() {
-            return valueType;
-        }
-
         @Override
         public int writeType(FlatBufferBuilder builder) {
             return org.apache.arrow.flatbuf.Map.createMap(builder, keysSorted);
@@ -1083,7 +996,7 @@ public abstract sealed class BarrageColumnType
         }
 
         @Override
-        public String deephavenType() {
+        public String inferDeephavenType() {
             return "java.lang.Object";
         }
 
@@ -1125,13 +1038,6 @@ public abstract sealed class BarrageColumnType
             this.unit = unit;
         }
 
-        /**
-         * @return unit value from {@link org.apache.arrow.flatbuf.TimeUnit}
-         */
-        public short unit() {
-            return unit;
-        }
-
         @Override
         public int writeType(FlatBufferBuilder builder) {
             return org.apache.arrow.flatbuf.Duration.createDuration(builder, unit);
@@ -1143,7 +1049,7 @@ public abstract sealed class BarrageColumnType
         }
 
         @Override
-        public String deephavenType() {
+        public String inferDeephavenType() {
             return "java.time.Duration";
         }
 
@@ -1170,13 +1076,13 @@ public abstract sealed class BarrageColumnType
         }
 
         @Override
-        public String deephavenType() {
-            return "java.math.BigInteger";
+        public String inferDeephavenType() {
+            return "java.lang.Object";
         }
 
         @Override
         public Class<?> type() {
-            return BigIntegerWrapper.class;
+            return Object.class;
         }
     }
 
@@ -1197,7 +1103,7 @@ public abstract sealed class BarrageColumnType
         }
 
         @Override
-        public String deephavenType() {
+        public String inferDeephavenType() {
             return "java.lang.String";
         }
 
@@ -1216,10 +1122,6 @@ public abstract sealed class BarrageColumnType
             this.componentType = componentType;
         }
 
-        public BarrageColumnType listComponentType() {
-            return componentType;
-        }
-
         @Override
         public int writeType(FlatBufferBuilder builder) {
             org.apache.arrow.flatbuf.LargeList.startLargeList(builder);
@@ -1232,7 +1134,7 @@ public abstract sealed class BarrageColumnType
         }
 
         @Override
-        public String deephavenType() {
+        public String inferDeephavenType() {
             return componentType.deephavenType() + "[]";
         }
 
@@ -1263,14 +1165,6 @@ public abstract sealed class BarrageColumnType
             this.valuesType = valuesType;
         }
 
-        public BarrageColumnType runEndsType() {
-            return runEndsType;
-        }
-
-        public BarrageColumnType valuesType() {
-            return valuesType;
-        }
-
         @Override
         public int writeType(FlatBufferBuilder builder) {
             org.apache.arrow.flatbuf.RunEndEncoded.startRunEndEncoded(builder);
@@ -1283,7 +1177,7 @@ public abstract sealed class BarrageColumnType
         }
 
         @Override
-        public String deephavenType() {
+        public String inferDeephavenType() {
             return valuesType.deephavenType();
         }
 
@@ -1299,10 +1193,6 @@ public abstract sealed class BarrageColumnType
     }
 
     public static final class BinaryView extends BarrageColumnType {
-        public BinaryView(@Nullable String columnName) {
-            super(columnName);
-        }
-
         public BinaryView(@Nullable String columnName, java.util.Map<String, String> customMetadata) {
             super(columnName, customMetadata);
         }
@@ -1319,7 +1209,7 @@ public abstract sealed class BarrageColumnType
         }
 
         @Override
-        public String deephavenType() {
+        public String inferDeephavenType() {
             return "byte[]";
         }
 
@@ -1335,10 +1225,6 @@ public abstract sealed class BarrageColumnType
     }
 
     public static final class Utf8View extends BarrageColumnType {
-        public Utf8View(@Nullable String columnName) {
-            super(columnName);
-        }
-
         public Utf8View(@Nullable String columnName, java.util.Map<String, String> customMetadata) {
             super(columnName, customMetadata);
         }
@@ -1355,7 +1241,7 @@ public abstract sealed class BarrageColumnType
         }
 
         @Override
-        public String deephavenType() {
+        public String inferDeephavenType() {
             return "java.lang.String";
         }
 
@@ -1368,19 +1254,10 @@ public abstract sealed class BarrageColumnType
     public static final class ListView extends BarrageColumnType {
         private final BarrageColumnType componentType;
 
-        public ListView(@Nullable String columnName, BarrageColumnType componentType) {
-            super(columnName);
-            this.componentType = componentType;
-        }
-
         public ListView(@Nullable String columnName, BarrageColumnType componentType,
                 java.util.Map<String, String> customMetadata) {
             super(columnName, customMetadata);
             this.componentType = componentType;
-        }
-
-        public BarrageColumnType listComponentType() {
-            return componentType;
         }
 
         @Override
@@ -1395,7 +1272,7 @@ public abstract sealed class BarrageColumnType
         }
 
         @Override
-        public String deephavenType() {
+        public String inferDeephavenType() {
             return componentType.deephavenType() + "[]";
         }
 
@@ -1424,10 +1301,6 @@ public abstract sealed class BarrageColumnType
             this.componentType = componentType;
         }
 
-        public BarrageColumnType listComponentType() {
-            return componentType;
-        }
-
         @Override
         public int writeType(FlatBufferBuilder builder) {
             org.apache.arrow.flatbuf.LargeListView.startLargeListView(builder);
@@ -1440,7 +1313,7 @@ public abstract sealed class BarrageColumnType
         }
 
         @Override
-        public String deephavenType() {
+        public String inferDeephavenType() {
             return componentType.deephavenType() + "[]";
         }
 
