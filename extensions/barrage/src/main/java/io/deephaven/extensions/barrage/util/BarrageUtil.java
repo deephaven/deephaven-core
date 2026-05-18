@@ -1398,17 +1398,7 @@ public class BarrageUtil {
                         // very simplistic logic to take the last snapshot and extrapolate max
                         // number of rows that will not exceed the target UGP processing time
                         // percentage
-                        final long targetCycleDurationMillis;
-                        final UpdateGraph updateGraph = table.getUpdateGraph();
-                        if (updateGraph == null || updateGraph instanceof PoisonedUpdateGraph) {
-                            targetCycleDurationMillis = PeriodicUpdateGraph.getDefaultTargetCycleDurationMillis();
-                        } else {
-                            targetCycleDurationMillis = updateGraph.<PeriodicUpdateGraph>cast()
-                                    .getTargetCycleDurationMillis();
-                        }
-                        long targetNanos = (long) (TARGET_SNAPSHOT_PERCENTAGE
-                                * targetCycleDurationMillis
-                                * 1000000);
+                        final long targetNanos = targetSnapshotTime(table.getUpdateGraph());
 
                         long nanosPerCell = elapsed / (msg.rowsIncluded.size() * columnCount);
 
@@ -1427,6 +1417,24 @@ public class BarrageUtil {
                 }
             }
         }
+    }
+
+    /**
+     * Very simplistic logic to take the last snapshot and extrapolate max number of rows that will not exceed the
+     * target UGP processing time percentage
+     * 
+     * @param updateGraph the update graph for the table
+     * @return the target snapshot time, in nanos
+     */
+    public static long targetSnapshotTime(final UpdateGraph updateGraph) {
+        long targetCycleDurationMillis;
+        if (updateGraph instanceof PeriodicUpdateGraph) {
+            final PeriodicUpdateGraph periodicUpdateGraph = updateGraph.cast();
+            targetCycleDurationMillis = periodicUpdateGraph.getTargetCycleDurationMillis();
+        } else {
+            targetCycleDurationMillis = PeriodicUpdateGraph.getDefaultTargetCycleDurationMillis();
+        }
+        return (long) (TARGET_SNAPSHOT_PERCENTAGE * targetCycleDurationMillis * 1000000);
     }
 
     public static void createAndSendSnapshot(
