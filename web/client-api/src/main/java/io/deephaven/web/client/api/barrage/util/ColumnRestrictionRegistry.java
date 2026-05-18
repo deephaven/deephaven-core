@@ -7,8 +7,10 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Registry for column restriction converters and validators. Supports built-in types and allows downstream consumers to
- * extend the restriction system with their own types via {@link #register}.
+ * Registry for column restriction converters and optional client-side validators. Built-in restriction types
+ * ({@code IntegerRangeRestriction}, {@code DoubleRangeRestriction}, etc.) are handled by typed subclasses of
+ * {@code ColumnRestriction} and do not need entries here. This registry is primarily for downstream consumers that want
+ * to extend the restriction system with their own custom types via {@link #register}.
  */
 public class ColumnRestrictionRegistry {
 
@@ -16,25 +18,15 @@ public class ColumnRestrictionRegistry {
     private static final Map<String, ColumnRestrictionValidator> validators = new HashMap<>();
 
     static {
-        register("IntegerRangeRestriction",
-                ColumnRestrictionUtils::convertIntegerRangeRestriction,
-                ColumnRestrictionUtils::validateIntegerRange);
-        register("DoubleRangeRestriction",
-                ColumnRestrictionUtils::convertDoubleRangeRestriction,
-                ColumnRestrictionUtils::validateDoubleRange);
-        register("NotNullRestriction",
-                ColumnRestrictionUtils::convertNotNullRestriction,
-                ColumnRestrictionUtils::validateNotNull);
-        register("NonEmptyRestriction",
-                ColumnRestrictionUtils::convertNonEmptyRestriction,
-                ColumnRestrictionUtils::validateNonEmpty);
-        register("StringListRestriction",
-                ColumnRestrictionUtils::convertStringListRestriction,
-                ColumnRestrictionUtils::validateStringList);
+        converters.put("IntegerRangeRestriction", ColumnRestrictionUtils::convertIntegerRangeRestriction);
+        converters.put("DoubleRangeRestriction", ColumnRestrictionUtils::convertDoubleRangeRestriction);
+        converters.put("NotNullRestriction", ColumnRestrictionUtils::convertNotNullRestriction);
+        converters.put("NonEmptyRestriction", ColumnRestrictionUtils::convertNonEmptyRestriction);
+        converters.put("StringListRestriction", ColumnRestrictionUtils::convertStringListRestriction);
     }
 
     /**
-     * Register a converter and optional client-side validator for a column restriction type. Calling this from
+     * Register a converter and optional client-side validator for a custom column restriction type. Calling this from
      * JavaScript allows downstream consumers to extend the restriction system with their own types.
      *
      * <p>
@@ -43,7 +35,7 @@ public class ColumnRestrictionRegistry {
      * takes a proposed value and the restriction's data object and returns a human-readable error message if the value
      * is invalid, or {@code null} if it is valid.
      *
-     * @param restrictionType The restriction type name (e.g., "IntegerRangeRestriction")
+     * @param restrictionType The restriction type name (e.g., "MyCustomRestriction")
      * @param converter Converts protobuf bytes into a ColumnRestriction
      * @param validator Optional client-side validation function; may be {@code null}
      */
@@ -63,4 +55,3 @@ public class ColumnRestrictionRegistry {
         return validators.get(restrictionType);
     }
 }
-

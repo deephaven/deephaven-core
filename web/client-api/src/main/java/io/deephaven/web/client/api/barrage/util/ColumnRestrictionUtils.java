@@ -11,14 +11,16 @@ import io.deephaven.proto.backplane.grpc.DoubleRangeRestriction;
 import io.deephaven.proto.backplane.grpc.IntegerRangeRestriction;
 import io.deephaven.proto.backplane.grpc.StringListRestriction;
 import io.deephaven.web.client.api.ColumnRestriction;
-import jsinterop.base.Js;
-import jsinterop.base.JsPropertyMap;
+import io.deephaven.web.client.api.DoubleRangeColumnRestriction;
+import io.deephaven.web.client.api.IntegerRangeColumnRestriction;
+import io.deephaven.web.client.api.NonEmptyColumnRestriction;
+import io.deephaven.web.client.api.NotNullColumnRestriction;
+import io.deephaven.web.client.api.StringListColumnRestriction;
 
 import java.nio.ByteBuffer;
 
 /**
- * Utility class for converting protobuf column restrictions to {@link ColumnRestriction} objects, and for providing
- * built-in client-side validators for each known restriction type.
+ * Utility class for converting protobuf column restrictions to typed {@link ColumnRestriction} subclass instances.
  */
 public class ColumnRestrictionUtils {
 
@@ -39,15 +41,15 @@ public class ColumnRestrictionUtils {
     }
 
     // -------------------------------------------------------------------------
-    // Parsers (protobuf Any -> ColumnRestriction)
+    // Converters (protobuf Any -> typed ColumnRestriction subclass)
     // -------------------------------------------------------------------------
 
     /**
-     * Convert an {@code IntegerRangeRestriction} protobuf {@code Any} message into a {@link ColumnRestriction} with
-     * type {@code "IntegerRangeRestriction"} and data {@code {min: number, max: number}}.
+     * Convert an {@code IntegerRangeRestriction} protobuf {@code Any} message into an
+     * {@link IntegerRangeColumnRestriction}. Either bound is {@code null} when absent (unbounded on that side).
      *
      * @param restrictionAny The packed protobuf {@code Any} message
-     * @return A {@link ColumnRestriction} representing the integer range restriction
+     * @return A typed {@link IntegerRangeColumnRestriction}
      * @throws ColumnRestrictionConverterException if the message cannot be parsed
      */
     public static ColumnRestriction convertIntegerRangeRestriction(Any restrictionAny)
@@ -55,21 +57,20 @@ public class ColumnRestrictionUtils {
         try {
             ByteBuffer buffer = restrictionAny.getValue().asReadOnlyByteBuffer();
             IntegerRangeRestriction restriction = IntegerRangeRestriction.parseFrom(buffer);
-            JsPropertyMap<Object> data = JsPropertyMap.of();
-            data.set("min", restriction.hasMinInclusive() ? (double) restriction.getMinInclusive() : Double.NaN);
-            data.set("max", restriction.hasMaxInclusive() ? (double) restriction.getMaxInclusive() : Double.NaN);
-            return new ColumnRestriction("IntegerRangeRestriction", data);
+            Double min = restriction.hasMinInclusive() ? (double) restriction.getMinInclusive() : null;
+            Double max = restriction.hasMaxInclusive() ? (double) restriction.getMaxInclusive() : null;
+            return new IntegerRangeColumnRestriction(min, max);
         } catch (Exception e) {
             throw new ColumnRestrictionConverterException("Failed to convert IntegerRangeRestriction", e);
         }
     }
 
     /**
-     * Convert a {@code DoubleRangeRestriction} protobuf {@code Any} message into a {@link ColumnRestriction} with type
-     * {@code "DoubleRangeRestriction"} and data {@code {min: number, max: number}}.
+     * Convert a {@code DoubleRangeRestriction} protobuf {@code Any} message into a
+     * {@link DoubleRangeColumnRestriction}. Either bound is {@code null} when absent (unbounded on that side).
      *
      * @param restrictionAny The packed protobuf {@code Any} message
-     * @return A {@link ColumnRestriction} representing the double range restriction
+     * @return A typed {@link DoubleRangeColumnRestriction}
      * @throws ColumnRestrictionConverterException if the message cannot be parsed
      */
     public static ColumnRestriction convertDoubleRangeRestriction(Any restrictionAny)
@@ -77,21 +78,19 @@ public class ColumnRestrictionUtils {
         try {
             ByteBuffer buffer = restrictionAny.getValue().asReadOnlyByteBuffer();
             DoubleRangeRestriction restriction = DoubleRangeRestriction.parseFrom(buffer);
-            JsPropertyMap<Object> data = JsPropertyMap.of();
-            data.set("min", restriction.hasMinInclusive() ? restriction.getMinInclusive() : Double.NaN);
-            data.set("max", restriction.hasMaxInclusive() ? restriction.getMaxInclusive() : Double.NaN);
-            return new ColumnRestriction("DoubleRangeRestriction", data);
+            Double min = restriction.hasMinInclusive() ? restriction.getMinInclusive() : null;
+            Double max = restriction.hasMaxInclusive() ? restriction.getMaxInclusive() : null;
+            return new DoubleRangeColumnRestriction(min, max);
         } catch (Exception e) {
             throw new ColumnRestrictionConverterException("Failed to convert DoubleRangeRestriction", e);
         }
     }
 
     /**
-     * Convert a {@code NotNullRestriction} protobuf {@code Any} message into a {@link ColumnRestriction} with type
-     * {@code "NotNullRestriction"} and an empty data object.
+     * Convert a {@code NotNullRestriction} protobuf {@code Any} message into a {@link NotNullColumnRestriction}.
      *
      * @param restrictionAny The packed protobuf {@code Any} message
-     * @return A {@link ColumnRestriction} representing the not-null restriction
+     * @return A typed {@link NotNullColumnRestriction}
      * @throws ColumnRestrictionConverterException if the message cannot be parsed
      */
     public static ColumnRestriction convertNotNullRestriction(Any restrictionAny)
@@ -99,18 +98,17 @@ public class ColumnRestrictionUtils {
         try {
             ByteBuffer buffer = restrictionAny.getValue().asReadOnlyByteBuffer();
             NotNullRestriction.parseFrom(buffer);
-            return new ColumnRestriction("NotNullRestriction", JsPropertyMap.of());
+            return new NotNullColumnRestriction();
         } catch (Exception e) {
             throw new ColumnRestrictionConverterException("Failed to convert NotNullRestriction", e);
         }
     }
 
     /**
-     * Convert a {@code NonEmptyRestriction} protobuf {@code Any} message into a {@link ColumnRestriction} with type
-     * {@code "NonEmptyRestriction"} and an empty data object.
+     * Convert a {@code NonEmptyRestriction} protobuf {@code Any} message into a {@link NonEmptyColumnRestriction}.
      *
      * @param restrictionAny The packed protobuf {@code Any} message
-     * @return A {@link ColumnRestriction} representing the non-empty restriction
+     * @return A typed {@link NonEmptyColumnRestriction}
      * @throws ColumnRestrictionConverterException if the message cannot be parsed
      */
     public static ColumnRestriction convertNonEmptyRestriction(Any restrictionAny)
@@ -118,18 +116,18 @@ public class ColumnRestrictionUtils {
         try {
             ByteBuffer buffer = restrictionAny.getValue().asReadOnlyByteBuffer();
             NonEmptyRestriction.parseFrom(buffer);
-            return new ColumnRestriction("NonEmptyRestriction", JsPropertyMap.of());
+            return new NonEmptyColumnRestriction();
         } catch (Exception e) {
             throw new ColumnRestrictionConverterException("Failed to convert NonEmptyRestriction", e);
         }
     }
 
     /**
-     * Convert a {@code StringListRestriction} protobuf {@code Any} message into a {@link ColumnRestriction} with type
-     * {@code "StringListRestriction"} and data {@code {values: string[]}}.
+     * Convert a {@code StringListRestriction} protobuf {@code Any} message into a
+     * {@link StringListColumnRestriction}.
      *
      * @param restrictionAny The packed protobuf {@code Any} message
-     * @return A {@link ColumnRestriction} representing the string list restriction
+     * @return A typed {@link StringListColumnRestriction}
      * @throws ColumnRestrictionConverterException if the message cannot be parsed
      */
     public static ColumnRestriction convertStringListRestriction(Any restrictionAny)
@@ -141,105 +139,9 @@ public class ColumnRestrictionUtils {
             for (String value : restriction.getAllowedValuesList()) {
                 values.push(value);
             }
-            JsPropertyMap<Object> data = JsPropertyMap.of();
-            data.set("values", values);
-            return new ColumnRestriction("StringListRestriction", data);
+            return new StringListColumnRestriction(values);
         } catch (Exception e) {
             throw new ColumnRestrictionConverterException("Failed to convert StringListRestriction", e);
         }
-    }
-
-    // -------------------------------------------------------------------------
-    // Built-in client-side validators
-    // -------------------------------------------------------------------------
-
-    /**
-     * Validate that a numeric value falls within the integer range defined in the restriction data.
-     *
-     * @param value The proposed column value
-     * @param data Restriction data with {@code min} and {@code max} fields (may be {@code NaN} if unbounded)
-     * @return An error message if the value is out of range, or {@code null} if valid
-     */
-    public static String validateIntegerRange(Object value, JsPropertyMap<Object> data) {
-        if (value == null)
-            return null;
-        Object rawMin = data.get("min");
-        Object rawMax = data.get("max");
-        if (rawMin == null || rawMax == null) {
-            throw new IllegalStateException(
-                    "validateIntegerRange: restriction data is missing expected fields 'min' and/or 'max'. "
-                            + "This likely means the validator was attached to the wrong restriction type.");
-        }
-        double num = Js.<Double>cast(value);
-        double min = Js.<Double>cast(rawMin);
-        double max = Js.<Double>cast(rawMax);
-        if (!Double.isNaN(min) && num < min) {
-            return "Value " + num + " is less than the minimum allowed value of " + min;
-        }
-        if (!Double.isNaN(max) && num > max) {
-            return "Value " + num + " is greater than the maximum allowed value of " + max;
-        }
-        return null;
-    }
-
-    /**
-     * Validate that a numeric value falls within the double range defined in the restriction data.
-     *
-     * @param value The proposed column value
-     * @param data Restriction data with {@code min} and {@code max} fields (may be {@code NaN} if unbounded)
-     * @return An error message if the value is out of range, or {@code null} if valid
-     */
-    public static String validateDoubleRange(Object value, JsPropertyMap<Object> data) {
-        return validateIntegerRange(value, data); // same numeric logic
-    }
-
-    /**
-     * Validate that a value is not {@code null}.
-     *
-     * @param value The proposed column value
-     * @param data Restriction data (unused for this restriction type)
-     * @return An error message if the value is {@code null}, or {@code null} if valid
-     */
-    public static String validateNotNull(Object value, JsPropertyMap<Object> data) {
-        return value == null ? "Value must not be null" : null;
-    }
-
-    /**
-     * Validate that a string value is not empty.
-     *
-     * @param value The proposed column value
-     * @param data Restriction data (unused for this restriction type)
-     * @return An error message if the value is empty, or {@code null} if valid
-     */
-    public static String validateNonEmpty(Object value, JsPropertyMap<Object> data) {
-        if (value == null)
-            return null;
-        String str = Js.cast(value);
-        return str.isEmpty() ? "Value must not be empty" : null;
-    }
-
-    /**
-     * Validate that a string value is one of the allowed values defined in the restriction data.
-     *
-     * @param value The proposed column value
-     * @param data Restriction data with a {@code values} field containing the array of allowed strings
-     * @return An error message if the value is not in the allowed list, or {@code null} if valid
-     */
-    public static String validateStringList(Object value, JsPropertyMap<Object> data) {
-        if (value == null)
-            return null;
-        Object rawAllowed = data.get("values");
-        if (rawAllowed == null) {
-            throw new IllegalStateException(
-                    "validateStringList: restriction data is missing expected field 'values'. "
-                            + "This likely means the validator was attached to the wrong restriction type.");
-        }
-        String str = Js.cast(value);
-        JsArray<String> allowed = Js.cast(rawAllowed);
-        for (int i = 0; i < allowed.length; i++) {
-            if (str.equals(allowed.getAt(i)))
-                return null;
-        }
-        return "Value '" + str + "' is not in the allowed list: " + allowed.join(", ");
     }
 }
