@@ -4,7 +4,7 @@
 package io.deephaven.web.client.api.barrage;
 
 import com.google.flatbuffers.FlatBufferBuilder;
-import elemental2.dom.DomGlobal;
+import com.google.common.io.BaseEncoding;
 import io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
 import io.deephaven.proto.backplane.grpc.DeephavenTableMetadata;
@@ -30,7 +30,6 @@ import com.google.protobuf.Any;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -104,11 +103,8 @@ public class WebBarrageUtils {
         final InputTableMetadata metadata = new InputTableMetadata();
         try {
             // Decode the base64 string to bytes and parse the DeephavenTableMetadata
-            final byte[] bytes = DomGlobal.atob(tableMetadataBase64).getBytes(StandardCharsets.ISO_8859_1);
-            final ByteBuffer buffer = ByteBuffer.allocateDirect(bytes.length);
-            buffer.put(bytes);
-            buffer.flip();
-            final DeephavenTableMetadata tableMetadata = DeephavenTableMetadata.parseFrom(buffer);
+            final byte[] bytes = BaseEncoding.base64().decode(tableMetadataBase64);
+            final DeephavenTableMetadata tableMetadata = DeephavenTableMetadata.parseFrom(bytes);
 
             if (!tableMetadata.hasInputTableMetadata()) {
                 return null;
