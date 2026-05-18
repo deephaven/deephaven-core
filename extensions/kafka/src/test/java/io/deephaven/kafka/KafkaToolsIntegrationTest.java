@@ -3,7 +3,6 @@
 //
 package io.deephaven.kafka;
 
-import io.deephaven.chunk.util.pools.ChunkPoolReleaseTracking;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
@@ -18,10 +17,6 @@ import io.deephaven.json.ByteValue;
 import io.deephaven.json.CharValue;
 import io.deephaven.json.DoubleValue;
 import io.deephaven.json.FloatValue;
-import io.deephaven.json.IntValue;
-import io.deephaven.json.LongValue;
-import io.deephaven.json.ArrayValue;
-import io.deephaven.json.DoubleValue;
 import io.deephaven.json.IntValue;
 import io.deephaven.json.LongValue;
 import io.deephaven.json.ObjectValue;
