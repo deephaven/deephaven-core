@@ -275,6 +275,22 @@ public class RangeFilter extends WhereFilterImpl implements ExposesChunkFilter {
         return Optional.empty();
     }
 
+    /**
+     * Return an {@link Optional} containing the underlying {@link AbstractRangeFilter} if the provided filter is a
+     * range filter that can be pushed down (i.e. is not implemented by a ConditionFilter). Otherwise returns
+     * {@code Optional.empty()}.
+     */
+    public static Optional<AbstractRangeFilter> extractRangeFilter(WhereFilter filter) {
+        if (filter instanceof RangeFilter
+                && ((RangeFilter) filter).getRealFilter() instanceof AbstractRangeFilter) {
+            return Optional.of((AbstractRangeFilter) ((RangeFilter) filter).getRealFilter());
+        }
+        if (filter instanceof AbstractRangeFilter) {
+            return Optional.of((AbstractRangeFilter) filter);
+        }
+        return Optional.empty();
+    }
+
     private static LongRangeFilter makeInstantRangeFilter(String columnName, Condition condition, long value) {
         switch (condition) {
             case LESS_THAN:

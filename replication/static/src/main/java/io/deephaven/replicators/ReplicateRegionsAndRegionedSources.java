@@ -214,8 +214,10 @@ public class ReplicateRegionsAndRegionedSources {
         lines = removeImport(lines, "import io\\.deephaven\\.util\\.type\\.ArrayTypeUtils;");
         lines = globalReplacements(lines,
                 "<\\?>", "<?, ?>",
-                "final Object\\[\\] unboxed = ArrayTypeUtils.getUnboxedObjectArray\\(searchValues\\);", "",
-                "unboxed", "searchValues");
+                "final Object\\[\\] unboxed = ArrayTypeUtils.getUnboxedObjectArray\\(searchValues\\);",
+                "final Object[] copiedValues = Arrays.copyOf(searchValues, searchValues.length);",
+                "unboxed", "copiedValues");
+        lines = addImport(lines, "import java.util.Arrays;");
         FileUtils.writeLines(new File(charToObject), lines);
     }
 }

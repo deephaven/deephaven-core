@@ -356,7 +356,7 @@ public final class ParquetTableFilterTest {
         filterAndVerifyResults(diskTable, memTable, "boolean_col = true");
         filterAndVerifyResultsAllowEmpty(diskTable, memTable, "boolean_col = false");
 
-        // BigDecimal range filters (match is complicated with BD, given
+        // BigDecimal range filters (match is complicated with BD, given precision)
         ExecutionContext.getContext().getQueryScope().putParam("bd_500", BigDecimal.valueOf(500.0));
         ExecutionContext.getContext().getQueryScope().putParam("bd_1000", BigDecimal.valueOf(1000.00));
 
@@ -2104,47 +2104,61 @@ public final class ParquetTableFilterTest {
         final List<RowSetCapturingFilter> allFilters = List.of(filterA, filterB);
 
         Table result;
+        Filter f;
 
         // Test with no barrier, expect A then B
-        result = diskTable.where(Filter.and(filterA, filterB));
-        assertEquals(97, filterA.numRowsProcessed()); // only indexA rows
+        f = Filter.and(filterA, filterB);
+        result = diskTable.where(f).coalesce();
+        // A has an index, stored as sorted data. Applying to the index results in bin search, bypassing filter
+        // row set capture.
+        assertEquals(0, filterA.numRowsProcessed());
         assertEquals(51550, filterB.numRowsProcessed());
 
         assertEquals(23435, result.size());
+        assertTableEquals(memTable.where(f).coalesce(), result);
         allFilters.forEach(RowSetCapturingFilter::reset);
 
         // Test with no barrier, expect A then B despite user ordering
-        result = diskTable.where(Filter.and(filterB, filterA));
-        assertEquals(97, filterA.numRowsProcessed()); // only indexA rows
+        f = Filter.and(filterB, filterA);
+        result = diskTable.where(f).coalesce();
+        assertEquals(0, filterA.numRowsProcessed());
         assertEquals(51550, filterB.numRowsProcessed());
 
         assertEquals(23435, result.size());
+        assertTableEquals(memTable.where(f).coalesce(), result);
         allFilters.forEach(RowSetCapturingFilter::reset);
 
         // Barrier to force B then A
-        result = diskTable.where(Filter.and(filterB.withDeclaredBarriers("b1"), filterA.withRespectedBarriers("b1")));
-        assertEquals(97, filterA.numRowsProcessed()); // only indexA rows
+        f = Filter.and(filterB.withDeclaredBarriers("b1"), filterA.withRespectedBarriers("b1"));
+        result = diskTable.where(f).coalesce();
+        assertEquals(0, filterA.numRowsProcessed());
         assertEquals(100_000, filterB.numRowsProcessed());
 
         assertEquals(23435, result.size());
+        assertTableEquals(memTable.where(f).coalesce(), result);
         allFilters.forEach(RowSetCapturingFilter::reset);
 
         // Barrier to force B then A
-        result = diskTable.where(Filter.and(filterB.withSerial(), filterA));
-        assertEquals(97, filterA.numRowsProcessed()); // only indexA rows
+        f = Filter.and(filterB.withSerial(), filterA);
+        result = diskTable.where(f).coalesce();
+        assertEquals(0, filterA.numRowsProcessed());
         assertEquals(100_000, filterB.numRowsProcessed());
 
         assertEquals(23435, result.size());
+        assertTableEquals(memTable.where(f).coalesce(), result);
         allFilters.forEach(RowSetCapturingFilter::reset);
 
         // Inverted - Barrier to force B then A
-        result = diskTable.where(Filter.and(
+        f = Filter.and(
                 WhereFilterInvertedImpl.of(filterB.withDeclaredBarriers("b1")),
-                WhereFilterInvertedImpl.of(filterA.withRespectedBarriers("b1"))));
-        assertEquals(97, filterA.numRowsProcessed()); // only indexA rows
+                WhereFilterInvertedImpl.of(filterA.withRespectedBarriers("b1")));
+        result = diskTable.where(f).coalesce();
+        // filterA not recognized as a range filter (because of the inversion), so applied to index table rows.
+        assertEquals(97, filterA.numRowsProcessed());
         assertEquals(100_000, filterB.numRowsProcessed());
 
         assertEquals(26430, result.size());
+        assertTableEquals(memTable.where(f).coalesce(), result);
         allFilters.forEach(RowSetCapturingFilter::reset);
     }
 
@@ -2192,12 +2206,10 @@ public final class ParquetTableFilterTest {
 
             Table result;
 
-            result = diskTable.where(capturingFilterSym);
+            result = diskTable.where(capturingFilterSym).coalesce();
 
-            // 583 is explained as follows. There are 6 * 97 = 582 regions where Sym is not-null which are tested.
-            // There are 97 null regions for Sym which are all covered by a single test (to determine filter null
-            // behavior).
-            assertEquals(583, capturingFilterSym.numRowsProcessed());
+            // This filter is executed as a chunk filter over the constant regions, no rows are logged.
+            assertEquals(0, capturingFilterSym.numRowsProcessed());
             assertEquals(28572, result.size());
 
             // Use the unwrapped filter to test other optimization paths (i.e. chunk filtering) and assert equality.
@@ -2208,9 +2220,10 @@ public final class ParquetTableFilterTest {
 
             //////////////////////////////////////////////////////
 
-            result = diskTable.where(capturingFilterSymConditional);
+            // This filter is executed as a chunk filter over the constant regions, no rows are logged.
+            result = diskTable.where(capturingFilterSymConditional).coalesce();
 
-            assertEquals(583, capturingFilterSymConditional.numRowsProcessed());
+            assertEquals(0, capturingFilterSymConditional.numRowsProcessed());
             assertEquals(28572, result.size());
 
             // Use the unwrapped filter to test other optimization paths (i.e. chunk filtering) and assert equality.
@@ -2223,9 +2236,8 @@ public final class ParquetTableFilterTest {
 
             result = diskTable.where(capturingFilterA).coalesce();
 
-            // 673 is explained as follows. There are 7 * 96 = 672 regions where A is not null. There are 6 null
-            // regions for A, which are covered by a single test for filter null behavior.
-            assertEquals(673, capturingFilterA.numRowsProcessed());
+            // This filter is executed as a chunk filter over the constant regions, no rows are logged.
+            assertEquals(0, capturingFilterA.numRowsProcessed());
             assertEquals(51550, result.size());
 
             // Use the unwrapped filter to test other optimization paths (i.e. chunk filtering) and assert equality.
@@ -2236,9 +2248,10 @@ public final class ParquetTableFilterTest {
 
             //////////////////////////////////////////////////////
 
+            // This filter is executed as a chunk filter over the constant regions, no rows are logged.
             result = diskTable.where(capturingFilterAConditional).coalesce();
 
-            assertEquals(673, capturingFilterAConditional.numRowsProcessed());
+            assertEquals(0, capturingFilterAConditional.numRowsProcessed());
             assertEquals(51550, result.size());
 
             // Use the unwrapped filter to test other optimization paths (i.e. chunk filtering) and assert equality.
@@ -2249,7 +2262,7 @@ public final class ParquetTableFilterTest {
 
             //////////////////////////////////////////////////////
 
-            result = diskTable.where(capturingFilterB);
+            result = diskTable.where(capturingFilterB).coalesce();
 
             // All rows to be tested.
             assertEquals(100000, capturingFilterB.numRowsProcessed());
@@ -2263,12 +2276,12 @@ public final class ParquetTableFilterTest {
 
             //////////////////////////////////////////////////////
 
+            // This filter is executed as a chunk filter over the constant regions, no rows are logged.
             result = diskTable.where(Filter.and(capturingFilterSym, capturingFilterA)).coalesce();
 
-            // All regions tested for Sym match
-            assertEquals(583, capturingFilterSym.numRowsProcessed());
+            assertEquals(0, capturingFilterSym.numRowsProcessed());
             // A subset of regions tested for A match
-            assertEquals(193, capturingFilterA.numRowsProcessed());
+            assertEquals(0, capturingFilterA.numRowsProcessed());
             assertEquals(14729, result.size());
 
             // Use the unwrapped filter to test other optimization paths (i.e. chunk filtering) and assert equality.
