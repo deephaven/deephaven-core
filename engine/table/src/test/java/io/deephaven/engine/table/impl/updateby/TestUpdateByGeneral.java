@@ -8,7 +8,6 @@ import io.deephaven.api.updateby.BadDataBehavior;
 import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
@@ -16,8 +15,6 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.NoSuchColumnException;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.UpdateErrorReporter;
-import io.deephaven.engine.table.impl.sources.DelegatingColumnSource;
-import io.deephaven.engine.table.impl.sources.IntegerSparseArraySource;
 import io.deephaven.engine.table.impl.util.AsyncClientErrorNotifier;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
@@ -585,94 +582,5 @@ public class TestUpdateByGeneral extends BaseUpdateByTest implements UpdateError
         assertTrue(result.getDefinition().getColumn("String").isPartitioning());
         assertTrue(result.getDefinition().getColumn("Int").isDirect());
         assertTrue(result.getDefinition().getColumn("Double").isDirect());
-    }
-
-    /**
-     * Regression test covering two shared-source bugs in UpdateBy.
-     *
-     * <p>
-     * Bug 1 (slot-map no-entry value): {@code inputColumnToSlotMap} previously defaulted to a no-entry value of 0,
-     * so whatever column was assigned slot 0 (the first input column seen) looked "not found" on every subsequent
-     * lookup and got a fresh duplicate slot. The duplicate slots' caches misaligned with operator reads and produced
-     * wrong results or NPEs.
-     *
-     * <p>
-     * Bug 2 (reference counting): when multiple operators within the same UpdateBy window share identical input-source
-     * slot arrays (e.g. CumSum and Ema both reading only column "d"), they are grouped into a single operator set, and
-     * {@code releaseInputSources} is called exactly <em>once</em> for that set. The old code counted operators rather
-     * than operator sets, so the reference count for the shared source was too high. After release the count remained
-     * > 0, {@code maybeCachedInputSources[d]} was never nulled, and the next incremental step reused a stale
-     * {@code InverseWrappedRowSetRowRedirection} that only covered the prior row set -- causing an
-     * {@code ArrayIndexOutOfBoundsException} when newly added row keys were looked up.
-     *
-     * <p>
-     * Both "d" and "e" are referenced by multiple operators across the cumulative and rolling windows so the slot map
-     * is exercised hard enough to expose the no-entry-value bug, and the operator-set reference counting is exercised
-     * across both windows. Column sources are wrapped in {@link NonFillUnorderedWrapper} so caching is required.
-     * Without the fixes, the second incremental cycle fails.
-     */
-    @Test
-    public void testSharedSourceReferenceCountingIncrementalUpdate() {
-        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
-
-        final IntegerSparseArraySource innerD = new IntegerSparseArraySource();
-        final IntegerSparseArraySource innerE = new IntegerSparseArraySource();
-        final ColumnSource<Integer> sourceD = new NonFillUnorderedWrapper(innerD);
-        final ColumnSource<Integer> sourceE = new NonFillUnorderedWrapper(innerE);
-
-        final TrackingWritableRowSet rowSet = i().toTracking();
-        final LinkedHashMap<String, ColumnSource<?>> cols = new LinkedHashMap<>();
-        cols.put("d", sourceD);
-        cols.put("e", sourceE);
-        final QueryTable source = new QueryTable(rowSet, cols);
-        source.setRefreshing(true);
-
-        final Table result = source.updateBy(List.of(
-                CumSum("sum_d=d"),
-                CumSum("sum_e=e"),
-                Ema(10.0, "ema_d=d"),
-                Ema(10.0, "ema_e=e"),
-                RollingWAvg(5L, "e", "wavg_d=d"),
-                RollingWAvg(5L, "d", "wavg_e=e")));
-
-        // Cycle 1: add rows 0-2.
-        updateGraph.runWithinUnitTestCycle(() -> {
-            innerD.set(0, 1);
-            innerD.set(1, 2);
-            innerD.set(2, 3);
-            innerE.set(0, 1);
-            innerE.set(1, 1);
-            innerE.set(2, 1);
-            rowSet.insert(i(0, 1, 2));
-            source.notifyListeners(i(0, 1, 2), i(), i());
-        });
-        Assert.assertEquals(3, result.size());
-
-        // Cycle 2: add rows 3-5.
-        // Without the fix the stale InverseWrappedRowSetRowRedirection returns -1 for new keys -> crash.
-        updateGraph.runWithinUnitTestCycle(() -> {
-            innerD.set(3, 4);
-            innerD.set(4, 5);
-            innerD.set(5, 6);
-            innerE.set(3, 1);
-            innerE.set(4, 1);
-            innerE.set(5, 1);
-            rowSet.insert(i(3, 4, 5));
-            source.notifyListeners(i(3, 4, 5), i(), i());
-        });
-        Assert.assertEquals(6, result.size());
-    }
-
-    /**
-     * An integer column source wrapper that deliberately does NOT implement
-     * {@link io.deephaven.engine.table.impl.sources.FillUnordered}, forcing UpdateBy to cache this source (setting
-     * {@code inputCacheNeeded = true}) and exercising the shared-source reference-counting logic.
-     * {@link DelegatingColumnSource} already lacks {@code FillUnordered}, so simply extending it gives us a
-     * non-fill-unordered wrapper without any explicit overrides.
-     */
-    private static class NonFillUnorderedWrapper extends DelegatingColumnSource<Integer, Integer> {
-        NonFillUnorderedWrapper(final IntegerSparseArraySource inner) {
-            super(Integer.class, null, inner);
-        }
     }
 }

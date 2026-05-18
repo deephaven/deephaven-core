@@ -691,6 +691,25 @@ public class TestRollingWAvg extends BaseUpdateByTest {
     }
 
     @Test
+    public void testValueColumnEqualsWeightColumn() {
+        // Op for rwx (value=x, weight=x) has duplicate input columns ["x","x"], producing slot array
+        // [0,0]. A second op rwy (value=y, weight=x) has slots [1,0]. The two ops form separate
+        // operator-sets in the same window; if releaseInputSources decrements the refcount once per
+        // occurrence in srcIndices (twice for rwx) it over-releases slot 0. The second operator-set
+        // then sees a null cached source for slot 0, leaking the partially-allocated thread context.
+        // Uses ImmutableDoubleTestSource (not FillUnordered) so the input-source caching path runs.
+        final QueryTable t = createTestTable(1_000, false, false, false, 0xABCDEF,
+                new String[] {"x", "y"},
+                new TestDataGenerator[] {
+                        new DoubleGenerator(10.1, 20.1, 0.0),
+                        new DoubleGenerator(30.1, 40.1, 0.0)
+                }).t;
+        final Table result = t.updateBy(
+                UpdateByOperation.RollingWAvg(10, "x", "rwx = x", "rwy = y"));
+        Assert.eq(result.size(), "result.size()", t.size());
+    }
+
+    @Test
     public void testStaticZeroKeyRev() {
         final int prevTicks = 100;
         final int fwdTicks = 0;
