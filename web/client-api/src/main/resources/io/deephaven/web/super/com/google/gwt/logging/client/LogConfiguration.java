@@ -19,7 +19,6 @@ package com.google.gwt.logging.client;
 import com.google.gwt.core.client.EntryPoint;
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.core.client.GWT.UncaughtExceptionHandler;
-import com.google.gwt.user.client.Window.Location;
 
 import java.util.logging.Handler;
 import java.util.logging.Level;
