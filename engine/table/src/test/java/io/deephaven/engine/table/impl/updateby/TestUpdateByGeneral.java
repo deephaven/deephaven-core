@@ -13,11 +13,10 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.table.impl.AbstractColumnSource;
-import io.deephaven.engine.table.impl.ColumnSourceGetDefaults;
 import io.deephaven.engine.table.impl.NoSuchColumnException;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.UpdateErrorReporter;
+import io.deephaven.engine.table.impl.sources.DelegatingColumnSource;
 import io.deephaven.engine.table.impl.sources.IntegerSparseArraySource;
 import io.deephaven.engine.table.impl.util.AsyncClientErrorNotifier;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
@@ -667,79 +666,12 @@ public class TestUpdateByGeneral extends BaseUpdateByTest implements UpdateError
      * An integer column source wrapper that deliberately does NOT implement
      * {@link io.deephaven.engine.table.impl.sources.FillUnordered}, forcing UpdateBy to cache this source (setting
      * {@code inputCacheNeeded = true}) and exercising the shared-source reference-counting logic.
+     * {@link DelegatingColumnSource} already lacks {@code FillUnordered}, so simply extending it gives us a
+     * non-fill-unordered wrapper without any explicit overrides.
      */
-    private static class NonFillUnorderedWrapper extends AbstractColumnSource<Integer>
-            implements ColumnSourceGetDefaults.ForObject<Integer> {
-        private final IntegerSparseArraySource inner;
-
+    private static class NonFillUnorderedWrapper extends DelegatingColumnSource<Integer, Integer> {
         NonFillUnorderedWrapper(final IntegerSparseArraySource inner) {
-            super(Integer.class);
-            this.inner = inner;
-        }
-
-        @Override
-        public Integer get(final long rowKey) {
-            return inner.get(rowKey);
-        }
-
-        @Override
-        public int getInt(final long rowKey) {
-            return inner.getInt(rowKey);
-        }
-
-        @Override
-        public Integer getPrev(final long rowKey) {
-            return inner.getPrev(rowKey);
-        }
-
-        @Override
-        public int getPrevInt(final long rowKey) {
-            return inner.getPrevInt(rowKey);
-        }
-
-        @Override
-        public Boolean getPrevBoolean(final long rowKey) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public byte getPrevByte(final long rowKey) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public char getPrevChar(final long rowKey) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public double getPrevDouble(final long rowKey) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public float getPrevFloat(final long rowKey) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public long getPrevLong(final long rowKey) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public short getPrevShort(final long rowKey) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public boolean isImmutable() {
-            return false;
-        }
-
-        @Override
-        public void startTrackingPrevValues() {
-            inner.startTrackingPrevValues();
+            super(Integer.class, null, inner);
         }
     }
 }
