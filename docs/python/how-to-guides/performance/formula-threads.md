@@ -30,7 +30,7 @@ thread_name = empty_table(1).update(["Thr=java.lang.Thread.currentThread().getNa
 
 The Deephaven engine may parallelize evaluation, thus resulting in a value of `Thr` of `OperationInitializationThreadPool-initializationExecutor-3`, indicating that the formula was evaluated on the operation initialization thread pool.
 
-Similarly, each time a source table updates, the downstream effects are evaluated by an Update Graph. The default Periodic Update Graph uses a thread pool that has the same number of threads as the machine has processors (the number of threads can be configured by the property `PeriodicUpdateGraph.updateThreads`).
+Similarly, each time a source table updates, the downstream effects are evaluated by an Update Graph. The default Periodic Update Graph uses a thread pool with the same number of threads as the machine has processors (the number of threads can be configured by the `PeriodicUpdateGraph.updateThreads` property).
 
 ```python order=null
 from deephaven import time_table
@@ -55,7 +55,7 @@ thread_name = empty_table(1).view(["Thr=java.lang.Thread.currentThread().getName
 distinct_threads = thread_name.select_distinct()
 ```
 
-The value of `Thr` in `distinct_threads` is `DeephavenApiServer-Scheduler-Serial-1` - the thread that executed the `select_distinct` operation. However, when viewing the table `thread_name`, the `Thr` column takes on a value like `DeephavenApiServer-Scheduler-Concurrent-4` because that is the thread that the barrage snapshot operation read the value on. Each time a cell is accessed (e.g., by reloading or scrolling around a table), the value is recomputed potentially on another thread.
+The value of `Thr` in `distinct_threads` is `DeephavenApiServer-Scheduler-Serial-1` - the thread that executed the `select_distinct` operation. However, when viewing the table `thread_name`, the `Thr` column takes on a value like `DeephavenApiServer-Scheduler-Concurrent-4` because that is the thread that the barrage snapshot operation read the value on. Each time a cell is accessed (e.g., by reloading or scrolling around a table), the value is recomputed, potentially on another thread.
 
 ## `where`
 
