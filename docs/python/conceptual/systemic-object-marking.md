@@ -1,11 +1,10 @@
 ---
-title: Systemic Object Marking
-sidebar_label: Systemic Object Marking
+title: Systemic object marking
 ---
 
-In Deephaven, a **systemic object** is an object of critical importance—such as a table essential for reliable data analysis. If a systemic object fails, Deephaven terminates the entire worker process to maintain data integrity. By default, any object created on a thread is marked as systemic, providing maximum protection for your data flow. This guide explains how to manage this behavior using the [`deephaven.systemic_obj_tracker`](https://docs.deephaven.io/core/pydoc/code/deephaven.systemic_obj_tracker.html) module.
+In Deephaven, a **systemic object** is an object of critical importance, such as a table essential to reliable data analysis. If a systemic object fails, Deephaven terminates the entire worker process to maintain data integrity. By default, any object created on a thread is marked as systemic, providing maximum protection for your data flow. This guide explains how to manage this behavior using the [`deephaven.systemic_obj_tracker`](https://docs.deephaven.io/core/pydoc/code/deephaven.systemic_obj_tracker.html) module.
 
-## Enable Systemic Object Marking
+## Enable systemic object marking
 
 Systemic object marking is not user-configurable at runtime by default. To enable this feature, start the server with the JVM option:
 
@@ -13,7 +12,7 @@ Systemic object marking is not user-configurable at runtime by default. To enabl
 -DSystemicObjectTracker.enabled=true
 ```
 
-To check if systemic object marking is enabled:
+Check if systemic object marking is enabled:
 
 ```python test-set=1 order=null
 from deephaven.systemic_obj_tracker import is_systemic_object_marking_enabled
@@ -21,11 +20,11 @@ from deephaven.systemic_obj_tracker import is_systemic_object_marking_enabled
 print(is_systemic_object_marking_enabled())
 ```
 
-## Manage Thread Systemic Status
+## Manage thread systemic status
 
 Systemic object creation is controlled per thread. When systemic object marking is enabled, you can programmatically set a thread as systemic or non-systemic at runtime. While a thread is systemic, any object it creates is also systemic; when non-systemic, objects are not marked as systemic.
 
-To check and toggle the systemic status of the current thread:
+Check and toggle the systemic status of the current thread:
 
 ```python test-set=1 order=null
 from deephaven.systemic_obj_tracker import is_systemic, set_systemic
@@ -36,7 +35,7 @@ else:
     print("Systemic object marking is not currently enabled.")
 ```
 
-## Context Managers
+## Context managers
 
 The [`deephaven.systemic_obj_tracker`](https://docs.deephaven.io/core/pydoc/code/deephaven.systemic_obj_tracker.html) module provides context managers to enable or disable systemic object creation within code blocks.
 
