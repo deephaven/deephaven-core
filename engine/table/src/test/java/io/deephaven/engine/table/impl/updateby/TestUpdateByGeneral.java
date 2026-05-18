@@ -588,26 +588,28 @@ public class TestUpdateByGeneral extends BaseUpdateByTest implements UpdateError
     }
 
     /**
-     * Regression test for the shared-source reference-counting bug.
+     * Regression test covering two shared-source bugs in UpdateBy.
      *
      * <p>
-     * When multiple operators within the same UpdateBy window share identical input-source slot arrays (e.g. CumSum and
-     * Ema both reading only column "d"), they are grouped into a single operator set, and {@code releaseInputSources}
-     * is called exactly <em>once</em> for that set. The old code counted operators rather than operator sets, so the
-     * reference count for the shared source was too high. After two incremental releases the count remained > 0,
-     * {@code maybeCachedInputSources[d]} was never nulled, and the next incremental step reused a stale
+     * Bug 1 (slot-map no-entry value): {@code inputColumnToSlotMap} previously defaulted to a no-entry value of 0,
+     * so whatever column was assigned slot 0 (the first input column seen) looked "not found" on every subsequent
+     * lookup and got a fresh duplicate slot. The duplicate slots' caches misaligned with operator reads and produced
+     * wrong results or NPEs.
+     *
+     * <p>
+     * Bug 2 (reference counting): when multiple operators within the same UpdateBy window share identical input-source
+     * slot arrays (e.g. CumSum and Ema both reading only column "d"), they are grouped into a single operator set, and
+     * {@code releaseInputSources} is called exactly <em>once</em> for that set. The old code counted operators rather
+     * than operator sets, so the reference count for the shared source was too high. After release the count remained
+     * > 0, {@code maybeCachedInputSources[d]} was never nulled, and the next incremental step reused a stale
      * {@code InverseWrappedRowSetRowRedirection} that only covered the prior row set -- causing an
      * {@code ArrayIndexOutOfBoundsException} when newly added row keys were looked up.
      *
      * <p>
-     * The test reproduces the scenario by:
-     * <ol>
-     * <li>Wrapping column sources in {@link NonFillUnorderedWrapper} so that caching is required.</li>
-     * <li>Applying three operators -- {@code CumSum("d")}, {@code Ema("d")}, and {@code RollingWAvg(5, "e", "d")} --
-     * that
-     * together overcount source "d"'s reference by 1 under the old logic.</li>
-     * <li>Running two incremental update cycles; the second cycle crashes without the fix.</li>
-     * </ol>
+     * Both "d" and "e" are referenced by multiple operators across the cumulative and rolling windows so the slot map
+     * is exercised hard enough to expose the no-entry-value bug, and the operator-set reference counting is exercised
+     * across both windows. Column sources are wrapped in {@link NonFillUnorderedWrapper} so caching is required.
+     * Without the fixes, the second incremental cycle fails.
      */
     @Test
     public void testSharedSourceReferenceCountingIncrementalUpdate() {
@@ -625,15 +627,13 @@ public class TestUpdateByGeneral extends BaseUpdateByTest implements UpdateError
         final QueryTable source = new QueryTable(rowSet, cols);
         source.setRefreshing(true);
 
-        // CumSum("d") and Ema("d") share slot array [slot_d] -> one operator set in the cumulative window.
-        // RollingWAvg("e" weight, "d" value) uses slot array [slot_d, slot_e] -> one operator set in the rolling window.
-        // Old code: refcount("d") = 3 (2 operators + 1 rolling); released 2 times -> refcount stays at 1 -> stale cache.
-        // New code: refcount("d") = 2 (1 cumulative set + 1 rolling set); released 2 times -> refcount = 0 -> cache
-        // cleared.
         final Table result = source.updateBy(List.of(
                 CumSum("sum_d=d"),
+                CumSum("sum_e=e"),
                 Ema(10.0, "ema_d=d"),
-                RollingWAvg(5L, "e", "wavg_d=d")));
+                Ema(10.0, "ema_e=e"),
+                RollingWAvg(5L, "e", "wavg_d=d"),
+                RollingWAvg(5L, "d", "wavg_e=e")));
 
         // Cycle 1: add rows 0-2.
         updateGraph.runWithinUnitTestCycle(() -> {
