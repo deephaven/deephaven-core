@@ -591,20 +591,21 @@ public class TestUpdateByGeneral extends BaseUpdateByTest implements UpdateError
     /**
      * Regression test for the shared-source reference-counting bug.
      *
-     * <p>When multiple operators within the same UpdateBy window share identical input-source slot arrays (e.g. CumSum
-     * and Ema both reading only column "d"), they are grouped into a single operator set, and
-     * {@code releaseInputSources} is called exactly <em>once</em> for that set. The old code counted operators rather
-     * than operator sets, so the reference count for the shared source was too high. After two incremental releases the
-     * count remained > 0, {@code maybeCachedInputSources[d]} was never nulled, and the next incremental step reused a
-     * stale {@code InverseWrappedRowSetRowRedirection} that only covered the prior row set — causing an
+     * <p>
+     * When multiple operators within the same UpdateBy window share identical input-source slot arrays (e.g. CumSum and
+     * Ema both reading only column "d"), they are grouped into a single operator set, and {@code releaseInputSources}
+     * is called exactly <em>once</em> for that set. The old code counted operators rather than operator sets, so the
+     * reference count for the shared source was too high. After two incremental releases the count remained > 0,
+     * {@code maybeCachedInputSources[d]} was never nulled, and the next incremental step reused a stale
+     * {@code InverseWrappedRowSetRowRedirection} that only covered the prior row set — causing an
      * {@code ArrayIndexOutOfBoundsException} when newly added row keys were looked up.
      *
-     * <p>The test reproduces the scenario by:
+     * <p>
+     * The test reproduces the scenario by:
      * <ol>
      * <li>Wrapping column sources in {@link NonFillUnorderedWrapper} so that caching is required.</li>
-     * <li>Applying three operators — {@code CumSum("d")}, {@code Ema("d")}, and
-     * {@code RollingWAvg(5, "e", "d")} — that together overcount source "d"'s reference by 1 under the old
-     * logic.</li>
+     * <li>Applying three operators — {@code CumSum("d")}, {@code Ema("d")}, and {@code RollingWAvg(5, "e", "d")} — that
+     * together overcount source "d"'s reference by 1 under the old logic.</li>
      * <li>Running two incremental update cycles; the second cycle crashes without the fix.</li>
      * </ol>
      */
@@ -627,7 +628,8 @@ public class TestUpdateByGeneral extends BaseUpdateByTest implements UpdateError
         // CumSum("d") and Ema("d") share slot array [slot_d] → one operator set in the cumulative window.
         // RollingWAvg("e" weight, "d" value) uses slot array [slot_d, slot_e] → one operator set in the rolling window.
         // Old code: refcount("d") = 3 (2 operators + 1 rolling); released 2 times → refcount stays at 1 → stale cache.
-        // New code: refcount("d") = 2 (1 cumulative set + 1 rolling set); released 2 times → refcount = 0 → cache cleared.
+        // New code: refcount("d") = 2 (1 cumulative set + 1 rolling set); released 2 times → refcount = 0 → cache
+        // cleared.
         final Table result = source.updateBy(List.of(
                 CumSum("sum_d=d"),
                 Ema(10.0, "ema_d=d"),
