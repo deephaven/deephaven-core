@@ -12,9 +12,9 @@ import jsinterop.base.JsPropertyMap;
  * human-readable error message if the value is invalid, or {@code null} if it is valid.
  *
  * <p>
- * Validators are registered alongside parsers via
- * {@link io.deephaven.web.client.api.barrage.WebBarrageUtils#registerColumnRestrictionType}. They allow the client to
- * proactively surface helpful error messages before a write is attempted, without requiring a round-trip to the server.
+ * Validators are registered alongside converters via {@link ColumnRestrictionRegistry#register}. They allow the client
+ * to proactively surface helpful error messages before a write is attempted, without requiring a round-trip to the
+ * server.
  */
 @JsFunction
 public interface ColumnRestrictionValidator {
