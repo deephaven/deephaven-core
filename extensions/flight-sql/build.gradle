@@ -59,6 +59,12 @@ dependencies {
     // grpc://localhost:10000
     adbcTestImplementation project(':server-jetty')
     adbcTestImplementation libs.adbc.flight.sql
+    // The BouncyCastle provider must be pinned to a particular version, because otherwise we end up with a dynamic
+    // range "org.bouncycastle:bcprov-jdk18on:[1.80,1.81)" from org.apache.arrow:flight-sql-jdbc-core:18.3.0 which is
+    // not permitted by our build.
+    adbcTestImplementation libs.bcprov.jdk18on
+    adbcTestImplementation libs.bcutil.jdk18on
+    adbcTestImplementation libs.bcpkix.jdk18on
 
     adbcTestImplementation project(':server-test-utils')
     adbcTestAnnotationProcessor libs.dagger.compiler
