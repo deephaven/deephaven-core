@@ -14,7 +14,7 @@ import jsinterop.annotations.JsNullable;
 public class NotNullColumnRestriction extends ColumnRestriction {
 
     public NotNullColumnRestriction() {
-        super("NotNullRestriction", null);
+        super("NotNullRestriction");
     }
 
     @Override

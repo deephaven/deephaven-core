@@ -19,7 +19,7 @@ public class IntegerRangeColumnRestriction extends ColumnRestriction {
     private final Double max;
 
     public IntegerRangeColumnRestriction(@JsNullable Double min, @JsNullable Double max) {
-        super("IntegerRangeRestriction", null);
+        super("IntegerRangeRestriction");
         this.min = min;
         this.max = max;
     }

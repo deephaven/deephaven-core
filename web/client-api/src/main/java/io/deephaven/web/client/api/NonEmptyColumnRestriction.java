@@ -15,7 +15,7 @@ import jsinterop.base.Js;
 public class NonEmptyColumnRestriction extends ColumnRestriction {
 
     public NonEmptyColumnRestriction() {
-        super("NonEmptyRestriction", null);
+        super("NonEmptyRestriction");
     }
 
     @Override

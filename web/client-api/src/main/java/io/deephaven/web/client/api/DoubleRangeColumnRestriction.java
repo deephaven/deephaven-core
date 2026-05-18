@@ -9,8 +9,8 @@ import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsProperty;
 
 /**
- * A {@link ColumnRestriction} that constrains a double column to a closed range {@code [min, max]}. Either bound may
- * be {@code null}, meaning the range is unbounded on that side.
+ * A {@link ColumnRestriction} that constrains a double column to a closed range {@code [min, max]}. Either bound may be
+ * {@code null}, meaning the range is unbounded on that side.
  */
 @TsName(namespace = "dh")
 public class DoubleRangeColumnRestriction extends ColumnRestriction {
@@ -19,7 +19,7 @@ public class DoubleRangeColumnRestriction extends ColumnRestriction {
     private final Double max;
 
     public DoubleRangeColumnRestriction(@JsNullable Double min, @JsNullable Double max) {
-        super("DoubleRangeRestriction", null);
+        super("DoubleRangeRestriction");
         this.min = min;
         this.max = max;
     }

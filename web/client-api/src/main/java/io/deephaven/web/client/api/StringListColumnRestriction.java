@@ -19,7 +19,7 @@ public class StringListColumnRestriction extends ColumnRestriction {
     private final JsArray<String> allowedValues;
 
     public StringListColumnRestriction(JsArray<String> allowedValues) {
-        super("StringListRestriction", null);
+        super("StringListRestriction");
         this.allowedValues = allowedValues;
     }
 

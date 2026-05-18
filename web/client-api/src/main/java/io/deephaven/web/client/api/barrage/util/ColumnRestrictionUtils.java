@@ -123,8 +123,7 @@ public class ColumnRestrictionUtils {
     }
 
     /**
-     * Convert a {@code StringListRestriction} protobuf {@code Any} message into a
-     * {@link StringListColumnRestriction}.
+     * Convert a {@code StringListRestriction} protobuf {@code Any} message into a {@link StringListColumnRestriction}.
      *
      * @param restrictionAny The packed protobuf {@code Any} message
      * @return A typed {@link StringListColumnRestriction}

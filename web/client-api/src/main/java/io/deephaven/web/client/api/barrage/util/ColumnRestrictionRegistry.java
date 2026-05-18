@@ -7,15 +7,14 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Registry for column restriction converters and optional client-side validators. Built-in restriction types
- * ({@code IntegerRangeRestriction}, {@code DoubleRangeRestriction}, etc.) are handled by typed subclasses of
- * {@code ColumnRestriction} and do not need entries here. This registry is primarily for downstream consumers that want
- * to extend the restriction system with their own custom types via {@link #register}.
+ * Registry for column restriction converters. Built-in restriction types are handled by typed subclasses of
+ * {@link io.deephaven.web.client.api.ColumnRestriction} and are pre-registered here. Downstream consumers can register
+ * additional custom types via {@link #register}; their converter must return a concrete subclass that overrides
+ * {@code validate()} as needed.
  */
 public class ColumnRestrictionRegistry {
 
     private static final Map<String, ColumnRestrictionConverter> converters = new HashMap<>();
-    private static final Map<String, ColumnRestrictionValidator> validators = new HashMap<>();
 
     static {
         converters.put("IntegerRangeRestriction", ColumnRestrictionUtils::convertIntegerRangeRestriction);
@@ -26,32 +25,17 @@ public class ColumnRestrictionRegistry {
     }
 
     /**
-     * Register a converter and optional client-side validator for a custom column restriction type. Calling this from
-     * JavaScript allows downstream consumers to extend the restriction system with their own types.
-     *
-     * <p>
-     * The {@code converter} converts a raw protobuf {@code Any} message into a
-     * {@link io.deephaven.web.client.api.ColumnRestriction}. The {@code validator} (if provided) is a function that
-     * takes a proposed value and the restriction's data object and returns a human-readable error message if the value
-     * is invalid, or {@code null} if it is valid.
+     * Register a converter for a custom column restriction type. The converter is responsible for returning a concrete
+     * {@link io.deephaven.web.client.api.ColumnRestriction} subclass that implements {@code validate()} as needed.
      *
      * @param restrictionType The restriction type name (e.g., "MyCustomRestriction")
-     * @param converter Converts protobuf bytes into a ColumnRestriction
-     * @param validator Optional client-side validation function; may be {@code null}
+     * @param converter Converts a protobuf {@code Any} message into a typed {@code ColumnRestriction}
      */
-    public static void register(String restrictionType, ColumnRestrictionConverter converter,
-            ColumnRestrictionValidator validator) {
+    public static void register(String restrictionType, ColumnRestrictionConverter converter) {
         converters.put(restrictionType, converter);
-        if (validator != null) {
-            validators.put(restrictionType, validator);
-        }
     }
 
     public static ColumnRestrictionConverter getConverter(String restrictionType) {
         return converters.get(restrictionType);
-    }
-
-    public static ColumnRestrictionValidator getValidator(String restrictionType) {
-        return validators.get(restrictionType);
     }
 }
