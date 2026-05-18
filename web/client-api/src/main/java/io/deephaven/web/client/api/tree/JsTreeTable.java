@@ -230,7 +230,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
         // Load the table and column definitions from the descriptor
         extractDefinition(treeDescriptor);
 
-        actionCol = new Column(-1, -1, null, null, "byte", "__action__", false, null, null, false, false, false);
+        actionCol = new Column(-1, -1, null, null, "byte", "__action__", false, null, null, false, false, false, null);
 
         keyTableData = new Object[keyColumns.length + 2][0];
 

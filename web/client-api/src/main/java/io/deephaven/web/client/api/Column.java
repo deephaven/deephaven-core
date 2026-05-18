@@ -100,16 +100,6 @@ public class Column {
         this.columnRestrictions = columnRestrictions;
     }
 
-    /**
-     * @deprecated Use the constructor with columnRestrictions parameter instead
-     */
-    @Deprecated
-    public Column(int jsIndex, int index, Integer formatColumnIndex, Integer styleColumnIndex, String type, String name,
-            boolean isPartitionColumn, Integer formatStringColumnIndex, String description,
-            boolean inputTableKeyColumn, boolean inputTableValueColumn, boolean isSortable) {
-        this(jsIndex, index, formatColumnIndex, styleColumnIndex, type, name, isPartitionColumn,
-                formatStringColumnIndex, description, inputTableKeyColumn, inputTableValueColumn, isSortable, null);
-    }
 
     /**
      * The value for this column in the given row. Type will be consistent with the type of the Column.
