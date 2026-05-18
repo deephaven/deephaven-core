@@ -3,10 +3,7 @@
 //
 package io.deephaven.util.datastructures.hash;
 
-import gnu.trove.map.TLongLongMap;
-import io.deephaven.util.datastructures.hash.HashMapLockFreeK1V1;
-import io.deephaven.util.datastructures.hash.HashMapLockFreeK2V2;
-import io.deephaven.util.datastructures.hash.HashMapLockFreeK4V4;
+import it.unimi.dsi.fastutil.longs.Long2LongMap;
 import junit.framework.TestCase;
 import org.junit.Assume;
 import org.junit.Test;
@@ -50,7 +47,7 @@ public class TestKnVn {
         fillToCapacity(new HashMapLockFreeK4V4(), HASHTABLE_SIZE_LOWER_BOUND_4);
     }
 
-    private static void fillToCapacity(TLongLongMap ht, final long lowerSizeBound) {
+    private static void fillToCapacity(Long2LongMap ht, final long lowerSizeBound) {
         final long maxMemory = Runtime.getRuntime().maxMemory();
         if (maxMemory < MINIMUM_HEAP_SIZE_NEEDED_FOR_TEST) {
             final String skipMessage = String.format("Skipping test, because I want %fG of heap, but have only %fG%n",

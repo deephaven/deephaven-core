@@ -3,21 +3,22 @@
 //
 package io.deephaven.engine.table.impl.util;
 
-import gnu.trove.iterator.TLongLongIterator;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.LongChunk;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.engine.updategraph.UpdateCommitter;
 import io.deephaven.util.datastructures.hash.HashMapLockFreeK1V1;
 import io.deephaven.util.datastructures.hash.HashMapLockFreeK2V2;
 import io.deephaven.util.datastructures.hash.HashMapLockFreeK4V4;
-import io.deephaven.util.datastructures.hash.TNullableLongLongMap;
-import io.deephaven.engine.rowset.chunkattributes.RowKeys;
-import io.deephaven.chunk.Chunk;
-import io.deephaven.chunk.LongChunk;
+import io.deephaven.util.datastructures.hash.NullableLong2LongMap;
 import io.deephaven.util.mutable.MutableInt;
+import it.unimi.dsi.fastutil.longs.Long2LongMap;
+import it.unimi.dsi.fastutil.longs.Long2LongMaps;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -123,15 +124,15 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
     /**
      * How things looked at the beginning of the most recent idle cycle.
      */
-    private final TNullableLongLongMap baseline;
+    private final NullableLong2LongMap baseline;
     /**
      * Updates that have happened since the start of the most recent idle cycle.
      */
-    private TNullableLongLongMap updates;
+    private NullableLong2LongMap updates;
 
     private UpdateCommitter<WritableRowRedirectionLockFree> updateCommitter;
 
-    WritableRowRedirectionLockFree(TNullableLongLongMap map) {
+    WritableRowRedirectionLockFree(NullableLong2LongMap map) {
         this.baseline = map;
         // Initially, baseline == updates (i.e. they point to the same object). They will continue to point to the same
         // object until the first terminal listener notification after prev tracking is turned on (via
@@ -148,15 +149,16 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
         // This only gets called by the UpdateCommitter, and only as a result of a terminal listener notification (which
         // in turn can only happen once prev tracking has been turned on). We copy updates to baseline and reset the
         // updates map.
-        final TNullableLongLongMap updates = instance.updates;
-        final TNullableLongLongMap baseline = instance.baseline;
+        final NullableLong2LongMap updates = instance.updates;
+        final NullableLong2LongMap baseline = instance.baseline;
         Assert.neq(baseline, "baseline", updates, "updates");
-        for (final TLongLongIterator it = updates.iterator(); it.hasNext();) {
-            it.advance();
-            if (it.value() == BASELINE_KEY_NOT_FOUND) {
-                baseline.remove(it.key());
+        for (final Long2LongMap.Entry entry : Long2LongMaps.fastIterable(updates)) {
+            final long key = entry.getLongKey();
+            final long value = entry.getLongValue();
+            if (value == BASELINE_KEY_NOT_FOUND) {
+                baseline.remove(key);
             } else {
-                baseline.put(it.key(), it.value());
+                baseline.put(key, value);
             }
         }
         updates.resetToNull();
@@ -300,17 +302,17 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
             .getIntegerForClassWithDefault(WritableRowRedirectionLockFree.class, "hashBucketWidth", 1);
 
     @NotNull
-    private static TNullableLongLongMap createUpdateMap() {
+    private static NullableLong2LongMap createUpdateMap() {
         return createMapWithCapacity(10, LOAD_FACTOR, UPDATES_KEY_NOT_FOUND);
     }
 
     @NotNull
-    static TNullableLongLongMap createMapWithCapacity(int initialCapacity) {
+    static NullableLong2LongMap createMapWithCapacity(int initialCapacity) {
         return createMapWithCapacity(initialCapacity, LOAD_FACTOR, BASELINE_KEY_NOT_FOUND);
     }
 
     @NotNull
-    private static TNullableLongLongMap createMapWithCapacity(int initialCapacity, float loadFactor,
+    private static NullableLong2LongMap createMapWithCapacity(int initialCapacity, float loadFactor,
             long noEntryValue) {
         switch (hashBucketWidth) {
             case 1:

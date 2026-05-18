@@ -3,8 +3,9 @@
 //
 package io.deephaven.engine.table.impl.updateby;
 
-import gnu.trove.list.array.TIntArrayList;
-import gnu.trove.map.hash.TObjectIntHashMap;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.objects.Object2IntMap;
+import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.updateby.ColumnUpdateOperation;
 import io.deephaven.api.updateby.UpdateByControl;
@@ -444,14 +445,18 @@ public abstract class UpdateBy {
                         // create a RowSet to be used by `InverseWrappedRowSetRowRedirection`
                         inputSourceRowSets.set(srcIdx, source.getRowSet().copy());
 
-                        // record how many operators require this input source
+                        // record how many operator sets (not operators) require this input source;
+                        // releaseInputSources() is called once per set, so the count must match sets
                         int useCount = 0;
                         for (UpdateByWindow win : windows) {
+                            final Set<IntArrayList> seenSlotArrays = new HashSet<>();
                             for (int winOpIdx = 0; winOpIdx < win.operators.length; winOpIdx++) {
                                 if (win.operatorUsesSource(winOpIdx, srcIdx)) {
-                                    useCount++;
+                                    seenSlotArrays.add(
+                                            new IntArrayList(win.operatorInputSourceSlots[winOpIdx]));
                                 }
                             }
+                            useCount += seenSlotArrays.size();
                         }
                         inputSourceReferenceCounts.set(srcIdx, useCount);
                     }
@@ -497,14 +502,19 @@ public abstract class UpdateBy {
                                 }
                             }
 
+                            // Count distinct operator sets (not operators) that use this source;
+                            // releaseInputSources() is called once per set, so the count must match sets
+                            final Set<IntArrayList> seenSlotArrays = new HashSet<>();
                             for (int winOpIdx = 0; winOpIdx < win.operators.length; winOpIdx++) {
-                                if (win.operatorUsesSource(winOpIdx, srcIdx)
-                                        && dirtyWindowOperators[winIdx].get(winOpIdx)) {
-                                    useCount++;
+                                if (dirtyWindowOperators[winIdx].get(winOpIdx)
+                                        && win.operatorUsesSource(winOpIdx, srcIdx)) {
+                                    seenSlotArrays.add(
+                                            new IntArrayList(win.operatorInputSourceSlots[winOpIdx]));
                                 }
                             }
-                            inputSourceReferenceCounts.set(srcIdx, useCount);
+                            useCount += seenSlotArrays.size();
                         }
+                        inputSourceReferenceCounts.set(srcIdx, useCount);
                     }, onComputeComplete,
                     () -> {
                     },
@@ -661,22 +671,22 @@ public abstract class UpdateBy {
             final Integer[] sortedDirtyOperators = ArrayUtils.addAll(dirtyConstantOperators, dirtyDynamicOperators);
 
             final List<int[]> operatorSets = new ArrayList<>(sortedDirtyOperators.length);
-            final TIntArrayList opList = new TIntArrayList(sortedDirtyOperators.length);
+            final IntArrayList opList = new IntArrayList(sortedDirtyOperators.length);
 
-            opList.add(sortedDirtyOperators[0]);
+            opList.add(sortedDirtyOperators[0].intValue());
             int lastOpIdx = sortedDirtyOperators[0];
             for (int ii = 1; ii < sortedDirtyOperators.length; ii++) {
                 final int opIdx = sortedDirtyOperators[ii];
                 if (Arrays.equals(win.operatorInputSourceSlots[opIdx], win.operatorInputSourceSlots[lastOpIdx])) {
                     opList.add(opIdx);
                 } else {
-                    operatorSets.add(opList.toArray());
-                    opList.clear(sortedDirtyOperators.length);
+                    operatorSets.add(opList.toIntArray());
+                    opList.clear();
                     opList.add(opIdx);
                 }
                 lastOpIdx = opIdx;
             }
-            operatorSets.add(opList.toArray());
+            operatorSets.add(opList.toIntArray());
 
             // Process each set of similar operators in this window serially.
             jobScheduler.iterateSerial(executionContext,
@@ -876,10 +886,21 @@ public abstract class UpdateBy {
         private void releaseInputSources(int[] sources) {
             try (final ResettableWritableObjectChunk<?, ?> backingChunk =
                     ResettableWritableObjectChunk.makeResettableChunk()) {
+                // A slot array can contain duplicate indices (e.g. when the same column is used as both value and
+                // weight in rollingWavg). Track which sources have already been decremented in this call so that each
+                // source is released at most once per operator set.
+                boolean[] decremented = null;
                 for (int srcIdx : sources) {
                     if (!inputSourceCacheNeeded[srcIdx]) {
                         continue;
                     }
+                    if (decremented == null) {
+                        decremented = new boolean[inputSources.length];
+                    }
+                    if (decremented[srcIdx]) {
+                        continue;
+                    }
+                    decremented[srcIdx] = true;
 
                     if (inputSourceReferenceCounts.decrementAndGet(srcIdx) == 0) {
                         // Last use of this set, let's clean up
@@ -1249,7 +1270,8 @@ public abstract class UpdateBy {
             final Set<String> opResultColumnSet = new HashSet<>();
 
             final ArrayList<String> inputColumnList = new ArrayList<>();
-            final TObjectIntHashMap<String> inputColumnToSlotMap = new TObjectIntHashMap<>();
+            final Object2IntMap<String> inputColumnToSlotMap = new Object2IntOpenHashMap<>();
+            inputColumnToSlotMap.defaultReturnValue(-1);
 
             final UpdateByWindow[] windowArr = windowSpecs.stream().map(clauseList -> {
                 final UpdateByOperator[] windowOps =
@@ -1287,8 +1309,8 @@ public abstract class UpdateBy {
 
                     for (int colIdx = 0; colIdx < inputColumnNames.length; colIdx++) {
                         final String name = inputColumnNames[colIdx];
-                        final int maybeExistingSlot = inputColumnToSlotMap.get(name);
-                        if (maybeExistingSlot == inputColumnToSlotMap.getNoEntryValue()) {
+                        final int maybeExistingSlot = inputColumnToSlotMap.getInt(name);
+                        if (maybeExistingSlot == inputColumnToSlotMap.defaultReturnValue()) {
                             // create a new input source
                             final int srcIdx = inputColumnList.size();
                             inputColumnList.add(name);

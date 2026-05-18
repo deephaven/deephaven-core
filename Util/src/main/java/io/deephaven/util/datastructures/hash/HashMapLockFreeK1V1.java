@@ -3,7 +3,8 @@
 //
 package io.deephaven.util.datastructures.hash;
 
-import gnu.trove.iterator.TLongLongIterator;
+import it.unimi.dsi.fastutil.longs.Long2LongMap;
+import it.unimi.dsi.fastutil.objects.ObjectSet;
 
 public final class HashMapLockFreeK1V1 extends HashMapK1V1 {
     private volatile long[] keysAndValues;
@@ -65,27 +66,27 @@ public final class HashMapLockFreeK1V1 extends HashMapK1V1 {
     }
 
     @Override
-    public final long[] keys() {
+    public final ObjectSet<Long2LongMap.Entry> long2LongEntrySet() {
+        return entrySetImpl(keysAndValues);
+    }
+
+    @Override
+    public final long[] keyArray() {
         return keysOrValuesImpl(keysAndValues, null, false);
     }
 
     @Override
-    public final long[] keys(long[] array) {
-        return keysOrValuesImpl(keysAndValues, array, false);
+    public final long[] keyArray(long[] space) {
+        return keysOrValuesImpl(keysAndValues, space, false);
     }
 
     @Override
-    public final long[] values() {
+    public final long[] valueArray() {
         return keysOrValuesImpl(keysAndValues, null, true);
     }
 
     @Override
-    public final long[] values(long[] array) {
-        return keysOrValuesImpl(keysAndValues, array, true);
-    }
-
-    @Override
-    public final TLongLongIterator iterator() {
-        return iteratorImpl(keysAndValues);
+    public final long[] valueArray(long[] space) {
+        return keysOrValuesImpl(keysAndValues, space, true);
     }
 }

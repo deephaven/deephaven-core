@@ -3,7 +3,6 @@
 //
 package io.deephaven.engine.table.impl.util;
 
-import gnu.trove.map.TLongLongMap;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetShiftData;
@@ -12,6 +11,7 @@ import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.util.mutable.MutableInt;
+import it.unimi.dsi.fastutil.longs.Long2LongMap;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -174,15 +174,15 @@ public interface WritableRowRedirection extends RowRedirection, ChunkSink<RowKey
      * Factory for producing WritableRowRedirections and their components.
      */
     interface Factory {
-        TLongLongMap createUnderlyingMapWithCapacity(int initialCapacity);
+        Long2LongMap createUnderlyingMapWithCapacity(int initialCapacity);
 
         WritableRowRedirection createRowRedirection(int initialCapacity);
 
         /**
-         * @param map The initial {@link TLongLongMap} to use for backing the result WritableRowRedirection. Needs to
+         * @param map The initial {@link Long2LongMap} to use for backing the result WritableRowRedirection. Needs to
          *        have the same dynamic type as that returned by {@link #createUnderlyingMapWithCapacity(int)}.
          */
-        RowRedirection createRowRedirection(TLongLongMap map);
+        RowRedirection createRowRedirection(Long2LongMap map);
     }
 
     Factory FACTORY = new RowRedirectionLockFreeFactory();

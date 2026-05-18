@@ -5,7 +5,7 @@ package io.deephaven.engine.table.impl;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
-import gnu.trove.list.array.TLongArrayList;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
 import io.deephaven.api.Pair;
 import io.deephaven.base.Base64;
 import io.deephaven.base.log.LogOutput;
@@ -1544,13 +1544,13 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
     private long[] parentPerformanceEntryIdsArray() {
         // parents is often empty (because we manage things instead), so this might not have anything.
         // We attempt to account for at least one listener, in the common case.
-        final TLongArrayList ids = new TLongArrayList(parents.size() + 1);
+        final LongArrayList ids = new LongArrayList(parents.size() + 1);
         forEachManagedReference(ref -> BaseTable.getParentPerformanceEntryIds(ref).forEach(ids::add));
 
         BaseTable.getParentPerformanceEntryIds(this).forEach(ids::add);
         parents.stream().flatMapToLong(BaseTable::getParentPerformanceEntryIds).forEach(ids::add);
 
-        return ids.toArray();
+        return ids.toLongArray();
     }
 
     /**

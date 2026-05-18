@@ -28,7 +28,8 @@ import io.deephaven.engine.table.impl.sources.sparse.ByteOneOrN;
 import io.deephaven.engine.table.impl.sources.sparse.LongOneOrN;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.util.SoftRecycler;
-import gnu.trove.list.array.TLongArrayList;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
+import it.unimi.dsi.fastutil.longs.LongList;
 import io.deephaven.util.annotations.TestUseOnly;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
@@ -86,7 +87,7 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean>
      * BLOCK0_SHIFT). We recycle those blocks in the PrevFlusher; and accumulate the set of blocks that must be recycled
      * from the next level array, and so on until we recycle the top-level prevBlocks and prevInUse arrays.
      */
-    private transient final TLongArrayList blocksToFlush = new TLongArrayList();
+    private transient final LongList blocksToFlush = new LongArrayList();
 
     protected ByteOneOrN.Block0 blocks;
     protected transient ByteOneOrN.Block0 prevBlocks;
@@ -296,7 +297,7 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean>
 
     private void commitUpdates() {
         maybeClearBlocks();
-        blocksToFlush.sort();
+        blocksToFlush.sort(null);
 
         int destinationOffset = 0;
         long lastBlock2Key = -1;
@@ -318,7 +319,7 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean>
         // we are accumulating values of block0, block1, block2
         for (int ii = 0; ii < blocksToFlush.size(); ii++) {
             // blockKey = block0 | block1 | block2
-            final long blockKey = blocksToFlush.getQuick(ii);
+            final long blockKey = blocksToFlush.getLong(ii);
             final long key = blockKey << LOG_BLOCK_SIZE;
             final long block2key = key >> BLOCK1_SHIFT;
             if (block2key != lastBlock2Key) {
@@ -342,14 +343,14 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean>
             inUseRecycler.returnItem(inuse);
         }
 
-        blocksToFlush.remove(destinationOffset, blocksToFlush.size() - destinationOffset);
+        blocksToFlush.removeElements(destinationOffset, blocksToFlush.size());
         destinationOffset = 0;
         long lastBlock1key = -1;
 
         // we are clearing out values from block0, block1, block2
         // we are accumulating values of block0, block1
         for (int ii = 0; ii < blocksToFlush.size(); ii++) {
-            final long blockKey = blocksToFlush.getQuick(ii);
+            final long blockKey = blocksToFlush.getLong(ii);
             // blockKey = block0 | block1
             final long key = blockKey << BLOCK1_SHIFT;
             final long block1Key = key >> BLOCK0_SHIFT;
@@ -374,11 +375,11 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean>
             inuse.maybeRecycle(inUse2Recycler);
         }
 
-        blocksToFlush.remove(destinationOffset, blocksToFlush.size() - destinationOffset);
+        blocksToFlush.removeElements(destinationOffset, blocksToFlush.size());
 
         // we are clearing out values from block0, block1
         for (int ii = 0; ii < blocksToFlush.size(); ii++) {
-            final int block0 = (int) (blocksToFlush.getQuick(ii)) & BLOCK0_MASK;
+            final int block0 = (int) (blocksToFlush.getLong(ii)) & BLOCK0_MASK;
             final ByteOneOrN.Block1 pb1 = localPrevBlocks.get(block0);
             final LongOneOrN.Block1 inuse = localPrevInUse.get(block0);
 

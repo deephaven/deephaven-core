@@ -3,7 +3,7 @@
 //
 package io.deephaven.engine.table.impl.sources;
 
-import gnu.trove.list.array.TLongArrayList;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.context.ExecutionContext;
@@ -803,8 +803,8 @@ public class UnionSourceManager implements PushdownPredicateManager {
                 ctx.matchers.size(),
                 (localContext, idx, nec, resume) -> {
                     final PushdownFilterMatcher matcher = ctx.matchers.get(idx);
-                    final long firstRowKey = ctx.firstRowKeys.get(idx);
-                    final long lastRowKey = ctx.lastRowKeys.get(idx);
+                    final long firstRowKey = ctx.firstRowKeys.getLong(idx);
+                    final long lastRowKey = ctx.lastRowKeys.getLong(idx);
                     try (final WritableRowSet localSelection = selection.subSetByKeyRange(firstRowKey, lastRowKey)) {
                         if (localSelection.isEmpty()) {
                             // No rows remain for this constituent, so we can skip it.
@@ -856,8 +856,8 @@ public class UnionSourceManager implements PushdownPredicateManager {
                 ctx.matchers.size(),
                 (localContext, idx, nec, resume) -> {
                     final PushdownFilterMatcher matcher = ctx.matchers.get(idx);
-                    final long firstRowKey = ctx.firstRowKeys.get(idx);
-                    final long lastRowKey = ctx.lastRowKeys.get(idx);
+                    final long firstRowKey = ctx.firstRowKeys.getLong(idx);
+                    final long lastRowKey = ctx.lastRowKeys.getLong(idx);
                     try (final WritableRowSet localSelection = selection.subSetByKeyRange(firstRowKey, lastRowKey)) {
                         if (localSelection.isEmpty()) {
                             matches[idx] = RowSetFactory.empty();
@@ -907,8 +907,8 @@ public class UnionSourceManager implements PushdownPredicateManager {
 
         boolean initialized = false;
         List<PushdownFilterMatcher> matchers;
-        TLongArrayList firstRowKeys;
-        TLongArrayList lastRowKeys;
+        LongArrayList firstRowKeys;
+        LongArrayList lastRowKeys;
         List<io.deephaven.engine.table.impl.PushdownFilterContext> contexts;
 
         public UnionSourcePushdownFilterContext(
@@ -948,8 +948,8 @@ public class UnionSourceManager implements PushdownPredicateManager {
 
             matchers = new ArrayList<>(constituentCount);
             contexts = new ArrayList<>(constituentCount);
-            firstRowKeys = new TLongArrayList(constituentCount);
-            lastRowKeys = new TLongArrayList(constituentCount);
+            firstRowKeys = new LongArrayList(constituentCount);
+            lastRowKeys = new LongArrayList(constituentCount);
 
             // Use a 0-based slot counter for unionRedirection lookups (which are position-indexed, not
             // row-key-indexed). Slot positions diverge from constituentRows row keys when

@@ -3,12 +3,12 @@
 //
 package io.deephaven.engine.table.impl.util;
 
-import io.deephaven.util.datastructures.hash.TNullableLongLongMap;
-import gnu.trove.map.TLongLongMap;
+import io.deephaven.util.datastructures.hash.NullableLong2LongMap;
+import it.unimi.dsi.fastutil.longs.Long2LongMap;
 
 class RowRedirectionLockFreeFactory implements WritableRowRedirection.Factory {
     @Override
-    public TLongLongMap createUnderlyingMapWithCapacity(int initialCapacity) {
+    public Long2LongMap createUnderlyingMapWithCapacity(int initialCapacity) {
         return WritableRowRedirectionLockFree.createMapWithCapacity(initialCapacity);
     }
 
@@ -18,7 +18,7 @@ class RowRedirectionLockFreeFactory implements WritableRowRedirection.Factory {
     }
 
     @Override
-    public WritableRowRedirectionLockFree createRowRedirection(TLongLongMap map) {
-        return new WritableRowRedirectionLockFree((TNullableLongLongMap) map);
+    public WritableRowRedirectionLockFree createRowRedirection(Long2LongMap map) {
+        return new WritableRowRedirectionLockFree((NullableLong2LongMap) map);
     }
 }
