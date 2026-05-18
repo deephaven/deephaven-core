@@ -2,7 +2,8 @@
 // Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
-// ****** Edit TestFloatSegmentedSortedMultisetSpecialValues and run "./gradlew replicateSegmentedSortedMultisetTests" to regenerate
+// ****** Edit TestFloatSegmentedSortedMultisetSpecialValues and run "./gradlew replicateSegmentedSortedMultisetTests"
+// to regenerate
 //
 // @formatter:off
 package io.deephaven.engine.table.impl.ssms;
