@@ -291,6 +291,13 @@ public class QueryTable extends BaseTable<QueryTable> {
                     false);
 
     /**
+     * Disable the usage of sorted column regions during push-down filtering.
+     */
+    public static boolean DISABLE_WHERE_PUSHDOWN_SORTED_COLUMN_LOCATION =
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.disableWherePushdownSortedColumn",
+                    false);
+
+    /**
      * You can choose to enable or disable the column parallel select and update.
      */
     static boolean ENABLE_PARALLEL_SELECT_AND_UPDATE =

@@ -9,7 +9,7 @@ dependencies {
     api project(':engine-rowset')
 
     implementation libs.commons.lang3
-    implementation libs.trove
+    implementation libs.dsi.fastutil
 
     implementation libs.junit4
 }

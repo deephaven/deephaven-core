@@ -347,6 +347,7 @@ Deephaven Community Core is specifically designed, delivered, and packaged to be
 - [Directed acyclic graph (DAG)](./dag.md)
 - [Table update model](./table-update-model.md)
 - [Core API design](./deephaven-core-api.md)
+- [Column types](./column-types.md)
 
 ### How-to guides
 

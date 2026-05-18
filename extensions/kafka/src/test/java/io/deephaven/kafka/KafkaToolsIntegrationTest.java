@@ -7,20 +7,31 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
+import io.deephaven.json.ArrayValue;
+import io.deephaven.json.ByteValue;
+import io.deephaven.json.CharValue;
+import io.deephaven.json.DoubleValue;
+import io.deephaven.json.FloatValue;
+import io.deephaven.json.IntValue;
+import io.deephaven.json.LongValue;
 import io.deephaven.json.ObjectValue;
+import io.deephaven.json.ShortValue;
 import io.deephaven.json.StringValue;
 import io.deephaven.json.jackson.JacksonProvider;
 import io.deephaven.kafka.KafkaTools.TableType;
 import io.deephaven.kafka.testcontainers.KafkaService;
+import io.deephaven.qst.type.Type;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.StringSerializer;
+import org.apache.kafka.common.serialization.VoidSerializer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
@@ -278,6 +289,104 @@ class KafkaToolsIntegrationTest {
             producer.flush();
 
             awaitEquals(e3, taa);
+        }
+    }
+
+    @ParameterizedTest(name = "jsonArrayTest_DH22657 {0}")
+    @EnumSource
+    @Timeout(TIMEOUT_SECONDS)
+    void jsonArrayTest_DH22657(final KafkaService kafkaService, final TestInfo testInfo) throws Exception {
+        Assumptions.assumeTrue(kafkaService.isEnabled());
+        kafkaService.init();
+        final String topic = sanitizedTopicName(testInfo);
+        final String byteArrayName = "ByteArray";
+        final String charArrayName = "CharArray";
+        final String shortArrayName = "ShortArray";
+        final String intArrayName = "IntArray";
+        final String longArrayName = "LongArray";
+        final String floatArrayName = "FloatArray";
+        final String doubleArrayName = "DoubleArray";
+        final String stringArrayName = "StringArray";
+
+        final TableDefinition td;
+        final Table e1;
+        final Table e2;
+        {
+            td = TableDefinition.of(
+                    PARTITION_COLUMN,
+                    OFFSET_COLUMN,
+                    TIMESTAMP_COLUMN,
+                    ColumnDefinition.of(byteArrayName, Type.byteType().arrayType()),
+                    ColumnDefinition.of(charArrayName, Type.charType().arrayType()),
+                    ColumnDefinition.of(shortArrayName, Type.shortType().arrayType()),
+                    ColumnDefinition.of(intArrayName, Type.intType().arrayType()),
+                    ColumnDefinition.of(longArrayName, Type.longType().arrayType()),
+                    ColumnDefinition.of(floatArrayName, Type.floatType().arrayType()),
+                    ColumnDefinition.of(doubleArrayName, Type.doubleType().arrayType()),
+                    ColumnDefinition.of(stringArrayName, Type.stringType().arrayType()));
+            e1 = TableTools.newTable(td);
+            e2 = TableTools.newTable(td,
+                    intCol(PARTITION_COLUMN.getName(), 0, 0),
+                    longCol(OFFSET_COLUMN.getName(), 0, 1),
+                    instantCol(TIMESTAMP_COLUMN.getName(), Instant.ofEpochMilli(42L), Instant.ofEpochMilli(43L)),
+                    new ColumnHolder<>(byteArrayName, byte[].class, byte.class, false,
+                            new byte[] {1, 2, 3},
+                            new byte[] {3, 2, 1}),
+                    new ColumnHolder<>(charArrayName, char[].class, char.class, false,
+                            new char[] {'a', 'b', 'c'},
+                            new char[] {'d', 'e', 'f'}),
+                    new ColumnHolder<>(shortArrayName, short[].class, short.class, false,
+                            new short[] {1, 2, 3},
+                            new short[] {3, 2, 1}),
+                    new ColumnHolder<>(intArrayName, int[].class, int.class, false,
+                            new int[] {1, 2, 3},
+                            new int[] {3, 2, 1}),
+                    new ColumnHolder<>(longArrayName, long[].class, long.class, false,
+                            new long[] {1, 2, 3},
+                            new long[] {3, 2, 1}),
+                    new ColumnHolder<>(floatArrayName, float[].class, float.class, false,
+                            new float[] {1, 2, 3},
+                            new float[] {3, 2, 1}),
+                    new ColumnHolder<>(doubleArrayName, double[].class, double.class, false,
+                            new double[] {1, 2, 3},
+                            new double[] {3, 2, 1}),
+                    new ColumnHolder<>(stringArrayName, String[].class, String.class, false,
+                            new String[] {"foo", "bar", "baz"},
+                            new String[] {"baz", "bar", "foo"}));
+        }
+
+        createTopic(kafkaService, topic);
+
+        final KafkaTools.TableAndAdapter taa = KafkaTools.consumeToTableAndAdapter(
+                kafkaService.properties(),
+                topic,
+                ALL_PARTITIONS,
+                ALL_PARTITIONS_SEEK_TO_BEGINNING,
+                KafkaTools.Consume.IGNORE,
+                KafkaTools.Consume.objectProcessorSpec(
+                        JacksonProvider.of(ObjectValue.builder()
+                                .putFields(byteArrayName, ArrayValue.strict(ByteValue.standard()))
+                                .putFields(charArrayName, ArrayValue.strict(CharValue.standard()))
+                                .putFields(shortArrayName, ArrayValue.strict(ShortValue.standard()))
+                                .putFields(intArrayName, ArrayValue.strict(IntValue.standard()))
+                                .putFields(longArrayName, ArrayValue.strict(LongValue.standard()))
+                                .putFields(floatArrayName, ArrayValue.strict(FloatValue.standard()))
+                                .putFields(doubleArrayName, ArrayValue.strict(DoubleValue.standard()))
+                                .putFields(stringArrayName, ArrayValue.strict(StringValue.standard()))
+                                .build())),
+                TableType.append());
+
+        try (final KafkaProducer<Void, String> producer =
+                kafkaService.producer(new VoidSerializer(), new StringSerializer())) {
+            awaitEquals(e1, taa);
+
+            producer.send(new ProducerRecord<>(topic, null, 42L, null,
+                    "{ \"ByteArray\": [1, 2, 3], \"CharArray\": [\"a\", \"b\", \"c\"], \"ShortArray\": [1, 2, 3], \"IntArray\": [1, 2, 3], \"LongArray\": [1, 2, 3], \"FloatArray\": [1, 2, 3], \"DoubleArray\": [1, 2, 3], \"StringArray\": [\"foo\", \"bar\", \"baz\"] }"));
+            producer.send(new ProducerRecord<>(topic, null, 43L, null,
+                    "{ \"ByteArray\": [3, 2, 1], \"CharArray\": [\"d\", \"e\", \"f\"], \"ShortArray\": [3, 2, 1], \"IntArray\": [3, 2, 1], \"LongArray\": [3, 2, 1], \"FloatArray\": [3, 2, 1], \"DoubleArray\": [3, 2, 1], \"StringArray\": [\"baz\", \"bar\", \"foo\"] }"));
+            producer.flush();
+
+            awaitEquals(e2, taa);
         }
     }
 

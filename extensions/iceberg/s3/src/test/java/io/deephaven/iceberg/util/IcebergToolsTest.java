@@ -3,7 +3,6 @@
 //
 package io.deephaven.iceberg.util;
 
-import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.ColumnDefinition;
@@ -14,6 +13,8 @@ import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.extensions.s3.S3Instructions;
 import io.deephaven.iceberg.TestCatalog.IcebergTestCatalog;
 import io.deephaven.qst.type.Type;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
+import it.unimi.dsi.fastutil.longs.LongList;
 import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.Snapshot;
@@ -372,7 +373,7 @@ public abstract class IcebergToolsTest {
         final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog);
         final IcebergTableAdapter tableAdapter = adapter.loadTable("sales.sales_multi");
 
-        final TLongArrayList snapshotIds = new TLongArrayList();
+        final LongList snapshotIds = new LongArrayList();
 
         tableAdapter.listSnapshots().forEach(snapshot -> snapshotIds.add(snapshot.snapshotId()));
 

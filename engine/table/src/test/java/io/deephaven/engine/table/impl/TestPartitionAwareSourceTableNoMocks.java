@@ -421,8 +421,9 @@ public class TestPartitionAwareSourceTableNoMocks {
         Assert.eq(filter0.numRowsProcessed(), "filter0.numRowsProcessed()", 2 * partitionSize);
         // ensure we see the barrier partition filter as filtering only the partitioned rows
         Assert.eq(filter1.numRowsProcessed(), "filter1.numRowsProcessed()", 4);
-        // the respects barrier could not be lifted but operates on constant column regions (vs. rows)
-        Assert.eq(filter2.numRowsProcessed(), "filter2.numRowsProcessed()", 2);
+        // the respects barrier could not be lifted but operates on constant column regions (vs. rows). Since,
+        // the filter is performed as a chunk filter, no rows are actually processed by the filter.
+        Assert.eq(filter2.numRowsProcessed(), "filter2.numRowsProcessed()", 0);
 
         Assert.eq(res0.size(), "res0.size()", partitionSize / 2);
     }
