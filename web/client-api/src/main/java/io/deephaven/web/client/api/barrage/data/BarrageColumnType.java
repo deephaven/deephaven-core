@@ -288,7 +288,7 @@ public abstract sealed class BarrageColumnType
 
     /**
      * Returns a Class instance to use when constructing a local BarrageTypeInfo. This is presently specific to the JS
-     * client, and would need to generalized if we shared this clas.
+     * client, and would need to generalized if we shared this class.
      */
     protected abstract Class<?> type();
 
