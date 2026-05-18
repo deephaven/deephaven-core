@@ -23,7 +23,7 @@ public class ReplicateSegmentedSortedMultiset {
     private static final String TASK = "replicateSegmentedSortedMultiset";
 
     public static void main(String[] args) throws IOException {
-        // Replicate FloatCompareOpenHashSet → DoubleCompareOpenHashSet
+        // Replicate FloatCompareOpenHashSet -> DoubleCompareOpenHashSet
         floatToAllFloatingPoints(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/ssms/FloatCompareOpenHashSet.java");
         final File doubleCompareHashSetFile = new File(
@@ -32,7 +32,7 @@ public class ReplicateSegmentedSortedMultiset {
         doubleCompareLines = globalReplacements(doubleCompareLines,
                 "0\\.0f", "0.0d",
                 "0x7fc00000", "0x7ff8000000000000L",
-                // DoubleOpenHashSet's load-factor parameter is float, not double — keep it float
+                // DoubleOpenHashSet's load-factor parameter is float, not double -- keep it float
                 "final int expected, final double f\\)", "final int expected, final float f)");
         FileUtils.writeLines(doubleCompareHashSetFile, doubleCompareLines);
 

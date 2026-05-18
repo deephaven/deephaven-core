@@ -16,9 +16,9 @@ import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
  *
  * <p>
  * The SSM's delta-tracking added/removed sets must agree with the SSM's leaf-storage equality (FloatComparisons.eq). If
- * they disagree — e.g. because the underlying hash set treats {@code -0.0f} and {@code +0.0f} as distinct, or keeps two
- * NaN bit patterns as separate entries — then a net-no-change insert/remove pair can leak phantom adds/removes through
- * {@code fillAddedChunk}/{@code fillRemovedChunk}.
+ * they disagree -- e.g. because the underlying hash set treats {@code -0.0f} and {@code +0.0f} as distinct, or keeps
+ * two NaN bit patterns as separate entries -- then a net-no-change insert/remove pair can leak phantom adds/removes
+ * through {@code fillAddedChunk}/{@code fillRemovedChunk}.
  */
 public class TestFloatSegmentedSortedMultisetSpecialValues extends RefreshingTableTestCase {
 
@@ -79,8 +79,8 @@ public class TestFloatSegmentedSortedMultisetSpecialValues extends RefreshingTab
     }
 
     /**
-     * Insert {@code +0.0f} then remove {@code -0.0f} — the mirror of the previous test. Same FloatComparisons semantics
-     * apply.
+     * Insert {@code +0.0f} then remove {@code -0.0f} -- the mirror of the previous test. Same FloatComparisons
+     * semantics apply.
      */
     public void testInsertPositiveZeroThenRemoveNegativeZero() {
         final FloatSegmentedSortedMultiset ssm = trackingSsm();

@@ -596,14 +596,15 @@ public class TestUpdateByGeneral extends BaseUpdateByTest implements UpdateError
      * is called exactly <em>once</em> for that set. The old code counted operators rather than operator sets, so the
      * reference count for the shared source was too high. After two incremental releases the count remained > 0,
      * {@code maybeCachedInputSources[d]} was never nulled, and the next incremental step reused a stale
-     * {@code InverseWrappedRowSetRowRedirection} that only covered the prior row set — causing an
+     * {@code InverseWrappedRowSetRowRedirection} that only covered the prior row set -- causing an
      * {@code ArrayIndexOutOfBoundsException} when newly added row keys were looked up.
      *
      * <p>
      * The test reproduces the scenario by:
      * <ol>
      * <li>Wrapping column sources in {@link NonFillUnorderedWrapper} so that caching is required.</li>
-     * <li>Applying three operators — {@code CumSum("d")}, {@code Ema("d")}, and {@code RollingWAvg(5, "e", "d")} — that
+     * <li>Applying three operators -- {@code CumSum("d")}, {@code Ema("d")}, and {@code RollingWAvg(5, "e", "d")} --
+     * that
      * together overcount source "d"'s reference by 1 under the old logic.</li>
      * <li>Running two incremental update cycles; the second cycle crashes without the fix.</li>
      * </ol>
@@ -624,17 +625,17 @@ public class TestUpdateByGeneral extends BaseUpdateByTest implements UpdateError
         final QueryTable source = new QueryTable(rowSet, cols);
         source.setRefreshing(true);
 
-        // CumSum("d") and Ema("d") share slot array [slot_d] → one operator set in the cumulative window.
-        // RollingWAvg("e" weight, "d" value) uses slot array [slot_d, slot_e] → one operator set in the rolling window.
-        // Old code: refcount("d") = 3 (2 operators + 1 rolling); released 2 times → refcount stays at 1 → stale cache.
-        // New code: refcount("d") = 2 (1 cumulative set + 1 rolling set); released 2 times → refcount = 0 → cache
+        // CumSum("d") and Ema("d") share slot array [slot_d] -> one operator set in the cumulative window.
+        // RollingWAvg("e" weight, "d" value) uses slot array [slot_d, slot_e] -> one operator set in the rolling window.
+        // Old code: refcount("d") = 3 (2 operators + 1 rolling); released 2 times -> refcount stays at 1 -> stale cache.
+        // New code: refcount("d") = 2 (1 cumulative set + 1 rolling set); released 2 times -> refcount = 0 -> cache
         // cleared.
         final Table result = source.updateBy(List.of(
                 CumSum("sum_d=d"),
                 Ema(10.0, "ema_d=d"),
                 RollingWAvg(5L, "e", "wavg_d=d")));
 
-        // Cycle 1: add rows 0–2.
+        // Cycle 1: add rows 0-2.
         updateGraph.runWithinUnitTestCycle(() -> {
             innerD.set(0, 1);
             innerD.set(1, 2);
@@ -647,8 +648,8 @@ public class TestUpdateByGeneral extends BaseUpdateByTest implements UpdateError
         });
         Assert.assertEquals(3, result.size());
 
-        // Cycle 2: add rows 3–5.
-        // Without the fix the stale InverseWrappedRowSetRowRedirection returns -1 for new keys → crash.
+        // Cycle 2: add rows 3-5.
+        // Without the fix the stale InverseWrappedRowSetRowRedirection returns -1 for new keys -> crash.
         updateGraph.runWithinUnitTestCycle(() -> {
             innerD.set(3, 4);
             innerD.set(4, 5);

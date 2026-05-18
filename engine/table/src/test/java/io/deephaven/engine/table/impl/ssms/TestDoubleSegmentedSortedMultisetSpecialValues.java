@@ -20,9 +20,9 @@ import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
  *
  * <p>
  * The SSM's delta-tracking added/removed sets must agree with the SSM's leaf-storage equality (DoubleComparisons.eq). If
- * they disagree â e.g. because the underlying hash set treats {@code -0.0d} and {@code +0.0d} as distinct, or keeps two
- * NaN bit patterns as separate entries â then a net-no-change insert/remove pair can leak phantom adds/removes through
- * {@code fillAddedChunk}/{@code fillRemovedChunk}.
+ * they disagree -- e.g. because the underlying hash set treats {@code -0.0d} and {@code +0.0d} as distinct, or keeps
+ * two NaN bit patterns as separate entries -- then a net-no-change insert/remove pair can leak phantom adds/removes
+ * through {@code fillAddedChunk}/{@code fillRemovedChunk}.
  */
 public class TestDoubleSegmentedSortedMultisetSpecialValues extends RefreshingTableTestCase {
 
@@ -83,8 +83,8 @@ public class TestDoubleSegmentedSortedMultisetSpecialValues extends RefreshingTa
     }
 
     /**
-     * Insert {@code +0.0d} then remove {@code -0.0d} â the mirror of the previous test. Same DoubleComparisons semantics
-     * apply.
+     * Insert {@code +0.0d} then remove {@code -0.0d} -- the mirror of the previous test. Same DoubleComparisons
+     * semantics apply.
      */
     public void testInsertPositiveZeroThenRemoveNegativeZero() {
         final DoubleSegmentedSortedMultiset ssm = trackingSsm();

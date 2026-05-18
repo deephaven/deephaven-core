@@ -18,7 +18,7 @@ public class ReplicateSegmentedSortedMultisetTests {
     public static void main(String[] args) throws IOException {
         ReplicateSegmentedSortedMultiset.main(args);
 
-        // Replicate TestFloatSegmentedSortedMultisetSpecialValues → TestDoubleSegmentedSortedMultisetSpecialValues
+        // Replicate TestFloatSegmentedSortedMultisetSpecialValues -> TestDoubleSegmentedSortedMultisetSpecialValues
         floatToAllFloatingPoints("replicateSegmentedSortedMultisetTests",
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/ssms/TestFloatSegmentedSortedMultisetSpecialValues.java");
         final File doubleSpecialValuesTest = new File(
