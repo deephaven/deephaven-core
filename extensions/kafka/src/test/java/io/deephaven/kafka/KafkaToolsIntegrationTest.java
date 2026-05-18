@@ -401,8 +401,8 @@ class KafkaToolsIntegrationTest {
         final String topic = sanitizedTopicName(testInfo);
         final String fooName = "Biz_Foo";
         final String barName = "Biz_Bar";
-        final String zipName = "Buz_Zip";
-        final String zapName = "Buz_Zap";
+        final String zipName = "Biz_Zip";
+        final String zapName = "Biz_Zap";
 
         final TableDefinition td;
         final Table e1;
@@ -445,18 +445,13 @@ class KafkaToolsIntegrationTest {
                 topic,
                 ALL_PARTITIONS,
                 ALL_PARTITIONS_SEEK_TO_BEGINNING,
+                KafkaTools.Consume.IGNORE,
                 KafkaTools.Consume.objectProcessorSpec(
                         JacksonProvider.of(ObjectValue.builder()
                                 .putFields("Biz", ArrayValue.standard(
                                         ObjectValue.builder()
                                                 .putFields("Foo", IntValue.strict())
                                                 .putFields("Bar", LongValue.strict())
-                                                .build()))
-                                .build())),
-                KafkaTools.Consume.objectProcessorSpec(
-                        JacksonProvider.of(ObjectValue.builder()
-                                .putFields("Buz", ArrayValue.standard(
-                                        ObjectValue.builder()
                                                 .putFields("Zip", DoubleValue.strict())
                                                 .putFields("Zap", StringValue.strict())
                                                 .build()))
@@ -467,16 +462,16 @@ class KafkaToolsIntegrationTest {
                 kafkaService.producer(new StringSerializer(), new StringSerializer())) {
             awaitEquals(e1, taa);
 
-            producer.send(new ProducerRecord<>(topic, null, 42L, "{ \"Biz\": [ { \"Foo\": 1, \"Bar\": 4 } ] }",
-                    " {\"Buz\": [ { \"Zip\": 7.1, \"Zap\": \"zap1\" } ] }"));
-            producer.send(new ProducerRecord<>(topic, null, 43L, "{ \"Biz\": [ { \"Foo\": 2, \"Bar\": 5 } ] }",
-                    "{ \"Buz\": [ { \"Zip\": 8.2, \"Zap\": \"zap2\" } ] }"));
+            producer.send(new ProducerRecord<>(topic, null, 42L, null,
+                    " {\"Biz\": [ { \"Foo\": 1, \"Bar\": 4, \"Zip\": 7.1, \"Zap\": \"zap1\" } ] }"));
+            producer.send(new ProducerRecord<>(topic, null, 43L, null,
+                    "{ \"Biz\": [ { \"Foo\": 2, \"Bar\": 5, \"Zip\": 8.2, \"Zap\": \"zap2\" } ] }"));
             producer.flush();
 
             awaitEquals(e2, taa);
 
-            producer.send(new ProducerRecord<>(topic, null, 44L, "{ \"Biz\": [{ \"Foo\": 3, \"Bar\": 6 } ] }",
-                    "{ \"Buz\": [ { \"Zip\": 9.3, \"Zap\": \"zap3\" } ] }"));
+            producer.send(new ProducerRecord<>(topic, null, 44L, null,
+                    "{ \"Biz\": [ { \"Foo\": 3, \"Bar\": 6, \"Zip\": 9.3, \"Zap\": \"zap3\" } ] }"));
             producer.flush();
 
             awaitEquals(e3, taa);
@@ -488,8 +483,7 @@ class KafkaToolsIntegrationTest {
                 doubleCol("Zip", 7.1, 8.2, 9.3),
                 stringCol("Zap", "zap1", "zap2", "zap3"));
         final Table elementTable = taa.table()
-                .view("Foo = Biz_Foo[0]", "Bar = Biz_Bar[0]", "Zip = Buz_Zip[0]", "Zap = Buz_Zap[0]")
-                .select();
+                .view("Foo = Biz_Foo[0]", "Bar = Biz_Bar[0]", "Zip = Biz_Zip[0]", "Zap = Biz_Zap[0]");
         TstUtils.assertTableEquals(expectedTable, elementTable);
     }
 
