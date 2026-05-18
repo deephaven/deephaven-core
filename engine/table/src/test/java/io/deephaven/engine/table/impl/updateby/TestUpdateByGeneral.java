@@ -8,13 +8,17 @@ import io.deephaven.api.updateby.BadDataBehavior;
 import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.AbstractColumnSource;
+import io.deephaven.engine.table.impl.ColumnSourceGetDefaults;
 import io.deephaven.engine.table.impl.NoSuchColumnException;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.UpdateErrorReporter;
+import io.deephaven.engine.table.impl.sources.IntegerSparseArraySource;
 import io.deephaven.engine.table.impl.util.AsyncClientErrorNotifier;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
@@ -582,5 +586,158 @@ public class TestUpdateByGeneral extends BaseUpdateByTest implements UpdateError
         assertTrue(result.getDefinition().getColumn("String").isPartitioning());
         assertTrue(result.getDefinition().getColumn("Int").isDirect());
         assertTrue(result.getDefinition().getColumn("Double").isDirect());
+    }
+
+    /**
+     * Regression test for the shared-source reference-counting bug.
+     *
+     * <p>When multiple operators within the same UpdateBy window share identical input-source slot arrays (e.g. CumSum
+     * and Ema both reading only column "d"), they are grouped into a single operator set, and
+     * {@code releaseInputSources} is called exactly <em>once</em> for that set. The old code counted operators rather
+     * than operator sets, so the reference count for the shared source was too high. After two incremental releases the
+     * count remained > 0, {@code maybeCachedInputSources[d]} was never nulled, and the next incremental step reused a
+     * stale {@code InverseWrappedRowSetRowRedirection} that only covered the prior row set — causing an
+     * {@code ArrayIndexOutOfBoundsException} when newly added row keys were looked up.
+     *
+     * <p>The test reproduces the scenario by:
+     * <ol>
+     * <li>Wrapping column sources in {@link NonFillUnorderedWrapper} so that caching is required.</li>
+     * <li>Applying three operators — {@code CumSum("d")}, {@code Ema("d")}, and
+     * {@code RollingWAvg(5, "e", "d")} — that together overcount source "d"'s reference by 1 under the old
+     * logic.</li>
+     * <li>Running two incremental update cycles; the second cycle crashes without the fix.</li>
+     * </ol>
+     */
+    @Test
+    public void testSharedSourceReferenceCountingIncrementalUpdate() {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
+        final IntegerSparseArraySource innerD = new IntegerSparseArraySource();
+        final IntegerSparseArraySource innerE = new IntegerSparseArraySource();
+        final ColumnSource<Integer> sourceD = new NonFillUnorderedWrapper(innerD);
+        final ColumnSource<Integer> sourceE = new NonFillUnorderedWrapper(innerE);
+
+        final TrackingWritableRowSet rowSet = i().toTracking();
+        final LinkedHashMap<String, ColumnSource<?>> cols = new LinkedHashMap<>();
+        cols.put("d", sourceD);
+        cols.put("e", sourceE);
+        final QueryTable source = new QueryTable(rowSet, cols);
+        source.setRefreshing(true);
+
+        // CumSum("d") and Ema("d") share slot array [slot_d] → one operator set in the cumulative window.
+        // RollingWAvg("e" weight, "d" value) uses slot array [slot_d, slot_e] → one operator set in the rolling window.
+        // Old code: refcount("d") = 3 (2 operators + 1 rolling); released 2 times → refcount stays at 1 → stale cache.
+        // New code: refcount("d") = 2 (1 cumulative set + 1 rolling set); released 2 times → refcount = 0 → cache cleared.
+        final Table result = source.updateBy(List.of(
+                CumSum("sum_d=d"),
+                Ema(10.0, "ema_d=d"),
+                RollingWAvg(5L, "e", "wavg_d=d")));
+
+        // Cycle 1: add rows 0–2.
+        updateGraph.runWithinUnitTestCycle(() -> {
+            innerD.set(0, 1);
+            innerD.set(1, 2);
+            innerD.set(2, 3);
+            innerE.set(0, 1);
+            innerE.set(1, 1);
+            innerE.set(2, 1);
+            rowSet.insert(i(0, 1, 2));
+            source.notifyListeners(i(0, 1, 2), i(), i());
+        });
+        Assert.assertEquals(3, result.size());
+
+        // Cycle 2: add rows 3–5.
+        // Without the fix the stale InverseWrappedRowSetRowRedirection returns -1 for new keys → crash.
+        updateGraph.runWithinUnitTestCycle(() -> {
+            innerD.set(3, 4);
+            innerD.set(4, 5);
+            innerD.set(5, 6);
+            innerE.set(3, 1);
+            innerE.set(4, 1);
+            innerE.set(5, 1);
+            rowSet.insert(i(3, 4, 5));
+            source.notifyListeners(i(3, 4, 5), i(), i());
+        });
+        Assert.assertEquals(6, result.size());
+    }
+
+    /**
+     * An integer column source wrapper that deliberately does NOT implement
+     * {@link io.deephaven.engine.table.impl.sources.FillUnordered}, forcing UpdateBy to cache this source (setting
+     * {@code inputCacheNeeded = true}) and exercising the shared-source reference-counting logic.
+     */
+    private static class NonFillUnorderedWrapper extends AbstractColumnSource<Integer>
+            implements ColumnSourceGetDefaults.ForObject<Integer> {
+        private final IntegerSparseArraySource inner;
+
+        NonFillUnorderedWrapper(final IntegerSparseArraySource inner) {
+            super(Integer.class);
+            this.inner = inner;
+        }
+
+        @Override
+        public Integer get(final long rowKey) {
+            return inner.get(rowKey);
+        }
+
+        @Override
+        public int getInt(final long rowKey) {
+            return inner.getInt(rowKey);
+        }
+
+        @Override
+        public Integer getPrev(final long rowKey) {
+            return inner.getPrev(rowKey);
+        }
+
+        @Override
+        public int getPrevInt(final long rowKey) {
+            return inner.getPrevInt(rowKey);
+        }
+
+        @Override
+        public Boolean getPrevBoolean(final long rowKey) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public byte getPrevByte(final long rowKey) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public char getPrevChar(final long rowKey) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public double getPrevDouble(final long rowKey) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public float getPrevFloat(final long rowKey) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public long getPrevLong(final long rowKey) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public short getPrevShort(final long rowKey) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean isImmutable() {
+            return false;
+        }
+
+        @Override
+        public void startTrackingPrevValues() {
+            inner.startTrackingPrevValues();
+        }
     }
 }

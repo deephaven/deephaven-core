@@ -445,14 +445,18 @@ public abstract class UpdateBy {
                         // create a RowSet to be used by `InverseWrappedRowSetRowRedirection`
                         inputSourceRowSets.set(srcIdx, source.getRowSet().copy());
 
-                        // record how many operators require this input source
+                        // record how many operator sets (not operators) require this input source;
+                        // releaseInputSources() is called once per set, so the count must match sets
                         int useCount = 0;
                         for (UpdateByWindow win : windows) {
+                            final Set<IntArrayList> seenSlotArrays = new HashSet<>();
                             for (int winOpIdx = 0; winOpIdx < win.operators.length; winOpIdx++) {
                                 if (win.operatorUsesSource(winOpIdx, srcIdx)) {
-                                    useCount++;
+                                    seenSlotArrays.add(
+                                            new IntArrayList(win.operatorInputSourceSlots[winOpIdx]));
                                 }
                             }
+                            useCount += seenSlotArrays.size();
                         }
                         inputSourceReferenceCounts.set(srcIdx, useCount);
                     }
@@ -498,14 +502,19 @@ public abstract class UpdateBy {
                                 }
                             }
 
+                            // Count distinct operator sets (not operators) that use this source;
+                            // releaseInputSources() is called once per set, so the count must match sets
+                            final Set<IntArrayList> seenSlotArrays = new HashSet<>();
                             for (int winOpIdx = 0; winOpIdx < win.operators.length; winOpIdx++) {
-                                if (win.operatorUsesSource(winOpIdx, srcIdx)
-                                        && dirtyWindowOperators[winIdx].get(winOpIdx)) {
-                                    useCount++;
+                                if (dirtyWindowOperators[winIdx].get(winOpIdx)
+                                        && win.operatorUsesSource(winOpIdx, srcIdx)) {
+                                    seenSlotArrays.add(
+                                            new IntArrayList(win.operatorInputSourceSlots[winOpIdx]));
                                 }
                             }
-                            inputSourceReferenceCounts.set(srcIdx, useCount);
+                            useCount += seenSlotArrays.size();
                         }
+                        inputSourceReferenceCounts.set(srcIdx, useCount);
                     }, onComputeComplete,
                     () -> {
                     },
@@ -877,10 +886,21 @@ public abstract class UpdateBy {
         private void releaseInputSources(int[] sources) {
             try (final ResettableWritableObjectChunk<?, ?> backingChunk =
                     ResettableWritableObjectChunk.makeResettableChunk()) {
+                // A slot array can contain duplicate indices (e.g. when the same column is used as both value and
+                // weight in rollingWavg). Track which sources have already been decremented in this call so that each
+                // source is released at most once per operator set.
+                boolean[] decremented = null;
                 for (int srcIdx : sources) {
                     if (!inputSourceCacheNeeded[srcIdx]) {
                         continue;
                     }
+                    if (decremented == null) {
+                        decremented = new boolean[inputSources.length];
+                    }
+                    if (decremented[srcIdx]) {
+                        continue;
+                    }
+                    decremented[srcIdx] = true;
 
                     if (inputSourceReferenceCounts.decrementAndGet(srcIdx) == 0) {
                         // Last use of this set, let's clean up
