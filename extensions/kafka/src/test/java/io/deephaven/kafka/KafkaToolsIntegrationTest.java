@@ -491,15 +491,9 @@ class KafkaToolsIntegrationTest {
                 stringCol("Zap", "zap1", "zap2", "zap3")
         );
         final Table elementTable = taa.table()
-                .view("Foo = Biz_Foo[0]", "Bar = Biz_Bar[0]", "Zip = Buz_Zip[0]")
+                .view("Foo = Biz_Foo[0]", "Bar = Biz_Bar[0]", "Zip = Buz_Zip[0]", "Zap = Buz_Zap[0]")
                 .select();
-        TstUtils.assertTableEquals(expectedTable.dropColumns("Zap"), elementTable);
-
-        // TODO: when we figure this out, should be able to include "Zap" in `elementTable` and do basic comparison
-        final Table bustedTable = taa.table()
-                .view("Zap = Buz_Zap[0]")
-                .select();
-        TstUtils.assertTableEquals(expectedTable.view("Zap"), bustedTable);
+        TstUtils.assertTableEquals(expectedTable, elementTable);
     }
 
     private static String sanitizedTopicName(TestInfo testInfo) {
