@@ -422,18 +422,20 @@ class KafkaToolsIntegrationTest {
                     intCol(PARTITION_COLUMN.getName(), 0, 0),
                     longCol(OFFSET_COLUMN.getName(), 0, 1),
                     instantCol(TIMESTAMP_COLUMN.getName(), Instant.ofEpochMilli(42L), Instant.ofEpochMilli(43L)),
-                    new ColumnHolder<>(fooName, int[].class, int.class, false, new int[]{1}, new int[]{2}),
-                    new ColumnHolder<>(barName, long[].class, long.class, false, new long[]{4}, new long[]{5}),
-                    new ColumnHolder<>(zipName, double[].class, double.class, false, new double[]{7.1}, new double[]{8.2}),
-                    new ColumnHolder<>(zapName, String[].class, String.class, false, new String[]{"zap1"}, new String[]{"zap2"}));
+                    new ColumnHolder<>(fooName, int[].class, int.class, false, new int[] {1}, new int[] {2}),
+                    new ColumnHolder<>(barName, long[].class, long.class, false, new long[] {4}, new long[] {5}),
+                    new ColumnHolder<>(zipName, double[].class, double.class, false, new double[] {7.1},
+                            new double[] {8.2}),
+                    new ColumnHolder<>(zapName, String[].class, String.class, false, new String[] {"zap1"},
+                            new String[] {"zap2"}));
             e3 = TableTools.merge(e2, TableTools.newTable(td,
                     intCol(PARTITION_COLUMN.getName(), 0),
                     longCol(OFFSET_COLUMN.getName(), 2),
                     instantCol(TIMESTAMP_COLUMN.getName(), Instant.ofEpochMilli(44L)),
-                    new ColumnHolder<>(fooName, int[].class, int.class, false, new int[]{3}),
-                    new ColumnHolder<>(barName, long[].class, long.class, false, new long[]{6}),
-                    new ColumnHolder<>(zipName, double[].class, double.class, false, new double[]{9.3}),
-                    new ColumnHolder<>(zapName, String[].class, String.class, false, new String[]{"zap3"})));
+                    new ColumnHolder<>(fooName, int[].class, int.class, false, new int[] {3}),
+                    new ColumnHolder<>(barName, long[].class, long.class, false, new long[] {6}),
+                    new ColumnHolder<>(zipName, double[].class, double.class, false, new double[] {9.3}),
+                    new ColumnHolder<>(zapName, String[].class, String.class, false, new String[] {"zap3"})));
         }
 
         createTopic(kafkaService, topic);
@@ -449,24 +451,20 @@ class KafkaToolsIntegrationTest {
                                         ObjectValue.builder()
                                                 .putFields("Foo", IntValue.strict())
                                                 .putFields("Bar", LongValue.strict())
-                                                .build()
-                                )).build()
-                        )
-                ),
+                                                .build()))
+                                .build())),
                 KafkaTools.Consume.objectProcessorSpec(
                         JacksonProvider.of(ObjectValue.builder()
                                 .putFields("Buz", ArrayValue.standard(
                                         ObjectValue.builder()
                                                 .putFields("Zip", DoubleValue.strict())
                                                 .putFields("Zap", StringValue.strict())
-                                                .build()
-                                )).build()
-                        )
-                ),
+                                                .build()))
+                                .build())),
                 TableType.append());
 
         try (final KafkaProducer<String, String> producer =
-                     kafkaService.producer(new StringSerializer(), new StringSerializer())) {
+                kafkaService.producer(new StringSerializer(), new StringSerializer())) {
             awaitEquals(e1, taa);
 
             producer.send(new ProducerRecord<>(topic, null, 42L, "{ \"Biz\": [ { \"Foo\": 1, \"Bar\": 4 } ] }",
@@ -488,8 +486,7 @@ class KafkaToolsIntegrationTest {
                 intCol("Foo", 1, 2, 3),
                 longCol("Bar", 4, 5, 6),
                 doubleCol("Zip", 7.1, 8.2, 9.3),
-                stringCol("Zap", "zap1", "zap2", "zap3")
-        );
+                stringCol("Zap", "zap1", "zap2", "zap3"));
         final Table elementTable = taa.table()
                 .view("Foo = Biz_Foo[0]", "Bar = Biz_Bar[0]", "Zip = Buz_Zip[0]", "Zap = Buz_Zap[0]")
                 .select();
