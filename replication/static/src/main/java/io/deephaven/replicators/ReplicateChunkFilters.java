@@ -56,7 +56,8 @@ public class ReplicateChunkFilters {
                 "doubleToIntBits", "doubleToLongBits",
                 "IntOpenHashSet", "LongOpenHashSet",
                 "IntSet", "LongSet",
-                "it\\.unimi\\.dsi\\.fastutil\\.ints", "it.unimi.dsi.fastutil.longs");
+                "it\\.unimi\\.dsi\\.fastutil\\.ints", "it.unimi.dsi.fastutil.longs",
+                "0\\.0f", "0.0d");
         FileUtils.writeLines(objectFile, lines);
 
         // *RangeFilter.java

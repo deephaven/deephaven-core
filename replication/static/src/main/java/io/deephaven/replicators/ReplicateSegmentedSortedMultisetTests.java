@@ -18,6 +18,19 @@ public class ReplicateSegmentedSortedMultisetTests {
     public static void main(String[] args) throws IOException {
         ReplicateSegmentedSortedMultiset.main(args);
 
+        // Replicate TestFloatSegmentedSortedMultisetSpecialValues → TestDoubleSegmentedSortedMultisetSpecialValues
+        floatToAllFloatingPoints("replicateSegmentedSortedMultisetTests",
+                "engine/table/src/test/java/io/deephaven/engine/table/impl/ssms/TestFloatSegmentedSortedMultisetSpecialValues.java");
+        final File doubleSpecialValuesTest = new File(
+                "engine/table/src/test/java/io/deephaven/engine/table/impl/ssms/TestDoubleSegmentedSortedMultisetSpecialValues.java");
+        List<String> doubleSpecialValuesLines = FileUtils.readLines(doubleSpecialValuesTest, Charset.defaultCharset());
+        doubleSpecialValuesLines = globalReplacements(doubleSpecialValuesLines,
+                "Double\\.intBitsToDouble\\(0x7fc12345\\)", "Double.longBitsToDouble(0x7ff8000000000001L)",
+                "Double\\.doubleToRawIntBits", "Double.doubleToRawLongBits",
+                "0\\.0f", "0.0d",
+                "canonical 0x7fc00000", "canonical 0x7ff8000000000000L");
+        FileUtils.writeLines(doubleSpecialValuesTest, doubleSpecialValuesLines);
+
         charToAllButBooleanAndFloats("replicateSegmentedSortedMultisetTests",
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/ssms/TestCharSegmentedSortedMultiset.java");
         fixupFloatTests(

@@ -163,11 +163,40 @@ public class FloatChunkMatchFilterFactory {
         }
     }
 
+    // A FloatOpenHashSet that canonicalizes -0.0f to +0.0f; NaN values are silently skipped (not added).
+    private static final class FloatZeroCanonicalOpenHashSet extends FloatOpenHashSet {
+        FloatZeroCanonicalOpenHashSet(float... values) {
+            super(values.length);
+            for (final float v : values) {
+                add(v);
+            }
+        }
+
+        private static float canonicalize(final float k) {
+            return k == 0.0f ? 0.0f : k;
+        }
+
+        @Override
+        public boolean add(final float k) {
+            return !Float.isNaN(k) && super.add(canonicalize(k));
+        }
+
+        @Override
+        public boolean remove(final float k) {
+            return !Float.isNaN(k) && super.remove(canonicalize(k));
+        }
+
+        @Override
+        public boolean contains(final float k) {
+            return !Float.isNaN(k) && super.contains(canonicalize(k));
+        }
+    }
+
     private final static class MultiValueFloatChunkFilter extends FloatChunkFilter {
         private final FloatSet values;
 
         private MultiValueFloatChunkFilter(float... values) {
-            this.values = new FloatOpenHashSet(values);
+            this.values = new FloatZeroCanonicalOpenHashSet(values);
         }
 
         @Override
@@ -180,7 +209,7 @@ public class FloatChunkMatchFilterFactory {
         private final FloatSet values;
 
         private InverseMultiValueFloatChunkFilter(float... values) {
-            this.values = new FloatOpenHashSet(values);
+            this.values = new FloatZeroCanonicalOpenHashSet(values);
         }
 
         @Override

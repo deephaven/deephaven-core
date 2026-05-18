@@ -1,6 +1,10 @@
 //
 // Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit FloatCompareOpenHashSet and run "./gradlew replicateSegmentedSortedMultiset" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.ssms;
 
 import io.deephaven.util.compare.DoubleComparisons;
@@ -14,10 +18,10 @@ import it.unimi.dsi.fastutil.doubles.DoubleOpenHashSet;
  * patterns are treated as a single value.
  *
  * <p>
- * Values are canonicalized on every entry point ({@link #add(double)}, {@link #remove(double)},
- * {@link #contains(double)}, the array/collection constructors, and the bulk-add helpers): negative zero is collapsed
- * to positive zero, and any NaN is replaced with {@link Double#NaN} (the canonical {@code 0x7ff8000000000000L} bit
- * pattern). The canonicalized value is what is stored and returned by iteration.
+ * Values are canonicalized on every entry point ({@link #add(double)}, {@link #remove(double)}, {@link #contains(double)},
+ * the array/collection constructors, and the bulk-add helpers): negative zero is collapsed to positive zero, and any
+ * NaN is replaced with {@link Double#NaN} (the canonical {@code 0x7ff8000000000000L} bit pattern). The canonicalized value is
+ * what is stored and returned by iteration.
  */
 public class DoubleCompareOpenHashSet extends DoubleOpenHashSet {
 

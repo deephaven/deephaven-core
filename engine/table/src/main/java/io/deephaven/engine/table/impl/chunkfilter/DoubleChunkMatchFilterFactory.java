@@ -166,11 +166,40 @@ public class DoubleChunkMatchFilterFactory {
         }
     }
 
+    // A DoubleOpenHashSet that canonicalizes -0.0d to +0.0d; NaN values are silently skipped (not added).
+    private static final class DoubleZeroCanonicalOpenHashSet extends DoubleOpenHashSet {
+        DoubleZeroCanonicalOpenHashSet(double... values) {
+            super(values.length);
+            for (final double v : values) {
+                add(v);
+            }
+        }
+
+        private static double canonicalize(final double k) {
+            return k == 0.0d ? 0.0d : k;
+        }
+
+        @Override
+        public boolean add(final double k) {
+            return !Double.isNaN(k) && super.add(canonicalize(k));
+        }
+
+        @Override
+        public boolean remove(final double k) {
+            return !Double.isNaN(k) && super.remove(canonicalize(k));
+        }
+
+        @Override
+        public boolean contains(final double k) {
+            return !Double.isNaN(k) && super.contains(canonicalize(k));
+        }
+    }
+
     private final static class MultiValueDoubleChunkFilter extends DoubleChunkFilter {
         private final DoubleSet values;
 
         private MultiValueDoubleChunkFilter(double... values) {
-            this.values = new DoubleOpenHashSet(values);
+            this.values = new DoubleZeroCanonicalOpenHashSet(values);
         }
 
         @Override
@@ -183,7 +212,7 @@ public class DoubleChunkMatchFilterFactory {
         private final DoubleSet values;
 
         private InverseMultiValueDoubleChunkFilter(double... values) {
-            this.values = new DoubleOpenHashSet(values);
+            this.values = new DoubleZeroCanonicalOpenHashSet(values);
         }
 
         @Override
@@ -200,7 +229,7 @@ public class DoubleChunkMatchFilterFactory {
     private static final Double NEG_ZERO = -0.0;
     public static long getBits(double value) {
         if (NEG_ZERO.equals(value)) {
-            return Double.doubleToLongBits(0.0f);
+            return Double.doubleToLongBits(0.0d);
         }
         return Double.doubleToLongBits(value);
     }
