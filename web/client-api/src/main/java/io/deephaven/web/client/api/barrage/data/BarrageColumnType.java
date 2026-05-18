@@ -334,23 +334,23 @@ public abstract sealed class BarrageColumnType
         }
 
         @Override
-        public int writeType(FlatBufferBuilder builder) {
+        protected int writeType(FlatBufferBuilder builder) {
             org.apache.arrow.flatbuf.Null.startNull(builder);
             return org.apache.arrow.flatbuf.Null.endNull(builder);
         }
 
         @Override
-        public byte typeType() {
+        protected byte typeType() {
             return Type.Null;
         }
 
         @Override
-        public String inferDeephavenType() {
+        protected String inferDeephavenType() {
             return "java.lang.Object";
         }
 
         @Override
-        public Class<?> type() {
+        protected Class<?> type() {
             return Object.class;
         }
     }
@@ -373,17 +373,17 @@ public abstract sealed class BarrageColumnType
         }
 
         @Override
-        public int writeType(FlatBufferBuilder builder) {
+        protected int writeType(FlatBufferBuilder builder) {
             return org.apache.arrow.flatbuf.Int.createInt(builder, bitWidth, isSigned);
         }
 
         @Override
-        public byte typeType() {
+        protected byte typeType() {
             return Type.Int;
         }
 
         @Override
-        public String inferDeephavenType() {
+        protected String inferDeephavenType() {
             if (isSigned) {
                 switch (bitWidth) {
                     case 8:
@@ -408,7 +408,7 @@ public abstract sealed class BarrageColumnType
         }
 
         @Override
-        public Class<?> type() {
+        protected Class<?> type() {
             if (isSigned) {
                 switch (bitWidth) {
                     case 8:
@@ -448,17 +448,17 @@ public abstract sealed class BarrageColumnType
         }
 
         @Override
-        public int writeType(FlatBufferBuilder builder) {
+        protected int writeType(FlatBufferBuilder builder) {
             return org.apache.arrow.flatbuf.FloatingPoint.createFloatingPoint(builder, precision);
         }
 
         @Override
-        public byte typeType() {
+        protected byte typeType() {
             return Type.FloatingPoint;
         }
 
         @Override
-        public String inferDeephavenType() {
+        protected String inferDeephavenType() {
             switch (precision) {
                 case org.apache.arrow.flatbuf.Precision.SINGLE:
                     return "float";
@@ -470,7 +470,7 @@ public abstract sealed class BarrageColumnType
         }
 
         @Override
-        public Class<?> type() {
+        protected Class<?> type() {
             switch (precision) {
                 case org.apache.arrow.flatbuf.Precision.SINGLE:
                     return float.class;
@@ -496,23 +496,23 @@ public abstract sealed class BarrageColumnType
         }
 
         @Override
-        public int writeType(FlatBufferBuilder builder) {
+        protected int writeType(FlatBufferBuilder builder) {
             org.apache.arrow.flatbuf.Binary.startBinary(builder);
             return org.apache.arrow.flatbuf.Binary.endBinary(builder);
         }
 
         @Override
-        public byte typeType() {
+        protected byte typeType() {
             return Type.Binary;
         }
 
         @Override
-        public String inferDeephavenType() {
+        protected String inferDeephavenType() {
             return deephavenType;
         }
 
         @Override
-        public Class<?> type() {
+        protected Class<?> type() {
             // Only two types are explicitly supported as Binary by deephaven, interpret the rest as object
             if (deephavenType.equals("java.math.BigDecimal")) {
                 return BigDecimalWrapper.class;
@@ -534,23 +534,23 @@ public abstract sealed class BarrageColumnType
         }
 
         @Override
-        public int writeType(FlatBufferBuilder builder) {
+        protected int writeType(FlatBufferBuilder builder) {
             org.apache.arrow.flatbuf.Utf8.startUtf8(builder);
             return org.apache.arrow.flatbuf.Utf8.endUtf8(builder);
         }
 
         @Override
-        public byte typeType() {
+        protected byte typeType() {
             return Type.Utf8;
         }
 
         @Override
-        public String inferDeephavenType() {
+        protected String inferDeephavenType() {
             return "java.lang.String";
         }
 
         @Override
-        public Class<?> type() {
+        protected Class<?> type() {
             return String.class;
         }
     }
@@ -565,23 +565,23 @@ public abstract sealed class BarrageColumnType
         }
 
         @Override
-        public int writeType(FlatBufferBuilder builder) {
+        protected int writeType(FlatBufferBuilder builder) {
             org.apache.arrow.flatbuf.Bool.startBool(builder);
             return org.apache.arrow.flatbuf.Bool.endBool(builder);
         }
 
         @Override
-        public byte typeType() {
+        protected byte typeType() {
             return Type.Bool;
         }
 
         @Override
-        public String inferDeephavenType() {
+        protected String inferDeephavenType() {
             return "java.lang.Boolean";
         }
 
         @Override
-        public Class<?> type() {
+        protected Class<?> type() {
             return boolean.class;
         }
     }
@@ -600,22 +600,22 @@ public abstract sealed class BarrageColumnType
         }
 
         @Override
-        public int writeType(FlatBufferBuilder builder) {
+        protected int writeType(FlatBufferBuilder builder) {
             return org.apache.arrow.flatbuf.Decimal.createDecimal(builder, precision, scale, bitWidth);
         }
 
         @Override
-        public byte typeType() {
+        protected byte typeType() {
             return Type.Decimal;
         }
 
         @Override
-        public String inferDeephavenType() {
+        protected String inferDeephavenType() {
             return "java.math.BigDecimal";
         }
 
         @Override
-        public Class<?> type() {
+        protected Class<?> type() {
             return BigDecimalWrapper.class;
         }
     }
@@ -634,22 +634,22 @@ public abstract sealed class BarrageColumnType
         }
 
         @Override
-        public int writeType(FlatBufferBuilder builder) {
+        protected int writeType(FlatBufferBuilder builder) {
             return org.apache.arrow.flatbuf.Date.createDate(builder, unit);
         }
 
         @Override
-        public byte typeType() {
+        protected byte typeType() {
             return Type.Date;
         }
 
         @Override
-        public String inferDeephavenType() {
+        protected String inferDeephavenType() {
             return "java.time.LocalDate";
         }
 
         @Override
-        public Class<?> type() {
+        protected Class<?> type() {
             return LocalDateWrapper.class;
         }
     }
@@ -672,22 +672,22 @@ public abstract sealed class BarrageColumnType
         }
 
         @Override
-        public int writeType(FlatBufferBuilder builder) {
+        protected int writeType(FlatBufferBuilder builder) {
             return org.apache.arrow.flatbuf.Time.createTime(builder, unit, bitWidth);
         }
 
         @Override
-        public byte typeType() {
+        protected byte typeType() {
             return Type.Time;
         }
 
         @Override
-        public String inferDeephavenType() {
+        protected String inferDeephavenType() {
             return "java.time.LocalTime";
         }
 
         @Override
-        public Class<?> type() {
+        protected Class<?> type() {
             return LocalTimeWrapper.class;
         }
     }
@@ -711,23 +711,23 @@ public abstract sealed class BarrageColumnType
         }
 
         @Override
-        public int writeType(FlatBufferBuilder builder) {
+        protected int writeType(FlatBufferBuilder builder) {
             int tzOffset = timezone != null ? builder.createString(timezone) : 0;
             return org.apache.arrow.flatbuf.Timestamp.createTimestamp(builder, unit, tzOffset);
         }
 
         @Override
-        public byte typeType() {
+        protected byte typeType() {
             return Type.Timestamp;
         }
 
         @Override
-        public String inferDeephavenType() {
+        protected String inferDeephavenType() {
             return "java.time.Instant";
         }
 
         @Override
-        public Class<?> type() {
+        protected Class<?> type() {
             return DateWrapper.class;
         }
     }
@@ -741,22 +741,22 @@ public abstract sealed class BarrageColumnType
         }
 
         @Override
-        public int writeType(FlatBufferBuilder builder) {
+        protected int writeType(FlatBufferBuilder builder) {
             return org.apache.arrow.flatbuf.Interval.createInterval(builder, unit);
         }
 
         @Override
-        public byte typeType() {
+        protected byte typeType() {
             return Type.Interval;
         }
 
         @Override
-        public String inferDeephavenType() {
+        protected String inferDeephavenType() {
             return "java.time.Duration";
         }
 
         @Override
-        public Class<?> type() {
+        protected Class<?> type() {
             return Object.class;
         }
     }
@@ -776,18 +776,18 @@ public abstract sealed class BarrageColumnType
         }
 
         @Override
-        public int writeType(FlatBufferBuilder builder) {
+        protected int writeType(FlatBufferBuilder builder) {
             org.apache.arrow.flatbuf.List.startList(builder);
             return org.apache.arrow.flatbuf.List.endList(builder);
         }
 
         @Override
-        public byte typeType() {
+        protected byte typeType() {
             return Type.List;
         }
 
         @Override
-        public String inferDeephavenType() {
+        protected String inferDeephavenType() {
             return componentType.deephavenType() + "[]";
         }
 
@@ -797,12 +797,12 @@ public abstract sealed class BarrageColumnType
         }
 
         @Override
-        public Class<?> type() {
+        protected Class<?> type() {
             return Object.class;
         }
 
         @Override
-        public Class<?> componentType() {
+        protected Class<?> componentType() {
             return componentType.type();
         }
     }
@@ -821,18 +821,18 @@ public abstract sealed class BarrageColumnType
         }
 
         @Override
-        public int writeType(FlatBufferBuilder builder) {
+        protected int writeType(FlatBufferBuilder builder) {
             org.apache.arrow.flatbuf.Struct_.startStruct_(builder);
             return org.apache.arrow.flatbuf.Struct_.endStruct_(builder);
         }
 
         @Override
-        public byte typeType() {
+        protected byte typeType() {
             return Type.Struct_;
         }
 
         @Override
-        public String inferDeephavenType() {
+        protected String inferDeephavenType() {
             return "java.lang.Object";
         }
 
@@ -846,7 +846,7 @@ public abstract sealed class BarrageColumnType
         }
 
         @Override
-        public Class<?> type() {
+        protected Class<?> type() {
             return Object.class;
         }
     }
@@ -865,18 +865,18 @@ public abstract sealed class BarrageColumnType
         }
 
         @Override
-        public int writeType(FlatBufferBuilder builder) {
+        protected int writeType(FlatBufferBuilder builder) {
             int typeIdsOffset = org.apache.arrow.flatbuf.Union.createTypeIdsVector(builder, typeIds);
             return org.apache.arrow.flatbuf.Union.createUnion(builder, mode, typeIdsOffset);
         }
 
         @Override
-        public byte typeType() {
+        protected byte typeType() {
             return Type.Union;
         }
 
         @Override
-        public String inferDeephavenType() {
+        protected String inferDeephavenType() {
             return "java.lang.Object";
         }
 
@@ -890,7 +890,7 @@ public abstract sealed class BarrageColumnType
         }
 
         @Override
-        public Class<?> type() {
+        protected Class<?> type() {
             return Object.class;
         }
     }
@@ -905,27 +905,27 @@ public abstract sealed class BarrageColumnType
         }
 
         @Override
-        public int writeType(FlatBufferBuilder builder) {
+        protected int writeType(FlatBufferBuilder builder) {
             return org.apache.arrow.flatbuf.FixedSizeBinary.createFixedSizeBinary(builder, byteWidth);
         }
 
         @Override
-        public byte typeType() {
+        protected byte typeType() {
             return Type.FixedSizeBinary;
         }
 
         @Override
-        public String inferDeephavenType() {
+        protected String inferDeephavenType() {
             return "byte[]";
         }
 
         @Override
-        public Class<?> type() {
+        protected Class<?> type() {
             return Object.class;
         }
 
         @Override
-        public Class<?> componentType() {
+        protected Class<?> componentType() {
             return byte.class;
         }
     }
@@ -942,17 +942,17 @@ public abstract sealed class BarrageColumnType
         }
 
         @Override
-        public int writeType(FlatBufferBuilder builder) {
+        protected int writeType(FlatBufferBuilder builder) {
             return org.apache.arrow.flatbuf.FixedSizeList.createFixedSizeList(builder, listSize);
         }
 
         @Override
-        public byte typeType() {
+        protected byte typeType() {
             return Type.FixedSizeList;
         }
 
         @Override
-        public String inferDeephavenType() {
+        protected String inferDeephavenType() {
             return componentType.deephavenType() + "[]";
         }
 
@@ -962,12 +962,12 @@ public abstract sealed class BarrageColumnType
         }
 
         @Override
-        public Class<?> type() {
+        protected Class<?> type() {
             return Object.class;
         }
 
         @Override
-        public Class<?> componentType() {
+        protected Class<?> componentType() {
             return componentType.type();
         }
     }
@@ -986,17 +986,17 @@ public abstract sealed class BarrageColumnType
         }
 
         @Override
-        public int writeType(FlatBufferBuilder builder) {
+        protected int writeType(FlatBufferBuilder builder) {
             return org.apache.arrow.flatbuf.Map.createMap(builder, keysSorted);
         }
 
         @Override
-        public byte typeType() {
+        protected byte typeType() {
             return Type.Map;
         }
 
         @Override
-        public String inferDeephavenType() {
+        protected String inferDeephavenType() {
             return "java.lang.Object";
         }
 
@@ -1025,7 +1025,7 @@ public abstract sealed class BarrageColumnType
         }
 
         @Override
-        public Class<?> type() {
+        protected Class<?> type() {
             return Object.class;
         }
     }
@@ -1039,22 +1039,22 @@ public abstract sealed class BarrageColumnType
         }
 
         @Override
-        public int writeType(FlatBufferBuilder builder) {
+        protected int writeType(FlatBufferBuilder builder) {
             return org.apache.arrow.flatbuf.Duration.createDuration(builder, unit);
         }
 
         @Override
-        public byte typeType() {
+        protected byte typeType() {
             return Type.Duration;
         }
 
         @Override
-        public String inferDeephavenType() {
+        protected String inferDeephavenType() {
             return "java.time.Duration";
         }
 
         @Override
-        public Class<?> type() {
+        protected Class<?> type() {
             return Object.class;
         }
     }
@@ -1065,23 +1065,23 @@ public abstract sealed class BarrageColumnType
         }
 
         @Override
-        public int writeType(FlatBufferBuilder builder) {
+        protected int writeType(FlatBufferBuilder builder) {
             org.apache.arrow.flatbuf.LargeBinary.startLargeBinary(builder);
             return org.apache.arrow.flatbuf.LargeBinary.endLargeBinary(builder);
         }
 
         @Override
-        public byte typeType() {
+        protected byte typeType() {
             return Type.LargeBinary;
         }
 
         @Override
-        public String inferDeephavenType() {
+        protected String inferDeephavenType() {
             return "java.lang.Object";
         }
 
         @Override
-        public Class<?> type() {
+        protected Class<?> type() {
             return Object.class;
         }
     }
@@ -1092,23 +1092,23 @@ public abstract sealed class BarrageColumnType
         }
 
         @Override
-        public int writeType(FlatBufferBuilder builder) {
+        protected int writeType(FlatBufferBuilder builder) {
             org.apache.arrow.flatbuf.LargeUtf8.startLargeUtf8(builder);
             return org.apache.arrow.flatbuf.LargeUtf8.endLargeUtf8(builder);
         }
 
         @Override
-        public byte typeType() {
+        protected byte typeType() {
             return Type.LargeUtf8;
         }
 
         @Override
-        public String inferDeephavenType() {
+        protected String inferDeephavenType() {
             return "java.lang.String";
         }
 
         @Override
-        public Class<?> type() {
+        protected Class<?> type() {
             return String.class;
         }
     }
@@ -1123,18 +1123,18 @@ public abstract sealed class BarrageColumnType
         }
 
         @Override
-        public int writeType(FlatBufferBuilder builder) {
+        protected int writeType(FlatBufferBuilder builder) {
             org.apache.arrow.flatbuf.LargeList.startLargeList(builder);
             return org.apache.arrow.flatbuf.LargeList.endLargeList(builder);
         }
 
         @Override
-        public byte typeType() {
+        protected byte typeType() {
             return Type.LargeList;
         }
 
         @Override
-        public String inferDeephavenType() {
+        protected String inferDeephavenType() {
             return componentType.deephavenType() + "[]";
         }
 
@@ -1144,12 +1144,12 @@ public abstract sealed class BarrageColumnType
         }
 
         @Override
-        public Class<?> type() {
+        protected Class<?> type() {
             return Object.class;
         }
 
         @Override
-        public Class<?> componentType() {
+        protected Class<?> componentType() {
             return componentType.type();
         }
     }
@@ -1166,18 +1166,18 @@ public abstract sealed class BarrageColumnType
         }
 
         @Override
-        public int writeType(FlatBufferBuilder builder) {
+        protected int writeType(FlatBufferBuilder builder) {
             org.apache.arrow.flatbuf.RunEndEncoded.startRunEndEncoded(builder);
             return org.apache.arrow.flatbuf.RunEndEncoded.endRunEndEncoded(builder);
         }
 
         @Override
-        public byte typeType() {
+        protected byte typeType() {
             return Type.RunEndEncoded;
         }
 
         @Override
-        public String inferDeephavenType() {
+        protected String inferDeephavenType() {
             return valuesType.deephavenType();
         }
 
@@ -1187,7 +1187,7 @@ public abstract sealed class BarrageColumnType
         }
 
         @Override
-        public Class<?> type() {
+        protected Class<?> type() {
             return valuesType.type();
         }
     }
@@ -1198,28 +1198,28 @@ public abstract sealed class BarrageColumnType
         }
 
         @Override
-        public int writeType(FlatBufferBuilder builder) {
+        protected int writeType(FlatBufferBuilder builder) {
             org.apache.arrow.flatbuf.BinaryView.startBinaryView(builder);
             return org.apache.arrow.flatbuf.BinaryView.endBinaryView(builder);
         }
 
         @Override
-        public byte typeType() {
+        protected byte typeType() {
             return Type.BinaryView;
         }
 
         @Override
-        public String inferDeephavenType() {
+        protected String inferDeephavenType() {
             return "byte[]";
         }
 
         @Override
-        public Class<?> type() {
+        protected Class<?> type() {
             return Object.class;
         }
 
         @Override
-        public Class<?> componentType() {
+        protected Class<?> componentType() {
             return byte.class;
         }
     }
@@ -1230,23 +1230,23 @@ public abstract sealed class BarrageColumnType
         }
 
         @Override
-        public int writeType(FlatBufferBuilder builder) {
+        protected int writeType(FlatBufferBuilder builder) {
             org.apache.arrow.flatbuf.Utf8View.startUtf8View(builder);
             return org.apache.arrow.flatbuf.Utf8View.endUtf8View(builder);
         }
 
         @Override
-        public byte typeType() {
+        protected byte typeType() {
             return Type.Utf8View;
         }
 
         @Override
-        public String inferDeephavenType() {
+        protected String inferDeephavenType() {
             return "java.lang.String";
         }
 
         @Override
-        public Class<?> type() {
+        protected Class<?> type() {
             return String.class;
         }
     }
@@ -1261,18 +1261,18 @@ public abstract sealed class BarrageColumnType
         }
 
         @Override
-        public int writeType(FlatBufferBuilder builder) {
+        protected int writeType(FlatBufferBuilder builder) {
             org.apache.arrow.flatbuf.ListView.startListView(builder);
             return org.apache.arrow.flatbuf.ListView.endListView(builder);
         }
 
         @Override
-        public byte typeType() {
+        protected byte typeType() {
             return Type.ListView;
         }
 
         @Override
-        public String inferDeephavenType() {
+        protected String inferDeephavenType() {
             return componentType.deephavenType() + "[]";
         }
 
@@ -1282,12 +1282,12 @@ public abstract sealed class BarrageColumnType
         }
 
         @Override
-        public Class<?> type() {
+        protected Class<?> type() {
             return Object.class;
         }
 
         @Override
-        public @Nullable Class<?> componentType() {
+        protected @Nullable Class<?> componentType() {
             return componentType.type();
         }
     }
@@ -1302,18 +1302,18 @@ public abstract sealed class BarrageColumnType
         }
 
         @Override
-        public int writeType(FlatBufferBuilder builder) {
+        protected int writeType(FlatBufferBuilder builder) {
             org.apache.arrow.flatbuf.LargeListView.startLargeListView(builder);
             return org.apache.arrow.flatbuf.LargeListView.endLargeListView(builder);
         }
 
         @Override
-        public byte typeType() {
+        protected byte typeType() {
             return Type.LargeListView;
         }
 
         @Override
-        public String inferDeephavenType() {
+        protected String inferDeephavenType() {
             return componentType.deephavenType() + "[]";
         }
 
@@ -1323,12 +1323,12 @@ public abstract sealed class BarrageColumnType
         }
 
         @Override
-        public Class<?> type() {
+        protected Class<?> type() {
             return Object.class;
         }
 
         @Override
-        public @Nullable Class<?> componentType() {
+        protected @Nullable Class<?> componentType() {
             return componentType.type();
         }
     }
