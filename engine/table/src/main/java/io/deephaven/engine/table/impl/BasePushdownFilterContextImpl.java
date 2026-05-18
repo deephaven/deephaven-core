@@ -34,8 +34,8 @@ public class BasePushdownFilterContextImpl implements BasePushdownFilterContext 
 
     private final List<ColumnSource<?>> columnSources;
 
-    private final boolean isRangeFilter;
-    private final boolean isMatchFilter;
+    private final AbstractRangeFilter rangeFilter;
+    private final MatchFilter matchFilter;
     private final boolean supportsChunkFiltering;
 
     private long executedFilterCost;
@@ -60,19 +60,21 @@ public class BasePushdownFilterContextImpl implements BasePushdownFilterContext 
                     "filter must be stateless, but does not permit parallelization: " + filter);
         }
 
-        this.filter = filter;
         this.columnSources = columnSources;
-
         executedFilterCost = 0;
 
-        isRangeFilter = filter instanceof RangeFilter
-                && ((RangeFilter) filter).getRealFilter() instanceof AbstractRangeFilter;
-        isMatchFilter = filter instanceof MatchFilter &&
-                ((MatchFilter) filter).getFailoverFilterIfCached() == null;
+        // Extract the effective filter and use it for populating the context. This removes wrapper layers (such as
+        // serial and barrier wrappers) which have already been processed.
+        final WhereFilter effectiveFilter = WhereFilterDelegating.maybeUnwrapFilter(filter);
+        this.filter = effectiveFilter;
 
-        final Optional<ChunkFilter> chunkFilter = ExposesChunkFilter.chunkFilter(filter);
+        rangeFilter = RangeFilter.extractRangeFilter(effectiveFilter).orElse(null);
+        matchFilter = MatchFilter.extractMatchFilter(effectiveFilter).orElse(null);
+
+        final Optional<ChunkFilter> chunkFilter = ExposesChunkFilter.chunkFilter(effectiveFilter);
         supportsChunkFiltering = chunkFilter.isPresent()
-                || (filter instanceof ConditionFilter && ((ConditionFilter) filter).getNumInputsUsed() == 1);
+                || (effectiveFilter instanceof ConditionFilter
+                        && ((ConditionFilter) effectiveFilter).getNumInputsUsed() == 1);
 
         conditionalFilterInitTable = null; // lazily initialized
         filterNullBehavior = null; // lazily initialized
@@ -104,6 +106,16 @@ public class BasePushdownFilterContextImpl implements BasePushdownFilterContext 
         return columnSources;
     }
 
+    @Override
+    public final AbstractRangeFilter rangeFilter() {
+        return rangeFilter;
+    }
+
+    @Override
+    public final MatchFilter matchFilter() {
+        return matchFilter;
+    }
+
     /**
      * Whether this filter supports direct chunk filtering, i.e., it can be applied to a chunk of data rather than a
      * table. This includes any filter that implements {@link ExposesChunkFilter} or {@link ConditionFilter} with
@@ -115,11 +127,11 @@ public class BasePushdownFilterContextImpl implements BasePushdownFilterContext 
     }
 
     /**
-     * Whether this filter supports filtering based on parquet metadata.
+     * Whether this filter supports filtering based on region metadata.
      */
     @Override
     public final boolean supportsMetadataFiltering() {
-        return isRangeFilter || isMatchFilter;
+        return rangeFilter != null || matchFilter != null;
     }
 
     @Override
@@ -142,11 +154,11 @@ public class BasePushdownFilterContextImpl implements BasePushdownFilterContext 
      */
     @Override
     public final WhereFilter filterForMetadataFiltering() {
-        if (isRangeFilter) {
-            return ((RangeFilter) filter).getRealFilter();
+        if (rangeFilter != null) {
+            return rangeFilter;
         }
-        if (isMatchFilter) {
-            return filter;
+        if (matchFilter != null) {
+            return matchFilter;
         }
         throw new IllegalStateException("Should only use when supportsMetadataFiltering is true");
     }
@@ -161,8 +173,7 @@ public class BasePushdownFilterContextImpl implements BasePushdownFilterContext 
             synchronized (this) {
                 local = filterNullBehavior;
                 if (local == null) {
-                    local = computeFilterNullBehavior();
-                    filterNullBehavior = local;
+                    filterNullBehavior = local = computeFilterNullBehavior();
                 }
             }
         }

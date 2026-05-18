@@ -270,6 +270,18 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
         return true;
     }
 
+    /**
+     * Return an {@link Optional} containing the {@link MatchFilter} if the provided filter is a match filter that can
+     * be pushed down (i.e. is not implemented by a ConditionFilter). Otherwise returns {@code Optional.empty()}.
+     */
+    public static Optional<MatchFilter> extractMatchFilter(WhereFilter filter) {
+        if (filter instanceof MatchFilter &&
+                ((MatchFilter) filter).getFailoverFilterIfCached() == null) {
+            return Optional.of((MatchFilter) filter);
+        }
+        return Optional.empty();
+    }
+
     @Override
     public void setRecomputeListener(RecomputeListener listener) {}
 

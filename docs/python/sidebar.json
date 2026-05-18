@@ -1118,7 +1118,11 @@
                     "path": "how-to-guides/configuration/configure-web.md"
                   },
                   {
-                    "label": "Custom environmental variables",
+                    "label": "JS plugin configuration",
+                    "path": "how-to-guides/configuration/js-plugins.md"
+                  },
+                  {
+                    "label": "Custom environment variables",
                     "path": "how-to-guides/custom-environmental-variables.md"
                   },
                   {
