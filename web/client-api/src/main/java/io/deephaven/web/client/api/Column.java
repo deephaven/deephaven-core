@@ -12,7 +12,6 @@ import jsinterop.annotations.JsOptional;
 import jsinterop.annotations.JsProperty;
 import jsinterop.base.Any;
 
-import java.util.Objects;
 import java.util.stream.IntStream;
 import java.util.stream.IntStream.Builder;
 
@@ -79,12 +78,11 @@ public class Column {
         return new CustomColumn(name, CustomColumn.TYPE_NEW, expression, options);
     }
 
-    public Column(int jsIndex, int index, Integer formatColumnIndex, Integer styleColumnIndex, String type, String name,
+    public Column(int jsIndex, int index, Integer styleColumnIndex, String type, String name,
             boolean isPartitionColumn, Integer formatStringColumnIndex, String description,
             boolean inputTableKeyColumn, boolean inputTableValueColumn, boolean isSortable) {
         this.jsIndex = jsIndex;
         this.index = index;
-        assert Objects.equals(formatColumnIndex, styleColumnIndex);
         this.styleColumnIndex = styleColumnIndex;
         this.type = type;
         this.name = name;
@@ -319,12 +317,12 @@ public class Column {
     }
 
     public Column withFormatStringColumnIndex(int formatStringColumnIndex) {
-        return new Column(jsIndex, index, styleColumnIndex, styleColumnIndex, type, name, isPartitionColumn,
+        return new Column(jsIndex, index, styleColumnIndex, type, name, isPartitionColumn,
                 formatStringColumnIndex, description, isInputTableKeyColumn, isInputTableValueColumn, isSortable);
     }
 
     public Column withStyleColumnIndex(int styleColumnIndex) {
-        return new Column(jsIndex, index, styleColumnIndex, styleColumnIndex, type, name, isPartitionColumn,
+        return new Column(jsIndex, index, styleColumnIndex, type, name, isPartitionColumn,
                 formatStringColumnIndex, description, isInputTableKeyColumn, isInputTableValueColumn, isSortable);
     }
 }

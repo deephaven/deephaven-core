@@ -3,6 +3,9 @@
 //
 package io.deephaven.web.client.api.tree;
 
+import com.google.common.io.BaseEncoding;
+import com.google.protobuf.ByteString;
+import com.google.protobuf.CodedInputStream;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.vertispan.tsdefs.annotations.TsIgnore;
 import com.vertispan.tsdefs.annotations.TsTypeRef;
@@ -14,6 +17,10 @@ import elemental2.dom.AbortController;
 import elemental2.dom.DomGlobal;
 import elemental2.promise.IThenable;
 import elemental2.promise.Promise;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.ObjectChunk;
+import io.deephaven.chunk.attributes.Values;
+import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
 import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
 import io.deephaven.proto.backplane.grpc.HierarchicalTableApplyRequest;
 import io.deephaven.proto.backplane.grpc.HierarchicalTableApplyResponse;
@@ -28,7 +35,10 @@ import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.backplane.grpc.TypedTicket;
 import io.deephaven.proto.backplane.grpc.UpdateViewRequest;
 import io.deephaven.web.client.api.*;
+import io.deephaven.web.client.api.barrage.WebBarrageMessage;
+import io.deephaven.web.client.api.barrage.WebBarrageMessageReader;
 import io.deephaven.web.client.api.barrage.WebBarrageUtils;
+import io.deephaven.web.client.api.barrage.data.BarrageColumnType;
 import io.deephaven.web.client.api.barrage.data.WebBarrageSubscription;
 import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
 import io.deephaven.web.client.api.barrage.def.InitialTableDefinition;
@@ -59,6 +69,9 @@ import jsinterop.annotations.JsMethod;
 import jsinterop.base.Any;
 import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
+import org.apache.arrow.flatbuf.Message;
+import org.apache.arrow.flatbuf.Schema;
+import org.apache.arrow.flight.impl.Flight;
 
 import java.nio.ByteBuffer;
 import java.util.*;
@@ -230,7 +243,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
         // Load the table and column definitions from the descriptor
         extractDefinition(treeDescriptor);
 
-        actionCol = new Column(-1, -1, null, null, "byte", "__action__", false, null, null, false, false, false);
+        actionCol = new Column(-1, -1, null, "byte", "__action__", false, null, null, false, false, false);
 
         keyTableData = new Object[keyColumns.length + 2][0];
 
@@ -1453,85 +1466,129 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
         return sourceTable.get().then(t -> Promise.resolve(t.getGrandTotalsTable(config)));
     }
 
-    // TODO core#279 restore this with protobuf once smartkey has some pb-based analog
-    // private static final int SERIALIZED_VERSION = 1;
-    //
-    // @JsMethod
-    // public String saveExpandedState() {
-    // if (expandedMap.get(Key.root()).expandedChildren.isEmpty()) {
-    // return "";//empty string means nothing expanded, don't bother with preamble
-    // }
-    // KeySerializer serializer = new KeySerializer_Impl();
-    // TypeSerializer typeSerializer = serializer.createSerializer();
-    // final StringSerializationStreamWriter writer = new StringSerializationStreamWriter(typeSerializer);
-    // writer.prepareToWrite();
-    // writer.writeInt(SERIALIZED_VERSION);
-    // writer.writeString(typeSerializer.getChecksum());
-    //
-    // // Starting from the root node, write a node, its child count, then call this recursively.
-    // // Normally we would write the key first, but the root key is a special case where we don't
-    // // do this.
-    // try {
-    // writeTreeNode(serializer, writer, Key.root());
-    // } catch (SerializationException e) {
-    // throw new IllegalStateException("Failed to serialize content: " + e.getMessage(), e);
-    // }
-    //
-    // return writer.toString();
-    // }
-    //
-    // private void writeTreeNode(KeySerializer serializer, SerializationStreamWriter writer, Key key) throws
-    // SerializationException {
-    // TreeNodeState node = expandedMap.get(key);
-    // if (node == null) {
-    // writer.writeInt(0);
-    // return;
-    // }
-    // writer.writeInt(node.expandedChildren.size());
-    // for (Key child : node.expandedChildren) {
-    // serializer.write(child, writer);
-    // writeTreeNode(serializer, writer, child);
-    // }
-    // }
-    //
-    // @JsMethod
-    // public void restoreExpandedState(String nodesToRestore) throws SerializationException {
-    // // sanity check that nothing has been expanded yet so we can safely do this
-    // if (!expandedMap.get(Key.root()).expandedChildren.isEmpty()) {
-    // throw new IllegalArgumentException("Tree already has expanded children, ignoring restoreExpandedState call");
-    // }
-    // if (nodesToRestore.isEmpty()) {
-    // // no work to do, empty set of items expanded
-    // return;
-    // }
-    // KeySerializer serializer = new KeySerializer_Impl();
-    // TypeSerializer typeSerializer = serializer.createSerializer();
-    // StringSerializationStreamReader reader = new StringSerializationStreamReader(typeSerializer, nodesToRestore);
-    // int vers = reader.readInt();
-    // if (vers != SERIALIZED_VERSION) {
-    // throw new IllegalArgumentException("Failed to deserialize, current version doesn't match the serialized data.
-    // Expected version " + SERIALIZED_VERSION + ", actual version " + vers);
-    // }
-    // String checksum = reader.readString();
-    // if (!checksum.equals(typeSerializer.getChecksum())) {
-    // throw new IllegalArgumentException("Failed to deserialize, current type definition doesn't match the serialized
-    // data. Expected: " + typeSerializer.getChecksum() + ", actual: " + checksum);
-    // }
-    //
-    // // read each key, assuming root as the first key
-    // readTreeNode(serializer, reader, Key.root());
-    // }
-    //
-    // private void readTreeNode(KeySerializer serializer, SerializationStreamReader reader, Key key) throws
-    // SerializationException {
-    // TreeNodeState node = expandedMap.get(key);
-    // int count = reader.readInt();
-    // for (int i = 0; i < count; i++) {
-    // Key child = serializer.read(reader);
-    // node.expand(child);
-    // readTreeNode(serializer, reader, child);
-    // }
-    // }
+    /**
+     * Serializes the current expand
+     * 
+     * @return
+     */
+    @JsMethod
+    public String saveExpandedState() {
+        // Serialize the key table to a length-prefixed flight stream, then base64 it to a string.
+        List<BarrageColumnType> columnTypes = new ArrayList<>();
+        Chunk<Values>[] chunks = new Chunk[keyColumns.length];
+        for (int i = 0; i < keyColumns.length; i++) {
+            Column c = keyColumns.getAt(i);
+            columnTypes.add(BarrageColumnType.fromString(c.getName(), c.getType()));
+            chunks[i] = ObjectChunk.chunkWrap(keyTableData[i]);
+        }
+        columnTypes.add(BarrageColumnType.fromString(rowDepthCol.getName(), rowDepthCol.getType()));
+        columnTypes.add(BarrageColumnType.fromString(actionCol.getName(), actionCol.getType()));
+
+        chunks[keyColumns.length] = ObjectChunk.chunkWrap(keyTableData[keyColumns.length]);
+        chunks[keyColumns.length + 1] = ObjectChunk.chunkWrap(keyTableData[keyColumns.length + 1]);
+
+        byte[] bytes = connection.newTableToBytes(columnTypes, chunks);
+        return BaseEncoding.base64().encode(bytes);
+    }
+
+    /**
+     * Given a compatible expanded state string from {@link #saveExpandedState()}, replaces this table's expanded state
+     * with that state. This is a best-effort operation, and on error will have no effect except to log a diagnostic
+     * warning. With that said it is possible for the expand operation to fail
+     *
+     * @param nodesToRestore serialized string payload to restore
+     */
+    @JsMethod
+    public void restoreExpandedState(String nodesToRestore) {
+        // Transform string from base64, and read length-prefixed payloads. Validate the schema matches, then overwrite
+        // our key table and trigger replacing it.
+        final WebBarrageMessage payloadMessage;
+        try {
+            WebBarrageMessageReader reader = new WebBarrageMessageReader();
+            byte[] bytes = BaseEncoding.base64().decode(nodesToRestore);
+            CodedInputStream codedStream = CodedInputStream.newInstance(bytes);
+            int schemaSize = codedStream.readRawLittleEndian32();
+            int oldSchemaLimit = codedStream.pushLimit(schemaSize);
+            Flight.FlightData schema = Flight.FlightData.parseFrom(codedStream);
+            codedStream.popLimit(oldSchemaLimit);
+            WebBarrageMessage schemaMessage = reader.parseFrom(BarrageSnapshotOptions.builder().build(), schema);
+            if (schemaMessage != null) {
+                JsLog.warn("First payload unexpected provided full message, cannot restore expanded state");
+                return;
+            }
+
+            // Validate the schema matches expected
+            validateSchemaMatchesKeyTypes(schema.getDataHeader());
+
+            int dataSize = codedStream.readRawLittleEndian32();
+            int oldDataLimit = codedStream.pushLimit(dataSize);
+            Flight.FlightData data = Flight.FlightData.parseFrom(codedStream);
+            codedStream.popLimit(oldDataLimit);
+            payloadMessage = reader.parseFrom(BarrageSnapshotOptions.builder().build(), data);
+            if (payloadMessage == null) {
+                JsLog.warn("Record batch was incomplete, failed to restore expanded state");
+                return;
+            }
+            if (!codedStream.isAtEnd()) {
+                JsLog.warn("Unexpected trailing bytes in expand payload, aborting restore");
+                return;
+            }
+        } catch (Exception e) {
+            JsLog.warn("Failed to read expanded state", e);
+            return;
+        }
+
+        Object[][] oldKeyTableData = keyTableData;
+        try {
+            keyTableData = new Object[oldKeyTableData.length][];
+            for (int i = 0; i < payloadMessage.addColumnData.length; i++) {
+                ObjectChunk<?, ?> colData = payloadMessage.addColumnData[i].data.get(0).asObjectChunk();
+                keyTableData[i] = new Object[colData.size()];
+                for (int j = 0; j < colData.size(); j++) {
+                    keyTableData[i][j] = colData.get(j);
+                }
+            }
+        } catch (Exception e) {
+            keyTableData = oldKeyTableData;
+            JsLog.warn("Failed to replace expanded state", e);
+            return;
+        }
+        replaceKeyTable();
+    }
+
+    private void validateSchemaMatchesKeyTypes(ByteString dataHeader) {
+        Message message = Message.getRootAsMessage(dataHeader.asReadOnlyByteBuffer());
+        Schema schema = new Schema();
+        message.header(schema);
+
+        assert keyTableData.length == keyColumns.length + 2;
+        if (schema.fieldsLength() != keyTableData.length) {
+            throw new RuntimeException(
+                    "Expected " + keyTableData.length + " columns, but got " + schema.fieldsLength());
+        }
+
+        List<BarrageColumnType> providedTypes = new ArrayList<>();
+        for (int i = 0; i < schema.fieldsLength(); i++) {
+            providedTypes.add(BarrageColumnType.fromArrowField(schema.fields(i)));
+        }
+        for (int i = 0; i < keyColumns.length; i++) {
+            if (!providedTypes.get(i).deephavenType().equals(keyColumns.getAt(i).getType())) {
+                throw new RuntimeException(
+                        "Column " + i + " expected type " + keyColumns.getAt(i).getType() + " but got "
+                                + providedTypes.get(i).deephavenType());
+            }
+        }
+        if (!providedTypes.get(keyColumns.length).deephavenType().equals(rowDepthCol.getType())) {
+            throw new RuntimeException(
+                    "Column " + keyColumns.length + " expected type " + rowDepthCol.getType() + " but got "
+                            + providedTypes.get(keyColumns.length).deephavenType());
+        }
+        if (!providedTypes.get(keyColumns.length + 1).deephavenType().equals(actionCol.getType())) {
+            throw new RuntimeException(
+                    "Column " + (keyColumns.length + 1) + " expected type " + actionCol.getType() + " but got "
+                            + providedTypes.get(keyColumns.length + 1).deephavenType());
+        }
+    }
 
     /**
      * a new copy of this treetable, so it can be sorted and filtered separately, and maintain a different viewport.

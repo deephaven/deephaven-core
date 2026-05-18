@@ -7,7 +7,6 @@ import elemental2.core.JsMap;
 import elemental2.core.JsObject;
 import elemental2.core.JsSet;
 import elemental2.promise.Promise;
-import io.deephaven.extensions.barrage.BarrageTypeInfo;
 import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
 import io.deephaven.web.client.api.*;
 import io.deephaven.web.client.api.barrage.WebBarrageUtils;
@@ -231,33 +230,6 @@ public final class ClientTableState extends TableConfig {
 
     public TableTicket getHandle() {
         return handle;
-    }
-
-    /**
-     * Returns the Java Class to represent each column in the table. This lets the client replace certain JVM-only
-     * classes with alternative implementations, but still use the simple {@link BarrageTypeInfo} wrapper.
-     */
-    public Class<?>[] columnTypes() {
-        return Arrays.stream(tableDef.getColumns())
-                .map(ColumnDefinition::getType)
-                .map(WebBarrageUtils::stringToClass)
-                .toArray(Class<?>[]::new);
-    }
-
-    /**
-     * Returns the Java Class to represent the component type in any list/array type. At this time, this value is not
-     * used by the chunk reading implementation.
-     */
-    public Class<?>[] componentTypes() {
-        return Arrays.stream(tableDef.getColumns()).map(ColumnDefinition::getType).map(t -> {
-            // All arrays and vectors will be handled as objects for now.
-            // TODO (deephaven-core#2102) clarify if we need to handle these cases at all
-            if (t.endsWith("[]") || t.endsWith("Vector")) {
-                return Object.class;
-            }
-            // Non-arrays or vectors should return null
-            return null;
-        }).toArray(Class[]::new);
     }
 
     public ClientTableState newState(TableTicket newHandle, TableConfig config) {
