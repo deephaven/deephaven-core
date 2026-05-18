@@ -359,15 +359,17 @@ public class WebChunkWriterFactory implements ChunkWriter.Factory {
                 Class<?> componentType = typeInfo.componentType();
                 // TODO special case for byte[]?
 
-                final BarrageTypeInfo<Field> componentTypeInfo = new BarrageTypeInfo<>(
+                assert componentType != null;
+                final BarrageTypeInfo<Field> componentTypeInfo = BarrageTypeInfo.make(
                         componentType,
-                        componentType == null ? null : componentType.getComponentType(),
+                        componentType.getComponentType(),
                         typeInfo.arrowField().children(0));
                 final ChunkType chunkType = ListChunkReader.getChunkTypeFor(componentTypeInfo.type());
                 final ExpansionKernel<?> kernel =
                         ArrayExpansionKernel.makeExpansionKernel(chunkType, componentTypeInfo.type());
                 final ChunkWriter<?> componentWriter = newWriter(componentTypeInfo);
 
+                // noinspection unchecked
                 return (ChunkWriter<T>) new ListChunkWriter<>(listMode, fixedSizeLength, kernel, componentWriter, true);
             }
             default:

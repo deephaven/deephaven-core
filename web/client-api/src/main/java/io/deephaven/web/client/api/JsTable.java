@@ -899,8 +899,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
             doExchange.onData(data -> {
                 WebBarrageMessage message;
                 try {
-                    message = reader.parseFrom(barrageSnapshotOptions, cts.columnTypes(),
-                            cts.componentTypes(), data);
+                    message = reader.parseFrom(barrageSnapshotOptions, data);
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
