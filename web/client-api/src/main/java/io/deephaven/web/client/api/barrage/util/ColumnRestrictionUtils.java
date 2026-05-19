@@ -28,17 +28,6 @@ public class ColumnRestrictionUtils {
         // Utility class - no instances
     }
 
-    /**
-     * Extract the restriction type short name from a google.protobuf.Any type URL.
-     *
-     * @param typeUrl The type URL (e.g.,
-     *        "type.googleapis.com/io.deephaven.proto.backplane.grpc.IntegerRangeRestriction")
-     * @return The short type name (e.g., "IntegerRangeRestriction")
-     */
-    public static String getRestrictionType(String typeUrl) {
-        String typeName = typeUrl.substring(typeUrl.lastIndexOf('/') + 1);
-        return typeName.substring(typeName.lastIndexOf('.') + 1);
-    }
 
     // -------------------------------------------------------------------------
     // Converters (protobuf Any -> typed ColumnRestriction subclass)

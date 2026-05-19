@@ -16,7 +16,6 @@ import io.deephaven.web.client.api.barrage.def.InputTableMetadata;
 import io.deephaven.web.client.api.barrage.def.TableAttributesDefinition;
 import io.deephaven.web.client.api.barrage.util.ColumnRestrictionConverter;
 import io.deephaven.web.client.api.barrage.util.ColumnRestrictionRegistry;
-import io.deephaven.web.client.api.barrage.util.ColumnRestrictionUtils;
 import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.shared.data.*;
 import org.apache.arrow.flatbuf.KeyValue;
@@ -125,14 +124,14 @@ public class WebBarrageUtils {
                         new InputTableMetadata.ColumnRestrictions();
 
                 for (Any restrictionAny : restrictionsList) {
-                    // Get the restriction type and look up the converter
-                    String restrictionType = ColumnRestrictionUtils.getRestrictionType(restrictionAny.getTypeUrl());
-                    ColumnRestrictionConverter converter = ColumnRestrictionRegistry.getConverter(restrictionType);
+                    // Look up the converter by the full type URL
+                    String typeUrl = restrictionAny.getTypeUrl();
+                    ColumnRestrictionConverter converter = ColumnRestrictionRegistry.getConverter(typeUrl);
                     if (converter != null) {
                         ColumnRestriction restriction = converter.convert(restrictionAny);
                         colRestrictions.addRestriction(restriction);
                     } else {
-                        JsLog.error("No converter registered for restriction type: " + restrictionType);
+                        JsLog.error("No converter registered for restriction type: " + typeUrl);
                     }
                 }
 

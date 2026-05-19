@@ -16,26 +16,35 @@ public class ColumnRestrictionRegistry {
 
     private static final Map<String, ColumnRestrictionConverter> converters = new HashMap<>();
 
+    private static final String TYPE_URL_PREFIX =
+            "docs.deephaven.io/io.deephaven.proto.backplane.grpc.";
+
     static {
-        converters.put("IntegerRangeRestriction", ColumnRestrictionUtils::convertIntegerRangeRestriction);
-        converters.put("DoubleRangeRestriction", ColumnRestrictionUtils::convertDoubleRangeRestriction);
-        converters.put("NotNullRestriction", ColumnRestrictionUtils::convertNotNullRestriction);
-        converters.put("NonEmptyRestriction", ColumnRestrictionUtils::convertNonEmptyRestriction);
-        converters.put("StringListRestriction", ColumnRestrictionUtils::convertStringListRestriction);
+        converters.put(TYPE_URL_PREFIX + "IntegerRangeRestriction",
+                ColumnRestrictionUtils::convertIntegerRangeRestriction);
+        converters.put(TYPE_URL_PREFIX + "DoubleRangeRestriction",
+                ColumnRestrictionUtils::convertDoubleRangeRestriction);
+        converters.put(TYPE_URL_PREFIX + "NotNullRestriction",
+                ColumnRestrictionUtils::convertNotNullRestriction);
+        converters.put(TYPE_URL_PREFIX + "NonEmptyRestriction",
+                ColumnRestrictionUtils::convertNonEmptyRestriction);
+        converters.put(TYPE_URL_PREFIX + "StringListRestriction",
+                ColumnRestrictionUtils::convertStringListRestriction);
     }
 
     /**
      * Register a converter for a custom column restriction type. The converter is responsible for returning a concrete
      * {@link io.deephaven.web.client.api.ColumnRestriction} subclass that implements {@code validate()} as needed.
      *
-     * @param restrictionType The restriction type name (e.g., "MyCustomRestriction")
+     * @param typeUrl The full protobuf {@code Any} type URL (e.g.,
+     *        {@code "type.googleapis.com/io.deephaven.proto.backplane.grpc.MyCustomRestriction"})
      * @param converter Converts a protobuf {@code Any} message into a typed {@code ColumnRestriction}
      */
-    public static void register(String restrictionType, ColumnRestrictionConverter converter) {
-        converters.put(restrictionType, converter);
+    public static void register(String typeUrl, ColumnRestrictionConverter converter) {
+        converters.put(typeUrl, converter);
     }
 
-    public static ColumnRestrictionConverter getConverter(String restrictionType) {
-        return converters.get(restrictionType);
+    public static ColumnRestrictionConverter getConverter(String typeUrl) {
+        return converters.get(typeUrl);
     }
 }
