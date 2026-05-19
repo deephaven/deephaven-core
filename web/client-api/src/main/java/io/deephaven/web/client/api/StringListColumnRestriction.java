@@ -10,15 +10,17 @@ import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsProperty;
 import jsinterop.base.Js;
 
+import java.util.List;
+
 /**
  * A {@link ColumnRestriction} that constrains a string column to one of a fixed set of allowed values.
  */
 @TsName(namespace = "dh")
 public class StringListColumnRestriction extends ColumnRestriction {
 
-    private final JsArray<String> allowedValues;
+    private final List<String> allowedValues;
 
-    public StringListColumnRestriction(JsArray<String> allowedValues) {
+    public StringListColumnRestriction(List<String> allowedValues) {
         super("StringListRestriction");
         this.allowedValues = allowedValues;
     }
@@ -30,7 +32,11 @@ public class StringListColumnRestriction extends ColumnRestriction {
      */
     @JsProperty
     public JsArray<String> getAllowedValues() {
-        return allowedValues;
+        JsArray<String> result = new JsArray<>();
+        for (String value : allowedValues) {
+            result.push(value);
+        }
+        return result;
     }
 
     @Override
@@ -41,17 +47,15 @@ public class StringListColumnRestriction extends ColumnRestriction {
             return null;
         }
         String str = Js.cast(value);
-        for (int i = 0; i < allowedValues.length; i++) {
-            if (str.equals(allowedValues.getAt(i))) {
-                return null;
-            }
+        if (allowedValues.contains(str)) {
+            return null;
         }
-        return "Value '" + str + "' is not in the allowed list: " + allowedValues.join(", ");
+        return "Value '" + str + "' is not in the allowed list: " + String.join(", ", allowedValues);
     }
 
     @Override
     public String toString() {
-        return "StringListColumnRestriction{allowedValues=" + allowedValues.join(", ") + "}";
+        return "StringListColumnRestriction{allowedValues=" + String.join(", ", allowedValues) + "}";
     }
 }
 

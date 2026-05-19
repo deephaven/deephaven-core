@@ -4,7 +4,6 @@
 package io.deephaven.web.client.api.barrage.util;
 
 import com.google.protobuf.Any;
-import elemental2.core.JsArray;
 import io.deephaven.proto.backplane.grpc.NonEmptyRestriction;
 import io.deephaven.proto.backplane.grpc.NotNullRestriction;
 import io.deephaven.proto.backplane.grpc.DoubleRangeRestriction;
@@ -119,11 +118,7 @@ public class ColumnRestrictionUtils {
         try {
             ByteBuffer buffer = restrictionAny.getValue().asReadOnlyByteBuffer();
             StringListRestriction restriction = StringListRestriction.parseFrom(buffer);
-            JsArray<String> values = new JsArray<>();
-            for (String value : restriction.getAllowedValuesList()) {
-                values.push(value);
-            }
-            return new StringListColumnRestriction(values);
+            return new StringListColumnRestriction(restriction.getAllowedValuesList());
         } catch (Exception e) {
             throw new ColumnRestrictionConverterException("Failed to convert StringListRestriction", e);
         }
