@@ -695,8 +695,10 @@ public abstract class UpdateBy {
                             processWindowOperatorSet(winIdx, opIndices, srcIndices, maxAffectedChunkSize,
                                     maxInfluencerChunkSize,
                                     () -> {
-                                        // Release the cached sources that are no longer needed.
-                                        releaseInputSources(srcIndices);
+                                        // Release the cached sources that are no longer needed. Decrement once
+                                        // per (operator, distinct srcIdx) pair to match how computeCachedColumnRowSets
+                                        // accumulates useCount.
+                                        releaseInputSources(srcIndices, opIndices.length);
                                         opSetComplete.run();
                                     }, nestedErrorConsumer);
                         }, nestedErrorConsumer);
@@ -873,15 +875,21 @@ public abstract class UpdateBy {
 
 
         /** Release the input sources that will not be needed for the rest of this update */
-        private void releaseInputSources(int[] sources) {
+        private void releaseInputSources(int[] sources, int opCount) {
             try (final ResettableWritableObjectChunk<?, ?> backingChunk =
                     ResettableWritableObjectChunk.makeResettableChunk()) {
+                // `sources` may list the same srcIdx multiple times (an operator whose value column equals its
+                // weight column has slot array [k, k]). Each operator in the set contributes 1 to the refcount
+                // per distinct srcIdx it touches, so decrement opCount times per unique srcIdx — not once per
+                // occurrence in `sources` — to avoid over-releasing.
+                final BitSet seen = new BitSet();
                 for (int srcIdx : sources) {
-                    if (!inputSourceCacheNeeded[srcIdx]) {
+                    if (!inputSourceCacheNeeded[srcIdx] || seen.get(srcIdx)) {
                         continue;
                     }
+                    seen.set(srcIdx);
 
-                    if (inputSourceReferenceCounts.decrementAndGet(srcIdx) == 0) {
+                    if (inputSourceReferenceCounts.addAndGet(srcIdx, -opCount) == 0) {
                         // Last use of this set, let's clean up
                         try (final RowSet rows = inputSourceRowSets.get(srcIdx)) {
                             // release any objects we are holding in the cache
@@ -1249,7 +1257,7 @@ public abstract class UpdateBy {
             final Set<String> opResultColumnSet = new HashSet<>();
 
             final ArrayList<String> inputColumnList = new ArrayList<>();
-            final TObjectIntHashMap<String> inputColumnToSlotMap = new TObjectIntHashMap<>();
+            final TObjectIntHashMap<String> inputColumnToSlotMap = new TObjectIntHashMap<>(clauses.size(), 0.75f, -1);
 
             final UpdateByWindow[] windowArr = windowSpecs.stream().map(clauseList -> {
                 final UpdateByOperator[] windowOps =

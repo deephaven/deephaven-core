@@ -956,6 +956,10 @@
                     "path": "conceptual/query-engine/engine-locking.md"
                   },
                   {
+                    "label": "Formulas and threads",
+                    "path": "how-to-guides/performance/formula-threads.md"
+                  },
+                  {
                     "label": "Python-Java boundary",
                     "path": "conceptual/python-java-boundary.md"
                   },

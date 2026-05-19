@@ -22,9 +22,10 @@ import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.extensions.barrage.BarrageMessageWriter;
 import io.deephaven.extensions.barrage.BarrageMessageWriterImpl;
 import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
-import io.deephaven.extensions.barrage.BarrageTypeInfo;
 import io.deephaven.extensions.barrage.chunk.ChunkWriter;
+import io.deephaven.extensions.barrage.util.ExposedByteArrayOutputStream;
 import io.deephaven.flightjs.protocol.BrowserFlightServiceGrpc;
+import io.deephaven.io.streams.ByteBufferOutputStream;
 import io.deephaven.proto.backplane.grpc.ApplicationServiceGrpc;
 import io.deephaven.proto.backplane.grpc.ApplyPreviewColumnsRequest;
 import io.deephaven.proto.backplane.grpc.ConfigServiceGrpc;
@@ -63,8 +64,8 @@ import io.deephaven.proto.backplane.grpc.TypedTicket;
 import io.deephaven.proto.backplane.script.grpc.ConsoleServiceGrpc;
 import io.deephaven.proto.backplane.script.grpc.LogSubscriptionData;
 import io.deephaven.proto.backplane.script.grpc.LogSubscriptionRequest;
-import io.deephaven.web.client.api.barrage.WebBarrageUtils;
 import io.deephaven.web.client.api.barrage.WebChunkWriterFactory;
+import io.deephaven.web.client.api.barrage.data.BarrageColumnType;
 import io.deephaven.web.client.api.barrage.def.InitialTableDefinition;
 import io.deephaven.web.client.api.barrage.stream.AuthenticationInterceptor;
 import io.deephaven.web.client.api.barrage.stream.BiDiStream;
@@ -106,15 +107,14 @@ import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsOptional;
 import jsinterop.annotations.JsNullable;
 import jsinterop.base.JsPropertyMap;
-import org.apache.arrow.flatbuf.Field;
-import org.apache.arrow.flatbuf.KeyValue;
 import org.apache.arrow.flatbuf.Message;
 import org.apache.arrow.flatbuf.MessageHeader;
 import org.apache.arrow.flatbuf.Schema;
 import org.apache.arrow.flight.impl.Flight;
 import org.apache.arrow.flight.impl.FlightServiceGrpc;
+import org.jspecify.annotations.Nullable;
 
-import javax.annotation.Nullable;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
@@ -129,11 +129,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
 
 /**
@@ -1086,33 +1086,22 @@ public class WorkerConnection {
             context.timeZone = JsTimeZone.getTimeZone(userTimeZone);
         }
 
-        BarrageTypeInfo<Field>[] typeInfos = new BarrageTypeInfo[types.length];
+        List<BarrageColumnType> columnTypes = new ArrayList<>();
         Chunk<Values>[] chunks = new Chunk[types.length];
         for (int i = 0; i < types.length; i++) {
             JsDataHandler handler = JsDataHandler.getHandler(types[i]);
-            Class<?> type = WebBarrageUtils.stringToClass(handler.deephavenType());
-            FlatBufferBuilder b = new FlatBufferBuilder();
-            int typeOffset = handler.writeType(b);
-            Field.startField(b);
-            Field.addType(b, typeOffset);
-            Field.addTypeType(b, handler.typeType());
-            b.finish(Field.endField(b));
-            Field field = Field.getRootAsField(b.dataBuffer());
-            Class<?> componentType = null;
-            if (types[i].endsWith("[]")) {
-                componentType = WebBarrageUtils
-                        .stringToClass(handler.deephavenType().substring(0, handler.deephavenType().length() - 2));
+            columnTypes.add(BarrageColumnType.fromString(columnNames[i], types[i]));
+            if (handler != null) {
+                chunks[i] = ObjectChunk.chunkWrap(handler.process(data[i], context));
+            } else {
+                chunks[i] = ObjectChunk.chunkWrap(data[i]);
             }
-            typeInfos[i] = BarrageTypeInfo.make(type, componentType, field);
-
-            chunks[i] = ObjectChunk.chunkWrap(handler.process(data[i], context));
         }
-        return newTable(columnNames, types, typeInfos, chunks);
+        return newTable(columnTypes, chunks);
     }
 
-    public Promise<JsTable> newTable(String[] columnNames, String[] types, BarrageTypeInfo<Field>[] typeInfos,
-            Chunk<Values>[] data) {
-        // Store the data using a refernce we can clear out, so the data is garbage collected later
+    public Promise<JsTable> newTable(List<BarrageColumnType> columnTypes, Chunk<Values>[] data) {
+        // Store the data using a reference we can clear out, so the data is garbage collected later
         // This means the table can only be created once, but that's probably what we want in this case anyway
         AtomicReference<Chunk<Values>[]> chunkRef = new AtomicReference<>(data);
 
@@ -1124,136 +1113,208 @@ public class WorkerConnection {
             }
             chunkRef.set(null);
 
-            ToIntFunction<FlatBufferBuilder> schemaWriter = fb -> {
-                int[] fields = new int[columnNames.length];
-                for (int i = 0; i < columnNames.length; i++) {
-                    String columnName = columnNames[i];
+            StreamObserver<BarrageMessageWriter.MessageView> listener =
+                    doPutStream(columnTypes, c, cts.getHandle().makeTicket(), d[0].size());
+            Flight.FlightDescriptor flightDescriptor = cts.getHandle().makeFlightDescriptor();
 
-                    JsDataHandler writer = JsDataHandler.getHandler(types[i]);
+            writeTableToStream(columnTypes, listener, flightDescriptor, d);
+        }, "creating new table")
+                .refetch()
+                .then(cts -> Promise.resolve(new JsTable(this, cts)));
+    }
 
-                    int nameOffset = fb.createString(columnName);
-                    int typeOffset = writer.writeType(fb);
-                    int metadataOffset = Field.createCustomMetadataVector(fb, new int[] {
-                            KeyValue.createKeyValue(fb, fb.createString("deephaven:type"),
-                                    fb.createString(writer.deephavenType()))
+    private void writeTableToStream(List<BarrageColumnType> columnTypes,
+            StreamObserver<BarrageMessageWriter.MessageView> listener,
+            Flight.@Nullable FlightDescriptor flightDescriptor, Chunk<Values>[] d) {
+        ChunkWriter.Factory f = new WebChunkWriterFactory();
+        listener.onNext(bmwFactory.getSchemaView(fb -> writeSimpleSchema(columnTypes, fb), flightDescriptor));
+
+        ChunkWriter<Chunk<Values>>[] chunkWriters = new ChunkWriter[columnTypes.size()];
+        for (int i = 0; i < columnTypes.size(); i++) {
+            chunkWriters[i] = f.newWriter(columnTypes.get(i).typeInfo());
+        }
+
+        BarrageMessage msg = new BarrageMessage();
+        if (d[0].size() > 0) {
+            msg.rowsAdded = RowSetFactory.fromRange(0, d[0].size() - 1);
+        } else {
+            msg.rowsAdded = RowSetFactory.empty();
+        }
+        msg.rowsIncluded = msg.rowsAdded;
+        msg.rowsRemoved = RowSetFactory.empty();
+        msg.length = d[0].size();
+        msg.addColumnData = new BarrageMessage.AddColumnData[columnTypes.size()];
+        for (int i = 0; i < columnTypes.size(); i++) {
+            BarrageMessage.AddColumnData acd = new BarrageMessage.AddColumnData();
+            acd.data = Collections.singletonList(d[i]);
+            msg.addColumnData[i] = acd;
+        }
+        msg.modColumnData = BarrageMessage.ZERO_MOD_COLUMNS;
+        msg.shifted = RowSetShiftData.EMPTY;
+
+        BarrageMessageWriter barrageMessageWriter =
+                bmwFactory.newMessageWriter(msg, chunkWriters, BarrageMessageWriter.WriteMetricsConsumer.NO_OP);
+        listener.onNext(barrageMessageWriter.getSnapshotView(BarrageSnapshotOptions.builder()
+                .useDeephavenNulls(true).build()));
+
+        listener.onCompleted();
+    }
+
+    /**
+     * Internal API to write a table to a byte array, prefixed with each FlightData message size as a 32bit LE int.
+     * <p>
+     * Note that this is _not_ the IPC format, also used as arrow flight feather v2, as this has no support for app
+     * metadata nor the rest of the surrounding FlightData protobuf. Technically we don't need that metadata for this
+     * use case, but without the rest of the wrapping we cannot reuse the rest of our usual reading/writing code.
+     *
+     * @param columnTypes the types of each column
+     * @param data the chunks to write
+     * @return an array of bytes in the specified internal format
+     */
+    public byte[] newTableToBytes(List<BarrageColumnType> columnTypes, Chunk<Values>[] data) {
+        ExposedByteArrayOutputStream out = new ExposedByteArrayOutputStream();
+        AtomicBoolean finished = new AtomicBoolean(false);
+        AtomicReference<Throwable> error = new AtomicReference<>();
+        StreamObserver<BarrageMessageWriter.MessageView> listener = new StreamObserver<>() {
+            @Override
+            public void onNext(BarrageMessageWriter.MessageView value) {
+                try {
+                    AtomicInteger bytesWritten = new AtomicInteger();
+                    int pos = out.size();
+                    // reserve space for the length
+                    out.writeBytes(new byte[4]);
+                    value.forEachStream(drainable -> {
+                        try {
+                            bytesWritten.addAndGet(drainable.drainTo(out));
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
+                        }
                     });
+                    // write the length at the reserved space
+                    for (int i = 0; i < 4; i++) {
+                        out.peekBuffer()[pos + i] = (byte) (0xff & bytesWritten.get() >>> (i * 8));
+                    }
 
-                    Field.startField(fb);
-                    Field.addName(fb, nameOffset);
-                    Field.addNullable(fb, true);
-
-                    Field.addTypeType(fb, writer.typeType());
-                    Field.addType(fb, typeOffset);
-                    Field.addCustomMetadata(fb, metadataOffset);
-
-                    fields[i] = Field.endField(fb);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
                 }
-                int fieldsOffset = Schema.createFieldsVector(fb, fields);
-
-                Schema.startSchema(fb);
-                Schema.addFields(fb, fieldsOffset);
-                return Schema.endSchema(fb);
-            };
-
-            // The "StreamObserver c" here is for a unary, so we can't just pass it directly
-            // to doPut(), but need to filter out the messages and wait for onComplete
-            final StreamObserver<InputStream> observer;
-            try {
-                observer = doPut(new StreamObserver<>() {
-                    @Override
-                    public void onNext(InputStream value) {
-                        // ignore these, we'll get an ack for each message sent, but nothing for us to act on
-                    }
-
-                    @Override
-                    public void onError(Throwable t) {
-                        // Table creation failed, notify caller
-                        c.onError(t);
-                    }
-
-                    @Override
-                    public void onCompleted() {
-                        // All done, notify caller with a synthetic ETCR
-                        FlatBufferBuilder schemaMessageBuilder = new FlatBufferBuilder();
-                        int schemaOffset = schemaWriter.applyAsInt(schemaMessageBuilder);
-                        Message.startMessage(schemaMessageBuilder);
-                        Message.addHeaderType(schemaMessageBuilder, MessageHeader.Schema);
-                        Message.addHeader(schemaMessageBuilder, schemaOffset);
-                        schemaMessageBuilder.finish(Message.endMessage(schemaMessageBuilder));
-                        ByteBuffer schemaMessagePayload = schemaMessageBuilder.dataBuffer();
-                        ByteBuffer schemaPlusHeader = ByteBuffer.allocate(schemaMessagePayload.remaining() + 8);
-                        schemaPlusHeader.order(ByteOrder.LITTLE_ENDIAN);
-                        schemaPlusHeader.putInt(-1);
-                        schemaPlusHeader.putInt(schemaMessagePayload.remaining());
-                        schemaPlusHeader.put(schemaMessagePayload);
-                        schemaPlusHeader.flip();
-                        ExportedTableCreationResponse syntheticResponse = ExportedTableCreationResponse.newBuilder()
-                                .setSchemaHeader(ByteStringAccess.wrap(schemaPlusHeader))
-                                .setSize(data[0].size())
-                                .setIsStatic(true)
-                                .setSuccess(true)
-                                .setResultId(cts.getHandle().makeTableReference())
-                                .build();
-                        c.onNext(syntheticResponse);
-                        c.onCompleted();
-                    }
-                });
-            } catch (Exception e) {
-                throw new RuntimeException(e);
             }
-            StreamObserver<BarrageMessageWriter.MessageView> listener = new StreamObserver<>() {
+
+            @Override
+            public void onError(Throwable t) {
+                error.set(t);
+            }
+
+            @Override
+            public void onCompleted() {
+                finished.set(true);
+            }
+        };
+        writeTableToStream(columnTypes, listener, null, data);
+        if (error.get() != null) {
+            throw new RuntimeException(error.get());
+        }
+        assert out.size() > 0;
+        assert finished.get();
+        return out.toByteArray();
+    }
+
+    /**
+     * Adapts a table schema and a unary response to a MessageView bidi stream that calls FlightService/DoPut.
+     *
+     * @param columnTypes the schema of the table
+     * @param unaryObserver a unary observer to receive the final ETCR response or any error that occurs during the
+     *        stream
+     * @param resultTicket the ticket that will contain the table after upload
+     * @param size the size of the table being uploaded
+     * @return a stream observer which can be given MessageViews from a BarrageMessageWriter
+     */
+    private StreamObserver<BarrageMessageWriter.MessageView> doPutStream(List<BarrageColumnType> columnTypes,
+            StreamObserver<ExportedTableCreationResponse> unaryObserver, Ticket resultTicket, int size) {
+        // to doPut(), but need to filter out the messages and wait for onComplete
+        final StreamObserver<InputStream> observer;
+        try {
+            observer = doPut(new StreamObserver<>() {
                 @Override
-                public void onNext(BarrageMessageWriter.MessageView value) {
-                    try {
-                        value.forEachStream(observer::onNext);
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
+                public void onNext(InputStream value) {
+                    // ignore these, we'll get an ack for each message sent, but nothing for us to act on
                 }
 
                 @Override
                 public void onError(Throwable t) {
-                    observer.onError(t);
+                    // Table creation failed, notify caller
+                    unaryObserver.onError(t);
                 }
 
                 @Override
                 public void onCompleted() {
-                    observer.onCompleted();
+                    // All done, notify caller with a synthetic ETCR
+                    FlatBufferBuilder schemaMessageBuilder = new FlatBufferBuilder();
+                    int schemaOffset = writeSimpleSchema(columnTypes, schemaMessageBuilder);
+                    Message.startMessage(schemaMessageBuilder);
+                    Message.addHeaderType(schemaMessageBuilder, MessageHeader.Schema);
+                    Message.addHeader(schemaMessageBuilder, schemaOffset);
+                    schemaMessageBuilder.finish(Message.endMessage(schemaMessageBuilder));
+                    ByteBuffer schemaMessagePayload = schemaMessageBuilder.dataBuffer();
+                    ByteBuffer schemaPlusHeader = ByteBuffer.allocate(schemaMessagePayload.remaining() + 8);
+                    schemaPlusHeader.order(ByteOrder.LITTLE_ENDIAN);
+                    schemaPlusHeader.putInt(-1);
+                    schemaPlusHeader.putInt(schemaMessagePayload.remaining());
+                    schemaPlusHeader.put(schemaMessagePayload);
+                    schemaPlusHeader.flip();
+                    ExportedTableCreationResponse syntheticResponse = ExportedTableCreationResponse.newBuilder()
+                            .setSchemaHeader(ByteStringAccess.wrap(schemaPlusHeader))
+                            .setSize(size)
+                            .setIsStatic(true)
+                            .setSuccess(true)
+                            .setResultId(TableReference.newBuilder().setTicket(resultTicket))
+                            .build();
+                    unaryObserver.onNext(syntheticResponse);
+                    unaryObserver.onCompleted();
                 }
-            };
-            ChunkWriter.Factory f = new WebChunkWriterFactory();
-
-            Flight.FlightDescriptor flightDescriptor = cts.getHandle().makeFlightDescriptor();
-            listener.onNext(bmwFactory.getSchemaView(schemaWriter, flightDescriptor));
-
-            ChunkWriter<Chunk<Values>>[] chunkWriters = new ChunkWriter[columnNames.length];
-            for (int i = 0; i < typeInfos.length; i++) {
-                chunkWriters[i] = f.newWriter(typeInfos[i]);
+            });
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        return new StreamObserver<>() {
+            @Override
+            public void onNext(BarrageMessageWriter.MessageView value) {
+                try {
+                    value.forEachStream(observer::onNext);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
             }
 
-            BarrageMessage msg = new BarrageMessage();
-            msg.rowsAdded = RowSetFactory.fromRange(0, data[0].size() - 1);
-            msg.rowsIncluded = msg.rowsAdded;
-            msg.rowsRemoved = RowSetFactory.empty();
-            msg.length = data[0].size();
-            msg.addColumnData = new BarrageMessage.AddColumnData[columnNames.length];
-            for (int i = 0; i < columnNames.length; i++) {
-                BarrageMessage.AddColumnData acd = new BarrageMessage.AddColumnData();
-                acd.data = Collections.singletonList(d[i]);
-                msg.addColumnData[i] = acd;
+            @Override
+            public void onError(Throwable t) {
+                observer.onError(t);
             }
-            msg.modColumnData = BarrageMessage.ZERO_MOD_COLUMNS;
-            msg.shifted = RowSetShiftData.EMPTY;
 
-            BarrageMessageWriter barrageMessageWriter =
-                    bmwFactory.newMessageWriter(msg, chunkWriters, BarrageMessageWriter.WriteMetricsConsumer.NO_OP);
-            listener.onNext(barrageMessageWriter.getSnapshotView(BarrageSnapshotOptions.builder()
-                    .useDeephavenNulls(true).build()));
+            @Override
+            public void onCompleted() {
+                observer.onCompleted();
+            }
+        };
+    }
 
-            listener.onCompleted();
-        }, "creating new table")
-                .refetch()
-                .then(cts -> Promise.resolve(new JsTable(this, cts)));
+    /**
+     * Writes a simple schema with the given column names and types.
+     *
+     * @param columnTypes the schema of the table
+     * @param fb
+     * @return
+     */
+    private static int writeSimpleSchema(List<BarrageColumnType> columnTypes, FlatBufferBuilder fb) {
+        int[] fields = new int[columnTypes.size()];
+        for (int i = 0; i < columnTypes.size(); i++) {
+            fields[i] = columnTypes.get(i).writeField(fb);
+        }
+        int fieldsOffset = Schema.createFieldsVector(fb, fields);
+
+        Schema.startSchema(fb);
+        Schema.addFields(fb, fieldsOffset);
+        return Schema.endSchema(fb);
     }
 
     private StreamObserver<InputStream> doPut(StreamObserver<InputStream> observer) throws Exception {

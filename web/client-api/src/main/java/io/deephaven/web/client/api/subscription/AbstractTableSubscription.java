@@ -577,7 +577,7 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
     private void onFlightData(Flight.FlightData data) {
         WebBarrageMessage message;
         try {
-            message = reader.parseFrom(options, state.columnTypes(), state.componentTypes(), data);
+            message = reader.parseFrom(options, data);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

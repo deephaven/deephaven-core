@@ -10,9 +10,6 @@ import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
 import io.deephaven.proto.backplane.grpc.DeephavenTableMetadata;
 import io.deephaven.proto.backplane.grpc.InputTableColumnInfo;
 import io.deephaven.web.client.api.ColumnRestriction;
-import io.deephaven.web.client.api.BigDecimalWrapper;
-import io.deephaven.web.client.api.BigIntegerWrapper;
-import io.deephaven.web.client.api.DateWrapper;
 import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
 import io.deephaven.web.client.api.barrage.def.InitialTableDefinition;
 import io.deephaven.web.client.api.barrage.def.InputTableMetadata;
@@ -41,7 +38,6 @@ import java.util.function.IntFunction;
  */
 public class WebBarrageUtils {
     public static final int FLATBUFFER_MAGIC = 0x6E687064;
-
 
     public static ByteBuffer wrapMessage(FlatBufferBuilder innerBuilder, byte messageType) {
         FlatBufferBuilder outerBuilder = new FlatBufferBuilder(1024);
@@ -191,7 +187,7 @@ public class WebBarrageUtils {
         return schema;
     }
 
-    public static Map<String, String> keyValuePairs(String filterPrefix, double count,
+    public static Map<String, String> keyValuePairs(String filterPrefix, int count,
             IntFunction<KeyValue> accessor) {
         Map<String, String> map = new HashMap<>();
         for (int i = 0; i < count; i++) {
@@ -220,22 +216,5 @@ public class WebBarrageUtils {
         }
 
         return CompressedRangeSetReader.writeRange(s);
-    }
-
-    public static Class<?> stringToClass(String t) {
-        return switch (t) {
-            case "boolean", "java.lang.Boolean" -> boolean.class;
-            case "char", "java.lang.Character" -> char.class;
-            case "byte", "java.lang.Byte" -> byte.class;
-            case "int", "java.lang.Integer" -> int.class;
-            case "short", "java.lang.Short" -> short.class;
-            case "long", "java.lang.Long" -> long.class;
-            case "java.lang.Float", "float" -> float.class;
-            case "java.lang.Double", "double" -> double.class;
-            case "java.time.Instant" -> DateWrapper.class;
-            case "java.math.BigInteger" -> BigIntegerWrapper.class;
-            case "java.math.BigDecimal" -> BigDecimalWrapper.class;
-            default -> Object.class;
-        };
     }
 }
