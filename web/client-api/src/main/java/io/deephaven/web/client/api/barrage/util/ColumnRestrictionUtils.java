@@ -46,9 +46,7 @@ public class ColumnRestrictionUtils {
         try {
             ByteBuffer buffer = restrictionAny.getValue().asReadOnlyByteBuffer();
             IntegerRangeRestriction restriction = IntegerRangeRestriction.parseFrom(buffer);
-            Double min = restriction.hasMinInclusive() ? (double) restriction.getMinInclusive() : null;
-            Double max = restriction.hasMaxInclusive() ? (double) restriction.getMaxInclusive() : null;
-            return new IntegerRangeColumnRestriction(min, max);
+            return new IntegerRangeColumnRestriction(restriction);
         } catch (Exception e) {
             throw new ColumnRestrictionConverterException("Failed to convert IntegerRangeRestriction", e);
         }
@@ -67,9 +65,7 @@ public class ColumnRestrictionUtils {
         try {
             ByteBuffer buffer = restrictionAny.getValue().asReadOnlyByteBuffer();
             DoubleRangeRestriction restriction = DoubleRangeRestriction.parseFrom(buffer);
-            Double min = restriction.hasMinInclusive() ? restriction.getMinInclusive() : null;
-            Double max = restriction.hasMaxInclusive() ? restriction.getMaxInclusive() : null;
-            return new DoubleRangeColumnRestriction(min, max);
+            return new DoubleRangeColumnRestriction(restriction);
         } catch (Exception e) {
             throw new ColumnRestrictionConverterException("Failed to convert DoubleRangeRestriction", e);
         }

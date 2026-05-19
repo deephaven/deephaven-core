@@ -4,6 +4,8 @@
 package io.deephaven.web.client.api;
 
 import com.vertispan.tsdefs.annotations.TsName;
+import io.deephaven.proto.backplane.grpc.DoubleRangeRestriction;
+import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsProperty;
@@ -15,13 +17,12 @@ import jsinterop.annotations.JsProperty;
 @TsName(namespace = "dh")
 public class DoubleRangeColumnRestriction extends ColumnRestriction {
 
-    private final Double min;
-    private final Double max;
+    private final DoubleRangeRestriction restriction;
 
-    public DoubleRangeColumnRestriction(Double min, Double max) {
+    @JsIgnore
+    public DoubleRangeColumnRestriction(DoubleRangeRestriction restriction) {
         super("DoubleRangeRestriction");
-        this.min = min;
-        this.max = max;
+        this.restriction = restriction;
     }
 
     /**
@@ -32,7 +33,7 @@ public class DoubleRangeColumnRestriction extends ColumnRestriction {
     @JsProperty
     @JsNullable
     public Double getMin() {
-        return min;
+        return restriction.hasMinInclusive() ? restriction.getMinInclusive() : null;
     }
 
     /**
@@ -43,7 +44,7 @@ public class DoubleRangeColumnRestriction extends ColumnRestriction {
     @JsProperty
     @JsNullable
     public Double getMax() {
-        return max;
+        return restriction.hasMaxInclusive() ? restriction.getMaxInclusive() : null;
     }
 
     @Override
@@ -54,18 +55,18 @@ public class DoubleRangeColumnRestriction extends ColumnRestriction {
             return null;
         }
         double num = ((Number) value).doubleValue();
-        if (min != null && num < min) {
-            return "Value " + num + " is less than the minimum allowed value of " + min;
+        if (restriction.hasMinInclusive() && num < restriction.getMinInclusive()) {
+            return "Value " + num + " is less than the minimum allowed value of " + restriction.getMinInclusive();
         }
-        if (max != null && num > max) {
-            return "Value " + num + " is greater than the maximum allowed value of " + max;
+        if (restriction.hasMaxInclusive() && num > restriction.getMaxInclusive()) {
+            return "Value " + num + " is greater than the maximum allowed value of " + restriction.getMaxInclusive();
         }
         return null;
     }
 
     @Override
     public String toString() {
-        return "DoubleRangeColumnRestriction{min=" + min + ", max=" + max + "}";
+        return "DoubleRangeColumnRestriction{min=" + getMin() + ", max=" + getMax() + "}";
     }
 }
 

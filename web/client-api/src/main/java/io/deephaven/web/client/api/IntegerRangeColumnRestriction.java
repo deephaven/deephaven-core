@@ -4,6 +4,8 @@
 package io.deephaven.web.client.api;
 
 import com.vertispan.tsdefs.annotations.TsName;
+import io.deephaven.proto.backplane.grpc.IntegerRangeRestriction;
+import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsProperty;
@@ -15,35 +17,34 @@ import jsinterop.annotations.JsProperty;
 @TsName(namespace = "dh")
 public class IntegerRangeColumnRestriction extends ColumnRestriction {
 
-    private final Double min;
-    private final Double max;
+    private final IntegerRangeRestriction restriction;
 
-    public IntegerRangeColumnRestriction(Double min, Double max) {
+    @JsIgnore
+    public IntegerRangeColumnRestriction(IntegerRangeRestriction restriction) {
         super("IntegerRangeRestriction");
-        this.min = min;
-        this.max = max;
+        this.restriction = restriction;
     }
 
     /**
      * The inclusive minimum value allowed, or {@code null} if the range is unbounded below.
      *
-     * @return The minimum value, or {@code null}
+     * @return The minimum value as a {@link LongWrapper}, or {@code null}
      */
     @JsProperty
     @JsNullable
-    public Double getMin() {
-        return min;
+    public LongWrapper getMin() {
+        return restriction.hasMinInclusive() ? LongWrapper.of(restriction.getMinInclusive()) : null;
     }
 
     /**
      * The inclusive maximum value allowed, or {@code null} if the range is unbounded above.
      *
-     * @return The maximum value, or {@code null}
+     * @return The maximum value as a {@link LongWrapper}, or {@code null}
      */
     @JsProperty
     @JsNullable
-    public Double getMax() {
-        return max;
+    public LongWrapper getMax() {
+        return restriction.hasMaxInclusive() ? LongWrapper.of(restriction.getMaxInclusive()) : null;
     }
 
     @Override
@@ -53,19 +54,25 @@ public class IntegerRangeColumnRestriction extends ColumnRestriction {
         if (value == null) {
             return null;
         }
-        double num = ((Number) value).doubleValue();
-        if (min != null && num < min) {
-            return "Value " + (long) num + " is less than the minimum allowed value of " + min.longValue();
+        if (!(value instanceof LongWrapper)) {
+            return "Value must be a LongWrapper";
         }
-        if (max != null && num > max) {
-            return "Value " + (long) num + " is greater than the maximum allowed value of " + max.longValue();
+        long num = ((LongWrapper) value).getWrapped();
+        if (restriction.hasMinInclusive() && num < restriction.getMinInclusive()) {
+            return "Value " + num + " is less than the minimum allowed value of " + restriction.getMinInclusive();
+        }
+        if (restriction.hasMaxInclusive() && num > restriction.getMaxInclusive()) {
+            return "Value " + num + " is greater than the maximum allowed value of " + restriction.getMaxInclusive();
         }
         return null;
     }
 
     @Override
     public String toString() {
-        return "IntegerRangeColumnRestriction{min=" + min + ", max=" + max + "}";
+        LongWrapper min = getMin();
+        LongWrapper max = getMax();
+        return "IntegerRangeColumnRestriction{min=" + (min != null ? min : "null") + ", max="
+                + (max != null ? max : "null") + "}";
     }
 }
 
