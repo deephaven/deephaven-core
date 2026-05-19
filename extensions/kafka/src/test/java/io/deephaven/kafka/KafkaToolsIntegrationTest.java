@@ -51,9 +51,11 @@ import static io.deephaven.engine.table.ColumnDefinition.ofInt;
 import static io.deephaven.engine.table.ColumnDefinition.ofLong;
 import static io.deephaven.engine.table.ColumnDefinition.ofString;
 import static io.deephaven.engine.table.ColumnDefinition.ofTime;
+import static io.deephaven.engine.util.TableTools.doubleCol;
 import static io.deephaven.engine.util.TableTools.instantCol;
 import static io.deephaven.engine.util.TableTools.intCol;
 import static io.deephaven.engine.util.TableTools.longCol;
+import static io.deephaven.engine.util.TableTools.newTable;
 import static io.deephaven.engine.util.TableTools.stringCol;
 import static io.deephaven.kafka.KafkaTools.ALL_PARTITIONS;
 import static io.deephaven.kafka.KafkaTools.ALL_PARTITIONS_SEEK_TO_BEGINNING;
@@ -388,6 +390,101 @@ class KafkaToolsIntegrationTest {
 
             awaitEquals(e2, taa);
         }
+    }
+
+    @ParameterizedTest(name = "valuesFromArrayElement {0}")
+    @EnumSource
+    @Timeout(TIMEOUT_SECONDS)
+    void valuesFromArrayElement(final KafkaService kafkaService, final TestInfo testInfo) throws Exception {
+        Assumptions.assumeTrue(kafkaService.isEnabled());
+        kafkaService.init();
+        final String topic = sanitizedTopicName(testInfo);
+        final String fooName = "Biz_Foo";
+        final String barName = "Biz_Bar";
+        final String zipName = "Biz_Zip";
+        final String zapName = "Biz_Zap";
+
+        final TableDefinition td;
+        final Table e1;
+        final Table e2;
+        final Table e3;
+        {
+            td = TableDefinition.of(
+                    PARTITION_COLUMN,
+                    OFFSET_COLUMN,
+                    TIMESTAMP_COLUMN,
+                    ColumnDefinition.of(fooName, Type.intType().arrayType()),
+                    ColumnDefinition.of(barName, Type.longType().arrayType()),
+                    ColumnDefinition.of(zipName, Type.doubleType().arrayType()),
+                    ColumnDefinition.of(zapName, Type.stringType().arrayType()));
+            e1 = TableTools.newTable(td);
+            e2 = TableTools.newTable(td,
+                    intCol(PARTITION_COLUMN.getName(), 0, 0),
+                    longCol(OFFSET_COLUMN.getName(), 0, 1),
+                    instantCol(TIMESTAMP_COLUMN.getName(), Instant.ofEpochMilli(42L), Instant.ofEpochMilli(43L)),
+                    new ColumnHolder<>(fooName, int[].class, int.class, false, new int[] {1}, new int[] {2}),
+                    new ColumnHolder<>(barName, long[].class, long.class, false, new long[] {4}, new long[] {5}),
+                    new ColumnHolder<>(zipName, double[].class, double.class, false, new double[] {7.1},
+                            new double[] {8.2}),
+                    new ColumnHolder<>(zapName, String[].class, String.class, false, new String[] {"zap1"},
+                            new String[] {"zap2"}));
+            e3 = TableTools.merge(e2, TableTools.newTable(td,
+                    intCol(PARTITION_COLUMN.getName(), 0),
+                    longCol(OFFSET_COLUMN.getName(), 2),
+                    instantCol(TIMESTAMP_COLUMN.getName(), Instant.ofEpochMilli(44L)),
+                    new ColumnHolder<>(fooName, int[].class, int.class, false, new int[] {3}),
+                    new ColumnHolder<>(barName, long[].class, long.class, false, new long[] {6}),
+                    new ColumnHolder<>(zipName, double[].class, double.class, false, new double[] {9.3}),
+                    new ColumnHolder<>(zapName, String[].class, String.class, false, new String[] {"zap3"})));
+        }
+
+        createTopic(kafkaService, topic);
+
+        final KafkaTools.TableAndAdapter taa = KafkaTools.consumeToTableAndAdapter(
+                kafkaService.properties(),
+                topic,
+                ALL_PARTITIONS,
+                ALL_PARTITIONS_SEEK_TO_BEGINNING,
+                KafkaTools.Consume.IGNORE,
+                KafkaTools.Consume.objectProcessorSpec(
+                        JacksonProvider.of(ObjectValue.builder()
+                                .putFields("Biz", ArrayValue.standard(
+                                        ObjectValue.builder()
+                                                .putFields("Foo", IntValue.strict())
+                                                .putFields("Bar", LongValue.strict())
+                                                .putFields("Zip", DoubleValue.strict())
+                                                .putFields("Zap", StringValue.strict())
+                                                .build()))
+                                .build())),
+                TableType.append());
+
+        try (final KafkaProducer<String, String> producer =
+                kafkaService.producer(new StringSerializer(), new StringSerializer())) {
+            awaitEquals(e1, taa);
+
+            producer.send(new ProducerRecord<>(topic, null, 42L, null,
+                    " {\"Biz\": [ { \"Foo\": 1, \"Bar\": 4, \"Zip\": 7.1, \"Zap\": \"zap1\" } ] }"));
+            producer.send(new ProducerRecord<>(topic, null, 43L, null,
+                    "{ \"Biz\": [ { \"Foo\": 2, \"Bar\": 5, \"Zip\": 8.2, \"Zap\": \"zap2\" } ] }"));
+            producer.flush();
+
+            awaitEquals(e2, taa);
+
+            producer.send(new ProducerRecord<>(topic, null, 44L, null,
+                    "{ \"Biz\": [ { \"Foo\": 3, \"Bar\": 6, \"Zip\": 9.3, \"Zap\": \"zap3\" } ] }"));
+            producer.flush();
+
+            awaitEquals(e3, taa);
+        }
+
+        final Table expectedTable = newTable(
+                intCol("Foo", 1, 2, 3),
+                longCol("Bar", 4, 5, 6),
+                doubleCol("Zip", 7.1, 8.2, 9.3),
+                stringCol("Zap", "zap1", "zap2", "zap3"));
+        final Table elementTable = taa.table()
+                .view("Foo = Biz_Foo[0]", "Bar = Biz_Bar[0]", "Zip = Biz_Zip[0]", "Zap = Biz_Zap[0]");
+        TstUtils.assertTableEquals(expectedTable, elementTable);
     }
 
     private static String sanitizedTopicName(TestInfo testInfo) {
