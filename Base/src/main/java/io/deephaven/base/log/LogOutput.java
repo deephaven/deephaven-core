@@ -195,6 +195,25 @@ public interface LogOutput {
                 }
             };
 
+    /**
+     * Formats a Collection of LogOutputAppendable instances
+     */
+    ObjFormatter<Collection<? extends CharSequence>> STRING_COLLECTION_FORMATTER =
+            (logOutput, collection) -> {
+                if (collection == null) {
+                    logOutput.append("null");
+                } else if (collection.isEmpty()) {
+                    logOutput.append("{}");
+                } else {
+                    char delim = '{';
+                    for (final CharSequence elem : collection) {
+                        logOutput.append(delim).append(elem);
+                        delim = ',';
+                    }
+                    logOutput.append('}');
+                }
+            };
+
 
     // ---------------------------------------------------------------------------------------------
     // null implementation
