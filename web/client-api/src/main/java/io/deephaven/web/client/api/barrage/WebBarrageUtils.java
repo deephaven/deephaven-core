@@ -115,7 +115,6 @@ public class WebBarrageUtils {
                 final InputTableColumnInfo columnInfo = columnInfoMap.get(columnName);
 
                 if (columnInfo == null) {
-                    JsLog.warn("parseInputTableMetadata: No column info found for column " + columnName);
                     continue;
                 }
 
@@ -131,7 +130,7 @@ public class WebBarrageUtils {
                         ColumnRestriction restriction = converter.convert(restrictionAny);
                         colRestrictions.addRestriction(restriction);
                     } else {
-                        JsLog.error("No converter registered for restriction type: " + typeUrl);
+                        JsLog.warn("No converter registered for restriction type: " + typeUrl);
                     }
                 }
 
