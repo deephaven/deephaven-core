@@ -335,11 +335,13 @@ public class Column {
 
     public Column withFormatStringColumnIndex(int formatStringColumnIndex) {
         return new Column(jsIndex, index, styleColumnIndex, type, name, isPartitionColumn,
-                formatStringColumnIndex, description, isInputTableKeyColumn, isInputTableValueColumn, isSortable, columnRestrictions);
+                formatStringColumnIndex, description, isInputTableKeyColumn, isInputTableValueColumn, isSortable,
+                columnRestrictions);
     }
 
     public Column withStyleColumnIndex(int styleColumnIndex) {
         return new Column(jsIndex, index, styleColumnIndex, type, name, isPartitionColumn,
-                formatStringColumnIndex, description, isInputTableKeyColumn, isInputTableValueColumn, isSortable, columnRestrictions);
+                formatStringColumnIndex, description, isInputTableKeyColumn, isInputTableValueColumn, isSortable,
+                columnRestrictions);
     }
 }
