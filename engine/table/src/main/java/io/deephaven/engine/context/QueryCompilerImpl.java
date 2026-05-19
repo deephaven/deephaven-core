@@ -87,15 +87,15 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
     }
 
     /**
-     * Should this class be traced? Even with only trace logging, we may not want to flood the log with "uninteresting"
-     * classes, so we provide an inclusion and an exclusion list.
+     * Should this class (or package) be traced? Even with only trace logging, we may not want to flood the log with
+     * "uninteresting" classes, so we provide an inclusion and an exclusion list.
      *
      * <p>
      * Excludes take precedence over includes.
      * </p>
      *
-     * @param className the classname to check against our trace prefixes?
-     * @return if this class should be traced
+     * @param className the class/package name to check against our trace prefixes
+     * @return if this class/package should be traced
      */
     private static boolean shouldTrace(String className) {
         if (!log.isTraceEnabled()) {
