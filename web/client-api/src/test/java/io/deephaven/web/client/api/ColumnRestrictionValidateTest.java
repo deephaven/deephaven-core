@@ -7,6 +7,8 @@ import io.deephaven.proto.backplane.grpc.DoubleRangeRestriction;
 import io.deephaven.proto.backplane.grpc.IntegerRangeRestriction;
 import org.junit.Test;
 
+import java.util.List;
+
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 
@@ -152,8 +154,44 @@ public class ColumnRestrictionValidateTest {
         assertNull(r.validate("hello"));
     }
 
-    // Note: StringListColumnRestriction tests are not included here because JsArray (Elemental2)
-    // requires a GWT/browser runtime and cannot be instantiated in a plain JUnit test.
+    // -------------------------------------------------------------------------
+    // StringListColumnRestriction
+    // -------------------------------------------------------------------------
+
+    @Test
+    public void testStringList_nullValueIsValid() {
+        StringListColumnRestriction r = new StringListColumnRestriction(List.of("a", "b", "c"));
+        assertNull(r.validate(null));
+    }
+
+    @Test
+    public void testStringList_allowedValueIsValid() {
+        StringListColumnRestriction r = new StringListColumnRestriction(List.of("foo", "bar", "baz"));
+        assertNull(r.validate("foo"));
+        assertNull(r.validate("bar"));
+        assertNull(r.validate("baz"));
+    }
+
+    @Test
+    public void testStringList_disallowedValueIsInvalid() {
+        StringListColumnRestriction r = new StringListColumnRestriction(List.of("foo", "bar"));
+        assertNotNull(r.validate("qux"));
+        assertNotNull(r.validate(""));
+    }
+
+    @Test
+    public void testStringList_isCaseSensitive() {
+        StringListColumnRestriction r = new StringListColumnRestriction(List.of("Foo"));
+        assertNotNull(r.validate("foo"));
+        assertNotNull(r.validate("FOO"));
+        assertNull(r.validate("Foo"));
+    }
+
+    @Test
+    public void testStringList_emptyListDisallowsEverything() {
+        StringListColumnRestriction r = new StringListColumnRestriction(List.of());
+        assertNotNull(r.validate("anything"));
+    }
 
     // -------------------------------------------------------------------------
     // Helpers
