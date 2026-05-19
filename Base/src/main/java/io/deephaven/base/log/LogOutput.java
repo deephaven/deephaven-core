@@ -196,7 +196,7 @@ public interface LogOutput {
             };
 
     /**
-     * Formats a Collection of LogOutputAppendable instances
+     * Formats a Collection of CharSequence instances, such as Strings
      */
     ObjFormatter<Collection<? extends CharSequence>> STRING_COLLECTION_FORMATTER =
             (logOutput, collection) -> {
