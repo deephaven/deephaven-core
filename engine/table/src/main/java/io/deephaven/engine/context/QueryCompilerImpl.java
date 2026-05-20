@@ -447,8 +447,10 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
 
                 // We've already not found this class, so we should not try to search again
                 if (missingClasses.contains(name)) {
-                    log.trace().append("findClass(").append(name)
-                            .append("): previously cached as missing, delegating to super.findClass").endl();
+                    if (shouldTrace) {
+                        log.trace().append("findClass(").append(name)
+                                .append("): previously cached as missing, delegating to super.findClass").endl();
+                    }
                     return super.findClass(name);
                 }
 
