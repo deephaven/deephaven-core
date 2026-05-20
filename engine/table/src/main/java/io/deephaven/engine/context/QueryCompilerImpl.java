@@ -197,6 +197,11 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
         }
 
         this.classNamesForAnnotationProcessing = classNamesForAnnotationProcessing;
+
+        if (log.isTraceEnabled()) {
+            log.trace().append("QueryCompiler Class Path: ").append(getClassPath()).append(File.pathSeparator)
+                    .append(getJavaClassPath()).endl();
+        }
     }
 
     @Override
@@ -305,8 +310,9 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
             throw new IllegalArgumentException("Requests and resolvers must be the same length");
         }
 
-        final boolean shouldTrace = Arrays.stream(requests).map(QueryCompilerRequest::packageNameRoot)
-                .anyMatch(QueryCompilerImpl::shouldTrace);
+        final boolean shouldTrace =
+                log.isTraceEnabled() && Arrays.stream(requests).map(QueryCompilerRequest::packageNameRoot)
+                        .anyMatch(QueryCompilerImpl::shouldTrace);
         if (shouldTrace) {
             log.trace().append("Compilation request for ").append((logOutput, queryCompilerRequests) -> {
                 logOutput.append("[");
@@ -1152,8 +1158,6 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
                 "-cp", classPathAsString,
                 // this option allows the compiler to attempt to process all source files even if some of them fail
                 "--should-stop=ifError=GENERATE");
-
-        log.trace().append("Compiler options: ").append(LogOutput.STRING_COLLECTION_FORMATTER, compilerOptions).endl();
 
         final MutableInt numFailures = new MutableInt(0);
         final List<RuntimeException> globalFailures = new ArrayList<>();
