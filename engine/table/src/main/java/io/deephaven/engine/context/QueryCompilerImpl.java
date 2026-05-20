@@ -806,9 +806,14 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
             final Class<?> result) {
         final String identifyingFieldValue = loadIdentifyingField(result);
         if (!request.classBody().equals(identifyingFieldValue)) {
-            log.trace().append("Hash collision for ").append(result.getName())
-                    .append(": loaded identifying field length=").append(identifyingFieldValue.length())
-                    .append(", expected class body length=").append(request.classBody().length()).endl();
+            final LogOutput logOutput = log.trace().append("Hash collision for ").append(result.getName())
+                    .append(": loaded identifying field length=");
+            if (identifyingFieldValue == null) {
+                logOutput.append("null");
+            } else {
+                logOutput.append(identifyingFieldValue.length());
+            }
+            logOutput.append(", expected class body length=").append(request.classBody().length()).endl();
             return false;
         }
 
