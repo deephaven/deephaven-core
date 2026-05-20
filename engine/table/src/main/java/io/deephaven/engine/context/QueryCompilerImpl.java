@@ -768,6 +768,7 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
                             clazz = tryLoadClassByFqName(state.fqClassName, request.parameterClasses());
                         }
                     } catch (final InterruptedException ie) {
+                        Thread.currentThread().interrupt();
                         throw new UncheckedDeephavenException("Interrupted while waiting for codegen", ie);
                     }
                     if (shouldTrace) {
