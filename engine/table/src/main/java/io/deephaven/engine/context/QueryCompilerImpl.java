@@ -17,6 +17,7 @@ import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.table.impl.util.OperationInitializerJobScheduler;
 import io.deephaven.internal.log.LoggerFactory;
+import io.deephaven.io.log.LogEntry;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.ByteUtils;
@@ -808,7 +809,7 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
             final Class<?> result) {
         final String identifyingFieldValue = loadIdentifyingField(result);
         if (!request.classBody().equals(identifyingFieldValue)) {
-            final LogOutput logOutput = log.trace().append("Hash collision for ").append(result.getName())
+            final LogEntry logOutput = log.trace().append("Hash collision for ").append(result.getName())
                     .append(": loaded identifying field length=");
             if (identifyingFieldValue == null) {
                 logOutput.append("null");
