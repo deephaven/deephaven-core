@@ -31,11 +31,7 @@ public class StringListColumnRestriction extends ColumnRestriction {
      */
     @JsProperty
     public JsArray<String> getAllowedValues() {
-        JsArray<String> result = new JsArray<>();
-        for (String value : allowedValues) {
-            result.push(value);
-        }
-        return result;
+        return JsArray.of(allowedValues.toArray(new String[0]));
     }
 
     @Override
