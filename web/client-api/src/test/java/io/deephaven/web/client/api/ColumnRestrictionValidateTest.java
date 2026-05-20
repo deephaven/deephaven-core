@@ -144,9 +144,9 @@ public class ColumnRestrictionValidateTest {
     // -------------------------------------------------------------------------
 
     @Test
-    public void testNonEmpty_nullIsValid() {
+    public void testNonEmpty_nullIsInvalid() {
         NonEmptyColumnRestriction r = new NonEmptyColumnRestriction();
-        assertNull(r.validate(null));
+        assertNotNull(r.validate(null));
     }
 
     @Test
@@ -159,6 +159,14 @@ public class ColumnRestrictionValidateTest {
     public void testNonEmpty_nonEmptyStringIsValid() {
         NonEmptyColumnRestriction r = new NonEmptyColumnRestriction();
         assertNull(r.validate("hello"));
+    }
+
+    @Test
+    public void testNonEmpty_nonStringIsCoercedViaToString() {
+        NonEmptyColumnRestriction r = new NonEmptyColumnRestriction();
+        // Non-string types are coerced via toString() rather than throwing
+        assertNull(r.validate(42));
+        assertNull(r.validate(true));
     }
 
     // -------------------------------------------------------------------------

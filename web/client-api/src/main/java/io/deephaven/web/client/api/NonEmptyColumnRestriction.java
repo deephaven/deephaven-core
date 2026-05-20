@@ -6,7 +6,6 @@ package io.deephaven.web.client.api;
 import com.vertispan.tsdefs.annotations.TsName;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsNullable;
-import jsinterop.base.Js;
 
 /**
  * A {@link ColumnRestriction} that requires a string column value to be non-empty.
@@ -23,10 +22,9 @@ public class NonEmptyColumnRestriction extends ColumnRestriction {
     @JsNullable
     public String validate(Object value) {
         if (value == null) {
-            return null;
+            return "Value must not be null";
         }
-        String str = Js.cast(value);
-        return str.isEmpty() ? "Value must not be empty" : null;
+        return value.toString().isEmpty() ? "Value must not be empty" : null;
     }
 
     @Override
