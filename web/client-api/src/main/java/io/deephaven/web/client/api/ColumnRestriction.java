@@ -3,10 +3,15 @@
 //
 package io.deephaven.web.client.api;
 
+import com.google.protobuf.Any;
 import com.vertispan.tsdefs.annotations.TsName;
+import io.deephaven.web.client.api.barrage.util.ColumnRestrictionConverterException;
+import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsProperty;
+
+import java.nio.ByteBuffer;
 
 /**
  * Abstract base class representing a restriction on an input table column. Each restriction has a {@code type} string
@@ -28,6 +33,21 @@ import jsinterop.annotations.JsProperty;
  */
 @TsName(namespace = "dh")
 public abstract class ColumnRestriction {
+
+    @FunctionalInterface
+    public interface BufferParser<T extends ColumnRestriction> {
+        T parse(ByteBuffer buffer) throws Exception;
+    }
+
+    @JsIgnore
+    protected static <T extends ColumnRestriction> T parseFromAny(Any restrictionAny, String type,
+            BufferParser<T> parser) throws ColumnRestrictionConverterException {
+        try {
+            return parser.parse(restrictionAny.getValue().asReadOnlyByteBuffer());
+        } catch (Exception e) {
+            throw new ColumnRestrictionConverterException("Failed to convert " + type, e);
+        }
+    }
 
     private final String type;
 

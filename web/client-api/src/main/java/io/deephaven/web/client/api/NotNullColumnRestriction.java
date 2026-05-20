@@ -3,7 +3,11 @@
 //
 package io.deephaven.web.client.api;
 
+import com.google.protobuf.Any;
 import com.vertispan.tsdefs.annotations.TsName;
+import io.deephaven.proto.backplane.grpc.NotNullRestriction;
+import io.deephaven.web.client.api.barrage.util.ColumnRestrictionConverterException;
+import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsNullable;
 
@@ -15,6 +19,16 @@ public class NotNullColumnRestriction extends ColumnRestriction {
 
     public NotNullColumnRestriction() {
         super("NotNullRestriction");
+    }
+
+    @JsIgnore
+    public static NotNullColumnRestriction fromAny(Any restrictionAny)
+            throws ColumnRestrictionConverterException {
+        return parseFromAny(restrictionAny, "NotNullRestriction",
+                buffer -> {
+                    NotNullRestriction.parseFrom(buffer);
+                    return new NotNullColumnRestriction();
+                });
     }
 
     @Override
@@ -29,4 +43,3 @@ public class NotNullColumnRestriction extends ColumnRestriction {
         return "NotNullColumnRestriction{}";
     }
 }
-

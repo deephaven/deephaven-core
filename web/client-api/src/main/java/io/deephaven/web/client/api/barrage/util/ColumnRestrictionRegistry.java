@@ -3,6 +3,12 @@
 //
 package io.deephaven.web.client.api.barrage.util;
 
+import io.deephaven.web.client.api.DoubleRangeColumnRestriction;
+import io.deephaven.web.client.api.IntegerRangeColumnRestriction;
+import io.deephaven.web.client.api.NonEmptyColumnRestriction;
+import io.deephaven.web.client.api.NotNullColumnRestriction;
+import io.deephaven.web.client.api.StringListColumnRestriction;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -20,16 +26,11 @@ public class ColumnRestrictionRegistry {
             "docs.deephaven.io/io.deephaven.proto.backplane.grpc.";
 
     static {
-        converters.put(TYPE_URL_PREFIX + "IntegerRangeRestriction",
-                ColumnRestrictionUtils::convertIntegerRangeRestriction);
-        converters.put(TYPE_URL_PREFIX + "DoubleRangeRestriction",
-                ColumnRestrictionUtils::convertDoubleRangeRestriction);
-        converters.put(TYPE_URL_PREFIX + "NotNullRestriction",
-                ColumnRestrictionUtils::convertNotNullRestriction);
-        converters.put(TYPE_URL_PREFIX + "NonEmptyRestriction",
-                ColumnRestrictionUtils::convertNonEmptyRestriction);
-        converters.put(TYPE_URL_PREFIX + "StringListRestriction",
-                ColumnRestrictionUtils::convertStringListRestriction);
+        converters.put(TYPE_URL_PREFIX + "IntegerRangeRestriction", IntegerRangeColumnRestriction::fromAny);
+        converters.put(TYPE_URL_PREFIX + "DoubleRangeRestriction", DoubleRangeColumnRestriction::fromAny);
+        converters.put(TYPE_URL_PREFIX + "NotNullRestriction", NotNullColumnRestriction::fromAny);
+        converters.put(TYPE_URL_PREFIX + "NonEmptyRestriction", NonEmptyColumnRestriction::fromAny);
+        converters.put(TYPE_URL_PREFIX + "StringListRestriction", StringListColumnRestriction::fromAny);
     }
 
     /**

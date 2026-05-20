@@ -3,7 +3,11 @@
 //
 package io.deephaven.web.client.api;
 
+import com.google.protobuf.Any;
 import com.vertispan.tsdefs.annotations.TsName;
+import io.deephaven.proto.backplane.grpc.NonEmptyRestriction;
+import io.deephaven.web.client.api.barrage.util.ColumnRestrictionConverterException;
+import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsNullable;
 
@@ -15,6 +19,16 @@ public class NonEmptyColumnRestriction extends ColumnRestriction {
 
     public NonEmptyColumnRestriction() {
         super("NonEmptyRestriction");
+    }
+
+    @JsIgnore
+    public static NonEmptyColumnRestriction fromAny(Any restrictionAny)
+            throws ColumnRestrictionConverterException {
+        return parseFromAny(restrictionAny, "NonEmptyRestriction",
+                buffer -> {
+                    NonEmptyRestriction.parseFrom(buffer);
+                    return new NonEmptyColumnRestriction();
+                });
     }
 
     @Override
@@ -32,4 +46,3 @@ public class NonEmptyColumnRestriction extends ColumnRestriction {
         return "NonEmptyColumnRestriction{}";
     }
 }
-

@@ -3,8 +3,10 @@
 //
 package io.deephaven.web.client.api;
 
+import com.google.protobuf.Any;
 import com.vertispan.tsdefs.annotations.TsName;
 import io.deephaven.proto.backplane.grpc.DoubleRangeRestriction;
+import io.deephaven.web.client.api.barrage.util.ColumnRestrictionConverterException;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsNullable;
@@ -23,6 +25,13 @@ public class DoubleRangeColumnRestriction extends ColumnRestriction {
     public DoubleRangeColumnRestriction(DoubleRangeRestriction restriction) {
         super("DoubleRangeRestriction");
         this.restriction = restriction;
+    }
+
+    @JsIgnore
+    public static DoubleRangeColumnRestriction fromAny(Any restrictionAny)
+            throws ColumnRestrictionConverterException {
+        return parseFromAny(restrictionAny, "DoubleRangeRestriction",
+                buffer -> new DoubleRangeColumnRestriction(DoubleRangeRestriction.parseFrom(buffer)));
     }
 
     /**

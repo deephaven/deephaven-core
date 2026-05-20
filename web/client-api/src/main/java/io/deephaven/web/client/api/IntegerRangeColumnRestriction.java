@@ -3,8 +3,10 @@
 //
 package io.deephaven.web.client.api;
 
+import com.google.protobuf.Any;
 import com.vertispan.tsdefs.annotations.TsName;
 import io.deephaven.proto.backplane.grpc.IntegerRangeRestriction;
+import io.deephaven.web.client.api.barrage.util.ColumnRestrictionConverterException;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsNullable;
@@ -23,6 +25,13 @@ public class IntegerRangeColumnRestriction extends ColumnRestriction {
     public IntegerRangeColumnRestriction(IntegerRangeRestriction restriction) {
         super("IntegerRangeRestriction");
         this.restriction = restriction;
+    }
+
+    @JsIgnore
+    public static IntegerRangeColumnRestriction fromAny(Any restrictionAny)
+            throws ColumnRestrictionConverterException {
+        return parseFromAny(restrictionAny, "IntegerRangeRestriction",
+                buffer -> new IntegerRangeColumnRestriction(IntegerRangeRestriction.parseFrom(buffer)));
     }
 
     /**
