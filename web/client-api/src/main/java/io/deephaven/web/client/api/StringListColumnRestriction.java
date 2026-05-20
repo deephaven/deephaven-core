@@ -8,7 +8,6 @@ import elemental2.core.JsArray;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsProperty;
-import jsinterop.base.Js;
 
 import java.util.List;
 
@@ -46,7 +45,7 @@ public class StringListColumnRestriction extends ColumnRestriction {
         if (value == null) {
             return "Value must not be null";
         }
-        String str = Js.cast(value);
+        String str = value.toString();
         if (allowedValues.contains(str)) {
             return null;
         }
