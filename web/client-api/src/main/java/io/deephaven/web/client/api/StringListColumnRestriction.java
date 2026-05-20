@@ -17,6 +17,8 @@ import java.util.List;
 @TsName(namespace = "dh")
 public class StringListColumnRestriction extends ColumnRestriction {
 
+    private static final int TRUNCATED_LIST_LIMIT = 5;
+
     private final List<String> allowedValues;
 
     public StringListColumnRestriction(List<String> allowedValues) {
@@ -45,12 +47,19 @@ public class StringListColumnRestriction extends ColumnRestriction {
         if (allowedValues.contains(str)) {
             return null;
         }
-        return "Value '" + str + "' is not in the allowed list: " + String.join(", ", allowedValues);
+        return "Value '" + str + "' is not in the allowed list: " + truncatedList();
+    }
+
+    private String truncatedList() {
+        if (allowedValues.size() <= TRUNCATED_LIST_LIMIT) {
+            return String.join(", ", allowedValues);
+        }
+        return String.join(", ", allowedValues.subList(0, TRUNCATED_LIST_LIMIT)) + ", ...";
     }
 
     @Override
     public String toString() {
-        return "StringListColumnRestriction{allowedValues=" + String.join(", ", allowedValues) + "}";
+        return "StringListColumnRestriction{allowedValues=" + truncatedList() + "}";
     }
 }
 
