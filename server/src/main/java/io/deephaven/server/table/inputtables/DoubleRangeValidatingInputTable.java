@@ -10,6 +10,7 @@ import io.deephaven.engine.util.input.InputTableUpdater;
 import io.deephaven.engine.util.input.InputTableValidationException;
 import io.deephaven.engine.util.input.StructuredErrorImpl;
 import io.deephaven.proto.backplane.grpc.DoubleRangeRestriction;
+import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.TestUseOnly;
 import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.Nullable;
@@ -88,7 +89,11 @@ public class DoubleRangeValidatingInputTable extends AbstractBaseValidatingInput
         final MutableInt position = new MutableInt(0);
         try (final CloseablePrimitiveIteratorOfDouble vals = tableToApply.doubleColumnIterator(column)) {
             vals.forEachRemaining((double val) -> {
-                if (val < min || val > max) {
+                if (val == QueryConstants.NULL_DOUBLE) {
+                    errors.add(new StructuredErrorImpl(
+                            "Value must not be null",
+                            column, position.get()));
+                } else if (val < min || val > max) {
                     errors.add(new StructuredErrorImpl(
                             "Value out of range: " + val + " must be between " + min + " and " + max + " inclusive",
                             column, position.get()));

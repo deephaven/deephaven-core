@@ -52,7 +52,7 @@ public class DoubleRangeColumnRestriction extends ColumnRestriction {
     @JsNullable
     public String validate(Object value) {
         if (value == null) {
-            return null;
+            return "Value must not be null";
         }
         double num = ((Number) value).doubleValue();
         if (restriction.hasMinInclusive() && num < restriction.getMinInclusive()) {

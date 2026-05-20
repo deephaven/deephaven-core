@@ -19,9 +19,9 @@ public class ColumnRestrictionValidateTest {
     // -------------------------------------------------------------------------
 
     @Test
-    public void testIntegerRange_nullValueIsValid() {
+    public void testIntegerRange_nullValueIsInvalid() {
         IntegerRangeColumnRestriction r = rangedInteger(1L, 10L);
-        assertNull(r.validate(null));
+        assertNotNull(r.validate(null));
     }
 
     @Test
@@ -55,9 +55,16 @@ public class ColumnRestrictionValidateTest {
     @Test
     public void testIntegerRange_unboundedBelowAllowsAnyLow() {
         IntegerRangeColumnRestriction r = rangedIntegerNoMin(10L);
-        assertNull(r.validate(LongWrapper.of(Long.MIN_VALUE)));
+        assertNull(r.validate(LongWrapper.of(Long.MIN_VALUE + 1)));
         assertNull(r.validate(LongWrapper.of(10L)));
         assertNotNull(r.validate(LongWrapper.of(11L)));
+    }
+
+    @Test
+    public void testIntegerRange_nullLongSentinelIsInvalid() {
+        // LongWrapper.of(Long.MIN_VALUE) returns null since MIN_VALUE is the NULL_LONG sentinel
+        IntegerRangeColumnRestriction r = rangedIntegerNoMin(10L);
+        assertNotNull(r.validate(LongWrapper.of(Long.MIN_VALUE)));
     }
 
     @Test
@@ -73,9 +80,9 @@ public class ColumnRestrictionValidateTest {
     // -------------------------------------------------------------------------
 
     @Test
-    public void testDoubleRange_nullValueIsValid() {
+    public void testDoubleRange_nullValueIsInvalid() {
         DoubleRangeColumnRestriction r = rangedDouble(1.0, 10.0);
-        assertNull(r.validate(null));
+        assertNotNull(r.validate(null));
     }
 
     @Test
@@ -101,7 +108,7 @@ public class ColumnRestrictionValidateTest {
     @Test
     public void testDoubleRange_unboundedBelowAllowsAnyLow() {
         DoubleRangeColumnRestriction r = rangedDoubleNoMin(10.0);
-        assertNull(r.validate(-Double.MAX_VALUE));
+        assertNull(r.validate(-1.0e300));
         assertNull(r.validate(10.0));
         assertNotNull(r.validate(10.1));
     }
@@ -159,9 +166,9 @@ public class ColumnRestrictionValidateTest {
     // -------------------------------------------------------------------------
 
     @Test
-    public void testStringList_nullValueIsValid() {
+    public void testStringList_nullValueIsInvalid() {
         StringListColumnRestriction r = new StringListColumnRestriction(List.of("a", "b", "c"));
-        assertNull(r.validate(null));
+        assertNotNull(r.validate(null));
     }
 
     @Test

@@ -52,7 +52,7 @@ public class IntegerRangeColumnRestriction extends ColumnRestriction {
     @JsNullable
     public String validate(Object value) {
         if (value == null) {
-            return null;
+            return "Value must not be null";
         }
         if (!(value instanceof LongWrapper)) {
             return "Value must be a LongWrapper";

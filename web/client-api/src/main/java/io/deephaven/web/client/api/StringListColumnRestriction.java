@@ -44,7 +44,7 @@ public class StringListColumnRestriction extends ColumnRestriction {
     @JsNullable
     public String validate(Object value) {
         if (value == null) {
-            return null;
+            return "Value must not be null";
         }
         String str = Js.cast(value);
         if (allowedValues.contains(str)) {
