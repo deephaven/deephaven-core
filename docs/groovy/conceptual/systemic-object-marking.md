@@ -2,7 +2,7 @@
 title: Systemic object marking
 ---
 
-In Deephaven, a **systemic object** is an object of critical importance, such as a table essential to reliable data analysis. If a systemic object fails, Deephaven terminates the entire worker process to maintain data integrity. By default, any object created on a thread is marked as systemic, providing maximum protection for your data flow. This guide explains how to manage this behavior using the [`SystemicObjectTracker`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/util/systemicmarking/SystemicObjectTracker.html) class.
+In Deephaven, a **systemic object** is an object whose failure causes Deephaven to terminate the entire worker process. When systemic object marking is disabled (the default), all objects are treated as systemic and any object failure is fatal. When marking is enabled, threads are non-systemic by default—only objects created on explicitly marked threads or within a scoped execution are systemic. This guide explains how to control this behavior using the [`SystemicObjectTracker`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/util/systemicmarking/SystemicObjectTracker.html) class.
 
 ## Enable systemic object marking
 
