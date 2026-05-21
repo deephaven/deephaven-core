@@ -270,9 +270,9 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
                 case VIEW_EAGER: {
                     final ColumnSource<?> viewCs = sc.getDataView();
                     if (sc.maybeGetFormulaColumn().isPresent()) {
-                        //noinspection EmptyTryBlock
+                        // noinspection EmptyTryBlock
                         try (final SafeCloseable ignored = viewCs.makeFillContext(0);
-                             final SafeCloseable ignored2 = viewCs.makeGetContext(0)) {
+                                final SafeCloseable ignored2 = viewCs.makeGetContext(0)) {
                         }
                     }
                     maybeCreateAlias.accept(viewCs);
