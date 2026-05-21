@@ -225,7 +225,7 @@ public final class SessionImpl extends SessionBase {
         return Calls.completableFutureUnaryCall(
                 channel().channel2(),
                 ObjectServiceGrpc.getMessageStreamMethod(),
-                channel().callOptions(),
+                channel().callOptions().withWaitForReady().withDeadlineAfter(Duration.ofMinutes(1)),
                 connectRequest)
                 .thenApply(this::toDataAndExports);
     }
@@ -435,16 +435,19 @@ public final class SessionImpl extends SessionBase {
         public Changes executeCode(String code, ExecuteCodeOptions options)
                 throws InterruptedException, TimeoutException {
             final ExecuteCommandResponse response;
-            try {
-                response = ClientCalls.blockingV2UnaryCall(
-                        channel().channel2(),
-                        ConsoleServiceGrpc.getExecuteCommandMethod(),
-                        channel().callOptions().withDeadlineAfter(config.executeTimeout()),
-                        executeCommandRequest(code, options));
-            } catch (StatusException e) {
-                Calls.extractInterrupted(e);
-                Calls.extractTimeout(e);
-                throw Calls.asStatusRuntime(e);
+            {
+                final ExecuteCommandRequest request = executeCommandRequest(code, options);
+                try {
+                    response = Calls.blockingUnaryCall(
+                            channel().channel2(),
+                            ConsoleServiceGrpc.getExecuteCommandMethod(),
+                            channel().callOptions()
+                                    .withWaitForReady()
+                                    .withDeadlineAfter(config.executeTimeout()),
+                            request);
+                } catch (StatusException e) {
+                    throw Calls.asStatusRuntime(e);
+                }
             }
             return toChanges(response);
         }
@@ -492,24 +495,19 @@ public final class SessionImpl extends SessionBase {
 
         @Override
         public void close() {
+            final ReleaseRequest request = releaseRequest();
             try {
-                ClientCalls.blockingV2UnaryCall(
+                Calls.blockingUnaryCall(
                         channel().channel2(),
                         SessionServiceGrpc.getReleaseMethod(),
-                        channel().callOptions().withDeadlineAfter(config.closeTimeout()),
-                        releaseRequest());
-            } catch (final StatusException e) {
-                if (Calls.isInterrupted(e)) {
-                    log.warn("Interrupted waiting for console close");
-                    return;
-                }
-                if (Calls.isTimeout(e)) {
-                    log.warn("Timed out waiting for console close");
-                    return;
-                }
+                        channel().callOptions().withWaitForReady().withDeadlineAfter(config.closeTimeout()),
+                        request);
+            } catch (final StatusException | RuntimeException e) {
                 log.error("Exception waiting for console close", e);
-            } catch (final RuntimeException e) {
-                log.error("Exception waiting for console close", e);
+            } catch (InterruptedException e) {
+                log.warn("Interrupted waiting for console close", e);
+            } catch (TimeoutException e) {
+                log.warn("Timed out waiting for console close", e);
             }
         }
     }
