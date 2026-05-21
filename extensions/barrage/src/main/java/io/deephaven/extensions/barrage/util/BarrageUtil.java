@@ -1360,19 +1360,6 @@ public class BarrageUtil {
             }
 
             try (final RowSequence.Iterator rsIt = targetViewport.getRowSequenceIterator()) {
-                if (!rsIt.hasMore()) {
-                    // Empty target viewport: emit a single empty batch so clients can rely on
-                    // receiving at least one record batch per DoGet stream.
-                    final BarrageMessage msg = ConstructSnapshot.constructBackplaneSnapshotInPositionSpace(
-                            log, table, columns, targetViewport, null);
-                    msg.modColumnData = BarrageMessage.ZERO_MOD_COLUMNS;
-                    try (final BarrageMessageWriter bmw = bmwFactory.newMessageWriter(msg, chunkWriters, metrics)) {
-                        listener.onNext(bmw.getSnapshotView(snapshotRequestOptions,
-                                viewport, reverseViewport,
-                                msg.rowsIncluded, columns));
-                    }
-                    return;
-                }
                 while (rsIt.hasMore()) {
                     // compute the next range to snapshot
                     final long cellCount = Math.max(

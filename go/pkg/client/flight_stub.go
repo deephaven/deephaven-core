@@ -2,7 +2,6 @@ package client
 
 import (
 	"context"
-	"errors"
 	"io"
 	"net"
 	"strconv"
@@ -93,7 +92,20 @@ func (fs *flightStub) snapshotRecord(ctx context.Context, ticket *ticketpb2.Tick
 	}
 
 	if len(batches) == 0 {
-		return nil, errors.New("no record batches retrieved during snapshot")
+		// Static snapshots of empty tables produce zero record batches on the wire. Synthesize an
+		// empty Record from the schema so callers can treat it uniformly.
+		schema := reader.Schema()
+		cols := make([]arrow.Array, len(schema.Fields()))
+		for i, f := range schema.Fields() {
+			b := array.NewBuilder(memory.DefaultAllocator, f.Type)
+			cols[i] = b.NewArray()
+			b.Release()
+		}
+		rec := array.NewRecord(schema, cols, 0)
+		for _, c := range cols {
+			c.Release()
+		}
+		return rec, nil
 	}
 
 	return concatRecords(batches)
