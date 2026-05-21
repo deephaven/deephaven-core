@@ -575,8 +575,7 @@ func doQueryTest(inputRec arrow.Record, t *testing.T, exec execBatchOrSerial, op
 
 	input, err := c.ImportTable(ctx, inputRec)
 	if err != nil {
-		t.Errorf("ImportTable %s", err.Error())
-		return nil
+		t.Fatalf("ImportTable %s", err.Error())
 	}
 	defer input.Release(ctx)
 
@@ -584,22 +583,19 @@ func doQueryTest(inputRec arrow.Record, t *testing.T, exec execBatchOrSerial, op
 
 	tables, err := exec(c, ctx, query...)
 	if err != nil {
-		t.Errorf("ExecBatch %s", err.Error())
-		return nil
+		t.Fatalf("ExecBatch %s", err.Error())
 	}
 
 	var recs []arrow.Record
 	for _, table := range tables {
 		rec, err := table.Snapshot(ctx)
 		if err != nil {
-			t.Errorf("Snapshot %s", err.Error())
-			return nil
+			t.Fatalf("Snapshot %s", err.Error())
 		}
 		recs = append(recs, rec)
 		err = table.Release(ctx)
 		if err != nil {
-			t.Errorf("Release %s", err.Error())
-			return nil
+			t.Fatalf("Release %s", err.Error())
 		}
 	}
 

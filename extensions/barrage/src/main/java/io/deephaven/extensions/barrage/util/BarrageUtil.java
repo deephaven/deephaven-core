@@ -132,13 +132,12 @@ public class BarrageUtil {
             Configuration.getInstance().getDoubleForClassWithDefault(BarrageUtil.class,
                     "targetSnapshotPercentage", 0.25);
 
-    // TODO (deephaven-core#188): drop this default to 50k once the jsapi can handle many batches
     public static final long MIN_SNAPSHOT_CELL_COUNT =
             Configuration.getInstance().getLongForClassWithDefault(BarrageUtil.class,
-                    "minSnapshotCellCount", Long.MAX_VALUE);
+                    "minSnapshotCellCount", 1L << 13);
     public static final long MAX_SNAPSHOT_CELL_COUNT =
             Configuration.getInstance().getLongForClassWithDefault(BarrageUtil.class,
-                    "maxSnapshotCellCount", Long.MAX_VALUE);
+                    "maxSnapshotCellCount", 1L << 24);
 
     /**
      * Note that arrow's wire format states that Timestamps without timezones are not UTC -- that they are no timezone
@@ -1396,20 +1395,7 @@ public class BarrageUtil {
                     }
 
                     if (!msg.rowsIncluded.isEmpty()) {
-                        // very simplistic logic to take the last snapshot and extrapolate max
-                        // number of rows that will not exceed the target UGP processing time
-                        // percentage
-                        final long targetCycleDurationMillis;
-                        final UpdateGraph updateGraph = table.getUpdateGraph();
-                        if (updateGraph == null || updateGraph instanceof PoisonedUpdateGraph) {
-                            targetCycleDurationMillis = PeriodicUpdateGraph.getDefaultTargetCycleDurationMillis();
-                        } else {
-                            targetCycleDurationMillis = updateGraph.<PeriodicUpdateGraph>cast()
-                                    .getTargetCycleDurationMillis();
-                        }
-                        long targetNanos = (long) (TARGET_SNAPSHOT_PERCENTAGE
-                                * targetCycleDurationMillis
-                                * 1000000);
+                        final long targetNanos = targetSnapshotTime(table.getUpdateGraph());
 
                         long nanosPerCell = elapsed / (msg.rowsIncluded.size() * columnCount);
 
@@ -1428,6 +1414,24 @@ public class BarrageUtil {
                 }
             }
         }
+    }
+
+    /**
+     * Very simplistic logic to take the last snapshot and extrapolate max number of rows that will not exceed the
+     * target update graph processing time percentage.
+     * 
+     * @param updateGraph the update graph for the table
+     * @return the target snapshot time, in nanos
+     */
+    public static long targetSnapshotTime(final UpdateGraph updateGraph) {
+        long targetCycleDurationMillis;
+        if (updateGraph instanceof PeriodicUpdateGraph) {
+            final PeriodicUpdateGraph periodicUpdateGraph = updateGraph.cast();
+            targetCycleDurationMillis = periodicUpdateGraph.getTargetCycleDurationMillis();
+        } else {
+            targetCycleDurationMillis = PeriodicUpdateGraph.getDefaultTargetCycleDurationMillis();
+        }
+        return (long) (TARGET_SNAPSHOT_PERCENTAGE * targetCycleDurationMillis * 1000000);
     }
 
     public static void createAndSendSnapshot(
