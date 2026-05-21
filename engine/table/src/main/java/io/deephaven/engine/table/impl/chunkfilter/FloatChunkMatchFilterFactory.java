@@ -192,12 +192,8 @@ public class FloatChunkMatchFilterFactory {
      * to bits returns different values for 0.0 and -0.0 but the same value for NaN.
      */
     // region getBits
-    private static final Float NEG_ZERO = -0.0F;
     public static int getBits(float value) {
-        if (NEG_ZERO.equals(value)) {
-            return Float.floatToIntBits(0.0f);
-        }
-        return Float.floatToIntBits(value);
+        return Float.floatToIntBits(value == 0.0f ? 0.0f : value);
     }
     // endregion getBits
 

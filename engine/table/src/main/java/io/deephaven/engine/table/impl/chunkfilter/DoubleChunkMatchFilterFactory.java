@@ -195,12 +195,8 @@ public class DoubleChunkMatchFilterFactory {
      * to bits returns different values for 0.0 and -0.0 but the same value for NaN.
      */
     // region getBits
-    private static final Double NEG_ZERO = -0.0;
     public static long getBits(double value) {
-        if (NEG_ZERO.equals(value)) {
-            return Double.doubleToLongBits(0.0f);
-        }
-        return Double.doubleToLongBits(value);
+        return Double.doubleToLongBits(value == 0.0d ? 0.0d : value);
     }
 
     // endregion getBits
