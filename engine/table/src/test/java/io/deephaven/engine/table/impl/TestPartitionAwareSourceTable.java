@@ -513,6 +513,10 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
             final ColumnSource columnSource =
                     mock(ColumnSource.class, "_CS_" + columnDefinition.getDataType().getSimpleName());
             dataTypeToColumnSource.put(columnDefinition.getDataType(), columnSource);
+            final ChunkSource.FillContext mockFillContext =
+                    mock(ChunkSource.FillContext.class, "_FC_" + columnDefinition.getDataType().getSimpleName());
+            final ChunkSource.GetContext mockGetContext =
+                    mock(ChunkSource.GetContext.class, "_GC_" + columnDefinition.getDataType().getSimpleName());
             checking(new Expectations() {
                 {
                     allowing(columnSource).getType();
@@ -521,6 +525,12 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
                     will(returnValue(columnDefinition.getComponentType()));
                     allowing(columnSource).isStateless();
                     will(returnValue(true));
+                    allowing(columnSource).makeFillContext(0);
+                    will(returnValue(mockFillContext));
+                    allowing(columnSource).makeGetContext(0);
+                    will(returnValue(mockGetContext));
+                    allowing(mockFillContext).close();
+                    allowing(mockGetContext).close();
                 }
             });
         });
