@@ -118,10 +118,11 @@ public class KeyedArrayBackedInputTable extends BaseArrayBackedInputTable {
                     final ChunkBoxer.BoxerKernel boxer = ChunkBoxer.getBoxer(keySource.getChunkType(), chunkCapacity)) {
                 final Chunk<? extends Values> keys = keySource.getChunk(getContext, addRowSet);
                 final ObjectChunk<?, ? extends Values> boxed = boxer.box(keys);
+                final long defaultReturnValue = keyToRowMap.defaultReturnValue();
                 for (int ii = 0; ii < boxed.size(); ++ii) {
                     final Object key = boxed.get(ii);
                     long rowNumber = keyToRowMap.putIfAbsent(key, rowToInsert);
-                    if (rowNumber == keyToRowMap.defaultReturnValue()) {
+                    if (rowNumber == defaultReturnValue) {
                         rowNumber = rowToInsert++;
                         destinations.set(ii, rowNumber);
                     } else if (isDeletedRowNumber(rowNumber)) {
