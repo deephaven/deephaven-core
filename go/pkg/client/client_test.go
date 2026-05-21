@@ -145,6 +145,39 @@ func testTimeTableHelper(t *testing.T, ctx context.Context, c *client.Client, pe
 // record batches that the client must concatenate back into a single Record.
 //
 // The table is built server-side via EmptyTable + Update to avoid the cost of uploading it.
+// TestEmptySnapshot verifies snapshot behavior for a 0-row table with at least one column,
+// to check whether the server sends a single empty record batch or no record batches at all.
+func TestEmptySnapshot(t *testing.T) {
+	ctx := context.Background()
+	s, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), test_tools.GetAuthType(), test_tools.GetAuthToken())
+	if err != nil {
+		t.Fatalf("NewClient err %s", err.Error())
+	}
+	defer s.Close()
+
+	empty, err := s.EmptyTable(ctx, 0)
+	if err != nil {
+		t.Fatalf("EmptyTable err %s", err.Error())
+	}
+	defer empty.Release(ctx)
+
+	tbl, err := empty.Update(ctx, "a = (int) ii", "b = (int) ii")
+	if err != nil {
+		t.Fatalf("Update err %s", err.Error())
+	}
+	defer tbl.Release(ctx)
+
+	rec, err := tbl.Snapshot(ctx)
+	if err != nil {
+		t.Fatalf("Snapshot err %s", err.Error())
+	}
+	defer rec.Release()
+
+	if rec.NumRows() != 0 || rec.NumCols() != 2 {
+		t.Fatalf("empty snapshot shape mismatch: expected 0x2, got %dx%d", rec.NumRows(), rec.NumCols())
+	}
+}
+
 func TestLargeSnapshot(t *testing.T) {
 	const numCols int64 = 4
 	const numRows int64 = 5_000_000 // 20M cells > MAX_SNAPSHOT_CELL_COUNT (~16.7M)

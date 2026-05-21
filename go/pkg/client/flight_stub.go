@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"errors"
 	"io"
 	"net"
 	"strconv"
@@ -92,19 +93,7 @@ func (fs *flightStub) snapshotRecord(ctx context.Context, ticket *ticketpb2.Tick
 	}
 
 	if len(batches) == 0 {
-		// No data batches were sent; synthesize an empty record using the schema from the reader.
-		schema := reader.Schema()
-		cols := make([]arrow.Array, len(schema.Fields()))
-		for i, f := range schema.Fields() {
-			b := array.NewBuilder(memory.DefaultAllocator, f.Type)
-			cols[i] = b.NewArray()
-			b.Release()
-		}
-		rec := array.NewRecord(schema, cols, 0)
-		for _, c := range cols {
-			c.Release()
-		}
-		return rec, nil
+		return nil, errors.New("no record batches retrieved during snapshot")
 	}
 
 	return concatRecords(batches)
@@ -134,19 +123,13 @@ func concatRecords(batches []arrow.Record) (arrow.Record, error) {
 		}
 		merged, err := array.Concatenate(arrs, memory.DefaultAllocator)
 		if err != nil {
-			for _, c := range mergedCols {
-				c.Release()
-			}
 			return nil, err
 		}
+		defer merged.Release()
 		mergedCols = append(mergedCols, merged)
 	}
 
-	rec := array.NewRecord(schema, mergedCols, totalRows)
-	for _, c := range mergedCols {
-		c.Release()
-	}
-	return rec, nil
+	return array.NewRecord(schema, mergedCols, totalRows), nil
 }
 
 // ImportTable uploads a table to the Deephaven server.
