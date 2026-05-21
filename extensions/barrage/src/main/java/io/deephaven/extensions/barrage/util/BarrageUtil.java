@@ -1395,9 +1395,6 @@ public class BarrageUtil {
                     }
 
                     if (!msg.rowsIncluded.isEmpty()) {
-                        // very simplistic logic to take the last snapshot and extrapolate max
-                        // number of rows that will not exceed the target UGP processing time
-                        // percentage
                         final long targetNanos = targetSnapshotTime(table.getUpdateGraph());
 
                         long nanosPerCell = elapsed / (msg.rowsIncluded.size() * columnCount);
