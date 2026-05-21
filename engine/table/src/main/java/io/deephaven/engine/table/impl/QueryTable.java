@@ -286,8 +286,8 @@ public class QueryTable extends BaseTable<QueryTable> {
     /**
      * Disable the usage of parquet row group dictionaries during push-down filtering.
      */
-    public static boolean DISABLE_WHERE_PUSHDOWN_PARQUET_DICTIONARY =
-            Configuration.getInstance().getBooleanWithDefault("QueryTable.disableWherePushdownParquetDictionary",
+    public static boolean DISABLE_WHERE_PUSHDOWN_DICTIONARY =
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.disableWherePushdownDictionary",
                     false);
 
     /**
