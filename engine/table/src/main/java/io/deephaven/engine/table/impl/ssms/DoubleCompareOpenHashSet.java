@@ -13,9 +13,9 @@ import it.unimi.dsi.fastutil.doubles.DoubleIterator;
 import it.unimi.dsi.fastutil.doubles.DoubleOpenHashSet;
 
 /**
- * A {@link DoubleOpenHashSet} that compares values using {@link DoubleComparisons} equality rather than fastutil's
- * default raw-bit equality. Concretely, {@code -0.0d} and {@code +0.0d} are treated as the same value, and all NaN bit
- * patterns are treated as a single value.
+ * A {@link DoubleOpenHashSet} that compares values consistently with {@link DoubleComparisons} equality rather than
+ * fastutil's default raw-bit equality. Concretely, {@code -0.0d} and {@code +0.0d} are treated as the same value, and
+ * all NaN bit patterns are treated as a single value.
  *
  * <p>
  * Values are canonicalized on every entry point ({@link #add(double)}, {@link #remove(double)}, {@link #contains(double)},

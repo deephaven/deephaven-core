@@ -9,9 +9,9 @@ import it.unimi.dsi.fastutil.floats.FloatIterator;
 import it.unimi.dsi.fastutil.floats.FloatOpenHashSet;
 
 /**
- * A {@link FloatOpenHashSet} that compares values using {@link FloatComparisons} equality rather than fastutil's
- * default raw-bit equality. Concretely, {@code -0.0f} and {@code +0.0f} are treated as the same value, and all NaN bit
- * patterns are treated as a single value.
+ * A {@link FloatOpenHashSet} that compares values consistently with {@link FloatComparisons} equality rather than
+ * fastutil's default raw-bit equality. Concretely, {@code -0.0f} and {@code +0.0f} are treated as the same value, and
+ * all NaN bit patterns are treated as a single value.
  *
  * <p>
  * Values are canonicalized on every entry point ({@link #add(float)}, {@link #remove(float)}, {@link #contains(float)},
