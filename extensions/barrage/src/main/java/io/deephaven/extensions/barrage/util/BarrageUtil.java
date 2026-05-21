@@ -1418,7 +1418,7 @@ public class BarrageUtil {
 
     /**
      * Very simplistic logic to take the last snapshot and extrapolate max number of rows that will not exceed the
-     * target UGP processing time percentage
+     * target update graph processing time percentage.
      * 
      * @param updateGraph the update graph for the table
      * @return the target snapshot time, in nanos
