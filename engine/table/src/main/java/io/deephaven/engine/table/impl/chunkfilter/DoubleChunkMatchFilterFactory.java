@@ -191,8 +191,8 @@ public class DoubleChunkMatchFilterFactory {
     }
 
     /**
-     * Handle -0.0 vs. 0.0 correctly in value comparison. This leverages the fact that the library conversion
-     * to bits returns different values for 0.0 and -0.0 but the same value for NaN.
+     * Gets the canonicalized bit pattern for the given value. Specifically, ensures that any NaN values have the bit
+     * pattern of {@link Double#NaN}, and -0.0 has the bit pattern of 0.0.
      */
     // region getBits
     public static long getBits(double value) {
