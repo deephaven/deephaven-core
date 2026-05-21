@@ -87,6 +87,7 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
 
     private TableLocationUpdateSubscriptionBuffer[] subscriptionBuffers;
     private long[] lastSizes;
+    private List<String[]>[] dataIndexColumnsByLocation;
     private int regionCount;
     private TIntIntMap locationIndexToRegionIndex;
     private WritableRowSet expectedRowSet;
@@ -147,6 +148,13 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
             });
         }));
 
+        // Initialize per-location data index columns to a single-entry list naming the grouping column,
+        // matching the original mock behavior. Individual tests can replace entries to exercise alternate
+        // returns (e.g., duplicates) before invoking initialize().
+        // noinspection unchecked
+        dataIndexColumnsByLocation = (List<String[]>[]) new List<?>[NUM_LOCATIONS];
+        Arrays.fill(dataIndexColumnsByLocation,
+                Collections.singletonList(new String[] {groupingColumnDefinition.getName()}));
         tableLocations = IntStream.range(0, NUM_LOCATIONS).mapToObj(li -> setUpTableLocation(li, ""))
                 .toArray(TableLocation[]::new);
         tableLocation0A = tableLocations[0];
@@ -214,7 +222,12 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
                     }
                 });
                 allowing(tl).getDataIndexColumns();
-                will(returnValue(Collections.singletonList((new String[] {groupingColumnDefinition.getName()}))));
+                will(new CustomAction("Return current data index columns for this location") {
+                    @Override
+                    public Object invoke(Invocation invocation) {
+                        return dataIndexColumnsByLocation[li];
+                    }
+                });
                 allowing(tl).hasDataIndex(groupingColumnDefinition.getName());
                 will(returnValue(true));
             }
@@ -511,6 +524,39 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
         public boolean isRefreshing() {
             return false;
         }
+    }
+
+    /**
+     * Verify that {@link RegionedColumnSourceManager#initialize()} de-duplicates the data index columns returned by the
+     * first included {@link TableLocation}. A misbehaving location that lists the same key column set twice (for
+     * example, a Core+ Deephaven format location whose schema declares a column as both a grouping column and a
+     * single-column data index) must not cause {@code DataIndexer.addDataIndex} to throw on a redundant registration.
+     */
+    @Test
+    public void testStaticDeduplicatesDuplicateDataIndexColumns() {
+        SUT = new RegionedColumnSourceManager(false, false, componentFactory, ColumnToCodecMappings.EMPTY,
+                tableDefinition);
+
+        Arrays.stream(tableLocations).forEach(SUT::addLocation);
+
+        // Only tableLocation1A is included (the others are NULL_SIZE), so it is unambiguously the only
+        // location consulted for data index columns. Have it report the same single-column data index twice,
+        // plus a multi-column index in two different orderings that share the same key column set.
+        dataIndexColumnsByLocation[1] = Arrays.asList(
+                new String[] {groupingColumnDefinition.getName()},
+                new String[] {groupingColumnDefinition.getName()},
+                new String[] {groupingColumnDefinition.getName(), normalColumnDefinition.getName()},
+                new String[] {normalColumnDefinition.getName(), groupingColumnDefinition.getName()});
+
+        setSizeExpectations(false, true, NULL_SIZE, 100, NULL_SIZE, NULL_SIZE);
+
+        // Initialize must not throw despite duplicate / set-equivalent entries.
+        captureIndexes(SUT.initialize());
+
+        // Exactly one MergedDataIndex should have been registered for the grouping column, despite the
+        // double entry in the returned list.
+        assertNotNull(capturedGroupingColumnIndex);
+        assertEquals(Collections.singletonList(tableLocation1A), SUT.includedLocations());
     }
 
     @Test

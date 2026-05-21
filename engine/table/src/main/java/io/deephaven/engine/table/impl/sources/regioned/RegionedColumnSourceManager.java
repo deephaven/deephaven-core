@@ -359,9 +359,16 @@ public class RegionedColumnSourceManager
             // Use the first location as a proxy for the whole table; since data indexes must be complete over all
             // locations, this is a valid approach.
             final TableLocation firstLocation = includedTableLocations.iterator().next().location;
+            // De-duplicate by key column set so that misbehaving TableLocation implementations cannot cause
+            // DataIndexer.addDataIndex to throw on a redundant registration. Set semantics match DataIndexer,
+            // which keys indexes by the set of key columns rather than their order.
+            final Set<Set<String>> seenKeyColumnSets = new HashSet<>();
             for (final String[] keyColumnNames : firstLocation.getDataIndexColumns()) {
                 // Skip adding additional indexes on partitioning columns
                 if (keyColumnNames.length == 1 && partitioningColumnValueSources.containsKey(keyColumnNames[0])) {
+                    continue;
+                }
+                if (!seenKeyColumnSets.add(new HashSet<>(Arrays.asList(keyColumnNames)))) {
                     continue;
                 }
                 // Here, we assume the data index is present on all included locations. MergedDataIndex.validate() will
