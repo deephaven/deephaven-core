@@ -8,7 +8,6 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.util.input.InputTableStatusListener;
 import io.deephaven.engine.util.input.InputTableUpdater;
-import io.deephaven.util.annotations.TestUseOnly;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
@@ -25,7 +24,6 @@ import java.util.function.UnaryOperator;
  * validation logic.
  * </p>
  */
-@TestUseOnly
 public abstract class AbstractBaseValidatingInputTable implements InputTableUpdater {
     protected final InputTableUpdater wrapped;
 

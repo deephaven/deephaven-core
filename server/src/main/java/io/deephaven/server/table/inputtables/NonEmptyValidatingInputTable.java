@@ -10,7 +10,6 @@ import io.deephaven.engine.util.input.InputTableUpdater;
 import io.deephaven.engine.util.input.InputTableValidationException;
 import io.deephaven.engine.util.input.StructuredErrorImpl;
 import io.deephaven.proto.backplane.grpc.NonEmptyRestriction;
-import io.deephaven.util.annotations.TestUseOnly;
 import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.Nullable;
 
@@ -25,7 +24,6 @@ import java.util.List;
  * that the column does not contain empty strings.
  * </p>
  */
-@TestUseOnly
 public class NonEmptyValidatingInputTable extends AbstractBaseValidatingInputTable {
     private final String column;
 

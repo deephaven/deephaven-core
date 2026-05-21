@@ -10,7 +10,6 @@ import io.deephaven.engine.util.input.InputTableUpdater;
 import io.deephaven.engine.util.input.InputTableValidationException;
 import io.deephaven.engine.util.input.StructuredErrorImpl;
 import io.deephaven.proto.backplane.grpc.StringListRestriction;
-import io.deephaven.util.annotations.TestUseOnly;
 import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.Nullable;
 
@@ -27,7 +26,6 @@ import java.util.Set;
  * that the column values are in the allowed set (or null).
  * </p>
  */
-@TestUseOnly
 public class StringListValidatingInputTable extends AbstractBaseValidatingInputTable {
     private final String column;
     private final Set<String> allowedValues;
