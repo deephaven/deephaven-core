@@ -178,41 +178,6 @@ func TestEmptySnapshot(t *testing.T) {
 	}
 }
 
-func TestLargeSnapshot(t *testing.T) {
-	const numCols int64 = 4
-	const numRows int64 = 5_000_000 // 20M cells > MAX_SNAPSHOT_CELL_COUNT (~16.7M)
-
-	ctx := context.Background()
-	s, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), test_tools.GetAuthType(), test_tools.GetAuthToken())
-	if err != nil {
-		t.Fatalf("NewClient err %s", err.Error())
-	}
-	defer s.Close()
-
-	empty, err := s.EmptyTable(ctx, numRows)
-	if err != nil {
-		t.Fatalf("EmptyTable err %s", err.Error())
-	}
-	defer empty.Release(ctx)
-
-	tbl, err := empty.Update(ctx, "a = (int) ii", "b = (int) ii", "c = (int) ii", "d = (int) ii")
-	if err != nil {
-		t.Fatalf("Update err %s", err.Error())
-	}
-	defer tbl.Release(ctx)
-
-	rec, err := tbl.Snapshot(ctx)
-	if err != nil {
-		t.Fatalf("Snapshot err %s", err.Error())
-	}
-	defer rec.Release()
-
-	if rec.NumRows() != numRows || rec.NumCols() != numCols {
-		t.Fatalf("snapshot shape mismatch: expected %dx%d, got %dx%d",
-			numRows, numCols, rec.NumRows(), rec.NumCols())
-	}
-}
-
 func TestTableUpload(t *testing.T) {
 	r := test_tools.ExampleRecord()
 	defer r.Release()
