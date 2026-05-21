@@ -98,7 +98,7 @@ public class BarrageMessageProducer extends LivenessArtifact
 
     public static final boolean SUBSCRIPTION_GROWTH_ENABLED =
             Configuration.getInstance().getBooleanForClassWithDefault(BarrageMessageProducer.class,
-                    "subscriptionGrowthEnabled", false);
+                    "subscriptionGrowthEnabled", true);
 
     private long snapshotTargetCellCount = MIN_SNAPSHOT_CELL_COUNT;
     private double snapshotNanosPerCell = 0;
@@ -1409,14 +1409,8 @@ public class BarrageMessageProducer extends LivenessArtifact
                 recordMetric(stats -> stats.snapshot, elapsed);
 
                 if (SUBSCRIPTION_GROWTH_ENABLED && !snapshot.rowsIncluded.isEmpty()) {
-                    // very simplistic logic to take the last snapshot and extrapolate max number of rows that will
-                    // not exceed the target UGP processing time percentage
-                    PeriodicUpdateGraph updateGraph = parent.getUpdateGraph().cast();
-                    long targetNanos = (long) (TARGET_SNAPSHOT_PERCENTAGE
-                            * updateGraph.getTargetCycleDurationMillis()
-                            * 1000000);
-
-                    long nanosPerCell = elapsed / (snapshot.rowsIncluded.size() * columnCount);
+                    final long targetNanos = BarrageUtil.targetSnapshotTime(parent.getUpdateGraph());
+                    final long nanosPerCell = elapsed / (snapshot.rowsIncluded.size() * columnCount);
 
                     // apply an exponential moving average to filter the data
                     if (snapshotNanosPerCell == 0) {
