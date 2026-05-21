@@ -395,7 +395,7 @@ public class LongRegionBinarySearchKernelTest {
 
     private void binSearchWithGapsHelper(boolean inverted) {
         // From 0 to 9
-        binSearchWithGaps(inverted, (long) 0, true, (long) 9, true,8, 0, 7);
+        binSearchWithGaps(inverted, (long) 0, true, (long) 9, true, 8, 0, 7);
         binSearchWithGaps(inverted, (long) 0, true, (long) 9, false, 7, 0, 6);
         binSearchWithGaps(inverted, (long) 0, false, (long) 9, true, 7, 1, 7);
         binSearchWithGaps(inverted, (long) 0, false, (long) 9, false, 6, 1, 6);
