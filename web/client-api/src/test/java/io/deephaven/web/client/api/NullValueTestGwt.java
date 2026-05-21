@@ -74,7 +74,7 @@ public class NullValueTestGwt extends AbstractAsyncGwtTestCase {
                     return Promise.resolve(table);
                 })
                 .then(table -> {
-                    validateTypes(table, true);
+                    validateTypes(table);
 
                     return Promise.resolve(table);
                 })
@@ -84,7 +84,7 @@ public class NullValueTestGwt extends AbstractAsyncGwtTestCase {
                     options.columns = table.getColumns();
                     TableSubscription sub = table.createSubscription(options);
                     return assertUpdateReceived(sub, data -> {
-                        validateSomeNulls(table, data, true);
+                        validateSomeNulls(table, data);
                     }, 1000).then(ignore -> Promise.resolve(table));
                 })
 
@@ -235,7 +235,7 @@ public class NullValueTestGwt extends AbstractAsyncGwtTestCase {
                 .then(this::finish).catch_(this::report);
     }
 
-    private static void validateSomeNulls(JsTable table, ViewportData data, boolean checkArrays) {
+    private static void validateSomeNulls(JsTable table, ViewportData data) {
         JsArray<? extends TableData.Row> rows = data.getRows();
         TableData.Row nullRow = rows.getAt(0);
 
@@ -261,10 +261,8 @@ public class NullValueTestGwt extends AbstractAsyncGwtTestCase {
                 valueRow.get(table.findColumn("MyBigInteger")).<BigIntegerWrapper>cast().getWrapped());
         assertEquals(BigDecimal.valueOf(1, 4),
                 valueRow.get(table.findColumn("MyBigDecimal")).<BigDecimalWrapper>cast().getWrapped());
-        if (checkArrays) {
-            assertArrayEquals(new String[] {"A", "B", "C"},
-                    valueRow.get(table.findColumn("MyStringArray1")).<String[]>cast());
-        }
+        assertArrayEquals(new String[] {"A", "B", "C"},
+                valueRow.get(table.findColumn("MyStringArray1")).<String[]>cast());
 
         LocalDateWrapper localDate =
                 valueRow.get(table.findColumn("MyLocalDate")).<LocalDateWrapper>cast();
@@ -280,7 +278,7 @@ public class NullValueTestGwt extends AbstractAsyncGwtTestCase {
         assertEquals(0, localTime.getNano());
     }
 
-    private static void validateTypes(JsTable table, boolean checkArrays) {
+    private static void validateTypes(JsTable table) {
         assertEquals("int", table.findColumn("MyInt").getType());
         assertEquals("long", table.findColumn("MyLong").getType());
         assertEquals("double", table.findColumn("MyDouble").getType());
@@ -293,9 +291,7 @@ public class NullValueTestGwt extends AbstractAsyncGwtTestCase {
         assertEquals("java.time.Instant", table.findColumn("MyDate").getType());
         assertEquals("java.math.BigInteger", table.findColumn("MyBigInteger").getType());
         assertEquals("java.math.BigDecimal", table.findColumn("MyBigDecimal").getType());
-        if (checkArrays) {
-            assertEquals("java.lang.String[]", table.findColumn("MyStringArray1").getType());
-        }
+        assertEquals("java.lang.String[]", table.findColumn("MyStringArray1").getType());
         assertEquals("java.time.LocalDate", table.findColumn("MyLocalDate").getType());
         assertEquals("java.time.LocalTime", table.findColumn("MyLocalTime").getType());
     }
@@ -333,7 +329,7 @@ public class NullValueTestGwt extends AbstractAsyncGwtTestCase {
                     return Promise.resolve(table);
                 })
                 .then(table -> {
-                    validateTypes(table, true);
+                    validateTypes(table);
 
                     return Promise.resolve(table);
                 })
@@ -368,12 +364,10 @@ public class NullValueTestGwt extends AbstractAsyncGwtTestCase {
                     return table.createSnapshot(snapshotOptions)
                             .then(s -> {
                                 // Copy all data, send it back to the server using WorkerConnection.newTable
-                                String[] columnNames =
-                                        table.getColumns().asList().stream().filter(c -> !c.getType().endsWith("[]"))
-                                                .map(Column::getName).toArray(String[]::new);
-                                String[] types =
-                                        table.getColumns().asList().stream().filter(c -> !c.getType().endsWith("[]"))
-                                                .map(Column::getType).toArray(String[]::new);
+                                String[] columnNames = table.getColumns().asList().stream()
+                                        .map(Column::getName).toArray(String[]::new);
+                                String[] types = table.getColumns().asList().stream()
+                                        .map(Column::getType).toArray(String[]::new);
                                 Object[][] data = new Object[columnNames.length][];
                                 for (int i = 0; i < data.length; i++) {
                                     Column column = table.findColumn(columnNames[i]);
@@ -386,12 +380,12 @@ public class NullValueTestGwt extends AbstractAsyncGwtTestCase {
                             })
                             .then(newTable -> {
                                 // subscribe to the new table, verify it matches the existing one
-                                validateTypes(newTable, false);
+                                validateTypes(newTable);
                                 DataOptions.SubscriptionOptions options2 = new DataOptions.SubscriptionOptions();
                                 options2.columns = newTable.getColumns();
                                 TableSubscription sub = newTable.createSubscription(options2);
                                 return assertUpdateReceived(sub, data -> {
-                                    validateSomeNulls(newTable, data, false);
+                                    validateSomeNulls(newTable, data);
                                 }, 1000).then(ignore -> Promise.resolve(table));
                             });
                 })
