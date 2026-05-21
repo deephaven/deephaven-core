@@ -85,6 +85,9 @@ public class TestSimpleSourceTable extends RefreshingTableTestCase {
 
         columnSources = TABLE_DEFINITION.getColumnStream().map(cd -> {
             final ColumnSource<?> mocked = mock(ColumnSource.class, cd.getName());
+            final ChunkSource.FillContext mockedFillContext =
+                    mock(ChunkSource.FillContext.class, "_FC_" + cd.getName());
+            final ChunkSource.GetContext mockedGetContext = mock(ChunkSource.GetContext.class, "_GC_" + cd.getName());
             checking(new Expectations() {
                 {
                     allowing(mocked).getType();
@@ -93,6 +96,12 @@ public class TestSimpleSourceTable extends RefreshingTableTestCase {
                     will(returnValue(cd.getComponentType()));
                     allowing(mocked).isStateless();
                     will(returnValue(true));
+                    allowing(mocked).makeFillContext(0);
+                    will(returnValue(mockedFillContext));
+                    allowing(mocked).makeGetContext(0);
+                    will(returnValue(mockedGetContext));
+                    allowing(mockedFillContext).close();
+                    allowing(mockedGetContext).close();
                 }
             });
             return mocked;
