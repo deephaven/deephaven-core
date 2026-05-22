@@ -172,6 +172,8 @@ result = AppendOnlyArrayBackedInputTable.make(definition)
 
 ![Manually adding a clickable link to an input table](../assets/how-to/groovy-input-table-link.gif)
 
+<!-- TODO DH-22694: Uncomment and update this section when the test-only validators are made production ready.
+
 ## Input table validators
 
 Input table validators allow you to add validation rules to input tables, ensuring that data entered (either programmatically or manually through the UI) meets specific criteria. Validators wrap an existing input table and check data before it's added, throwing validation exceptions if the data doesn't meet the requirements.
@@ -246,6 +248,8 @@ stringListValidator = StringListValidatingInputTable.make(
     "Fruit", "Vegetable", "Grain"
 )
 ```
+
+-->
 
 ## Related documentation
 
