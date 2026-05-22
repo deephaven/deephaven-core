@@ -10,6 +10,7 @@ import io.deephaven.engine.util.input.InputTableUpdater;
 import io.deephaven.engine.util.input.InputTableValidationException;
 import io.deephaven.engine.util.input.StructuredErrorImpl;
 import io.deephaven.proto.backplane.grpc.IntegerRangeRestriction;
+import io.deephaven.util.annotations.TestUseOnly;
 import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.Nullable;
 
@@ -24,7 +25,13 @@ import java.util.List;
  * This class wraps an existing input table, and before performing the underlying validation performs its own validation
  * on the range of the column.
  * </p>
+ *
+ * <p>
+ * <b>This class is intended for testing and demonstrating validation functionality, it is not production ready and may
+ * be changed or removed at any time.</b>
+ * </p>
  */
+@TestUseOnly
 public class RangeValidatingInputTable extends AbstractBaseValidatingInputTable {
     private final String column;
     private final int min;
