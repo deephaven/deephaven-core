@@ -8,7 +8,6 @@
 package io.deephaven.engine.table.impl.chunkfilter;
 
 import it.unimi.dsi.fastutil.doubles.DoubleOpenHashSet;
-import it.unimi.dsi.fastutil.doubles.DoubleSet;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import io.deephaven.engine.table.MatchOptions;
@@ -167,9 +166,11 @@ public class DoubleChunkMatchFilterFactory {
     }
 
     // A DoubleOpenHashSet that canonicalizes -0.0d to +0.0d; NaN values are silently skipped (not added).
-    private static final class DoubleZeroCanonicalOpenHashSet extends DoubleOpenHashSet {
+    private static final class DoubleZeroCanonicalOpenHashSet {
+        final DoubleOpenHashSet wrapped;
+
         DoubleZeroCanonicalOpenHashSet(double... values) {
-            super(values.length);
+            wrapped = new DoubleOpenHashSet(values.length);
             for (final double v : values) {
                 add(v);
             }
@@ -179,24 +180,17 @@ public class DoubleChunkMatchFilterFactory {
             return k == 0.0d ? 0.0d : k;
         }
 
-        @Override
         public boolean add(final double k) {
-            return !Double.isNaN(k) && super.add(canonicalize(k));
+            return !Double.isNaN(k) && add(canonicalize(k));
         }
 
-        @Override
-        public boolean remove(final double k) {
-            return !Double.isNaN(k) && super.remove(canonicalize(k));
-        }
-
-        @Override
         public boolean contains(final double k) {
-            return !Double.isNaN(k) && super.contains(canonicalize(k));
+            return !Double.isNaN(k) && contains(canonicalize(k));
         }
     }
 
     private final static class MultiValueDoubleChunkFilter extends DoubleChunkFilter {
-        private final DoubleSet values;
+        private final DoubleZeroCanonicalOpenHashSet values;
 
         private MultiValueDoubleChunkFilter(double... values) {
             this.values = new DoubleZeroCanonicalOpenHashSet(values);
@@ -209,7 +203,7 @@ public class DoubleChunkMatchFilterFactory {
     }
 
     private final static class InverseMultiValueDoubleChunkFilter extends DoubleChunkFilter {
-        private final DoubleSet values;
+        private final DoubleZeroCanonicalOpenHashSet values;
 
         private InverseMultiValueDoubleChunkFilter(double... values) {
             this.values = new DoubleZeroCanonicalOpenHashSet(values);

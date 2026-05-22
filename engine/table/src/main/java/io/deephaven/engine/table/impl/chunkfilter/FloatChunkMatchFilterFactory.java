@@ -5,7 +5,6 @@
 package io.deephaven.engine.table.impl.chunkfilter;
 
 import it.unimi.dsi.fastutil.floats.FloatOpenHashSet;
-import it.unimi.dsi.fastutil.floats.FloatSet;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.ints.IntSet;
 import io.deephaven.engine.table.MatchOptions;
@@ -164,9 +163,11 @@ public class FloatChunkMatchFilterFactory {
     }
 
     // A FloatOpenHashSet that canonicalizes -0.0f to +0.0f; NaN values are silently skipped (not added).
-    private static final class FloatZeroCanonicalOpenHashSet extends FloatOpenHashSet {
+    private static final class FloatZeroCanonicalOpenHashSet {
+        final FloatOpenHashSet wrapped;
+
         FloatZeroCanonicalOpenHashSet(float... values) {
-            super(values.length);
+            wrapped = new FloatOpenHashSet(values.length);
             for (final float v : values) {
                 add(v);
             }
@@ -176,24 +177,17 @@ public class FloatChunkMatchFilterFactory {
             return k == 0.0f ? 0.0f : k;
         }
 
-        @Override
         public boolean add(final float k) {
-            return !Float.isNaN(k) && super.add(canonicalize(k));
+            return !Float.isNaN(k) && add(canonicalize(k));
         }
 
-        @Override
-        public boolean remove(final float k) {
-            return !Float.isNaN(k) && super.remove(canonicalize(k));
-        }
-
-        @Override
         public boolean contains(final float k) {
-            return !Float.isNaN(k) && super.contains(canonicalize(k));
+            return !Float.isNaN(k) && contains(canonicalize(k));
         }
     }
 
     private final static class MultiValueFloatChunkFilter extends FloatChunkFilter {
-        private final FloatSet values;
+        private final FloatZeroCanonicalOpenHashSet values;
 
         private MultiValueFloatChunkFilter(float... values) {
             this.values = new FloatZeroCanonicalOpenHashSet(values);
@@ -206,7 +200,7 @@ public class FloatChunkMatchFilterFactory {
     }
 
     private final static class InverseMultiValueFloatChunkFilter extends FloatChunkFilter {
-        private final FloatSet values;
+        private final FloatZeroCanonicalOpenHashSet values;
 
         private InverseMultiValueFloatChunkFilter(float... values) {
             this.values = new FloatZeroCanonicalOpenHashSet(values);

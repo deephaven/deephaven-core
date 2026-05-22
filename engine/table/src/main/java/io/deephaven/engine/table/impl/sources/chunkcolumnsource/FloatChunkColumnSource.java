@@ -161,7 +161,8 @@ public class FloatChunkColumnSource extends AbstractColumnSource<Float>
         if (start == firstOffsetForData.getLong(startChunk)) {
             return startChunk;
         }
-        int index = LongArrays.binarySearch(firstOffsetForData.elements(), startChunk, firstOffsetForData.size(), start);
+        int index =
+                LongArrays.binarySearch(firstOffsetForData.elements(), startChunk, firstOffsetForData.size(), start);
         if (index < 0) {
             index = -index - 2;
         }
