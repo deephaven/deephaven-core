@@ -8,7 +8,6 @@ import com.vertispan.tsdefs.annotations.TsName;
 import io.deephaven.proto.backplane.grpc.NonEmptyRestriction;
 import io.deephaven.util.annotations.TestUseOnly;
 import io.deephaven.web.client.api.barrage.util.ColumnRestrictionConverterException;
-import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsNullable;
 
@@ -28,7 +27,6 @@ public class NonEmptyColumnRestriction extends ColumnRestriction {
         super("NonEmptyRestriction");
     }
 
-    @JsIgnore
     public static NonEmptyColumnRestriction fromAny(Any restrictionAny)
             throws ColumnRestrictionConverterException {
         return parseFromAny(restrictionAny, "NonEmptyRestriction",

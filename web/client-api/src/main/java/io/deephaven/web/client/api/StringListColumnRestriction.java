@@ -9,7 +9,6 @@ import elemental2.core.JsArray;
 import io.deephaven.proto.backplane.grpc.StringListRestriction;
 import io.deephaven.util.annotations.TestUseOnly;
 import io.deephaven.web.client.api.barrage.util.ColumnRestrictionConverterException;
-import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsProperty;
@@ -37,7 +36,6 @@ public class StringListColumnRestriction extends ColumnRestriction {
         this.allowedValues = allowedValues;
     }
 
-    @JsIgnore
     public static StringListColumnRestriction fromAny(Any restrictionAny)
             throws ColumnRestrictionConverterException {
         return parseFromAny(restrictionAny, "StringListRestriction",

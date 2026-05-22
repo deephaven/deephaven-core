@@ -6,7 +6,6 @@ package io.deephaven.web.client.api;
 import com.google.protobuf.Any;
 import com.vertispan.tsdefs.annotations.TsName;
 import io.deephaven.web.client.api.barrage.util.ColumnRestrictionConverterException;
-import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsProperty;
@@ -39,7 +38,6 @@ public abstract class ColumnRestriction {
         T parse(ByteBuffer buffer) throws Exception;
     }
 
-    @JsIgnore
     protected static <T extends ColumnRestriction> T parseFromAny(Any restrictionAny, String type,
             BufferParser<T> parser) throws ColumnRestrictionConverterException {
         try {

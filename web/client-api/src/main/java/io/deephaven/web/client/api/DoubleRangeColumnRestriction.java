@@ -8,7 +8,6 @@ import com.vertispan.tsdefs.annotations.TsName;
 import io.deephaven.proto.backplane.grpc.DoubleRangeRestriction;
 import io.deephaven.util.annotations.TestUseOnly;
 import io.deephaven.web.client.api.barrage.util.ColumnRestrictionConverterException;
-import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsProperty;
@@ -28,13 +27,11 @@ public class DoubleRangeColumnRestriction extends ColumnRestriction {
 
     private final DoubleRangeRestriction restriction;
 
-    @JsIgnore
     public DoubleRangeColumnRestriction(DoubleRangeRestriction restriction) {
         super("DoubleRangeRestriction");
         this.restriction = restriction;
     }
 
-    @JsIgnore
     public static DoubleRangeColumnRestriction fromAny(Any restrictionAny)
             throws ColumnRestrictionConverterException {
         return parseFromAny(restrictionAny, "DoubleRangeRestriction",
