@@ -209,42 +209,42 @@ _source = newTable(
 
 // Example 1: Integer Range Validator (0-100)
 intRangeValidator = RangeValidatingInputTable.make(
-    KeyedArrayBackedInputTable.make(_source, "Key"), 
-    "IntValue", 
-    0, 
+    KeyedArrayBackedInputTable.make(_source, "Key"),
+    "IntValue",
+    0,
     100
 )
 
 // Example 2: Double Range Validator (0.0-100.0)
 doubleRangeValidator = DoubleRangeValidatingInputTable.make(
-    KeyedArrayBackedInputTable.make(_source, "Key"), 
-    "DoubleValue", 
-    0.0, 
+    KeyedArrayBackedInputTable.make(_source, "Key"),
+    "DoubleValue",
+    0.0,
     100.0
 )
 
 // Example 3: Not Null Validator on Category column
 notNullValidator = NotNullValidatingInputTable.make(
-    KeyedArrayBackedInputTable.make(_source, "Key"), 
+    KeyedArrayBackedInputTable.make(_source, "Key"),
     "Category"
 )
 
 // Example 3.1: Not Null Validator on IntValue column
 notNullValidatorInt = NotNullValidatingInputTable.make(
-    KeyedArrayBackedInputTable.make(_source, "Key"), 
+    KeyedArrayBackedInputTable.make(_source, "Key"),
     "IntValue"
 )
 
 // Example 4: Non-Empty Validator on Description column
 nonEmptyValidator = NonEmptyValidatingInputTable.make(
-    KeyedArrayBackedInputTable.make(_source, "Key"), 
+    KeyedArrayBackedInputTable.make(_source, "Key"),
     "Description"
 )
 
 // Example 5: String List Validator - Category must be "Fruit", "Vegetable", or "Grain"
 stringListValidator = StringListValidatingInputTable.make(
-    KeyedArrayBackedInputTable.make(_source, "Key"), 
-    "Category", 
+    KeyedArrayBackedInputTable.make(_source, "Key"),
+    "Category",
     "Fruit", "Vegetable", "Grain"
 )
 ```

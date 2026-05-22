@@ -221,6 +221,7 @@ result = input_table(col_defs=my_col_defs)
 ```
 
 ![Manually adding a clickable link to an input table](../assets/how-to/ui/clickable_link_gif.gif)
+
 <!-- TODO DH-22694: Uncomment and update this section when the test-only validators are made production ready.
 
 ## Input table validators
