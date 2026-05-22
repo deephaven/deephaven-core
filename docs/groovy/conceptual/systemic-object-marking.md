@@ -2,7 +2,17 @@
 title: Systemic object marking
 ---
 
-In Deephaven, a **systemic object** is an object whose failure causes Deephaven to terminate the entire worker process. When systemic object marking is disabled (the default), all objects are treated as systemic and any object failure is fatal. When marking is enabled, threads are non-systemic by default—only objects created on explicitly marked threads or within a scoped execution are systemic. This guide explains how to control this behavior using the [`SystemicObjectTracker`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/util/systemicmarking/SystemicObjectTracker.html) class.
+In Deephaven, a **systemic object** is an object whose failure receives special handling. In Deephaven Core+ (Enterprise), when a systemic object fails, the worker process terminates. When a non-systemic object fails, only that object is marked as failed and the worker continues running. When systemic object marking is disabled (the default), all objects are treated as systemic. When enabled, threads are non-systemic by default—only objects created on explicitly marked threads or within a scoped execution are systemic. This guide explains how to control this behavior using the [`SystemicObjectTracker`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/util/systemicmarking/SystemicObjectTracker.html) class.
+
+## Object failure
+
+The difference between systemic and non-systemic objects is most visible when a ticking table fails. In this example, the formula `Z=Y.toString()` throws a `NullPointerException` once `X` exceeds 10 and `Y` becomes null:
+
+```groovy
+timeBomb = timeTable("PT1s").update("X=ii", "Y=X > 10 ? null : `abc`", "Z=Y.toString()")
+```
+
+After about 10 seconds, the table fails. If `timeBomb` is systemic and the server is running as a Core+ worker, the worker terminates. If it is non-systemic, only `timeBomb` is marked as failed and the rest of the session continues.
 
 ## Enable systemic object marking
 
@@ -14,7 +24,7 @@ Systemic object marking is not user-configurable at runtime by default. To enabl
 
 Check if systemic object marking is enabled:
 
-```groovy test-set=1 order=null
+```groovy test-set=1 order=:log
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker
 
 println SystemicObjectTracker.isSystemicObjectMarkingEnabled()
@@ -44,7 +54,7 @@ if (SystemicObjectTracker.isSystemicObjectMarkingEnabled()) {
 
 The [`SystemicObjectTracker`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/util/systemicmarking/SystemicObjectTracker.html) class provides an `executeSystemically` method to enable or disable systemic object creation within a closure.
 
-```groovy skip-test
+```groovy order=systemicT, notSystemicT
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker
 
 // Create a systemic table
