@@ -7,6 +7,7 @@ import com.google.protobuf.Any;
 import com.vertispan.tsdefs.annotations.TsName;
 import elemental2.core.JsArray;
 import io.deephaven.proto.backplane.grpc.StringListRestriction;
+import io.deephaven.util.annotations.TestUseOnly;
 import io.deephaven.web.client.api.barrage.util.ColumnRestrictionConverterException;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
@@ -17,7 +18,13 @@ import java.util.List;
 
 /**
  * A {@link ColumnRestriction} that constrains a string column to one of a fixed set of allowed values.
+ *
+ * <p>
+ * <b>This class is intended for testing and demonstrating validation functionality, it is not production ready and may
+ * be changed or removed at any time.</b>
+ * </p>
  */
+@TestUseOnly
 @TsName(namespace = "dh")
 public class StringListColumnRestriction extends ColumnRestriction {
 

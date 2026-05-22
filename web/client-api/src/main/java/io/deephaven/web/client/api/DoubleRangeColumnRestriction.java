@@ -6,6 +6,7 @@ package io.deephaven.web.client.api;
 import com.google.protobuf.Any;
 import com.vertispan.tsdefs.annotations.TsName;
 import io.deephaven.proto.backplane.grpc.DoubleRangeRestriction;
+import io.deephaven.util.annotations.TestUseOnly;
 import io.deephaven.web.client.api.barrage.util.ColumnRestrictionConverterException;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
@@ -15,7 +16,13 @@ import jsinterop.annotations.JsProperty;
 /**
  * A {@link ColumnRestriction} that constrains a double column to a closed range {@code [min, max]}. Either bound may be
  * {@code null}, meaning the range is unbounded on that side.
+ *
+ * <p>
+ * <b>This class is intended for testing and demonstrating validation functionality, it is not production ready and may
+ * be changed or removed at any time.</b>
+ * </p>
  */
+@TestUseOnly
 @TsName(namespace = "dh")
 public class DoubleRangeColumnRestriction extends ColumnRestriction {
 

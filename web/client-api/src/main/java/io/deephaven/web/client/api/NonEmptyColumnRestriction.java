@@ -6,6 +6,7 @@ package io.deephaven.web.client.api;
 import com.google.protobuf.Any;
 import com.vertispan.tsdefs.annotations.TsName;
 import io.deephaven.proto.backplane.grpc.NonEmptyRestriction;
+import io.deephaven.util.annotations.TestUseOnly;
 import io.deephaven.web.client.api.barrage.util.ColumnRestrictionConverterException;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
@@ -13,7 +14,13 @@ import jsinterop.annotations.JsNullable;
 
 /**
  * A {@link ColumnRestriction} that requires a string column value to be non-empty.
+ *
+ * <p>
+ * <b>This class is intended for testing and demonstrating validation functionality, it is not production ready and may
+ * be changed or removed at any time.</b>
+ * </p>
  */
+@TestUseOnly
 @TsName(namespace = "dh")
 public class NonEmptyColumnRestriction extends ColumnRestriction {
 
