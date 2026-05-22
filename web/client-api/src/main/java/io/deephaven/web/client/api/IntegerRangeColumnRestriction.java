@@ -67,10 +67,10 @@ public class IntegerRangeColumnRestriction extends ColumnRestriction {
         if (value == null) {
             return null;
         }
-        if (!(value instanceof LongWrapper)) {
-            return "Value must be a LongWrapper";
-        }
-        return validateImpl((LongWrapper) value);
+        LongWrapper longValue = (value instanceof LongWrapper)
+                ? (LongWrapper) value
+                : LongWrapper.of((long) value.asDouble());
+        return validateImpl(longValue);
     }
 
     @JsNullable
