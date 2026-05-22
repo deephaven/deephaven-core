@@ -219,16 +219,12 @@ public class FloatChunkMatchFilterFactory {
     }
 
     /**
-     * Handle -0.0 vs. 0.0 correctly in value comparison. This leverages the fact that the library conversion
-     * to bits returns different values for 0.0 and -0.0 but the same value for NaN.
+     * Gets the canonicalized bit pattern for the given value. Specifically, ensures that any NaN values have the bit
+     * pattern of {@link Float#NaN}, and -0.0 has the bit pattern of 0.0.
      */
     // region getBits
-    private static final Float NEG_ZERO = -0.0F;
     public static int getBits(float value) {
-        if (NEG_ZERO.equals(value)) {
-            return Float.floatToIntBits(0.0f);
-        }
-        return Float.floatToIntBits(value);
+        return Float.floatToIntBits(value == 0.0f ? 0.0f : value);
     }
     // endregion getBits
 
