@@ -65,7 +65,7 @@ public class DoubleRangeColumnRestriction extends ColumnRestriction {
     @JsNullable
     public String validate(jsinterop.base.Any value) {
         if (value == null) {
-            return "Value must not be null";
+            return null;
         }
         return validateImpl(value.asDouble());
     }

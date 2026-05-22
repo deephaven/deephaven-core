@@ -19,9 +19,9 @@ public class ColumnRestrictionValidateTest {
     // -------------------------------------------------------------------------
 
     @Test
-    public void testIntegerRange_nullValueIsInvalid() {
+    public void testIntegerRange_nullValueIsValid() {
         IntegerRangeColumnRestriction r = rangedInteger(1L, 10L);
-        assertNotNull(r.validate(null));
+        assertNull(r.validate(null));
     }
 
     @Test
@@ -54,10 +54,10 @@ public class ColumnRestrictionValidateTest {
     }
 
     @Test
-    public void testIntegerRange_nullLongSentinelIsInvalid() {
+    public void testIntegerRange_nullLongSentinelIsValid() {
         // LongWrapper.of(Long.MIN_VALUE) returns null since MIN_VALUE is the NULL_LONG sentinel
         IntegerRangeColumnRestriction r = rangedIntegerNoMin(10L);
-        assertNotNull(r.validateImpl(LongWrapper.of(Long.MIN_VALUE)));
+        assertNull(r.validateImpl(LongWrapper.of(Long.MIN_VALUE)));
     }
 
     @Test
@@ -73,9 +73,9 @@ public class ColumnRestrictionValidateTest {
     // -------------------------------------------------------------------------
 
     @Test
-    public void testDoubleRange_nullValueIsInvalid() {
+    public void testDoubleRange_nullValueIsValid() {
         DoubleRangeColumnRestriction r = rangedDouble(1.0, 10.0);
-        assertNotNull(r.validate(null));
+        assertNull(r.validate(null));
     }
 
     @Test

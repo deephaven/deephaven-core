@@ -65,7 +65,7 @@ public class IntegerRangeColumnRestriction extends ColumnRestriction {
     @JsNullable
     public String validate(jsinterop.base.Any value) {
         if (value == null) {
-            return "Value must not be null";
+            return null;
         }
         if (!(value instanceof LongWrapper)) {
             return "Value must be a LongWrapper";
@@ -76,7 +76,7 @@ public class IntegerRangeColumnRestriction extends ColumnRestriction {
     @JsNullable
     String validateImpl(LongWrapper value) {
         if (value == null) {
-            return "Value must not be null";
+            return null;
         }
         long num = value.getWrapped();
         if (restriction.hasMinInclusive() && num < restriction.getMinInclusive()) {
