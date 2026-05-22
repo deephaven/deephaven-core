@@ -52,8 +52,8 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
 
     // region Deltas
     private transient boolean accumulateDeltas = false;
-    private transient FloatSet added;
-    private transient FloatSet removed;
+    private transient FloatCompareOpenHashSet added;
+    private transient FloatCompareOpenHashSet removed;
     private transient FloatVector prevValues;
     // endregion Deltas
 

@@ -274,8 +274,8 @@ public class ReplicateSegmentedSortedMultiset {
 
     /**
      * Swap the FloatOpenHashSet / DoubleOpenHashSet used by the delta-tracking hash sets in the generated Float and
-     * Double SSMs for our {@link io.deephaven.engine.table.impl.ssms.FloatCompareOpenHashSet} /
-     * {@link io.deephaven.engine.table.impl.ssms.DoubleCompareOpenHashSet}, so signed-zero and NaN comparisons in the
+     * Double SSMs for our {@code }io.deephaven.engine.table.impl.ssms.FloatCompareOpenHashSet} /
+     * {@code io.deephaven.engine.table.impl.ssms.DoubleCompareOpenHashSet}, so signed-zero and NaN comparisons in the
      * delta tracker line up with the SSM's leaf-storage equality (FloatComparisons / DoubleComparisons).
      */
     private static void useCompareOpenHashSet(final String generatedPath, final String typeName) throws IOException {
@@ -284,7 +284,9 @@ public class ReplicateSegmentedSortedMultiset {
         lines = globalReplacements(lines,
                 "it\\.unimi\\.dsi\\.fastutil\\." + typeName.toLowerCase() + "s\\." + typeName + "OpenHashSet",
                 "io.deephaven.engine.table.impl.ssms." + typeName + "CompareOpenHashSet",
-                "new " + typeName + "OpenHashSet\\(", "new " + typeName + "CompareOpenHashSet(");
+                "new " + typeName + "OpenHashSet\\(", "new " + typeName + "CompareOpenHashSet(",
+                typeName + "Set added", typeName + "CompareOpenHashSet added",
+                typeName + "Set removed", typeName + "CompareOpenHashSet removed");
         FileUtils.writeLines(file, lines);
     }
 

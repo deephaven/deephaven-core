@@ -13,7 +13,7 @@ import it.unimi.dsi.fastutil.doubles.DoubleIterator;
 import it.unimi.dsi.fastutil.doubles.DoubleOpenHashSet;
 
 /**
- * A {@link DoubleOpenHashSet} that compares values consistently with {@link DoubleComparisons} equality rather than
+ * A subset of {@link DoubleOpenHashSet} that compares values consistently with {@link DoubleComparisons} equality rather than
  * fastutil's default raw-bit equality. Concretely, {@code -0.0d} and {@code +0.0d} are treated as the same value, and
  * all NaN bit patterns are treated as a single value.
  *
@@ -23,25 +23,16 @@ import it.unimi.dsi.fastutil.doubles.DoubleOpenHashSet;
  * NaN is replaced with {@link Double#NaN} (the canonical {@code 0x7ff8000000000000L} bit pattern). The canonicalized value is
  * what is stored and returned by iteration.
  */
-public class DoubleCompareOpenHashSet extends DoubleOpenHashSet {
+class DoubleCompareOpenHashSet {
 
-    public DoubleCompareOpenHashSet() {
-        super();
+    final DoubleOpenHashSet wrapped;
+
+    DoubleCompareOpenHashSet() {
+        wrapped = new DoubleOpenHashSet();
     }
 
-    public DoubleCompareOpenHashSet(final int expected) {
-        super(expected);
-    }
-
-    public DoubleCompareOpenHashSet(final int expected, final float f) {
-        super(expected, f);
-    }
-
-    public DoubleCompareOpenHashSet(final double[] a) {
-        super();
-        for (final double v : a) {
-            add(v);
-        }
+    DoubleCompareOpenHashSet(final int expected) {
+        wrapped = new DoubleOpenHashSet(expected);
     }
 
     /**
@@ -58,22 +49,26 @@ public class DoubleCompareOpenHashSet extends DoubleOpenHashSet {
         return v;
     }
 
-    @Override
     public boolean add(final double k) {
-        return super.add(canonicalize(k));
+        return wrapped.add(canonicalize(k));
     }
 
-    @Override
     public boolean remove(final double k) {
-        return super.remove(canonicalize(k));
+        return wrapped.remove(canonicalize(k));
     }
 
-    @Override
     public boolean contains(final double k) {
-        return super.contains(canonicalize(k));
+        return wrapped.contains(canonicalize(k));
     }
 
-    @Override
+    public int size() {
+        return wrapped.size();
+    }
+
+    public double[] toDoubleArray() {
+        return wrapped.toDoubleArray();
+    }
+
     public boolean addAll(final DoubleCollection c) {
         boolean changed = false;
         final DoubleIterator it = c.iterator();

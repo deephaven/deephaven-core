@@ -52,8 +52,8 @@ public final class DoubleSegmentedSortedMultiset implements SegmentedSortedMulti
 
     // region Deltas
     private transient boolean accumulateDeltas = false;
-    private transient DoubleSet added;
-    private transient DoubleSet removed;
+    private transient DoubleCompareOpenHashSet added;
+    private transient DoubleCompareOpenHashSet removed;
     private transient DoubleVector prevValues;
     // endregion Deltas
 
