@@ -129,9 +129,9 @@ public class ColumnRestrictionValidateTest {
     // -------------------------------------------------------------------------
 
     @Test
-    public void testNonEmpty_nullIsInvalid() {
+    public void testNonEmpty_nullIsValid() {
         NonEmptyColumnRestriction r = new NonEmptyColumnRestriction();
-        assertNotNull(r.validate(null));
+        assertNull(r.validate(null));
     }
 
     @Test
@@ -159,9 +159,9 @@ public class ColumnRestrictionValidateTest {
     // -------------------------------------------------------------------------
 
     @Test
-    public void testStringList_nullValueIsInvalid() {
+    public void testStringList_nullValueIsValid() {
         StringListColumnRestriction r = new StringListColumnRestriction(List.of("a", "b", "c"));
-        assertNotNull(r.validate(null));
+        assertNull(r.validate(null));
     }
 
     @Test
