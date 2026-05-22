@@ -14,7 +14,8 @@ import java.nio.ByteBuffer;
 
 /**
  * Abstract base class representing a restriction on an input table column. Each restriction has a {@code type} string
- * identifying what kind of restriction it is, and a {@link #validate(Object)} method for client-side validation.
+ * identifying what kind of restriction it is, and a {@link #validate(jsinterop.base.Any)} method for client-side
+ * validation.
  *
  * <p>
  * Built-in restriction types are exposed as typed subclasses with strongly-typed fields:
@@ -28,7 +29,7 @@ import java.nio.ByteBuffer;
  *
  * <p>
  * Custom restriction types can be registered via {@code ColumnRestrictionRegistry.register}. The converter must return
- * a concrete subclass of {@code ColumnRestriction} that overrides {@link #validate(Object)} as needed.
+ * a concrete subclass of {@code ColumnRestriction} that overrides {@link #validate(jsinterop.base.Any)} as needed.
  */
 @TsName(namespace = "dh")
 public abstract class ColumnRestriction {
@@ -71,7 +72,7 @@ public abstract class ColumnRestriction {
      */
     @JsMethod
     @JsNullable
-    public abstract String validate(Object value);
+    public abstract String validate(jsinterop.base.Any value);
 
     @Override
     public String toString() {

@@ -63,14 +63,22 @@ public class IntegerRangeColumnRestriction extends ColumnRestriction {
     @Override
     @JsMethod
     @JsNullable
-    public String validate(Object value) {
+    public String validate(jsinterop.base.Any value) {
         if (value == null) {
             return "Value must not be null";
         }
         if (!(value instanceof LongWrapper)) {
             return "Value must be a LongWrapper";
         }
-        long num = ((LongWrapper) value).getWrapped();
+        return validateImpl((LongWrapper) value);
+    }
+
+    @JsNullable
+    String validateImpl(LongWrapper value) {
+        if (value == null) {
+            return "Value must not be null";
+        }
+        long num = value.getWrapped();
         if (restriction.hasMinInclusive() && num < restriction.getMinInclusive()) {
             return "Value " + num + " is less than the minimum allowed value of " + restriction.getMinInclusive();
         }

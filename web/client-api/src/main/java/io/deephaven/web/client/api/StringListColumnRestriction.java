@@ -56,11 +56,15 @@ public class StringListColumnRestriction extends ColumnRestriction {
     @Override
     @JsMethod
     @JsNullable
-    public String validate(Object value) {
+    public String validate(jsinterop.base.Any value) {
         if (value == null) {
             return "Value must not be null";
         }
-        String str = value.toString();
+        return validateImpl(value.toString());
+    }
+
+    @JsNullable
+    String validateImpl(String str) {
         if (allowedValues.contains(str)) {
             return null;
         }

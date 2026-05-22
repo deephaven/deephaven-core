@@ -39,11 +39,16 @@ public class NonEmptyColumnRestriction extends ColumnRestriction {
     @Override
     @JsMethod
     @JsNullable
-    public String validate(Object value) {
+    public String validate(jsinterop.base.Any value) {
         if (value == null) {
             return "Value must not be null";
         }
-        return value.toString().isEmpty() ? "Value must not be empty" : null;
+        return validateImpl(value.toString());
+    }
+
+    @JsNullable
+    String validateImpl(String value) {
+        return value.isEmpty() ? "Value must not be empty" : null;
     }
 
     @Override

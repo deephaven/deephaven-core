@@ -39,7 +39,7 @@ public class NotNullColumnRestriction extends ColumnRestriction {
     @Override
     @JsMethod
     @JsNullable
-    public String validate(Object value) {
+    public String validate(jsinterop.base.Any value) {
         return value == null ? "Value must not be null" : null;
     }
 

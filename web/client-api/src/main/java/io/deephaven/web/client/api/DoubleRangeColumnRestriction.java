@@ -63,11 +63,15 @@ public class DoubleRangeColumnRestriction extends ColumnRestriction {
     @Override
     @JsMethod
     @JsNullable
-    public String validate(Object value) {
+    public String validate(jsinterop.base.Any value) {
         if (value == null) {
             return "Value must not be null";
         }
-        double num = ((Number) value).doubleValue();
+        return validateImpl(value.asDouble());
+    }
+
+    @JsNullable
+    String validateImpl(double num) {
         if (restriction.hasMinInclusive() && num < restriction.getMinInclusive()) {
             return "Value " + num + " is less than the minimum allowed value of " + restriction.getMinInclusive();
         }

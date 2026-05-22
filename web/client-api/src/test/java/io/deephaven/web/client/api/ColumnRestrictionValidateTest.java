@@ -25,54 +25,47 @@ public class ColumnRestrictionValidateTest {
     }
 
     @Test
-    public void testIntegerRange_nonLongWrapperIsInvalid() {
-        IntegerRangeColumnRestriction r = rangedInteger(1L, 10L);
-        assertNotNull(r.validate(5.0));
-        assertNotNull(r.validate("5"));
-    }
-
-    @Test
     public void testIntegerRange_withinBoundsIsValid() {
         IntegerRangeColumnRestriction r = rangedInteger(1L, 10L);
-        assertNull(r.validate(LongWrapper.of(1L)));
-        assertNull(r.validate(LongWrapper.of(5L)));
-        assertNull(r.validate(LongWrapper.of(10L)));
+        assertNull(r.validateImpl(LongWrapper.of(1L)));
+        assertNull(r.validateImpl(LongWrapper.of(5L)));
+        assertNull(r.validateImpl(LongWrapper.of(10L)));
     }
 
     @Test
     public void testIntegerRange_belowMinIsInvalid() {
         IntegerRangeColumnRestriction r = rangedInteger(1L, 10L);
-        assertNotNull(r.validate(LongWrapper.of(0L)));
-        assertNotNull(r.validate(LongWrapper.of(-100L)));
+        assertNotNull(r.validateImpl(LongWrapper.of(0L)));
+        assertNotNull(r.validateImpl(LongWrapper.of(-100L)));
     }
 
     @Test
     public void testIntegerRange_aboveMaxIsInvalid() {
         IntegerRangeColumnRestriction r = rangedInteger(1L, 10L);
-        assertNotNull(r.validate(LongWrapper.of(11L)));
+        assertNotNull(r.validateImpl(LongWrapper.of(11L)));
     }
 
     @Test
     public void testIntegerRange_unboundedBelowAllowsAnyLow() {
         IntegerRangeColumnRestriction r = rangedIntegerNoMin(10L);
-        assertNull(r.validate(LongWrapper.of(Long.MIN_VALUE + 1)));
-        assertNull(r.validate(LongWrapper.of(10L)));
-        assertNotNull(r.validate(LongWrapper.of(11L)));
+        assertNull(r.validateImpl(LongWrapper.of(Long.MIN_VALUE + 1)));
+        assertNull(r.validateImpl(LongWrapper.of(10L)));
+        assertNotNull(r.validateImpl(LongWrapper.of(11L)));
     }
 
     @Test
     public void testIntegerRange_nullLongSentinelIsInvalid() {
         // LongWrapper.of(Long.MIN_VALUE) returns null since MIN_VALUE is the NULL_LONG sentinel
         IntegerRangeColumnRestriction r = rangedIntegerNoMin(10L);
-        assertNotNull(r.validate(LongWrapper.of(Long.MIN_VALUE)));
+        assertNotNull(r.validateImpl(LongWrapper.of(Long.MIN_VALUE)));
     }
 
     @Test
     public void testIntegerRange_unboundedAboveAllowsAnyHigh() {
         IntegerRangeColumnRestriction r = rangedIntegerNoMax(1L);
-        assertNull(r.validate(LongWrapper.of(Long.MAX_VALUE)));
-        assertNull(r.validate(LongWrapper.of(1L)));
-        assertNotNull(r.validate(LongWrapper.of(0L)));
+        assertNull(r.validateImpl(LongWrapper.of(Long.MAX_VALUE)));
+        assertNull(r.validateImpl(LongWrapper.of(1L)));
+        assertNotNull(r.validateImpl(LongWrapper.of(0L)));
     }
 
     // -------------------------------------------------------------------------
@@ -88,37 +81,37 @@ public class ColumnRestrictionValidateTest {
     @Test
     public void testDoubleRange_withinBoundsIsValid() {
         DoubleRangeColumnRestriction r = rangedDouble(1.0, 10.0);
-        assertNull(r.validate(1.0));
-        assertNull(r.validate(5.5));
-        assertNull(r.validate(10.0));
+        assertNull(r.validateImpl(1.0));
+        assertNull(r.validateImpl(5.5));
+        assertNull(r.validateImpl(10.0));
     }
 
     @Test
     public void testDoubleRange_belowMinIsInvalid() {
         DoubleRangeColumnRestriction r = rangedDouble(1.0, 10.0);
-        assertNotNull(r.validate(0.9));
+        assertNotNull(r.validateImpl(0.9));
     }
 
     @Test
     public void testDoubleRange_aboveMaxIsInvalid() {
         DoubleRangeColumnRestriction r = rangedDouble(1.0, 10.0);
-        assertNotNull(r.validate(10.1));
+        assertNotNull(r.validateImpl(10.1));
     }
 
     @Test
     public void testDoubleRange_unboundedBelowAllowsAnyLow() {
         DoubleRangeColumnRestriction r = rangedDoubleNoMin(10.0);
-        assertNull(r.validate(-1.0e300));
-        assertNull(r.validate(10.0));
-        assertNotNull(r.validate(10.1));
+        assertNull(r.validateImpl(-1.0e300));
+        assertNull(r.validateImpl(10.0));
+        assertNotNull(r.validateImpl(10.1));
     }
 
     @Test
     public void testDoubleRange_unboundedAboveAllowsAnyHigh() {
         DoubleRangeColumnRestriction r = rangedDoubleNoMax(1.0);
-        assertNull(r.validate(Double.MAX_VALUE));
-        assertNull(r.validate(1.0));
-        assertNotNull(r.validate(0.9));
+        assertNull(r.validateImpl(Double.MAX_VALUE));
+        assertNull(r.validateImpl(1.0));
+        assertNotNull(r.validateImpl(0.9));
     }
 
     // -------------------------------------------------------------------------
@@ -129,14 +122,6 @@ public class ColumnRestrictionValidateTest {
     public void testNotNull_nullIsInvalid() {
         NotNullColumnRestriction r = new NotNullColumnRestriction();
         assertNotNull(r.validate(null));
-    }
-
-    @Test
-    public void testNotNull_nonNullIsValid() {
-        NotNullColumnRestriction r = new NotNullColumnRestriction();
-        assertNull(r.validate("hello"));
-        assertNull(r.validate(0));
-        assertNull(r.validate(""));
     }
 
     // -------------------------------------------------------------------------
@@ -152,21 +137,21 @@ public class ColumnRestrictionValidateTest {
     @Test
     public void testNonEmpty_emptyStringIsInvalid() {
         NonEmptyColumnRestriction r = new NonEmptyColumnRestriction();
-        assertNotNull(r.validate(""));
+        assertNotNull(r.validateImpl(""));
     }
 
     @Test
     public void testNonEmpty_nonEmptyStringIsValid() {
         NonEmptyColumnRestriction r = new NonEmptyColumnRestriction();
-        assertNull(r.validate("hello"));
+        assertNull(r.validateImpl("hello"));
     }
 
     @Test
     public void testNonEmpty_nonStringIsCoercedViaToString() {
         NonEmptyColumnRestriction r = new NonEmptyColumnRestriction();
         // Non-string types are coerced via toString() rather than throwing
-        assertNull(r.validate(42));
-        assertNull(r.validate(true));
+        assertNull(r.validateImpl("42"));
+        assertNull(r.validateImpl("true"));
     }
 
     // -------------------------------------------------------------------------
@@ -182,30 +167,30 @@ public class ColumnRestrictionValidateTest {
     @Test
     public void testStringList_allowedValueIsValid() {
         StringListColumnRestriction r = new StringListColumnRestriction(List.of("foo", "bar", "baz"));
-        assertNull(r.validate("foo"));
-        assertNull(r.validate("bar"));
-        assertNull(r.validate("baz"));
+        assertNull(r.validateImpl("foo"));
+        assertNull(r.validateImpl("bar"));
+        assertNull(r.validateImpl("baz"));
     }
 
     @Test
     public void testStringList_disallowedValueIsInvalid() {
         StringListColumnRestriction r = new StringListColumnRestriction(List.of("foo", "bar"));
-        assertNotNull(r.validate("qux"));
-        assertNotNull(r.validate(""));
+        assertNotNull(r.validateImpl("qux"));
+        assertNotNull(r.validateImpl(""));
     }
 
     @Test
     public void testStringList_isCaseSensitive() {
         StringListColumnRestriction r = new StringListColumnRestriction(List.of("Foo"));
-        assertNotNull(r.validate("foo"));
-        assertNotNull(r.validate("FOO"));
-        assertNull(r.validate("Foo"));
+        assertNotNull(r.validateImpl("foo"));
+        assertNotNull(r.validateImpl("FOO"));
+        assertNull(r.validateImpl("Foo"));
     }
 
     @Test
     public void testStringList_emptyListDisallowsEverything() {
         StringListColumnRestriction r = new StringListColumnRestriction(List.of());
-        assertNotNull(r.validate("anything"));
+        assertNotNull(r.validateImpl("anything"));
     }
 
     // -------------------------------------------------------------------------
