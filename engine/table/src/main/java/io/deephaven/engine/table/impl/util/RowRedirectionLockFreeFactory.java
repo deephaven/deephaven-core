@@ -8,7 +8,7 @@ import it.unimi.dsi.fastutil.longs.Long2LongMap;
 
 class RowRedirectionLockFreeFactory implements WritableRowRedirection.Factory {
     @Override
-    public Long2LongMap createUnderlyingMapWithCapacity(int initialCapacity) {
+    public NullableLong2LongMap createUnderlyingMapWithCapacity(int initialCapacity) {
         return WritableRowRedirectionLockFree.createMapWithCapacity(initialCapacity);
     }
 
@@ -18,7 +18,7 @@ class RowRedirectionLockFreeFactory implements WritableRowRedirection.Factory {
     }
 
     @Override
-    public WritableRowRedirectionLockFree createRowRedirection(Long2LongMap map) {
-        return new WritableRowRedirectionLockFree((NullableLong2LongMap) map);
+    public WritableRowRedirectionLockFree createRowRedirection(NullableLong2LongMap map) {
+        return new WritableRowRedirectionLockFree(map);
     }
 }

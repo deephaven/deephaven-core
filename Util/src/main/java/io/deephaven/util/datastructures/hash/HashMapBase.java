@@ -5,18 +5,10 @@ package io.deephaven.util.datastructures.hash;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.hash.PrimeFinder;
-import it.unimi.dsi.fastutil.longs.AbstractLong2LongMap;
-import it.unimi.dsi.fastutil.longs.Long2LongMap;
-import it.unimi.dsi.fastutil.longs.LongCollection;
-import it.unimi.dsi.fastutil.longs.LongSet;
-import it.unimi.dsi.fastutil.objects.AbstractObjectSet;
-import it.unimi.dsi.fastutil.objects.ObjectIterator;
-import it.unimi.dsi.fastutil.objects.ObjectSet;
+import it.unimi.dsi.fastutil.longs.LongLongBiConsumer;
 
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.Map;
-import java.util.NoSuchElementException;
 
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
@@ -205,11 +197,6 @@ public abstract class HashMapBase implements NullableLong2LongMap {
     }
 
     @Override
-    public final void defaultReturnValue(final long rv) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public final long defaultReturnValue() {
         return noEntryValue;
     }
@@ -244,140 +231,34 @@ public abstract class HashMapBase implements NullableLong2LongMap {
         return result;
     }
 
-    final ObjectSet<Long2LongMap.Entry> entrySetImpl(final long[] kv) {
-        return kv == null ? EMPTY_ENTRY_SET : new EntrySet(kv, size);
-    }
-
-    private static final EntrySet EMPTY_ENTRY_SET = new EntrySet(new long[0], 0);
-
-    /**
-     * Read-only entry set view backed by the supplied keys-and-values array. Supports iteration only.
-     */
-    private static final class EntrySet extends AbstractObjectSet<Long2LongMap.Entry>
-            implements Long2LongMap.FastEntrySet {
-        // Keep a local reference so a concurrent rehash that replaces the owning map's array does not crash us.
-        private final long[] keysAndValues;
-        private final int size;
-
-        EntrySet(final long[] kv, final int size) {
-            this.keysAndValues = kv;
-            this.size = size;
+    final void forEachImpl(final long[] kv, LongLongBiConsumer consumer) {
+        if (kv == null) {
+            return;
         }
-
-        @Override
-        public int size() {
-            return size;
-        }
-
-        @Override
-        public ObjectIterator<Long2LongMap.Entry> iterator() {
-            // We only support fastIterator(), which reuses a single mutable entry to avoid per-element allocation.
-            // The plain iterator() would have to allocate a fresh entry per call to next() because the caller is
-            // allowed to retain references across iteration.
-            throw new UnsupportedOperationException("Use fastIterator()");
-        }
-
-        @Override
-        public ObjectIterator<Long2LongMap.Entry> fastIterator() {
-            return new EntryIterator(keysAndValues);
-        }
-    }
-
-    /*
-     * Iterator over the keys-and-values array. We keep our own reference to the array so we can avoid crashing if there
-     * is an unprotected concurrent write (e.g. a rehash that reallocates the owning map's array). We also un-redirect
-     * REDIRECTED_KEY_FOR_EMPTY_SLOT back to 0 so callers see the key they originally inserted. A single mutable entry
-     * is reused across calls to next() — callers must not retain the returned Entry past the next advance.
-     */
-    private static final class EntryIterator implements ObjectIterator<Long2LongMap.Entry> {
-        private final long[] keysAndValues;
-        private final MutableEntry entry = new MutableEntry();
-        /**
-         * nextIndex points to the next occupied slot (or the first occupied slot if we have just been constructed), or
-         * keysAndValues.length if there is no next occupied slot.
-         */
-        private int nextIndex;
-
-        EntryIterator(final long[] kv) {
-            this.keysAndValues = kv;
-            this.nextIndex = findOccupiedSlot(0);
-        }
-
-        @Override
-        public boolean hasNext() {
-            return nextIndex < keysAndValues.length;
-        }
-
-        @Override
-        public Long2LongMap.Entry next() {
-            if (!hasNext()) {
-                throw new NoSuchElementException();
-            }
-            final long rawKey = keysAndValues[nextIndex];
+        for (int nextIndex = findOccupiedSlot(kv, 0); nextIndex < kv.length; nextIndex =
+                findOccupiedSlot(kv, nextIndex + 2)) {
+            final long rawKey = kv[nextIndex];
             final long key = rawKey == REDIRECTED_KEY_FOR_EMPTY_SLOT ? SPECIAL_KEY_FOR_EMPTY_SLOT : rawKey;
-            final long value = keysAndValues[nextIndex + 1];
-            nextIndex = findOccupiedSlot(nextIndex + 2);
-            entry.set(key, value);
-            return entry;
-        }
-
-        /**
-         * Find next occupied slot starting at {@code beginSlot}.
-         *
-         * @param beginSlot The inclusive position from where to start looking.
-         * @return The slot containing the next occupied key, or keysAndValues.length if none.
-         */
-        private int findOccupiedSlot(int beginSlot) {
-            while (beginSlot < keysAndValues.length) {
-                final long key = keysAndValues[beginSlot];
-                if (key != SPECIAL_KEY_FOR_EMPTY_SLOT && key != SPECIAL_KEY_FOR_DELETED_SLOT) {
-                    break;
-                }
-                beginSlot += 2;
-            }
-            return beginSlot;
+            final long value = kv[nextIndex + 1];
+            consumer.accept(key, value);
         }
     }
 
     /**
-     * Subclass of fastutil's BasicEntry that exposes the protected key/value fields for in-place mutation, so the fast
-     * iterator can reuse the same entry instance across calls to next().
+     * Find next occupied slot starting at {@code beginSlot}.
+     *
+     * @param beginSlot The inclusive position from where to start looking.
+     * @return The slot containing the next occupied key, or keysAndValues.length if none.
      */
-    private static final class MutableEntry extends AbstractLong2LongMap.BasicEntry {
-        void set(final long key, final long value) {
-            this.key = key;
-            this.value = value;
+    private int findOccupiedSlot(long[] keysAndValues, int beginSlot) {
+        while (beginSlot < keysAndValues.length) {
+            final long key = keysAndValues[beginSlot];
+            if (key != SPECIAL_KEY_FOR_EMPTY_SLOT && key != SPECIAL_KEY_FOR_DELETED_SLOT) {
+                break;
+            }
+            beginSlot += 2;
         }
-    }
-
-    // Callers should use keyArray() / valueArray() (declared on NullableLong2LongMap) rather than the
-    // Long2LongMap-inherited keySet() / values() collection views, which would require us to maintain custom
-    // collection-view objects. The collection views, containsKey, containsValue, and
-    // putAll all throw UnsupportedOperationException; they can be implemented manually later if needed.
-
-    @Override
-    public boolean containsKey(long key) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public boolean containsValue(long value) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public LongSet keySet() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public LongCollection values() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void putAll(@org.jetbrains.annotations.NotNull final Map<? extends Long, ? extends Long> m) {
-        throw new UnsupportedOperationException();
+        return beginSlot;
     }
 
     // Run this at class load time to confirm that the values returned by getMaxBucketCapacity aren't too large.

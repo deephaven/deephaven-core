@@ -3,8 +3,7 @@
 //
 package io.deephaven.util.datastructures.hash;
 
-import it.unimi.dsi.fastutil.longs.Long2LongMap;
-import it.unimi.dsi.fastutil.objects.ObjectSet;
+import it.unimi.dsi.fastutil.longs.LongLongBiConsumer;
 
 public final class HashMapLockFreeK1V1 extends HashMapK1V1 {
     private volatile long[] keysAndValues;
@@ -32,61 +31,62 @@ public final class HashMapLockFreeK1V1 extends HashMapK1V1 {
     }
 
     @Override
-    public final long put(long key, long value) {
+    public long put(long key, long value) {
         return putImpl(keysAndValues, key, value, false);
     }
 
     @Override
-    public final long putIfAbsent(long key, long value) {
+    public long putIfAbsent(long key, long value) {
         return putImpl(keysAndValues, key, value, true);
     }
 
     @Override
-    public final long get(long key) {
+    public long get(long key) {
         return getImpl(keysAndValues, key);
     }
 
     @Override
-    public final long remove(long key) {
+    public long remove(long key) {
         return removeImpl(keysAndValues, key);
     }
 
-    public final int capacity() {
+    public int capacity() {
         return capacityImpl(keysAndValues);
     }
 
     @Override
-    public final void clear() {
+    public void clear() {
         clearImpl(keysAndValues);
     }
 
-    public final void resetToNull() {
+    @Override
+    public void resetToNull() {
         resetToNullImpl();
         keysAndValues = null;
     }
 
     @Override
-    public final ObjectSet<Long2LongMap.Entry> long2LongEntrySet() {
-        return entrySetImpl(keysAndValues);
-    }
-
-    @Override
-    public final long[] keyArray() {
+    public long[] keyArray() {
         return keysOrValuesImpl(keysAndValues, null, false);
     }
 
     @Override
-    public final long[] keyArray(long[] space) {
+    public long[] keyArray(long[] space) {
         return keysOrValuesImpl(keysAndValues, space, false);
     }
 
     @Override
-    public final long[] valueArray() {
+    public long[] valueArray() {
         return keysOrValuesImpl(keysAndValues, null, true);
     }
 
     @Override
-    public final long[] valueArray(long[] space) {
+    public long[] valueArray(long[] space) {
         return keysOrValuesImpl(keysAndValues, space, true);
+    }
+
+    @Override
+    public void forEach(LongLongBiConsumer consumer) {
+        forEachImpl(keysAndValues, consumer);
     }
 }

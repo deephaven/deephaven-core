@@ -19,7 +19,10 @@ import io.deephaven.util.datastructures.hash.NullableLong2LongMap;
 import io.deephaven.util.mutable.MutableInt;
 import it.unimi.dsi.fastutil.longs.Long2LongMap;
 import it.unimi.dsi.fastutil.longs.Long2LongMaps;
+import it.unimi.dsi.fastutil.objects.ObjectSet;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.Iterator;
 
 /**
  * This is a lock-free implementation of a WritableRowRedirection. The rules for using this class are as follows.
@@ -152,15 +155,14 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
         final NullableLong2LongMap updates = instance.updates;
         final NullableLong2LongMap baseline = instance.baseline;
         Assert.neq(baseline, "baseline", updates, "updates");
-        for (final Long2LongMap.Entry entry : Long2LongMaps.fastIterable(updates)) {
-            final long key = entry.getLongKey();
-            final long value = entry.getLongValue();
+
+        updates.forEach((key, value) -> {
             if (value == BASELINE_KEY_NOT_FOUND) {
                 baseline.remove(key);
             } else {
                 baseline.put(key, value);
             }
-        }
+        });
         updates.resetToNull();
     }
 

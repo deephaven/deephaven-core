@@ -3,9 +3,11 @@
 //
 package io.deephaven.util.datastructures.hash;
 
+import io.deephaven.util.mutable.MutableInt;
 import it.unimi.dsi.fastutil.longs.Long2LongMap;
 import it.unimi.dsi.fastutil.longs.Long2LongMaps;
 import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
+import it.unimi.dsi.fastutil.longs.LongLongBiConsumer;
 import it.unimi.dsi.fastutil.objects.ObjectIterator;
 import junit.framework.TestCase;
 import org.junit.Test;
@@ -25,10 +27,8 @@ import java.util.function.BiFunction;
 public class TestLongLongMap {
     private static final Factory referenceFactory = new Factory("fastutil", TestLongLongMap::newReferenceMap);
 
-    private static Long2LongMap newReferenceMap(final int initialCapacity, final float loadFactor) {
-        final Long2LongOpenHashMap map = new Long2LongOpenHashMap(initialCapacity, loadFactor);
-        map.defaultReturnValue(-1);
-        return map;
+    private static NullableLong2LongMap newReferenceMap(final int initialCapacity, final float loadFactor) {
+        return new TestNullableLong2LongMap(initialCapacity, loadFactor);
     }
 
     @Parameterized.Parameters(name = "map={0}, cap={1}, load={2}")
@@ -64,7 +64,7 @@ public class TestLongLongMap {
 
     @Test
     public void zeroKey() {
-        Long2LongMap map = factory.create(initialCapacity, loadFactor);
+        NullableLong2LongMap map = factory.create(initialCapacity, loadFactor);
         map.put(0, 12345);
         TestCase.assertEquals(map.get(0), 12345);
         TestCase.assertEquals(map.size(), 1);
@@ -76,7 +76,7 @@ public class TestLongLongMap {
         if (factory == referenceFactory) {
             return;
         }
-        Long2LongMap map = factory.create(initialCapacity, loadFactor);
+        NullableLong2LongMap map = factory.create(initialCapacity, loadFactor);
         try {
             map.put(HashMapBase.SPECIAL_KEY_FOR_DELETED_SLOT, 12345);
             TestCase.fail("SPECIAL_KEY_FOR_DELETED_SLOT should not be accepted");
@@ -97,7 +97,7 @@ public class TestLongLongMap {
         if (factory == referenceFactory) {
             return;
         }
-        NullableLong2LongMap map = (NullableLong2LongMap) factory.create(initialCapacity, loadFactor);
+        NullableLong2LongMap map = factory.create(initialCapacity, loadFactor);
         final long noEntryValue = map.defaultReturnValue();
         map.put(0, 1);
         map.put(2, 3);
@@ -113,7 +113,7 @@ public class TestLongLongMap {
         final long endKey = 200;
         final long beginValue = 5000;
         final long endValue = 5010;
-        Long2LongMap map = factory.create(initialCapacity, loadFactor);
+        NullableLong2LongMap map = factory.create(initialCapacity, loadFactor);
         final long noEntryValue = map.defaultReturnValue();
         for (long valueBase = beginValue; valueBase < endValue; ++valueBase) {
             for (long key = beginKey; key < endKey; ++key) {
@@ -128,7 +128,7 @@ public class TestLongLongMap {
     public void prevValuesOnRemove() {
         final long beginKey = 100;
         final long endKey = 200;
-        Long2LongMap map = factory.create(initialCapacity, loadFactor);
+        NullableLong2LongMap map = factory.create(initialCapacity, loadFactor);
         final long noEntryValue = map.defaultReturnValue();
         for (long key = beginKey; key < endKey; ++key) {
             final long previous = map.put(key, key - 10000);
@@ -145,7 +145,7 @@ public class TestLongLongMap {
     public void putIfAbsent() {
         final long beginKey = 100;
         final long endKey = 200;
-        Long2LongMap map = factory.create(initialCapacity, loadFactor);
+        NullableLong2LongMap map = factory.create(initialCapacity, loadFactor);
         final long noEntryValue = map.defaultReturnValue();
         for (long key = beginKey; key < endKey; key += 2) {
             final long previous = map.put(key, key + 5000);
@@ -167,7 +167,7 @@ public class TestLongLongMap {
     public void clear() {
         final int numIterations = 10;
         final int sizeAtWhichToClear = 10000;
-        Long2LongMap map = factory.create(initialCapacity, loadFactor);
+        NullableLong2LongMap map = factory.create(initialCapacity, loadFactor);
         for (int iteration = 0; iteration < numIterations; ++iteration) {
             TestCase.assertEquals(map.size(), 0);
             for (long ii = 0; ii < sizeAtWhichToClear; ++ii) {
@@ -199,10 +199,10 @@ public class TestLongLongMap {
 
     @Test
     public void zeroComesBackThroughKeys() {
-        Long2LongMap map = factory.create(initialCapacity, loadFactor);
+        NullableLong2LongMap map = factory.create(initialCapacity, loadFactor);
         final long specialKey = HashMapBase.SPECIAL_KEY_FOR_EMPTY_SLOT;
         map.put(specialKey, 12345);
-        final long[] keys = getKeys(map);
+        final long[] keys = map.keyArray();
         TestCase.assertEquals(1, keys.length);
         TestCase.assertEquals(specialKey, keys[0]);
     }
@@ -210,7 +210,7 @@ public class TestLongLongMap {
     @Test
     public void testKeysAndValues() {
         Map<Long, Long> reference = new HashMap<>(initialCapacity, loadFactor);
-        Long2LongMap test = factory.create(initialCapacity, loadFactor);
+        NullableLong2LongMap test = factory.create(initialCapacity, loadFactor);
         Random rng = new Random(1283712890);
         populate(rng, 1000000, 10000, 0.75, reference, test);
 
@@ -225,8 +225,8 @@ public class TestLongLongMap {
         TestCase.assertEquals(nextIndex, reference.size());
         TestCase.assertEquals(reference.size(), test.size());
 
-        final long[] actualKeys = getKeys(test);
-        final long[] actualValues = getValues(test);
+        final long[] actualKeys = test.keyArray();
+        final long[] actualValues = test.valueArray();
         TestCase.assertEquals(expectedKeys.length, actualKeys.length);
         TestCase.assertEquals(expectedValues.length, actualValues.length);
 
@@ -238,7 +238,7 @@ public class TestLongLongMap {
         TestCase.assertTrue(Arrays.equals(expectedKeys, actualKeys));
         TestCase.assertTrue(Arrays.equals(expectedValues, actualValues));
 
-        if (test instanceof NullableLong2LongMap) {
+        if (test instanceof HashMapBase) {
             // Also exercise the caller-provided-space overloads.
             final NullableLong2LongMap nm = (NullableLong2LongMap) test;
             final long[] keySpace = new long[reference.size()];
@@ -252,23 +252,9 @@ public class TestLongLongMap {
         }
     }
 
-    private static long[] getKeys(Long2LongMap map) {
-        if (map instanceof NullableLong2LongMap) {
-            return ((NullableLong2LongMap) map).keyArray();
-        }
-        return map.keySet().toLongArray();
-    }
-
-    private static long[] getValues(Long2LongMap map) {
-        if (map instanceof NullableLong2LongMap) {
-            return ((NullableLong2LongMap) map).valueArray();
-        }
-        return map.values().toLongArray();
-    }
-
     @Test
     public void do100KInserts() {
-        Long2LongMap map = factory.create(initialCapacity, loadFactor);
+        NullableLong2LongMap map = factory.create(initialCapacity, loadFactor);
         final long beginKey = -50000;
         final long endKey = 50000;
         final long size = endKey - beginKey;
@@ -296,7 +282,7 @@ public class TestLongLongMap {
 
     @Test
     public void do100KInsertsThen50KRemoves() {
-        Long2LongMap map = factory.create(initialCapacity, loadFactor);
+        NullableLong2LongMap map = factory.create(initialCapacity, loadFactor);
         final long beginKey = 0;
         final long endKey = 100000;
         final long size = endKey - beginKey;
@@ -319,7 +305,7 @@ public class TestLongLongMap {
     public void do1MRandomOperationsLotsOfCollisions() {
         // Standard of correctness: java.util.HashMap
         Map<Long, Long> reference = new HashMap<>(initialCapacity, loadFactor);
-        Long2LongMap test = factory.create(initialCapacity, loadFactor);
+        NullableLong2LongMap test = factory.create(initialCapacity, loadFactor);
         Random rng = new Random(12345);
         populate(rng, 1000000, 10000, 0.75, reference, test);
 
@@ -376,7 +362,7 @@ public class TestLongLongMap {
 
     @Test
     public void iteratorFromEmptyAndNullMap() {
-        Long2LongMap map = factory.create(initialCapacity, loadFactor);
+        NullableLong2LongMap map = factory.create(initialCapacity, loadFactor);
         map.put(0, 1);
         map.put(2, 3);
         map.clear();
@@ -384,27 +370,24 @@ public class TestLongLongMap {
         if (factory == referenceFactory) {
             return;
         }
-        NullableLong2LongMap nullableMap = (NullableLong2LongMap) map;
+        NullableLong2LongMap nullableMap = map;
         nullableMap.resetToNull();
         emptyMapHelper(map);
     }
 
-    private void emptyMapHelper(Long2LongMap map) {
-        final ObjectIterator<Long2LongMap.Entry> it = Long2LongMaps.fastIterator(map);
-        TestCase.assertFalse(it.hasNext());
-        try {
-            it.next();
-            TestCase.fail();
-        } catch (NoSuchElementException e) {
-            // expected
-        }
+    private void emptyMapHelper(NullableLong2LongMap map) {
+        final MutableInt count = new MutableInt();
+        map.forEach((key, value) -> {
+            count.increment();
+        });
+        TestCase.assertEquals(0, count.get());
     }
 
     static class Factory {
         private final String name;
-        private BiFunction<Integer, Float, Long2LongMap> constructor;
+        private BiFunction<Integer, Float, NullableLong2LongMap> constructor;
 
-        Factory(String name, BiFunction<Integer, Float, Long2LongMap> constructor) {
+        Factory(String name, BiFunction<Integer, Float, NullableLong2LongMap> constructor) {
             this.name = name;
             this.constructor = constructor;
         }
@@ -414,7 +397,7 @@ public class TestLongLongMap {
             return name;
         }
 
-        public Long2LongMap create(int initialCapacity, float loadFactor) {
+        public NullableLong2LongMap create(int initialCapacity, float loadFactor) {
             return constructor.apply(initialCapacity, loadFactor);
         }
     }
@@ -434,17 +417,16 @@ public class TestLongLongMap {
             return new Entries(keys, values);
         }
 
-        public static Entries create(Long2LongMap map) {
+        public static Entries create(NullableLong2LongMap map) {
             int size = map.size();
             final long[] keys = new long[size];
             final long[] values = new long[size];
-            int nextIndex = 0;
-            for (Long2LongMap.Entry entry : Long2LongMaps.fastIterable(map)) {
-                keys[nextIndex] = entry.getLongKey();
-                values[nextIndex] = entry.getLongValue();
-                ++nextIndex;
-            }
-            TestCase.assertEquals(nextIndex, size);
+            final MutableInt nextIndex = new MutableInt();
+            map.forEach((key, value) -> {
+                keys[nextIndex.get()] = key;
+                values[nextIndex.getAndIncrement()] = value;
+            });
+            TestCase.assertEquals(size, nextIndex.get());
             return new Entries(keys, values);
         }
 
@@ -469,7 +451,7 @@ public class TestLongLongMap {
     }
 
     private static void populate(Random rng, int numIterations, long randomRange, double putProbability,
-            Map<Long, Long> reference, Long2LongMap test) {
+            Map<Long, Long> reference, NullableLong2LongMap test) {
         for (int ii = 0; ii < numIterations; ++ii) {
             final long nextKey = Math.abs(rng.nextLong()) % randomRange;
             final long nextValue = ii;
@@ -481,6 +463,90 @@ public class TestLongLongMap {
                 reference.remove(nextKey);
                 test.remove(nextKey);
             }
+        }
+    }
+
+    private static class TestNullableLong2LongMap implements NullableLong2LongMap {
+        final Long2LongOpenHashMap map;
+
+        public TestNullableLong2LongMap(int initialCapacity, float loadFactor) {
+            map = new Long2LongOpenHashMap(initialCapacity, loadFactor);
+            map.defaultReturnValue(-1);
+        }
+
+        @Override
+        public void resetToNull() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public int capacity() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public long[] keyArray() {
+            return map.keySet().toLongArray();
+        }
+
+        @Override
+        public long[] keyArray(long[] space) {
+            return map.keySet().toArray(space);
+        }
+
+        @Override
+        public long[] valueArray() {
+            return map.values().toLongArray();
+        }
+
+        @Override
+        public long[] valueArray(long[] space) {
+            return map.values().toArray(space);
+        }
+
+        @Override
+        public int size() {
+            return map.size();
+        }
+
+        @Override
+        public boolean isEmpty() {
+            return map.isEmpty();
+        }
+
+        @Override
+        public long defaultReturnValue() {
+            return map.defaultReturnValue();
+        }
+
+        @Override
+        public long put(long key, long value) {
+            return map.put(key, value);
+        }
+
+        @Override
+        public long putIfAbsent(long key, long value) {
+            return map.putIfAbsent(key, value);
+        }
+
+        @Override
+        public long get(long key) {
+            return map.get(key);
+        }
+
+        @Override
+        public long remove(long key) {
+            return map.remove(key);
+        }
+
+        @Override
+        public void clear() {
+            map.clear();
+        }
+
+        @Override
+        public void forEach(LongLongBiConsumer consumer) {
+            map.forEach(consumer);
         }
     }
 }

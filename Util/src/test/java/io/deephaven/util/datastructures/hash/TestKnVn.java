@@ -47,7 +47,7 @@ public class TestKnVn {
         fillToCapacity(new HashMapLockFreeK4V4(), HASHTABLE_SIZE_LOWER_BOUND_4);
     }
 
-    private static void fillToCapacity(Long2LongMap ht, final long lowerSizeBound) {
+    private static void fillToCapacity(NullableLong2LongMap ht, final long lowerSizeBound) {
         final long maxMemory = Runtime.getRuntime().maxMemory();
         if (maxMemory < MINIMUM_HEAP_SIZE_NEEDED_FOR_TEST) {
             final String skipMessage = String.format("Skipping test, because I want %fG of heap, but have only %fG%n",
