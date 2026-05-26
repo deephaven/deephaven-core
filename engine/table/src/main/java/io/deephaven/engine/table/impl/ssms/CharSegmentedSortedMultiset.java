@@ -450,7 +450,7 @@ public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSe
                 return;
             }
             // a second distinct value is arriving; expand to the directory representation and fall through
-            materializeSingleton();
+            materializeSingleton(valuesToInsert.size());
         }
 
         insertExisting(valuesToInsert, counts);
@@ -705,15 +705,17 @@ public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSe
     }
 
     /**
-     * Expand the singleton representation into single-element directory arrays so the existing array-based code paths
-     * can operate on it.
+     * Expand the singleton representation into directory arrays so the existing array-based code paths can operate on
+     * it. The arrays are sized to hold the current value plus {@code incomingValueCount} values about to be inserted
+     * (capped at {@code leafSize}), to avoid an immediate reallocation.
      */
-    private void materializeSingleton() {
+    private void materializeSingleton(int incomingValueCount) {
         if (!isSingleton()) {
             return;
         }
-        directoryValues = new char[1];
-        directoryCount = new long[1];
+        final int capacity = Math.min(leafSize, 1 + incomingValueCount);
+        directoryValues = new char[capacity];
+        directoryCount = new long[capacity];
         directoryValues[0] = singletonValue;
         directoryCount[0] = singletonCount;
     }
@@ -1552,7 +1554,7 @@ public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSe
         }
         // a new distinct value is arriving, so we must use the directory/leaf representation
         if (isSingleton()) {
-            materializeSingleton();
+            materializeSingleton(1);
         }
         if (leafCount == 1) {
             final int newSize = size + 1;
@@ -1611,7 +1613,7 @@ public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSe
             return;
         }
         if (isSingleton()) {
-            materializeSingleton();
+            materializeSingleton(1);
         }
         if (leafCount == 1) {
             final int newSize = size + 1;
@@ -1727,8 +1729,8 @@ public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSe
         }
 
         // The source is not a singleton here, but the destination still might be; expand only the destination so the
-        // array-based machinery below can operate on it.
-        destination.materializeSingleton();
+        // array-based machinery below can operate on it (it sizes the directory itself via prepareAppend/preparePrepend).
+        destination.materializeSingleton(1);
 
         final MutableLong remaining = new MutableLong(count);
         final MutableLong leftOverMutable = new MutableLong();
@@ -2185,8 +2187,8 @@ public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSe
         }
 
         // The source is not a singleton here, but the destination still might be; expand only the destination so the
-        // array-based machinery below can operate on it.
-        destination.materializeSingleton();
+        // array-based machinery below can operate on it (it sizes the directory itself via prepareAppend/preparePrepend).
+        destination.materializeSingleton(1);
 
         final MutableLong remaining = new MutableLong(count);
         final MutableLong leftOverMutable = new MutableLong();
