@@ -306,6 +306,9 @@ public class ReplicateSegmentedSortedMultiset {
                         "                if(!Objects.equals(directoryValues[ii], that.directoryValues[ii])) {\n" +
                                 "                    return false;\n" +
                                 "                }"));
+        lines = replaceRegion(lines, "SingletonEquals",
+                Collections.singletonList(
+                        "            return Objects.equals(get(0), that.get(0));"));
         return replaceRegion(lines, "LeafObjectEquals",
                 Collections.singletonList(
                         "                if(!Objects.equals(leafValues[li][ai], that.leafValues[otherLeaf][otherLeafIdx++])) {\n"
@@ -359,7 +362,7 @@ public class ReplicateSegmentedSortedMultiset {
                         "        WritableObjectChunk<Instant, Values> writable = destChunk.asWritableObjectChunk();",
                         "        if (leafCount == 1) {",
                         "            for(int ii = 0; ii < size(); ii++) {",
-                        "                writable.set(ii, DateTimeUtils.epochNanosToInstant(directoryValues[ii]));",
+                        "                writable.set(ii, DateTimeUtils.epochNanosToInstant(directoryValues == null ? singletonValue : directoryValues[ii]));",
                         "            }",
                         "        } else if (leafCount > 0) {",
                         "            int offset = 0;",
@@ -396,7 +399,7 @@ public class ReplicateSegmentedSortedMultiset {
                         "        final Instant[] keyArray = new Instant[intSize()];",
                         "        if (leafCount == 1) {",
                         "            for(int ii = 0; ii < totalSize; ii++) {",
-                        "                keyArray[ii] = DateTimeUtils.epochNanosToInstant(directoryValues[ii + (int)first]);",
+                        "                keyArray[ii] = DateTimeUtils.epochNanosToInstant(directoryValues == null ? singletonValue : directoryValues[ii + (int)first]);",
                         "            }",
                         "        } else if (leafCount > 0) {",
                         "            int offset = 0;",
@@ -433,7 +436,7 @@ public class ReplicateSegmentedSortedMultiset {
                         "        final StringBuilder arrAsString = new StringBuilder(\"[\");",
                         "        if (leafCount == 1) {",
                         "            for(int ii = 0; ii < intSize(); ii++) {",
-                        "                arrAsString.append(DateTimeUtils.epochNanosToInstant(directoryValues[ii])).append(\", \");",
+                        "                arrAsString.append(DateTimeUtils.epochNanosToInstant(directoryValues == null ? singletonValue : directoryValues[ii])).append(\", \");",
                         "            }",
                         "            ",
                         "            arrAsString.replace(arrAsString.length() - 2, arrAsString.length(), \"]\");",
