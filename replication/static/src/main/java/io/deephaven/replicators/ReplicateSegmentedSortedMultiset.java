@@ -300,7 +300,7 @@ public class ReplicateSegmentedSortedMultiset {
         // the primitive iterator is only used by the (now removed) primitive-vector equalsArray overload
         lines = removeImport(lines, "\\s*import .*CloseablePrimitiveIteratorOfObject;");
         lines = replaceRegion(lines, "EqualsArrayTypeCheck", Collections.singletonList(
-                "        if(o.getComponentType() != o.getComponentType()) {\n" +
+                "        if(getComponentType() != o.getComponentType()) {\n" +
                         "            return false;\n" +
                         "        }"));
         lines = replaceRegion(lines, "DirObjectEquals",

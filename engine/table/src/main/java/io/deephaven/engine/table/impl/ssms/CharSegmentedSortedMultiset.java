@@ -699,6 +699,8 @@ public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSe
         leafSizes = null;
         directoryValues = null;
         directoryCount = null;
+        singletonCount = 0;
+        singletonValue = NULL_CHAR;
     }
 
     private boolean isSingleton() {

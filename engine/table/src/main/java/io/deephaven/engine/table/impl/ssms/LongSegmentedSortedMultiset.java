@@ -58,7 +58,8 @@ public final class LongSegmentedSortedMultiset implements SegmentedSortedMultiSe
 
     /**
      * When the set holds exactly one distinct value we avoid allocating the directory arrays and store the single value
-     * and its count directly here. This singleton state is identified by {@code leafCount == 1 && directoryValues == null}.
+     * and its count directly here. This singleton state is identified by
+     * {@code leafCount == 1 && directoryValues == null}.
      */
     private long singletonValue;
     private long singletonCount;
@@ -707,6 +708,8 @@ public final class LongSegmentedSortedMultiset implements SegmentedSortedMultiSe
         leafSizes = null;
         directoryValues = null;
         directoryCount = null;
+        singletonCount = 0;
+        singletonValue = NULL_LONG;
     }
 
     private boolean isSingleton() {
@@ -1737,7 +1740,8 @@ public final class LongSegmentedSortedMultiset implements SegmentedSortedMultiSe
         }
 
         // The source is not a singleton here, but the destination still might be; expand only the destination so the
-        // array-based machinery below can operate on it (it sizes the directory itself via prepareAppend/preparePrepend).
+        // array-based machinery below can operate on it (it sizes the directory itself via
+        // prepareAppend/preparePrepend).
         destination.materializeSingleton(1);
 
         final MutableLong remaining = new MutableLong(count);
@@ -2194,7 +2198,8 @@ public final class LongSegmentedSortedMultiset implements SegmentedSortedMultiSe
         }
 
         // The source is not a singleton here, but the destination still might be; expand only the destination so the
-        // array-based machinery below can operate on it (it sizes the directory itself via prepareAppend/preparePrepend).
+        // array-based machinery below can operate on it (it sizes the directory itself via
+        // prepareAppend/preparePrepend).
         destination.materializeSingleton(1);
 
         final MutableLong remaining = new MutableLong(count);
