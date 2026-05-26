@@ -99,7 +99,7 @@ Configuration flow:
 props/*.prop files or environment → Configuration/ utilities → Runtime component
 
 gRPC service flow:
-proto/proto-backplane-grpc/*.proto → generated Java → server/src/*Service.java → java-client/ or py/client/
+proto/proto-backplane-grpc/*.proto → generated Java → server/src/.../server/**/*ServiceGrpcImpl.java → java-client/ or py/client/
 
 Table update flow:
 Source data change → UpdateGraph cycle → TableUpdateListener.onUpdate → Downstream table update → Barrage → UI refresh
@@ -110,15 +110,15 @@ Source data change → UpdateGraph cycle → TableUpdateListener.onUpdate → Do
 For feature traces, follow data/control through all layers:
 
 1. **Entry point** — gRPC service (`server/`), UI action (`web/`), or Python/Groovy API (`py/`)
-2. **Service layer** — `*ServiceGrpcImpl.java` in `server/src/`
+2. **Service layer** — `*ServiceGrpcImpl.java` in `server/src/main/java/io/deephaven/server/*/`
 3. **Domain logic** — Core classes in `engine/table/` or `extensions/`
 4. **Data access** — `ColumnSource`, `RowSet` in `engine/api/`
 
-**Example trace (executing a table operation):**
+**Example trace (client executes a table operation via gRPC):**
 ```
-User calls table.where("Price > 100") in Python
-  → py/server/ translates to Java call
-  → server/ receives gRPC request via TableServiceGrpcImpl
+User calls table.where("Price > 100") in py/client/pydeephaven
+  → Client sends gRPC request to server
+  → server/src/.../table/ops/TableServiceGrpcImpl receives request
   → engine/table/impl/QueryTable.where() creates WhereListener
   → WhereFilter evaluates condition against ColumnSource data
   → Result table registered with UpdateGraph for live updates
@@ -244,7 +244,7 @@ Report comprehensively:
 - **Subpackages**: `session/`, `table/`, `arrow/`, `barrage/`
 
 ### proto/proto-backplane-grpc/ — gRPC protocol definitions
-- **Entry points**: `proto/proto-backplane-grpc/src/main/proto/deephaven/proto/`
+- **Entry points**: `proto/proto-backplane-grpc/src/main/proto/deephaven_core/proto/`
 - `.proto` files define all client-server communication
 
 ## Extensions
@@ -321,7 +321,7 @@ props/*.prop or environment → Configuration/ → Runtime component
 
 **gRPC service flow:**
 ```
-proto/proto-backplane-grpc/*.proto → generated Java → server/*ServiceGrpcImpl → java-client/ or py/client/
+proto/proto-backplane-grpc/*.proto → generated Java → server/src/.../server/**/*ServiceGrpcImpl.java → java-client/ or py/client/
 ```
 
 **Table update flow:**
