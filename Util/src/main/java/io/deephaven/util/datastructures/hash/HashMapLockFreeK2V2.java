@@ -5,7 +5,7 @@ package io.deephaven.util.datastructures.hash;
 
 import it.unimi.dsi.fastutil.longs.LongLongBiConsumer;
 
-public final class HashMapLockFreeK2V2 extends HashMapK2V2 {
+public final class HashMapLockFreeK2V2 extends HashMapK2V2 implements NullableLongLongMapTestAccessors {
     private volatile long[] keysAndValues;
 
     public HashMapLockFreeK2V2() {

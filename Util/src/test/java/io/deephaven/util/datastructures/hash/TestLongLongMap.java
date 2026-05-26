@@ -198,7 +198,7 @@ public class TestLongLongMap {
         NullableLongLongMap map = factory.create(initialCapacity, loadFactor);
         final long specialKey = HashMapBase.SPECIAL_KEY_FOR_EMPTY_SLOT;
         map.put(specialKey, 12345);
-        final long[] keys = map.keyArray();
+        final long[] keys = ((NullableLongLongMapTestAccessors) map).keyArray();
         TestCase.assertEquals(1, keys.length);
         TestCase.assertEquals(specialKey, keys[0]);
     }
@@ -206,7 +206,8 @@ public class TestLongLongMap {
     @Test
     public void testKeysAndValues() {
         Map<Long, Long> reference = new HashMap<>(initialCapacity, loadFactor);
-        NullableLongLongMap test = factory.create(initialCapacity, loadFactor);
+        NullableLongLongMapTestAccessors test =
+                (NullableLongLongMapTestAccessors) factory.create(initialCapacity, loadFactor);
         Random rng = new Random(1283712890);
         populate(rng, 1000000, 10000, 0.75, reference, test);
 
@@ -236,11 +237,10 @@ public class TestLongLongMap {
 
         if (test instanceof HashMapBase) {
             // Also exercise the caller-provided-space overloads.
-            final NullableLongLongMap nm = (NullableLongLongMap) test;
             final long[] keySpace = new long[reference.size()];
             final long[] valueSpace = new long[reference.size()];
-            TestCase.assertSame(keySpace, nm.keyArray(keySpace));
-            TestCase.assertSame(valueSpace, nm.valueArray(valueSpace));
+            TestCase.assertSame(keySpace, test.keyArray(keySpace));
+            TestCase.assertSame(valueSpace, test.valueArray(valueSpace));
             Arrays.sort(keySpace);
             Arrays.sort(valueSpace);
             TestCase.assertTrue(Arrays.equals(expectedKeys, keySpace));
@@ -462,7 +462,7 @@ public class TestLongLongMap {
         }
     }
 
-    private static class TestNullableLongLongMap implements NullableLongLongMap {
+    private static class TestNullableLongLongMap implements NullableLongLongMapTestAccessors {
         final Long2LongOpenHashMap map;
 
         public TestNullableLongLongMap(int initialCapacity, float loadFactor) {
