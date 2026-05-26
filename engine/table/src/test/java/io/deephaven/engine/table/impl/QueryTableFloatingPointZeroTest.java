@@ -609,12 +609,16 @@ public class QueryTableFloatingPointZeroTest {
 
     @Test
     public void testDoubleFilters() {
-        final Table doubles =  newTable(doubleCol("X", 0.0, 1.0, 2.0, 3.0, 4.0, Double.NaN, -0.0), intCol("S", 0, 1, 2, 3, 4, 5, 6));
+        final Table doubles =
+                newTable(doubleCol("X", 0.0, 1.0, 2.0, 3.0, 4.0, Double.NaN, -0.0), intCol("S", 0, 1, 2, 3, 4, 5, 6));
         assertTableEquals(newTable(doubleCol("X", 0.0, -0.0), intCol("S", 0, 6)), doubles.where("X in 0.0"));
         assertTableEquals(newTable(doubleCol("X", 0.0, -0.0), intCol("S", 0, 6)), doubles.where("X in -0.0"));
-        assertTableEquals(newTable(doubleCol("X", 0.0, 1.0, -0.0), intCol("S", 0, 1, 6)), doubles.where("X in 0.0, 1.0"));
-        assertTableEquals(newTable(doubleCol("X", 0.0, 1.0, 2.0, -0.0), intCol("S", 0, 1, 2, 6)), doubles.where("X in 0.0, 1.0, 2.0"));
-        assertTableEquals(newTable(doubleCol("X", 0.0, 1.0, 2.0, 3, -0.0), intCol("S", 0, 1, 2, 3, 6)), doubles.where("X in 0.0, 1.0, 2.0, 3.0"));
+        assertTableEquals(newTable(doubleCol("X", 0.0, 1.0, -0.0), intCol("S", 0, 1, 6)),
+                doubles.where("X in 0.0, 1.0"));
+        assertTableEquals(newTable(doubleCol("X", 0.0, 1.0, 2.0, -0.0), intCol("S", 0, 1, 2, 6)),
+                doubles.where("X in 0.0, 1.0, 2.0"));
+        assertTableEquals(newTable(doubleCol("X", 0.0, 1.0, 2.0, 3, -0.0), intCol("S", 0, 1, 2, 3, 6)),
+                doubles.where("X in 0.0, 1.0, 2.0, 3.0"));
         final Table noZeros = newTable(doubleCol("X", 1.0, 2.0, 3.0, 4.0, Double.NaN), intCol("S", 1, 2, 3, 4, 5));
         assertTableEquals(noZeros, doubles.where("X not in 0.0"));
         assertTableEquals(noZeros, doubles.where("X not in -0.0"));
@@ -625,12 +629,16 @@ public class QueryTableFloatingPointZeroTest {
 
     @Test
     public void testFloatFilters() {
-        final Table floats =  newTable(floatCol("X", 0.0f, 1.0f, 2.0f, 3.0f, 4.0f, Float.NaN, -0.0f), intCol("S", 0, 1, 2, 3, 4, 5, 6));
+        final Table floats = newTable(floatCol("X", 0.0f, 1.0f, 2.0f, 3.0f, 4.0f, Float.NaN, -0.0f),
+                intCol("S", 0, 1, 2, 3, 4, 5, 6));
         assertTableEquals(newTable(floatCol("X", 0.0f, -0.0f), intCol("S", 0, 6)), floats.where("X in 0.0"));
         assertTableEquals(newTable(floatCol("X", 0.0f, -0.0f), intCol("S", 0, 6)), floats.where("X in -0.0"));
-        assertTableEquals(newTable(floatCol("X", 0.0f, 1.0f, -0.0f), intCol("S", 0, 1, 6)), floats.where("X in 0.0, 1.0"));
-        assertTableEquals(newTable(floatCol("X", 0.0f, 1.0f, 2.0f, -0.0f), intCol("S", 0, 1, 2, 6)), floats.where("X in 0.0, 1.0, 2.0"));
-        assertTableEquals(newTable(floatCol("X", 0.0f, 1.0f, 2.0f, 3f, -0.0f), intCol("S", 0, 1, 2, 3, 6)), floats.where("X in 0.0, 1.0, 2.0, 3.0"));
+        assertTableEquals(newTable(floatCol("X", 0.0f, 1.0f, -0.0f), intCol("S", 0, 1, 6)),
+                floats.where("X in 0.0, 1.0"));
+        assertTableEquals(newTable(floatCol("X", 0.0f, 1.0f, 2.0f, -0.0f), intCol("S", 0, 1, 2, 6)),
+                floats.where("X in 0.0, 1.0, 2.0"));
+        assertTableEquals(newTable(floatCol("X", 0.0f, 1.0f, 2.0f, 3f, -0.0f), intCol("S", 0, 1, 2, 3, 6)),
+                floats.where("X in 0.0, 1.0, 2.0, 3.0"));
         final Table noZeros = newTable(floatCol("X", 1.0f, 2.0f, 3.0f, 4.0f, Float.NaN), intCol("S", 1, 2, 3, 4, 5));
         assertTableEquals(noZeros, floats.where("X not in 0.0"));
         assertTableEquals(noZeros, floats.where("X not in -0.0"));
