@@ -22,7 +22,6 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.mutable.MutableInt;
 import io.deephaven.util.mutable.MutableLong;
-import io.deephaven.engine.table.impl.ssms.FloatCompareOpenHashSet;
 import it.unimi.dsi.fastutil.floats.FloatSet;
 
 import java.util.Arrays;

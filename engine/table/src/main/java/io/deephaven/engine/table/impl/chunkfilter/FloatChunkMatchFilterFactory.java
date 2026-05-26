@@ -178,11 +178,11 @@ public class FloatChunkMatchFilterFactory {
         }
 
         public boolean add(final float k) {
-            return !Float.isNaN(k) && add(canonicalize(k));
+            return !Float.isNaN(k) && wrapped.add(canonicalize(k));
         }
 
         public boolean contains(final float k) {
-            return !Float.isNaN(k) && contains(canonicalize(k));
+            return !Float.isNaN(k) && wrapped.contains(canonicalize(k));
         }
     }
 

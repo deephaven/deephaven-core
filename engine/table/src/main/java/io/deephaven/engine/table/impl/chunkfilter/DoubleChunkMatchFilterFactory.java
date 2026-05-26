@@ -181,11 +181,11 @@ public class DoubleChunkMatchFilterFactory {
         }
 
         public boolean add(final double k) {
-            return !Double.isNaN(k) && add(canonicalize(k));
+            return !Double.isNaN(k) && wrapped.add(canonicalize(k));
         }
 
         public boolean contains(final double k) {
-            return !Double.isNaN(k) && contains(canonicalize(k));
+            return !Double.isNaN(k) && wrapped.contains(canonicalize(k));
         }
     }
 

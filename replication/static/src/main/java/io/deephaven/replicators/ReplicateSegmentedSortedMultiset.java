@@ -4,6 +4,10 @@
 package io.deephaven.replicators;
 
 import io.deephaven.replication.ReplicationUtils;
+import it.unimi.dsi.fastutil.doubles.DoubleOpenCustomHashSet;
+import it.unimi.dsi.fastutil.doubles.DoubleOpenHashSet;
+import it.unimi.dsi.fastutil.floats.FloatOpenCustomHashSet;
+import it.unimi.dsi.fastutil.floats.FloatOpenHashSet;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
@@ -282,11 +286,10 @@ public class ReplicateSegmentedSortedMultiset {
         final File file = new File(generatedPath);
         List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
         lines = globalReplacements(lines,
-                "it\\.unimi\\.dsi\\.fastutil\\." + typeName.toLowerCase() + "s\\." + typeName + "OpenHashSet",
-                "io.deephaven.engine.table.impl.ssms." + typeName + "CompareOpenHashSet",
                 "new " + typeName + "OpenHashSet\\(", "new " + typeName + "CompareOpenHashSet(",
                 typeName + "Set added", typeName + "CompareOpenHashSet added",
                 typeName + "Set removed", typeName + "CompareOpenHashSet removed");
+        lines = removeImport(lines, typeName.equals("Float") ? FloatOpenHashSet.class : DoubleOpenHashSet.class);
         FileUtils.writeLines(file, lines);
     }
 
