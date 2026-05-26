@@ -3,20 +3,26 @@
 //
 package io.deephaven.engine.util;
 
-import io.deephaven.engine.context.ExecutionContext;
+import gnu.trove.map.TLongIntMap;
+import gnu.trove.map.hash.TLongIntHashMap;
+import gnu.trove.map.hash.TObjectLongHashMap;
+import io.deephaven.base.Pair;
+import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetBuilderRandom;
+import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
-import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter;
-import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.updategraph.LogicalClock;
-import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.updategraph.TerminalNotification;
-import gnu.trove.map.hash.TObjectLongHashMap;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.LongConsumer;
@@ -24,7 +30,7 @@ import java.util.function.LongFunction;
 
 /**
  * Listens to a table, mapping keys to values.
- *
+ * <p>
  * When you call get, we return the value as of the start of this clock cycle.
  *
  * @param <K> the key type
@@ -133,17 +139,62 @@ public class ToMapListener<K, V> extends InstrumentedTableUpdateListenerAdapter 
         return get((K) key, valueProducer, prevValueProducer);
     }
 
-    public <T> T get(K key, groovy.lang.Closure<T> valueProducer, groovy.lang.Closure<T> prevValueProducer) {
-        return get(key, (long row) -> (T) valueProducer.call(row), (long row) -> (T) prevValueProducer.call(row));
-    }
-
     public <T> T get(K key, ColumnSource<T> cs) {
         return get(key, cs::get, cs::getPrev);
     }
 
+    @NotNull
+    public RowSetForKeysResult getRowSetForKeys(List<K> dataKeys) {
+        final LogicalClock.State state = getUpdateGraph().clock().currentState();
+        TObjectLongHashMap<Object> map;
+
+        final boolean useBaselineMap;
+        if (state == LogicalClock.State.Idle && (map = currentMap) != null) {
+            useBaselineMap = false;
+        } else {
+            map = baselineMap;
+            useBaselineMap = true;
+        }
+
+        final Pair<RowSet, TLongIntMap> result;
+        if (useBaselineMap) {
+            Assert.eq(map, "map", baselineMap, "baselineMap");
+            synchronized (baselineMap) {
+                result = getRowSetForKeys0(dataKeys, map);
+            }
+        } else {
+            result = getRowSetForKeys0(dataKeys, map);
+        }
+
+        return new RowSetForKeysResult(result.first, result.second, state == LogicalClock.State.Updating);
+    }
+
+    @NotNull
+    private Pair<RowSet, TLongIntMap> getRowSetForKeys0(List<K> dataKeys, TObjectLongHashMap<Object> map) {
+        final int nKeys = dataKeys.size();
+        final TLongIntMap idxKeyToDataKeyPositionMap = new TLongIntHashMap(nKeys);
+        final RowSetBuilderRandom builder = RowSetFactory.builderRandom();
+        int ii = 0;
+        for (K dataKey : dataKeys) {
+            long k = map.get(dataKey);
+            if (k != NO_ENTRY_VALUE && k != DELETED_ENTRY_VALUE) {
+                builder.addKey(k);
+                idxKeyToDataKeyPositionMap.put(k, ii);
+            }
+
+            ii++;
+        }
+
+        return new Pair<>(builder.build(), idxKeyToDataKeyPositionMap);
+    }
+
+    public Table getSource() {
+        return super.source;
+    }
+
     /**
      * Get but instead of applying the default value producer, use a custom value producer.
-     *
+     * <p>
      * The intention is that you can wrap the map up with several different value producers, e.g. one for bid and
      * another for ask.
      *
@@ -223,6 +274,18 @@ public class ToMapListener<K, V> extends InstrumentedTableUpdateListenerAdapter 
                 baselineMap.putAll(currentMap);
             }
             currentMap = null;
+        }
+    }
+
+    public static class RowSetForKeysResult {
+        public final RowSet rowSet;
+        public final TLongIntMap idxKeyToDataKeyPositionMap;
+        public final boolean usePrev;
+
+        private RowSetForKeysResult(RowSet rowSet, TLongIntMap idxKeyToDataKeyPositionMap, boolean usePrev) {
+            this.rowSet = rowSet;
+            this.idxKeyToDataKeyPositionMap = idxKeyToDataKeyPositionMap;
+            this.usePrev = usePrev;
         }
     }
 }

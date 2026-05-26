@@ -32,11 +32,7 @@ public interface ColumnSource<T>
 
     @FinalDefault
     default ChunkType getChunkType() {
-        final Class<T> dataType = getType();
-        if (dataType == Boolean.class) {
-            return ChunkType.Object;
-        }
-        return ChunkType.fromElementType(dataType);
+        return ChunkType.fromColumnDataType(getType());
     }
 
     /**
