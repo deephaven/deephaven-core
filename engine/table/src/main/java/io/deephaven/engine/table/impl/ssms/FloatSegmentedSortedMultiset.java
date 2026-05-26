@@ -22,7 +22,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.mutable.MutableInt;
 import io.deephaven.util.mutable.MutableLong;
-import gnu.trove.set.hash.TFloatHashSet;
+import it.unimi.dsi.fastutil.floats.FloatSet;
 
 import java.util.Arrays;
 import java.util.Objects;
@@ -51,8 +51,8 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
 
     // region Deltas
     private transient boolean accumulateDeltas = false;
-    private transient TFloatHashSet added;
-    private transient TFloatHashSet removed;
+    private transient FloatCompareOpenHashSet added;
+    private transient FloatCompareOpenHashSet removed;
     private transient FloatVector prevValues;
     // endregion Deltas
 
@@ -2232,7 +2232,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
         }
 
         if (added == null) {
-            added = new TFloatHashSet(valuesToInsert.size());
+            added = new FloatCompareOpenHashSet(valuesToInsert.size());
         }
 
         if (removed == null) {
@@ -2261,7 +2261,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
         }
 
         if (removed == null) {
-            removed = new TFloatHashSet();
+            removed = new FloatCompareOpenHashSet();
         }
 
         if (added == null || !added.remove(valueRemoved)) {
@@ -2291,11 +2291,11 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
     }
 
     public void fillRemovedChunk(WritableFloatChunk<? extends Values> chunk, int position) {
-        chunk.copyFromTypedArray(removed.toArray(), 0, position, removed.size());
+        chunk.copyFromTypedArray(removed.toFloatArray(), 0, position, removed.size());
     }
 
     public void fillAddedChunk(WritableFloatChunk<? extends Values> chunk, int position) {
-        chunk.copyFromTypedArray(added.toArray(), 0, position, added.size());
+        chunk.copyFromTypedArray(added.toFloatArray(), 0, position, added.size());
     }
 
     public FloatVector getPrevValues() {

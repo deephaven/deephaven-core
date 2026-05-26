@@ -22,7 +22,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.mutable.MutableInt;
 import io.deephaven.util.mutable.MutableLong;
-import gnu.trove.set.hash.TDoubleHashSet;
+import it.unimi.dsi.fastutil.doubles.DoubleSet;
 
 import java.util.Arrays;
 import java.util.Objects;
@@ -51,8 +51,8 @@ public final class DoubleSegmentedSortedMultiset implements SegmentedSortedMulti
 
     // region Deltas
     private transient boolean accumulateDeltas = false;
-    private transient TDoubleHashSet added;
-    private transient TDoubleHashSet removed;
+    private transient DoubleCompareOpenHashSet added;
+    private transient DoubleCompareOpenHashSet removed;
     private transient DoubleVector prevValues;
     // endregion Deltas
 
@@ -2232,7 +2232,7 @@ public final class DoubleSegmentedSortedMultiset implements SegmentedSortedMulti
         }
 
         if (added == null) {
-            added = new TDoubleHashSet(valuesToInsert.size());
+            added = new DoubleCompareOpenHashSet(valuesToInsert.size());
         }
 
         if (removed == null) {
@@ -2261,7 +2261,7 @@ public final class DoubleSegmentedSortedMultiset implements SegmentedSortedMulti
         }
 
         if (removed == null) {
-            removed = new TDoubleHashSet();
+            removed = new DoubleCompareOpenHashSet();
         }
 
         if (added == null || !added.remove(valueRemoved)) {
@@ -2291,11 +2291,11 @@ public final class DoubleSegmentedSortedMultiset implements SegmentedSortedMulti
     }
 
     public void fillRemovedChunk(WritableDoubleChunk<? extends Values> chunk, int position) {
-        chunk.copyFromTypedArray(removed.toArray(), 0, position, removed.size());
+        chunk.copyFromTypedArray(removed.toDoubleArray(), 0, position, removed.size());
     }
 
     public void fillAddedChunk(WritableDoubleChunk<? extends Values> chunk, int position) {
-        chunk.copyFromTypedArray(added.toArray(), 0, position, added.size());
+        chunk.copyFromTypedArray(added.toDoubleArray(), 0, position, added.size());
     }
 
     public DoubleVector getPrevValues() {
