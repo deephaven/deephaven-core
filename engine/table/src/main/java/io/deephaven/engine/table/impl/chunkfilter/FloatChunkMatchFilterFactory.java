@@ -311,7 +311,7 @@ public class FloatChunkMatchFilterFactory {
 
         @Override
         public boolean matches(float value) {
-            final int valueBits = Float.floatToIntBits(value);
+            final int valueBits = getBits(value);
             return valueBits != valueBits1 && valueBits != valueBits2 && valueBits != valueBits3;
         }
     }

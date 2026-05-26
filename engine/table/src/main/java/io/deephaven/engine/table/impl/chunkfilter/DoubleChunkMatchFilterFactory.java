@@ -315,7 +315,7 @@ public class DoubleChunkMatchFilterFactory {
 
         @Override
         public boolean matches(double value) {
-            final long valueBits = Double.doubleToLongBits(value);
+            final long valueBits = getBits(value);
             return valueBits != valueBits1 && valueBits != valueBits2 && valueBits != valueBits3;
         }
     }
