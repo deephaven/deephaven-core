@@ -214,7 +214,7 @@ public abstract class HashMapBase implements NullableLongLongMap {
         int nextIndex = 0;
         // In a single-threaded case, we would not need the 'nextIndex < sz' part of the conjunction. But in the
         // unsynchronized concurrent case, we might encounter more keys than would fit in the array. To avoid an index
-        // range exception, we do the 'nextIndex < sz' test both here and in the loop below.
+        // range exception, we do the 'nextIndex < sz' test here.
         for (int ii = 0; ii < kv.length && nextIndex < sz; ii += 2) {
             final long key = kv[ii];
             if (key == SPECIAL_KEY_FOR_EMPTY_SLOT || key == SPECIAL_KEY_FOR_DELETED_SLOT) {
