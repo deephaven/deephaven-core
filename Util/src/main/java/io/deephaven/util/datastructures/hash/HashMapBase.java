@@ -12,7 +12,7 @@ import java.util.HashSet;
 
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
-public abstract class HashMapBase implements NullableLong2LongMap {
+public abstract class HashMapBase implements NullableLongLongMap {
     static final int DEFAULT_INITIAL_CAPACITY = 10;
     static final long DEFAULT_NO_ENTRY_VALUE = -1;
     static final float DEFAULT_LOAD_FACTOR = 0.5f;

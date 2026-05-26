@@ -15,14 +15,9 @@ import io.deephaven.engine.updategraph.UpdateCommitter;
 import io.deephaven.util.datastructures.hash.HashMapLockFreeK1V1;
 import io.deephaven.util.datastructures.hash.HashMapLockFreeK2V2;
 import io.deephaven.util.datastructures.hash.HashMapLockFreeK4V4;
-import io.deephaven.util.datastructures.hash.NullableLong2LongMap;
+import io.deephaven.util.datastructures.hash.NullableLongLongMap;
 import io.deephaven.util.mutable.MutableInt;
-import it.unimi.dsi.fastutil.longs.Long2LongMap;
-import it.unimi.dsi.fastutil.longs.Long2LongMaps;
-import it.unimi.dsi.fastutil.objects.ObjectSet;
 import org.jetbrains.annotations.NotNull;
-
-import java.util.Iterator;
 
 /**
  * This is a lock-free implementation of a WritableRowRedirection. The rules for using this class are as follows.
@@ -127,15 +122,15 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
     /**
      * How things looked at the beginning of the most recent idle cycle.
      */
-    private final NullableLong2LongMap baseline;
+    private final NullableLongLongMap baseline;
     /**
      * Updates that have happened since the start of the most recent idle cycle.
      */
-    private NullableLong2LongMap updates;
+    private NullableLongLongMap updates;
 
     private UpdateCommitter<WritableRowRedirectionLockFree> updateCommitter;
 
-    WritableRowRedirectionLockFree(NullableLong2LongMap map) {
+    WritableRowRedirectionLockFree(NullableLongLongMap map) {
         this.baseline = map;
         // Initially, baseline == updates (i.e. they point to the same object). They will continue to point to the same
         // object until the first terminal listener notification after prev tracking is turned on (via
@@ -152,8 +147,8 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
         // This only gets called by the UpdateCommitter, and only as a result of a terminal listener notification (which
         // in turn can only happen once prev tracking has been turned on). We copy updates to baseline and reset the
         // updates map.
-        final NullableLong2LongMap updates = instance.updates;
-        final NullableLong2LongMap baseline = instance.baseline;
+        final NullableLongLongMap updates = instance.updates;
+        final NullableLongLongMap baseline = instance.baseline;
         Assert.neq(baseline, "baseline", updates, "updates");
 
         updates.forEach((key, value) -> {
@@ -304,17 +299,17 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
             .getIntegerForClassWithDefault(WritableRowRedirectionLockFree.class, "hashBucketWidth", 1);
 
     @NotNull
-    private static NullableLong2LongMap createUpdateMap() {
+    private static NullableLongLongMap createUpdateMap() {
         return createMapWithCapacity(10, LOAD_FACTOR, UPDATES_KEY_NOT_FOUND);
     }
 
     @NotNull
-    static NullableLong2LongMap createMapWithCapacity(int initialCapacity) {
+    static NullableLongLongMap createMapWithCapacity(int initialCapacity) {
         return createMapWithCapacity(initialCapacity, LOAD_FACTOR, BASELINE_KEY_NOT_FOUND);
     }
 
     @NotNull
-    private static NullableLong2LongMap createMapWithCapacity(int initialCapacity, float loadFactor,
+    private static NullableLongLongMap createMapWithCapacity(int initialCapacity, float loadFactor,
             long noEntryValue) {
         switch (hashBucketWidth) {
             case 1:

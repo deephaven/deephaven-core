@@ -8,7 +8,7 @@ import it.unimi.dsi.fastutil.longs.LongLongBiConsumer;
 /**
  * The interface we use for our Long2LongMaps that are the basis for a hashed redirection index.
  */
-public interface NullableLong2LongMap {
+public interface NullableLongLongMap {
     void resetToNull();
 
     int capacity();
