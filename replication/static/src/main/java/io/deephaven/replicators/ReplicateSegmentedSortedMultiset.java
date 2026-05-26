@@ -297,6 +297,8 @@ public class ReplicateSegmentedSortedMultiset {
 
     private static List<String> fixupObjectCompare(List<String> lines) {
         lines = removeRegion(lines, "VectorEquals");
+        // the primitive iterator is only used by the (now removed) primitive-vector equalsArray overload
+        lines = removeImport(lines, "\\s*import .*CloseablePrimitiveIteratorOfObject;");
         lines = replaceRegion(lines, "EqualsArrayTypeCheck", Collections.singletonList(
                 "        if(o.getComponentType() != o.getComponentType()) {\n" +
                         "            return false;\n" +

@@ -14,6 +14,8 @@ import io.deephaven.vector.FloatVectorDirect;
 import io.deephaven.vector.ObjectVector;
 import io.deephaven.util.compare.FloatComparisons;
 import io.deephaven.util.type.ArrayTypeUtils;
+import io.deephaven.engine.primitive.iterator.CloseableIterator;
+import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfFloat;
 import io.deephaven.engine.table.impl.by.SumIntChunk;
 import io.deephaven.engine.table.impl.sort.timsort.TimsortUtils;
 import io.deephaven.chunk.*;
@@ -2646,32 +2648,34 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
             return false;
         }
 
-        if (size == 1) {
-            return get(0) == o.get(0);
-        }
+        // iterate o exactly once; random access via get can be expensive for some Vector implementations
+        try (final CloseablePrimitiveIteratorOfFloat oit = o.iterator()) {
+            if (size == 1) {
+                return get(0) == oit.nextFloat();
+            }
 
-        if (leafCount == 1) {
-            for (int ii = 0; ii < size; ii++) {
-                // region DirObjectEquals
-                if (directoryValues[ii] != o.get(ii)) {
-                    return false;
+            if (leafCount == 1) {
+                for (int ii = 0; ii < size; ii++) {
+                    // region DirObjectEquals
+                    if (directoryValues[ii] != oit.nextFloat()) {
+                        return false;
+                    }
+                    // endregion DirObjectEquals
                 }
-                // endregion DirObjectEquals
+
+                return true;
+            }
+
+            for (int li = 0; li < leafCount; ++li) {
+                for (int ai = 0; ai < leafSizes[li]; ai++) {
+                    if (leafValues[li][ai] != oit.nextFloat()) {
+                        return false;
+                    }
+                }
             }
 
             return true;
         }
-
-        int nCompared = 0;
-        for (int li = 0; li < leafCount; ++li) {
-            for (int ai = 0; ai < leafSizes[li]; ai++) {
-                if (leafValues[li][ai] != o.get(nCompared++)) {
-                    return false;
-                }
-            }
-        }
-
-        return true;
     }
     // endregion VectorEquals
 
@@ -2686,51 +2690,53 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
             return false;
         }
 
-        if (size == 1) {
-            final Float val = (Float) o.get(0);
-            // region VectorEquals
-            if (get(0) == NULL_FLOAT && val != null && val != NULL_FLOAT) {
-                return false;
-            }
-            // endregion VectorEquals
-
-            return Objects.equals(get(0), val);
-        }
-
-        if (leafCount == 1) {
-            for (int ii = 0; ii < size; ii++) {
-                final Float val = (Float) o.get(ii);
+        // iterate o exactly once; random access via get can be expensive for some Vector implementations
+        try (final CloseableIterator<?> oit = o.iterator()) {
+            if (size == 1) {
+                final Float val = (Float) oit.next();
                 // region VectorEquals
-                if (directoryValues[ii] == NULL_FLOAT && val != null && val != NULL_FLOAT) {
+                if (get(0) == NULL_FLOAT && val != null && val != NULL_FLOAT) {
                     return false;
                 }
                 // endregion VectorEquals
 
-                if (!Objects.equals(directoryValues[ii], val)) {
-                    return false;
+                return Objects.equals(get(0), val);
+            }
+
+            if (leafCount == 1) {
+                for (int ii = 0; ii < size; ii++) {
+                    final Float val = (Float) oit.next();
+                    // region VectorEquals
+                    if (directoryValues[ii] == NULL_FLOAT && val != null && val != NULL_FLOAT) {
+                        return false;
+                    }
+                    // endregion VectorEquals
+
+                    if (!Objects.equals(directoryValues[ii], val)) {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+
+            for (int li = 0; li < leafCount; ++li) {
+                for (int ai = 0; ai < leafSizes[li]; ai++) {
+                    final Float val = (Float) oit.next();
+                    // region VectorEquals
+                    if (leafValues[li][ai] == NULL_FLOAT && val != null && val != NULL_FLOAT) {
+                        return false;
+                    }
+                    // endregion VectorEquals
+
+                    if (!Objects.equals(leafValues[li][ai], val)) {
+                        return false;
+                    }
                 }
             }
 
             return true;
         }
-
-        int nCompared = 0;
-        for (int li = 0; li < leafCount; ++li) {
-            for (int ai = 0; ai < leafSizes[li]; ai++) {
-                final Float val = (Float) o.get(nCompared++);
-                // region VectorEquals
-                if (leafValues[li][ai] == NULL_FLOAT && val != null && val != NULL_FLOAT) {
-                    return false;
-                }
-                // endregion VectorEquals
-
-                if (!Objects.equals(leafValues[li][ai], val)) {
-                    return false;
-                }
-            }
-        }
-
-        return true;
     }
 
     @Override

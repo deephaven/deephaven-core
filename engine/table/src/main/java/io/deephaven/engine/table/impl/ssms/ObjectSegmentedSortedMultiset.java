@@ -21,6 +21,7 @@ import io.deephaven.vector.ObjectVectorDirect;
 import io.deephaven.vector.ObjectVector;
 import io.deephaven.util.compare.ObjectComparisons;
 import io.deephaven.util.type.ArrayTypeUtils;
+import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.table.impl.by.SumIntChunk;
 import io.deephaven.engine.table.impl.sort.timsort.TimsortUtils;
 import io.deephaven.chunk.*;
@@ -2668,42 +2669,44 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
             return false;
         }
 
-        if (size == 1) {
-            final Object val = (Object) o.get(0);
-            // region VectorEquals
-            // endregion VectorEquals
-
-            return Objects.equals(get(0), val);
-        }
-
-        if (leafCount == 1) {
-            for (int ii = 0; ii < size; ii++) {
-                final Object val = (Object) o.get(ii);
+        // iterate o exactly once; random access via get can be expensive for some Vector implementations
+        try (final CloseableIterator<?> oit = o.iterator()) {
+            if (size == 1) {
+                final Object val = (Object) oit.next();
                 // region VectorEquals
                 // endregion VectorEquals
 
-                if (!Objects.equals(directoryValues[ii], val)) {
-                    return false;
+                return Objects.equals(get(0), val);
+            }
+
+            if (leafCount == 1) {
+                for (int ii = 0; ii < size; ii++) {
+                    final Object val = (Object) oit.next();
+                    // region VectorEquals
+                    // endregion VectorEquals
+
+                    if (!Objects.equals(directoryValues[ii], val)) {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+
+            for (int li = 0; li < leafCount; ++li) {
+                for (int ai = 0; ai < leafSizes[li]; ai++) {
+                    final Object val = (Object) oit.next();
+                    // region VectorEquals
+                    // endregion VectorEquals
+
+                    if (!Objects.equals(leafValues[li][ai], val)) {
+                        return false;
+                    }
                 }
             }
 
             return true;
         }
-
-        int nCompared = 0;
-        for (int li = 0; li < leafCount; ++li) {
-            for (int ai = 0; ai < leafSizes[li]; ai++) {
-                final Object val = (Object) o.get(nCompared++);
-                // region VectorEquals
-                // endregion VectorEquals
-
-                if (!Objects.equals(leafValues[li][ai], val)) {
-                    return false;
-                }
-            }
-        }
-
-        return true;
     }
 
     @Override

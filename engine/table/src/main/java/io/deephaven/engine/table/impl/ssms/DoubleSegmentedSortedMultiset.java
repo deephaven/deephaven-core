@@ -14,6 +14,8 @@ import io.deephaven.vector.DoubleVectorDirect;
 import io.deephaven.vector.ObjectVector;
 import io.deephaven.util.compare.DoubleComparisons;
 import io.deephaven.util.type.ArrayTypeUtils;
+import io.deephaven.engine.primitive.iterator.CloseableIterator;
+import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfDouble;
 import io.deephaven.engine.table.impl.by.SumIntChunk;
 import io.deephaven.engine.table.impl.sort.timsort.TimsortUtils;
 import io.deephaven.chunk.*;
@@ -2646,32 +2648,34 @@ public final class DoubleSegmentedSortedMultiset implements SegmentedSortedMulti
             return false;
         }
 
-        if (size == 1) {
-            return get(0) == o.get(0);
-        }
+        // iterate o exactly once; random access via get can be expensive for some Vector implementations
+        try (final CloseablePrimitiveIteratorOfDouble oit = o.iterator()) {
+            if (size == 1) {
+                return get(0) == oit.nextDouble();
+            }
 
-        if (leafCount == 1) {
-            for (int ii = 0; ii < size; ii++) {
-                // region DirObjectEquals
-                if (directoryValues[ii] != o.get(ii)) {
-                    return false;
+            if (leafCount == 1) {
+                for (int ii = 0; ii < size; ii++) {
+                    // region DirObjectEquals
+                    if (directoryValues[ii] != oit.nextDouble()) {
+                        return false;
+                    }
+                    // endregion DirObjectEquals
                 }
-                // endregion DirObjectEquals
+
+                return true;
+            }
+
+            for (int li = 0; li < leafCount; ++li) {
+                for (int ai = 0; ai < leafSizes[li]; ai++) {
+                    if (leafValues[li][ai] != oit.nextDouble()) {
+                        return false;
+                    }
+                }
             }
 
             return true;
         }
-
-        int nCompared = 0;
-        for (int li = 0; li < leafCount; ++li) {
-            for (int ai = 0; ai < leafSizes[li]; ai++) {
-                if (leafValues[li][ai] != o.get(nCompared++)) {
-                    return false;
-                }
-            }
-        }
-
-        return true;
     }
     // endregion VectorEquals
 
@@ -2686,51 +2690,53 @@ public final class DoubleSegmentedSortedMultiset implements SegmentedSortedMulti
             return false;
         }
 
-        if (size == 1) {
-            final Double val = (Double) o.get(0);
-            // region VectorEquals
-            if (get(0) == NULL_DOUBLE && val != null && val != NULL_DOUBLE) {
-                return false;
-            }
-            // endregion VectorEquals
-
-            return Objects.equals(get(0), val);
-        }
-
-        if (leafCount == 1) {
-            for (int ii = 0; ii < size; ii++) {
-                final Double val = (Double) o.get(ii);
+        // iterate o exactly once; random access via get can be expensive for some Vector implementations
+        try (final CloseableIterator<?> oit = o.iterator()) {
+            if (size == 1) {
+                final Double val = (Double) oit.next();
                 // region VectorEquals
-                if (directoryValues[ii] == NULL_DOUBLE && val != null && val != NULL_DOUBLE) {
+                if (get(0) == NULL_DOUBLE && val != null && val != NULL_DOUBLE) {
                     return false;
                 }
                 // endregion VectorEquals
 
-                if (!Objects.equals(directoryValues[ii], val)) {
-                    return false;
+                return Objects.equals(get(0), val);
+            }
+
+            if (leafCount == 1) {
+                for (int ii = 0; ii < size; ii++) {
+                    final Double val = (Double) oit.next();
+                    // region VectorEquals
+                    if (directoryValues[ii] == NULL_DOUBLE && val != null && val != NULL_DOUBLE) {
+                        return false;
+                    }
+                    // endregion VectorEquals
+
+                    if (!Objects.equals(directoryValues[ii], val)) {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+
+            for (int li = 0; li < leafCount; ++li) {
+                for (int ai = 0; ai < leafSizes[li]; ai++) {
+                    final Double val = (Double) oit.next();
+                    // region VectorEquals
+                    if (leafValues[li][ai] == NULL_DOUBLE && val != null && val != NULL_DOUBLE) {
+                        return false;
+                    }
+                    // endregion VectorEquals
+
+                    if (!Objects.equals(leafValues[li][ai], val)) {
+                        return false;
+                    }
                 }
             }
 
             return true;
         }
-
-        int nCompared = 0;
-        for (int li = 0; li < leafCount; ++li) {
-            for (int ai = 0; ai < leafSizes[li]; ai++) {
-                final Double val = (Double) o.get(nCompared++);
-                // region VectorEquals
-                if (leafValues[li][ai] == NULL_DOUBLE && val != null && val != NULL_DOUBLE) {
-                    return false;
-                }
-                // endregion VectorEquals
-
-                if (!Objects.equals(leafValues[li][ai], val)) {
-                    return false;
-                }
-            }
-        }
-
-        return true;
     }
 
     @Override

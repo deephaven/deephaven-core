@@ -19,6 +19,8 @@ import io.deephaven.vector.LongVectorDirect;
 import io.deephaven.vector.ObjectVector;
 import io.deephaven.util.compare.LongComparisons;
 import io.deephaven.util.type.ArrayTypeUtils;
+import io.deephaven.engine.primitive.iterator.CloseableIterator;
+import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfLong;
 import io.deephaven.engine.table.impl.by.SumIntChunk;
 import io.deephaven.engine.table.impl.sort.timsort.TimsortUtils;
 import io.deephaven.chunk.*;
@@ -2651,32 +2653,34 @@ public final class LongSegmentedSortedMultiset implements SegmentedSortedMultiSe
             return false;
         }
 
-        if (size == 1) {
-            return get(0) == o.get(0);
-        }
+        // iterate o exactly once; random access via get can be expensive for some Vector implementations
+        try (final CloseablePrimitiveIteratorOfLong oit = o.iterator()) {
+            if (size == 1) {
+                return get(0) == oit.nextLong();
+            }
 
-        if (leafCount == 1) {
-            for (int ii = 0; ii < size; ii++) {
-                // region DirObjectEquals
-                if (directoryValues[ii] != o.get(ii)) {
-                    return false;
+            if (leafCount == 1) {
+                for (int ii = 0; ii < size; ii++) {
+                    // region DirObjectEquals
+                    if (directoryValues[ii] != oit.nextLong()) {
+                        return false;
+                    }
+                    // endregion DirObjectEquals
                 }
-                // endregion DirObjectEquals
+
+                return true;
+            }
+
+            for (int li = 0; li < leafCount; ++li) {
+                for (int ai = 0; ai < leafSizes[li]; ai++) {
+                    if (leafValues[li][ai] != oit.nextLong()) {
+                        return false;
+                    }
+                }
             }
 
             return true;
         }
-
-        int nCompared = 0;
-        for (int li = 0; li < leafCount; ++li) {
-            for (int ai = 0; ai < leafSizes[li]; ai++) {
-                if (leafValues[li][ai] != o.get(nCompared++)) {
-                    return false;
-                }
-            }
-        }
-
-        return true;
     }
     // endregion VectorEquals
 
@@ -2691,51 +2695,53 @@ public final class LongSegmentedSortedMultiset implements SegmentedSortedMultiSe
             return false;
         }
 
-        if (size == 1) {
-            final Long val = (Long) o.get(0);
-            // region VectorEquals
-            if (get(0) == NULL_LONG && val != null && val != NULL_LONG) {
-                return false;
-            }
-            // endregion VectorEquals
-
-            return Objects.equals(get(0), val);
-        }
-
-        if (leafCount == 1) {
-            for (int ii = 0; ii < size; ii++) {
-                final Long val = (Long) o.get(ii);
+        // iterate o exactly once; random access via get can be expensive for some Vector implementations
+        try (final CloseableIterator<?> oit = o.iterator()) {
+            if (size == 1) {
+                final Long val = (Long) oit.next();
                 // region VectorEquals
-                if (directoryValues[ii] == NULL_LONG && val != null && val != NULL_LONG) {
+                if (get(0) == NULL_LONG && val != null && val != NULL_LONG) {
                     return false;
                 }
                 // endregion VectorEquals
 
-                if (!Objects.equals(directoryValues[ii], val)) {
-                    return false;
+                return Objects.equals(get(0), val);
+            }
+
+            if (leafCount == 1) {
+                for (int ii = 0; ii < size; ii++) {
+                    final Long val = (Long) oit.next();
+                    // region VectorEquals
+                    if (directoryValues[ii] == NULL_LONG && val != null && val != NULL_LONG) {
+                        return false;
+                    }
+                    // endregion VectorEquals
+
+                    if (!Objects.equals(directoryValues[ii], val)) {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+
+            for (int li = 0; li < leafCount; ++li) {
+                for (int ai = 0; ai < leafSizes[li]; ai++) {
+                    final Long val = (Long) oit.next();
+                    // region VectorEquals
+                    if (leafValues[li][ai] == NULL_LONG && val != null && val != NULL_LONG) {
+                        return false;
+                    }
+                    // endregion VectorEquals
+
+                    if (!Objects.equals(leafValues[li][ai], val)) {
+                        return false;
+                    }
                 }
             }
 
             return true;
         }
-
-        int nCompared = 0;
-        for (int li = 0; li < leafCount; ++li) {
-            for (int ai = 0; ai < leafSizes[li]; ai++) {
-                final Long val = (Long) o.get(nCompared++);
-                // region VectorEquals
-                if (leafValues[li][ai] == NULL_LONG && val != null && val != NULL_LONG) {
-                    return false;
-                }
-                // endregion VectorEquals
-
-                if (!Objects.equals(leafValues[li][ai], val)) {
-                    return false;
-                }
-            }
-        }
-
-        return true;
     }
 
     @Override
