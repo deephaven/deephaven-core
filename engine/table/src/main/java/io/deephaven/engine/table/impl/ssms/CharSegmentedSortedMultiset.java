@@ -1541,10 +1541,10 @@ public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSe
 
     /**
      * Append {@code count} copies of {@code value} as a new maximum element. {@code value} must be strictly greater
-     * than the current maximum, or this set must be empty. Does not adjust {@link #totalSize}; the caller is
-     * responsible for that bookkeeping.
+     * than the current maximum, or this set must be empty.
      */
     private void appendMaximum(char value, long count) {
+        totalSize += count;
         if (leafCount == 0) {
             singletonValue = value;
             singletonCount = count;
@@ -1601,10 +1601,10 @@ public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSe
 
     /**
      * Prepend {@code count} copies of {@code value} as a new minimum element. {@code value} must be strictly less than
-     * the current minimum, or this set must be empty. Does not adjust {@link #totalSize}; the caller is responsible for
-     * that bookkeeping.
+     * the current minimum, or this set must be empty.
      */
     private void prependMinimum(char value, long count) {
+        totalSize += count;
         if (leafCount == 0) {
             singletonValue = value;
             singletonCount = count;
@@ -1695,7 +1695,6 @@ public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSe
                 destination.addMaxCount(count);
             } else {
                 destination.appendMaximum(singletonValue, count);
-                destination.totalSize += count;
             }
             totalSize -= count;
             singletonCount -= count;
@@ -2154,7 +2153,6 @@ public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSe
                 destination.addMinCount(count);
             } else {
                 destination.prependMinimum(singletonValue, count);
-                destination.totalSize += count;
             }
             totalSize -= count;
             singletonCount -= count;
