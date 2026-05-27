@@ -452,8 +452,9 @@ public final class ByteSegmentedSortedMultiset implements SegmentedSortedMultiSe
         return maybeCompact(valuesToInsert, counts, offset, ripos, wipos.get(), end);
     }
 
-    private void insertInternal(WritableByteChunk<? extends Values> valuesToInsert, WritableIntChunk<ChunkLengths> counts,
-                                int offset, int length) {
+    private void insertInternal(WritableByteChunk<? extends Values> valuesToInsert,
+            WritableIntChunk<ChunkLengths> counts,
+            int offset, int length) {
         validate();
         validateInputs(valuesToInsert, counts, offset, length);
         if (length == 0) {
@@ -957,7 +958,7 @@ public final class ByteSegmentedSortedMultiset implements SegmentedSortedMultiSe
     }
 
     private void removeInternal(RemoveContext removeContext, ByteChunk<? extends Values> valuesToRemove,
-                                IntChunk<ChunkLengths> counts, int offset, int length) {
+            IntChunk<ChunkLengths> counts, int offset, int length) {
         validate();
         validateInputs(valuesToRemove, counts, offset, length);
 

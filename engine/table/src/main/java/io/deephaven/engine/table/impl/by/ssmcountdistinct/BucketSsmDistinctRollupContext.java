@@ -13,14 +13,17 @@ public class BucketSsmDistinctRollupContext extends SsmDistinctRollupContext
     public final WritableIntChunk<ChunkLengths> lengthCopy;
     final WritableIntChunk<ChunkLengths> countCopy;
     public final WritableIntChunk<ChunkPositions> starts;
-    public final WritableBooleanChunk<?> ssmsToMaybeClear;
+    // per-bucket starts/lengths for the net-addition side (postValues) when diffing a modify
+    public final WritableIntChunk<ChunkPositions> postStarts;
+    public final WritableIntChunk<ChunkLengths> postLengthCopy;
 
     public BucketSsmDistinctRollupContext(ChunkType chunkType, int size) {
         super(chunkType);
         lengthCopy = WritableIntChunk.makeWritableChunk(size);
         countCopy = WritableIntChunk.makeWritableChunk(size);
         starts = WritableIntChunk.makeWritableChunk(size);
-        ssmsToMaybeClear = WritableBooleanChunk.makeWritableChunk(size);
+        postStarts = WritableIntChunk.makeWritableChunk(size);
+        postLengthCopy = WritableIntChunk.makeWritableChunk(size);
     }
 
     @Override
@@ -29,6 +32,7 @@ public class BucketSsmDistinctRollupContext extends SsmDistinctRollupContext
         lengthCopy.close();
         countCopy.close();
         starts.close();
-        ssmsToMaybeClear.close();
+        postStarts.close();
+        postLengthCopy.close();
     }
 }

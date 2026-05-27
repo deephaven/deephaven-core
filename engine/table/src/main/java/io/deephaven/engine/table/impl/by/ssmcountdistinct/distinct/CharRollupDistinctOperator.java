@@ -10,6 +10,7 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.by.RollupConstants;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.*;
+import io.deephaven.engine.table.impl.by.ssmcountdistinct.compactmodifications.CharCompactModifications;
 import io.deephaven.engine.updategraph.UpdateCommitter;
 import io.deephaven.engine.table.impl.by.IterativeChunkedAggregationOperator;
 import io.deephaven.engine.table.ColumnSource;
@@ -18,6 +19,8 @@ import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.*;
+import io.deephaven.chunk.sized.SizedChunk;
+import io.deephaven.chunk.sized.SizedIntChunk;
 import io.deephaven.engine.table.impl.ssms.CharSegmentedSortedMultiset;
 import io.deephaven.engine.table.impl.ssms.SegmentedSortedMultiSet;
 import io.deephaven.engine.table.impl.util.compact.CharCompactKernel;
@@ -216,23 +219,28 @@ public class CharRollupDistinctOperator implements IterativeChunkedAggregationOp
         }
     }
 
-    private void updateModifyAddValues(BucketSsmDistinctRollupContext context,
-            Chunk<? extends Values> inputs,
-            IntChunk<ChunkPositions> starts,
-            IntChunk<ChunkLengths> lengths) {
+    /**
+     * Flatten each child's per-cycle removed (or added) delta values for every bucket into a single contiguous run,
+     * without compacting: the per-bucket run begins at {@code targetStarts[ii]} and has length
+     * {@code targetLengths[ii]} (the sum of the buckets' child delta sizes). The values are left uncompacted because
+     * {@link CharCompactModifications#compactAndCountModifications} sorts, counts, and diffs each run in place. The
+     * destination value/count chunks are grown and sized to hold every bucket's run.
+     */
+    private void flattenDeltas(SizedChunk<Values> targetValues, SizedIntChunk<ChunkLengths> targetCounts,
+            WritableIntChunk<ChunkPositions> targetStarts, WritableIntChunk<ChunkLengths> targetLengths,
+            Chunk<? extends Values> inputs, IntChunk<ChunkPositions> starts, IntChunk<ChunkLengths> lengths,
+            boolean removed) {
         final ObjectChunk<CharSegmentedSortedMultiset, ? extends Values> inputValues = inputs.asObjectChunk();
 
-        context.lengthCopy.setSize(lengths.size());
-        context.starts.setSize(lengths.size());
-        if (context.valueCopy.get() != null) {
-            context.valueCopy.get().setSize(0);
-            context.counts.get().setSize(0);
+        targetLengths.setSize(lengths.size());
+        targetStarts.setSize(lengths.size());
+        if (targetValues.get() != null) {
+            targetValues.get().setSize(0);
         }
 
-        // Now fill the valueCopy set with the expanded underlying SSMs
         int currentPos = 0;
         for (int ii = 0; ii < starts.size(); ii++) {
-            context.starts.set(ii, currentPos);
+            targetStarts.set(ii, currentPos);
 
             final int startPos = starts.get(ii);
             final int curLength = lengths.get(ii);
@@ -240,29 +248,30 @@ public class CharRollupDistinctOperator implements IterativeChunkedAggregationOp
             for (int kk = startPos; kk < startPos + curLength; kk++) {
                 final CharSegmentedSortedMultiset ssm = inputValues.get(kk);
                 final int size;
-                if (ssm == null || (size = ssm.getAddedSize()) == 0) {
+                if (ssm == null || (size = removed ? ssm.getRemovedSize() : ssm.getAddedSize()) == 0) {
                     continue;
                 }
 
-                context.valueCopy.ensureCapacityPreserve(currentPos + newLength + size);
-                ssm.fillAddedChunk(context.valueCopy.get().asWritableCharChunk(), currentPos + newLength);
+                targetValues.ensureCapacityPreserve(currentPos + newLength + size);
+                if (removed) {
+                    ssm.fillRemovedChunk(targetValues.get().asWritableCharChunk(), currentPos + newLength);
+                } else {
+                    ssm.fillAddedChunk(targetValues.get().asWritableCharChunk(), currentPos + newLength);
+                }
 
                 newLength += size;
                 // we have to do this every time otherwise ensureCapacityPreserve will not do anything.
-                context.valueCopy.get().setSize(currentPos + newLength);
+                targetValues.get().setSize(currentPos + newLength);
             }
 
-            // If we wrote anything into values, compact and count them, and recompute the updated length
-            if (newLength > 0) {
-                context.counts.ensureCapacityPreserve(currentPos + newLength);
-                context.counts.get().setSize(currentPos + newLength);
-                newLength = CharCompactKernel.compactAndCount(context.valueCopy.get().asWritableCharChunk(),
-                        context.counts.get(), currentPos, newLength, countNullNaN, countNullNaN);
-            }
-
-            context.lengthCopy.set(ii, newLength);
+            targetLengths.set(ii, newLength);
             currentPos += newLength;
         }
+
+        // ensure the value and count chunks exist and are sized so the kernel can compact each run in place
+        targetValues.ensureCapacityPreserve(currentPos);
+        targetCounts.ensureCapacityPreserve(currentPos);
+        targetCounts.get().setSize(currentPos);
     }
 
     @Override
@@ -270,52 +279,42 @@ public class CharRollupDistinctOperator implements IterativeChunkedAggregationOp
             Chunk<? extends Values> postValues, LongChunk<? extends RowKeys> postShiftRowKeys,
             IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
             WritableBooleanChunk<Values> stateModified) {
-        final BucketSsmDistinctRollupContext context =
-                updateRemoveValues((BucketSsmDistinctRollupContext) bucketedContext, preValues, startPositions, length);
+        final BucketSsmDistinctRollupContext context = (BucketSsmDistinctRollupContext) bucketedContext;
+        // flatten each side's child deltas, then diff them per bucket so only the net change touches the parent ssm
+        flattenDeltas(context.valueCopy, context.counts, context.starts, context.lengthCopy, preValues, startPositions,
+                length, true);
+        flattenDeltas(context.postValues, context.postCounts, context.postStarts, context.postLengthCopy, postValues,
+                startPositions, length, false);
 
         final SegmentedSortedMultiSet.RemoveContext removeContext = removeContextFactory.get();
-        context.ssmsToMaybeClear.fillWithValue(0, destinations.size(), false);
-        final WritableCharChunk<? extends Values> preValueCopy =
-                context.valueCopy.get() == null ? null : context.valueCopy.get().asWritableCharChunk();
-        final WritableIntChunk<ChunkLengths> preCounts = context.counts.get();
+        final WritableCharChunk<? extends Values> preValueCopy = context.valueCopy.get().asWritableCharChunk();
+        final WritableIntChunk<ChunkLengths> removedCounts = context.counts.get();
+        final WritableCharChunk<? extends Values> postValueCopy = context.postValues.get().asWritableCharChunk();
+        final WritableIntChunk<ChunkLengths> addedCounts = context.postCounts.get();
         for (int ii = 0; ii < startPositions.size(); ++ii) {
-            final int runLength = context.lengthCopy.get(ii);
-            if (runLength == 0) {
-                continue;
-            }
-            final int startPosition = context.starts.get(ii);
-            final int origStartPosition = startPositions.get(ii);
-            final long destination = destinations.get(origStartPosition);
-
-            final CharSegmentedSortedMultiset ssm = ssmForSlot(destination);
-            ssm.remove(removeContext, preValueCopy, preCounts, startPosition, runLength);
-            if (ssm.isEmpty()) {
-                context.ssmsToMaybeClear.set(ii, true);
-            }
-        }
-
-        updateModifyAddValues(context, postValues, startPositions, length);
-        final WritableCharChunk<? extends Values> postValueCopy =
-                context.valueCopy.get() == null ? null : context.valueCopy.get().asWritableCharChunk();
-        final WritableIntChunk<ChunkLengths> postCounts = context.counts.get();
-        for (int ii = 0; ii < startPositions.size(); ++ii) {
-            final int runLength = context.lengthCopy.get(ii);
-            final int startPosition = context.starts.get(ii);
             final int origStartPosition = startPositions.get(ii);
             final long destination = destinations.get(origStartPosition);
             final CharSegmentedSortedMultiset ssm = ssmForSlot(destination);
 
-            if (runLength == 0) {
-                if (context.ssmsToMaybeClear.get(ii)) {
-                    // we may have deleted this position on the last round, really get rid of it
+            final int removedRunLength = context.lengthCopy.get(ii);
+            final int addedRunLength = context.postLengthCopy.get(ii);
+            if (removedRunLength != 0 || addedRunLength != 0) {
+                CharCompactModifications.compactAndCountModifications(preValueCopy, removedCounts, postValueCopy,
+                        addedCounts, context.starts.get(ii), removedRunLength, context.postStarts.get(ii),
+                        addedRunLength, countNullNaN, countNullNaN, context.removedSize, context.addedSize);
+                final int removed = context.removedSize.get();
+                if (removed > 0) {
+                    ssm.remove(removeContext, preValueCopy, removedCounts, context.starts.get(ii), removed);
+                }
+                final int added = context.addedSize.get();
+                if (added > 0) {
+                    ssm.insert(postValueCopy, addedCounts, context.postStarts.get(ii), added);
+                }
+                if (ssm.isEmpty()) {
                     clearSsm(destination);
                 }
-
-                stateModified.set(ii, ssm.getRemovedSize() > 0);
-                continue;
             }
 
-            ssm.insert(postValueCopy, postCounts, startPosition, runLength);
             stateModified.set(ii, ssm.getAddedSize() > 0 || ssm.getRemovedSize() > 0);
         }
     }
@@ -426,64 +425,70 @@ public class CharRollupDistinctOperator implements IterativeChunkedAggregationOp
         return anyRemoved;
     }
 
-    private void updateModifyAddValues(SsmDistinctRollupContext context,
-            Chunk<? extends Values> inputs) {
+    /**
+     * Flatten each child's per-cycle removed (or added) delta values into {@code targetValues} without compacting,
+     * returning the number flattened. The values are left uncompacted because
+     * {@link CharCompactModifications#compactAndCountModifications} sorts, counts, and diffs the run in place.
+     */
+    private int flattenDeltas(SizedChunk<Values> targetValues, SizedIntChunk<ChunkLengths> targetCounts,
+            Chunk<? extends Values> inputs, boolean removed) {
         final ObjectChunk<CharSegmentedSortedMultiset, ? extends Values> values = inputs.asObjectChunk();
 
-        if (context.valueCopy.get() != null) {
-            context.valueCopy.get().setSize(0);
-            context.counts.get().setSize(0);
-        }
-        if (values.size() == 0) {
-            return;
+        if (targetValues.get() != null) {
+            targetValues.get().setSize(0);
         }
 
         int currentPos = 0;
         for (int ii = 0; ii < values.size(); ii++) {
             final CharSegmentedSortedMultiset ssm = values.get(ii);
             final int size;
-            if (ssm == null || (size = ssm.getAddedSize()) == 0) {
+            if (ssm == null || (size = removed ? ssm.getRemovedSize() : ssm.getAddedSize()) == 0) {
                 continue;
             }
 
-            context.valueCopy.ensureCapacityPreserve(currentPos + size);
-            ssm.fillAddedChunk(context.valueCopy.get().asWritableCharChunk(), currentPos);
+            targetValues.ensureCapacityPreserve(currentPos + size);
+            if (removed) {
+                ssm.fillRemovedChunk(targetValues.get().asWritableCharChunk(), currentPos);
+            } else {
+                ssm.fillAddedChunk(targetValues.get().asWritableCharChunk(), currentPos);
+            }
             currentPos += size;
             // we have to do this every time otherwise ensureCapacityPreserve will not do anything.
-            context.valueCopy.get().setSize(currentPos);
+            targetValues.get().setSize(currentPos);
         }
 
-        if (currentPos > 0) {
-            context.counts.ensureCapacityPreserve(currentPos);
-            context.counts.get().setSize(currentPos);
-            CharCompactKernel.compactAndCount(context.valueCopy.get().asWritableCharChunk(), context.counts.get(),
-                    countNullNaN, countNullNaN);
-        }
+        // ensure the value and count chunks exist and are sized so the kernel can compact the run in place
+        targetValues.ensureCapacityPreserve(currentPos);
+        targetCounts.ensureCapacityPreserve(currentPos);
+        targetCounts.get().setSize(currentPos);
+        return currentPos;
     }
 
     @Override
     public boolean modifyChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> preValues,
             Chunk<? extends Values> postValues, LongChunk<? extends RowKeys> postShiftRowKeys, long destination) {
-        final SsmDistinctRollupContext context =
-                updateRemoveValues((SsmDistinctRollupContext) singletonContext, preValues);
-        CharSegmentedSortedMultiset ssm = null;
-        WritableChunk<? extends Values> updatedValues = context.valueCopy.get();
-        if (updatedValues != null && updatedValues.size() > 0) {
-            ssm = ssmForSlot(destination);
-            ssm.remove(context.removeContext, updatedValues, context.counts.get());
+        final SsmDistinctRollupContext context = (SsmDistinctRollupContext) singletonContext;
+        // flatten each side's child deltas, then diff them so only the net change touches the parent ssm
+        final int removedTotal = flattenDeltas(context.valueCopy, context.counts, preValues, true);
+        final int addedTotal = flattenDeltas(context.postValues, context.postCounts, postValues, false);
+        if (removedTotal == 0 && addedTotal == 0) {
+            return false;
         }
 
-        updateModifyAddValues(context, postValues);
-        updatedValues = context.valueCopy.get();
-        if (updatedValues != null && updatedValues.size() > 0) {
-            if (ssm == null) {
-                ssm = ssmForSlot(destination);
-            }
-            ssm.insert(updatedValues, context.counts.get());
-        } else if (ssm != null && ssm.isEmpty()) {
+        CharCompactModifications.compactAndCountModifications(context.valueCopy.get().asWritableCharChunk(),
+                context.counts.get(), context.postValues.get().asWritableCharChunk(), context.postCounts.get(),
+                0, removedTotal, 0, addedTotal, countNullNaN, countNullNaN, context.removedSize, context.addedSize);
+        final CharSegmentedSortedMultiset ssm = ssmForSlot(destination);
+        final int removed = context.removedSize.get();
+        if (removed > 0) {
+            ssm.remove(context.removeContext, context.valueCopy.get(), context.counts.get(), 0, removed);
+        }
+        final int added = context.addedSize.get();
+        if (added > 0) {
+            ssm.insert(context.postValues.get(), context.postCounts.get(), 0, added);
+        }
+        if (ssm.isEmpty()) {
             clearSsm(destination);
-        } else if (ssm == null) {
-            return false;
         }
         return ssm.getAddedSize() > 0 || ssm.getRemovedSize() > 0;
     }

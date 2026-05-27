@@ -451,8 +451,9 @@ public final class DoubleSegmentedSortedMultiset implements SegmentedSortedMulti
         return maybeCompact(valuesToInsert, counts, offset, ripos, wipos.get(), end);
     }
 
-    private void insertInternal(WritableDoubleChunk<? extends Values> valuesToInsert, WritableIntChunk<ChunkLengths> counts,
-                                int offset, int length) {
+    private void insertInternal(WritableDoubleChunk<? extends Values> valuesToInsert,
+            WritableIntChunk<ChunkLengths> counts,
+            int offset, int length) {
         validate();
         validateInputs(valuesToInsert, counts, offset, length);
         if (length == 0) {
@@ -956,7 +957,7 @@ public final class DoubleSegmentedSortedMultiset implements SegmentedSortedMulti
     }
 
     private void removeInternal(RemoveContext removeContext, DoubleChunk<? extends Values> valuesToRemove,
-                                IntChunk<ChunkLengths> counts, int offset, int length) {
+            IntChunk<ChunkLengths> counts, int offset, int length) {
         validate();
         validateInputs(valuesToRemove, counts, offset, length);
 

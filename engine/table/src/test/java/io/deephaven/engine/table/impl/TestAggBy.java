@@ -669,7 +669,21 @@ public class TestAggBy extends RefreshingTableTestCase {
                                 AggUnique("uic=intCol", "uid=doubleCol"),
                                 AggUnique(true, "uicN=intColNulls", "uidN=doubleColNulls")), "Sym")
                                 .sort("Sym"),
-                        "AggCountDistinct")
+                        "AggCountDistinct"),
+                // Zero-key distinct/unique/countDistinct: drives the SingletonContext add/remove/modify path (the
+                // net-delta modify the unique operator applies); compared incrementally against a from-scratch
+                // recompute
+                new EvalNugget() {
+                    public Table e() {
+                        return queryTable.aggBy(List.of(
+                                AggCountDistinct("cdi=intCol", "ddi=doubleCol"),
+                                AggCountDistinct(true, "cdiN=intColNulls", "ddiN=doubleColNulls"),
+                                AggDistinct("dic=intCol", "did=doubleCol"),
+                                AggDistinct(true, "dicN=intColNulls", "didN=doubleColNulls"),
+                                AggUnique("uic=intCol", "uid=doubleCol"),
+                                AggUnique(true, "uicN=intColNulls", "uidN=doubleColNulls")));
+                    }
+                }
         };
         final int steps = 100; // 8;
         for (int step = 0; step < steps; step++) {

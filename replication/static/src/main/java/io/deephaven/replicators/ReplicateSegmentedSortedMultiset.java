@@ -125,6 +125,18 @@ public class ReplicateSegmentedSortedMultiset {
                 (l) -> replaceRegion(l, "CreateNew", Collections.singletonList(
                         "            underlying.set(key, ssm = new ObjectSegmentedSortedMultiset(SsmDistinctContext.NODE_SIZE, componentType));")));
 
+        final String compactModificationsPath =
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/compactmodifications/CharCompactModifications.java";
+        final List<String> compactModifications = charToAllButBoolean(TASK, compactModificationsPath);
+        for (final String compactModification : compactModifications) {
+            if (compactModification.contains("Float")) {
+                fixupFloatCompactModifications(compactModification, "Float");
+            } else if (compactModification.contains("Double")) {
+                fixupFloatCompactModifications(compactModification, "Double");
+            }
+        }
+        fixupObjectCompactModifications(charToObject(TASK, compactModificationsPath));
+
         charToAllButBoolean(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/count/CharChunkedCountDistinctOperator.java");
         fixupObjectKernelOperator(
@@ -243,7 +255,7 @@ public class ReplicateSegmentedSortedMultiset {
         lines = replaceRegion(lines, "ResultCreation",
                 indent(Collections.singletonList("this.internalResult = new ObjectArraySource(type);"), 8));
         lines = globalReplacements(lines, "\\(WritableObjectChunk<\\? extends Values>\\)",
-                "(WritableObjectChunk<?, ? extends Values>)");
+                "(WritableObjectChunk<Object, ? extends Values>)");
         // give the typed chunk locals (e.g. the cast-once valueCopy) the two-argument WritableObjectChunk form
         lines = fixupChunkAttributes(lines);
 
@@ -298,6 +310,31 @@ public class ReplicateSegmentedSortedMultiset {
     private static List<String> fixupNulls(List<String> lines) {
         lines = globalReplacements(lines, "NULL_OBJECT", "null");
         return removeImport(lines, "\\s*import static.*QueryConstants.*;");
+    }
+
+    private static void fixupFloatCompactModifications(String path, String typeOfFloat) throws IOException {
+        final File file = new File(path);
+        List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
+        lines = replaceRegion(lines, "maybeIgnoreNaN", Collections.singletonList("" +
+                "        if (!countNaN && " + typeOfFloat + ".isNaN(value)) {\n" +
+                "            return true;\n" +
+                "        }"));
+        FileUtils.writeLines(file, lines);
+    }
+
+    private static void fixupObjectCompactModifications(String path) throws IOException {
+        final File file = new File(path);
+        List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
+        lines = fixupChunkAttributes(lines, "T");
+        lines = globalReplacements(lines,
+                "public static void compactAndCountModifications",
+                "public static <T> void compactAndCountModifications",
+                "private static int countRun", "private static <T> int countRun",
+                "final Object removedValue", "final T removedValue",
+                "final Object addedValue", "final T addedValue",
+                "final Object value", "final T value");
+        lines = fixupNulls(lines);
+        FileUtils.writeLines(file, lines);
     }
 
     private static List<String> fixupObjectHashes(List<String> lines) {

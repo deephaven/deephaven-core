@@ -18,6 +18,7 @@ import io.deephaven.engine.table.impl.by.IterativeChunkedAggregationOperator;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.BucketSsmDistinctContext;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.IntSsmBackedSource;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.SsmDistinctContext;
+import io.deephaven.engine.table.impl.by.ssmcountdistinct.compactmodifications.IntCompactModifications;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.ChunkLengths;
@@ -132,48 +133,52 @@ public class IntChunkedDistinctOperator implements IterativeChunkedAggregationOp
             Chunk<? extends Values> postValues, LongChunk<? extends RowKeys> postShiftRowKeys,
             IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
             WritableBooleanChunk<Values> stateModified) {
-        final BucketSsmDistinctContext context =
-                getAndUpdateContext(preValues, startPositions, length, bucketedContext);
+        final BucketSsmDistinctContext context = (BucketSsmDistinctContext) bucketedContext;
+        // a modify produces one pre and one post value per row, so the two ranges share start positions and lengths
+        context.valueCopy.setSize(preValues.size());
+        context.valueCopy.copyFromChunk(preValues, 0, 0, preValues.size());
+        context.postValues.setSize(postValues.size());
+        context.postValues.copyFromChunk(postValues, 0, 0, postValues.size());
+
         final SegmentedSortedMultiSet.RemoveContext removeContext = removeContextFactory.get();
-        context.ssmsToMaybeClear.fillWithValue(0, startPositions.size(), false);
-        final WritableIntChunk<? extends Values> preValueCopy = context.valueCopy.asWritableIntChunk();
+        final WritableIntChunk<? extends Values> preValueCopy =
+                (WritableIntChunk<? extends Values>) context.valueCopy;
+        final WritableIntChunk<? extends Values> postValueCopy =
+                (WritableIntChunk<? extends Values>) context.postValues;
         for (int ii = 0; ii < startPositions.size(); ++ii) {
-            final int runLength = context.lengthCopy.get(ii);
-            if (runLength == 0) {
-                continue;
-            }
             final int startPosition = startPositions.get(ii);
             final long destination = destinations.get(startPosition);
+            final int runLength = length.get(ii);
 
-            final IntSegmentedSortedMultiset ssm = ssmForSlot(destination);
-            ssm.remove(removeContext, preValueCopy, context.counts, startPosition, runLength);
-            if (ssm.isEmpty()) {
-                context.ssmsToMaybeClear.set(ii, true);
-            }
-        }
-
-        getAndUpdateContext(postValues, startPositions, length, context);
-        final WritableIntChunk<? extends Values> postValueCopy = context.valueCopy.asWritableIntChunk();
-        for (int ii = 0; ii < startPositions.size(); ++ii) {
-            final int runLength = context.lengthCopy.get(ii);
-            final int startPosition = startPositions.get(ii);
-            final long destination = destinations.get(startPosition);
-
+            // an unchanged or empty bucket must not create an ssm, so look up the existing one unless we have work to
+            // do
+            IntSegmentedSortedMultiset ssm;
             if (runLength == 0) {
-                final IntSegmentedSortedMultiset ssm = internalResult.getCurrentSsm(destination);
-                if (context.ssmsToMaybeClear.get(ii)) {
-                    // we may have deleted this position on the last round, really get rid of it
-                    clearSsm(destination);
+                ssm = internalResult.getCurrentSsm(destination);
+            } else {
+                // reduce the bucket's modify to its net effect, cancelling the unchanged overlap
+                IntCompactModifications.compactAndCountModifications(preValueCopy, context.counts,
+                        postValueCopy, context.postCounts, startPosition, runLength, startPosition, runLength,
+                        countNullNaN, countNullNaN, context.removedSize, context.addedSize);
+                final int removed = context.removedSize.get();
+                final int added = context.addedSize.get();
+                if (removed == 0 && added == 0) {
+                    ssm = internalResult.getCurrentSsm(destination);
+                } else {
+                    ssm = ssmForSlot(destination);
+                    if (removed > 0) {
+                        ssm.remove(removeContext, preValueCopy, context.counts, startPosition, removed);
+                    }
+                    if (added > 0) {
+                        ssm.insert(postValueCopy, context.postCounts, startPosition, added);
+                    }
+                    if (ssm.isEmpty()) {
+                        clearSsm(destination);
+                    }
                 }
-
-                stateModified.set(ii, ssm != null && (ssm.getAddedSize() > 0 || ssm.getRemovedSize() > 0));
-                continue;
             }
 
-            final IntSegmentedSortedMultiset ssm = ssmForSlot(destination);
-            ssm.insert(postValueCopy, context.counts, startPosition, runLength);
-
-            stateModified.set(ii, ssm.getAddedSize() > 0 || ssm.getRemovedSize() > 0);
+            stateModified.set(ii, ssm != null && (ssm.getAddedSize() > 0 || ssm.getRemovedSize() > 0));
         }
     }
     // endregion
@@ -187,6 +192,24 @@ public class IntChunkedDistinctOperator implements IterativeChunkedAggregationOp
         context.valueCopy.copyFromChunk(values, 0, 0, values.size());
         IntCompactKernel.compactAndCount((WritableIntChunk<? extends Values>) context.valueCopy, context.counts,
                 countNullNaN, countNullNaN);
+        return context;
+    }
+
+    @NotNull
+    private SsmDistinctContext getAndUpdateContext(Chunk<? extends Values> preValues,
+            Chunk<? extends Values> postValues, SingletonContext singletonContext) {
+        final SsmDistinctContext context = (SsmDistinctContext) singletonContext;
+
+        // a modify produces one pre and one post value per row, so the two ranges share a length
+        final int length = preValues.size();
+        context.valueCopy.setSize(length);
+        context.valueCopy.copyFromChunk(preValues, 0, 0, length);
+        context.postValues.setSize(length);
+        context.postValues.copyFromChunk(postValues, 0, 0, length);
+        IntCompactModifications.compactAndCountModifications(
+                (WritableIntChunk<? extends Values>) context.valueCopy, context.counts,
+                (WritableIntChunk<? extends Values>) context.postValues, context.postCounts,
+                0, length, 0, length, countNullNaN, countNullNaN, context.removedSize, context.addedSize);
         return context;
     }
 
@@ -221,21 +244,24 @@ public class IntChunkedDistinctOperator implements IterativeChunkedAggregationOp
     @Override
     public boolean modifyChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> preValues,
             Chunk<? extends Values> postValues, LongChunk<? extends RowKeys> postShiftRowKeys, long destination) {
-        final SsmDistinctContext context = getAndUpdateContext(preValues, singletonContext);
-        if (context.valueCopy.size() > 0) {
-            IntSegmentedSortedMultiset ssm = ssmForSlot(destination);
-            ssm.remove(context.removeContext, context.valueCopy, context.counts);
-        }
-
-        getAndUpdateContext(postValues, context);
+        final SsmDistinctContext context = getAndUpdateContext(preValues, postValues, singletonContext);
+        final int removed = context.removedSize.get();
+        final int added = context.addedSize.get();
+        // an unchanged modify must not create an ssm, so look up the existing one unless we have work to do
         IntSegmentedSortedMultiset ssm = internalResult.getCurrentSsm(destination);
-        if (context.valueCopy.size() > 0) {
+        if (removed > 0 || added > 0) {
             if (ssm == null) {
                 ssm = ssmForSlot(destination);
             }
-            ssm.insert(context.valueCopy, context.counts);
-        } else if (ssm != null && ssm.isEmpty()) {
-            clearSsm(destination);
+            if (removed > 0) {
+                ssm.remove(context.removeContext, context.valueCopy, context.counts, 0, removed);
+            }
+            if (added > 0) {
+                ssm.insert(context.postValues, context.postCounts, 0, added);
+            }
+            if (ssm.isEmpty()) {
+                clearSsm(destination);
+            }
         } else if (ssm == null) {
             return false;
         }
