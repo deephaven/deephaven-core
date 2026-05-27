@@ -14,9 +14,8 @@ Filters are prioritized for pushdown in the following order (from highest to low
 
 - Filtering [single value column sources](#single-value-column-sources).
 - Range and match filtering of Parquet data columns using [row group metadata](#parquet-row-group-metadata).
-- Filtering columns with a cached (already loaded in memory) Deephaven [data index](#deephaven-data-indexes).
-- Filtering columns with dictionary encoding.
-- Filtering columns with an un-cached Deephaven [data index](#deephaven-data-indexes).
+- Range and match filtering using [sorted column binary search](#sorted-column-binary-search).
+- Filtering columns with an existing Deephaven [data index](#deephaven-data-indexes).
 
 > [!IMPORTANT]
 > Where multiple filters have the same pushdown priority, the user-supplied order will generally be maintained. Stateful filters and filter barriers are always respected during pushdown operations.
@@ -92,6 +91,48 @@ filtered_2 = disk_table.where("X <= 3 && Y > 10")
 
 If desired, you can [disable](#disabling-predicate-pushdown-features) the use of these file-level data indexes during pushdown operations:
 
+## Sorted column binary search
+
+Columns with data stored in sorted order (ascending or descending) can efficiently evaluate range and match filters. Rather than scanning every row to evaluate the filter, the engine performs binary search, drastically reducing the number of values to be examined.
+
+Deephaven detects sorted order for a column from table metadata. When the Deephaven engine sorts a table, the metadata will automatically be set.
+
+```groovy order=source,sorted_source,result_range,result_match
+// create a table with random integer and double data
+source = emptyTable(100).update("X = randomInt(0, 100)", "Y = randomDouble(0, 100)")
+
+// sort the table by the integer column
+sorted_source = source.sort("X")
+
+// match and range filters will use binary search on the sorted column
+result_range = sorted_source.where("X > 50", "X < 75")
+result_match = sorted_source.where("X in 50, 51, 52, 53, 54, 55, 56, 57, 58, 59")
+```
+
+### Forcing sorted column metadata
+
+When sorted-column metadata is missing, you can explicitly annotate the table using [`SortedColumnsAttribute.withOrderForColumn`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/SortedColumnsAttribute.html#withOrderForColumn(io.deephaven.engine.table.Table,java.lang.String,io.deephaven.engine.table.impl.SortingOrder)). This returns a new view of the table with the sorted-column attribute set, telling the engine that binary search is safe to use for that column.
+
+> [!NOTE]
+> This only annotates the table — it does not sort the data. If the column is not actually sorted in the declared order, filters may return incorrect results.
+
+```groovy order=source,annotated,result_range,result_match
+import io.deephaven.engine.table.impl.SortedColumnsAttribute
+import io.deephaven.engine.table.impl.SortingOrder
+
+// create a table with sorted integer, random double columns
+source = emptyTable(100).update("X = i", "Y = randomDouble(0, 100)")
+
+// annotate so the engine knows the integer column is sorted
+annotated = SortedColumnsAttribute.withOrderForColumn(source, "X", SortingOrder.Ascending)
+
+// match and range filters will use binary search on the sorted column
+result_range = annotated.where("X > 50", "X < 75")
+result_match = annotated.where("X in 50, 51, 52, 53, 54, 55, 56, 57, 58, 59")
+```
+
+If desired, you can [disable](#disabling-predicate-pushdown-features) the use of sorted column binary search during pushdown operations.
+
 ## Disabling predicate pushdown features
 
 Under certain circumstances, you may want to disable specific predicate pushdown features. These settings are global and will affect all pushdown operations across the Deephaven engine. The following properties affect pushdown:
@@ -100,6 +141,7 @@ Under certain circumstances, you may want to disable specific predicate pushdown
 - [`QueryTable.disableWherePushdownParquetRowGroupMetadata`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/QueryTable.html#DISABLE_WHERE_PUSHDOWN_PARQUET_ROW_GROUP_METADATA) – disables consideration of Parquet row group metadata when filtering.
 - [`QueryTable.disableWherePushdownDataIndex`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/QueryTable.html#DISABLE_WHERE_PUSHDOWN_DATA_INDEX) – disables the use of file-level Deephaven data indexes when filtering.
 - [`QueryTable.disableWherePushdownParquetDictionary`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/QueryTable.html#DISABLE_WHERE_PUSHDOWN_PARQUET_DICTIONARY) – disables the use of dictionary encoding when filtering.
+- [`QueryTable.disableWherePushdownSortedColumn`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/QueryTable.html#DISABLE_WHERE_PUSHDOWN_SORTED_COLUMN_LOCATION) – disables the use of sorted column binary search when filtering.
 
 For more information, see the [Query table configuration](../conceptual/query-table-configuration.md) documentation.
 
