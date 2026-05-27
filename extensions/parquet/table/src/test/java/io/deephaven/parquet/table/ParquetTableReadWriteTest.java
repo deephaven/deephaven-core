@@ -31,6 +31,8 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.PartitionedTableFactory;
+import io.deephaven.engine.table.impl.SortedColumnsAttribute;
+import io.deephaven.engine.table.impl.SortingOrder;
 import io.deephaven.engine.table.impl.SourceTable;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.*;
@@ -117,6 +119,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -611,6 +614,42 @@ public final class ParquetTableReadWriteTest {
                 SortColumn.asc(ColumnName.of("someString"))));
         final Table index2Table = DataIndexer.getDataIndex(fromDisk, "someInt", "someString").table();
         assertTableEquals(index2Table, index2Table.sort("someInt", "someString"));
+    }
+
+    @Test
+    public void testSortedColumnsAttributeRoundTrip() {
+        // Single ascending sort column
+        final Table sorted = TableTools.emptyTable(10).select("x = i", "y = i * 2").sort("x");
+        final File dest = new File(rootFile, "ParquetTest_sortedColumnsAttribute_test.parquet");
+        writeTable(sorted, dest.getPath());
+
+        // Coalescing populates the sort attribute from parquet metadata onto the SourceTable
+        final Table fromDisk = readTable(dest.getPath());
+        fromDisk.coalesce();
+        assertEquals(Optional.of(SortingOrder.Ascending),
+                SortedColumnsAttribute.getOrderForColumn(fromDisk, "x"));
+        assertEquals(Optional.empty(),
+                SortedColumnsAttribute.getOrderForColumn(fromDisk, "y"));
+
+        // Two-column sort: ParquetTableWriter only serializes the first sort column, so only "x" round-trips
+        final Table sorted2 = TableTools.emptyTable(10).select("x = i", "y = i * 2").sort("x", "y");
+        final File dest2 = new File(rootFile, "ParquetTest_sortedColumnsAttribute_test2.parquet");
+        writeTable(sorted2, dest2.getPath());
+
+        final Table fromDisk2 = readTable(dest2.getPath());
+        fromDisk2.coalesce();
+        assertEquals(Optional.of(SortingOrder.Ascending),
+                SortedColumnsAttribute.getOrderForColumn(fromDisk2, "x"));
+
+        // Descending sort
+        final Table sortedDesc = TableTools.emptyTable(10).select("x = i").sortDescending("x");
+        final File dest3 = new File(rootFile, "ParquetTest_sortedColumnsAttribute_desc_test.parquet");
+        writeTable(sortedDesc, dest3.getPath());
+
+        final Table fromDisk3 = readTable(dest3.getPath());
+        fromDisk3.coalesce();
+        assertEquals(Optional.of(SortingOrder.Descending),
+                SortedColumnsAttribute.getOrderForColumn(fromDisk3, "x"));
     }
 
     static void verifyIndexingInfoExists(final Table table, final String... columnNames) {
