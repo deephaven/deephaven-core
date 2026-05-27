@@ -24,7 +24,8 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.mutable.MutableInt;
 import io.deephaven.util.mutable.MutableLong;
-import gnu.trove.set.hash.TIntHashSet;
+import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
+import it.unimi.dsi.fastutil.ints.IntSet;
 
 import java.util.Arrays;
 import java.util.Objects;
@@ -61,8 +62,8 @@ public final class IntSegmentedSortedMultiset implements SegmentedSortedMultiSet
 
     // region Deltas
     private transient boolean accumulateDeltas = false;
-    private transient TIntHashSet added;
-    private transient TIntHashSet removed;
+    private transient IntSet added;
+    private transient IntSet removed;
     private transient IntVector prevValues;
     // endregion Deltas
 
@@ -2563,7 +2564,7 @@ public final class IntSegmentedSortedMultiset implements SegmentedSortedMultiSet
         }
 
         if (added == null) {
-            added = new TIntHashSet(length);
+            added = new IntOpenHashSet(length);
         }
 
         if (removed == null) {
@@ -2592,7 +2593,7 @@ public final class IntSegmentedSortedMultiset implements SegmentedSortedMultiSet
         }
 
         if (removed == null) {
-            removed = new TIntHashSet();
+            removed = new IntOpenHashSet();
         }
 
         if (added == null || !added.remove(valueRemoved)) {
@@ -2622,11 +2623,11 @@ public final class IntSegmentedSortedMultiset implements SegmentedSortedMultiSet
     }
 
     public void fillRemovedChunk(WritableIntChunk<? extends Values> chunk, int position) {
-        chunk.copyFromTypedArray(removed.toArray(), 0, position, removed.size());
+        chunk.copyFromTypedArray(removed.toIntArray(), 0, position, removed.size());
     }
 
     public void fillAddedChunk(WritableIntChunk<? extends Values> chunk, int position) {
-        chunk.copyFromTypedArray(added.toArray(), 0, position, added.size());
+        chunk.copyFromTypedArray(added.toIntArray(), 0, position, added.size());
     }
 
     public IntVector getPrevValues() {

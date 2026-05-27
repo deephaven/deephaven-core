@@ -24,7 +24,8 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.mutable.MutableInt;
 import io.deephaven.util.mutable.MutableLong;
-import gnu.trove.set.hash.TByteHashSet;
+import it.unimi.dsi.fastutil.bytes.ByteOpenHashSet;
+import it.unimi.dsi.fastutil.bytes.ByteSet;
 
 import java.util.Arrays;
 import java.util.Objects;
@@ -61,8 +62,8 @@ public final class ByteSegmentedSortedMultiset implements SegmentedSortedMultiSe
 
     // region Deltas
     private transient boolean accumulateDeltas = false;
-    private transient TByteHashSet added;
-    private transient TByteHashSet removed;
+    private transient ByteSet added;
+    private transient ByteSet removed;
     private transient ByteVector prevValues;
     // endregion Deltas
 
@@ -2563,7 +2564,7 @@ public final class ByteSegmentedSortedMultiset implements SegmentedSortedMultiSe
         }
 
         if (added == null) {
-            added = new TByteHashSet(length);
+            added = new ByteOpenHashSet(length);
         }
 
         if (removed == null) {
@@ -2592,7 +2593,7 @@ public final class ByteSegmentedSortedMultiset implements SegmentedSortedMultiSe
         }
 
         if (removed == null) {
-            removed = new TByteHashSet();
+            removed = new ByteOpenHashSet();
         }
 
         if (added == null || !added.remove(valueRemoved)) {
@@ -2622,11 +2623,11 @@ public final class ByteSegmentedSortedMultiset implements SegmentedSortedMultiSe
     }
 
     public void fillRemovedChunk(WritableByteChunk<? extends Values> chunk, int position) {
-        chunk.copyFromTypedArray(removed.toArray(), 0, position, removed.size());
+        chunk.copyFromTypedArray(removed.toByteArray(), 0, position, removed.size());
     }
 
     public void fillAddedChunk(WritableByteChunk<? extends Values> chunk, int position) {
-        chunk.copyFromTypedArray(added.toArray(), 0, position, added.size());
+        chunk.copyFromTypedArray(added.toByteArray(), 0, position, added.size());
     }
 
     public ByteVector getPrevValues() {

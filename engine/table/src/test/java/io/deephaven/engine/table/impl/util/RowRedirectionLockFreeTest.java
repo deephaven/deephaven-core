@@ -9,7 +9,7 @@ import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.mutable.MutableInt;
-import gnu.trove.list.array.TLongArrayList;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
 import junit.framework.TestCase;
 
 import java.util.Arrays;
@@ -143,9 +143,9 @@ public class RowRedirectionLockFreeTest {
             final WritableRowRedirectionLockFree ix = index;
 
             // Record the mismatches
-            final TLongArrayList mmKeys = new TLongArrayList();
-            final TLongArrayList mmExpect = new TLongArrayList();
-            final TLongArrayList mmActual = new TLongArrayList();
+            final LongArrayList mmKeys = new LongArrayList();
+            final LongArrayList mmExpect = new LongArrayList();
+            final LongArrayList mmActual = new LongArrayList();
 
             // Look at the map in the reverse order of the writer, just to avoid any unintended synchronization.
             // These keys are expected to not exist.

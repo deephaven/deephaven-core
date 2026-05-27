@@ -20,7 +20,8 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.mutable.MutableInt;
 import io.deephaven.util.mutable.MutableLong;
-import gnu.trove.set.hash.TCharHashSet;
+import it.unimi.dsi.fastutil.chars.CharOpenHashSet;
+import it.unimi.dsi.fastutil.chars.CharSet;
 
 import java.util.Arrays;
 import java.util.Objects;
@@ -57,8 +58,8 @@ public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSe
 
     // region Deltas
     private transient boolean accumulateDeltas = false;
-    private transient TCharHashSet added;
-    private transient TCharHashSet removed;
+    private transient CharSet added;
+    private transient CharSet removed;
     private transient CharVector prevValues;
     // endregion Deltas
 
@@ -2559,7 +2560,7 @@ public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSe
         }
 
         if (added == null) {
-            added = new TCharHashSet(length);
+            added = new CharOpenHashSet(length);
         }
 
         if (removed == null) {
@@ -2588,7 +2589,7 @@ public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSe
         }
 
         if (removed == null) {
-            removed = new TCharHashSet();
+            removed = new CharOpenHashSet();
         }
 
         if (added == null || !added.remove(valueRemoved)) {
@@ -2618,11 +2619,11 @@ public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSe
     }
 
     public void fillRemovedChunk(WritableCharChunk<? extends Values> chunk, int position) {
-        chunk.copyFromTypedArray(removed.toArray(), 0, position, removed.size());
+        chunk.copyFromTypedArray(removed.toCharArray(), 0, position, removed.size());
     }
 
     public void fillAddedChunk(WritableCharChunk<? extends Values> chunk, int position) {
-        chunk.copyFromTypedArray(added.toArray(), 0, position, added.size());
+        chunk.copyFromTypedArray(added.toCharArray(), 0, position, added.size());
     }
 
     public CharVector getPrevValues() {

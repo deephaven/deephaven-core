@@ -29,7 +29,8 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.mutable.MutableInt;
 import io.deephaven.util.mutable.MutableLong;
-import gnu.trove.set.hash.TLongHashSet;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
+import it.unimi.dsi.fastutil.longs.LongSet;
 
 import java.util.Arrays;
 import java.util.Objects;
@@ -66,8 +67,8 @@ public final class LongSegmentedSortedMultiset implements SegmentedSortedMultiSe
 
     // region Deltas
     private transient boolean accumulateDeltas = false;
-    private transient TLongHashSet added;
-    private transient TLongHashSet removed;
+    private transient LongSet added;
+    private transient LongSet removed;
     private transient LongVector prevValues;
     // endregion Deltas
 
@@ -2568,7 +2569,7 @@ public final class LongSegmentedSortedMultiset implements SegmentedSortedMultiSe
         }
 
         if (added == null) {
-            added = new TLongHashSet(length);
+            added = new LongOpenHashSet(length);
         }
 
         if (removed == null) {
@@ -2597,7 +2598,7 @@ public final class LongSegmentedSortedMultiset implements SegmentedSortedMultiSe
         }
 
         if (removed == null) {
-            removed = new TLongHashSet();
+            removed = new LongOpenHashSet();
         }
 
         if (added == null || !added.remove(valueRemoved)) {
@@ -2627,11 +2628,11 @@ public final class LongSegmentedSortedMultiset implements SegmentedSortedMultiSe
     }
 
     public void fillRemovedChunk(WritableLongChunk<? extends Values> chunk, int position) {
-        chunk.copyFromTypedArray(removed.toArray(), 0, position, removed.size());
+        chunk.copyFromTypedArray(removed.toLongArray(), 0, position, removed.size());
     }
 
     public void fillAddedChunk(WritableLongChunk<? extends Values> chunk, int position) {
-        chunk.copyFromTypedArray(added.toArray(), 0, position, added.size());
+        chunk.copyFromTypedArray(added.toLongArray(), 0, position, added.size());
     }
 
     public LongVector getPrevValues() {

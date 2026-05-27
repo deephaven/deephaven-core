@@ -4,8 +4,8 @@
 package io.deephaven.engine.table.impl;
 
 import com.google.common.collect.Lists;
-import gnu.trove.list.TLongList;
-import gnu.trove.list.array.TLongArrayList;
+import it.unimi.dsi.fastutil.longs.LongList;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
 import io.deephaven.api.RawString;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.base.FileUtils;
@@ -2955,13 +2955,13 @@ public abstract class QueryTableWhereTest {
         postFilter.reset();
     }
 
-    protected static TLongList getAndSortSizes(final RowSetCapturingFilter filter) {
+    protected static LongList getAndSortSizes(final RowSetCapturingFilter filter) {
         final List<RowSet> rowSets = filter.rowSets();
-        TLongList sizes = new TLongArrayList(rowSets.size());
+        LongList sizes = new LongArrayList(rowSets.size());
         filter.rowSets().stream()
                 .mapToLong(RowSet::size)
                 .forEach(sizes::add);
-        sizes.sort();
+        sizes.sort(null);
         return sizes;
     }
 

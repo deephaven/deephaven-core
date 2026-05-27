@@ -24,7 +24,8 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.mutable.MutableInt;
 import io.deephaven.util.mutable.MutableLong;
-import gnu.trove.set.hash.TShortHashSet;
+import it.unimi.dsi.fastutil.shorts.ShortOpenHashSet;
+import it.unimi.dsi.fastutil.shorts.ShortSet;
 
 import java.util.Arrays;
 import java.util.Objects;
@@ -61,8 +62,8 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
 
     // region Deltas
     private transient boolean accumulateDeltas = false;
-    private transient TShortHashSet added;
-    private transient TShortHashSet removed;
+    private transient ShortSet added;
+    private transient ShortSet removed;
     private transient ShortVector prevValues;
     // endregion Deltas
 
@@ -2563,7 +2564,7 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
         }
 
         if (added == null) {
-            added = new TShortHashSet(length);
+            added = new ShortOpenHashSet(length);
         }
 
         if (removed == null) {
@@ -2592,7 +2593,7 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
         }
 
         if (removed == null) {
-            removed = new TShortHashSet();
+            removed = new ShortOpenHashSet();
         }
 
         if (added == null || !added.remove(valueRemoved)) {
@@ -2622,11 +2623,11 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
     }
 
     public void fillRemovedChunk(WritableShortChunk<? extends Values> chunk, int position) {
-        chunk.copyFromTypedArray(removed.toArray(), 0, position, removed.size());
+        chunk.copyFromTypedArray(removed.toShortArray(), 0, position, removed.size());
     }
 
     public void fillAddedChunk(WritableShortChunk<? extends Values> chunk, int position) {
-        chunk.copyFromTypedArray(added.toArray(), 0, position, added.size());
+        chunk.copyFromTypedArray(added.toShortArray(), 0, position, added.size());
     }
 
     public ShortVector getPrevValues() {

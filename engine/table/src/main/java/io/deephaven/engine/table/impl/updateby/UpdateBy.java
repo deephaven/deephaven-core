@@ -3,8 +3,9 @@
 //
 package io.deephaven.engine.table.impl.updateby;
 
-import gnu.trove.list.array.TIntArrayList;
-import gnu.trove.map.hash.TObjectIntHashMap;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.objects.Object2IntMap;
+import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.updateby.ColumnUpdateOperation;
 import io.deephaven.api.updateby.UpdateByControl;
@@ -661,22 +662,22 @@ public abstract class UpdateBy {
             final Integer[] sortedDirtyOperators = ArrayUtils.addAll(dirtyConstantOperators, dirtyDynamicOperators);
 
             final List<int[]> operatorSets = new ArrayList<>(sortedDirtyOperators.length);
-            final TIntArrayList opList = new TIntArrayList(sortedDirtyOperators.length);
+            final IntArrayList opList = new IntArrayList(sortedDirtyOperators.length);
 
-            opList.add(sortedDirtyOperators[0]);
+            opList.add(sortedDirtyOperators[0].intValue());
             int lastOpIdx = sortedDirtyOperators[0];
             for (int ii = 1; ii < sortedDirtyOperators.length; ii++) {
                 final int opIdx = sortedDirtyOperators[ii];
                 if (Arrays.equals(win.operatorInputSourceSlots[opIdx], win.operatorInputSourceSlots[lastOpIdx])) {
                     opList.add(opIdx);
                 } else {
-                    operatorSets.add(opList.toArray());
-                    opList.clear(sortedDirtyOperators.length);
+                    operatorSets.add(opList.toIntArray());
+                    opList.clear();
                     opList.add(opIdx);
                 }
                 lastOpIdx = opIdx;
             }
-            operatorSets.add(opList.toArray());
+            operatorSets.add(opList.toIntArray());
 
             // Process each set of similar operators in this window serially.
             jobScheduler.iterateSerial(executionContext,
@@ -1257,7 +1258,8 @@ public abstract class UpdateBy {
             final Set<String> opResultColumnSet = new HashSet<>();
 
             final ArrayList<String> inputColumnList = new ArrayList<>();
-            final TObjectIntHashMap<String> inputColumnToSlotMap = new TObjectIntHashMap<>(clauses.size(), 0.75f, -1);
+            final Object2IntMap<String> inputColumnToSlotMap = new Object2IntOpenHashMap<>();
+            inputColumnToSlotMap.defaultReturnValue(-1);
 
             final UpdateByWindow[] windowArr = windowSpecs.stream().map(clauseList -> {
                 final UpdateByOperator[] windowOps =
@@ -1295,8 +1297,8 @@ public abstract class UpdateBy {
 
                     for (int colIdx = 0; colIdx < inputColumnNames.length; colIdx++) {
                         final String name = inputColumnNames[colIdx];
-                        final int maybeExistingSlot = inputColumnToSlotMap.get(name);
-                        if (maybeExistingSlot == inputColumnToSlotMap.getNoEntryValue()) {
+                        final int maybeExistingSlot = inputColumnToSlotMap.getInt(name);
+                        if (maybeExistingSlot == inputColumnToSlotMap.defaultReturnValue()) {
                             // create a new input source
                             final int srcIdx = inputColumnList.size();
                             inputColumnList.add(name);

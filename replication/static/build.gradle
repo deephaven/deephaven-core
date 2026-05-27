@@ -9,7 +9,6 @@ dependencies {
     implementation project(':Util')
     implementation project(':Base')
     implementation project(':replication-util')
-    implementation libs.trove
     implementation libs.commons.io
 }
 
