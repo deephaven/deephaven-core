@@ -158,6 +158,122 @@ public class TestShortSegmentedSortedMultiset extends RefreshingTableTestCase {
         }
     }
 
+    public void testInsertIntoMiddleLeafSplit() {
+        final int nodeSize = 4;
+        final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
+
+        // three full leaves at even offsets; inserting new odd-offset values into the first leaf overflows it, forcing a
+        // hole that shifts the trailing leaves (copyLeavesAndDirectory) and runs the existing-value merge (maybeCompact)
+        final short[] initial = new short[12];
+        for (int ii = 0; ii < 12; ++ii) {
+            initial[ii] = (short) ('a' + 2 * ii);
+        }
+        final ShortSegmentedSortedMultiset ssm = makeSsm(nodeSize, initial);
+
+        try (final WritableShortChunk<Values> values = WritableShortChunk.makeWritableChunk(3);
+                final WritableIntChunk<ChunkLengths> counts = WritableIntChunk.makeWritableChunk(3)) {
+            values.set(0, (short) ('a' + 1));
+            values.set(1, (short) ('a' + 3));
+            values.set(2, (short) ('a' + 5));
+            counts.set(0, 1);
+            counts.set(1, 1);
+            counts.set(2, 1);
+            ssm.insert(values, counts);
+        }
+
+        final short[] expected = new short[] {
+                (short) ('a' + 0), (short) ('a' + 1), (short) ('a' + 2), (short) ('a' + 3), (short) ('a' + 4),
+                (short) ('a' + 5), (short) ('a' + 6), (short) ('a' + 8), (short) ('a' + 10), (short) ('a' + 12),
+                (short) ('a' + 14), (short) ('a' + 16), (short) ('a' + 18), (short) ('a' + 20), (short) ('a' + 22)};
+        verifySsm(ssm, expected, desc);
+    }
+
+    public void testRemoveMaxMultiLeaf() {
+        final int nodeSize = 4;
+        final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
+
+        // a multi-leaf source whose maximum equals the destination minimum, moving the whole maximum entry, exercises
+        // removeMax's leafCount > 1 branch
+        final ShortSegmentedSortedMultiset source = makeSsm(nodeSize, new short[] {
+                (short) ('a' + 0), (short) ('a' + 1), (short) ('a' + 2), (short) ('a' + 3), (short) ('a' + 4)});
+        final ShortSegmentedSortedMultiset dest =
+                makeSsm(nodeSize, new short[] {(short) ('a' + 4), (short) ('a' + 5)});
+        source.moveBackToFront(dest, 1);
+        verifySsm(source, new short[] {(short) ('a' + 0), (short) ('a' + 1), (short) ('a' + 2), (short) ('a' + 3)}, desc);
+        verifySsm(dest, new short[] {(short) ('a' + 4), (short) ('a' + 4), (short) ('a' + 5)}, desc);
+    }
+
+    public void testRemoveMaxSizeOne() {
+        final int nodeSize = 4;
+        final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
+
+        // a two-value single-leaf directory; removing its maximum leaves a size-1 directory (removeMax's leafCount == 1
+        // branch) rather than collapsing to the singleton representation
+        final ShortSegmentedSortedMultiset source =
+                makeSsm(nodeSize, new short[] {(short) ('a' + 3), (short) ('a' + 4)});
+        final ShortSegmentedSortedMultiset dest1 =
+                makeSsm(nodeSize, new short[] {(short) ('a' + 4), (short) ('a' + 5)});
+        source.moveBackToFront(dest1, 1);
+        verifySsm(source, new short[] {(short) ('a' + 3)}, desc);
+        verifySsm(dest1, new short[] {(short) ('a' + 4), (short) ('a' + 4), (short) ('a' + 5)}, desc);
+
+        // removing the maximum of that size-1 directory clears the set (removeMax's size == 1 branch)
+        final ShortSegmentedSortedMultiset dest2 =
+                makeSsm(nodeSize, new short[] {(short) ('a' + 3), (short) ('a' + 6)});
+        source.moveBackToFront(dest2, 1);
+        verifySsm(source, new short[0], desc);
+        verifySsm(dest2, new short[] {(short) ('a' + 3), (short) ('a' + 3), (short) ('a' + 6)}, desc);
+    }
+
+    public void testMoveFrontToBackPartialAppend() {
+        final int nodeSize = 4;
+        final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
+
+        // single-leaf directory destination: moving part of the source minimum's count appends the partial value into
+        // the destination directory (the directoryCount != null branch of the partial-append handling)
+        {
+            final ShortSegmentedSortedMultiset source =
+                    makeSsm(nodeSize, new short[] {(short) ('a' + 2), (short) ('a' + 3)}, new int[] {2, 2});
+            final ShortSegmentedSortedMultiset dest =
+                    makeSsm(nodeSize, new short[] {(short) ('a' + 0), (short) ('a' + 1)});
+            source.moveFrontToBack(dest, 1);
+            verifySsm(source, new short[] {(short) ('a' + 2), (short) ('a' + 3), (short) ('a' + 3)}, desc);
+            verifySsm(dest, new short[] {(short) ('a' + 0), (short) ('a' + 1), (short) ('a' + 2)}, desc);
+        }
+
+        // multi-leaf destination: the same partial move appends into the destination's last leaf, and the leftover count
+        // is decremented on that leaf (the directoryCount == null leftover branch)
+        {
+            final ShortSegmentedSortedMultiset source =
+                    makeSsm(nodeSize, new short[] {(short) ('a' + 5), (short) ('a' + 6)}, new int[] {2, 2});
+            final ShortSegmentedSortedMultiset dest = makeSsm(nodeSize, new short[] {
+                    (short) ('a' + 0), (short) ('a' + 1), (short) ('a' + 2), (short) ('a' + 3), (short) ('a' + 4)});
+            source.moveFrontToBack(dest, 1);
+            verifySsm(source, new short[] {(short) ('a' + 5), (short) ('a' + 6), (short) ('a' + 6)}, desc);
+            verifySsm(dest, new short[] {(short) ('a' + 0), (short) ('a' + 1), (short) ('a' + 2), (short) ('a' + 3),
+                    (short) ('a' + 4), (short) ('a' + 5)}, desc);
+        }
+    }
+
+    public void testMoveBackToFrontCompleteLeaves() {
+        final int nodeSize = 4;
+        final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
+
+        // a three-leaf source where the boundary value's count is split: moving the six largest transfers two complete
+        // leaves plus a leftover slot of the boundary value (the multi-leaf complete-leaf move with a leftover slot)
+        final ShortSegmentedSortedMultiset source = makeSsm(nodeSize, new short[] {
+                (short) ('a' + 0), (short) ('a' + 1), (short) ('a' + 2), (short) ('a' + 3), (short) ('a' + 4),
+                (short) ('a' + 5), (short) ('a' + 6), (short) ('a' + 7), (short) ('a' + 8)},
+                new int[] {1, 1, 1, 2, 1, 1, 1, 1, 1});
+        final ShortSegmentedSortedMultiset dest =
+                makeSsm(nodeSize, new short[] {(short) ('a' + 9), (short) ('a' + 10)});
+        source.moveBackToFront(dest, 6);
+        verifySsm(source,
+                new short[] {(short) ('a' + 0), (short) ('a' + 1), (short) ('a' + 2), (short) ('a' + 3)}, desc);
+        verifySsm(dest, new short[] {(short) ('a' + 3), (short) ('a' + 4), (short) ('a' + 5), (short) ('a' + 6),
+                (short) ('a' + 7), (short) ('a' + 8), (short) ('a' + 9), (short) ('a' + 10)}, desc);
+    }
+
     public void testInsertRemoveWithOffset() {
         final int nodeSize = 4;
         final int prefix = 3;

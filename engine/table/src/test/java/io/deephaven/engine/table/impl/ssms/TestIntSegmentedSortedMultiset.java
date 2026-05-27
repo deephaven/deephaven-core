@@ -158,6 +158,122 @@ public class TestIntSegmentedSortedMultiset extends RefreshingTableTestCase {
         }
     }
 
+    public void testInsertIntoMiddleLeafSplit() {
+        final int nodeSize = 4;
+        final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
+
+        // three full leaves at even offsets; inserting new odd-offset values into the first leaf overflows it, forcing a
+        // hole that shifts the trailing leaves (copyLeavesAndDirectory) and runs the existing-value merge (maybeCompact)
+        final int[] initial = new int[12];
+        for (int ii = 0; ii < 12; ++ii) {
+            initial[ii] = (int) ('a' + 2 * ii);
+        }
+        final IntSegmentedSortedMultiset ssm = makeSsm(nodeSize, initial);
+
+        try (final WritableIntChunk<Values> values = WritableIntChunk.makeWritableChunk(3);
+                final WritableIntChunk<ChunkLengths> counts = WritableIntChunk.makeWritableChunk(3)) {
+            values.set(0, (int) ('a' + 1));
+            values.set(1, (int) ('a' + 3));
+            values.set(2, (int) ('a' + 5));
+            counts.set(0, 1);
+            counts.set(1, 1);
+            counts.set(2, 1);
+            ssm.insert(values, counts);
+        }
+
+        final int[] expected = new int[] {
+                (int) ('a' + 0), (int) ('a' + 1), (int) ('a' + 2), (int) ('a' + 3), (int) ('a' + 4),
+                (int) ('a' + 5), (int) ('a' + 6), (int) ('a' + 8), (int) ('a' + 10), (int) ('a' + 12),
+                (int) ('a' + 14), (int) ('a' + 16), (int) ('a' + 18), (int) ('a' + 20), (int) ('a' + 22)};
+        verifySsm(ssm, expected, desc);
+    }
+
+    public void testRemoveMaxMultiLeaf() {
+        final int nodeSize = 4;
+        final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
+
+        // a multi-leaf source whose maximum equals the destination minimum, moving the whole maximum entry, exercises
+        // removeMax's leafCount > 1 branch
+        final IntSegmentedSortedMultiset source = makeSsm(nodeSize, new int[] {
+                (int) ('a' + 0), (int) ('a' + 1), (int) ('a' + 2), (int) ('a' + 3), (int) ('a' + 4)});
+        final IntSegmentedSortedMultiset dest =
+                makeSsm(nodeSize, new int[] {(int) ('a' + 4), (int) ('a' + 5)});
+        source.moveBackToFront(dest, 1);
+        verifySsm(source, new int[] {(int) ('a' + 0), (int) ('a' + 1), (int) ('a' + 2), (int) ('a' + 3)}, desc);
+        verifySsm(dest, new int[] {(int) ('a' + 4), (int) ('a' + 4), (int) ('a' + 5)}, desc);
+    }
+
+    public void testRemoveMaxSizeOne() {
+        final int nodeSize = 4;
+        final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
+
+        // a two-value single-leaf directory; removing its maximum leaves a size-1 directory (removeMax's leafCount == 1
+        // branch) rather than collapsing to the singleton representation
+        final IntSegmentedSortedMultiset source =
+                makeSsm(nodeSize, new int[] {(int) ('a' + 3), (int) ('a' + 4)});
+        final IntSegmentedSortedMultiset dest1 =
+                makeSsm(nodeSize, new int[] {(int) ('a' + 4), (int) ('a' + 5)});
+        source.moveBackToFront(dest1, 1);
+        verifySsm(source, new int[] {(int) ('a' + 3)}, desc);
+        verifySsm(dest1, new int[] {(int) ('a' + 4), (int) ('a' + 4), (int) ('a' + 5)}, desc);
+
+        // removing the maximum of that size-1 directory clears the set (removeMax's size == 1 branch)
+        final IntSegmentedSortedMultiset dest2 =
+                makeSsm(nodeSize, new int[] {(int) ('a' + 3), (int) ('a' + 6)});
+        source.moveBackToFront(dest2, 1);
+        verifySsm(source, new int[0], desc);
+        verifySsm(dest2, new int[] {(int) ('a' + 3), (int) ('a' + 3), (int) ('a' + 6)}, desc);
+    }
+
+    public void testMoveFrontToBackPartialAppend() {
+        final int nodeSize = 4;
+        final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
+
+        // single-leaf directory destination: moving part of the source minimum's count appends the partial value into
+        // the destination directory (the directoryCount != null branch of the partial-append handling)
+        {
+            final IntSegmentedSortedMultiset source =
+                    makeSsm(nodeSize, new int[] {(int) ('a' + 2), (int) ('a' + 3)}, new int[] {2, 2});
+            final IntSegmentedSortedMultiset dest =
+                    makeSsm(nodeSize, new int[] {(int) ('a' + 0), (int) ('a' + 1)});
+            source.moveFrontToBack(dest, 1);
+            verifySsm(source, new int[] {(int) ('a' + 2), (int) ('a' + 3), (int) ('a' + 3)}, desc);
+            verifySsm(dest, new int[] {(int) ('a' + 0), (int) ('a' + 1), (int) ('a' + 2)}, desc);
+        }
+
+        // multi-leaf destination: the same partial move appends into the destination's last leaf, and the leftover count
+        // is decremented on that leaf (the directoryCount == null leftover branch)
+        {
+            final IntSegmentedSortedMultiset source =
+                    makeSsm(nodeSize, new int[] {(int) ('a' + 5), (int) ('a' + 6)}, new int[] {2, 2});
+            final IntSegmentedSortedMultiset dest = makeSsm(nodeSize, new int[] {
+                    (int) ('a' + 0), (int) ('a' + 1), (int) ('a' + 2), (int) ('a' + 3), (int) ('a' + 4)});
+            source.moveFrontToBack(dest, 1);
+            verifySsm(source, new int[] {(int) ('a' + 5), (int) ('a' + 6), (int) ('a' + 6)}, desc);
+            verifySsm(dest, new int[] {(int) ('a' + 0), (int) ('a' + 1), (int) ('a' + 2), (int) ('a' + 3),
+                    (int) ('a' + 4), (int) ('a' + 5)}, desc);
+        }
+    }
+
+    public void testMoveBackToFrontCompleteLeaves() {
+        final int nodeSize = 4;
+        final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
+
+        // a three-leaf source where the boundary value's count is split: moving the six largest transfers two complete
+        // leaves plus a leftover slot of the boundary value (the multi-leaf complete-leaf move with a leftover slot)
+        final IntSegmentedSortedMultiset source = makeSsm(nodeSize, new int[] {
+                (int) ('a' + 0), (int) ('a' + 1), (int) ('a' + 2), (int) ('a' + 3), (int) ('a' + 4),
+                (int) ('a' + 5), (int) ('a' + 6), (int) ('a' + 7), (int) ('a' + 8)},
+                new int[] {1, 1, 1, 2, 1, 1, 1, 1, 1});
+        final IntSegmentedSortedMultiset dest =
+                makeSsm(nodeSize, new int[] {(int) ('a' + 9), (int) ('a' + 10)});
+        source.moveBackToFront(dest, 6);
+        verifySsm(source,
+                new int[] {(int) ('a' + 0), (int) ('a' + 1), (int) ('a' + 2), (int) ('a' + 3)}, desc);
+        verifySsm(dest, new int[] {(int) ('a' + 3), (int) ('a' + 4), (int) ('a' + 5), (int) ('a' + 6),
+                (int) ('a' + 7), (int) ('a' + 8), (int) ('a' + 9), (int) ('a' + 10)}, desc);
+    }
+
     public void testInsertRemoveWithOffset() {
         final int nodeSize = 4;
         final int prefix = 3;

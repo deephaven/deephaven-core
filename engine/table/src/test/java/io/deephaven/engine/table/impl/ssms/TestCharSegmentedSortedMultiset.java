@@ -155,6 +155,122 @@ public class TestCharSegmentedSortedMultiset extends RefreshingTableTestCase {
         }
     }
 
+    public void testInsertIntoMiddleLeafSplit() {
+        final int nodeSize = 4;
+        final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
+
+        // three full leaves at even offsets; inserting new odd-offset values into the first leaf overflows it, forcing a
+        // hole that shifts the trailing leaves (copyLeavesAndDirectory) and runs the existing-value merge (maybeCompact)
+        final char[] initial = new char[12];
+        for (int ii = 0; ii < 12; ++ii) {
+            initial[ii] = (char) ('a' + 2 * ii);
+        }
+        final CharSegmentedSortedMultiset ssm = makeSsm(nodeSize, initial);
+
+        try (final WritableCharChunk<Values> values = WritableCharChunk.makeWritableChunk(3);
+                final WritableIntChunk<ChunkLengths> counts = WritableIntChunk.makeWritableChunk(3)) {
+            values.set(0, (char) ('a' + 1));
+            values.set(1, (char) ('a' + 3));
+            values.set(2, (char) ('a' + 5));
+            counts.set(0, 1);
+            counts.set(1, 1);
+            counts.set(2, 1);
+            ssm.insert(values, counts);
+        }
+
+        final char[] expected = new char[] {
+                (char) ('a' + 0), (char) ('a' + 1), (char) ('a' + 2), (char) ('a' + 3), (char) ('a' + 4),
+                (char) ('a' + 5), (char) ('a' + 6), (char) ('a' + 8), (char) ('a' + 10), (char) ('a' + 12),
+                (char) ('a' + 14), (char) ('a' + 16), (char) ('a' + 18), (char) ('a' + 20), (char) ('a' + 22)};
+        verifySsm(ssm, expected, desc);
+    }
+
+    public void testRemoveMaxMultiLeaf() {
+        final int nodeSize = 4;
+        final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
+
+        // a multi-leaf source whose maximum equals the destination minimum, moving the whole maximum entry, exercises
+        // removeMax's leafCount > 1 branch
+        final CharSegmentedSortedMultiset source = makeSsm(nodeSize, new char[] {
+                (char) ('a' + 0), (char) ('a' + 1), (char) ('a' + 2), (char) ('a' + 3), (char) ('a' + 4)});
+        final CharSegmentedSortedMultiset dest =
+                makeSsm(nodeSize, new char[] {(char) ('a' + 4), (char) ('a' + 5)});
+        source.moveBackToFront(dest, 1);
+        verifySsm(source, new char[] {(char) ('a' + 0), (char) ('a' + 1), (char) ('a' + 2), (char) ('a' + 3)}, desc);
+        verifySsm(dest, new char[] {(char) ('a' + 4), (char) ('a' + 4), (char) ('a' + 5)}, desc);
+    }
+
+    public void testRemoveMaxSizeOne() {
+        final int nodeSize = 4;
+        final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
+
+        // a two-value single-leaf directory; removing its maximum leaves a size-1 directory (removeMax's leafCount == 1
+        // branch) rather than collapsing to the singleton representation
+        final CharSegmentedSortedMultiset source =
+                makeSsm(nodeSize, new char[] {(char) ('a' + 3), (char) ('a' + 4)});
+        final CharSegmentedSortedMultiset dest1 =
+                makeSsm(nodeSize, new char[] {(char) ('a' + 4), (char) ('a' + 5)});
+        source.moveBackToFront(dest1, 1);
+        verifySsm(source, new char[] {(char) ('a' + 3)}, desc);
+        verifySsm(dest1, new char[] {(char) ('a' + 4), (char) ('a' + 4), (char) ('a' + 5)}, desc);
+
+        // removing the maximum of that size-1 directory clears the set (removeMax's size == 1 branch)
+        final CharSegmentedSortedMultiset dest2 =
+                makeSsm(nodeSize, new char[] {(char) ('a' + 3), (char) ('a' + 6)});
+        source.moveBackToFront(dest2, 1);
+        verifySsm(source, new char[0], desc);
+        verifySsm(dest2, new char[] {(char) ('a' + 3), (char) ('a' + 3), (char) ('a' + 6)}, desc);
+    }
+
+    public void testMoveFrontToBackPartialAppend() {
+        final int nodeSize = 4;
+        final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
+
+        // single-leaf directory destination: moving part of the source minimum's count appends the partial value into
+        // the destination directory (the directoryCount != null branch of the partial-append handling)
+        {
+            final CharSegmentedSortedMultiset source =
+                    makeSsm(nodeSize, new char[] {(char) ('a' + 2), (char) ('a' + 3)}, new int[] {2, 2});
+            final CharSegmentedSortedMultiset dest =
+                    makeSsm(nodeSize, new char[] {(char) ('a' + 0), (char) ('a' + 1)});
+            source.moveFrontToBack(dest, 1);
+            verifySsm(source, new char[] {(char) ('a' + 2), (char) ('a' + 3), (char) ('a' + 3)}, desc);
+            verifySsm(dest, new char[] {(char) ('a' + 0), (char) ('a' + 1), (char) ('a' + 2)}, desc);
+        }
+
+        // multi-leaf destination: the same partial move appends into the destination's last leaf, and the leftover count
+        // is decremented on that leaf (the directoryCount == null leftover branch)
+        {
+            final CharSegmentedSortedMultiset source =
+                    makeSsm(nodeSize, new char[] {(char) ('a' + 5), (char) ('a' + 6)}, new int[] {2, 2});
+            final CharSegmentedSortedMultiset dest = makeSsm(nodeSize, new char[] {
+                    (char) ('a' + 0), (char) ('a' + 1), (char) ('a' + 2), (char) ('a' + 3), (char) ('a' + 4)});
+            source.moveFrontToBack(dest, 1);
+            verifySsm(source, new char[] {(char) ('a' + 5), (char) ('a' + 6), (char) ('a' + 6)}, desc);
+            verifySsm(dest, new char[] {(char) ('a' + 0), (char) ('a' + 1), (char) ('a' + 2), (char) ('a' + 3),
+                    (char) ('a' + 4), (char) ('a' + 5)}, desc);
+        }
+    }
+
+    public void testMoveBackToFrontCompleteLeaves() {
+        final int nodeSize = 4;
+        final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
+
+        // a three-leaf source where the boundary value's count is split: moving the six largest transfers two complete
+        // leaves plus a leftover slot of the boundary value (the multi-leaf complete-leaf move with a leftover slot)
+        final CharSegmentedSortedMultiset source = makeSsm(nodeSize, new char[] {
+                (char) ('a' + 0), (char) ('a' + 1), (char) ('a' + 2), (char) ('a' + 3), (char) ('a' + 4),
+                (char) ('a' + 5), (char) ('a' + 6), (char) ('a' + 7), (char) ('a' + 8)},
+                new int[] {1, 1, 1, 2, 1, 1, 1, 1, 1});
+        final CharSegmentedSortedMultiset dest =
+                makeSsm(nodeSize, new char[] {(char) ('a' + 9), (char) ('a' + 10)});
+        source.moveBackToFront(dest, 6);
+        verifySsm(source,
+                new char[] {(char) ('a' + 0), (char) ('a' + 1), (char) ('a' + 2), (char) ('a' + 3)}, desc);
+        verifySsm(dest, new char[] {(char) ('a' + 3), (char) ('a' + 4), (char) ('a' + 5), (char) ('a' + 6),
+                (char) ('a' + 7), (char) ('a' + 8), (char) ('a' + 9), (char) ('a' + 10)}, desc);
+    }
+
     public void testInsertRemoveWithOffset() {
         final int nodeSize = 4;
         final int prefix = 3;
