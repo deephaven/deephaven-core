@@ -514,8 +514,9 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
      * after the cycle completes must reflect the newly added rows.
      * <p>
      * Both a range filter ({@code Sentinel >= 5 && Sentinel <= 7}) and an equivalent match filter
-     * ({@code Sentinel in 5, 6, 7}) are tested, since {@link io.deephaven.engine.table.impl.sort.SortedColumnPushdownManager}
-     * dispatches to different binary-search kernels for each.
+     * ({@code Sentinel in 5, 6, 7}) are tested, since
+     * {@link io.deephaven.engine.table.impl.sort.SortedColumnPushdownManager} dispatches to different binary-search
+     * kernels for each.
      * <p>
      * IntColumnBinarySearchKernel is tested as a replication for all primitive types.
      */
@@ -608,9 +609,9 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
     }
 
     /**
-     * String-typed clone of {@link #testWhereSortedColumnBinarySearchInternal}. Uses
-     * {@link ComparableRangeFilter} in place of {@link IntRangeFilter} to exercise the Object binary-search
-     * kernel path through {@link io.deephaven.engine.table.impl.sort.SortedColumnPushdownManager}.
+     * String-typed clone of {@link #testWhereSortedColumnBinarySearchInternal}. Uses {@link ComparableRangeFilter} in
+     * place of {@link IntRangeFilter} to exercise the Object binary-search kernel path through
+     * {@link io.deephaven.engine.table.impl.sort.SortedColumnPushdownManager}.
      */
     private void testWhereSortedColumnBinarySearchStringInternal(final boolean ascending)
             throws ExecutionException, InterruptedException, TimeoutException {
