@@ -399,7 +399,9 @@ public class SortedColumnPushdownManager implements PushdownPredicateManager {
             @NotNull final QueryTable sourceTable,
             @NotNull final WhereFilter filter,
             @NotNull final List<ColumnSource<?>> filterSources) {
-        if (filterSources.size() != 1 || filter.getColumns().size() != 1) {
+        if (QueryTable.DISABLE_WHERE_PUSHDOWN_SORTED_COLUMN_LOCATION
+                || filterSources.size() != 1
+                || filter.getColumns().size() != 1) {
             return null;
         }
 
