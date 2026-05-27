@@ -217,6 +217,8 @@ public class ReplicateSegmentedSortedMultiset {
                 indent(Collections.singletonList("this.internalResult = new ObjectArraySource(type);"), 8));
         lines = globalReplacements(lines, "\\(WritableObjectChunk<\\? extends Values>\\)",
                 "(WritableObjectChunk<?, ? extends Values>)");
+        // give the typed chunk locals (e.g. the cast-once valueCopy) the two-argument WritableObjectChunk form
+        lines = fixupChunkAttributes(lines);
 
         FileUtils.writeLines(objectFile, lines);
     }

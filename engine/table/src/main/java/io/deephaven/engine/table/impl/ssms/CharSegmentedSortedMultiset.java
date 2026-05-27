@@ -85,8 +85,17 @@ public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSe
     @Override
     public boolean insert(WritableChunk<? extends Values> valuesToInsert, WritableIntChunk<ChunkLengths> counts,
             int offset, int length) {
+        return insert(valuesToInsert.asWritableCharChunk(), counts, offset, length);
+    }
+
+    /**
+     * Insert the {@code length} values beginning at {@code offset}; accepts an already-typed chunk so callers that
+     * repeatedly insert from the same backing chunk can cast it once rather than per call.
+     */
+    public boolean insert(WritableCharChunk<? extends Values> valuesToInsert, WritableIntChunk<ChunkLengths> counts,
+            int offset, int length) {
         final long beforeSize = size();
-        insert(valuesToInsert.asWritableCharChunk(), counts, offset, length);
+        insertInternal(valuesToInsert, counts, offset, length);
         return beforeSize != size();
     }
 
@@ -438,8 +447,8 @@ public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSe
         return maybeCompact(valuesToInsert, counts, offset, ripos, wipos.get(), end);
     }
 
-    private void insert(WritableCharChunk<? extends Values> valuesToInsert, WritableIntChunk<ChunkLengths> counts,
-            int offset, int length) {
+    private void insertInternal(WritableCharChunk<? extends Values> valuesToInsert, WritableIntChunk<ChunkLengths> counts,
+                                int offset, int length) {
         validate();
         validateInputs(valuesToInsert, counts, offset, length);
         if (length == 0) {
@@ -928,13 +937,22 @@ public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSe
     @Override
     public boolean remove(RemoveContext removeContext, WritableChunk<? extends Values> valuesToRemove,
             WritableIntChunk<ChunkLengths> counts, int offset, int length) {
+        return remove(removeContext, valuesToRemove.asWritableCharChunk(), counts, offset, length);
+    }
+
+    /**
+     * Remove the {@code length} values beginning at {@code offset}; accepts an already-typed chunk so callers that
+     * repeatedly remove from the same backing chunk can cast it once rather than per call.
+     */
+    public boolean remove(RemoveContext removeContext, WritableCharChunk<? extends Values> valuesToRemove,
+            WritableIntChunk<ChunkLengths> counts, int offset, int length) {
         final long beforeSize = size();
-        remove(removeContext, valuesToRemove.asCharChunk(), counts, offset, length);
+        removeInternal(removeContext, valuesToRemove, counts, offset, length);
         return beforeSize != size();
     }
 
-    private void remove(RemoveContext removeContext, CharChunk<? extends Values> valuesToRemove,
-            IntChunk<ChunkLengths> counts, int offset, int length) {
+    private void removeInternal(RemoveContext removeContext, CharChunk<? extends Values> valuesToRemove,
+                                IntChunk<ChunkLengths> counts, int offset, int length) {
         validate();
         validateInputs(valuesToRemove, counts, offset, length);
 

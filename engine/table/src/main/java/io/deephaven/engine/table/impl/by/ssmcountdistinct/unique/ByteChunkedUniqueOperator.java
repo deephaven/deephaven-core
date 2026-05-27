@@ -100,6 +100,7 @@ public class ByteChunkedUniqueOperator implements IterativeChunkedAggregationOpe
             IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
             WritableBooleanChunk<Values> stateModified) {
         final BucketSsmDistinctContext context = getAndUpdateContext(values, startPositions, length, bucketedContext);
+        final WritableByteChunk<? extends Values> valueCopy = context.valueCopy.asWritableByteChunk();
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int runLength = context.lengthCopy.get(ii);
             if (runLength == 0) {
@@ -110,7 +111,7 @@ public class ByteChunkedUniqueOperator implements IterativeChunkedAggregationOpe
             final long destination = destinations.get(startPosition);
 
             final ByteSegmentedSortedMultiset ssm = ssmForSlot(destination);
-            ssm.insert(context.valueCopy, context.counts, startPosition, runLength);
+            ssm.insert(valueCopy, context.counts, startPosition, runLength);
             stateModified.set(ii, setResult(ssm, destination));
         }
     }
@@ -122,6 +123,7 @@ public class ByteChunkedUniqueOperator implements IterativeChunkedAggregationOpe
             WritableBooleanChunk<Values> stateModified) {
         final BucketSsmDistinctContext context = getAndUpdateContext(values, startPositions, length, bucketedContext);
         final SegmentedSortedMultiSet.RemoveContext removeContext = removeContextFactory.get();
+        final WritableByteChunk<? extends Values> valueCopy = context.valueCopy.asWritableByteChunk();
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int runLength = context.lengthCopy.get(ii);
             if (runLength == 0) {
@@ -131,7 +133,7 @@ public class ByteChunkedUniqueOperator implements IterativeChunkedAggregationOpe
             final long destination = destinations.get(startPosition);
 
             final ByteSegmentedSortedMultiset ssm = ssmForSlot(destination);
-            ssm.remove(removeContext, context.valueCopy, context.counts, startPosition, runLength);
+            ssm.remove(removeContext, valueCopy, context.counts, startPosition, runLength);
             if (ssm.isEmpty()) {
                 clearSsm(destination);
             }
@@ -149,6 +151,7 @@ public class ByteChunkedUniqueOperator implements IterativeChunkedAggregationOpe
                 getAndUpdateContext(preValues, startPositions, length, bucketedContext);
         final SegmentedSortedMultiSet.RemoveContext removeContext = removeContextFactory.get();
         context.ssmsToMaybeClear.fillWithValue(0, startPositions.size(), false);
+        final WritableByteChunk<? extends Values> preValueCopy = context.valueCopy.asWritableByteChunk();
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int runLength = context.lengthCopy.get(ii);
             if (runLength == 0) {
@@ -158,13 +161,14 @@ public class ByteChunkedUniqueOperator implements IterativeChunkedAggregationOpe
             final long destination = destinations.get(startPosition);
 
             final ByteSegmentedSortedMultiset ssm = ssmForSlot(destination);
-            ssm.remove(removeContext, context.valueCopy, context.counts, startPosition, runLength);
+            ssm.remove(removeContext, preValueCopy, context.counts, startPosition, runLength);
             if (ssm.isEmpty()) {
                 context.ssmsToMaybeClear.set(ii, true);
             }
         }
 
         getAndUpdateContext(postValues, startPositions, length, context);
+        final WritableByteChunk<? extends Values> postValueCopy = context.valueCopy.asWritableByteChunk();
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int runLength = context.lengthCopy.get(ii);
             final int startPosition = startPositions.get(ii);
@@ -180,7 +184,7 @@ public class ByteChunkedUniqueOperator implements IterativeChunkedAggregationOpe
                 continue;
             }
 
-            ssm.insert(context.valueCopy, context.counts, startPosition, runLength);
+            ssm.insert(postValueCopy, context.counts, startPosition, runLength);
             stateModified.set(ii, setResult(ssm, destination));
         }
     }
