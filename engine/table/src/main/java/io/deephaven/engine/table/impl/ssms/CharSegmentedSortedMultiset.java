@@ -2696,8 +2696,10 @@ public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSe
             if (size == 1) {
                 final Character val = (Character) oit.next();
                 // region VectorEquals
-                if (get(0) == NULL_CHAR && val != null && val != NULL_CHAR) {
-                    return false;
+                if (val == null) {
+                    // a null value matches our stored null sentinel; comparing the boxed sentinel via Objects.equals
+                    // would incorrectly report inequality
+                    return get(0) == NULL_CHAR;
                 }
                 // endregion VectorEquals
 
@@ -2708,8 +2710,12 @@ public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSe
                 for (int ii = 0; ii < size; ii++) {
                     final Character val = (Character) oit.next();
                     // region VectorEquals
-                    if (directoryValues[ii] == NULL_CHAR && val != null && val != NULL_CHAR) {
-                        return false;
+                    if (val == null) {
+                        // a null value matches only our stored null sentinel
+                        if (directoryValues[ii] != NULL_CHAR) {
+                            return false;
+                        }
+                        continue;
                     }
                     // endregion VectorEquals
 
@@ -2725,8 +2731,12 @@ public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSe
                 for (int ai = 0; ai < leafSizes[li]; ai++) {
                     final Character val = (Character) oit.next();
                     // region VectorEquals
-                    if (leafValues[li][ai] == NULL_CHAR && val != null && val != NULL_CHAR) {
-                        return false;
+                    if (val == null) {
+                        // a null value matches only our stored null sentinel
+                        if (leafValues[li][ai] != NULL_CHAR) {
+                            return false;
+                        }
+                        continue;
                     }
                     // endregion VectorEquals
 

@@ -25,6 +25,8 @@ import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.ssa.SsaTestHelpers;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.vector.CharVectorDirect;
+import io.deephaven.vector.ObjectVectorDirect;
 import io.deephaven.engine.table.impl.util.compact.CharCompactKernel;
 import io.deephaven.test.types.ParallelTest;
 import io.deephaven.util.SafeCloseable;
@@ -89,6 +91,67 @@ public class TestCharSegmentedSortedMultiset extends RefreshingTableTestCase {
                     testMove(desc.reset(seed, tableSize, nodeSize), true);
                 }
             }
+        }
+    }
+
+    public void testEqualsArray() {
+        // exercise the singleton (size == 1), single-leaf, and multi-leaf representations
+        checkEqualsArray(1);
+        checkEqualsArray(3);
+        checkEqualsArray(20);
+    }
+
+    public void testMoveSingletonSource() {
+        final int nodeSize = 4;
+        final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
+        // destination states: empty, singleton, partial leaf, full single leaf, multi-leaf (last leaf partial and full)
+        for (final int destCount : new int[] {0, 1, 3, 4, 6, 8}) {
+            checkAppendMaximum(nodeSize, destCount, desc);
+            checkPrependMinimum(nodeSize, destCount, desc);
+        }
+    }
+
+    public void testMoveSingletonMerge() {
+        final int nodeSize = 4;
+        final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
+        final char v = (char) ('a' + 5);
+        final char w = (char) ('a' + 6);
+
+        // moveFrontToBack: a singleton whose value equals the destination's (singleton) maximum merges via addMaxCount
+        {
+            final CharSegmentedSortedMultiset source = makeSsm(nodeSize, new char[] {v}, new int[] {2});
+            final CharSegmentedSortedMultiset dest = makeSsm(nodeSize, new char[] {v}, new int[] {3});
+            source.moveFrontToBack(dest, source.totalSize());
+            verifySsm(source, new char[0], desc);
+            verifySsm(dest, new char[] {v, v, v, v, v}, desc);
+        }
+
+        // moveBackToFront: a singleton whose value equals the destination's (singleton) minimum merges via addMinCount
+        {
+            final CharSegmentedSortedMultiset source = makeSsm(nodeSize, new char[] {v}, new int[] {2});
+            final CharSegmentedSortedMultiset dest = makeSsm(nodeSize, new char[] {v}, new int[] {3});
+            source.moveBackToFront(dest, source.totalSize());
+            verifySsm(source, new char[0], desc);
+            verifySsm(dest, new char[] {v, v, v, v, v}, desc);
+        }
+
+        // moveFrontToBack: a non-singleton source whose minimum equals the destination's maximum, moving fewer than the
+        // minimum's count, reduces the source minimum in place (addMinCount(-count)) rather than removing it
+        {
+            final CharSegmentedSortedMultiset source = makeSsm(nodeSize, new char[] {v, w}, new int[] {3, 1});
+            final CharSegmentedSortedMultiset dest = makeSsm(nodeSize, new char[] {v}, new int[] {1});
+            source.moveFrontToBack(dest, 1);
+            verifySsm(source, new char[] {v, v, w}, desc);
+            verifySsm(dest, new char[] {v, v}, desc);
+        }
+
+        // moveBackToFront: the symmetric case, reducing the source maximum in place (addMaxCount(-count))
+        {
+            final CharSegmentedSortedMultiset source = makeSsm(nodeSize, new char[] {v, w}, new int[] {1, 3});
+            final CharSegmentedSortedMultiset dest = makeSsm(nodeSize, new char[] {w}, new int[] {1});
+            source.moveBackToFront(dest, 1);
+            verifySsm(source, new char[] {v, w, w}, desc);
+            verifySsm(dest, new char[] {w, w}, desc);
         }
     }
 
@@ -331,5 +394,168 @@ public class TestCharSegmentedSortedMultiset extends RefreshingTableTestCase {
         } catch (AssertionFailure e) {
             TestCase.fail("Check failed at " + desc + ": " + e.getMessage());
         }
+    }
+
+    private CharSegmentedSortedMultiset makeSsm(int nodeSize, char[] values) {
+        final int[] counts = new int[values.length];
+        Arrays.fill(counts, 1);
+        return makeSsm(nodeSize, values, counts);
+    }
+
+    private CharSegmentedSortedMultiset makeSsm(int nodeSize, char[] values, int[] counts) {
+        final CharSegmentedSortedMultiset ssm = new CharSegmentedSortedMultiset(nodeSize);
+        if (values.length > 0) {
+            try (final WritableCharChunk<Values> valuesChunk = WritableCharChunk.makeWritableChunk(values.length);
+                 final WritableIntChunk<ChunkLengths> countsChunk = WritableIntChunk.makeWritableChunk(values.length)) {
+                for (int ii = 0; ii < values.length; ++ii) {
+                    valuesChunk.set(ii, values[ii]);
+                    countsChunk.set(ii, counts[ii]);
+                }
+                ssm.insert(valuesChunk, countsChunk);
+            }
+        }
+        return ssm;
+    }
+
+    private void checkEqualsArray(int valueCount) {
+        final int nodeSize = 4;
+        final char[] values = new char[valueCount];
+        for (int ii = 0; ii < valueCount; ++ii) {
+            values[ii] = (char) ('a' + ii);
+        }
+        final CharSegmentedSortedMultiset ssm = makeSsm(nodeSize, values);
+
+        final Character[] boxed = new Character[valueCount];
+        for (int ii = 0; ii < valueCount; ++ii) {
+            boxed[ii] = values[ii];
+        }
+
+        // a Vector with identical contents is equal (the primitive Vector becomes an ObjectVector after Object
+        // replication, so this exercises both equalsArray overloads across the type variants)
+        assertTrue(ssm.equals(ssm.getDirect()));
+        assertTrue(ssm.equals(new CharVectorDirect(values)));
+        assertTrue(ssm.equals(new ObjectVectorDirect<>(boxed)));
+
+        // a Vector of a different length is not equal
+        final char[] longer = new char[valueCount + 1];
+        for (int ii = 0; ii < longer.length; ++ii) {
+            longer[ii] = (char) ('a' + ii);
+        }
+        assertFalse(ssm.equals(new CharVectorDirect(longer)));
+        final Character[] longerBoxed = new Character[valueCount + 1];
+        for (int ii = 0; ii < longerBoxed.length; ++ii) {
+            longerBoxed[ii] = (char) ('a' + ii);
+        }
+        assertFalse(ssm.equals(new ObjectVectorDirect<>(longerBoxed)));
+
+        // a Vector that differs from the original in a single position is not equal; check the first, middle, and last
+        if (valueCount > 0) {
+            final char different = (char) ('a' + 20);
+            for (final int position : new int[] {0, valueCount / 2, valueCount - 1}) {
+                final char[] modifiedValues = values.clone();
+                modifiedValues[position] = different;
+                assertFalse(ssm.equals(new CharVectorDirect(modifiedValues)));
+
+                final Character[] modifiedBoxed = boxed.clone();
+                modifiedBoxed[position] = different;
+                assertFalse(ssm.equals(new ObjectVectorDirect<>(modifiedBoxed)));
+            }
+        }
+    }
+
+    // region NullEquals
+    public void testEqualsArrayNull() {
+        // a singleton holding the null sentinel
+        checkEqualsArrayNull(4, new char[] {NULL_CHAR});
+        // a single leaf containing the null sentinel
+        checkEqualsArrayNull(4, new char[] {NULL_CHAR, (char) ('a' + 1), (char) ('a' + 2)});
+        // multiple leaves containing the null sentinel
+        checkEqualsArrayNull(4, new char[] {NULL_CHAR,
+                (char) ('a' + 1), (char) ('a' + 2), (char) ('a' + 3), (char) ('a' + 4), (char) ('a' + 5)});
+    }
+
+    private void checkEqualsArrayNull(int nodeSize, char[] sortedValues) {
+        // sortedValues must be sorted and distinct and contain the null sentinel (which sorts first)
+        final CharSegmentedSortedMultiset ssm = makeSsm(nodeSize, sortedValues);
+        final char[] stored = ssm.toArray();
+
+        // boxing the null sentinel yields a non-null element holding the sentinel value, which compares equal
+        final Character[] boxedSentinel = new Character[stored.length];
+        for (int ii = 0; ii < stored.length; ++ii) {
+            boxedSentinel[ii] = stored[ii];
+        }
+        assertTrue(ssm.equals(new ObjectVectorDirect<>(boxedSentinel)));
+
+        // a literal null also compares equal to the stored null sentinel
+        final Character[] boxedNull = boxedSentinel.clone();
+        for (int ii = 0; ii < stored.length; ++ii) {
+            if (stored[ii] == NULL_CHAR) {
+                boxedNull[ii] = null;
+            }
+        }
+        assertTrue(ssm.equals(new ObjectVectorDirect<>(boxedNull)));
+
+        // a null at a position holding a non-null value is not equal
+        for (int ii = 0; ii < stored.length; ++ii) {
+            if (stored[ii] != NULL_CHAR) {
+                final Character[] boxedWrongNull = boxedSentinel.clone();
+                boxedWrongNull[ii] = null;
+                assertFalse(ssm.equals(new ObjectVectorDirect<>(boxedWrongNull)));
+                break;
+            }
+        }
+    }
+    // endregion NullEquals
+
+    private void verifySsm(CharSegmentedSortedMultiset ssm, char[] expanded, SsaTestHelpers.TestDescriptor desc) {
+        try (final WritableCharChunk<Values> valueChunk =
+                WritableCharChunk.makeWritableChunk(Math.max(expanded.length, 1))) {
+            valueChunk.setSize(expanded.length);
+            for (int ii = 0; ii < expanded.length; ++ii) {
+                valueChunk.set(ii, expanded[ii]);
+            }
+            checkSsm(ssm, valueChunk, true, desc);
+        }
+    }
+
+    private void checkAppendMaximum(int nodeSize, int destCount, SsaTestHelpers.TestDescriptor desc) {
+        final char[] destValues = new char[destCount];
+        for (int ii = 0; ii < destCount; ++ii) {
+            destValues[ii] = (char) ('a' + 1 + ii);
+        }
+        // strictly greater than everything in the destination, so it becomes the new maximum (exercises appendMaximum)
+        final char value = (char) ('a' + 20);
+
+        final CharSegmentedSortedMultiset source = makeSsm(nodeSize, new char[] {value});
+        final CharSegmentedSortedMultiset dest = makeSsm(nodeSize, destValues);
+
+        source.moveFrontToBack(dest, source.totalSize());
+
+        verifySsm(source, new char[0], desc);
+        final char[] expected = Arrays.copyOf(destValues, destCount + 1);
+        expected[destCount] = value;
+        verifySsm(dest, expected, desc);
+    }
+
+    private void checkPrependMinimum(int nodeSize, int destCount, SsaTestHelpers.TestDescriptor desc) {
+        final char[] destValues = new char[destCount];
+        for (int ii = 0; ii < destCount; ++ii) {
+            destValues[ii] = (char) ('a' + 1 + ii);
+        }
+        // strictly less than everything in the destination, so it becomes the new minimum (exercises prependMinimum).
+        // Use ('a' + 0) rather than a bare 'a' so that the Object replication boxes to the same type as the other
+        // values (int arithmetic boxes to Integer; a bare char literal would box to Character and break comparisons).
+        final char value = (char) ('a' + 0);
+
+        final CharSegmentedSortedMultiset source = makeSsm(nodeSize, new char[] {value});
+        final CharSegmentedSortedMultiset dest = makeSsm(nodeSize, destValues);
+
+        source.moveBackToFront(dest, source.totalSize());
+
+        verifySsm(source, new char[0], desc);
+        final char[] expected = new char[destCount + 1];
+        expected[0] = value;
+        System.arraycopy(destValues, 0, expected, 1, destCount);
+        verifySsm(dest, expected, desc);
     }
 }

@@ -28,6 +28,7 @@ import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.ssa.SsaTestHelpers;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.vector.ObjectVectorDirect;
 import io.deephaven.engine.table.impl.util.compact.ObjectCompactKernel;
 import io.deephaven.test.types.ParallelTest;
 import io.deephaven.util.SafeCloseable;
@@ -91,6 +92,67 @@ public class TestObjectSegmentedSortedMultiset extends RefreshingTableTestCase {
                     testMove(desc.reset(seed, tableSize, nodeSize), true);
                 }
             }
+        }
+    }
+
+    public void testEqualsArray() {
+        // exercise the singleton (size == 1), single-leaf, and multi-leaf representations
+        checkEqualsArray(1);
+        checkEqualsArray(3);
+        checkEqualsArray(20);
+    }
+
+    public void testMoveSingletonSource() {
+        final int nodeSize = 4;
+        final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
+        // destination states: empty, singleton, partial leaf, full single leaf, multi-leaf (last leaf partial and full)
+        for (final int destCount : new int[] {0, 1, 3, 4, 6, 8}) {
+            checkAppendMaximum(nodeSize, destCount, desc);
+            checkPrependMinimum(nodeSize, destCount, desc);
+        }
+    }
+
+    public void testMoveSingletonMerge() {
+        final int nodeSize = 4;
+        final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
+        final Object v = (Object) ('a' + 5);
+        final Object w = (Object) ('a' + 6);
+
+        // moveFrontToBack: a singleton whose value equals the destination's (singleton) maximum merges via addMaxCount
+        {
+            final ObjectSegmentedSortedMultiset source = makeSsm(nodeSize, new Object[] {v}, new int[] {2});
+            final ObjectSegmentedSortedMultiset dest = makeSsm(nodeSize, new Object[] {v}, new int[] {3});
+            source.moveFrontToBack(dest, source.totalSize());
+            verifySsm(source, new Object[0], desc);
+            verifySsm(dest, new Object[] {v, v, v, v, v}, desc);
+        }
+
+        // moveBackToFront: a singleton whose value equals the destination's (singleton) minimum merges via addMinCount
+        {
+            final ObjectSegmentedSortedMultiset source = makeSsm(nodeSize, new Object[] {v}, new int[] {2});
+            final ObjectSegmentedSortedMultiset dest = makeSsm(nodeSize, new Object[] {v}, new int[] {3});
+            source.moveBackToFront(dest, source.totalSize());
+            verifySsm(source, new Object[0], desc);
+            verifySsm(dest, new Object[] {v, v, v, v, v}, desc);
+        }
+
+        // moveFrontToBack: a non-singleton source whose minimum equals the destination's maximum, moving fewer than the
+        // minimum's count, reduces the source minimum in place (addMinCount(-count)) rather than removing it
+        {
+            final ObjectSegmentedSortedMultiset source = makeSsm(nodeSize, new Object[] {v, w}, new int[] {3, 1});
+            final ObjectSegmentedSortedMultiset dest = makeSsm(nodeSize, new Object[] {v}, new int[] {1});
+            source.moveFrontToBack(dest, 1);
+            verifySsm(source, new Object[] {v, v, w}, desc);
+            verifySsm(dest, new Object[] {v, v}, desc);
+        }
+
+        // moveBackToFront: the symmetric case, reducing the source maximum in place (addMaxCount(-count))
+        {
+            final ObjectSegmentedSortedMultiset source = makeSsm(nodeSize, new Object[] {v, w}, new int[] {1, 3});
+            final ObjectSegmentedSortedMultiset dest = makeSsm(nodeSize, new Object[] {w}, new int[] {1});
+            source.moveBackToFront(dest, 1);
+            verifySsm(source, new Object[] {v, w, w}, desc);
+            verifySsm(dest, new Object[] {w, w}, desc);
         }
     }
 
@@ -322,5 +384,127 @@ public class TestObjectSegmentedSortedMultiset extends RefreshingTableTestCase {
         } catch (AssertionFailure e) {
             TestCase.fail("Check failed at " + desc + ": " + e.getMessage());
         }
+    }
+
+    private ObjectSegmentedSortedMultiset makeSsm(int nodeSize, Object[] values) {
+        final int[] counts = new int[values.length];
+        Arrays.fill(counts, 1);
+        return makeSsm(nodeSize, values, counts);
+    }
+
+    private ObjectSegmentedSortedMultiset makeSsm(int nodeSize, Object[] values, int[] counts) {
+        final ObjectSegmentedSortedMultiset ssm = new ObjectSegmentedSortedMultiset(nodeSize, Object.class);
+        if (values.length > 0) {
+            try (final WritableObjectChunk<Object, Values> valuesChunk = WritableObjectChunk.makeWritableChunk(values.length);
+                 final WritableIntChunk<ChunkLengths> countsChunk = WritableIntChunk.makeWritableChunk(values.length)) {
+                for (int ii = 0; ii < values.length; ++ii) {
+                    valuesChunk.set(ii, values[ii]);
+                    countsChunk.set(ii, counts[ii]);
+                }
+                ssm.insert(valuesChunk, countsChunk);
+            }
+        }
+        return ssm;
+    }
+
+    private void checkEqualsArray(int valueCount) {
+        final int nodeSize = 4;
+        final Object[] values = new Object[valueCount];
+        for (int ii = 0; ii < valueCount; ++ii) {
+            values[ii] = (Object) ('a' + ii);
+        }
+        final ObjectSegmentedSortedMultiset ssm = makeSsm(nodeSize, values);
+
+        final Object[] boxed = new Object[valueCount];
+        for (int ii = 0; ii < valueCount; ++ii) {
+            boxed[ii] = values[ii];
+        }
+
+        // a Vector with identical contents is equal (the primitive Vector becomes an ObjectVector after Object
+        // replication, so this exercises both equalsArray overloads across the type variants)
+        assertTrue(ssm.equals(ssm.getDirect()));
+        assertTrue(ssm.equals(new ObjectVectorDirect(values)));
+        assertTrue(ssm.equals(new ObjectVectorDirect<>(boxed)));
+
+        // a Vector of a different length is not equal
+        final Object[] longer = new Object[valueCount + 1];
+        for (int ii = 0; ii < longer.length; ++ii) {
+            longer[ii] = (Object) ('a' + ii);
+        }
+        assertFalse(ssm.equals(new ObjectVectorDirect(longer)));
+        final Object[] longerBoxed = new Object[valueCount + 1];
+        for (int ii = 0; ii < longerBoxed.length; ++ii) {
+            longerBoxed[ii] = (Object) ('a' + ii);
+        }
+        assertFalse(ssm.equals(new ObjectVectorDirect<>(longerBoxed)));
+
+        // a Vector that differs from the original in a single position is not equal; check the first, middle, and last
+        if (valueCount > 0) {
+            final Object different = (Object) ('a' + 20);
+            for (final int position : new int[] {0, valueCount / 2, valueCount - 1}) {
+                final Object[] modifiedValues = values.clone();
+                modifiedValues[position] = different;
+                assertFalse(ssm.equals(new ObjectVectorDirect(modifiedValues)));
+
+                final Object[] modifiedBoxed = boxed.clone();
+                modifiedBoxed[position] = different;
+                assertFalse(ssm.equals(new ObjectVectorDirect<>(modifiedBoxed)));
+            }
+        }
+    }
+
+    // region NullEquals
+    // endregion NullEquals
+
+    private void verifySsm(ObjectSegmentedSortedMultiset ssm, Object[] expanded, SsaTestHelpers.TestDescriptor desc) {
+        try (final WritableObjectChunk<Object, Values> valueChunk =
+                WritableObjectChunk.makeWritableChunk(Math.max(expanded.length, 1))) {
+            valueChunk.setSize(expanded.length);
+            for (int ii = 0; ii < expanded.length; ++ii) {
+                valueChunk.set(ii, expanded[ii]);
+            }
+            checkSsm(ssm, valueChunk, true, desc);
+        }
+    }
+
+    private void checkAppendMaximum(int nodeSize, int destCount, SsaTestHelpers.TestDescriptor desc) {
+        final Object[] destValues = new Object[destCount];
+        for (int ii = 0; ii < destCount; ++ii) {
+            destValues[ii] = (Object) ('a' + 1 + ii);
+        }
+        // strictly greater than everything in the destination, so it becomes the new maximum (exercises appendMaximum)
+        final Object value = (Object) ('a' + 20);
+
+        final ObjectSegmentedSortedMultiset source = makeSsm(nodeSize, new Object[] {value});
+        final ObjectSegmentedSortedMultiset dest = makeSsm(nodeSize, destValues);
+
+        source.moveFrontToBack(dest, source.totalSize());
+
+        verifySsm(source, new Object[0], desc);
+        final Object[] expected = Arrays.copyOf(destValues, destCount + 1);
+        expected[destCount] = value;
+        verifySsm(dest, expected, desc);
+    }
+
+    private void checkPrependMinimum(int nodeSize, int destCount, SsaTestHelpers.TestDescriptor desc) {
+        final Object[] destValues = new Object[destCount];
+        for (int ii = 0; ii < destCount; ++ii) {
+            destValues[ii] = (Object) ('a' + 1 + ii);
+        }
+        // strictly less than everything in the destination, so it becomes the new minimum (exercises prependMinimum).
+        // Use ('a' + 0) rather than a bare 'a' so that the Object replication boxes to the same type as the other
+        // values (int arithmetic boxes to Integer; a bare Object literal would box to Object and break comparisons).
+        final Object value = (Object) ('a' + 0);
+
+        final ObjectSegmentedSortedMultiset source = makeSsm(nodeSize, new Object[] {value});
+        final ObjectSegmentedSortedMultiset dest = makeSsm(nodeSize, destValues);
+
+        source.moveBackToFront(dest, source.totalSize());
+
+        verifySsm(source, new Object[0], desc);
+        final Object[] expected = new Object[destCount + 1];
+        expected[0] = value;
+        System.arraycopy(destValues, 0, expected, 1, destCount);
+        verifySsm(dest, expected, desc);
     }
 }

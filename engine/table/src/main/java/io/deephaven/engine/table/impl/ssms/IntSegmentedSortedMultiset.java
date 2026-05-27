@@ -2700,8 +2700,10 @@ public final class IntSegmentedSortedMultiset implements SegmentedSortedMultiSet
             if (size == 1) {
                 final Integer val = (Integer) oit.next();
                 // region VectorEquals
-                if (get(0) == NULL_INT && val != null && val != NULL_INT) {
-                    return false;
+                if (val == null) {
+                    // a null value matches our stored null sentinel; comparing the boxed sentinel via Objects.equals
+                    // would incorrectly report inequality
+                    return get(0) == NULL_INT;
                 }
                 // endregion VectorEquals
 
@@ -2712,8 +2714,12 @@ public final class IntSegmentedSortedMultiset implements SegmentedSortedMultiSet
                 for (int ii = 0; ii < size; ii++) {
                     final Integer val = (Integer) oit.next();
                     // region VectorEquals
-                    if (directoryValues[ii] == NULL_INT && val != null && val != NULL_INT) {
-                        return false;
+                    if (val == null) {
+                        // a null value matches only our stored null sentinel
+                        if (directoryValues[ii] != NULL_INT) {
+                            return false;
+                        }
+                        continue;
                     }
                     // endregion VectorEquals
 
@@ -2729,8 +2735,12 @@ public final class IntSegmentedSortedMultiset implements SegmentedSortedMultiSet
                 for (int ai = 0; ai < leafSizes[li]; ai++) {
                     final Integer val = (Integer) oit.next();
                     // region VectorEquals
-                    if (leafValues[li][ai] == NULL_INT && val != null && val != NULL_INT) {
-                        return false;
+                    if (val == null) {
+                        // a null value matches only our stored null sentinel
+                        if (leafValues[li][ai] != NULL_INT) {
+                            return false;
+                        }
+                        continue;
                     }
                     // endregion VectorEquals
 

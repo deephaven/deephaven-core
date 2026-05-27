@@ -50,6 +50,11 @@ public class ReplicateSegmentedSortedMultisetTests {
                 "new ObjectSegmentedSortedMultiset(desc.nodeSize(), Object.class)");
         lines = removeImport(lines, "\\s*import static.*QueryConstants.*;");
         lines = removeRegion(lines, "SortFixupSanityCheck");
+        // the null-sentinel equality semantics are specific to the primitive types
+        lines = removeRegion(lines, "NullEquals");
+        // CharVectorDirect replicates to ObjectVectorDirect, which is already imported explicitly; drop the duplicate
+        // (removeImport removes a single occurrence per pattern, leaving exactly one)
+        lines = removeImport(lines, "\\s*import io.deephaven.vector.ObjectVectorDirect;");
         FileUtils.writeLines(objectFile, ReplicationUtils.fixupChunkAttributes(lines));
     }
 }

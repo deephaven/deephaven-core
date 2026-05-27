@@ -28,6 +28,8 @@ import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.ssa.SsaTestHelpers;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.vector.FloatVectorDirect;
+import io.deephaven.vector.ObjectVectorDirect;
 import io.deephaven.engine.table.impl.util.compact.FloatCompactKernel;
 import io.deephaven.test.types.ParallelTest;
 import io.deephaven.util.SafeCloseable;
@@ -92,6 +94,67 @@ public class TestFloatSegmentedSortedMultiset extends RefreshingTableTestCase {
                     testMove(desc.reset(seed, tableSize, nodeSize), true);
                 }
             }
+        }
+    }
+
+    public void testEqualsArray() {
+        // exercise the singleton (size == 1), single-leaf, and multi-leaf representations
+        checkEqualsArray(1);
+        checkEqualsArray(3);
+        checkEqualsArray(20);
+    }
+
+    public void testMoveSingletonSource() {
+        final int nodeSize = 4;
+        final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
+        // destination states: empty, singleton, partial leaf, full single leaf, multi-leaf (last leaf partial and full)
+        for (final int destCount : new int[] {0, 1, 3, 4, 6, 8}) {
+            checkAppendMaximum(nodeSize, destCount, desc);
+            checkPrependMinimum(nodeSize, destCount, desc);
+        }
+    }
+
+    public void testMoveSingletonMerge() {
+        final int nodeSize = 4;
+        final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
+        final float v = (float) ('a' + 5);
+        final float w = (float) ('a' + 6);
+
+        // moveFrontToBack: a singleton whose value equals the destination's (singleton) maximum merges via addMaxCount
+        {
+            final FloatSegmentedSortedMultiset source = makeSsm(nodeSize, new float[] {v}, new int[] {2});
+            final FloatSegmentedSortedMultiset dest = makeSsm(nodeSize, new float[] {v}, new int[] {3});
+            source.moveFrontToBack(dest, source.totalSize());
+            verifySsm(source, new float[0], desc);
+            verifySsm(dest, new float[] {v, v, v, v, v}, desc);
+        }
+
+        // moveBackToFront: a singleton whose value equals the destination's (singleton) minimum merges via addMinCount
+        {
+            final FloatSegmentedSortedMultiset source = makeSsm(nodeSize, new float[] {v}, new int[] {2});
+            final FloatSegmentedSortedMultiset dest = makeSsm(nodeSize, new float[] {v}, new int[] {3});
+            source.moveBackToFront(dest, source.totalSize());
+            verifySsm(source, new float[0], desc);
+            verifySsm(dest, new float[] {v, v, v, v, v}, desc);
+        }
+
+        // moveFrontToBack: a non-singleton source whose minimum equals the destination's maximum, moving fewer than the
+        // minimum's count, reduces the source minimum in place (addMinCount(-count)) rather than removing it
+        {
+            final FloatSegmentedSortedMultiset source = makeSsm(nodeSize, new float[] {v, w}, new int[] {3, 1});
+            final FloatSegmentedSortedMultiset dest = makeSsm(nodeSize, new float[] {v}, new int[] {1});
+            source.moveFrontToBack(dest, 1);
+            verifySsm(source, new float[] {v, v, w}, desc);
+            verifySsm(dest, new float[] {v, v}, desc);
+        }
+
+        // moveBackToFront: the symmetric case, reducing the source maximum in place (addMaxCount(-count))
+        {
+            final FloatSegmentedSortedMultiset source = makeSsm(nodeSize, new float[] {v, w}, new int[] {1, 3});
+            final FloatSegmentedSortedMultiset dest = makeSsm(nodeSize, new float[] {w}, new int[] {1});
+            source.moveBackToFront(dest, 1);
+            verifySsm(source, new float[] {v, w, w}, desc);
+            verifySsm(dest, new float[] {w, w}, desc);
         }
     }
 
@@ -334,5 +397,168 @@ public class TestFloatSegmentedSortedMultiset extends RefreshingTableTestCase {
         } catch (AssertionFailure e) {
             TestCase.fail("Check failed at " + desc + ": " + e.getMessage());
         }
+    }
+
+    private FloatSegmentedSortedMultiset makeSsm(int nodeSize, float[] values) {
+        final int[] counts = new int[values.length];
+        Arrays.fill(counts, 1);
+        return makeSsm(nodeSize, values, counts);
+    }
+
+    private FloatSegmentedSortedMultiset makeSsm(int nodeSize, float[] values, int[] counts) {
+        final FloatSegmentedSortedMultiset ssm = new FloatSegmentedSortedMultiset(nodeSize);
+        if (values.length > 0) {
+            try (final WritableFloatChunk<Values> valuesChunk = WritableFloatChunk.makeWritableChunk(values.length);
+                 final WritableIntChunk<ChunkLengths> countsChunk = WritableIntChunk.makeWritableChunk(values.length)) {
+                for (int ii = 0; ii < values.length; ++ii) {
+                    valuesChunk.set(ii, values[ii]);
+                    countsChunk.set(ii, counts[ii]);
+                }
+                ssm.insert(valuesChunk, countsChunk);
+            }
+        }
+        return ssm;
+    }
+
+    private void checkEqualsArray(int valueCount) {
+        final int nodeSize = 4;
+        final float[] values = new float[valueCount];
+        for (int ii = 0; ii < valueCount; ++ii) {
+            values[ii] = (float) ('a' + ii);
+        }
+        final FloatSegmentedSortedMultiset ssm = makeSsm(nodeSize, values);
+
+        final Float[] boxed = new Float[valueCount];
+        for (int ii = 0; ii < valueCount; ++ii) {
+            boxed[ii] = values[ii];
+        }
+
+        // a Vector with identical contents is equal (the primitive Vector becomes an ObjectVector after Object
+        // replication, so this exercises both equalsArray overloads across the type variants)
+        assertTrue(ssm.equals(ssm.getDirect()));
+        assertTrue(ssm.equals(new FloatVectorDirect(values)));
+        assertTrue(ssm.equals(new ObjectVectorDirect<>(boxed)));
+
+        // a Vector of a different length is not equal
+        final float[] longer = new float[valueCount + 1];
+        for (int ii = 0; ii < longer.length; ++ii) {
+            longer[ii] = (float) ('a' + ii);
+        }
+        assertFalse(ssm.equals(new FloatVectorDirect(longer)));
+        final Float[] longerBoxed = new Float[valueCount + 1];
+        for (int ii = 0; ii < longerBoxed.length; ++ii) {
+            longerBoxed[ii] = (float) ('a' + ii);
+        }
+        assertFalse(ssm.equals(new ObjectVectorDirect<>(longerBoxed)));
+
+        // a Vector that differs from the original in a single position is not equal; check the first, middle, and last
+        if (valueCount > 0) {
+            final float different = (float) ('a' + 20);
+            for (final int position : new int[] {0, valueCount / 2, valueCount - 1}) {
+                final float[] modifiedValues = values.clone();
+                modifiedValues[position] = different;
+                assertFalse(ssm.equals(new FloatVectorDirect(modifiedValues)));
+
+                final Float[] modifiedBoxed = boxed.clone();
+                modifiedBoxed[position] = different;
+                assertFalse(ssm.equals(new ObjectVectorDirect<>(modifiedBoxed)));
+            }
+        }
+    }
+
+    // region NullEquals
+    public void testEqualsArrayNull() {
+        // a singleton holding the null sentinel
+        checkEqualsArrayNull(4, new float[] {NULL_FLOAT});
+        // a single leaf containing the null sentinel
+        checkEqualsArrayNull(4, new float[] {NULL_FLOAT, (float) ('a' + 1), (float) ('a' + 2)});
+        // multiple leaves containing the null sentinel
+        checkEqualsArrayNull(4, new float[] {NULL_FLOAT,
+                (float) ('a' + 1), (float) ('a' + 2), (float) ('a' + 3), (float) ('a' + 4), (float) ('a' + 5)});
+    }
+
+    private void checkEqualsArrayNull(int nodeSize, float[] sortedValues) {
+        // sortedValues must be sorted and distinct and contain the null sentinel (which sorts first)
+        final FloatSegmentedSortedMultiset ssm = makeSsm(nodeSize, sortedValues);
+        final float[] stored = ssm.toArray();
+
+        // boxing the null sentinel yields a non-null element holding the sentinel value, which compares equal
+        final Float[] boxedSentinel = new Float[stored.length];
+        for (int ii = 0; ii < stored.length; ++ii) {
+            boxedSentinel[ii] = stored[ii];
+        }
+        assertTrue(ssm.equals(new ObjectVectorDirect<>(boxedSentinel)));
+
+        // a literal null also compares equal to the stored null sentinel
+        final Float[] boxedNull = boxedSentinel.clone();
+        for (int ii = 0; ii < stored.length; ++ii) {
+            if (stored[ii] == NULL_FLOAT) {
+                boxedNull[ii] = null;
+            }
+        }
+        assertTrue(ssm.equals(new ObjectVectorDirect<>(boxedNull)));
+
+        // a null at a position holding a non-null value is not equal
+        for (int ii = 0; ii < stored.length; ++ii) {
+            if (stored[ii] != NULL_FLOAT) {
+                final Float[] boxedWrongNull = boxedSentinel.clone();
+                boxedWrongNull[ii] = null;
+                assertFalse(ssm.equals(new ObjectVectorDirect<>(boxedWrongNull)));
+                break;
+            }
+        }
+    }
+    // endregion NullEquals
+
+    private void verifySsm(FloatSegmentedSortedMultiset ssm, float[] expanded, SsaTestHelpers.TestDescriptor desc) {
+        try (final WritableFloatChunk<Values> valueChunk =
+                WritableFloatChunk.makeWritableChunk(Math.max(expanded.length, 1))) {
+            valueChunk.setSize(expanded.length);
+            for (int ii = 0; ii < expanded.length; ++ii) {
+                valueChunk.set(ii, expanded[ii]);
+            }
+            checkSsm(ssm, valueChunk, true, desc);
+        }
+    }
+
+    private void checkAppendMaximum(int nodeSize, int destCount, SsaTestHelpers.TestDescriptor desc) {
+        final float[] destValues = new float[destCount];
+        for (int ii = 0; ii < destCount; ++ii) {
+            destValues[ii] = (float) ('a' + 1 + ii);
+        }
+        // strictly greater than everything in the destination, so it becomes the new maximum (exercises appendMaximum)
+        final float value = (float) ('a' + 20);
+
+        final FloatSegmentedSortedMultiset source = makeSsm(nodeSize, new float[] {value});
+        final FloatSegmentedSortedMultiset dest = makeSsm(nodeSize, destValues);
+
+        source.moveFrontToBack(dest, source.totalSize());
+
+        verifySsm(source, new float[0], desc);
+        final float[] expected = Arrays.copyOf(destValues, destCount + 1);
+        expected[destCount] = value;
+        verifySsm(dest, expected, desc);
+    }
+
+    private void checkPrependMinimum(int nodeSize, int destCount, SsaTestHelpers.TestDescriptor desc) {
+        final float[] destValues = new float[destCount];
+        for (int ii = 0; ii < destCount; ++ii) {
+            destValues[ii] = (float) ('a' + 1 + ii);
+        }
+        // strictly less than everything in the destination, so it becomes the new minimum (exercises prependMinimum).
+        // Use ('a' + 0) rather than a bare 'a' so that the Object replication boxes to the same type as the other
+        // values (int arithmetic boxes to Integer; a bare float literal would box to Float and break comparisons).
+        final float value = (float) ('a' + 0);
+
+        final FloatSegmentedSortedMultiset source = makeSsm(nodeSize, new float[] {value});
+        final FloatSegmentedSortedMultiset dest = makeSsm(nodeSize, destValues);
+
+        source.moveBackToFront(dest, source.totalSize());
+
+        verifySsm(source, new float[0], desc);
+        final float[] expected = new float[destCount + 1];
+        expected[0] = value;
+        System.arraycopy(destValues, 0, expected, 1, destCount);
+        verifySsm(dest, expected, desc);
     }
 }

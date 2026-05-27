@@ -28,6 +28,8 @@ import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.ssa.SsaTestHelpers;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.vector.ByteVectorDirect;
+import io.deephaven.vector.ObjectVectorDirect;
 import io.deephaven.engine.table.impl.util.compact.ByteCompactKernel;
 import io.deephaven.test.types.ParallelTest;
 import io.deephaven.util.SafeCloseable;
@@ -92,6 +94,67 @@ public class TestByteSegmentedSortedMultiset extends RefreshingTableTestCase {
                     testMove(desc.reset(seed, tableSize, nodeSize), true);
                 }
             }
+        }
+    }
+
+    public void testEqualsArray() {
+        // exercise the singleton (size == 1), single-leaf, and multi-leaf representations
+        checkEqualsArray(1);
+        checkEqualsArray(3);
+        checkEqualsArray(20);
+    }
+
+    public void testMoveSingletonSource() {
+        final int nodeSize = 4;
+        final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
+        // destination states: empty, singleton, partial leaf, full single leaf, multi-leaf (last leaf partial and full)
+        for (final int destCount : new int[] {0, 1, 3, 4, 6, 8}) {
+            checkAppendMaximum(nodeSize, destCount, desc);
+            checkPrependMinimum(nodeSize, destCount, desc);
+        }
+    }
+
+    public void testMoveSingletonMerge() {
+        final int nodeSize = 4;
+        final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
+        final byte v = (byte) ('a' + 5);
+        final byte w = (byte) ('a' + 6);
+
+        // moveFrontToBack: a singleton whose value equals the destination's (singleton) maximum merges via addMaxCount
+        {
+            final ByteSegmentedSortedMultiset source = makeSsm(nodeSize, new byte[] {v}, new int[] {2});
+            final ByteSegmentedSortedMultiset dest = makeSsm(nodeSize, new byte[] {v}, new int[] {3});
+            source.moveFrontToBack(dest, source.totalSize());
+            verifySsm(source, new byte[0], desc);
+            verifySsm(dest, new byte[] {v, v, v, v, v}, desc);
+        }
+
+        // moveBackToFront: a singleton whose value equals the destination's (singleton) minimum merges via addMinCount
+        {
+            final ByteSegmentedSortedMultiset source = makeSsm(nodeSize, new byte[] {v}, new int[] {2});
+            final ByteSegmentedSortedMultiset dest = makeSsm(nodeSize, new byte[] {v}, new int[] {3});
+            source.moveBackToFront(dest, source.totalSize());
+            verifySsm(source, new byte[0], desc);
+            verifySsm(dest, new byte[] {v, v, v, v, v}, desc);
+        }
+
+        // moveFrontToBack: a non-singleton source whose minimum equals the destination's maximum, moving fewer than the
+        // minimum's count, reduces the source minimum in place (addMinCount(-count)) rather than removing it
+        {
+            final ByteSegmentedSortedMultiset source = makeSsm(nodeSize, new byte[] {v, w}, new int[] {3, 1});
+            final ByteSegmentedSortedMultiset dest = makeSsm(nodeSize, new byte[] {v}, new int[] {1});
+            source.moveFrontToBack(dest, 1);
+            verifySsm(source, new byte[] {v, v, w}, desc);
+            verifySsm(dest, new byte[] {v, v}, desc);
+        }
+
+        // moveBackToFront: the symmetric case, reducing the source maximum in place (addMaxCount(-count))
+        {
+            final ByteSegmentedSortedMultiset source = makeSsm(nodeSize, new byte[] {v, w}, new int[] {1, 3});
+            final ByteSegmentedSortedMultiset dest = makeSsm(nodeSize, new byte[] {w}, new int[] {1});
+            source.moveBackToFront(dest, 1);
+            verifySsm(source, new byte[] {v, w, w}, desc);
+            verifySsm(dest, new byte[] {w, w}, desc);
         }
     }
 
@@ -334,5 +397,168 @@ public class TestByteSegmentedSortedMultiset extends RefreshingTableTestCase {
         } catch (AssertionFailure e) {
             TestCase.fail("Check failed at " + desc + ": " + e.getMessage());
         }
+    }
+
+    private ByteSegmentedSortedMultiset makeSsm(int nodeSize, byte[] values) {
+        final int[] counts = new int[values.length];
+        Arrays.fill(counts, 1);
+        return makeSsm(nodeSize, values, counts);
+    }
+
+    private ByteSegmentedSortedMultiset makeSsm(int nodeSize, byte[] values, int[] counts) {
+        final ByteSegmentedSortedMultiset ssm = new ByteSegmentedSortedMultiset(nodeSize);
+        if (values.length > 0) {
+            try (final WritableByteChunk<Values> valuesChunk = WritableByteChunk.makeWritableChunk(values.length);
+                 final WritableIntChunk<ChunkLengths> countsChunk = WritableIntChunk.makeWritableChunk(values.length)) {
+                for (int ii = 0; ii < values.length; ++ii) {
+                    valuesChunk.set(ii, values[ii]);
+                    countsChunk.set(ii, counts[ii]);
+                }
+                ssm.insert(valuesChunk, countsChunk);
+            }
+        }
+        return ssm;
+    }
+
+    private void checkEqualsArray(int valueCount) {
+        final int nodeSize = 4;
+        final byte[] values = new byte[valueCount];
+        for (int ii = 0; ii < valueCount; ++ii) {
+            values[ii] = (byte) ('a' + ii);
+        }
+        final ByteSegmentedSortedMultiset ssm = makeSsm(nodeSize, values);
+
+        final Byte[] boxed = new Byte[valueCount];
+        for (int ii = 0; ii < valueCount; ++ii) {
+            boxed[ii] = values[ii];
+        }
+
+        // a Vector with identical contents is equal (the primitive Vector becomes an ObjectVector after Object
+        // replication, so this exercises both equalsArray overloads across the type variants)
+        assertTrue(ssm.equals(ssm.getDirect()));
+        assertTrue(ssm.equals(new ByteVectorDirect(values)));
+        assertTrue(ssm.equals(new ObjectVectorDirect<>(boxed)));
+
+        // a Vector of a different length is not equal
+        final byte[] longer = new byte[valueCount + 1];
+        for (int ii = 0; ii < longer.length; ++ii) {
+            longer[ii] = (byte) ('a' + ii);
+        }
+        assertFalse(ssm.equals(new ByteVectorDirect(longer)));
+        final Byte[] longerBoxed = new Byte[valueCount + 1];
+        for (int ii = 0; ii < longerBoxed.length; ++ii) {
+            longerBoxed[ii] = (byte) ('a' + ii);
+        }
+        assertFalse(ssm.equals(new ObjectVectorDirect<>(longerBoxed)));
+
+        // a Vector that differs from the original in a single position is not equal; check the first, middle, and last
+        if (valueCount > 0) {
+            final byte different = (byte) ('a' + 20);
+            for (final int position : new int[] {0, valueCount / 2, valueCount - 1}) {
+                final byte[] modifiedValues = values.clone();
+                modifiedValues[position] = different;
+                assertFalse(ssm.equals(new ByteVectorDirect(modifiedValues)));
+
+                final Byte[] modifiedBoxed = boxed.clone();
+                modifiedBoxed[position] = different;
+                assertFalse(ssm.equals(new ObjectVectorDirect<>(modifiedBoxed)));
+            }
+        }
+    }
+
+    // region NullEquals
+    public void testEqualsArrayNull() {
+        // a singleton holding the null sentinel
+        checkEqualsArrayNull(4, new byte[] {NULL_BYTE});
+        // a single leaf containing the null sentinel
+        checkEqualsArrayNull(4, new byte[] {NULL_BYTE, (byte) ('a' + 1), (byte) ('a' + 2)});
+        // multiple leaves containing the null sentinel
+        checkEqualsArrayNull(4, new byte[] {NULL_BYTE,
+                (byte) ('a' + 1), (byte) ('a' + 2), (byte) ('a' + 3), (byte) ('a' + 4), (byte) ('a' + 5)});
+    }
+
+    private void checkEqualsArrayNull(int nodeSize, byte[] sortedValues) {
+        // sortedValues must be sorted and distinct and contain the null sentinel (which sorts first)
+        final ByteSegmentedSortedMultiset ssm = makeSsm(nodeSize, sortedValues);
+        final byte[] stored = ssm.toArray();
+
+        // boxing the null sentinel yields a non-null element holding the sentinel value, which compares equal
+        final Byte[] boxedSentinel = new Byte[stored.length];
+        for (int ii = 0; ii < stored.length; ++ii) {
+            boxedSentinel[ii] = stored[ii];
+        }
+        assertTrue(ssm.equals(new ObjectVectorDirect<>(boxedSentinel)));
+
+        // a literal null also compares equal to the stored null sentinel
+        final Byte[] boxedNull = boxedSentinel.clone();
+        for (int ii = 0; ii < stored.length; ++ii) {
+            if (stored[ii] == NULL_BYTE) {
+                boxedNull[ii] = null;
+            }
+        }
+        assertTrue(ssm.equals(new ObjectVectorDirect<>(boxedNull)));
+
+        // a null at a position holding a non-null value is not equal
+        for (int ii = 0; ii < stored.length; ++ii) {
+            if (stored[ii] != NULL_BYTE) {
+                final Byte[] boxedWrongNull = boxedSentinel.clone();
+                boxedWrongNull[ii] = null;
+                assertFalse(ssm.equals(new ObjectVectorDirect<>(boxedWrongNull)));
+                break;
+            }
+        }
+    }
+    // endregion NullEquals
+
+    private void verifySsm(ByteSegmentedSortedMultiset ssm, byte[] expanded, SsaTestHelpers.TestDescriptor desc) {
+        try (final WritableByteChunk<Values> valueChunk =
+                WritableByteChunk.makeWritableChunk(Math.max(expanded.length, 1))) {
+            valueChunk.setSize(expanded.length);
+            for (int ii = 0; ii < expanded.length; ++ii) {
+                valueChunk.set(ii, expanded[ii]);
+            }
+            checkSsm(ssm, valueChunk, true, desc);
+        }
+    }
+
+    private void checkAppendMaximum(int nodeSize, int destCount, SsaTestHelpers.TestDescriptor desc) {
+        final byte[] destValues = new byte[destCount];
+        for (int ii = 0; ii < destCount; ++ii) {
+            destValues[ii] = (byte) ('a' + 1 + ii);
+        }
+        // strictly greater than everything in the destination, so it becomes the new maximum (exercises appendMaximum)
+        final byte value = (byte) ('a' + 20);
+
+        final ByteSegmentedSortedMultiset source = makeSsm(nodeSize, new byte[] {value});
+        final ByteSegmentedSortedMultiset dest = makeSsm(nodeSize, destValues);
+
+        source.moveFrontToBack(dest, source.totalSize());
+
+        verifySsm(source, new byte[0], desc);
+        final byte[] expected = Arrays.copyOf(destValues, destCount + 1);
+        expected[destCount] = value;
+        verifySsm(dest, expected, desc);
+    }
+
+    private void checkPrependMinimum(int nodeSize, int destCount, SsaTestHelpers.TestDescriptor desc) {
+        final byte[] destValues = new byte[destCount];
+        for (int ii = 0; ii < destCount; ++ii) {
+            destValues[ii] = (byte) ('a' + 1 + ii);
+        }
+        // strictly less than everything in the destination, so it becomes the new minimum (exercises prependMinimum).
+        // Use ('a' + 0) rather than a bare 'a' so that the Object replication boxes to the same type as the other
+        // values (int arithmetic boxes to Integer; a bare byte literal would box to Byte and break comparisons).
+        final byte value = (byte) ('a' + 0);
+
+        final ByteSegmentedSortedMultiset source = makeSsm(nodeSize, new byte[] {value});
+        final ByteSegmentedSortedMultiset dest = makeSsm(nodeSize, destValues);
+
+        source.moveBackToFront(dest, source.totalSize());
+
+        verifySsm(source, new byte[0], desc);
+        final byte[] expected = new byte[destCount + 1];
+        expected[0] = value;
+        System.arraycopy(destValues, 0, expected, 1, destCount);
+        verifySsm(dest, expected, desc);
     }
 }
