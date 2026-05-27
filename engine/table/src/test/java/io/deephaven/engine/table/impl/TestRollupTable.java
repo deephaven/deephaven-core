@@ -156,6 +156,57 @@ public class TestRollupTable extends RefreshingTableTestCase {
         }
     }
 
+    private final Collection<Aggregation> distinctAggs = List.of(
+            AggCountDistinct("countDistinct=intCol"),
+            AggDistinct("distinct=intCol"),
+            AggUnique("unique=intCol"));
+
+    private final String[] distinctColumnsToCompare = new String[] {
+            "countDistinct",
+            "distinct",
+            "unique"
+    };
+
+    /**
+     * Like {@link #testRollupVsZeroKeyIncremental()}, but rolls up by two key columns. The extra key introduces an
+     * intermediate aggregation level whose parents each hold multiple buckets, so the distinct re-aggregation operators
+     * (including {@code unique}) run their bucketed paths, which a single key column never reaches. The root still
+     * aggregates every row, so it is compared against the zero-key equivalent.
+     */
+    @Test
+    public void testRollupMultiKeyVsZeroKeyIncremental() {
+        for (int size = 10; size <= 1000; size *= 10) {
+            testRollupMultiKeyIncrementalInternal("size-" + size, size);
+        }
+    }
+
+    private void testRollupMultiKeyIncrementalInternal(final String ctxt, final int size) {
+        final Random random = new Random(0);
+
+        final ColumnInfo[] columnInfo = initColumnInfos(
+                new String[] {"Sym", "Sym2", "intCol"},
+                new SetGenerator<>("a", "b", "c", "d"),
+                new SetGenerator<>("u", "v", "w"),
+                new IntGenerator(10, 1_000));
+
+        final QueryTable testTable = getTable(true, 100_000, random, columnInfo);
+
+        EvalNuggetInterface[] en = new EvalNuggetInterface[] {
+                new QueryTableTest.TableComparator(
+                        testTable.rollup(distinctAggs, false, "Sym", "Sym2")
+                                .getRoot().select(distinctColumnsToCompare),
+                        testTable.aggBy(distinctAggs))
+        };
+
+        final int steps = 100;
+        for (int step = 0; step < steps; step++) {
+            if (RefreshingTableTestCase.printTableUpdates) {
+                System.out.println("Step = " + step);
+            }
+            simulateShiftAwareStep(ctxt + " step == " + step, size, random, testTable, columnInfo, en);
+        }
+    }
+
     @Test
     public void testRollupWithFilter() {
         final Table sourceUncounted = newTable(
