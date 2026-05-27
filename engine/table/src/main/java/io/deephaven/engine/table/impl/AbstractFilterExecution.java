@@ -15,6 +15,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.DataIndex;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.impl.dataindex.DataIndexPushdownManager;
+import io.deephaven.engine.table.impl.sort.SortedColumnPushdownManager;
 import io.deephaven.engine.table.impl.filter.ExtractBarriers;
 import io.deephaven.engine.table.impl.filter.ExtractRespectedBarriers;
 import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
@@ -508,7 +509,10 @@ abstract class AbstractFilterExecution {
                             .collect(Collectors.toList());
 
                     PushdownFilterMatcher executor =
-                            PushdownFilterMatcher.getPushdownFilterMatcher(filter, filterSources);
+                            SortedColumnPushdownManager.maybeMake(sourceTable, filter, filterSources);
+                    if (executor == null) {
+                        executor = PushdownFilterMatcher.getPushdownFilterMatcher(filter, filterSources);
+                    }
                     // Potentially wrap the executor to add DataIndex support.
                     final DataIndex dataIndex = filterDataIndexMap.get(filter);
                     if (dataIndex != null) {

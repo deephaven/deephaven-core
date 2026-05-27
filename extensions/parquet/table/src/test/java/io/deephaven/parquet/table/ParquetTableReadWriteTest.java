@@ -5072,56 +5072,103 @@ public final class ParquetTableReadWriteTest {
         checkSingleTable(newTable(stringCol("status", "RED", "GREEN", "BLUE")), dest);
     }
 
-    private void testSortedFilteringInternal(final Table table, final String columnName, final String filter) {
-        testSortedFilteringInternal(table, columnName, RawString.of(filter));
+    private Table[] splitTableEvenly(final Table source, final int numSplits,
+            final String sortColumnName, final SortingOrder sortOrder) {
+        final long splitSize = source.size() / numSplits;
+        final Table[] result = new Table[numSplits];
+        for (int i = 0; i < numSplits - 1; i++) {
+            // Maintain the sort order for the slice.
+            result[i] = SortedColumnsAttribute.withOrderForColumn(
+                    source.slice(i * splitSize, (i + 1) * splitSize), sortColumnName, sortOrder);
+        }
+        result[numSplits - 1] = SortedColumnsAttribute.withOrderForColumn(
+                source.slice((numSplits - 1) * splitSize, source.size()), sortColumnName, sortOrder);
+        return result;
+    }
+
+    private void writeTablesFlat(final File destDir, final Table[] tables,
+            final ParquetInstructions instructions) {
+        destDir.mkdirs();
+        for (int i = 0; i < tables.length; i++) {
+            final String name = "table_" + String.format("%05d", i) + ".parquet";
+            writeTable(tables[i], Path.of(destDir.getPath(), name).toString(), instructions);
+        }
+    }
+
+    private void testSortedFilteringInternal(final Table table, final String columnName, final String filter,
+            final int partitionCount) {
+        testSortedFilteringInternal(table, columnName, RawString.of(filter), partitionCount);
     }
 
     private void testSortedFilteringInternal(
             final Table source,
             final String columnName,
-            final Filter filter) {
+            final Filter filter,
+            final int partitionCount) {
 
-        Table sortedAsc = source.sort(columnName);
-        final File destAsc = new File(rootFile, "ParquetTest_sortedColumnFilteringAsc.parquet");
-        writeTable(sortedAsc, destAsc.getPath());
-        final Table fromDiskAsc = checkSingleTable(sortedAsc, destAsc);
-        Table resultAsc = fromDiskAsc.where(filter);
-        assertTableEquals(sortedAsc.where(filter), resultAsc);
-
-        // Perform the filter on an already filtered table.
-        resultAsc = fromDiskAsc.where("ii % 2 == 0").where(filter);
-        assertTableEquals(sortedAsc.where("ii % 2 == 0").where(filter), resultAsc);
-
-        // Also verify that the descending sort has the same results.
+        final Table sortedAsc = source.sort(columnName);
         final Table sortedDesc = source.sortDescending(columnName);
-        final File destDesc = new File(rootFile, "ParquetTest_sortedColumnFilteringDesc.parquet");
-        writeTable(sortedDesc, destDesc.getPath());
-        final Table fromDiskDesc = checkSingleTable(sortedDesc, destDesc);
-        Table resultDesc = fromDiskDesc.where(filter);
-        assertTableEquals(sortedDesc.where(filter), resultDesc);
-
-        // Perform the filter on an already filtered table.
-        resultDesc = fromDiskDesc.where("ii % 2 == 0").where(filter);
-        assertTableEquals(sortedDesc.where("ii % 2 == 0").where(filter), resultDesc);
-
-        // Force multiple row groups to get the page-store action tested.
-        final ParquetInstructions instructions = ParquetInstructions.builder()
+        final ParquetInstructions multiRowGroupInstructions = ParquetInstructions.builder()
                 .setRowGroupInfo(RowGroupInfo.maxRows(1_000))
                 .build();
-        final File destMultiRowGroupAsc =
-                new File(rootFile, "ParquetTest_sortedColumnFilteringMultipleRowGroups.parquet");
-        writeTable(sortedAsc, destMultiRowGroupAsc.getPath(), instructions);
-        final Table fromDiskMultiGroupAsc = checkSingleTable(sortedAsc, destMultiRowGroupAsc);
-        Table resultMultiGroupAsc = fromDiskMultiGroupAsc.where(filter);
-        assertTableEquals(sortedAsc.where(filter), resultMultiGroupAsc);
 
-        // Verify descending order is also verified
-        final File destMultiRowGroupDesc =
-                new File(rootFile, "ParquetTest_sortedColumnFilteringMultipleRowGroupsDesc.parquet");
-        writeTable(sortedDesc, destMultiRowGroupDesc.getPath(), instructions);
-        final Table fromDiskMultiGroupDesc = checkSingleTable(sortedDesc, destMultiRowGroupDesc);
-        Table resultMultiGroupDesc = fromDiskMultiGroupDesc.where(filter);
-        assertTableEquals(sortedDesc.where(filter), resultMultiGroupDesc);
+        if (partitionCount == 1) {
+            final File destAsc = new File(rootFile, "ParquetTest_sortedColumnFilteringAsc.parquet");
+            writeTable(sortedAsc, destAsc.getPath());
+            final Table fromDiskAsc = checkSingleTable(sortedAsc, destAsc);
+            assertTableEquals(sortedAsc.where(filter), fromDiskAsc.where(filter));
+            // Test on a sparse table to force the row intersection logic.
+            assertTableEquals(sortedAsc.where("index % 2 == 0").where(filter),
+                    fromDiskAsc.where("index % 2 == 0").where(filter));
+
+            final File destDesc = new File(rootFile, "ParquetTest_sortedColumnFilteringDesc.parquet");
+            writeTable(sortedDesc, destDesc.getPath());
+            final Table fromDiskDesc = checkSingleTable(sortedDesc, destDesc);
+            assertTableEquals(sortedDesc.where(filter), fromDiskDesc.where(filter));
+            // Test on a sparse table to force the row intersection logic.
+            assertTableEquals(sortedDesc.where("index % 2 == 0").where(filter),
+                    fromDiskDesc.where("index % 2 == 0").where(filter));
+
+            // Force multiple row groups to get the page-store action tested.
+            final File destMultiRowGroupAsc =
+                    new File(rootFile, "ParquetTest_sortedColumnFilteringMultipleRowGroups.parquet");
+            writeTable(sortedAsc, destMultiRowGroupAsc.getPath(), multiRowGroupInstructions);
+            final Table fromDiskMultiGroupAsc = checkSingleTable(sortedAsc, destMultiRowGroupAsc);
+            assertTableEquals(sortedAsc.where(filter), fromDiskMultiGroupAsc.where(filter));
+            // Test on a sparse table to force the row intersection logic.
+            assertTableEquals(sortedAsc.where("index % 2 == 0").where(filter),
+                    fromDiskMultiGroupAsc.where("index % 2 == 0").where(filter));
+
+            final File destMultiRowGroupDesc =
+                    new File(rootFile, "ParquetTest_sortedColumnFilteringMultipleRowGroupsDesc.parquet");
+            writeTable(sortedDesc, destMultiRowGroupDesc.getPath(), multiRowGroupInstructions);
+            final Table fromDiskMultiGroupDesc = checkSingleTable(sortedDesc, destMultiRowGroupDesc);
+            assertTableEquals(sortedDesc.where(filter), fromDiskMultiGroupDesc.where(filter));
+            // Test on a sparse table to force the row intersection logic.
+            assertTableEquals(sortedDesc.where("index % 2 == 0").where(filter),
+                    fromDiskMultiGroupDesc.where("index % 2 == 0").where(filter));
+        } else {
+            // Split into partitionCount files in a directory and read back as a flat partitioned table.
+            final File destDirAsc =
+                    new File(rootFile, "ParquetTest_sortedColumnFilteringAsc_" + partitionCount);
+            writeTablesFlat(destDirAsc,
+                    splitTableEvenly(sortedAsc, partitionCount, columnName, SortingOrder.Ascending), EMPTY);
+            final Table fromDiskAsc = ParquetTools.readTable(destDirAsc.getPath());
+            assertTableEquals(sortedAsc.where(filter), fromDiskAsc.where(filter));
+            // Test on a sparse table to force the row intersection logic.
+            assertTableEquals(sortedAsc.where("index % 2 == 0").where(filter),
+                    fromDiskAsc.where("index % 2 == 0").where(filter));
+
+            final File destDirDesc =
+                    new File(rootFile, "ParquetTest_sortedColumnFilteringDesc_" + partitionCount);
+            writeTablesFlat(destDirDesc,
+                    splitTableEvenly(sortedDesc, partitionCount, columnName, SortingOrder.Descending), EMPTY);
+            final Table fromDiskDesc = ParquetTools.readTable(destDirDesc.getPath());
+            assertTableEquals(sortedDesc.where(filter), fromDiskDesc.where(filter));
+            // Test on a sparse table to force the row intersection logic.
+            assertTableEquals(sortedDesc.where("index % 2 == 0").where(filter),
+                    fromDiskDesc.where("index % 2 == 0").where(filter));
+        }
     }
 
     @Test
@@ -5133,6 +5180,7 @@ public final class ParquetTableReadWriteTest {
             QueryTable.DISABLE_WHERE_PUSHDOWN_PARQUET_ROW_GROUP_METADATA = true;
             final Table testTable = TableTools.emptyTable(10_000)
                     .update(
+                            "index = ii",
                             "byteCol = i % 97 == 0 ? null : (byte)(i % 97)",
                             "charCol = i % 997 == 0 ? null : (char)(i % 997)",
                             "shortCol = i % 997 == 0 ? null : (short)(i % 997)",
@@ -5143,80 +5191,81 @@ public final class ParquetTableReadWriteTest {
                             "stringCol = i % 997 == 0 ? null : `Str` + (i % 997)",
                             "bdCol = i % 997 == 0 ? (java.math.BigDecimal)null : java.math.BigDecimal.valueOf(ii % 997)");
 
-            testSortedFilteringInternal(testTable, "byteCol", "byteCol in 30, 50, 70");
-            testSortedFilteringInternal(testTable, "byteCol", "byteCol not in 30, 50, 70");
-            testSortedFilteringInternal(testTable, "byteCol", "byteCol > 30");
-            testSortedFilteringInternal(testTable, "byteCol", "byteCol <= 50");
+            // NB: when partition count == 1, column sorting will propagate to the QueryTable and the table-level
+            // manager will be used. When partition count > 1, sorted region pushdown will be used.
+            for (int count : new int[] {1, 4}) {
+                testSortedFilteringInternal(testTable, "byteCol", "byteCol in 30, 50, 70", count);
+                testSortedFilteringInternal(testTable, "byteCol", "byteCol not in 30, 50, 70", count);
+                testSortedFilteringInternal(testTable, "byteCol", "byteCol > 30", count);
+                testSortedFilteringInternal(testTable, "byteCol", "byteCol <= 50", count);
 
-            testSortedFilteringInternal(testTable, "charCol", "charCol in 'a', 'b', 'c'");
-            testSortedFilteringInternal(testTable, "charCol", "charCol not in 'a', 'b', 'c'");
-            testSortedFilteringInternal(testTable, "charCol", "charCol > 'a'");
-            testSortedFilteringInternal(testTable, "charCol", "charCol <= 'b'");
+                testSortedFilteringInternal(testTable, "charCol", "charCol in 'a', 'b', 'c'", count);
+                testSortedFilteringInternal(testTable, "charCol", "charCol not in 'a', 'b', 'c'", count);
+                testSortedFilteringInternal(testTable, "charCol", "charCol > 'a'", count);
+                testSortedFilteringInternal(testTable, "charCol", "charCol <= 'b'", count);
 
-            testSortedFilteringInternal(testTable, "shortCol", "shortCol in 300, 500, 700");
-            testSortedFilteringInternal(testTable, "shortCol", "shortCol not in 300, 500, 700");
-            testSortedFilteringInternal(testTable, "shortCol", "shortCol > 300");
-            testSortedFilteringInternal(testTable, "shortCol", "shortCol <= 500");
+                testSortedFilteringInternal(testTable, "shortCol", "shortCol in 300, 500, 700", count);
+                testSortedFilteringInternal(testTable, "shortCol", "shortCol not in 300, 500, 700", count);
+                testSortedFilteringInternal(testTable, "shortCol", "shortCol > 300", count);
+                testSortedFilteringInternal(testTable, "shortCol", "shortCol <= 500", count);
 
-            testSortedFilteringInternal(testTable, "intCol", "intCol in 300, 500, 700");
-            testSortedFilteringInternal(testTable, "intCol", "intCol not in 300, 500, 700");
-            testSortedFilteringInternal(testTable, "intCol", "intCol > 300");
-            testSortedFilteringInternal(testTable, "intCol", "intCol <= 500");
+                testSortedFilteringInternal(testTable, "intCol", "intCol in 300, 500, 700", count);
+                testSortedFilteringInternal(testTable, "intCol", "intCol not in 300, 500, 700", count);
+                testSortedFilteringInternal(testTable, "intCol", "intCol > 300", count);
+                testSortedFilteringInternal(testTable, "intCol", "intCol <= 500", count);
 
-            testSortedFilteringInternal(testTable, "longCol", "longCol in 300, 500, 700");
-            testSortedFilteringInternal(testTable, "longCol", "longCol not in 300, 500, 700");
-            testSortedFilteringInternal(testTable, "longCol", "longCol > 300");
-            testSortedFilteringInternal(testTable, "longCol", "longCol <= 500");
+                testSortedFilteringInternal(testTable, "longCol", "longCol in 300, 500, 700", count);
+                testSortedFilteringInternal(testTable, "longCol", "longCol not in 300, 500, 700", count);
+                testSortedFilteringInternal(testTable, "longCol", "longCol > 300", count);
+                testSortedFilteringInternal(testTable, "longCol", "longCol <= 500", count);
 
-            testSortedFilteringInternal(testTable, "floatCol", "floatCol in 300.0, 500.0, 700.0");
-            testSortedFilteringInternal(testTable, "floatCol", "floatCol not in 300.0, 500.0, 700.0");
-            testSortedFilteringInternal(testTable, "floatCol", "floatCol in NaN");
-            testSortedFilteringInternal(testTable, "floatCol", "floatCol > 300.0");
-            testSortedFilteringInternal(testTable, "floatCol", "floatCol <= 500.0");
-            testSortedFilteringInternal(testTable, "floatCol", "floatCol > Float.POSITIVE_INFINITY");
-            testSortedFilteringInternal(testTable, "floatCol", "floatCol >= NaN");
+                testSortedFilteringInternal(testTable, "floatCol", "floatCol in 300.0, 500.0, 700.0", count);
+                testSortedFilteringInternal(testTable, "floatCol", "floatCol not in 300.0, 500.0, 700.0", count);
+                testSortedFilteringInternal(testTable, "floatCol", "floatCol in NaN", count);
+                testSortedFilteringInternal(testTable, "floatCol", "floatCol > 300.0", count);
+                testSortedFilteringInternal(testTable, "floatCol", "floatCol <= 500.0", count);
+                testSortedFilteringInternal(testTable, "floatCol", "floatCol > Float.POSITIVE_INFINITY", count);
+                testSortedFilteringInternal(testTable, "floatCol", "floatCol >= NaN", count);
 
-            testSortedFilteringInternal(testTable, "doubleCol", "doubleCol in 300.0, 500.0, 700.0");
-            testSortedFilteringInternal(testTable, "doubleCol", "doubleCol not in 300.0, 500.0, 700.0");
-            testSortedFilteringInternal(testTable, "doubleCol", "doubleCol in NaN");
-            testSortedFilteringInternal(testTable, "doubleCol", "doubleCol > 300.0");
-            testSortedFilteringInternal(testTable, "doubleCol", "doubleCol <= 500.0");
-            testSortedFilteringInternal(testTable, "doubleCol", "doubleCol > Float.POSITIVE_INFINITY");
-            testSortedFilteringInternal(testTable, "doubleCol", "doubleCol >= NaN");
+                testSortedFilteringInternal(testTable, "doubleCol", "doubleCol in 300.0, 500.0, 700.0", count);
+                testSortedFilteringInternal(testTable, "doubleCol", "doubleCol not in 300.0, 500.0, 700.0", count);
+                testSortedFilteringInternal(testTable, "doubleCol", "doubleCol in NaN", count);
+                testSortedFilteringInternal(testTable, "doubleCol", "doubleCol > 300.0", count);
+                testSortedFilteringInternal(testTable, "doubleCol", "doubleCol <= 500.0", count);
+                testSortedFilteringInternal(testTable, "doubleCol", "doubleCol > Float.POSITIVE_INFINITY", count);
+                testSortedFilteringInternal(testTable, "doubleCol", "doubleCol >= NaN", count);
 
-            testSortedFilteringInternal(testTable, "stringCol", "stringCol in `Str300`, `Str500`, `Str700`");
-            testSortedFilteringInternal(testTable, "stringCol", "stringCol not in `Str300`, `Str500`, `Str700`");
-            testSortedFilteringInternal(testTable, "stringCol", "stringCol > `Str300`");
-            testSortedFilteringInternal(testTable, "stringCol", "stringCol <= `Str500`");
+                testSortedFilteringInternal(testTable, "stringCol", "stringCol in `Str300`, `Str500`, `Str700`",
+                        count);
+                testSortedFilteringInternal(testTable, "stringCol",
+                        "stringCol not in `Str300`, `Str500`, `Str700`", count);
+                testSortedFilteringInternal(testTable, "stringCol", "stringCol > `Str300`", count);
+                testSortedFilteringInternal(testTable, "stringCol", "stringCol <= `Str500`", count);
 
-            Filter bdFilter;
+                // Single Sided
+                ExecutionContext.getContext().getQueryScope().putParam("bd_300", BigDecimal.valueOf(300.0));
+                ExecutionContext.getContext().getQueryScope().putParam("bd_500", BigDecimal.valueOf(500.00));
+                testSortedFilteringInternal(testTable, "bdCol", "bdCol < bd_300", count);
+                testSortedFilteringInternal(testTable, "bdCol", "bdCol >= bd_500", count);
 
-            // Single Sided
-            ExecutionContext.getContext().getQueryScope().putParam("bd_300", BigDecimal.valueOf(300.0));
-            ExecutionContext.getContext().getQueryScope().putParam("bd_500", BigDecimal.valueOf(500.00));
-            testSortedFilteringInternal(testTable, "bdCol", "bdCol < bd_300");
-            testSortedFilteringInternal(testTable, "bdCol", "bdCol >= bd_500");
-
-            // Comparable
-            bdFilter = ComparableRangeFilter.makeForTest("bdCol",
-                    BigDecimal.valueOf(300.0), BigDecimal.valueOf(500.00),
-                    true, true);
-            testSortedFilteringInternal(testTable, "bdCol", bdFilter);
-
-            bdFilter = ComparableRangeFilter.makeForTest("bdCol",
-                    BigDecimal.valueOf(300.0), BigDecimal.valueOf(500.00),
-                    false, true);
-            testSortedFilteringInternal(testTable, "bdCol", bdFilter);
-
-            bdFilter = ComparableRangeFilter.makeForTest("bdCol",
-                    BigDecimal.valueOf(300.0), BigDecimal.valueOf(500.00),
-                    true, false);
-            testSortedFilteringInternal(testTable, "bdCol", bdFilter);
-
-            bdFilter = ComparableRangeFilter.makeForTest("bdCol",
-                    BigDecimal.valueOf(300.0), BigDecimal.valueOf(500.00),
-                    false, false);
-            testSortedFilteringInternal(testTable, "bdCol", bdFilter);
+                // Comparable
+                testSortedFilteringInternal(testTable, "bdCol",
+                        ComparableRangeFilter.makeForTest("bdCol",
+                                BigDecimal.valueOf(300.0), BigDecimal.valueOf(500.00), true, true),
+                        count);
+                testSortedFilteringInternal(testTable, "bdCol",
+                        ComparableRangeFilter.makeForTest("bdCol",
+                                BigDecimal.valueOf(300.0), BigDecimal.valueOf(500.00), false, true),
+                        count);
+                testSortedFilteringInternal(testTable, "bdCol",
+                        ComparableRangeFilter.makeForTest("bdCol",
+                                BigDecimal.valueOf(300.0), BigDecimal.valueOf(500.00), true, false),
+                        count);
+                testSortedFilteringInternal(testTable, "bdCol",
+                        ComparableRangeFilter.makeForTest("bdCol",
+                                BigDecimal.valueOf(300.0), BigDecimal.valueOf(500.00), false, false),
+                        count);
+            }
         }
     }
 

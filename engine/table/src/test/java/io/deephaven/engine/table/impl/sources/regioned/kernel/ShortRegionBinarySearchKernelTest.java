@@ -21,7 +21,6 @@ import io.deephaven.generic.region.AppendOnlyRegionAccessor;
 import io.deephaven.test.types.ParallelTest;
 import io.deephaven.util.compare.ShortComparisons;
 import org.jetbrains.annotations.NotNull;
-import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -32,8 +31,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.function.IntToLongFunction;
 import static io.deephaven.util.QueryConstants.NULL_SHORT;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 @Category(ParallelTest.class)
 public class ShortRegionBinarySearchKernelTest {
@@ -86,29 +84,38 @@ public class ShortRegionBinarySearchKernelTest {
             final long startRow = Math.max(0, firstKey.applyAsLong(ii));
             final long endRow = Math.min(size - 1, lastKey.applyAsLong(ii));
             // Test match search and min/max search give the same results for this value.
-            try (final RowSet matchesFound = ShortRegionBinarySearchKernel.binarySearchMatch(
-                    region,
-                    startRow, endRow,
-                    sortColumn,
-                    new Short[] {value});
-                    final RowSet minMaxFound = ShortRegionBinarySearchKernel.binarySearchMinMax(
-                            region,
-                            startRow, endRow,
-                            sortColumn,
-                            value,
-                            value, true,
-                            true)) {
-                if (startRow <= ii && ii <= endRow) {
-                    assertTrue("Expected to find " + value + " at index " + ii,
-                            matchesFound.containsRange(ii, ii));
-                } else {
-                    Assert.assertFalse("Index should not be populated.",
-                            matchesFound.containsRange(ii, ii));
-                }
-                assertEquals("binarySearchMatch and binarySearchMinMax should return the same results.",
-                        matchesFound, minMaxFound);
-            }
+            try (final RowSet matchRs = ShortRegionBinarySearchKernel.binarySearchMatch(
+                    region, startRow, endRow, sortColumn, new Short[] {value});
+                 final RowSet minMaxRs = ShortRegionBinarySearchKernel.binarySearchMinMax(
+                         region, startRow, endRow, sortColumn, value, value, true, true)) {
+                // Ensure match search and min/max search give the same results.
+                assertEquals(matchRs, minMaxRs);
 
+                // Test the results for correctness.
+                if (matchRs.isNonempty()) {
+                    // Ensure not returning outside row limits.
+                    assertTrue(matchRs.firstRowKey() >= startRow);
+                    assertTrue(matchRs.lastRowKey() <= endRow);
+                }
+                if (startRow <= ii && ii <= endRow) {
+                    assertTrue("Expected to find " + ii, matchRs.containsRange(ii, ii));
+                } else {
+                    assertFalse("Not expected to find " + ii, matchRs.containsRange(ii, ii));
+                }
+            }
+            // Ensure not found when not expected.
+            try (final RowSet valuesFound = ShortRegionBinarySearchKernel.binarySearchMinMax(
+                    region, startRow, endRow, sortColumn, value, value, true, false)) {
+                assertTrue(valuesFound.isEmpty());
+            }
+            try (final RowSet valuesFound = ShortRegionBinarySearchKernel.binarySearchMinMax(
+                    region, startRow, endRow, sortColumn, value, value, false, true)) {
+                assertTrue(valuesFound.isEmpty());
+            }
+            try (final RowSet valuesFound = ShortRegionBinarySearchKernel.binarySearchMinMax(
+                    region, startRow, endRow, sortColumn, value, value, false, false)) {
+                assertTrue(valuesFound.isEmpty());
+            }
         }
 
         // Test negative lookups
@@ -118,43 +125,11 @@ public class ShortRegionBinarySearchKernelTest {
             final long startRow = 0;
             final long endRow = size - 1;
             try (final RowSet valuesFound = ShortRegionBinarySearchKernel.binarySearchMatch(
-                    region,
-                    startRow, endRow,
-                    sortColumn,
-                    new Short[] {missingValue})) {
+                    region, startRow, endRow, sortColumn, new Short[] {missingValue})) {
                 assertTrue(valuesFound.isEmpty());
             }
             try (final RowSet valuesFound = ShortRegionBinarySearchKernel.binarySearchMinMax(
-                    region,
-                    startRow,
-                    endRow,
-                    sortColumn,
-                    missingValue,
-                    missingValue,
-                    true,
-                    false)) {
-                assertTrue(valuesFound.isEmpty());
-            }
-            try (final RowSet valuesFound = ShortRegionBinarySearchKernel.binarySearchMinMax(
-                    region,
-                    startRow,
-                    endRow,
-                    sortColumn,
-                    missingValue,
-                    missingValue,
-                    false,
-                    true)) {
-                assertTrue(valuesFound.isEmpty());
-            }
-            try (final RowSet valuesFound = ShortRegionBinarySearchKernel.binarySearchMinMax(
-                    region,
-                    startRow,
-                    endRow,
-                    sortColumn,
-                    missingValue,
-                    missingValue,
-                    true,
-                    true)) {
+                    region, startRow, endRow, sortColumn, missingValue, missingValue, true, true)) {
                 assertTrue(valuesFound.isEmpty());
             }
         }

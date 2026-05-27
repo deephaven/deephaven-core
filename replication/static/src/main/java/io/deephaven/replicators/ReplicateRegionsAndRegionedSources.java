@@ -34,6 +34,8 @@ public class ReplicateRegionsAndRegionedSources {
             "extensions/source-support/src/main/java/io/deephaven/generic/region/AppendOnlyFixedSizePageRegionChar.java";
     private static final String GENERIC_REGION_BINARY_SEARCH_KERNEL_PATH =
             "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/regioned/kernel/CharRegionBinarySearchKernel.java";
+    private static final String GENERIC_COLUMN_BINARY_SEARCH_KERNEL_PATH =
+            "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/regioned/kernel/CharColumnBinarySearchKernel.java";
 
     public static void main(String... args) throws IOException {
         // Note that Byte and Object regions are not replicated!
@@ -50,6 +52,8 @@ public class ReplicateRegionsAndRegionedSources {
         charToAllButBoolean(TASK, GENERIC_REGION_BINARY_SEARCH_KERNEL_PATH);
         fixupBinSearchObject(charToObject(TASK, GENERIC_REGION_BINARY_SEARCH_KERNEL_PATH));
 
+        charToAllButBoolean(TASK, GENERIC_COLUMN_BINARY_SEARCH_KERNEL_PATH);
+        fixupBinSearchObject(charToObject(TASK, GENERIC_COLUMN_BINARY_SEARCH_KERNEL_PATH));
         charToAllButBooleanAndByte(TASK, GENERIC_REGION_CHAR_PATH);
         fixupChunkColumnRegionByte(charToByte(TASK, GENERIC_REGION_CHAR_PATH));
         fixupChunkColumnRegionObject(charToObject(TASK, GENERIC_REGION_CHAR_PATH));
@@ -213,7 +217,11 @@ public class ReplicateRegionsAndRegionedSources {
         List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
         lines = removeImport(lines, "import io\\.deephaven\\.util\\.type\\.ArrayTypeUtils;");
         lines = globalReplacements(lines,
-                "<\\?>", "<?, ?>",
+                "ColumnRegionObject<\\?>", "ColumnRegionObject<?, ?>",
+                "public static RowSet binary", "public static <T extends Comparable<? super T>> RowSet binary",
+                "source\\.getObject\\(", "source.get(",
+                "source\\.getPrevObject\\(", "source.getPrev(",
+
                 "final Object\\[\\] unboxed = ArrayTypeUtils.getUnboxedObjectArray\\(searchValues\\);",
                 "final Object[] copiedValues = Arrays.copyOf(searchValues, searchValues.length);",
                 "unboxed", "copiedValues");
