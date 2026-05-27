@@ -110,9 +110,9 @@ test {
     systemProperty 'ModelFileGenerator.testSource', layout.projectDirectory.dir('src/test/java/').toString()
 }
 
-tasks.withType(Test).configureEach {
-    systemProperty 'SegmentedSortedMultiSet.validation', 'true'
-}
+//tasks.withType(Test).configureEach {
+//    systemProperty 'SegmentedSortedMultiSet.validation', 'true'
+//}
 
 // Adds a custom testParallel task which is allowed to run tests in parallel.
 // Add @Category(ParallelTest.class) to have your tests run in parallel

@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.agg.Aggregation;
+import io.deephaven.util.profiling.ThreadProfiler;
 import it.unimi.dsi.fastutil.doubles.DoubleOpenHashSet;
 import it.unimi.dsi.fastutil.doubles.DoubleSet;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
@@ -42,6 +43,7 @@ import org.junit.experimental.categories.Category;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.text.DecimalFormat;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collection;
@@ -1331,4 +1333,22 @@ public class TestAggBy extends RefreshingTableTestCase {
 
         TableTools.show(result);
     }
+
+
+    @Test
+    public void testAggUniquePerf() {
+                final Table input = TableTools.emptyTable(7_250_000).update("X=Long.toHexString(ii)", "Y=X.toUpperCase()", "Z=X.toLowerCase()", "A=Long.toString(i)", "Bucket=ii%100 == 0 ? 0 : ii");
+                final long startAllocatedBytes = ThreadProfiler.DEFAULT.getCurrentThreadAllocatedBytes();
+                System.out.println("Select done");
+                final long start = System.nanoTime();
+                final Table uniqued = input.aggBy(AggUnique("X", "Y", "Z","A"), "Bucket");
+                final long end = System.nanoTime();
+                final DecimalFormat df = new DecimalFormat("###,###.##");
+                System.out.println("Duration: " + df.format(end - start));
+
+                        final long endAllocatedBytes = ThreadProfiler.DEFAULT.getCurrentThreadAllocatedBytes();
+                System.out.println("Allocated Bytes: " + df.format(endAllocatedBytes - startAllocatedBytes));
+            }
+
+
 }
