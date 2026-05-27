@@ -4,6 +4,7 @@
 package io.deephaven.replication;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.text.WordUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
@@ -433,7 +434,18 @@ public class ReplicationUtils {
                         + "\" to regenerate",
                 "//",
                 "// @formatter:off",
-                "");
+                "").flatMap(ReplicationUtils::linewrap);
+    }
+
+    public static Stream<String> linewrap(final String line) {
+        if (line.length() < 120) {
+            return Stream.of(line);
+        }
+        if (line.startsWith("// ")) {
+            return Arrays.stream(WordUtils.wrap(line.substring(3), 115, "\n", false).split("\n")).map(l -> "// " + l);
+        } else {
+            return Stream.of(WordUtils.wrap(line, 115, "\n", false));
+        }
     }
 
     @NotNull

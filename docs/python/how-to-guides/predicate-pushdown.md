@@ -158,7 +158,7 @@ Under certain circumstances, you may want to disable specific predicate pushdown
 - [`QueryTable.useDataIndexForWhere`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/QueryTable.html#USE_DATA_INDEX_FOR_WHERE) – enables the use of Deephaven table-level data indexes when filtering.
 - [`QueryTable.disableWherePushdownParquetRowGroupMetadata`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/QueryTable.html#DISABLE_WHERE_PUSHDOWN_PARQUET_ROW_GROUP_METADATA) – disables consideration of Parquet row group metadata when filtering.
 - [`QueryTable.disableWherePushdownDataIndex`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/QueryTable.html#DISABLE_WHERE_PUSHDOWN_DATA_INDEX) – disables the use of file-level Deephaven data indexes when filtering.
-- [`QueryTable.disableWherePushdownParquetDictionary`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/QueryTable.html#DISABLE_WHERE_PUSHDOWN_PARQUET_DICTIONARY) – disables the use of dictionary encoding when filtering.
+- [`QueryTable.disableWherePushdownDictionary`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/QueryTable.html#DISABLE_WHERE_PUSHDOWN_DICTIONARY) – disables the use of dictionary encoding when filtering.
 - [`QueryTable.disableWherePushdownSortedColumn`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/QueryTable.html#DISABLE_WHERE_PUSHDOWN_SORTED_COLUMN_LOCATION) – disables the use of sorted column binary search when filtering.
 
 For more information, see the [Query table configuration](../conceptual/query-table-configuration.md) documentation.

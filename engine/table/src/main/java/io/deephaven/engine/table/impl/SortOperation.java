@@ -337,7 +337,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
             resultTable.setAttribute(SORT_ROW_REDIRECTION_ATTRIBUTE, sortMappingColumnName);
             setReverseLookup(resultTable, (final long innerRowKey) -> {
                 final long outerRowKey = reverseLookup.get(innerRowKey);
-                return outerRowKey == reverseLookup.getNoEntryValue() ? RowSequence.NULL_ROW_KEY : outerRowKey;
+                return outerRowKey == reverseLookup.defaultReturnValue() ? RowSequence.NULL_ROW_KEY : outerRowKey;
             });
 
             final SortListener listener = new SortListener(parent, resultTable, reverseLookup,

@@ -40,7 +40,7 @@ groovy = "3.0.25"
 # Only bump this in concert with netty (which will update boringssl). See the dependency matrix
 # for particular gRPC versions at https://github.com/grpc/grpc-java/blob/master/SECURITY.md#netty
 grpc = "1.76.2"
-netty = "4.1.132.Final"
+netty = "4.1.133.Final"
 
 protobuf-gwt='4.33.2-2'
 grpc-gwt='1.76.2-2'
@@ -83,14 +83,13 @@ postgresql = "42.7.10"
 protobuf = "4.33.2"
 randelshofer = "2.0.1"
 rdblue = "0.1.1"
-rewrite-java = "8.82.1"
+rewrite-java = "8.83.1"
 selenium = "4.44.0"
 slf4j = "2.0.18"
 snappy = "1.1.10.8"
 squareup = "1.13.0"
 ayza = "10.0.5"
 tdunning = "3.3"
-trove = "3.0.3"
 undercouch = "2.18.0"
 univocity = "2.9.1"
 vertispan-nio = "1.0-alpha-2"
@@ -332,8 +331,6 @@ ayza-jetty = { module = "io.github.hakky54:ayza-for-jetty", version.ref = "ayza"
 ayza-netty = { module = "io.github.hakky54:ayza-for-netty", version.ref = "ayza" }
 
 tdunning-t-digest = { module = "com.tdunning:t-digest", version.ref = "tdunning" }
-
-trove = { module = "net.sf.trove4j:trove4j", version.ref = "trove" }
 
 undercouch-bson4jackson = { module = "de.undercouch:bson4jackson", version.ref = "undercouch" }
 
