@@ -110,11 +110,7 @@ public class ShortChunkedUniqueOperator implements IterativeChunkedAggregationOp
             final long destination = destinations.get(startPosition);
 
             final ShortSegmentedSortedMultiset ssm = ssmForSlot(destination);
-            final WritableChunk<? extends Values> valueSlice =
-                    context.valueResettable.resetFromChunk(context.valueCopy, startPosition, runLength);
-            final WritableIntChunk<ChunkLengths> countSlice =
-                    context.countResettable.resetFromChunk(context.counts, startPosition, runLength);
-            ssm.insert(valueSlice, countSlice);
+            ssm.insert(context.valueCopy, context.counts, startPosition, runLength);
             stateModified.set(ii, setResult(ssm, destination));
         }
     }
@@ -135,11 +131,7 @@ public class ShortChunkedUniqueOperator implements IterativeChunkedAggregationOp
             final long destination = destinations.get(startPosition);
 
             final ShortSegmentedSortedMultiset ssm = ssmForSlot(destination);
-            final WritableChunk<? extends Values> valueSlice =
-                    context.valueResettable.resetFromChunk(context.valueCopy, startPosition, runLength);
-            final WritableIntChunk<ChunkLengths> countSlice =
-                    context.countResettable.resetFromChunk(context.counts, startPosition, runLength);
-            ssm.remove(removeContext, valueSlice, countSlice);
+            ssm.remove(removeContext, context.valueCopy, context.counts, startPosition, runLength);
             if (ssm.isEmpty()) {
                 clearSsm(destination);
             }
@@ -166,11 +158,7 @@ public class ShortChunkedUniqueOperator implements IterativeChunkedAggregationOp
             final long destination = destinations.get(startPosition);
 
             final ShortSegmentedSortedMultiset ssm = ssmForSlot(destination);
-            final WritableChunk<? extends Values> valueSlice =
-                    context.valueResettable.resetFromChunk(context.valueCopy, startPosition, runLength);
-            final WritableIntChunk<ChunkLengths> countSlice =
-                    context.countResettable.resetFromChunk(context.counts, startPosition, runLength);
-            ssm.remove(removeContext, valueSlice, countSlice);
+            ssm.remove(removeContext, context.valueCopy, context.counts, startPosition, runLength);
             if (ssm.isEmpty()) {
                 context.ssmsToMaybeClear.set(ii, true);
             }
@@ -192,11 +180,7 @@ public class ShortChunkedUniqueOperator implements IterativeChunkedAggregationOp
                 continue;
             }
 
-            final WritableChunk<? extends Values> valueSlice =
-                    context.valueResettable.resetFromChunk(context.valueCopy, startPosition, runLength);
-            final WritableIntChunk<ChunkLengths> countSlice =
-                    context.countResettable.resetFromChunk(context.counts, startPosition, runLength);
-            ssm.insert(valueSlice, countSlice);
+            ssm.insert(context.valueCopy, context.counts, startPosition, runLength);
             stateModified.set(ii, setResult(ssm, destination));
         }
     }

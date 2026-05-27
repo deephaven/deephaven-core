@@ -156,6 +156,24 @@ public class TestObjectSegmentedSortedMultiset extends RefreshingTableTestCase {
         }
     }
 
+    public void testInsertRemoveWithOffset() {
+        final int nodeSize = 4;
+        final int prefix = 3;
+        // `subject` is built with offset inserts/removes (from chunks carrying a junk prefix that must be ignored);
+        // `reference` is built with the plain (offset 0) calls. After every step the contents must be identical.
+        final ObjectSegmentedSortedMultiset subject = new ObjectSegmentedSortedMultiset(nodeSize, Object.class);
+        final ObjectSegmentedSortedMultiset reference = new ObjectSegmentedSortedMultiset(nodeSize, Object.class);
+
+        // empty -> multiple leaves (makeLeavesInitial with an offset)
+        applyInsert(subject, reference, prefix, range(1, 10), ones(10));
+        // a new minimum plus merges into existing values (insertExisting + distributeNewIntoLeaves with an offset)
+        applyInsert(subject, reference, prefix, new int[] {0, 1, 3}, new int[] {1, 2, 3});
+        // new maximums (doAppend with an offset)
+        applyInsert(subject, reference, prefix, new int[] {11, 12}, new int[] {5, 5});
+        // removals from an offset (removeFromLeaf with an offset)
+        applyRemove(subject, reference, prefix, new int[] {1, 3, 11}, new int[] {1, 2, 1});
+    }
+
     public void testPartialCopy() {
         final int nodeSize = 8;
         final ObjectSegmentedSortedMultiset ssm = new ObjectSegmentedSortedMultiset(nodeSize, Object.class);
@@ -405,6 +423,115 @@ public class TestObjectSegmentedSortedMultiset extends RefreshingTableTestCase {
             }
         }
         return ssm;
+    }
+
+    private static int[] range(int start, int count) {
+        final int[] result = new int[count];
+        for (int ii = 0; ii < count; ++ii) {
+            result[ii] = start + ii;
+        }
+        return result;
+    }
+
+    private static int[] ones(int count) {
+        final int[] result = new int[count];
+        Arrays.fill(result, 1);
+        return result;
+    }
+
+    private void applyInsert(ObjectSegmentedSortedMultiset subject, ObjectSegmentedSortedMultiset reference, int prefix,
+            int[] valueOffsets, int[] counts) {
+        final Object[] values = new Object[valueOffsets.length];
+        for (int ii = 0; ii < values.length; ++ii) {
+            values[ii] = (Object) ('a' + valueOffsets[ii]);
+        }
+
+        // reference: a plain (offset 0) insert
+        try (final WritableObjectChunk<Object, Values> valuesChunk = WritableObjectChunk.makeWritableChunk(values.length);
+             final WritableIntChunk<ChunkLengths> countsChunk = WritableIntChunk.makeWritableChunk(values.length)) {
+            for (int ii = 0; ii < values.length; ++ii) {
+                valuesChunk.set(ii, values[ii]);
+                countsChunk.set(ii, counts[ii]);
+            }
+            reference.insert(valuesChunk, countsChunk);
+        }
+
+        // subject: an offset insert from a chunk with a junk prefix that must be left untouched
+        final Object junk = (Object) ('a' - 1);
+        try (final WritableObjectChunk<Object, Values> valuesChunk = WritableObjectChunk.makeWritableChunk(prefix + values.length);
+             final WritableIntChunk<ChunkLengths> countsChunk =
+                     WritableIntChunk.makeWritableChunk(prefix + values.length)) {
+            for (int ii = 0; ii < prefix; ++ii) {
+                valuesChunk.set(ii, junk);
+                countsChunk.set(ii, 7);
+            }
+            for (int ii = 0; ii < values.length; ++ii) {
+                valuesChunk.set(prefix + ii, values[ii]);
+                countsChunk.set(prefix + ii, counts[ii]);
+            }
+            subject.insert(valuesChunk, countsChunk, prefix, values.length);
+            for (int ii = 0; ii < prefix; ++ii) {
+                assertEquals(junk, valuesChunk.get(ii));
+            }
+        }
+
+        assertSameContents(subject, reference);
+    }
+
+    private void applyRemove(ObjectSegmentedSortedMultiset subject, ObjectSegmentedSortedMultiset reference, int prefix,
+            int[] valueOffsets, int[] counts) {
+        final Object[] values = new Object[valueOffsets.length];
+        for (int ii = 0; ii < values.length; ++ii) {
+            values[ii] = (Object) ('a' + valueOffsets[ii]);
+        }
+        final SegmentedSortedMultiSet.RemoveContext removeContext =
+                SegmentedSortedMultiSet.makeRemoveContext(reference.getNodeSize());
+
+        try (final WritableObjectChunk<Object, Values> valuesChunk = WritableObjectChunk.makeWritableChunk(values.length);
+             final WritableIntChunk<ChunkLengths> countsChunk = WritableIntChunk.makeWritableChunk(values.length)) {
+            for (int ii = 0; ii < values.length; ++ii) {
+                valuesChunk.set(ii, values[ii]);
+                countsChunk.set(ii, counts[ii]);
+            }
+            reference.remove(removeContext, valuesChunk, countsChunk);
+        }
+
+        final Object junk = (Object) ('a' - 1);
+        try (final WritableObjectChunk<Object, Values> valuesChunk = WritableObjectChunk.makeWritableChunk(prefix + values.length);
+             final WritableIntChunk<ChunkLengths> countsChunk =
+                     WritableIntChunk.makeWritableChunk(prefix + values.length)) {
+            for (int ii = 0; ii < prefix; ++ii) {
+                valuesChunk.set(ii, junk);
+                countsChunk.set(ii, 7);
+            }
+            for (int ii = 0; ii < values.length; ++ii) {
+                valuesChunk.set(prefix + ii, values[ii]);
+                countsChunk.set(prefix + ii, counts[ii]);
+            }
+            subject.remove(removeContext, valuesChunk, countsChunk, prefix, values.length);
+            for (int ii = 0; ii < prefix; ++ii) {
+                assertEquals(junk, valuesChunk.get(ii));
+            }
+        }
+
+        assertSameContents(subject, reference);
+    }
+
+    private void assertSameContents(ObjectSegmentedSortedMultiset subject, ObjectSegmentedSortedMultiset reference) {
+        subject.validate();
+        reference.validate();
+        assertEquals(reference.size(), subject.size());
+        assertEquals(reference.totalSize(), subject.totalSize());
+        try (final WritableObjectChunk<Object, ?> subjectKeys = subject.keyChunk();
+             final WritableLongChunk<?> subjectCounts = subject.countChunk();
+             final WritableObjectChunk<Object, ?> referenceKeys = reference.keyChunk();
+             final WritableLongChunk<?> referenceCounts = reference.countChunk()) {
+            assertEquals(referenceKeys.size(), subjectKeys.size());
+            for (int ii = 0; ii < referenceKeys.size(); ++ii) {
+                assertEquals(referenceKeys.get(ii), subjectKeys.get(ii));
+                assertEquals(referenceCounts.get(ii), subjectCounts.get(ii));
+            }
+        }
     }
 
     private void checkEqualsArray(int valueCount) {
