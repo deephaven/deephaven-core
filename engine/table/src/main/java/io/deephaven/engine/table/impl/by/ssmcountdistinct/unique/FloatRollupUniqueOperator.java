@@ -135,6 +135,9 @@ public class FloatRollupUniqueOperator implements IterativeChunkedAggregationOpe
         final BucketSsmDistinctRollupContext context =
                 updateAddValues((BucketSsmDistinctRollupContext) bucketedContext, values, startPositions, length);
 
+        final WritableFloatChunk<? extends Values> valueCopy =
+                context.valueCopy.get() == null ? null : context.valueCopy.get().asWritableFloatChunk();
+        final WritableIntChunk<ChunkLengths> counts = context.counts.get();
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int runLength = context.lengthCopy.get(ii);
             if (runLength == 0) {
@@ -146,11 +149,7 @@ public class FloatRollupUniqueOperator implements IterativeChunkedAggregationOpe
             final long destination = destinations.get(origStartPos);
 
             final FloatSegmentedSortedMultiset ssm = ssmForSlot(destination);
-            final WritableChunk<? extends Values> valueSlice =
-                    context.valueResettable.resetFromChunk(context.valueCopy.get(), startPosition, runLength);
-            final WritableIntChunk<ChunkLengths> countSlice =
-                    context.countResettable.resetFromChunk(context.counts.get(), startPosition, runLength);
-            final boolean anyAdded = ssm.insert(valueSlice, countSlice);
+            final boolean anyAdded = ssm.insert(valueCopy, counts, startPosition, runLength);
             updateResult(ssm, destination);
             stateModified.set(ii, anyAdded);
         }
@@ -216,6 +215,9 @@ public class FloatRollupUniqueOperator implements IterativeChunkedAggregationOpe
                 updateRemoveValues((BucketSsmDistinctRollupContext) bucketedContext, values, startPositions, length);
 
         final SegmentedSortedMultiSet.RemoveContext removeContext = removeContextFactory.get();
+        final WritableFloatChunk<? extends Values> valueCopy =
+                context.valueCopy.get() == null ? null : context.valueCopy.get().asWritableFloatChunk();
+        final WritableIntChunk<ChunkLengths> counts = context.counts.get();
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int runLength = context.lengthCopy.get(ii);
             if (runLength == 0) {
@@ -227,11 +229,7 @@ public class FloatRollupUniqueOperator implements IterativeChunkedAggregationOpe
             final long destination = destinations.get(origStartPos);
 
             final FloatSegmentedSortedMultiset ssm = ssmForSlot(destination);
-            final WritableChunk<? extends Values> valueSlice =
-                    context.valueResettable.resetFromChunk(context.valueCopy.get(), startPosition, runLength);
-            final WritableIntChunk<ChunkLengths> countSlice =
-                    context.countResettable.resetFromChunk(context.counts.get(), startPosition, runLength);
-            ssm.remove(removeContext, valueSlice, countSlice);
+            ssm.remove(removeContext, valueCopy, counts, startPosition, runLength);
             if (ssm.isEmpty()) {
                 clearSsm(destination);
             }
@@ -300,6 +298,9 @@ public class FloatRollupUniqueOperator implements IterativeChunkedAggregationOpe
 
         final SegmentedSortedMultiSet.RemoveContext removeContext = removeContextFactory.get();
         context.ssmsToMaybeClear.fillWithValue(0, destinations.size(), false);
+        final WritableFloatChunk<? extends Values> preValueCopy =
+                context.valueCopy.get() == null ? null : context.valueCopy.get().asWritableFloatChunk();
+        final WritableIntChunk<ChunkLengths> preCounts = context.counts.get();
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int runLength = context.lengthCopy.get(ii);
             if (runLength == 0) {
@@ -310,17 +311,16 @@ public class FloatRollupUniqueOperator implements IterativeChunkedAggregationOpe
             final long destination = destinations.get(origStartPosition);
 
             final FloatSegmentedSortedMultiset ssm = ssmForSlot(destination);
-            final WritableChunk<? extends Values> valueSlice =
-                    context.valueResettable.resetFromChunk(context.valueCopy.get(), startPosition, runLength);
-            final WritableIntChunk<ChunkLengths> countSlice =
-                    context.countResettable.resetFromChunk(context.counts.get(), startPosition, runLength);
-            ssm.remove(removeContext, valueSlice, countSlice);
+            ssm.remove(removeContext, preValueCopy, preCounts, startPosition, runLength);
             if (ssm.isEmpty()) {
                 context.ssmsToMaybeClear.set(ii, true);
             }
         }
 
         updateModifyAddValues(context, postValues, startPositions, length);
+        final WritableFloatChunk<? extends Values> postValueCopy =
+                context.valueCopy.get() == null ? null : context.valueCopy.get().asWritableFloatChunk();
+        final WritableIntChunk<ChunkLengths> postCounts = context.counts.get();
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int runLength = context.lengthCopy.get(ii);
             final int startPosition = context.starts.get(ii);
@@ -339,11 +339,7 @@ public class FloatRollupUniqueOperator implements IterativeChunkedAggregationOpe
                 continue;
             }
 
-            final WritableChunk<? extends Values> valueSlice =
-                    context.valueResettable.resetFromChunk(context.valueCopy.get(), startPosition, runLength);
-            final WritableIntChunk<ChunkLengths> countSlice =
-                    context.countResettable.resetFromChunk(context.counts.get(), startPosition, runLength);
-            ssm.insert(valueSlice, countSlice);
+            ssm.insert(postValueCopy, postCounts, startPosition, runLength);
             updateResult(ssm, destination);
             stateModified.set(ii, ssm.getAddedSize() > 0 || ssm.getRemovedSize() > 0);
         }

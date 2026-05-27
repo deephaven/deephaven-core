@@ -84,6 +84,7 @@ public class CharChunkedDistinctOperator implements IterativeChunkedAggregationO
             IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
             WritableBooleanChunk<Values> stateModified) {
         final BucketSsmDistinctContext context = getAndUpdateContext(values, startPositions, length, bucketedContext);
+        final WritableCharChunk<? extends Values> valueCopy = context.valueCopy.asWritableCharChunk();
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int runLength = context.lengthCopy.get(ii);
             if (runLength == 0) {
@@ -94,11 +95,7 @@ public class CharChunkedDistinctOperator implements IterativeChunkedAggregationO
             final long destination = destinations.get(startPosition);
 
             final CharSegmentedSortedMultiset ssm = ssmForSlot(destination);
-            final WritableChunk<? extends Values> valueSlice =
-                    context.valueResettable.resetFromChunk(context.valueCopy, startPosition, runLength);
-            final WritableIntChunk<ChunkLengths> countSlice =
-                    context.countResettable.resetFromChunk(context.counts, startPosition, runLength);
-            stateModified.set(ii, ssm.insert(valueSlice, countSlice));
+            stateModified.set(ii, ssm.insert(valueCopy, context.counts, startPosition, runLength));
         }
     }
 
@@ -109,6 +106,7 @@ public class CharChunkedDistinctOperator implements IterativeChunkedAggregationO
             WritableBooleanChunk<Values> stateModified) {
         final BucketSsmDistinctContext context = getAndUpdateContext(values, startPositions, length, bucketedContext);
         final SegmentedSortedMultiSet.RemoveContext removeContext = removeContextFactory.get();
+        final WritableCharChunk<? extends Values> valueCopy = context.valueCopy.asWritableCharChunk();
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int runLength = context.lengthCopy.get(ii);
             if (runLength == 0) {
@@ -118,11 +116,7 @@ public class CharChunkedDistinctOperator implements IterativeChunkedAggregationO
             final long destination = destinations.get(startPosition);
 
             final CharSegmentedSortedMultiset ssm = ssmForSlot(destination);
-            final WritableChunk<? extends Values> valueSlice =
-                    context.valueResettable.resetFromChunk(context.valueCopy, startPosition, runLength);
-            final WritableIntChunk<ChunkLengths> countSlice =
-                    context.countResettable.resetFromChunk(context.counts, startPosition, runLength);
-            stateModified.set(ii, ssm.remove(removeContext, valueSlice, countSlice));
+            stateModified.set(ii, ssm.remove(removeContext, valueCopy, context.counts, startPosition, runLength));
             if (ssm.isEmpty()) {
                 clearSsm(destination);
             }
@@ -138,6 +132,7 @@ public class CharChunkedDistinctOperator implements IterativeChunkedAggregationO
                 getAndUpdateContext(preValues, startPositions, length, bucketedContext);
         final SegmentedSortedMultiSet.RemoveContext removeContext = removeContextFactory.get();
         context.ssmsToMaybeClear.fillWithValue(0, startPositions.size(), false);
+        final WritableCharChunk<? extends Values> preValueCopy = context.valueCopy.asWritableCharChunk();
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int runLength = context.lengthCopy.get(ii);
             if (runLength == 0) {
@@ -147,17 +142,14 @@ public class CharChunkedDistinctOperator implements IterativeChunkedAggregationO
             final long destination = destinations.get(startPosition);
 
             final CharSegmentedSortedMultiset ssm = ssmForSlot(destination);
-            final WritableChunk<? extends Values> valueSlice =
-                    context.valueResettable.resetFromChunk(context.valueCopy, startPosition, runLength);
-            final WritableIntChunk<ChunkLengths> countSlice =
-                    context.countResettable.resetFromChunk(context.counts, startPosition, runLength);
-            ssm.remove(removeContext, valueSlice, countSlice);
+            ssm.remove(removeContext, preValueCopy, context.counts, startPosition, runLength);
             if (ssm.isEmpty()) {
                 context.ssmsToMaybeClear.set(ii, true);
             }
         }
 
         getAndUpdateContext(postValues, startPositions, length, context);
+        final WritableCharChunk<? extends Values> postValueCopy = context.valueCopy.asWritableCharChunk();
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int runLength = context.lengthCopy.get(ii);
             final int startPosition = startPositions.get(ii);
@@ -175,11 +167,7 @@ public class CharChunkedDistinctOperator implements IterativeChunkedAggregationO
             }
 
             final CharSegmentedSortedMultiset ssm = ssmForSlot(destination);
-            final WritableChunk<? extends Values> valueSlice =
-                    context.valueResettable.resetFromChunk(context.valueCopy, startPosition, runLength);
-            final WritableIntChunk<ChunkLengths> countSlice =
-                    context.countResettable.resetFromChunk(context.counts, startPosition, runLength);
-            ssm.insert(valueSlice, countSlice);
+            ssm.insert(postValueCopy, context.counts, startPosition, runLength);
 
             stateModified.set(ii, ssm.getAddedSize() > 0 || ssm.getRemovedSize() > 0);
         }
