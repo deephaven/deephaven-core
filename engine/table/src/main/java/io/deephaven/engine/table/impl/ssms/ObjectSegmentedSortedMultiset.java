@@ -20,7 +20,6 @@ import io.deephaven.vector.ObjectVector;
 import io.deephaven.util.compare.ObjectComparisons;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
-import io.deephaven.engine.table.impl.by.SumIntChunk;
 import io.deephaven.engine.table.impl.sort.timsort.TimsortUtils;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.ChunkLengths;
@@ -133,6 +132,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
                 rlpos = upperBound(leafValues, rlpos, leafSize, nextValue);
                 if (rlpos < leafSize) {
                     if (ObjectComparisons.eq(leafValues[rlpos], nextValue)) {
+                        totalSize += counts.get(ripos);
                         leafCounts[rlpos] += counts.get(ripos);
                         ripos++;
                     }
@@ -188,6 +188,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
 
             if (useInsertValue) {
                 leafValues[wleaf][wpos] = insertValue;
+                totalSize += counts.get(ripos);
                 leafCounts[wleaf][wpos] = counts.get(ripos);
                 ripos--;
                 wpos--;
@@ -207,6 +208,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
                         valuesToInsert.copyToTypedArray(minInsert, leafValues[wleaf], wpos - gallopLength + 1,
                                 gallopLength);
                         while (ripos >= minInsert) {
+                            totalSize += counts.get(ripos);
                             leafCounts[wleaf][wpos--] = counts.get(ripos--);
                         }
                         remaining -= gallopLength;
@@ -278,6 +280,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
                 final int copySize = wpos + 1;
                 valuesToInsert.copyToTypedArray(ripos - wpos, leafValues[wleaf], 0, copySize);
                 for (int ii = 0; ii < copySize; ++ii) {
+                    totalSize += counts.get(ripos - (copySize - 1) + ii);
                     leafCounts[wleaf][ii] = counts.get(ripos - (copySize - 1) + ii);
                 }
                 ripos -= copySize;
@@ -332,6 +335,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
 
             if (ObjectComparisons.gt(insertValue, leafValue)) {
                 leafValues[wpos] = insertValue;
+                totalSize += counts.get(ripos);
                 leafCounts[wpos] = counts.get(ripos);
                 if (ripos == insertStart) {
                     // all that is left is the leaf so we are completed
@@ -350,6 +354,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
                     if (gallopLength > 0) {
                         valuesToInsert.copyToTypedArray(minInsert, leafValues, wpos - gallopLength + 1, gallopLength);
                         while (ripos >= minInsert) {
+                            totalSize += counts.get(ripos);
                             leafCounts[wpos--] = counts.get(ripos--);
                         }
 
@@ -407,6 +412,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
             WritableIntChunk<ChunkLengths> counts, int insertStart, Object[] leafValues, long[] leafCounts, int ripos) {
         valuesToInsert.copyToTypedArray(insertStart, leafValues, 0, ripos - insertStart + 1);
         for (int ii = 0; ii < ripos - insertStart + 1; ++ii) {
+            totalSize += counts.get(ii + insertStart);
             leafCounts[ii] = counts.get(ii + insertStart);
         }
     }
@@ -473,8 +479,6 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
             return;
         }
 
-        totalSize += SumIntChunk.sumIntChunk(counts, offset, length);
-
         if (leafCount == 0) {
             // we are creating something brand new
             makeLeavesInitial(valuesToInsert, counts, offset, length);
@@ -487,6 +491,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
             if (length == 1 && ObjectComparisons.eq(valuesToInsert.get(offset), singletonValue)) {
                 // the only value being inserted is the one we already hold; just bump its count
                 singletonCount += counts.get(offset);
+                totalSize += counts.get(offset);
                 validate();
                 return;
             }
@@ -695,6 +700,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
             // store the single value directly without allocating the directory arrays
             singletonValue = values.get(offset);
             singletonCount = counts.get(offset);
+            totalSize += singletonCount;
             return;
         }
 
@@ -704,6 +710,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
             values.copyToTypedArray(offset, directoryValues, 0, length);
             for (int ii = 0; ii < length; ++ii) {
                 directoryCount[ii] = counts.get(offset + ii);
+                totalSize += directoryCount[ii];
             }
             return;
         }
@@ -725,6 +732,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
             for (int ii = 0; ii < thisLeafSize; ++ii) {
                 leafValues[startLeaf][ii] = values.get(rpos + ii);
                 leafCounts[startLeaf][ii] = counts.get(rpos + ii);
+                totalSize += counts.get(rpos + ii);
             }
             if (startLeaf < leafCount - 1) {
                 directoryValues[startLeaf] = leafValues[startLeaf][thisLeafSize - 1];
@@ -979,7 +987,6 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
         }
 
         final int end = offset + length;
-        totalSize -= SumIntChunk.sumIntChunk(counts, offset, length);
 
         if (isSingleton()) {
             // by contract we only remove values that are present, so a singleton can only be asked to remove its one
@@ -988,6 +995,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
             Assert.assertion(ObjectComparisons.eq(valuesToRemove.get(offset), singletonValue),
                     "ObjectComparisons.eq(valuesToRemove.get(offset), singletonValue)");
             singletonCount -= counts.get(offset);
+            totalSize -= counts.get(offset);
             Assert.geqZero(singletonCount, "singletonCount");
             if (singletonCount == 0) {
                 maybeAccumulateRemoval(singletonValue);
@@ -1233,6 +1241,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
                 break;
             }
             leafCounts[rlpos] -= counts.get(ripos);
+            totalSize -= counts.get(ripos);
             Assert.geqZero(leafCounts[rlpos], "leafCounts[rlpos]");
             if (leafCounts[rlpos] == 0) {
                 maybeAccumulateRemoval(removeValue);

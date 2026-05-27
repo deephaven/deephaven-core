@@ -235,8 +235,8 @@ public class LongRollupDistinctOperator implements IterativeChunkedAggregationOp
 
     /**
      * Flatten each child's per-cycle removed (or added) delta values for every bucket into a single contiguous run,
-     * without compacting: the per-bucket run begins at {@code targetStarts[ii]} and has length {@code targetLengths[ii]}
-     * (the sum of the buckets' child delta sizes). The values are left uncompacted because
+     * without compacting: the per-bucket run begins at {@code targetStarts[ii]} and has length
+     * {@code targetLengths[ii]} (the sum of the buckets' child delta sizes). The values are left uncompacted because
      * {@link LongCompactModifications#compactAndCountModifications} sorts, counts, and diffs each run in place. The
      * destination value/count chunks are grown and sized to hold every bucket's run.
      */
