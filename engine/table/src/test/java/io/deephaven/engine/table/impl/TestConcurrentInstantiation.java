@@ -16,6 +16,7 @@ import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.hierarchical.TreeTable;
+import io.deephaven.api.filter.Filter;
 import io.deephaven.engine.table.impl.hierarchical.TreeTableFilter;
 import io.deephaven.engine.table.impl.hierarchical.TreeTableImpl;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
@@ -484,6 +485,223 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         TstUtils.assertTableEquals(testUpdate, filter1);
         TstUtils.assertTableEquals(testUpdate, filter2);
         TstUtils.assertTableEquals(testUpdate, filter3);
+    }
+
+    public void testWhereSortedColumnBinarySearchAsc()
+            throws ExecutionException, InterruptedException, TimeoutException {
+        testWhereSortedColumnBinarySearchInternal(true);
+    }
+
+    public void testWhereSortedColumnBinarySearchDesc()
+            throws ExecutionException, InterruptedException, TimeoutException {
+        testWhereSortedColumnBinarySearchInternal(false);
+    }
+
+    public void testWhereSortedColumnBinarySearchStringAsc()
+            throws ExecutionException, InterruptedException, TimeoutException {
+        testWhereSortedColumnBinarySearchStringInternal(true);
+    }
+
+    public void testWhereSortedColumnBinarySearchStringDesc()
+            throws ExecutionException, InterruptedException, TimeoutException {
+        testWhereSortedColumnBinarySearchStringInternal(false);
+    }
+
+    /**
+     * Verifies that binary-search pushdown on a sorted refreshing table correctly handles both {@code usePrev=true}
+     * (snapshot during an active update cycle) and {@code usePrev=false} (post-cycle current state). Filters
+     * constructed while the update cycle is in progress must see the previous sorted-column values; filters observed
+     * after the cycle completes must reflect the newly added rows.
+     * <p>
+     * Both a range filter ({@code Sentinel >= 5 && Sentinel <= 7}) and an equivalent match filter
+     * ({@code Sentinel in 5, 6, 7}) are tested, since {@link io.deephaven.engine.table.impl.sort.SortedColumnPushdownManager}
+     * dispatches to different binary-search kernels for each.
+     * <p>
+     * IntColumnBinarySearchKernel is tested as a replication for all primitive types.
+     */
+    private void testWhereSortedColumnBinarySearchInternal(final boolean ascending)
+            throws ExecutionException, InterruptedException, TimeoutException {
+        // Source has Sentinel values [1, 3, 5, 7, 9] — sparse row keys to confirm the binary search
+        // correctly translates positions to row keys via RowSet.get().
+        final QueryTable source = TstUtils.testRefreshingTable(
+                i(2, 4, 6, 8, 10).toTracking(),
+                intCol("Sentinel", 1, 3, 5, 7, 9));
+
+        // sort()/sortDescending() attaches SortedColumnsAttribute, which causes AbstractFilterExecution
+        // to build a SortedColumnPushdownManager for range/match filters on the Sentinel column.
+        final Table sorted = ascending ? source.sort("Sentinel") : source.sortDescending("Sentinel");
+
+        // Range filter expressed as string predicates; equivalent to IntRangeFilter("Sentinel", 5, 7, true, true).
+        final Filter rangeFilter = Filter.and(Filter.from("Sentinel >= 5", "Sentinel <= 7"));
+        // IntRangeFilter directly — exercises the typed range binary-search kernel.
+        final Filter intRangeFilter = new IntRangeFilter("Sentinel", 5, 7, true, true);
+        // Match filter: Sentinel in {5, 6, 7} — same result set as the range filter after the update.
+        final Filter matchFilter = Filter.and(Filter.from("Sentinel in 5, 6, 7"));
+
+        // Initial filter expectation: Sentinel in [5, 7] inclusive → {5, 7} in sort order.
+        final Table tableStart = ascending
+                ? newTable(intCol("Sentinel", 5, 7))
+                : newTable(intCol("Sentinel", 7, 5));
+
+        updateGraph.startCycleForUnitTests(false);
+
+        // Filters constructed before any data change during the active cycle.
+        // ConstructSnapshot will use usePrev=true, but prev == current so results are {5, 7}.
+        final Table rangeFilter1 = pool.submit(() -> sorted.where(rangeFilter)).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+        final Table intRangeFilter1 = pool.submit(() -> sorted.where(intRangeFilter)).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+        final Table matchFilter1 = pool.submit(() -> sorted.where(matchFilter)).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+        TstUtils.assertTableEquals(tableStart, rangeFilter1);
+        TstUtils.assertTableEquals(tableStart, intRangeFilter1);
+        TstUtils.assertTableEquals(tableStart, matchFilter1);
+
+        // Add two new rows with Sentinel values 4 and 6 — NOT yet propagated to listeners.
+        TstUtils.addToTable(source, i(12, 14), intCol("Sentinel", 4, 6));
+
+        // Filters constructed after addToTable but before notifyListeners.
+        // ConstructSnapshot still uses usePrev=true because sorted is not yet satisfied for this cycle.
+        // The binary search must read prev column values and return the pre-update result {5, 7}.
+        final Table rangeFilter2 = pool.submit(() -> sorted.where(rangeFilter)).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+        final Table intRangeFilter2 = pool.submit(() -> sorted.where(intRangeFilter)).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+        final Table matchFilter2 = pool.submit(() -> sorted.where(matchFilter)).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+
+        // All filters' prev-state snapshots must equal the pre-cycle data {5, 7} in sort order.
+        TstUtils.assertTableEquals(tableStart, prevTable(rangeFilter1));
+        TstUtils.assertTableEquals(tableStart, prevTable(intRangeFilter1));
+        TstUtils.assertTableEquals(tableStart, prevTable(matchFilter1));
+        TstUtils.assertTableEquals(tableStart, prevTable(rangeFilter2));
+        TstUtils.assertTableEquals(tableStart, prevTable(intRangeFilter2));
+        TstUtils.assertTableEquals(tableStart, prevTable(matchFilter2));
+
+        source.notifyListeners(i(12, 14), i(), i());
+        updateGraph.markSourcesRefreshedForUnitTests();
+
+        // Filters constructed after source is satisfied, but sorted's downstream listeners have not yet
+        // fired. ConstructSnapshot uses usePrev=true until sorted itself is satisfied.
+        final Table rangeFilter3 = pool.submit(() -> sorted.where(rangeFilter)).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+        final Table intRangeFilter3 = pool.submit(() -> sorted.where(intRangeFilter)).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+        final Table matchFilter3 = pool.submit(() -> sorted.where(matchFilter)).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+
+        TstUtils.assertTableEquals(tableStart, prevTable(rangeFilter1));
+        TstUtils.assertTableEquals(tableStart, prevTable(intRangeFilter1));
+        TstUtils.assertTableEquals(tableStart, prevTable(matchFilter1));
+        TstUtils.assertTableEquals(tableStart, prevTable(rangeFilter2));
+        TstUtils.assertTableEquals(tableStart, prevTable(intRangeFilter2));
+        TstUtils.assertTableEquals(tableStart, prevTable(matchFilter2));
+
+        updateGraph.completeCycleForUnitTests();
+
+        // After the cycle, sorted contains [1, 3, 4, 5, 6, 7, 9] (asc) or [9, 7, 6, 5, 4, 3, 1] (desc).
+        // All three filters match {5, 6, 7} in sort order.
+        // All refreshing filter tables must have updated to reflect usePrev=false current values.
+        final Table tableUpdate = ascending
+                ? newTable(intCol("Sentinel", 5, 6, 7))
+                : newTable(intCol("Sentinel", 7, 6, 5));
+        TstUtils.assertTableEquals(tableUpdate, rangeFilter1);
+        TstUtils.assertTableEquals(tableUpdate, intRangeFilter1);
+        TstUtils.assertTableEquals(tableUpdate, matchFilter1);
+        TstUtils.assertTableEquals(tableUpdate, rangeFilter2);
+        TstUtils.assertTableEquals(tableUpdate, intRangeFilter2);
+        TstUtils.assertTableEquals(tableUpdate, matchFilter2);
+        TstUtils.assertTableEquals(tableUpdate, rangeFilter3);
+        TstUtils.assertTableEquals(tableUpdate, intRangeFilter3);
+        TstUtils.assertTableEquals(tableUpdate, matchFilter3);
+    }
+
+    /**
+     * String-typed clone of {@link #testWhereSortedColumnBinarySearchInternal}. Uses
+     * {@link ComparableRangeFilter} in place of {@link IntRangeFilter} to exercise the Object binary-search
+     * kernel path through {@link io.deephaven.engine.table.impl.sort.SortedColumnPushdownManager}.
+     */
+    private void testWhereSortedColumnBinarySearchStringInternal(final boolean ascending)
+            throws ExecutionException, InterruptedException, TimeoutException {
+        // Source has Sentinel values ["a","c","e","g","i"] — sparse row keys to confirm the binary search
+        // correctly translates positions to row keys via RowSet.get().
+        final QueryTable source = TstUtils.testRefreshingTable(
+                i(2, 4, 6, 8, 10).toTracking(),
+                stringCol("Sentinel", "a", "c", "e", "g", "i"));
+
+        // sort()/sortDescending() attaches SortedColumnsAttribute, which causes AbstractFilterExecution
+        // to build a SortedColumnPushdownManager for range/match filters on the Sentinel column.
+        final Table sorted = ascending ? source.sort("Sentinel") : source.sortDescending("Sentinel");
+
+        // Range filter expressed as string predicates.
+        final Filter rangeFilter = Filter.and(Filter.from("Sentinel >= `e`", "Sentinel <= `g`"));
+        // ComparableRangeFilter directly — exercises the Object range binary-search kernel.
+        final Filter comparableRangeFilter =
+                ComparableRangeFilter.makeForTest("Sentinel", "e", "g", true, true);
+        // Match filter: Sentinel in {"e","f","g"} — same result set as the range filter after the update.
+        final Filter matchFilter = Filter.and(Filter.from("Sentinel in `e`, `f`, `g`"));
+
+        // Initial filter expectation: Sentinel in ["e","g"] inclusive → {"e","g"} in sort order.
+        final Table tableStart = ascending
+                ? newTable(stringCol("Sentinel", "e", "g"))
+                : newTable(stringCol("Sentinel", "g", "e"));
+
+        updateGraph.startCycleForUnitTests(false);
+
+        // Filters constructed before any data change during the active cycle.
+        // ConstructSnapshot will use usePrev=true, but prev == current so results are {"e","g"}.
+        final Table rangeFilter1 = pool.submit(() -> sorted.where(rangeFilter)).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+        final Table comparableRangeFilter1 =
+                pool.submit(() -> sorted.where(comparableRangeFilter)).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+        final Table matchFilter1 = pool.submit(() -> sorted.where(matchFilter)).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+        TstUtils.assertTableEquals(tableStart, rangeFilter1);
+        TstUtils.assertTableEquals(tableStart, comparableRangeFilter1);
+        TstUtils.assertTableEquals(tableStart, matchFilter1);
+
+        // Add two new rows with Sentinel values "d" and "f" — NOT yet propagated to listeners.
+        TstUtils.addToTable(source, i(12, 14), stringCol("Sentinel", "d", "f"));
+
+        // Filters constructed after addToTable but before notifyListeners.
+        // ConstructSnapshot still uses usePrev=true because sorted is not yet satisfied for this cycle.
+        // The binary search must read prev column values and return the pre-update result {"e","g"}.
+        final Table rangeFilter2 = pool.submit(() -> sorted.where(rangeFilter)).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+        final Table comparableRangeFilter2 =
+                pool.submit(() -> sorted.where(comparableRangeFilter)).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+        final Table matchFilter2 = pool.submit(() -> sorted.where(matchFilter)).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+
+        // All filters' prev-state snapshots must equal the pre-cycle data {"e","g"} in sort order.
+        TstUtils.assertTableEquals(tableStart, prevTable(rangeFilter1));
+        TstUtils.assertTableEquals(tableStart, prevTable(comparableRangeFilter1));
+        TstUtils.assertTableEquals(tableStart, prevTable(matchFilter1));
+        TstUtils.assertTableEquals(tableStart, prevTable(rangeFilter2));
+        TstUtils.assertTableEquals(tableStart, prevTable(comparableRangeFilter2));
+        TstUtils.assertTableEquals(tableStart, prevTable(matchFilter2));
+
+        source.notifyListeners(i(12, 14), i(), i());
+        updateGraph.markSourcesRefreshedForUnitTests();
+
+        // Filters constructed after source is satisfied, but sorted's downstream listeners have not yet
+        // fired. ConstructSnapshot uses usePrev=true until sorted itself is satisfied.
+        final Table rangeFilter3 = pool.submit(() -> sorted.where(rangeFilter)).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+        final Table comparableRangeFilter3 =
+                pool.submit(() -> sorted.where(comparableRangeFilter)).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+        final Table matchFilter3 = pool.submit(() -> sorted.where(matchFilter)).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+
+        TstUtils.assertTableEquals(tableStart, prevTable(rangeFilter1));
+        TstUtils.assertTableEquals(tableStart, prevTable(comparableRangeFilter1));
+        TstUtils.assertTableEquals(tableStart, prevTable(matchFilter1));
+        TstUtils.assertTableEquals(tableStart, prevTable(rangeFilter2));
+        TstUtils.assertTableEquals(tableStart, prevTable(comparableRangeFilter2));
+        TstUtils.assertTableEquals(tableStart, prevTable(matchFilter2));
+
+        updateGraph.completeCycleForUnitTests();
+
+        // After the cycle, sorted contains ["a","c","d","e","f","g","i"] (asc) or ["i","g","f","e","d","c","a"] (desc).
+        // All three filters match {"e","f","g"} in sort order.
+        // All refreshing filter tables must have updated to reflect usePrev=false current values.
+        final Table tableUpdate = ascending
+                ? newTable(stringCol("Sentinel", "e", "f", "g"))
+                : newTable(stringCol("Sentinel", "g", "f", "e"));
+        TstUtils.assertTableEquals(tableUpdate, rangeFilter1);
+        TstUtils.assertTableEquals(tableUpdate, comparableRangeFilter1);
+        TstUtils.assertTableEquals(tableUpdate, matchFilter1);
+        TstUtils.assertTableEquals(tableUpdate, rangeFilter2);
+        TstUtils.assertTableEquals(tableUpdate, comparableRangeFilter2);
+        TstUtils.assertTableEquals(tableUpdate, matchFilter2);
+        TstUtils.assertTableEquals(tableUpdate, rangeFilter3);
+        TstUtils.assertTableEquals(tableUpdate, comparableRangeFilter3);
+        TstUtils.assertTableEquals(tableUpdate, matchFilter3);
     }
 
     public void testWhereDynamic() throws ExecutionException, InterruptedException, TimeoutException {
