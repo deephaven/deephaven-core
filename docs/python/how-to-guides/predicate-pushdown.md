@@ -16,6 +16,8 @@ Filters are prioritized for pushdown in the following order (from highest to low
 - Range and match filtering of Parquet data columns using [row group metadata](#parquet-row-group-metadata).
 - Range and match filtering using [sorted column binary search](#sorted-column-binary-search).
 - Filtering columns with an existing Deephaven [data index](#deephaven-data-indexes).
+- Filtering columns with dictionary encoding.
+- Filtering columns with an un-cached Deephaven [data index](#deephaven-data-indexes).
 
 > [!IMPORTANT]
 > Where multiple filters have the same pushdown priority, the user-supplied order will generally be maintained. Stateful filters and filter barriers are always respected during pushdown operations.
