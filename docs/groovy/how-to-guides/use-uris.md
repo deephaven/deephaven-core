@@ -122,13 +122,13 @@ Spinning up multiple Deephaven instances from Docker is simple. In order to do s
 ```yml
 services:
   table-producer:
-    image: ghcr.io/deephaven/server-slim:0.36.0
+    image: ghcr.io/deephaven/server-slim:latest
     ports:
       - "10000:10000"
     environment:
       - START_OPTS=-DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler
   table-consumer:
-    image: ghcr.io/deephaven/server-slim:0.36.0
+    image: ghcr.io/deephaven/server-slim:latest
     ports:
       - "9999:10000"
     environment:
