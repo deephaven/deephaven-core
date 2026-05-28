@@ -40,7 +40,7 @@ for idx in range(n_tries):
 end = time()
 elapsed = (end - start) / n_tries
 
-print(f"Built-in `sin` function - {(elapsed):.3f} seconds.")
+print(f"Built-in sin function - {(elapsed):.3f} seconds.")
 
 start = time()
 for idx in range(n_tries):
@@ -48,7 +48,7 @@ for idx in range(n_tries):
 end = time()
 elapsed = (end - start) / n_tries
 
-print(f"NumPy `sin` function - {(elapsed):.3f} seconds.")
+print(f"NumPy sin function - {(elapsed):.3f} seconds.")
 ```
 
 Why is [NumPy](https://numpy.org/) so much slower?
