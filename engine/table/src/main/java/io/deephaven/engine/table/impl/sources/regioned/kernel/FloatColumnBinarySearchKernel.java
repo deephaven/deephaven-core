@@ -74,6 +74,14 @@ public class FloatColumnBinarySearchKernel {
                     firstPos = -(startResult + 1);
                     continue;
                 }
+                final float startValue = usePrev
+                        ? source.getPrevFloat(selection.get(startResult))
+                        : source.getFloat(selection.get(startResult));
+                if (startValue != toFind) {
+                    // startResult points to the first value > toFind; toFind is absent.
+                    firstPos = startResult;
+                    continue;
+                }
                 final long endResult =
                         findEndPosAscending(source, selection, startResult, lastPos, toFind, true, usePrev);
                 if (endResult >= 0) {
@@ -92,6 +100,14 @@ public class FloatColumnBinarySearchKernel {
                 if (startResult < 0) {
                     // Advance firstPos since we didn't find the value but eliminated some positions.
                     firstPos = -(startResult + 1);
+                    continue;
+                }
+                final float startValue = usePrev
+                        ? source.getPrevFloat(selection.get(startResult))
+                        : source.getFloat(selection.get(startResult));
+                if (startValue != toFind) {
+                    // startResult points to the first value > toFind; toFind is absent.
+                    firstPos = startResult;
                     continue;
                 }
                 final long endResult =
@@ -150,6 +166,7 @@ public class FloatColumnBinarySearchKernel {
             }
             // The end of the range is the last position whose value is < or <= max (depends on maxInc)
             final long endResult = findEndPosAscending(source, selection, startPos, lastPos, max, maxInc, usePrev);
+            // -(endResult+1) is first non-satisfying pos; subtract 1 for last satisfying
             endPos = endResult >= 0 ? endResult : -(endResult + 1) - 1;
         } else {
             // The beginning of the range is the first position whose value is < or <= max (depends on maxInc)
@@ -160,6 +177,7 @@ public class FloatColumnBinarySearchKernel {
             }
             // The end of the range is the last position whose value is > or >= min (depends on minInc)
             final long endResult = findEndPosDescending(source, selection, startPos, lastPos, min, minInc, usePrev);
+            // -(endResult+1) is first non-satisfying pos; subtract 1 for last satisfying
             endPos = endResult >= 0 ? endResult : -(endResult + 1) - 1;
         }
 
@@ -209,6 +227,7 @@ public class FloatColumnBinarySearchKernel {
             startPos = 0;
             // The end of the range is the last position whose value is > or >= min (depends on minInc)
             final long endResult = findEndPosDescending(source, selection, 0, lastPos, min, minInc, usePrev);
+            // -(endResult+1) is first non-satisfying pos; subtract 1 for last satisfying
             endPos = endResult >= 0 ? endResult : -(endResult + 1) - 1;
         }
 
@@ -252,6 +271,7 @@ public class FloatColumnBinarySearchKernel {
             startPos = 0;
             // The end of the range is the last position whose value is < or <= max (depends on maxInc)
             final long endResult = findEndPosAscending(source, selection, 0, lastPos, max, maxInc, usePrev);
+            // -(endResult+1) is first non-satisfying pos; subtract 1 for last satisfying
             endPos = endResult >= 0 ? endResult : -(endResult + 1) - 1;
         } else {
             // The beginning of the range is the first position whose value is < or <= max (depends on maxInc)
@@ -280,7 +300,8 @@ public class FloatColumnBinarySearchKernel {
      * @param min The value to find.
      * @param minInc If true, the search is inclusive of the value.
      * @param usePrev If true, uses getPrevFloat instead of getFloat.
-     * @return The found position (&gt;= 0), or {@code -(insertionPos + 1)} if not found.
+     * @return The leftmost position (&gt;= 0) satisfying the min bound, or a negative value if no position in the range
+     *         satisfies the min bound. When negative, {@code -(result + 1)} is past the end of the range.
      */
     private static long findStartPosAscending(
             @NotNull final ElementSource<?> source,
@@ -324,7 +345,9 @@ public class FloatColumnBinarySearchKernel {
      * @param max The value to find.
      * @param maxInc If true, the search is inclusive of the value.
      * @param usePrev If true, uses getPrevFloat instead of getFloat.
-     * @return The found position (&gt;= 0), or {@code -(insertionPos + 1)} if not found.
+     * @return The rightmost position (&gt;= 0) satisfying the max bound, or a negative value if no position in the range
+     *         satisfies the max bound. When negative, {@code -(result + 1)} is the first position in the range whose
+     *         value exceeds the max bound.
      */
     private static long findEndPosAscending(
             @NotNull final ElementSource<?> source,
@@ -368,7 +391,8 @@ public class FloatColumnBinarySearchKernel {
      * @param max The value to find.
      * @param maxInc If true, the search is inclusive of the value.
      * @param usePrev If true, uses getPrevFloat instead of getFloat.
-     * @return The found position (&gt;= 0), or {@code -(insertionPos + 1)} if not found.
+     * @return The leftmost position (&gt;= 0) satisfying the max bound, or a negative value if no position in the range
+     *         satisfies the max bound. When negative, {@code -(result + 1)} is past the end of the range.
      */
     private static long findStartPosDescending(
             @NotNull final ElementSource<?> source,
@@ -412,7 +436,9 @@ public class FloatColumnBinarySearchKernel {
      * @param min The value to find.
      * @param minInc If true, the search is inclusive of the value.
      * @param usePrev If true, uses getPrevFloat instead of getFloat.
-     * @return The found position (&gt;= 0), or {@code -(insertionPos + 1)} if not found.
+     * @return The rightmost position (&gt;= 0) satisfying the min bound, or a negative value if no position in the range
+     *         satisfies the min bound. When negative, {@code -(result + 1)} is the first position in the range whose
+     *         value falls below the min bound.
      */
     private static long findEndPosDescending(
             @NotNull final ElementSource<?> source,

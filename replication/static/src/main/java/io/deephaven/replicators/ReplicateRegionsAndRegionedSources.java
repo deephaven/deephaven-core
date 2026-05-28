@@ -220,10 +220,10 @@ public class ReplicateRegionsAndRegionedSources {
                 "ColumnRegionObject<\\?>", "ColumnRegionObject<?, ?>",
                 "source\\.getObject\\(", "source.get(",
                 "source\\.getPrevObject\\(", "source.getPrev(",
-
                 "final Object\\[\\] unboxed = ArrayTypeUtils.getUnboxedObjectArray\\(searchValues\\);",
                 "final Object[] copiedValues = Arrays.copyOf(searchValues, searchValues.length);",
-                "unboxed", "copiedValues");
+                "unboxed", "copiedValues",
+                "startValue != toFind", "!ObjectComparisons.eq(startValue, toFind)");
         lines = addImport(lines, "import java.util.Arrays;");
         FileUtils.writeLines(new File(charToObject), lines);
     }
