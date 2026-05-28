@@ -355,6 +355,7 @@ class TableTestCase(BaseTestCase):
 
     def test_with_order_for_column(self):
         import jpy
+
         _JSortedColumnsAttribute = jpy.get_type(
             "io.deephaven.engine.table.impl.SortedColumnsAttribute"
         )
@@ -365,7 +366,9 @@ class TableTestCase(BaseTestCase):
         order = _JSortedColumnsAttribute.getOrderForColumn(asc_table.j_table, "a")
         self.assertEqual(order.get(), _JSortingOrder.Ascending)
 
-        desc_table = self.test_table.with_order_for_column("a", SortDirection.DESCENDING)
+        desc_table = self.test_table.with_order_for_column(
+            "a", SortDirection.DESCENDING
+        )
         order = _JSortedColumnsAttribute.getOrderForColumn(desc_table.j_table, "a")
         self.assertEqual(order.get(), _JSortingOrder.Descending)
 
@@ -377,6 +380,7 @@ class TableTestCase(BaseTestCase):
 
     def test_assert_sorted(self):
         import jpy
+
         _JSortedColumnsAttribute = jpy.get_type(
             "io.deephaven.engine.table.impl.SortedColumnsAttribute"
         )
@@ -390,7 +394,9 @@ class TableTestCase(BaseTestCase):
 
         pre_sorted_desc = self.test_table.sort_descending(order_by="a")
         result_desc = pre_sorted_desc.assert_sorted("a", SortDirection.DESCENDING)
-        order_desc = _JSortedColumnsAttribute.getOrderForColumn(result_desc.j_table, "a")
+        order_desc = _JSortedColumnsAttribute.getOrderForColumn(
+            result_desc.j_table, "a"
+        )
         self.assertEqual(order_desc.get(), _JSortingOrder.Descending)
 
         with self.assertRaises(DHError):

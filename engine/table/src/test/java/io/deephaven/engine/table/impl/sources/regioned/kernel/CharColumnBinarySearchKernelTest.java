@@ -63,8 +63,7 @@ public class CharColumnBinarySearchKernelTest {
     }
 
     /**
-     * Helper method to create a CharChunkColumnSource from a list of characters, populated in chunks of size
-     * CHUNK_SIZE.
+     * Helper method to create a ChunkColumnSource from a list of values, populated in chunks of size CHUNK_SIZE.
      */
     private static CharChunkColumnSource makeChunkColumnSource(@NotNull final List<Character> values) {
         final CharChunkColumnSource source = new CharChunkColumnSource();

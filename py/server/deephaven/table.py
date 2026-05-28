@@ -1732,6 +1732,14 @@ class Table(JObjectWrapper):
         This sets the SORTED_COLUMNS_ATTRIBUTE so that downstream operations (e.g. sorted-column binary
         search / pushdown) can trust the column is pre-sorted without re-sorting.
 
+        .. warning::
+            **This method performs no validation.** If the column is not actually sorted in the declared
+            order, range and match filters will silently return **incorrect (missing or wrong) results**
+            with no error or warning. Use :meth:`assert_sorted` instead whenever possible — it validates
+            the sort order at call time for static tables and re-validates on every update for refreshing
+            tables. Only use this method when you have an external guarantee that the data is sorted and
+            the validation cost of ``assert_sorted`` is unacceptable.
+
         Args:
             col_name (str): the column to annotate as sorted.
             order (SortDirection): the sort direction; defaults to ASCENDING.

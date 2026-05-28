@@ -67,8 +67,7 @@ public class ByteColumnBinarySearchKernelTest {
     }
 
     /**
-     * Helper method to create a ByteChunkColumnSource from a list of byteacters, populated in chunks
-     * of size CHUNK_SIZE.
+     * Helper method to create a ChunkColumnSource from a list of values, populated in chunks of size CHUNK_SIZE.
      */
     private static ByteChunkColumnSource makeChunkColumnSource(@NotNull final List<Byte> values) {
         final ByteChunkColumnSource source = new ByteChunkColumnSource();
@@ -113,8 +112,8 @@ public class ByteColumnBinarySearchKernelTest {
                 // Test match search and min/max search give the same results for this value.
                 try (final RowSet matchRs = ByteColumnBinarySearchKernel.binarySearchMatch(
                         source, selection, sortColumn, new Byte[] {value}, false);
-                     final RowSet minMaxRs = ByteColumnBinarySearchKernel.binarySearchMinMax(
-                             source, selection, sortColumn, value, value, true, true, false)) {
+                        final RowSet minMaxRs = ByteColumnBinarySearchKernel.binarySearchMinMax(
+                                source, selection, sortColumn, value, value, true, true, false)) {
 
                     // Ensure match search and min/max search give the same results.
                     assertEquals(matchRs, minMaxRs);

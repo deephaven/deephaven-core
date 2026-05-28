@@ -148,9 +148,8 @@ public class LongColumnBinarySearchKernel {
             if (startPos > lastPos) {
                 return RowSetFactory.empty();
             }
-            final long offset = Math.max(startPos, 0);
             // The end of the range is the last position whose value is < or <= max (depends on maxInc)
-            final long endResult = findEndPosAscending(source, selection, offset, lastPos, max, maxInc, usePrev);
+            final long endResult = findEndPosAscending(source, selection, startPos, lastPos, max, maxInc, usePrev);
             endPos = endResult >= 0 ? endResult : -(endResult + 1) - 1;
         } else {
             // The beginning of the range is the first position whose value is < or <= max (depends on maxInc)
@@ -159,13 +158,12 @@ public class LongColumnBinarySearchKernel {
             if (startPos > lastPos) {
                 return RowSetFactory.empty();
             }
-            final long offset = Math.max(startPos, 0);
             // The end of the range is the last position whose value is > or >= min (depends on minInc)
-            final long endResult = findEndPosDescending(source, selection, offset, lastPos, min, minInc, usePrev);
+            final long endResult = findEndPosDescending(source, selection, startPos, lastPos, min, minInc, usePrev);
             endPos = endResult >= 0 ? endResult : -(endResult + 1) - 1;
         }
 
-        // Validate that a logical range was found and the bounds didn't cross
+        // If the bounds didn't cross, return the subset
         if (startPos <= endPos) {
             return selection.subSetByPositionRange(startPos, endPos + 1);
         }

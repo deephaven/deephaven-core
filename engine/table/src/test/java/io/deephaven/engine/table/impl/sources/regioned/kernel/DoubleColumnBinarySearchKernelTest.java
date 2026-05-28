@@ -2,7 +2,8 @@
 // Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
-// ****** Edit FloatColumnBinarySearchKernelTest and run "./gradlew replicateRegionAndRegionedSourceTests" to regenerate
+// ****** Edit FloatColumnBinarySearchKernelTest and run "./gradlew replicateRegionAndRegionedSourceTests" to
+// regenerate
 //
 // @formatter:off
 package io.deephaven.engine.table.impl.sources.regioned.kernel;

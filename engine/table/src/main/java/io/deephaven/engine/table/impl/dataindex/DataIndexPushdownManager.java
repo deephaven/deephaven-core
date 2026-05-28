@@ -266,8 +266,11 @@ public class DataIndexPushdownManager implements PushdownPredicateManager {
      *         supported
      */
     public static PushdownFilterMatcher wrap(
-            @NotNull final DataIndex dataIndex,
+            final DataIndex dataIndex,
             final PushdownFilterMatcher wrapped) {
+        if (dataIndex == null) {
+            return wrapped;
+        }
         return new DataIndexPushdownManager(dataIndex, wrapped);
     }
 }

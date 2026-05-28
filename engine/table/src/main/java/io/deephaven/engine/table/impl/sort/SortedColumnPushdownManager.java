@@ -108,9 +108,13 @@ public class SortedColumnPushdownManager implements PushdownPredicateManager {
             try (final RowSet matching =
                     binarySearchMatch(columnSource, dataType, selection, sortColumn, values, usePrev)) {
                 // Handle normal / inverted match filters:
-                onComplete.accept(PushdownResult.of(selection, matchFilter.getMatchOptions().inverted()
-                        ? selection.minus(matching)
-                        : matching.intersect(selection), RowSetFactory.empty()));
+                if (matchFilter.getMatchOptions().inverted()) {
+                    try (final RowSet pushdownMatches = selection.minus(matching)) {
+                        onComplete.accept(PushdownResult.of(selection, pushdownMatches, RowSetFactory.empty()));
+                    }
+                } else {
+                    onComplete.accept(PushdownResult.of(selection, matching, RowSetFactory.empty()));
+                }
                 return;
             }
         }
@@ -395,21 +399,22 @@ public class SortedColumnPushdownManager implements PushdownPredicateManager {
                 || rangeFilter instanceof SingleSidedComparableRangeFilter;
     }
 
-    public static PushdownFilterMatcher maybeMake(
+    public static PushdownFilterMatcher wrap(
             @NotNull final QueryTable sourceTable,
             @NotNull final WhereFilter filter,
-            @NotNull final List<ColumnSource<?>> filterSources) {
+            @NotNull final List<ColumnSource<?>> filterSources,
+            PushdownFilterMatcher executor) {
         if (QueryTable.DISABLE_WHERE_PUSHDOWN_SORTED_COLUMN_LOCATION
                 || filterSources.size() != 1
                 || filter.getColumns().size() != 1) {
-            return null;
+            return executor;
         }
 
         final WhereFilter effectiveFilter = WhereFilterDelegating.maybeUnwrapFilter(filter);
         final AbstractRangeFilter rangeFilter = RangeFilter.extractRangeFilter(effectiveFilter).orElse(null);
         final MatchFilter matchFilter = MatchFilter.extractMatchFilter(effectiveFilter).orElse(null);
         if (rangeFilter == null && matchFilter == null) {
-            return null;
+            return executor;
         }
 
         final MatchOptions matchOptions = matchFilter == null ? null : matchFilter.getMatchOptions();
@@ -418,7 +423,7 @@ public class SortedColumnPushdownManager implements PushdownPredicateManager {
         final boolean supportedRangeFilter = rangeFilter != null
                 && isSupportedRangeFilter(rangeFilter);
         if (!supportedRangeFilter && !supportedMatchFilter) {
-            return null;
+            return executor;
         }
 
         final String filterColumn = filter.getColumns().get(0);
@@ -428,7 +433,7 @@ public class SortedColumnPushdownManager implements PushdownPredicateManager {
                         : SortColumn.desc(ColumnName.of(filterColumn)))
                 .orElse(null);
         if (sortColumn == null) {
-            return null;
+            return executor;
         }
         return new SortedColumnPushdownManager(filterSources.get(0), sortColumn, rangeFilter, matchFilter);
     }

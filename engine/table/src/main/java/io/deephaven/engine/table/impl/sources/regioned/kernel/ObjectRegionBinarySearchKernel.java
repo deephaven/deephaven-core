@@ -37,7 +37,7 @@ public class ObjectRegionBinarySearchKernel {
      *
      * @return A {@link RowSet} containing the row keys where the sorted keys were found.
      */
-    public static <T extends Comparable<? super T>> RowSet binarySearchMatch(
+    public static RowSet binarySearchMatch(
             ColumnRegionObject<?, ?> region,
             long firstKey,
             final long lastKey,
@@ -108,7 +108,7 @@ public class ObjectRegionBinarySearchKernel {
      * @param maxInc {@code true} if the maximum value is inclusive, {@code false} otherwise.
      * @return A {@link RowSet} containing the row keys where the values were found.
      */
-    public static <T extends Comparable<? super T>> RowSet binarySearchMinMax(
+    public static RowSet binarySearchMinMax(
             @NotNull final ColumnRegionObject<?, ?> region,
             final long firstKey,
             final long lastKey,
@@ -165,7 +165,7 @@ public class ObjectRegionBinarySearchKernel {
      * @param minInc {@code true} if the minimum value is inclusive, {@code false} otherwise.
      * @return A {@link RowSet} containing the row keys where the values were found.
      */
-    public static <T extends Comparable<? super T>> RowSet binarySearchMin(
+    public static RowSet binarySearchMin(
             @NotNull final ColumnRegionObject<?, ?> region,
             final long firstKey,
             final long lastKey,
@@ -207,7 +207,7 @@ public class ObjectRegionBinarySearchKernel {
      * @param maxInc {@code true} if the maximum value is inclusive, {@code false} otherwise.
      * @return A {@link RowSet} containing the row keys where the values were found.
      */
-    public static <T extends Comparable<? super T>> RowSet binarySearchMax(
+    public static RowSet binarySearchMax(
             @NotNull final ColumnRegionObject<?, ?> region,
             final long firstKey,
             final long lastKey,

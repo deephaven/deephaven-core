@@ -86,8 +86,8 @@ public class LongRegionBinarySearchKernelTest {
             // Test match search and min/max search give the same results for this value.
             try (final RowSet matchRs = LongRegionBinarySearchKernel.binarySearchMatch(
                     region, startRow, endRow, sortColumn, new Long[] {value});
-                 final RowSet minMaxRs = LongRegionBinarySearchKernel.binarySearchMinMax(
-                         region, startRow, endRow, sortColumn, value, value, true, true)) {
+                    final RowSet minMaxRs = LongRegionBinarySearchKernel.binarySearchMinMax(
+                            region, startRow, endRow, sortColumn, value, value, true, true)) {
                 // Ensure match search and min/max search give the same results.
                 assertEquals(matchRs, minMaxRs);
 

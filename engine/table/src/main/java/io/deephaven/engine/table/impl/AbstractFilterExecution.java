@@ -509,15 +509,11 @@ abstract class AbstractFilterExecution {
                             .collect(Collectors.toList());
 
                     PushdownFilterMatcher executor =
-                            SortedColumnPushdownManager.maybeMake(sourceTable, filter, filterSources);
-                    if (executor == null) {
-                        executor = PushdownFilterMatcher.getPushdownFilterMatcher(filter, filterSources);
-                    }
-                    // Potentially wrap the executor to add DataIndex support.
-                    final DataIndex dataIndex = filterDataIndexMap.get(filter);
-                    if (dataIndex != null) {
-                        executor = DataIndexPushdownManager.wrap(dataIndex, executor);
-                    }
+                            PushdownFilterMatcher.getPushdownFilterMatcher(filter, filterSources);
+                    // Wrap the executor to add DataIndex support (if applicable).
+                    executor = DataIndexPushdownManager.wrap(filterDataIndexMap.get(filter), executor);
+                    // Wrap the executor to add SortedColumn support (if applicable)
+                    executor = SortedColumnPushdownManager.wrap(sourceTable, filter, filterSources, executor);
                     if (executor != null) {
                         final PushdownFilterContext context = executor.makePushdownFilterContext(filter, filterSources);
                         statelessFilters[ii] = new StatelessFilter(ii, filter, executor, context, barrierDependencies);

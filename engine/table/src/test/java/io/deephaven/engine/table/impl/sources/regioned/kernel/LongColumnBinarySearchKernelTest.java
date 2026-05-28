@@ -67,8 +67,7 @@ public class LongColumnBinarySearchKernelTest {
     }
 
     /**
-     * Helper method to create a LongChunkColumnSource from a list of longacters, populated in chunks
-     * of size CHUNK_SIZE.
+     * Helper method to create a ChunkColumnSource from a list of values, populated in chunks of size CHUNK_SIZE.
      */
     private static LongChunkColumnSource makeChunkColumnSource(@NotNull final List<Long> values) {
         final LongChunkColumnSource source = new LongChunkColumnSource();
@@ -113,8 +112,8 @@ public class LongColumnBinarySearchKernelTest {
                 // Test match search and min/max search give the same results for this value.
                 try (final RowSet matchRs = LongColumnBinarySearchKernel.binarySearchMatch(
                         source, selection, sortColumn, new Long[] {value}, false);
-                     final RowSet minMaxRs = LongColumnBinarySearchKernel.binarySearchMinMax(
-                             source, selection, sortColumn, value, value, true, true, false)) {
+                        final RowSet minMaxRs = LongColumnBinarySearchKernel.binarySearchMinMax(
+                                source, selection, sortColumn, value, value, true, true, false)) {
 
                     // Ensure match search and min/max search give the same results.
                     assertEquals(matchRs, minMaxRs);

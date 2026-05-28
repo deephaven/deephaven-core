@@ -86,8 +86,8 @@ public class ByteRegionBinarySearchKernelTest {
             // Test match search and min/max search give the same results for this value.
             try (final RowSet matchRs = ByteRegionBinarySearchKernel.binarySearchMatch(
                     region, startRow, endRow, sortColumn, new Byte[] {value});
-                 final RowSet minMaxRs = ByteRegionBinarySearchKernel.binarySearchMinMax(
-                         region, startRow, endRow, sortColumn, value, value, true, true)) {
+                    final RowSet minMaxRs = ByteRegionBinarySearchKernel.binarySearchMinMax(
+                            region, startRow, endRow, sortColumn, value, value, true, true)) {
                 // Ensure match search and min/max search give the same results.
                 assertEquals(matchRs, minMaxRs);
 

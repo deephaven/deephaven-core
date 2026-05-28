@@ -218,7 +218,6 @@ public class ReplicateRegionsAndRegionedSources {
         lines = removeImport(lines, "import io\\.deephaven\\.util\\.type\\.ArrayTypeUtils;");
         lines = globalReplacements(lines,
                 "ColumnRegionObject<\\?>", "ColumnRegionObject<?, ?>",
-                "public static RowSet binary", "public static <T extends Comparable<? super T>> RowSet binary",
                 "source\\.getObject\\(", "source.get(",
                 "source\\.getPrevObject\\(", "source.getPrev(",
 

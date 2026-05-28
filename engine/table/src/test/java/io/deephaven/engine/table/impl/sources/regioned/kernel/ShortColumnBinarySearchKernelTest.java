@@ -67,8 +67,7 @@ public class ShortColumnBinarySearchKernelTest {
     }
 
     /**
-     * Helper method to create a ShortChunkColumnSource from a list of shortacters, populated in chunks
-     * of size CHUNK_SIZE.
+     * Helper method to create a ChunkColumnSource from a list of values, populated in chunks of size CHUNK_SIZE.
      */
     private static ShortChunkColumnSource makeChunkColumnSource(@NotNull final List<Short> values) {
         final ShortChunkColumnSource source = new ShortChunkColumnSource();
@@ -113,8 +112,8 @@ public class ShortColumnBinarySearchKernelTest {
                 // Test match search and min/max search give the same results for this value.
                 try (final RowSet matchRs = ShortColumnBinarySearchKernel.binarySearchMatch(
                         source, selection, sortColumn, new Short[] {value}, false);
-                     final RowSet minMaxRs = ShortColumnBinarySearchKernel.binarySearchMinMax(
-                             source, selection, sortColumn, value, value, true, true, false)) {
+                        final RowSet minMaxRs = ShortColumnBinarySearchKernel.binarySearchMinMax(
+                                source, selection, sortColumn, value, value, true, true, false)) {
 
                     // Ensure match search and min/max search give the same results.
                     assertEquals(matchRs, minMaxRs);

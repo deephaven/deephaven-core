@@ -67,8 +67,7 @@ public class IntColumnBinarySearchKernelTest {
     }
 
     /**
-     * Helper method to create a IntChunkColumnSource from a list of intacters, populated in chunks
-     * of size CHUNK_SIZE.
+     * Helper method to create a ChunkColumnSource from a list of values, populated in chunks of size CHUNK_SIZE.
      */
     private static IntChunkColumnSource makeChunkColumnSource(@NotNull final List<Integer> values) {
         final IntChunkColumnSource source = new IntChunkColumnSource();
@@ -113,8 +112,8 @@ public class IntColumnBinarySearchKernelTest {
                 // Test match search and min/max search give the same results for this value.
                 try (final RowSet matchRs = IntColumnBinarySearchKernel.binarySearchMatch(
                         source, selection, sortColumn, new Integer[] {value}, false);
-                     final RowSet minMaxRs = IntColumnBinarySearchKernel.binarySearchMinMax(
-                             source, selection, sortColumn, value, value, true, true, false)) {
+                        final RowSet minMaxRs = IntColumnBinarySearchKernel.binarySearchMinMax(
+                                source, selection, sortColumn, value, value, true, true, false)) {
 
                     // Ensure match search and min/max search give the same results.
                     assertEquals(matchRs, minMaxRs);
