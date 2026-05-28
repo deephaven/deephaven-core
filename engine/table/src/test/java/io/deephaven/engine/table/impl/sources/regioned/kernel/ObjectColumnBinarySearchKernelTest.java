@@ -260,6 +260,82 @@ public class ObjectColumnBinarySearchKernelTest {
         }
     }
 
+    @Test
+    public void testBoundsAscending() {
+        // data: ["1","2","3","3","3","5","5","5"] at positions 0-7
+        final List<String> data = List.of("1", "2", "3", "3", "3", "5", "5", "5");
+        final ObjectChunkColumnSource source = makeChunkColumnSource(data);
+        final RowSet selection = RowSetFactory.fromRange(0, data.size() - 1);
+        final long lastPos = data.size() - 1;
+
+        try {
+            // lowerBound: "4" is absent; exclusive and inclusive both encode insertion point 5 as -(5+1)=-6
+            assertEquals(-6, ObjectColumnBinarySearchKernel.lowerBoundAscending(
+                    source, selection, 0, lastPos, "4", false, false));
+            assertEquals(-6, ObjectColumnBinarySearchKernel.lowerBoundAscending(
+                    source, selection, 0, lastPos, "4", true, false));
+            // lowerBound: "5" is present but exclusive (value > "5") finds nothing; past-end insertion point 8 -> -(8+1)=-9
+            assertEquals(-9, ObjectColumnBinarySearchKernel.lowerBoundAscending(
+                    source, selection, 0, lastPos, "5", false, false));
+            // lowerBound: "5" is present; inclusive search returns first occurrence at position 5
+            assertEquals(5, ObjectColumnBinarySearchKernel.lowerBoundAscending(
+                    source, selection, 0, lastPos, "5", true, false));
+
+            // upperBound: "4" is absent; exclusive and inclusive both encode insertion point 5 as -(5+1)=-6
+            assertEquals(-6, ObjectColumnBinarySearchKernel.upperBoundAscending(
+                    source, selection, 0, lastPos, "4", false, false));
+            assertEquals(-6, ObjectColumnBinarySearchKernel.upperBoundAscending(
+                    source, selection, 0, lastPos, "4", true, false));
+            // upperBound: "1" is present but exclusive (value < "1") finds nothing; before-start insertion point 0 -> -(0+1)=-1
+            assertEquals(-1, ObjectColumnBinarySearchKernel.upperBoundAscending(
+                    source, selection, 0, lastPos, "1", false, false));
+            // upperBound: "5" is present; inclusive search returns last occurrence at position 7
+            assertEquals(7, ObjectColumnBinarySearchKernel.upperBoundAscending(
+                    source, selection, 0, lastPos, "5", true, false));
+        } finally {
+            selection.close();
+            source.clear(true);
+        }
+    }
+
+    @Test
+    public void testBoundsDescending() {
+        // data: ["5","5","5","3","3","3","2","1"] at positions 0-7 (reverse of testBoundsAscending)
+        final List<String> data = List.of("5", "5", "5", "3", "3", "3", "2", "1");
+        final ObjectChunkColumnSource source = makeChunkColumnSource(data);
+        final RowSet selection = RowSetFactory.fromRange(0, data.size() - 1);
+        final long lastPos = data.size() - 1;
+
+        try {
+            // lowerBound: "4" is absent; exclusive and inclusive both encode insertion point 3 as -(3+1)=-4
+            assertEquals(-4, ObjectColumnBinarySearchKernel.lowerBoundDescending(
+                    source, selection, 0, lastPos, "4", false, false));
+            assertEquals(-4, ObjectColumnBinarySearchKernel.lowerBoundDescending(
+                    source, selection, 0, lastPos, "4", true, false));
+            // lowerBound: "1" is present but exclusive (value < "1") finds nothing; past-end insertion point 8 -> -(8+1)=-9
+            assertEquals(-9, ObjectColumnBinarySearchKernel.lowerBoundDescending(
+                    source, selection, 0, lastPos, "1", false, false));
+            // lowerBound: "1" is present; inclusive search returns first (leftmost) occurrence at position 7
+            assertEquals(7, ObjectColumnBinarySearchKernel.lowerBoundDescending(
+                    source, selection, 0, lastPos, "1", true, false));
+
+            // upperBound: "4" is absent; exclusive and inclusive both encode insertion point 3 as -(3+1)=-4
+            assertEquals(-4, ObjectColumnBinarySearchKernel.upperBoundDescending(
+                    source, selection, 0, lastPos, "4", false, false));
+            assertEquals(-4, ObjectColumnBinarySearchKernel.upperBoundDescending(
+                    source, selection, 0, lastPos, "4", true, false));
+            // upperBound: "5" is present but exclusive (value > "5") finds nothing; before-start insertion point 0 -> -(0+1)=-1
+            assertEquals(-1, ObjectColumnBinarySearchKernel.upperBoundDescending(
+                    source, selection, 0, lastPos, "5", false, false));
+            // upperBound: "5" is present; inclusive search returns last (rightmost) occurrence at position 2
+            assertEquals(2, ObjectColumnBinarySearchKernel.upperBoundDescending(
+                    source, selection, 0, lastPos, "5", true, false));
+        } finally {
+            selection.close();
+            source.clear(true);
+        }
+    }
+
     // NOTE: missing "3" and "7" to create gaps in the data.
     private static final List<String> GAPS_DATA = List.of(
             "0", // position 0

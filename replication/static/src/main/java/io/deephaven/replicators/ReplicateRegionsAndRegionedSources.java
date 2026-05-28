@@ -223,7 +223,11 @@ public class ReplicateRegionsAndRegionedSources {
                 "final Object\\[\\] unboxed = ArrayTypeUtils.getUnboxedObjectArray\\(searchValues\\);",
                 "final Object[] copiedValues = Arrays.copyOf(searchValues, searchValues.length);",
                 "unboxed", "copiedValues",
-                "startValue != toFind", "!ObjectComparisons.eq(startValue, toFind)");
+                "startValue != toFind", "!ObjectComparisons.eq(startValue, toFind)",
+                "lowValue == min", "ObjectComparisons.eq(lowValue, min)",
+                "highValue == max", "ObjectComparisons.eq(highValue, max)",
+                "lowValue == max", "ObjectComparisons.eq(lowValue, max)",
+                "highValue == min", "ObjectComparisons.eq(highValue, min)");
         lines = addImport(lines, "import java.util.Arrays;");
         FileUtils.writeLines(new File(charToObject), lines);
     }

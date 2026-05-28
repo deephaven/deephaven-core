@@ -18,6 +18,8 @@ import io.deephaven.engine.table.ElementSource;
 import io.deephaven.engine.table.impl.sort.timsort.LongTimsortDescendingKernel;
 import io.deephaven.engine.table.impl.sort.timsort.LongTimsortKernel;
 import io.deephaven.util.compare.LongComparisons;
+
+import static io.deephaven.engine.table.impl.sources.regioned.kernel.BinarySearchKernelHelper.insertionPoint;
 import io.deephaven.util.type.ArrayTypeUtils;
 import org.jetbrains.annotations.NotNull;
 
@@ -68,22 +70,15 @@ public class LongColumnBinarySearchKernel {
             for (int idx = 0; idx < unboxed.length && firstPos <= lastPos; ++idx) {
                 final long toFind = unboxed[idx];
                 final long startResult =
-                        findStartPosAscending(source, selection, firstPos, lastPos, toFind, true, usePrev);
+                        lowerBoundAscending(source, selection, firstPos, lastPos, toFind, true, usePrev);
                 if (startResult < 0) {
                     // Advance firstPos since we didn't find the value but eliminated some positions.
                     firstPos = -(startResult + 1);
                     continue;
                 }
-                final long startValue = usePrev
-                        ? source.getPrevLong(selection.get(startResult))
-                        : source.getLong(selection.get(startResult));
-                if (startValue != toFind) {
-                    // startResult points to the first value > toFind; toFind is absent.
-                    firstPos = startResult;
-                    continue;
-                }
+                // startResult is positive only when value at startResult == toFind; no extra check needed.
                 final long endResult =
-                        findEndPosAscending(source, selection, startResult, lastPos, toFind, true, usePrev);
+                        upperBoundAscending(source, selection, startResult, lastPos, toFind, true, usePrev);
                 if (endResult >= 0) {
                     try (final RowSet subset = selection.subSetByPositionRange(startResult, endResult + 1)) {
                         builder.appendRowSequence(subset);
@@ -96,22 +91,15 @@ public class LongColumnBinarySearchKernel {
             for (int searchIndex = 0; searchIndex < unboxed.length && firstPos <= lastPos; ++searchIndex) {
                 final long toFind = unboxed[searchIndex];
                 final long startResult =
-                        findStartPosDescending(source, selection, firstPos, lastPos, toFind, true, usePrev);
+                        lowerBoundDescending(source, selection, firstPos, lastPos, toFind, true, usePrev);
                 if (startResult < 0) {
                     // Advance firstPos since we didn't find the value but eliminated some positions.
                     firstPos = -(startResult + 1);
                     continue;
                 }
-                final long startValue = usePrev
-                        ? source.getPrevLong(selection.get(startResult))
-                        : source.getLong(selection.get(startResult));
-                if (startValue != toFind) {
-                    // startResult points to the first value > toFind; toFind is absent.
-                    firstPos = startResult;
-                    continue;
-                }
+                // startResult is positive only when value at startResult == toFind; no extra check needed.
                 final long endResult =
-                        findEndPosDescending(source, selection, startResult, lastPos, toFind, true, usePrev);
+                        upperBoundDescending(source, selection, startResult, lastPos, toFind, true, usePrev);
                 if (endResult >= 0) {
                     try (final RowSet subset = selection.subSetByPositionRange(startResult, endResult + 1)) {
                         builder.appendRowSequence(subset);
@@ -159,24 +147,24 @@ public class LongColumnBinarySearchKernel {
 
         if (sortColumn.isAscending()) {
             // The beginning of the range is the first position whose value is > or >= min (depends on minInc)
-            final long startResult = findStartPosAscending(source, selection, 0, lastPos, min, minInc, usePrev);
+            final long startResult = lowerBoundAscending(source, selection, 0, lastPos, min, minInc, usePrev);
             startPos = startResult >= 0 ? startResult : -(startResult + 1);
             if (startPos > lastPos) {
                 return RowSetFactory.empty();
             }
             // The end of the range is the last position whose value is < or <= max (depends on maxInc)
-            final long endResult = findEndPosAscending(source, selection, startPos, lastPos, max, maxInc, usePrev);
+            final long endResult = upperBoundAscending(source, selection, startPos, lastPos, max, maxInc, usePrev);
             // -(endResult+1) is first non-satisfying pos; subtract 1 for last satisfying
             endPos = endResult >= 0 ? endResult : -(endResult + 1) - 1;
         } else {
             // The beginning of the range is the first position whose value is < or <= max (depends on maxInc)
-            final long startResult = findStartPosDescending(source, selection, 0, lastPos, max, maxInc, usePrev);
+            final long startResult = lowerBoundDescending(source, selection, 0, lastPos, max, maxInc, usePrev);
             startPos = startResult >= 0 ? startResult : -(startResult + 1);
             if (startPos > lastPos) {
                 return RowSetFactory.empty();
             }
             // The end of the range is the last position whose value is > or >= min (depends on minInc)
-            final long endResult = findEndPosDescending(source, selection, startPos, lastPos, min, minInc, usePrev);
+            final long endResult = upperBoundDescending(source, selection, startPos, lastPos, min, minInc, usePrev);
             // -(endResult+1) is first non-satisfying pos; subtract 1 for last satisfying
             endPos = endResult >= 0 ? endResult : -(endResult + 1) - 1;
         }
@@ -220,13 +208,13 @@ public class LongColumnBinarySearchKernel {
 
         if (sortColumn.isAscending()) {
             // The beginning of the range is the first position whose value is > or >= min (depends on minInc)
-            final long startResult = findStartPosAscending(source, selection, 0, lastPos, min, minInc, usePrev);
+            final long startResult = lowerBoundAscending(source, selection, 0, lastPos, min, minInc, usePrev);
             startPos = startResult >= 0 ? startResult : -(startResult + 1);
             endPos = lastPos;
         } else {
             startPos = 0;
             // The end of the range is the last position whose value is > or >= min (depends on minInc)
-            final long endResult = findEndPosDescending(source, selection, 0, lastPos, min, minInc, usePrev);
+            final long endResult = upperBoundDescending(source, selection, 0, lastPos, min, minInc, usePrev);
             // -(endResult+1) is first non-satisfying pos; subtract 1 for last satisfying
             endPos = endResult >= 0 ? endResult : -(endResult + 1) - 1;
         }
@@ -270,12 +258,12 @@ public class LongColumnBinarySearchKernel {
         if (sortColumn.isAscending()) {
             startPos = 0;
             // The end of the range is the last position whose value is < or <= max (depends on maxInc)
-            final long endResult = findEndPosAscending(source, selection, 0, lastPos, max, maxInc, usePrev);
+            final long endResult = upperBoundAscending(source, selection, 0, lastPos, max, maxInc, usePrev);
             // -(endResult+1) is first non-satisfying pos; subtract 1 for last satisfying
             endPos = endResult >= 0 ? endResult : -(endResult + 1) - 1;
         } else {
             // The beginning of the range is the first position whose value is < or <= max (depends on maxInc)
-            final long startResult = findStartPosDescending(source, selection, 0, lastPos, max, maxInc, usePrev);
+            final long startResult = lowerBoundDescending(source, selection, 0, lastPos, max, maxInc, usePrev);
             startPos = startResult >= 0 ? startResult : -(startResult + 1);
             endPos = lastPos;
         }
@@ -288,22 +276,35 @@ public class LongColumnBinarySearchKernel {
     }
 
     /**
-     * Finds the starting position for a given value in an ascending (non-descending) sorted source.
+     * Performs a binary search on an ascending (non-descending) sorted {@link ElementSource} to find the position of
+     * {@code min} within the search range.
      *
      * <p>
      * Positions are indices into {@code selection}; the row key at position {@code p} is {@code selection.get(p)}.
+     *
+     * <p>
+     * Return value convention (mirrors {@link java.util.Arrays#binarySearch}):
+     * <ul>
+     * <li>A non-negative value is returned only when {@code minInc=true} and the value at the found position exactly
+     * equals {@code min}. The returned value is the leftmost such position.</li>
+     * <li>A negative value {@code p} is returned in all other cases: when {@code min} is absent from the range, when
+     * {@code minInc=false} (exclusive bound), or when no position satisfies the bound. In this case {@code -(p + 1)} is
+     * the insertion point â the leftmost position whose value exceeds {@code min} â or {@code lastPos + 1} if all
+     * values in the range are &lt;= {@code min}.</li>
+     * </ul>
      *
      * @param source The element source to search.
      * @param selection The {@link RowSet} mapping positions to row keys.
      * @param firstPos The starting position of the search range (inclusive).
      * @param lastPos The ending position of the search range (inclusive).
      * @param min The value to find.
-     * @param minInc If true, the search is inclusive of the value.
+     * @param minInc If {@code true}, an exact match at the leftmost occurrence returns a non-negative position; if
+     *        {@code false}, the result is always negative (insertion-point encoded).
      * @param usePrev If true, uses getPrevLong instead of getLong.
-     * @return The leftmost position (&gt;= 0) satisfying the min bound, or a negative value if no position in the range
-     *         satisfies the min bound. When negative, {@code -(result + 1)} is past the end of the range.
+     * @return A non-negative position if {@code minInc=true} and {@code min} is found; otherwise a negative value
+     *         {@code p} where {@code -(p + 1)} is the insertion point.
      */
-    private static long findStartPosAscending(
+    static long lowerBoundAscending(
             @NotNull final ElementSource<?> source,
             @NotNull final RowSet selection,
             final long firstPos,
@@ -313,43 +314,56 @@ public class LongColumnBinarySearchKernel {
             final boolean usePrev) {
         long low = firstPos;
         long high = lastPos;
-        long ans = -1;
 
         while (low <= high) {
             final long mid = low + (high - low) / 2;
             final long midValue = usePrev ? source.getPrevLong(selection.get(mid)) : source.getLong(selection.get(mid));
-            final boolean satisfiesMin = minInc
-                    ? LongComparisons.geq(midValue, min)
-                    : LongComparisons.gt(midValue, min);
-
-            if (satisfiesMin) {
-                ans = mid;
+            if (minInc ? LongComparisons.geq(midValue, min) : LongComparisons.gt(midValue, min)) {
                 high = mid - 1;
             } else {
                 low = mid + 1;
             }
         }
-        return ans >= 0 ? ans : -(low + 1);
+        // low is now the insertion point. For inclusive searches, check for an exact match there.
+        if (minInc && low <= lastPos) {
+            final long lowValue = usePrev ? source.getPrevLong(selection.get(low)) : source.getLong(selection.get(low));
+            if (LongComparisons.eq(lowValue, min)) {
+                return low;
+            }
+        }
+        return insertionPoint(low);
     }
 
     /**
-     * Finds the ending position for a given value in an ascending (non-descending) sorted source.
+     * Performs a binary search on an ascending (non-descending) sorted {@link ElementSource} to find the position of
+     * {@code max} within the search range.
      *
      * <p>
      * Positions are indices into {@code selection}; the row key at position {@code p} is {@code selection.get(p)}.
+     *
+     * <p>
+     * Return value convention (mirrors {@link java.util.Arrays#binarySearch}):
+     * <ul>
+     * <li>A non-negative value is returned only when {@code maxInc=true} and the value at the found position exactly
+     * equals {@code max}. The returned value is the rightmost such position.</li>
+     * <li>A negative value {@code p} is returned in all other cases: when {@code max} is absent from the range, when
+     * {@code maxInc=false} (exclusive bound), or when no position satisfies the bound. In this case {@code -(p + 1)} is
+     * the first position whose value exceeds {@code max} â or {@code firstPos} if all values in the range are &gt;
+     * {@code max}.</li>
+     * </ul>
      *
      * @param source The element source to search.
      * @param selection The {@link RowSet} mapping positions to row keys.
      * @param firstPos The starting position of the search range (inclusive).
      * @param lastPos The ending position of the search range (inclusive).
      * @param max The value to find.
-     * @param maxInc If true, the search is inclusive of the value.
+     * @param maxInc If {@code true}, an exact match at the rightmost occurrence returns a non-negative position; if
+     *        {@code false}, the result is always negative (insertion-point encoded).
      * @param usePrev If true, uses getPrevLong instead of getLong.
-     * @return The rightmost position (&gt;= 0) satisfying the max bound, or a negative value if no position in the range
-     *         satisfies the max bound. When negative, {@code -(result + 1)} is the first position in the range whose
-     *         value exceeds the max bound.
+     * @return A non-negative position if {@code maxInc=true} and {@code max} is found; otherwise a negative value
+     *         {@code p} where {@code -(p + 1)} is the first position whose value exceeds {@code max}.
      */
-    private static long findEndPosAscending(
+    static long upperBoundAscending(
             @NotNull final ElementSource<?> source,
             @NotNull final RowSet selection,
             final long firstPos,
@@ -359,42 +373,58 @@ public class LongColumnBinarySearchKernel {
             final boolean usePrev) {
         long low = firstPos;
         long high = lastPos;
-        long ans = -1;
 
         while (low <= high) {
             final long mid = low + (high - low) / 2;
             final long midValue = usePrev ? source.getPrevLong(selection.get(mid)) : source.getLong(selection.get(mid));
-            final boolean satisfiesMax = maxInc
-                    ? LongComparisons.leq(midValue, max)
-                    : LongComparisons.lt(midValue, max);
-
-            if (satisfiesMax) {
-                ans = mid;
+            if (maxInc ? LongComparisons.leq(midValue, max) : LongComparisons.lt(midValue, max)) {
                 low = mid + 1;
             } else {
                 high = mid - 1;
             }
         }
-        return ans >= 0 ? ans : -(low + 1);
+        // high is now the last satisfying position; low = high + 1 is the first non-satisfying position.
+        // For inclusive searches, check for an exact match at high.
+        if (maxInc && high >= firstPos) {
+            final long highValue =
+                    usePrev ? source.getPrevLong(selection.get(high)) : source.getLong(selection.get(high));
+            if (LongComparisons.eq(highValue, max)) {
+                return high;
+            }
+        }
+        return insertionPoint(low);
     }
 
     /**
-     * Finds the starting position for a given value in a descending (non-ascending) sorted source.
+     * Performs a binary search on a descending (non-ascending) sorted {@link ElementSource} to find the position of
+     * {@code max} within the search range.
      *
      * <p>
      * Positions are indices into {@code selection}; the row key at position {@code p} is {@code selection.get(p)}.
+     *
+     * <p>
+     * Return value convention (mirrors {@link java.util.Arrays#binarySearch}):
+     * <ul>
+     * <li>A non-negative value is returned only when {@code maxInc=true} and the value at the found position exactly
+     * equals {@code max}. The returned value is the leftmost such position.</li>
+     * <li>A negative value {@code p} is returned in all other cases: when {@code max} is absent from the range, when
+     * {@code maxInc=false} (exclusive bound), or when no position satisfies the bound. In this case {@code -(p + 1)} is
+     * the insertion point â the leftmost position whose value falls below {@code max} â or {@code lastPos + 1} if all
+     * values in the range are &gt;= {@code max}.</li>
+     * </ul>
      *
      * @param source The element source to search.
      * @param selection The {@link RowSet} mapping positions to row keys.
      * @param firstPos The starting position of the search range (inclusive).
      * @param lastPos The ending position of the search range (inclusive).
      * @param max The value to find.
-     * @param maxInc If true, the search is inclusive of the value.
+     * @param maxInc If {@code true}, an exact match at the leftmost occurrence returns a non-negative position; if
+     *        {@code false}, the result is always negative (insertion-point encoded).
      * @param usePrev If true, uses getPrevLong instead of getLong.
-     * @return The leftmost position (&gt;= 0) satisfying the max bound, or a negative value if no position in the range
-     *         satisfies the max bound. When negative, {@code -(result + 1)} is past the end of the range.
+     * @return A non-negative position if {@code maxInc=true} and {@code max} is found; otherwise a negative value
+     *         {@code p} where {@code -(p + 1)} is the insertion point.
      */
-    private static long findStartPosDescending(
+    static long lowerBoundDescending(
             @NotNull final ElementSource<?> source,
             @NotNull final RowSet selection,
             final long firstPos,
@@ -404,43 +434,56 @@ public class LongColumnBinarySearchKernel {
             final boolean usePrev) {
         long low = firstPos;
         long high = lastPos;
-        long ans = -1;
 
         while (low <= high) {
             final long mid = low + (high - low) / 2;
             final long midValue = usePrev ? source.getPrevLong(selection.get(mid)) : source.getLong(selection.get(mid));
-            final boolean satisfiesMax = maxInc
-                    ? LongComparisons.leq(midValue, max)
-                    : LongComparisons.lt(midValue, max);
-
-            if (satisfiesMax) {
-                ans = mid;
+            if (maxInc ? LongComparisons.leq(midValue, max) : LongComparisons.lt(midValue, max)) {
                 high = mid - 1;
             } else {
                 low = mid + 1;
             }
         }
-        return ans >= 0 ? ans : -(low + 1);
+        // low is now the insertion point. For inclusive searches, check for an exact match there.
+        if (maxInc && low <= lastPos) {
+            final long lowValue = usePrev ? source.getPrevLong(selection.get(low)) : source.getLong(selection.get(low));
+            if (LongComparisons.eq(lowValue, max)) {
+                return low;
+            }
+        }
+        return insertionPoint(low);
     }
 
     /**
-     * Finds the ending position for a given value in a descending (non-ascending) sorted source.
+     * Performs a binary search on a descending (non-ascending) sorted {@link ElementSource} to find the position of
+     * {@code min} within the search range.
      *
      * <p>
      * Positions are indices into {@code selection}; the row key at position {@code p} is {@code selection.get(p)}.
+     *
+     * <p>
+     * Return value convention (mirrors {@link java.util.Arrays#binarySearch}):
+     * <ul>
+     * <li>A non-negative value is returned only when {@code minInc=true} and the value at the found position exactly
+     * equals {@code min}. The returned value is the rightmost such position.</li>
+     * <li>A negative value {@code p} is returned in all other cases: when {@code min} is absent from the range, when
+     * {@code minInc=false} (exclusive bound), or when no position satisfies the bound. In this case {@code -(p + 1)} is
+     * the first position whose value falls below {@code min} â or {@code firstPos} if all values in the range are &lt;=
+     * {@code min}.</li>
+     * </ul>
      *
      * @param source The element source to search.
      * @param selection The {@link RowSet} mapping positions to row keys.
      * @param firstPos The starting position of the search range (inclusive).
      * @param lastPos The ending position of the search range (inclusive).
      * @param min The value to find.
-     * @param minInc If true, the search is inclusive of the value.
+     * @param minInc If {@code true}, an exact match at the rightmost occurrence returns a non-negative position; if
+     *        {@code false}, the result is always negative (insertion-point encoded).
      * @param usePrev If true, uses getPrevLong instead of getLong.
-     * @return The rightmost position (&gt;= 0) satisfying the min bound, or a negative value if no position in the range
-     *         satisfies the min bound. When negative, {@code -(result + 1)} is the first position in the range whose
-     *         value falls below the min bound.
+     * @return A non-negative position if {@code minInc=true} and {@code min} is found; otherwise a negative value
+     *         {@code p} where {@code -(p + 1)} is the first position whose value falls below {@code min}.
      */
-    private static long findEndPosDescending(
+    static long upperBoundDescending(
             @NotNull final ElementSource<?> source,
             @NotNull final RowSet selection,
             final long firstPos,
@@ -450,23 +493,26 @@ public class LongColumnBinarySearchKernel {
             final boolean usePrev) {
         long low = firstPos;
         long high = lastPos;
-        long ans = -1;
 
         while (low <= high) {
             final long mid = low + (high - low) / 2;
             final long midValue = usePrev ? source.getPrevLong(selection.get(mid)) : source.getLong(selection.get(mid));
-            final boolean satisfiesMin = minInc
-                    ? LongComparisons.geq(midValue, min)
-                    : LongComparisons.gt(midValue, min);
-
-            if (satisfiesMin) {
-                ans = mid;
+            if (minInc ? LongComparisons.geq(midValue, min) : LongComparisons.gt(midValue, min)) {
                 low = mid + 1;
             } else {
                 high = mid - 1;
             }
         }
-        return ans >= 0 ? ans : -(low + 1);
+        // high is now the last satisfying position; low = high + 1 is the first non-satisfying position.
+        // For inclusive searches, check for an exact match at high.
+        if (minInc && high >= firstPos) {
+            final long highValue =
+                    usePrev ? source.getPrevLong(selection.get(high)) : source.getLong(selection.get(high));
+            if (LongComparisons.eq(highValue, min)) {
+                return high;
+            }
+        }
+        return insertionPoint(low);
     }
 }
 

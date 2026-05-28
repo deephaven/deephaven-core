@@ -5116,6 +5116,7 @@ public final class ParquetTableReadWriteTest {
             final File destAsc = new File(rootFile, "ParquetTest_sortedColumnFilteringAsc.parquet");
             writeTable(sortedAsc, destAsc.getPath());
             final Table fromDiskAsc = checkSingleTable(sortedAsc, destAsc);
+            assertTableEquals(source.where(filter).sort(columnName), sortedAsc.where(filter));
             assertTableEquals(sortedAsc.where(filter), fromDiskAsc.where(filter));
             // Test on a sparse table to force the row intersection logic.
             assertTableEquals(sortedAsc.where("index % 2 == 0").where(filter),
@@ -5124,6 +5125,7 @@ public final class ParquetTableReadWriteTest {
             final File destDesc = new File(rootFile, "ParquetTest_sortedColumnFilteringDesc.parquet");
             writeTable(sortedDesc, destDesc.getPath());
             final Table fromDiskDesc = checkSingleTable(sortedDesc, destDesc);
+            assertTableEquals(source.where(filter).sortDescending(columnName), sortedDesc.where(filter));
             assertTableEquals(sortedDesc.where(filter), fromDiskDesc.where(filter));
             // Test on a sparse table to force the row intersection logic.
             assertTableEquals(sortedDesc.where("index % 2 == 0").where(filter),
@@ -5189,7 +5191,8 @@ public final class ParquetTableReadWriteTest {
                             "floatCol = (i % 997 == 0) ? null : (i % 997 == 996) ? Float.NaN : (i % 997 == 995) ? Float.POSITIVE_INFINITY : (i % 997 == 994) ? Float.NEGATIVE_INFINITY : (float)(i % 997)",
                             "doubleCol = (i % 997 == 0) ? null : (i % 997 == 996) ? Double.NaN : (i % 997 == 995) ? Double.POSITIVE_INFINITY : (i % 997 == 994) ? Double.NEGATIVE_INFINITY : (double)(i % 997)",
                             "stringCol = i % 997 == 0 ? null : `Str` + (i % 997)",
-                            "bdCol = i % 997 == 0 ? (java.math.BigDecimal)null : java.math.BigDecimal.valueOf(ii % 997)");
+                            "bdCol = i % 997 == 0 ? (java.math.BigDecimal)null : java.math.BigDecimal.valueOf(ii % 997)",
+                            "instantCol = i % 997 == 0 ? null : DateTimeUtils.epochNanosToInstant((long)(i % 997) * 1_000_000_000L)");
 
             // NB: when partition count == 1, column sorting will propagate to the QueryTable and the table-level
             // manager will be used. When partition count > 1, sorted region pushdown will be used.
@@ -5265,6 +5268,27 @@ public final class ParquetTableReadWriteTest {
                         ComparableRangeFilter.makeForTest("bdCol",
                                 BigDecimal.valueOf(300.0), BigDecimal.valueOf(500.00), false, false),
                         count);
+
+                // Instant — single-sided via query scope params
+                final Instant inst300 = DateTimeUtils.epochNanosToInstant(300L * 1_000_000_000L);
+                final Instant inst500 = DateTimeUtils.epochNanosToInstant(500L * 1_000_000_000L);
+                ExecutionContext.getContext().getQueryScope().putParam("inst_300", inst300);
+                ExecutionContext.getContext().getQueryScope().putParam("inst_500", inst500);
+                testSortedFilteringInternal(testTable, "instantCol",
+                        new MatchFilter(MatchOptions.REGULAR, "instantCol", inst300), count);
+                testSortedFilteringInternal(testTable, "instantCol", "instantCol in inst_300,inst_500", count);
+                testSortedFilteringInternal(testTable, "instantCol", "instantCol < inst_300", count);
+                testSortedFilteringInternal(testTable, "instantCol", "instantCol >= inst_500", count);
+
+                // Instant — range via InstantRangeFilter
+                testSortedFilteringInternal(testTable, "instantCol",
+                        new InstantRangeFilter("instantCol", inst300, inst500, true, true), count);
+                testSortedFilteringInternal(testTable, "instantCol",
+                        new InstantRangeFilter("instantCol", inst300, inst500, false, true), count);
+                testSortedFilteringInternal(testTable, "instantCol",
+                        new InstantRangeFilter("instantCol", inst300, inst500, true, false), count);
+                testSortedFilteringInternal(testTable, "instantCol",
+                        new InstantRangeFilter("instantCol", inst300, inst500, false, false), count);
             }
         }
     }

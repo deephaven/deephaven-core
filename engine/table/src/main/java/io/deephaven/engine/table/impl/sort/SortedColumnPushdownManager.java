@@ -8,7 +8,6 @@ import io.deephaven.api.SortColumn;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.ElementSource;
 import io.deephaven.engine.table.MatchOptions;
 import io.deephaven.engine.table.impl.PushdownFilterContext;
 import io.deephaven.engine.table.impl.PushdownFilterMatcher;
@@ -30,6 +29,7 @@ import io.deephaven.engine.table.impl.select.ShortRangeFilter;
 import io.deephaven.engine.table.impl.select.SingleSidedComparableRangeFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.select.WhereFilterDelegating;
+import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.sources.regioned.kernel.*;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import org.jetbrains.annotations.NotNull;
@@ -134,7 +134,7 @@ public class SortedColumnPushdownManager implements PushdownPredicateManager {
      * Helper method to call correct kernel based on data type.
      */
     public static RowSet binarySearchMatch(
-            @NotNull final ElementSource<?> source,
+            @NotNull final ColumnSource<?> source,
             @NotNull final Class<?> dataType,
             @NotNull final RowSet selection,
             @NotNull final SortColumn sortColumn,
@@ -172,37 +172,40 @@ public class SortedColumnPushdownManager implements PushdownPredicateManager {
      * Helper method to call correct search method based on filter type.
      */
     public static RowSet binarySearchRange(
-            @NotNull final ElementSource<?> source,
+            @NotNull final ColumnSource<?> source,
             @NotNull final RowSet selection,
             @NotNull final SortColumn sortColumn,
             @NotNull final AbstractRangeFilter rangeFilter,
             final boolean usePrev) {
+        final ColumnSource<?> maybeReinterpreted = ReinterpretUtils.maybeConvertToPrimitive(source);
+
         if (rangeFilter instanceof CharRangeFilter) {
-            return binarySearchRangeChar(source, selection, sortColumn, rangeFilter, usePrev);
+            return binarySearchRangeChar(maybeReinterpreted, selection, sortColumn, rangeFilter, usePrev);
         }
         if (rangeFilter instanceof ByteRangeFilter) {
-            return binarySearchRangeByte(source, selection, sortColumn, rangeFilter, usePrev);
+            return binarySearchRangeByte(maybeReinterpreted, selection, sortColumn, rangeFilter, usePrev);
         }
         if (rangeFilter instanceof ShortRangeFilter) {
-            return binarySearchRangeShort(source, selection, sortColumn, rangeFilter, usePrev);
+            return binarySearchRangeShort(maybeReinterpreted, selection, sortColumn, rangeFilter, usePrev);
         }
         if (rangeFilter instanceof IntRangeFilter) {
-            return binarySearchRangeInt(source, selection, sortColumn, rangeFilter, usePrev);
+            return binarySearchRangeInt(maybeReinterpreted, selection, sortColumn, rangeFilter, usePrev);
         }
         if (rangeFilter instanceof LongRangeFilter) {
-            return binarySearchRangeLong(source, selection, sortColumn, rangeFilter, usePrev);
+            return binarySearchRangeLong(maybeReinterpreted, selection, sortColumn, rangeFilter, usePrev);
         }
         if (rangeFilter instanceof FloatRangeFilter) {
-            return binarySearchRangeFloat(source, selection, sortColumn, rangeFilter, usePrev);
+            return binarySearchRangeFloat(maybeReinterpreted, selection, sortColumn, rangeFilter, usePrev);
         }
         if (rangeFilter instanceof DoubleRangeFilter) {
-            return binarySearchRangeDouble(source, selection, sortColumn, rangeFilter, usePrev);
+            return binarySearchRangeDouble(maybeReinterpreted, selection, sortColumn, rangeFilter, usePrev);
         }
+        // Use the original-typed source.
         return binarySearchRangeObject(source, selection, sortColumn, rangeFilter, usePrev);
     }
 
     private static RowSet binarySearchRangeChar(
-            @NotNull final ElementSource<?> source,
+            @NotNull final ColumnSource<?> source,
             @NotNull final RowSet selection,
             @NotNull final SortColumn sortColumn,
             @NotNull final AbstractRangeFilter filter,
@@ -225,7 +228,7 @@ public class SortedColumnPushdownManager implements PushdownPredicateManager {
     }
 
     private static RowSet binarySearchRangeByte(
-            @NotNull final ElementSource<?> source,
+            @NotNull final ColumnSource<?> source,
             @NotNull final RowSet selection,
             @NotNull final SortColumn sortColumn,
             @NotNull final AbstractRangeFilter filter,
@@ -248,7 +251,7 @@ public class SortedColumnPushdownManager implements PushdownPredicateManager {
     }
 
     private static RowSet binarySearchRangeShort(
-            @NotNull final ElementSource<?> source,
+            @NotNull final ColumnSource<?> source,
             @NotNull final RowSet selection,
             @NotNull final SortColumn sortColumn,
             @NotNull final AbstractRangeFilter filter,
@@ -271,7 +274,7 @@ public class SortedColumnPushdownManager implements PushdownPredicateManager {
     }
 
     private static RowSet binarySearchRangeInt(
-            @NotNull final ElementSource<?> source,
+            @NotNull final ColumnSource<?> source,
             @NotNull final RowSet selection,
             @NotNull final SortColumn sortColumn,
             @NotNull final AbstractRangeFilter filter,
@@ -294,7 +297,7 @@ public class SortedColumnPushdownManager implements PushdownPredicateManager {
     }
 
     private static RowSet binarySearchRangeLong(
-            @NotNull final ElementSource<?> source,
+            @NotNull final ColumnSource<?> source,
             @NotNull final RowSet selection,
             @NotNull final SortColumn sortColumn,
             @NotNull final AbstractRangeFilter filter,
@@ -317,7 +320,7 @@ public class SortedColumnPushdownManager implements PushdownPredicateManager {
     }
 
     private static RowSet binarySearchRangeFloat(
-            @NotNull final ElementSource<?> source,
+            @NotNull final ColumnSource<?> source,
             @NotNull final RowSet selection,
             @NotNull final SortColumn sortColumn,
             @NotNull final AbstractRangeFilter filter,
@@ -340,7 +343,7 @@ public class SortedColumnPushdownManager implements PushdownPredicateManager {
     }
 
     private static RowSet binarySearchRangeDouble(
-            @NotNull final ElementSource<?> source,
+            @NotNull final ColumnSource<?> source,
             @NotNull final RowSet selection,
             @NotNull final SortColumn sortColumn,
             @NotNull final AbstractRangeFilter filter,
@@ -363,7 +366,7 @@ public class SortedColumnPushdownManager implements PushdownPredicateManager {
     }
 
     private static RowSet binarySearchRangeObject(
-            @NotNull final ElementSource<?> source,
+            @NotNull final ColumnSource<?> source,
             @NotNull final RowSet selection,
             @NotNull final SortColumn sortColumn,
             @NotNull final AbstractRangeFilter filter,
