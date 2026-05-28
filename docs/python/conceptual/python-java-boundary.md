@@ -92,7 +92,7 @@ When there is a one-to-one translation for a function, you should prefer to use 
 
 When using [Python user-defined functions (UDFs)](../how-to-guides/python-functions.md) in Deephaven query strings, Python memory is allocated outside the Java heap. This has important implications:
 
-- **OOM risk** — When total process memory grows too large, the Linux Out-Of-Memory (OOM) killer may terminate processes. In a Kubernetes environment, if the worker's allocated heap and non-heap memory exceed the permitted size, that worker is terminated. In a bare metal environment, the kernel may select any process co-located with the worker on the same machine. If the OOM killer selects the dispatcher, all workers on the machine terminate.
+- **OOM risk** — When total process memory grows too large, the Linux Out-Of-Memory (OOM) killer may terminate processes. This can happen when the combined Java heap and Python memory exceed the available system or container memory.
 - **Unbounded memory growth** — Python objects allocated during UDF execution can accumulate over time, especially in long-running or high-throughput queries. This can lead to resident memory far exceeding the configured Java heap size.
 
 ### Recommendations
@@ -100,10 +100,8 @@ When using [Python user-defined functions (UDFs)](../how-to-guides/python-functi
 To minimize memory risks when using Python UDFs:
 
 - **Convert performance-critical UDFs to Java** — For frequently called functions, consider implementing them in Java or using built-in query language functions instead.
-- **Avoid allocating large Python objects in UDFs** — Minimize the creation of large data structures within UDF code.
+- **Avoid returning large Python objects in UDFs** — They can remain in Python memory for extended periods, and if not freed in a timely manner, may cause a Python `MemoryError` and crash the worker process. Instead, when possible, have UDFs return only the data needed for table columns, which are typically primitive types and text. In situations where Java is not actively garbage collecting unused table columns that store Python objects, `deephaven.gc_collect()` can be used to attempt to trigger Java GC, but keep in mind that it is advisory only.
 - **Monitor resident memory** — Track total process memory, not just Java heap usage, for queries using Python UDFs.
-- **Configure additional memory** — If a query is known to use significant Python resources, configure "Additional Memory" in the Code Studio or Advanced Settings in the Persistent Query configuration. On bare metal or Podman, this setting is advisory and not enforced; it simply prevents the dispatcher from starting more queries. On Kubernetes, this permits the pod to use more memory.
-- **Segregate infrastructure processes from query processes** — This reduces the risk of the OOM killer affecting critical infrastructure. Note that the Query Dispatcher process, which starts workers, cannot be segregated.
 
 ## The Python API under the hood
 
