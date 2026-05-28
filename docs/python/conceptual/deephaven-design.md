@@ -22,11 +22,31 @@ Deephaven's architecture is built on several key innovations:
 - **Python-first UI framework**: `deephaven.ui` enables building reactive web applications entirely in Python, with live table integration and no front-end engineering required.
 - **Unified batch and streaming**: Batch and real-time data coexist behind a single, consistent API — no separate systems or complex coordination required.
 
+## The live data stack
+
+Deephaven is a full-stack data system that unifies live and historical data in a single, composable environment. Unlike traditional architectures that force trade-offs between batch and streaming, Deephaven delivers both through a unified platform built on three integrated layers:
+
+| Layer               | Components                                              | What it provides                                                         |
+| ------------------- | ------------------------------------------------------- | ------------------------------------------------------------------------ |
+| **Engine**          | UpdateGraph, ColumnSources, RowSets, Chunk architecture | Incremental computation, columnar storage, zero-copy operations          |
+| **APIs**            | gRPC/Barrage, Python/Java/JS clients, Arrow Flight      | Cross-language access, network-transparent DAGs, real-time subscriptions |
+| **UI/Applications** | `deephaven.ui`, web-client-ui, Jupyter widgets          | Live dashboards, reactive components, real-time visualization            |
+
+At the core of this stack are **Live Dataframes** — Deephaven's unique abstraction that allows data to update continuously and flow naturally through code, dashboards, and applications. When a source table changes, updates propagate through the entire stack:
+
+1. **Engine**: The UpdateGraph detects changes and propagates them through the DAG
+2. **APIs**: Barrage protocol streams incremental updates to connected clients
+3. **UI**: Components automatically refresh to reflect the latest data
+
+This architecture means the same table can simultaneously serve a Python script, a Java application, a web dashboard, and a remote client — all seeing consistent, live updates without any additional code.
+
+**Why this matters**: Traditional systems require separate pipelines for batch and streaming, with different APIs, different mental models, and complex coordination. Deephaven's live data stack eliminates this complexity. Whether you're analyzing historical Parquet files or streaming Kafka data, you use the same code, the same operations, and the same UI — and everything stays in sync.
+
 ## How Deephaven compares
 
 | Capability             | Traditional Approach                    | Deephaven                            |
 | ---------------------- | --------------------------------------- | ------------------------------------ |
-| **Batch + Real-time**  | Separate systems (e.g., Spark + Flink)  | Unified table API for both           |
+| **Batch + Real-time**  | Separate systems for each               | Unified table API for both           |
 | **Update model**       | Recompute full datasets                 | Incremental (only changed rows)      |
 | **Memory efficiency**  | Copy-on-write, data duplication         | Shared `RowSets` and `ColumnSources` |
 | **Query consistency**  | Manual coordination required            | Automatic via DAG and logical clock  |
@@ -212,15 +232,27 @@ The [`update`](../reference/table-operations/select/update.md) operation adds or
 
 Most Deephaven table operations follow this pattern:
 
-| Operation Type | `RowSet` | `ColumnSource`s |
-|---------------|----------|-----------------|
-| **Filtering** (`where`) | New (subset) | Shared |
-| **Column derivation** (`update`, `view`) | Shared | Mixed (shared + new) |
-| **Sorting** (`sort`) | New (redirecting) | Shared (via redirection) |
-| **Joining** (`natural_join`, etc.) | New or shared | Mixed |
-| **Aggregation** (`agg_by`, etc.) | New | New |
+| Operation Type                           | `RowSet`          | `ColumnSource`s          |
+| ---------------------------------------- | ----------------- | ------------------------ |
+| **Filtering** (`where`)                  | New (subset)      | Shared                   |
+| **Column derivation** (`update`, `view`) | Shared            | Mixed (shared + new)     |
+| **Sorting** (`sort`)                     | New (redirecting) | Shared (via redirection) |
+| **Joining** (`natural_join`, etc.)       | New or shared     | Mixed                    |
+| **Aggregation** (`agg_by`, etc.)         | New               | New                      |
 
 This sharing model, combined with [incremental updates](./table-update-model.md) through the [DAG](./dag.md), enables Deephaven to handle complex queries on large, rapidly-changing datasets efficiently.
+
+### How operations stay live
+
+The listener attachment in step 5 of each operation is what makes Deephaven tables "live." When a parent table updates:
+
+1. The parent's `notifyListeners` method enqueues update notifications for all child listeners
+2. Each listener receives a `TableUpdate` describing exactly which rows were added, removed, or modified
+3. The listener recomputes only the affected rows and propagates its own update downstream
+
+This continues through the entire DAG. A single source change cascades through filters, joins, and aggregations — each operation processing only the delta, not the full dataset. The result flows through the [API layer](#the-live-data-stack) via Barrage to connected clients and UI components, all within a single update cycle (default 1000ms).
+
+This is the technical foundation of [Live Dataframes](#the-live-data-stack): the same table object can be static (if its source never changes) or live (if connected to streaming data), and all downstream operations automatically inherit that behavior.
 
 ## Mechanical sympathy
 
