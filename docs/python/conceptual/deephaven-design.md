@@ -167,6 +167,61 @@ By itself, this sharing capability represents an important optimization that avo
 
 Furthermore, the possible sparsity of the `RowSet`'s row key space allows for greatly reduced data movement within the `RowSet` itself and the `ColumnSource`s it addresses. This is essential for the performance of Deephaven’s incremental sort operation, as well as in many cases when source tables publish changes that are more complex than simple append-only growth; e.g., multiple independently-growing partitions, or tabular representations of key-value store state.
 
+## How operations work
+
+Understanding how table operations execute helps explain why Deephaven is so efficient. This section traces through two common operations to show how `RowSet` and `ColumnSource` sharing work in practice.
+
+### What happens when you call `where`
+
+The [`where`](../reference/table-operations/filter/where.md) operation filters rows based on a condition. Here's what happens internally:
+
+1. **Expression parsing**: The filter condition (e.g., `"Price > 100"`) is parsed and converted into a `WhereFilter` object that can evaluate the condition efficiently.
+
+2. **Snapshot**: The operation captures a consistent snapshot of the parent table's current `RowSet`. For refreshing tables, this ensures the filter sees a stable view of the data.
+
+3. **Evaluation**: The `WhereFilter` evaluates the condition against the parent's `ColumnSource` data, processing rows in [chunks](#chunk-oriented-architecture) for efficiency. Only row keys that satisfy the condition are collected.
+
+4. **Result table creation**: A new table is created with:
+   - A new `RowSet` containing only the matching row keys (a subset of the parent's `RowSet`)
+   - **Shared** `ColumnSource`s — the result table points to the same column data as the parent, with no copying
+
+5. **Listener attachment**: If the parent table is [refreshing](./table-types.md), a listener is attached so the filtered table updates automatically when the parent changes. On each update cycle, only the changed rows are re-evaluated.
+
+**Why this is efficient**: The result table doesn't copy any column data. It simply maintains a smaller `RowSet` that selects which rows from the shared `ColumnSource`s are visible. Multiple `where` filters on the same parent all share the same underlying data.
+
+### What happens when you call `update`
+
+The [`update`](../reference/table-operations/select/update.md) operation adds or replaces columns with computed values. Here's the execution flow:
+
+1. **Formula parsing**: The formula (e.g., `"Total = Price * Quantity"`) is parsed using [JavaParser](https://javaparser.org/). Simple formulas may use pre-compiled implementations; complex formulas trigger dynamic compilation of a new Java class.
+
+2. **Column source creation**: A new `ColumnSource` is created for each derived column. This source computes values on-demand or caches them, depending on the operation variant ([`update`](../reference/table-operations/select/update.md) vs [`update_view`](../reference/table-operations/select/update-view.md)).
+
+3. **Formula evaluation**: For `update`, the formula is evaluated for each row in the `RowSet`, with results stored in the new `ColumnSource`. Data is processed in [chunks](#chunk-oriented-architecture) for efficiency.
+
+4. **Result table creation**: A new table is created with:
+   - **Shared** `RowSet` — the result has exactly the same rows as the parent
+   - **Shared** `ColumnSource`s for pass-through columns
+   - **New** `ColumnSource`(s) for the computed columns
+
+5. **Listener attachment**: For refreshing tables, a listener ensures derived columns are recomputed when source columns change.
+
+**Why this is efficient**: Only the new computed columns require storage. All other columns are shared with the parent, and the `RowSet` is inherited directly.
+
+### Operation pattern summary
+
+Most Deephaven table operations follow this pattern:
+
+| Operation Type | `RowSet` | `ColumnSource`s |
+|---------------|----------|-----------------|
+| **Filtering** (`where`) | New (subset) | Shared |
+| **Column derivation** (`update`, `view`) | Shared | Mixed (shared + new) |
+| **Sorting** (`sort`) | New (redirecting) | Shared (via redirection) |
+| **Joining** (`natural_join`, etc.) | New or shared | Mixed |
+| **Aggregation** (`agg_by`, etc.) | New | New |
+
+This sharing model, combined with [incremental updates](./table-update-model.md) through the [DAG](./dag.md), enables Deephaven to handle complex queries on large, rapidly-changing datasets efficiently.
+
 ## Mechanical sympathy
 
 > “You don’t have to be an engineer to be a racing driver, but you do have to have Mechanical Sympathy.” <br/> _– Jackie Stewart, racing driver_
