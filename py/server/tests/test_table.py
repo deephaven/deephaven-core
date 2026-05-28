@@ -353,8 +353,51 @@ class TableTestCase(BaseTestCase):
         sorted_table2 = self.test_table.sort_descending(order_by="b")
         self.assertEqual(sorted_table, sorted_table2)
 
+    def test_with_order_for_column(self):
+        import jpy
+        _JSortedColumnsAttribute = jpy.get_type(
+            "io.deephaven.engine.table.impl.SortedColumnsAttribute"
+        )
+        _JSortingOrder = jpy.get_type("io.deephaven.engine.table.impl.SortingOrder")
+
+        asc_table = self.test_table.with_order_for_column("a")
+        self.assertEqual(asc_table.size, self.test_table.size)
+        order = _JSortedColumnsAttribute.getOrderForColumn(asc_table.j_table, "a")
+        self.assertEqual(order.get(), _JSortingOrder.Ascending)
+
+        desc_table = self.test_table.with_order_for_column("a", SortDirection.DESCENDING)
+        order = _JSortedColumnsAttribute.getOrderForColumn(desc_table.j_table, "a")
+        self.assertEqual(order.get(), _JSortingOrder.Descending)
+
+        no_order = _JSortedColumnsAttribute.getOrderForColumn(desc_table.j_table, "b")
+        self.assertTrue(no_order.isEmpty())
+
         with self.assertRaises(TypeError):
             sorted_table3 = self.test_table.sort_descending()
+
+    def test_assert_sorted(self):
+        import jpy
+        _JSortedColumnsAttribute = jpy.get_type(
+            "io.deephaven.engine.table.impl.SortedColumnsAttribute"
+        )
+        _JSortingOrder = jpy.get_type("io.deephaven.engine.table.impl.SortingOrder")
+
+        pre_sorted = self.test_table.sort(order_by="a")
+        result = pre_sorted.assert_sorted("a")
+        self.assertEqual(result.size, pre_sorted.size)
+        order = _JSortedColumnsAttribute.getOrderForColumn(result.j_table, "a")
+        self.assertEqual(order.get(), _JSortingOrder.Ascending)
+
+        pre_sorted_desc = self.test_table.sort_descending(order_by="a")
+        result_desc = pre_sorted_desc.assert_sorted("a", SortDirection.DESCENDING)
+        order_desc = _JSortedColumnsAttribute.getOrderForColumn(result_desc.j_table, "a")
+        self.assertEqual(order_desc.get(), _JSortingOrder.Descending)
+
+        with self.assertRaises(DHError):
+            pre_sorted.assert_sorted("a", SortDirection.DESCENDING)
+
+        with self.assertRaises(DHError):
+            self.test_table.assert_sorted("a", description="my_sort_check")
 
     def test_reverse(self):
         reversed_table = self.test_table.reverse()

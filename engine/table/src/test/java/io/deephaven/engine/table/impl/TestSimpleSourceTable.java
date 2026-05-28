@@ -77,6 +77,8 @@ public class TestSimpleSourceTable extends RefreshingTableTestCase {
             {
                 allowing(columnSourceManager).allLocations();
                 will(returnValue(Collections.EMPTY_MAP));
+                allowing(columnSourceManager).includedLocations();
+                will(returnValue(Collections.emptyList()));
                 allowing(columnSourceManager).getTableAttributes(with(any(TableUpdateMode.class)),
                         with(any(TableUpdateMode.class)));
                 will(returnValue(Collections.EMPTY_MAP));
