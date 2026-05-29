@@ -375,10 +375,14 @@ public class RegionedColumnSourceManager
                     // DataIndex.
                     continue;
                 }
+                final DataIndexer dataIndexer = DataIndexer.of(initialRowSet);
+                if (dataIndexer.hasDataIndex(keySources)) {
+                    continue;
+                }
                 final DataIndex mergedIndex = new MergedDataIndex(keyColumnNames, keySources, this);
                 retainedDataIndexes.add(mergedIndex);
                 // Not refreshing, so no need to manage mergedIndex
-                DataIndexer.of(initialRowSet).addDataIndex(mergedIndex);
+                dataIndexer.addDataIndex(mergedIndex);
             }
         }
         return initialRowSet;
