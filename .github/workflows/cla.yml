@@ -14,6 +14,12 @@ on:
   pull_request_target:
     types: [opened,closed,synchronize]
 
+permissions:
+  actions: write
+  contents: write
+  pull-requests: write
+  statuses: write
+
 jobs:
   CLAssistant:
     runs-on: ubuntu-24.04
@@ -24,11 +30,8 @@ jobs:
         uses: cla-assistant/github-action@v2.6.1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PERSONAL_ACCESS_TOKEN : ${{ secrets.CLA_PERSONAL_ACCESS_TOKEN }}
         with:
           path-to-document: 'https://github.com/deephaven/cla/blob/main/CLA.md'
-          remote-organization-name: deephaven
-          remote-repository-name:  cla
           branch: 'main'
           path-to-signatures: 'signatures/version1/cla.json'
           allowlist: dependabot[bot]
