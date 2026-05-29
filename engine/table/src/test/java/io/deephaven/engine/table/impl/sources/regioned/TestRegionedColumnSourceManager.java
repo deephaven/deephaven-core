@@ -230,6 +230,10 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
                 });
                 allowing(tl).hasDataIndex(groupingColumnDefinition.getName());
                 will(returnValue(true));
+                // Validating a registered multi-column MergedDataIndex (via DataIndexer.hasDataIndex during
+                // de-duplication) queries each location for the full key column set.
+                allowing(tl).hasDataIndex(groupingColumnDefinition.getName(), normalColumnDefinition.getName());
+                will(returnValue(true));
             }
         });
         IntStream.range(0, NUM_COLUMNS).forEach(ci -> {
