@@ -9,8 +9,6 @@ package io.deephaven.engine.table.impl.ssms;
 
 import java.lang.reflect.Array;
 
-import gnu.trove.set.hash.THashSet;
-
 import java.util.Objects;
 import io.deephaven.util.compare.ObjectComparisons;
 
@@ -29,6 +27,8 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.mutable.MutableInt;
 import io.deephaven.util.mutable.MutableLong;
+import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
+import it.unimi.dsi.fastutil.objects.ObjectSet;
 
 import java.util.Arrays;
 import java.util.Objects;
@@ -56,8 +56,8 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
 
     // region Deltas
     private transient boolean accumulateDeltas = false;
-    private transient THashSet added;
-    private transient THashSet removed;
+    private transient ObjectSet<Object> added;
+    private transient ObjectSet<Object> removed;
     private transient ObjectVector prevValues;
     // endregion Deltas
 
@@ -2246,7 +2246,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
         }
 
         if (added == null) {
-            added = new THashSet(valuesToInsert.size());
+            added = new ObjectOpenHashSet<>(valuesToInsert.size());
         }
 
         if (removed == null) {
@@ -2275,7 +2275,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
         }
 
         if (removed == null) {
-            removed = new THashSet();
+            removed = new ObjectOpenHashSet<>();
         }
 
         if (added == null || !added.remove(valueRemoved)) {

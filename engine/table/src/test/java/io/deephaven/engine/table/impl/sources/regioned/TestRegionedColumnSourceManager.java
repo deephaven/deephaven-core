@@ -3,8 +3,8 @@
 //
 package io.deephaven.engine.table.impl.sources.regioned;
 
-import gnu.trove.map.TIntIntMap;
-import gnu.trove.map.hash.TIntIntHashMap;
+import it.unimi.dsi.fastutil.ints.Int2IntMap;
+import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 import io.deephaven.base.verify.AssertionFailure;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.ReferenceCountedLivenessNode;
@@ -88,7 +88,7 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
     private TableLocationUpdateSubscriptionBuffer[] subscriptionBuffers;
     private long[] lastSizes;
     private int regionCount;
-    private TIntIntMap locationIndexToRegionIndex;
+    private Int2IntMap locationIndexToRegionIndex;
     private WritableRowSet expectedRowSet;
     private RowSet expectedAddedRowSet;
     private Map<String, WritableRowSet> expectedPartitioningColumnIndex;
@@ -171,7 +171,9 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
         lastSizes = new long[NUM_LOCATIONS];
         Arrays.fill(lastSizes, -1); // Not null size
         regionCount = 0;
-        locationIndexToRegionIndex = new TIntIntHashMap(4, 0.5f, -1, -1);
+        final Int2IntOpenHashMap tmpMap = new Int2IntOpenHashMap(4, 0.5f);
+        tmpMap.defaultReturnValue(-1);
+        locationIndexToRegionIndex = tmpMap;
         expectedRowSet = RowSetFactory.empty().toTracking();
         expectedAddedRowSet = RowSetFactory.empty();
         expectedPartitioningColumnIndex = new LinkedHashMap<>();

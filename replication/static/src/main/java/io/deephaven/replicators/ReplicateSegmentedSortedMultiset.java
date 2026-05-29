@@ -3,8 +3,11 @@
 //
 package io.deephaven.replicators;
 
-import gnu.trove.set.hash.THashSet;
 import io.deephaven.replication.ReplicationUtils;
+import it.unimi.dsi.fastutil.doubles.DoubleOpenCustomHashSet;
+import it.unimi.dsi.fastutil.doubles.DoubleOpenHashSet;
+import it.unimi.dsi.fastutil.floats.FloatOpenCustomHashSet;
+import it.unimi.dsi.fastutil.floats.FloatOpenHashSet;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
@@ -24,8 +27,32 @@ public class ReplicateSegmentedSortedMultiset {
     private static final String TASK = "replicateSegmentedSortedMultiset";
 
     public static void main(String[] args) throws IOException {
-        charToAllButBooleanAndLong(TASK,
+        // Replicate FloatCompareOpenHashSet -> DoubleCompareOpenHashSet
+        floatToAllFloatingPoints(TASK,
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/ssms/FloatCompareOpenHashSet.java");
+        final File doubleCompareHashSetFile = new File(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/ssms/DoubleCompareOpenHashSet.java");
+        List<String> doubleCompareLines = FileUtils.readLines(doubleCompareHashSetFile, Charset.defaultCharset());
+        doubleCompareLines = globalReplacements(doubleCompareLines,
+                "0\\.0f", "0.0d",
+                "0x7fc00000", "0x7ff8000000000000L",
+                // DoubleOpenHashSet's load-factor parameter is float, not double -- keep it float
+                "final int expected, final double f\\)", "final int expected, final float f)");
+        FileUtils.writeLines(doubleCompareHashSetFile, doubleCompareLines);
+
+        final List<String> generatedSsms = charToAllButBooleanAndLong(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/ssms/CharSegmentedSortedMultiset.java");
+
+        // Float/Double SSMs must use FloatComparisons / DoubleComparisons equality in their delta-tracking hash
+        // sets — otherwise -0.0 vs +0.0 (and any two NaN bit patterns) would be treated as distinct values, which
+        // disagrees with the SSM's own leaf-storage equality.
+        for (final String generated : generatedSsms) {
+            if (generated.contains("Float")) {
+                useCompareOpenHashSet(generated, "Float");
+            } else if (generated.contains("Double")) {
+                useCompareOpenHashSet(generated, "Double");
+            }
+        }
 
         insertInstantExtensions(charToLong(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/ssms/CharSegmentedSortedMultiset.java"));
@@ -34,7 +61,7 @@ public class ReplicateSegmentedSortedMultiset {
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/ssms/CharSegmentedSortedMultiset.java");
         fixupObjectSsm(objectSsm, ReplicateSegmentedSortedMultiset::fixupNulls,
                 ReplicateSegmentedSortedMultiset::fixupObjectGeneric,
-                ReplicateSegmentedSortedMultiset::fixupTHashes,
+                ReplicateSegmentedSortedMultiset::fixupObjectHashes,
                 ReplicateSegmentedSortedMultiset::fixupSsmConstructor,
                 ReplicateSegmentedSortedMultiset::fixupObjectCompare,
                 ReplicateSegmentedSortedMultiset::fixupKeyArrayAllocation);
@@ -249,15 +276,38 @@ public class ReplicateSegmentedSortedMultiset {
         return addImport(lines, Array.class);
     }
 
+    /**
+     * Swap the FloatOpenHashSet / DoubleOpenHashSet used by the delta-tracking hash sets in the generated Float and
+     * Double SSMs for our {@code }io.deephaven.engine.table.impl.ssms.FloatCompareOpenHashSet} /
+     * {@code io.deephaven.engine.table.impl.ssms.DoubleCompareOpenHashSet}, so signed-zero and NaN comparisons in the
+     * delta tracker line up with the SSM's leaf-storage equality (FloatComparisons / DoubleComparisons).
+     */
+    private static void useCompareOpenHashSet(final String generatedPath, final String typeName) throws IOException {
+        final File file = new File(generatedPath);
+        List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
+        lines = globalReplacements(lines,
+                "new " + typeName + "OpenHashSet\\(", "new " + typeName + "CompareOpenHashSet(",
+                typeName + "Set added", typeName + "CompareOpenHashSet added",
+                typeName + "Set removed", typeName + "CompareOpenHashSet removed");
+        lines = removeImport(lines, typeName.equals("Float") ? FloatOpenHashSet.class : DoubleOpenHashSet.class);
+        FileUtils.writeLines(file, lines);
+    }
+
     private static List<String> fixupNulls(List<String> lines) {
         lines = globalReplacements(lines, "NULL_OBJECT", "null");
         return removeImport(lines, "\\s*import static.*QueryConstants.*;");
     }
 
-    private static List<String> fixupTHashes(List<String> lines) {
-        lines = removeImport(lines, "\\s*import gnu.trove.*;");
-        lines = addImport(lines, THashSet.class);
-        return globalReplacements(lines, "TObjectHashSet", "THashSet");
+    private static List<String> fixupObjectHashes(List<String> lines) {
+        // charToObject capitalizes the leading C in the package "chars" to "Objects"; fix back to "objects".
+        // Also fixes the leaky toCharArray API that doesn't exist on ObjectCollection.
+        return globalReplacements(lines,
+                "it\\.unimi\\.dsi\\.fastutil\\.Objects\\.", "it.unimi.dsi.fastutil.objects.",
+                "ObjectSet added", "ObjectSet<Object> added",
+                "ObjectSet removed", "ObjectSet<Object> removed",
+                "new ObjectOpenHashSet\\(", "new ObjectOpenHashSet<>(",
+                // ObjectCollection.toArray() returns Object[] already; the typed toCharArray() rename doesn't exist.
+                "\\.toObjectArray\\(", ".toArray(");
     }
 
     private static List<String> fixupSsmConstructor(List<String> lines) {
