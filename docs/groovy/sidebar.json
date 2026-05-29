@@ -877,6 +877,27 @@
                   {
                     "label": "Retrieve logs",
                     "path": "how-to-guides/logs.md"
+                  },
+                  {
+                    "label": "Debugging",
+                    "items": [
+                      {
+                        "label": "Overview",
+                        "path": "how-to-guides/debugging/debugging-landing.md"
+                      },
+                      {
+                        "label": "Docker setup",
+                        "path": "how-to-guides/debugging/docker-setup.md"
+                      },
+                      {
+                        "label": "Source setup",
+                        "path": "how-to-guides/debugging/source-setup.md"
+                      },
+                      {
+                        "label": "Common problems",
+                        "path": "how-to-guides/debugging/common-problems.md"
+                      }
+                    ]
                   }
                 ]
               },
