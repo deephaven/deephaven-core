@@ -359,7 +359,6 @@ public class RegionedColumnSourceManager
             // Use the first location as a proxy for the whole table; since data indexes must be complete over all
             // locations, this is a valid approach.
             final TableLocation firstLocation = includedTableLocations.iterator().next().location;
-            final DataIndexer dataIndexer = DataIndexer.of(initialRowSet);
             for (final String[] keyColumnNames : firstLocation.getDataIndexColumns()) {
                 // Skip adding additional indexes on partitioning columns
                 if (keyColumnNames.length == 1 && partitioningColumnValueSources.containsKey(keyColumnNames[0])) {
@@ -376,6 +375,7 @@ public class RegionedColumnSourceManager
                     // DataIndex.
                     continue;
                 }
+                final DataIndexer dataIndexer = DataIndexer.of(initialRowSet);
                 if (dataIndexer.hasDataIndex(keySources)) {
                     continue;
                 }
