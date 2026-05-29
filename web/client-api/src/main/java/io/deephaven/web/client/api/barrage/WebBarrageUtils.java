@@ -14,7 +14,6 @@ import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
 import io.deephaven.web.client.api.barrage.def.InitialTableDefinition;
 import io.deephaven.web.client.api.barrage.def.InputTableMetadata;
 import io.deephaven.web.client.api.barrage.def.TableAttributesDefinition;
-import io.deephaven.web.client.api.barrage.util.ColumnRestrictionConverter;
 import io.deephaven.web.client.api.barrage.util.ColumnRestrictionRegistry;
 import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.shared.data.*;
@@ -29,6 +28,7 @@ import java.nio.ByteOrder;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.IntFunction;
 
@@ -87,10 +87,17 @@ public class WebBarrageUtils {
      */
     private static InputTableMetadata parseInputTableMetadata(Schema schema, ColumnDefinition[] cols) {
         // Extract the tableMetadata from schema custom metadata
-        final Map<String, String> schemaMetadata =
-                keyValuePairs("deephaven:", schema.customMetadataLength(), schema::customMetadata);
+        String tableMetadataBase64 = null;
+        for (int i = 0; i < schema.customMetadataLength(); i++) {
+            KeyValue pair = schema.customMetadata(i);
+            String key = pair.key();
+            if (key.equals("deephaven:tableMetadata")) {
+                // Found the table metadata, we can stop looking
+                tableMetadataBase64 = pair.value();
+                break;
+            }
+        }
 
-        final String tableMetadataBase64 = schemaMetadata.get("tableMetadata");
         if (tableMetadataBase64 == null || tableMetadataBase64.isEmpty()) {
             return null;
         }
@@ -125,10 +132,9 @@ public class WebBarrageUtils {
                 for (Any restrictionAny : restrictionsList) {
                     // Look up the converter by the full type URL
                     String typeUrl = restrictionAny.getTypeUrl();
-                    ColumnRestrictionConverter converter = ColumnRestrictionRegistry.getConverter(typeUrl);
-                    if (converter != null) {
-                        ColumnRestriction restriction = converter.convert(restrictionAny);
-                        colRestrictions.addRestriction(restriction);
+                    Optional<ColumnRestriction> restriction = ColumnRestrictionRegistry.convert(restrictionAny);
+                    if (restriction.isPresent()) {
+                        colRestrictions.addRestriction(restriction.get());
                     } else {
                         JsLog.warn("No converter registered for restriction type: " + typeUrl);
                     }

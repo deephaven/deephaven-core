@@ -3,14 +3,14 @@
 //
 package io.deephaven.web.client.api;
 
-import com.google.protobuf.Any;
+import com.google.protobuf.Message;
 import com.vertispan.tsdefs.annotations.TsName;
 import io.deephaven.proto.backplane.grpc.DoubleRangeRestriction;
 import io.deephaven.util.annotations.TestUseOnly;
-import io.deephaven.web.client.api.barrage.util.ColumnRestrictionConverterException;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsProperty;
+import jsinterop.base.Any;
 
 /**
  * A {@link ColumnRestriction} that constrains a double column to a closed range {@code [min, max]}. Either bound may be
@@ -28,14 +28,12 @@ public class DoubleRangeColumnRestriction extends ColumnRestriction {
     private final DoubleRangeRestriction restriction;
 
     public DoubleRangeColumnRestriction(DoubleRangeRestriction restriction) {
-        super("DoubleRangeRestriction");
         this.restriction = restriction;
     }
 
-    public static DoubleRangeColumnRestriction fromAny(Any restrictionAny)
-            throws ColumnRestrictionConverterException {
-        return parseFromAny(restrictionAny, "DoubleRangeRestriction",
-                buffer -> new DoubleRangeColumnRestriction(DoubleRangeRestriction.parseFrom(buffer)));
+    @Override
+    protected Message getRestriction() {
+        return restriction;
     }
 
     /**
@@ -63,7 +61,7 @@ public class DoubleRangeColumnRestriction extends ColumnRestriction {
     @Override
     @JsMethod
     @JsNullable
-    public String validate(jsinterop.base.Any value) {
+    public String validate(@JsNullable Any value) {
         if (value == null) {
             return null;
         }

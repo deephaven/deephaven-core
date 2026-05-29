@@ -5,6 +5,8 @@ package io.deephaven.web.client.api;
 
 import io.deephaven.proto.backplane.grpc.DoubleRangeRestriction;
 import io.deephaven.proto.backplane.grpc.IntegerRangeRestriction;
+import io.deephaven.proto.backplane.grpc.NonEmptyRestriction;
+import io.deephaven.proto.backplane.grpc.StringListRestriction;
 import org.junit.Test;
 
 import java.util.List;
@@ -120,7 +122,7 @@ public class ColumnRestrictionValidateTest {
 
     @Test
     public void testNotNull_nullIsInvalid() {
-        NotNullColumnRestriction r = new NotNullColumnRestriction();
+        NotNullColumnRestriction r = new NotNullColumnRestriction(null);
         assertNotNull(r.validate(null));
     }
 
@@ -130,25 +132,25 @@ public class ColumnRestrictionValidateTest {
 
     @Test
     public void testNonEmpty_nullIsValid() {
-        NonEmptyColumnRestriction r = new NonEmptyColumnRestriction();
+        NonEmptyColumnRestriction r = new NonEmptyColumnRestriction(NonEmptyRestriction.getDefaultInstance());
         assertNull(r.validate(null));
     }
 
     @Test
     public void testNonEmpty_emptyStringIsInvalid() {
-        NonEmptyColumnRestriction r = new NonEmptyColumnRestriction();
+        NonEmptyColumnRestriction r = new NonEmptyColumnRestriction(NonEmptyRestriction.getDefaultInstance());
         assertNotNull(r.validateImpl(""));
     }
 
     @Test
     public void testNonEmpty_nonEmptyStringIsValid() {
-        NonEmptyColumnRestriction r = new NonEmptyColumnRestriction();
+        NonEmptyColumnRestriction r = new NonEmptyColumnRestriction(NonEmptyRestriction.getDefaultInstance());
         assertNull(r.validateImpl("hello"));
     }
 
     @Test
     public void testNonEmpty_nonStringIsCoercedViaToString() {
-        NonEmptyColumnRestriction r = new NonEmptyColumnRestriction();
+        NonEmptyColumnRestriction r = new NonEmptyColumnRestriction(NonEmptyRestriction.getDefaultInstance());
         // Non-string types are coerced via toString() rather than throwing
         assertNull(r.validateImpl("42"));
         assertNull(r.validateImpl("true"));
@@ -160,13 +162,17 @@ public class ColumnRestrictionValidateTest {
 
     @Test
     public void testStringList_nullValueIsValid() {
-        StringListColumnRestriction r = new StringListColumnRestriction(List.of("a", "b", "c"));
+        StringListColumnRestriction r = new StringListColumnRestriction(StringListRestriction.newBuilder()
+                .addAllAllowedValues(List.of("a", "b", "c"))
+                .build());
         assertNull(r.validate(null));
     }
 
     @Test
     public void testStringList_allowedValueIsValid() {
-        StringListColumnRestriction r = new StringListColumnRestriction(List.of("foo", "bar", "baz"));
+        StringListColumnRestriction r = new StringListColumnRestriction(StringListRestriction.newBuilder()
+                .addAllAllowedValues(List.of("foo", "bar", "baz"))
+                .build());
         assertNull(r.validateImpl("foo"));
         assertNull(r.validateImpl("bar"));
         assertNull(r.validateImpl("baz"));
@@ -174,14 +180,18 @@ public class ColumnRestrictionValidateTest {
 
     @Test
     public void testStringList_disallowedValueIsInvalid() {
-        StringListColumnRestriction r = new StringListColumnRestriction(List.of("foo", "bar"));
+        StringListColumnRestriction r = new StringListColumnRestriction(StringListRestriction.newBuilder()
+                .addAllAllowedValues(List.of("foo", "bar"))
+                .build());
         assertNotNull(r.validateImpl("qux"));
         assertNotNull(r.validateImpl(""));
     }
 
     @Test
     public void testStringList_isCaseSensitive() {
-        StringListColumnRestriction r = new StringListColumnRestriction(List.of("Foo"));
+        StringListColumnRestriction r = new StringListColumnRestriction(StringListRestriction.newBuilder()
+                .addAllAllowedValues(List.of("Foo"))
+                .build());
         assertNotNull(r.validateImpl("foo"));
         assertNotNull(r.validateImpl("FOO"));
         assertNull(r.validateImpl("Foo"));
@@ -189,7 +199,8 @@ public class ColumnRestrictionValidateTest {
 
     @Test
     public void testStringList_emptyListDisallowsEverything() {
-        StringListColumnRestriction r = new StringListColumnRestriction(List.of());
+        StringListColumnRestriction r = new StringListColumnRestriction(StringListRestriction.newBuilder()
+                .build());
         assertNotNull(r.validateImpl("anything"));
     }
 

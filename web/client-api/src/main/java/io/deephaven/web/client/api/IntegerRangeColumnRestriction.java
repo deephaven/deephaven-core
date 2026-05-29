@@ -3,14 +3,14 @@
 //
 package io.deephaven.web.client.api;
 
-import com.google.protobuf.Any;
+import com.google.protobuf.Message;
 import com.vertispan.tsdefs.annotations.TsName;
 import io.deephaven.proto.backplane.grpc.IntegerRangeRestriction;
 import io.deephaven.util.annotations.TestUseOnly;
-import io.deephaven.web.client.api.barrage.util.ColumnRestrictionConverterException;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsProperty;
+import jsinterop.base.Any;
 
 /**
  * A {@link ColumnRestriction} that constrains an integer column to a closed range {@code [min, max]}. Either bound may
@@ -28,14 +28,12 @@ public class IntegerRangeColumnRestriction extends ColumnRestriction {
     private final IntegerRangeRestriction restriction;
 
     public IntegerRangeColumnRestriction(IntegerRangeRestriction restriction) {
-        super("IntegerRangeRestriction");
         this.restriction = restriction;
     }
 
-    public static IntegerRangeColumnRestriction fromAny(Any restrictionAny)
-            throws ColumnRestrictionConverterException {
-        return parseFromAny(restrictionAny, "IntegerRangeRestriction",
-                buffer -> new IntegerRangeColumnRestriction(IntegerRangeRestriction.parseFrom(buffer)));
+    @Override
+    protected Message getRestriction() {
+        return restriction;
     }
 
     /**
@@ -63,7 +61,7 @@ public class IntegerRangeColumnRestriction extends ColumnRestriction {
     @Override
     @JsMethod
     @JsNullable
-    public String validate(jsinterop.base.Any value) {
+    public String validate(@JsNullable Any value) {
         if (value == null) {
             return null;
         }

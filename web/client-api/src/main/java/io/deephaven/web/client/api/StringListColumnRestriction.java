@@ -3,17 +3,15 @@
 //
 package io.deephaven.web.client.api;
 
-import com.google.protobuf.Any;
+import com.google.protobuf.Message;
 import com.vertispan.tsdefs.annotations.TsName;
 import elemental2.core.JsArray;
 import io.deephaven.proto.backplane.grpc.StringListRestriction;
 import io.deephaven.util.annotations.TestUseOnly;
-import io.deephaven.web.client.api.barrage.util.ColumnRestrictionConverterException;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsProperty;
-
-import java.util.List;
+import jsinterop.base.Any;
 
 /**
  * A {@link ColumnRestriction} that constrains a string column to one of a fixed set of allowed values.
@@ -29,18 +27,15 @@ public class StringListColumnRestriction extends ColumnRestriction {
 
     private static final int TRUNCATED_LIST_LIMIT = 5;
 
-    private final List<String> allowedValues;
+    private final StringListRestriction restriction;
 
-    public StringListColumnRestriction(List<String> allowedValues) {
-        super("StringListRestriction");
-        this.allowedValues = allowedValues;
+    public StringListColumnRestriction(StringListRestriction restriction) {
+        this.restriction = restriction;
     }
 
-    public static StringListColumnRestriction fromAny(Any restrictionAny)
-            throws ColumnRestrictionConverterException {
-        return parseFromAny(restrictionAny, "StringListRestriction",
-                buffer -> new StringListColumnRestriction(
-                        StringListRestriction.parseFrom(buffer).getAllowedValuesList()));
+    @Override
+    protected Message getRestriction() {
+        return restriction;
     }
 
     /**
@@ -50,13 +45,13 @@ public class StringListColumnRestriction extends ColumnRestriction {
      */
     @JsProperty
     public JsArray<String> getAllowedValues() {
-        return JsArray.of(allowedValues.toArray(new String[0]));
+        return JsArray.of(restriction.getAllowedValuesList().toArray(new String[0]));
     }
 
     @Override
     @JsMethod
     @JsNullable
-    public String validate(jsinterop.base.Any value) {
+    public String validate(@JsNullable Any value) {
         if (value == null) {
             return null;
         }
@@ -65,17 +60,17 @@ public class StringListColumnRestriction extends ColumnRestriction {
 
     @JsNullable
     String validateImpl(String str) {
-        if (allowedValues.contains(str)) {
+        if (restriction.getAllowedValuesList().contains(str)) {
             return null;
         }
         return "Value '" + str + "' is not in the allowed list: " + truncatedList();
     }
 
     private String truncatedList() {
-        if (allowedValues.size() <= TRUNCATED_LIST_LIMIT) {
-            return String.join(", ", allowedValues);
+        if (restriction.getAllowedValuesCount() <= TRUNCATED_LIST_LIMIT) {
+            return String.join(", ", restriction.getAllowedValuesList());
         }
-        return String.join(", ", allowedValues.subList(0, TRUNCATED_LIST_LIMIT)) + ", ...";
+        return String.join(", ", restriction.getAllowedValuesList().subList(0, TRUNCATED_LIST_LIMIT)) + ", ...";
     }
 
     @Override

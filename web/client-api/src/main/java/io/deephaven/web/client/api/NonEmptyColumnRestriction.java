@@ -3,13 +3,13 @@
 //
 package io.deephaven.web.client.api;
 
-import com.google.protobuf.Any;
+import com.google.protobuf.Message;
 import com.vertispan.tsdefs.annotations.TsName;
 import io.deephaven.proto.backplane.grpc.NonEmptyRestriction;
 import io.deephaven.util.annotations.TestUseOnly;
-import io.deephaven.web.client.api.barrage.util.ColumnRestrictionConverterException;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsNullable;
+import jsinterop.base.Any;
 
 /**
  * A {@link ColumnRestriction} that requires a string column value to be non-empty.
@@ -23,23 +23,18 @@ import jsinterop.annotations.JsNullable;
 @TsName(namespace = "dh")
 public class NonEmptyColumnRestriction extends ColumnRestriction {
 
-    public NonEmptyColumnRestriction() {
-        super("NonEmptyRestriction");
+    public NonEmptyColumnRestriction(NonEmptyRestriction ignored) {
     }
 
-    public static NonEmptyColumnRestriction fromAny(Any restrictionAny)
-            throws ColumnRestrictionConverterException {
-        return parseFromAny(restrictionAny, "NonEmptyRestriction",
-                buffer -> {
-                    NonEmptyRestriction.parseFrom(buffer);
-                    return new NonEmptyColumnRestriction();
-                });
+    @Override
+    protected Message getRestriction() {
+        return NonEmptyRestriction.getDefaultInstance();
     }
 
     @Override
     @JsMethod
     @JsNullable
-    public String validate(jsinterop.base.Any value) {
+    public String validate(@JsNullable Any value) {
         if (value == null) {
             return null;
         }

@@ -3,18 +3,16 @@
 //
 package io.deephaven.web.client.api;
 
-import com.google.protobuf.Any;
+import com.google.protobuf.Message;
 import com.vertispan.tsdefs.annotations.TsName;
-import io.deephaven.web.client.api.barrage.util.ColumnRestrictionConverterException;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsProperty;
-
-import java.nio.ByteBuffer;
+import jsinterop.base.Any;
 
 /**
  * Abstract base class representing a restriction on an input table column. Each restriction has a {@code type} string
- * identifying what kind of restriction it is, and a {@link #validate(jsinterop.base.Any)} method for client-side
+ * identifying what kind of restriction it is, and a {@link #validate(Any)} method for client-side
  * validation.
  *
  * <p>
@@ -29,30 +27,12 @@ import java.nio.ByteBuffer;
  *
  * <p>
  * Custom restriction types can be registered via {@code ColumnRestrictionRegistry.register}. The converter must return
- * a concrete subclass of {@code ColumnRestriction} that overrides {@link #validate(jsinterop.base.Any)} as needed.
+ * a concrete subclass of {@code ColumnRestriction} that overrides {@link #validate(Any)} as needed.
  */
 @TsName(namespace = "dh")
 public abstract class ColumnRestriction {
 
-    @FunctionalInterface
-    public interface BufferParser<T extends ColumnRestriction> {
-        T parse(ByteBuffer buffer) throws Exception;
-    }
-
-    protected static <T extends ColumnRestriction> T parseFromAny(Any restrictionAny, String type,
-            BufferParser<T> parser) throws ColumnRestrictionConverterException {
-        try {
-            return parser.parse(restrictionAny.getValue().asReadOnlyByteBuffer());
-        } catch (Exception e) {
-            throw new ColumnRestrictionConverterException("Failed to convert " + type, e);
-        }
-    }
-
-    private final String type;
-
-    protected ColumnRestriction(String type) {
-        this.type = type;
-    }
+    protected abstract Message getRestriction();
 
     /**
      * The type of restriction (e.g., {@code "IntegerRangeRestriction"}, {@code "StringListRestriction"}).
@@ -61,7 +41,7 @@ public abstract class ColumnRestriction {
      */
     @JsProperty
     public String getType() {
-        return type;
+        return getRestriction().getDescriptorForType().getFullName();
     }
 
     /**
@@ -72,10 +52,10 @@ public abstract class ColumnRestriction {
      */
     @JsMethod
     @JsNullable
-    public abstract String validate(jsinterop.base.Any value);
+    public abstract String validate(@JsNullable Any value);
 
     @Override
     public String toString() {
-        return "ColumnRestriction{type='" + type + "'}";
+        return "ColumnRestriction{type='" + getType() + "'}";
     }
 }
