@@ -95,7 +95,7 @@ public class Column {
         this.isInputTableKeyColumn = inputTableKeyColumn;
         this.isInputTableValueColumn = inputTableValueColumn;
         this.isSortable = isSortable;
-        this.columnRestrictions = columnRestrictions;
+        this.columnRestrictions = columnRestrictions != null ? columnRestrictions : new JsArray<>();
     }
 
     /**
@@ -225,16 +225,15 @@ public class Column {
     }
 
     /**
-     * Returns the column restrictions for input table columns, or null if this is not an input table column or if no
-     * restrictions are defined. The restrictions are implementation-specific constraints that the server enforces on
-     * column values.
+     * Returns the column restrictions for input table columns, or an empty array if this is not an input table column
+     * or if no restrictions are defined. The restrictions are implementation-specific constraints that the server
+     * enforces on column values. The returned array is a copy and may be safely modified by the caller.
      *
-     * @return Array of column restrictions, or null if none are defined
+     * @return Array of column restrictions, empty if none are defined
      */
     @JsProperty
-    @JsNullable
     public JsArray<ColumnRestriction> getColumnRestrictions() {
-        return columnRestrictions;
+        return columnRestrictions.slice();
     }
 
     /**
