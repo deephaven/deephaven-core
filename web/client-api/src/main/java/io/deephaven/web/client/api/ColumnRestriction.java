@@ -3,7 +3,6 @@
 //
 package io.deephaven.web.client.api;
 
-import com.google.protobuf.Message;
 import com.vertispan.tsdefs.annotations.TsName;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsNullable;
@@ -12,17 +11,16 @@ import jsinterop.base.Any;
 
 /**
  * Abstract base class representing a restriction on an input table column. Each restriction has a {@code type} string
- * identifying what kind of restriction it is, and a {@link #validate(Any)} method for client-side
- * validation.
+ * identifying what kind of restriction it is, and a {@link #validate(Any)} method for client-side validation.
  *
  * <p>
  * Built-in restriction types are exposed as typed subclasses with strongly-typed fields:
  * <ul>
- * <li>{@link IntegerRangeColumnRestriction} ({@code "IntegerRangeRestriction"})</li>
- * <li>{@link DoubleRangeColumnRestriction} ({@code "DoubleRangeRestriction"})</li>
- * <li>{@link NotNullColumnRestriction} ({@code "NotNullRestriction"})</li>
- * <li>{@link NonEmptyColumnRestriction} ({@code "NonEmptyRestriction"})</li>
- * <li>{@link StringListColumnRestriction} ({@code "StringListRestriction"})</li>
+ * <li>{@link IntegerRangeColumnRestriction} ({@code "io.deephaven.proto.backplane.grpc.IntegerRangeRestriction"})</li>
+ * <li>{@link DoubleRangeColumnRestriction} ({@code "io.deephaven.proto.backplane.grpc.DoubleRangeRestriction"})</li>
+ * <li>{@link NotNullColumnRestriction} ({@code "io.deephaven.proto.backplane.grpc.NotNullRestriction"})</li>
+ * <li>{@link NonEmptyColumnRestriction} ({@code "io.deephaven.proto.backplane.grpc.NonEmptyRestriction"})</li>
+ * <li>{@link StringListColumnRestriction} ({@code "io.deephaven.proto.backplane.grpc.StringListRestriction"})</li>
  * </ul>
  *
  * <p>
@@ -32,16 +30,21 @@ import jsinterop.base.Any;
 @TsName(namespace = "dh")
 public abstract class ColumnRestriction {
 
-    protected abstract Message getRestriction();
+    private final String type;
+
+    protected ColumnRestriction(String type) {
+        this.type = type;
+    }
 
     /**
-     * The type of restriction (e.g., {@code "IntegerRangeRestriction"}, {@code "StringListRestriction"}).
+     * The fully-qualified protobuf type name of this restriction (e.g.,
+     * {@code "io.deephaven.proto.backplane.grpc.IntegerRangeRestriction"}).
      *
      * @return The restriction type name
      */
     @JsProperty
     public String getType() {
-        return getRestriction().getDescriptorForType().getFullName();
+        return type;
     }
 
     /**
@@ -56,6 +59,6 @@ public abstract class ColumnRestriction {
 
     @Override
     public String toString() {
-        return "ColumnRestriction{type='" + getType() + "'}";
+        return "ColumnRestriction{type='" + type + "'}";
     }
 }

@@ -3,7 +3,6 @@
 //
 package io.deephaven.web.client.api;
 
-import com.google.protobuf.Message;
 import com.vertispan.tsdefs.annotations.TsName;
 import elemental2.core.JsArray;
 import io.deephaven.proto.backplane.grpc.StringListRestriction;
@@ -30,13 +29,10 @@ public class StringListColumnRestriction extends ColumnRestriction {
     private final StringListRestriction restriction;
 
     public StringListColumnRestriction(StringListRestriction restriction) {
+        super("io.deephaven.proto.backplane.grpc.StringListRestriction");
         this.restriction = restriction;
     }
 
-    @Override
-    protected Message getRestriction() {
-        return restriction;
-    }
 
     /**
      * The list of allowed string values for this column.

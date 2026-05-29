@@ -3,7 +3,6 @@
 //
 package io.deephaven.web.client.api;
 
-import com.google.protobuf.Message;
 import com.vertispan.tsdefs.annotations.TsName;
 import io.deephaven.proto.backplane.grpc.NonEmptyRestriction;
 import io.deephaven.util.annotations.TestUseOnly;
@@ -24,11 +23,7 @@ import jsinterop.base.Any;
 public class NonEmptyColumnRestriction extends ColumnRestriction {
 
     public NonEmptyColumnRestriction(NonEmptyRestriction ignored) {
-    }
-
-    @Override
-    protected Message getRestriction() {
-        return NonEmptyRestriction.getDefaultInstance();
+        super("io.deephaven.proto.backplane.grpc.NonEmptyRestriction");
     }
 
     @Override

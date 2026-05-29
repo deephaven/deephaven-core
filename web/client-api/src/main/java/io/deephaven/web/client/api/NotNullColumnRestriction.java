@@ -3,7 +3,6 @@
 //
 package io.deephaven.web.client.api;
 
-import com.google.protobuf.Message;
 import com.vertispan.tsdefs.annotations.TsName;
 import io.deephaven.proto.backplane.grpc.NotNullRestriction;
 import io.deephaven.util.annotations.TestUseOnly;
@@ -23,11 +22,7 @@ import jsinterop.annotations.JsNullable;
 public class NotNullColumnRestriction extends ColumnRestriction {
 
     public NotNullColumnRestriction(NotNullRestriction ignored) {
-    }
-
-    @Override
-    protected Message getRestriction() {
-        return NotNullRestriction.getDefaultInstance();
+        super("io.deephaven.proto.backplane.grpc.NotNullRestriction");
     }
 
     @Override

@@ -3,7 +3,6 @@
 //
 package io.deephaven.web.client.api;
 
-import com.google.protobuf.Message;
 import com.vertispan.tsdefs.annotations.TsName;
 import io.deephaven.proto.backplane.grpc.IntegerRangeRestriction;
 import io.deephaven.util.annotations.TestUseOnly;
@@ -28,13 +27,10 @@ public class IntegerRangeColumnRestriction extends ColumnRestriction {
     private final IntegerRangeRestriction restriction;
 
     public IntegerRangeColumnRestriction(IntegerRangeRestriction restriction) {
+        super("io.deephaven.proto.backplane.grpc.IntegerRangeRestriction");
         this.restriction = restriction;
     }
 
-    @Override
-    protected Message getRestriction() {
-        return restriction;
-    }
 
     /**
      * The inclusive minimum value allowed, or {@code null} if the range is unbounded below.
