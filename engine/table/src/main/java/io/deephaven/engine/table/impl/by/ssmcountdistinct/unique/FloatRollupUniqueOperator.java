@@ -353,10 +353,10 @@ public class FloatRollupUniqueOperator implements IterativeChunkedAggregationOpe
 
     /**
      * Add a destination's compacted distinct unique constituent values to its multiset (held in {@code count} /
-     * {@code ssmHolder}) in a single bulk operation. {@code values} / {@code counts} hold the first {@code distinctCount}
-     * distinct values and their occurrence counts, transitioning empty -> unique -> non-unique (allocating an SSM) as a
-     * second distinct value appears. {@link #finalizeState} writes the resulting encoding to {@code singletonCount}
-     * afterward.
+     * {@code ssmHolder}) in a single bulk operation. {@code values} / {@code counts} hold the first
+     * {@code distinctCount} distinct values and their occurrence counts, transitioning empty -> unique -> non-unique
+     * (allocating an SSM) as a second distinct value appears. {@link #finalizeState} writes the resulting encoding to
+     * {@code singletonCount} afterward.
      */
     private void applyAdds(long destination, WritableFloatChunk<? extends Values> values, int distinctCount,
             WritableIntChunk<ChunkLengths> counts, MutableLong count,
@@ -413,10 +413,10 @@ public class FloatRollupUniqueOperator implements IterativeChunkedAggregationOpe
 
     /**
      * Remove a destination's compacted distinct unique constituent values from its multiset (held in {@code count} /
-     * {@code ssmHolder}) in a single bulk operation. {@code values} / {@code counts} hold the first {@code distinctCount}
-     * distinct values and their occurrence counts, collapsing a non-unique SSM back to a unique value (or empty) as its
-     * cardinality drops. The values must currently be present. {@link #finalizeState} writes the resulting encoding to
-     * {@code singletonCount} afterward.
+     * {@code ssmHolder}) in a single bulk operation. {@code values} / {@code counts} hold the first
+     * {@code distinctCount} distinct values and their occurrence counts, collapsing a non-unique SSM back to a unique
+     * value (or empty) as its cardinality drops. The values must currently be present. {@link #finalizeState} writes
+     * the resulting encoding to {@code singletonCount} afterward.
      */
     private void applyRemoves(long destination, WritableFloatChunk<? extends Values> values, int distinctCount,
             WritableIntChunk<ChunkLengths> counts, SegmentedSortedMultiSet.RemoveContext removeContext,

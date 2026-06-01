@@ -215,6 +215,8 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
         }
         maybeAccumulateAddition(value);
         if (leafSz < leafSize) {
+            // value is strictly below this leaf's maximum (larger values route to a later leaf, equal ones merge
+            // above), so it lands before the last element and the leaf max -- and its directory entry -- is unchanged
             System.arraycopy(leafValue, ip, leafValue, ip + 1, leafSz - ip);
             System.arraycopy(leafCount, ip, leafCount, ip + 1, leafSz - ip);
             leafValue[ip] = value;
@@ -222,9 +224,6 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
             leafSizes[leaf] = leafSz + 1;
             size++;
             totalSize += count;
-            if (ip == leafSz && leaf < this.leafCount - 1) {
-                updateDirectory(leaf);
-            }
             return true;
         }
         splitLeafForInsert(leaf, ip, value, count);

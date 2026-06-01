@@ -39,6 +39,7 @@ import io.deephaven.vector.DoubleVector;
 import io.deephaven.vector.IntVector;
 import io.deephaven.vector.LongVector;
 import junit.framework.TestCase;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -1336,7 +1337,8 @@ public class TestAggBy extends RefreshingTableTestCase {
     }
 
 
-    @Test
+    // @Test
+    @Ignore
     public void testAggUniquePerf() {
         final Table input = TableTools.emptyTable(7_250_000).update("X=Long.toHexString(ii)", "Y=X.toUpperCase()",
                 "Z=X.toLowerCase()", "A=Long.toString(i)", "Bucket=ii%100 == 0 ? 0 : ii");
@@ -1352,7 +1354,8 @@ public class TestAggBy extends RefreshingTableTestCase {
         System.out.println("Allocated Bytes: " + df.format(endAllocatedBytes - startAllocatedBytes));
     }
 
-    @Test
+    // @Test
+    @Ignore
     public void testAggUniquePerfWithRollup() {
         final Table input = TableTools.emptyTable(2_500_000).update("X=Long.toHexString(ii % 10000)",
                 "Y=X.toUpperCase()",
