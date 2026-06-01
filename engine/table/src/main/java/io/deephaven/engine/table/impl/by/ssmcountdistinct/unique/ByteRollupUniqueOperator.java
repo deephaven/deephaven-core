@@ -251,7 +251,7 @@ public class ByteRollupUniqueOperator implements IterativeChunkedAggregationOper
     // region State Machine
     /**
      * Add one occurrence of {@code value} (one unique constituent holding it) to the destination's multiset,
-     * transitioning empty â unique â non-unique (allocating an SSM) as a second distinct value arrives.
+     * transitioning empty -> unique -> non-unique (allocating an SSM) as a second distinct value arrives.
      */
     private void addValueToMultiset(long destination, byte value) {
         final long mc = internalSingletonCount.getUnsafe(destination);
