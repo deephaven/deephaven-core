@@ -7,18 +7,14 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.by.ssmcountdistinct.unique;
 
-import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.rowset.WritableRowSet;
-import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.table.TableUpdate;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.impl.by.RollupConstants;
-import io.deephaven.engine.updategraph.UpdateCommitter;
 import io.deephaven.engine.table.impl.by.IterativeChunkedAggregationOperator;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.BucketSsmDistinctContext;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.FloatSsmBackedSource;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.SsmDistinctContext;
 import io.deephaven.engine.table.impl.sources.FloatArraySource;
+import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.ChunkLengths;
@@ -29,6 +25,7 @@ import io.deephaven.engine.table.impl.ssms.FloatSegmentedSortedMultiset;
 import io.deephaven.engine.table.impl.ssms.SegmentedSortedMultiSet;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.compactmodifications.FloatCompactModifications;
 import io.deephaven.engine.table.impl.util.compact.FloatCompactKernel;
+import io.deephaven.util.compare.FloatComparisons;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;
@@ -36,9 +33,19 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Supplier;
 
+import static io.deephaven.util.QueryConstants.NULL_LONG;
+
 /**
  * This operator computes the single unique value of a particular aggregated state. If there are no values at all the
  * 'no value key' is used. If there are more than one values for the state, the 'non unique key' is used.
+ *
+ * <p>
+ * A state holding exactly one distinct value is stored without a {@link FloatSegmentedSortedMultiset SSM}: the value
+ * lives in {@code internalResult} and its multiplicity in {@code singletonCount}. {@code singletonCount} encodes the
+ * state: {@code NULL_LONG} or {@code 0} means empty, {@code > 0} means the single value in {@code internalResult} is
+ * present that many times, and {@code -1} means the state holds two or more distinct values and an SSM in {@code ssms}
+ * holds them. An SSM is created only when a state actually becomes non-unique, and is discarded when removals collapse
+ * it back to a single distinct value (or empty).
  */
 public class FloatChunkedUniqueOperator implements IterativeChunkedAggregationOperator {
     private final String name;
@@ -46,11 +53,10 @@ public class FloatChunkedUniqueOperator implements IterativeChunkedAggregationOp
     private final Supplier<SegmentedSortedMultiSet.RemoveContext> removeContextFactory;
     private final boolean countNullNaN;
     private final boolean exposeInternal;
-    private WritableRowSet touchedStates;
-    private UpdateCommitter<FloatChunkedUniqueOperator> prevFlusher = null;
 
     private final FloatSsmBackedSource ssms;
     private final FloatArraySource internalResult;
+    private final LongArraySource singletonCount;
     private final ColumnSource<?> externalResult;
     private final float onlyNullsSentinel;
     private final float nonUniqueSentinel;
@@ -71,6 +77,7 @@ public class FloatChunkedUniqueOperator implements IterativeChunkedAggregationOp
         // region ResultCreation
         this.internalResult = new FloatArraySource();
         // endregion ResultCreation
+        this.singletonCount = new LongArraySource();
         // region ResultAssignment
         this.externalResult = internalResult;
         // endregion ResultAssignment
@@ -104,16 +111,17 @@ public class FloatChunkedUniqueOperator implements IterativeChunkedAggregationOp
         final WritableFloatChunk<? extends Values> valueCopy = context.valueCopy.asWritableFloatChunk();
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int runLength = context.lengthCopy.get(ii);
+            final int startPosition = startPositions.get(ii);
+            final long destination = destinations.get(startPosition);
             if (runLength == 0) {
+                stateModified.set(ii, false);
                 continue;
             }
 
-            final int startPosition = startPositions.get(ii);
-            final long destination = destinations.get(startPosition);
-
-            final FloatSegmentedSortedMultiset ssm = ssmForSlot(destination);
-            ssm.insert(valueCopy, context.counts, startPosition, runLength);
-            stateModified.set(ii, setResult(ssm, destination));
+            final long priorState = singletonCount.getUnsafe(destination);
+            final float priorValue = internalResult.getUnsafe(destination);
+            addToState(destination, valueCopy, context.counts, startPosition, runLength);
+            stateModified.set(ii, stateChanged(destination, priorState, priorValue));
         }
     }
 
@@ -127,19 +135,17 @@ public class FloatChunkedUniqueOperator implements IterativeChunkedAggregationOp
         final WritableFloatChunk<? extends Values> valueCopy = context.valueCopy.asWritableFloatChunk();
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int runLength = context.lengthCopy.get(ii);
-            if (runLength == 0) {
-                continue;
-            }
             final int startPosition = startPositions.get(ii);
             final long destination = destinations.get(startPosition);
-
-            final FloatSegmentedSortedMultiset ssm = ssmForSlot(destination);
-            ssm.remove(removeContext, valueCopy, context.counts, startPosition, runLength);
-            if (ssm.isEmpty()) {
-                clearSsm(destination);
+            if (runLength == 0) {
+                stateModified.set(ii, false);
+                continue;
             }
 
-            stateModified.set(ii, setResult(ssm, destination));
+            final long priorState = singletonCount.getUnsafe(destination);
+            final float priorValue = internalResult.getUnsafe(destination);
+            removeFromState(destination, removeContext, valueCopy, context.counts, startPosition, runLength);
+            stateModified.set(ii, stateChanged(destination, priorState, priorValue));
         }
     }
 
@@ -163,29 +169,25 @@ public class FloatChunkedUniqueOperator implements IterativeChunkedAggregationOp
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
             final long destination = destinations.get(startPosition);
-            final FloatSegmentedSortedMultiset ssm = ssmForSlot(destination);
 
             final int runLength = length.get(ii);
-            if (runLength != 0) {
-                // reduce the bucket's modify to its net effect: net removals compacted into preValueCopy and net
-                // additions into postValueCopy, each beginning at startPosition, with the unchanged overlap cancelled
-                FloatCompactModifications.compactAndCountModifications(preValueCopy, context.counts,
-                        postValueCopy, context.postCounts, startPosition, runLength, startPosition, runLength,
-                        countNullNaN, countNullNaN, context.removedSize, context.addedSize);
-                final int removed = context.removedSize.get();
-                if (removed > 0) {
-                    ssm.remove(removeContext, preValueCopy, context.counts, startPosition, removed);
-                }
-                final int added = context.addedSize.get();
-                if (added > 0) {
-                    ssm.insert(postValueCopy, context.postCounts, startPosition, added);
-                }
-                if (ssm.isEmpty()) {
-                    clearSsm(destination);
-                }
+            if (runLength == 0) {
+                stateModified.set(ii, false);
+                continue;
             }
 
-            stateModified.set(ii, setResult(ssm, destination));
+            // reduce the bucket's modify to its net effect: net removals in preValueCopy, net additions in
+            // postValueCopy, with the unchanged overlap cancelled
+            FloatCompactModifications.compactAndCountModifications(preValueCopy, context.counts,
+                    postValueCopy, context.postCounts, startPosition, runLength, startPosition, runLength,
+                    countNullNaN, countNullNaN, context.removedSize, context.addedSize);
+
+            final long priorState = singletonCount.getUnsafe(destination);
+            final float priorValue = internalResult.getUnsafe(destination);
+            modifyState(destination, removeContext, preValueCopy, context.counts, startPosition,
+                    context.removedSize.get(), postValueCopy, context.postCounts, startPosition,
+                    context.addedSize.get());
+            stateModified.set(ii, stateChanged(destination, priorState, priorValue));
         }
     }
     // endregion
@@ -224,11 +226,14 @@ public class FloatChunkedUniqueOperator implements IterativeChunkedAggregationOp
     public boolean addChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> values,
             LongChunk<? extends RowKeys> inputRowKeys, long destination) {
         final SsmDistinctContext context = getAndUpdateContext(values, singletonContext);
-        final FloatSegmentedSortedMultiset ssm = ssmForSlot(destination);
-        if (context.valueCopy.size() > 0) {
-            ssm.insert(context.valueCopy, context.counts);
+        if (context.valueCopy.size() == 0) {
+            return false;
         }
-        return setResult(ssm, destination);
+        final long priorState = singletonCount.getUnsafe(destination);
+        final float priorValue = internalResult.getUnsafe(destination);
+        addToState(destination, (WritableFloatChunk<? extends Values>) context.valueCopy, context.counts, 0,
+                context.valueCopy.size());
+        return stateChanged(destination, priorState, priorValue);
     }
 
     @Override
@@ -238,14 +243,11 @@ public class FloatChunkedUniqueOperator implements IterativeChunkedAggregationOp
         if (context.valueCopy.size() == 0) {
             return false;
         }
-
-        final FloatSegmentedSortedMultiset ssm = ssmForSlot(destination);
-        ssm.remove(context.removeContext, context.valueCopy, context.counts);
-        if (ssm.isEmpty()) {
-            clearSsm(destination);
-        }
-
-        return setResult(ssm, destination);
+        final long priorState = singletonCount.getUnsafe(destination);
+        final float priorValue = internalResult.getUnsafe(destination);
+        removeFromState(destination, context.removeContext, (WritableFloatChunk<? extends Values>) context.valueCopy,
+                context.counts, 0, context.valueCopy.size());
+        return stateChanged(destination, priorState, priorValue);
     }
 
     @Override
@@ -254,46 +256,164 @@ public class FloatChunkedUniqueOperator implements IterativeChunkedAggregationOp
         // reduce the modify to its net effect: valueCopy/counts hold the values to remove, postValues/postCounts the
         // values to add, with the unchanged overlap cancelled out
         final SsmDistinctContext context = getAndUpdateContext(preValues, postValues, singletonContext);
-        final FloatSegmentedSortedMultiset ssm = ssmForSlot(destination);
-        final int removed = context.removedSize.get();
-        if (removed > 0) {
-            ssm.remove(context.removeContext, context.valueCopy, context.counts, 0, removed);
+        final long priorState = singletonCount.getUnsafe(destination);
+        final float priorValue = internalResult.getUnsafe(destination);
+        modifyState(destination, context.removeContext, (WritableFloatChunk<? extends Values>) context.valueCopy,
+                context.counts, 0, context.removedSize.get(), (WritableFloatChunk<? extends Values>) context.postValues,
+                context.postCounts, 0, context.addedSize.get());
+        return stateChanged(destination, priorState, priorValue);
+    }
+    // endregion
+
+    // region State Machine
+    /**
+     * Apply an addition of the compacted distinct {@code (value, count)} entries in {@code [start, start + len)} to
+     * {@code destination}'s state, transitioning empty â unique â non-unique (allocating an SSM) as needed.
+     */
+    private void addToState(long destination, WritableFloatChunk<? extends Values> values,
+            WritableIntChunk<ChunkLengths> counts, int start, int len) {
+        if (len == 0) {
+            return;
         }
-        final int added = context.addedSize.get();
-        if (added > 0) {
-            ssm.insert(context.postValues, context.postCounts, 0, added);
+        final long sc = singletonCount.getUnsafe(destination);
+        if (isUnique(sc)) {
+            final float held = internalResult.getUnsafe(destination);
+            if (len == 1 && FloatComparisons.eq(values.get(start), held)) {
+                // the single distinct value being added is the one we already hold; just bump its multiplicity
+                singletonCount.set(destination, sc + counts.get(start));
+                return;
+            }
+            // a second distinct value is arriving; materialize an SSM seeded with the held value, then add the rest
+            final FloatSegmentedSortedMultiset ssm = ssmForSlot(destination);
+            ssm.insert(held, sc);
+            ssm.insert(values, counts, start, len);
+            setNonUnique(destination);
+        } else if (isNonUnique(sc)) {
+            ssmForSlot(destination).insert(values, counts, start, len);
+        } else if (len == 1) {
+            setUnique(destination, values.get(start), counts.get(start));
+        } else {
+            ssmForSlot(destination).insert(values, counts, start, len);
+            setNonUnique(destination);
         }
+    }
+
+    /**
+     * Apply a removal of the compacted distinct {@code (value, count)} entries in {@code [start, start + len)} from
+     * {@code destination}'s state, collapsing a non-unique SSM back to a unique value (or empty) as removals reduce its
+     * cardinality. By contract every removed value is currently present.
+     */
+    private void removeFromState(long destination, SegmentedSortedMultiSet.RemoveContext removeContext,
+            WritableFloatChunk<? extends Values> values, WritableIntChunk<ChunkLengths> counts, int start, int len) {
+        if (len == 0) {
+            return;
+        }
+        final long sc = singletonCount.getUnsafe(destination);
+        if (isUnique(sc)) {
+            // a unique state can only be asked to remove its one held value, and never more copies than it holds
+            Assert.eq(len, "len", 1);
+            Assert.assertion(FloatComparisons.eq(values.get(start), internalResult.getUnsafe(destination)),
+                    "values.get(start) == internalResult.getUnsafe(destination)");
+            final long remaining = sc - counts.get(start);
+            Assert.geqZero(remaining, "remaining");
+            if (remaining == 0) {
+                setEmpty(destination);
+            } else {
+                singletonCount.set(destination, remaining);
+            }
+        } else {
+            final FloatSegmentedSortedMultiset ssm = ssmForSlot(destination);
+            ssm.remove(removeContext, values, counts, start, len);
+            finishFromSsm(destination, ssm);
+        }
+    }
+
+    /**
+     * Apply the net removals followed by the net additions of a modify to {@code destination}'s state. A non-unique
+     * state mutates its SSM in place (collapsing only once at the end); a unique/empty state runs the removals then the
+     * additions through {@link #removeFromState} / {@link #addToState}.
+     */
+    private void modifyState(long destination, SegmentedSortedMultiSet.RemoveContext removeContext,
+            WritableFloatChunk<? extends Values> removedValues, WritableIntChunk<ChunkLengths> removedCounts,
+            int removedStart, int removed,
+            WritableFloatChunk<? extends Values> addedValues, WritableIntChunk<ChunkLengths> addedCounts,
+            int addedStart, int added) {
+        if (isNonUnique(singletonCount.getUnsafe(destination))) {
+            final FloatSegmentedSortedMultiset ssm = ssmForSlot(destination);
+            if (removed > 0) {
+                ssm.remove(removeContext, removedValues, removedCounts, removedStart, removed);
+            }
+            if (added > 0) {
+                ssm.insert(addedValues, addedCounts, addedStart, added);
+            }
+            finishFromSsm(destination, ssm);
+        } else {
+            if (removed > 0) {
+                removeFromState(destination, removeContext, removedValues, removedCounts, removedStart, removed);
+            }
+            addToState(destination, addedValues, addedCounts, addedStart, added);
+        }
+    }
+
+    /**
+     * Resolve a non-unique state's representation after its SSM was mutated: discard the SSM and become empty or unique
+     * if it has collapsed to zero or one distinct value, otherwise remain non-unique.
+     */
+    private void finishFromSsm(long destination, FloatSegmentedSortedMultiset ssm) {
         if (ssm.isEmpty()) {
             clearSsm(destination);
+            setEmpty(destination);
+        } else if (ssm.size() == 1) {
+            final float value = ssm.get(0);
+            final long count = ssm.getMaxCount();
+            clearSsm(destination);
+            setUnique(destination, value, count);
+        } else {
+            setNonUnique(destination);
         }
+    }
 
-        return setResult(ssm, destination);
+    private void setEmpty(long destination) {
+        singletonCount.set(destination, 0L);
+        internalResult.set(destination, onlyNullsSentinel);
+    }
+
+    private void setUnique(long destination, float value, long count) {
+        singletonCount.set(destination, count);
+        internalResult.set(destination, value);
+    }
+
+    private void setNonUnique(long destination) {
+        singletonCount.set(destination, -1L);
+        internalResult.set(destination, nonUniqueSentinel);
+    }
+
+    private static boolean isUnique(long sc) {
+        return sc > 0;
+    }
+
+    private static boolean isNonUnique(long sc) {
+        return sc != NULL_LONG && sc < 0;
+    }
+
+    /**
+     * Whether an exposed result column of {@code destination} changed: the result value always, and (when the
+     * singletonCount column is exposed for a rollup parent) the singletonCount, whose magnitude can change while the
+     * value does not.
+     */
+    private boolean stateChanged(long destination, long priorState, float priorValue) {
+        if (!FloatComparisons.eq(internalResult.getUnsafe(destination), priorValue)) {
+            return true;
+        }
+        return exposeInternal && singletonCount.getUnsafe(destination) != priorState;
     }
     // endregion
 
     // region IterativeOperator / DistinctAggregationOperator
     @Override
-    public void propagateUpdates(@NotNull TableUpdate downstream, @NotNull RowSet newDestinations) {
-        if (touchedStates != null) {
-            prevFlusher.maybeActivate();
-            touchedStates.clear();
-            touchedStates.insert(downstream.added());
-            touchedStates.insert(downstream.modified());
-        }
-    }
-
-    private static void flushPrevious(FloatChunkedUniqueOperator op) {
-        if (op.touchedStates == null || op.touchedStates.isEmpty()) {
-            return;
-        }
-
-        op.ssms.clearDeltas(op.touchedStates);
-        op.touchedStates.clear();
-    }
-
-    @Override
     public void ensureCapacity(long tableSize) {
         internalResult.ensureCapacity(tableSize);
+        singletonCount.ensureCapacity(tableSize);
         ssms.ensureCapacity(tableSize);
     }
 
@@ -302,8 +422,9 @@ public class FloatChunkedUniqueOperator implements IterativeChunkedAggregationOp
         if (exposeInternal) {
             final Map<String, ColumnSource<?>> columns = new LinkedHashMap<>();
             columns.put(name, externalResult);
-            columns.put(name + RollupConstants.ROLLUP_DISTINCT_SSM_COLUMN_ID + RollupConstants.ROLLUP_COLUMN_SUFFIX,
-                    ssms.getUnderlyingSource());
+            columns.put(
+                    name + RollupConstants.ROLLUP_DISTINCT_SSM_COUNT_COLUMN_ID + RollupConstants.ROLLUP_COLUMN_SUFFIX,
+                    singletonCount);
             return columns;
         }
 
@@ -314,14 +435,7 @@ public class FloatChunkedUniqueOperator implements IterativeChunkedAggregationOp
     public void startTrackingPrevValues() {
         internalResult.startTrackingPrevValues();
         if (exposeInternal) {
-            if (prevFlusher != null) {
-                throw new IllegalStateException("startTrackingPrevValues must only be called once");
-            }
-
-            ssms.startTrackingPrevValues();
-            prevFlusher = new UpdateCommitter<>(this, ExecutionContext.getContext().getUpdateGraph(),
-                    FloatChunkedUniqueOperator::flushPrevious);
-            touchedStates = RowSetFactory.empty();
+            singletonCount.startTrackingPrevValues();
         }
     }
 
@@ -346,20 +460,6 @@ public class FloatChunkedUniqueOperator implements IterativeChunkedAggregationOp
 
     private void clearSsm(long destination) {
         ssms.clear(destination);
-    }
-
-    private boolean setResult(FloatSegmentedSortedMultiset ssm, long destination) {
-        final boolean resultChanged;
-        if (ssm.isEmpty()) {
-            resultChanged = internalResult.getAndSetUnsafe(destination, onlyNullsSentinel) != onlyNullsSentinel;
-        } else if (ssm.size() == 1) {
-            final float newValue = ssm.get(0);
-            resultChanged = internalResult.getAndSetUnsafe(destination, newValue) != newValue;
-        } else {
-            resultChanged = internalResult.getAndSetUnsafe(destination, nonUniqueSentinel) != nonUniqueSentinel;
-        }
-
-        return resultChanged || (exposeInternal && (ssm.getAddedSize() > 0 || ssm.getRemovedSize() > 0));
     }
     // endregion
 }
