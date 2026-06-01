@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.agg.Aggregation;
+import io.deephaven.engine.table.hierarchical.RollupTable;
 import io.deephaven.util.profiling.ThreadProfiler;
 import it.unimi.dsi.fastutil.doubles.DoubleOpenHashSet;
 import it.unimi.dsi.fastutil.doubles.DoubleSet;
@@ -1351,5 +1352,21 @@ public class TestAggBy extends RefreshingTableTestCase {
         System.out.println("Allocated Bytes: " + df.format(endAllocatedBytes - startAllocatedBytes));
     }
 
+    @Test
+    public void testAggUniquePerfWithRollup() {
+        final Table input = TableTools.emptyTable(2_500_000).update("X=Long.toHexString(ii % 10000)",
+                "Y=X.toUpperCase()",
+                "Z=X.toLowerCase()", "A=Long.toString(i)", "Bucket=ii%100 == 0 ? 0 : ii", "Bucket2=ii % 10_000");
+        final long startAllocatedBytes = ThreadProfiler.DEFAULT.getCurrentThreadAllocatedBytes();
+        System.out.println("Select done");
+        final long start = System.nanoTime();
+        final RollupTable uniqued = input.rollup(List.of(AggUnique("X", "Y", "Z", "A")), "Bucket", "Bucket2");
+        final long end = System.nanoTime();
+        final DecimalFormat df = new DecimalFormat("###,###.##");
+        System.out.println("Duration: " + df.format(end - start));
+
+        final long endAllocatedBytes = ThreadProfiler.DEFAULT.getCurrentThreadAllocatedBytes();
+        System.out.println("Allocated Bytes: " + df.format(endAllocatedBytes - startAllocatedBytes));
+    }
 
 }

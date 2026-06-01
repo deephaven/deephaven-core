@@ -15,8 +15,9 @@ import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.table.impl.ssms.CharSegmentedSortedMultiset;
-import io.deephaven.engine.table.impl.ssms.SegmentedSortedMultiSet;
 import io.deephaven.util.compare.CharComparisons;
+import io.deephaven.util.mutable.MutableLong;
+import org.apache.commons.lang3.mutable.MutableObject;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -86,6 +87,8 @@ public class CharRollupUniqueOperator implements IterativeChunkedAggregationOper
             IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
             WritableBooleanChunk<Values> stateModified) {
         final CharChunk<? extends Values> valueChunk = values.asCharChunk();
+        final MutableLong count = new MutableLong();
+        final MutableObject<CharSegmentedSortedMultiset> ssmHolder = new MutableObject<>();
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
             final int runLength = length.get(ii);
@@ -93,18 +96,19 @@ public class CharRollupUniqueOperator implements IterativeChunkedAggregationOper
 
             final long priorState = singletonCount.getUnsafe(destination);
             final char priorValue = internalResult.getUnsafe(destination);
+            loadState(destination, count, ssmHolder);
             long nonUniqueDelta = 0;
             for (int kk = startPosition; kk < startPosition + runLength; ++kk) {
                 final long sc = constituentSingletonCount.getLong(inputRowKeys.get(kk));
                 if (sc > 0) {
-                    addValueToMultiset(destination, valueChunk.get(kk));
+                    addValueToMultiset(destination, valueChunk.get(kk), count, ssmHolder);
                 } else if (isNonUniqueState(sc)) {
                     nonUniqueDelta++;
                 }
             }
             applyNonUniqueDelta(destination, nonUniqueDelta);
-            finalizeState(destination);
-            stateModified.set(ii, exposedChanged(destination, priorState, priorValue));
+            stateModified.set(ii,
+                    finalizeState(destination, priorState, priorValue, count.get(), ssmHolder.getValue()));
         }
     }
 
@@ -114,6 +118,8 @@ public class CharRollupUniqueOperator implements IterativeChunkedAggregationOper
             IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
             WritableBooleanChunk<Values> stateModified) {
         final CharChunk<? extends Values> valueChunk = values.asCharChunk();
+        final MutableLong count = new MutableLong();
+        final MutableObject<CharSegmentedSortedMultiset> ssmHolder = new MutableObject<>();
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
             final int runLength = length.get(ii);
@@ -121,19 +127,20 @@ public class CharRollupUniqueOperator implements IterativeChunkedAggregationOper
 
             final long priorState = singletonCount.getUnsafe(destination);
             final char priorValue = internalResult.getUnsafe(destination);
+            loadState(destination, count, ssmHolder);
             long nonUniqueDelta = 0;
             for (int kk = startPosition; kk < startPosition + runLength; ++kk) {
                 // the removed constituents are gone from the current table, so read their prior singletonCount
                 final long sc = constituentSingletonCount.getPrevLong(inputRowKeys.get(kk));
                 if (sc > 0) {
-                    removeValueFromMultiset(destination, valueChunk.get(kk));
+                    removeValueFromMultiset(destination, valueChunk.get(kk), count, ssmHolder);
                 } else if (isNonUniqueState(sc)) {
                     nonUniqueDelta--;
                 }
             }
             applyNonUniqueDelta(destination, nonUniqueDelta);
-            finalizeState(destination);
-            stateModified.set(ii, exposedChanged(destination, priorState, priorValue));
+            stateModified.set(ii,
+                    finalizeState(destination, priorState, priorValue, count.get(), ssmHolder.getValue()));
         }
     }
 
@@ -144,6 +151,8 @@ public class CharRollupUniqueOperator implements IterativeChunkedAggregationOper
             WritableBooleanChunk<Values> stateModified) {
         final CharChunk<? extends Values> prevValueChunk = preValues.asCharChunk();
         final CharChunk<? extends Values> postValueChunk = postValues.asCharChunk();
+        final MutableLong count = new MutableLong();
+        final MutableObject<CharSegmentedSortedMultiset> ssmHolder = new MutableObject<>();
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
             final int runLength = length.get(ii);
@@ -151,26 +160,27 @@ public class CharRollupUniqueOperator implements IterativeChunkedAggregationOper
 
             final long priorState = singletonCount.getUnsafe(destination);
             final char priorValue = internalResult.getUnsafe(destination);
+            loadState(destination, count, ssmHolder);
             long nonUniqueDelta = 0;
             for (int kk = startPosition; kk < startPosition + runLength; ++kk) {
                 final long rowKey = postShiftRowKeys.get(kk);
                 // reverse the constituent's previous contribution, then apply its current one
                 final long prevSc = constituentSingletonCount.getPrevLong(rowKey);
                 if (prevSc > 0) {
-                    removeValueFromMultiset(destination, prevValueChunk.get(kk));
+                    removeValueFromMultiset(destination, prevValueChunk.get(kk), count, ssmHolder);
                 } else if (isNonUniqueState(prevSc)) {
                     nonUniqueDelta--;
                 }
                 final long sc = constituentSingletonCount.getLong(rowKey);
                 if (sc > 0) {
-                    addValueToMultiset(destination, postValueChunk.get(kk));
+                    addValueToMultiset(destination, postValueChunk.get(kk), count, ssmHolder);
                 } else if (isNonUniqueState(sc)) {
                     nonUniqueDelta++;
                 }
             }
             applyNonUniqueDelta(destination, nonUniqueDelta);
-            finalizeState(destination);
-            stateModified.set(ii, exposedChanged(destination, priorState, priorValue));
+            stateModified.set(ii,
+                    finalizeState(destination, priorState, priorValue, count.get(), ssmHolder.getValue()));
         }
     }
     // endregion
@@ -182,18 +192,20 @@ public class CharRollupUniqueOperator implements IterativeChunkedAggregationOper
         final CharChunk<? extends Values> valueChunk = values.asCharChunk();
         final long priorState = singletonCount.getUnsafe(destination);
         final char priorValue = internalResult.getUnsafe(destination);
+        final MutableLong count = new MutableLong();
+        final MutableObject<CharSegmentedSortedMultiset> ssmHolder = new MutableObject<>();
+        loadState(destination, count, ssmHolder);
         long nonUniqueDelta = 0;
         for (int kk = 0; kk < chunkSize; ++kk) {
             final long sc = constituentSingletonCount.getLong(inputRowKeys.get(kk));
             if (sc > 0) {
-                addValueToMultiset(destination, valueChunk.get(kk));
+                addValueToMultiset(destination, valueChunk.get(kk), count, ssmHolder);
             } else if (isNonUniqueState(sc)) {
                 nonUniqueDelta++;
             }
         }
         applyNonUniqueDelta(destination, nonUniqueDelta);
-        finalizeState(destination);
-        return exposedChanged(destination, priorState, priorValue);
+        return finalizeState(destination, priorState, priorValue, count.get(), ssmHolder.getValue());
     }
 
     @Override
@@ -202,19 +214,21 @@ public class CharRollupUniqueOperator implements IterativeChunkedAggregationOper
         final CharChunk<? extends Values> valueChunk = values.asCharChunk();
         final long priorState = singletonCount.getUnsafe(destination);
         final char priorValue = internalResult.getUnsafe(destination);
+        final MutableLong count = new MutableLong();
+        final MutableObject<CharSegmentedSortedMultiset> ssmHolder = new MutableObject<>();
+        loadState(destination, count, ssmHolder);
         long nonUniqueDelta = 0;
         for (int kk = 0; kk < chunkSize; ++kk) {
             // the removed constituents are gone from the current table, so read their prior singletonCount
             final long sc = constituentSingletonCount.getPrevLong(inputRowKeys.get(kk));
             if (sc > 0) {
-                removeValueFromMultiset(destination, valueChunk.get(kk));
+                removeValueFromMultiset(destination, valueChunk.get(kk), count, ssmHolder);
             } else if (isNonUniqueState(sc)) {
                 nonUniqueDelta--;
             }
         }
         applyNonUniqueDelta(destination, nonUniqueDelta);
-        finalizeState(destination);
-        return exposedChanged(destination, priorState, priorValue);
+        return finalizeState(destination, priorState, priorValue, count.get(), ssmHolder.getValue());
     }
 
     @Override
@@ -224,78 +238,107 @@ public class CharRollupUniqueOperator implements IterativeChunkedAggregationOper
         final CharChunk<? extends Values> postValueChunk = postValues.asCharChunk();
         final long priorState = singletonCount.getUnsafe(destination);
         final char priorValue = internalResult.getUnsafe(destination);
+        final MutableLong count = new MutableLong();
+        final MutableObject<CharSegmentedSortedMultiset> ssmHolder = new MutableObject<>();
+        loadState(destination, count, ssmHolder);
         long nonUniqueDelta = 0;
         for (int kk = 0; kk < chunkSize; ++kk) {
             final long rowKey = postShiftRowKeys.get(kk);
             final long prevSc = constituentSingletonCount.getPrevLong(rowKey);
             if (prevSc > 0) {
-                removeValueFromMultiset(destination, prevValueChunk.get(kk));
+                removeValueFromMultiset(destination, prevValueChunk.get(kk), count, ssmHolder);
             } else if (isNonUniqueState(prevSc)) {
                 nonUniqueDelta--;
             }
             final long sc = constituentSingletonCount.getLong(rowKey);
             if (sc > 0) {
-                addValueToMultiset(destination, postValueChunk.get(kk));
+                addValueToMultiset(destination, postValueChunk.get(kk), count, ssmHolder);
             } else if (isNonUniqueState(sc)) {
                 nonUniqueDelta++;
             }
         }
         applyNonUniqueDelta(destination, nonUniqueDelta);
-        finalizeState(destination);
-        return exposedChanged(destination, priorState, priorValue);
+        return finalizeState(destination, priorState, priorValue, count.get(), ssmHolder.getValue());
     }
     // endregion
 
     // region State Machine
     /**
-     * Add one occurrence of {@code value} (one unique constituent holding it) to the destination's multiset,
-     * transitioning empty -> unique -> non-unique (allocating an SSM) as a second distinct value arrives. The
-     * multiset's singleton count lives in {@code singletonCount} (see {@link #singletonCountValue}); two or more
-     * distinct values live in an SSM in {@code ssms}. {@link #finalizeState} re-derives the exposed encoding afterward.
+     * Load {@code destination}'s multiset state once into the supplied holders so a run of constituents for the same
+     * destination need not re-read {@code ssms} and {@code singletonCount}: the SSM (when two or more distinct values
+     * are present) goes into {@code ssmHolder}, otherwise the singleton count goes into {@code count}.
      */
-    private void addValueToMultiset(long destination, char value) {
-        final CharSegmentedSortedMultiset ssm = ssms.getCurrentSsm(destination);
+    private void loadState(long destination, MutableLong count,
+            MutableObject<CharSegmentedSortedMultiset> ssmHolder) {
+        final long sc = singletonCount.getUnsafe(destination);
+        if (isNonUniqueState(sc)) {
+            // only a non-unique encoding can be backed by an SSM holding two or more distinct values
+            final CharSegmentedSortedMultiset ssm = ssms.getCurrentSsm(destination);
+            ssmHolder.setValue(ssm);
+            count.set(ssm == null ? -1 - sc : 0);
+            return;
+        }
+        ssmHolder.setValue(null);
+        count.set(sc == NULL_LONG ? 0 : sc);
+    }
+
+    /**
+     * Add one occurrence of {@code value} (one unique constituent holding it) to the destination's multiset (held in
+     * {@code count} / {@code ssmHolder}), transitioning empty -> unique -> non-unique (allocating an SSM) as a second
+     * distinct value arrives. {@link #finalizeState} writes the resulting encoding to {@code singletonCount} afterward.
+     */
+    private void addValueToMultiset(long destination, char value, MutableLong count,
+            MutableObject<CharSegmentedSortedMultiset> ssmHolder) {
+        final CharSegmentedSortedMultiset ssm = ssmHolder.getValue();
         if (ssm != null) {
             ssm.insert(value, 1);
             return;
         }
-        final long count = singletonCountValue(destination);
-        if (count == 0) {
+        if (count.get() == 0) {
             singletonValue.set(destination, value);
-            singletonCount.set(destination, 1L);
-        } else {
-            final char held = singletonValue.getUnsafe(destination);
-            if (CharComparisons.eq(value, held)) {
-                singletonCount.set(destination, count + 1);
-            } else {
-                // a second distinct value is arriving; materialize an SSM holding both
-                final CharSegmentedSortedMultiset newSsm = ssmForSlot(destination);
-                newSsm.insert(held, count);
-                newSsm.insert(value, 1);
-            }
+            count.set(1);
+            return;
         }
+        final char held = singletonValue.getUnsafe(destination);
+        if (CharComparisons.eq(value, held)) {
+            count.increment();
+            return;
+        }
+        // a second distinct value is arriving; materialize an SSM holding both
+        final CharSegmentedSortedMultiset newSsm = ssmForSlot(destination);
+        newSsm.insert(held, count.get());
+        newSsm.insert(value, 1);
+        ssmHolder.setValue(newSsm);
+        clearSingletonValue(destination);
     }
 
     /**
-     * Remove one occurrence of {@code value} from the destination's multiset, collapsing a non-unique SSM back to a
-     * unique value (or empty) as its cardinality drops. The value must currently be present.
+     * Remove one occurrence of {@code value} from the destination's multiset (held in {@code count} / {@code
+     * ssmHolder}), collapsing a non-unique SSM back to a unique value (or empty) as its cardinality drops. The value
+     * must currently be present.
      */
-    private void removeValueFromMultiset(long destination, char value) {
-        final CharSegmentedSortedMultiset ssm = ssms.getCurrentSsm(destination);
+    private void removeValueFromMultiset(long destination, char value, MutableLong count,
+            MutableObject<CharSegmentedSortedMultiset> ssmHolder) {
+        final CharSegmentedSortedMultiset ssm = ssmHolder.getValue();
         if (ssm != null) {
             ssm.remove(value, 1);
             if (ssm.isEmpty()) {
                 clearSsm(destination);
-                singletonCount.set(destination, 0L);
+                ssmHolder.setValue(null);
+                count.set(0);
             } else if (ssm.size() == 1) {
                 singletonValue.set(destination, ssm.get(0));
-                singletonCount.set(destination, ssm.getMaxCount());
+                count.set(ssm.getMaxCount());
                 clearSsm(destination);
+                ssmHolder.setValue(null);
             }
             return;
         }
         // a singleton multiset can only be asked to remove its single held value
-        singletonCount.set(destination, singletonCountValue(destination) - 1);
+        count.decrement();
+        if (count.get() == 0) {
+            clearSingletonValue(destination);
+        }
     }
 
     private void applyNonUniqueDelta(long destination, long nonUniqueDelta) {
@@ -306,60 +349,57 @@ public class CharRollupUniqueOperator implements IterativeChunkedAggregationOper
     }
 
     /**
-     * The multiset's singleton count (the number of unique constituents holding {@link #singletonValue}), or {@code 0}
-     * when empty. Only meaningful when there is no SSM. Recovers the count whether {@code singletonCount} currently
-     * holds the unique encoding ({@code count}) or the non-unique encoding ({@code -1 - count}); see
-     * {@link #finalizeState}.
+     * Derive the exposed encoding of {@code internalResult} and {@code singletonCount} from the multiset (the supplied
+     * {@code count} / {@code ssm}) and {@code nonUniqueCount}, writing each only when it actually changes from
+     * ({@code priorValue}, {@code priorState}), and returning whether either changed. A grandparent reads
+     * {@code singletonCount} as: {@code > 0} unique (the count), {@code 0}/{@code NULL_LONG} empty, {@code < 0}
+     * non-unique. When a non-unique constituent forces a non-unique result while the multiset is still a single value,
+     * the count is preserved as {@code -1 - count} so it survives until the non-unique constituents are gone.
      */
-    private long singletonCountValue(long destination) {
-        final long sc = singletonCount.getUnsafe(destination);
-        if (sc == NULL_LONG) {
-            return 0;
+    private boolean finalizeState(long destination, long priorState, char priorValue, long count,
+            CharSegmentedSortedMultiset ssm) {
+        final char newValue;
+        final long newCount;
+        if (ssm != null) {
+            // two or more distinct values
+            newValue = nonUniqueSentinel;
+            newCount = -1L;
+        } else {
+            final long nuc = nonUniqueCount.getUnsafe(destination);
+            if (nuc != NULL_LONG && nuc > 0) {
+                newValue = nonUniqueSentinel;
+                newCount = -1 - count;
+            } else if (count > 0) {
+                newValue = singletonValue.getUnsafe(destination);
+                newCount = count;
+            } else {
+                newValue = onlyNullsSentinel;
+                newCount = 0L;
+            }
         }
-        return sc >= 0 ? sc : -1 - sc;
+        boolean changed = false;
+        if (!CharComparisons.eq(newValue, priorValue)) {
+            internalResult.set(destination, newValue);
+            changed = true;
+        }
+        if (newCount != priorState) {
+            singletonCount.set(destination, newCount);
+            changed = true;
+        }
+        return changed;
     }
 
     /**
-     * Re-derive the exposed encoding of {@code singletonCount} (and {@code internalResult}) from the multiset and
-     * {@code nonUniqueCount}. A grandparent reads {@code singletonCount} as: {@code > 0} unique (the count),
-     * {@code 0}/{@code NULL_LONG} empty, {@code < 0} non-unique. When a non-unique constituent forces a non-unique
-     * result while the multiset is still a single value, the count is preserved as {@code -1 - count} so it survives
-     * until the non-unique constituents are gone.
+     * Forget {@code destination}'s former singleton value now that two or more distinct values live in its SSM. A no-op
+     * for the primitive specializations; the object specialization nulls the reference so it is not retained.
      */
-    private void finalizeState(long destination) {
-        if (ssms.getCurrentSsm(destination) != null) {
-            // two or more distinct values
-            internalResult.set(destination, nonUniqueSentinel);
-            singletonCount.set(destination, -1L);
-            return;
-        }
-        final long nuc = nonUniqueCount.getUnsafe(destination);
-        final long count = singletonCountValue(destination);
-        if (nuc != NULL_LONG && nuc > 0) {
-            internalResult.set(destination, nonUniqueSentinel);
-            singletonCount.set(destination, -1 - count);
-        } else if (count > 0) {
-            internalResult.set(destination, singletonValue.getUnsafe(destination));
-            singletonCount.set(destination, count);
-        } else {
-            internalResult.set(destination, onlyNullsSentinel);
-            singletonCount.set(destination, 0L);
-        }
+    private void clearSingletonValue(long destination) {
+        // region clearSingletonValue
+        // endregion clearSingletonValue
     }
 
     private static boolean isNonUniqueState(long stateCount) {
         return stateCount != NULL_LONG && stateCount < 0;
-    }
-
-    /**
-     * Whether an exposed result column of {@code destination} changed: its result value, or its singletonCount (whose
-     * magnitude can change while the value does not). Both are exposed for a grandparent rollup.
-     */
-    private boolean exposedChanged(long destination, long priorState, char priorValue) {
-        if (!CharComparisons.eq(internalResult.getUnsafe(destination), priorValue)) {
-            return true;
-        }
-        return singletonCount.getUnsafe(destination) != priorState;
     }
     // endregion
 
