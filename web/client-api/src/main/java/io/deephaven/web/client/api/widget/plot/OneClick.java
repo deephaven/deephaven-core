@@ -208,14 +208,13 @@ public class OneClick {
         } else if (key1 == null || key2 == null) {
             return false;
         }
-        if (key1 instanceof String) {
-            return key1.equals(key2);
+        if (key1 instanceof String[]) {
+            if (key2 instanceof String[]) {
+                return Arrays.equals((String[]) key1, (String[]) key2);
+            }
+            return false;
         }
-        assert key1 instanceof String[];
-        if (key2 instanceof String[]) {
-            return Arrays.equals((String[]) key1, (String[]) key2);
-        }
-        return false;// key2 isn't String[], so fail
+        return key1.equals(key2);
     }
 
     private static boolean anyKeyMatches(Object[] keys, Object key) {
