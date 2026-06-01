@@ -9,6 +9,7 @@ import io.deephaven.web.client.api.barrage.data.BarrageColumnType;
 import io.deephaven.web.client.api.ColumnRestriction;
 import org.apache.arrow.flatbuf.Field;
 
+import java.util.List;
 import java.util.Map;
 
 public class ColumnDefinition {
@@ -87,8 +88,11 @@ public class ColumnDefinition {
         return columnRestrictions;
     }
 
-    public void setColumnRestrictions(JsArray<ColumnRestriction> columnRestrictions) {
-        this.columnRestrictions = columnRestrictions;
+    public void setColumnRestrictions(List<ColumnRestriction> columnRestrictions) {
+        this.columnRestrictions = new JsArray<>();
+        for (ColumnRestriction r : columnRestrictions) {
+            this.columnRestrictions.push(r);
+        }
     }
 
     public Column makeJsColumn(int index, Map<Boolean, Map<String, ColumnDefinition>> map) {

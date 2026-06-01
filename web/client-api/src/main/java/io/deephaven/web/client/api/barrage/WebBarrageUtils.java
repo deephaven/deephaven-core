@@ -25,6 +25,7 @@ import com.google.protobuf.Any;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -126,21 +127,20 @@ public class WebBarrageUtils {
                 }
 
                 final List<Any> restrictionsList = columnInfo.getRestrictionsList();
-                final InputTableMetadata.ColumnRestrictions colRestrictions =
-                        new InputTableMetadata.ColumnRestrictions();
+                final List<ColumnRestriction> colRestrictions = new ArrayList<>();
 
                 for (Any restrictionAny : restrictionsList) {
                     // Look up the converter by the full type URL
                     String typeUrl = restrictionAny.getTypeUrl();
                     Optional<ColumnRestriction> restriction = ColumnRestrictionRegistry.convert(restrictionAny);
                     if (restriction.isPresent()) {
-                        colRestrictions.addRestriction(restriction.get());
+                        colRestrictions.add(restriction.get());
                     } else {
                         JsLog.warn("No converter registered for restriction type: " + typeUrl);
                     }
                 }
 
-                if (colRestrictions.getRestrictions().length > 0) {
+                if (!colRestrictions.isEmpty()) {
                     metadata.addColumnRestrictions(columnName, colRestrictions);
                 }
             }
