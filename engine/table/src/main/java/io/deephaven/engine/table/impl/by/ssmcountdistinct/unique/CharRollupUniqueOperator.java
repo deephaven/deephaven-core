@@ -31,11 +31,15 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
  * <p>
  * This operator ignores the values of non-unique constituents, tracking only how many constituents are non-unique
  * ({@code nonUniqueCount}); a single such constituent forces this state's result to the non-unique sentinel. The values
- * of the unique constituents are gathered into a multiset, represented like the chunked operator's: a single distinct
- * value lives in {@code singletonValue}/{@code internalSingletonCount} with no SSM, and two or more distinct values are
- * held in an SSM in {@code ssms}. The exposed result ({@code internalResult} + {@code singletonCount}) is derived from
- * the multiset and {@code nonUniqueCount}, so a grandparent rollup reads this level exactly as it reads a base
- * constituent.
+ * of the unique constituents are gathered into a multiset: a single distinct value lives in {@code singletonValue} with
+ * its count in {@code singletonCount}, and two or more distinct values are held in an SSM in {@code ssms}.
+ *
+ * <p>
+ * {@code singletonCount} is also the column a grandparent reads, so it encodes both the result and the multiset's
+ * count: {@code 0}/{@code NULL_LONG} empty, {@code > 0} the unique count, and {@code < 0} non-unique. When a non-unique
+ * constituent forces a non-unique result while the multiset still holds a single value, that value's count {@code C} is
+ * preserved as {@code -1 - C} (using the otherwise-unused {@code [NULL_LONG, -2]} range) so it survives until the
+ * non-unique constituents are gone; an {@code ssms} entry, when present, means two or more distinct values.
  */
 public class CharRollupUniqueOperator implements IterativeChunkedAggregationOperator {
     private final String name;
@@ -44,7 +48,6 @@ public class CharRollupUniqueOperator implements IterativeChunkedAggregationOper
     private final CharacterArraySource internalResult;
     private final LongArraySource singletonCount;
     private final CharacterArraySource singletonValue;
-    private final LongArraySource internalSingletonCount;
     private final LongArraySource nonUniqueCount;
     private final ColumnSource<?> externalResult;
     private final ColumnSource<?> constituentSingletonCount;
@@ -70,7 +73,6 @@ public class CharRollupUniqueOperator implements IterativeChunkedAggregationOper
         // endregion ResultCreation
         this.singletonValue = new CharacterArraySource();
         this.singletonCount = new LongArraySource();
-        this.internalSingletonCount = new LongArraySource();
         this.nonUniqueCount = new LongArraySource();
         // region ResultAssignment
         this.externalResult = internalResult;
@@ -247,25 +249,30 @@ public class CharRollupUniqueOperator implements IterativeChunkedAggregationOper
     // region State Machine
     /**
      * Add one occurrence of {@code value} (one unique constituent holding it) to the destination's multiset,
-     * transitioning empty -> unique -> non-unique (allocating an SSM) as a second distinct value arrives.
+     * transitioning empty -> unique -> non-unique (allocating an SSM) as a second distinct value arrives. The
+     * multiset's singleton count lives in {@code singletonCount} (see {@link #singletonCountValue}); two or more
+     * distinct values live in an SSM in {@code ssms}. {@link #finalizeState} re-derives the exposed encoding afterward.
      */
     private void addValueToMultiset(long destination, char value) {
-        final long mc = internalSingletonCount.getUnsafe(destination);
-        if (mc > 0) {
+        final CharSegmentedSortedMultiset ssm = ssms.getCurrentSsm(destination);
+        if (ssm != null) {
+            ssm.insert(value, 1);
+            return;
+        }
+        final long count = singletonCountValue(destination);
+        if (count == 0) {
+            singletonValue.set(destination, value);
+            singletonCount.set(destination, 1L);
+        } else {
             final char held = singletonValue.getUnsafe(destination);
             if (CharComparisons.eq(value, held)) {
-                internalSingletonCount.set(destination, mc + 1);
-                return;
+                singletonCount.set(destination, count + 1);
+            } else {
+                // a second distinct value is arriving; materialize an SSM holding both
+                final CharSegmentedSortedMultiset newSsm = ssmForSlot(destination);
+                newSsm.insert(held, count);
+                newSsm.insert(value, 1);
             }
-            final CharSegmentedSortedMultiset ssm = ssmForSlot(destination);
-            ssm.insert(held, mc);
-            ssm.insert(value, 1);
-            internalSingletonCount.set(destination, -1L);
-        } else if (isNonUniqueState(mc)) {
-            ssmForSlot(destination).insert(value, 1);
-        } else {
-            singletonValue.set(destination, value);
-            internalSingletonCount.set(destination, 1L);
         }
     }
 
@@ -274,25 +281,21 @@ public class CharRollupUniqueOperator implements IterativeChunkedAggregationOper
      * unique value (or empty) as its cardinality drops. The value must currently be present.
      */
     private void removeValueFromMultiset(long destination, char value) {
-        final long mc = internalSingletonCount.getUnsafe(destination);
-        if (mc > 0) {
-            if (mc == 1) {
-                internalSingletonCount.set(destination, 0L);
-            } else {
-                internalSingletonCount.set(destination, mc - 1);
-            }
-        } else {
-            final CharSegmentedSortedMultiset ssm = ssmForSlot(destination);
+        final CharSegmentedSortedMultiset ssm = ssms.getCurrentSsm(destination);
+        if (ssm != null) {
             ssm.remove(value, 1);
             if (ssm.isEmpty()) {
                 clearSsm(destination);
-                internalSingletonCount.set(destination, 0L);
+                singletonCount.set(destination, 0L);
             } else if (ssm.size() == 1) {
                 singletonValue.set(destination, ssm.get(0));
-                internalSingletonCount.set(destination, ssm.getMaxCount());
+                singletonCount.set(destination, ssm.getMaxCount());
                 clearSsm(destination);
             }
+            return;
         }
+        // a singleton multiset can only be asked to remove its single held value
+        singletonCount.set(destination, singletonCountValue(destination) - 1);
     }
 
     private void applyNonUniqueDelta(long destination, long nonUniqueDelta) {
@@ -303,22 +306,41 @@ public class CharRollupUniqueOperator implements IterativeChunkedAggregationOper
     }
 
     /**
-     * Derive the exposed result ({@code internalResult} + {@code singletonCount}) from the multiset and
-     * {@code nonUniqueCount}: any non-unique constituent forces the non-unique sentinel, otherwise the multiset's
-     * cardinality decides empty / unique / non-unique.
+     * The multiset's singleton count (the number of unique constituents holding {@link #singletonValue}), or {@code 0}
+     * when empty. Only meaningful when there is no SSM. Recovers the count whether {@code singletonCount} currently
+     * holds the unique encoding ({@code count}) or the non-unique encoding ({@code -1 - count}); see
+     * {@link #finalizeState}.
+     */
+    private long singletonCountValue(long destination) {
+        final long sc = singletonCount.getUnsafe(destination);
+        if (sc == NULL_LONG) {
+            return 0;
+        }
+        return sc >= 0 ? sc : -1 - sc;
+    }
+
+    /**
+     * Re-derive the exposed encoding of {@code singletonCount} (and {@code internalResult}) from the multiset and
+     * {@code nonUniqueCount}. A grandparent reads {@code singletonCount} as: {@code > 0} unique (the count),
+     * {@code 0}/{@code NULL_LONG} empty, {@code < 0} non-unique. When a non-unique constituent forces a non-unique
+     * result while the multiset is still a single value, the count is preserved as {@code -1 - count} so it survives
+     * until the non-unique constituents are gone.
      */
     private void finalizeState(long destination) {
+        if (ssms.getCurrentSsm(destination) != null) {
+            // two or more distinct values
+            internalResult.set(destination, nonUniqueSentinel);
+            singletonCount.set(destination, -1L);
+            return;
+        }
         final long nuc = nonUniqueCount.getUnsafe(destination);
-        final long mc = internalSingletonCount.getUnsafe(destination);
+        final long count = singletonCountValue(destination);
         if (nuc != NULL_LONG && nuc > 0) {
             internalResult.set(destination, nonUniqueSentinel);
-            singletonCount.set(destination, -1L);
-        } else if (mc > 0) {
+            singletonCount.set(destination, -1 - count);
+        } else if (count > 0) {
             internalResult.set(destination, singletonValue.getUnsafe(destination));
-            singletonCount.set(destination, mc);
-        } else if (isNonUniqueState(mc)) {
-            internalResult.set(destination, nonUniqueSentinel);
-            singletonCount.set(destination, -1L);
+            singletonCount.set(destination, count);
         } else {
             internalResult.set(destination, onlyNullsSentinel);
             singletonCount.set(destination, 0L);
@@ -347,7 +369,6 @@ public class CharRollupUniqueOperator implements IterativeChunkedAggregationOper
         internalResult.ensureCapacity(tableSize);
         singletonCount.ensureCapacity(tableSize);
         singletonValue.ensureCapacity(tableSize);
-        internalSingletonCount.ensureCapacity(tableSize);
         nonUniqueCount.ensureCapacity(tableSize);
         ssms.ensureCapacity(tableSize);
     }

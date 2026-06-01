@@ -312,10 +312,10 @@ public class FloatChunkedUniqueOperator implements IterativeChunkedAggregationOp
     }
 
     /**
-     * Apply the net removals followed by the net additions of a modify to {@code destination}'s state, returning whether
-     * the result changed. A non-unique state mutates its SSM in place (collapsing only once at the end); a unique/empty
-     * state runs the removals then the additions through {@link #removeFromState} / {@link #addToState} (whose net is a
-     * change iff either step is, since the net-removed and net-added value sets are disjoint).
+     * Apply the net removals followed by the net additions of a modify to {@code destination}'s state, returning
+     * whether the result changed. A non-unique state mutates its SSM in place (collapsing only once at the end); a
+     * unique/empty state runs the removals then the additions through {@link #removeFromState} / {@link #addToState}
+     * (whose net is a change iff either step is, since the net-removed and net-added value sets are disjoint).
      */
     private boolean modifyState(long destination, SegmentedSortedMultiSet.RemoveContext removeContext,
             WritableFloatChunk<? extends Values> removedValues, WritableIntChunk<ChunkLengths> removedCounts,
