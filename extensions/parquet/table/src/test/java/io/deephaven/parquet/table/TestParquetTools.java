@@ -226,8 +226,6 @@ public class TestParquetTools {
         String path = testRoot + File.separator + "emptyStringsTable.parquet";
         ParquetTools.writeTable(emptyStringsTable, path, instructions);
         Table result = ParquetTools.readTable(path);
-        TableTools.show(result);
-        TableTools.show(emptyStringsTable);
         assertTableEquals(emptyStringsTable, result);
         result.close();
         emptyStringsTable.close();
