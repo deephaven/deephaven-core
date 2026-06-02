@@ -7,6 +7,10 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.sources.regioned.kernel;
 
+import io.deephaven.engine.table.impl.select.AbstractRangeFilter;
+import io.deephaven.engine.table.impl.select.ComparableRangeFilter;
+import io.deephaven.engine.table.impl.select.SingleSidedComparableRangeFilter;
+
 import java.util.Arrays;
 
 import io.deephaven.api.SortSpec;
@@ -25,6 +29,42 @@ import static io.deephaven.engine.table.impl.sources.regioned.kernel.BinarySearc
 import org.jetbrains.annotations.NotNull;
 
 public class ObjectColumnBinarySearchKernel {
+    // region binsearchRangeFilter
+    /**
+     * Performs a binary search on a sorted {@link ElementSource} using bounds from an {@link AbstractRangeFilter}
+     * (either {@link SingleSidedComparableRangeFilter} or {@link ComparableRangeFilter}), returning the row keys that
+     * satisfy the filter.
+     *
+     * @param source The element source to search.
+     * @param selection The {@link RowSet} defining which rows are populated and the order in which they are searched.
+     * @param sortColumn A {@link SortColumn} representing the sorting order.
+     * @param filter The range filter supplying bounds and their inclusive flags.
+     * @param usePrev If true, uses previous values instead of current values.
+     * @return A {@link RowSet} containing the row keys satisfying the filter.
+     */
+    public static RowSet binsearchRangeFilter(
+            @NotNull final ElementSource<?> source,
+            @NotNull final RowSet selection,
+            @NotNull final SortColumn sortColumn,
+            @NotNull final AbstractRangeFilter filter,
+            final boolean usePrev) {
+        if (filter instanceof SingleSidedComparableRangeFilter) {
+            final SingleSidedComparableRangeFilter rangeFilter = (SingleSidedComparableRangeFilter) filter;
+            if (rangeFilter.isGreaterThan()) {
+                return binarySearchMin(source, selection, sortColumn,
+                        rangeFilter.getPivot(), rangeFilter.isLowerInclusive(), usePrev);
+            } else {
+                return binarySearchMax(source, selection, sortColumn,
+                        rangeFilter.getPivot(), rangeFilter.isUpperInclusive(), usePrev);
+            }
+        }
+        final ComparableRangeFilter rangeFilter = (ComparableRangeFilter) filter;
+        return binarySearchMinMax(source, selection, sortColumn,
+                rangeFilter.getLower(), rangeFilter.getUpper(),
+                rangeFilter.isLowerInclusive(), rangeFilter.isUpperInclusive(), usePrev);
+    }
+    // endregion binsearchRangeFilter
+
     /**
      * Performs a binary search on a given sorted {@link ElementSource} to find the row keys from a provided
      * {@link RowSet} that pass a range or match filter. The method returns the {@link RowSet} containing the matched

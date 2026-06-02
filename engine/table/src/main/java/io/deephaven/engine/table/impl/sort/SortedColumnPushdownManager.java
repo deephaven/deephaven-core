@@ -38,20 +38,6 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 
-import static io.deephaven.util.QueryConstants.MAX_BYTE;
-import static io.deephaven.util.QueryConstants.MAX_CHAR;
-import static io.deephaven.util.QueryConstants.MAX_DOUBLE;
-import static io.deephaven.util.QueryConstants.MAX_FLOAT;
-import static io.deephaven.util.QueryConstants.MAX_INT;
-import static io.deephaven.util.QueryConstants.MAX_LONG;
-import static io.deephaven.util.QueryConstants.MAX_SHORT;
-import static io.deephaven.util.QueryConstants.NULL_BYTE;
-import static io.deephaven.util.QueryConstants.NULL_CHAR;
-import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
-import static io.deephaven.util.QueryConstants.NULL_FLOAT;
-import static io.deephaven.util.QueryConstants.NULL_INT;
-import static io.deephaven.util.QueryConstants.NULL_LONG;
-import static io.deephaven.util.QueryConstants.NULL_SHORT;
 
 /**
  * A {@link PushdownPredicateManager} that uses binary search against a single sorted column.
@@ -180,214 +166,35 @@ public class SortedColumnPushdownManager implements PushdownPredicateManager {
         final ColumnSource<?> maybeReinterpreted = ReinterpretUtils.maybeConvertToPrimitive(source);
 
         if (rangeFilter instanceof CharRangeFilter) {
-            return binarySearchRangeChar(maybeReinterpreted, selection, sortColumn, rangeFilter, usePrev);
+            return CharColumnBinarySearchKernel.binsearchRangeFilter(
+                    maybeReinterpreted, selection, sortColumn, (CharRangeFilter) rangeFilter, usePrev);
         }
         if (rangeFilter instanceof ByteRangeFilter) {
-            return binarySearchRangeByte(maybeReinterpreted, selection, sortColumn, rangeFilter, usePrev);
+            return ByteColumnBinarySearchKernel.binsearchRangeFilter(
+                    maybeReinterpreted, selection, sortColumn, (ByteRangeFilter) rangeFilter, usePrev);
         }
         if (rangeFilter instanceof ShortRangeFilter) {
-            return binarySearchRangeShort(maybeReinterpreted, selection, sortColumn, rangeFilter, usePrev);
+            return ShortColumnBinarySearchKernel.binsearchRangeFilter(
+                    maybeReinterpreted, selection, sortColumn, (ShortRangeFilter) rangeFilter, usePrev);
         }
         if (rangeFilter instanceof IntRangeFilter) {
-            return binarySearchRangeInt(maybeReinterpreted, selection, sortColumn, rangeFilter, usePrev);
+            return IntColumnBinarySearchKernel.binsearchRangeFilter(
+                    maybeReinterpreted, selection, sortColumn, (IntRangeFilter) rangeFilter, usePrev);
         }
         if (rangeFilter instanceof LongRangeFilter) {
-            return binarySearchRangeLong(maybeReinterpreted, selection, sortColumn, rangeFilter, usePrev);
+            return LongColumnBinarySearchKernel.binsearchRangeFilter(
+                    maybeReinterpreted, selection, sortColumn, (LongRangeFilter) rangeFilter, usePrev);
         }
         if (rangeFilter instanceof FloatRangeFilter) {
-            return binarySearchRangeFloat(maybeReinterpreted, selection, sortColumn, rangeFilter, usePrev);
+            return FloatColumnBinarySearchKernel.binsearchRangeFilter(
+                    maybeReinterpreted, selection, sortColumn, (FloatRangeFilter) rangeFilter, usePrev);
         }
         if (rangeFilter instanceof DoubleRangeFilter) {
-            return binarySearchRangeDouble(maybeReinterpreted, selection, sortColumn, rangeFilter, usePrev);
+            return DoubleColumnBinarySearchKernel.binsearchRangeFilter(
+                    maybeReinterpreted, selection, sortColumn, (DoubleRangeFilter) rangeFilter, usePrev);
         }
         // Use the original-typed source.
-        return binarySearchRangeObject(source, selection, sortColumn, rangeFilter, usePrev);
-    }
-
-    private static RowSet binarySearchRangeChar(
-            @NotNull final ColumnSource<?> source,
-            @NotNull final RowSet selection,
-            @NotNull final SortColumn sortColumn,
-            @NotNull final AbstractRangeFilter filter,
-            final boolean usePrev) {
-        final CharRangeFilter rangeFilter = (CharRangeFilter) filter;
-        if (rangeFilter.getLower() == NULL_CHAR && rangeFilter.isLowerInclusive()) {
-            return CharColumnBinarySearchKernel.binarySearchMax(
-                    source, selection, sortColumn,
-                    rangeFilter.getUpper(), rangeFilter.isUpperInclusive(), usePrev);
-        } else if (rangeFilter.getUpper() == MAX_CHAR && rangeFilter.isUpperInclusive()) {
-            return CharColumnBinarySearchKernel.binarySearchMin(
-                    source, selection, sortColumn,
-                    rangeFilter.getLower(), rangeFilter.isLowerInclusive(), usePrev);
-        } else {
-            return CharColumnBinarySearchKernel.binarySearchMinMax(
-                    source, selection, sortColumn,
-                    rangeFilter.getLower(), rangeFilter.getUpper(),
-                    rangeFilter.isLowerInclusive(), rangeFilter.isUpperInclusive(), usePrev);
-        }
-    }
-
-    private static RowSet binarySearchRangeByte(
-            @NotNull final ColumnSource<?> source,
-            @NotNull final RowSet selection,
-            @NotNull final SortColumn sortColumn,
-            @NotNull final AbstractRangeFilter filter,
-            final boolean usePrev) {
-        final ByteRangeFilter rangeFilter = (ByteRangeFilter) filter;
-        if (rangeFilter.getLower() == NULL_BYTE && rangeFilter.isLowerInclusive()) {
-            return ByteColumnBinarySearchKernel.binarySearchMax(
-                    source, selection, sortColumn,
-                    rangeFilter.getUpper(), rangeFilter.isUpperInclusive(), usePrev);
-        } else if (rangeFilter.getUpper() == MAX_BYTE && rangeFilter.isUpperInclusive()) {
-            return ByteColumnBinarySearchKernel.binarySearchMin(
-                    source, selection, sortColumn,
-                    rangeFilter.getLower(), rangeFilter.isLowerInclusive(), usePrev);
-        } else {
-            return ByteColumnBinarySearchKernel.binarySearchMinMax(
-                    source, selection, sortColumn,
-                    rangeFilter.getLower(), rangeFilter.getUpper(),
-                    rangeFilter.isLowerInclusive(), rangeFilter.isUpperInclusive(), usePrev);
-        }
-    }
-
-    private static RowSet binarySearchRangeShort(
-            @NotNull final ColumnSource<?> source,
-            @NotNull final RowSet selection,
-            @NotNull final SortColumn sortColumn,
-            @NotNull final AbstractRangeFilter filter,
-            final boolean usePrev) {
-        final ShortRangeFilter rangeFilter = (ShortRangeFilter) filter;
-        if (rangeFilter.getLower() == NULL_SHORT && rangeFilter.isLowerInclusive()) {
-            return ShortColumnBinarySearchKernel.binarySearchMax(
-                    source, selection, sortColumn,
-                    rangeFilter.getUpper(), rangeFilter.isUpperInclusive(), usePrev);
-        } else if (rangeFilter.getUpper() == MAX_SHORT && rangeFilter.isUpperInclusive()) {
-            return ShortColumnBinarySearchKernel.binarySearchMin(
-                    source, selection, sortColumn,
-                    rangeFilter.getLower(), rangeFilter.isLowerInclusive(), usePrev);
-        } else {
-            return ShortColumnBinarySearchKernel.binarySearchMinMax(
-                    source, selection, sortColumn,
-                    rangeFilter.getLower(), rangeFilter.getUpper(),
-                    rangeFilter.isLowerInclusive(), rangeFilter.isUpperInclusive(), usePrev);
-        }
-    }
-
-    private static RowSet binarySearchRangeInt(
-            @NotNull final ColumnSource<?> source,
-            @NotNull final RowSet selection,
-            @NotNull final SortColumn sortColumn,
-            @NotNull final AbstractRangeFilter filter,
-            final boolean usePrev) {
-        final IntRangeFilter rangeFilter = (IntRangeFilter) filter;
-        if (rangeFilter.getLower() == NULL_INT && rangeFilter.isLowerInclusive()) {
-            return IntColumnBinarySearchKernel.binarySearchMax(
-                    source, selection, sortColumn,
-                    rangeFilter.getUpper(), rangeFilter.isUpperInclusive(), usePrev);
-        } else if (rangeFilter.getUpper() == MAX_INT && rangeFilter.isUpperInclusive()) {
-            return IntColumnBinarySearchKernel.binarySearchMin(
-                    source, selection, sortColumn,
-                    rangeFilter.getLower(), rangeFilter.isLowerInclusive(), usePrev);
-        } else {
-            return IntColumnBinarySearchKernel.binarySearchMinMax(
-                    source, selection, sortColumn,
-                    rangeFilter.getLower(), rangeFilter.getUpper(),
-                    rangeFilter.isLowerInclusive(), rangeFilter.isUpperInclusive(), usePrev);
-        }
-    }
-
-    private static RowSet binarySearchRangeLong(
-            @NotNull final ColumnSource<?> source,
-            @NotNull final RowSet selection,
-            @NotNull final SortColumn sortColumn,
-            @NotNull final AbstractRangeFilter filter,
-            final boolean usePrev) {
-        final LongRangeFilter rangeFilter = (LongRangeFilter) filter;
-        if (rangeFilter.getLower() == NULL_LONG && rangeFilter.isLowerInclusive()) {
-            return LongColumnBinarySearchKernel.binarySearchMax(
-                    source, selection, sortColumn,
-                    rangeFilter.getUpper(), rangeFilter.isUpperInclusive(), usePrev);
-        } else if (rangeFilter.getUpper() == MAX_LONG && rangeFilter.isUpperInclusive()) {
-            return LongColumnBinarySearchKernel.binarySearchMin(
-                    source, selection, sortColumn,
-                    rangeFilter.getLower(), rangeFilter.isLowerInclusive(), usePrev);
-        } else {
-            return LongColumnBinarySearchKernel.binarySearchMinMax(
-                    source, selection, sortColumn,
-                    rangeFilter.getLower(), rangeFilter.getUpper(),
-                    rangeFilter.isLowerInclusive(), rangeFilter.isUpperInclusive(), usePrev);
-        }
-    }
-
-    private static RowSet binarySearchRangeFloat(
-            @NotNull final ColumnSource<?> source,
-            @NotNull final RowSet selection,
-            @NotNull final SortColumn sortColumn,
-            @NotNull final AbstractRangeFilter filter,
-            final boolean usePrev) {
-        final FloatRangeFilter rangeFilter = (FloatRangeFilter) filter;
-        if (rangeFilter.getLower() == NULL_FLOAT && rangeFilter.isLowerInclusive()) {
-            return FloatColumnBinarySearchKernel.binarySearchMax(
-                    source, selection, sortColumn,
-                    rangeFilter.getUpper(), rangeFilter.isUpperInclusive(), usePrev);
-        } else if (rangeFilter.getUpper() == MAX_FLOAT && rangeFilter.isUpperInclusive()) {
-            return FloatColumnBinarySearchKernel.binarySearchMin(
-                    source, selection, sortColumn,
-                    rangeFilter.getLower(), rangeFilter.isLowerInclusive(), usePrev);
-        } else {
-            return FloatColumnBinarySearchKernel.binarySearchMinMax(
-                    source, selection, sortColumn,
-                    rangeFilter.getLower(), rangeFilter.getUpper(),
-                    rangeFilter.isLowerInclusive(), rangeFilter.isUpperInclusive(), usePrev);
-        }
-    }
-
-    private static RowSet binarySearchRangeDouble(
-            @NotNull final ColumnSource<?> source,
-            @NotNull final RowSet selection,
-            @NotNull final SortColumn sortColumn,
-            @NotNull final AbstractRangeFilter filter,
-            final boolean usePrev) {
-        final DoubleRangeFilter rangeFilter = (DoubleRangeFilter) filter;
-        if (rangeFilter.getLower() == NULL_DOUBLE && rangeFilter.isLowerInclusive()) {
-            return DoubleColumnBinarySearchKernel.binarySearchMax(
-                    source, selection, sortColumn,
-                    rangeFilter.getUpper(), rangeFilter.isUpperInclusive(), usePrev);
-        } else if (rangeFilter.getUpper() == MAX_DOUBLE && rangeFilter.isUpperInclusive()) {
-            return DoubleColumnBinarySearchKernel.binarySearchMin(
-                    source, selection, sortColumn,
-                    rangeFilter.getLower(), rangeFilter.isLowerInclusive(), usePrev);
-        } else {
-            return DoubleColumnBinarySearchKernel.binarySearchMinMax(
-                    source, selection, sortColumn,
-                    rangeFilter.getLower(), rangeFilter.getUpper(),
-                    rangeFilter.isLowerInclusive(), rangeFilter.isUpperInclusive(), usePrev);
-        }
-    }
-
-    private static RowSet binarySearchRangeObject(
-            @NotNull final ColumnSource<?> source,
-            @NotNull final RowSet selection,
-            @NotNull final SortColumn sortColumn,
-            @NotNull final AbstractRangeFilter filter,
-            final boolean usePrev) {
-        if (filter instanceof SingleSidedComparableRangeFilter) {
-            final SingleSidedComparableRangeFilter rangeFilter = (SingleSidedComparableRangeFilter) filter;
-            if (rangeFilter.isGreaterThan()) {
-                return ObjectColumnBinarySearchKernel.binarySearchMin(
-                        source, selection, sortColumn,
-                        rangeFilter.getPivot(), rangeFilter.isLowerInclusive(), usePrev);
-            } else {
-                return ObjectColumnBinarySearchKernel.binarySearchMax(
-                        source, selection, sortColumn,
-                        rangeFilter.getPivot(), rangeFilter.isUpperInclusive(), usePrev);
-            }
-        }
-        final ComparableRangeFilter rangeFilter = (ComparableRangeFilter) filter;
-        return ObjectColumnBinarySearchKernel.binarySearchMinMax(
-                source, selection, sortColumn,
-                rangeFilter.getLower(), rangeFilter.getUpper(),
-                rangeFilter.isLowerInclusive(), rangeFilter.isUpperInclusive(), usePrev);
+        return ObjectColumnBinarySearchKernel.binsearchRangeFilter(source, selection, sortColumn, rangeFilter, usePrev);
     }
 
     private static boolean isSupportedRangeFilter(final AbstractRangeFilter rangeFilter) {

@@ -216,6 +216,10 @@ public class ReplicateRegionsAndRegionedSources {
         final File file = new File(charToObject);
         List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
         lines = removeImport(lines, "import io\\.deephaven\\.util\\.type\\.ArrayTypeUtils;");
+        lines = removeAnyImports(lines,
+                "import io\\.deephaven\\.engine\\.table\\.impl\\.select\\.ObjectRangeFilter;",
+                "import static io\\.deephaven\\.util\\.QueryConstants\\.NULL_OBJECT;",
+                "import static io\\.deephaven\\.util\\.QueryConstants\\.MAX_OBJECT;");
         lines = globalReplacements(lines,
                 "ColumnRegionObject<\\?>", "ColumnRegionObject<?, ?>",
                 "source\\.getObject\\(", "source.get(",
@@ -229,6 +233,49 @@ public class ReplicateRegionsAndRegionedSources {
                 "lowValue == max", "ObjectComparisons.eq(lowValue, max)",
                 "highValue == min", "ObjectComparisons.eq(highValue, min)");
         lines = addImport(lines, "import java.util.Arrays;");
+        if (file.getName().contains("Column")) {
+            lines = replaceRegion(lines, "binsearchRangeFilter", Arrays.asList(
+                    "    /**",
+                    "     * Performs a binary search on a sorted {@link ElementSource} using bounds from an"
+                            + " {@link AbstractRangeFilter}",
+                    "     * (either {@link SingleSidedComparableRangeFilter} or {@link ComparableRangeFilter}),"
+                            + " returning the row keys that",
+                    "     * satisfy the filter.",
+                    "     *",
+                    "     * @param source The element source to search.",
+                    "     * @param selection The {@link RowSet} defining which rows are populated and the order in which"
+                            + " they are searched.",
+                    "     * @param sortColumn A {@link SortColumn} representing the sorting order.",
+                    "     * @param filter The range filter supplying bounds and their inclusive flags.",
+                    "     * @param usePrev If true, uses previous values instead of current values.",
+                    "     * @return A {@link RowSet} containing the row keys satisfying the filter.",
+                    "     */",
+                    "    public static RowSet binsearchRangeFilter(",
+                    "            @NotNull final ElementSource<?> source,",
+                    "            @NotNull final RowSet selection,",
+                    "            @NotNull final SortColumn sortColumn,",
+                    "            @NotNull final AbstractRangeFilter filter,",
+                    "            final boolean usePrev) {",
+                    "        if (filter instanceof SingleSidedComparableRangeFilter) {",
+                    "            final SingleSidedComparableRangeFilter rangeFilter = (SingleSidedComparableRangeFilter) filter;",
+                    "            if (rangeFilter.isGreaterThan()) {",
+                    "                return binarySearchMin(source, selection, sortColumn,",
+                    "                        rangeFilter.getPivot(), rangeFilter.isLowerInclusive(), usePrev);",
+                    "            } else {",
+                    "                return binarySearchMax(source, selection, sortColumn,",
+                    "                        rangeFilter.getPivot(), rangeFilter.isUpperInclusive(), usePrev);",
+                    "            }",
+                    "        }",
+                    "        final ComparableRangeFilter rangeFilter = (ComparableRangeFilter) filter;",
+                    "        return binarySearchMinMax(source, selection, sortColumn,",
+                    "                rangeFilter.getLower(), rangeFilter.getUpper(),",
+                    "                rangeFilter.isLowerInclusive(), rangeFilter.isUpperInclusive(), usePrev);",
+                    "    }"));
+            lines = addImport(lines,
+                    "import io.deephaven.engine.table.impl.select.AbstractRangeFilter;",
+                    "import io.deephaven.engine.table.impl.select.ComparableRangeFilter;",
+                    "import io.deephaven.engine.table.impl.select.SingleSidedComparableRangeFilter;");
+        }
         FileUtils.writeLines(new File(charToObject), lines);
     }
 }

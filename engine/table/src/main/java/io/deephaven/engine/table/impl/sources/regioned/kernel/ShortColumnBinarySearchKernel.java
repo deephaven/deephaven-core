@@ -15,15 +15,50 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ElementSource;
+import io.deephaven.engine.table.impl.select.ShortRangeFilter;
 import io.deephaven.engine.table.impl.sort.timsort.ShortTimsortDescendingKernel;
 import io.deephaven.engine.table.impl.sort.timsort.ShortTimsortKernel;
 import io.deephaven.util.compare.ShortComparisons;
 
 import static io.deephaven.engine.table.impl.sources.regioned.kernel.BinarySearchKernelHelper.insertionPoint;
+import static io.deephaven.util.QueryConstants.MAX_SHORT;
+import static io.deephaven.util.QueryConstants.NULL_SHORT;
 import io.deephaven.util.type.ArrayTypeUtils;
 import org.jetbrains.annotations.NotNull;
 
 public class ShortColumnBinarySearchKernel {
+    // region binsearchRangeFilter
+    /**
+     * Performs a binary search on a sorted {@link ElementSource} using bounds from a {@link ShortRangeFilter}, returning
+     * the row keys that satisfy the filter.
+     *
+     * @param source The element source to search.
+     * @param selection The {@link RowSet} defining which rows are populated and the order in which they are searched.
+     * @param sortColumn A {@link SortColumn} representing the sorting order.
+     * @param filter The range filter supplying lower/upper bounds and their inclusive flags.
+     * @param usePrev If true, uses previous values instead of current values.
+     * @return A {@link RowSet} containing the row keys satisfying the filter.
+     */
+    public static RowSet binsearchRangeFilter(
+            @NotNull final ElementSource<?> source,
+            @NotNull final RowSet selection,
+            @NotNull final SortColumn sortColumn,
+            @NotNull final ShortRangeFilter filter,
+            final boolean usePrev) {
+        if (filter.getLower() == NULL_SHORT && filter.isLowerInclusive()) {
+            return binarySearchMax(source, selection, sortColumn, filter.getUpper(), filter.isUpperInclusive(),
+                    usePrev);
+        } else if (filter.getUpper() == MAX_SHORT && filter.isUpperInclusive()) {
+            return binarySearchMin(source, selection, sortColumn, filter.getLower(), filter.isLowerInclusive(),
+                    usePrev);
+        } else {
+            return binarySearchMinMax(source, selection, sortColumn,
+                    filter.getLower(), filter.getUpper(),
+                    filter.isLowerInclusive(), filter.isUpperInclusive(), usePrev);
+        }
+    }
+    // endregion binsearchRangeFilter
+
     /**
      * Performs a binary search on a given sorted {@link ElementSource} to find the row keys from a provided
      * {@link RowSet} that pass a range or match filter. The method returns the {@link RowSet} containing the matched
