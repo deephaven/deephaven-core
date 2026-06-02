@@ -38,7 +38,7 @@ final class PlainBinaryChunkedWriter extends AbstractBulkValuesWriter<Binary[]> 
     }
 
     @Override
-    public final void writeBytes(Binary v) {
+    public void writeBytes(Binary v) {
         ensureCapacityFor(v);
         innerBuffer.putInt(v.length());
         innerBuffer.put(v.toByteBuffer());
@@ -138,7 +138,7 @@ final class PlainBinaryChunkedWriter extends AbstractBulkValuesWriter<Binary[]> 
     }
 
     private void ensureCapacityFor(@NotNull final Binary v) {
-        if (v.length() == 0 || innerBuffer.remaining() >= v.length() + Integer.BYTES) {
+        if (innerBuffer.remaining() >= v.length() + Integer.BYTES) {
             return;
         }
 

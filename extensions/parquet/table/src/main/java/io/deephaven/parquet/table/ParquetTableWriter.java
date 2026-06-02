@@ -263,7 +263,7 @@ public class ParquetTableWriter {
                 try {
                     writeColumnSource(tableRowSet, writeInstructions, rowGroupWriter, computedCache, columnName,
                             columnSource);
-                } catch (IllegalAccessException e) {
+                } catch (final RuntimeException | IllegalAccessException e) {
                     throw new RuntimeException("Failed to write column " + columnName, e);
                 }
             }
