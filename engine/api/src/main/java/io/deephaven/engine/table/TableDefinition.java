@@ -5,6 +5,7 @@ package io.deephaven.engine.table;
 
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.api.ColumnName;
+import io.deephaven.api.util.NameValidator;
 import io.deephaven.base.cache.OpenAddressedCanonicalizationCache;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
@@ -174,6 +175,20 @@ public class TableDefinition implements LogOutputAppendable {
      */
     public TableDefinition intern() {
         return INTERNED_DEFINITIONS.getCachedItem(this);
+    }
+
+    /**
+     * Validate that every column name in this definition is a legal Deephaven column name. This is not enforced when a
+     * TableDefinition is constructed, because definitions are frequently derived from existing (already-validated)
+     * tables or built from sources that legalize names; callers that accept a definition with user-supplied column
+     * names should invoke this before creating a table.
+     *
+     * @throws io.deephaven.api.util.NameValidator.InvalidNameException if any column name is not a valid column name
+     */
+    public void checkHasValidColumnNames() {
+        for (final ColumnDefinition<?> column : columns) {
+            NameValidator.validateColumnName(column.getName());
+        }
     }
 
     @Override

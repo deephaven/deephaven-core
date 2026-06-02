@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.util;
 
+import io.deephaven.api.util.NameValidator;
 import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
@@ -12,11 +13,13 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.InMemoryTable;
 import io.deephaven.engine.table.impl.InstrumentedTableUpdateListener;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.partitioned.PartitionedTableCreatorImpl;
 import io.deephaven.engine.table.impl.sources.ConstituentTableException;
+import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
 import io.deephaven.engine.table.impl.sources.UnionRedirection;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.table.vectors.ColumnVectors;
@@ -258,6 +261,46 @@ public class TestTableTools {
                 "Column x different from the expected set, first difference at row 0 encountered 1.0E-12 expected 2.0E-12 (difference = 1.0E-12)\n",
                 TableTools.diff(TableTools.newTable(floatCol("x", 0.000000000001f, 0.000000000002f, 0.000000000003f)),
                         TableTools.newTable(floatCol("x", 0.000000000002f, NULL_FLOAT, NULL_FLOAT)), 10));
+    }
+
+    @Test
+    public void testNewTableValidatesColumnNames() {
+        final TableDefinition badDefinition = TableDefinition.of(ColumnDefinition.ofInt("Asdf:"));
+
+        // newTable(TableDefinition)
+        Assert.assertThrows(NameValidator.InvalidNameException.class, () -> TableTools.newTable(badDefinition));
+
+        // newTable(TableDefinition, ColumnHolder...)
+        Assert.assertThrows(NameValidator.InvalidNameException.class,
+                () -> TableTools.newTable(badDefinition, ColumnHolder.ZERO_LENGTH_COLUMN_HOLDER_ARRAY));
+
+        // newTable(long, Map<String, ColumnSource>)
+        final Map<String, ColumnSource<?>> badColumns = new LinkedHashMap<>();
+        badColumns.put("Asdf:", NullValueColumnSource.getInstance(int.class, null));
+        Assert.assertThrows(NameValidator.InvalidNameException.class, () -> TableTools.newTable(0, badColumns));
+
+        // newTable(long, List<String>, List<ColumnSource>)
+        Assert.assertThrows(NameValidator.InvalidNameException.class, () -> TableTools.newTable(0,
+                List.of("Asdf:"), List.of(NullValueColumnSource.getInstance(int.class, null))));
+
+        // A legal column name still produces a table.
+        final Table good = TableTools.newTable(TableDefinition.of(ColumnDefinition.ofInt("Asdf")));
+        assertEquals(1, good.numColumns());
+    }
+
+    @Test
+    public void testInMemoryTableValidatesColumnNames() {
+        // InMemoryTable(String[], Object[])
+        Assert.assertThrows(NameValidator.InvalidNameException.class,
+                () -> new InMemoryTable(new String[] {"Asdf:"}, new Object[] {new int[] {1, 2, 3}}));
+
+        // InMemoryTable(TableDefinition, int)
+        Assert.assertThrows(NameValidator.InvalidNameException.class,
+                () -> new InMemoryTable(TableDefinition.of(ColumnDefinition.ofInt("Asdf:")), 0));
+
+        // A legal column name still produces a table.
+        final Table good = new InMemoryTable(new String[] {"Asdf"}, new Object[] {new int[] {1, 2, 3}});
+        assertEquals(3, good.size());
     }
 
     @Test
