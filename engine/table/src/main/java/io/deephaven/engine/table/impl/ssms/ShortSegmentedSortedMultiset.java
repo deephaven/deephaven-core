@@ -112,6 +112,7 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
      * directly, splitting the target leaf only when it is full.
      */
     public boolean insert(short value, long count) {
+        Assert.gtZero(count, "count");
         validate();
         if (leafCount == 0) {
             // empty -> singleton, stored directly without allocating the directory or leaf arrays
@@ -1130,6 +1131,7 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
      * singleton representations, but non-empty leaves are not opportunistically merged.
      */
     public boolean remove(short value, long count) {
+        Assert.gtZero(count, "count");
         validate();
         if (isSingleton()) {
             Assert.assertion(ShortComparisons.eq(value, singletonValue),

@@ -108,6 +108,7 @@ public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSe
      * directly, splitting the target leaf only when it is full.
      */
     public boolean insert(char value, long count) {
+        Assert.gtZero(count, "count");
         validate();
         if (leafCount == 0) {
             // empty -> singleton, stored directly without allocating the directory or leaf arrays
@@ -1125,10 +1126,10 @@ public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSe
      * caller to wrap it in a chunk. Empty leaves are dropped and the set collapses back toward the directory and
      * singleton representations, but non-empty leaves are not opportunistically merged.
      */
-public boolean remove(char value, long count) {
-    validate();
-    Assert.gtZero(count, "count");
-    if (isSingleton()) {
+    public boolean remove(char value, long count) {
+        Assert.gtZero(count, "count");
+        validate();
+        if (isSingleton()) {
             Assert.assertion(CharComparisons.eq(value, singletonValue),
                     "CharComparisons.eq(value, singletonValue)");
             Assert.leq(count, "count", singletonCount, "singletonCount");
