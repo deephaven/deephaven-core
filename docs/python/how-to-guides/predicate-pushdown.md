@@ -14,7 +14,9 @@ Filters are prioritized for pushdown in the following order (from highest to low
 
 - Filtering [single value column sources](#single-value-column-sources).
 - Range and match filtering of Parquet data columns using [row group metadata](#parquet-row-group-metadata).
-- Filtering columns with an existing Deephaven [data index](#deephaven-data-indexes).
+- Filtering columns with a cached (already loaded in memory) Deephaven [data index](#deephaven-data-indexes).
+- Filtering columns with [dictionary encoding](#parquet-dictionary-encoding).
+- Filtering columns with an un-cached Deephaven [data index](#deephaven-data-indexes).
 
 > [!IMPORTANT]
 > Where multiple filters have the same pushdown priority, the user-supplied order will generally be maintained. Stateful filters and filter barriers are always respected during pushdown operations.
@@ -100,7 +102,6 @@ Under certain circumstances, you may want to disable specific predicate pushdown
 - [`QueryTable.disableWherePushdownParquetRowGroupMetadata`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/QueryTable.html#DISABLE_WHERE_PUSHDOWN_PARQUET_ROW_GROUP_METADATA) – disables consideration of Parquet row group metadata when filtering.
 - [`QueryTable.disableWherePushdownDataIndex`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/QueryTable.html#DISABLE_WHERE_PUSHDOWN_DATA_INDEX) – disables the use of file-level Deephaven data indexes when filtering.
 - [`QueryTable.disableWherePushdownDictionary`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/QueryTable.html#DISABLE_WHERE_PUSHDOWN_DICTIONARY) – disables the use of dictionary encoding when filtering.
--
 
 For more information, see the [Query table configuration](../conceptual/query-table-configuration.md) documentation.
 
