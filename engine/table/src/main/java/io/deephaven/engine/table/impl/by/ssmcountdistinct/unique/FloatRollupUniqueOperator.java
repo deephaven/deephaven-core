@@ -105,7 +105,7 @@ public class FloatRollupUniqueOperator implements IterativeChunkedAggregationOpe
 
             final long priorState = singletonCount.getUnsafe(destination);
             final float priorValue = internalResult.getUnsafe(destination);
-            loadState(destination, count, ssmHolder);
+            loadState(priorState, destination, count, ssmHolder);
             int addCount = 0;
             long nonUniqueDelta = 0;
             for (int kk = startPosition; kk < startPosition + runLength; ++kk) {
@@ -140,7 +140,7 @@ public class FloatRollupUniqueOperator implements IterativeChunkedAggregationOpe
 
             final long priorState = singletonCount.getUnsafe(destination);
             final float priorValue = internalResult.getUnsafe(destination);
-            loadState(destination, count, ssmHolder);
+            loadState(priorState, destination, count, ssmHolder);
             int removeCount = 0;
             long nonUniqueDelta = 0;
             for (int kk = startPosition; kk < startPosition + runLength; ++kk) {
@@ -179,7 +179,7 @@ public class FloatRollupUniqueOperator implements IterativeChunkedAggregationOpe
 
             final long priorState = singletonCount.getUnsafe(destination);
             final float priorValue = internalResult.getUnsafe(destination);
-            loadState(destination, count, ssmHolder);
+            loadState(priorState, destination, count, ssmHolder);
             long nonUniqueDelta = 0;
 
             // gather each constituent's previous contribution as a removal and its current one as an addition
@@ -226,7 +226,7 @@ public class FloatRollupUniqueOperator implements IterativeChunkedAggregationOpe
         final float priorValue = internalResult.getUnsafe(destination);
         final MutableLong count = new MutableLong();
         final MutableObject<FloatSegmentedSortedMultiset> ssmHolder = new MutableObject<>();
-        loadState(destination, count, ssmHolder);
+        loadState(priorState, destination, count, ssmHolder);
         int addCount = 0;
         long nonUniqueDelta = 0;
         for (int kk = 0; kk < chunkSize; ++kk) {
@@ -252,7 +252,7 @@ public class FloatRollupUniqueOperator implements IterativeChunkedAggregationOpe
         final float priorValue = internalResult.getUnsafe(destination);
         final MutableLong count = new MutableLong();
         final MutableObject<FloatSegmentedSortedMultiset> ssmHolder = new MutableObject<>();
-        loadState(destination, count, ssmHolder);
+        loadState(priorState, destination, count, ssmHolder);
         int removeCount = 0;
         long nonUniqueDelta = 0;
         for (int kk = 0; kk < chunkSize; ++kk) {
@@ -282,7 +282,7 @@ public class FloatRollupUniqueOperator implements IterativeChunkedAggregationOpe
         final float priorValue = internalResult.getUnsafe(destination);
         final MutableLong count = new MutableLong();
         final MutableObject<FloatSegmentedSortedMultiset> ssmHolder = new MutableObject<>();
-        loadState(destination, count, ssmHolder);
+        loadState(priorState, destination, count, ssmHolder);
         long nonUniqueDelta = 0;
 
         // gather each constituent's previous contribution as a removal and its current one as an addition
@@ -319,11 +319,11 @@ public class FloatRollupUniqueOperator implements IterativeChunkedAggregationOpe
     /**
      * Load {@code destination}'s multiset state once into the supplied holders so a run of constituents for the same
      * destination need not re-read {@code ssms} and {@code singletonCount}: the SSM (when two or more distinct values
-     * are present) goes into {@code ssmHolder}, otherwise the singleton count goes into {@code count}.
+     * are present) goes into {@code ssmHolder}, otherwise the singleton count goes into {@code count}. {@code sc} is
+     * the destination's current {@code singletonCount}, already read by the caller for change detection.
      */
-    private void loadState(long destination, MutableLong count,
+    private void loadState(long sc, long destination, MutableLong count,
             MutableObject<FloatSegmentedSortedMultiset> ssmHolder) {
-        final long sc = singletonCount.getUnsafe(destination);
         if (isNonUniqueState(sc)) {
             // only a non-unique encoding can be backed by an SSM holding two or more distinct values
             final FloatSegmentedSortedMultiset ssm = ssms.getCurrentSsm(destination);
