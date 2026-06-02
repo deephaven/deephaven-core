@@ -104,7 +104,7 @@ public abstract class ArrayColumnSource(int size) : IMutableColumnSource {
 }
 
 public sealed class ArrayColumnSource<T>(int size) : ArrayColumnSource(size), IMutableColumnSource<T> {
-  private readonly T[] _data = new T[size];
+  private readonly T?[] _data = new T?[size];
 
   public override void FillChunk(RowSequence rows, Chunk dest, BooleanChunk? nullFlags) {
     var typedChunk = (Chunk<T>)dest;

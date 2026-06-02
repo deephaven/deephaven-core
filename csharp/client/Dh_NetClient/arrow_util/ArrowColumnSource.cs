@@ -13,7 +13,6 @@ global using DoubleArrowColumnSource = Deephaven.Dh_NetClient.ArrowColumnSource<
 global using DateTimeOffsetArrowColumnSource = Deephaven.Dh_NetClient.ArrowColumnSource<System.DateTimeOffset>;
 global using LocalDateArrowColumnSource = Deephaven.Dh_NetClient.ArrowColumnSource<System.DateOnly>;
 global using LocalTimeArrowColumnSource = Deephaven.Dh_NetClient.ArrowColumnSource<System.TimeOnly>;
-
 using Apache.Arrow;
 using Apache.Arrow.Types;
 
@@ -181,7 +180,7 @@ abstract class FillChunkHelper {
 }
 
 sealed class ValueCopier<T>(Chunk<T> typedDest, BooleanChunk? nullFlags, T? deephavenNullValue)
-      : FillChunkHelper where T : struct {
+  : FillChunkHelper where T : struct {
   protected override void DoCopy(IArrowArray src, int srcOffset, int destOffset, int count) {
     var typedSrc = (IReadOnlyList<T?>)src;
     for (var i = 0; i < count; ++i) {
@@ -209,8 +208,12 @@ sealed class ValueCopier<T>(Chunk<T> typedDest, BooleanChunk? nullFlags, T? deep
   }
 }
 
-sealed class TransformingCopier<TSrc, TDest>(Chunk<TDest> typedDest, BooleanChunk? nullFlags,
-  TSrc deephavenNullValue, TDest transformedNullValue, Func<TSrc, TDest> transformer)
+sealed class TransformingCopier<TSrc, TDest>(
+  Chunk<TDest> typedDest,
+  BooleanChunk? nullFlags,
+  TSrc deephavenNullValue,
+  TDest transformedNullValue,
+  Func<TSrc, TDest> transformer)
   : FillChunkHelper where TSrc : struct where TDest : struct {
   protected override void DoCopy(IArrowArray src, int srcOffset, int destOffset, int count) {
     var typedSrc = (IReadOnlyList<TSrc?>)src;
@@ -246,6 +249,31 @@ sealed class ReferenceCopier<T>(Chunk<T> typedDest, BooleanChunk? nullFlags) : F
 
       ++srcOffset;
       ++destOffset;
+    }
+  }
+}
+
+sealed class ListCopier(ListChunk typedDest, BooleanChunk? nullFlags) : FillChunkHelper {
+  protected override void DoCopy(IArrowArray src, int srcOffset, int destOffset, int count) {
+    var typedSrc = (ListArray)src;
+    // var srcValues = (Apache.Arrow.Array)typedSrc.Values;
+    for (var i = 0; i < count; ++i, ++srcOffset, ++destOffset) {
+      if (src.IsNull(i)) {
+        if (nullFlags != null) {
+          typedDest.Data[destOffset] = null;
+          nullFlags.Data[destOffset] = true;
+        }
+        continue;
+      }
+
+      var slicedData = typedSrc.GetSlicedValues(srcOffset);
+
+      // var start = typedSrc.ValueOffsets[srcOffset];
+      // var end = typedSrc.ValueOffsets[srcOffset + 1];
+      // var slicedData = srcValues.Slice(start, end - start);
+      var sn = new AdaptorSelector();
+      slicedData.Accept(sn);
+      typedDest.Data[destOffset] = sn.Result;
     }
   }
 }
@@ -299,7 +327,8 @@ class ArrowColumnSourceMaker(ChunkedArray chunkedArray) :
   IArrowTypeVisitor<StringType>,
   IArrowTypeVisitor<TimestampType>,
   IArrowTypeVisitor<Date64Type>,
-  IArrowTypeVisitor<Time64Type> {
+  IArrowTypeVisitor<Time64Type>,
+  IArrowTypeVisitor<ListType> {
   public ArrowColumnSource? Result { get; private set; }
 
   public void Visit(UInt16Type type) {
@@ -350,7 +379,86 @@ class ArrowColumnSourceMaker(ChunkedArray chunkedArray) :
     Result = new LocalTimeArrowColumnSource(chunkedArray);
   }
 
+  public void Visit(ListType type) {
+    var visitor = new ElementTypeVisitor();
+    type.ValueDataType.Accept(visitor);
+    var elementType = visitor.Result!;
+    Result = new ListArrowColumnSource(chunkedArray, elementType);
+  }
+
   public void Visit(IArrowType type) {
     throw new Exception($"Arrow type {type.Name} is not supported");
+  }
+}
+
+public class ElementTypeVisitor :
+  IArrowTypeVisitor<UInt16Type>,
+  IArrowTypeVisitor<Int8Type>,
+  IArrowTypeVisitor<Int16Type>,
+  IArrowTypeVisitor<Int32Type>,
+  IArrowTypeVisitor<Int64Type>,
+  IArrowTypeVisitor<FloatType>,
+  IArrowTypeVisitor<DoubleType>,
+  IArrowTypeVisitor<BooleanType>,
+  IArrowTypeVisitor<StringType>,
+  IArrowTypeVisitor<TimestampType>,
+  IArrowTypeVisitor<Date64Type>,
+  IArrowTypeVisitor<Time64Type> {
+
+  public Type? Result { get; private set; }
+
+  public void Visit(UInt16Type type) {
+    Result = typeof(char);
+  }
+  public void Visit(Int8Type type) {
+    Result = typeof(SByte);
+  }
+  public void Visit(Int16Type type) {
+    Result = typeof(Int16);
+  }
+  public void Visit(Int32Type type) {
+    Result = typeof(Int32);
+  }
+  public void Visit(Int64Type type) {
+    Result = typeof(Int64);
+  }
+  public void Visit(FloatType type) {
+    Result = typeof(float);
+  }
+  public void Visit(DoubleType type) {
+    Result = typeof(double);
+  }
+  public void Visit(BooleanType type) {
+    Result = typeof(bool);
+  }
+  public void Visit(StringType type) {
+    Result = typeof(string);
+  }
+  public void Visit(TimestampType type) {
+    Result = typeof(DateTimeOffset);
+  }
+  public void Visit(Date64Type type) {
+    Result = typeof(DateOnly);
+  }
+  public void Visit(Time64Type type) {
+    Result = typeof(TimeOnly);
+  }
+
+  public void Visit(IArrowType type) {
+    throw new Exception($"Arrow type {type.Name} is not supported");
+  }
+}
+
+public class ListArrowColumnSource(ChunkedArray chunkedArray, Type elementType) : ArrowColumnSource, IListColumnSource, IHasElementType {
+  public Type ElementType => elementType;
+
+  public override void FillChunk(RowSequence rows, Chunk dest, BooleanChunk? nullFlags) {
+    var typedDest = (ListChunk)dest;
+    var lc = new ListCopier(typedDest, nullFlags);
+    lc.FillChunk(rows, chunkedArray);
+  }
+
+  public override void Accept(IColumnSourceVisitor visitor) {
+    IColumnSource.Accept(this, visitor);
   }
 }
