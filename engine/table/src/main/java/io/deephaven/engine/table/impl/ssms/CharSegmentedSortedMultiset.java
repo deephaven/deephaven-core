@@ -1125,9 +1125,10 @@ public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSe
      * caller to wrap it in a chunk. Empty leaves are dropped and the set collapses back toward the directory and
      * singleton representations, but non-empty leaves are not opportunistically merged.
      */
-    public boolean remove(char value, long count) {
-        validate();
-        if (isSingleton()) {
+public boolean remove(char value, long count) {
+    validate();
+    Assert.gtZero(count, "count");
+    if (isSingleton()) {
             Assert.assertion(CharComparisons.eq(value, singletonValue),
                     "CharComparisons.eq(value, singletonValue)");
             Assert.leq(count, "count", singletonCount, "singletonCount");
