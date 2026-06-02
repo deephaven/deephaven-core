@@ -3,7 +3,7 @@ title: Configure JS plugins
 sidebar_label: JS plugins
 ---
 
-The Deephaven server supports custom JS plugins that extend the functionality of the [server](https://github.com/deephaven/deephaven-core) and [web client UI](https://github.com/deephaven/web-client-ui). This guide shows you how to install JS plugins and provides examples for two specific plugins, [Plotly](https://plotly.com/) and [Matplotlib](https://matplotlib.org/).
+The Deephaven server supports custom JS plugins that extend the functionality of the [server](https://github.com/deephaven/deephaven-core) and [web client UI](https://github.com/deephaven/web-client-ui). This guide shows you how to install JS plugins and provides an example using the [Keycloak](https://www.keycloak.org/) authentication plugin, which is JS-only and works with `server-slim`.
 
 ## Quickstart
 
@@ -21,8 +21,6 @@ RUN pip install --no-cache-dir <packages>
 COPY --from=js-plugins js-plugins/ /opt/deephaven/config/js-plugins/
 ```
 
-<></>
-
 ```bash
 docker build -t my-deephaven-image .
 docker run --rm -p 10000:10000 my-deephaven-image
@@ -38,31 +36,20 @@ The JS plugins directory can also be set explicitly through the [configuration p
 
 ## Examples
 
-### Plotly
+### Keycloak authentication
 
-Here's an example installing the [Plotly](https://plotly.com/) JS plugin:
-
-```docker title="Dockerfile"
-FROM ghcr.io/deephaven/web-plugin-packager:latest as js-plugins
-RUN ./pack-plugins.sh @deephaven/js-plugin-plotly
-
-FROM ghcr.io/deephaven/server-slim:latest
-RUN pip install --no-cache-dir deephaven-plugin-plotly
-COPY --from=js-plugins js-plugins/ /opt/deephaven/config/js-plugins/
-```
-
-### Plotly + Matplotlib
-
-Here's an example installing the [Plotly](https://plotly.com/) and [Matplotlib](https://matplotlib.org/) JS plugins:
+Here's an example installing the [Keycloak](https://www.keycloak.org/) authentication JS plugin:
 
 ```docker title="Dockerfile"
 FROM ghcr.io/deephaven/web-plugin-packager:latest as js-plugins
-RUN ./pack-plugins.sh @deephaven/js-plugin-plotly @deephaven/js-plugin-matplotlib
+RUN ./pack-plugins.sh @deephaven/js-plugin-auth-keycloak
 
 FROM ghcr.io/deephaven/server-slim:latest
-RUN pip install --no-cache-dir deephaven-plugin-plotly deephaven-plugin-matplotlib
 COPY --from=js-plugins js-plugins/ /opt/deephaven/config/js-plugins/
 ```
+
+> [!NOTE]
+> The Keycloak plugin handles only the client-side authentication UI. Using it end-to-end also requires a running Keycloak server and server-side authentication configuration in Deephaven.
 
 ## Available JS plugins
 

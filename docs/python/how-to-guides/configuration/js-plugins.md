@@ -3,7 +3,7 @@ title: Configure JS plugins
 sidebar_label: JS plugins
 ---
 
-The Deephaven server supports custom JS plugins that extend the functionality of the [server](https://github.com/deephaven/deephaven-core) and [web client UI](https://github.com/deephaven/web-client-ui). This guide shows you how to install JS plugins and provides examples for two specific plugins, [Plotly](https://plotly.com/) and [Matplotlib](https://matplotlib.org/).
+The Deephaven server supports custom JS plugins that extend the functionality of the [server](https://github.com/deephaven/deephaven-core) and [web client UI](https://github.com/deephaven/web-client-ui). `server:latest` ships with several plugins pre-bundled, including Matplotlib, Plotly Express, and the Deephaven UI. This guide shows how to install a plugin that isn't included in the base image, using [Plotly](https://plotly.com/) (basic) as the example.
 
 ## Quickstart
 
@@ -20,8 +20,6 @@ RUN pip install --no-cache-dir <packages>
 # 3. Copy the js-plugins/ directory
 COPY --from=js-plugins js-plugins/ /opt/deephaven/config/js-plugins/
 ```
-
-<></>
 
 ```bash
 docker build -t my-deephaven-image .
@@ -40,7 +38,7 @@ The JS plugins directory can also be set explicitly through the [configuration p
 
 ### Plotly
 
-Here's an example installing the [Plotly](https://plotly.com/) JS plugin:
+Here's an example installing the [Plotly](https://plotly.com/) JS plugin. This is the basic Plotly plugin, which enables rendering of raw `plotly.graph_objects.Figure` objects — distinct from `deephaven-plugin-plotly-express`, which is pre-bundled in `server:latest`:
 
 ```docker title="Dockerfile"
 FROM ghcr.io/deephaven/web-plugin-packager:latest as js-plugins
@@ -48,19 +46,6 @@ RUN ./pack-plugins.sh @deephaven/js-plugin-plotly
 
 FROM ghcr.io/deephaven/server:latest
 RUN pip install --no-cache-dir deephaven-plugin-plotly
-COPY --from=js-plugins js-plugins/ /opt/deephaven/config/js-plugins/
-```
-
-### Plotly + Matplotlib
-
-Here's an example installing the [Plotly](https://plotly.com/) and [Matplotlib](https://matplotlib.org/) JS plugins:
-
-```docker title="Dockerfile"
-FROM ghcr.io/deephaven/web-plugin-packager:latest as js-plugins
-RUN ./pack-plugins.sh @deephaven/js-plugin-plotly @deephaven/js-plugin-matplotlib
-
-FROM ghcr.io/deephaven/server:latest
-RUN pip install --no-cache-dir deephaven-plugin-plotly deephaven-plugin-matplotlib
 COPY --from=js-plugins js-plugins/ /opt/deephaven/config/js-plugins/
 ```
 
