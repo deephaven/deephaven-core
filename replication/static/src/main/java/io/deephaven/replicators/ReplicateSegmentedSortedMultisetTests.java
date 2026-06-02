@@ -40,10 +40,26 @@ public class ReplicateSegmentedSortedMultisetTests {
         fixupFloatTests(charToDouble("replicateSegmentedSortedMultisetTests",
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/ssms/TestCharSegmentedSortedMultiset.java",
                 null));
-        final String objectSsaTest =
+        final String objectSsmTest =
                 charToObject("replicateSegmentedSortedMultisetTests",
                         "engine/table/src/test/java/io/deephaven/engine/table/impl/ssms/TestCharSegmentedSortedMultiset.java");
-        fixupObjectSsaTest(objectSsaTest);
+        fixupObjectSsmTest(objectSsmTest);
+
+        final String compactModificationsTest =
+                "engine/table/src/test/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/compactmodifications/TestCharCompactModifications.java";
+        charToAllButBooleanAndFloats("replicateSegmentedSortedMultisetTests", compactModificationsTest);
+        fixupFloatTests(charToFloat("replicateSegmentedSortedMultisetTests", compactModificationsTest, null));
+        fixupFloatTests(charToDouble("replicateSegmentedSortedMultisetTests", compactModificationsTest, null));
+        fixupObjectCompactModificationsTest(
+                charToObject("replicateSegmentedSortedMultisetTests", compactModificationsTest));
+    }
+
+    private static void fixupObjectCompactModificationsTest(String objectPath) throws IOException {
+        final File objectFile = new File(objectPath);
+        List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
+        lines = globalReplacements(lines, "NULL_OBJECT", "null");
+        lines = removeImport(lines, "\\s*import static.*QueryConstants.*;");
+        FileUtils.writeLines(objectFile, ReplicationUtils.fixupChunkAttributes(lines));
     }
 
     private static void fixupFloatTests(String path) throws IOException {
@@ -53,7 +69,7 @@ public class ReplicateSegmentedSortedMultisetTests {
         FileUtils.writeLines(file, lines);
     }
 
-    private static void fixupObjectSsaTest(String objectPath) throws IOException {
+    private static void fixupObjectSsmTest(String objectPath) throws IOException {
         final File objectFile = new File(objectPath);
         List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
         lines = globalReplacements(lines, "NULL_OBJECT", "null",
@@ -63,6 +79,8 @@ public class ReplicateSegmentedSortedMultisetTests {
                 "new ObjectSegmentedSortedMultiset(desc.nodeSize(), Object.class)");
         lines = removeImport(lines, "\\s*import static.*QueryConstants.*;");
         lines = removeRegion(lines, "SortFixupSanityCheck");
+        // the null-sentinel equality semantics are specific to the primitive types
+        lines = removeRegion(lines, "NullEquals");
         FileUtils.writeLines(objectFile, ReplicationUtils.fixupChunkAttributes(lines));
     }
 }

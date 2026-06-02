@@ -16,10 +16,9 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.vector.ObjectVector;
 import io.deephaven.vector.ObjectVectorDirect;
-import io.deephaven.vector.ObjectVector;
 import io.deephaven.util.compare.ObjectComparisons;
 import io.deephaven.util.type.ArrayTypeUtils;
-import io.deephaven.engine.table.impl.by.SumIntChunk;
+import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.table.impl.sort.timsort.TimsortUtils;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.ChunkLengths;
@@ -54,6 +53,14 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
     private Object[][] leafValues;
     private long[][] leafCounts;
 
+    /**
+     * When the set holds exactly one distinct value we avoid allocating the directory arrays and store the single value
+     * and its count directly here. This singleton state is identified by
+     * {@code leafCount == 1 && directoryValues == null}.
+     */
+    private Object singletonValue;
+    private long singletonCount;
+
     // region Deltas
     private transient boolean accumulateDeltas = false;
     private transient ObjectSet<Object> added;
@@ -87,17 +94,32 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
     // region Insertion
     @Override
     public boolean insert(WritableChunk<? extends Values> valuesToInsert, WritableIntChunk<ChunkLengths> counts) {
+        return insert(valuesToInsert, counts, 0, valuesToInsert.size());
+    }
+
+    @Override
+    public boolean insert(WritableChunk<? extends Values> valuesToInsert, WritableIntChunk<ChunkLengths> counts,
+            int offset, int length) {
+        return insert(valuesToInsert.asWritableObjectChunk(), counts, offset, length);
+    }
+
+    /**
+     * Insert the {@code length} values beginning at {@code offset}; accepts an already-typed chunk so callers that
+     * repeatedly insert from the same backing chunk can cast it once rather than per call.
+     */
+    public boolean insert(WritableObjectChunk<Object, ? extends Values> valuesToInsert, WritableIntChunk<ChunkLengths> counts,
+            int offset, int length) {
         final long beforeSize = size();
-        insert(valuesToInsert.asWritableObjectChunk(), counts);
+        insertInternal(valuesToInsert, counts, offset, length);
         return beforeSize != size();
     }
 
     private int insertExistingIntoLeaf(WritableObjectChunk<Object, ? extends Values> valuesToInsert,
             WritableIntChunk<ChunkLengths> counts, int ripos, MutableInt wipos, int leafSize, Object[] leafValues,
-            long[] leafCounts, Object maxInsert, boolean lastLeaf) {
+            long[] leafCounts, Object maxInsert, boolean lastLeaf, int end) {
         int rlpos = 0;
         Object nextValue;
-        while (rlpos < leafSize && ripos < valuesToInsert.size()
+        while (rlpos < leafSize && ripos < end
                 && (ObjectComparisons.leq(nextValue = valuesToInsert.get(ripos), maxInsert) || lastLeaf)) {
             if (ObjectComparisons.gt(leafValues[rlpos], nextValue)) {
                 // we're not going to find nextValue in this leaf, so we skip over it
@@ -109,13 +131,14 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
                 rlpos = upperBound(leafValues, rlpos, leafSize, nextValue);
                 if (rlpos < leafSize) {
                     if (ObjectComparisons.eq(leafValues[rlpos], nextValue)) {
+                        totalSize += counts.get(ripos);
                         leafCounts[rlpos] += counts.get(ripos);
                         ripos++;
                     }
                 } else if (rlpos == leafSize) {
                     // we have hit the end of the leaf, we can not insert any value that is less than maxvalue
-                    final int lastInsert = lastLeaf ? valuesToInsert.size()
-                            : upperBound(valuesToInsert, ripos, valuesToInsert.size(), maxInsert);
+                    final int lastInsert = lastLeaf ? end
+                            : upperBound(valuesToInsert, ripos, end, maxInsert);
 
                     // noinspection unchecked
                     valuesToInsert.copyFromTypedChunk((WritableObjectChunk) valuesToInsert, ripos, wipos.get(),
@@ -164,6 +187,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
 
             if (useInsertValue) {
                 leafValues[wleaf][wpos] = insertValue;
+                totalSize += counts.get(ripos);
                 leafCounts[wleaf][wpos] = counts.get(ripos);
                 ripos--;
                 wpos--;
@@ -183,6 +207,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
                         valuesToInsert.copyToTypedArray(minInsert, leafValues[wleaf], wpos - gallopLength + 1,
                                 gallopLength);
                         while (ripos >= minInsert) {
+                            totalSize += counts.get(ripos);
                             leafCounts[wleaf][wpos--] = counts.get(ripos--);
                         }
                         remaining -= gallopLength;
@@ -254,6 +279,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
                 final int copySize = wpos + 1;
                 valuesToInsert.copyToTypedArray(ripos - wpos, leafValues[wleaf], 0, copySize);
                 for (int ii = 0; ii < copySize; ++ii) {
+                    totalSize += counts.get(ripos - (copySize - 1) + ii);
                     leafCounts[wleaf][ii] = counts.get(ripos - (copySize - 1) + ii);
                 }
                 ripos -= copySize;
@@ -308,8 +334,9 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
 
             if (ObjectComparisons.gt(insertValue, leafValue)) {
                 leafValues[wpos] = insertValue;
+                totalSize += counts.get(ripos);
                 leafCounts[wpos] = counts.get(ripos);
-                if (ripos == 0) {
+                if (ripos == insertStart) {
                     // all that is left is the leaf so we are completed
                     return;
                 }
@@ -319,17 +346,18 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
                 iwins++;
                 lwins = 0;
                 if (iwins > minGallop) {
-                    final int minInsert = gallopBound(valuesToInsert, 0, ripos + 1, leafValue);
+                    final int minInsert = gallopBound(valuesToInsert, insertStart, ripos + 1, leafValue);
 
                     final int gallopLength = ripos - minInsert + 1;
 
                     if (gallopLength > 0) {
                         valuesToInsert.copyToTypedArray(minInsert, leafValues, wpos - gallopLength + 1, gallopLength);
                         while (ripos >= minInsert) {
+                            totalSize += counts.get(ripos);
                             leafCounts[wpos--] = counts.get(ripos--);
                         }
 
-                        if (ripos == -1) {
+                        if (ripos < insertStart) {
                             return;
                         }
                     }
@@ -383,96 +411,118 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
             WritableIntChunk<ChunkLengths> counts, int insertStart, Object[] leafValues, long[] leafCounts, int ripos) {
         valuesToInsert.copyToTypedArray(insertStart, leafValues, 0, ripos - insertStart + 1);
         for (int ii = 0; ii < ripos - insertStart + 1; ++ii) {
+            totalSize += counts.get(ii + insertStart);
             leafCounts[ii] = counts.get(ii + insertStart);
         }
     }
 
-    private void maybeCompact(WritableObjectChunk<Object, ? extends Values> valuesToInsert, WritableIntChunk<ChunkLengths> counts,
-            int ripos, int wipos) {
-        if (wipos == ripos) {
-            return;
+    /**
+     * Compact the surviving (genuinely new) values into {@code [offset, offset + result)}, leaving the rest of the
+     * shared chunk untouched, and return the number of survivors. Unlike a size-based compaction this never resizes the
+     * chunk, so the caller may pass a sub-range of a larger chunk.
+     */
+    private int maybeCompact(WritableObjectChunk<Object, ? extends Values> valuesToInsert, WritableIntChunk<ChunkLengths> counts,
+            int offset, int ripos, int wipos, int end) {
+        final int toCopy = end - ripos;
+        if (wipos != ripos && toCopy > 0) {
+            // we've found something to compact away
+            // noinspection unchecked - how the heck does this type not actuall work?
+            valuesToInsert.copyFromTypedChunk((ObjectChunk) valuesToInsert, ripos, wipos, toCopy);
+            counts.copyFromChunk(counts, ripos, wipos, toCopy);
         }
-        // we've found something to compact away
-        final int originalSize = valuesToInsert.size();
-        final int toCopy = originalSize - ripos;
-        // noinspection unchecked - how the heck does this type not actuall work?
-        valuesToInsert.copyFromTypedChunk((ObjectChunk) valuesToInsert, ripos, wipos, toCopy);
-        counts.copyFromChunk(counts, ripos, wipos, toCopy);
-        valuesToInsert.setSize(wipos + toCopy);
-        counts.setSize(wipos + toCopy);
+        return (wipos - offset) + toCopy;
     }
 
-    private void insertExisting(WritableObjectChunk<Object, ? extends Values> valuesToInsert,
-            WritableIntChunk<ChunkLengths> counts) {
+    /**
+     * Merge the counts of any values in {@code [offset, offset + length)} that already exist in this set, and compact
+     * the values that are genuinely new into {@code [offset, offset + result)}. Returns the number of new values.
+     */
+    private int insertExisting(WritableObjectChunk<Object, ? extends Values> valuesToInsert,
+            WritableIntChunk<ChunkLengths> counts, int offset, int length) {
+        final int end = offset + length;
         if (leafCount == 0) {
-            return;
+            return length;
         }
         if (leafCount == 1) {
-            final MutableInt wipos = new MutableInt(0);
-            final int ripos = insertExistingIntoLeaf(valuesToInsert, counts, 0, wipos, size, directoryValues,
-                    directoryCount, null, true);
-            maybeCompact(valuesToInsert, counts, ripos, wipos.get());
-            return;
+            final MutableInt wipos = new MutableInt(offset);
+            final int ripos = insertExistingIntoLeaf(valuesToInsert, counts, offset, wipos, size, directoryValues,
+                    directoryCount, null, true, end);
+            return maybeCompact(valuesToInsert, counts, offset, ripos, wipos.get(), end);
         }
 
         // we have multiple leaves that we should insert into
-        final MutableInt wipos = new MutableInt(0);
-        int ripos = 0;
+        final MutableInt wipos = new MutableInt(offset);
+        int ripos = offset;
         int nextLeaf = 0;
-        while (ripos < valuesToInsert.size()) {
+        while (ripos < end) {
             final Object startValue = valuesToInsert.get(ripos);
             nextLeaf = lowerBoundExclusive(directoryValues, nextLeaf, leafCount - 1, startValue);
             // find the thing in directoryValues
             final boolean lastLeaf = nextLeaf == leafCount - 1;
             final Object maxValue = lastLeaf ? null : directoryValues[nextLeaf];
             ripos = insertExistingIntoLeaf(valuesToInsert, counts, ripos, wipos, leafSizes[nextLeaf],
-                    leafValues[nextLeaf], leafCounts[nextLeaf], maxValue, lastLeaf);
+                    leafValues[nextLeaf], leafCounts[nextLeaf], maxValue, lastLeaf, end);
             if (lastLeaf) {
                 break;
             }
         }
-        maybeCompact(valuesToInsert, counts, ripos, wipos.get());
+        return maybeCompact(valuesToInsert, counts, offset, ripos, wipos.get(), end);
     }
 
-    private void insert(WritableObjectChunk<Object, ? extends Values> valuesToInsert, WritableIntChunk<ChunkLengths> counts) {
+    private void insertInternal(WritableObjectChunk<Object, ? extends Values> valuesToInsert,
+            WritableIntChunk<ChunkLengths> counts,
+            int offset, int length) {
         validate();
-        validateInputs(valuesToInsert, counts);
-        if (valuesToInsert.size() == 0) {
+        validateInputs(valuesToInsert, counts, offset, length);
+        if (length == 0) {
             return;
         }
-
-        totalSize += SumIntChunk.sumIntChunk(counts, 0, counts.size());
 
         if (leafCount == 0) {
             // we are creating something brand new
-            makeLeavesInitial(valuesToInsert, counts);
-            maybeAccumulateAdditions(valuesToInsert);
-            validate();
-            return;
-        }
-        insertExisting(valuesToInsert, counts);
-
-        if (valuesToInsert.size() == 0) {
+            makeLeavesInitial(valuesToInsert, counts, offset, length);
+            maybeAccumulateAdditions(valuesToInsert, offset, length);
             validate();
             return;
         }
 
-        maybeAccumulateAdditions(valuesToInsert);
+        if (isSingleton()) {
+            if (length == 1 && ObjectComparisons.eq(valuesToInsert.get(offset), singletonValue)) {
+                // the only value being inserted is the one we already hold; just bump its count
+                singletonCount += counts.get(offset);
+                totalSize += counts.get(offset);
+                validate();
+                return;
+            }
+            // a second distinct value is arriving; expand to the directory representation and fall through
+            materializeSingleton(length);
+        }
 
-        if (leafCount > 1 && ObjectComparisons.gt(valuesToInsert.get(0), getMaxObject())) {
-            doAppend(valuesToInsert, counts);
+        // merge counts for values we already hold, compacting the genuinely new values into [offset, offset + length)
+        length = insertExisting(valuesToInsert, counts, offset, length);
+
+        if (length == 0) {
+            validate();
             return;
         }
 
-        final int newSize = valuesToInsert.size() + size;
+        maybeAccumulateAdditions(valuesToInsert, offset, length);
+
+        if (leafCount > 1 && ObjectComparisons.gt(valuesToInsert.get(offset), getMaxObject())) {
+            doAppend(valuesToInsert, counts, offset, length);
+            return;
+        }
+
+        final int end = offset + length;
+        final int newSize = length + size;
         final int desiredLeafCount = getDesiredLeafCount(newSize);
 
         // now we are inserting things, which we know to be new
         if (leafCount == 1) {
             // if we are too small to fit the excess, increase our size
             final int freeLocations = directoryValues.length - size;
-            if (freeLocations < valuesToInsert.size()) {
-                if (size + valuesToInsert.size() > leafSize) {
+            if (freeLocations < length) {
+                if (size + length > leafSize) {
                     // we must move the directory into the first leaf
                     moveDirectoryToLeaf(desiredLeafCount);
                 } else {
@@ -482,7 +532,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
             }
             if (desiredLeafCount == 1) {
                 // we should fit into the existing leaf
-                insertNewIntoLeaf(valuesToInsert, counts, 0, valuesToInsert.size(), size, directoryValues,
+                insertNewIntoLeaf(valuesToInsert, counts, offset, length, size, directoryValues,
                         directoryCount);
                 size = newSize;
                 validate();
@@ -493,7 +543,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
         // this might not be enough, but we should at least start out with enough room for what we will insert
         reallocateLeafArrays(desiredLeafCount);
 
-        int rpos = 0;
+        int rpos = offset;
         int nextLeaf = 0;
 
         do {
@@ -505,10 +555,10 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
             final int lastInsertValue;
             if (nextLeaf == leafCount - 1) {
                 // we should insert all of the remaining values in this leaf
-                lastInsertValue = valuesToInsert.size();
+                lastInsertValue = end;
             } else {
                 final Object lastLeafValue = directoryValues[nextLeaf];
-                lastInsertValue = upperBound(valuesToInsert, rpos, valuesToInsert.size(), lastLeafValue);
+                lastInsertValue = upperBound(valuesToInsert, rpos, end, lastLeafValue);
             }
             final int originalLeafSize = leafSizes[nextLeaf];
             final int insertIntoLeaf = lastInsertValue - rpos;
@@ -524,7 +574,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
                     newLeafSize);
 
             rpos += insertIntoLeaf;
-        } while (rpos < valuesToInsert.size());
+        } while (rpos < end);
 
         validate();
     }
@@ -553,28 +603,30 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
         directoryValues = new Object[desiredLeafCount - 1];
     }
 
-    private void doAppend(WritableObjectChunk<Object, ? extends Values> valuesToInsert, WritableIntChunk<ChunkLengths> counts) {
+    private void doAppend(WritableObjectChunk<Object, ? extends Values> valuesToInsert, WritableIntChunk<ChunkLengths> counts,
+            int offset, int length) {
         // We are doing a special case of appending to the SSM
         final int lastLeafIndex = leafCount - 1;
         final int lastLeafSize = leafSizes[lastLeafIndex];
         final int lastLeafFree = this.leafSize - lastLeafSize;
-        int rpos = 0;
+        final int end = offset + length;
+        int rpos = offset;
         if (lastLeafFree > 0) {
-            final int insertCount = Math.min(lastLeafFree, valuesToInsert.size());
+            final int insertCount = Math.min(lastLeafFree, length);
             insertNewIntoLeaf(valuesToInsert, counts, rpos, insertCount, lastLeafSize, leafValues[lastLeafIndex],
                     leafCounts[lastLeafIndex]);
             leafSizes[lastLeafIndex] += insertCount;
             rpos += insertCount;
-            if (insertCount == valuesToInsert.size()) {
+            if (insertCount == length) {
                 size += insertCount;
                 validate();
                 return;
             }
         }
-        final int newLeavesRequired = getDesiredLeafCount(valuesToInsert.size() - rpos);
+        final int newLeavesRequired = getDesiredLeafCount(end - rpos);
         reallocateLeafArrays(leafCount + newLeavesRequired);
         // we need to fixup the directory from the last leaf
-        if (rpos > 0) {
+        if (rpos > offset) {
             directoryValues[lastLeafIndex] = valuesToInsert.get(rpos - 1);
         } else {
             assert leafSizes[lastLeafIndex] == leafSize;
@@ -582,8 +634,8 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
         }
         final int oldLeafCount = leafCount;
         leafCount += newLeavesRequired;
-        packValuesIntoLeaves(valuesToInsert, counts, rpos, oldLeafCount, leafSize);
-        size += valuesToInsert.size();
+        packValuesIntoLeaves(valuesToInsert, counts, rpos, oldLeafCount, leafSize, end);
+        size += length;
         validate();
     }
 
@@ -638,30 +690,40 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
         return Math.max(minimumSize, leafSizes.length * 2);
     }
 
-    private void makeLeavesInitial(ObjectChunk<Object, ? extends Values> values, IntChunk<ChunkLengths> counts) {
-        leafCount = getDesiredLeafCount(values.size());
-        size = values.size();
+    private void makeLeavesInitial(ObjectChunk<Object, ? extends Values> values, IntChunk<ChunkLengths> counts, int offset,
+            int length) {
+        leafCount = getDesiredLeafCount(length);
+        size = length;
+
+        if (size == 1) {
+            // store the single value directly without allocating the directory arrays
+            singletonValue = values.get(offset);
+            singletonCount = counts.get(offset);
+            totalSize += singletonCount;
+            return;
+        }
 
         if (leafCount == 1) {
-            directoryValues = new Object[values.size()];
-            directoryCount = new long[values.size()];
-            values.copyToTypedArray(0, directoryValues, 0, values.size());
-            for (int ii = 0; ii < counts.size(); ++ii) {
-                directoryCount[ii] = counts.get(ii);
+            directoryValues = new Object[length];
+            directoryCount = new long[length];
+            values.copyToTypedArray(offset, directoryValues, 0, length);
+            for (int ii = 0; ii < length; ++ii) {
+                directoryCount[ii] = counts.get(offset + ii);
+                totalSize += directoryCount[ii];
             }
             return;
         }
 
         allocateLeafArrays(leafCount);
 
-        final int valuesPerLeaf = valuesPerLeaf(values.size(), leafCount);
-        packValuesIntoLeaves(values, counts, 0, 0, valuesPerLeaf);
+        final int valuesPerLeaf = valuesPerLeaf(length, leafCount);
+        packValuesIntoLeaves(values, counts, offset, 0, valuesPerLeaf, offset + length);
     }
 
     private void packValuesIntoLeaves(ObjectChunk<Object, ? extends Values> values, IntChunk<ChunkLengths> counts, int rpos,
-            int startLeaf, int valuesPerLeaf) {
-        while (rpos < values.size()) {
-            final int thisLeafSize = Math.min(valuesPerLeaf, values.size() - rpos);
+            int startLeaf, int valuesPerLeaf, int end) {
+        while (rpos < end) {
+            final int thisLeafSize = Math.min(valuesPerLeaf, end - rpos);
             leafSizes[startLeaf] = thisLeafSize;
             leafValues[startLeaf] = new Object[leafSize];
             values.copyToTypedArray(rpos, leafValues[startLeaf], 0, thisLeafSize);
@@ -669,6 +731,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
             for (int ii = 0; ii < thisLeafSize; ++ii) {
                 leafValues[startLeaf][ii] = values.get(rpos + ii);
                 leafCounts[startLeaf][ii] = counts.get(rpos + ii);
+                totalSize += counts.get(rpos + ii);
             }
             if (startLeaf < leafCount - 1) {
                 directoryValues[startLeaf] = leafValues[startLeaf][thisLeafSize - 1];
@@ -688,6 +751,40 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
         leafSizes = null;
         directoryValues = null;
         directoryCount = null;
+        singletonCount = 0;
+        singletonValue = null;
+    }
+
+    private boolean isSingleton() {
+        return leafCount == 1 && directoryValues == null;
+    }
+
+    /**
+     * Expand the singleton representation into directory arrays so the existing array-based code paths can operate on
+     * it. The arrays are sized to hold the current value plus {@code incomingValueCount} values about to be inserted
+     * (capped at {@code leafSize}), to avoid an immediate reallocation.
+     */
+    private void materializeSingleton(int incomingValueCount) {
+        if (!isSingleton()) {
+            return;
+        }
+        final int capacity = Math.min(leafSize, 1 + incomingValueCount);
+        directoryValues = new Object[capacity];
+        directoryCount = new long[capacity];
+        directoryValues[0] = singletonValue;
+        directoryCount[0] = singletonCount;
+    }
+
+    /**
+     * Collapse a single-leaf directory that holds exactly one value back into the singleton representation, releasing
+     * the directory arrays.
+     */
+    private void collapseToSingleton() {
+        singletonValue = directoryValues[0];
+        singletonCount = directoryCount[0];
+        directoryValues = null;
+        directoryCount = null;
+        size = 1;
     }
 
     // region Bounds search
@@ -859,37 +956,70 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
     @Override
     public boolean remove(RemoveContext removeContext, WritableChunk<? extends Values> valuesToRemove,
             WritableIntChunk<ChunkLengths> counts) {
+        return remove(removeContext, valuesToRemove, counts, 0, valuesToRemove.size());
+    }
+
+    @Override
+    public boolean remove(RemoveContext removeContext, WritableChunk<? extends Values> valuesToRemove,
+            WritableIntChunk<ChunkLengths> counts, int offset, int length) {
+        return remove(removeContext, valuesToRemove.asWritableObjectChunk(), counts, offset, length);
+    }
+
+    /**
+     * Remove the {@code length} values beginning at {@code offset}; accepts an already-typed chunk so callers that
+     * repeatedly remove from the same backing chunk can cast it once rather than per call.
+     */
+    public boolean remove(RemoveContext removeContext, WritableObjectChunk<Object, ? extends Values> valuesToRemove,
+            WritableIntChunk<ChunkLengths> counts, int offset, int length) {
         final long beforeSize = size();
-        remove(removeContext, valuesToRemove.asObjectChunk(), counts);
+        removeInternal(removeContext, valuesToRemove, counts, offset, length);
         return beforeSize != size();
     }
 
-    private void remove(RemoveContext removeContext, ObjectChunk<Object, ? extends Values> valuesToRemove,
-            IntChunk<ChunkLengths> counts) {
+    private void removeInternal(RemoveContext removeContext, ObjectChunk<Object, ? extends Values> valuesToRemove,
+            IntChunk<ChunkLengths> counts, int offset, int length) {
         validate();
-        validateInputs(valuesToRemove, counts);
+        validateInputs(valuesToRemove, counts, offset, length);
 
-        final int removeSize = valuesToRemove.size();
-        if (removeSize == 0) {
+        if (length == 0) {
             return;
         }
 
-        totalSize -= SumIntChunk.sumIntChunk(counts, 0, counts.size());
+        final int end = offset + length;
+
+        if (isSingleton()) {
+            // by contract we only remove values that are present, so a singleton can only be asked to remove its one
+            // value
+            Assert.eq(length, "length", 1);
+            Assert.assertion(ObjectComparisons.eq(valuesToRemove.get(offset), singletonValue),
+                    "ObjectComparisons.eq(valuesToRemove.get(offset), singletonValue)");
+            singletonCount -= counts.get(offset);
+            totalSize -= counts.get(offset);
+            Assert.geqZero(singletonCount, "singletonCount");
+            if (singletonCount == 0) {
+                maybeAccumulateRemoval(singletonValue);
+                clear();
+            }
+            validate();
+            return;
+        }
 
         if (leafCount == 1) {
             final MutableInt sz = new MutableInt(size);
-            final int consumed = removeFromLeaf(removeContext, valuesToRemove, counts, 0, valuesToRemove.size(),
+            final int consumed = removeFromLeaf(removeContext, valuesToRemove, counts, offset, end,
                     directoryValues, directoryCount, sz);
-            assert consumed == valuesToRemove.size();
+            assert consumed == end;
             if (sz.get() == 0) {
                 clear();
+            } else if (sz.get() == 1) {
+                collapseToSingleton();
             } else {
                 size = sz.get();
             }
         } else {
             removeContext.ensureLeafCount((leafCount + 1) / 2);
 
-            int rpos = 0;
+            int rpos = offset;
             int nextLeaf = 0;
             int cl = -1;
             do {
@@ -898,7 +1028,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
                 nextLeaf = lowerBound(directoryValues, nextLeaf, leafCount - 1, firstValueToRemove);
 
                 final MutableInt sz = new MutableInt(leafSizes[nextLeaf]);
-                rpos = removeFromLeaf(removeContext, valuesToRemove, counts, rpos, valuesToRemove.size(),
+                rpos = removeFromLeaf(removeContext, valuesToRemove, counts, rpos, end,
                         leafValues[nextLeaf], leafCounts[nextLeaf], sz);
                 size -= leafSizes[nextLeaf] - sz.get();
                 leafSizes[nextLeaf] = sz.get();
@@ -940,7 +1070,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
                 nextLeaf++;
 
                 validateCompaction(removeContext, cl);
-            } while (rpos < valuesToRemove.size());
+            } while (rpos < end);
 
             if (size == 0) {
                 clear();
@@ -1110,6 +1240,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
                 break;
             }
             leafCounts[rlpos] -= counts.get(ripos);
+            totalSize -= counts.get(ripos);
             Assert.geqZero(leafCounts[rlpos], "leafCounts[rlpos]");
             if (leafCounts[rlpos] == 0) {
                 maybeAccumulateRemoval(removeValue);
@@ -1178,15 +1309,16 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
         validateInternal();
     }
 
-    private void validateInputs(ObjectChunk<Object, ? extends Values> valuesToInsert, IntChunk<ChunkLengths> counts) {
+    private void validateInputs(ObjectChunk<Object, ? extends Values> valuesToInsert, IntChunk<ChunkLengths> counts, int offset,
+            int length) {
         if (!SEGMENTED_SORTED_MULTISET_VALIDATION) {
             return;
         }
-        Assert.eq(valuesToInsert.size(), "valuesToInsert.size()", counts.size(), "counts.size()");
-        if (counts.size() > 0) {
-            Assert.gtZero(counts.get(0), "counts.get(ii)");
+        final int end = offset + length;
+        if (length > 0) {
+            Assert.gtZero(counts.get(offset), "counts.get(offset)");
         }
-        for (int ii = 1; ii < valuesToInsert.size(); ++ii) {
+        for (int ii = offset + 1; ii < end; ++ii) {
             Assert.gtZero(counts.get(ii), "counts.get(ii)");
             final Object prevValue = valuesToInsert.get(ii - 1);
             final Object curValue = valuesToInsert.get(ii);
@@ -1210,6 +1342,15 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
             Assert.eqNull(leafSizes, "leafSizes");
             Assert.eqNull(directoryCount, "directoryIndex");
             Assert.eqNull(directoryValues, "directoryValues");
+        } else if (leafCount == 1 && directoryValues == null) {
+            // singleton state: the single value and its count are held directly
+            Assert.eqNull(leafValues, "leafValues");
+            Assert.eqNull(leafCounts, "leafValues");
+            Assert.eqNull(leafSizes, "leafSizes");
+            Assert.eqNull(directoryCount, "directoryCount");
+            Assert.eq(size, "size", 1);
+            Assert.gtZero(singletonCount, "singletonCount");
+            Assert.eq(totalSize, "totalSize", singletonCount, "singletonCount");
         } else if (leafCount == 1) {
             Assert.eqNull(leafValues, "leafValues");
             Assert.eqNull(leafCounts, "leafValues");
@@ -1359,7 +1500,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
         if (leafCount == 0) {
             throw new IllegalStateException();
         } else if (leafCount == 1) {
-            return directoryValues[0];
+            return directoryValues == null ? singletonValue : directoryValues[0];
         }
         return leafValues[0][0];
     }
@@ -1369,7 +1510,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
         if (leafCount == 0) {
             throw new IllegalStateException();
         } else if (leafCount == 1) {
-            return directoryCount[0];
+            return directoryCount == null ? singletonCount : directoryCount[0];
         }
         return leafCounts[0][0];
     }
@@ -1378,7 +1519,11 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
         if (leafCount == 0) {
             throw new IllegalStateException();
         } else if (leafCount == 1) {
-            directoryCount[0] += toAdd;
+            if (directoryCount == null) {
+                singletonCount += toAdd;
+            } else {
+                directoryCount[0] += toAdd;
+            }
         } else {
             leafCounts[0][0] += toAdd;
         }
@@ -1417,7 +1562,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
         if (leafCount == 0) {
             throw new IllegalStateException();
         } else if (leafCount == 1) {
-            return directoryValues[size - 1];
+            return directoryValues == null ? singletonValue : directoryValues[size - 1];
         }
         return leafValues[leafCount - 1][leafSizes[leafCount - 1] - 1];
     }
@@ -1427,7 +1572,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
         if (leafCount == 0) {
             throw new IllegalStateException();
         } else if (leafCount == 1) {
-            return directoryCount[size - 1];
+            return directoryCount == null ? singletonCount : directoryCount[size - 1];
         }
         return leafCounts[leafCount - 1][leafSizes[leafCount - 1] - 1];
     }
@@ -1436,7 +1581,11 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
         if (leafCount == 0) {
             throw new IllegalStateException();
         } else if (leafCount == 1) {
-            directoryCount[size - 1] += toAdd;
+            if (directoryCount == null) {
+                singletonCount += toAdd;
+            } else {
+                directoryCount[size - 1] += toAdd;
+            }
         } else {
             leafCounts[leafCount - 1][leafSizes[leafCount - 1] - 1] += toAdd;
         }
@@ -1462,6 +1611,134 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
         }
     }
 
+    /**
+     * Append {@code count} copies of {@code value} as a new maximum element. {@code value} must be strictly greater
+     * than the current maximum, or this set must be empty.
+     */
+    private void appendMaximum(Object value, long count) {
+        totalSize += count;
+        if (leafCount == 0) {
+            singletonValue = value;
+            singletonCount = count;
+            size = 1;
+            leafCount = 1;
+            return;
+        }
+        // a new distinct value is arriving, so we must use the directory/leaf representation
+        if (isSingleton()) {
+            materializeSingleton(1);
+        }
+        if (leafCount == 1) {
+            final int newSize = size + 1;
+            if (newSize <= leafSize) {
+                if (directoryValues.length < newSize) {
+                    directoryValues = Arrays.copyOf(directoryValues, newSize);
+                    directoryCount = Arrays.copyOf(directoryCount, newSize);
+                }
+                directoryValues[size] = value;
+                directoryCount[size] = count;
+                size = newSize;
+                return;
+            }
+            // the single leaf is full; convert it into a leaf and append the value into a fresh trailing leaf
+            moveDirectoryToLeaf(2);
+            directoryValues[0] = leafValues[0][leafSize - 1];
+            leafValues[1] = new Object[leafSize];
+            leafCounts[1] = new long[leafSize];
+            leafValues[1][0] = value;
+            leafCounts[1][0] = count;
+            leafSizes[1] = 1;
+            leafCount = 2;
+            size++;
+            return;
+        }
+        final int lastLeaf = leafCount - 1;
+        final int lastLeafSize = leafSizes[lastLeaf];
+        if (lastLeafSize < leafSize) {
+            leafValues[lastLeaf][lastLeafSize] = value;
+            leafCounts[lastLeaf][lastLeafSize] = count;
+            leafSizes[lastLeaf] = lastLeafSize + 1;
+        } else {
+            reallocateLeafArrays(leafCount + 1);
+            directoryValues[lastLeaf] = leafValues[lastLeaf][leafSize - 1];
+            leafValues[leafCount] = new Object[leafSize];
+            leafCounts[leafCount] = new long[leafSize];
+            leafValues[leafCount][0] = value;
+            leafCounts[leafCount][0] = count;
+            leafSizes[leafCount] = 1;
+            leafCount++;
+        }
+        size++;
+    }
+
+    /**
+     * Prepend {@code count} copies of {@code value} as a new minimum element. {@code value} must be strictly less than
+     * the current minimum, or this set must be empty.
+     */
+    private void prependMinimum(Object value, long count) {
+        totalSize += count;
+        if (leafCount == 0) {
+            singletonValue = value;
+            singletonCount = count;
+            size = 1;
+            leafCount = 1;
+            return;
+        }
+        if (isSingleton()) {
+            materializeSingleton(1);
+        }
+        if (leafCount == 1) {
+            final int newSize = size + 1;
+            if (newSize <= leafSize) {
+                if (directoryValues.length < newSize) {
+                    // grow and shift in a single copy rather than copying then shifting
+                    final Object[] grownValues = new Object[newSize];
+                    final long[] grownCount = new long[newSize];
+                    System.arraycopy(directoryValues, 0, grownValues, 1, size);
+                    System.arraycopy(directoryCount, 0, grownCount, 1, size);
+                    directoryValues = grownValues;
+                    directoryCount = grownCount;
+                } else {
+                    System.arraycopy(directoryValues, 0, directoryValues, 1, size);
+                    System.arraycopy(directoryCount, 0, directoryCount, 1, size);
+                }
+                directoryValues[0] = value;
+                directoryCount[0] = count;
+                size = newSize;
+                return;
+            }
+            // the single leaf is full; move it to the trailing leaf and put the value alone in a fresh leading leaf
+            moveDirectoryToLeaf(2, 1);
+            leafValues[0] = new Object[leafSize];
+            leafCounts[0] = new long[leafSize];
+            leafValues[0][0] = value;
+            leafCounts[0][0] = count;
+            leafSizes[0] = 1;
+            directoryValues[0] = value;
+            leafCount = 2;
+            size++;
+            return;
+        }
+        final int firstLeafSize = leafSizes[0];
+        if (firstLeafSize < leafSize) {
+            System.arraycopy(leafValues[0], 0, leafValues[0], 1, firstLeafSize);
+            System.arraycopy(leafCounts[0], 0, leafCounts[0], 1, firstLeafSize);
+            leafValues[0][0] = value;
+            leafCounts[0][0] = count;
+            leafSizes[0] = firstLeafSize + 1;
+        } else {
+            makeLeafHole(0, 1);
+            leafCount++;
+            leafValues[0] = new Object[leafSize];
+            leafCounts[0] = new long[leafSize];
+            leafValues[0][0] = value;
+            leafCounts[0][0] = count;
+            leafSizes[0] = 1;
+            directoryValues[0] = value;
+        }
+        size++;
+    }
+
     // region Moving
     @Override
     public void moveFrontToBack(SegmentedSortedMultiSet untypedDestination, long count) {
@@ -1483,6 +1760,25 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
             }
         }
 
+        if (isSingleton()) {
+            // we hold a single value; it can only leave us, never grow our cardinality. Transfer count copies of it to
+            // the back of the destination (merging if it already holds that value as its maximum) and shed them.
+            if (destination.size > 0 && ObjectComparisons.eq(singletonValue, destination.getMaxObject())) {
+                destination.addMaxCount(count);
+            } else {
+                destination.appendMaximum(singletonValue, count);
+            }
+            totalSize -= count;
+            singletonCount -= count;
+            Assert.geqZero(singletonCount, "singletonCount");
+            if (singletonCount == 0) {
+                clear();
+            }
+            validate();
+            destination.validate();
+            return;
+        }
+
         if (destination.size > 0 && ObjectComparisons.eq(getMinObject(), destination.getMaxObject())) {
             final long minCount = getMinCount();
             final long toAdd;
@@ -1502,6 +1798,11 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
             destination.validate();
             return;
         }
+
+        // The source is not a singleton here, but the destination still might be; expand only the destination so the
+        // array-based machinery below can operate on it (it sizes the directory itself via
+        // prepareAppend/preparePrepend).
+        destination.materializeSingleton(1);
 
         final MutableLong remaining = new MutableLong(count);
         final MutableLong leftOverMutable = new MutableLong();
@@ -1918,6 +2219,25 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
             }
         }
 
+        if (isSingleton()) {
+            // we hold a single value; it can only leave us, never grow our cardinality. Transfer count copies of it to
+            // the front of the destination (merging if it already holds that value as its minimum) and shed them.
+            if (destination.size > 0 && ObjectComparisons.eq(singletonValue, destination.getMinObject())) {
+                destination.addMinCount(count);
+            } else {
+                destination.prependMinimum(singletonValue, count);
+            }
+            totalSize -= count;
+            singletonCount -= count;
+            Assert.geqZero(singletonCount, "singletonCount");
+            if (singletonCount == 0) {
+                clear();
+            }
+            validate();
+            destination.validate();
+            return;
+        }
+
         if (destination.size > 0 && ObjectComparisons.eq(getMaxObject(), destination.getMinObject())) {
             final long maxCount = getMaxCount();
             final long toAdd;
@@ -1936,6 +2256,11 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
         if (count == 0) {
             return;
         }
+
+        // The source is not a singleton here, but the destination still might be; expand only the destination so the
+        // array-based machinery below can operate on it (it sizes the directory itself via
+        // prepareAppend/preparePrepend).
+        destination.materializeSingleton(1);
 
         final MutableLong remaining = new MutableLong(count);
         final MutableLong leftOverMutable = new MutableLong();
@@ -2159,7 +2484,11 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
         }
 
         if (leafCount == 1) {
-            keyChunk.copyFromTypedArray(directoryValues, 0, offset, size);
+            if (directoryValues == null) {
+                keyChunk.set(offset, singletonValue);
+            } else {
+                keyChunk.copyFromTypedArray(directoryValues, 0, offset, size);
+            }
         } else if (leafCount > 0) {
             int destOffset = 0;
             for (int li = 0; li < leafCount; ++li) {
@@ -2173,7 +2502,11 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
     public WritableLongChunk<?> countChunk() {
         final WritableLongChunk<Any> countChunk = WritableLongChunk.makeWritableChunk(intSize());
         if (leafCount == 1) {
-            countChunk.copyFromTypedArray(directoryCount, 0, 0, size);
+            if (directoryCount == null) {
+                countChunk.set(0, singletonCount);
+            } else {
+                countChunk.copyFromTypedArray(directoryCount, 0, 0, size);
+            }
         } else if (leafCount > 0) {
             int offset = 0;
             for (int li = 0; li < leafCount; ++li) {
@@ -2207,7 +2540,11 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
         final Object[] keyArray = (Object[]) Array.newInstance(getComponentType(), totalSize);
         // endregion KeyArrayAllocation
         if (leafCount == 1) {
-            System.arraycopy(directoryValues, (int) first, keyArray, 0, totalSize);
+            if (directoryValues == null) {
+                keyArray[0] = singletonValue;
+            } else {
+                System.arraycopy(directoryValues, (int) first, keyArray, 0, totalSize);
+            }
         } else if (leafCount > 0) {
             int offset = 0;
             int copied = 0;
@@ -2236,25 +2573,27 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
     }
 
     // region Delta Management
-    private void maybeAccumulateAdditions(WritableObjectChunk<Object, ? extends Values> valuesToInsert) {
-        if (!accumulateDeltas || valuesToInsert.size() == 0) {
+    private void maybeAccumulateAdditions(WritableObjectChunk<Object, ? extends Values> valuesToInsert, int offset, int length) {
+        if (!accumulateDeltas || length == 0) {
             return;
         }
+
+        final int end = offset + length;
 
         if (prevValues == null) {
             prevValues = new ObjectVectorDirect(keyArray());
         }
 
         if (added == null) {
-            added = new ObjectOpenHashSet<>(valuesToInsert.size());
+            added = new ObjectOpenHashSet<>(length);
         }
 
         if (removed == null) {
-            for (int ii = 0; ii < valuesToInsert.size(); ii++) {
+            for (int ii = offset; ii < end; ii++) {
                 added.add(valuesToInsert.get(ii));
             }
         } else {
-            for (int ii = 0; ii < valuesToInsert.size(); ii++) {
+            for (int ii = offset; ii < end; ii++) {
                 Object val = valuesToInsert.get(ii);
                 // Only add to the 'added' set if it was not removed before.
                 // if it was then this key is a net-no-change.
@@ -2325,7 +2664,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
         }
 
         if (leafCount == 1) {
-            return directoryValues[(int) index];
+            return directoryValues == null ? singletonValue : directoryValues[(int) index];
         } else {
             for (int ii = 0; ii < leafCount; ii++) {
                 if (index < leafSizes[ii]) {
@@ -2380,7 +2719,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
 
     private boolean equalsArray(ObjectVector<?> o) {
         // region EqualsArrayTypeCheck
-        if(o.getComponentType() != o.getComponentType()) {
+        if(getComponentType() != o.getComponentType()) {
             return false;
         }
         // endregion EqualsArrayTypeCheck
@@ -2389,34 +2728,44 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
             return false;
         }
 
-        if (leafCount == 1) {
-            for (int ii = 0; ii < size; ii++) {
-                final Object val = (Object) o.get(ii);
+        // iterate o exactly once; random access via get can be expensive for some Vector implementations
+        try (final CloseableIterator<?> oit = o.iterator()) {
+            if (size == 1) {
+                final Object val = (Object) oit.next();
                 // region VectorEquals
                 // endregion VectorEquals
 
-                if (!Objects.equals(directoryValues[ii], val)) {
-                    return false;
+                return Objects.equals(get(0), val);
+            }
+
+            if (leafCount == 1) {
+                for (int ii = 0; ii < size; ii++) {
+                    final Object val = (Object) oit.next();
+                    // region VectorEquals
+                    // endregion VectorEquals
+
+                    if (!Objects.equals(directoryValues[ii], val)) {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+
+            for (int li = 0; li < leafCount; ++li) {
+                for (int ai = 0; ai < leafSizes[li]; ai++) {
+                    final Object val = (Object) oit.next();
+                    // region VectorEquals
+                    // endregion VectorEquals
+
+                    if (!Objects.equals(leafValues[li][ai], val)) {
+                        return false;
+                    }
                 }
             }
 
             return true;
         }
-
-        int nCompared = 0;
-        for (int li = 0; li < leafCount; ++li) {
-            for (int ai = 0; ai < leafSizes[li]; ai++) {
-                final Object val = (Object) o.get(nCompared++);
-                // region VectorEquals
-                // endregion VectorEquals
-
-                if (!Objects.equals(leafValues[li][ai], val)) {
-                    return false;
-                }
-            }
-        }
-
-        return true;
     }
 
     @Override
@@ -2436,6 +2785,12 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
 
         if (size() != that.size()) {
             return false;
+        }
+
+        if (size == 1) {
+            // region SingletonEquals
+            return Objects.equals(get(0), that.get(0));
+            // endregion SingletonEquals
         }
 
         if (leafCount == 1) {
@@ -2480,6 +2835,10 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
 
     @Override
     public int hashCode() {
+        if (size == 1) {
+            return Objects.hash(size) * 31 + Objects.hash(get(0));
+        }
+
         if (leafCount == 1) {
             int result = Objects.hash(size);
             for (int ii = 0; ii < size; ii++) {
@@ -2503,6 +2862,9 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
     @Override
     public String toString() {
         if (leafCount == 1) {
+            if (directoryValues == null) {
+                return "[" + singletonValue + "]";
+            }
             return ArrayTypeUtils.toString(directoryValues, 0, intSize());
         } else if (leafCount > 0) {
             StringBuilder arrAsString = new StringBuilder("[");

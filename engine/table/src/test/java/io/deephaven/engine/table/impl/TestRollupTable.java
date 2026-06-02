@@ -13,7 +13,10 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.hierarchical.HierarchicalTable;
 import io.deephaven.engine.table.hierarchical.RollupTable;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
-import io.deephaven.engine.testutil.*;
+import io.deephaven.engine.testutil.ColumnInfo;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
+import io.deephaven.engine.testutil.EvalNuggetInterface;
+import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.generator.IntGenerator;
 import io.deephaven.engine.testutil.generator.SetGenerator;
 import io.deephaven.engine.table.impl.select.WhereFilterFactory;
@@ -203,19 +206,14 @@ public class TestRollupTable extends RefreshingTableTestCase {
 
         final QueryTable testTable = getTable(true, size, random, columnInfo);
 
-        TableTools.showWithRowSet(testTable);
-
         final Table agged = testTable.aggBy(aggs);
-        TableTools.showWithRowSet(agged);
 
         final RollupTable rollup = testTable.rollup(aggs, false, "Sym", "Sym2");
-        dumpRollup(rollup);
-
 
         EvalNuggetInterface[] en = new EvalNuggetInterface[] {
                 new RollupCompareNugget(
                         rollup,
-                        testTable.aggBy(aggs))
+                        agged)
         };
 
         final int steps = 100;
