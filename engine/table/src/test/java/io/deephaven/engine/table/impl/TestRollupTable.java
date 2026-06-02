@@ -49,48 +49,48 @@ public class TestRollupTable extends RefreshingTableTestCase {
     // This is the list of supported aggregations for rollup. These are all using `intCol` as the column to aggregate
     // because the re-aggregation logic is effectively the same for all column types.
     private final Collection<Aggregation> aggs = List.of(
-//            AggAbsSum("absSum=intCol"),
-//            AggAvg("avg=intCol"),
-//            AggCount("count"),
-//            AggCountWhere("countWhere", "intCol > 50"),
-//            AggCountDistinct("countDistinct=intCol"),
-//            AggDistinct("distinct=intCol"),
-//            AggFirst("first=intCol"),
-//            AggLast("last=intCol"),
-//            AggMax("max=intCol"),
-//            AggMin("min=intCol"),
-            AggSortedFirst("Sym", "firstSorted=intCol")
-//            AggSortedLast("Sym", "lastSorted=intCol")
-//            AggStd("std=intCol"),
-//            AggSum("sum=intCol"),
-//            AggUnique("unique=intCol"),
-//            AggVar("var=intCol"),
-//            AggWAvg("intCol", "wavg=intCol"),
-//            AggWSum("intCol", "wsum=intCol"),
-//            AggGroup("grp=intCol")
+            AggAbsSum("absSum=intCol"),
+            AggAvg("avg=intCol"),
+            AggCount("count"),
+            AggCountWhere("countWhere", "intCol > 50"),
+            AggCountDistinct("countDistinct=intCol"),
+            AggDistinct("distinct=intCol"),
+            AggFirst("first=intCol"),
+            AggLast("last=intCol"),
+            AggMax("max=intCol"),
+            AggMin("min=intCol"),
+            AggSortedFirst("Sym", "firstSorted=intCol"),
+            AggSortedLast("Sym", "lastSorted=intCol"),
+            AggStd("std=intCol"),
+            AggSum("sum=intCol"),
+            AggUnique("unique=intCol"),
+            AggVar("var=intCol"),
+            AggWAvg("intCol", "wavg=intCol"),
+            AggWSum("intCol", "wsum=intCol"),
+            AggGroup("grp=intCol")
             );
 
     // Companion list of columns to compare between rollup root and the zero-key equivalent
     private final String[] columnsToCompare = new String[] {
-//            "absSum",
-//            "avg",
-//            "count",
-//            "countWhere",
-//            "countDistinct",
-//            "distinct",
-//            "first",
-//            "last",
-//            "max",
-//            "min",
-            "firstSorted"
-//            "lastSorted",
-//            "std",
-//            "sum",
-//            "unique",
-//            "var",
-//            "wavg",
-//            "wsum",
-//            "grp"
+            "absSum",
+            "avg",
+            "count",
+            "countWhere",
+            "countDistinct",
+            "distinct",
+            "first",
+            "last",
+            "max",
+            "min",
+            "firstSorted",
+            "lastSorted",
+            "std",
+            "sum",
+            "unique",
+            "var",
+            "wavg",
+            "wsum",
+            "grp"
     };
 
     /**
@@ -248,7 +248,7 @@ public class TestRollupTable extends RefreshingTableTestCase {
         final Table keyTable = ht.getEmptyExpansionsTable();
         final List<ColumnHolder<?>> holders = new ArrayList<>();
         holders.add(intCol(ht.getRowDepthColumn().name(), 0));
-        keyTable.getDefinition().getColumns().forEach(cd-> {
+        keyTable.getDefinition().getColumns().forEach(cd -> {
             if (cd.getName().equals(ht.getRowDepthColumn().name())) {
                 return;
             }
@@ -257,7 +257,7 @@ public class TestRollupTable extends RefreshingTableTestCase {
             } else if (cd.getDataType() == double.class) {
                 holders.add(doubleCol(cd.getName(), NULL_DOUBLE));
             } else if (cd.getDataType() == String.class) {
-                holders.add(stringCol(cd.getName(), new String[]{null}));
+                holders.add(stringCol(cd.getName(), new String[] {null}));
             } else {
                 throw new IllegalArgumentException("Unsupported data type: " + cd.getDataType());
             }
@@ -265,7 +265,8 @@ public class TestRollupTable extends RefreshingTableTestCase {
         holders.add(byteCol("Action", HierarchicalTable.KEY_TABLE_ACTION_EXPAND_ALL));
         final ColumnHolder[] array = holders.toArray(ColumnHolder[]::new);
         final Table keyTableExpandAll = TableTools.newTable(array);
-        final Table snapshot = snapshotToTable(ht, ss1, keyTableExpandAll, ColumnName.of("Action"), null, RowSetFactory.flat(30));
+        final Table snapshot =
+                snapshotToTable(ht, ss1, keyTableExpandAll, ColumnName.of("Action"), null, RowSetFactory.flat(30));
         TableTools.showWithRowSet(snapshot, 30);
         freeSnapshotTableChunks(snapshot);
     }
