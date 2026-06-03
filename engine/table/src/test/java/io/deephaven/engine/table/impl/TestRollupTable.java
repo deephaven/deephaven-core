@@ -14,10 +14,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.hierarchical.HierarchicalTable;
 import io.deephaven.engine.table.hierarchical.RollupTable;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
-import io.deephaven.engine.testutil.ColumnInfo;
-import io.deephaven.engine.testutil.ControlledUpdateGraph;
-import io.deephaven.engine.testutil.EvalNuggetInterface;
-import io.deephaven.engine.testutil.TstUtils;
+import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.IntGenerator;
 import io.deephaven.engine.testutil.generator.SetGenerator;
 import io.deephaven.engine.table.impl.select.WhereFilterFactory;
@@ -45,6 +42,7 @@ import static io.deephaven.engine.testutil.HierarchicalTableTestTools.snapshotTo
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.engine.util.TableTools.byteCol;
+import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 import static io.deephaven.util.QueryConstants.NULL_INT;
 
 @Category(OutOfBandTest.class)
@@ -122,6 +120,29 @@ public class TestRollupTable extends RefreshingTableTestCase {
     }
 
     /**
+     * Like {@link #testRollupVsZeroKeyStatic()}, but rolls up by two key columns. The extra key forces re-aggregation
+     * through an intermediate aggregated level, which is where {@code SortedFirst}/{@code SortedLast} must still break
+     * sort-value ties by the original source row key. The root aggregates every row, so it must equal the zero-key
+     * {@code aggBy}.
+     */
+    @Test
+    public void testRollupMultiKeyVsZeroKeyStatic() {
+        final Random random = new Random(0);
+        final ColumnInfo[] columnInfo = initColumnInfos(
+                new String[] {"Sym", "Sym2", "intCol"},
+                new SetGenerator<>("a", "b", "c", "d"),
+                new SetGenerator<>("u", "v", "w"),
+                new IntGenerator(10, 1_000));
+
+        final Table testTable = getTable(false, 100_000, random, columnInfo);
+
+        final Table actual = testTable.rollup(aggs, false, "Sym", "Sym2").getRoot().select(columnsToCompare);
+        final Table expected = testTable.aggBy(aggs);
+
+        TstUtils.assertTableEquals(actual, expected);
+    }
+
+    /**
      * Perform a large table test, comparing the rollup table root to the zero-key equivalent table, incorporating all
      * supported aggregations.
      */
@@ -158,22 +179,11 @@ public class TestRollupTable extends RefreshingTableTestCase {
         }
     }
 
-    private final Collection<Aggregation> distinctAggs = List.of(
-            AggCountDistinct("countDistinct=intCol"),
-            AggDistinct("distinct=intCol"),
-            AggUnique("unique=intCol"));
-
-    private final String[] distinctColumnsToCompare = new String[] {
-            "countDistinct",
-            "distinct",
-            "unique"
-    };
-
     /**
      * Like {@link #testRollupVsZeroKeyIncremental()}, but rolls up by two key columns. The extra key introduces an
-     * intermediate aggregation level whose parents each hold multiple buckets, so the distinct re-aggregation operators
-     * (including {@code unique}) run their bucketed paths, which a single key column never reaches. The root still
-     * aggregates every row, so it is compared against the zero-key equivalent.
+     * intermediate aggregation level whose parents each hold multiple buckets, so the re-aggregation operators run
+     * their bucketed paths, which a single key column never reaches. The root still aggregates every row, so it is
+     * compared against the zero-key equivalent.
      */
     @Test
     public void testRollupMultiKeyVsZeroKeyIncremental() {
@@ -191,13 +201,16 @@ public class TestRollupTable extends RefreshingTableTestCase {
                 new SetGenerator<>("u", "v", "w"),
                 new IntGenerator(10, 1_000));
 
-        final QueryTable testTable = getTable(true, 100_000, random, columnInfo);
+        final QueryTable testTable = getTable(true, size, random, columnInfo);
+
+        final Table agged = testTable.aggBy(aggs);
+
+        final RollupTable rollup = testTable.rollup(aggs, false, "Sym", "Sym2");
 
         EvalNuggetInterface[] en = new EvalNuggetInterface[] {
-                new QueryTableTest.TableComparator(
-                        testTable.rollup(distinctAggs, false, "Sym", "Sym2")
-                                .getRoot().select(distinctColumnsToCompare),
-                        testTable.aggBy(distinctAggs))
+                new RollupCompareNugget(
+                        rollup,
+                        agged)
         };
 
         final int steps = 100;
@@ -207,6 +220,50 @@ public class TestRollupTable extends RefreshingTableTestCase {
             }
             simulateShiftAwareStep(ctxt + " step == " + step, size, random, testTable, columnInfo, en);
         }
+    }
+
+    private class RollupCompareNugget extends QueryTableTestBase.TableComparator {
+
+        private final RollupTable rollup;
+
+        public RollupCompareNugget(RollupTable rollup, Table t2) {
+            super(rollup.getRoot().select(columnsToCompare), t2);
+            this.rollup = rollup;
+        }
+
+        @Override
+        public void show() {
+            super.show();
+            dumpRollup(rollup);
+        }
+    }
+
+    void dumpRollup(HierarchicalTable ht) {
+        final HierarchicalTable.SnapshotState ss1 = ht.makeSnapshotState();
+        final Table keyTable = ht.getEmptyExpansionsTable();
+        final List<ColumnHolder<?>> holders = new ArrayList<>();
+        holders.add(intCol(ht.getRowDepthColumn().name(), 0));
+        keyTable.getDefinition().getColumns().forEach(cd -> {
+            if (cd.getName().equals(ht.getRowDepthColumn().name())) {
+                return;
+            }
+            if (cd.getDataType() == int.class) {
+                holders.add(intCol(cd.getName(), NULL_INT));
+            } else if (cd.getDataType() == double.class) {
+                holders.add(doubleCol(cd.getName(), NULL_DOUBLE));
+            } else if (cd.getDataType() == String.class) {
+                holders.add(stringCol(cd.getName(), new String[] {null}));
+            } else {
+                throw new IllegalArgumentException("Unsupported data type: " + cd.getDataType());
+            }
+        });
+        holders.add(byteCol("Action", HierarchicalTable.KEY_TABLE_ACTION_EXPAND_ALL));
+        final ColumnHolder[] array = holders.toArray(ColumnHolder[]::new);
+        final Table keyTableExpandAll = TableTools.newTable(array);
+        final Table snapshot =
+                snapshotToTable(ht, ss1, keyTableExpandAll, ColumnName.of("Action"), null, RowSetFactory.flat(30));
+        TableTools.showWithRowSet(snapshot, 30);
+        freeSnapshotTableChunks(snapshot);
     }
 
     @Test

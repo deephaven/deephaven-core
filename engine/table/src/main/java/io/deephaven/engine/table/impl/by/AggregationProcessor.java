@@ -607,7 +607,12 @@ public class AggregationProcessor implements AggregationContextFactory {
             addNoInputOperator(operator);
         }
 
-        final void addSortedFirstOrLastOperator(@NotNull final List<SortColumn> sortColumns, final boolean isFirst) {
+        final void addSortedFirstOrLastOperator(@NotNull final List<SortColumn> sortColumns, final boolean isFirst,
+                final String exposeRedirectionAs) {
+            if (exposeRedirectionAs != null) {
+                unsupportedForBlinkTables((isFirst ? "SortedFirst" : "SortedLast") +
+                        " with exposed row redirections (e.g. for rollup())");
+            }
             final String[] sortColumnNames = sortColumns.stream().map(sc -> {
                 descendingSortedFirstOrLastUnsupported(sc, isFirst);
                 return sc.column().name();
@@ -622,7 +627,7 @@ public class AggregationProcessor implements AggregationContextFactory {
             }
             addOperator(
                     makeSortedFirstOrLastOperator(inputSource.getChunkType(), isFirst, aggregations.size() > 1,
-                            MatchPair.fromPairs(resultPairs), table),
+                            MatchPair.fromPairs(resultPairs), table, exposeRedirectionAs),
                     inputSource, sortColumnNames);
         }
 
@@ -1117,12 +1122,12 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final AggSpecSortedFirst sortedFirst) {
-            addSortedFirstOrLastOperator(sortedFirst.columns(), true);
+            addSortedFirstOrLastOperator(sortedFirst.columns(), true, null);
         }
 
         @Override
         public void visit(@NotNull final AggSpecSortedLast sortedLast) {
-            addSortedFirstOrLastOperator(sortedLast.columns(), false);
+            addSortedFirstOrLastOperator(sortedLast.columns(), false, null);
         }
 
         @Override
@@ -1492,12 +1497,12 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final AggSpecSortedFirst sortedFirst) {
-            addSortedFirstOrLastOperator(sortedFirst.columns(), true);
+            addSortedFirstOrLastOperator(sortedFirst.columns(), true, makeRedirectionName(nextColumnIdentifier++));
         }
 
         @Override
         public void visit(@NotNull final AggSpecSortedLast sortedLast) {
-            addSortedFirstOrLastOperator(sortedLast.columns(), false);
+            addSortedFirstOrLastOperator(sortedLast.columns(), false, makeRedirectionName(nextColumnIdentifier++));
         }
 
         @Override
@@ -1847,13 +1852,26 @@ public class AggregationProcessor implements AggregationContextFactory {
                     resultPairs.stream().map(Pair::output),
                     Stream.of(redirectionColumnName))
                     .collect(Collectors.toList());
-            addSortedFirstOrLastOperator(List.of(SortColumn.asc(redirectionColumnName)), isFirst);
+            addSortedFirstOrLastOperator(List.of(SortColumn.asc(redirectionColumnName)), isFirst, null);
         }
 
         private void reaggregateSortedFirstOrLastOperator(
                 @NotNull final List<SortColumn> sortColumns, final boolean isFirst) {
-            resultPairs = resultPairs.stream().map(Pair::output).collect(Collectors.toList());
-            addSortedFirstOrLastOperator(sortColumns, isFirst);
+            // Carry the originating source row key forward, exactly as First/Last does, so this re-aggregation breaks
+            // sort-value ties by the original row key instead of by this level's row keys. The child level exposed its
+            // selected source row key under this same name (the identifier sequence matches across levels); we re-sort
+            // by the sort columns with that carried row key appended as the final, tie-breaking sort column, and add it
+            // to resultPairs so it is re-exposed (redirected from the child) for the next level up.
+            final ColumnName redirectionColumnName = ColumnName.of(makeRedirectionName(nextColumnIdentifier++));
+            resultPairs = Stream.concat(
+                    resultPairs.stream().map(Pair::output),
+                    Stream.of(redirectionColumnName))
+                    .collect(Collectors.toList());
+            final List<SortColumn> reaggregationSortColumns = Stream.concat(
+                    sortColumns.stream(),
+                    Stream.of(SortColumn.asc(redirectionColumnName)))
+                    .collect(Collectors.toList());
+            addSortedFirstOrLastOperator(reaggregationSortColumns, isFirst, null);
         }
 
         private void reaggregateMinOrMaxOperators(final boolean isMin) {
@@ -2561,19 +2579,20 @@ public class AggregationProcessor implements AggregationContextFactory {
             final boolean isFirst,
             final boolean multipleAggs,
             @NotNull final MatchPair[] resultPairs,
-            @NotNull final QueryTable sourceTable) {
+            @NotNull final QueryTable sourceTable,
+            final String exposeRedirectionAs) {
         if (sourceTable.isAddOnly()) {
             // @formatter:off
             switch (chunkType) {
                 case Boolean: throw new UnsupportedOperationException("Columns never use boolean chunks");
-                case    Char: return new CharAddOnlySortedFirstOrLastChunkedOperator(  isFirst, resultPairs, sourceTable, null);
-                case    Byte: return new ByteAddOnlySortedFirstOrLastChunkedOperator(  isFirst, resultPairs, sourceTable, null);
-                case   Short: return new ShortAddOnlySortedFirstOrLastChunkedOperator( isFirst, resultPairs, sourceTable, null);
-                case     Int: return new IntAddOnlySortedFirstOrLastChunkedOperator(   isFirst, resultPairs, sourceTable, null);
-                case    Long: return new LongAddOnlySortedFirstOrLastChunkedOperator(  isFirst, resultPairs, sourceTable, null);
-                case   Float: return new FloatAddOnlySortedFirstOrLastChunkedOperator( isFirst, resultPairs, sourceTable, null);
-                case  Double: return new DoubleAddOnlySortedFirstOrLastChunkedOperator(isFirst, resultPairs, sourceTable, null);
-                case  Object: return new ObjectAddOnlySortedFirstOrLastChunkedOperator(isFirst, resultPairs, sourceTable, null);
+                case    Char: return new CharAddOnlySortedFirstOrLastChunkedOperator(  isFirst, resultPairs, sourceTable, exposeRedirectionAs);
+                case    Byte: return new ByteAddOnlySortedFirstOrLastChunkedOperator(  isFirst, resultPairs, sourceTable, exposeRedirectionAs);
+                case   Short: return new ShortAddOnlySortedFirstOrLastChunkedOperator( isFirst, resultPairs, sourceTable, exposeRedirectionAs);
+                case     Int: return new IntAddOnlySortedFirstOrLastChunkedOperator(   isFirst, resultPairs, sourceTable, exposeRedirectionAs);
+                case    Long: return new LongAddOnlySortedFirstOrLastChunkedOperator(  isFirst, resultPairs, sourceTable, exposeRedirectionAs);
+                case   Float: return new FloatAddOnlySortedFirstOrLastChunkedOperator( isFirst, resultPairs, sourceTable, exposeRedirectionAs);
+                case  Double: return new DoubleAddOnlySortedFirstOrLastChunkedOperator(isFirst, resultPairs, sourceTable, exposeRedirectionAs);
+                case  Object: return new ObjectAddOnlySortedFirstOrLastChunkedOperator(isFirst, resultPairs, sourceTable, exposeRedirectionAs);
             }
             // @formatter:on
         }
@@ -2592,7 +2611,8 @@ public class AggregationProcessor implements AggregationContextFactory {
             }
             // @formatter:on
         }
-        return new SortedFirstOrLastChunkedOperator(chunkType, isFirst, resultPairs, sourceTable);
+        return new SortedFirstOrLastChunkedOperator(chunkType, isFirst, resultPairs, sourceTable,
+                exposeRedirectionAs);
     }
 
     // -----------------------------------------------------------------------------------------------------------------
