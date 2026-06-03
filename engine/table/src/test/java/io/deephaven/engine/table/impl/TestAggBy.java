@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.agg.Aggregation;
+import io.deephaven.engine.table.hierarchical.RollupTable;
 import io.deephaven.util.profiling.ThreadProfiler;
 import it.unimi.dsi.fastutil.doubles.DoubleOpenHashSet;
 import it.unimi.dsi.fastutil.doubles.DoubleSet;
@@ -38,6 +39,7 @@ import io.deephaven.vector.DoubleVector;
 import io.deephaven.vector.IntVector;
 import io.deephaven.vector.LongVector;
 import junit.framework.TestCase;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -1334,8 +1336,86 @@ public class TestAggBy extends RefreshingTableTestCase {
         TableTools.show(result);
     }
 
-
+    /**
+     * Directed coverage for the base "unique" operator's modifyChunk path, which the randomized and rollup tests never
+     * exercise (they only ever add or remove source rows). A single keyed group is walked through every modify
+     * transition the operator's modifyState handles. {@code Count} (a count-distinct in the same group) makes the
+     * multiset's distinct cardinality observable so the SSM-internal cases are distinguishable.
+     */
     @Test
+    public void testAggUniqueModifyTransitions() {
+        final QueryTable table = TstUtils.testRefreshingTable(i(0, 1, 2, 3).toTracking(),
+                stringCol("Key", "G", "G", "G", "G"),
+                intCol("Value", 10, 10, 10, 10));
+        final Table result = table.aggBy(
+                List.of(AggUnique(false, UnionObject.of(-1), "Unique=Value"), AggCountDistinct("Count=Value")), "Key");
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
+        assertUniqueModifyState(result, 10, 1); // singleton(10)
+
+        // 2. remove a value and add a different one, changing the singleton -> singleton(20)
+        modifyValues(updateGraph, table, i(0, 1, 2, 3), 20, 20, 20, 20);
+        assertUniqueModifyState(result, 20, 1);
+
+        // 4. a second distinct value transitions the singleton to an SSM -> {20, 30}
+        modifyValues(updateGraph, table, i(0), 30);
+        assertUniqueModifyState(result, -1, 2);
+
+        // 7. modify into an already-present SSM value (30) while the old value (20) survives elsewhere
+        modifyValues(updateGraph, table, i(1), 30);
+        assertUniqueModifyState(result, -1, 2);
+
+        // 8. modify into a brand-new SSM value (40) while the old value (20) survives elsewhere -> {20, 30, 40}
+        modifyValues(updateGraph, table, i(2), 40);
+        assertUniqueModifyState(result, -1, 3);
+
+        // 9. modify away the last 20, removing that value from the SSM -> {30, 40}
+        modifyValues(updateGraph, table, i(3), 30);
+        assertUniqueModifyState(result, -1, 2);
+
+        // 1. swap two rows' values so the SSM's net removals and additions cancel -> {30, 40} unchanged
+        modifyValues(updateGraph, table, i(0, 2), 40, 30);
+        assertUniqueModifyState(result, -1, 2);
+
+        // 5. modify away the last 40, collapsing the SSM back to singleton(30)
+        modifyValues(updateGraph, table, i(0), 30);
+        assertUniqueModifyState(result, 30, 1);
+
+        // 3. null out the singleton's only value, transitioning to empty
+        modifyValues(updateGraph, table, i(0, 1, 2, 3), NULL_INT, NULL_INT, NULL_INT, NULL_INT);
+        assertUniqueModifyState(result, NULL_INT, NULL_LONG);
+
+        // (empty -> SSM) two distinct values arrive via modify, re-allocating the SSM -> {50, 60}
+        modifyValues(updateGraph, table, i(0, 1), 50, 60);
+        assertUniqueModifyState(result, -1, 2);
+
+        // 6. null out both SSM values, transitioning the SSM to empty
+        modifyValues(updateGraph, table, i(0, 1), NULL_INT, NULL_INT);
+        assertUniqueModifyState(result, NULL_INT, NULL_LONG);
+    }
+
+    /**
+     * Modify the {@code Value} of the given (all-{@code "G"}-keyed) rows in a single update cycle, reporting only the
+     * {@code Value} column as modified so the keyed aggregation runs its bucketed modifyChunk.
+     */
+    private static void modifyValues(final ControlledUpdateGraph updateGraph, final QueryTable table,
+            final RowSet rows, final int... values) {
+        final String[] keys = new String[values.length];
+        Arrays.fill(keys, "G");
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(table, rows, stringCol("Key", keys), intCol("Value", values));
+            table.notifyListeners(new TableUpdateImpl(i(), i(), rows.copy(), RowSetShiftData.EMPTY,
+                    table.newModifiedColumnSet("Value")));
+        });
+    }
+
+    private static void assertUniqueModifyState(final Table result, final int unique, final long count) {
+        assertTableEquals(newTable(stringCol("Key", "G"), intCol("Unique", unique), longCol("Count", count)), result);
+    }
+
+    // @Test
+    @Ignore
     public void testAggUniquePerf() {
         final Table input = TableTools.emptyTable(7_250_000).update("X=Long.toHexString(ii)", "Y=X.toUpperCase()",
                 "Z=X.toLowerCase()", "A=Long.toString(i)", "Bucket=ii%100 == 0 ? 0 : ii");
@@ -1351,5 +1431,22 @@ public class TestAggBy extends RefreshingTableTestCase {
         System.out.println("Allocated Bytes: " + df.format(endAllocatedBytes - startAllocatedBytes));
     }
 
+    // @Test
+    @Ignore
+    public void testAggUniquePerfWithRollup() {
+        final Table input = TableTools.emptyTable(2_500_000).update("X=Long.toHexString(ii % 10000)",
+                "Y=X.toUpperCase()",
+                "Z=X.toLowerCase()", "A=Long.toString(i)", "Bucket=ii%100 == 0 ? 0 : ii", "Bucket2=ii % 10_000");
+        final long startAllocatedBytes = ThreadProfiler.DEFAULT.getCurrentThreadAllocatedBytes();
+        System.out.println("Select done");
+        final long start = System.nanoTime();
+        final RollupTable uniqued = input.rollup(List.of(AggUnique("X", "Y", "Z", "A")), "Bucket", "Bucket2");
+        final long end = System.nanoTime();
+        final DecimalFormat df = new DecimalFormat("###,###.##");
+        System.out.println("Duration: " + df.format(end - start));
+
+        final long endAllocatedBytes = ThreadProfiler.DEFAULT.getCurrentThreadAllocatedBytes();
+        System.out.println("Allocated Bytes: " + df.format(endAllocatedBytes - startAllocatedBytes));
+    }
 
 }

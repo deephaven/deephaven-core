@@ -274,6 +274,73 @@ public class TestIntSegmentedSortedMultiset extends RefreshingTableTestCase {
                 (int) ('a' + 7), (int) ('a' + 8), (int) ('a' + 9), (int) ('a' + 10)}, desc);
     }
 
+    public void testScalarInsertRemove() {
+        final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
+        final int alphabet = 12;
+        // a small node size so the scalar inserts/removes exercise the directory, multi-leaf, split, and collapse
+        // paths with only a handful of distinct values
+        final int nodeSize = 4;
+        for (int seed = 0; seed < 20; ++seed) {
+            final Random rng = new Random(seed);
+            final IntSegmentedSortedMultiset ssm = new IntSegmentedSortedMultiset(nodeSize);
+            final long[] refCounts = new long[alphabet];
+
+            for (int ii = 0; ii < 60; ++ii) {
+                final int offset = rng.nextInt(alphabet);
+                final int count = 1 + rng.nextInt(3);
+                final boolean wasPresent = refCounts[offset] > 0;
+                final boolean added = ssm.insert((int) ('a' + offset), count);
+                refCounts[offset] += count;
+                assertEquals(!wasPresent, added);
+                verifyScalar(ssm, refCounts, desc);
+            }
+
+            while (true) {
+                final int[] present = new int[alphabet];
+                int presentCount = 0;
+                for (int offset = 0; offset < alphabet; ++offset) {
+                    if (refCounts[offset] > 0) {
+                        present[presentCount++] = offset;
+                    }
+                }
+                if (presentCount == 0) {
+                    break;
+                }
+                final int offset = present[rng.nextInt(presentCount)];
+                final int count = 1 + rng.nextInt((int) refCounts[offset]);
+                final boolean fully = count == refCounts[offset];
+                final boolean removed = ssm.remove((int) ('a' + offset), count);
+                refCounts[offset] -= count;
+                assertEquals(fully, removed);
+                verifyScalar(ssm, refCounts, desc);
+            }
+
+            assertEquals(0, ssm.size());
+            assertEquals(0, ssm.totalSize());
+        }
+    }
+
+    private void verifyScalar(IntSegmentedSortedMultiset ssm, long[] refCounts, SsaTestHelpers.TestDescriptor desc) {
+        int total = 0;
+        int distinct = 0;
+        for (int offset = 0; offset < refCounts.length; ++offset) {
+            total += refCounts[offset];
+            if (refCounts[offset] > 0) {
+                distinct++;
+            }
+        }
+        final int[] expanded = new int[total];
+        int position = 0;
+        for (int offset = 0; offset < refCounts.length; ++offset) {
+            for (long kk = 0; kk < refCounts[offset]; ++kk) {
+                expanded[position++] = (int) ('a' + offset);
+            }
+        }
+        verifySsm(ssm, expanded, desc);
+        assertEquals(distinct, ssm.size());
+        assertEquals(total, ssm.totalSize());
+    }
+
     public void testInsertRemoveWithOffset() {
         final int nodeSize = 4;
         final int prefix = 3;
