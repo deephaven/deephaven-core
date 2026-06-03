@@ -510,6 +510,10 @@
                 "path": "conceptual/liveness-scope-concept.md"
               },
               {
+                "label": "Systemic Object Marking",
+                "path": "conceptual/systemic-object-marking.md"
+              },
+              {
                 "label": "Generate query strings",
                 "path": "how-to-guides/generate-query-strings.md"
               }
