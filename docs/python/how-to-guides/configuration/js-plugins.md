@@ -15,7 +15,7 @@ FROM ghcr.io/deephaven/web-plugin-packager:latest as js-plugins
 RUN ./pack-plugins.sh <plugins>
 
 FROM ghcr.io/deephaven/server:latest
-# 2. Install the python js-plugin(s) if necessary (some plugins may be JS only)
+# 2. Install the Python package(s) if necessary (some plugins may be JS only)
 RUN pip install --no-cache-dir <packages>
 # 3. Copy the js-plugins/ directory
 COPY --from=js-plugins js-plugins/ /opt/deephaven/config/js-plugins/
@@ -26,11 +26,11 @@ docker build -t my-deephaven-image .
 docker run --rm -p 10000:10000 my-deephaven-image
 ```
 
-The workflow above is shown in relationship to the [Docker application](./docker-application.md), but the general requirements are the same if one is deploying the [production application](./configure-production-application.md). See [pack-plugins.sh](https://github.com/deephaven/deephaven-core/blob/main/docker/web-plugin-packager/src/main/docker/files/pack-plugins.sh) for more information on the JS plugin packaging logic.
+The workflow above applies to the [Docker application](./docker-application.md), but the general requirements are the same when deploying the [production application](./configure-production-application.md). See [`pack-plugins.sh`](https://github.com/deephaven/deephaven-core/blob/main/docker/web-plugin-packager/src/main/docker/files/pack-plugins.sh) for more information on the JS plugin packaging logic.
 
 ## Configuration
 
-The JS plugins are automatically sourced from the `<configDir>/js-plugins/` directory if present. In the case of the Docker example above, `/opt/deephaven/config/` is the configuration directory. See [configuration directory](./configure-production-application.md#deephaven-server-bootstrap-configuration) for information about the configuration directory for other setups.
+The JS plugins are automatically sourced from the `<configDir>/js-plugins/` directory if present. In the case of the Docker example above, `/opt/deephaven/config/` is the configuration directory. The server looks for `manifest.json` in that directory to discover plugins — this file is generated automatically by `pack-plugins.sh`. See [configuration directory](./configure-production-application.md#deephaven-server-bootstrap-configuration) for information about the configuration directory for other setups.
 
 The JS plugins directory can also be set explicitly through the [configuration property](./config-file.md) `deephaven.jsPlugins.resourceBase`.
 
