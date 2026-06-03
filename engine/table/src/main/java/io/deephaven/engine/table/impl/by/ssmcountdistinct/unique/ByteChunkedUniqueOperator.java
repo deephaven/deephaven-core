@@ -40,12 +40,12 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
  * 'no value key' is used. If there are more than one values for the state, the 'non unique key' is used.
  *
  * <p>
- * A state holding exactly one distinct value is stored without a {@link ByteSegmentedSortedMultiset SSM}: the value
- * lives in {@code internalResult} and its multiplicity in {@code singletonCount}. {@code singletonCount} encodes the
- * state: {@code NULL_LONG} or {@code 0} means empty, {@code > 0} means the single value in {@code internalResult} is
- * present that many times, and {@code -1} means the state holds two or more distinct values and an SSM in {@code ssms}
- * holds them. An SSM is created only when a state actually becomes non-unique, and is discarded when removals collapse
- * it back to a single distinct value (or empty).
+ * A state holding zero values or one distinct value is stored without a {@link ByteSegmentedSortedMultiset SSM}: the
+ * value lives in {@code internalResult} and its multiplicity in {@code singletonCount}. {@code singletonCount} encodes
+ * the state: {@code NULL_LONG} or {@code 0} means empty, {@code > 0} means the single value in {@code internalResult}
+ * is present that many times, and {@code -1} means the state holds two or more distinct values and an SSM in
+ * {@code ssms} holds them. An SSM is created only when a state actually becomes non-unique, and is discarded when
+ * removals collapse it back to a single distinct value (or empty).
  */
 public class ByteChunkedUniqueOperator implements IterativeChunkedAggregationOperator {
     private final String name;
