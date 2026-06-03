@@ -114,6 +114,15 @@ _JNewColumnBehaviorType = jpy.get_type(
 # Selectable
 _JSelectable = jpy.get_type("io.deephaven.api.Selectable")
 
+# SortedColumnsAttribute
+_JSortedColumnsAttribute = jpy.get_type(
+    "io.deephaven.engine.table.impl.SortedColumnsAttribute"
+)
+_JSortingOrder = jpy.get_type("io.deephaven.engine.table.impl.SortingOrder")
+_JTableAssertions = jpy.get_type(
+    "io.deephaven.engine.table.impl.verify.TableAssertions"
+)
+
 
 class Selectable(ConcurrencyControl["Selectable"], JObjectWrapper):
     """A Selectable represents a formula with explicit ordering control that affects the order and the parallelization
@@ -646,6 +655,14 @@ def _sort_column(col: str, dir_: SortDirection) -> jpy.JType:
         _JSortColumn.desc(_JColumnName.of(col))
         if dir_ == SortDirection.DESCENDING
         else _JSortColumn.asc(_JColumnName.of(col))
+    )
+
+
+def _sorting_order(dir_: SortDirection) -> jpy.JType:
+    return (
+        _JSortingOrder.Descending
+        if dir_ == SortDirection.DESCENDING
+        else _JSortingOrder.Ascending
     )
 
 
@@ -1704,6 +1721,75 @@ class Table(JObjectWrapper):
             return Table(j_table=self.j_table.sort(j_sc_list))
         except Exception as e:
             raise DHError(e, "table sort operation failed.") from e
+
+    def with_order_for_column(
+        self,
+        col_name: str,
+        order: SortDirection = SortDirection.ASCENDING,
+    ) -> Table:
+        """Annotates this table to indicate that the given column is already sorted in the specified order.
+
+        This sets the SORTED_COLUMNS_ATTRIBUTE so that downstream operations (e.g. sorted-column binary
+        search / pushdown) can trust the column is pre-sorted without re-sorting.
+
+        .. warning::
+            **This method performs no validation.** If the column is not actually sorted in the declared
+            order, range and match filters will silently return **incorrect (missing or wrong) results**
+            with no error or warning. Use :meth:`assert_sorted` instead whenever possible — it validates
+            the sort order at call time for static tables and re-validates on every update for refreshing
+            tables. Only use this method when you have an external guarantee that the data is sorted and
+            the validation cost of ``assert_sorted`` is unacceptable.
+
+        Args:
+            col_name (str): the column to annotate as sorted.
+            order (SortDirection): the sort direction; defaults to ASCENDING.
+
+        Returns:
+            a new Table with the sorted-column attribute set.
+
+        Raises:
+            DHError
+        """
+        try:
+            return Table(
+                j_table=_JSortedColumnsAttribute.withOrderForColumn(
+                    self.j_table, col_name, _sorting_order(order)
+                )
+            )
+        except Exception as e:
+            raise DHError(e, "table with_order_for_column operation failed.") from e
+
+    def assert_sorted(
+        self,
+        col_name: str,
+        order: SortDirection = SortDirection.ASCENDING,
+        description: Optional[str] = None,
+    ) -> Table:
+        """Asserts that this table is sorted by the given column and returns it with the sorted-column attribute set.
+
+        For static tables this validates the sort order immediately and annotates the result. For refreshing tables
+        a listener is installed that validates each subsequent update, raising an error if the assertion is violated.
+        The annotation allows downstream range filters to use binary search instead of a linear scan.
+
+        Args:
+            col_name (str): the column that the table must be sorted by.
+            order (SortDirection): the expected sort direction; defaults to ASCENDING.
+            description (Optional[str]): an optional label included in the error message if the assertion is violated.
+
+        Returns:
+            a new Table with the sorted-column assertion applied.
+
+        Raises:
+            DHError
+        """
+        try:
+            return Table(
+                j_table=_JTableAssertions.assertSorted(
+                    description, self.j_table, col_name, _sorting_order(order)
+                )
+            )
+        except Exception as e:
+            raise DHError(e, "table assert_sorted operation failed.") from e
 
     # endregion
 

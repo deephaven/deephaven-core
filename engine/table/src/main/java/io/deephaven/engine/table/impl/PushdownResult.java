@@ -39,6 +39,14 @@ public final class PushdownResult implements SafeCloseable {
             Configuration.getInstance().getLongWithDefault("PredicatePushdown.tableSingleValueColumnCost", 5_000L);
 
     /**
+     * Binary searches sorted data at the Table-level.
+     * <p>
+     * Complexity/access: O(log(rows)) / In-Memory or Storage Data, resolves "yes", "no"
+     */
+    public static final long TABLE_SORTED_DATA_COST =
+            Configuration.getInstance().getLongWithDefault("PredicatePushdown.tableSortedDataCost", 7_500L);
+
+    /**
      * Filters an already-materialized Table-level index.
      * <p>
      * Complexity/access: O(rows / 4) / In-Memory Data, resolves "yes", "no"

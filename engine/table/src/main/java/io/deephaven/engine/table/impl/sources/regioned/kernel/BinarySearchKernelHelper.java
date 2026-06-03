@@ -18,4 +18,11 @@ class BinarySearchKernelHelper {
     static int insertionPoint(final int index) {
         return -index - 1;
     }
+
+    /**
+     * Helper to convert array index to insertion index (and back again).
+     */
+    static long insertionPoint(final long index) {
+        return -index - 1;
+    }
 }

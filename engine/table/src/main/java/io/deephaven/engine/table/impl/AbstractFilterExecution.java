@@ -15,6 +15,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.DataIndex;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.impl.dataindex.DataIndexPushdownManager;
+import io.deephaven.engine.table.impl.sort.SortedColumnPushdownManager;
 import io.deephaven.engine.table.impl.filter.ExtractBarriers;
 import io.deephaven.engine.table.impl.filter.ExtractRespectedBarriers;
 import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
@@ -509,11 +510,10 @@ abstract class AbstractFilterExecution {
 
                     PushdownFilterMatcher executor =
                             PushdownFilterMatcher.getPushdownFilterMatcher(filter, filterSources);
-                    // Potentially wrap the executor to add DataIndex support.
-                    final DataIndex dataIndex = filterDataIndexMap.get(filter);
-                    if (dataIndex != null) {
-                        executor = DataIndexPushdownManager.wrap(dataIndex, executor);
-                    }
+                    // Wrap the executor to add DataIndex support (if applicable).
+                    executor = DataIndexPushdownManager.wrap(filterDataIndexMap.get(filter), executor);
+                    // Wrap the executor to add SortedColumn support (if applicable)
+                    executor = SortedColumnPushdownManager.wrap(sourceTable, filter, filterSources, executor);
                     if (executor != null) {
                         final PushdownFilterContext context = executor.makePushdownFilterContext(filter, filterSources);
                         statelessFilters[ii] = new StatelessFilter(ii, filter, executor, context, barrierDependencies);
