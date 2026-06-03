@@ -6,7 +6,7 @@ The `writeTable` method will write a table to a standard Parquet file.
 
 ## Syntax
 
-```groovy
+```groovy syntax
 writeTable(sourceTable, destPath)
 writeTable(sourceTable, destPath, writeInstructions)
 ```
@@ -14,7 +14,7 @@ writeTable(sourceTable, destPath, writeInstructions)
 > [!NOTE]
 > To write multiple tables at once, use [`writeTables`](https://deephaven.io/core/javadoc/io/deephaven/parquet/table/ParquetTools.html#writeTables(io.deephaven.engine.table.Table%5B%5D,java.lang.String%5B%5D,io.deephaven.parquet.table.ParquetInstructions)):
 >
-> ```groovy
+> ```groovy syntax
 > writeTables(sourceTables[], destPaths[], writeInstructions)
 > ```
 
