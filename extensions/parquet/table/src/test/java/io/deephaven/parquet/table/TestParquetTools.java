@@ -213,6 +213,25 @@ public class TestParquetTools {
     }
 
     @Test
+    public void testWriteTableEmptyStrings() {
+        final Table emptyStringsTable = TableTools.emptyTable(1_000_000)
+                .updateView("StrValue=i % 10000 == 0 ? Integer.toString(i) : \"\"");
+
+        final ParquetInstructions instructions = ParquetInstructions.builder()
+                .setCompressionCodecName("UNCOMPRESSED")
+                .useDictionary("StrValue", false)
+                .setMaximumDictionaryKeys(0)
+                .build();
+
+        String path = testRoot + File.separator + "emptyStringsTable.parquet";
+        ParquetTools.writeTable(emptyStringsTable, path, instructions);
+        Table result = ParquetTools.readTable(path);
+        assertTableEquals(emptyStringsTable, result);
+        result.close();
+        emptyStringsTable.close();
+    }
+
+    @Test
     public void testWriteTableRenames() {
         final String path = testRoot + File.separator + "Table_W_Renames.parquet";
         final ParquetInstructions instructions = ParquetInstructions.builder()

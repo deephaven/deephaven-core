@@ -263,7 +263,7 @@ public class ParquetTableWriter {
                 try {
                     writeColumnSource(tableRowSet, writeInstructions, rowGroupWriter, computedCache, columnName,
                             columnSource);
-                } catch (IllegalAccessException e) {
+                } catch (final RuntimeException e) {
                     throw new RuntimeException("Failed to write column " + columnName, e);
                 }
             }
@@ -410,7 +410,7 @@ public class ParquetTableWriter {
             @NotNull final RowGroupWriter rowGroupWriter,
             @NotNull final Map<String, Map<ParquetCacheTags, Object>> computedCache,
             @NotNull final String columnName,
-            @NotNull final ColumnSource<DATA_TYPE> columnSource) throws IllegalAccessException, IOException {
+            @NotNull final ColumnSource<DATA_TYPE> columnSource) throws IOException {
         try (final ColumnWriter columnWriter = rowGroupWriter.addColumn(
                 writeInstructions.getParquetColumnNameFromColumnNameOrDefault(columnName))) {
             boolean usedDictionary = false;

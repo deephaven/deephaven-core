@@ -1550,7 +1550,8 @@ public abstract class SqliteCatalogBase {
             failBecauseExceptionWasNotThrown(UncheckedDeephavenException.class);
         } catch (UncheckedDeephavenException e) {
             // Exception expected for invalid formula in table
-            assertThat(e).cause().isInstanceOf(FormulaEvaluationException.class);
+            assertThat(e).cause().isInstanceOf(RuntimeException.class);
+            assertThat(e).cause().cause().isInstanceOf(FormulaEvaluationException.class);
         }
 
         // Now create a table with good data with same schema and append a bad source to it
@@ -1570,7 +1571,8 @@ public abstract class SqliteCatalogBase {
             failBecauseExceptionWasNotThrown(UncheckedDeephavenException.class);
         } catch (UncheckedDeephavenException e) {
             // Exception expected for invalid formula in table
-            assertThat(e).cause().isInstanceOf(FormulaEvaluationException.class);
+            assertThat(e).cause().isInstanceOf(RuntimeException.class);
+            assertThat(e).cause().cause().isInstanceOf(FormulaEvaluationException.class);
         }
 
         try {
