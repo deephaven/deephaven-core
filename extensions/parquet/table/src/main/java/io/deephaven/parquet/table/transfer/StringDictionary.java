@@ -4,7 +4,6 @@
 package io.deephaven.parquet.table.transfer;
 
 import io.deephaven.parquet.table.DictionarySizeExceededException;
-import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import org.apache.parquet.column.statistics.Statistics;
 import org.apache.parquet.io.api.Binary;
@@ -18,6 +17,9 @@ final public class StringDictionary {
 
     private static final int INITIAL_DICTIONARY_SIZE = 1 << 8;
 
+    // Kept as a negative value since 0 is a valid position in the dictionary.
+    private static final int NO_ENTRY_VALUE = -1;
+
     private final int maxKeys;
     private final int maxDictSize;
     private final Statistics<?> statistics;
@@ -27,7 +29,7 @@ final public class StringDictionary {
      */
     private final int nullPos;
 
-    private final Object2IntMap<String> keyToPos;
+    private final Object2IntOpenHashMap<String> keyToPos;
 
     private Binary[] encodedKeys;
     private int keyCount;
@@ -40,10 +42,11 @@ final public class StringDictionary {
         this.statistics = statistics;
         this.nullPos = nullPos;
 
-        // Kept as a negative value since 0 is a valid position in the dictionary.
-        final int NO_ENTRY_VALUE = -1;
-        // Preserve the Trove default capacity (10) and load factor (0.5f) rather than fastutil's 16/0.75f.
-        final Object2IntMap<String> tmpKeyToPos = new Object2IntOpenHashMap<>(10, 0.5f);
+        // Preserve the Trove default capacity (10) and load factor (0.5f) rather than fastutil's 16/0.75f. The field is
+        // declared as the concrete Object2IntOpenHashMap (not the Object2IntMap interface) so that the hot getInt/put
+        // calls in add() bind as monomorphic virtual calls the JIT can inline, matching the devirtualized calls Trove's
+        // concrete TObjectIntHashMap field used to get.
+        final Object2IntOpenHashMap<String> tmpKeyToPos = new Object2IntOpenHashMap<>(10, 0.5f);
         tmpKeyToPos.defaultReturnValue(NO_ENTRY_VALUE);
         this.keyToPos = tmpKeyToPos;
 
@@ -70,27 +73,34 @@ final public class StringDictionary {
         if (key == null) {
             return nullPos;
         }
-        int posInDictionary = keyToPos.getInt(key);
-        if (posInDictionary == keyToPos.defaultReturnValue()) {
-            if (keyCount == encodedKeys.length) {
-                // Copy into an array of double the size with upper limit at maxKeys
-                if (keyCount == maxKeys) {
-                    throw new DictionarySizeExceededException("Dictionary maximum keys exceeded");
-                }
-                encodedKeys = Arrays.copyOf(encodedKeys, (int) Math.min(keyCount * 2L, maxKeys));
-            }
-            final Binary encodedKey = Binary.fromString(key);
-            dictSize += encodedKey.length();
-            if (dictSize > maxDictSize) {
-                throw new DictionarySizeExceededException("Dictionary maximum size exceeded");
-            }
-            encodedKeys[keyCount] = encodedKey;
-            // Track the min/max statistics while the dictionary is being built.
-            statistics.updateStats(encodedKey);
-            posInDictionary = keyCount;
-            keyCount++;
-            keyToPos.put(key, posInDictionary);
+        final int posInDictionary = keyToPos.getInt(key);
+        if (posInDictionary != NO_ENTRY_VALUE) {
+            return posInDictionary;
         }
+        // Keep the hot path (above) small enough for the JIT to inline by isolating the rare first-occurrence handling
+        // (array growth, encoding, statistics, and size checks) in its own method.
+        return addNewKey(key);
+    }
+
+    private int addNewKey(final String key) {
+        if (keyCount == encodedKeys.length) {
+            // Copy into an array of double the size with upper limit at maxKeys
+            if (keyCount == maxKeys) {
+                throw new DictionarySizeExceededException("Dictionary maximum keys exceeded");
+            }
+            encodedKeys = Arrays.copyOf(encodedKeys, (int) Math.min(keyCount * 2L, maxKeys));
+        }
+        final Binary encodedKey = Binary.fromString(key);
+        dictSize += encodedKey.length();
+        if (dictSize > maxDictSize) {
+            throw new DictionarySizeExceededException("Dictionary maximum size exceeded");
+        }
+        encodedKeys[keyCount] = encodedKey;
+        // Track the min/max statistics while the dictionary is being built.
+        statistics.updateStats(encodedKey);
+        final int posInDictionary = keyCount;
+        keyCount++;
+        keyToPos.put(key, posInDictionary);
         return posInDictionary;
     }
 }
