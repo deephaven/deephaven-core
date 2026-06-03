@@ -17,7 +17,6 @@ import io.deephaven.engine.table.impl.by.ssmcountdistinct.*;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.compactmodifications.LongCompactModifications;
 import io.deephaven.engine.table.impl.by.IterativeChunkedAggregationOperator;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
-import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
