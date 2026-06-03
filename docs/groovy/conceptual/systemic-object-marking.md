@@ -2,7 +2,7 @@
 title: Systemic object marking
 ---
 
-In Deephaven, a **systemic object** is an object whose failure receives special handling. In Deephaven Core+ (Enterprise), when a systemic object fails, the worker process terminates. When a non-systemic object fails, only that object is marked as failed and the worker continues running. When systemic object marking is disabled (the default), all objects are treated as systemic. When enabled, threads are non-systemic by default—only objects created on explicitly marked threads or within a scoped execution are systemic. This guide explains how to control this behavior using the [`SystemicObjectTracker`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/util/systemicmarking/SystemicObjectTracker.html) class.
+In Deephaven, a **systemic object** is an object whose failure receives special handling. In Deephaven Core+ (Enterprise), when a systemic object fails, the worker process terminates. When a non-systemic object fails, only that object is marked as failed and the worker continues running. When systemic object marking is disabled (the default), all objects are treated as systemic. When enabled, threads are non-systemic by default — only objects created on explicitly marked threads or within a scoped execution are systemic. This guide explains how to control this behavior using the [`SystemicObjectTracker`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/util/systemicmarking/SystemicObjectTracker.html) class.
 
 ## Object failure
 
