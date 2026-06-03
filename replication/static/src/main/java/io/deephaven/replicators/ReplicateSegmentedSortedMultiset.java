@@ -189,10 +189,25 @@ public class ReplicateSegmentedSortedMultiset {
                 charToLong(TASK,
                         "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/unique/CharRollupUniqueOperator.java"),
                 "    externalResult = new LongAsInstantColumnSource(internalResult);");
-        fixupObjectKernelOperator(
+        fixupObjectRollupUniqueOperator(
                 charToObject(TASK,
-                        "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/unique/CharRollupUniqueOperator.java"),
-                "ssms");
+                        "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/unique/CharRollupUniqueOperator.java"));
+    }
+
+    /**
+     * Apply the standard object kernel-operator fixups to the rollup unique operator, then (1) supply the component
+     * type to the {@code singletonValue} {@code ObjectArraySource} (the only one constructed without it, since {@code
+     * internalResult}'s construction lives in the replaced ResultCreation region) and (2) null out a destination's
+     * former singleton value when it migrates into an SSM, so the object is not retained.
+     */
+    private static void fixupObjectRollupUniqueOperator(String objectPath) throws IOException {
+        fixupObjectKernelOperator(objectPath, "ssms");
+        final File objectFile = new File(objectPath);
+        List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
+        lines = globalReplacements(lines, "new ObjectArraySource\\(\\)", "new ObjectArraySource(type)");
+        lines = replaceRegion(lines, "clearSingletonValue",
+                indent(Collections.singletonList("singletonValue.set(destination, null);"), 8));
+        FileUtils.writeLines(objectFile, lines);
     }
 
     private static void updateFloatPercentileHelper(String file) throws IOException {

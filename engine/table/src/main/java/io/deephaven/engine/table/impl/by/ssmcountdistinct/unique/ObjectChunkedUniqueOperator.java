@@ -7,18 +7,14 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.by.ssmcountdistinct.unique;
 
-import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.rowset.WritableRowSet;
-import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.table.TableUpdate;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.impl.by.RollupConstants;
-import io.deephaven.engine.updategraph.UpdateCommitter;
 import io.deephaven.engine.table.impl.by.IterativeChunkedAggregationOperator;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.BucketSsmDistinctContext;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.ObjectSsmBackedSource;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.SsmDistinctContext;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
+import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.ChunkLengths;
@@ -29,6 +25,7 @@ import io.deephaven.engine.table.impl.ssms.ObjectSegmentedSortedMultiset;
 import io.deephaven.engine.table.impl.ssms.SegmentedSortedMultiSet;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.compactmodifications.ObjectCompactModifications;
 import io.deephaven.engine.table.impl.util.compact.ObjectCompactKernel;
+import io.deephaven.util.compare.ObjectComparisons;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;
@@ -36,9 +33,19 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Supplier;
 
+import static io.deephaven.util.QueryConstants.NULL_LONG;
+
 /**
  * This operator computes the single unique value of a particular aggregated state. If there are no values at all the
  * 'no value key' is used. If there are more than one values for the state, the 'non unique key' is used.
+ *
+ * <p>
+ * A state holding zero values or one distinct value is stored without a {@link ObjectSegmentedSortedMultiset SSM}: the
+ * value lives in {@code internalResult} and its multiplicity in {@code singletonCount}. {@code singletonCount} encodes
+ * the state: {@code NULL_LONG} or {@code 0} means empty, {@code > 0} means the single value in {@code internalResult}
+ * is present that many times, and {@code -1} means the state holds two or more distinct values and an SSM in
+ * {@code ssms} holds them. An SSM is created only when a state actually becomes non-unique, and is discarded when
+ * removals collapse it back to a single distinct value (or empty).
  */
 public class ObjectChunkedUniqueOperator implements IterativeChunkedAggregationOperator {
     private final String name;
@@ -46,11 +53,10 @@ public class ObjectChunkedUniqueOperator implements IterativeChunkedAggregationO
     private final Supplier<SegmentedSortedMultiSet.RemoveContext> removeContextFactory;
     private final boolean countNullNaN;
     private final boolean exposeInternal;
-    private WritableRowSet touchedStates;
-    private UpdateCommitter<ObjectChunkedUniqueOperator> prevFlusher = null;
 
     private final ObjectSsmBackedSource ssms;
     private final ObjectArraySource internalResult;
+    private final LongArraySource singletonCount;
     private final ColumnSource<?> externalResult;
     private final Object onlyNullsSentinel;
     private final Object nonUniqueSentinel;
@@ -72,6 +78,7 @@ public class ObjectChunkedUniqueOperator implements IterativeChunkedAggregationO
         // region ResultCreation
         this.internalResult = new ObjectArraySource(type);
         // endregion ResultCreation
+        this.singletonCount = new LongArraySource();
         // region ResultAssignment
         this.externalResult = internalResult;
         // endregion ResultAssignment
@@ -106,15 +113,12 @@ public class ObjectChunkedUniqueOperator implements IterativeChunkedAggregationO
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int runLength = context.lengthCopy.get(ii);
             if (runLength == 0) {
+                stateModified.set(ii, false);
                 continue;
             }
-
             final int startPosition = startPositions.get(ii);
             final long destination = destinations.get(startPosition);
-
-            final ObjectSegmentedSortedMultiset ssm = ssmForSlot(destination);
-            ssm.insert(valueCopy, context.counts, startPosition, runLength);
-            stateModified.set(ii, setResult(ssm, destination));
+            stateModified.set(ii, addToState(destination, valueCopy, context.counts, startPosition, runLength));
         }
     }
 
@@ -129,18 +133,13 @@ public class ObjectChunkedUniqueOperator implements IterativeChunkedAggregationO
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int runLength = context.lengthCopy.get(ii);
             if (runLength == 0) {
+                stateModified.set(ii, false);
                 continue;
             }
             final int startPosition = startPositions.get(ii);
             final long destination = destinations.get(startPosition);
-
-            final ObjectSegmentedSortedMultiset ssm = ssmForSlot(destination);
-            ssm.remove(removeContext, valueCopy, context.counts, startPosition, runLength);
-            if (ssm.isEmpty()) {
-                clearSsm(destination);
-            }
-
-            stateModified.set(ii, setResult(ssm, destination));
+            stateModified.set(ii,
+                    removeFromState(destination, removeContext, valueCopy, context.counts, startPosition, runLength));
         }
     }
 
@@ -164,29 +163,22 @@ public class ObjectChunkedUniqueOperator implements IterativeChunkedAggregationO
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
             final long destination = destinations.get(startPosition);
-            final ObjectSegmentedSortedMultiset ssm = ssmForSlot(destination);
 
             final int runLength = length.get(ii);
-            if (runLength != 0) {
-                // reduce the bucket's modify to its net effect: net removals compacted into preValueCopy and net
-                // additions into postValueCopy, each beginning at startPosition, with the unchanged overlap cancelled
-                ObjectCompactModifications.compactAndCountModifications(preValueCopy, context.counts,
-                        postValueCopy, context.postCounts, startPosition, runLength, startPosition, runLength,
-                        countNullNaN, countNullNaN, context.removedSize, context.addedSize);
-                final int removed = context.removedSize.get();
-                if (removed > 0) {
-                    ssm.remove(removeContext, preValueCopy, context.counts, startPosition, removed);
-                }
-                final int added = context.addedSize.get();
-                if (added > 0) {
-                    ssm.insert(postValueCopy, context.postCounts, startPosition, added);
-                }
-                if (ssm.isEmpty()) {
-                    clearSsm(destination);
-                }
+            if (runLength == 0) {
+                stateModified.set(ii, false);
+                continue;
             }
 
-            stateModified.set(ii, setResult(ssm, destination));
+            // reduce the bucket's modify to its net effect: net removals in preValueCopy, net additions in
+            // postValueCopy, with the unchanged overlap cancelled
+            ObjectCompactModifications.compactAndCountModifications(preValueCopy, context.counts,
+                    postValueCopy, context.postCounts, startPosition, runLength, startPosition, runLength,
+                    countNullNaN, countNullNaN, context.removedSize, context.addedSize);
+
+            stateModified.set(ii, modifyState(destination, removeContext, preValueCopy, context.counts, startPosition,
+                    context.removedSize.get(), postValueCopy, context.postCounts, startPosition,
+                    context.addedSize.get()));
         }
     }
     // endregion
@@ -225,11 +217,11 @@ public class ObjectChunkedUniqueOperator implements IterativeChunkedAggregationO
     public boolean addChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> values,
             LongChunk<? extends RowKeys> inputRowKeys, long destination) {
         final SsmDistinctContext context = getAndUpdateContext(values, singletonContext);
-        final ObjectSegmentedSortedMultiset ssm = ssmForSlot(destination);
-        if (context.valueCopy.size() > 0) {
-            ssm.insert(context.valueCopy, context.counts);
+        if (context.valueCopy.size() == 0) {
+            return false;
         }
-        return setResult(ssm, destination);
+        return addToState(destination, (WritableObjectChunk<Object, ? extends Values>) context.valueCopy, context.counts, 0,
+                context.valueCopy.size());
     }
 
     @Override
@@ -239,14 +231,8 @@ public class ObjectChunkedUniqueOperator implements IterativeChunkedAggregationO
         if (context.valueCopy.size() == 0) {
             return false;
         }
-
-        final ObjectSegmentedSortedMultiset ssm = ssmForSlot(destination);
-        ssm.remove(context.removeContext, context.valueCopy, context.counts);
-        if (ssm.isEmpty()) {
-            clearSsm(destination);
-        }
-
-        return setResult(ssm, destination);
+        return removeFromState(destination, context.removeContext,
+                (WritableObjectChunk<Object, ? extends Values>) context.valueCopy, context.counts, 0, context.valueCopy.size());
     }
 
     @Override
@@ -255,46 +241,160 @@ public class ObjectChunkedUniqueOperator implements IterativeChunkedAggregationO
         // reduce the modify to its net effect: valueCopy/counts hold the values to remove, postValues/postCounts the
         // values to add, with the unchanged overlap cancelled out
         final SsmDistinctContext context = getAndUpdateContext(preValues, postValues, singletonContext);
+        return modifyState(destination, context.removeContext, (WritableObjectChunk<Object, ? extends Values>) context.valueCopy,
+                context.counts, 0, context.removedSize.get(), (WritableObjectChunk<Object, ? extends Values>) context.postValues,
+                context.postCounts, 0, context.addedSize.get());
+    }
+    // endregion
+
+    // region State Machine
+    /**
+     * Apply an addition of the compacted distinct {@code (value, count)} entries in {@code [start, start + len)} to
+     * {@code destination}'s state, transitioning empty -> unique -> non-unique (allocating an SSM) as needed.
+     */
+    private boolean addToState(long destination, WritableObjectChunk<Object, ? extends Values> values,
+            WritableIntChunk<ChunkLengths> counts, int start, int len) {
+        final long priorState = singletonCount.getUnsafe(destination);
+        if (isUnique(priorState)) {
+            final Object held = internalResult.getUnsafe(destination);
+            if (len == 1 && ObjectComparisons.eq(values.get(start), held)) {
+                // the single distinct value being added is the one we already hold; just bump its multiplicity. The
+                // result value is unchanged; only the (internal) count moves.
+                singletonCount.set(destination, priorState + counts.get(start));
+                return exposeInternal;
+            }
+            // a second distinct value is arriving; materialize an SSM seeded with the held value, then add the rest
+            final ObjectSegmentedSortedMultiset ssm = ssmForSlot(destination);
+            ssm.insert(held, priorState);
+            ssm.insert(values, counts, start, len);
+            setNonUnique(destination);
+            return exposeInternal || !ObjectComparisons.eq(held, nonUniqueSentinel);
+        }
+        if (isNonUnique(priorState)) {
+            // already non-unique; the result value and count are unchanged regardless of what we insert
+            ssmForSlot(destination).insert(values, counts, start, len);
+            return false;
+        }
+        // empty -> non-empty is always a change to the result
+        if (len == 1) {
+            setUnique(destination, values.get(start), counts.get(start));
+            return true;
+        }
+        ssmForSlot(destination).insert(values, counts, start, len);
+        setNonUnique(destination);
+        return true;
+    }
+
+    /**
+     * Apply a removal of the compacted distinct {@code (value, count)} entries in {@code [start, start + len)} from
+     * {@code destination}'s state, collapsing a non-unique SSM back to a unique value (or empty) as removals reduce its
+     * cardinality. By contract every removed value is currently present.
+     */
+    private boolean removeFromState(long destination, SegmentedSortedMultiSet.RemoveContext removeContext,
+            WritableObjectChunk<Object, ? extends Values> values, WritableIntChunk<ChunkLengths> counts, int start, int len) {
+        final long priorState = singletonCount.getUnsafe(destination);
+        if (isUnique(priorState)) {
+            // a unique state can only be asked to remove its one held value, and never more copies than it holds
+            Assert.eq(len, "len", 1);
+            Assert.assertion(ObjectComparisons.eq(values.get(start), internalResult.getUnsafe(destination)),
+                    "values.get(start) == internalResult.getUnsafe(destination)");
+            final long remaining = priorState - counts.get(start);
+            Assert.geqZero(remaining, "remaining");
+            if (remaining == 0) {
+                setEmpty(destination);
+                return true; // unique -> empty is always a change to the result
+            }
+            singletonCount.set(destination, remaining);
+            return exposeInternal; // value unchanged; only the (internal) count moves
+        }
         final ObjectSegmentedSortedMultiset ssm = ssmForSlot(destination);
-        final int removed = context.removedSize.get();
+        ssm.remove(removeContext, values, counts, start, len);
+        return finishFromSsm(destination, ssm);
+    }
+
+    /**
+     * Apply the net removals followed by the net additions of a modify to {@code destination}'s state, returning
+     * whether the result changed. A non-unique state mutates its SSM in place (collapsing only once at the end); a
+     * unique/empty state runs the removals then the additions through {@link #removeFromState} / {@link #addToState}
+     * (whose net is a change iff either step is, since the net-removed and net-added value sets are disjoint).
+     */
+    private boolean modifyState(long destination, SegmentedSortedMultiSet.RemoveContext removeContext,
+            WritableObjectChunk<Object, ? extends Values> removedValues, WritableIntChunk<ChunkLengths> removedCounts,
+            int removedStart, int removed,
+            WritableObjectChunk<Object, ? extends Values> addedValues, WritableIntChunk<ChunkLengths> addedCounts,
+            int addedStart, int added) {
+        if (isNonUnique(singletonCount.getUnsafe(destination))) {
+            final ObjectSegmentedSortedMultiset ssm = ssmForSlot(destination);
+            if (removed > 0) {
+                ssm.remove(removeContext, removedValues, removedCounts, removedStart, removed);
+            }
+            if (added > 0) {
+                ssm.insert(addedValues, addedCounts, addedStart, added);
+            }
+            return finishFromSsm(destination, ssm);
+        }
+        boolean changed = false;
         if (removed > 0) {
-            ssm.remove(context.removeContext, context.valueCopy, context.counts, 0, removed);
+            changed = removeFromState(destination, removeContext, removedValues, removedCounts, removedStart, removed);
         }
-        final int added = context.addedSize.get();
         if (added > 0) {
-            ssm.insert(context.postValues, context.postCounts, 0, added);
+            changed |= addToState(destination, addedValues, addedCounts, addedStart, added);
         }
+        return changed;
+    }
+
+    /**
+     * Resolve a non-unique state's representation after its SSM was mutated: discard the SSM and become empty or unique
+     * if it has collapsed to zero or one distinct value, otherwise remain non-unique. Returns whether the result
+     * changed.
+     */
+    private boolean finishFromSsm(long destination, ObjectSegmentedSortedMultiset ssm) {
         if (ssm.isEmpty()) {
             clearSsm(destination);
+            setEmpty(destination);
+            return true; // non-unique -> empty is always a change to the result
         }
+        if (ssm.size() == 1) {
+            final Object value = ssm.get(0);
+            final long count = ssm.getMaxCount();
+            clearSsm(destination);
+            setUnique(destination, value, count);
+            // non-unique -> unique: the result value moves from the sentinel to the surviving value
+            return exposeInternal || !ObjectComparisons.eq(nonUniqueSentinel, value);
+        }
+        // remains non-unique; the exposed value and count are unchanged
+        return false;
+    }
 
-        return setResult(ssm, destination);
+    private void setEmpty(long destination) {
+        singletonCount.set(destination, 0L);
+        internalResult.set(destination, onlyNullsSentinel);
+    }
+
+    private void setUnique(long destination, Object value, long count) {
+        singletonCount.set(destination, count);
+        internalResult.set(destination, value);
+    }
+
+    private void setNonUnique(long destination) {
+        singletonCount.set(destination, -1L);
+        internalResult.set(destination, nonUniqueSentinel);
+    }
+
+    private static boolean isUnique(long sc) {
+        return sc > 0;
+    }
+
+    private static boolean isNonUnique(long sc) {
+        return sc != NULL_LONG && sc < 0;
     }
     // endregion
 
     // region IterativeOperator / DistinctAggregationOperator
     @Override
-    public void propagateUpdates(@NotNull TableUpdate downstream, @NotNull RowSet newDestinations) {
-        if (touchedStates != null) {
-            prevFlusher.maybeActivate();
-            touchedStates.clear();
-            touchedStates.insert(downstream.added());
-            touchedStates.insert(downstream.modified());
-        }
-    }
-
-    private static void flushPrevious(ObjectChunkedUniqueOperator op) {
-        if (op.touchedStates == null || op.touchedStates.isEmpty()) {
-            return;
-        }
-
-        op.ssms.clearDeltas(op.touchedStates);
-        op.touchedStates.clear();
-    }
-
-    @Override
     public void ensureCapacity(long tableSize) {
         internalResult.ensureCapacity(tableSize);
+        singletonCount.ensureCapacity(tableSize);
         ssms.ensureCapacity(tableSize);
     }
 
@@ -303,8 +403,9 @@ public class ObjectChunkedUniqueOperator implements IterativeChunkedAggregationO
         if (exposeInternal) {
             final Map<String, ColumnSource<?>> columns = new LinkedHashMap<>();
             columns.put(name, externalResult);
-            columns.put(name + RollupConstants.ROLLUP_DISTINCT_SSM_COLUMN_ID + RollupConstants.ROLLUP_COLUMN_SUFFIX,
-                    ssms.getUnderlyingSource());
+            columns.put(
+                    name + RollupConstants.ROLLUP_DISTINCT_SSM_COUNT_COLUMN_ID + RollupConstants.ROLLUP_COLUMN_SUFFIX,
+                    singletonCount);
             return columns;
         }
 
@@ -315,14 +416,7 @@ public class ObjectChunkedUniqueOperator implements IterativeChunkedAggregationO
     public void startTrackingPrevValues() {
         internalResult.startTrackingPrevValues();
         if (exposeInternal) {
-            if (prevFlusher != null) {
-                throw new IllegalStateException("startTrackingPrevValues must only be called once");
-            }
-
-            ssms.startTrackingPrevValues();
-            prevFlusher = new UpdateCommitter<>(this, ExecutionContext.getContext().getUpdateGraph(),
-                    ObjectChunkedUniqueOperator::flushPrevious);
-            touchedStates = RowSetFactory.empty();
+            singletonCount.startTrackingPrevValues();
         }
     }
 
@@ -347,20 +441,6 @@ public class ObjectChunkedUniqueOperator implements IterativeChunkedAggregationO
 
     private void clearSsm(long destination) {
         ssms.clear(destination);
-    }
-
-    private boolean setResult(ObjectSegmentedSortedMultiset ssm, long destination) {
-        final boolean resultChanged;
-        if (ssm.isEmpty()) {
-            resultChanged = internalResult.getAndSetUnsafe(destination, onlyNullsSentinel) != onlyNullsSentinel;
-        } else if (ssm.size() == 1) {
-            final Object newValue = ssm.get(0);
-            resultChanged = internalResult.getAndSetUnsafe(destination, newValue) != newValue;
-        } else {
-            resultChanged = internalResult.getAndSetUnsafe(destination, nonUniqueSentinel) != nonUniqueSentinel;
-        }
-
-        return resultChanged || (exposeInternal && (ssm.getAddedSize() > 0 || ssm.getRemovedSize() > 0));
     }
     // endregion
 }

@@ -103,6 +103,164 @@ public final class IntSegmentedSortedMultiset implements SegmentedSortedMultiSet
         return beforeSize != size();
     }
 
+    /**
+     * Insert {@code count} copies of a single {@code value}, returning whether a new distinct value was added (as
+     * opposed to merging into an existing one). This does the work of
+     * {@link #insert(WritableIntChunk, WritableIntChunk, int, int)} for one value without requiring the caller to wrap
+     * it in a chunk, so seeding a freshly created set is allocation-free. Values at the boundaries reuse
+     * {@link #appendMaximum}/{@link #prependMinimum} (which handle leaf splitting); interior values are placed
+     * directly, splitting the target leaf only when it is full.
+     */
+    public boolean insert(int value, long count) {
+        Assert.gtZero(count, "count");
+        validate();
+        if (leafCount == 0) {
+            // empty -> singleton, stored directly without allocating the directory or leaf arrays
+            singletonValue = value;
+            singletonCount = count;
+            size = 1;
+            leafCount = 1;
+            totalSize += count;
+            maybeAccumulateAddition(value);
+            validate();
+            return true;
+        }
+        if (isSingleton()) {
+            if (IntComparisons.eq(value, singletonValue)) {
+                singletonCount += count;
+                totalSize += count;
+                validate();
+                return false;
+            }
+            materializeSingleton(1);
+        }
+
+        final boolean added;
+        final int max = getMaxInt();
+        if (IntComparisons.gt(value, max)) {
+            maybeAccumulateAddition(value);
+            appendMaximum(value, count);
+            added = true;
+        } else if (IntComparisons.eq(value, max)) {
+            addMaxCount(count);
+            added = false;
+        } else {
+            final int min = getMinInt();
+            if (IntComparisons.lt(value, min)) {
+                maybeAccumulateAddition(value);
+                prependMinimum(value, count);
+                added = true;
+            } else if (IntComparisons.eq(value, min)) {
+                addMinCount(count);
+                added = false;
+            } else {
+                added = insertInterior(value, count);
+            }
+        }
+        validate();
+        return added;
+    }
+
+    /**
+     * Insert {@code count} copies of {@code value}, which is strictly between the current minimum and maximum, merging
+     * into an existing equal value or placing a new one in sorted position. The directory (single-leaf) representation
+     * is promoted to leaves when it would overflow; an interior insert into a full leaf splits that leaf in two.
+     */
+    private boolean insertInterior(int value, long count) {
+        if (leafCount == 1) {
+            final int ip = upperBound(directoryValues, 0, size, value);
+            if (IntComparisons.eq(directoryValues[ip], value)) {
+                directoryCount[ip] += count;
+                totalSize += count;
+                return false;
+            }
+            if (size + 1 <= leafSize) {
+                maybeAccumulateAddition(value);
+                if (directoryValues.length < size + 1) {
+                    directoryValues = Arrays.copyOf(directoryValues, size + 1);
+                    directoryCount = Arrays.copyOf(directoryCount, size + 1);
+                }
+                System.arraycopy(directoryValues, ip, directoryValues, ip + 1, size - ip);
+                System.arraycopy(directoryCount, ip, directoryCount, ip + 1, size - ip);
+                directoryValues[ip] = value;
+                directoryCount[ip] = count;
+                size++;
+                totalSize += count;
+                return true;
+            }
+            // the single directory leaf is full; promote it to a leaf and fall through to the leaf split below
+            moveDirectoryToLeaf(getDesiredLeafCount(size + 1));
+        }
+
+        final int leaf = upperBound(directoryValues, 0, leafCount - 1, value);
+        final int[] leafValue = leafValues[leaf];
+        final long[] leafCount = leafCounts[leaf];
+        final int leafSz = leafSizes[leaf];
+        final int ip = upperBound(leafValue, 0, leafSz, value);
+        if (ip < leafSz && IntComparisons.eq(leafValue[ip], value)) {
+            leafCount[ip] += count;
+            totalSize += count;
+            return false;
+        }
+        maybeAccumulateAddition(value);
+        if (leafSz < leafSize) {
+            // value is strictly below this leaf's maximum (larger values route to a later leaf, equal ones merge
+            // above), so it lands before the last element and the leaf max -- and its directory entry -- is unchanged
+            System.arraycopy(leafValue, ip, leafValue, ip + 1, leafSz - ip);
+            System.arraycopy(leafCount, ip, leafCount, ip + 1, leafSz - ip);
+            leafValue[ip] = value;
+            leafCount[ip] = count;
+            leafSizes[leaf] = leafSz + 1;
+            size++;
+            totalSize += count;
+            return true;
+        }
+        splitLeafForInsert(leaf, ip, value, count);
+        return true;
+    }
+
+    /**
+     * Split the full leaf {@code leaf} in two, placing {@code count} copies of {@code value} at position {@code ip}.
+     * The lower half stays in {@code leaf}; a fresh trailing leaf receives the upper half.
+     */
+    private void splitLeafForInsert(int leaf, int ip, int value, long count) {
+        makeLeafHole(leaf + 1, 1);
+        leafCount++;
+        final int[] lowerValues = leafValues[leaf];
+        final long[] lowerCounts = leafCounts[leaf];
+        final int[] upperValues = leafValues[leaf + 1] = new int[leafSize];
+        final long[] upperCounts = leafCounts[leaf + 1] = new long[leafSize];
+        final int total = leafSize + 1;
+        final int lowerSize = total / 2;
+        final int upperSize = total - lowerSize;
+        if (ip >= lowerSize) {
+            // value lands in the upper leaf: upper = lower[lowerSize..ip) + value + lower[ip..leafSize)
+            final int beforeValue = ip - lowerSize;
+            System.arraycopy(lowerValues, lowerSize, upperValues, 0, beforeValue);
+            System.arraycopy(lowerCounts, lowerSize, upperCounts, 0, beforeValue);
+            upperValues[beforeValue] = value;
+            upperCounts[beforeValue] = count;
+            System.arraycopy(lowerValues, ip, upperValues, beforeValue + 1, leafSize - ip);
+            System.arraycopy(lowerCounts, ip, upperCounts, beforeValue + 1, leafSize - ip);
+        } else {
+            // value lands in the lower leaf: the top upperSize entries move up, then value is spliced into the lower
+            System.arraycopy(lowerValues, lowerSize - 1, upperValues, 0, upperSize);
+            System.arraycopy(lowerCounts, lowerSize - 1, upperCounts, 0, upperSize);
+            System.arraycopy(lowerValues, ip, lowerValues, ip + 1, lowerSize - 1 - ip);
+            System.arraycopy(lowerCounts, ip, lowerCounts, ip + 1, lowerSize - 1 - ip);
+            lowerValues[ip] = value;
+            lowerCounts[ip] = count;
+        }
+        leafSizes[leaf] = lowerSize;
+        leafSizes[leaf + 1] = upperSize;
+        size++;
+        totalSize += count;
+        updateDirectory(leaf);
+        if (leaf + 1 < leafCount - 1) {
+            updateDirectory(leaf + 1);
+        }
+    }
+
     private int insertExistingIntoLeaf(WritableIntChunk<? extends Values> valuesToInsert,
             WritableIntChunk<ChunkLengths> counts, int ripos, MutableInt wipos, int leafSize, int[] leafValues,
             long[] leafCounts, int maxInsert, boolean lastLeaf, int end) {
@@ -963,6 +1121,108 @@ public final class IntSegmentedSortedMultiset implements SegmentedSortedMultiSet
         final long beforeSize = size();
         removeInternal(removeContext, valuesToRemove, counts, offset, length);
         return beforeSize != size();
+    }
+
+    /**
+     * Remove {@code count} copies of a single {@code value}, which must currently be present, returning whether the
+     * distinct value was fully removed (its count reached zero). This does the work of
+     * {@link #remove(RemoveContext, WritableIntChunk, WritableIntChunk, int, int)} for one value without requiring the
+     * caller to wrap it in a chunk. Empty leaves are dropped and the set collapses back toward the directory and
+     * singleton representations, but non-empty leaves are not opportunistically merged.
+     */
+    public boolean remove(int value, long count) {
+        Assert.gtZero(count, "count");
+        validate();
+        if (isSingleton()) {
+            Assert.assertion(IntComparisons.eq(value, singletonValue),
+                    "IntComparisons.eq(value, singletonValue)");
+            Assert.leq(count, "count", singletonCount, "singletonCount");
+            singletonCount -= count;
+            totalSize -= count;
+            if (singletonCount == 0) {
+                maybeAccumulateRemoval(value);
+                clear();
+                validate();
+                return true;
+            }
+            validate();
+            return false;
+        }
+        if (leafCount == 1) {
+            final int pos = upperBound(directoryValues, 0, size, value);
+            Assert.assertion(pos < size && IntComparisons.eq(directoryValues[pos], value),
+                    "pos < size && IntComparisons.eq(directoryValues[pos], value)");
+            Assert.leq(count, "count", directoryCount[pos], "directoryCount[pos]");
+            directoryCount[pos] -= count;
+            totalSize -= count;
+            if (directoryCount[pos] != 0) {
+                validate();
+                return false;
+            }
+            maybeAccumulateRemoval(value);
+            System.arraycopy(directoryValues, pos + 1, directoryValues, pos, size - pos - 1);
+            System.arraycopy(directoryCount, pos + 1, directoryCount, pos, size - pos - 1);
+            size--;
+            if (size == 1) {
+                collapseToSingleton();
+            }
+            validate();
+            return true;
+        }
+
+        final int leaf = upperBound(directoryValues, 0, leafCount - 1, value);
+        final int[] leafValue = leafValues[leaf];
+        final long[] leafCount = leafCounts[leaf];
+        final int leafSz = leafSizes[leaf];
+        final int pos = upperBound(leafValue, 0, leafSz, value);
+        Assert.assertion(pos < leafSz && IntComparisons.eq(leafValue[pos], value),
+                "pos < leafSz && IntComparisons.eq(leafValue[pos], value)");
+        Assert.leq(count, "count", leafCount[pos], "leafCount[pos]");
+        leafCount[pos] -= count;
+        totalSize -= count;
+        if (leafCount[pos] != 0) {
+            validate();
+            return false;
+        }
+        maybeAccumulateRemoval(value);
+        System.arraycopy(leafValue, pos + 1, leafValue, pos, leafSz - pos - 1);
+        System.arraycopy(leafCount, pos + 1, leafCount, pos, leafSz - pos - 1);
+        leafSizes[leaf] = leafSz - 1;
+        size--;
+        if (leafSizes[leaf] == 0) {
+            removeLeaf(leaf);
+        } else if (pos == leafSz - 1 && leaf < this.leafCount - 1) {
+            // removed the leaf's former maximum; refresh its directory separator
+            updateDirectory(leaf);
+        }
+        if (this.leafCount == 1 && size == 1) {
+            collapseToSingleton();
+        }
+        validate();
+        return true;
+    }
+
+    /**
+     * Drop the now-empty leaf {@code leaf}, shifting the trailing leaves and their directory separators down and
+     * promoting a lone remaining leaf back into the directory representation.
+     */
+    private void removeLeaf(int leaf) {
+        final int leavesAfter = leafCount - leaf - 1;
+        if (leavesAfter > 0) {
+            System.arraycopy(leafValues, leaf + 1, leafValues, leaf, leavesAfter);
+            System.arraycopy(leafCounts, leaf + 1, leafCounts, leaf, leavesAfter);
+            System.arraycopy(leafSizes, leaf + 1, leafSizes, leaf, leavesAfter);
+            // the separator after the removed leaf goes away; pull the later separators down over it
+            final int separatorsAfter = (leafCount - 1) - (leaf + 1);
+            if (separatorsAfter > 0) {
+                System.arraycopy(directoryValues, leaf + 1, directoryValues, leaf, separatorsAfter);
+            }
+        }
+        leafValues[leafCount - 1] = null;
+        leafCounts[leafCount - 1] = null;
+        leafSizes[leafCount - 1] = 0;
+        leafCount--;
+        maybePromoteLastLeaf();
     }
 
     private void removeInternal(RemoveContext removeContext, IntChunk<? extends Values> valuesToRemove,
@@ -2590,6 +2850,25 @@ public final class IntSegmentedSortedMultiset implements SegmentedSortedMultiSet
                     added.add(val);
                 }
             }
+        }
+    }
+
+    private void maybeAccumulateAddition(int valueAdded) {
+        if (!accumulateDeltas) {
+            return;
+        }
+
+        if (prevValues == null) {
+            prevValues = new IntVectorDirect(keyArray());
+        }
+
+        if (added == null) {
+            added = new IntOpenHashSet(1);
+        }
+
+        // only record as added if it was not removed before; if it was then this key is a net-no-change
+        if (removed == null || !removed.remove(valueAdded)) {
+            added.add(valueAdded);
         }
     }
 

@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.agg.Aggregation;
+import io.deephaven.api.object.UnionObject;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.ModifiedColumnSet;
@@ -44,6 +45,7 @@ import static io.deephaven.engine.testutil.HierarchicalTableTestTools.snapshotTo
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.engine.util.TableTools.byteCol;
+import static io.deephaven.util.QueryConstants.NULL_INT;
 
 @Category(OutOfBandTest.class)
 public class TestRollupTable extends RefreshingTableTestCase {
@@ -785,6 +787,298 @@ public class TestRollupTable extends RefreshingTableTestCase {
 
         assertTableEquals(expected, snapshot5);
         freeSnapshotTableChunks(snapshot5);
+    }
+
+    /**
+     * Directed coverage for the rollup "unique" re-aggregation operator (the bucketed and singleton paths that the
+     * randomized tests reach only incidentally). Four leaf states roll up into two: {@code Alpha} = Apple + Banana and
+     * {@code Bravo} = Carrot + Dragonfruit. The cycles walk a constituent through every classification the operator
+     * cares about -- empty, unique, and non-unique -- and exercise the empty->unique, non-unique->unique, and
+     * unique->non-unique modify transitions plus the add transitions that grow a singleton's count and that allocate an
+     * SSM when a second distinct value appears.
+     */
+    @Test
+    public void testRollupUniqueIncremental() {
+        final int nonUnique = -1;
+        final QueryTable source = TstUtils.testRefreshingTable(
+                stringCol("Level1", "Alpha", "Alpha", "Alpha", "Alpha", "Alpha", "Bravo", "Bravo", "Bravo"),
+                stringCol("Level2", "Apple", "Apple", "Banana", "Banana", "Banana", "Carrot", "Dragonfruit",
+                        "Dragonfruit"),
+                intCol("Value", 100, 100, 100, 100, 100, NULL_INT, 200, 201));
+
+        // Apple is unique(100) with two entries, Banana the same value with three; Carrot has only nulls (empty) and
+        // Dragonfruit holds two distinct values (non-unique).
+        final RollupTable rollup =
+                source.rollup(List.of(AggUnique(false, UnionObject.of(nonUnique), "Unique=Value")), "Level1", "Level2");
+
+        final String[] arrayWithNull = new String[1];
+        final Table keyTable = newTable(
+                intCol(rollup.getRowDepthColumn().name(), 0),
+                stringCol("Level1", arrayWithNull),
+                stringCol("Level2", arrayWithNull),
+                byteCol("Action", HierarchicalTable.KEY_TABLE_ACTION_EXPAND_ALL));
+        final HierarchicalTable.SnapshotState ss = rollup.makeSnapshotState();
+
+        // 1. Alpha is unique(100) (Apple and Banana share it); Bravo is non-unique (Dragonfruit forces it while Carrot
+        // contributes nothing); the root is non-unique.
+        assertUniqueSnapshot(rollup, ss, keyTable, newTable(
+                stringCol("Level1", null, "Alpha", "Alpha", "Alpha", "Bravo", "Bravo", "Bravo"),
+                stringCol("Level2", null, null, "Apple", "Banana", null, "Carrot", "Dragonfruit"),
+                intCol("Unique", nonUnique, 100, 100, 100, nonUnique, NULL_INT, nonUnique)));
+
+        final ControlledUpdateGraph cug = source.getUpdateGraph().cast();
+
+        // 2. A new row joins Apple at its existing value: Apple stays unique(100) but its singleton count grows, so the
+        // Alpha re-aggregation runs its bucketed modifyChunk on a value-preserving constituent modify whose removal and
+        // addition net to nothing. Nothing exposed changes.
+        cug.runWithinUnitTestCycle(() -> {
+            addToTable(source, i(20), stringCol("Level1", "Alpha"), stringCol("Level2", "Apple"), intCol("Value", 100));
+            source.notifyListeners(
+                    new TableUpdateImpl(i(20), i(), i(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
+        });
+        assertUniqueSnapshot(rollup, ss, keyTable, newTable(
+                stringCol("Level1", null, "Alpha", "Alpha", "Alpha", "Bravo", "Bravo", "Bravo"),
+                stringCol("Level2", null, null, "Apple", "Banana", null, "Carrot", "Dragonfruit"),
+                intCol("Unique", nonUnique, 100, 100, 100, nonUnique, NULL_INT, nonUnique)));
+
+        // 3. Dragonfruit drops a value and becomes a singleton(200), so Bravo collapses to unique(200).
+        cug.runWithinUnitTestCycle(() -> {
+            removeRows(source, i(7));
+            source.notifyListeners(new TableUpdateImpl(i(), i(7), i(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
+        });
+        assertUniqueSnapshot(rollup, ss, keyTable, newTable(
+                stringCol("Level1", null, "Alpha", "Alpha", "Alpha", "Bravo", "Bravo", "Bravo"),
+                stringCol("Level2", null, null, "Apple", "Banana", null, "Carrot", "Dragonfruit"),
+                intCol("Unique", nonUnique, 100, 100, 100, 200, NULL_INT, 200)));
+
+        // 4. Carrot gains the value Dragonfruit holds, so Bravo stays unique(200) while its singleton count grows.
+        cug.runWithinUnitTestCycle(() -> {
+            addToTable(source, i(8), stringCol("Level1", "Bravo"), stringCol("Level2", "Carrot"), intCol("Value", 200));
+            source.notifyListeners(new TableUpdateImpl(i(8), i(), i(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
+        });
+        assertUniqueSnapshot(rollup, ss, keyTable, newTable(
+                stringCol("Level1", null, "Alpha", "Alpha", "Alpha", "Bravo", "Bravo", "Bravo"),
+                stringCol("Level2", null, null, "Apple", "Banana", null, "Carrot", "Dragonfruit"),
+                intCol("Unique", nonUnique, 100, 100, 100, 200, 200, 200)));
+
+        // 5. Banana gains a second distinct value and becomes non-unique, forcing Alpha non-unique.
+        cug.runWithinUnitTestCycle(() -> {
+            addToTable(source, i(9), stringCol("Level1", "Alpha"), stringCol("Level2", "Banana"), intCol("Value", 101));
+            source.notifyListeners(new TableUpdateImpl(i(9), i(), i(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
+        });
+        assertUniqueSnapshot(rollup, ss, keyTable, newTable(
+                stringCol("Level1", null, "Alpha", "Alpha", "Alpha", "Bravo", "Bravo", "Bravo"),
+                stringCol("Level2", null, null, "Apple", "Banana", null, "Carrot", "Dragonfruit"),
+                intCol("Unique", nonUnique, nonUnique, 100, nonUnique, 200, 200, 200)));
+
+        // 6. A new Bravo constituent (Eggplant) holds Dragonfruit's value, so Bravo stays unique(200).
+        cug.runWithinUnitTestCycle(() -> {
+            addToTable(source, i(10), stringCol("Level1", "Bravo"), stringCol("Level2", "Eggplant"),
+                    intCol("Value", 200));
+            source.notifyListeners(
+                    new TableUpdateImpl(i(10), i(), i(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
+        });
+        assertUniqueSnapshot(rollup, ss, keyTable, newTable(
+                stringCol("Level1", null, "Alpha", "Alpha", "Alpha", "Bravo", "Bravo", "Bravo", "Bravo"),
+                stringCol("Level2", null, null, "Apple", "Banana", null, "Carrot", "Dragonfruit", "Eggplant"),
+                intCol("Unique", nonUnique, nonUnique, 100, nonUnique, 200, 200, 200, 200)));
+
+        // 7. A new Bravo constituent (Fig) holds a distinct value, so Bravo becomes non-unique as its multiset gains a
+        // second distinct value (allocating an SSM at the rollup level).
+        cug.runWithinUnitTestCycle(() -> {
+            addToTable(source, i(11), stringCol("Level1", "Bravo"), stringCol("Level2", "Fig"), intCol("Value", 300));
+            source.notifyListeners(
+                    new TableUpdateImpl(i(11), i(), i(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
+        });
+        assertUniqueSnapshot(rollup, ss, keyTable, newTable(
+                stringCol("Level1", null, "Alpha", "Alpha", "Alpha", "Bravo", "Bravo", "Bravo", "Bravo", "Bravo"),
+                stringCol("Level2", null, null, "Apple", "Banana", null, "Carrot", "Dragonfruit", "Eggplant", "Fig"),
+                intCol("Unique", nonUnique, nonUnique, 100, nonUnique, nonUnique, 200, 200, 200, 300)));
+
+        // 8. Carrot loses its only non-null value (its null row keeps the leaf alive), so it modifies completely to
+        // null/empty. The Bravo re-aggregation processes the unique->empty constituent modify, removing a 200 from its
+        // SSM; Bravo stays non-unique.
+        cug.runWithinUnitTestCycle(() -> {
+            removeRows(source, i(8));
+            source.notifyListeners(new TableUpdateImpl(i(), i(8), i(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
+        });
+        assertUniqueSnapshot(rollup, ss, keyTable, newTable(
+                stringCol("Level1", null, "Alpha", "Alpha", "Alpha", "Bravo", "Bravo", "Bravo", "Bravo", "Bravo"),
+                stringCol("Level2", null, null, "Apple", "Banana", null, "Carrot", "Dragonfruit", "Eggplant", "Fig"),
+                intCol("Unique", nonUnique, nonUnique, 100, nonUnique, nonUnique, NULL_INT, 200, 200, 300)));
+
+        // 9. Remove a unique state: Fig (the only holder of 300) goes away entirely, so Bravo's re-aggregation runs its
+        // removeChunk, collapsing its SSM back to the singleton unique(200).
+        cug.runWithinUnitTestCycle(() -> {
+            removeRows(source, i(11));
+            source.notifyListeners(
+                    new TableUpdateImpl(i(), i(11), i(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
+        });
+        assertUniqueSnapshot(rollup, ss, keyTable, newTable(
+                stringCol("Level1", null, "Alpha", "Alpha", "Alpha", "Bravo", "Bravo", "Bravo", "Bravo"),
+                stringCol("Level2", null, null, "Apple", "Banana", null, "Carrot", "Dragonfruit", "Eggplant"),
+                intCol("Unique", nonUnique, nonUnique, 100, nonUnique, 200, NULL_INT, 200, 200)));
+
+        // 10. Remove a non-unique state: Banana goes away entirely, so Alpha's removeChunk drops its non-unique
+        // constituent and collapses to the singleton unique(100).
+        cug.runWithinUnitTestCycle(() -> {
+            removeRows(source, i(2, 3, 4, 9));
+            source.notifyListeners(
+                    new TableUpdateImpl(i(), i(2, 3, 4, 9), i(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
+        });
+        assertUniqueSnapshot(rollup, ss, keyTable, newTable(
+                stringCol("Level1", null, "Alpha", "Alpha", "Bravo", "Bravo", "Bravo", "Bravo"),
+                stringCol("Level2", null, null, "Apple", null, "Carrot", "Dragonfruit", "Eggplant"),
+                intCol("Unique", nonUnique, 100, 100, 200, NULL_INT, 200, 200)));
+
+        // 11. Remove the null state: Carrot (which has held only nulls since step 8) goes away entirely, so Bravo's
+        // removeChunk drops an empty constituent and is otherwise unchanged.
+        cug.runWithinUnitTestCycle(() -> {
+            removeRows(source, i(5));
+            source.notifyListeners(new TableUpdateImpl(i(), i(5), i(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
+        });
+        assertUniqueSnapshot(rollup, ss, keyTable, newTable(
+                stringCol("Level1", null, "Alpha", "Alpha", "Bravo", "Bravo", "Bravo"),
+                stringCol("Level2", null, null, "Apple", null, "Dragonfruit", "Eggplant"),
+                intCol("Unique", nonUnique, 100, 100, 200, 200, 200)));
+
+        // 12. A brand-new parent (Charlie) appears in one cycle holding three new children at once: a null-only state
+        // (Honeydew) plus two distinct values (Iceberg, Jicama). Its re-aggregation runs addChunk against an empty
+        // destination that immediately takes two distinct values, allocating an SSM directly (without passing through
+        // the singleton representation); Charlie is non-unique.
+        cug.runWithinUnitTestCycle(() -> {
+            addToTable(source, i(12, 13, 14),
+                    stringCol("Level1", "Charlie", "Charlie", "Charlie"),
+                    stringCol("Level2", "Honeydew", "Iceberg", "Jicama"),
+                    intCol("Value", NULL_INT, 400, 500));
+            source.notifyListeners(
+                    new TableUpdateImpl(i(12, 13, 14), i(), i(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
+        });
+        assertUniqueSnapshot(rollup, ss, keyTable, newTable(
+                stringCol("Level1", null, "Alpha", "Alpha", "Bravo", "Bravo", "Bravo", "Charlie", "Charlie", "Charlie",
+                        "Charlie"),
+                stringCol("Level2", null, null, "Apple", null, "Dragonfruit", "Eggplant", null, "Honeydew", "Iceberg",
+                        "Jicama"),
+                intCol("Unique", nonUnique, 100, 100, 200, 200, 200, nonUnique, NULL_INT, 400, 500)));
+
+        // 13. A further new child (Kale) joins Charlie while it already holds an SSM, so addChunk inserts straight into
+        // the existing rollup SSM; Charlie stays non-unique.
+        cug.runWithinUnitTestCycle(() -> {
+            addToTable(source, i(15), stringCol("Level1", "Charlie"), stringCol("Level2", "Kale"),
+                    intCol("Value", 600));
+            source.notifyListeners(
+                    new TableUpdateImpl(i(15), i(), i(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
+        });
+        assertUniqueSnapshot(rollup, ss, keyTable, newTable(
+                stringCol("Level1", null, "Alpha", "Alpha", "Bravo", "Bravo", "Bravo", "Charlie", "Charlie", "Charlie",
+                        "Charlie", "Charlie"),
+                stringCol("Level2", null, null, "Apple", null, "Dragonfruit", "Eggplant", null, "Honeydew", "Iceberg",
+                        "Jicama", "Kale"),
+                intCol("Unique", nonUnique, 100, 100, 200, 200, 200, nonUnique, NULL_INT, 400, 500, 600)));
+
+        // 14. Remove every remaining child of Bravo (Dragonfruit and Eggplant), so Bravo itself disappears. The root is
+        // a zero-key re-aggregation, so its singleton removeChunk drops the Bravo constituent; the root stays
+        // non-unique (Alpha=100 and the non-unique Charlie remain).
+        cug.runWithinUnitTestCycle(() -> {
+            removeRows(source, i(6, 10));
+            source.notifyListeners(
+                    new TableUpdateImpl(i(), i(6, 10), i(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
+        });
+        assertUniqueSnapshot(rollup, ss, keyTable, newTable(
+                stringCol("Level1", null, "Alpha", "Alpha", "Charlie", "Charlie", "Charlie", "Charlie", "Charlie"),
+                stringCol("Level2", null, null, "Apple", null, "Honeydew", "Iceberg", "Jicama", "Kale"),
+                intCol("Unique", nonUnique, 100, 100, nonUnique, NULL_INT, 400, 500, 600)));
+
+        // 15. A new parent (Delta) appears with a single null-only child (Lemon), so Delta is empty. The root is a
+        // zero-key re-aggregation, so its singleton addChunk takes an empty (neither unique nor non-unique)
+        // constituent; the root is unchanged.
+        cug.runWithinUnitTestCycle(() -> {
+            addToTable(source, i(16), stringCol("Level1", "Delta"), stringCol("Level2", "Lemon"),
+                    intCol("Value", NULL_INT));
+            source.notifyListeners(
+                    new TableUpdateImpl(i(16), i(), i(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
+        });
+        assertUniqueSnapshot(rollup, ss, keyTable, newTable(
+                stringCol("Level1", null, "Alpha", "Alpha", "Charlie", "Charlie", "Charlie", "Charlie", "Charlie",
+                        "Delta", "Delta"),
+                stringCol("Level2", null, null, "Apple", null, "Honeydew", "Iceberg", "Jicama", "Kale", null, "Lemon"),
+                intCol("Unique", nonUnique, 100, 100, nonUnique, NULL_INT, 400, 500, 600, NULL_INT, NULL_INT)));
+
+        // 16. Remove every child of Charlie at once. Charlie's bucketed removeChunk strips all three values from its
+        // SSM, emptying it; and because Charlie (a non-unique state) then disappears, the root's singleton removeChunk
+        // drops a non-unique constituent, so the root collapses to unique(100).
+        cug.runWithinUnitTestCycle(() -> {
+            removeRows(source, i(12, 13, 14, 15));
+            source.notifyListeners(
+                    new TableUpdateImpl(i(), i(12, 13, 14, 15), i(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
+        });
+        assertUniqueSnapshot(rollup, ss, keyTable, newTable(
+                stringCol("Level1", null, "Alpha", "Alpha", "Delta", "Delta"),
+                stringCol("Level2", null, null, "Apple", null, "Lemon"),
+                intCol("Unique", 100, 100, 100, NULL_INT, NULL_INT)));
+
+        // 17. Two new children with their own distinct values (700, 800) join the singleton Alpha (unique 100) in one
+        // cycle, so Alpha's re-aggregation takes a singleton + multi-distinct addChunk: applyAdds seeds an SSM from the
+        // held value plus the two-element batch. Alpha becomes non-unique.
+        cug.runWithinUnitTestCycle(() -> {
+            addToTable(source, i(17, 18), stringCol("Level1", "Alpha", "Alpha"),
+                    stringCol("Level2", "Mango", "Nectarine"), intCol("Value", 700, 800));
+            source.notifyListeners(
+                    new TableUpdateImpl(i(17, 18), i(), i(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
+        });
+        assertUniqueSnapshot(rollup, ss, keyTable, newTable(
+                stringCol("Level1", null, "Alpha", "Alpha", "Alpha", "Alpha", "Delta", "Delta"),
+                stringCol("Level2", null, null, "Apple", "Mango", "Nectarine", null, "Lemon"),
+                intCol("Unique", nonUnique, nonUnique, 100, 700, 800, NULL_INT, NULL_INT)));
+
+        // 18. Delta gains a non-null child (Melon=900), flipping it from only-nulls to unique. The root is a zero-key
+        // re-aggregation, so its singleton modifyChunk processes a constituent whose previous state was empty.
+        cug.runWithinUnitTestCycle(() -> {
+            addToTable(source, i(19), stringCol("Level1", "Delta"), stringCol("Level2", "Melon"),
+                    intCol("Value", 900));
+            source.notifyListeners(
+                    new TableUpdateImpl(i(19), i(), i(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
+        });
+        assertUniqueSnapshot(rollup, ss, keyTable, newTable(
+                stringCol("Level1", null, "Alpha", "Alpha", "Alpha", "Alpha", "Delta", "Delta", "Delta"),
+                stringCol("Level2", null, null, "Apple", "Mango", "Nectarine", null, "Lemon", "Melon"),
+                intCol("Unique", nonUnique, nonUnique, 100, 700, 800, 900, NULL_INT, 900)));
+
+        // 19. Removing Melon flips Delta back from unique to only-nulls, so the root's singleton modifyChunk now
+        // processes a constituent whose new state is empty.
+        cug.runWithinUnitTestCycle(() -> {
+            removeRows(source, i(19));
+            source.notifyListeners(
+                    new TableUpdateImpl(i(), i(19), i(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
+        });
+        assertUniqueSnapshot(rollup, ss, keyTable, newTable(
+                stringCol("Level1", null, "Alpha", "Alpha", "Alpha", "Alpha", "Delta", "Delta"),
+                stringCol("Level2", null, null, "Apple", "Mango", "Nectarine", null, "Lemon"),
+                intCol("Unique", nonUnique, nonUnique, 100, 700, 800, NULL_INT, NULL_INT)));
+
+        // 20. Removing Delta's last child deletes the (empty) Delta node, so the root's singleton removeChunk drops an
+        // empty constituent. The root stays non-unique (Alpha remains non-unique).
+        cug.runWithinUnitTestCycle(() -> {
+            removeRows(source, i(16));
+            source.notifyListeners(
+                    new TableUpdateImpl(i(), i(16), i(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
+        });
+        assertUniqueSnapshot(rollup, ss, keyTable, newTable(
+                stringCol("Level1", null, "Alpha", "Alpha", "Alpha", "Alpha"),
+                stringCol("Level2", null, null, "Apple", "Mango", "Nectarine"),
+                intCol("Unique", nonUnique, nonUnique, 100, 700, 800)));
+    }
+
+    /**
+     * Snapshot the whole {@code rollup} (every level expanded) and assert its {@code Level1}/{@code Level2}/
+     * {@code Unique} columns, sorted by key so each parent precedes its children, equal {@code expected}.
+     */
+    private static void assertUniqueSnapshot(final RollupTable rollup, final HierarchicalTable.SnapshotState ss,
+            final Table keyTable, final Table expected) {
+        final Table snapshot =
+                snapshotToTable(rollup, ss, keyTable, ColumnName.of("Action"), null, RowSetFactory.flat(30));
+        assertTableEquals(expected, snapshot.view("Level1", "Level2", "Unique").sort("Level1", "Level2"));
+        freeSnapshotTableChunks(snapshot);
     }
 
     @Test
