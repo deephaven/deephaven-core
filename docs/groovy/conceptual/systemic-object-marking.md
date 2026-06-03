@@ -8,7 +8,7 @@ In Deephaven, a **systemic object** is an object whose failure receives special 
 
 The difference between systemic and non-systemic objects is most visible when a ticking table fails. In this example, the formula `Z=Y.toString()` throws a `NullPointerException` once `X` exceeds 10 and `Y` becomes null:
 
-```groovy
+```groovy should-fail
 timeBomb = timeTable("PT1s").update("X=ii", "Y=X > 10 ? null : `abc`", "Z=Y.toString()")
 ```
 
@@ -54,7 +54,7 @@ if (SystemicObjectTracker.isSystemicObjectMarkingEnabled()) {
 
 The [`SystemicObjectTracker`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/util/systemicmarking/SystemicObjectTracker.html) class provides an `executeSystemically` method to enable or disable systemic object creation within a closure.
 
-```groovy order=systemicT, notSystemicT
+```groovy order=systemicT,notSystemicT
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker
 
 // Create a systemic table
