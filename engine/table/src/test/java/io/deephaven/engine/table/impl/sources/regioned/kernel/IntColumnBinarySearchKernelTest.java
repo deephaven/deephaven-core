@@ -258,7 +258,7 @@ public class IntColumnBinarySearchKernelTest {
                     source, selection, 0, lastPos, (int) 4, false, false));
             assertEquals(-6, IntColumnBinarySearchKernel.lowerBoundAscending(
                     source, selection, 0, lastPos, (int) 4, true, false));
-            // lowerBound: 5 is present but exclusive (value > 5) finds nothing; past-end insertion point 8 â -(8+1)=-9
+            // lowerBound: 5 is present but exclusive (value > 5) finds nothing; past-end insertion point 8 -> -(8+1)=-9
             assertEquals(-9, IntColumnBinarySearchKernel.lowerBoundAscending(
                     source, selection, 0, lastPos, (int) 5, false, false));
             // lowerBound: 5 is present; inclusive search returns first occurrence at position 5
@@ -266,19 +266,21 @@ public class IntColumnBinarySearchKernelTest {
                     source, selection, 0, lastPos, (int) 5, true, false));
 
             // upperBound: 4 is absent; exclusive and inclusive both encode insertion point 5 as -(5+1)=-6
+            // inserting 4 at pos 5 preserves sort order
             assertEquals(-6, IntColumnBinarySearchKernel.upperBoundAscending(
-                    source, selection, 0, lastPos, (int) 4, false, false)); // inserting 4 at pos 5 preserves sort
-                                                                             // order
+                    source, selection, 0, lastPos, (int) 4, false, false));
+            // inserting 4 at pos 5 preserves sort order
             assertEquals(-6, IntColumnBinarySearchKernel.upperBoundAscending(
-                    source, selection, 0, lastPos, (int) 4, true, false)); // inserting 4 at pos 5 preserves sort order
-            // upperBound: 1 is present but exclusive (value < 1) finds nothing; before-start insertion point 0 â
+                    source, selection, 0, lastPos, (int) 4, true, false));
+            // upperBound: 1 is present but exclusive (value < 1) finds nothing; before-start insertion point 0 ->
             // -(0+1)=-1
+            // inserting 1 at pos 0 preserves sort order
             assertEquals(-1, IntColumnBinarySearchKernel.upperBoundAscending(
-                    source, selection, 0, lastPos, (int) 1, false, false)); // inserting 1 at pos 0 preserves sort
-                                                                             // order
+                    source, selection, 0, lastPos, (int) 1, false, false));
             // upperBound: 5 is present; inclusive search returns last occurrence at position 7
+            // inserting 5 at pos 7 preserves sort order
             assertEquals(7, IntColumnBinarySearchKernel.upperBoundAscending(
-                    source, selection, 0, lastPos, (int) 5, true, false)); // inserting 5 at pos 7 preserves sort order
+                    source, selection, 0, lastPos, (int) 5, true, false));
         } finally {
             selection.close();
             source.clear(true);
@@ -301,7 +303,7 @@ public class IntColumnBinarySearchKernelTest {
                     source, selection, 0, lastPos, (int) 4, false, false));
             assertEquals(-4, IntColumnBinarySearchKernel.lowerBoundDescending(
                     source, selection, 0, lastPos, (int) 4, true, false));
-            // lowerBound: 1 is present but exclusive (value < 1) finds nothing; past-end insertion point 8 â -(8+1)=-9
+            // lowerBound: 1 is present but exclusive (value < 1) finds nothing; past-end insertion point 8 -> -(8+1)=-9
             assertEquals(-9, IntColumnBinarySearchKernel.lowerBoundDescending(
                     source, selection, 0, lastPos, (int) 1, false, false));
             // lowerBound: 1 is present; inclusive search returns first (leftmost) occurrence at position 7
@@ -313,7 +315,7 @@ public class IntColumnBinarySearchKernelTest {
                     source, selection, 0, lastPos, (int) 4, false, false));
             assertEquals(-4, IntColumnBinarySearchKernel.upperBoundDescending(
                     source, selection, 0, lastPos, (int) 4, true, false));
-            // upperBound: 5 is present but exclusive (value > 5) finds nothing; before-start insertion point 0 â
+            // upperBound: 5 is present but exclusive (value > 5) finds nothing; before-start insertion point 0 ->
             // -(0+1)=-1
             assertEquals(-1, IntColumnBinarySearchKernel.upperBoundDescending(
                     source, selection, 0, lastPos, (int) 5, false, false));

@@ -114,12 +114,14 @@ public class ShortColumnBinarySearchKernel {
                 // startResult is positive only when value at startResult == toFind; no extra check needed.
                 final long endResult =
                         upperBoundAscending(source, selection, startResult, lastPos, toFind, true, usePrev);
-                if (endResult >= 0) {
-                    try (final RowSet subset = selection.subSetByPositionRange(startResult, endResult + 1)) {
-                        builder.appendRowSequence(subset);
-                    }
-                    firstPos = endResult + 1;
+                if (endResult < 0) {
+                    throw new IllegalStateException(
+                            "upperBoundAscending returned negative result for value: " + toFind);
                 }
+                try (final RowSet subset = selection.subSetByPositionRange(startResult, endResult + 1)) {
+                    builder.appendRowSequence(subset);
+                }
+                firstPos = endResult + 1;
             }
         } else {
             long firstPos = 0;
@@ -135,12 +137,14 @@ public class ShortColumnBinarySearchKernel {
                 // startResult is positive only when value at startResult == toFind; no extra check needed.
                 final long endResult =
                         upperBoundDescending(source, selection, startResult, lastPos, toFind, true, usePrev);
-                if (endResult >= 0) {
-                    try (final RowSet subset = selection.subSetByPositionRange(startResult, endResult + 1)) {
-                        builder.appendRowSequence(subset);
-                    }
-                    firstPos = endResult + 1;
+                if (endResult < 0) {
+                    throw new IllegalStateException(
+                            "upperBoundDescending returned negative result for value: " + toFind);
                 }
+                try (final RowSet subset = selection.subSetByPositionRange(startResult, endResult + 1)) {
+                    builder.appendRowSequence(subset);
+                }
+                firstPos = endResult + 1;
             }
         }
 
