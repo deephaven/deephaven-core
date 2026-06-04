@@ -266,6 +266,10 @@
                 "path": "how-to-guides/use-uris.md"
               },
               {
+                "label": "Table data service",
+                "path": "how-to-guides/data-import-export/table-data-service.md"
+              },
+              {
                 "label": "Table listeners",
                 "items": [
                   {
