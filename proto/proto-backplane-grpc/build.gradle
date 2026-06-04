@@ -28,7 +28,7 @@ dependencies {
   }
 
   api platform(libs.grpc.bom)
-  api(platform(libs.netty.bom)) {
+  api(enforcedPlatform(libs.netty.bom)) {
     because 'Ensures we use a consistent version of netty for grpc'
   }
   api libs.grpc.protobuf

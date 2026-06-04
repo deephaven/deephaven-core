@@ -10,4 +10,7 @@ dependencies {
     implementation project(':Configuration')
 
     implementation libs.arrow.flight.core
+    api(enforcedPlatform(libs.netty.bom)) {
+        because 'Ensures we use a consistent version of netty for grpc'
+    }
 }
