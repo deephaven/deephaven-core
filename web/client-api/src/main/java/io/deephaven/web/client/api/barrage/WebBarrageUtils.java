@@ -4,23 +4,32 @@
 package io.deephaven.web.client.api.barrage;
 
 import com.google.flatbuffers.FlatBufferBuilder;
+import com.google.common.io.BaseEncoding;
 import io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
-import io.deephaven.web.client.api.barrage.data.BarrageColumnType;
+import io.deephaven.proto.backplane.grpc.DeephavenTableMetadata;
+import io.deephaven.proto.backplane.grpc.InputTableColumnInfo;
+import io.deephaven.web.client.api.ColumnRestriction;
 import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
 import io.deephaven.web.client.api.barrage.def.InitialTableDefinition;
+import io.deephaven.web.client.api.barrage.def.InputTableMetadata;
 import io.deephaven.web.client.api.barrage.def.TableAttributesDefinition;
+import io.deephaven.web.client.api.barrage.util.ColumnRestrictionRegistry;
+import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.shared.data.*;
 import org.apache.arrow.flatbuf.KeyValue;
 import org.apache.arrow.flatbuf.Message;
 import org.apache.arrow.flatbuf.MessageHeader;
 import org.apache.arrow.flatbuf.Schema;
-import org.jetbrains.annotations.NotNull;
+import com.google.protobuf.Any;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.IntFunction;
 
@@ -60,9 +69,87 @@ public class WebBarrageUtils {
                 keyValuePairs("deephaven:attribute_type.", schema.customMetadataLength(), schema::customMetadata),
                 keyValuePairs("deephaven:unsent.attribute.", schema.customMetadataLength(), schema::customMetadata)
                         .keySet());
+
+        // Parse input table metadata if present
+        InputTableMetadata inputTableMetadata = parseInputTableMetadata(schema, cols);
+
         return new InitialTableDefinition()
                 .setAttributes(attributes)
-                .setColumns(cols);
+                .setColumns(cols)
+                .setInputTableMetadata(inputTableMetadata);
+    }
+
+    /**
+     * Parses input table metadata from the schema's custom metadata and column definitions.
+     *
+     * @param schema the schema containing the custom metadata with the base64-encoded table metadata
+     * @param cols the column definitions to match against the column info in the table metadata
+     * @return an InputTableMetadata object containing the column restrictions, or null if no valid metadata is found
+     */
+    private static InputTableMetadata parseInputTableMetadata(Schema schema, ColumnDefinition[] cols) {
+        // Extract the tableMetadata from schema custom metadata
+        String tableMetadataBase64 = null;
+        for (int i = 0; i < schema.customMetadataLength(); i++) {
+            KeyValue pair = schema.customMetadata(i);
+            String key = pair.key();
+            if (key.equals("deephaven:tableMetadata")) {
+                // Found the table metadata, we can stop looking
+                tableMetadataBase64 = pair.value();
+                break;
+            }
+        }
+
+        if (tableMetadataBase64 == null || tableMetadataBase64.isEmpty()) {
+            return null;
+        }
+
+        final InputTableMetadata metadata = new InputTableMetadata();
+        try {
+            // Decode the base64 string to bytes and parse the DeephavenTableMetadata
+            final byte[] bytes = BaseEncoding.base64().decode(tableMetadataBase64);
+            final DeephavenTableMetadata tableMetadata = DeephavenTableMetadata.parseFrom(bytes);
+
+            if (!tableMetadata.hasInputTableMetadata()) {
+                return null;
+            }
+
+            // Get the column info map
+            final Map<String, InputTableColumnInfo> columnInfoMap =
+                    tableMetadata.getInputTableMetadata().getColumnInfoMap();
+
+            // Extract column restrictions from the column info map
+            for (ColumnDefinition col : cols) {
+                final String columnName = col.getName();
+                final InputTableColumnInfo columnInfo = columnInfoMap.get(columnName);
+
+                if (columnInfo == null) {
+                    continue;
+                }
+
+                final List<Any> restrictionsList = columnInfo.getRestrictionsList();
+                final List<ColumnRestriction> colRestrictions = new ArrayList<>();
+
+                for (Any restrictionAny : restrictionsList) {
+                    // Look up the converter by the full type URL
+                    String typeUrl = restrictionAny.getTypeUrl();
+                    Optional<ColumnRestriction> restriction = ColumnRestrictionRegistry.convert(restrictionAny);
+                    if (restriction.isPresent()) {
+                        colRestrictions.add(restriction.get());
+                    } else {
+                        JsLog.warn("No converter registered for restriction type: " + typeUrl);
+                    }
+                }
+
+                if (!colRestrictions.isEmpty()) {
+                    metadata.addColumnRestrictions(columnName, colRestrictions);
+                }
+            }
+        } catch (Exception e) {
+            JsLog.error("Failed to parse input table metadata:", e);
+            return null;
+        }
+
+        return metadata;
     }
 
     private static ColumnDefinition[] readColumnDefinitions(Schema schema) {
