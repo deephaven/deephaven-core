@@ -3128,7 +3128,8 @@ public final class ParquetTableReadWriteTest {
             writer.writeTable(badTable, destFile);
             TestCase.fail("Exception expected for invalid formula");
         } catch (UncheckedDeephavenException e) {
-            assertTrue(e.getCause() instanceof FormulaEvaluationException);
+            assertTrue(e.getCause() instanceof UncheckedDeephavenException);
+            assertTrue(e.getCause().getCause() instanceof FormulaEvaluationException);
         }
 
         // Make sure that original file is preserved and no temporary files
@@ -3247,7 +3248,8 @@ public final class ParquetTableReadWriteTest {
                     ParquetInstructions.EMPTY.withTableDefinition(firstTable.getDefinition()));
             TestCase.fail("Exception expected for invalid formula");
         } catch (UncheckedDeephavenException e) {
-            assertTrue(e.getCause() instanceof FormulaEvaluationException);
+            assertTrue(e.getCause() instanceof UncheckedDeephavenException);
+            assertTrue(e.getCause().getCause() instanceof FormulaEvaluationException);
         }
 
         // All files should be deleted even though first table would be written successfully
@@ -3669,7 +3671,8 @@ public final class ParquetTableReadWriteTest {
             writer.writeTable(badTable, destFile);
             TestCase.fail("Exception expected for invalid formula");
         } catch (UncheckedDeephavenException e) {
-            assertTrue(e.getCause() instanceof FormulaEvaluationException);
+            assertTrue(e.getCause() instanceof UncheckedDeephavenException);
+            assertTrue(e.getCause().getCause() instanceof FormulaEvaluationException);
         }
 
         // Make sure that original file is preserved and no temporary files
@@ -4020,7 +4023,8 @@ public final class ParquetTableReadWriteTest {
             writer.writeTable(badTable, destFile);
             TestCase.fail();
         } catch (UncheckedDeephavenException e) {
-            assertTrue(e.getCause() instanceof FormulaEvaluationException);
+            assertTrue(e.getCause() instanceof UncheckedDeephavenException);
+            assertTrue(e.getCause().getCause() instanceof FormulaEvaluationException);
         }
 
         // Close all old file handles so that we read the file path fresh instead of using any old handles
