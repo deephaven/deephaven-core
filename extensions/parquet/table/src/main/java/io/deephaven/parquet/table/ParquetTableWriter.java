@@ -3,6 +3,7 @@
 //
 package io.deephaven.parquet.table;
 
+import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.api.SortColumn;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSet;
@@ -264,7 +265,7 @@ public class ParquetTableWriter {
                     writeColumnSource(tableRowSet, writeInstructions, rowGroupWriter, computedCache, columnName,
                             columnSource);
                 } catch (final RuntimeException e) {
-                    throw new RuntimeException("Failed to write column " + columnName, e);
+                    throw new UncheckedDeephavenException("Failed to write column " + columnName, e);
                 }
             }
         }

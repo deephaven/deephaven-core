@@ -1550,7 +1550,7 @@ public abstract class SqliteCatalogBase {
             failBecauseExceptionWasNotThrown(UncheckedDeephavenException.class);
         } catch (UncheckedDeephavenException e) {
             // Exception expected for invalid formula in table
-            assertThat(e).cause().isInstanceOf(RuntimeException.class);
+            assertThat(e).cause().isInstanceOf(UncheckedDeephavenException.class);
             assertThat(e).cause().cause().isInstanceOf(FormulaEvaluationException.class);
         }
 
@@ -1571,7 +1571,7 @@ public abstract class SqliteCatalogBase {
             failBecauseExceptionWasNotThrown(UncheckedDeephavenException.class);
         } catch (UncheckedDeephavenException e) {
             // Exception expected for invalid formula in table
-            assertThat(e).cause().isInstanceOf(RuntimeException.class);
+            assertThat(e).cause().isInstanceOf(UncheckedDeephavenException.class);
             assertThat(e).cause().cause().isInstanceOf(FormulaEvaluationException.class);
         }
 
