@@ -33,7 +33,7 @@ public abstract class PluginOptions {
 
     public interface AuthorizationTransformer {
         <T> T transform(T object);
-   }
+    }
 
     /**
      * Returns a function to be applied to objects returned to a user.

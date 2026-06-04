@@ -15,6 +15,7 @@ import io.deephaven.engine.table.impl.select.ConditionFilter;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.validation.ColumnExpressionValidator;
+import io.deephaven.plugin.options.PluginOptions;
 import io.deephaven.plugin.type.Exporter;
 import io.deephaven.plugin.type.ObjectType;
 import io.deephaven.plugin.type.ObjectTypeBase;
@@ -26,7 +27,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.List;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -101,8 +101,13 @@ public class PluginModuleTest {
     static public class NoopAuthTransformModule {
         @Provides
         @Named("authTransform")
-        Function<Object, Object> authTransform() {
-            return x -> x;
+        PluginOptions.AuthorizationTransformer authTransform() {
+            return new PluginOptions.AuthorizationTransformer() {
+                @Override
+                public <T> T transform(T object) {
+                    return object;
+                }
+            };
         }
 
         @Provides

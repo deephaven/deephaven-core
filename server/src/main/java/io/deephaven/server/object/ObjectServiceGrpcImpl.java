@@ -5,21 +5,27 @@ package io.deephaven.server.object;
 
 import com.google.protobuf.ByteString;
 import com.google.rpc.Code;
+import io.deephaven.auth.AuthContext;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
+import io.deephaven.internal.log.LoggerFactory;
+import io.deephaven.io.logger.Logger;
 import io.deephaven.plugin.type.ObjectCommunicationException;
 import io.deephaven.plugin.type.ObjectType;
 import io.deephaven.plugin.type.ObjectTypeLookup;
 import io.deephaven.proto.backplane.grpc.*;
 import io.deephaven.proto.util.Exceptions;
+import io.deephaven.server.auth.AuthorizationProvider;
 import io.deephaven.server.grpc.GrpcErrorHelper;
 import io.deephaven.server.session.SessionService;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.SessionState.ExportObject;
+import io.deephaven.server.session.TicketResolver;
 import io.deephaven.server.session.TicketRouter;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.function.ThrowingRunnable;
@@ -36,17 +42,26 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Queue;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBase {
+    private static final Logger log = LoggerFactory.getLogger(ObjectServiceGrpcImpl.class);
+
     private final SessionService sessionService;
     private final TicketRouter ticketRouter;
     private final ObjectTypeLookup objectTypeLookup;
     private final TypeLookup typeLookup;
     private final SessionService.ErrorTransformer errorTransformer;
+    private final TicketResolver.Authorization authorization;
+    private final PluginReferenceAuthorizationPolicy referenceAuthorizationPolicy;
+
+    /** ObjectType names that have already been warned about under the fail-closed policy; warn at most once each. */
+    private final Set<String> warnedUndeclaredPlugins = ConcurrentHashMap.newKeySet();
 
     @FunctionalInterface
     interface StreamOperation extends ThrowingRunnable<ObjectCommunicationException> {
@@ -55,12 +70,15 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
     @Inject
     public ObjectServiceGrpcImpl(SessionService sessionService, TicketRouter ticketRouter,
             ObjectTypeLookup objectTypeLookup, TypeLookup typeLookup,
-            SessionService.ErrorTransformer errorTransformer) {
+            SessionService.ErrorTransformer errorTransformer, AuthorizationProvider authorizationProvider,
+            PluginReferenceAuthorizationPolicy referenceAuthorizationPolicy) {
         this.sessionService = Objects.requireNonNull(sessionService);
         this.ticketRouter = Objects.requireNonNull(ticketRouter);
         this.objectTypeLookup = Objects.requireNonNull(objectTypeLookup);
         this.typeLookup = Objects.requireNonNull(typeLookup);
         this.errorTransformer = Objects.requireNonNull(errorTransformer);
+        this.authorization = Objects.requireNonNull(authorizationProvider.getTicketResolverAuthorization());
+        this.referenceAuthorizationPolicy = Objects.requireNonNull(referenceAuthorizationPolicy);
     }
 
     private enum EnqueuedState {
@@ -143,7 +161,10 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
                     final Object o = object.get();
                     final ObjectType objectType = getObjectTypeInstance(type, o);
 
-                    PluginMessageSender clientConnection = new PluginMessageSender(responseObserver, session);
+                    ObjectType.MessageStream clientConnection = new PluginMessageSender(responseObserver, session);
+                    if (shouldTransformReferences(objectType)) {
+                        clientConnection = new AuthorizingMessageStream(clientConnection);
+                    }
                     messageStream = objectType.clientConnection(o, clientConnection);
                 });
             } else if (request.hasData()) {
@@ -302,7 +323,11 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
                                 isClosed.set(true);
                             }
                         };
-                        PluginMessageSender connection = new PluginMessageSender(wrappedResponseObserver, session);
+                        ObjectType.MessageStream connection =
+                                new PluginMessageSender(wrappedResponseObserver, session);
+                        if (shouldTransformReferences(objectTypeInstance)) {
+                            connection = new AuthorizingMessageStream(connection);
+                        }
                         objectTypeInstance.clientConnection(o, connection);
 
                         FetchObjectResponse message = singleResponse.get();
@@ -345,6 +370,40 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
         return objectType;
     }
 
+    /**
+     * Determines whether the references a plugin exports through {@link ObjectType.MessageStream#onData} should be run
+     * through the authorization transform, applying the server's {@link PluginReferenceAuthorizationPolicy} to plugins
+     * that make no declaration. Under {@link PluginReferenceAuthorizationPolicy#FAIL_CLOSED fail-closed}, an undeclared
+     * plugin has its references transformed and a warning is logged prompting the plugin to declare its behavior.
+     *
+     * @param objectType the plugin
+     * @return true if the references should be transformed
+     */
+    private boolean shouldTransformReferences(ObjectType objectType) {
+        final ObjectType.AuthorizationExportBehavior behavior = objectType.authorizationExportBehavior();
+        switch (behavior) {
+            case TRANSFORM:
+                return true;
+            case MANUAL:
+                return false;
+            case UNSET:
+                if (referenceAuthorizationPolicy == PluginReferenceAuthorizationPolicy.FAIL_CLOSED) {
+                    if (warnedUndeclaredPlugins.add(objectType.name())) {
+                        log.warn().append("ObjectType '").append(objectType.name())
+                                .append("' does not declare an authorization export behavior; requiring transformation "
+                                        + "of its exported references under the fail-closed plugin reference "
+                                        + "authorization policy. The plugin should declare "
+                                        + "AuthorizationExportBehavior.TRANSFORM or MANUAL.")
+                                .endl();
+                    }
+                    return true;
+                }
+                return false;
+            default:
+                throw new IllegalStateException("Unexpected AuthorizationExportBehavior: " + behavior);
+        }
+    }
+
     private static void cleanup(Collection<ExportObject<?>> exports, Throwable t) {
         for (ExportObject<?> export : exports) {
             try {
@@ -352,6 +411,47 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
             } catch (Throwable inner) {
                 t.addSuppressed(inner);
             }
+        }
+    }
+
+    /**
+     * Wraps a {@link ObjectType.MessageStream} and runs each reference passed to {@link #onData} through the
+     * authorization transform before delegating. Used when a plugin's references must be authorized by the server; if
+     * the transform denies access to any reference, the stream fails.
+     */
+    private final class AuthorizingMessageStream implements ObjectType.MessageStream {
+        private final ObjectType.MessageStream delegate;
+
+        AuthorizingMessageStream(ObjectType.MessageStream delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public void onData(ByteBuffer payload, Object... references) throws ObjectCommunicationException {
+            final Object[] transformed = new Object[references.length];
+            for (int ii = 0; ii < references.length; ii++) {
+                Object reference = references[ii];
+                if (reference == null) {
+                    transformed[ii] = null;
+                    continue;
+                }
+
+                final Object authorized = authorization.transform(reference);
+                if (authorized == null) {
+                    final AuthContext authContext = ExecutionContext.getContext().getAuthContext();
+                    log.error().append("Plugin reference is not authorized for ").append(authContext).append(": class=")
+                            .append(reference.getClass().getCanonicalName()).append(", index=").append(ii).endl();
+                    throw new ObjectCommunicationException(
+                            "Not authorized to access a reference returned by the plugin");
+                }
+                transformed[ii] = authorized;
+            }
+            delegate.onData(payload, transformed);
+        }
+
+        @Override
+        public void onClose() {
+            delegate.onClose();
         }
     }
 

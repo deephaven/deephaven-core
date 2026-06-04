@@ -146,6 +146,16 @@ public abstract class DeephavenApiServerTestBase {
         return DaggerDeephavenApiServerTestBase_TestComponent.builder();
     }
 
+    /**
+     * The {@link AuthorizationProvider} to install for the test server. Subclasses may override to supply a custom
+     * provider (for example a {@code TestAuthorizationProvider}) to exercise authorization behavior.
+     *
+     * @return the authorization provider
+     */
+    protected AuthorizationProvider authorizationProvider() {
+        return new CommunityAuthorizationProvider();
+    }
+
     @Before
     public void setUp() throws Exception {
         logBuffer = new LogBuffer(128);
@@ -164,7 +174,7 @@ public abstract class DeephavenApiServerTestBase {
 
         testComponentBuilder()
                 .withServerConfig(config)
-                .withAuthorizationProvider(new CommunityAuthorizationProvider())
+                .withAuthorizationProvider(authorizationProvider())
                 .withOut(System.out)
                 .withErr(System.err)
                 .build()

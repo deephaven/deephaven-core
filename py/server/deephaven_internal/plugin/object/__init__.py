@@ -94,6 +94,15 @@ class ObjectTypeAdapter:
     def is_fetch_only(self) -> bool:
         return isinstance(self._user_object_type, FetchOnlyObjectType)
 
+    def authorization_export_behavior(self) -> str:
+        # Optional opt-in/opt-out declaration; read via getattr so plugins that predate this attribute (or use an
+        # older deephaven-plugin package) continue to work. May be a string ("transform"/"manual"/"unset") or a
+        # callable returning one. Java maps unknown values to UNSET.
+        behavior = getattr(self._user_object_type, "authorization_export_behavior", "unset")
+        if callable(behavior):
+            behavior = behavior()
+        return str(behavior).lower() if behavior is not None else "unset"
+
     def to_bytes(self, exporter: JExporterAdapter, obj: Any) -> bytes:
         return self._user_object_type.to_bytes(  # type: ignore
             ExporterAdapter(exporter), pythonify(obj)
