@@ -1,4 +1,3 @@
-
 ---
 title: Time and Calendars
 ---
