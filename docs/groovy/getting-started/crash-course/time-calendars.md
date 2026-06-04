@@ -1,3 +1,8 @@
+
+---
+title: Time and Calendars
+---
+
 This section covers working with time and calendars in Deephaven queries. Since Deephaven specializes in real-time operations, understanding how to work with time is crucial to building effective analyses.
 
 Critical concepts covered in this crash course include:

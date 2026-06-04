@@ -43,6 +43,10 @@
                 "path": "getting-started/crash-course/table-ops.md"
               },
               {
+                "label": "Time and Calendars",
+                "path": "getting-started/crash-course/time-calendars.md"
+              },
+              {
                 "label": "Query Strings",
                 "path": "getting-started/crash-course/query-strings.md"
               },

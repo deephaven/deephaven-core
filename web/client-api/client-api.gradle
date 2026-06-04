@@ -53,6 +53,7 @@ dependencies {
     gwt project(":IO")
 
     // Promote this to compile+runtime, so GWT can see it
+    api project(':util-annotations')
     api project(':util-immutables')
 
     gwt libs.flatbuffers.java
