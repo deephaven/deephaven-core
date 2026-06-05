@@ -414,6 +414,16 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
         }
     }
 
+    private static class FailedAuthorization {
+        private final Object originalReference;
+        private final Exception exception;
+
+        FailedAuthorization(final Object originalReference, final Exception exception) {
+            this.originalReference = originalReference;
+            this.exception = exception;
+        }
+    }
+
     /**
      * Wraps a {@link ObjectType.MessageStream} and runs each reference passed to {@link #onData} through the
      * authorization transform before delegating. Used when a plugin's references must be authorized by the server; if
@@ -438,13 +448,17 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
 
                 final Object authorized = authorization.transform(reference);
                 if (authorized == null) {
+                    // Log the details server-side; the client receives a generic permission error so we do not leak
+                    // the type of the object the viewer is not authorized to access.
                     final AuthContext authContext = ExecutionContext.getContext().getAuthContext();
-                    log.error().append("Plugin reference is not authorized for ").append(authContext).append(": class=")
-                            .append(reference.getClass().getCanonicalName()).append(", index=").append(ii).endl();
-                    throw new ObjectCommunicationException(
-                            "Not authorized to access a reference returned by the plugin");
+                    log.error().append("Plugin reference is not authorized for ").append(authContext)
+                            .append(": class=").append(reference.getClass().getCanonicalName())
+                            .append(", index=").append(ii).endl();
+                    transformed[ii] = new FailedAuthorization(reference, Exceptions.statusRuntimeException(
+                            Code.PERMISSION_DENIED, "Not authorized to access a reference returned by the plugin"));
+                } else {
+                    transformed[ii] = authorized;
                 }
-                transformed[ii] = authorized;
             }
             delegate.onData(payload, transformed);
         }
@@ -471,9 +485,20 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
                 ServerData.Builder payload = ServerData.newBuilder().setPayload(ByteString.copyFrom(message));
 
                 for (Object reference : references) {
-                    final String type = typeLookup.type(reference).orElse(null);
-                    final ExportObject<?> exportObject = sessionState.newServerSideExport(reference);
+                    final String type;
+                    final ExportObject<?> exportObject;
+                    if (reference instanceof FailedAuthorization) {
+                        final FailedAuthorization failedAuthorization = (FailedAuthorization) reference;
+                        exportObject = sessionState.newFailedServerSideExport(failedAuthorization.exception);
+                        // TOOD: Code review: we may not want to tell the user what the actual type of the thing they
+                        // cannot see is. I need to understand its impact on error reporting though.
+                        type = typeLookup.type(failedAuthorization.originalReference).orElse(null);
+                    } else {
+                        exportObject = sessionState.newServerSideExport(reference);
+                        type = typeLookup.type(reference).orElse(null);
+                    }
                     exports.add(exportObject);
+
                     TypedTicket typedTicket = ticketForExport(exportObject, type);
                     payload.addExportedReferences(typedTicket);
                 }

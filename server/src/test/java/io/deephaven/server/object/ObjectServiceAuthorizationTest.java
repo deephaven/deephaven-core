@@ -10,6 +10,7 @@ import io.deephaven.plugin.type.Exporter;
 import io.deephaven.plugin.type.ObjectType;
 import io.deephaven.plugin.type.ObjectTypeClassBase;
 import io.deephaven.proto.backplane.grpc.ConnectRequest;
+import io.deephaven.proto.backplane.grpc.ExportNotification;
 import io.deephaven.proto.backplane.grpc.StreamRequest;
 import io.deephaven.proto.backplane.grpc.StreamResponse;
 import io.deephaven.proto.backplane.grpc.TypedTicket;
@@ -29,7 +30,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
 /**
  * Verifies that the server applies the authorization transform to references a plugin exports via
@@ -81,7 +81,8 @@ public class ObjectServiceAuthorizationTest extends DeephavenApiServerSingleAuth
     }
 
     @Test
-    public void transformDeniedFailsStream() throws InterruptedException, TimeoutException {
+    public void transformDeniedYieldsFailedExport()
+            throws ExecutionException, InterruptedException, TimeoutException {
         authorizationProvider.delegateTicketTransformation = new NoopTicketResolverAuthorization() {
             @Override
             public <T> T transform(T source) {
@@ -89,14 +90,17 @@ public class ObjectServiceAuthorizationTest extends DeephavenApiServerSingleAuth
             }
         };
 
-        final CompletableFuture<StreamResponse> cf =
-                connect(TransformHolder.class.getName(), new TransformHolder(twoColumnTable()));
-        try {
-            cf.get(5, TimeUnit.SECONDS);
-            failBecauseExceptionWasNotThrown(ExecutionException.class);
-        } catch (ExecutionException expected) {
-            // the stream fails because the user is not authorized to access the reference
-        }
+        // The stream still delivers its payload and the reference; only the unauthorized reference becomes a failed
+        // export rather than failing the entire stream.
+        final StreamResponse response = connectAndAwaitData(
+                TransformHolder.class.getName(), new TransformHolder(twoColumnTable()));
+
+        assertThat(response.getData().getExportedReferencesCount()).isEqualTo(1);
+        final TypedTicket ref = response.getData().getExportedReferences(0);
+
+        // The exported reference resolves to a failed export carrying the authorization failure.
+        final ExportObject<Table> failed = authenticatedSessionState().getExport(ref.getTicket(), "ref");
+        assertThat(failed.getState()).isEqualTo(ExportNotification.State.FAILED);
     }
 
     @Test
