@@ -57,7 +57,7 @@ public class MemoizedResult<R> {
     private R maybeMarkSystemic(R cachedResult) {
         if (cachedResult instanceof SystemicObject && SystemicObjectTracker.isSystemicThread()) {
             // noinspection unchecked
-            return (R) ((SystemicObject) cachedResult).markSystemic();
+            return (R) ((SystemicObject<?>) cachedResult).markSystemic();
         }
         return cachedResult;
     }
