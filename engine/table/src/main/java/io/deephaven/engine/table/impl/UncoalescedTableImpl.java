@@ -29,7 +29,7 @@ public abstract class UncoalescedTableImpl<IMPL_TYPE extends UncoalescedTable<IM
 
     private volatile Table coalesced;
 
-    public UncoalescedTableImpl(@NotNull final TableDefinition definition, @NotNull final String description) {
+    protected UncoalescedTableImpl(@NotNull final TableDefinition definition, @NotNull final String description) {
         super(definition, description);
     }
 
