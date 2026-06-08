@@ -7,6 +7,7 @@ import dagger.Binds;
 import dagger.multibindings.IntoSet;
 import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.plugin.Registration;
+import io.deephaven.plugin.options.PluginOptions;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
@@ -18,10 +19,12 @@ import javax.inject.Provider;
 public final class PythonPluginsRegistration implements Registration {
 
     private final Provider<ScriptSession> scriptSessionProvider;
+    private final PluginOptions pluginOptions;
 
     @Inject
-    public PythonPluginsRegistration(Provider<ScriptSession> scriptSessionProvider) {
+    public PythonPluginsRegistration(Provider<ScriptSession> scriptSessionProvider, PluginOptions pluginOptions) {
         this.scriptSessionProvider = scriptSessionProvider;
+        this.pluginOptions = pluginOptions;
     }
 
     @Override
@@ -30,7 +33,7 @@ public final class PythonPluginsRegistration implements Registration {
             return;
         }
         try (final Deephaven2ServerPluginModule module = Deephaven2ServerPluginModule.of()) {
-            module.initialize_all_and_register_into(new CallbackAdapter(callback));
+            module.initialize_all_and_register_into(new CallbackAdapter(callback, pluginOptions));
         }
     }
 
