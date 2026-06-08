@@ -68,7 +68,7 @@ jpy = "2.0.0"
 jsinterop = "2.1.0"
 # google is annoying, and have different versions released for the same groupId
 jsinterop-base = "1.0.3"
-logback = "1.5.33"
+logback = "1.5.34"
 lz4 = "1.10.2"
 mindrot = "0.4"
 nidi = "0.18.1"
