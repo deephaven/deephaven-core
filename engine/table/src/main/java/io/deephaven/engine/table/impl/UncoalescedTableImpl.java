@@ -17,7 +17,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * <p>
  * When the Table is {@link #coalesce() coalesced}, a hard reference is stored to the result. Any future
- * {@link #coalesce()} call reuses the same result. If the coalesce operation is context dependent, then you must
+ * {@link #coalesce()} call reuses the same result if it is static or remains live. If the coalesce operation is context dependent, then you must
  * directly extend {@link UncoalescedTable} instead of extending {@link UncoalescedTableImpl}.
  * </p>
  *
