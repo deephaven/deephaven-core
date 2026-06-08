@@ -78,5 +78,4 @@ public abstract class UncoalescedTableImpl<IMPL_TYPE extends UncoalescedTable<IM
     protected @Nullable final Table getCoalesced() {
         return coalesced;
     }
-
 }
