@@ -25,6 +25,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public abstract class UncoalescedTableImpl<IMPL_TYPE extends UncoalescedTable<IMPL_TYPE>>
         extends UncoalescedTable<IMPL_TYPE> {
+
     private final Object coalescingLock = new Object();
 
     private volatile Table coalesced;
