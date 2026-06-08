@@ -1,7 +1,7 @@
 [versions]
 adbc = "0.21.0"
 airlift = "2.0.3"
-arrow = "19.0.0"
+arrow = "18.3.0"
 autoservice = "1.1.1"
 avro = "1.12.1"
 awssdk = "2.29.52"
@@ -39,10 +39,10 @@ groovy = "3.0.25"
 
 # Only bump this in concert with netty (which will update boringssl). See the dependency matrix
 # for particular gRPC versions at https://github.com/grpc/grpc-java/blob/master/SECURITY.md#netty
-grpc = "1.81.0"
+grpc = "1.76.2"
 netty = "4.1.134.Final"
 
-protobuf-gwt='4.33.4-1'
+protobuf-gwt='4.33.2-2'
 grpc-gwt='1.76.2-2'
 
 grpc-web-gwt-fetch='1.2.0'
@@ -80,7 +80,7 @@ pac4j = "5.7.9"
 parquet = "1.17.0"
 picocli = "4.7.7"
 postgresql = "42.7.10"
-protobuf = "4.33.4"
+protobuf = "4.33.2"
 randelshofer = "2.0.1"
 rdblue = "0.1.1"
 rewrite-java = "8.83.5"
