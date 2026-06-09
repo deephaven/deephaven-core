@@ -414,8 +414,8 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
     /**
      * A join key moving from one constituent to another within a single update cycle momentarily appears in both
      * constituents (the destination may claim it before the source releases it). The sanity check must treat this as a
-     * clean hand-off rather than an overlap. Two rows swap partitions each cycle, so one key is claimed before the other
-     * releases it regardless of listener order; a randomized delay reading the {@code Sym} column varies the
+     * clean hand-off rather than an overlap. Two rows swap partitions each cycle, so one key is claimed before the
+     * other releases it regardless of listener order; a randomized delay reading the {@code Sym} column varies the
      * interleaving so that, repeated over several cycles, both the immediate (release-first) and deferred (claim-first)
      * paths of the sanity check are exercised.
      */
@@ -468,6 +468,44 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
             final String unmatchedFilter = swapped ? "!isNull(RightSentinel)" : "isNull(RightSentinel)";
             TestCase.assertTrue(mergedResult.where(unmatchedFilter).isEmpty());
         }
+    }
+
+    /**
+     * The join-key sanity check builds its keys from a {@link io.deephaven.engine.table.TupleSource}, which is
+     * exercised here with a primitive (non-{@code String}) join key. The initial join validates with no overlap, then a
+     * row is added that puts the same {@code int} key in a second constituent and the overlap must be reported.
+     */
+    public void testJoinSanityIntKey() {
+        final QueryTable left = testRefreshingTable(i(1, 2, 4, 6).toTracking(),
+                col("USym", "aa", "bb", "aa", "bb"),
+                intCol("KeyId", 11, 21, 12, 22),
+                col("LeftSentinel", 10, 20, 40, 60));
+        final QueryTable right = testRefreshingTable(i(3, 5, 7, 9).toTracking(),
+                col("USym", "aa", "bb", "aa", "bb"),
+                intCol("KeyId", 11, 21, 12, 22),
+                col("RightSentinel", 30, 50, 70, 90));
+
+        final PartitionedTable.Proxy leftProxy = left.partitionBy("USym").proxy(true, true);
+        final PartitionedTable.Proxy rightProxy = right.partitionBy("USym").proxy(true, true);
+
+        // No overlap initially (each KeyId is in exactly one USym constituent): the join builds successfully.
+        final Table mergedResult = leftProxy.join(rightProxy, "KeyId", "RightSentinel").target().merge();
+        TableTools.show(mergedResult);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.startCycleForUnitTests();
+        // KeyId 11 already lives in the "aa" constituent; adding it to "bb" puts the same key in two constituents.
+        addToTable(left, i(8), col("USym", "bb"), intCol("KeyId", 11), col("LeftSentinel", 80));
+        allowingError(() -> {
+            left.notifyListeners(i(8), i(), i());
+            updateGraph.completeCycleForUnitTests();
+        }, throwables -> {
+            TestCase.assertTrue(getUpdateErrors().size() > 0);
+            final Throwable throwable = throwables.get(0);
+            TestCase.assertEquals(IllegalArgumentException.class, throwable.getClass());
+            TestCase.assertTrue(throwable.getMessage().contains("has join keys found in multiple constituents"));
+            return true;
+        });
     }
 
     public void testDependencies() {
