@@ -427,7 +427,7 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
     /**
      * Wraps a {@link ObjectType.MessageStream} and runs each reference passed to {@link #onData} through the
      * authorization transform before delegating. Used when a plugin's references must be authorized by the server; if
-     * the transform denies access to any reference, the stream fails.
+     * the transform denies access to a reference, then it resolves to a failure.
      */
     private final class AuthorizingMessageStream implements ObjectType.MessageStream {
         private final ObjectType.MessageStream delegate;
@@ -448,8 +448,6 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
 
                 final Object authorized = authorization.transform(reference);
                 if (authorized == null) {
-                    // Log the details server-side; the client receives a generic permission error so we do not leak
-                    // the type of the object the viewer is not authorized to access.
                     final AuthContext authContext = ExecutionContext.getContext().getAuthContext();
                     log.error().append("Plugin reference is not authorized for ").append(authContext)
                             .append(": class=").append(reference.getClass().getCanonicalName())
@@ -492,13 +490,12 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
                         exportObject = sessionState.newFailedServerSideExport(failedAuthorization.exception);
                         // TOOD: Code review: we may not want to tell the user what the actual type of the thing they
                         // cannot see is. I need to understand its impact on error reporting though.
-                        type = typeLookup.type(failedAuthorization.originalReference).orElse(null);
+                        type = null; // typeLookup.type(failedAuthorization.originalReference).orElse(null);
                     } else {
                         exportObject = sessionState.newServerSideExport(reference);
                         type = typeLookup.type(reference).orElse(null);
                     }
                     exports.add(exportObject);
-
                     TypedTicket typedTicket = ticketForExport(exportObject, type);
                     payload.addExportedReferences(typedTicket);
                 }

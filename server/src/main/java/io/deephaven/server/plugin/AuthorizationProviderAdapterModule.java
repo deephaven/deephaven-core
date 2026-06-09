@@ -9,7 +9,6 @@ import io.deephaven.plugin.options.PluginOptions;
 import io.deephaven.server.auth.AuthorizationProvider;
 
 import javax.inject.Named;
-import java.util.function.Function;
 import java.util.function.Predicate;
 
 /**

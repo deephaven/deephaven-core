@@ -97,7 +97,7 @@ class ObjectTypeAdapter:
     def authorization_export_behavior(self) -> str:
         # Optional opt-in/opt-out declaration; read via getattr so plugins that predate this attribute (or use an
         # older deephaven-plugin package) continue to work. May be a string ("transform"/"manual"/"unset") or a
-        # callable returning one. Java maps unknown values to UNSET.
+        # callable returning one.  Unknown values result in an error.
         behavior = getattr(self._user_object_type, "authorization_export_behavior", "unset")
         if callable(behavior):
             behavior = behavior()

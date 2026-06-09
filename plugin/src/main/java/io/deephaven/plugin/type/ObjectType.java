@@ -34,7 +34,7 @@ public interface ObjectType extends Plugin {
     enum AuthorizationExportBehavior {
         /**
          * The server applies the authorization transform to each exported reference. If the transform denies access to
-         * a reference, the message stream fails.
+         * a reference, that reference will resolve to a failed export.
          */
         TRANSFORM,
         /**
