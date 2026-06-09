@@ -35,12 +35,12 @@ public final class Calls {
         if (!options.isWaitForReady()) {
             throw new IllegalArgumentException("When deadline is set, must set wait for ready");
         }
-//        if (options.isWaitForReady() && options.getDeadline() == null) {
-//            throw new IllegalArgumentException("todo");
-//        }
-//        if (options.getDeadline() != null && !options.isWaitForReady()) {
-//            throw new IllegalArgumentException("todo");
-//        }
+        // if (options.isWaitForReady() && options.getDeadline() == null) {
+        // throw new IllegalArgumentException("todo");
+        // }
+        // if (options.getDeadline() != null && !options.isWaitForReady()) {
+        // throw new IllegalArgumentException("todo");
+        // }
     }
 
     /**
@@ -98,9 +98,9 @@ public final class Calls {
     public static void extractInterrupted(final StatusException e) throws InterruptedException {
         if (isInterruptedImpl(e.getStatus(), true)) {
             throw new InterruptedException();
-//            final InterruptedException ie = new InterruptedException(e.getMessage());
-//            ie.initCause(e);
-//            throw ie;
+            // final InterruptedException ie = new InterruptedException(e.getMessage());
+            // ie.initCause(e);
+            // throw ie;
         }
     }
 
