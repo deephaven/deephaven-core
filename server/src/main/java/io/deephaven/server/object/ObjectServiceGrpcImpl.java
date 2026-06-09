@@ -488,9 +488,10 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
                     if (reference instanceof FailedAuthorization) {
                         final FailedAuthorization failedAuthorization = (FailedAuthorization) reference;
                         exportObject = sessionState.newFailedServerSideExport(failedAuthorization.exception);
-                        // TOOD: Code review: we may not want to tell the user what the actual type of the thing they
-                        // cannot see is. I need to understand its impact on error reporting though.
-                        type = null; // typeLookup.type(failedAuthorization.originalReference).orElse(null);
+                        // We are purposefully leaking the type of the object the user cannot see. This makes the
+                        // error reporting useful in terms of seeing "Error: Not authorized to access a reference
+                        // returned by the plugin" in our UI. Without the type, we see "Error: Unsupported descriptor".
+                        type = typeLookup.type(failedAuthorization.originalReference).orElse(null);
                     } else {
                         exportObject = sessionState.newServerSideExport(reference);
                         type = typeLookup.type(reference).orElse(null);
