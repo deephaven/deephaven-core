@@ -22,10 +22,10 @@ public abstract class PluginOptions {
     public abstract ColumnExpressionValidator columnExpressionValidator();
 
     /**
-     * Returns {@code true} if the user should the user be permitted access to the given object.
+     * Returns {@code true} if the user should be permitted access to the given object.
      *
      * <p>
-     * Before providing access to an object, the authorizationTransformer must be applied.
+     * Callers should still apply {@link #authorizationTransformer()} before exporting an object to a user.
      * </p>
      */
     public abstract Predicate<Object> isAccessPermitted();
