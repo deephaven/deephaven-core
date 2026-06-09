@@ -11,7 +11,6 @@ import io.grpc.ClientCall;
 import io.grpc.MethodDescriptor;
 import io.grpc.Status;
 import io.grpc.StatusException;
-import io.grpc.StatusRuntimeException;
 import io.grpc.stub.ClientCallStreamObserver;
 import io.grpc.stub.ClientCalls;
 import io.grpc.stub.ClientResponseObserver;
@@ -26,22 +25,6 @@ import java.util.function.Function;
  */
 @InternalUseOnly
 public final class Calls {
-
-    public static void checkOptions(CallOptions options) {
-        if (options.getDeadline() == null) {
-            throw new IllegalArgumentException("Must specify deadline");
-        }
-        // we _could_ do this by default...
-        if (!options.isWaitForReady()) {
-            throw new IllegalArgumentException("When deadline is set, must set wait for ready");
-        }
-        // if (options.isWaitForReady() && options.getDeadline() == null) {
-        // throw new IllegalArgumentException("todo");
-        // }
-        // if (options.getDeadline() != null && !options.isWaitForReady()) {
-        // throw new IllegalArgumentException("todo");
-        // }
-    }
 
     /**
      * Executes a blocking unary call. Callers are strongly encouraged to set a {@link CallOptions#getDeadline()
@@ -59,53 +42,25 @@ public final class Calls {
             final MethodDescriptor<ReqT, RespT> method,
             final CallOptions callOptions,
             final ReqT request) throws StatusException, InterruptedException, TimeoutException {
-        checkOptions(callOptions);
         try {
             return ClientCalls.blockingV2UnaryCall(channel, method, callOptions, request);
         } catch (final StatusException e) {
-            extractInterrupted(e);
-            extractTimeout(e);
+            final Status status = e.getStatus();
+            // Note: it's possible that the current thread _is_ interrupted, but some other StatusException was thrown.
+            // In that case, it's better to throw the explicit StatusException since the caller can always find out they
+            // were interrupted by calling Thread.interrupted() (Thread.interrupted() is checked last here).
+            if (status.getCode() == Status.Code.CANCELLED
+                    && status.getCause() instanceof InterruptedException
+                    && Thread.interrupted()) {
+                throw new InterruptedException();
+            }
+            if (status.getCode() == Status.Code.DEADLINE_EXCEEDED) {
+                final TimeoutException te = new TimeoutException();
+                te.initCause(e);
+                throw te;
+            }
             throw e;
         }
-    }
-
-    public static boolean isTimeout(StatusException e) {
-        return e.getStatus().getCode() == Status.Code.DEADLINE_EXCEEDED;
-    }
-
-    public static void extractTimeout(final StatusException e) throws TimeoutException {
-        if (isTimeout(e)) {
-            final TimeoutException te = new TimeoutException(e.getMessage());
-            te.initCause(e);
-            throw te;
-        }
-    }
-
-    private static boolean isInterruptedImpl(Status status, boolean clearIfSet) {
-        // Note: it's possible that the current thread _is_ interrupted, but some other StatusException was thrown.
-        // In that case, it's better to throw the explicit StatusException since the caller can always find out they
-        // were interrupted by calling Thread.interrupted().
-        return status.getCode() == Status.Code.CANCELLED
-                // && "Thread interrupted".equals(status.getDescription())
-                && status.getCause() instanceof InterruptedException
-                && clearIfSet ? Thread.interrupted() : Thread.currentThread().isInterrupted();
-    }
-
-    public static boolean isInterrupted(StatusException e) {
-        return isInterruptedImpl(e.getStatus(), false);
-    }
-
-    public static void extractInterrupted(final StatusException e) throws InterruptedException {
-        if (isInterruptedImpl(e.getStatus(), true)) {
-            throw new InterruptedException();
-            // final InterruptedException ie = new InterruptedException(e.getMessage());
-            // ie.initCause(e);
-            // throw ie;
-        }
-    }
-
-    public static StatusRuntimeException asStatusRuntime(StatusException e) {
-        return e.getStatus().asRuntimeException(e.getTrailers());
     }
 
     /**
@@ -151,7 +106,6 @@ public final class Calls {
             final CallOptions callOptions,
             final ReqT request,
             final StreamObserver<RespT> responseObserver) {
-        checkOptions(callOptions);
         ClientCalls.asyncUnaryCall(channel.newCall(method, callOptions), request, responseObserver);
     }
 

@@ -32,8 +32,8 @@ import io.deephaven.proto.backplane.script.grpc.ExecuteCommandResponse;
 import io.deephaven.proto.backplane.script.grpc.StartConsoleRequest;
 import io.deephaven.qst.table.TableSpec;
 import io.grpc.StatusException;
+import io.grpc.StatusRuntimeException;
 import io.grpc.stub.ClientCallStreamObserver;
-import io.grpc.stub.ClientCalls;
 import io.grpc.stub.ClientResponseObserver;
 import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
@@ -225,7 +225,7 @@ public final class SessionImpl extends SessionBase {
         return Calls.completableFutureUnaryCall(
                 channel().channel2(),
                 ObjectServiceGrpc.getMessageStreamMethod(),
-                channel().callOptions().withWaitForReady().withDeadlineAfter(Duration.ofMinutes(1)),
+                channel().callOptions(),
                 connectRequest)
                 .thenApply(this::toDataAndExports);
     }
@@ -446,7 +446,7 @@ public final class SessionImpl extends SessionBase {
                                     .withDeadlineAfter(config.executeTimeout()),
                             request);
                 } catch (StatusException e) {
-                    throw Calls.asStatusRuntime(e);
+                    throw new StatusRuntimeException(e.getStatus(), e.getTrailers());
                 }
             }
             return toChanges(response);
@@ -502,12 +502,13 @@ public final class SessionImpl extends SessionBase {
                         SessionServiceGrpc.getReleaseMethod(),
                         channel().callOptions().withWaitForReady().withDeadlineAfter(config.closeTimeout()),
                         request);
-            } catch (final StatusException | RuntimeException e) {
-                log.error("Exception waiting for console close", e);
             } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
                 log.warn("Interrupted waiting for console close", e);
             } catch (TimeoutException e) {
                 log.warn("Timed out waiting for console close", e);
+            } catch (StatusException e) {
+                log.error("Exception waiting for console close", e);
             }
         }
     }
