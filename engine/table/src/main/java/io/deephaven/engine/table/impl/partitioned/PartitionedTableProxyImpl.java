@@ -11,10 +11,12 @@ import io.deephaven.api.snapshot.SnapshotWhenOptions;
 import io.deephaven.api.snapshot.SnapshotWhenOptions.Flag;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.api.updateby.UpdateByControl;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.iterators.ChunkedObjectColumnIterator;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.filter.ExtractBarriers;
@@ -34,6 +36,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BinaryOperator;
 import java.util.function.Predicate;
@@ -62,7 +66,6 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
     }
 
     private static final ColumnName FOUND_IN = ColumnName.of("__FOUND_IN__");
-    private static final ColumnName ENCLOSING_CONSTITUENT = ColumnName.of("__ENCLOSING_CONSTITUENT__");
 
     /**
      * The underlying target {@link PartitionedTable}.
@@ -466,28 +469,215 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
         // NB: At the moment, we are assuming that constituents appear only once per partitioned table in scenarios
         // where overlapping join keys are concerning.
         final AtomicLong sequenceCounter = new AtomicLong(0);
-        final PartitionedTable stamped = input.transform(
+        final String inputDescription = input.table().getDescription();
+        final boolean refreshing = input.table().isRefreshing();
+
+        // Phase 1: reduce each constituent to its distinct join keys. Doing this as its own transform lets us total the
+        // per-constituent distinct key counts before building the shared map, so it can be sized up front instead of
+        // repeatedly resizing as the constituents claim their keys concurrently (resizing dominated the profile).
+        final PartitionedTable distinctKeys = input.transform(
                 null,
-                table -> table.updateView(
-                        List.of(new LongConstantColumn(ENCLOSING_CONSTITUENT.name(),
-                                sequenceCounter.getAndIncrement()))),
-                input.table().isRefreshing());
-        final Table merged = stamped.merge();
-        final Table mergedWithUniqueAgg = merged.aggAllBy(AggSpec.unique(), joinKeyColumnNames);
-        final Table overlappingJoinKeys = mergedWithUniqueAgg.where(Filter.isNull(ENCLOSING_CONSTITUENT));
-        final Table overlappingJoinKeysOnly = overlappingJoinKeys.view(joinKeyColumnNames);
-        checkOverlappingJoinKeys(input, overlappingJoinKeysOnly);
-        return new DependentValidation("Non-overlapping Join Keys", overlappingJoinKeysOnly,
-                () -> checkOverlappingJoinKeys(input, overlappingJoinKeysOnly));
+                constituent -> constituent.selectDistinct(joinKeyColumnNames),
+                refreshing);
+
+        // The sum of the constituents' distinct key counts is an upper bound on the number of entries in the shared map
+        // (a key shared by N constituents is counted N times), so sizing to it avoids resizing while claiming the keys
+        // present at initialization.
+        long initialKeyCount = 0;
+        for (final Table constituent : distinctKeys.constituents()) {
+            initialKeyCount += constituent.size();
+        }
+
+        // Shared by every constituent's validator: maps each distinct join key to the id of the one constituent allowed
+        // to contain it. A second constituent claiming a key that is already owned by another is exactly the overlap we
+        // are guarding against. Sized up front (see above) so it does not resize while the constituents claim their keys
+        // concurrently.
+        final ConcurrentHashMap<Object, Long> keyOwners =
+                new ConcurrentHashMap<>((int) Math.min(initialKeyCount, Integer.MAX_VALUE));
+
+        // When a join key moves from one constituent to another within a single update cycle, the constituents'
+        // listeners run in an unspecified order: the destination may claim the key before the source releases it,
+        // making a clean hand-off momentarily look like an overlap. Rather than fail on that transient state, such
+        // conflicts are recorded here and re-checked once, after every constituent has applied its changes for the
+        // cycle (see reconcilePendingConflicts, run as this validation's dependent action).
+        final ConcurrentLinkedQueue<DeferredKeyConflict> pendingConflicts = new ConcurrentLinkedQueue<>();
+
+        // Phase 2: hand each constituent's distinct keys to a custom validating operation that maintains keyOwners
+        // incrementally. This replaces a unique aggregation over the merge of every constituent's rows: instead of
+        // recomputing overlaps from scratch each cycle, each validator claims its added keys and releases its removed
+        // keys directly against the shared map.
+        final PartitionedTable validators = distinctKeys.transform(
+                null,
+                constituent -> validateConstituentJoinKeys(
+                        constituent, joinKeyColumnNames, keyOwners, pendingConflicts, sequenceCounter,
+                        inputDescription),
+                refreshing);
+        // Merging realizes every constituent (running the initialization-time claim that catches overlaps already
+        // present in the inputs) and fans the validators' failures and liveness into the single table that
+        // {@link #validated} watches. The dependent action runs after every constituent's listener for the cycle, so it
+        // is where deferred conflicts that did not resolve into a clean hand-off are finally rejected.
+        final Table merged = validators.merge();
+        return new DependentValidation("Non-overlapping Join Keys", merged,
+                () -> reconcilePendingConflicts(keyOwners, pendingConflicts, inputDescription));
     }
 
-    private static void checkOverlappingJoinKeys(
-            @NotNull final PartitionedTable input,
-            @NotNull final Table overlappingJoinKeys) {
-        if (!overlappingJoinKeys.isEmpty()) {
-            throw new IllegalArgumentException("Partitioned table \"" + input.table().getDescription()
-                    + "\" has join keys found in multiple constituents; re-assess your input data or create a proxy with sanityCheckJoinOperations=false:\n"
-                    + TableTools.string(overlappingJoinKeys, 10));
+    /**
+     * The custom validating operation applied to a single constituent's distinct join keys (the result of phase one's
+     * {@code selectDistinct}). It claims a unique id from {@code sequenceCounter} and registers each of its join keys in
+     * the shared {@code keyOwners} map. A static constituent is fully validated when this method runs; a refreshing
+     * constituent additionally installs a listener that claims newly added keys and releases removed ones, failing the
+     * downstream join if another constituent ever claims a key this one does not own.
+     */
+    private static Table validateConstituentJoinKeys(
+            @NotNull final Table distinctConstituent,
+            @NotNull final String[] joinKeyColumnNames,
+            @NotNull final ConcurrentHashMap<Object, Long> keyOwners,
+            @NotNull final ConcurrentLinkedQueue<DeferredKeyConflict> pendingConflicts,
+            @NotNull final AtomicLong sequenceCounter,
+            @NotNull final String inputDescription) {
+        final QueryTable distinctKeys = (QueryTable) distinctConstituent.coalesce();
+        final long constituentId = sequenceCounter.getAndIncrement();
+        final ColumnSource<?>[] keyColumnSources = Arrays.stream(joinKeyColumnNames)
+                .map(distinctKeys::getColumnSource).toArray(ColumnSource[]::new);
+        final TupleSource<?> keySource = TupleSourceFactory.makeTupleSource(keyColumnSources);
+
+        // Claim the join keys present at initialization, reading them with an internally chunked column iterator. A
+        // conflict here is a true overlap in the initial data (there is no in-cycle hand-off to wait for), so it fails
+        // immediately.
+        try (final ChunkedObjectColumnIterator<Object> keyIterator =
+                new ChunkedObjectColumnIterator<>(keySource, distinctKeys.getRowSet())) {
+            keyIterator.forEachRemaining((final Object key) -> claimKey(keyOwners, key, constituentId, inputDescription));
+        }
+
+        if (!distinctKeys.isRefreshing()) {
+            return distinctKeys;
+        }
+
+        final QueryTable validated = distinctKeys.getSubTable(
+                distinctKeys.getRowSet(),
+                distinctKeys.getModifiedColumnSetForUpdates(),
+                distinctKeys.getAttributes());
+        distinctKeys.propagateFlatness(validated);
+        distinctKeys.addUpdateListener(new BaseTable.ListenerImpl("Non-overlapping Join Keys", distinctKeys, validated) {
+            @Override
+            public void onUpdate(@NotNull final TableUpdate upstream) {
+                // A selectDistinct over only the key columns produces rows that are their own identity, so an update
+                // can add or remove key tuples but never modify one in place.
+                Assert.assertion(upstream.modified().isEmpty(), "upstream.modified().isEmpty()");
+                // Removed rows are gone from the current table, so their keys are read one row at a time from the
+                // previous values; added keys (current values) are read with the chunked iterator. A claim that finds
+                // the key already owned by another constituent is recorded rather than thrown: the key may simply be
+                // moving from one constituent to another this cycle (a clean hand-off), and whether the source's
+                // release has been applied yet depends on the order the constituents' listeners ran.
+                // reconcilePendingConflicts re-checks the recorded claims once every constituent has reported.
+                upstream.removed().forAllRowKeys((final long rowKey) -> releaseKey(
+                        keyOwners, pendingConflicts, keySource.createPreviousTuple(rowKey), constituentId));
+                try (final ChunkedObjectColumnIterator<Object> addedIterator =
+                        new ChunkedObjectColumnIterator<>(keySource, upstream.added())) {
+                    addedIterator.forEachRemaining((final Object key) -> claimKey(
+                            keyOwners, pendingConflicts, key, constituentId));
+                }
+                super.onUpdate(upstream);
+            }
+        });
+        return validated;
+    }
+
+    /**
+     * Record {@code constituentId} as the owner of {@code key}, failing immediately if another constituent already owns
+     * it. Used for the initialization-time claim, where any conflict is a genuine overlap.
+     */
+    private static void claimKey(
+            @NotNull final ConcurrentHashMap<Object, Long> keyOwners,
+            final Object key,
+            final long constituentId,
+            @NotNull final String inputDescription) {
+        final Long previousOwner = keyOwners.putIfAbsent(key, constituentId);
+        if (previousOwner != null && previousOwner != constituentId) {
+            throw new IllegalArgumentException(overlapMessage(inputDescription, key));
+        }
+    }
+
+    /**
+     * Incrementally claim {@code key} for {@code constituentId}. If another constituent currently owns it, the conflict
+     * is recorded for end-of-cycle reconciliation rather than thrown, since the current owner may release the key later
+     * in the same cycle.
+     */
+    private static void claimKey(
+            @NotNull final ConcurrentHashMap<Object, Long> keyOwners,
+            @NotNull final ConcurrentLinkedQueue<DeferredKeyConflict> pendingConflicts,
+            final Object key,
+            final long constituentId) {
+        final Long previousOwner = keyOwners.putIfAbsent(key, constituentId);
+        if (previousOwner != null && previousOwner != constituentId) {
+            pendingConflicts.add(new DeferredKeyConflict(key, constituentId, true));
+        }
+    }
+
+    /**
+     * Relinquish ownership of {@code key}, removing the entry only if this constituent still owns it. If it does not --
+     * another constituent claimed it earlier this cycle while a hand-off was in progress -- the release is recorded so
+     * that {@link #reconcilePendingConflicts} applies it before the deferred claims.
+     */
+    private static void releaseKey(
+            @NotNull final ConcurrentHashMap<Object, Long> keyOwners,
+            @NotNull final ConcurrentLinkedQueue<DeferredKeyConflict> pendingConflicts,
+            final Object key,
+            final long constituentId) {
+        if (!keyOwners.remove(key, constituentId)) {
+            pendingConflicts.add(new DeferredKeyConflict(key, constituentId, false));
+        }
+    }
+
+    /**
+     * Resolve the changes deferred during the cycle now that every constituent has reported its updates. Releases are
+     * applied first so that any key handed off from one constituent to another is freed; the claims are then
+     * (re)applied, and a claim that still finds the key owned by a different constituent is a genuine overlap that fails
+     * the downstream join. Processing all releases before all claims is what makes the result independent of the order
+     * in which the constituents' listeners ran.
+     */
+    private static void reconcilePendingConflicts(
+            @NotNull final ConcurrentHashMap<Object, Long> keyOwners,
+            @NotNull final ConcurrentLinkedQueue<DeferredKeyConflict> pendingConflicts,
+            @NotNull final String inputDescription) {
+        final List<DeferredKeyConflict> deferredClaims = new ArrayList<>();
+        DeferredKeyConflict change;
+        while ((change = pendingConflicts.poll()) != null) {
+            if (change.claim) {
+                deferredClaims.add(change);
+            } else {
+                keyOwners.remove(change.key, change.constituentId);
+            }
+        }
+        for (final DeferredKeyConflict claim : deferredClaims) {
+            final Long currentOwner = keyOwners.putIfAbsent(claim.key, claim.constituentId);
+            if (currentOwner != null && currentOwner != claim.constituentId) {
+                throw new IllegalArgumentException(overlapMessage(inputDescription, claim.key));
+            }
+        }
+    }
+
+    private static String overlapMessage(@NotNull final String inputDescription, final Object key) {
+        return "Partitioned table \"" + inputDescription
+                + "\" has join keys found in multiple constituents; re-assess your input data or create a proxy with sanityCheckJoinOperations=false: "
+                + key;
+    }
+
+    /**
+     * A join-key change deferred to end-of-cycle reconciliation: a contended claim (one that found the key owned by
+     * another constituent), or a release that could not remove its entry because the key had already been taken over.
+     * {@code claim} is true for the former. Releases are reconciled before claims.
+     */
+    private static final class DeferredKeyConflict {
+
+        private final Object key;
+        private final long constituentId;
+        private final boolean claim;
+
+        private DeferredKeyConflict(final Object key, final long constituentId, final boolean claim) {
+            this.key = key;
+            this.constituentId = constituentId;
+            this.claim = claim;
         }
     }
 

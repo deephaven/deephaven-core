@@ -411,6 +411,65 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
 
     }
 
+    /**
+     * A join key moving from one constituent to another within a single update cycle momentarily appears in both
+     * constituents (the destination may claim it before the source releases it). The sanity check must treat this as a
+     * clean hand-off rather than an overlap. Two rows swap partitions each cycle, so one key is claimed before the other
+     * releases it regardless of listener order; a randomized delay reading the {@code Sym} column varies the
+     * interleaving so that, repeated over several cycles, both the immediate (release-first) and deferred (claim-first)
+     * paths of the sanity check are exercised.
+     */
+    public void testJoinSanityConcurrentHandoff() {
+        // A small randomized delay on each Sym read, to vary how the constituents' validator listeners interleave.
+        QueryScope.addParam("delayedSym", (java.util.function.Function<String, String>) (final String sym) -> {
+            java.util.concurrent.locks.LockSupport
+                    .parkNanos(java.util.concurrent.ThreadLocalRandom.current().nextLong(500_000L));
+            return sym;
+        });
+
+        final QueryTable left = testRefreshingTable(i(1, 2).toTracking(),
+                col("USym", "c1", "c2"),
+                col("RawSym", "k1", "k2"),
+                col("LeftSentinel", 10, 20));
+        final QueryTable right = testRefreshingTable(i(3, 4).toTracking(),
+                col("USym", "c1", "c2"),
+                col("Sym", "k1", "k2"),
+                col("RightSentinel", 30, 40));
+
+        final Table leftDelayed = left.updateView("Sym = (String) delayedSym.apply(RawSym)");
+
+        // requireMatchingKeys=false (partition-key sets may differ); sanityCheckJoins=true to exercise the join-key
+        // overlap validation.
+        final PartitionedTable.Proxy leftProxy = leftDelayed.partitionBy("USym").proxy(false, true);
+        final PartitionedTable.Proxy rightProxy = right.partitionBy("USym").proxy(false, true);
+
+        final Table mergedResult = leftProxy.naturalJoin(rightProxy, "Sym", "RightSentinel").target().merge();
+        // Before any swap each key matches its right-side row within the same constituent.
+        TestCase.assertTrue(mergedResult.where("isNull(RightSentinel)").isEmpty());
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        // Repeat the hand-off several times (cheap; bounded well under ten seconds) for higher confidence that both
+        // interleavings occur. Each cycle swaps the two rows' partitions: k1 and k2 each move to the other constituent.
+        for (int iteration = 0; iteration < 10; ++iteration) {
+            final boolean swapped = (iteration & 1) == 0;
+            final String usym1 = swapped ? "c2" : "c1";
+            final String usym2 = swapped ? "c1" : "c2";
+            updateGraph.runWithinUnitTestCycle(() -> {
+                addToTable(left, i(1, 2), col("USym", usym1, usym2), col("RawSym", "k1", "k2"),
+                        col("LeftSentinel", 10, 20));
+                left.notifyListeners(i(), i(), i(1, 2));
+            });
+
+            // The hand-off must not be mistaken for an overlap (setExpectError(false) would otherwise fail the test).
+            TestCase.assertEquals(0, getUpdateErrors().size());
+            TestCase.assertEquals(2, mergedResult.size());
+            // When swapped, each key sits in the opposite constituent from its right-side row, so nothing matches; when
+            // restored, everything matches. Either way confirms the rows moved and the validation let the cycle pass.
+            final String unmatchedFilter = swapped ? "!isNull(RightSentinel)" : "isNull(RightSentinel)";
+            TestCase.assertTrue(mergedResult.where(unmatchedFilter).isEmpty());
+        }
+    }
+
     public void testDependencies() {
         final QueryTable sourceTable = testRefreshingTable(i(1, 2, 4, 6).toTracking(),
                 col("USym", "aa", "bb", "aa", "bb"),
