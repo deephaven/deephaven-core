@@ -184,6 +184,10 @@
                 "label": "Advanced table constructors",
                 "items": [
                   {
+                    "label": "Convert add- and append-only tables to blink tables",
+                    "path": "how-to-guides/add-only-to-blink.md"
+                  },
+                  {
                     "label": "Write data to a real-time table",
                     "path": "how-to-guides/table-publisher.md"
                   },

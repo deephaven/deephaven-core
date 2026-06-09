@@ -159,7 +159,7 @@
                 "label": "Advanced table constructors",
                 "items": [
                   {
-                    "label": "Convert add-only tables to blink tables",
+                    "label": "Convert add- and append-only tables to blink tables",
                     "path": "how-to-guides/add-only-to-blink.md"
                   },
                   {
