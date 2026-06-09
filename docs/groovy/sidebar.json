@@ -875,6 +875,10 @@
                     "path": "how-to-guides/triage-errors.md"
                   },
                   {
+                    "label": "Decipher Groovy errors",
+                    "path": "how-to-guides/groovy-errors.md"
+                  },
+                  {
                     "label": "Attach a JVM debugger",
                     "path": "how-to-guides/attach-debugger.md"
                   },
