@@ -61,7 +61,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.time.Period;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -1109,15 +1108,6 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         RunEndEncodedChunkWriter.checkRunEndsOverflow(Short.MAX_VALUE, ChunkType.Short);
         RunEndEncodedChunkWriter.checkRunEndsOverflow(Integer.MAX_VALUE, ChunkType.Int);
         RunEndEncodedChunkWriter.checkRunEndsOverflow(Integer.MAX_VALUE, ChunkType.Long);
-    }
-
-    /** makeChunkForType must return a WritableBooleanChunk when asked for ChunkType.Boolean. */
-    public void testMakeChunkForTypeBooleanCase() {
-        // noinspection unchecked
-        try (final WritableChunk<Values> chunk = (WritableChunk<Values>) RunEndEncodedChunkWriter
-                .makeChunkForType(ChunkType.Boolean, 3)) {
-            assertEquals(ChunkType.Boolean, chunk.getChunkType());
-        }
     }
 
     /**

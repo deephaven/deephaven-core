@@ -62,10 +62,7 @@ public class RunEndEncodedChunkReader extends BaseChunkReader<WritableChunk<Valu
         final int numRows = nodeInfo.numElements;
         final WritableChunk<Values> chunk = BaseChunkReader.castOrCreateChunk(
                 outChunk, outOffset, Math.max(totalRows, numRows),
-                capacity -> {
-                    // noinspection unchecked
-                    return (WritableChunk<Values>) RunEndEncodedChunkWriter.makeChunkForType(valuesChunkType, capacity);
-                },
+                valuesChunkType::makeWritableChunk,
                 c -> c);
 
         if (numRows == 0) {

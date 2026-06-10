@@ -6,16 +6,11 @@ package io.deephaven.extensions.barrage.chunk;
 import com.google.rpc.Code;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ChunkType;
+import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.WritableBooleanChunk;
-import io.deephaven.chunk.WritableByteChunk;
-import io.deephaven.chunk.WritableCharChunk;
 import io.deephaven.chunk.WritableChunk;
-import io.deephaven.chunk.WritableDoubleChunk;
-import io.deephaven.chunk.WritableFloatChunk;
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.WritableLongChunk;
-import io.deephaven.chunk.ObjectChunk;
-import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.WritableShortChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.util.hashing.ChunkEquals;
@@ -117,8 +112,7 @@ public class RunEndEncodedChunkWriter extends BaseChunkWriter<Chunk<Values>> {
                 this.denseValues = null;
                 // noinspection unchecked
                 final WritableChunk<Values> emptyRunEnds = (WritableChunk<Values>) makeRunEndsChunk(0);
-                // noinspection unchecked
-                final WritableChunk<Values> emptyValues = (WritableChunk<Values>) makeChunkForType(valuesChunkType, 0);
+                final WritableChunk<Values> emptyValues = valuesChunkType.makeWritableChunk(0);
                 this.runEndsCtx = runEndsWriter.makeContext(emptyRunEnds, 0);
                 this.valuesCtx = valuesWriter.makeContext(emptyValues, 0);
                 this.runEndsColumn = runEndsWriter.getInputStream(runEndsCtx, null, options);
@@ -138,8 +132,7 @@ public class RunEndEncodedChunkWriter extends BaseChunkWriter<Chunk<Values>> {
                 srcForRuns = context.getChunk();
             } else {
                 // Project the subset into a contiguous dense temp chunk.
-                // noinspection unchecked
-                tempDense = (WritableChunk<Values>) makeChunkForType(valuesChunkType, logicalSize);
+                tempDense = valuesChunkType.makeWritableChunk(logicalSize);
                 tempDense.setSize(logicalSize);
                 // Array over MutableInt for efficiency.
                 final int[] destPos = {0};
@@ -171,8 +164,7 @@ public class RunEndEncodedChunkWriter extends BaseChunkWriter<Chunk<Values>> {
 
                 // noinspection unchecked
                 tempRunEnds = (WritableChunk<Values>) makeRunEndsChunk(numRuns);
-                // noinspection unchecked
-                tempRunValues = (WritableChunk<Values>) makeChunkForType(valuesChunkType, numRuns);
+                tempRunValues = valuesChunkType.makeWritableChunk(numRuns);
 
                 // Fill run_ends (cumulative 1-based end indices) and per-run value representatives.
                 int runIndex = 0;
@@ -266,34 +258,6 @@ public class RunEndEncodedChunkWriter extends BaseChunkWriter<Chunk<Values>> {
                             + ". Use Int32 or Int64 run_ends instead.");
         }
         // Note: Int32 and Int64 cannot overflow for any Deephaven batch (which is int-bounded).
-    }
-
-    /**
-     * Allocate a writable chunk of the given {@link ChunkType} with capacity {@code size}.
-     */
-    static WritableChunk<?> makeChunkForType(final ChunkType chunkType, final int size) {
-        switch (chunkType) {
-            case Boolean:
-                return WritableBooleanChunk.makeWritableChunk(size);
-            case Byte:
-                return WritableByteChunk.makeWritableChunk(size);
-            case Char:
-                return WritableCharChunk.makeWritableChunk(size);
-            case Short:
-                return WritableShortChunk.makeWritableChunk(size);
-            case Int:
-                return WritableIntChunk.makeWritableChunk(size);
-            case Long:
-                return WritableLongChunk.makeWritableChunk(size);
-            case Float:
-                return WritableFloatChunk.makeWritableChunk(size);
-            case Double:
-                return WritableDoubleChunk.makeWritableChunk(size);
-            case Object:
-                return WritableObjectChunk.makeWritableChunk(size);
-            default:
-                throw new IllegalArgumentException("Unsupported ChunkType: " + chunkType);
-        }
     }
 
     /**

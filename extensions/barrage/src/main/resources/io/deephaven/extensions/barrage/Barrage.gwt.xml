@@ -26,8 +26,6 @@
         <exclude name="DefaultChunkWriterFactory.java" />
         <exclude name="MapChunkReader.java" />
         <exclude name="MapChunkWriter.java" />
-        <!-- TODO: Temporary exclusion - GWT support for REE will be added in this PR -->
-        <exclude name="RunEndEncodedChunkReader.java" />
         <exclude name="RunEndEncodedChunkWriter.java" />
         <exclude name="UnionChunkWriter.java" />
         <exclude name="UnionChunkReader.java" />
