@@ -34,9 +34,9 @@ Whether to check that for proxied join operations, a given join key only occurs 
 
 
 > [!CAUTION]
-> PartitionedTable transforms and proxies produce different results than on a single-table `join` when the join keys span partitions. You must take care to ensure that your data's keys map to appropriate partitions to enable correct answers.
+> `PartitionedTable` transforms and proxies produce different results than on a single-table `join` when the join keys span partitions. You must ensure that your data's keys map to appropriate partitions to enable correct answers.
 >
-> When the argument `sanityCheckJoins` to the `proxy` method is true, the engine validates that join keys exist only in a single partition; but it does not validate that a key exists in the same partition in both the left and right table.
+> When the argument `sanityCheckJoins` to the `proxy` method is true, the engine validates that join keys exist only in a single partition, but it does not validate that a key exists in the same partition in both the left and right table.
 
 
 ## Returns
