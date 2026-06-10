@@ -138,7 +138,10 @@ public interface PartitionedTable extends LivenessNode, LogOutputAppendable {
      *
      * <p>
      * Note that as of Deephaven Core 42.0, proxies do not sanity check join operations by default. You must manually
-     * call {@code proxy(true, true)} to get pre-42.0 behavior.
+     * call {@code proxy(true, true)} to get pre-42.0 behavior. The sanity check requires examining every row of all
+     * constituent tables and updating a shared data structure, increasing the total amount of work required and
+     * reducing the potential parallelism of the join operation. However, the sanity check may catch data errors in the
+     * query that would produce otherwise unexpected results.
      * </p>
      *
      * @return A proxy that allows {@link TableOperations table operations} to be applied to the constituent tables of
@@ -167,7 +170,10 @@ public interface PartitionedTable extends LivenessNode, LogOutputAppendable {
      * @param sanityCheckJoinOperations Whether to check that proxied join operations will only find a given join key in
      *        one constituent table for {@code this} and the {@link Table table} argument if it is also a
      *        {@link PartitionedTable.Proxy proxy}. If a join key exists in more than one constituent table, the results
-     *        of the proxy are inconsistent with the result on a non-partitioned table.
+     *        of the proxy are inconsistent with the result on a non-partitioned table. Although the argument is named
+     *        "sanityCheckJoinOperations", it applies to any operation that combines results from a left-hand-side table
+     *        and a right-hand-side table that correlates keys between the tables which also includes
+     *        {@link Table#whereIn(Object, String...)} and {@link Table#whereNotIn(Object, String...)}.
      * @return A proxy that allows {@link TableOperations table operations} to be applied to the constituent tables of
      *         this PartitionedTable
      */
