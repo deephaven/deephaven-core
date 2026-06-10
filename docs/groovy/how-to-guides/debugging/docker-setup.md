@@ -91,23 +91,48 @@ IntelliJ will connect to port 5005. The debugger status bar at the bottom of the
 
 ## 5. Use the IntelliJ debugger
 
-Set a breakpoint inside any Groovy method by clicking in the left margin of the editor. When Deephaven calls that method, execution will pause and the debugger panel will become active.
+Once connected, IntelliJ has access to the running JVM. You can inspect thread dumps and heap state, and set breakpoints in Deephaven's own compiled Java code when using a [source-built setup](./source-setup.md).
 
-Here's an example script to test your setup. Enter it in the Deephaven console after attaching the debugger, with a breakpoint set on the `return` line of `addOne`:
+> [!NOTE]
+> **Breakpoints in user-defined Groovy scripts do not work with this setup.** Deephaven compiles app mode scripts and console code dynamically. Before compiling, it prepends a `package io.deephaven.dynamic;` declaration, which shifts all line numbers by one and gives the compiled class a path-derived internal name. IntelliJ cannot map these back to your source file, so breakpoints set in your `.groovy` files are never hit.
+
+### Tracing with println
+
+For debugging logic in your own Groovy scripts, use `println` statements. Output appears in the container logs.
+
+Here is an example that traces calls through a function:
 
 ```groovy
-def addOne(int x) {
-    return x + 1  // Set a breakpoint here
+addOne = { long x ->
+    println "[DEBUG] addOne called: x=$x"
+    def result = x + 1
+    println "[DEBUG] addOne returning: $result"
+    result
 }
 
 t = emptyTable(10).update("X = ii")
-tResult = t.select("X", "Y = addOne(X)")
+tEager = t.select("X", "Y = addOne(X)")
 ```
 
-> [!NOTE]
-> Use `select` rather than `updateView` when testing breakpoints in methods. `updateView` uses lazy evaluation and may not trigger the breakpoint. See [Common problems](./common-problems.md) for details.
+Follow the output while the container runs:
 
-IntelliJ IDEA's debugger can step through Groovy and Java source code, inspect variables, and evaluate expressions. [JetBrains' debugging guide](https://www.jetbrains.com/help/idea/debugging-code.html) is a good reference for general debugger usage.
+```shell
+docker compose logs -f
+```
+
+You will see each call traced in the log:
+
+```text
+deephaven-1  | [DEBUG] processValue called: x=0
+deephaven-1  | [DEBUG] processValue returning: 1
+deephaven-1  | [DEBUG] processValue called: x=1
+deephaven-1  | [DEBUG] processValue returning: 2
+...
+```
+
+For line-by-line breakpoint debugging of user Groovy code, see [source debugging setup](./source-setup.md).
+
+IntelliJ IDEA's debugger can step through and inspect variables when breakpoints do fire. [JetBrains' debugging guide](https://www.jetbrains.com/help/idea/debugging-code.html) is a good reference for general debugger usage.
 
 ## Troubleshooting
 
@@ -125,11 +150,13 @@ IntelliJ IDEA's debugger can step through Groovy and Java source code, inspect v
 
 **Problem**: Execution runs through a breakpoint without pausing.
 
+**Cause**: Breakpoints in user-defined Groovy scripts (app mode scripts or console code) do not work with the prebuilt Docker image. Deephaven compiles these scripts dynamically with a prepended `package` declaration that offsets line numbers and assigns an internal path-derived class name. IntelliJ cannot reliably map these compiled classes back to your source file.
+
 **Solutions**:
 
-- Confirm the debugger is connected (check the IntelliJ status bar).
-- If using `updateView`, switch to `select` to force eager evaluation. See [Common problems](./common-problems.md).
-- Verify the source file open in IntelliJ matches the code running in the container.
+- Use `println` statements to trace execution. Output appears in `docker compose logs -f`.
+- For breakpoint debugging of user code, see [source debugging setup](./source-setup.md).
+- If you are trying to set breakpoints in Deephaven's own code, the [source debugging setup](./source-setup.md) is required.
 
 ### Debugger disconnects after attaching
 
