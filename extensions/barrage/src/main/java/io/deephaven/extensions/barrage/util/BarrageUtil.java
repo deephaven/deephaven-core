@@ -22,7 +22,6 @@ import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.context.PoisonedUpdateGraph;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -787,6 +786,13 @@ public class BarrageUtil {
             return new BarrageTypeInfo<>(Map.class, null, field);
         }
 
+        if (field.getType().getTypeID() == ArrowType.ArrowTypeID.RunEndEncoded) {
+            // The Deephaven column type is determined by the values child (child[1]); the run_ends
+            // child (child[0]) is purely an index. Delegate to the values child so that its
+            // deephaven:type / deephaven:componentType metadata are honoured.
+            return getDefaultType(field.getChildren().get(1));
+        }
+
         final Class<?> columnType = getDefaultType(field, explicitClass);
         if (columnComponentType == null && columnType.isArray()) {
             columnComponentType = columnType.getComponentType();
@@ -886,6 +892,9 @@ public class BarrageUtil {
                 }
             case Map:
                 return Map.class;
+            case RunEndEncoded:
+                // Delegate to the values child (child[1]); run_ends (child[0]) is just an index.
+                return getDefaultType(arrowField.getChildren().get(1), null);
             case Union:
             case Null:
                 return Object.class;

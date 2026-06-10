@@ -188,7 +188,6 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
 
     public <T extends Chunk<Values>> ChunkWriter<T> newWriterPojo(
             @NotNull final BarrageTypeInfo<Field> typeInfo) {
-        // TODO (deephaven/deephaven-core#6033): Run-End Support
         // TODO (deephaven/deephaven-core#6034): Dictionary Support
 
         final Field field = typeInfo.arrowField();
@@ -306,6 +305,20 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
             // noinspection unchecked
             return (ChunkWriter<T>) new MapChunkWriter<>(
                     keyWriter, valueWriter, keyTypeInfo.chunkType(), valueTypeInfo.chunkType(), field.isNullable());
+        }
+
+        if (typeId == ArrowType.ArrowTypeID.RunEndEncoded) {
+            final BarrageTypeInfo<Field> runEndsTypeInfo =
+                    BarrageUtil.getDefaultType(field.getChildren().get(0));
+            final BarrageTypeInfo<Field> valuesTypeInfo =
+                    BarrageUtil.getDefaultType(field.getChildren().get(1));
+            final ChunkWriter<Chunk<Values>> runEndsWriter = newWriterPojo(runEndsTypeInfo);
+            final ChunkWriter<Chunk<Values>> valuesWriter = newWriterPojo(valuesTypeInfo);
+            // noinspection unchecked
+            return (ChunkWriter<T>) new RunEndEncodedChunkWriter(
+                    runEndsWriter, valuesWriter,
+                    runEndsTypeInfo.chunkType(), valuesTypeInfo.chunkType(),
+                    field.isNullable());
         }
 
         // TODO (DH-18679): struct support

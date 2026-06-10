@@ -5,7 +5,7 @@ sidebar_label: Barrage Schema Annotation
 
 Deephaven tables support Object-typed columns that can hold arbitrary Java objects. When exporting these tables over Flight using the Barrage format, Deephaven uses Apache Arrow schemas to describe the data. By default, if a column is typed as `Object`, the Arrow schema may not capture the intended structure of the data, which can lead to inefficient serialization or loss of type information. Use the `Table.BARRAGE_SCHEMA_ATTRIBUTE` to inject explicit Arrow schema information, which ensures that the Flight export uses the correct wire format.
 
-Use this when your Deephaven column type is too generic for the intended wire type (for example, `Object` columns that should be exported as `Union` or `Map`). This guide includes examples of the `Union` and `Map` types, which are currently supported by Deephaven.
+Use this when your Deephaven column type is too generic for the intended wire type (for example, `Object` columns that should be exported as `Union` or `Map`), or when you want to opt into a wire-level compression such as Run-End Encoding. This guide includes examples of the `Union`, `Map`, and `RunEndEncoded` types, which are supported by Deephaven.
 
 ## How It Works
 
@@ -317,4 +317,61 @@ def new_schema = new Schema(fields)
 
 // 7. Apply attributes, creating a new table reference which can be used for export
 map_union_table_w_attributes = map_union_table.withAttributes(java.util.Map.of(Table.BARRAGE_SCHEMA_ATTRIBUTE, new_schema))
+```
+
+## Example: Run-End Encoded (REE) Columns
+
+[Run-End Encoding](https://arrow.apache.org/docs/format/Columnar.html#run-end-encoded-layout) is a wire-level optimization for columns with many repeated values. Instead of sending every value, the column is serialized as two child arrays:
+
+- `run_ends` — a non-nullable integer array (Int16, Int32, or Int64) of cumulative 1-based end indices, one per run. The last value always equals the logical row count.
+- `values` — one representative value per run (nullable).
+
+A column of 1,000 rows where the same integer repeats 100 times in a row costs 10 run_end entries + 10 value entries instead of 1,000 integers. Deephaven stores the column flat (unchanged type); REE is a transport-only optimization.
+
+> [!NOTE]
+> Choose the `run_ends` width based on the largest batch size you expect: Int16 supports up to 32,767 logical rows per batch; Int32 supports up to ~2.1 billion. Use Int64 only if you have very large batches.
+
+```groovy order=ree_table,ree_table_w_attributes
+import io.deephaven.engine.table.Table
+import io.deephaven.extensions.barrage.util.BarrageUtil
+import org.apache.arrow.vector.types.pojo.ArrowType
+import org.apache.arrow.vector.types.pojo.Field
+import org.apache.arrow.vector.types.pojo.FieldType
+import org.apache.arrow.vector.types.pojo.Schema
+
+// 1. Create a table whose "status" column has many repeated values — a natural fit for REE.
+ree_table = emptyTable(100).update(
+    "status = (ii % 10 < 7) ? `OPEN` : `CLOSED`",
+    "value  = (int) ii"
+)
+
+// 2. Extract the default schema so we can borrow the existing field metadata.
+def baseSchema = BarrageUtil.schemaFromTable(ree_table)
+def fields = new java.util.ArrayList<>(baseSchema.getFields())
+
+// 3. Build the REE field for the "status" column.
+//    run_ends child: non-nullable Int32 index (handles up to ~2 billion logical rows per batch)
+def runEndsField = new Field("run_ends",
+    new FieldType(false, new ArrowType.Int(32, true), null, null),
+    java.util.Collections.emptyList()
+)
+//    values child: reuse the original "status" field type so the deephaven:type metadata is preserved
+def originalStatusField = baseSchema.findField("status")
+def valuesField = new Field("values",
+    originalStatusField.getFieldType(),
+    originalStatusField.getChildren()
+)
+//    REE parent: nullable, no buffers (the children carry all the data)
+def reeField = new Field("status",
+    new FieldType(true, ArrowType.RunEndEncoded.INSTANCE, null, null),
+    java.util.List.of(runEndsField, valuesField)
+)
+
+// 4. Replace the "status" field in the schema with the new REE field.
+def statusIdx = fields.findIndexOf { it.getName() == "status" }
+fields.set(statusIdx, reeField)
+def new_schema = new Schema(fields)
+
+// 5. Apply attributes — the "status" column will now be sent as REE over Flight / Barrage.
+ree_table_w_attributes = ree_table.withAttributes(java.util.Map.of(Table.BARRAGE_SCHEMA_ATTRIBUTE, new_schema))
 ```

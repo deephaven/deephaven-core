@@ -104,6 +104,7 @@ import org.apache.arrow.vector.complex.ListVector;
 import org.apache.arrow.vector.complex.ListViewVector;
 import org.apache.arrow.vector.complex.MapVector;
 import org.apache.arrow.vector.complex.StructVector;
+import org.apache.arrow.vector.complex.RunEndEncodedVector;
 import org.apache.arrow.vector.complex.UnionVector;
 import org.apache.arrow.vector.complex.impl.ComplexCopier;
 import org.apache.arrow.vector.complex.impl.UnionListReader;
@@ -3593,5 +3594,135 @@ public class BarrageChunkFactoryTest {
             return QueryConstants.MAX_LONG;
         }
         throw new IllegalArgumentException("Unexpected type: " + dhType);
+    }
+
+    // ---- Run-End Encoded interop test ----
+
+    /**
+     * Verifies bidirectional Arrow Flight interop for Run-End Encoded columns:
+     * <ol>
+     * <li>Upload REE from stock Arrow → confirm DH decodes to flat int values.</li>
+     * <li>Download the same table (BARRAGE_SCHEMA_ATTRIBUTE carries the REE schema) → confirm stock Arrow receives a
+     * {@link RunEndEncodedVector} with correct decoded values.</li>
+     * </ol>
+     */
+    @Test
+    public void testRunEndEncodedInterop() throws Exception {
+        final Random rnd = new Random(RANDOM_SEED);
+
+        // --- Build flat logical values (null = null reference, non-null = boxed int) ---
+        // Pattern: blocks of 10 rows; every third block is all-null for run variety.
+        final Integer[] flatValues = new Integer[NUM_ROWS];
+        for (int i = 0; i < NUM_ROWS; ++i) {
+            flatValues[i] = ((i / 10) % 3 == 2) ? null : rnd.nextInt(1_000_000);
+        }
+
+        // --- Run-encode the flat values ---
+        final int[] runEnds = new int[NUM_ROWS];
+        final Integer[] runValues = new Integer[NUM_ROWS];
+        int numRuns = 0;
+        {
+            int pos = 0;
+            while (pos < NUM_ROWS) {
+                final Integer cur = flatValues[pos];
+                int end = pos + 1;
+                while (end < NUM_ROWS) {
+                    final Integer nxt = flatValues[end];
+                    if (cur == null ? nxt == null : cur.equals(nxt)) {
+                        end++;
+                    } else {
+                        break;
+                    }
+                }
+                runEnds[numRuns] = end;
+                runValues[numRuns] = cur;
+                numRuns++;
+                pos = end;
+            }
+        }
+
+        // --- Build the REE Arrow schema ---
+        // run_ends child: non-nullable Int32
+        final Field runEndsField = new Field("run_ends",
+                new FieldType(false, new ArrowType.Int(32, true), null, null),
+                Collections.emptyList());
+        // values child: nullable Int32, carries deephaven:type metadata so DH knows the Java type
+        final Map<String, String> valuesAttrs = new LinkedHashMap<>();
+        valuesAttrs.put(DH_TYPE_TAG, int.class.getCanonicalName());
+        final Field valuesField = new Field("values",
+                new FieldType(true, new ArrowType.Int(32, true), null, valuesAttrs),
+                Collections.emptyList());
+        // REE parent: nullable, no buffers
+        final Field reeField = new Field(COLUMN_NAME,
+                new FieldType(true, ArrowType.RunEndEncoded.INSTANCE, null, null),
+                Arrays.asList(runEndsField, valuesField));
+        final Schema uploadSchema = new Schema(Collections.singletonList(reeField));
+
+        // --- Upload REE data to Deephaven ---
+        final int ticket = nextTicket++;
+        final int finalNumRuns = numRuns;
+        try (final VectorSchemaRoot source = VectorSchemaRoot.create(uploadSchema, allocator)) {
+            source.allocateNew();
+            final RunEndEncodedVector reeVec = (RunEndEncodedVector) source.getVector(0);
+            final IntVector runEndsVec = (IntVector) reeVec.getRunEndsVector();
+            final IntVector valuesVec = (IntVector) reeVec.getValuesVector();
+
+            for (int i = 0; i < finalNumRuns; ++i) {
+                runEndsVec.setSafe(i, runEnds[i]);
+                if (runValues[i] == null) {
+                    valuesVec.setNull(i);
+                } else {
+                    valuesVec.setSafe(i, runValues[i]);
+                }
+            }
+            runEndsVec.setValueCount(finalNumRuns);
+            valuesVec.setValueCount(finalNumRuns);
+            reeVec.setValueCount(NUM_ROWS);
+            source.setRowCount(NUM_ROWS);
+
+            final FlightDescriptor descriptor = FlightDescriptor.path("export", Integer.toString(ticket));
+            final FlightClient.ClientStreamListener putStream =
+                    flightClient.startPut(descriptor, source, new AsyncPutListener());
+            putStream.putNext();
+            putStream.completed();
+            putStream.getResult();
+        }
+
+        // --- Verify DH decoded REE into flat int values ---
+        final CompletableFuture<Table> tableFuture = new CompletableFuture<>();
+        final SessionState.ExportObject<Table> tableExport = currentSession.getExport(ticket);
+        currentSession.nonExport()
+                .onErrorHandler(e -> tableFuture.cancel(true))
+                .require(tableExport)
+                .submit(() -> tableFuture.complete(tableExport.get()));
+        final Table uploadedTable = tableFuture.get();
+
+        assertEquals(NUM_ROWS, uploadedTable.size());
+        assertEquals(int.class, uploadedTable.getColumnSource(COLUMN_NAME).getType());
+
+        // --- Download: BARRAGE_SCHEMA_ATTRIBUTE is the REE schema → DH re-encodes as REE ---
+        // Verify stock Arrow receives a RunEndEncodedVector with correct logical values.
+        try (final FlightStream stream = flightClient.getStream(flightTicketFor(ticket))) {
+            assertTrue("Expected at least one payload", stream.next());
+            final VectorSchemaRoot dest = stream.getRoot();
+
+            assertEquals("Row count mismatch", NUM_ROWS, dest.getRowCount());
+
+            final FieldVector colVec = dest.getVector(0);
+            assertTrue(
+                    "Expected RunEndEncodedVector on download, got: " + colVec.getClass().getSimpleName(),
+                    colVec instanceof RunEndEncodedVector);
+
+            final RunEndEncodedVector destRee = (RunEndEncodedVector) colVec;
+            for (int i = 0; i < NUM_ROWS; ++i) {
+                if (flatValues[i] == null) {
+                    assertTrue("Expected null at logical index " + i, destRee.isNull(i));
+                } else {
+                    assertFalse("Unexpected null at logical index " + i, destRee.isNull(i));
+                    assertEquals("Value mismatch at logical index " + i,
+                            (int) flatValues[i], ((Number) destRee.getObject(i)).intValue());
+                }
+            }
+        }
     }
 }
