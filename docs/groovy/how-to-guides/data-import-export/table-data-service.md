@@ -4,14 +4,14 @@ title: Table data service
 
 This guide covers using the Table Data Service API to integrate custom, partitioned, lazily-loaded data into Deephaven workflows.
 
-In Groovy, you use the Java `TableDataService` interface and its implementations directly. The Python Table Data Service API is a higher-level wrapper built on top of the same interface.
+In Groovy, you use the Java [`TableDataService`](/core/javadoc/io/deephaven/engine/table/impl/locations/TableDataService.html) interface and its implementations directly. The Python Table Data Service API is a higher-level wrapper built on top of the same interface.
 
 > [!NOTE]
 > This feature is currently experimental. The API and its characteristics are subject to change.
 
 ### `TableDataService` API
 
-The `TableDataService` interface provides a way to integrate external data sources into Deephaven tables in both static and refreshing contexts. The data is partitioned, and each partition is loaded lazily — the engine only reads column data when a query needs it.
+The [`TableDataService`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/locations/TableDataService.html) interface provides a way to integrate external data sources into Deephaven tables in both static and refreshing contexts. The data is partitioned, and each partition is loaded lazily — the engine only reads column data when a query needs it.
 
 The API involves seven cooperating classes, each responsible for one layer of the data access stack:
 
@@ -29,7 +29,7 @@ The following sections describe the implementation requirements for each class a
 
 ### `TableKey`
 
-A `TableKey` is a unique identifier for a logical table. Implement [`ImmutableTableKey`](/core/javadoc/io/deephaven/engine/table/impl/locations/ImmutableTableKey.html) (a sub-interface of `TableKey`) to get a default `makeImmutable()` that returns `this`. You must provide:
+A [`TableKey`](/core/javadoc/io/deephaven/engine/table/impl/locations/TableKey.html) is a unique identifier for a logical table. Implement [`ImmutableTableKey`](/core/javadoc/io/deephaven/engine/table/impl/locations/ImmutableTableKey.html) (a sub-interface of `TableKey`) to get a default `makeImmutable()` that returns `this`. You must provide:
 
 - `getImplementationName()`: A human-readable name used in logging.
 - `append(LogOutput)`: Describes the key in log output.
@@ -61,7 +61,7 @@ class StockPricesKey implements ImmutableTableKey {
 
 ### `TableLocationKey`
 
-A `TableLocationKey` identifies a specific partition within a table. Extend [`PartitionedTableLocationKey`](/core/javadoc/io/deephaven/engine/table/impl/locations/impl/PartitionedTableLocationKey.html), which handles partition-map storage, sorting, `hashCode()`, and `equals()`. Only `getImplementationName()` and `append(LogOutput)` need to be provided:
+A [`TableLocationKey`](/core/javadoc/io/deephaven/engine/table/impl/locations/TableLocationKey.html) identifies a specific partition within a table. Extend [`PartitionedTableLocationKey`](/core/javadoc/io/deephaven/engine/table/impl/locations/impl/PartitionedTableLocationKey.html), which handles partition-map storage, sorting, `hashCode()`, and `equals()`. Only `getImplementationName()` and `append(LogOutput)` need to be provided:
 
 ```groovy test-set=1 order=null
 import io.deephaven.base.log.LogOutput
@@ -88,7 +88,7 @@ For unpartitioned tables, use the built-in singleton [`StandaloneTableLocationKe
 
 ### `ColumnLocation`
 
-A `ColumnLocation` provides the actual column data for one partition. It is created on demand by `AbstractTableLocation.makeColumnLocation()` and returns typed `ColumnRegion` objects that the engine uses to read data.
+A [`ColumnLocation`](/core/javadoc/io/deephaven/engine/table/impl/locations/ColumnLocation.html) provides the actual column data for one partition. It is created on demand by `AbstractTableLocation.makeColumnLocation()` and returns typed [`ColumnRegion`](/core/javadoc/io/deephaven/engine/table/impl/sources/regioned/ColumnRegion.html) objects that the engine uses to read data.
 
 Extend [`AbstractColumnLocation`](/core/javadoc/io/deephaven/engine/table/impl/locations/impl/AbstractColumnLocation.html) and implement one `makeColumnRegion*` method per column type present in your table schema. For each, return an `AppendOnlyFixedSizePageRegion*` backed by an [`AppendOnlyRegionAccessor`](/core/javadoc/io/deephaven/generic/region/AppendOnlyRegionAccessor.html) that reads from your data store.
 
@@ -271,9 +271,9 @@ class StockTableLocation extends AbstractTableLocation {
 
 ### `TableLocationProvider`
 
-A `TableLocationProvider` discovers and manages the set of `TableLocation` objects for a given `TableKey`. Extend [`AbstractTableLocationProvider`](/core/javadoc/io/deephaven/engine/table/impl/locations/impl/AbstractTableLocationProvider.html) and implement:
+A [`TableLocationProvider`](/core/javadoc/io/deephaven/engine/table/impl/locations/TableLocationProvider.html) discovers and manages the set of [`TableLocation`](/core/javadoc/io/deephaven/engine/table/impl/locations/TableLocation.html) objects for a given [`TableKey`](/core/javadoc/io/deephaven/engine/table/impl/locations/TableKey.html). Extend [`AbstractTableLocationProvider`](/core/javadoc/io/deephaven/engine/table/impl/locations/impl/AbstractTableLocationProvider.html) and implement:
 
-- `makeTableLocation(locationKey)`: Returns the `TableLocation` for the given key.
+- `makeTableLocation(locationKey)`: Returns the [`TableLocation`](/core/javadoc/io/deephaven/engine/table/impl/locations/TableLocation.html) for the given [`TableKey`](/core/javadoc/io/deephaven/engine/table/impl/locations/TableKey.html).
 - `refresh()`: Re-enumerates locations; call `handleTableLocationKeyAdded` for each known key.
 - `activateUnderlyingDataSource()`: Subscribe and register known locations; call `activationSuccessful`.
 - `deactivateUnderlyingDataSource()`: Unsubscribe.
@@ -326,7 +326,7 @@ class StockTableLocationProvider extends AbstractTableLocationProvider {
 
 ### `AbstractTableDataService`
 
-`AbstractTableDataService` is the service entry point. It caches `TableLocationProvider` instances and only requires implementing `makeTableLocationProvider(TableKey)`:
+[`AbstractTableDataService`](/core/javadoc/io/deephaven/engine/table/impl/locations/impl/AbstractTableDataService.html) is the service entry point. It caches [`TableLocationProvider`](/core/javadoc/io/deephaven/engine/table/impl/locations/TableLocationProvider.html) instances and only requires implementing `makeTableLocationProvider(TableKey)`:
 
 ```groovy test-set=1 order=null
 import io.deephaven.engine.table.impl.locations.TableKey
@@ -356,7 +356,7 @@ class StockDataService extends AbstractTableDataService {
 
 ### Usage
 
-The following code uses all six classes defined above to build a `PartitionAwareSourceTable` backed by an in-memory stock prices store with two date partitions:
+The following code uses all six classes defined above to build a [`PartitionAwareSourceTable`](/core/javadoc/io/deephaven/engine/table/impl/PartitionAwareSourceTable.html) backed by an in-memory stock prices store with two date partitions:
 
 ```groovy test-set=1 order=stockPrices
 import io.deephaven.engine.table.ColumnDefinition
@@ -402,9 +402,20 @@ stockPrices = new PartitionAwareSourceTable(
 
 ## Related documentation
 
-- [`TableDataService` Javadoc](/core/javadoc/io/deephaven/engine/table/impl/locations/TableDataService.html)
+- [`AbstractColumnLocation` Javadoc](/core/javadoc/io/deephaven/engine/table/impl/locations/impl/AbstractColumnLocation.html)
 - [`AbstractTableDataService` Javadoc](/core/javadoc/io/deephaven/engine/table/impl/locations/impl/AbstractTableDataService.html)
 - [`AbstractTableLocation` Javadoc](/core/javadoc/io/deephaven/engine/table/impl/locations/impl/AbstractTableLocation.html)
 - [`AbstractTableLocationProvider` Javadoc](/core/javadoc/io/deephaven/engine/table/impl/locations/impl/AbstractTableLocationProvider.html)
-- [`PartitionAwareSourceTable` Javadoc](/core/javadoc/io/deephaven/engine/table/impl/PartitionAwareSourceTable.html)
+- [`AppendOnlyRegionAccessor` Javadoc](/core/javadoc/io/deephaven/generic/region/AppendOnlyRegionAccessor.html)
+- [`ColumnLocation` Javadoc](/core/javadoc/io/deephaven/engine/table/impl/locations/ColumnLocation.html)
+- [`ColumnRegion` Javadoc](/core/javadoc/io/deephaven/engine/table/impl/sources/regioned/ColumnRegion.html)
 - [Custom data sources](../../reference/community-questions/custom-data-sources.md)
+- [`ImmutableTableKey` Javadoc](/core/javadoc/io/deephaven/engine/table/impl/locations/ImmutableTableKey.html)
+- [`PartitionAwareSourceTable` Javadoc](/core/javadoc/io/deephaven/engine/table/impl/PartitionAwareSourceTable.html)
+- [`PartitionedTableLocationKey` Javadoc](/core/javadoc/io/deephaven/engine/table/impl/locations/impl/PartitionedTableLocationKey.html)
+- [`StandaloneTableLocationKey` Javadoc](/core/javadoc/io/deephaven/engine/table/impl/locations/impl/StandaloneTableLocationKey.html)
+- [`TableDataService` Javadoc](/core/javadoc/io/deephaven/engine/table/impl/locations/TableDataService.html)
+- [`TableKey` Javadoc](/core/javadoc/io/deephaven/engine/table/impl/locations/TableKey.html)
+- [`TableLocation` Javadoc](/core/javadoc/io/deephaven/engine/table/impl/locations/TableLocation.html)
+- [`TableLocationKey` Javadoc](/core/javadoc/io/deephaven/engine/table/impl/locations/TableLocationKey.html)
+- [`TableLocationProvider` Javadoc](/core/javadoc/io/deephaven/engine/table/impl/locations/TableLocationProvider.html)
