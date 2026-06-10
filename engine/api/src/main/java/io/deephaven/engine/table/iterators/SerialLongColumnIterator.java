@@ -50,4 +50,11 @@ public final class SerialLongColumnIterator
     public long nextLong() {
         return columnSource.getLong(advanceAndGetNextRowKey());
     }
+
+    @Override
+    public void consumeAll() {
+        while (hasNext()) {
+            nextLong();
+        }
+    }
 }

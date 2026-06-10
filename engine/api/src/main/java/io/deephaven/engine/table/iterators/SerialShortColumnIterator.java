@@ -50,4 +50,11 @@ public final class SerialShortColumnIterator
     public short nextShort() {
         return columnSource.getShort(advanceAndGetNextRowKey());
     }
+
+    @Override
+    public void consumeAll() {
+        while (hasNext()) {
+            nextShort();
+        }
+    }
 }

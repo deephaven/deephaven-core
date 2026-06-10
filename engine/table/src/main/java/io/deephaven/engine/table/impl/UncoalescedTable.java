@@ -18,13 +18,21 @@ import io.deephaven.api.filter.Filter;
 import io.deephaven.api.snapshot.SnapshotWhenOptions;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.api.updateby.UpdateByControl;
-import io.deephaven.engine.primitive.iterator.*;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.hierarchical.RollupTable;
 import io.deephaven.engine.table.hierarchical.TreeTable;
 import io.deephaven.engine.table.impl.updateby.UpdateBy;
 import io.deephaven.api.util.ConcurrentMethod;
+import io.deephaven.engine.table.iterators.ByteColumnIterator;
+import io.deephaven.engine.table.iterators.CharacterColumnIterator;
+import io.deephaven.engine.table.iterators.ColumnIterator;
+import io.deephaven.engine.table.iterators.DoubleColumnIterator;
+import io.deephaven.engine.table.iterators.FloatColumnIterator;
+import io.deephaven.engine.table.iterators.IntegerColumnIterator;
+import io.deephaven.engine.table.iterators.LongColumnIterator;
+import io.deephaven.engine.table.iterators.ObjectColumnIterator;
+import io.deephaven.engine.table.iterators.ShortColumnIterator;
 import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
 
@@ -109,52 +117,52 @@ public abstract class UncoalescedTable<IMPL_TYPE extends UncoalescedTable<IMPL_T
     }
 
     @Override
-    public <TYPE> CloseableIterator<TYPE> columnIterator(@NotNull String columnName) {
+    public <TYPE> ColumnIterator<TYPE> columnIterator(@NotNull String columnName) {
         return coalesce().columnIterator(columnName);
     }
 
     @Override
-    public CloseablePrimitiveIteratorOfChar characterColumnIterator(@NotNull String columnName) {
+    public CharacterColumnIterator characterColumnIterator(@NotNull String columnName) {
         return coalesce().characterColumnIterator(columnName);
     }
 
     @Override
-    public CloseablePrimitiveIteratorOfByte byteColumnIterator(@NotNull String columnName) {
+    public ByteColumnIterator byteColumnIterator(@NotNull String columnName) {
         return coalesce().byteColumnIterator(columnName);
     }
 
     @Override
-    public CloseablePrimitiveIteratorOfShort shortColumnIterator(@NotNull String columnName) {
+    public ShortColumnIterator shortColumnIterator(@NotNull String columnName) {
         return coalesce().shortColumnIterator(columnName);
     }
 
     @Override
-    public CloseablePrimitiveIteratorOfInt integerColumnIterator(@NotNull String columnName) {
+    public IntegerColumnIterator integerColumnIterator(@NotNull String columnName) {
         return coalesce().integerColumnIterator(columnName);
     }
 
     @Override
-    public CloseablePrimitiveIteratorOfLong longColumnIterator(@NotNull String columnName) {
+    public LongColumnIterator longColumnIterator(@NotNull String columnName) {
         return coalesce().longColumnIterator(columnName);
     }
 
     @Override
-    public CloseablePrimitiveIteratorOfFloat floatColumnIterator(@NotNull String columnName) {
+    public FloatColumnIterator floatColumnIterator(@NotNull String columnName) {
         return coalesce().floatColumnIterator(columnName);
     }
 
     @Override
-    public CloseablePrimitiveIteratorOfDouble doubleColumnIterator(@NotNull String columnName) {
+    public DoubleColumnIterator doubleColumnIterator(@NotNull String columnName) {
         return coalesce().doubleColumnIterator(columnName);
     }
 
     @Override
-    public <DATA_TYPE> CloseableIterator<DATA_TYPE> objectColumnIterator(@NotNull String columnName) {
+    public <DATA_TYPE> ObjectColumnIterator<DATA_TYPE> objectColumnIterator(@NotNull String columnName) {
         return coalesce().objectColumnIterator(columnName);
     }
 
     @Override
-    public <DATA_TYPE> CloseableIterator<DATA_TYPE> objectColumnIterator(@NotNull String columnName,
+    public <DATA_TYPE> ObjectColumnIterator<DATA_TYPE> objectColumnIterator(@NotNull String columnName,
             @NotNull Class<? extends DATA_TYPE> clazz) {
         return coalesce().objectColumnIterator(columnName, clazz);
     }

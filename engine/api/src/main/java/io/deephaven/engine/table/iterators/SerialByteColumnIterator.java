@@ -50,4 +50,11 @@ public final class SerialByteColumnIterator
     public byte nextByte() {
         return columnSource.getByte(advanceAndGetNextRowKey());
     }
+
+    @Override
+    public void consumeAll() {
+        while (hasNext()) {
+            nextByte();
+        }
+    }
 }

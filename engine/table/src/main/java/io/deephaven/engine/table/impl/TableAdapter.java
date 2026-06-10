@@ -25,6 +25,15 @@ import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.hierarchical.RollupTable;
 import io.deephaven.engine.table.hierarchical.TreeTable;
+import io.deephaven.engine.table.iterators.ByteColumnIterator;
+import io.deephaven.engine.table.iterators.CharacterColumnIterator;
+import io.deephaven.engine.table.iterators.ColumnIterator;
+import io.deephaven.engine.table.iterators.DoubleColumnIterator;
+import io.deephaven.engine.table.iterators.FloatColumnIterator;
+import io.deephaven.engine.table.iterators.IntegerColumnIterator;
+import io.deephaven.engine.table.iterators.LongColumnIterator;
+import io.deephaven.engine.table.iterators.ObjectColumnIterator;
+import io.deephaven.engine.table.iterators.ShortColumnIterator;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -163,52 +172,52 @@ public interface TableAdapter extends TableDefaults {
     }
 
     @Override
-    default <DATA_TYPE> CloseableIterator<DATA_TYPE> columnIterator(@NotNull String columnName) {
+    default <DATA_TYPE> ColumnIterator<DATA_TYPE> columnIterator(@NotNull String columnName) {
         return throwUnsupported();
     }
 
     @Override
-    default CloseablePrimitiveIteratorOfChar characterColumnIterator(@NotNull String columnName) {
+    default CharacterColumnIterator characterColumnIterator(@NotNull String columnName) {
         return throwUnsupported();
     }
 
     @Override
-    default CloseablePrimitiveIteratorOfByte byteColumnIterator(@NotNull String columnName) {
+    default ByteColumnIterator byteColumnIterator(@NotNull String columnName) {
         return throwUnsupported();
     }
 
     @Override
-    default CloseablePrimitiveIteratorOfShort shortColumnIterator(@NotNull String columnName) {
+    default ShortColumnIterator shortColumnIterator(@NotNull String columnName) {
         return throwUnsupported();
     }
 
     @Override
-    default CloseablePrimitiveIteratorOfInt integerColumnIterator(@NotNull String columnName) {
+    default IntegerColumnIterator integerColumnIterator(@NotNull String columnName) {
         return throwUnsupported();
     }
 
     @Override
-    default CloseablePrimitiveIteratorOfLong longColumnIterator(@NotNull String columnName) {
+    default LongColumnIterator longColumnIterator(@NotNull String columnName) {
         return throwUnsupported();
     }
 
     @Override
-    default CloseablePrimitiveIteratorOfFloat floatColumnIterator(@NotNull String columnName) {
+    default FloatColumnIterator floatColumnIterator(@NotNull String columnName) {
         return throwUnsupported();
     }
 
     @Override
-    default CloseablePrimitiveIteratorOfDouble doubleColumnIterator(@NotNull String columnName) {
+    default DoubleColumnIterator doubleColumnIterator(@NotNull String columnName) {
         return throwUnsupported();
     }
 
     @Override
-    default <DATA_TYPE> CloseableIterator<DATA_TYPE> objectColumnIterator(@NotNull String columnName) {
+    default <DATA_TYPE> ObjectColumnIterator<DATA_TYPE> objectColumnIterator(@NotNull String columnName) {
         return throwUnsupported();
     }
 
     @Override
-    default <DATA_TYPE> CloseableIterator<DATA_TYPE> objectColumnIterator(@NotNull String columnName,
+    default <DATA_TYPE> ObjectColumnIterator<DATA_TYPE> objectColumnIterator(@NotNull String columnName,
             @NotNull Class<? extends DATA_TYPE> clazz) {
         return throwUnsupported();
     }

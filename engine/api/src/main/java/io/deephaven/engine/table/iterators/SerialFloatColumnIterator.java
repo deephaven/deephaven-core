@@ -50,4 +50,11 @@ public final class SerialFloatColumnIterator
     public float nextFloat() {
         return columnSource.getFloat(advanceAndGetNextRowKey());
     }
+
+    @Override
+    public void consumeAll() {
+        while (hasNext()) {
+            nextFloat();
+        }
+    }
 }
