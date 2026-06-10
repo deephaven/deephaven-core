@@ -243,6 +243,3 @@ thread.start()
 - [`new_table`](../table-operations/create/newTable.md)
 - [Parquet](../../how-to-guides/data-import-export/parquet-export.md)
 - [Write data to a real-time table](../../how-to-guides/table-publisher.md)
-
-> [!NOTE]
-> These FAQ pages contain answers to questions about Deephaven Community Core that our users have asked in our [Community Slack](/slack). If you have a question that is not in our documentation, [join our Community](/slack) and we'll be happy to help!

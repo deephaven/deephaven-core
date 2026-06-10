@@ -10,6 +10,3 @@ The most common cause for this issue is timeouts. Your failed reads produce a st
 `did not complete before the specified timeout`
 
 This indicates that the operation takes longer than what is allowed. Deephaven's [`S3Instructions`](https://docs.deephaven.io/core/javadoc/io/deephaven/extensions/s3/S3Instructions.html) object allows you to specify a timeout for both reading from and writing to S3. You can increase the timeout by setting the `readTimeout` and `writeTimeout` parameters to a higher value. The default for both is 2 seconds.
-
-> [!NOTE]
-> These FAQ pages contain answers to questions about Deephaven Community Core that our users have asked in our [Community Slack](/slack). If you have a question that is not in our documentation, [join our Community](/slack) and we'll be happy to help!

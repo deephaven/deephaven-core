@@ -111,6 +111,3 @@ CMD ["/venv/bin/deephaven", "server"]
 - The `deephaven-core` wheel (for client-side use) does not require Java to be installed.
 - The `deephaven-server` wheel requires Java 17+ to be available in your environment.
 - When creating a `Server` instance in Python (e.g., `from deephaven_server.server import Server`), you must have Java 17+ installed and available.
-
-> [!NOTE]
-> These FAQ pages contain answers to questions about Deephaven Community Core that our users have asked in our [Community Slack](/slack). If you have a question that is not in our documentation, [join our Community](/slack) and we'll be happy to help!

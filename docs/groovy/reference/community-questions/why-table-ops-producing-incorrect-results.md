@@ -13,6 +13,3 @@ The most common reason for "incorrect" calculations in tables is due to the use 
 t = emptyTable(10).updateView("X = randomInt(0, 10)")
 t2 = t.update("Y = X + 1")
 ```
-
-> [!NOTE]
-> These FAQ pages contain answers to questions about Deephaven Community Core that our users have asked in our [Community Slack](/slack). If you have a question that is not in our documentation, [join our Community](/slack) and we'll be happy to help!

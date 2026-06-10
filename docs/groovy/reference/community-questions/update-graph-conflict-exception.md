@@ -53,6 +53,3 @@ Consider the following scenario, with two separate update graphs:
 You want to combine these two ticking tables into a single table. Any attempt to do so will result in an `UpdateGraphConflictException`, because the two ticking tables are from different update graphs. The resultant table cannot possibly be consistent - the resultant table cannot live in either existing update graph, and it cannot be in a new update graph that is not the same as either of the existing graphs.
 
 The only way to combine these tables is to take a snapshot of each to produce a static table, then combine the static tables.
-
-> [!NOTE]
-> These FAQ pages contain answers to questions about Deephaven Community Core that our users have asked in our [Community Slack](/slack). If you have a question that is not answered in our documentation, [join our Community](/slack) and ask it there. We are happy to help!

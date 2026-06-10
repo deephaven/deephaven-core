@@ -23,6 +23,3 @@ To illustrate these phases in action, consider a scenario involving filtering on
 - It then proceeds to read and cache the columns accessed by the remaining filters in the unpruned files.
 - During the merge operation, no data is read.
 - Finally, Deephaven reads all pages containing rows not filtered out in the previous step for the columns involved in the aggregation. For instance, if aggregating by columns "A" and "B" while computing max("C") and last("D"), only columns "A", "B", and "C" are read. Under certain circumstances, such as in ticking append-only or blink tables, column "D" may also be read, but only for the actual "last" row in each bucket.
-
-> [!NOTE]
-> These FAQ pages contain answers to questions about Deephaven Community Core that our users have asked in our [Community Slack](/slack). If you have a question that is not in our documentation, [join our Community](/slack) and we'll be happy to help!

@@ -12,6 +12,3 @@ We have some general advice, however:
   - Anything that creates a lot of small indices, like `group_by` or `partition_by`, may also consume a lot of memory.
 - Look at memory usage in the [Query Operation Performance Log](../../how-to-guides/performance/performance-tables.md#query-operation-performance-log).
   - If you initialize a query against tables that already have lots of data in them (i.e., start from a million-row table, not an empty table that will be populated as data from a Kafka stream is ingested), you can look at the QOPL to see the operations during which the query started using more memory. Note that external operations / Garbage Collection can affect the results, but often enough an expensive update or join or will be readiliy apparent.
-
-> [!NOTE]
-> These FAQ pages contain answers to questions about Deephaven Community Core that our users have asked in our [Community Slack](/slack). If you have a question that is not in our documentation, [join our Community](/slack) and we'll be happy to help!

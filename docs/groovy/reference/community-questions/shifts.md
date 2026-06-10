@@ -148,6 +148,3 @@ Shifts are a performance optimization that allows the engine to avoid re-evaluat
 For more detailed information about shifts and the table update model, see [Table update model - Shifts](../../conceptual/table-update-model.md#shifts).
 
 While this example focuses on merge operations, **shifts can occur with any table operation** that works with live/refreshing data, including joins, updates, selects, and other operations. The same safety concerns about positional indices apply regardless of which operation triggers the shift. Note that even without shifts, any operations that add or remove rows from refreshing tables can similarly cause positional indices (`i`, `ii`) to become incorrect in downstream operations.
-
-> [!NOTE]
-> These FAQ pages contain answers to questions about Deephaven Community Core that our users have asked in our [Community Slack](/slack). If you have a question that is not answered in our documentation, [join our Community](/slack) and ask it there. We are happy to help!

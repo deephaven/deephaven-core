@@ -31,6 +31,3 @@ rst = t.updateView("Partition = key % 100")
 ```
 
 Additionally, working with large data amplifies any inefficiency in your code, so make sure you're using the correct [join](../../how-to-guides/joins-exact-relational.md#which-method-should-you-use) and [selection](../../how-to-guides/use-select-view-update.md#choose-the-right-column-selection-method) methods for your use case.
-
-> [!NOTE]
-> These FAQ pages contain answers to questions about Deephaven Community Core that our users have asked in our [Community Slack](/slack). If you have a question that is not in our documentation, [join our Community](/slack) and we'll be happy to help!

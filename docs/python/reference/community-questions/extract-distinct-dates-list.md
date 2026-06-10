@@ -58,6 +58,3 @@ print(f"Date list length: {len(date_list)}")
 ```
 
 This approach works for any column type, not just dates. Use `select_distinct` to get unique values, then choose the conversion method that best fits your use case.
-
-> [!NOTE]
-> These FAQ pages contain answers to questions about Deephaven Community Core that our users have asked in our [Community Slack](/slack). If you have a question that is not in our documentation, [join our Community](/slack) and we'll be happy to help!

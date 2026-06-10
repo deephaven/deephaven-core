@@ -106,6 +106,3 @@ To work with specific partitions:
 - [`input_table` API reference](/core/pydoc/code/deephaven.table_factory.html#deephaven.table_factory.input_table)
 - [`ring_table` API reference](/core/pydoc/code/deephaven.html#deephaven.ring_table)
 - [`time_table` API reference](/core/pydoc/code/deephaven.html#deephaven.time_table)
-
-> [!NOTE]
-> These FAQ pages contain answers to questions about Deephaven Community Core that our users have asked in our [Community Slack](/slack). If you have a question that is not in our documentation, [join our Community](/slack) and we'll be happy to help!

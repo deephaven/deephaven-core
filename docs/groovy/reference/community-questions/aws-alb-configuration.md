@@ -58,6 +58,3 @@ When a proxy is present, `proxy.hint=true` tells Deephaven to disable HTTP/1.1 a
 
 - [Configure Deephaven to use another port](configure-dh-to-use-another-port.md)
 - [Why can't I read from S3?](aws-timeout.md)
-
-> [!NOTE]
-> These FAQ pages contain answers to questions about Deephaven Community Core that our users have asked in our [Community Slack](/slack). If you have a question that is not in our documentation, [join our Community](/slack) and we'll be happy to help!

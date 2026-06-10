@@ -8,6 +8,3 @@ Use special variables [`i` or `ii`](../query-language/variables/special-variable
 ```groovy skip-test
 result = source.update("ColShiftedUpOne = Col_[i - 1]", "ColShiftedDownOne = Col_[i + 1]]")
 ```
-
-> [!NOTE]
-> These FAQ pages contain answers to questions about Deephaven Community Core that our users have asked in our [Community Slack](/slack). If you have a question that is not in our documentation, [join our Community](/slack) and we'll be happy to help!

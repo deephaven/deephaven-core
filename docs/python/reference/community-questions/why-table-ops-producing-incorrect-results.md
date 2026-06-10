@@ -15,6 +15,3 @@ from deephaven import empty_table
 t = empty_table(10).update_view(["X = randomInt(0, 10)"])
 t2 = t.update(["Y = X + 1"])
 ```
-
-> [!NOTE]
-> These FAQ pages contain answers to questions about Deephaven Community Core that our users have asked in our [Community Slack](/slack). If you have a question that is not in our documentation, [join our Community](/slack) and we'll be happy to help!

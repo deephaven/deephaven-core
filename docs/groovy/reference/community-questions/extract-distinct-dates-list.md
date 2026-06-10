@@ -26,6 +26,3 @@ distinctDates = source.selectDistinct("Date")
 The `distinctDates` table now contains only the unique dates from the original table. You can view this table in the Deephaven IDE or use it in further table operations.
 
 This approach works for any column type, not just dates. Use `selectDistinct` to get unique values from any column in your table.
-
-> [!NOTE]
-> These FAQ pages contain answers to questions about Deephaven Community Core that our users have asked in our [Community Slack](/slack). If you have a question that is not in our documentation, [join our Community](/slack) and we'll be happy to help!

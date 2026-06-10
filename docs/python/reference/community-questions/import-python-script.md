@@ -127,6 +127,3 @@ Start the server using `docker compose up`, and the script import will work as e
 The data directory for pip-installed Deephaven can be appended to the `PYTHONPATH` environment variable before starting the server. This requires setting the environment variable _before_ starting the Python console and the Deephaven server. That information is given when the server is started.
 
 ![A user sets the environment variable, then starts the Python console and a Deephaven server](../../assets/reference/community-questions/import-script-pip-2.gif)
-
-> [!NOTE]
-> These FAQ pages contain answers to questions about Deephaven Community Core that our users have asked in our [Community Slack](/slack). If you have a question that is not in our documentation, [join our Community](/slack) and we'll be happy to help!

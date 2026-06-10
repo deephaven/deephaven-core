@@ -34,6 +34,3 @@ The following Docker command modifies the one-liner in our [quickstart](../../ge
 ```sh
 docker run --rm --name deephaven -p 10000:10000 --env START_OPTS=-Dauthentication.psk=YOUR_PASSWORD_HERE -Duser.timezone="America/New_York" ghcr.io/deephaven/server:latest
 ```
-
-> [!NOTE]
-> These FAQ pages contain answers to questions about Deephaven Community Core that our users have asked in our [Community Slack](/slack). If you have a question that is not in our documentation, [join our Community](/slack) and we'll be happy to help!

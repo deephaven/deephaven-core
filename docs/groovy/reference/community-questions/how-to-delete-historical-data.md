@@ -108,6 +108,3 @@ To work with specific partitions:
 - [Table types](../../conceptual/table-types.md)
 - [Create and use ring tables](../../how-to-guides/ring-table.md)
 - [Create and use partitioned tables](../../how-to-guides/partitioned-tables.md)
-
-> [!NOTE]
-> These FAQ pages contain answers to questions about Deephaven Community Core that our users have asked in our [Community Slack](/slack). If you have a question that is not in our documentation, [join our Community](/slack) and we'll be happy to help!

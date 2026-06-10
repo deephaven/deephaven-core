@@ -42,6 +42,3 @@ from deephaven_server import Server
 
 s = Server(port=10000, jvm_args=["-Xmx4g", "-Duser.timezone='America/New_York'"])
 ```
-
-> [!NOTE]
-> These FAQ pages contain answers to questions about Deephaven Community Core that our users have asked in our [Community Slack](/slack). If you have a question that is not in our documentation, [join our Community](/slack) and we'll be happy to help!

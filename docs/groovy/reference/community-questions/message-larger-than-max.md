@@ -28,6 +28,3 @@ def clientConfig = ClientConfig.builder()
     .maxInboundMessageSize(200 * 1024 * 1024) // Increases limit from 100MB to 200MB
     .build()
 ```
-
-> [!NOTE]
-> These FAQ pages contain answers to questions about Deephaven Community Core that our users have asked in our [Community Slack](/slack). If you have a question that is not in our documentation, [join our Community](/slack) and we'll be happy to help!

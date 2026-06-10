@@ -34,6 +34,3 @@ Or as a JVM argument:
 ```bash
 docker run --rm --env START_OPTS="-DQueryTable.memoizeResults=false" ghcr.io/deephaven/server:latest
 ```
-
-> [!NOTE]
-> These FAQ pages contain answers to questions about Deephaven Community Core that our users have asked in our [Community Slack](/slack). If you have a question that is not in our documentation, [join our Community](/slack) and we'll be happy to help!

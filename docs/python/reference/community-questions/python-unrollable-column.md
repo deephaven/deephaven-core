@@ -25,6 +25,3 @@ t2 = t1.update("Offsets=offsets")
 t3 = t2.ungroup()
 t4 = t2.ungroup("Offsets")
 ```
-
-> [!NOTE]
-> These FAQ pages contain answers to questions about Deephaven Community Core that our users have asked in our [Community Slack](/slack). If you have a question that is not in our documentation, [join our Community](/slack) and we'll be happy to help!

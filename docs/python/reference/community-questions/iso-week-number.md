@@ -49,6 +49,3 @@ This means that:
 - The first few days of January might be part of week 52 or 53 of the previous year.
 
 For example, January 1, 2024 is in ISO week 1 of 2024, but December 31, 2023 is in ISO week 52 of 2023.
-
-> [!NOTE]
-> These FAQ pages contain answers to questions about Deephaven Community Core that our users have asked in our [Community Slack](/slack). If you have a question that is not in our documentation, [join our Community](/slack) and we'll be happy to help!

@@ -43,6 +43,3 @@ This principle is true for operations outside of date-time libraries as well. Fo
 
 - [Time in Deephaven](../../conceptual/time-in-deephaven.md)
 - [The Python-Java boundary](../../conceptual/python-java-boundary.md)
-
-> [!NOTE]
-> These FAQ pages contain answers to questions about Deephaven Community Core that our users have asked in our [Community Slack](/slack). If you have a question that is not in our documentation, [join our Community](/slack) and we'll be happy to help!

@@ -40,6 +40,3 @@ This is the recommended approach because:
 - It handles date validation automatically through [`parseLocalDate`](https://docs.deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#parseLocalDate(java.lang.String)).
 - It follows Deephaven best practices by using built-in parsing functions.
 - The resulting [`LocalDate`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/time/LocalDate.html) objects work seamlessly with other time-based functions.
-
-> [!NOTE]
-> These FAQ pages contain answers to questions about Deephaven Community Core that our users have asked in our [Community Slack](/slack). If you have a question that is not in our documentation, [join our Community](/slack) and we'll be happy to help!

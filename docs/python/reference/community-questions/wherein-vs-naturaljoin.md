@@ -11,6 +11,3 @@ Generally, it's best to use [`where_in`](../table-operations/filter/where-in.md)
 Traders or firms often have a fairly stable set of symbols in which they have a position. Using a [`where_in`](../table-operations/filter/where-in.md) clause to filter other tables to those positions is generally efficient. The query doesn't have to maintain excess state for the rare cases where valid symbols change. However, full table scans are required when the positions _do_ change.
 
 On the other hand, the set of open order IDs changes frequently. In this case, filtering a table by open order ID using [`where_in`](../table-operations/filter/where-in.md) would require frequent scans. A [`natural_join`](../table-operations/join/natural-join.md) would require more in-memory state, but would be able to compute the results more incrementally.
-
-> [!NOTE]
-> These FAQ pages contain answers to questions about Deephaven Community Core that our users have asked in our [Community Slack](/slack). If you have a question that is not in our documentation, [join our Community](/slack) and we'll be happy to help!
