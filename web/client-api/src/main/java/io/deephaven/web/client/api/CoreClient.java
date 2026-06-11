@@ -243,7 +243,7 @@ public class CoreClient extends HasEventHandling {
     }
 
     /**
-     * Returns the underlying {@link IdeConnection}.
+     * Returns a promise that resolves to the underlying {@link IdeConnection}.
      */
     public Promise<IdeConnection> getAsIdeConnection() {
         return Promise.resolve(ideConnection);

@@ -24,25 +24,16 @@ public class JsWorkerHeapInfo {
         this.totalHeapSize = Long.parseLong(heapInfo.getTotalMemory());
     }
 
-    /**
-     * Maximum heap size available to this worker.
-     */
     @JsProperty
     public double getMaximumHeapSize() {
         return maximumHeapSize;
     }
 
-    /**
-     * Free heap memory available to this worker.
-     */
     @JsProperty
     public double getFreeMemory() {
         return freeMemory;
     }
 
-    /**
-     * Total heap size available for this worker.
-     */
     @JsProperty
     public double getTotalHeapSize() {
         return totalHeapSize;

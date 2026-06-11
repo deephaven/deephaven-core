@@ -24,17 +24,11 @@ public class Event<T> {
         this.detail = detail;
     }
 
-    /**
-     * Returns the event type.
-     */
     @JsProperty
     public String getType() {
         return type;
     }
 
-    /**
-     * Returns the event detail.
-     */
     @JsProperty
     public T getDetail() {
         return detail;

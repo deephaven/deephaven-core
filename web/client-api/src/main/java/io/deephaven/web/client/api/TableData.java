@@ -65,9 +65,6 @@ public interface TableData {
     @JsProperty
     JsArray<Column> getColumns();
 
-    /**
-     * A lazily computed array of all rows available on the client.
-     */
     @JsProperty
     JsArray<@TsTypeRef(Row.class) ? extends Row> getRows();
 
