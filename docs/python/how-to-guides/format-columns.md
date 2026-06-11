@@ -44,7 +44,7 @@ students_gpa_format = students.format_columns(["GPA=VIVID_YELLOW"])
 
 The [`format_column_where`](../reference/table-operations/format/format-column-where.md) method applies conditional color formatting to a single column. The following example formats the `TestGrade` column when the `GPA` is below 3.0:
 
-```python test-set=1
+```python test-set=1 order=students_format
 students_format = students.format_column_where("TestGrade", "GPA<3.0", "DEEP_GREEN")
 ```
 
@@ -52,7 +52,7 @@ students_format = students.format_column_where("TestGrade", "GPA<3.0", "DEEP_GRE
 
 The [`format_row_where`](../reference/table-operations/format/format-row-where.md) method applies conditional color formatting to entire rows. For example, the code below highlights rows where the student's name is "Jane":
 
-```python test-set=1
+```python test-set=1 order=student_name
 student_name = students.format_row_where("Name=`Jane`", "BRIGHT_YELLOW")
 ```
 
@@ -69,7 +69,7 @@ You can assign colors in Deephaven tables or plots using several different metho
 There are hundreds of predefined color values available in Deephaven. See the [Named Colors Chart](../assets/how-to/colors.pdf) for all of them. These predefined colors are referred to by their names, which must be typed in capital letters (e.g., `VIVID_YELLOW`, `BRIGHT_GREEN`).
 
 > [!NOTE]
-> The `NO_FORMATTING` predefined value indicates that no special format should be applied. This is useful in advanced formats defined with `.format_columns`.
+> The `NO_FORMATTING` predefined value indicates that no special format should be applied. This is useful in advanced formats defined with [`format_columns`](../reference/table-operations/format/format-columns.md).
 
 #### HEX (Hexadecimal)
 
@@ -77,7 +77,7 @@ Hexadecimal values are specified with three pairs of values that correspond to r
 
 Because these values are considered strings, they must be enclosed in quotes. If the HEX color values are to be used within another string (i.e., a string within a string), the name must be enclosed in backticks.
 
-```python test-set=1
+```python test-set=1 order=students_hex
 # Using HEX color - light sky blue (#87CEFA)
 students_hex = students.format_columns("Name = `#87CEFA`")
 ```
@@ -88,7 +88,7 @@ Note: HEX values must be enclosed in backticks when used within a string.
 
 You can specify RGB and RGBA colors using the `colorRGB` method:
 
-```python test-set=1
+```python test-set=1 order=students_rgb
 # RGB color (integers 0-255) - light sky blue
 students_rgb = students.format_columns("Name = colorRGB(135, 206, 250)")
 ```
@@ -105,7 +105,7 @@ The syntax follows:
 
 `colorRGB(float r, float g, float b, float a)`
 
-```python test-set=1
+```python test-set=1 order=students_rgba
 students_rgba = students.format_columns("Name = colorRGB(135, 206, 250, 50)")
 ```
 
@@ -203,7 +203,7 @@ Basic conditional formatting often involves applying a single rule to a column o
 
 You can use more complex conditions, like formatting every other row:
 
-```python test-set=1
+```python test-set=1 order=student_id
 student_id = students.format_row_where("StudentID % 2 == 0", "VIVID_PURPLE")
 ```
 
@@ -211,7 +211,7 @@ student_id = students.format_row_where("StudentID % 2 == 0", "VIVID_PURPLE")
 
 Row and column formatting can be combined in a single table. When both are applied, column formatting takes precedence over row formatting where they overlap:
 
-```python test-set=1
+```python test-set=1 order=students_combined
 students_combined = students.format_row_where(
     "StudentID % 2 == 0", "VIVID_PURPLE"
 ).format_column_where("Name", "GPA > 3.0", "BRIGHT_YELLOW")
@@ -229,7 +229,7 @@ Since `format_columns` leverages Deephaven's formula infrastructure, you have ac
 
 The [format_columns](../reference/table-operations/format/format-columns.md) method supports [ternary expressions](./ternary-if-how-to.md) for more complex conditional formatting:
 
-```python test-set=1
+```python test-set=1 order=student_tests
 student_tests = students.update("Diff = HomeworkGrade - TestGrade").format_columns(
     "Name = (Diff > 0) ? BRIGHT_GREEN : BRIGHT_RED"
 )
@@ -237,7 +237,7 @@ student_tests = students.update("Diff = HomeworkGrade - TestGrade").format_colum
 
 You can apply more sophisticated conditional formatting with multiple conditions. For example, this code colors the `Name` column based on multiple criteria:
 
-```python test-set=1
+```python test-set=1 order=students_cond
 students_cond = students.format_columns(
     "Name = TestGrade <= 85 || HomeworkGrade <= 85 ? BRIGHT_YELLOW : GPA < 3 ? LIGHT_RED : NO_FORMATTING"
 )
@@ -265,7 +265,7 @@ Where:
 
 For example, this creates a heat map for GPA values ranging from 1.0 to 4.0:
 
-```python test-set=1
+```python test-set=1 order=students_heat
 students_heat = students.format_columns(
     "GPA = heatmap(GPA, 1, 4, BRIGHT_GREEN, BRIGHT_RED)"
 )
@@ -275,13 +275,13 @@ students_heat = students.format_columns(
 - When the value is greater than or equal to 4.00, `BRIGHT_RED` will be used.
 - An automatically interpolated color proportionally between `BRIGHT_GREEN` and `BRIGHT_RED` will be used for all other values between 1 and 4.
 
-You can also create foreground heat maps with `heatmapFg()` or `heatmapForeground()` to color the text instead of the background.
+You can also create foreground heat maps with `heatmapFg` or `heatmapForeground` to color the text instead of the background.
 
 ### Advanced row formatting
 
 The special column name `__ROWFORMATTED` allows you to format entire rows based on conditions. This is particularly useful for creating banded tables or highlighting specific data patterns:
 
-```python test-set=1
+```python test-set=1 order=students_row_format
 students_row_format = students.format_columns(
     "__ROWFORMATTED = GPA >= 3.5 ? bg(LIGHT_GREEN) : GPA >= 3 ? bg(LIGHT_BLUE) : bg(BRIGHT_YELLOW)"
 )
@@ -302,3 +302,5 @@ This creates a table with:
 - [Python functions in query strings](./python-functions.md)
 - [Python classes in query strings](./python-classes.md)
 - [`format_columns`](../reference/table-operations/format/format-columns.md)
+- [`format_column_where`](../reference/table-operations/format/format-column-where.md)
+- [`format_row_where`](../reference/table-operations/format/format-row-where.md)

@@ -15,6 +15,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.DataIndex;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.impl.dataindex.DataIndexPushdownManager;
+import io.deephaven.engine.table.impl.sort.SortedColumnPushdownManager;
 import io.deephaven.engine.table.impl.filter.ExtractBarriers;
 import io.deephaven.engine.table.impl.filter.ExtractRespectedBarriers;
 import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
@@ -35,6 +36,8 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static io.deephaven.engine.table.impl.PushdownResult.UNSUPPORTED_ACTION_COST;
 
 /**
  * The AbstractFilterExecution incorporates the idea that we have an added and modified RowSet to filter and that there
@@ -210,7 +213,7 @@ abstract class AbstractFilterExecution {
         /**
          * The cost of the pushdown filter operation.
          */
-        public long pushdownFilterCost = Long.MAX_VALUE;
+        public long pushdownFilterCost = UNSUPPORTED_ACTION_COST;
         /**
          * The result of the pushdown filter operation, or null if pushdown is not supported.
          */
@@ -250,12 +253,13 @@ abstract class AbstractFilterExecution {
 
         /**
          * Schedules pushdown filter cost estimation for {@link #pushdownMatcher}. After {@link #pushdownFilterCost} has
-         * been set (or set to {@link Long#MAX_VALUE} if pushdown is not supported), {@code onComplete} will be called.
+         * been set (or set to {@link PushdownResult#UNSUPPORTED_ACTION_COST} if pushdown is not supported),
+         * {@code onComplete} will be called.
          */
         public void scheduleUpdatePushdownFilterCost(final RowSet selection, final Runnable onComplete,
                 final Consumer<Exception> onError) {
             if (pushdownMatcher == null) {
-                pushdownFilterCost = Long.MAX_VALUE;
+                pushdownFilterCost = UNSUPPORTED_ACTION_COST;
                 onComplete.run();
                 return;
             }
@@ -443,7 +447,7 @@ abstract class AbstractFilterExecution {
         };
 
         final RowSet input = localInput.get();
-        if (sf.pushdownMatcher != null && sf.pushdownFilterCost < Long.MAX_VALUE) {
+        if (sf.pushdownMatcher != null && sf.pushdownFilterCost != UNSUPPORTED_ACTION_COST) {
             // Execute the pushdown filter and return.
             sf.pushdownMatcher.pushdownFilter(sf.filter, input, usePrev, sf.context,
                     costCeiling, jobScheduler(), onPushdownComplete, filterNec);
@@ -506,11 +510,10 @@ abstract class AbstractFilterExecution {
 
                     PushdownFilterMatcher executor =
                             PushdownFilterMatcher.getPushdownFilterMatcher(filter, filterSources);
-                    // Potentially wrap the executor to add DataIndex support.
-                    final DataIndex dataIndex = filterDataIndexMap.get(filter);
-                    if (dataIndex != null) {
-                        executor = DataIndexPushdownManager.wrap(dataIndex, executor);
-                    }
+                    // Wrap the executor to add DataIndex support (if applicable).
+                    executor = DataIndexPushdownManager.wrap(filterDataIndexMap.get(filter), executor);
+                    // Wrap the executor to add SortedColumn support (if applicable)
+                    executor = SortedColumnPushdownManager.wrap(sourceTable, filter, filterSources, executor);
                     if (executor != null) {
                         final PushdownFilterContext context = executor.makePushdownFilterContext(filter, filterSources);
                         statelessFilters[ii] = new StatelessFilter(ii, filter, executor, context, barrierDependencies);

@@ -132,13 +132,12 @@ public class BarrageUtil {
             Configuration.getInstance().getDoubleForClassWithDefault(BarrageUtil.class,
                     "targetSnapshotPercentage", 0.25);
 
-    // TODO (deephaven-core#188): drop this default to 50k once the jsapi can handle many batches
     public static final long MIN_SNAPSHOT_CELL_COUNT =
             Configuration.getInstance().getLongForClassWithDefault(BarrageUtil.class,
-                    "minSnapshotCellCount", Long.MAX_VALUE);
+                    "minSnapshotCellCount", 1L << 13);
     public static final long MAX_SNAPSHOT_CELL_COUNT =
             Configuration.getInstance().getLongForClassWithDefault(BarrageUtil.class,
-                    "maxSnapshotCellCount", Long.MAX_VALUE);
+                    "maxSnapshotCellCount", 1L << 24);
 
     /**
      * Note that arrow's wire format states that Timestamps without timezones are not UTC -- that they are no timezone
@@ -1276,6 +1275,8 @@ public class BarrageUtil {
                         return NANO_DURATION_TYPE;
                     }
                     if (type == Period.class) {
+                        // TODO: DH-22159: Period support with Flight/barrage. (MONTH_DAY_NANO is probably a better
+                        // choice; captures full precision of Period.)
                         return new ArrowType.Interval(IntervalUnit.YEAR_MONTH);
                     }
                     if (type == PeriodDuration.class) {
@@ -1394,20 +1395,7 @@ public class BarrageUtil {
                     }
 
                     if (!msg.rowsIncluded.isEmpty()) {
-                        // very simplistic logic to take the last snapshot and extrapolate max
-                        // number of rows that will not exceed the target UGP processing time
-                        // percentage
-                        final long targetCycleDurationMillis;
-                        final UpdateGraph updateGraph = table.getUpdateGraph();
-                        if (updateGraph == null || updateGraph instanceof PoisonedUpdateGraph) {
-                            targetCycleDurationMillis = PeriodicUpdateGraph.getDefaultTargetCycleDurationMillis();
-                        } else {
-                            targetCycleDurationMillis = updateGraph.<PeriodicUpdateGraph>cast()
-                                    .getTargetCycleDurationMillis();
-                        }
-                        long targetNanos = (long) (TARGET_SNAPSHOT_PERCENTAGE
-                                * targetCycleDurationMillis
-                                * 1000000);
+                        final long targetNanos = targetSnapshotTime(table.getUpdateGraph());
 
                         long nanosPerCell = elapsed / (msg.rowsIncluded.size() * columnCount);
 
@@ -1428,6 +1416,24 @@ public class BarrageUtil {
         }
     }
 
+    /**
+     * Very simplistic logic to take the last snapshot and extrapolate max number of rows that will not exceed the
+     * target update graph processing time percentage.
+     * 
+     * @param updateGraph the update graph for the table
+     * @return the target snapshot time, in nanos
+     */
+    public static long targetSnapshotTime(final UpdateGraph updateGraph) {
+        long targetCycleDurationMillis;
+        if (updateGraph instanceof PeriodicUpdateGraph) {
+            final PeriodicUpdateGraph periodicUpdateGraph = updateGraph.cast();
+            targetCycleDurationMillis = periodicUpdateGraph.getTargetCycleDurationMillis();
+        } else {
+            targetCycleDurationMillis = PeriodicUpdateGraph.getDefaultTargetCycleDurationMillis();
+        }
+        return (long) (TARGET_SNAPSHOT_PERCENTAGE * targetCycleDurationMillis * 1000000);
+    }
+
     public static void createAndSendSnapshot(
             BarrageMessageWriter.Factory bwmFactory,
             BaseTable<?> table,
@@ -1444,12 +1450,30 @@ public class BarrageUtil {
             return;
         }
 
+        final Map<String, org.apache.arrow.flatbuf.Field> fieldFor;
+        if (table.hasAttribute(Table.BARRAGE_SCHEMA_ATTRIBUTE)) {
+            fieldFor = new HashMap<>();
+            // Extract the target schema from the table attributes
+            final Schema targetSchema = (Schema) table.getAttribute(Table.BARRAGE_SCHEMA_ATTRIBUTE);
+            // noinspection DataFlowIssue
+            // Iterate over each field, serialize it to a FlatBuffer, and store it in the map
+            targetSchema.getFields().forEach(f -> {
+                final FlatBufferBuilder fbb = new FlatBufferBuilder();
+                final int offset = f.getField(fbb);
+                fbb.finish(offset);
+                fieldFor.put(f.getName(), org.apache.arrow.flatbuf.Field.getRootAsField(fbb.dataBuffer()));
+            });
+        } else {
+            // No custom schema provided, keep the map null to rely on default field generation
+            fieldFor = null;
+        }
+
         // noinspection unchecked
         final ChunkWriter<Chunk<Values>>[] chunkWriters = table.getDefinition().getColumns().stream()
                 .map(cd -> DefaultChunkWriterFactory.INSTANCE.newWriter(BarrageTypeInfo.make(
                         ReinterpretUtils.maybeConvertToPrimitiveDataType(cd.getDataType()),
                         cd.getComponentType(),
-                        flatbufFieldFor(cd, Map.of()))))
+                        fieldFor != null ? fieldFor.get(cd.getName()) : flatbufFieldFor(cd, Map.of()))))
                 .toArray(ChunkWriter[]::new);
 
         // otherwise snapshot the entire request and send to the client

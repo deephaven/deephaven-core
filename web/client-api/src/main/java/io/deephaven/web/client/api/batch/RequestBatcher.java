@@ -5,10 +5,10 @@ package io.deephaven.web.client.api.batch;
 
 import elemental2.promise.Promise;
 import elemental2.promise.Promise.PromiseExecutorCallbackFn.RejectCallbackFn;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.ticket_pb.Ticket;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.BatchTableRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.ExportedTableCreationResponse;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.TableReference;
+import io.deephaven.proto.backplane.grpc.BatchTableRequest;
+import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
+import io.deephaven.proto.backplane.grpc.TableReference;
+import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.web.client.api.*;
 import io.deephaven.web.client.api.barrage.stream.ResponseStreamWrapper;
 import io.deephaven.web.client.api.batch.BatchBuilder.BatchOp;
@@ -59,9 +59,7 @@ public class RequestBatcher {
 
     public BatchTableRequest buildRequest() {
         createOps();
-        final BatchTableRequest request = new BatchTableRequest();
-        request.setOpsList(builder.serializable());
-        return request;
+        return BatchTableRequest.newBuilder().addAllOps(builder.serializable()).build();
     }
 
     public Promise<JsTable> nestedPromise(JsTable table) {
@@ -201,7 +199,7 @@ public class RequestBatcher {
             }
             onSend.clear();
             sent = true;
-            if (request.getOpsList().length == 0) {
+            if (request.getOpsList().isEmpty()) {
                 // Since this is an empty request, there are no "interested" tables as we normally would define them,
                 // so we can only operate on the root table object
                 // No server call needed - we need to examine the "before" state and fire events based on that.
@@ -239,11 +237,11 @@ public class RequestBatcher {
             final ClientTableState source = operationHead.getAppendTo();
             assert source != null : "A non-empty request must have a source state!";
 
-            JsLog.debug("Sending request", LazyString.of(request), request, " based on ", this);
+            JsLog.debug("Sending request based on ", this);
 
 
             ResponseStreamWrapper<ExportedTableCreationResponse> batchStream =
-                    ResponseStreamWrapper.of(connection.tableServiceClient().batch(request, connection.metadata()));
+                    ResponseStreamWrapper.of(observer -> connection.tableServiceClient().batch(request, observer));
             batchStream.onData(response -> {
                 TableReference resultid = response.getResultId();
                 if (!resultid.hasTicket()) {
@@ -256,7 +254,7 @@ public class RequestBatcher {
 
                     // any table which has that state active should fire a failed event
                     ClientTableState state = allStates().filter(
-                            cts -> cts.getHandle().makeTicket().getTicket_asB64().equals(ticket.getTicket_asB64()))
+                            cts -> cts.getHandle().makeTicket().equals(ticket))
                             .first();
 
                     if (state.isEmpty()) {
@@ -279,7 +277,7 @@ public class RequestBatcher {
 
                 // find the state that applies to this ticket
                 ClientTableState state = allStates()
-                        .filter(cts -> cts.getHandle().makeTicket().getTicket_asB64().equals(ticket.getTicket_asB64()))
+                        .filter(cts -> cts.getHandle().makeTicket().equals(ticket))
                         .first();
 
                 if (state.isEmpty()) {
@@ -330,7 +328,7 @@ public class RequestBatcher {
                 if (status.isOk()) {
                     resolve.onInvoke((Void) null);
                 } else {
-                    failed(reject, status.getDetails());
+                    failed(reject, status.getDescription());
                 }
 
                 // Tell anybody who was orphaned to check if they should release their subscriptions / handles

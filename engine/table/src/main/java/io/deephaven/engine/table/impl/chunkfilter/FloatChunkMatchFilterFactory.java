@@ -4,8 +4,9 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.chunkfilter;
 
-import gnu.trove.set.hash.TFloatHashSet;
-import gnu.trove.set.hash.TIntHashSet;
+import it.unimi.dsi.fastutil.floats.FloatOpenHashSet;
+import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
+import it.unimi.dsi.fastutil.ints.IntSet;
 import io.deephaven.engine.table.MatchOptions;
 
 /**
@@ -161,11 +162,35 @@ public class FloatChunkMatchFilterFactory {
         }
     }
 
+    // A FloatOpenHashSet that canonicalizes -0.0f to +0.0f; NaN values are silently skipped (not added).
+    private static final class FloatZeroCanonicalOpenHashSet {
+        final FloatOpenHashSet wrapped;
+
+        FloatZeroCanonicalOpenHashSet(float... values) {
+            wrapped = new FloatOpenHashSet(values.length);
+            for (final float v : values) {
+                add(v);
+            }
+        }
+
+        private static float canonicalize(final float k) {
+            return k == 0.0f ? 0.0f : k;
+        }
+
+        public boolean add(final float k) {
+            return !Float.isNaN(k) && wrapped.add(canonicalize(k));
+        }
+
+        public boolean contains(final float k) {
+            return !Float.isNaN(k) && wrapped.contains(canonicalize(k));
+        }
+    }
+
     private final static class MultiValueFloatChunkFilter extends FloatChunkFilter {
-        private final TFloatHashSet values;
+        private final FloatZeroCanonicalOpenHashSet values;
 
         private MultiValueFloatChunkFilter(float... values) {
-            this.values = new TFloatHashSet(values);
+            this.values = new FloatZeroCanonicalOpenHashSet(values);
         }
 
         @Override
@@ -175,10 +200,10 @@ public class FloatChunkMatchFilterFactory {
     }
 
     private final static class InverseMultiValueFloatChunkFilter extends FloatChunkFilter {
-        private final TFloatHashSet values;
+        private final FloatZeroCanonicalOpenHashSet values;
 
         private InverseMultiValueFloatChunkFilter(float... values) {
-            this.values = new TFloatHashSet(values);
+            this.values = new FloatZeroCanonicalOpenHashSet(values);
         }
 
         @Override
@@ -188,16 +213,12 @@ public class FloatChunkMatchFilterFactory {
     }
 
     /**
-     * Handle -0.0 vs. 0.0 correctly in value comparison. This leverages the fact that the library conversion
-     * to bits returns different values for 0.0 and -0.0 but the same value for NaN.
+     * Gets the canonicalized bit pattern for the given value. Specifically, ensures that any NaN values have the bit
+     * pattern of {@link Float#NaN}, and -0.0 has the bit pattern of 0.0.
      */
     // region getBits
-    private static final Float NEG_ZERO = -0.0F;
     public static int getBits(float value) {
-        if (NEG_ZERO.equals(value)) {
-            return Float.floatToIntBits(0.0f);
-        }
-        return Float.floatToIntBits(value);
+        return Float.floatToIntBits(value == 0.0f ? 0.0f : value);
     }
     // endregion getBits
 
@@ -290,16 +311,16 @@ public class FloatChunkMatchFilterFactory {
 
         @Override
         public boolean matches(float value) {
-            final int valueBits = Float.floatToIntBits(value);
+            final int valueBits = getBits(value);
             return valueBits != valueBits1 && valueBits != valueBits2 && valueBits != valueBits3;
         }
     }
 
     private final static class MultiValueNaNFloatChunkFilter extends FloatChunkFilter {
-        private final TIntHashSet values;
+        private final IntSet values;
 
         private MultiValueNaNFloatChunkFilter(float... values) {
-            this.values = new TIntHashSet(values.length);
+            this.values = new IntOpenHashSet(values.length);
             for (float v : values) {
                 this.values.add(getBits(v));
             }
@@ -313,10 +334,10 @@ public class FloatChunkMatchFilterFactory {
     }
 
     private final static class InverseMultiValueNaNFloatChunkFilter extends FloatChunkFilter {
-        private final TIntHashSet values;
+        private final IntSet values;
 
         private InverseMultiValueNaNFloatChunkFilter(float... values) {
-            this.values = new TIntHashSet(values.length);
+            this.values = new IntOpenHashSet(values.length);
             for (float v : values) {
                 this.values.add(getBits(v));
             }

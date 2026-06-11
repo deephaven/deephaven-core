@@ -61,7 +61,7 @@ Currently, the R client is only supported on Ubuntu 20.04 or 22.04 and must be b
    Independently of R itself, install the OS packages required for building vignettes: `libxml2-dev` and `pandoc`
    ```
    # required during the build for vignettes
-   $ sudo apt -y install libxml2-dev pandoc 
+   $ sudo apt -y install libxml2-dev libuv1-dev pandoc
    ```
 
 1. Build the Deephaven C++ client (and dependencies) according to the instructions in the

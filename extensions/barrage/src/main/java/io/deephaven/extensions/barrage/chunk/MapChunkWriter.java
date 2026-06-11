@@ -184,7 +184,7 @@ public class MapChunkWriter<T>
                 valueColumn = valueWriter.getInputStream(context.valueContext, null, options);
             } else {
                 // note that we maintain dense offsets within the writer, but write per the wire format
-                myOffsets = WritableIntChunk.makeWritableChunk(context.size() + 1);
+                myOffsets = WritableIntChunk.makeWritableChunk(subset.intSize() + 1);
                 myOffsets.setSize(0);
                 myOffsets.add(0);
 

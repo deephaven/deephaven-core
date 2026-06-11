@@ -25,8 +25,8 @@ public interface JoinableTable {
     Promise<JsTable> freeze();
 
     @JsMethod
-    Promise<JsTable> snapshot(JsTable baseTable, @JsOptional Boolean doInitialSnapshot,
-            @JsOptional String[] stampColumns);
+    Promise<JsTable> snapshot(JsTable baseTable, @JsOptional @JsNullable Boolean doInitialSnapshot,
+            @JsOptional @JsNullable String[] stampColumns);
 
     /**
      * Joins this table to the provided table, using one of the specified join types:

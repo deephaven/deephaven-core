@@ -392,7 +392,8 @@ final class MinMaxFromStatistics {
             @NotNull final Consumer<String> maxSetter) {
         final PrimitiveType parquetColType = statistics.type();
         final LogicalTypeAnnotation logicalType = parquetColType.getLogicalTypeAnnotation();
-        if (logicalType instanceof LogicalTypeAnnotation.StringLogicalTypeAnnotation) {
+        if (logicalType instanceof LogicalTypeAnnotation.StringLogicalTypeAnnotation
+                || logicalType instanceof LogicalTypeAnnotation.EnumLogicalTypeAnnotation) {
             verifyPrimitive(statistics, PrimitiveType.PrimitiveTypeName.BINARY);
             final String minString = statistics.minAsString();
             final String maxString = statistics.maxAsString();

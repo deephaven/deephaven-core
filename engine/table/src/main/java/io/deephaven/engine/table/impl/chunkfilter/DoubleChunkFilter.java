@@ -64,4 +64,3 @@ public abstract class DoubleChunkFilter implements ChunkFilter {
         return count;
     }
 }
-

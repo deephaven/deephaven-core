@@ -23,6 +23,12 @@ public class WhereFilterInvertedImpl extends WhereFilterDelegatingBase {
         super(filter);
     }
 
+    @Override
+    public WhereFilter maybeUnwrapFilter() {
+        // This filter inverts the results of the wrapped filter so we can't unwrap.
+        return this;
+    }
+
     @NotNull
     @Override
     public WritableRowSet filter(
@@ -45,11 +51,6 @@ public class WhereFilterInvertedImpl extends WhereFilterDelegatingBase {
     @Override
     public String toString() {
         return "not(" + filter + ")";
-    }
-
-    @VisibleForTesting
-    WhereFilter filter() {
-        return filter;
     }
 
     @Override

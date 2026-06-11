@@ -40,7 +40,8 @@ public class MappedSchemaTest {
                 .optionalElement(PrimitiveTypeName.INT32)
                 .as(LogicalTypeAnnotation.intType(32))
                 .named(FOO);
-        assertThat(type(ColumnDefinition.fromGenericType(FOO, int[].class, int.class))).isEqualTo(expected);
+        assertThat(type(ColumnDefinition.of(FOO, io.deephaven.qst.type.Type.intType().arrayType())))
+                .isEqualTo(expected);
     }
 
     @Test
@@ -49,7 +50,8 @@ public class MappedSchemaTest {
                 .optionalElement(PrimitiveTypeName.BINARY)
                 .as(LogicalTypeAnnotation.stringType())
                 .named(FOO);
-        assertThat(type(ColumnDefinition.fromGenericType(FOO, String[].class, String.class))).isEqualTo(expected);
+        assertThat(type(ColumnDefinition.of(FOO, io.deephaven.qst.type.Type.stringType().arrayType())))
+                .isEqualTo(expected);
     }
 
     private static Type type(ColumnDefinition<?> columnDefinition) {

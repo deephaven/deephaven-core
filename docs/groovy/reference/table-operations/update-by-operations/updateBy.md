@@ -69,7 +69,7 @@ One or more key columns that group rows of the table.
 
 ## Returns
 
-A new table with rolling window operations applied the the specified column(s).
+A new table with rolling window operations applied to the specified column(s).
 
 ## Examples
 
@@ -97,7 +97,7 @@ source = emptyTable(10).update("Letter = (i % 2 == 0) ? `A` : `B`", "X = i", "Y 
 result = source.updateBy(CumSum("SumX = X", "SumY = Y"), "Letter")
 ```
 
-The following example modifies the previous example by perfoerming two separate `UpdateByoperations`. The first uses [`CumSum`](./cum-sum.md) on the `X` column like the previous example, but instead performs a tick-based rolling sum on the `Y` column with [`RollingSum`](./rolling-sum.md).
+The following example modifies the previous example by performing two separate `UpdateByOperations`. The first uses [`CumSum`](./cum-sum.md) on the `X` column like the previous example, but instead performs a tick-based rolling sum on the `Y` column with [`RollingSum`](./rolling-sum.md).
 
 ```groovy order=source,result
 source = emptyTable(10).update("Letter = (i % 2 == 0) ? `A` : `B`", "X = i", "Y = randomInt(0, 10)")
@@ -119,5 +119,4 @@ result = source.updateBy([CumSum("SumX = X"), RollingSum(2, 1, "RollingSumY = Y"
 - [How to create an empty table](../../../how-to-guides/new-and-empty-table.md#emptytable)
 - [Ternary conditional operator](../../../how-to-guides/ternary-if-how-to.md)
 - [`update`](../select/update.md)
-- [`updateBy`](./updateBy.md)
 - [Javadoc](https://deephaven.io/core/javadoc/io/deephaven/api/TableOperations.html#updateBy(java.util.Collection))
