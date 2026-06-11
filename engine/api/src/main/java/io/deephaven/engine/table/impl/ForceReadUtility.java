@@ -204,6 +204,7 @@ public abstract class ForceReadUtility {
             }
             try (final RowSequence.Iterator it = rowSet.getRowSequenceIterator()) {
                 while (it.hasMore()) {
+                    sharedContext.reset();
                     final RowSequence rs = it.getNextRowSequenceWithLength(readSize);
                     for (int i = 0; i < columnSourcesLen; i++) {
                         columnSources[columnSourcesIx + i].getChunk(contexts[i], rs);
