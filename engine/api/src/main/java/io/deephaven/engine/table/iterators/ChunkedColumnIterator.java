@@ -146,13 +146,6 @@ public abstract class ChunkedColumnIterator<DATA_TYPE, CHUNK_TYPE extends Chunk<
     }
 
     @Override
-    public final void consumeAll() {
-        while (hasNext()) {
-            maybeAdvance();
-        }
-    }
-
-    @Override
     public final void close() {
         // @formatter:off
         try (final SafeCloseable ignored1 = getContext;

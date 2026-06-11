@@ -50,11 +50,4 @@ public final class SerialDoubleColumnIterator
     public double nextDouble() {
         return columnSource.getDouble(advanceAndGetNextRowKey());
     }
-
-    @Override
-    public void consumeAll() {
-        while (hasNext()) {
-            nextDouble();
-        }
-    }
 }

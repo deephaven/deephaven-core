@@ -7,19 +7,11 @@ import io.deephaven.api.*;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.Pair;
 import io.deephaven.engine.liveness.LivenessNode;
+import io.deephaven.engine.primitive.iterator.*;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.hierarchical.RollupTable;
 import io.deephaven.engine.table.hierarchical.TreeTable;
 import io.deephaven.api.util.ConcurrentMethod;
-import io.deephaven.engine.table.iterators.ByteColumnIterator;
-import io.deephaven.engine.table.iterators.CharacterColumnIterator;
-import io.deephaven.engine.table.iterators.ColumnIterator;
-import io.deephaven.engine.table.iterators.DoubleColumnIterator;
-import io.deephaven.engine.table.iterators.FloatColumnIterator;
-import io.deephaven.engine.table.iterators.IntegerColumnIterator;
-import io.deephaven.engine.table.iterators.LongColumnIterator;
-import io.deephaven.engine.table.iterators.ObjectColumnIterator;
-import io.deephaven.engine.table.iterators.ShortColumnIterator;
 import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.util.systemicmarking.SystemicObject;
@@ -322,25 +314,25 @@ public interface Table extends
     // Column Iterators
     // -----------------------------------------------------------------------------------------------------------------
 
-    <DATA_TYPE> ColumnIterator<DATA_TYPE> columnIterator(@NotNull String columnName);
+    <DATA_TYPE> CloseableIterator<DATA_TYPE> columnIterator(@NotNull String columnName);
 
-    CharacterColumnIterator characterColumnIterator(@NotNull String columnName);
+    CloseablePrimitiveIteratorOfChar characterColumnIterator(@NotNull String columnName);
 
-    ByteColumnIterator byteColumnIterator(@NotNull String columnName);
+    CloseablePrimitiveIteratorOfByte byteColumnIterator(@NotNull String columnName);
 
-    ShortColumnIterator shortColumnIterator(@NotNull String columnName);
+    CloseablePrimitiveIteratorOfShort shortColumnIterator(@NotNull String columnName);
 
-    IntegerColumnIterator integerColumnIterator(@NotNull String columnName);
+    CloseablePrimitiveIteratorOfInt integerColumnIterator(@NotNull String columnName);
 
-    LongColumnIterator longColumnIterator(@NotNull String columnName);
+    CloseablePrimitiveIteratorOfLong longColumnIterator(@NotNull String columnName);
 
-    FloatColumnIterator floatColumnIterator(@NotNull String columnName);
+    CloseablePrimitiveIteratorOfFloat floatColumnIterator(@NotNull String columnName);
 
-    DoubleColumnIterator doubleColumnIterator(@NotNull String columnName);
+    CloseablePrimitiveIteratorOfDouble doubleColumnIterator(@NotNull String columnName);
 
-    <DATA_TYPE> ObjectColumnIterator<DATA_TYPE> objectColumnIterator(@NotNull String columnName);
+    <DATA_TYPE> CloseableIterator<DATA_TYPE> objectColumnIterator(@NotNull String columnName);
 
-    <DATA_TYPE> ObjectColumnIterator<DATA_TYPE> objectColumnIterator(@NotNull String columnName,
+    <DATA_TYPE> CloseableIterator<DATA_TYPE> objectColumnIterator(@NotNull String columnName,
             @NotNull Class<? extends DATA_TYPE> clazz);
 
     // -----------------------------------------------------------------------------------------------------------------

@@ -50,11 +50,4 @@ public final class SerialIntegerColumnIterator
     public int nextInt() {
         return columnSource.getInt(advanceAndGetNextRowKey());
     }
-
-    @Override
-    public void consumeAll() {
-        while (hasNext()) {
-            nextInt();
-        }
-    }
 }

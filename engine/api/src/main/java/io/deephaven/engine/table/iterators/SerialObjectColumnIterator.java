@@ -46,11 +46,4 @@ public final class SerialObjectColumnIterator<DATA_TYPE>
     public DATA_TYPE next() {
         return columnSource.get(advanceAndGetNextRowKey());
     }
-
-    @Override
-    public void consumeAll() {
-        while (hasNext()) {
-            next();
-        }
-    }
 }

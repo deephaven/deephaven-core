@@ -46,11 +46,4 @@ public final class SerialCharacterColumnIterator
     public char nextChar() {
         return columnSource.getChar(advanceAndGetNextRowKey());
     }
-
-    @Override
-    public void consumeAll() {
-        while (hasNext()) {
-            nextChar();
-        }
-    }
 }
