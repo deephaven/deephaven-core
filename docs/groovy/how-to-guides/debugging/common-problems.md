@@ -35,7 +35,7 @@ file_0=./debug-demo.groovy
 
 `debug-demo.groovy`:
 
-```groovy
+```groovy test-set=1 order=null
 addOne = { long x -> x + 1 }
 
 t = emptyTable(10).update("X = ii")
@@ -71,7 +71,7 @@ docker compose logs -f
 
 Update `debug-demo.groovy` to add trace output:
 
-```groovy
+```groovy test-set=1 order=null
 addOne = { long x ->
     println "[DEBUG] addOne called: x=$x"
     def result = x + 1
@@ -94,7 +94,7 @@ Some Deephaven table operations — including [`updateView`](../../reference/tab
 
 The `debug-demo.groovy` script creates both kinds of tables:
 
-```groovy
+```groovy test-set=1 order=null
 tLazy = t.updateView("Y = addOne(X)")    // addOne is NOT called here
 tEager = t.select("X", "Y = addOne(X)") // addOne IS called here, once per row
 ```
