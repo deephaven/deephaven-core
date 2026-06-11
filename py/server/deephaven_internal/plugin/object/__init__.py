@@ -2,7 +2,7 @@
 # Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 #
 
-from typing import TYPE_CHECKING, Any, Optional, cast
+from typing import TYPE_CHECKING, Any, Literal, Optional, cast
 
 import jpy
 from deephaven.plugin.object_type import (
@@ -94,14 +94,21 @@ class ObjectTypeAdapter:
     def is_fetch_only(self) -> bool:
         return isinstance(self._user_object_type, FetchOnlyObjectType)
 
-    def authorization_export_behavior(self) -> str:
-        # Optional opt-in/opt-out declaration; read via getattr so plugins that predate this attribute (or use an
-        # older deephaven-plugin package) continue to work. May be a string ("transform"/"manual"/"unset") or a
-        # callable returning one.  Unknown values result in an error.
+    def authorization_export_behavior(self) -> Literal["transform", "manual", "unset"]:
+        # Read via getattr so plugins that predate this method (or use an older deephaven-plugin package that does not
+        # yet declare it on ObjectType) continue to work with the default "unset" behavior. Once deephaven-plugin
+        # adds authorization_export_behavior() to ObjectType with a default of "unset", the getattr fallback becomes
+        # a no-op for up-to-date installs while remaining safe for older ones.
         behavior = getattr(self._user_object_type, "authorization_export_behavior", "unset")
         if callable(behavior):
             behavior = behavior()
-        return str(behavior).lower() if behavior is not None else "unset"
+        result = str(behavior).lower() if behavior is not None else "unset"
+        if result not in ("transform", "manual", "unset"):
+            raise ValueError(
+                f"ObjectType '{self._user_object_type}' returned invalid authorization_export_behavior "
+                f"'{result}'; must be 'transform', 'manual', or 'unset'"
+            )
+        return result  # type: ignore[return-value]
 
     def to_bytes(self, exporter: JExporterAdapter, obj: Any) -> bytes:
         return self._user_object_type.to_bytes(  # type: ignore
