@@ -102,7 +102,7 @@ For debugging logic in your own Groovy scripts, use `println` statements. Output
 
 Here is an example that traces calls through a function:
 
-```groovy
+```groovy order=null
 addOne = { long x ->
     println "[DEBUG] addOne called: x=$x"
     def result = x + 1
