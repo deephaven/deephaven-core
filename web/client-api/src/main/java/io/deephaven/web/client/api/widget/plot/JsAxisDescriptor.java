@@ -87,7 +87,7 @@ public class JsAxisDescriptor {
     public double minRange = Double.NaN;
 
     /**
-     * The maximum value for the axis range, or {@link Double#NaN} to use the default.
+     * The maximum value for the axis range, or {@link elemental2.core.JsNumber#NaN} to use the default.
      */
     @JsNullable
     public double maxRange = Double.NaN;
