@@ -12,6 +12,7 @@ import io.deephaven.proto.backplane.grpc.ConfigValue;
 import io.deephaven.proto.backplane.grpc.ConfigurationConstantsRequest;
 import io.deephaven.proto.backplane.grpc.ConfigurationConstantsResponse;
 import io.deephaven.web.client.api.event.HasEventHandling;
+import io.deephaven.web.client.api.remotefilesource.JsRemoteFileSourceService;
 import io.deephaven.web.client.api.storage.JsStorageService;
 import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.client.fu.LazyPromise;
@@ -55,6 +56,7 @@ public class CoreClient extends HasEventHandling {
             LOGIN_TYPE_ANONYMOUS = "anonymous";
 
     private final IdeConnection ideConnection;
+    private Promise<JsRemoteFileSourceService> remoteFileSourceServicePromise;
 
     public CoreClient(String serverUrl,
             @TsTypeRef(ConnectOptions.class) @JsOptional @JsNullable Object connectOptions) {
@@ -148,6 +150,14 @@ public class CoreClient extends HasEventHandling {
      */
     public Promise<Void> onConnected(@JsOptional @JsNullable Double timeoutInMillis) {
         return ideConnection.onConnected();
+    }
+
+    public Promise<JsRemoteFileSourceService> getRemoteFileSourceService() {
+        if (remoteFileSourceServicePromise == null) {
+            remoteFileSourceServicePromise = JsRemoteFileSourceService.fetchPlugin(ideConnection.connection.get());
+        }
+
+        return remoteFileSourceServicePromise;
     }
 
     public Promise<String[][]> getServerConfigValues() {
