@@ -3,14 +3,14 @@
 //
 package io.deephaven.kafka.ingest;
 
-import gnu.trove.map.TObjectIntMap;
-import gnu.trove.map.hash.TObjectIntHashMap;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.WritableChunk;
+import it.unimi.dsi.fastutil.objects.Object2IntMap;
+import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 
 import java.util.List;
 import java.util.Map;
@@ -22,15 +22,17 @@ public class MultiFieldChunkAdapter implements KeyOrValueProcessor {
             final TableDefinition definition,
             final Map<String, String> fieldNamesToColumnNames) {
         final String[] columnNames = definition.getColumnNamesArray();
-        final TObjectIntMap<String> deephavenColumnNameToIndex = new TObjectIntHashMap<>(columnNames.length, 0.5f, -1);
+        final Object2IntMap<String> deephavenColumnNameToIndex =
+                new Object2IntOpenHashMap<>(columnNames.length, 0.5f);
+        deephavenColumnNameToIndex.defaultReturnValue(-1);
         for (int ii = 0; ii < columnNames.length; ++ii) {
             deephavenColumnNameToIndex.put(columnNames[ii], ii);
         }
         final int[] chunkOffsets = new int[fieldNamesToColumnNames.size()];
         int col = 0;
         for (String columnName : fieldNamesToColumnNames.values()) {
-            final int deephavenColumnIndex = deephavenColumnNameToIndex.get(columnName);
-            if (deephavenColumnIndex == deephavenColumnNameToIndex.getNoEntryValue()) {
+            final int deephavenColumnIndex = deephavenColumnNameToIndex.getInt(columnName);
+            if (deephavenColumnIndex == deephavenColumnNameToIndex.defaultReturnValue()) {
                 throw new IllegalArgumentException("Column not found in Deephaven table: " + deephavenColumnIndex);
             }
             chunkOffsets[col++] = deephavenColumnIndex;
@@ -54,7 +56,9 @@ public class MultiFieldChunkAdapter implements KeyOrValueProcessor {
         final String[] columnNames = definition.getColumnNamesArray();
         final List<ColumnDefinition<?>> columns = definition.getColumns();
 
-        final TObjectIntMap<String> deephavenColumnNameToIndex = new TObjectIntHashMap<>(columnNames.length, 0.5f, -1);
+        final Object2IntMap<String> deephavenColumnNameToIndex =
+                new Object2IntOpenHashMap<>(columnNames.length, 0.5f);
+        deephavenColumnNameToIndex.defaultReturnValue(-1);
         for (int ii = 0; ii < columnNames.length; ++ii) {
             deephavenColumnNameToIndex.put(columnNames[ii], ii);
         }
@@ -65,8 +69,8 @@ public class MultiFieldChunkAdapter implements KeyOrValueProcessor {
         int col = 0;
         for (Map.Entry<String, String> fieldToColumn : fieldNamesToColumnNames.entrySet()) {
             final String columnName = fieldToColumn.getValue();
-            final int deephavenColumnIndex = deephavenColumnNameToIndex.get(columnName);
-            if (deephavenColumnIndex == deephavenColumnNameToIndex.getNoEntryValue()) {
+            final int deephavenColumnIndex = deephavenColumnNameToIndex.getInt(columnName);
+            if (deephavenColumnIndex == deephavenColumnNameToIndex.defaultReturnValue()) {
                 throw new IllegalArgumentException("Column not found in Deephaven table: " + deephavenColumnIndex);
             }
 

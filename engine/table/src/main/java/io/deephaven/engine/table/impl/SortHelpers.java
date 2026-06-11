@@ -31,6 +31,8 @@ import io.deephaven.engine.table.impl.sources.regioned.SymbolTableSource;
 import io.deephaven.engine.table.impl.util.ContiguousWritableRowRedirection;
 import io.deephaven.engine.table.impl.util.GroupedWritableRowRedirection;
 import io.deephaven.engine.table.impl.util.LongColumnSourceWritableRowRedirection;
+import io.deephaven.engine.table.impl.util.RowRedirection;
+import io.deephaven.engine.table.impl.util.StaticWrappedRowSetRowRedirection;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import io.deephaven.engine.table.iterators.ChunkedColumnIterator;
 import io.deephaven.util.QueryConstants;
@@ -43,6 +45,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Comparator;
 import java.util.Map;
 import java.util.function.LongPredicate;
+import java.util.stream.IntStream;
 
 import static io.deephaven.engine.table.impl.SortHelpers.AllowSymbolTable.ALLOW_SYMBOL_TABLE;
 
@@ -108,7 +111,7 @@ public class SortHelpers {
 
         boolean forEachLong(LongPredicate consumer);
 
-        WritableRowRedirection makeHistoricalRowRedirection();
+        RowRedirection makeHistoricalRowRedirection();
     }
 
     final static class ArraySortMapping implements SortMapping {
@@ -255,22 +258,105 @@ public class SortHelpers {
         return true;
     }
 
+    private static boolean isSkippableConstantSortColumn(
+            final ColumnSource<Comparable<?>> columnSource,
+            final boolean comparatorRespectsEquality) {
+        return comparatorRespectsEquality && columnSource instanceof RowKeyAgnosticChunkSource;
+    }
+
+    /**
+     * SortMapping that emits the input RowSet's row keys in their natural order without allocating an array up front.
+     * Used when every sort column is row-key agnostic, so the sort is a no-op.
+     */
+    final static class IdentitySortMapping implements SortMapping {
+        private final RowSet rowSet;
+
+        private IdentitySortMapping(@NotNull final RowSet rowSet) {
+            this.rowSet = rowSet;
+        }
+
+        @Override
+        public long size() {
+            return rowSet.size();
+        }
+
+        @Override
+        @NotNull
+        public long[] getArrayMapping() {
+            if (rowSet.size() > (long) Integer.MAX_VALUE) {
+                throw new ArrayIndexOutOfBoundsException();
+            }
+            final long[] mapping = new long[rowSet.intSize()];
+            rowSet.fillRowKeyChunk(WritableLongChunk.writableChunkWrap(mapping));
+            return mapping;
+        }
+
+        @Override
+        public boolean forEachLong(LongPredicate consumer) {
+            return rowSet.forEachRowKey(consumer::test);
+        }
+
+        @Override
+        public RowRedirection makeHistoricalRowRedirection() {
+            return new StaticWrappedRowSetRowRedirection(rowSet);
+        }
+    }
+
     /**
      * Note that if usePrev is true, then rowSetToSort is the previous RowSet; not the current RowSet, and we should not
      * need to call prev().
      */
     static SortMapping getSortedKeys(
-            final SortingOrder[] order,
-            final ColumnSource<Comparable<?>>[] originalColumnsToSortBy,
-            final ColumnSource<Comparable<?>>[] columnsToSortBy,
-            final Comparator[] comparators,
-            final boolean[] comparatorsRespectEquality,
+            SortingOrder[] order,
+            ColumnSource<Comparable<?>>[] originalColumnsToSortBy,
+            ColumnSource<Comparable<?>>[] columnsToSortBy,
+            Comparator[] comparators,
+            boolean[] comparatorsRespectEquality,
             final DataIndex dataIndex,
             final RowSet rowSetToSort,
             final boolean usePrev,
             final AllowSymbolTable allowSymbolTable) {
         if (rowSetToSort.isEmpty()) {
             return EMPTY_SORT_MAPPING;
+        }
+
+        // Drop sort columns whose source is row-key agnostic: every row holds the same value, so the column cannot
+        // disambiguate any pair of rows. We can only skip when the comparator respects equality - a comparator with
+        // respectsEquality=false may still rely on the column's sort pass for tie-handling order.
+        final ColumnSource<Comparable<?>>[] columnsToSortByForFilter = columnsToSortBy;
+        final boolean[] comparatorsRespectEqualityForFilter = comparatorsRespectEquality;
+        final int survivors = (int) IntStream.range(0, columnsToSortBy.length)
+                .filter(ii -> !isSkippableConstantSortColumn(
+                        columnsToSortByForFilter[ii], comparatorsRespectEqualityForFilter[ii]))
+                .count();
+        if (survivors == 0) {
+            return new IdentitySortMapping(rowSetToSort);
+        }
+        if (survivors < columnsToSortBy.length) {
+            final SortingOrder[] newOrder = new SortingOrder[survivors];
+            // noinspection unchecked
+            final ColumnSource<Comparable<?>>[] newOriginalColumnsToSortBy = new ColumnSource[survivors];
+            // noinspection unchecked
+            final ColumnSource<Comparable<?>>[] newColumnsToSortBy = new ColumnSource[survivors];
+            final Comparator[] newComparators = new Comparator[survivors];
+            final boolean[] newComparatorsRespectEquality = new boolean[survivors];
+            int dst = 0;
+            for (int ii = 0; ii < columnsToSortBy.length; ++ii) {
+                if (isSkippableConstantSortColumn(columnsToSortBy[ii], comparatorsRespectEquality[ii])) {
+                    continue;
+                }
+                newOrder[dst] = order[ii];
+                newOriginalColumnsToSortBy[dst] = originalColumnsToSortBy[ii];
+                newColumnsToSortBy[dst] = columnsToSortBy[ii];
+                newComparators[dst] = comparators[ii];
+                newComparatorsRespectEquality[dst] = comparatorsRespectEquality[ii];
+                ++dst;
+            }
+            order = newOrder;
+            originalColumnsToSortBy = newOriginalColumnsToSortBy;
+            columnsToSortBy = newColumnsToSortBy;
+            comparators = newComparators;
+            comparatorsRespectEquality = newComparatorsRespectEquality;
         }
 
         // Don't use a full index if it is too large.

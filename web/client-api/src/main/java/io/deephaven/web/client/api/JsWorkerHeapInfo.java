@@ -5,20 +5,20 @@ package io.deephaven.web.client.api;
 
 import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.GetHeapInfoResponse;
+import io.deephaven.proto.backplane.script.grpc.GetHeapInfoResponse;
 import jsinterop.annotations.JsProperty;
 
 @TsInterface
 @TsName(name = "WorkerHeapInfo", namespace = "dh")
 public class JsWorkerHeapInfo {
-    private long maximumHeapSize;
-    private long freeMemory;
-    private long totalHeapSize;
+    private final long maximumHeapSize;
+    private final long freeMemory;
+    private final long totalHeapSize;
 
     public JsWorkerHeapInfo(GetHeapInfoResponse heapInfo) {
-        this.maximumHeapSize = Long.parseLong(heapInfo.getMaxMemory());
-        this.freeMemory = Long.parseLong(heapInfo.getFreeMemory());
-        this.totalHeapSize = Long.parseLong(heapInfo.getTotalMemory());
+        this.maximumHeapSize = heapInfo.getMaxMemory();
+        this.freeMemory = heapInfo.getFreeMemory();
+        this.totalHeapSize = heapInfo.getTotalMemory();
     }
 
     @JsProperty

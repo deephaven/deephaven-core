@@ -4,36 +4,31 @@
 package io.deephaven.web.client.ide;
 
 import com.vertispan.tsdefs.annotations.TsTypeRef;
-import elemental2.core.JsArray;
 import elemental2.promise.Promise;
-import io.deephaven.javascript.proto.dhinternal.browserheaders.BrowserHeaders;
-import io.deephaven.javascript.proto.dhinternal.grpcweb.Grpc;
-import io.deephaven.javascript.proto.dhinternal.grpcweb.grpc.Code;
-import io.deephaven.javascript.proto.dhinternal.grpcweb.grpc.Transport;
-import io.deephaven.javascript.proto.dhinternal.grpcweb.transports.transport.TransportOptions;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.session_pb.TerminationNotificationResponse;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.session_pb.terminationnotificationresponse.StackTrace;
+import io.deephaven.proto.backplane.grpc.TerminationNotificationResponse;
 import io.deephaven.web.client.api.ConnectOptions;
 import io.deephaven.web.client.api.JsTable;
 import io.deephaven.web.client.api.QueryConnectable;
 import io.deephaven.web.client.api.ServerObject;
 import io.deephaven.web.client.api.WorkerConnection;
-import io.deephaven.web.client.api.barrage.stream.ResponseStreamWrapper;
 import io.deephaven.web.client.api.console.JsVariableChanges;
 import io.deephaven.web.client.api.console.JsVariableDescriptor;
 import io.deephaven.web.client.api.console.JsVariableType;
-import io.deephaven.web.client.api.grpc.GrpcTransport;
-import io.deephaven.web.client.api.grpc.GrpcTransportFactory;
-import io.deephaven.web.client.api.grpc.GrpcTransportOptions;
+import io.deephaven.web.client.api.grpc.FetchTransport;
 import io.deephaven.web.client.api.grpc.MultiplexedWebsocketTransport;
 import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.shared.data.ConnectToken;
 import io.deephaven.web.shared.fu.JsConsumer;
 import io.deephaven.web.shared.fu.JsRunnable;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsOptional;
+import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsType;
 import jsinterop.base.JsPropertyMap;
+
+import java.util.List;
 
 import static io.deephaven.web.client.api.QueryInfoConstants.EVENT_TABLE_OPENED;
 
@@ -76,19 +71,7 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
             if (options.useWebsockets == Boolean.TRUE || !serverUrl.startsWith("https:")) {
                 options.transportFactory = new MultiplexedWebsocketTransport.Factory();
             } else {
-                options.transportFactory = new GrpcTransportFactory() {
-                    @Override
-                    public GrpcTransport create(GrpcTransportOptions options) {
-                        return GrpcTransport
-                                .from((Transport) Grpc.FetchReadableStreamTransport.onInvoke(new Object())
-                                        .onInvoke((TransportOptions) options));
-                    }
-
-                    @Override
-                    public boolean getSupportsClientStreaming() {
-                        return false;
-                    }
-                };
+                options.transportFactory = new FetchTransport.Factory();
             }
         }
     }
@@ -148,7 +131,7 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
      * @deprecated Added to resolve a specific issue, in the future preview will be applied as part of the subscription.
      */
     @Deprecated
-    public Promise<JsTable> getTable(String name, @JsOptional Boolean applyPreviewColumns) {
+    public Promise<JsTable> getTable(String name, @JsOptional @JsNullable Boolean applyPreviewColumns) {
         if (applyPreviewColumns == Boolean.FALSE) {
             JsLog.warn(
                     "getTable is deprecated, please use getObject instead. The applyPreviewColumns parameter no longer applies, the new APIs to access data from the resulting Table should be used instead.");
@@ -231,9 +214,9 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
                 retval = new StringBuilder("Server exited abnormally.");
             }
 
-            final JsArray<StackTrace> traces = success.getStackTracesList();
-            for (int ii = 0; ii < traces.length; ++ii) {
-                final StackTrace trace = traces.getAt(ii);
+            final List<TerminationNotificationResponse.StackTrace> traces = success.getStackTracesList();
+            for (int ii = 0; ii < traces.size(); ++ii) {
+                final TerminationNotificationResponse.StackTrace trace = traces.get(ii);
                 retval.append("\n\n");
                 if (ii != 0) {
                     retval.append("Caused By: ").append(trace.getType()).append(": ").append(trace.getMessage());
@@ -241,9 +224,9 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
                     retval.append(trace.getType()).append(": ").append(trace.getMessage());
                 }
 
-                final JsArray<String> elements = trace.getElementsList();
-                for (int jj = 0; jj < elements.length; ++jj) {
-                    retval.append("\n").append(elements.getAt(jj));
+                final List<String> elements = trace.getElementsList();
+                for (int jj = 0; jj < elements.size(); ++jj) {
+                    retval.append("\n").append(elements.get(jj));
                 }
             }
 
@@ -254,26 +237,11 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
         fireEvent(EVENT_SHUTDOWN, details);
 
         // fire deprecated event
-        notifyConnectionError(new ResponseStreamWrapper.Status() {
-            @Override
-            public int getCode() {
-                return Code.Unavailable;
-            }
-
-            @Override
-            public String getDetails() {
-                return details;
-            }
-
-            @Override
-            public BrowserHeaders getMetadata() {
-                return new BrowserHeaders(); // nothing to offer
-            }
-        });
+        notifyConnectionError(new StatusRuntimeException(Status.UNAVAILABLE.withDescription(details)));
     }
 
     public Promise<JsTable> newTable(String[] columnNames, String[] types, String[][] data, String userTimeZone) {
-        return connection.get().newTable(columnNames, types, data, userTimeZone, this).then(table -> {
+        return connection.get().newTable(columnNames, types, data, userTimeZone).then(table -> {
             fireEvent(EVENT_TABLE_OPENED, table);
 
             return Promise.resolve(table);

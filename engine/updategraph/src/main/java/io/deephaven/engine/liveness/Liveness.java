@@ -22,9 +22,6 @@ public final class Liveness {
 
     public static final Logger log = LoggerFactory.getLogger(Liveness.class);
 
-    static final boolean REFERENCE_TRACKING_DISABLED =
-            Configuration.getInstance().getBooleanWithDefault("Liveness.referenceTrackingDisabled", false);
-
     public static final boolean DEBUG_MODE_ENABLED =
             Configuration.getInstance().getBooleanWithDefault("Liveness.debugModeEnabled", false);
 

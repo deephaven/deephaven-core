@@ -1,8 +1,24 @@
 <module>
     <inherits name="io.deephaven.chunk.Chunk" />
+    <inherits name="io.deephaven.engine.rowset.RowSet" />
+    <inherits name="io.deephaven.engine.table.impl.util.BarrageMessage" />
     <inherits name="io.deephaven.engine.primitive.function.Function" />
     <inherits name="io.grpc.Grpc" />
-    <source path="" includes="BarrageOptions.java,BarrageSnapshotOptions.java,BarrageSubscriptionOptions.java,BarrageTypeInfo.java,ColumnConversionMode.java,ImmutableBarrageSnapshotOptions.java,ImmutableBarrageSubscriptionOptions.java,DrainableByteArrayInputStream.java" />
+    <inherits name="io.deephaven.proto.flight.util.FlightUtils" />
+    <source path="">
+        <include name="BarrageOptions.java" />
+        <include name="BarrageSnapshotOptions.java" />
+        <include name="BarrageSubscriptionOptions.java" />
+        <include name="BarrageTypeInfo.java" />
+        <include name="ColumnConversionMode.java" />
+        <include name="ImmutableBarrageSnapshotOptions.java" />
+        <include name="ImmutableBarrageSubscriptionOptions.java" />
+        <include name="DrainableByteArrayInputStream.java" />
+        <include name="BarrageMessageWriter.java" />
+        <include name="BarrageMessageWriterImpl.java" />
+        <include name="ColumnChunksWriter.java" />
+        <include name="ConsecutiveDrainableStreams.java" />
+    </source>
     <source path="util" includes="Float16.java,FlatBufferIteratorAdapter.java,DefensiveDrainable.java,DefensiveCapture.java,ExposedByteArrayOutputStream.java" />
     <source path="chunk">
         <exclude name="vector/*" />

@@ -16,33 +16,9 @@ import jsinterop.base.JsPropertyMap;
  */
 @JsType(name = "AxisDescriptor", namespace = "dh.plot")
 public class JsAxisDescriptor {
-    // TODO (deephaven-core#3442) change to some kind of String+int union type
-
-    /**
-     * The axis format type.
-     *
-     * <p>
-     * This should be a value from {@link io.deephaven.web.client.api.widget.plot.enums.JsAxisFormatType}.
-     */
-    public String formatType;
-    // TODO (deephaven-core#3442) change to some kind of String+int union type
-
-    /**
-     * The axis type.
-     *
-     * <p>
-     * This should be a value from {@link io.deephaven.web.client.api.widget.plot.enums.JsAxisType}.
-     */
-    public String type;
-    // TODO (deephaven-core#3442) change to some kind of String+int union type
-
-    /**
-     * The axis position.
-     *
-     * <p>
-     * This should be a value from {@link io.deephaven.web.client.api.widget.plot.enums.JsAxisPosition}.
-     */
-    public String position;
+    public StringOrNumber formatType;
+    public StringOrNumber type;
+    public StringOrNumber position;
 
     /**
      * Whether to use logarithmic scaling.
@@ -158,9 +134,9 @@ public class JsAxisDescriptor {
     public JsAxisDescriptor(JsPropertyMap<Object> source) {
         this();
 
-        formatType = JsData.getRequiredStringProperty(source, "formatType");
-        type = JsData.getRequiredStringProperty(source, "type");
-        position = JsData.getRequiredStringProperty(source, "position");
+        formatType = JsData.getRequiredStringOrIntProperty(source, "formatType");
+        type = JsData.getRequiredStringOrIntProperty(source, "type");
+        position = JsData.getRequiredStringOrIntProperty(source, "position");
         log = JsData.getBooleanProperty(source, "log");
         label = JsData.getStringProperty(source, "label");
         labelFont = JsData.getStringProperty(source, "labelFont");

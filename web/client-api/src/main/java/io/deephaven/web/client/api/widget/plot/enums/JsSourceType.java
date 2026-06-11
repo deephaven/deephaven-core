@@ -4,7 +4,7 @@
 package io.deephaven.web.client.api.widget.plot.enums;
 
 import com.vertispan.tsdefs.annotations.TsTypeDef;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.FigureDescriptor;
+import io.deephaven.proto.backplane.script.grpc.FigureDescriptor;
 import jsinterop.annotations.JsType;
 
 /**
@@ -20,57 +20,57 @@ public class JsSourceType {
      * LINE, AREA, STACKED_LINE, STACKED_AREA, ERROR_BAR, HISTOGRAM, SCATTER, STEP. Also used in PIE, but only to
      * identify the correct axis.
      */
-    public static final int X = FigureDescriptor.SourceType.getX();
+    public static final int X = FigureDescriptor.SourceType.X.getNumber();
     /**
      * LINE, AREA, STACKED_LINE, STACKED_AREA, ERROR_BAR, HISTOGRAM, SCATTER, STEP. Also used in PIE, but only to
      * identify the correct axis.
      */
-    public static final int Y = FigureDescriptor.SourceType.getY();
+    public static final int Y = FigureDescriptor.SourceType.Y.getNumber();
     /**
      * STACKED_AREA, SCATTER
      */
-    public static final int Z = FigureDescriptor.SourceType.getZ();
+    public static final int Z = FigureDescriptor.SourceType.Z.getNumber();
     /**
      * ERROR_BAR, HISTOGRAM
      */
-    public static final int X_LOW = FigureDescriptor.SourceType.getX_LOW();
+    public static final int X_LOW = FigureDescriptor.SourceType.X_LOW.getNumber();
     /**
      * ERROR_BAR, HISTOGRAM
      */
-    public static final int X_HIGH = FigureDescriptor.SourceType.getX_HIGH();
+    public static final int X_HIGH = FigureDescriptor.SourceType.X_HIGH.getNumber();
     /**
      * ERROR_BAR, HISTOGRAM
      */
-    public static final int Y_LOW = FigureDescriptor.SourceType.getY_LOW();
+    public static final int Y_LOW = FigureDescriptor.SourceType.Y_LOW.getNumber();
     /**
      * ERROR_BAR, HISTOGRAM
      */
-    public static final int Y_HIGH = FigureDescriptor.SourceType.getY_HIGH();
+    public static final int Y_HIGH = FigureDescriptor.SourceType.Y_HIGH.getNumber();
     /**
      * OHLC
      */
-    public static final int TIME = FigureDescriptor.SourceType.getTIME();
+    public static final int TIME = FigureDescriptor.SourceType.TIME.getNumber();
     /**
      * OHLC
      */
-    public static final int OPEN = FigureDescriptor.SourceType.getOPEN();
+    public static final int OPEN = FigureDescriptor.SourceType.OPEN.getNumber();
     /**
      * OHLC
      */
-    public static final int HIGH = FigureDescriptor.SourceType.getHIGH();
+    public static final int HIGH = FigureDescriptor.SourceType.HIGH.getNumber();
     /**
      * OHLC
      */
-    public static final int LOW = FigureDescriptor.SourceType.getLOW();
+    public static final int LOW = FigureDescriptor.SourceType.LOW.getNumber();
     /**
      * OHLC
      */
-    public static final int CLOSE = FigureDescriptor.SourceType.getCLOSE();
-    public static final int SHAPE = FigureDescriptor.SourceType.getSHAPE();
-    public static final int SIZE = FigureDescriptor.SourceType.getSIZE();
-    public static final int LABEL = FigureDescriptor.SourceType.getLABEL();
-    public static final int COLOR = FigureDescriptor.SourceType.getCOLOR();
-    public static final int PARENT = FigureDescriptor.SourceType.getPARENT();
-    public static final int TEXT = FigureDescriptor.SourceType.getTEXT();
-    public static final int HOVER_TEXT = FigureDescriptor.SourceType.getHOVER_TEXT();
+    public static final int CLOSE = FigureDescriptor.SourceType.CLOSE.getNumber();
+    public static final int SHAPE = FigureDescriptor.SourceType.SHAPE.getNumber();
+    public static final int SIZE = FigureDescriptor.SourceType.SIZE.getNumber();
+    public static final int LABEL = FigureDescriptor.SourceType.LABEL.getNumber();
+    public static final int COLOR = FigureDescriptor.SourceType.COLOR.getNumber();
+    public static final int PARENT = FigureDescriptor.SourceType.PARENT.getNumber();
+    public static final int TEXT = FigureDescriptor.SourceType.TEXT.getNumber();
+    public static final int HOVER_TEXT = FigureDescriptor.SourceType.HOVER_TEXT.getNumber();
 }

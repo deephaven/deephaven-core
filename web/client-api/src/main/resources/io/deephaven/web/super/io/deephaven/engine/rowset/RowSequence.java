@@ -20,5 +20,31 @@ public interface RowSequence extends SafeCloseable, LongSizedDataStructure {
         });
     }
 
+    Iterator getRowSequenceIterator();
+
     void forAllRowKeyRanges(LongRangeConsumer lrc);
+
+    interface Iterator extends SafeCloseable {
+
+        boolean hasMore();
+
+        long peekNextKey();
+
+        RowSequence getNextRowSequenceThrough(long maxKeyInclusive);
+
+        RowSequence getNextRowSequenceWithLength(long numberOfKeys);
+
+        boolean advance(long nextKey);
+
+        default long advanceAndGetPositionDistance(final long nextKey) {
+            final long initialRelativePosition = getRelativePosition();
+            advance(nextKey);
+            return getRelativePosition() - initialRelativePosition;
+        }
+
+        default void close() {}
+
+        long getRelativePosition();
+    }
+
 }

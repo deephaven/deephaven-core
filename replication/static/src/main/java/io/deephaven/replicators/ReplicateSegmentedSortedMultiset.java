@@ -3,8 +3,11 @@
 //
 package io.deephaven.replicators;
 
-import gnu.trove.set.hash.THashSet;
 import io.deephaven.replication.ReplicationUtils;
+import it.unimi.dsi.fastutil.doubles.DoubleOpenCustomHashSet;
+import it.unimi.dsi.fastutil.doubles.DoubleOpenHashSet;
+import it.unimi.dsi.fastutil.floats.FloatOpenCustomHashSet;
+import it.unimi.dsi.fastutil.floats.FloatOpenHashSet;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
@@ -24,8 +27,32 @@ public class ReplicateSegmentedSortedMultiset {
     private static final String TASK = "replicateSegmentedSortedMultiset";
 
     public static void main(String[] args) throws IOException {
-        charToAllButBooleanAndLong(TASK,
+        // Replicate FloatCompareOpenHashSet -> DoubleCompareOpenHashSet
+        floatToAllFloatingPoints(TASK,
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/ssms/FloatCompareOpenHashSet.java");
+        final File doubleCompareHashSetFile = new File(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/ssms/DoubleCompareOpenHashSet.java");
+        List<String> doubleCompareLines = FileUtils.readLines(doubleCompareHashSetFile, Charset.defaultCharset());
+        doubleCompareLines = globalReplacements(doubleCompareLines,
+                "0\\.0f", "0.0d",
+                "0x7fc00000", "0x7ff8000000000000L",
+                // DoubleOpenHashSet's load-factor parameter is float, not double -- keep it float
+                "final int expected, final double f\\)", "final int expected, final float f)");
+        FileUtils.writeLines(doubleCompareHashSetFile, doubleCompareLines);
+
+        final List<String> generatedSsms = charToAllButBooleanAndLong(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/ssms/CharSegmentedSortedMultiset.java");
+
+        // Float/Double SSMs must use FloatComparisons / DoubleComparisons equality in their delta-tracking hash
+        // sets — otherwise -0.0 vs +0.0 (and any two NaN bit patterns) would be treated as distinct values, which
+        // disagrees with the SSM's own leaf-storage equality.
+        for (final String generated : generatedSsms) {
+            if (generated.contains("Float")) {
+                useCompareOpenHashSet(generated, "Float");
+            } else if (generated.contains("Double")) {
+                useCompareOpenHashSet(generated, "Double");
+            }
+        }
 
         insertInstantExtensions(charToLong(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/ssms/CharSegmentedSortedMultiset.java"));
@@ -34,7 +61,7 @@ public class ReplicateSegmentedSortedMultiset {
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/ssms/CharSegmentedSortedMultiset.java");
         fixupObjectSsm(objectSsm, ReplicateSegmentedSortedMultiset::fixupNulls,
                 ReplicateSegmentedSortedMultiset::fixupObjectGeneric,
-                ReplicateSegmentedSortedMultiset::fixupTHashes,
+                ReplicateSegmentedSortedMultiset::fixupObjectHashes,
                 ReplicateSegmentedSortedMultiset::fixupSsmConstructor,
                 ReplicateSegmentedSortedMultiset::fixupObjectCompare,
                 ReplicateSegmentedSortedMultiset::fixupKeyArrayAllocation);
@@ -98,6 +125,18 @@ public class ReplicateSegmentedSortedMultiset {
                 (l) -> replaceRegion(l, "CreateNew", Collections.singletonList(
                         "            underlying.set(key, ssm = new ObjectSegmentedSortedMultiset(SsmDistinctContext.NODE_SIZE, componentType));")));
 
+        final String compactModificationsPath =
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/compactmodifications/CharCompactModifications.java";
+        final List<String> compactModifications = charToAllButBoolean(TASK, compactModificationsPath);
+        for (final String compactModification : compactModifications) {
+            if (compactModification.contains("Float")) {
+                fixupFloatCompactModifications(compactModification, "Float");
+            } else if (compactModification.contains("Double")) {
+                fixupFloatCompactModifications(compactModification, "Double");
+            }
+        }
+        fixupObjectCompactModifications(charToObject(TASK, compactModificationsPath));
+
         charToAllButBoolean(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/count/CharChunkedCountDistinctOperator.java");
         fixupObjectKernelOperator(
@@ -150,10 +189,25 @@ public class ReplicateSegmentedSortedMultiset {
                 charToLong(TASK,
                         "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/unique/CharRollupUniqueOperator.java"),
                 "    externalResult = new LongAsInstantColumnSource(internalResult);");
-        fixupObjectKernelOperator(
+        fixupObjectRollupUniqueOperator(
                 charToObject(TASK,
-                        "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/unique/CharRollupUniqueOperator.java"),
-                "ssms");
+                        "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/unique/CharRollupUniqueOperator.java"));
+    }
+
+    /**
+     * Apply the standard object kernel-operator fixups to the rollup unique operator, then (1) supply the component
+     * type to the {@code singletonValue} {@code ObjectArraySource} (the only one constructed without it, since {@code
+     * internalResult}'s construction lives in the replaced ResultCreation region) and (2) null out a destination's
+     * former singleton value when it migrates into an SSM, so the object is not retained.
+     */
+    private static void fixupObjectRollupUniqueOperator(String objectPath) throws IOException {
+        fixupObjectKernelOperator(objectPath, "ssms");
+        final File objectFile = new File(objectPath);
+        List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
+        lines = globalReplacements(lines, "new ObjectArraySource\\(\\)", "new ObjectArraySource(type)");
+        lines = replaceRegion(lines, "clearSingletonValue",
+                indent(Collections.singletonList("singletonValue.set(destination, null);"), 8));
+        FileUtils.writeLines(objectFile, lines);
     }
 
     private static void updateFloatPercentileHelper(String file) throws IOException {
@@ -216,7 +270,9 @@ public class ReplicateSegmentedSortedMultiset {
         lines = replaceRegion(lines, "ResultCreation",
                 indent(Collections.singletonList("this.internalResult = new ObjectArraySource(type);"), 8));
         lines = globalReplacements(lines, "\\(WritableObjectChunk<\\? extends Values>\\)",
-                "(WritableObjectChunk<?, ? extends Values>)");
+                "(WritableObjectChunk<Object, ? extends Values>)");
+        // give the typed chunk locals (e.g. the cast-once valueCopy) the two-argument WritableObjectChunk form
+        lines = fixupChunkAttributes(lines);
 
         FileUtils.writeLines(objectFile, lines);
     }
@@ -249,15 +305,63 @@ public class ReplicateSegmentedSortedMultiset {
         return addImport(lines, Array.class);
     }
 
+    /**
+     * Swap the FloatOpenHashSet / DoubleOpenHashSet used by the delta-tracking hash sets in the generated Float and
+     * Double SSMs for our {@code }io.deephaven.engine.table.impl.ssms.FloatCompareOpenHashSet} /
+     * {@code io.deephaven.engine.table.impl.ssms.DoubleCompareOpenHashSet}, so signed-zero and NaN comparisons in the
+     * delta tracker line up with the SSM's leaf-storage equality (FloatComparisons / DoubleComparisons).
+     */
+    private static void useCompareOpenHashSet(final String generatedPath, final String typeName) throws IOException {
+        final File file = new File(generatedPath);
+        List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
+        lines = globalReplacements(lines,
+                "new " + typeName + "OpenHashSet\\(", "new " + typeName + "CompareOpenHashSet(",
+                typeName + "Set added", typeName + "CompareOpenHashSet added",
+                typeName + "Set removed", typeName + "CompareOpenHashSet removed");
+        lines = removeImport(lines, typeName.equals("Float") ? FloatOpenHashSet.class : DoubleOpenHashSet.class);
+        FileUtils.writeLines(file, lines);
+    }
+
     private static List<String> fixupNulls(List<String> lines) {
         lines = globalReplacements(lines, "NULL_OBJECT", "null");
         return removeImport(lines, "\\s*import static.*QueryConstants.*;");
     }
 
-    private static List<String> fixupTHashes(List<String> lines) {
-        lines = removeImport(lines, "\\s*import gnu.trove.*;");
-        lines = addImport(lines, THashSet.class);
-        return globalReplacements(lines, "TObjectHashSet", "THashSet");
+    private static void fixupFloatCompactModifications(String path, String typeOfFloat) throws IOException {
+        final File file = new File(path);
+        List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
+        lines = replaceRegion(lines, "maybeIgnoreNaN", Collections.singletonList("" +
+                "        if (!countNaN && " + typeOfFloat + ".isNaN(value)) {\n" +
+                "            return true;\n" +
+                "        }"));
+        FileUtils.writeLines(file, lines);
+    }
+
+    private static void fixupObjectCompactModifications(String path) throws IOException {
+        final File file = new File(path);
+        List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
+        lines = fixupChunkAttributes(lines, "T");
+        lines = globalReplacements(lines,
+                "public static void compactAndCountModifications",
+                "public static <T> void compactAndCountModifications",
+                "private static int countRun", "private static <T> int countRun",
+                "final Object removedValue", "final T removedValue",
+                "final Object addedValue", "final T addedValue",
+                "final Object value", "final T value");
+        lines = fixupNulls(lines);
+        FileUtils.writeLines(file, lines);
+    }
+
+    private static List<String> fixupObjectHashes(List<String> lines) {
+        // charToObject capitalizes the leading C in the package "chars" to "Objects"; fix back to "objects".
+        // Also fixes the leaky toCharArray API that doesn't exist on ObjectCollection.
+        return globalReplacements(lines,
+                "it\\.unimi\\.dsi\\.fastutil\\.Objects\\.", "it.unimi.dsi.fastutil.objects.",
+                "ObjectSet added", "ObjectSet<Object> added",
+                "ObjectSet removed", "ObjectSet<Object> removed",
+                "new ObjectOpenHashSet\\(", "new ObjectOpenHashSet<>(",
+                // ObjectCollection.toArray() returns Object[] already; the typed toCharArray() rename doesn't exist.
+                "\\.toObjectArray\\(", ".toArray(");
     }
 
     private static List<String> fixupSsmConstructor(List<String> lines) {
@@ -297,8 +401,10 @@ public class ReplicateSegmentedSortedMultiset {
 
     private static List<String> fixupObjectCompare(List<String> lines) {
         lines = removeRegion(lines, "VectorEquals");
+        // the primitive iterator is only used by the (now removed) primitive-vector equalsArray overload
+        lines = removeImport(lines, "\\s*import .*CloseablePrimitiveIteratorOfObject;");
         lines = replaceRegion(lines, "EqualsArrayTypeCheck", Collections.singletonList(
-                "        if(o.getComponentType() != o.getComponentType()) {\n" +
+                "        if(getComponentType() != o.getComponentType()) {\n" +
                         "            return false;\n" +
                         "        }"));
         lines = replaceRegion(lines, "DirObjectEquals",
@@ -306,6 +412,9 @@ public class ReplicateSegmentedSortedMultiset {
                         "                if(!Objects.equals(directoryValues[ii], that.directoryValues[ii])) {\n" +
                                 "                    return false;\n" +
                                 "                }"));
+        lines = replaceRegion(lines, "SingletonEquals",
+                Collections.singletonList(
+                        "            return Objects.equals(get(0), that.get(0));"));
         return replaceRegion(lines, "LeafObjectEquals",
                 Collections.singletonList(
                         "                if(!Objects.equals(leafValues[li][ai], that.leafValues[otherLeaf][otherLeafIdx++])) {\n"
@@ -359,7 +468,7 @@ public class ReplicateSegmentedSortedMultiset {
                         "        WritableObjectChunk<Instant, Values> writable = destChunk.asWritableObjectChunk();",
                         "        if (leafCount == 1) {",
                         "            for(int ii = 0; ii < size(); ii++) {",
-                        "                writable.set(ii, DateTimeUtils.epochNanosToInstant(directoryValues[ii]));",
+                        "                writable.set(ii, DateTimeUtils.epochNanosToInstant(directoryValues == null ? singletonValue : directoryValues[ii]));",
                         "            }",
                         "        } else if (leafCount > 0) {",
                         "            int offset = 0;",
@@ -396,7 +505,7 @@ public class ReplicateSegmentedSortedMultiset {
                         "        final Instant[] keyArray = new Instant[intSize()];",
                         "        if (leafCount == 1) {",
                         "            for(int ii = 0; ii < totalSize; ii++) {",
-                        "                keyArray[ii] = DateTimeUtils.epochNanosToInstant(directoryValues[ii + (int)first]);",
+                        "                keyArray[ii] = DateTimeUtils.epochNanosToInstant(directoryValues == null ? singletonValue : directoryValues[ii + (int)first]);",
                         "            }",
                         "        } else if (leafCount > 0) {",
                         "            int offset = 0;",
@@ -433,7 +542,7 @@ public class ReplicateSegmentedSortedMultiset {
                         "        final StringBuilder arrAsString = new StringBuilder(\"[\");",
                         "        if (leafCount == 1) {",
                         "            for(int ii = 0; ii < intSize(); ii++) {",
-                        "                arrAsString.append(DateTimeUtils.epochNanosToInstant(directoryValues[ii])).append(\", \");",
+                        "                arrAsString.append(DateTimeUtils.epochNanosToInstant(directoryValues == null ? singletonValue : directoryValues[ii])).append(\", \");",
                         "            }",
                         "            ",
                         "            arrAsString.replace(arrAsString.length() - 2, arrAsString.length(), \"]\");",

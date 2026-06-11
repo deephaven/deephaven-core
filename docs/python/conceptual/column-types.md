@@ -122,7 +122,7 @@ t2 = empty_table(5).update(
 )
 ```
 
-You can check for nulls using `isNull()` or comparison with the null constant:
+You can check for nulls using `isNull` or comparison with the null constant:
 
 ```python test-set=column-types order=t3
 # Filter for non-null values
@@ -134,7 +134,7 @@ t4 = t2.where("WithNulls != NULL_INT")
 
 #### Type promotion and arithmetic
 
-When performing arithmetic with mixed numeric types, Deephaven follows Java's type promotion rules:
+When performing arithmetic with mixed numeric types, Deephaven follows Java's type promotion rules. Note that DQL promotes the `/` operator to `double` regardless of operand types — unlike Java, where `int / int` truncates. Cast the result explicitly to get integer truncation:
 
 ```python test-set=column-types order=t5
 from deephaven import empty_table
@@ -147,10 +147,10 @@ t5 = empty_table(3).update(
         "MixedIntLong = IntValue + LongValue",
         # int * double promotes to double
         "MixedIntDouble = IntValue * 3.14",
-        # Division with integers performs integer division
-        "IntDiv = 7 / 2",  # Result: 3
-        # Use double to get floating-point division
-        "DoubleDiv = 7.0 / 2.0",  # Result: 3.5
+        # DQL promotes / to double: 7 / 2 = 3.5
+        "DoubleDiv = 7 / 2",  # Result: 3.5
+        # Cast to int for truncating integer division
+        "IntDiv = (int)(7 / 2)",  # Result: 3
     ]
 )
 ```

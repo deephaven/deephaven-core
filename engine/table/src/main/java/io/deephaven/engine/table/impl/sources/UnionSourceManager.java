@@ -3,8 +3,7 @@
 //
 package io.deephaven.engine.table.impl.sources;
 
-import gnu.trove.list.array.TIntArrayList;
-import gnu.trove.list.array.TLongArrayList;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.context.ExecutionContext;
@@ -794,7 +793,7 @@ public class UnionSourceManager implements PushdownPredicateManager {
 
         final UnionSourcePushdownFilterContext ctx = (UnionSourcePushdownFilterContext) context;
         ctx.initialize(selection, usePrev);
-        final MutableLong minCost = new MutableLong(Long.MAX_VALUE);
+        final MutableLong minCost = new MutableLong(PushdownResult.UNSUPPORTED_ACTION_COST);
 
         jobScheduler.iterateParallel(
                 ExecutionContext.getContext(),
@@ -804,8 +803,8 @@ public class UnionSourceManager implements PushdownPredicateManager {
                 ctx.matchers.size(),
                 (localContext, idx, nec, resume) -> {
                     final PushdownFilterMatcher matcher = ctx.matchers.get(idx);
-                    final long firstRowKey = ctx.firstRowKeys.get(idx);
-                    final long lastRowKey = ctx.lastRowKeys.get(idx);
+                    final long firstRowKey = ctx.firstRowKeys.getLong(idx);
+                    final long lastRowKey = ctx.lastRowKeys.getLong(idx);
                     try (final WritableRowSet localSelection = selection.subSetByKeyRange(firstRowKey, lastRowKey)) {
                         if (localSelection.isEmpty()) {
                             // No rows remain for this constituent, so we can skip it.
@@ -857,8 +856,8 @@ public class UnionSourceManager implements PushdownPredicateManager {
                 ctx.matchers.size(),
                 (localContext, idx, nec, resume) -> {
                     final PushdownFilterMatcher matcher = ctx.matchers.get(idx);
-                    final long firstRowKey = ctx.firstRowKeys.get(idx);
-                    final long lastRowKey = ctx.lastRowKeys.get(idx);
+                    final long firstRowKey = ctx.firstRowKeys.getLong(idx);
+                    final long lastRowKey = ctx.lastRowKeys.getLong(idx);
                     try (final WritableRowSet localSelection = selection.subSetByKeyRange(firstRowKey, lastRowKey)) {
                         if (localSelection.isEmpty()) {
                             matches[idx] = RowSetFactory.empty();
@@ -901,15 +900,15 @@ public class UnionSourceManager implements PushdownPredicateManager {
                 onError);
     }
 
-    public static class UnionSourcePushdownFilterContext extends BasePushdownFilterContext {
+    public static class UnionSourcePushdownFilterContext extends BasePushdownFilterContextImpl {
         final UnionSourceManager manager;
         final WritableRowSet maybeMatch;
         final Map<String, String> renameMap;
 
         boolean initialized = false;
         List<PushdownFilterMatcher> matchers;
-        TLongArrayList firstRowKeys;
-        TLongArrayList lastRowKeys;
+        LongArrayList firstRowKeys;
+        LongArrayList lastRowKeys;
         List<io.deephaven.engine.table.impl.PushdownFilterContext> contexts;
 
         public UnionSourcePushdownFilterContext(
@@ -945,49 +944,53 @@ public class UnionSourceManager implements PushdownPredicateManager {
             // is very important for UnionSourceManager because will likely contain refreshing constituent tables.
 
             final RowSet rowSetToUse = usePrev ? manager.constituentRows.prev() : manager.constituentRows;
-            final TIntArrayList tableSlots = new TIntArrayList(rowSetToUse.intSize());
-            rowSetToUse.forAllRowKeys(slot -> tableSlots.add((int) slot)); // Can't overflow, slots are dense
+            final int constituentCount = rowSetToUse.intSize();
 
-            matchers = new ArrayList<>(tableSlots.size());
-            contexts = new ArrayList<>(tableSlots.size());
-            firstRowKeys = new TLongArrayList(tableSlots.size());
-            lastRowKeys = new TLongArrayList(tableSlots.size());
+            matchers = new ArrayList<>(constituentCount);
+            contexts = new ArrayList<>(constituentCount);
+            firstRowKeys = new LongArrayList(constituentCount);
+            lastRowKeys = new LongArrayList(constituentCount);
 
-            tableSlots.forEach(slot -> {
-                final long firstKey = usePrev
-                        ? manager.unionRedirection.prevFirstRowKeyForSlot(slot)
-                        : manager.unionRedirection.currFirstRowKeyForSlot(slot);
-                final long lastKey = usePrev
-                        ? manager.unionRedirection.prevLastRowKeyForSlot(slot)
-                        : manager.unionRedirection.currLastRowKeyForSlot(slot);
+            // Use a 0-based slot counter for unionRedirection lookups (which are position-indexed, not
+            // row-key-indexed). Slot positions diverge from constituentRows row keys when
+            // constituentChangesPermitted and removals have created gaps in constituentRows.
+            try (final ObjectColumnIterator<Table> constituents = usePrev
+                    ? manager.prevConstituentIter(rowSetToUse)
+                    : manager.currConstituentIter(rowSetToUse)) {
+                int slot = 0;
+                while (constituents.hasNext()) {
+                    final Table constituent = constituents.next();
+                    final long firstKey = usePrev
+                            ? manager.unionRedirection.prevFirstRowKeyForSlot(slot)
+                            : manager.unionRedirection.currFirstRowKeyForSlot(slot);
+                    final long lastKey = usePrev
+                            ? manager.unionRedirection.prevLastRowKeyForSlot(slot)
+                            : manager.unionRedirection.currLastRowKeyForSlot(slot);
 
-                // If there is no overlap, we can ignore this table completely.
-                if (selection.overlapsRange(firstKey, lastKey)) {
-                    final Table constituent = usePrev
-                            ? manager.constituentTables.getPrev(slot)
-                            : manager.constituentTables.get(slot);
+                    // If there is no overlap, we can ignore this table completely.
+                    if (selection.overlapsRange(firstKey, lastKey)) {
+                        final List<ColumnSource<?>> filterSources = filter().getColumns().stream()
+                                .map(cn -> renameMap.getOrDefault(cn, cn))
+                                .map(constituent::getColumnSource).collect(Collectors.toList());
 
-                    final List<ColumnSource<?>> filterSources = filter.getColumns().stream()
-                            .map(cn -> renameMap.getOrDefault(cn, cn))
-                            .map(constituent::getColumnSource).collect(Collectors.toList());
+                        final PushdownFilterMatcher matcher =
+                                PushdownFilterMatcher.getPushdownFilterMatcher(filter(), filterSources);
 
-                    final PushdownFilterMatcher matcher =
-                            PushdownFilterMatcher.getPushdownFilterMatcher(filter, filterSources);
-
-                    if (matcher != null) {
-                        matchers.add(matcher);
-                        contexts.add(matcher.makePushdownFilterContext(filter, filterSources));
-                        firstRowKeys.add(firstKey);
-                        lastRowKeys.add(lastKey);
-                    } else {
-                        // Skip this table, but save the rows from this constituent as "maybe"
-                        try (final RowSet localSelection = selection.subSetByKeyRange(firstKey, lastKey)) {
-                            maybeMatch.insert(localSelection);
+                        if (matcher != null) {
+                            matchers.add(matcher);
+                            contexts.add(matcher.makePushdownFilterContext(filter(), filterSources));
+                            firstRowKeys.add(firstKey);
+                            lastRowKeys.add(lastKey);
+                        } else {
+                            // Skip this table, but save the rows from this constituent as "maybe"
+                            try (final RowSet localSelection = selection.subSetByKeyRange(firstKey, lastKey)) {
+                                maybeMatch.insert(localSelection);
+                            }
                         }
                     }
+                    ++slot;
                 }
-                return true;
-            });
+            }
         }
 
         @Override
