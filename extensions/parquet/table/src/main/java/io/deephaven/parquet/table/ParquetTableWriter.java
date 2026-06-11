@@ -138,10 +138,8 @@ public class ParquetTableWriter {
             for (final ParquetTableWriter.IndexWritingInfo info : indexInfoList) {
                 try (final SafeCloseable ignored = t.isRefreshing() ? LivenessScopeStack.open() : null) {
                     // This will retrieve an existing index if one exists, or create a new one if not
-                    final BasicDataIndex dataIndex = Optional
-                            .ofNullable(DataIndexer.getDataIndex(t, info.indexColumnNames))
-                            .or(() -> Optional.of(DataIndexer.getOrCreateDataIndex(t, info.indexColumnNames)))
-                            .get()
+                    final BasicDataIndex dataIndex = DataIndexer
+                            .getOrCreateDataIndex(t, info.indexColumnNames)
                             .transform(DataIndexTransformer.builder().invertRowSet(t.getRowSet()).build());
                     final Table indexTable = dataIndex.table().sort(info.indexColumnNames.toArray(new String[0]));
                     final TableInfo.Builder indexTableInfoBuilder = TableInfo.builder().addSortingColumns(
