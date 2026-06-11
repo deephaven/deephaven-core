@@ -104,7 +104,9 @@ public abstract class ForceReadUtility {
 
     /**
      * The maximum number of columns to consider at any given time. Setting this to {@code 1} means that each column
-     * will be fully read before moving on to the next column. By default, is {@value #DEFAULT_COLUMN_CONSIDERATION}.
+     * will be fully read before moving on to the next column; setting this to {@link Integer#MAX_VALUE} means that all
+     * columns will be read together (that is, {@link #rowSet()} will be iterated through exactly once). By default, is
+     * {@value #DEFAULT_COLUMN_CONSIDERATION}.
      *
      * @return the column consideration
      */
@@ -163,9 +165,7 @@ public abstract class ForceReadUtility {
 
     @Value.Check
     final void checkColumns() {
-        if (!table().hasColumns(columnNames())) {
-            throw new IllegalArgumentException("table does not have specified column(s)");
-        }
+        table().getDefinition().checkHasColumns(columnNames());
     }
 
     private void execute() {

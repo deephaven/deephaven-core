@@ -13,6 +13,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.util.TableTools;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.jmock.Expectations;
@@ -23,6 +24,9 @@ import org.junit.Test;
 
 import java.util.LinkedHashMap;
 import java.util.List;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 public class ForceReadUtilityTest {
 
@@ -168,5 +172,68 @@ public class ForceReadUtilityTest {
         });
 
         ForceReadUtility.of(options);
+    }
+
+    @Test
+    public void missingTable() {
+        try {
+            ForceReadUtility.builder().build();
+            fail("Expected exception");
+        } catch (IllegalStateException e) {
+            assertEquals("Cannot build ForceReadUtility, some of required attributes are not set [table]",
+                    e.getMessage());
+        }
+    }
+
+    @Test
+    public void badRowSet() {
+        try {
+            ForceReadUtility.builder()
+                    .table(TableTools.emptyTable(42))
+                    .rowSet(RowSetFactory.flat(100))
+                    .build();
+            fail("Expected exception");
+        } catch (IllegalArgumentException e) {
+            assertEquals("rowSet must be a subset of the table's rowSet", e.getMessage());
+        }
+    }
+
+    @Test
+    public void badColumnName() {
+        try {
+            ForceReadUtility.builder()
+                    .table(TableTools.emptyTable(42))
+                    .addColumnNames("DoesNotExist")
+                    .build();
+            fail("Expected exception");
+        } catch (IllegalArgumentException e) {
+            assertEquals("Unknown column names [DoesNotExist], available column names are []", e.getMessage());
+        }
+    }
+
+    @Test
+    public void badReadSize() {
+        try {
+            ForceReadUtility.builder()
+                    .table(TableTools.emptyTable(42))
+                    .readSize(0)
+                    .build();
+            fail("Expected exception");
+        } catch (IllegalArgumentException e) {
+            assertEquals("readSize must be positive", e.getMessage());
+        }
+    }
+
+    @Test
+    public void badColumnConsideration() {
+        try {
+            ForceReadUtility.builder()
+                    .table(TableTools.emptyTable(42))
+                    .columnConsideration(0)
+                    .build();
+            fail("Expected exception");
+        } catch (IllegalArgumentException e) {
+            assertEquals("columnConsideration must be positive", e.getMessage());
+        }
     }
 }
