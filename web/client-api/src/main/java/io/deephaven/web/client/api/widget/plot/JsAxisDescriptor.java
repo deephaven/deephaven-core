@@ -81,7 +81,7 @@ public class JsAxisDescriptor {
     public String color;
 
     /**
-     * The minimum value for the axis range, or {@link Double#NaN} to use the default.
+     * The minimum value for the axis range, or {@link elemental2.core.JsNumber#NaN} to use the default.
      */
     @JsNullable
     public double minRange = Double.NaN;
