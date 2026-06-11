@@ -454,7 +454,7 @@ public final class SessionImpl extends SessionBase {
 
         @Override
         public Changes executeScript(Path path, ExecuteCodeOptions options)
-                throws IOException, InterruptedException, ExecutionException, TimeoutException {
+                throws IOException, InterruptedException, TimeoutException {
             return executeCode(scriptToCode(path), options);
         }
 
