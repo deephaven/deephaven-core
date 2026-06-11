@@ -353,6 +353,7 @@ h2database-h2 = { module = "com.h2database:h2", version.ref = "h2database" }
 jmh-core = { module = "org.openjdk.jmh:jmh-core", version.ref = "jmh" }
 jmh-generator-annprocess = { module = "org.openjdk.jmh:jmh-generator-annprocess", version.ref = "jmh" }
 
+jmock = { module = "org.jmock:jmock", version.ref = "jmock" }
 jmock-imposters = { module = "org.jmock:jmock-imposters", version.ref = "jmock" }
 jmock-junit4 = { module = "org.jmock:jmock-junit4", version.ref = "jmock" }
 
