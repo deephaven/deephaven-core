@@ -7,6 +7,9 @@ import com.vertispan.tsdefs.annotations.TsTypeDef;
 import io.deephaven.proto.backplane.script.grpc.FigureDescriptor;
 import jsinterop.annotations.JsType;
 
+/**
+ * A numeric enum indicating how axis values are interpreted for formatting and display.
+ */
 @JsType(name = "AxisFormatType", namespace = "dh.plot")
 @TsTypeDef(tsType = "number")
 public class JsAxisFormatType {
