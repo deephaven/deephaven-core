@@ -17,7 +17,6 @@ import jsinterop.annotations.JsType;
  * <ul>
  * <li>{@link LongWrapper#asNumber()} for a numeric representation</li>
  * <li>{@link LongWrapper#toString()} and {@link LongWrapper#valueOf()} for string representations</li>
- * <li>{@link LongWrapper#ofString(String)} for parsing</li>
  * </ul>
  */
 @JsType(namespace = "dh")
