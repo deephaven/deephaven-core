@@ -4,6 +4,7 @@
 package io.deephaven.web.client.api.widget.plot;
 
 import elemental2.core.JsArray;
+import io.deephaven.web.client.api.widget.plot.enums.JsSeriesPlotStyle;
 import io.deephaven.web.client.fu.JsData;
 import jsinterop.annotations.JsConstructor;
 import jsinterop.annotations.JsIgnore;
@@ -21,7 +22,7 @@ public class JsSeriesDescriptor {
     // TODO (deephaven-core#3442) change to some kind of String+int union type
 
     /**
-     * The series plot style.
+     * The series plot style. For legacy reasons, this is a string, but it should be the string value of one of {@link JsSeriesPlotStyle}'s values.
      */
     public String plotStyle;
 

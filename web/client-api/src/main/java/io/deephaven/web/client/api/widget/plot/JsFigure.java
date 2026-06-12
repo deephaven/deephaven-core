@@ -173,6 +173,7 @@ public class JsFigure extends HasLifecycle {
         /**
          * Returns the string representation of the underlying error.
          */
+        @Override
         public String toString() {
             return error.toString();
         }
