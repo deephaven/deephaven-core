@@ -12,7 +12,7 @@ dependencies {
 
     implementation project(':engine-table')
     implementation project(':engine-base')
-    implementation libs.trove
+    implementation libs.dsi.fastutil
 
     compileOnly project(':util-immutables')
     annotationProcessor libs.immutables.value

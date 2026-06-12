@@ -5,7 +5,7 @@ sidebar_label: How do I convert vector columns to primitive array columns?
 
 _How can I convert a Deephaven vector column to a primitive array column in Deephaven?_
 
-You can convert a Deephaven vector column to a primitive array column by using the `array()` method in a selection method's query string. Similarly, the `vec()` method can convert a primitive array type to a Deephaven vector type. Here, the `array` method converts an `IntVector` column to an `int[]` array. Here's an example:
+You can convert a Deephaven vector column to a primitive array column by using the `array` method in a selection method's query string. Similarly, the `vec` method can convert a primitive array type to a Deephaven vector type. Here, the `array` method converts an `IntVector` column to an `int[]` array. Here's an example:
 
 ```python order=t,tm,t1,t1m,t2,t2m
 from deephaven import empty_table
@@ -25,7 +25,7 @@ t2m = t2.meta_table
 
 The `vec` and `array` methods can handle the following types:
 
-| `vec()`  | `array()`    |
+| `vec`    | `array`      |
 | -------- | ------------ |
 | byte[]   | ByteVector   |
 | char[]   | CharVector   |

@@ -10,6 +10,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import io.deephaven.engine.table.impl.select.WhereFilter;
+import io.deephaven.engine.table.impl.select.WhereFilterDelegating;
 import io.deephaven.engine.table.impl.select.WhereFilterImpl;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
@@ -27,7 +28,7 @@ import java.util.List;
  * <p>
  * Once used, or between-uses, it is expected that the {@link #reset()} method is called to clear the captured RowSets.
  */
-public class RowSetCapturingFilter extends WhereFilterImpl implements SafeCloseable {
+public class RowSetCapturingFilter extends WhereFilterImpl implements WhereFilterDelegating, SafeCloseable {
     final List<RowSet> rowSets;
     final WhereFilter innerFilter;
 
@@ -57,6 +58,16 @@ public class RowSetCapturingFilter extends WhereFilterImpl implements SafeClosea
     RowSetCapturingFilter(final WhereFilter filter, final List<RowSet> rowSets) {
         this.rowSets = rowSets;
         this.innerFilter = filter;
+    }
+
+    @Override
+    public WhereFilter getWrappedFilter() {
+        return innerFilter;
+    }
+
+    @Override
+    public WhereFilter maybeUnwrapFilter() {
+        return WhereFilterDelegating.maybeUnwrapFilter(innerFilter);
     }
 
     @Override

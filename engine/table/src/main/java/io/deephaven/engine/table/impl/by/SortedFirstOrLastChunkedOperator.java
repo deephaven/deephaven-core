@@ -37,9 +37,10 @@ public class SortedFirstOrLastChunkedOperator
     private final LongColumnSourceWritableRowRedirection rowRedirection;
     private final Map<String, ColumnSource<?>> resultColumns;
     private final ObjectArraySource<SegmentedSortedArray> ssas;
+    private final boolean exposeRedirections;
 
     SortedFirstOrLastChunkedOperator(ChunkType chunkType, boolean isFirst, MatchPair[] resultNames,
-            Table originalTable) {
+            Table originalTable, String exposeRedirectionAs) {
         this.chunkType = chunkType;
         this.isFirst = isFirst;
         this.ssaFactory = SegmentedSortedArray.makeFactory(chunkType, false, 1024);
@@ -51,6 +52,12 @@ public class SortedFirstOrLastChunkedOperator
         for (final MatchPair mp : resultNames) {
             resultColumns.put(mp.leftColumn(), RedirectedColumnSource.maybeRedirect(
                     rowRedirection, originalTable.getColumnSource(mp.rightColumn())));
+        }
+        // Expose the selected row key for rollup re-aggregation, so a higher level can break sort-value ties by the
+        // original source row key rather than by this level's row keys.
+        exposeRedirections = exposeRedirectionAs != null;
+        if (exposeRedirections) {
+            resultColumns.put(exposeRedirectionAs, redirections);
         }
     }
 
@@ -219,6 +226,12 @@ public class SortedFirstOrLastChunkedOperator
             final long newValue = isFirst ? ssa.getFirst() : ssa.getLast();
             final long oldValue = redirections.getAndSetUnsafe(destination, newValue);
             final boolean changed = newValue != oldValue;
+            if (exposeRedirections && changed) {
+                // The exposed redirection column holds the selected row key itself, so any redirection change (even a
+                // pure shift of the selected row) changes that column's value and is a real modification.
+                stateModified.set(ii, true);
+                continue;
+            }
             // if we just shifted something, then this is not a true modification (and modifyRowKeys will catch it
             // later);
             // if on the other hand, our row key changed, then we must mark the state as modified
@@ -350,6 +363,12 @@ public class SortedFirstOrLastChunkedOperator
 
         final long newValue = isFirst ? ssa.getFirst() : ssa.getLast();
         final long oldValue = redirections.getAndSetUnsafe(destination, newValue);
+
+        if (exposeRedirections && newValue != oldValue) {
+            // The exposed redirection column holds the selected row key itself, so any redirection change (even a pure
+            // shift of the selected row) changes that column's value and is a real modification.
+            return true;
+        }
 
         final long chunkNewValue;
         if (isFirst) {

@@ -6,7 +6,7 @@ package io.deephaven.web.client.api.widget.plot;
 import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
 import com.vertispan.tsdefs.annotations.TsTypeRef;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.figuredescriptor.SourceDescriptor;
+import io.deephaven.proto.backplane.script.grpc.FigureDescriptor;
 import io.deephaven.web.client.api.JsTable;
 import io.deephaven.web.client.api.widget.plot.enums.JsSourceType;
 import jsinterop.annotations.JsProperty;
@@ -20,10 +20,10 @@ import java.util.Map;
 @TsName(namespace = "dh.plot")
 public class SeriesDataSource {
     private final JsAxis axis;
-    private final SourceDescriptor sourceDescriptor;
+    private final FigureDescriptor.SourceDescriptor sourceDescriptor;
     private String columnType;
 
-    public SeriesDataSource(JsAxis axis, SourceDescriptor type) {
+    public SeriesDataSource(JsAxis axis, FigureDescriptor.SourceDescriptor type) {
         this.axis = axis;
         this.sourceDescriptor = type;
     }
@@ -57,7 +57,7 @@ public class SeriesDataSource {
     @JsProperty
     @TsTypeRef(JsSourceType.class)
     public int getType() {
-        return sourceDescriptor.getType();
+        return sourceDescriptor.getType().getNumber();
     }
 
     /**
@@ -70,7 +70,7 @@ public class SeriesDataSource {
         return columnType;
     }
 
-    public SourceDescriptor getDescriptor() {
+    public FigureDescriptor.SourceDescriptor getDescriptor() {
         return sourceDescriptor;
     }
 

@@ -3,16 +3,14 @@
 //
 package io.deephaven.web.client.api.barrage.stream;
 
-import elemental2.core.Function;
-import io.deephaven.javascript.proto.dhinternal.browserheaders.BrowserHeaders;
-import io.deephaven.javascript.proto.dhinternal.grpcweb.grpc.Code;
-import io.deephaven.web.shared.fu.JsConsumer;
-import jsinterop.annotations.JsOverlay;
-import jsinterop.annotations.JsPackage;
-import jsinterop.annotations.JsProperty;
-import jsinterop.annotations.JsType;
-import jsinterop.base.Js;
-import jsinterop.base.JsPropertyMap;
+import io.deephaven.web.client.api.event.EventFn;
+import io.deephaven.web.client.api.event.HasEventHandling;
+import io.grpc.Context;
+import io.grpc.Status;
+import io.grpc.stub.StreamObserver;
+import org.jetbrains.annotations.NotNull;
+
+import java.util.function.Consumer;
 
 /**
  * Java wrapper to deal with the distinct ResponseStream types that are emitted. Provides strongly typed methods for
@@ -20,86 +18,63 @@ import jsinterop.base.JsPropertyMap;
  *
  * @param <T> payload that is emitted from the stream
  */
-@JsType(isNative = true, name = "Object", namespace = JsPackage.GLOBAL)
-public class ResponseStreamWrapper<T> {
-    @JsType(isNative = true)
-    public interface Status {
-        @JsOverlay
-        static Status of(int code, String details, BrowserHeaders metadata) {
-            return (Status) JsPropertyMap.of(
-                    "code", (double) code,
-                    "details", details,
-                    "metadata", metadata);
+public class ResponseStreamWrapper<T> extends HasEventHandling {
+
+    public static final String DATA_EVENT = "data";
+    public static final String STATUS_EVENT = "status";
+    public static final String END_EVENT = "end";
+
+    public static <T> ResponseStreamWrapper<T> of(Consumer<StreamObserver<T>> openStream) {
+        return new ResponseStreamWrapper<>(openStream);
+    }
+
+    private final Context.CancellableContext cancellation;
+    private final StreamObserver<T> observer = new StreamObserver<>() {
+        @Override
+        public void onNext(T value) {
+            fireEvent(DATA_EVENT, value);
         }
 
-        @JsProperty
-        int getCode();
-
-        @JsProperty
-        String getDetails();
-
-        @JsProperty
-        BrowserHeaders getMetadata();
-
-        @JsOverlay
-        default boolean isOk() {
-            return getCode() == Code.OK;
+        @Override
+        public void onError(Throwable t) {
+            Status detail = Status.fromThrowable(t);
+            fireEvent(STATUS_EVENT, detail);
+            fireEvent(END_EVENT, detail);
         }
 
-        @JsOverlay
-        default boolean isTransportError() {
-            return getCode() == Code.Internal || getCode() == Code.Unknown || getCode() == Code.Unavailable;
+        @Override
+        public void onCompleted() {
+            fireEvent(END_EVENT, Status.OK);
         }
-    }
-    @JsType(isNative = true)
-    public interface ServiceError {
-        @JsProperty
-        int getCode();
+    };
 
-        @JsProperty
-        String getMessage();
-
-        @JsProperty
-        BrowserHeaders getMetadata();
-
-        @JsOverlay
-        default boolean isOk() {
-            return getCode() == Code.OK;
-        }
+    public ResponseStreamWrapper(Consumer<StreamObserver<T>> openStream) {
+        cancellation = Context.current().withCancellation();
+        cancellation.run(() -> openStream.accept(observer));
     }
 
-    @JsOverlay
-    public static <T> ResponseStreamWrapper<T> of(Object someJsObject) {
-        // this cast is always legal, since ResponseStreamWrapper is declared to be Object
-        return Js.cast(someJsObject);
+    public void cancel() {
+        cancellation.cancel(null);
     }
 
-    public native void cancel();
-
-    public native ResponseStreamWrapper<T> on(String type, Function function);
-
-    @JsOverlay
-    public final ResponseStreamWrapper<T> onStatus(JsConsumer<Status> handler) {
-        return on("status", Js.cast(handler));
+    public final void onStatus(Consumer<Status> handler) {
+        addEventListener(STATUS_EVENT, wrapAsEventListener(handler));
     }
 
-    @JsOverlay
-    public final ResponseStreamWrapper<T> onData(JsConsumer<T> handler) {
-        return on("data", Js.cast(handler));
+    @NotNull
+    private static <T> EventFn<Object> wrapAsEventListener(Consumer<T> handler) {
+        return e -> handler.accept((T) e.getDetail());
     }
 
-    @JsOverlay
-    public final ResponseStreamWrapper<T> onEnd(JsConsumer<Status> handler) {
-        return on("end", Js.cast(handler));
+    public final void onData(Consumer<T> handler) {
+        addEventListener(DATA_EVENT, wrapAsEventListener(handler));
     }
 
-    @JsOverlay
-    public final ResponseStreamWrapper<T> onHeaders(JsConsumer<Object> handler) {
-        try {
-            return on("headers", Js.cast(handler));
-        } catch (Exception ignore) {
-            // most implementations don't offer this, we can ignore this error
-            return this;
-        }
+    public final void onEnd(Consumer<Status> handler) {
+        addEventListener(END_EVENT, wrapAsEventListener(handler));
+    }
+
+    public final void onHeaders(Consumer<Object> handler) {
+        addEventListener("headers", wrapAsEventListener(handler));
     }
 }

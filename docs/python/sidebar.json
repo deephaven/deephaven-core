@@ -135,8 +135,16 @@
                 "path": "conceptual/table-types.md"
               },
               {
+                "label": "Initialization and updates",
+                "path": "how-to-guides/initialization-and-updates.md"
+              },
+              {
                 "label": "Column types",
                 "path": "conceptual/column-types.md"
+              },
+              {
+                "label": "Deephaven Vectors",
+                "path": "conceptual/arrays-vs-vectors.md"
               },
               {
                 "label": "Core API design",
@@ -175,6 +183,10 @@
               {
                 "label": "Advanced table constructors",
                 "items": [
+                  {
+                    "label": "Convert add- and append-only tables to blink tables",
+                    "path": "how-to-guides/add-only-to-blink.md"
+                  },
                   {
                     "label": "Write data to a real-time table",
                     "path": "how-to-guides/table-publisher.md"
@@ -651,6 +663,10 @@
                     "path": "how-to-guides/user-interface/navigating-the-ui.md"
                   },
                   {
+                    "label": "Upload a table from a file",
+                    "path": "how-to-guides/user-interface/upload-table-from-file.md"
+                  },
+                  {
                     "label": "Set date-time format",
                     "path": "how-to-guides/set-date-time-format.md"
                   },
@@ -889,6 +905,10 @@
               {
                 "label": "Create your own plugin",
                 "path": "how-to-guides/create-plugins.md"
+              },
+              {
+                "label": "Create a JavaScript plugin",
+                "path": "how-to-guides/create-js-plugins.md"
               }
             ]
           },
@@ -938,6 +958,10 @@
                   {
                     "label": "Synchronization and locking",
                     "path": "conceptual/query-engine/engine-locking.md"
+                  },
+                  {
+                    "label": "Formulas and threads",
+                    "path": "how-to-guides/performance/formula-threads.md"
                   },
                   {
                     "label": "Python-Java boundary",
@@ -1102,7 +1126,11 @@
                     "path": "how-to-guides/configuration/configure-web.md"
                   },
                   {
-                    "label": "Custom environmental variables",
+                    "label": "JS plugin configuration",
+                    "path": "how-to-guides/configuration/js-plugins.md"
+                  },
+                  {
+                    "label": "Custom environment variables",
                     "path": "how-to-guides/custom-environmental-variables.md"
                   },
                   {
@@ -1519,6 +1547,10 @@
                   {
                     "label": "write",
                     "path": "reference/data-import-export/Parquet/writeTable.md"
+                  },
+                  {
+                    "label": "write_partitioned",
+                    "path": "reference/data-import-export/Parquet/writePartitioned.md"
                   }
                 ]
               },

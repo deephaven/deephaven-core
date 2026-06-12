@@ -233,6 +233,41 @@ public class QueryTableWhereInTest {
     }
 
     @Test
+    public void testWhereInStaticSet() {
+        final Table setTable = testTable(i(2, 4, 6, 8).toTracking(), col("X", "A", "B", "C", "B"));
+        assertFalse(setTable.isRefreshing());
+
+        final QueryTable filteredTable = testRefreshingTable(i(1, 2, 3, 4, 5).toTracking(),
+                col("X", "A", "B", "C", "D", "E"));
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
+        final Table result = updateGraph.exclusiveLock().computeLocked(
+                () -> filteredTable.whereIn(setTable, "X"));
+        show(result);
+        assertEquals(3, result.size());
+        assertArrayEquals(new String[] {"A", "B", "C"}, ColumnVectors.ofObject(result, "X", String.class).toArray());
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(filteredTable, i(6), col("X", "A"));
+            filteredTable.notifyListeners(i(6), i(), i());
+        });
+        show(result);
+        assertEquals(4, result.size());
+        assertArrayEquals(new String[] {"A", "B", "C", "A"},
+                ColumnVectors.ofObject(result, "X", String.class).toArray());
+
+        final DynamicWhereFilter dynamicWhereFilter =
+                new DynamicWhereFilter((QueryTable) setTable, true, MatchPairFactory.getExpressions("X"));
+        final WhereFilter invert = WhereFilterInvertedImpl.of(dynamicWhereFilter);
+
+        final Table filteredInvert = updateGraph.exclusiveLock().computeLocked(() -> filteredTable.where(invert));
+        assertEquals(2, filteredInvert.size());
+        assertArrayEquals(new String[] {"D", "E"},
+                ColumnVectors.ofObject(filteredInvert, "X", String.class).toArray());
+    }
+
+    @Test
     public void testWhereDynamicInIncremental() {
         testWhereDynamicIncrementalInternal(false, false, true, true);
         testWhereDynamicIncrementalInternal(false, false, true, false);
@@ -544,7 +579,7 @@ public class QueryTableWhereInTest {
         TableTools.show(filteredTable);
     }
 
-    private static class TestUncoalescedTable extends UncoalescedTable<TestUncoalescedTable> {
+    private static class TestUncoalescedTable extends UncoalescedTableImpl<TestUncoalescedTable> {
         private final Table delegate;
         private final List<Collection<? extends Selectable>> selectDistinctColumns = new ArrayList<>();
 

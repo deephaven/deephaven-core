@@ -64,7 +64,8 @@ specialVars = emptyTable(10).update("IdxInt = i", "IdxLong = ii")
 specialMeta = specialVars.meta()
 ```
 
-> **_NOTE:_** The special variables `i` and `ii` can only be used in [append-only](../../conceptual/table-types.md#specialization-1-append-only) tables.
+> [!NOTE]
+> The special variables `i` and `ii` can only be used in [append-only](../../conceptual/table-types.md#specialization-1-append-only) tables.
 
 Additionally, Deephaven provides a range of common constants that can be accessed from query strings. These constants are always written with snake case in capital letters. They include [minimum and maximum values for various data types](/core/javadoc/io/deephaven/util/QueryConstants.html), [conversion factors for time types](/core/javadoc/io/deephaven/time/DateTimeUtils.html), and more. Of particular interest are the null constants for primitive types.
 
@@ -317,7 +318,8 @@ These results can then be ungrouped with [`ungroup`](../../reference/table-opera
 tArrayFuncsUngrouped = tArrayFuncs.ungroup()
 ```
 
-> **_NOTE:_** Aggregations done with Deephaven's [Aggregations](../../how-to-guides/combined-aggregations.md) are more performant than with array functions.
+> [!NOTE]
+> Aggregations done with Deephaven's [Aggregations](../../how-to-guides/combined-aggregations.md) are more performant than with array functions.
 
 Deephaven provides array indexing and slicing operations.
 
@@ -376,8 +378,6 @@ addVarsFunc = emptyTable(1).update("Sum1 = mySum(1, 2)", "Sum2 = mySum(a, b)")
 ```
 
 So can classes.
-
-<!--TODO: next two examples, there is supposed to be a static and a non-static sum. I could not get the static method to work.-->
 
 ```groovy test-set=1
 public class MyMathClass {

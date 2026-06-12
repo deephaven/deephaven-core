@@ -3,10 +3,11 @@
 //
 package io.deephaven.web.client.api.console;
 
+import com.google.common.io.BaseEncoding;
 import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
 import com.vertispan.tsdefs.annotations.TsTypeRef;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.application_pb.FieldInfo;
+import io.deephaven.proto.backplane.grpc.FieldInfo;
 import io.deephaven.web.client.api.Tickets;
 import jsinterop.annotations.JsProperty;
 
@@ -24,6 +25,7 @@ public class JsVariableDefinition {
 
     private final String type;
     private final String title;
+    // The ticket in base64
     private final String id;
     private final String description;
     private final String applicationId;
@@ -41,7 +43,7 @@ public class JsVariableDefinition {
 
     public JsVariableDefinition(FieldInfo field) {
         this.type = field.getTypedTicket().getType();
-        this.id = field.getTypedTicket().getTicket().getTicket_asB64();
+        this.id = BaseEncoding.base64().encode(field.getTypedTicket().getTicket().getTicket().toByteArray());
         this.title = field.getFieldName();
         this.description = field.getFieldDescription();
         this.applicationId = field.getApplicationId();

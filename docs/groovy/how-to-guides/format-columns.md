@@ -8,236 +8,90 @@ This guide shows you how to apply various color formatting options to the column
 > [!CAUTION]
 > Formatting creates hidden columns in tables. It's recommended to apply formatting after all other data processing is complete.
 
-## Format an entire column
+## Formatting methods
 
-Color formatting can be applied to the contents of an entire column using the `formatColumns` method:
+Deephaven provides several methods for applying color formatting to tables. Here are the most common methods with basic examples.
 
-[`.formatColumns("columnName=<colorObject>")`](../reference/table-operations/format/format-columns.md)
+### `formatColumns`
 
-- `columnName` is the name of the column to format.
-- `<colorObject>` is any of the [valid color objects](../assets/how-to/colors.pdf) available in Deephaven.
+The [`formatColumns`](../reference/table-operations/format/format-columns.md) method is the foundational method for applying formatting. It can format specific columns with various conditions.
 
-The following query will apply the color `VIVID_YELLOW` to all cells in the `GPA` column:
+First, let's create the `students` table that will be used in the following examples:
 
-```groovy test-set=1
+```groovy test-set=1 order=students
 students = newTable(
     stringCol("Name", "Andy", "Claire", "Jane", "Steven"),
     intCol("StudentID", 1, 2, 3, 4),
     intCol("TestGrade", 85, 95, 88, 72),
     intCol("HomeworkGrade", 85, 95, 90, 95),
     doubleCol("GPA", 3.0, 4.0, 3.7, 2.8)
-).formatColumns("GPA=VIVID_YELLOW")
+)
 ```
 
-## Format certain rows or columns
+The following query colors the `GPA` column `VIVID_YELLOW`:
 
-### Columns
-
-You can apply conditional formatting to only certain rows and/or columns.
-
-The following method formats cells in the named column when a specified condition exists:
-
-[`.formatColumnWhere("columnName", "<condition>", "colorValue")`](../reference/table-operations/format/format-column-where.md)
-
-For example, the following query applies the color `DEEP_GREEN` to the `TestGrade` column when the value in the `GPA` column of the same row is less than `3.0`.
-
-```groovy test-set=1
-students_format=students.formatColumnWhere("TestGrade", "GPA<3.0", "DEEP_GREEN")
+```groovy test-set=1 order=studentsGpaFormat
+studentsGpaFormat = students.formatColumns("GPA=VIVID_YELLOW")
 ```
 
-[Ternary statements](./ternary-if-how-to.md) can also be used to color cells based on conditional statements. For example, the following query colors cells in the `Name` column `BRIGHT_GREEN` if the value in the `Diff` column is positive, and `BRIGHT_RED` if otherwise:
+### `formatColumnWhere`
 
-```groovy test-set=1
-student_tests =  students_format
-    .update("Diff = HomeworkGrade - TestGrade")
-    .formatColumns("Name = (Diff > 0) ? BRIGHT_GREEN : BRIGHT_RED")
+The [`formatColumnWhere`](../reference/table-operations/format/format-column-where.md) method applies conditional color formatting to a single column. The following example formats the `TestGrade` column when the `GPA` is below 3.0:
+
+```groovy test-set=1 order=studentsFormat
+studentsFormat = students.formatColumnWhere("TestGrade", "GPA<3.0", "DEEP_GREEN")
 ```
 
-### Rows
+### `formatRowWhere`
 
-The [`formatRowWhere`](../reference/table-operations/format/format-row-where.md) method formats entire rows when a specified condition exists:
+The [`formatRowWhere`](../reference/table-operations/format/format-row-where.md) method applies conditional color formatting to entire rows. For example, the code below highlights rows where the student's name is "Jane":
 
-`.formatRowWhere("<condition>", "<colorValue>")`
-
-The following query applies the color `PALE_BLUE` to any row when the value in the `Diff` column is greater than 0.
-
-```groovy test-set=1
-student_all_row =  student_tests
-    .formatRowWhere("Diff > 0"," PALE_BLUE")
+```groovy test-set=1 order=studentName
+studentName = students.formatRowWhere("Name=`Jane`", "BRIGHT_YELLOW")
 ```
 
-The following query colors the entire row `BRIGHT_YELLOW` if the `Sym` column is equal to the string "AAPL":
+## Colors
 
-```groovy test-set=1
-student_name = student_all_row.formatRowWhere("Name=`Jane`", "BRIGHT_YELLOW")
-```
+Before applying formatting to tables, it's essential to understand the available color options in Deephaven.
 
-The following colors all the cells in every other row `VIVID_PURPLE`:
+### Color types
 
-```groovy test-set=1
-student_id = student_name.formatRowWhere("StudentID % 2 == 0", "VIVID_PURPLE")
-```
+You can assign colors in Deephaven tables or plots using several different methods:
 
-### Row formatting with highlighted columns
+#### Named color values
 
-Row and column formatting can also be combined in a table. All columns will use the row format by default, but if
-a column format is specified, it will override the row format. For example:
-
-The following query colors all cells in every other row `VIVID_PURPLE`, and colors the cells in column C `BRIGHT_YELLOW` in every odd row.
-
-```groovy test-set=1
-students_combined = student_tests.formatRowWhere("StudentID % 2 == 0", "VIVID_PURPLE")
-    .formatColumnWhere("Name", "Diff > 0", "BRIGHT_YELLOW")
-```
-
-## Advanced formatting
-
-More advanced formats, including conditional formatting, can be achieved using
-the [`.formatColumns`](../reference/table-operations/format/format-columns.md) method. In fact,
-both [`.formatRowWhere`](../reference/table-operations/format/format-row-where.md) and [`.formatColumnWhere`](../reference/table-operations/format/format-column-where.md) are wrappers for [`.formatColumns`](../reference/table-operations/format/format-columns.md).
-
-The [`.formatColumns`](../reference/table-operations/format/format-columns.md) method works similarly to [`updateView`](../reference/table-operations/select/update-view.md) — however, the result of the
-formula is used to determine the format for an existing column, rather than to add a new column to the table.
-The result of a formula passed to [`.formatColumns`](../reference/table-operations/format/format-columns.md) must be either a color string (such as a hexadecimal RGB color,
-e.g. `"#040427`"), a [Color](/core/javadoc/io/deephaven/gui/color/Color.html), or a packed `long`
-representation of the background and foreground color (as returned by [`bgfg()` or `bgfga()`](#assign-colors-to-backgrounds-and-foregrounds)).
-
-Since `.formatColumns` leverages Deephaven's existing formula infrastructure, the full power of the Deephaven query
-engine is available to format formulas in `.formatColumns`. This allows column formats to utilize multiple
-Deephaven columns, user-defined functions and constants (such as custom colors or hashmaps of values to colors),
-and the flexibility of the query language
-(including built-in [query language functions](../reference/query-language/query-library/query-language-function-reference.md)).
-
-### Heat Maps
-
-Color-based formatting can also be used to create heat maps in Deephaven tables:
-
-`heatmap(<colName>, <minimumValue>, <maximumValue>, <minimumBackgroundColor>, <maximumBackgroundColor>)`
-
-The following query will apply color to the `GPA` column as follows:
-
-- When the value is less than or equal to 1.00, `BRIGHT_GREEN` will be used,
-- When the value is greater than or equal to 4.00, `BRIGHT_RED` will be used, and
-- An automatically interpolated color proportionally between `BRIGHT_GREEN` and `BRIGHT_RED` will be used for all other values between 1 and 4.
-
-```groovy test-set=1
-students_heat = students.formatColumns("GPA = heatmap(GPA, 1, 4, BRIGHT_GREEN, BRIGHT_RED)")
-```
-
-Options are also available for `heatmapFg()` and `heatmapForeground()`. When either of these methods is used, the heatmap color pair listed in the argument is applied only to the foreground.
-
-### Conditional formatting
-
-Advanced conditional formats can be applied via `formatColumns()`, such as different colors for different values. The
-following query will use a [terrnary if](./ternary-if-how-to.md) to color the `Name` column as follows:
-
-- When the `TestGrade` or `HomeworkGrade` is less than 85, `BRIGHT_YELLOW` will be used.
-- When the `GPA` is less than 3.0, `LIGHT_RED` will be used.
-- Otherwise, no formatting will be applied.
-
-```groovy test-set=1
-students_cond = students.formatColumns("Name = TestGrade < 85 || HomeworkGrade < 85 ? BRIGHT_YELLOW : GPA < 3 ? LIGHT_RED : NO_FORMATTING")
-```
-
-### Advanced row formatting
-
-The default color for a row can also be specified in a `.formatColumns()` formula by using the special variable
-`__ROWFORMATTED` as the destination column name. The following query will color the entire row, using different
-colors depending on the value of the `GPA` column.
-
-```groovy test-set=1
-students_cond = students.formatColumns("__ROWFORMATTED = GPA >= 3.5 ? LIGHT_GREEN : GPA >= 3 ? LIGHT_BLUE : BRIGHT_YELLOW")
-```
-
-## Assign colors to backgrounds and foregrounds
-
-The field of a cell is the background. The text/numbers showing in the cell is the foreground. Color objects can then be used with the following methods to assign individual color values or combinations to the background and/or foreground:
-
-- `bg()` or `background()` - These methods set the background to a specific color, but do not apply any foreground color.
-- `fg()` or `foreground()` - These methods set the foreground to a specific color, but do not apply any background color.
-- `bgfg()` or `backgroundForeground()` - These methods set both the background and foreground to specific values.
-- `bgfga()` or `backgroundForegroundAuto()` - These methods set the background to a specific color. Deephaven automatically chooses a contrasting foreground color.
-- `fgo()` or `foregroundOverride()` - These methods are similar to `fg()` or `foreground()`. However, when either of these methods are used, the color selected will override the highlight color that is automatically assigned when the user highlights the cell or group of cells in the Deephaven console.
-- `bgo()` or `backgroundOverride()` - These methods are similar to `bg()` or `background()`. However, when either of these methods are used, the color selected will override the highlight color that is automatically assigned when the user highlights the cell or group of cells in the Deephaven console.
-
-> [!CAUTION]
-> Overriding the foreground or background colors may make the highlighted content difficult to read. Care in use is suggested.
-
-The following query generates a table with an orange background using RGB values:
-
-```groovy test-set=1
-students_combined = student_tests
-    .formatColumnWhere("Name", "Diff > 0", "bg(colorRGB(255,93,0))")
-```
-
-The following query generates a table with a purple foreground using RGB values:
-
-```groovy test-set=1
-students_purple = students.formatRowWhere("true", "fg(colorRGB(102,0,204))")
-```
-
-The following query will color the `Name` column with a hot pink background and a yellow foreground.
-
-```groovy test-set=1
-students_pink = students.formatColumns("Name = bgfg(colorRGB(255,105,80),colorRGB(255,255,0))")
-```
-
-The following query generates a table with a navy blue background (defined by `colorRGB(0,0,128)`) and automatically
-selects a contrasting foreground (using `bgfga()`).
-
-```groovy test-set=1
-students_navy = students.formatColumns("* = bgfga(colorRGB(0,0,128))")
-```
-
-## Appendix: Assigning colors
-
-Colors can be assigned in Deephaven tables or plots using strings or by using color objects.
-
-### Named color values
-
-There are 280 predefined color values available in Deephaven.
+There are hundreds of predefined color values available in Deephaven. See the [Named Colors Chart](../assets/how-to/colors.pdf) for all of them. These predefined colors are referred to by their names, which must be typed in capital letters (e.g., `VIVID_YELLOW`, `BRIGHT_GREEN`).
 
 > [!NOTE]
-> See:
-> [Named Colors Chart](../assets/how-to/colors.pdf)
+> The `NO_FORMATTING` predefined value indicates that no special format should be applied. This is useful in advanced formats defined with [`formatColumns`](../reference/table-operations/format/format-columns.md).
 
-These predefined colors are referred to by their names, which must be typed in capital letters.
+#### HEX (Hexadecimal)
 
-> [!NOTE]
-> The `NO_FORMATTING` predefined value indicates that no special format should be applied. This is useful in advanced
-> formats defined with `.formatColumns()`.
-
-### HEX (Hexadecimal)
-
-Hexadecimal values are specified with three values that correspond to RRGGBB. Each value [RR (red), GG (green) and BB (blue)] are hexadecimal integers between 00 and FF, and they specify the intensity of the color. All Hex values are preceded with a pound sign, e.g., #0099FF.
+Hexadecimal values are specified with three pairs of values that correspond to red, green, and blue (RRGGBB). Each pair represents a hexadecimal integer between 00 and FF that specifies the intensity of the color. All hex values are preceded with a pound sign, e.g., #0099FF.
 
 Because these values are considered strings, they must be enclosed in quotes. If the HEX color values are to be used within another string (i.e., a string within a string), the name must be enclosed in backticks.
 
-```groovy test-set=1
-students_hex = students.formatColumns("Name = `#87CEFA`")
+```groovy test-set=1 order=studentsHex
+// Using HEX color - light sky blue (#87CEFA)
+studentsHex = students.formatColumns("Name = `#87CEFA`")
 ```
 
-#### RGB (Red, Green, Blue)
+Note: HEX values must be enclosed in backticks when used within a string.
 
-RGB values are represented numerically with comma-separated values for red, green and blue respectively, with each value expressed as integers in the range 0-255 or floats in the range 0-1.
+#### RGB and RGBA colors
 
-RGB color values can be converted into color objects in Deephaven by enclosing their values into the argument of the `colorRGB` method.
+You can specify RGB and RGBA colors using the `colorRGB` method:
 
-The syntax follows:
-
-`colorRGB(int r, int g, int b)`
-
-`colorRGB(float r, float g, float b)`
-
-```groovy test-set=1
-students_rgb = students.formatColumns("Name = colorRGB(135, 206, 250)")
+```groovy test-set=1 order=studentsRgb
+// RGB color (integers 0-255) - light sky blue
+studentsRgb = students.formatColumns("Name = colorRGB(135, 206, 250)")
 ```
 
 #### RGBA (Red, Green, Blue, Alpha)
 
-The RGBA color model is based on RGB. However, RGBA provides an option for a fourth value to specify alpha (transparency). As with RGB, the numeric values can be specified using floats or ints. The numeric ranges for RGB remain the same. The alpha channel can range from 0 (fully transparent) to 255 (fully opaque) for ints, and 0.0 to 1.0 for floats.
+The RGBA color model is similar to RGB, but also provides the `alpha` parameter to specify transparency. As with RGB, you can specify the numeric values using floats or ints. The numeric ranges for RGB remain the same. The alpha channel can range from 0 to 255 for ints, and 0.0 to 1.0 for floats. The minimum value indicates full transparency, whereas the maximum value indicates fully opaque.
 
-RGBA color values can be converted into color objects in Deephaven by enclosing their values into the argument of the `colorRGB` method.
+You can convert RGBA color values into color objects in Deephaven by enclosing their values into the argument of the `colorRGB` method.
 
 The syntax follows:
 
@@ -245,16 +99,202 @@ The syntax follows:
 
 `colorRGB(float r, float g, float b, float a)`
 
-```groovy test-set=1
-students_rgba = students.formatColumns("Name = colorRGB(135, 206, 250, 50)")
+```groovy test-set=1 order=studentsRgba
+studentsRgba = students.formatColumns("Name = colorRGB(135, 206, 250, 50)")
 ```
+
+### Background and foreground colors
+
+When formatting table cells, you can control two aspects of the cell's appearance:
+
+- **Background**: The field/fill color of the cell.
+- **Foreground**: The color of the text/numbers shown in the cell.
+
+You can use color objects with the following methods to assign colors to the background and/or foreground:
+
+- `bg` or `background` - Set the background to a specific color without changing the foreground.
+- `fg` or `foreground` - Set the foreground to a specific color without changing the background.
+- `bgfg` or `backgroundForeground` - Set both background and foreground to specific colors.
+- `bgfga` or `backgroundForegroundAuto` - Set the background to a specific color while Deephaven automatically chooses a contrasting foreground color.
+- `fgo` or `foregroundOverride` - Similar to `fg` but will override the highlight color that appears when users select cells.
+- `bgo` or `backgroundOverride` - Similar to `bg` but will override the highlight color that appears when users select cells.
+
+### Color combination best practices
+
+When applying color formatting to your tables, it's essential to consider how background and foreground colors interact. Not all color combinations provide adequate contrast, which can make your data difficult to read or visually unappealing. Here are some guidelines and examples:
+
+- **High contrast combinations** (like black on white or dark blue on light yellow) are generally easier to read.
+- **Low contrast combinations** (like light gray on white or dark blue on black) can strain the eyes and make text difficult to distinguish.
+- **Complementary colors** may create vibrating effects that cause visual fatigue.
+- **Consider accessibility** for users with color vision deficiencies (color blindness).
+
+The following examples demonstrate both effective and problematic color combinations:
+
+```groovy test-set=1 order=studentsOrangeBg,studentsPurple,studentsPink,studentsNavy,studentsHighContrast,studentsLowContrast,studentsVibrating,studentsAutoContrast,studentsColorblind
+// Example 1: Orange background using RGB values (Effective Highlighting)
+studentsOrangeBg = students.formatColumnWhere(
+    "Name", "GPA >= 3.5", "bg(colorRGB(255,93,0))"
+)
+
+// Example 2: Purple text (foreground) using RGB values (Good for Emphasis)
+studentsPurple = students.formatRowWhere("true", "fg(colorRGB(102,0,204))")
+
+// Example 3: Hot pink background with yellow text (High Contrast but Potentially Jarring)
+studentsPink = students.formatColumns(
+    "Name = bgfg(colorRGB(255,105,80),colorRGB(255,255,0))"
+)
+
+// Example 4: Navy blue background with automatically contrasting text (Recommended Approach)
+studentsNavy = students.formatColumns("* = bgfga(colorRGB(0,0,128))")
+
+// Example 5: High contrast (Good) - Black text on white background
+// Using RGB values for white and black
+studentsHighContrast = students.formatColumns(
+    "Name = bgfg(colorRGB(255,255,255), colorRGB(0,0,0))"
+)
+
+// Example 6: Low contrast (Poor) - White text on light gray background
+// This combination is difficult to read
+// Using RGB values for light gray and white
+studentsLowContrast = students.formatColumns(
+    "Name = bgfg(colorRGB(211,211,211), colorRGB(255,255,255))"
+)
+
+// Example 7: Vibrating colors (Poor) - Red text on blue background
+// This creates visual discomfort and fatigue
+// Using RGB values for blue and red
+studentsVibrating = students.formatColumns(
+    "Name = bgfg(colorRGB(0,0,205), colorRGB(255,0,0))"
+)
+
+// Example 8: Automatic contrast (Good) - Let Deephaven choose the text color
+// This is generally the safest approach for readability
+// Using RGB values for dark green
+studentsAutoContrast = students.formatColumns("* = bgfga(colorRGB(0,100,0))")
+
+// Example 9: Color blind friendly (Good) - Blue and orange have different brightness levels
+// This works well for most types of color vision deficiency
+studentsColorblind = students.formatColumns(
+    "Name = bgfg(colorRGB(51,153,255), colorRGB(255,128,0))"
+)
+```
+
+### Tips for selecting effective color combinations
+
+1. **Use the `bgfga` function** when possible, as it automatically selects a contrasting foreground color.
+2. **Test your color schemes** with actual data before deploying to production.
+3. **Consider your audience** - if your tables will be viewed by people with color vision deficiencies, use patterns that differ in brightness, not just hue.
+4. **Be consistent** - use the same color schemes for similar data patterns across your application.
+5. **Use colors meaningfully** - colors should help communicate information, not just make the table look interesting.
+
+## Conditional formatting
+
+Conditional formatting allows you to apply colors to cells, columns, or rows based on specific criteria. This can be as simple as highlighting values above a certain threshold or as complex as using multi-part logical expressions.
+
+### Basic conditional formatting
+
+Basic conditional formatting often involves applying a single rule to a column or row.
+
+You can use more complex conditions, like formatting every other row:
+
+```groovy test-set=1 order=studentsId
+studentsId = students.formatRowWhere("StudentID % 2 == 0", "VIVID_PURPLE")
+```
+
+#### Combining row and column formatting
+
+Row and column formatting can be combined in a single table. When both are applied, column formatting takes precedence over row formatting where they overlap:
+
+```groovy test-set=1 order=studentsCombined
+studentsCombined = students.formatRowWhere(
+    "StudentID % 2 == 0", "VIVID_PURPLE"
+).formatColumnWhere("Name", "GPA > 3.0", "BRIGHT_YELLOW")
+```
+
+### Advanced conditional formatting
+
+Since `formatColumns` leverages Deephaven's formula infrastructure, you have access to powerful formatting capabilities:
+
+- Complex expressions involving multiple columns.
+- User-defined functions and variables.
+- All [built-in query language functions](../reference/query-language/query-library/query-language-function-reference.md).
+
+#### Ternary expressions
+
+The [formatColumns](../reference/table-operations/format/format-columns.md) method supports [ternary expressions](./ternary-if-how-to.md) for more complex conditional formatting:
+
+```groovy test-set=1 order=studentTests
+studentTests = students.update("Diff = HomeworkGrade - TestGrade").formatColumns(
+    "Name = (Diff > 0) ? BRIGHT_GREEN : BRIGHT_RED"
+)
+```
+
+You can apply more sophisticated conditional formatting with multiple conditions. For example, this code colors the `Name` column based on multiple criteria:
+
+```groovy test-set=1 order=studentsCond
+studentsCond = students.formatColumns(
+    "Name = TestGrade <= 85 || HomeworkGrade <= 85 ? BRIGHT_YELLOW : GPA < 3 ? LIGHT_RED : NO_FORMATTING"
+)
+```
+
+This applies the following formatting rules:
+
+- Yellow background when either test grade or homework grade is ≤ 85.
+- Light red background when GPA < 3.0.
+- No special formatting otherwise.
+
+### Heat Maps
+
+Heat maps are a powerful way to visualize numeric ranges in your data. Deephaven provides built-in heat map functionality through the `heatmap` function:
+
+```syntax
+heatmap(<colName>, <minimumValue>, <maximumValue>, <minimumBackgroundColor>, <maximumBackgroundColor>)
+```
+
+Where:
+
+- `colName` is the column value to determine the color.
+- `minimumValue` and `maximumValue` define the range.
+- `minimumBackgroundColor` and `maximumBackgroundColor` are the colors to interpolate between.
+
+For example, this creates a heat map for GPA values ranging from 1.0 to 4.0:
+
+```groovy test-set=1 order=studentsHeat
+studentsHeat = students.formatColumns(
+    "GPA = heatmap(GPA, 1, 4, BRIGHT_GREEN, BRIGHT_RED)"
+)
+```
+
+- When the value is less than or equal to 1.00, `BRIGHT_GREEN` will be used.
+- When the value is greater than or equal to 4.00, `BRIGHT_RED` will be used.
+- An automatically interpolated color proportionally between `BRIGHT_GREEN` and `BRIGHT_RED` will be used for all other values between 1 and 4.
+
+You can also create foreground heat maps with `heatmapFg` or `heatmapForeground` to color the text instead of the background.
+
+### Advanced row formatting
+
+The special column name `__ROWFORMATTED` allows you to format entire rows based on conditions. This is particularly useful for creating banded tables or highlighting specific data patterns:
+
+```groovy test-set=1 order=studentsRowFormat
+studentsRowFormat = students.formatColumns(
+    "__ROWFORMATTED = GPA >= 3.5 ? bg(LIGHT_GREEN) : GPA >= 3 ? bg(LIGHT_BLUE) : bg(BRIGHT_YELLOW)"
+)
+```
+
+This creates a table with:
+
+- Light green rows for high-achieving students (GPA ≥ 3.5).
+- Light blue rows for good students (3.0 ≤ GPA < 3.5).
+- Light yellow rows for students who may need additional support (GPA < 3.0).
 
 ## Related documentation
 
 - [Create a new table](./new-and-empty-table.md#newtable)
 - [How to select, view, and update data in tables](./use-select-view-update.md)
-- [How to use filters](./filters.md)
-- [How to use variables and functions in query strings](./query-scope.md)
-- [`formatColumns()`](../reference/table-operations/format/format-columns.md)
-- [`formatColumnWhere()`](../reference/table-operations/format/format-column-where.md)
-- [`formatRowWhere()`](../reference/table-operations/format/format-row-where.md)
+- [How to use filters](./use-filters.md)
+- [Groovy variables in query strings](./groovy-variables.md)
+- [Groovy closures in query strings](./groovy-closures.md)
+- [Groovy classes in query strings](./groovy-classes.md)
+- [`formatColumns`](../reference/table-operations/format/format-columns.md)
+- [`formatColumnWhere`](../reference/table-operations/format/format-column-where.md)
+- [`formatRowWhere`](../reference/table-operations/format/format-row-where.md)

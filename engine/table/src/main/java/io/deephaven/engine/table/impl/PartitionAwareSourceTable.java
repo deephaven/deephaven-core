@@ -193,11 +193,7 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
     }
 
     @Override
-    protected final BaseTable<?> redefine(@NotNull final TableDefinition newDefinition) {
-        if (newDefinition.getColumnNames().equals(definition.getColumnNames())) {
-            // Nothing changed - we have the same columns in the same order.
-            return this;
-        }
+    protected final BaseTable<?> redefineImpl(@NotNull final TableDefinition newDefinition) {
         if (newDefinition.numColumns() == definition.numColumns()
                 || newDefinition.getPartitioningColumns().size() == partitioningColumnDefinitions.size()) {
             // Nothing changed except ordering, *or* some columns were dropped but the partitioning column was retained.

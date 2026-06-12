@@ -4,7 +4,7 @@
 package io.deephaven.web.client.ide;
 
 import elemental2.core.JsArray;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.GetHoverResponse;
+import io.deephaven.proto.backplane.script.grpc.GetHoverResponse;
 import io.deephaven.web.shared.ide.lsp.*;
 
 /**
@@ -19,11 +19,11 @@ import io.deephaven.web.shared.ide.lsp.*;
 public class LspTranslate {
 
     public static CompletionItem toJs(
-            io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.CompletionItem src) {
+            io.deephaven.proto.backplane.script.grpc.CompletionItem src) {
         final CompletionItem item = new CompletionItem();
-        item.setStart((int) src.getStart());
-        item.setLength((int) src.getLength());
-        item.commitCharacters = src.getCommitCharactersList();
+        item.setStart(src.getStart());
+        item.setLength(src.getLength());
+        item.commitCharacters = JsArray.from(src.getCommitCharactersList().toArray(new String[0]));
         item.textEdit = toJs(src.getTextEdit());
         item.label = src.getLabel();
         item.deprecated = src.getDeprecated();
@@ -48,17 +48,15 @@ public class LspTranslate {
         }
 
         final JsArray<TextEdit> edits = new JsArray<>();
-        final JsArray<io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.TextEdit> textEdits =
-                src.getAdditionalTextEditsList();
-        for (int i = 0; i < textEdits.getLength(); i++) {
-            edits.push(toJs(textEdits.getAt(i)));
+        for (int i = 0; i < src.getAdditionalTextEditsCount(); i++) {
+            edits.push(toJs(src.getAdditionalTextEdits(i)));
         }
         item.additionalTextEdits = edits;
         return item;
     }
 
     private static TextEdit toJs(
-            final io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.TextEdit src) {
+            final io.deephaven.proto.backplane.script.grpc.TextEdit src) {
         final TextEdit item = new TextEdit();
         item.text = src.getText();
         item.range = toJs(src.getRange());
@@ -66,7 +64,7 @@ public class LspTranslate {
     }
 
     private static DocumentRange toJs(
-            final io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.DocumentRange range) {
+            final io.deephaven.proto.backplane.script.grpc.DocumentRange range) {
         final DocumentRange item = new DocumentRange();
         item.start = toJs(range.getStart());
         item.end = toJs(range.getEnd());
@@ -74,7 +72,7 @@ public class LspTranslate {
     }
 
     private static Position toJs(
-            final io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.Position src) {
+            final io.deephaven.proto.backplane.script.grpc.Position src) {
         final Position item = new Position();
         item.line = (int) src.getLine();
         item.character = (int) src.getCharacter();
@@ -82,7 +80,7 @@ public class LspTranslate {
     }
 
     private static MarkupContent toJs(
-            final io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.MarkupContent src) {
+            final io.deephaven.proto.backplane.script.grpc.MarkupContent src) {
         final MarkupContent content = new MarkupContent();
 
         content.kind = src.getKind();
@@ -91,7 +89,7 @@ public class LspTranslate {
     }
 
     public static SignatureInformation toJs(
-            io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.SignatureInformation src) {
+            io.deephaven.proto.backplane.script.grpc.SignatureInformation src) {
         final SignatureInformation item = new SignatureInformation();
         item.label = src.getLabel();
         if (src.hasDocumentation()) {
@@ -102,17 +100,15 @@ public class LspTranslate {
         }
 
         final JsArray<ParameterInformation> params = new JsArray<>();
-        final JsArray<io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.ParameterInformation> paramsList =
-                src.getParametersList();
-        for (int i = 0; i < paramsList.getLength(); i++) {
-            params.push(toJs(paramsList.getAt(i)));
+        for (int i = 0; i < src.getParametersCount(); i++) {
+            params.push(toJs(src.getParameters(i)));
         }
         item.parameters = params;
         return item;
     }
 
     private static ParameterInformation toJs(
-            final io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.ParameterInformation src) {
+            final io.deephaven.proto.backplane.script.grpc.ParameterInformation src) {
         final ParameterInformation item = new ParameterInformation();
         item.label = src.getLabel();
         item.documentation = toJs(src.getDocumentation());

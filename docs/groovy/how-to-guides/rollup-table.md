@@ -41,31 +41,31 @@ The [`rollup`](../reference/table-operations/create/rollup.md) method takes up t
 
 The following aggregations are supported:
 
-| Aggregation                                                                                 | Supported by `rollup()` |
-| ------------------------------------------------------------------------------------------- | ----------------------- |
-| [`AggAbsSum`](../reference/table-operations/group-and-aggregate/AggAbsSum.md)               | <Check/>                |
-| [`AggAvg`](../reference/table-operations/group-and-aggregate/AggAvg.md)                     | <Check/>                |
-| [`AggCount`](../reference/table-operations/group-and-aggregate/AggCount.md)                 | <Check/>                |
-| [`AggCountWhere`](../reference/table-operations/group-and-aggregate/AggCountWhere.md)       | <Check/>                |
-| [`AggCountDistinct`](../reference/table-operations/group-and-aggregate/AggCountDistinct.md) | <Check/>                |
-| [`AggDistinct`](../reference/table-operations/group-and-aggregate/AggDistinct.md)           | <RedX/>                 |
-| [`AggFirst`](../reference/table-operations/group-and-aggregate/AggFirst.md)                 | <Check/>                |
-| [`AggFormula`](../reference/table-operations/group-and-aggregate/AggFormula.md)             | <RedX/>                 |
-| [`AggGroup`](../reference/table-operations/group-and-aggregate/AggGroup.md)                 | <RedX/>                 |
-| [`AggLast`](../reference/table-operations/group-and-aggregate/AggLast.md)                   | <Check/>                |
-| [`AggMax`](../reference/table-operations/group-and-aggregate/AggMax.md)                     | <Check/>                |
-| [`AggMed`](../reference/table-operations/group-and-aggregate/AggMed.md)                     | <RedX/>                 |
-| [`AggMin`](../reference/table-operations/group-and-aggregate/AggMin.md)                     | <Check/>                |
-| [`AggPartition`](../reference/table-operations/group-and-aggregate/AggPartition.md)         | <RedX/>                 |
-| [`AggPct`](../reference/table-operations/group-and-aggregate/AggPct.md)                     | <RedX/>                 |
-| [`AggSortedFirst`](../reference/table-operations/group-and-aggregate/AggSortedFirst.md)     | <Check/>                |
-| [`AggSortedLast`](../reference/table-operations/group-and-aggregate/AggSortedLast.md)       | <Check/>                |
-| [`AggStd`](../reference/table-operations/group-and-aggregate/AggStd.md)                     | <Check/>                |
-| [`AggSum`](../reference/table-operations/group-and-aggregate/AggSum.md)                     | <Check/>                |
-| [`AggUnique`](../reference/table-operations/group-and-aggregate/AggUnique.md)               | <Check/>                |
-| [`AggVar`](../reference/table-operations/group-and-aggregate/AggVar.md)                     | <Check/>                |
-| [`AggWAvg`](../reference/table-operations/group-and-aggregate/AggWAvg.md)                   | <Check/>                |
-| [`AggWSum`](../reference/table-operations/group-and-aggregate/AggWSum.md)                   | <Check/>                |
+| Aggregation                                                                                 | Supported by `rollup` |
+| ------------------------------------------------------------------------------------------- | --------------------- |
+| [`AggAbsSum`](../reference/table-operations/group-and-aggregate/AggAbsSum.md)               | <Check/>              |
+| [`AggAvg`](../reference/table-operations/group-and-aggregate/AggAvg.md)                     | <Check/>              |
+| [`AggCount`](../reference/table-operations/group-and-aggregate/AggCount.md)                 | <Check/>              |
+| [`AggCountWhere`](../reference/table-operations/group-and-aggregate/AggCountWhere.md)       | <Check/>              |
+| [`AggCountDistinct`](../reference/table-operations/group-and-aggregate/AggCountDistinct.md) | <Check/>              |
+| [`AggDistinct`](../reference/table-operations/group-and-aggregate/AggDistinct.md)           | <RedX/>               |
+| [`AggFirst`](../reference/table-operations/group-and-aggregate/AggFirst.md)                 | <Check/>              |
+| [`AggFormula`](../reference/table-operations/group-and-aggregate/AggFormula.md)             | <RedX/>               |
+| [`AggGroup`](../reference/table-operations/group-and-aggregate/AggGroup.md)                 | <RedX/>               |
+| [`AggLast`](../reference/table-operations/group-and-aggregate/AggLast.md)                   | <Check/>              |
+| [`AggMax`](../reference/table-operations/group-and-aggregate/AggMax.md)                     | <Check/>              |
+| [`AggMed`](../reference/table-operations/group-and-aggregate/AggMed.md)                     | <RedX/>               |
+| [`AggMin`](../reference/table-operations/group-and-aggregate/AggMin.md)                     | <Check/>              |
+| [`AggPartition`](../reference/table-operations/group-and-aggregate/AggPartition.md)         | <RedX/>               |
+| [`AggPct`](../reference/table-operations/group-and-aggregate/AggPct.md)                     | <RedX/>               |
+| [`AggSortedFirst`](../reference/table-operations/group-and-aggregate/AggSortedFirst.md)     | <Check/>              |
+| [`AggSortedLast`](../reference/table-operations/group-and-aggregate/AggSortedLast.md)       | <Check/>              |
+| [`AggStd`](../reference/table-operations/group-and-aggregate/AggStd.md)                     | <Check/>              |
+| [`AggSum`](../reference/table-operations/group-and-aggregate/AggSum.md)                     | <Check/>              |
+| [`AggUnique`](../reference/table-operations/group-and-aggregate/AggUnique.md)               | <Check/>              |
+| [`AggVar`](../reference/table-operations/group-and-aggregate/AggVar.md)                     | <Check/>              |
+| [`AggWAvg`](../reference/table-operations/group-and-aggregate/AggWAvg.md)                   | <Check/>              |
+| [`AggWSum`](../reference/table-operations/group-and-aggregate/AggWSum.md)                   | <Check/>              |
 
 In the case of a rollup table with a single aggregation, that aggregation can be on its own or in a single-element list. When more than one aggregation is used, the aggregations must be in a list. The aggregation(s) can be defined outside of the `rollup` call just like with [combined aggregations](./combined-aggregations.md#syntax).
 
