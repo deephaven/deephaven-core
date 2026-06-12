@@ -16,8 +16,8 @@ import java.math.BigDecimal;
 @JsType(namespace = "dh")
 public class BigDecimalWrapper {
     /**
-     * Creates a wrapper from a decimal string. Strings may optionally start with {@code +}/{@code -},  
-     * must have a decimal value, and may end with {@code e}/{@code E} followed by an exponent. 
+     * Creates a wrapper from a decimal string. Strings may optionally start with {@code +}/{@code -}, must have a
+     * decimal value, and may end with {@code e}/{@code E} followed by an exponent.
      *
      * @param value A string representation of a decimal number.
      * @return A wrapper for the parsed value.

@@ -15,7 +15,8 @@ import java.math.BigInteger;
 @JsType(namespace = "dh")
 public class BigIntegerWrapper {
     /**
-     * Creates a wrapper from an integer string. The provided string may start with {@code +} or {@code -}, and must otherwise only contain the digits 0-9.
+     * Creates a wrapper from an integer string. The provided string may start with {@code +} or {@code -}, and must
+     * otherwise only contain the digits 0-9.
      *
      * @param str A string representation of an integer.
      * @return A wrapper for the parsed value.
