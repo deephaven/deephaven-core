@@ -23,7 +23,7 @@ import java.util.Objects;
 public class JsFileContents {
 
     /**
-     * Creates an instance from an existing {@link Blob}.
+     * Creates an instance from an existing <a href="https://developer.mozilla.org/en-US/docs/Web/API/Blob">Blob</a>.
      *
      * @param blob The blob containing the file contents.
      * @return A {@link JsFileContents} instance containing the provided data.
@@ -36,7 +36,7 @@ public class JsFileContents {
     /**
      * Creates an instance from text.
      *
-     * @param text One or more string parts to combine into a {@link Blob}.
+     * @param text One or more string parts to combine into a <a href="https://developer.mozilla.org/en-US/docs/Web/API/Blob">Blob</a>.
      * @return A {@link JsFileContents} instance containing the provided data.
      */
     public static JsFileContents text(String... text) {
@@ -44,9 +44,9 @@ public class JsFileContents {
     }
 
     /**
-     * Creates an instance from one or more {@link ArrayBuffer} values.
+     * Creates an instance from one or more <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer">ArrayBuffer</a> values.
      *
-     * @param buffers One or more buffers to combine into a {@link Blob}.
+     * @param buffers One or more buffers to combine into a <a href="https://developer.mozilla.org/en-US/docs/Web/API/Blob">Blob</a>.
      * @return A {@link JsFileContents} instance containing the provided data.
      */
     public static JsFileContents arrayBuffers(ArrayBuffer... buffers) {
@@ -87,9 +87,9 @@ public class JsFileContents {
     }
 
     /**
-     * Reads the contents as an {@link ArrayBuffer}.
+     * Reads the contents as an <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer">ArrayBuffer</a>.
      *
-     * @return A promise that resolves to the file contents as an {@link ArrayBuffer}.
+     * @return A promise that resolves to the file contents as an <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer">ArrayBuffer</a>.
      */
     @JsMethod
     public Promise<ArrayBuffer> arrayBuffer() {
