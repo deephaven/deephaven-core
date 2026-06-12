@@ -1,9 +1,9 @@
 ---
-title: Stream data from a Python client with input tables
+title: Send data to Deephaven from a Python client
 sidebar_label: Client input tables
 ---
 
-This guide shows how to stream data into Deephaven from an external Python application using `pydeephaven` and input tables. This is useful when your data source runs outside the Deephaven server — for example, a separate process collecting sensor data, receiving messages from a queue, or pulling from an external API.
+This guide shows how to send data to Deephaven from an external Python application using `pydeephaven` and input tables. Input tables allow a client to add, update, and delete rows in a Deephaven table.
 
 > [!NOTE]
 > If your data source can run directly on the Deephaven server, consider using [server-side input tables](./input-tables.md) or [`DynamicTableWriter`](./table-publisher.md) instead. Server-side ingestion is generally more efficient because it avoids network overhead.
@@ -12,86 +12,89 @@ This guide shows how to stream data into Deephaven from an external Python appli
 
 Use client-side input tables when:
 
-- Your data source runs in a separate process or machine.
-- You need to forward data from an external system (message queue, API, sensor) to Deephaven.
-- You want to keep data collection logic separate from server-side analytics.
+- **Managing reference data**: Upload configuration, lookup tables, or static datasets that may need updates.
+- **Tracking state**: Maintain the latest status per entity (e.g., device status, order state, user preferences).
+- **Interactive editing**: Allow users or external systems to add, update, or remove records.
+- **Forwarding external data**: Relay data from message queues, APIs, or sensors running in separate processes.
 
-## The streaming pattern
+## Basic pattern
 
-The basic pattern for streaming data from a Python client is:
+The basic pattern for sending data from a Python client is:
 
 1. **Create an input table on the server** using [`Session.input_table`](/core/client-api/python/code/pydeephaven.session.html#pydeephaven.session.Session.input_table).
-2. **Receive data** in your client application.
+2. **Prepare data** in your client application.
 3. **Convert to PyArrow** and upload with [`Session.import_table`](/core/client-api/python/code/pydeephaven.session.html#pydeephaven.session.Session.import_table).
-4. **Append to the input table** with [`InputTable.add`](/core/client-api/python/code/pydeephaven.table.html#pydeephaven.table.InputTable.add).
+4. **Add to the input table** with [`InputTable.add`](/core/client-api/python/code/pydeephaven.table.html#pydeephaven.table.InputTable.add). For keyed tables, this inserts new rows or updates existing ones.
 5. **Release the uploaded table** with [`Session.release`](/core/client-api/python/code/pydeephaven.session.html#pydeephaven.session.Session.release) to prevent memory leaks.
 
-Repeat steps 2-5 to continuously stream data.
+Repeat steps 2-5 as needed.
 
 ## Complete example
 
-The following example simulates a sensor data stream. The client generates random temperature readings and streams them to the server every second.
+The following example tracks device status using a keyed input table. Each device has a unique ID, and updates replace the previous status for that device.
 
 ```python skip-test
-import time
 import pyarrow as pa
 from pydeephaven import Session
+from datetime import datetime, timezone
 
 # Connect to Deephaven server (localhost:10000 is the default)
 session = Session()
 
-# Define schema for sensor data
+# Define schema for device status
 schema = pa.schema(
     [
-        pa.field("Timestamp", pa.timestamp("ns", tz="UTC")),
-        pa.field("SensorId", pa.string()),
-        pa.field("Temperature", pa.float64()),
+        pa.field("DeviceId", pa.string()),
+        pa.field("Status", pa.string()),
+        pa.field("LastSeen", pa.timestamp("ns", tz="UTC")),
     ]
 )
 
-# Create an append-only input table on the server
-input_table = session.input_table(schema=schema)
+# Create a keyed input table - DeviceId is the key
+# Adding a row with an existing DeviceId updates that row
+input_table = session.input_table(schema=schema, key_cols="DeviceId")
 
 # Bind to a name so it's visible in the UI (check http://localhost:10000)
-session.bind_table("sensor_data", input_table)
+session.bind_table("device_status", input_table)
 
-print("Streaming sensor data. Press Ctrl+C to stop.")
 
-try:
-    while True:
-        # Simulate receiving sensor data
-        import random
-        from datetime import datetime, timezone
+def update_device(device_id: str, status: str):
+    """Add or update a device's status."""
+    pa_table = pa.table(
+        {
+            "DeviceId": [device_id],
+            "Status": [status],
+            "LastSeen": pa.array(
+                [datetime.now(timezone.utc)], type=pa.timestamp("ns", tz="UTC")
+            ),
+        }
+    )
 
-        now = datetime.now(timezone.utc)
-        sensor_id = f"sensor_{random.randint(1, 5)}"
-        temperature = 20.0 + random.gauss(0, 2)
+    uploaded = session.import_table(pa_table)
+    input_table.add(uploaded)  # Inserts or updates based on DeviceId
+    session.release(uploaded.ticket)
 
-        # Create a PyArrow table with the new data
-        pa_table = pa.table(
-            {
-                "Timestamp": pa.array([now], type=pa.timestamp("ns", tz="UTC")),
-                "SensorId": pa.array([sensor_id]),
-                "Temperature": pa.array([temperature]),
-            }
-        )
 
-        # Upload to server
-        uploaded = session.import_table(pa_table)
+def remove_device(device_id: str):
+    """Remove a device from the table."""
+    keys = pa.table({"DeviceId": [device_id]})
+    uploaded = session.import_table(keys)
+    input_table.delete(uploaded)
+    session.release(uploaded.ticket)
 
-        # Append to input table
-        input_table.add(uploaded)
 
-        # IMPORTANT: Release to prevent memory leak
-        session.release(uploaded.ticket)
+# Example usage
+update_device("sensor-001", "online")
+update_device("sensor-002", "online")
+update_device("sensor-003", "offline")
 
-        print(f"{now}: {sensor_id} = {temperature:.1f}°C")
-        time.sleep(1)
+# Update sensor-001's status (replaces the previous row)
+update_device("sensor-001", "maintenance")
 
-except KeyboardInterrupt:
-    print("\nStopped.")
-finally:
-    session.close()
+# Remove sensor-003
+remove_device("sensor-003")
+
+session.close()
 ```
 
 ## Memory management
@@ -115,40 +118,40 @@ session.release(uploaded.ticket)
 
 The client supports three types of input tables:
 
-### Append-only
-
-Rows are added to the end of the table. No key columns, no deletion support.
-
-```python skip-test
-# Append-only (default)
-input_table = session.input_table(schema=schema)
-```
-
 ### Keyed
 
 Rows are identified by key columns. Adding a row with an existing key replaces that row. Deletion is supported.
 
 ```python skip-test
-# Keyed by SensorId
-input_table = session.input_table(schema=schema, key_cols="SensorId")
+# Keyed by DeviceId
+input_table = session.input_table(schema=schema, key_cols="DeviceId")
 
 # With multiple key columns
-input_table = session.input_table(schema=schema, key_cols=["SensorId", "Region"])
+input_table = session.input_table(schema=schema, key_cols=["DeviceId", "Region"])
 ```
 
-With keyed tables, you can also delete rows:
+With keyed tables, you can delete rows by providing just the key values:
 
 ```python skip-test
 # Delete rows by key
-keys_to_delete = pa.table({"SensorId": ["sensor_1", "sensor_3"]})
+keys_to_delete = pa.table({"DeviceId": ["sensor-001", "sensor-003"]})
 uploaded_keys = session.import_table(keys_to_delete)
 input_table.delete(uploaded_keys)
 session.release(uploaded_keys.ticket)
 ```
 
+### Append-only
+
+Rows are added to the end of the table. No key columns, no updates, no deletion. Use this when you need a simple log or event stream.
+
+```python skip-test
+# Append-only (default when no key_cols specified)
+input_table = session.input_table(schema=schema)
+```
+
 ### Blink
 
-Rows are visible for only one [update graph](../conceptual/table-update-model.md) cycle, then disappear. This is useful for event streams where you only need to see the latest batch.
+Rows are visible for only one [update graph](../conceptual/table-update-model.md) cycle, then disappear. Use this for event streams where you only need to process the latest batch.
 
 ```python skip-test
 # Blink table
@@ -160,21 +163,17 @@ input_table = session.input_table(schema=schema, blink_table=True)
 
 ## Batch uploads
 
-For better performance when streaming high volumes of data, batch multiple rows into a single upload:
+For better performance, batch multiple rows into a single upload:
 
 ```python skip-test
-# Collect multiple readings
-batch_data = {
-    "Timestamp": [],
-    "SensorId": [],
-    "Temperature": [],
-}
+from datetime import datetime, timezone
 
-for _ in range(100):
-    # Collect data...
-    batch_data["Timestamp"].append(now)
-    batch_data["SensorId"].append(sensor_id)
-    batch_data["Temperature"].append(temperature)
+now = datetime.now(timezone.utc)
+batch_data = {
+    "DeviceId": ["sensor-001", "sensor-002", "sensor-003"],
+    "Status": ["online", "offline", "maintenance"],
+    "LastSeen": [now, now, now],
+}
 
 # Upload entire batch at once
 pa_table = pa.table(batch_data, schema=schema)
