@@ -20,7 +20,7 @@ dependencies will be explained in the section for each client.
 
 ### Software prerequisites
 
-1. Install Visual Studio 2022 Community Edition (or Professional, or Enterprise)
+1. Install Visual Studio 2026 Community Edition (or Professional, or Enterprise)
    from here:
 
    https://visualstudio.microsoft.com/downloads/
@@ -29,7 +29,7 @@ dependencies will be explained in the section for each client.
    * "Desktop development with C++"
    * "Python development"
 
-2. Install Python 3.10 from the Microsoft Store
+2. Install Python 3.13 from the Microsoft Store
 
 3. Install Java JDK 21 for Windows from
 
@@ -48,7 +48,7 @@ dependencies will be explained in the section for each client.
 1. Start a x64 Native Tools Command Prompt. Note this is NOT the regular Command Prompt,
    nor is it the Visual Studio Developer Command Prompt. 
 
-* `Start -> V -> Visual Studio 2022 -> x64 Native Tools Command Prompt for VS 2022`
+* `Start -> V -> Visual Studio 2026 -> x64 Native Tools Command Prompt for VS`
 
 2. (Optional) override environment variables
 
@@ -72,7 +72,7 @@ Download the build script:
 
 ```
 cd %HOMEDRIVE%%HOMEPATH%
-curl -O https://raw.githubusercontent.com/deephaven/deephaven-core/refs/heads/main/cpp-client/build-windows-clients.bat`
+curl -O https://raw.githubusercontent.com/deephaven/deephaven-core/refs/heads/main/cpp-client/build-windows-clients.bat
 ```
 
 ## Building the clients

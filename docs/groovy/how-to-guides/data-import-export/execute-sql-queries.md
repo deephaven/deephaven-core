@@ -18,7 +18,7 @@ These methods automatically use tables from your script session's [query scope](
 
 ## Execute a query with `evaluate`
 
-The simplest way to execute SQL against Deephaven tables is with `evaluate()`:
+The simplest way to execute SQL against Deephaven tables is with `evaluate`:
 
 ```groovy order=source,other,result
 import io.deephaven.engine.sql.Sql

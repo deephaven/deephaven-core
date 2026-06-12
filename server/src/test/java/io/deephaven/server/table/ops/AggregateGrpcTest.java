@@ -8,6 +8,7 @@ import com.google.protobuf.UnknownFieldSet.Field;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.proto.backplane.grpc.AggSpec;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecCountDistinct;
+import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecFormula;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecSum;
 import io.deephaven.proto.backplane.grpc.AggregateRequest;
 import io.deephaven.proto.backplane.grpc.Aggregation;
@@ -245,6 +246,55 @@ public class AggregateGrpcTest extends GrpcTableOperationTestBase<AggregateReque
                 .build();
         assertError(request, Code.INVALID_ARGUMENT,
                 "io.deephaven.proto.backplane.grpc.AggSpec must have oneof type. Note: this may also indicate that the server is older than the client and doesn't know about this new oneof option.");
+    }
+
+    @Test
+    public void columnsWithFormulaRejectsDisallowedExpression() {
+        final TableReference ref = ref(TableTools.emptyTable(100).view("Key=ii % 2", "I=ii"));
+        final AggregateRequest request = AggregateRequest.newBuilder()
+                .setResultId(ExportTicketHelper.wrapExportIdInTicket(1))
+                .setSourceId(ref)
+                .addAggregations(Aggregation.newBuilder()
+                        .setColumns(AggregationColumns.newBuilder()
+                                .setSpec(AggSpec.newBuilder()
+                                        .setFormula(AggSpecFormula.newBuilder()
+                                                .setFormula("Runtime.getRuntime().exec(\"touch /tmp/pwned\")")
+                                                .setParamToken("each")
+                                                .build())
+                                        .build())
+                                .addMatchPairs("I")
+                                .build())
+                        .build())
+                .addGroupByColumns("Key")
+                .build();
+        // Export-time errors are sanitized to "Details Logged w/ID" with the INVALID_ARGUMENT status preserved;
+        // the full ColumnExpressionValidator message is written to the server log.
+        assertError(request, Code.INVALID_ARGUMENT, "Details Logged w/ID");
+    }
+
+    @Test
+    public void columnsWithFormulaAcceptsBenignExpression() {
+        final TableReference ref = ref(TableTools.emptyTable(100).view("Key=ii % 2", "I=ii"));
+        final AggregateRequest request = AggregateRequest.newBuilder()
+                .setResultId(ExportTicketHelper.wrapExportIdInTicket(1))
+                .setSourceId(ref)
+                .addAggregations(Aggregation.newBuilder()
+                        .setColumns(AggregationColumns.newBuilder()
+                                .setSpec(AggSpec.newBuilder()
+                                        .setFormula(AggSpecFormula.newBuilder()
+                                                .setFormula("each.size()")
+                                                .setParamToken("each")
+                                                .build())
+                                        .build())
+                                .addMatchPairs("I")
+                                .build())
+                        .build())
+                .addGroupByColumns("Key")
+                .build();
+        final ExportedTableCreationResponse response = channel().tableBlocking().aggregate(request);
+        assertThat(response.getSuccess()).isTrue();
+        assertThat(response.getIsStatic()).isTrue();
+        assertThat(response.getSize()).isEqualTo(2);
     }
 
     @Test

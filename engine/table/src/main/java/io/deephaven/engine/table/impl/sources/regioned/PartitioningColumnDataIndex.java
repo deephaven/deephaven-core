@@ -3,7 +3,8 @@
 //
 package io.deephaven.engine.table.impl.sources.regioned;
 
-import gnu.trove.map.hash.TObjectIntHashMap;
+import it.unimi.dsi.fastutil.objects.Object2IntMap;
+import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.rowset.*;
@@ -51,7 +52,7 @@ class PartitioningColumnDataIndex<KEY_TYPE> extends AbstractDataIndex implements
 
 
     /** Provides fast lookup from keys to positions in the index table **/
-    private final TObjectIntHashMap<Object> keyPositionMap;
+    private final Object2IntMap<Object> keyPositionMap;
 
     private final ModifiedColumnSet upstreamKeyModified;
     private final ModifiedColumnSet upstreamRowSetModified;
@@ -92,7 +93,8 @@ class PartitioningColumnDataIndex<KEY_TYPE> extends AbstractDataIndex implements
         locationTableKeySourceReinterpreted = ReinterpretUtils.maybeConvertToPrimitive(locationTableKeySource);
         locationTableRowSetSource = locationTable.getColumnSource(columnSourceManager.rowSetColumnName(), RowSet.class);
 
-        keyPositionMap = new TObjectIntHashMap<>(locationTable.intSize(), 0.5F, KEY_NOT_FOUND);
+        keyPositionMap = new Object2IntOpenHashMap<>(locationTable.intSize(), 0.5F);
+        keyPositionMap.defaultReturnValue(KEY_NOT_FOUND);
 
         // Create a dummy update for the initial state.
         final TableUpdate initialUpdate = new TableUpdateImpl(
@@ -252,7 +254,7 @@ class PartitioningColumnDataIndex<KEY_TYPE> extends AbstractDataIndex implements
         }
 
         // Test using the (maybe) reinterpreted key
-        final int pos = keyPositionMap.get(locationKeyReinterpreted);
+        final int pos = keyPositionMap.getInt(locationKeyReinterpreted);
 
         // Inserting a new bucket
         if (pos == KEY_NOT_FOUND) {
@@ -319,7 +321,7 @@ class PartitioningColumnDataIndex<KEY_TYPE> extends AbstractDataIndex implements
     @Override
     @NotNull
     public RowKeyLookup rowKeyLookup(final DataIndexOptions unusedOptions) {
-        return (final Object key, final boolean usePrev) -> keyPositionMap.get(key);
+        return (final Object key, final boolean usePrev) -> keyPositionMap.getInt(key);
     }
 
     @Override

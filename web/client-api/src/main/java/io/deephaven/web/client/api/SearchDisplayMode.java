@@ -7,22 +7,23 @@ import com.vertispan.tsdefs.annotations.TsTypeDef;
 import jsinterop.annotations.JsType;
 
 /**
- * A string union representing whether search UI elements should be shown.
+ * Display mode values for the table search bar.
  */
 @TsTypeDef(tsType = "string")
 @JsType(namespace = "dh")
 public class SearchDisplayMode {
     /**
-     * The supported values.
-     *
-     * <p>
-     * {@link #SEARCH_DISPLAY_DEFAULT} uses the default behavior.
-     * <p>
-     * {@link #SEARCH_DISPLAY_HIDE} hides search UI elements.
-     * <p>
-     * {@link #SEARCH_DISPLAY_SHOW} shows search UI elements.
+     * Use the system default search bar display mode.
      */
-    public static final String SEARCH_DISPLAY_DEFAULT = "Default",
-            SEARCH_DISPLAY_HIDE = "Hide",
-            SEARCH_DISPLAY_SHOW = "Show";
+    public static final String SEARCH_DISPLAY_DEFAULT = "Default";
+
+    /**
+     * Hide the search bar.
+     */
+    public static final String SEARCH_DISPLAY_HIDE = "Hide";
+
+    /**
+     * Show the search bar.
+     */
+    public static final String SEARCH_DISPLAY_SHOW = "Show";
 }

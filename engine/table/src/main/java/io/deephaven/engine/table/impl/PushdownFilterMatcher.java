@@ -28,8 +28,8 @@ public interface PushdownFilterMatcher {
     /**
      * Estimate the cost of pushing down the next pushdown filter. This returns a unitless value to compare the cost of
      * executing different filters. Common costs are listed in {@link PushdownResult} (such as
-     * {@link PushdownResult#METADATA_STATS_COST}) and should be used as a baseline for estimating the cost of newly
-     * implemented pushdown operations.
+     * {@link PushdownResult#REGION_METADATA_STATS_COST}) and should be used as a baseline for estimating the cost of
+     * newly implemented pushdown operations.
      *
      * <p>
      * A no-op implementation should simply complete with {@link Long#MAX_VALUE}.
@@ -43,14 +43,17 @@ public interface PushdownFilterMatcher {
      *        that the filter cannot be pushed down.
      * @param onError Consumer of any exceptions that occur during the estimate operation
      */
-    void estimatePushdownFilterCost(
+    default void estimatePushdownFilterCost(
             final WhereFilter filter,
             final RowSet selection,
             final boolean usePrev,
             final PushdownFilterContext context,
             final JobScheduler jobScheduler,
             final LongConsumer onComplete,
-            final Consumer<Exception> onError);
+            final Consumer<Exception> onError) {
+        // Default to having no benefit by pushing down.
+        onComplete.accept(PushdownResult.UNSUPPORTED_ACTION_COST);
+    }
 
     /**
      * Push down the given filter to the underlying table and pass the result to the consumer. This method is expected
@@ -76,7 +79,7 @@ public interface PushdownFilterMatcher {
      * @param onComplete Consumer of the output rowsets for added and modified rows that pass the filter
      * @param onError Consumer of any exceptions that occur during the pushdown operation
      */
-    void pushdownFilter(
+    default void pushdownFilter(
             final WhereFilter filter,
             final RowSet selection,
             final boolean usePrev,
@@ -84,7 +87,10 @@ public interface PushdownFilterMatcher {
             final long costCeiling,
             final JobScheduler jobScheduler,
             final Consumer<PushdownResult> onComplete,
-            final Consumer<Exception> onError);
+            final Consumer<Exception> onError) {
+        // Default to returning all results as "maybe"
+        onComplete.accept(PushdownResult.allMaybeMatch(selection));
+    }
 
     /**
      * Create a pushdown filter context for this entity.
@@ -94,9 +100,11 @@ public interface PushdownFilterMatcher {
      *
      * @return the created filter context
      */
-    PushdownFilterContext makePushdownFilterContext(
+    default PushdownFilterContext makePushdownFilterContext(
             final WhereFilter filter,
-            final List<ColumnSource<?>> filterSources);
+            final List<ColumnSource<?>> filterSources) {
+        return PushdownFilterContext.NO_PUSHDOWN_CONTEXT;
+    }
 
     /**
      * Given a filter and a list of column sources, return the appropriate {@link PushdownFilterMatcher} to use for

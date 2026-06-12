@@ -244,8 +244,8 @@ executionContext = ExecutionContext.newBuilder()
 
 This approach allows you to specify:
 
-- **Query library**: A new, empty query library via `newQueryLibrary()`.
-- **Query scope**: A new, empty query scope via `newQueryScope()`.
+- **Query library**: A new, empty query library via `newQueryLibrary`.
+- **Query scope**: A new, empty query scope via `newQueryScope`.
 - **Operation initializer**: Parallelization behavior of operations.
 - **Update graph**: A custom update graph (e.g., `PeriodicUpdateGraph` or `EventDrivenUpdateGraph`).
 - **Query compiler**: A compiler instance with a specified working directory and class loader.

@@ -4,7 +4,7 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.sources;
 
-import gnu.trove.list.array.TIntArrayList;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
@@ -101,7 +101,7 @@ public class CharacterArraySource extends ArraySourceHelper<Character, char[]>
                     prevBlocks[block] = recycler.borrowItem();
                     prevInUse[block] = inUse = inUseRecycler.borrowItem();
                     if (prevAllocated == null) {
-                        prevAllocated = new TIntArrayList();
+                        prevAllocated = new IntArrayList();
                     }
                     prevAllocated.add(block);
                 } else {

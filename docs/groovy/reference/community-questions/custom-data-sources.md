@@ -57,14 +57,27 @@ The [`ArrayBackedColumnSource`](https://deephaven.io/core/javadoc/io/deephaven/e
 
 Dynamic tables allow you to integrate real-time data feeds. These tables update on each Deephaven update cycle and notify downstream operations of changes.
 
-Key features of dynamic tables:
+For most use cases, [`TablePublisher`](../table-operations/create/TablePublisher.md) is the recommended way to create dynamic tables. It produces a [blink table](../../conceptual/table-types.md#specialization-3-blink) and exposes an `add` method for publishing data. See the [how-to guide](../../how-to-guides/table-publisher.md) for full details.
 
-- Use the same `ArrayBackedColumnSource` as static tables.
-- Poll for updates on each Deephaven update cycle.
-- Track both current and previous values for incremental computation.
-- Notify listeners using [`notifyListeners`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/BaseTable.html#notifyListeners(io.deephaven.engine.table.TableUpdate)).
+```groovy order=null
+import io.deephaven.engine.table.ColumnDefinition
+import io.deephaven.engine.table.TableDefinition
+import io.deephaven.stream.TablePublisher
 
-Here's a simplified example of a dynamic table that updates periodically:
+definition = TableDefinition.of(
+    ColumnDefinition.ofString("Symbol"),
+    ColumnDefinition.ofDouble("Price"),
+)
+
+publisher = TablePublisher.of("Price feed", definition, null, null)
+blinkTable = publisher.table()
+
+// Publish data by calling publisher.add(tableWithData)
+```
+
+### Advanced: raw QueryTable approach
+
+For cases that require direct control over column sources — such as integrating a custom data store or implementing a lazy-loading `ColumnSource` — you can build a dynamic table manually using `QueryTable` and `notifyListeners`. This is significantly more complex and is not necessary for most use cases.
 
 ```groovy order=dynamicTable
 import io.deephaven.engine.rowset.RowSetFactory
@@ -158,8 +171,8 @@ For large datasets, implement custom [ColumnSource](https://deephaven.io/core/ja
 
 Key implementation points:
 
-- Implement `get()` methods for each primitive type (`getByte`, `getShort`, `getInt`, `getLong`, `getChar`, `getFloat`, `getDouble`).
-- Implement `fillChunk()` for efficient bulk data fetching.
+- Implement `get` methods for each primitive type (`getByte`, `getShort`, `getInt`, `getLong`, `getChar`, `getFloat`, `getDouble`).
+- Implement `fillChunk` for efficient bulk data fetching.
 - Cache data to avoid repeated disk reads.
 - For immutable on-disk data, delegate previous-value calls to current-value calls.
 
@@ -222,9 +235,10 @@ Deephaven's Apache Parquet integration uses these techniques:
 
 ## Related documentation
 
-- [Parquet](../../how-to-guides/data-import-export/parquet-export.md)
-- [Iceberg](../../how-to-guides/data-import-export/iceberg.md)
 - [Deephaven Core Javadoc](https://deephaven.io/core/javadoc/)
+- [Iceberg](../../how-to-guides/data-import-export/iceberg.md)
+- [Parquet](../../how-to-guides/data-import-export/parquet-export.md)
+- [Write data to a real-time table](../../how-to-guides/table-publisher.md)
 
 > [!NOTE]
 > These FAQ pages contain answers to questions about Deephaven Community Core that our users have asked in our [Community Slack](/slack). If you have a question that is not in our documentation, [join our Community](/slack) and we'll be happy to help!

@@ -108,10 +108,12 @@ resultRangeConjunctive = source.where("X >= 2", "X < 6")
 
 You can also filter for data that is not in a range by using the `!` operator or by [disjunctively](#disjunctive) combining two separate range filters:
 
-```groovy order=source,resultNotInRangeWhereOneOf,resultNotInRangeDisjunctive,resultNotInRange
+```groovy order=source,resultNotInRangeDisjunctive,resultNotInRangeFilterOr,resultNotInRange
+import io.deephaven.api.filter.Filter
+
 source = emptyTable(10).update("X = ii")
-resultNotInRangeDisjunctive = source.where("X < 2 || X >= 6")
-resultNotInRangeWhereOneOf = source.where("X < 2", "X >= 6")
+resultNotInRangeDisjunctive = source.where("X < 2 || X > 6")
+resultNotInRangeFilterOr = source.where(Filter.or(Filter.from("X < 2", "X > 6")))
 resultNotInRange = source.where("!inRange(X, 2, 6)")
 ```
 
@@ -176,11 +178,115 @@ Conjunctive filters return only rows that match _all_ of the specified filters. 
 
 ### Disjunctive
 
-Disjunctive filters return only rows that match _any_ of the specified filters. To disjunctively combine filters, pass a single query string with multiple filters separated by the `||` operator into one of the following table operations:
+Disjunctive filters return only rows that match _any_ of the specified filters. There are two ways to disjunctively combine filters:
 
-- [`where`](../reference/table-operations/filter/where.md)
-- [`whereIn`](../reference/table-operations/filter/where-in.md)
-- [`whereNotIn`](../reference/table-operations/filter/where-not-in.md)
+- Pass a single query string with multiple filters separated by the `||` operator into one of the following table operations:
+  - [`where`](../reference/table-operations/filter/where.md)
+  - [`whereIn`](../reference/table-operations/filter/where-in.md)
+  - [`whereNotIn`](../reference/table-operations/filter/where-not-in.md)
+- Use [`Filter.or`](https://docs.deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html#or(io.deephaven.api.filter.Filter...)) or [`DisjunctiveFilter`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/select/DisjunctiveFilter.html) to combine multiple filter clauses.
+
+The following examples demonstrate both approaches to disjunctive filtering:
+
+```groovy order=source,resultOr,resultFilterOr,resultDisjunctiveFilter
+import io.deephaven.api.filter.Filter
+import io.deephaven.engine.table.impl.select.DisjunctiveFilter
+import io.deephaven.engine.table.impl.select.WhereFilterFactory
+
+source = emptyTable(10).update("X = ii", "Y = randomDouble(-1, 1)")
+
+// Using || operator in a single query string
+resultOr = source.where("X < 2 || X >= 8")
+
+// Using Filter.or with multiple Filter objects
+resultFilterOr = source.where(Filter.or(Filter.from("X < 2", "X >= 8")))
+
+// Using DisjunctiveFilter.of with WhereFilter arguments
+resultDisjunctiveFilter = source.where(DisjunctiveFilter.of(
+    WhereFilterFactory.getExpression("X < 2"),
+    WhereFilterFactory.getExpression("X >= 8")
+))
+```
+
+Using `Filter.or` or `DisjunctiveFilter` is particularly useful when you need to programmatically combine filters or when working with complex filter logic that would be difficult to express in a single query string.
+
+The following example shows how to use `Filter.or` to combine multiple conditions across different columns:
+
+```groovy order=source,resultDisjunctive
+import io.deephaven.api.filter.Filter
+
+source = emptyTable(100).update(
+    "Category = ii % 3 == 0 ? `A` : ii % 3 == 1 ? `B` : `C`",
+    "Value = randomInt(0, 100)"
+)
+
+// Create a disjunctive filter that matches rows where Category is 'A' OR Value is greater than 80
+resultDisjunctive = source.where(Filter.or(Filter.from("Category == `A`", "Value > 80")))
+```
+
+## Filter performance
+
+How you structure filter clauses can affect query performance. The following guidelines help optimize filter execution.
+
+These guidelines provide useful rules of thumb, but they won't perform best for all filters and data combinations. Filters exercise many aspects of the Deephaven engine: each filter constructs a `RowSet` representing the rows that pass, and rowset construction can be expensive. Simple filters (like match or range filters) may take advantage of optimizations like Parquet row group statistics. To evaluate a filter, data must be read from its source (e.g., disk or a network server). For important queries, measure performance to determine the optimal order and structure of filters.
+
+### Combine filters on the same column
+
+When filtering the same column multiple times, combine the conditions in a single clause. This reads the column data once instead of multiple times:
+
+```groovy order=source,resultCombined,resultSeparate
+source = emptyTable(1000).update("X = randomInt(0, 100)")
+
+// Better: reads X once
+resultCombined = source.where("X > 10 && X < 90")
+
+// Worse: reads X twice
+resultSeparate = source.where("X > 10", "X < 90")
+```
+
+Both produce the same result, but `resultCombined` is more efficient because it evaluates both conditions in a single pass over the data.
+
+### Separate filters on different columns
+
+When filtering different columns, separating them into different clauses can improve performance. The engine evaluates each clause sequentially, so earlier filters reduce the data that later filters must examine:
+
+```groovy order=source,resultSeparate
+source = emptyTable(1000).update("Bid = randomDouble(0, 200)", "Ask = randomDouble(0, 200)")
+
+// Each filter is evaluated independently
+resultSeparate = source.where("Bid > 100", "Ask > 100")
+```
+
+> [!NOTE]
+> The performance benefit of separating filters on different columns depends on the selectivity of the filters. If the first filter removes most rows, subsequent filters have less work to do. However, if filters are not very selective, combining them may perform similarly.
+
+### Order matters
+
+Put more selective filters first. A filter that eliminates most rows early reduces the work for subsequent filters:
+
+```groovy order=source,resultOrdered
+source = emptyTable(10000).update(
+    "Category = (ii % 100 == 0) ? `rare` : `common`",
+    "Value = randomInt(0, 1000)"
+)
+
+// Better: rare category filter first (eliminates ~99% of rows)
+resultOrdered = source.where("Category == `rare`", "Value > 500")
+```
+
+### Keep match filters separate from formulas
+
+Match filters (equality checks like `X == 5` or `X in 1, 2, 3`) are optimized differently than formula filters (expressions like `X > 5 && X < 10`). When combining them in a single clause, the match filter optimization may not apply:
+
+```groovy order=source,resultSeparate,resultCombined
+source = emptyTable(1000).update("Symbol = (ii % 10 == 0) ? `AAPL` : `OTHER`", "Price = randomDouble(0, 200)")
+
+// Better: match filter is optimized independently
+resultSeparate = source.where("Symbol == `AAPL`", "Price > 100 && Price < 150")
+
+// Match filter optimization may not apply when combined with formula
+resultCombined = source.where("Symbol == `AAPL` && Price > 100 && Price < 150")
+```
 
 ## Filter utilities
 

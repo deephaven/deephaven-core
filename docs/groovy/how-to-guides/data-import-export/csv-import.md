@@ -6,7 +6,7 @@ sidebar_label: Read CSV files
 This guide will show you how to read data from CSV (and other delimited) files into in-memory Deephaven tables by using the [`readCsv`](../../reference/data-import-export/CSV/readCsv.md) method.
 
 > [!TIP]
-> CSV files can also be uploaded into Deephaven with drag-and-drop in the UI.
+> To upload a CSV without writing code, see [Upload a table from a file](../../how-to-guides/user-interface/upload-table-from-file.md).
 
 ## `readCsv`
 
@@ -129,10 +129,10 @@ By setting `trim` to `true` when reading the CSV file, these leading and trailin
 The `CsvSpecs` class allows you to specify additional options when reading a CSV file. The `CsvSpecs`' class methods are:
 
 - `allowMissingColumns(boolean)`: Whether the library should allow missing columns in the input. If `true`, allows the CSV file to have fewer columns than specified in the header. If `false`, no missing columns will be permitted.
-- `build()`: Returns the `CsvSpecs` object.
+- `build`: Returns the `CsvSpecs` object.
 - `concurrent(boolean)`: Whether or not to run concurrently.
-- `customDoubleParser()`: The custom double parser.
-- `customTimeZoneParser()`: An optional low-level "timezone parser" that understands custom time zone strings.
+- `customDoubleParser`: The custom double parser.
+- `customTimeZoneParser`: An optional low-level "timezone parser" that understands custom time zone strings.
 - `delimiter(char)`: The field delimiter character (the character that separates one column from the next).
 - `from(CsvSpecs)`: Copy all of the parameters from supplied CsvSpecs object into `this` builder.
 - `hasHeaderRow(boolean)`: Whether the input file has a header row.
@@ -186,3 +186,4 @@ For a complete list of optional arguments, see the [`readCsv` reference document
 
 - [How to export CSV files](./csv-export.md)
 - [`readCsv`](../../reference/data-import-export/CSV/readCsv.md)
+- [Navigate the GUI](../../how-to-guides/user-interface/navigating-the-ui.md)
