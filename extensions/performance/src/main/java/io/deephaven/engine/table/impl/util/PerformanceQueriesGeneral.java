@@ -112,7 +112,7 @@ public class PerformanceQueriesGeneral {
                         "IntervalDurationNanos = IntervalEndTime - IntervalStartTime",
                         "WorkerHeapSize = " + workerHeapSizeBytes + "L",
                         // % of time during this interval that the operation was using CPU
-                        "Ratio = CpuNanos / IntervalDurationNanos",
+                        "Ratio = UsageNanos / IntervalDurationNanos",
                         // Memory in use by the query. (Only includes active heap memory.)
                         "QueryMemUsed = MaxTotalMemory - MinFreeMemory",
                         // Memory usage as a percentage of the max heap size (-Xmx)
