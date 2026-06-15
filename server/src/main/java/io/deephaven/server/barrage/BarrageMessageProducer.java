@@ -24,7 +24,6 @@ import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.engine.table.impl.util.ShiftInversionHelper;
 import io.deephaven.engine.table.impl.util.UpdateCoalescer;
 import io.deephaven.engine.updategraph.*;
-import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.extensions.barrage.BarrageMessageWriter;
 import io.deephaven.extensions.barrage.BarragePerformanceLog;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
@@ -63,7 +62,6 @@ import java.util.stream.Stream;
 import static io.deephaven.engine.table.impl.remote.ConstructSnapshot.SNAPSHOT_CHUNK_SIZE;
 import static io.deephaven.extensions.barrage.util.BarrageUtil.MAX_SNAPSHOT_CELL_COUNT;
 import static io.deephaven.extensions.barrage.util.BarrageUtil.MIN_SNAPSHOT_CELL_COUNT;
-import static io.deephaven.extensions.barrage.util.BarrageUtil.TARGET_SNAPSHOT_PERCENTAGE;
 
 /**
  * The server-side implementation of a Barrage replication source.
@@ -1651,8 +1649,7 @@ public class BarrageMessageProducer extends LivenessArtifact
                 if (subscription.pendingInitialSnapshot) {
                     // Send schema metadata to this new client.
                     subscription.listener.onNext(streamGeneratorFactory.getSchemaView(
-                            fbb -> BarrageUtil.makeTableSchemaPayload(fbb, subscription.options,
-                                    parent.getDefinition(), parent.getAttributes(), parent.isFlat())));
+                            fbb -> BarrageUtil.makeTableSchemaPayload(fbb, subscription.options, parent)));
                 }
 
                 // some messages may be empty of rows, but we need to update the client viewport and column set

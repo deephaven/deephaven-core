@@ -37,8 +37,11 @@ import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
+import io.deephaven.extensions.barrage.ArrowSchemaControl;
 import io.deephaven.extensions.barrage.BarrageMessageWriter;
+import io.deephaven.extensions.barrage.BarrageMessageWriterImpl;
 import io.deephaven.extensions.barrage.BarrageOptions;
+import io.deephaven.extensions.barrage.ColumnEncoding;
 import io.deephaven.engine.util.ColumnFormatting;
 import io.deephaven.engine.util.input.InputTableUpdater;
 import io.deephaven.extensions.barrage.BarragePerformanceLog;
@@ -49,6 +52,8 @@ import io.deephaven.extensions.barrage.chunk.ChunkWriter;
 import io.deephaven.extensions.barrage.chunk.DefaultChunkWriterFactory;
 import io.deephaven.extensions.barrage.chunk.ChunkReader;
 import io.deephaven.extensions.barrage.chunk.vector.VectorExpansionKernel;
+import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
+import io.deephaven.engine.table.impl.sources.SingleValueColumnSource;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.backplane.grpc.DeephavenTableMetadata;
@@ -463,23 +468,30 @@ public class BarrageUtil {
     }
 
     public static ByteString schemaBytesFromTable(@NotNull final Table table) {
-        return schemaBytesFromTableDefinition(table.getDefinition(), table.getAttributes(), table.isFlat());
+        return schemaBytes(fbb -> makeTableSchemaPayload(fbb, DEFAULT_SNAPSHOT_OPTIONS, table));
     }
 
     public static ByteString schemaBytesFromTableDefinition(
             @NotNull final TableDefinition tableDefinition,
             @NotNull final Map<String, Object> attributes,
             final boolean isFlat) {
-        return schemaBytes(fbb -> makeTableSchemaPayload(
-                fbb, DEFAULT_SNAPSHOT_OPTIONS, tableDefinition, attributes, isFlat));
+        return schemaBytes(fbb -> makeSchema(DEFAULT_SNAPSHOT_OPTIONS, tableDefinition, attributes, isFlat,
+                ArrowSchemaControl.DEFAULT).getSchema(fbb));
     }
 
     public static Schema schemaFromTable(@NotNull final Table table) {
-        return makeSchema(DEFAULT_SNAPSHOT_OPTIONS, table.getDefinition(), table.getAttributes(), table.isFlat());
+        return schemaFromTable(table, ArrowSchemaControl.DEFAULT);
+    }
+
+    public static Schema schemaFromTable(
+            @NotNull final Table table,
+            @NotNull final ArrowSchemaControl control) {
+        return makeSchema(DEFAULT_SNAPSHOT_OPTIONS, table.getDefinition(), table.getAttributes(), table.isFlat(),
+                inferSchemaProperties(table, control));
     }
 
     public static Schema toSchema(final TableDefinition definition, Map<String, Object> attributes, boolean isFlat) {
-        return makeSchema(DEFAULT_SNAPSHOT_OPTIONS, definition, attributes, isFlat);
+        return makeSchema(DEFAULT_SNAPSHOT_OPTIONS, definition, attributes, isFlat, ArrowSchemaControl.DEFAULT);
     }
 
     public static ByteString schemaBytes(@NotNull final ToIntFunction<FlatBufferBuilder> schemaPayloadWriter) {
@@ -498,25 +510,28 @@ public class BarrageUtil {
     public static int makeTableSchemaPayload(
             @NotNull final FlatBufferBuilder builder,
             @NotNull final BarrageOptions options,
-            @NotNull final TableDefinition tableDefinition,
-            @NotNull final Map<String, Object> attributes,
-            final boolean isFlat) {
-        return makeSchema(options, tableDefinition, attributes, isFlat).getSchema(builder);
+            @NotNull final Table table) {
+        return makeSchema(options, table.getDefinition(), table.getAttributes(), table.isFlat(),
+                inferSchemaProperties(table, ArrowSchemaControl.DEFAULT)).getSchema(builder);
     }
 
     public static Schema makeSchema(
             @NotNull final BarrageOptions options,
             @NotNull final TableDefinition tableDefinition,
             @NotNull final Map<String, Object> attributes,
-            final boolean isFlat) {
+            final boolean isFlat,
+            @NotNull final ArrowSchemaControl control) {
         final Map<String, String> schemaMetadata = attributesToMetadata(attributes, isFlat);
         final Map<String, String> descriptions = GridAttributes.getColumnDescriptions(attributes);
         final InputTableUpdater inputTableUpdater = (InputTableUpdater) attributes.get(Table.INPUT_TABLE_ATTRIBUTE);
         maybeAddInputTableMetadata(tableDefinition, schemaMetadata, inputTableUpdater);
+        final int effectiveBatchSize = options.batchSize() > 0
+                ? options.batchSize()
+                : BarrageMessageWriterImpl.DEFAULT_BATCH_SIZE;
         final List<Field> fields = columnDefinitionsToFields(
                 descriptions, inputTableUpdater, tableDefinition, tableDefinition.getColumns(),
                 ignored -> new HashMap<>(),
-                attributes, options.columnsAsList())
+                attributes, options.columnsAsList(), control, effectiveBatchSize)
                 .collect(Collectors.toList());
         return new Schema(fields, schemaMetadata);
     }
@@ -598,9 +613,8 @@ public class BarrageUtil {
             @NotNull final Function<String, Map<String, String>> fieldMetadataFactory,
             @NotNull final Map<String, Object> attributes) {
         return columnDefinitionsToFields(columnDescriptions, inputTableUpdater, tableDefinition, columnDefinitions,
-                fieldMetadataFactory,
-                attributes,
-                false);
+                fieldMetadataFactory, attributes, false, ArrowSchemaControl.DEFAULT,
+                BarrageMessageWriterImpl.DEFAULT_BATCH_SIZE);
     }
 
     private static boolean isDataTypeSortable(final Class<?> dataType) {
@@ -616,6 +630,21 @@ public class BarrageUtil {
             @NotNull final Function<String, Map<String, String>> fieldMetadataFactory,
             @NotNull final Map<String, Object> attributes,
             final boolean columnsAsList) {
+        return columnDefinitionsToFields(columnDescriptions, inputTableUpdater, tableDefinition, columnDefinitions,
+                fieldMetadataFactory, attributes, columnsAsList, ArrowSchemaControl.DEFAULT,
+                BarrageMessageWriterImpl.DEFAULT_BATCH_SIZE);
+    }
+
+    private static Stream<Field> columnDefinitionsToFields(
+            @NotNull final Map<String, String> columnDescriptions,
+            @Nullable final InputTableUpdater inputTableUpdater,
+            @NotNull final TableDefinition tableDefinition,
+            @NotNull final Collection<ColumnDefinition<?>> columnDefinitions,
+            @NotNull final Function<String, Map<String, String>> fieldMetadataFactory,
+            @NotNull final Map<String, Object> attributes,
+            final boolean columnsAsList,
+            @NotNull final ArrowSchemaControl control,
+            final int maxBatchSize) {
         boolean wireFormatSpecified = attributes.containsKey(Table.BARRAGE_SCHEMA_ATTRIBUTE);
 
         // Find columns that are sortable
@@ -717,6 +746,8 @@ public class BarrageUtil {
                 field = new Field(field.getName(), newType, field.getChildren());
             } else if (Vector.class.isAssignableFrom(dataType)) {
                 field = arrowFieldForVectorType(name, dataType, componentType, metadata);
+            } else if (control.encodings().get(name) == ColumnEncoding.RUN_END_ENCODED) {
+                field = arrowReeFieldFor(name, dataType, componentType, metadata, maxBatchSize);
             } else {
                 field = arrowFieldFor(name, dataType, componentType, metadata, columnsAsList);
             }
@@ -1167,6 +1198,55 @@ public class BarrageUtil {
             return isTypeNativelySupported(typ.getComponentType());
         }
         return false;
+    }
+
+    static ArrowSchemaControl inferSchemaProperties(
+            @NotNull final Table table,
+            @NotNull final ArrowSchemaControl control) {
+        final ArrowSchemaControl.Builder builder = ArrowSchemaControl.builder();
+
+        // Single-value sources are an obvious win, should always be encoded.
+        table.getColumnSourceMap().forEach((name, source) -> {
+            if (source instanceof NullValueColumnSource || source instanceof SingleValueColumnSource) {
+                builder.putEncoding(name, ColumnEncoding.RUN_END_ENCODED);
+            }
+        });
+
+        // Partition tables that have been merged will have constant key columns per region.
+        if (Boolean.TRUE.equals(table.getAttribute(Table.MERGED_TABLE_ATTRIBUTE))
+                && table.hasAttribute(Table.KEY_COLUMNS_ATTRIBUTE)) {
+            for (final String col : ((String) table.getAttribute(Table.KEY_COLUMNS_ATTRIBUTE)).split(",")) {
+                builder.putEncoding(col, ColumnEncoding.RUN_END_ENCODED);
+            }
+        }
+
+        // TODO: add a sampling mechanism to detect runs and decide on the fly. With Int16 encoding the default,
+        // we can be optimistic and allow REE when we think it *might* be effective.
+
+        // User-specified control overrides auto-detected encodings (not the other way around).
+        builder.putAllEncodings(control.encodings());
+
+        return builder.build();
+    }
+
+    private static Field arrowReeFieldFor(
+            final String name,
+            final Class<?> type,
+            final Class<?> componentType,
+            final Map<String, String> metadata,
+            final int maxBatchSize) {
+        final ArrowType runEndsType = maxBatchSize <= Short.MAX_VALUE
+                ? Types.MinorType.SMALLINT.getType()
+                : Types.MinorType.INT.getType();
+        final Field runEndsField = new Field(
+                "run_ends",
+                new FieldType(false, runEndsType, null),
+                Collections.emptyList());
+        final Field valuesField = arrowFieldFor("values", type, componentType, Collections.emptyMap(), false);
+        return new Field(
+                name,
+                new FieldType(false, new ArrowType.RunEndEncoded(), null, metadata),
+                List.of(runEndsField, valuesField));
     }
 
     public static Field arrowFieldFor(

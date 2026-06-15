@@ -130,7 +130,7 @@ public class ArrowFlightUtil {
                         // push the schema to the listener
                         listener.onNext(streamGeneratorFactory.getSchemaView(
                                 fbb -> BarrageUtil.makeTableSchemaPayload(fbb, BarrageUtil.DEFAULT_SNAPSHOT_OPTIONS,
-                                        table.getDefinition(), table.getAttributes(), table.isFlat())));
+                                        table)));
 
                         // shared code between `DoGet` and `BarrageSnapshotRequest`
                         BarrageUtil.createAndSendSnapshot(streamGeneratorFactory, table, null, null, false,

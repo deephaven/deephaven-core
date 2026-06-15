@@ -9,7 +9,7 @@ Use this when your Deephaven column type is too generic for the intended wire ty
 
 ## How It Works
 
-1. Extract a base schema with `BarrageUtil.schemaFromTable(...)`. Manages basic type mapping for primitive types and collections of primitives.
+1. Extract a base schema with `BarrageUtil.schemaFromTable(...)`. Manages basic type mapping for primitive types and collections of primitives. An optional `ArrowSchemaControl` can be passed to specify column encodings.
 2. Replace the target field with explicit Arrow types.
 3. Attach the schema using `withAttributes(Map.of(Table.BARRAGE_SCHEMA_ATTRIBUTE, newSchema))`.
 
@@ -323,15 +323,39 @@ map_union_table_w_attributes = map_union_table.withAttributes(java.util.Map.of(T
 
 [Run-End Encoding](https://arrow.apache.org/docs/format/Columnar.html#run-end-encoded-layout) is a wire-level optimization for columns with many repeated values. Instead of sending every value, the column is serialized as two child arrays:
 
-- `run_ends` — a non-nullable integer array (Int16, Int32, or Int64) of cumulative 1-based end indices, one per run. The last value always equals the logical row count.
-- `values` — one representative value per run (nullable).
+- `run_ends` — a non-nullable integer array of cumulative 1-based end indices, one per run. The last value always equals the logical row count.
+- `values` — the values that will be repeated in the run.
 
-A column of 1,000 rows where the same integer repeats 100 times in a row costs 10 run_end entries + 10 value entries instead of 1,000 integers. Deephaven stores the column flat (unchanged type); REE is a transport-only optimization.
+A column of 1,000 rows where the same integer repeats 100 times in a row costs 10 run_end entries + 10 value entries instead of 1,000 integers. Deephaven stores the column flat (unchanged type); REE is a transport-only optimization. The `run_ends` integer width is chosen automatically based on the configured batch size. The batch size defaults to 32,767 (Short.MAX_VALUE), enabling Int16 encoding by default. You can override this via [`BarrageSnapshotOptions`](https://docs.deephaven.io/core/javadoc/io/deephaven/extensions/barrage/BarrageSnapshotOptions.html) or [`BarrageSubscriptionOptions`](https://docs.deephaven.io/core/javadoc/io/deephaven/extensions/barrage/BarrageSubscriptionOptions.html).
 
-> [!NOTE]
-> Choose the `run_ends` width based on the largest batch size you expect: Int16 supports up to 32,767 logical rows per batch; Int32 supports up to ~2.1 billion. Use Int64 only if you have very large batches.
+### Using `ArrowSchemaControl` (recommended)
+
+Pass an `ArrowSchemaControl` to `schemaFromTable`. The server picks the correct `run_ends` integer width automatically and merges any auto-detected encodings.
 
 ```groovy order=ree_table,ree_table_w_attributes
+import io.deephaven.engine.table.Table
+import io.deephaven.extensions.barrage.ArrowSchemaControl
+import io.deephaven.extensions.barrage.ColumnEncoding
+import io.deephaven.extensions.barrage.util.BarrageUtil
+
+ree_table = emptyTable(100).update(
+    "status = (ii % 10 < 7) ? `OPEN` : `CLOSED`",
+    "value  = (int) ii"
+)
+
+def control = ArrowSchemaControl.builder()
+    .putEncoding("status", ColumnEncoding.RUN_END_ENCODED)
+    .build()
+def new_schema = BarrageUtil.schemaFromTable(ree_table, control)
+
+ree_table_w_attributes = ree_table.withAttributes(java.util.Map.of(Table.BARRAGE_SCHEMA_ATTRIBUTE, new_schema))
+```
+
+### Using Arrow field construction
+
+Use this approach when you need explicit control over the `run_ends` integer width or want to customise the `values` child field metadata.
+
+```groovy order=ree_table_arrow,ree_table_arrow_w_attributes
 import io.deephaven.engine.table.Table
 import io.deephaven.extensions.barrage.util.BarrageUtil
 import org.apache.arrow.vector.types.pojo.ArrowType
@@ -339,39 +363,35 @@ import org.apache.arrow.vector.types.pojo.Field
 import org.apache.arrow.vector.types.pojo.FieldType
 import org.apache.arrow.vector.types.pojo.Schema
 
-// 1. Create a table whose "status" column has many repeated values — a natural fit for REE.
-ree_table = emptyTable(100).update(
+ree_table_arrow = emptyTable(100).update(
     "status = (ii % 10 < 7) ? `OPEN` : `CLOSED`",
     "value  = (int) ii"
 )
 
-// 2. Extract the default schema so we can borrow the existing field metadata.
-def baseSchema = BarrageUtil.schemaFromTable(ree_table)
+// Extract the default schema to borrow existing field metadata.
+def baseSchema = BarrageUtil.schemaFromTable(ree_table_arrow)
 def fields = new java.util.ArrayList<>(baseSchema.getFields())
 
-// 3. Build the REE field for the "status" column.
-//    run_ends child: non-nullable Int32 index (handles up to ~2 billion logical rows per batch)
+// run_ends child: non-nullable Int32 index (handles up to ~2 billion logical rows per batch)
 def runEndsField = new Field("run_ends",
     new FieldType(false, new ArrowType.Int(32, true), null, null),
     java.util.Collections.emptyList()
 )
-//    values child: reuse the original "status" field type so the deephaven:type metadata is preserved
+// values child: reuse the original "status" field type so deephaven:type metadata is preserved
 def originalStatusField = baseSchema.findField("status")
 def valuesField = new Field("values",
     originalStatusField.getFieldType(),
     originalStatusField.getChildren()
 )
-//    REE parent: nullable, no buffers (the children carry all the data)
+// REE parent: nullable, no buffers (the children carry all the data)
 def reeField = new Field("status",
     new FieldType(true, ArrowType.RunEndEncoded.INSTANCE, null, null),
     java.util.List.of(runEndsField, valuesField)
 )
 
-// 4. Replace the "status" field in the schema with the new REE field.
 def statusIdx = fields.findIndexOf { it.getName() == "status" }
 fields.set(statusIdx, reeField)
 def new_schema = new Schema(fields)
 
-// 5. Apply attributes — the "status" column will now be sent as REE over Flight / Barrage.
-ree_table_w_attributes = ree_table.withAttributes(java.util.Map.of(Table.BARRAGE_SCHEMA_ATTRIBUTE, new_schema))
+ree_table_arrow_w_attributes = ree_table_arrow.withAttributes(java.util.Map.of(Table.BARRAGE_SCHEMA_ATTRIBUTE, new_schema))
 ```
