@@ -46,7 +46,7 @@ public class LongWrapper {
     /**
      * Returns the wrapped value as a number.
      *
-     * @return The wrapped {@code long} converted to a {@code double}.
+     * @return The wrapped {@code long} converted to a JS Number.
      */
     public double asNumber() {
         return getWrapped();
