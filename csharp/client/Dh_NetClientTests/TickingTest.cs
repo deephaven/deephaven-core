@@ -1,25 +1,26 @@
 ﻿//
 // Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
+
+using System.Threading.Channels;
 using Apache.Arrow;
 using Deephaven.Dh_NetClient;
-using Xunit.Abstractions;
 
 namespace Deephaven.Dh_NetClientTests;
 
-public class TickingTest(ITestOutputHelper output) {
-  [Fact]
-  public void EventuallyReaches10Rows() {
+public class TickingTest {
+  [Test]
+  public async Task EventuallyReaches10Rows() {
     const Int64 maxRows = 10;
     using var ctx = CommonContextForTests.Create(new ClientOptions());
     var thm = ctx.Client.Manager;
 
     using var table = thm.TimeTable(TimeSpan.FromMilliseconds(500)).Update("II = ii");
-    var callback = new ReachesNRowsCallback(output, maxRows);
+    var callback = new ReachesNRowsCallback(maxRows);
     using var cookie = table.Subscribe(callback);
 
     while (true) {
-      var (done, exception) = callback.WaitForUpdate();
+      var (done, exception) = await callback.WaitForUpdateAsync();
       if (done) {
         break;
       }
@@ -29,8 +30,8 @@ public class TickingTest(ITestOutputHelper output) {
     }
   }
 
-  [Fact]
-  public void AllEventuallyGreaterThan10() {
+  [Test]
+  public async Task AllEventuallyGreaterThan10() {
     const Int64 maxRows = 10;
     using var ctx = CommonContextForTests.Create(new ClientOptions());
     var thm = ctx.Client.Manager;
@@ -39,11 +40,11 @@ public class TickingTest(ITestOutputHelper output) {
       .View("Key = (long)(ii % 10)", "Value = ii")
       .LastBy("Key");
 
-    var callback = new AllValuesGreaterThanNCallback(output, maxRows);
+    var callback = new AllValuesGreaterThanNCallback(maxRows);
     using var cookie = table.Subscribe(callback);
 
     while (true) {
-      var (done, exception) = callback.WaitForUpdate();
+      var (done, exception) = await callback.WaitForUpdateAsync();
       if (done) {
         break;
       }
@@ -53,8 +54,8 @@ public class TickingTest(ITestOutputHelper output) {
     }
   }
 
-  [Fact]
-  public void AllDataEventuallyPresent() {
+  [Test]
+  public async Task AllDataEventuallyPresent() {
     const Int64 maxRows = 10;
     using var ctx = CommonContextForTests.Create(new ClientOptions());
     var thm = ctx.Client.Manager;
@@ -76,11 +77,11 @@ public class TickingTest(ITestOutputHelper output) {
       .Sort(SortPair.Ascending("II"))
       .DropColumns("Timestamp", "II");
 
-    var callback = new WaitForPopulatedTableCallback(output, maxRows);
+    var callback = new WaitForPopulatedTableCallback(maxRows);
     using var cookie = table.Subscribe(callback);
 
     while (true) {
-      var (done, exception) = callback.WaitForUpdate();
+      var (done, exception) = await callback.WaitForUpdateAsync();
       if (done) {
         break;
       }
@@ -92,58 +93,36 @@ public class TickingTest(ITestOutputHelper output) {
 }
 
 public abstract class CommonBase : IObserver<TickingUpdate> {
-  protected readonly ITestOutputHelper Output;
-
-  protected CommonBase(ITestOutputHelper output) { 
-    Output = output;
-  }
-
-  private readonly object _sync = new();
-  private bool _done = false;
-  private Exception? _exception = null;
+  private readonly Channel<(bool, Exception?)> _channel = Channel.CreateUnbounded<(bool, Exception?)>();
 
   public void OnError(Exception error) {
-    lock (_sync) {
-      _exception = error;
-      Monitor.PulseAll(_sync);
-    }
+    _channel.Writer.TryWrite((false, error));
   }
 
-  public (bool, Exception?) WaitForUpdate() {
-    lock (_sync) {
-      while (true) {
-        if (_done || _exception != null) {
-          return (_done, _exception);
-        }
-
-        Monitor.Wait(_sync);
-      }
-    }
+  public async Task<(bool, Exception?)> WaitForUpdateAsync() {
+    return await _channel.Reader.ReadAsync();
   }
 
   public void OnCompleted() {
-    Output.WriteLine("Subscription complete");
+    Console.WriteLine("Subscription complete");
   }
 
   public abstract void OnNext(TickingUpdate value);
 
   protected void NotifyDone() {
-    lock (_sync) {
-      _done = true;
-      Monitor.PulseAll(_sync);
-    }
+    _channel.Writer.TryWrite((true, null));
   }
 }
 
 public sealed class ReachesNRowsCallback: CommonBase {
   private readonly Int64 _target;
 
-  public ReachesNRowsCallback(ITestOutputHelper output, Int64 target) : base(output) {
+  public ReachesNRowsCallback(Int64 target) {
     _target = target;
   }
 
   public override void OnNext(TickingUpdate update) {
-    Output.WriteLine($"=== The Full Table ===\n{update.Current.ToString(true, true)}");
+    Console.WriteLine($"=== The Full Table ===\n{update.Current.ToString(true, true)}");
     if (update.Current.NumRows >= _target) {
       NotifyDone();
     }
@@ -153,12 +132,12 @@ public sealed class ReachesNRowsCallback: CommonBase {
 public sealed class WaitForPopulatedTableCallback : CommonBase {
   private readonly Int64 _target;
 
-  public WaitForPopulatedTableCallback(ITestOutputHelper output, Int64 target) : base(output) {
+  public WaitForPopulatedTableCallback(Int64 target) {
     _target = target;
   }
 
   public override void OnNext(TickingUpdate update) {
-    Output.WriteLine($"=== The Full Table ===\n{update.Current.ToString(true, true)}");
+    Console.WriteLine($"=== The Full Table ===\n{update.Current.ToString(true, true)}");
 
     var current = update.Current;
 
@@ -236,14 +215,14 @@ public sealed class WaitForPopulatedTableCallback : CommonBase {
 public sealed class AllValuesGreaterThanNCallback : CommonBase {
   private readonly Int64 _target;
 
-  public AllValuesGreaterThanNCallback(ITestOutputHelper output, Int64 target) : base(output) {
+  public AllValuesGreaterThanNCallback(Int64 target) {
     _target = target;
   }
 
   public override void OnNext(TickingUpdate update) {
     var current = update.Current;
 
-    Output.WriteLine($"=== The Full Table ===\n{current.ToString(true, true)}");
+    Console.WriteLine($"=== The Full Table ===\n{current.ToString(true, true)}");
 
     if (current.NumRows == 0) {
       return;

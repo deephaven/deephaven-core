@@ -8,89 +8,81 @@ using Deephaven.Dh_NetClient;
 namespace Deephaven.Dh_NetClientTests;
 
 public class ReadOnlyListAdaptersTest {
-  [Fact]
-  public void AsIList() {
+  [Test]
+  public async Task AsIList() {
     IList list = MakeReadOnlyListAdapterForValueTypes();
-    Assert.Equal(4, list.Count);
-    Assert.True(list.IsFixedSize);
-    Assert.True(list.IsReadOnly);
+    await Assert.That(list.Count).IsEqualTo(4);
+    await Assert.That(list.IsFixedSize).IsTrue();
+    await Assert.That(list.IsReadOnly).IsTrue();
     object?[] expected = [1, 2, null, 4];
-    Assert.Equivalent(expected, list);
-    Assert.Equal(1, list[0]);
-    Assert.True(list.Contains(2));
-    Assert.True(list.Contains(null));
-    Assert.False(list.Contains(3));
+    await Assert.That(list).IsEquivalentTo(expected);
+    await Assert.That(list[0]).IsEqualTo(1);
+    await Assert.That(list.Contains(2)).IsTrue();
+    await Assert.That(list.Contains(null)).IsTrue();
+    await Assert.That(list.Contains(3)).IsFalse();
     var dest = new object?[5];
     list.CopyTo(dest, 1);
-    Assert.Equivalent(new object?[]{null, 1, 2, null, 4}, dest);
+    await Assert.That(dest).IsEquivalentTo(new object?[] { null, 1, 2, null, 4 });
 
     // test enumeration
     var copy = list.Cast<object>().ToArray();
-    Assert.Equivalent(copy, list);
+    await Assert.That(list).IsEquivalentTo(copy);
 
-    Assert.Throws<NotImplementedException>(() => list.Clear());
-    Assert.Throws<NotImplementedException>(() => list.Add(5));
-    Assert.Throws<NotImplementedException>(() => list.Remove(1));
-    Assert.Throws<NotImplementedException>(() => list.Insert(0, 1));
-    Assert.Throws<NotImplementedException>(() => list.RemoveAt(0));
+    await Assert.That(() => list.Clear()).Throws<NotImplementedException>();
+    await Assert.That(() => list.Add(5)).Throws<NotImplementedException>();
+    await Assert.That(() => list.Remove(1)).Throws<NotImplementedException>();
+    await Assert.That(() => list.Insert(0, 1)).Throws<NotImplementedException>();
+    await Assert.That(() => list.RemoveAt(0)).Throws<NotImplementedException>();
   }
 
-  [Fact]
-  public void AsIListOfT() {
+  [Test]
+  public async Task AsIListOfT() {
     IList<Int32> list = MakeReadOnlyListAdapterForValueTypes();
-    Assert.Equal(4, list.Count);
-    Assert.True(list.IsReadOnly);
+    await Assert.That(list.Count).IsEqualTo(4);
+    await Assert.That(list.IsReadOnly).IsTrue();
     Int32[] expected = [1, 2, DeephavenConstants.NullInt, 4];
-    // Comparing expected and list directly doesn't work because of something
-    // in the way XUnit works. Probably because my Enumerable, Enumerable<int>
-    // and Enumerable<int?> all give different answers. To be investigated.
-    var listAsArray = list.ToArray();
-    Assert.Equal(expected.ToArray(), listAsArray);
-    Assert.Equal(1, list[0]);
-    Assert.True(list.Contains(2));
-    Assert.False(list.Contains(3));
+    await Assert.That(list).IsEquivalentTo(expected.ToArray());
+    await Assert.That(list[0]).IsEqualTo(1);
+    await Assert.That(list.Contains(2)).IsTrue();
+    await Assert.That(list.Contains(3)).IsFalse();
     var dest = new int[5];
     list.CopyTo(dest, 1);
-    Assert.Equal(new Int32[] { 0, 1, 2, DeephavenConstants.NullInt, 4 }, dest);
+    await Assert.That(dest).IsEquivalentTo(new Int32[] { 0, 1, 2, DeephavenConstants.NullInt, 4 });
 
     // test enumeration
     var copy = list.Select(x => x).ToArray();
-    Assert.Equal(copy, listAsArray);
+    await Assert.That(list).IsEquivalentTo(copy);
 
-    Assert.Throws<NotImplementedException>(() => list.Clear());
-    Assert.Throws<NotImplementedException>(() => list.Add(5));
-    Assert.Throws<NotImplementedException>(() => list.Remove(1));
-    Assert.Throws<NotImplementedException>(() => list.Insert(0, 1));
-    Assert.Throws<NotImplementedException>(() => list.RemoveAt(0));
+    await Assert.That(() => list.Clear()).Throws<NotImplementedException>();
+    await Assert.That(() => list.Add(5)).Throws<NotImplementedException>();
+    await Assert.That(() => list.Remove(1)).Throws<NotImplementedException>();
+    await Assert.That(() => list.Insert(0, 1)).Throws<NotImplementedException>();
+    await Assert.That(() => list.RemoveAt(0)).Throws<NotImplementedException>();
   }
 
-  [Fact]
-  public void AsIListOfNullableT() {
+  [Test]
+  public async Task AsIListOfNullableT() {
     IList<Int32?> list = MakeReadOnlyListAdapterForValueTypes();
-    Assert.Equal(4, list.Count);
-    Assert.True(list.IsReadOnly);
+    await Assert.That(list.Count).IsEqualTo(4);
+    await Assert.That(list.IsReadOnly).IsTrue();
     Int32?[] expected = [1, 2, null, 4];
-    // Comparing expected and list directly doesn't work because of something
-    // in the way XUnit works. Probably because my Enumerable, Enumerable<int>
-    // and Enumerable<int?> all give different answers. To be investigated.
-    var listAsArray = list.ToArray();
-    Assert.Equal(expected, listAsArray);
-    Assert.Equal(1, list[0]);
-    Assert.True(list.Contains(2));
-    Assert.False(list.Contains(3));
+    await Assert.That(list).IsEquivalentTo(expected);
+    await Assert.That(list[0]).IsEqualTo(1);
+    await Assert.That(list.Contains(2)).IsTrue();
+    await Assert.That(list.Contains(3)).IsFalse();
     var dest = new Int32?[5];
     list.CopyTo(dest, 1);
-    Assert.Equal(new Int32?[] { null, 1, 2, null, 4 }, dest);
+    await Assert.That(dest).IsEquivalentTo(new Int32?[] { null, 1, 2, null, 4 });
 
     // test enumeration
     var copy = list.Select(x => x).ToArray();
-    Assert.Equal(copy, listAsArray);
+    await Assert.That(list).IsEquivalentTo(copy);
 
-    Assert.Throws<NotImplementedException>(() => list.Clear());
-    Assert.Throws<NotImplementedException>(() => list.Add(5));
-    Assert.Throws<NotImplementedException>(() => list.Remove(1));
-    Assert.Throws<NotImplementedException>(() => list.Insert(0, 1));
-    Assert.Throws<NotImplementedException>(() => list.RemoveAt(0));
+    await Assert.That(() => list.Clear()).Throws<NotImplementedException>();
+    await Assert.That(() => list.Add(5)).Throws<NotImplementedException>();
+    await Assert.That(() => list.Remove(1)).Throws<NotImplementedException>();
+    await Assert.That(() => list.Insert(0, 1)).Throws<NotImplementedException>();
+    await Assert.That(() => list.RemoveAt(0)).Throws<NotImplementedException>();
   }
 
   private static ReadOnlyListAdapterForValueTypes<Int32> MakeReadOnlyListAdapterForValueTypes() {

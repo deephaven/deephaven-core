@@ -6,8 +6,8 @@ using Deephaven.Dh_NetClient;
 namespace Deephaven.Dh_NetClientTests;
 
 public class AggregatesTest {
-  [Fact]
-  public void TestVariousAggregates() {
+  [Test]
+  public async Task TestVariousAggregates() {
     using var ctx = CommonContextForTests.Create(new ClientOptions());
     var table = ctx.TestTable;
 
@@ -30,6 +30,6 @@ public class AggregatesTest {
     expected.AddColumn("MaxClose", [544.9]);
     expected.AddColumn("Count", [(Int64)2]);
 
-    TableComparer.AssertSame(expected, aggTable);
+    await Assert.That(() => TableComparer.AssertSame(expected, aggTable)).ThrowsNothing();
   }
 }
