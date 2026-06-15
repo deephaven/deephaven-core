@@ -65,22 +65,12 @@ public class JsTotalsTable implements JoinableTable, ServerObject {
     private Column[] columns;
     private Double updateIntervalMs;
 
-    /**
-     * Table is wrapped to let us delegate calls to it, the directive is a serialized string, and the
-     * {@link JsTotalsTableConfig#groupBy groupBy} is copied when passed in, as well as when it is accessed, to prevent
-     * accidental mutation of the array.
-     */
     public JsTotalsTable(JsTable wrappedTable, String directive, JsArray<String> groupBy) {
         this.wrappedTable = wrappedTable;
         this.directive = directive;
         this.groupBy = Js.uncheckedCast(groupBy.slice());
     }
 
-    /**
-     * Gets the {@link WorkerConnection} used by this table.
-     *
-     * @return The connection.
-     */
     @Override
     public WorkerConnection getConnection() {
         return wrappedTable.getConnection();
@@ -316,11 +306,11 @@ public class JsTotalsTable implements JoinableTable, ServerObject {
      * Returns a promise that resolves with the next occurrence of the specified event.
      *
      * @param eventName The event name.
-     * @param timeoutInMillis Timeout in milliseconds.
+     * @param timeoutInMillis Optional timeout in milliseconds.
      * @return A promise that resolves to the next event.
      */
     @JsMethod
-    public <T> Promise<Event<T>> nextEvent(String eventName, Double timeoutInMillis) {
+    public <T> Promise<Event<T>> nextEvent(String eventName, @JsOptional Double timeoutInMillis) {
         return wrappedTable.nextEvent(eventName, timeoutInMillis);
     }
 

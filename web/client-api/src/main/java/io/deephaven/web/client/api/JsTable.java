@@ -329,8 +329,6 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     /**
      * {@code true} if this table represents a user Input Table (see {@link JsInputTable dh.InputTable}). When
      * {@code true}, you may call {@link #inputTable()} to add or remove data from the underlying table.
-     * 
-     * @return boolean
      */
     @JsProperty(name = "hasInputTable")
     public boolean hasInputTable() {
@@ -351,8 +349,6 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
      * If {@link #hasInputTable()} is {@code true}, you may call this method to gain access to an {@link JsInputTable}
      * object which can be used to mutate the data within the table. If the table is not an Input Table, the promise
      * will be immediately rejected.
-     *
-     * @return Promise of {@link JsInputTable}
      */
     @JsMethod
     public Promise<JsInputTable> inputTable() {
@@ -471,8 +467,6 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
 
     /**
      * Layout hints for displaying this table.
-     *
-     * @return {@link JsLayoutHints}, or {@code null}.
      */
     @JsProperty
     @JsNullable
@@ -486,9 +480,6 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
      * {@link #SIZE_UNCOALESCED}. Otherwise, the size will be updated when the server's update graph processes changes.
      * <p>
      * When the size changes, the {@link #EVENT_SIZECHANGED} event will be fired.
-     *
-     * @return the size of the table, or {@link #SIZE_UNCOALESCED} if there is no subscription and the table is
-     *         uncoalesced.
      */
     @JsProperty
     public double getSize() {
@@ -519,8 +510,6 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
      * The total count of the rows in the table, excluding any filters. Unlike {@link #getSize()}, changes to this value
      * will not result in any event. If the table is unfiltered, this will return the same size as {@link #getSize()}.
      * If this table was uncoalesced before it was filtered, this will return {@link #SIZE_UNCOALESCED}.
-     * 
-     * @return the size of the table before filters, or {@link #SIZE_UNCOALESCED}
      */
     @JsProperty
     public double getTotalSize() {
@@ -535,8 +524,6 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
      * An ordered list of {@link Sort}s to apply to the table. To update, call {@link #applySort(Sort[])}. Note that
      * this getter will return the new value immediately, even though it may take a little time to update on the server.
      * You may listen for the {@link #EVENT_SORTCHANGED} event to know when to update the UI.
-     * 
-     * @return {@link Sort} array
      */
     @JsProperty
     public JsArray<Sort> getSort() {
@@ -548,8 +535,6 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
      * {@link #applyFilter(FilterCondition[])}. Note that this getter will return the new value immediately, even though
      * it may take a little time to update on the server. You may listen for the {@link #EVENT_FILTERCHANGED} event to
      * know when to update the UI.
-     * 
-     * @return {@link FilterCondition} array
      */
     @JsProperty
     public JsArray<FilterCondition> getFilter() {
@@ -564,7 +549,6 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
      * {@link #EVENT_ROWREMOVED} will not.
      *
      * @param sort
-     * @return {@link Sort} array
      */
     @JsMethod
     @SuppressWarnings("unusable-by-js")
@@ -603,7 +587,6 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
      * {@link #EVENT_ROWREMOVED} will not.
      *
      * @param filter
-     * @return {@link FilterCondition} array
      */
     @JsMethod
     @SuppressWarnings("unusable-by-js")
@@ -667,7 +650,6 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
      * Used when adding new filter and sort operations to the table, as long as they are present.
      *
      * @param customColumns
-     * @return {@link CustomColumn} array
      */
     @JsMethod
     public JsArray<CustomColumn> applyCustomColumns(JsArray<CustomColumnArgUnionType> customColumns) {
@@ -707,9 +689,6 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     /**
      * An ordered list of custom column formulas to add to the table, either adding new columns or replacing existing
      * ones. To update, call {@link #applyCustomColumns(JsArray)}.
-     * 
-     * @return {@link CustomColumn} array
-     *
      */
     @JsProperty
     public JsArray<CustomColumn> getCustomColumns() {
@@ -741,7 +720,6 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
      * @param lastRow
      * @param columns
      * @param updateIntervalMs
-     * @return {@link TableViewportSubscription}
      * @deprecated Use {@link #createViewportSubscription(Object)} instead.
      */
     @JsMethod
@@ -819,7 +797,6 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
      *
      * @param columns
      * @param updateIntervalMs
-     * @return {@link TableSubscription}
      * @deprecated Use {@link #createSubscription(Object)} with a {@link DataOptions.SubscriptionOptions} instead.
      */
     @JsMethod
@@ -876,7 +853,6 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
      * the table, within the bounds of the specified rows and columns.
      *
      * @param options options for the snapshot; see {@link DataOptions.SnapshotOptions} for details
-     * @return Promise of {@link TableData}
      */
     @JsMethod
     public Promise<TableData> createSnapshot(@TsTypeRef(DataOptions.SnapshotOptions.class) Object options) {

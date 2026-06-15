@@ -55,8 +55,6 @@ public class JsChart extends HasEventHandling {
 
     /**
      * The column position of this chart in the figure layout.
-     *
-     * @return int
      */
     @JsProperty
     public int getColumn() {
@@ -65,8 +63,6 @@ public class JsChart extends HasEventHandling {
 
     /**
      * The row position of this chart in the figure layout.
-     *
-     * @return int
      */
     @JsProperty
     public int getRow() {
@@ -75,8 +71,6 @@ public class JsChart extends HasEventHandling {
 
     /**
      * The number of columns this chart spans in the figure layout.
-     *
-     * @return int
      */
     @JsProperty
     public int getColspan() {
@@ -85,8 +79,6 @@ public class JsChart extends HasEventHandling {
 
     /**
      * The number of rows this chart spans in the figure layout.
-     *
-     * @return int
      */
     @JsProperty
     public int getRowspan() {
@@ -95,8 +87,6 @@ public class JsChart extends HasEventHandling {
 
     /**
      * The type of this chart. See {@link JsChartType} for more details.
-     * 
-     * @return int
      */
     @JsProperty
     @TsTypeRef(JsChartType.class)
@@ -106,8 +96,6 @@ public class JsChart extends HasEventHandling {
 
     /**
      * The title of the chart.
-     * 
-     * @return String
      */
     @JsProperty
     @JsNullable
@@ -120,8 +108,6 @@ public class JsChart extends HasEventHandling {
 
     /**
      * The font used to render the chart title.
-     *
-     * @return String
      */
     @JsProperty
     public String getTitleFont() {
@@ -130,8 +116,6 @@ public class JsChart extends HasEventHandling {
 
     /**
      * The color used to render the chart title.
-     *
-     * @return String
      */
     @JsProperty
     public String getTitleColor() {
@@ -140,8 +124,6 @@ public class JsChart extends HasEventHandling {
 
     /**
      * Whether the chart legend is shown.
-     *
-     * @return boolean
      */
     @JsProperty
     public boolean isShowLegend() {
