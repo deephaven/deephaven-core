@@ -35,8 +35,8 @@ public interface TreeViewportData extends TableData {
     double getOffset();
 
     /**
-     * {@link TableData.Row} implementation that also provides additional read-only
-     * properties. Represents visible rows in the table, but with additional properties to reflect the tree structure.
+     * {@link TableData.Row} implementation that also provides additional read-only properties. Represents visible rows
+     * in the table, but with additional properties to reflect the tree structure.
      */
     @JsType
     interface TreeRow extends TableData.Row {
