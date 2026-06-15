@@ -40,7 +40,7 @@ public class BigIntegerWrapper {
     /**
      * Returns the wrapped value as a number.
      *
-     * @return The {@link BigInteger} value converted to a {@code double}.
+     * @return The {@link BigInteger} value converted to a JS Number.
      */
     public double asNumber() {
         return getWrapped().doubleValue();

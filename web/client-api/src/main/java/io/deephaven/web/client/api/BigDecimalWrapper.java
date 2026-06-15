@@ -41,7 +41,7 @@ public class BigDecimalWrapper {
     /**
      * Returns the wrapped value as a number.
      *
-     * @return The {@link BigDecimal} value converted to a JS {@code Number}.
+     * @return The {@link BigDecimal} value converted to a JS Number.
      */
     public double asNumber() {
         return getWrapped().doubleValue();
