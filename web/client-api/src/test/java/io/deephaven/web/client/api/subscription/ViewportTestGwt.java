@@ -3,6 +3,7 @@
 //
 package io.deephaven.web.client.api.subscription;
 
+import com.google.common.cache.RemovalListener;
 import com.google.gwt.core.client.GWT;
 import elemental2.core.JsArray;
 import elemental2.dom.DomGlobal;
@@ -24,6 +25,8 @@ import io.deephaven.web.client.api.filter.FilterCondition;
 import io.deephaven.web.client.api.filter.FilterValue;
 import io.deephaven.web.shared.fu.JsConsumer;
 import io.deephaven.web.shared.fu.RemoverFn;
+import javaemul.internal.annotations.DoNotAutobox;
+import jsinterop.annotations.JsFunction;
 import jsinterop.base.Any;
 import jsinterop.base.Js;
 
@@ -32,6 +35,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -1038,12 +1042,22 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                 .then(this::finish).catch_(this::report);
     }
 
+    @JsFunction
+    interface LogMethod {
+        void write(@DoNotAutobox Object... msgs);
+    }
+
     public void testSubscriptionsOutlivingTables() {
+        // DH-20800 resulted in a logged error, but no exception. This test instruments the browser's log functionality
+        // so we can detect that an error was written out, and confirm through its absence that the bug was fixed.
+        LogMethod originalConsoleError = console::error;
         AtomicBoolean seenUnhandledError = new AtomicBoolean(false);
-        DomGlobal.self.addEventListener("unhandledrejection", e -> {
+        LogMethod replacementConsoleError = (args) -> {
             seenUnhandledError.set(true);
-        });
-        GWT.setUncaughtExceptionHandler(e -> seenUnhandledError.set(true));
+            originalConsoleError.write("The following error was captured by test handler");
+            originalConsoleError.write(args);
+        };
+        Js.asPropertyMap(DomGlobal.console).set("error", replacementConsoleError);
         connect(tables)
                 .then(table("growingForward"))
                 .then(t -> {
