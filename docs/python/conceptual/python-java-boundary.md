@@ -100,7 +100,7 @@ When using [Python user-defined functions (UDFs)](../how-to-guides/python-functi
 To minimize memory risks when using Python UDFs:
 
 - **Convert performance-critical UDFs to Java** — For frequently called functions, consider implementing them in Java or using built-in query language functions instead.
-- **Avoid returning large Python objects in UDFs** — They can remain in Python memory for extended periods, and if not freed in a timely manner, may cause a Python `MemoryError` and crash the worker process. Instead, when possible, have UDFs return only the data needed for table columns, which are typically primitive types and text. In situations where Java is not actively garbage collecting unused table columns that store Python objects, `deephaven.gc_collect()` can be used to attempt to trigger Java GC, but keep in mind that it is advisory only.
+- **Avoid returning large Python objects in UDFs** — They can remain in Python memory for extended periods, and if not freed in a timely manner, may cause a Python `MemoryError` and crash the worker process. Instead, when possible, have UDFs return only the data needed for table columns, which are typically primitive types and text. In situations where Java is not actively garbage collecting unused table columns that store Python objects, you can use `deephaven.gc_collect()` to attempt to trigger Java GC, but keep in mind that it is advisory only.
 - **Monitor resident memory** — Track total process memory, not just Java heap usage, for queries using Python UDFs.
 
 ## The Python API under the hood
