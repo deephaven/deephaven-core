@@ -54,10 +54,10 @@ import static io.deephaven.extensions.barrage.chunk.BaseChunkWriter.PADDING_BUFF
 import static io.deephaven.proto.flight.util.MessageHelper.toIpcBytes;
 
 public class BarrageMessageWriterImpl implements BarrageMessageWriter {
-    // Default batch size limited to support use of Int16 in Arrow Run-End encoding, user allowed to specify larger or
-    // smaller sizes using BarrageOptions#batchSize
+    // Batch size when the client does not specify one. Schemas containing Int16 REE columns constrain the effective
+    // batch size to Short.MAX_VALUE, enforced by BarrageMessageProducer before options reach this writer.
     public static final int DEFAULT_BATCH_SIZE = Configuration.getInstance()
-            .getIntegerForClassWithDefault(BarrageMessageWriterImpl.class, "batchSize", Short.MAX_VALUE);
+            .getIntegerForClassWithDefault(BarrageMessageWriterImpl.class, "batchSize", Integer.MAX_VALUE);
 
     // defaults to a small value that is likely to succeed and provide data for following batches
     private static final int DEFAULT_INITIAL_BATCH_SIZE = Configuration.getInstance()

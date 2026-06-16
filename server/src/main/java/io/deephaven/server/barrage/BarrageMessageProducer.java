@@ -25,6 +25,7 @@ import io.deephaven.engine.table.impl.util.ShiftInversionHelper;
 import io.deephaven.engine.table.impl.util.UpdateCoalescer;
 import io.deephaven.engine.updategraph.*;
 import io.deephaven.extensions.barrage.BarrageMessageWriter;
+import io.deephaven.extensions.barrage.BarrageMessageWriterImpl;
 import io.deephaven.extensions.barrage.BarragePerformanceLog;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.BarrageSubscriptionPerformanceLogger;
@@ -200,6 +201,10 @@ public class BarrageMessageProducer extends LivenessArtifact
     private final ChunkSource.WithPrev<Values>[] chunkSources;
     /** the chunk writer per source column */
     private final ChunkWriter<Chunk<Values>>[] chunkWriters;
+    /** the Arrow SDK schema used to initialize chunkWriters; sent to each new subscriber as-is */
+    private final org.apache.arrow.vector.types.pojo.Schema chunkWriterSchema;
+    /** effective maximum batch size; Short.MAX_VALUE when any column uses Int16 REE, otherwise DEFAULT_BATCH_SIZE */
+    private final int maxBatchSize;
     /** internally, booleans are reinterpretted to bytes; however we need to be packed bitsets over Arrow */
     private final Class<?>[] realColumnType;
     private final Class<?>[] realColumnComponentType;
@@ -374,10 +379,19 @@ public class BarrageMessageProducer extends LivenessArtifact
         // noinspection unchecked
         chunkWriters = (ChunkWriter<Chunk<Values>>[]) new ChunkWriter[sources.length];
 
-        final MutableInt mi = new MutableInt();
+        // Compute the schema once; store the SDK form for schema-message generation and REE detection,
+        // then derive the flatbuf form for chunk-writer initialization. Honour BARRAGE_SCHEMA_ATTRIBUTE
+        // when present so that subscription chunk writers agree with snapshot chunk writers.
+        chunkWriterSchema = parent.hasAttribute(Table.BARRAGE_SCHEMA_ATTRIBUTE)
+                ? (org.apache.arrow.vector.types.pojo.Schema) parent.getAttribute(Table.BARRAGE_SCHEMA_ATTRIBUTE)
+                : BarrageUtil.schemaFromTable(parent);
+        maxBatchSize = chunkWriterSchema.getFields().stream().anyMatch(BarrageUtil::isReeInt16Field)
+                ? Short.MAX_VALUE
+                : BarrageMessageWriterImpl.DEFAULT_BATCH_SIZE;
         final Schema schema = SchemaHelper.flatbufSchema(
-                BarrageUtil.schemaBytesFromTable(parent).asReadOnlyByteBuffer());
+                BarrageUtil.schemaBytes(chunkWriterSchema::getSchema).asReadOnlyByteBuffer());
 
+        final MutableInt mi = new MutableInt();
         parent.getColumnSourceMap().forEach((columnName, columnSource) -> {
             int ii = mi.getAndIncrement();
             chunkWriters[ii] = DefaultChunkWriterFactory.INSTANCE.newWriter(BarrageTypeInfo.make(
@@ -398,6 +412,31 @@ public class BarrageMessageProducer extends LivenessArtifact
                 chunkSources[ci] = sources[ci];
             }
         }
+    }
+
+    /**
+     * Returns subscription options whose effective batch size does not exceed {@link #maxBatchSize}. When
+     * {@code maxBatchSize} equals {@link BarrageMessageWriterImpl#DEFAULT_BATCH_SIZE} the original options are returned
+     * unchanged. Otherwise (e.g. Int16 REE columns are present) the batch size is capped to prevent run-end overflow in
+     * the chunk writer.
+     */
+    private BarrageSubscriptionOptions effectiveOptions(final BarrageSubscriptionOptions options) {
+        if (maxBatchSize == BarrageMessageWriterImpl.DEFAULT_BATCH_SIZE) {
+            return options;
+        }
+        final int requested = options.batchSize();
+        final int effective = requested <= 0 ? maxBatchSize : Math.min(requested, maxBatchSize);
+        if (effective == requested) {
+            return options;
+        }
+        return BarrageSubscriptionOptions.builder()
+                .useDeephavenNulls(options.useDeephavenNulls())
+                .minUpdateIntervalMs(options.minUpdateIntervalMs())
+                .batchSize(effective)
+                .maxMessageSize(options.maxMessageSize())
+                .columnsAsList(options.columnsAsList())
+                .previewListLengthLimit(options.previewListLengthLimit())
+                .build();
     }
 
     @VisibleForTesting
@@ -1596,7 +1635,7 @@ public class BarrageMessageProducer extends LivenessArtifact
                         final RowSet clientView =
                                 vp != null ? propRowSetForMessage.subSetForPositions(vp, isReversed) : null) {
                     subscription.listener.onNext(bmw.getSubView(
-                            subscription.options, false, subscription.isFullSubscription(), vp,
+                            effectiveOptions(subscription.options), false, subscription.isFullSubscription(), vp,
                             subscription.reverseViewport, clientViewPrev, clientView, cols));
                 } catch (final Exception e) {
                     try {
@@ -1647,14 +1686,17 @@ public class BarrageMessageProducer extends LivenessArtifact
                                             subscription.snapshotReverseViewport)) {
 
                 if (subscription.pendingInitialSnapshot) {
-                    // Send schema metadata to this new client.
+                    // Send the pre-computed schema (matches chunkWriters encoding). Using the stored
+                    // schema avoids re-running inferSchemaProperties and guarantees that the REE
+                    // run_ends type (Int16/Int32) matches what the chunk writers will actually produce.
                     subscription.listener.onNext(streamGeneratorFactory.getSchemaView(
-                            fbb -> BarrageUtil.makeTableSchemaPayload(fbb, subscription.options, parent)));
+                            fbb -> chunkWriterSchema.getSchema(fbb)));
                 }
 
                 // some messages may be empty of rows, but we need to update the client viewport and column set
                 subscription.listener
-                        .onNext(snapshotGenerator.getSubView(subscription.options, subscription.pendingInitialSnapshot,
+                        .onNext(snapshotGenerator.getSubView(effectiveOptions(subscription.options),
+                                subscription.pendingInitialSnapshot,
                                 fullSubscription, subscription.viewport, subscription.reverseViewport,
                                 keySpaceViewportPrev, keySpaceViewport, subscription.subscribedColumns));
 

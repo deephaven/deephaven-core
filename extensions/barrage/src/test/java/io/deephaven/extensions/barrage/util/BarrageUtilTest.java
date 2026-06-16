@@ -7,7 +7,6 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
-import io.deephaven.extensions.barrage.ArrowSchemaControl;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.ColumnEncoding;
 import io.deephaven.proto.flight.util.SchemaHelper;
@@ -15,6 +14,7 @@ import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.arrow.vector.types.pojo.Schema;
 
+import java.util.Arrays;
 import java.util.Map;
 
 import static io.deephaven.engine.util.TableTools.*;
@@ -88,11 +88,11 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
         // update() with a constant expression produces SingleValueColumnSource for each column
         final Table table = emptyTable(100).update("X = 42", "Y = `hello`", "Z = 1.5");
 
-        final ArrowSchemaControl detected = BarrageUtil.inferSchemaProperties(table, ArrowSchemaControl.DEFAULT);
+        final Map<String, ColumnEncoding> detected = BarrageUtil.inferEncodings(table);
 
-        assertThat(detected.encodings().get("X")).isEqualTo(ColumnEncoding.RUN_END_ENCODED);
-        assertThat(detected.encodings().get("Y")).isEqualTo(ColumnEncoding.RUN_END_ENCODED);
-        assertThat(detected.encodings().get("Z")).isEqualTo(ColumnEncoding.RUN_END_ENCODED);
+        assertThat(detected.get("X")).isEqualTo(ColumnEncoding.RUN_END_ENCODED);
+        assertThat(detected.get("Y")).isEqualTo(ColumnEncoding.RUN_END_ENCODED);
+        assertThat(detected.get("Z")).isEqualTo(ColumnEncoding.RUN_END_ENCODED);
     }
 
     public void testNullValueColumnSourceGetREE() {
@@ -101,32 +101,13 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
         final ColumnSource<?> nullSource = NullValueColumnSource.getInstance(int.class, null);
         final Table table = newTable(5, Map.of("X", nullSource));
 
-        final ArrowSchemaControl detected = BarrageUtil.inferSchemaProperties(table, ArrowSchemaControl.DEFAULT);
+        final Map<String, ColumnEncoding> detected = BarrageUtil.inferEncodings(table);
 
-        assertThat(detected.encodings().get("X")).isEqualTo(ColumnEncoding.RUN_END_ENCODED);
-    }
-
-    public void testExplicitColumnEncodingOverrideForceREE() {
-        // A plain array-backed table with no merged/key-column attributes and no constant sources
-        // should produce no auto-REE columns.
-        final Table table = newTable(
-                stringCol("Symbol", "AAPL", "MSFT", "GOOG"),
-                intCol("Price", 100, 200, 300));
-
-        assertThat(BarrageUtil.inferSchemaProperties(table, ArrowSchemaControl.DEFAULT).encodings()).isEmpty();
-
-        // Explicitly request REE for Symbol via the 2-arg schemaFromTable overload.
-        final Schema schema = BarrageUtil.schemaFromTable(table,
-                ArrowSchemaControl.builder()
-                        .putEncoding("Symbol", ColumnEncoding.RUN_END_ENCODED)
-                        .build());
-
-        assertFieldIsREE(schema, "Symbol");
-        assertFieldIsNotREE(schema, "Price");
+        assertThat(detected.get("X")).isEqualTo(ColumnEncoding.RUN_END_ENCODED);
     }
 
     public void testREEFieldStructureInt32RunEndsForLargeBatch() {
-        // When batchSize > Short.MAX_VALUE, arrowReeFieldFor must select Int32 run_ends.
+        // REE fields always use Int32 run_ends regardless of batch size; verify via makeTableSchemaPayload.
         final Table table = newTable(
                 stringCol("Symbol", "AAPL", "AAPL"))
                 .withAttributes(Map.of(
@@ -168,8 +149,7 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
         final Field runEnds = symbolField.getChildren().get(0);
         assertThat(runEnds.getName()).isEqualTo("run_ends");
         assertThat(runEnds.getType().getTypeID()).isEqualTo(ArrowType.ArrowTypeID.Int);
-        // DEFAULT_BATCH_SIZE == Short.MAX_VALUE, so arrowReeFieldFor selects Int16 run_ends.
-        assertThat(((ArrowType.Int) runEnds.getType()).getBitWidth()).isEqualTo(16);
+        assertThat(((ArrowType.Int) runEnds.getType()).getBitWidth()).isEqualTo(32);
         assertThat(((ArrowType.Int) runEnds.getType()).getIsSigned()).isTrue();
 
         final Field values = symbolField.getChildren().get(1);
@@ -205,6 +185,64 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
         assertThat(converted.tableDef.getColumn("Exchange").getDataType()).isEqualTo(int.class);
         assertThat(converted.tableDef.getColumn("Price").getDataType()).isEqualTo(double.class);
         assertThat(converted.tableDef.getColumn("Size").getDataType()).isEqualTo(long.class);
+    }
+
+    public void testSamplingDetectsRepetitiveColumn() {
+        // Array-backed columns (not SingleValueColumnSource) with all identical values should be
+        // auto-detected via sampling.
+        final int N = 100;
+        final String[] symbols = new String[N];
+        Arrays.fill(symbols, "AAPL");
+        final int[] prices = new int[N];
+        Arrays.fill(prices, 42);
+        final Table table = newTable(stringCol("Symbol", symbols), intCol("Price", prices));
+
+        final Map<String, ColumnEncoding> detected = BarrageUtil.inferEncodings(table);
+
+        assertThat(detected.get("Symbol")).isEqualTo(ColumnEncoding.RUN_END_ENCODED);
+        assertThat(detected.get("Price")).isEqualTo(ColumnEncoding.RUN_END_ENCODED);
+    }
+
+    public void testSamplingSkipsDistinctColumn() {
+        // All-distinct values produce a run ratio of 1.0, which is above the threshold — no REE.
+        final int N = 100;
+        final int[] prices = new int[N];
+        for (int i = 0; i < N; i++) {
+            prices[i] = i;
+        }
+        final Table table = newTable(intCol("Price", prices));
+
+        final Map<String, ColumnEncoding> detected = BarrageUtil.inferEncodings(table);
+
+        assertThat(detected).doesNotContainKey("Price");
+    }
+
+    public void testSamplingMixedTable() {
+        // Repetitive column gets REE; all-distinct column does not.
+        final int N = 100;
+        final String[] symbols = new String[N];
+        Arrays.fill(symbols, "AAPL");
+        final int[] prices = new int[N];
+        for (int i = 0; i < N; i++) {
+            prices[i] = i;
+        }
+        final Table table = newTable(stringCol("Symbol", symbols), intCol("Price", prices));
+
+        final Map<String, ColumnEncoding> detected = BarrageUtil.inferEncodings(table);
+
+        assertThat(detected.get("Symbol")).isEqualTo(ColumnEncoding.RUN_END_ENCODED);
+        assertThat(detected).doesNotContainKey("Price");
+    }
+
+    public void testSamplingSkippedForSmallTable() {
+        // Tables with fewer than REE_MIN_SAMPLE_SIZE (16) rows are not sampled.
+        final String[] symbols = new String[15];
+        Arrays.fill(symbols, "AAPL");
+        final Table table = newTable(stringCol("Symbol", symbols));
+
+        final Map<String, ColumnEncoding> detected = BarrageUtil.inferEncodings(table);
+
+        assertThat(detected).doesNotContainKey("Symbol");
     }
 
     private static void assertFieldIsREE(final Schema schema, final String columnName) {

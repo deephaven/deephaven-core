@@ -19,8 +19,11 @@ import io.deephaven.base.ArrayUtil;
 import io.deephaven.base.ClassUtil;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.WritableBooleanChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.ChunkType;
+import io.deephaven.chunk.util.hashing.ChunkEquals;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
@@ -37,7 +40,6 @@ import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
-import io.deephaven.extensions.barrage.ArrowSchemaControl;
 import io.deephaven.extensions.barrage.BarrageMessageWriter;
 import io.deephaven.extensions.barrage.BarrageMessageWriterImpl;
 import io.deephaven.extensions.barrage.BarrageOptions;
@@ -142,6 +144,24 @@ public class BarrageUtil {
     public static final long MAX_SNAPSHOT_CELL_COUNT =
             Configuration.getInstance().getLongForClassWithDefault(BarrageUtil.class,
                     "maxSnapshotCellCount", 1L << 24);
+
+    /** Whether to sample columns at schema-inference time to detect run patterns for REE auto-encoding. */
+    private static final boolean REE_SAMPLING_ENABLED =
+            Configuration.getInstance().getBooleanWithDefault("BarrageUtil.ree.samplingEnabled", true);
+
+    /** Number of rows to sample per column when estimating run ratios. */
+    private static final int REE_SAMPLE_SIZE =
+            Configuration.getInstance().getIntegerWithDefault("BarrageUtil.ree.sampleSize", 1024);
+
+    /**
+     * Maximum ratio of (estimated runs / sampled rows) that triggers REE auto-encoding. At the default of 0.5, a column
+     * must average at least 2 rows per run to be encoded.
+     */
+    private static final double REE_RUN_RATIO_THRESHOLD =
+            Configuration.getInstance().getDoubleWithDefault("BarrageUtil.ree.runRatioThreshold", 0.5);
+
+    /** Minimum table row count before sampling is attempted; too few rows make the estimate noisy. */
+    private static final int REE_MIN_SAMPLE_SIZE = 16;
 
     /**
      * Note that arrow's wire format states that Timestamps without timezones are not UTC -- that they are no timezone
@@ -475,23 +495,55 @@ public class BarrageUtil {
             @NotNull final TableDefinition tableDefinition,
             @NotNull final Map<String, Object> attributes,
             final boolean isFlat) {
-        return schemaBytes(fbb -> makeSchema(DEFAULT_SNAPSHOT_OPTIONS, tableDefinition, attributes, isFlat,
-                ArrowSchemaControl.DEFAULT).getSchema(fbb));
+        return schemaBytes(fbb -> makeSchema(DEFAULT_SNAPSHOT_OPTIONS, tableDefinition, attributes, isFlat)
+                .getSchema(fbb));
     }
 
     public static Schema schemaFromTable(@NotNull final Table table) {
-        return schemaFromTable(table, ArrowSchemaControl.DEFAULT);
-    }
-
-    public static Schema schemaFromTable(
-            @NotNull final Table table,
-            @NotNull final ArrowSchemaControl control) {
+        if (table.hasAttribute(Table.BARRAGE_SCHEMA_ATTRIBUTE)) {
+            return makeSchema(DEFAULT_SNAPSHOT_OPTIONS, table.getDefinition(), table.getAttributes(), table.isFlat());
+        }
         return makeSchema(DEFAULT_SNAPSHOT_OPTIONS, table.getDefinition(), table.getAttributes(), table.isFlat(),
-                inferSchemaProperties(table, control));
+                inferEncodings(table));
     }
 
     public static Schema toSchema(final TableDefinition definition, Map<String, Object> attributes, boolean isFlat) {
-        return makeSchema(DEFAULT_SNAPSHOT_OPTIONS, definition, attributes, isFlat, ArrowSchemaControl.DEFAULT);
+        return makeSchema(DEFAULT_SNAPSHOT_OPTIONS, definition, attributes, isFlat);
+    }
+
+    /**
+     * Returns {@code true} when the given Arrow SDK field is Run-End Encoded with Int16 (16-bit signed) run_ends. Used
+     * to detect whether any column's chunk writer is constrained to batches of at most {@link Short#MAX_VALUE} rows.
+     */
+    public static boolean isReeInt16Field(final Field field) {
+        if (!(field.getType() instanceof ArrowType.RunEndEncoded)) {
+            return false;
+        }
+        final List<Field> children = field.getChildren();
+        if (children.isEmpty()) {
+            return false;
+        }
+        final Field runEnds = children.get(0);
+        return (runEnds.getType() instanceof ArrowType.Int)
+                && ((ArrowType.Int) runEnds.getType()).getBitWidth() == 16;
+    }
+
+    private static Field toReeField(final Field field) {
+        if (field.getType().getTypeID() == ArrowType.ArrowTypeID.RunEndEncoded) {
+            return field;
+        }
+        final Field runEndsField = new Field(
+                "run_ends",
+                new FieldType(false, Types.MinorType.INT.getType(), null),
+                Collections.emptyList());
+        final Field valuesField = new Field(
+                "values",
+                new FieldType(field.isNullable(), field.getType(), field.getDictionary(), Collections.emptyMap()),
+                field.getChildren());
+        return new Field(
+                field.getName(),
+                new FieldType(false, new ArrowType.RunEndEncoded(), null, field.getMetadata()),
+                List.of(runEndsField, valuesField));
     }
 
     public static ByteString schemaBytes(@NotNull final ToIntFunction<FlatBufferBuilder> schemaPayloadWriter) {
@@ -511,27 +563,38 @@ public class BarrageUtil {
             @NotNull final FlatBufferBuilder builder,
             @NotNull final BarrageOptions options,
             @NotNull final Table table) {
+        if (table.hasAttribute(Table.BARRAGE_SCHEMA_ATTRIBUTE)) {
+            return makeSchema(options, table.getDefinition(), table.getAttributes(), table.isFlat()).getSchema(builder);
+        }
         return makeSchema(options, table.getDefinition(), table.getAttributes(), table.isFlat(),
-                inferSchemaProperties(table, ArrowSchemaControl.DEFAULT)).getSchema(builder);
+                inferEncodings(table)).getSchema(builder);
     }
 
     public static Schema makeSchema(
             @NotNull final BarrageOptions options,
             @NotNull final TableDefinition tableDefinition,
             @NotNull final Map<String, Object> attributes,
+            final boolean isFlat) {
+        return makeSchema(options, tableDefinition, attributes, isFlat, Map.of());
+    }
+
+    private static Schema makeSchema(
+            @NotNull final BarrageOptions options,
+            @NotNull final TableDefinition tableDefinition,
+            @NotNull final Map<String, Object> attributes,
             final boolean isFlat,
-            @NotNull final ArrowSchemaControl control) {
+            @NotNull final Map<String, ColumnEncoding> encodings) {
         final Map<String, String> schemaMetadata = attributesToMetadata(attributes, isFlat);
         final Map<String, String> descriptions = GridAttributes.getColumnDescriptions(attributes);
         final InputTableUpdater inputTableUpdater = (InputTableUpdater) attributes.get(Table.INPUT_TABLE_ATTRIBUTE);
         maybeAddInputTableMetadata(tableDefinition, schemaMetadata, inputTableUpdater);
-        final int effectiveBatchSize = options.batchSize() > 0
-                ? options.batchSize()
-                : BarrageMessageWriterImpl.DEFAULT_BATCH_SIZE;
         final List<Field> fields = columnDefinitionsToFields(
                 descriptions, inputTableUpdater, tableDefinition, tableDefinition.getColumns(),
                 ignored -> new HashMap<>(),
-                attributes, options.columnsAsList(), control, effectiveBatchSize)
+                attributes, options.columnsAsList())
+                .map(field -> encodings.get(field.getName()) == ColumnEncoding.RUN_END_ENCODED
+                        ? toReeField(field)
+                        : field)
                 .collect(Collectors.toList());
         return new Schema(fields, schemaMetadata);
     }
@@ -613,8 +676,7 @@ public class BarrageUtil {
             @NotNull final Function<String, Map<String, String>> fieldMetadataFactory,
             @NotNull final Map<String, Object> attributes) {
         return columnDefinitionsToFields(columnDescriptions, inputTableUpdater, tableDefinition, columnDefinitions,
-                fieldMetadataFactory, attributes, false, ArrowSchemaControl.DEFAULT,
-                BarrageMessageWriterImpl.DEFAULT_BATCH_SIZE);
+                fieldMetadataFactory, attributes, false);
     }
 
     private static boolean isDataTypeSortable(final Class<?> dataType) {
@@ -630,21 +692,6 @@ public class BarrageUtil {
             @NotNull final Function<String, Map<String, String>> fieldMetadataFactory,
             @NotNull final Map<String, Object> attributes,
             final boolean columnsAsList) {
-        return columnDefinitionsToFields(columnDescriptions, inputTableUpdater, tableDefinition, columnDefinitions,
-                fieldMetadataFactory, attributes, columnsAsList, ArrowSchemaControl.DEFAULT,
-                BarrageMessageWriterImpl.DEFAULT_BATCH_SIZE);
-    }
-
-    private static Stream<Field> columnDefinitionsToFields(
-            @NotNull final Map<String, String> columnDescriptions,
-            @Nullable final InputTableUpdater inputTableUpdater,
-            @NotNull final TableDefinition tableDefinition,
-            @NotNull final Collection<ColumnDefinition<?>> columnDefinitions,
-            @NotNull final Function<String, Map<String, String>> fieldMetadataFactory,
-            @NotNull final Map<String, Object> attributes,
-            final boolean columnsAsList,
-            @NotNull final ArrowSchemaControl control,
-            final int maxBatchSize) {
         boolean wireFormatSpecified = attributes.containsKey(Table.BARRAGE_SCHEMA_ATTRIBUTE);
 
         // Find columns that are sortable
@@ -746,8 +793,6 @@ public class BarrageUtil {
                 field = new Field(field.getName(), newType, field.getChildren());
             } else if (Vector.class.isAssignableFrom(dataType)) {
                 field = arrowFieldForVectorType(name, dataType, componentType, metadata);
-            } else if (control.encodings().get(name) == ColumnEncoding.RUN_END_ENCODED) {
-                field = arrowReeFieldFor(name, dataType, componentType, metadata, maxBatchSize);
             } else {
                 field = arrowFieldFor(name, dataType, componentType, metadata, columnsAsList);
             }
@@ -1200,15 +1245,44 @@ public class BarrageUtil {
         return false;
     }
 
-    static ArrowSchemaControl inferSchemaProperties(
-            @NotNull final Table table,
-            @NotNull final ArrowSchemaControl control) {
-        final ArrowSchemaControl.Builder builder = ArrowSchemaControl.builder();
+    /**
+     * Samples {@code sampleSize} rows from {@code rowSet} and returns the ratio of estimated run count to rows sampled.
+     * A ratio near 0 means the column is highly repetitive; 1.0 means every consecutive pair differs.
+     */
+    private static double estimateRunRatio(
+            @NotNull final ColumnSource<?> source,
+            @NotNull final RowSet rowSet,
+            final int sampleSize) {
+        final int n = (int) Math.min(sampleSize, rowSet.size());
+        if (n < 2) {
+            return 1.0;
+        }
+        // read 64 samples of ~16 samples == 1000 rows distributed
+
+
+        try (final RowSet sampleRows = rowSet.subSetByPositionRange(0, n);
+                final ColumnSource.GetContext context = source.makeGetContext(n);
+                final WritableBooleanChunk<Values> isEqualNext =
+                        WritableBooleanChunk.makeWritableChunk(n - 1)) {
+            final Chunk<? extends Values> chunk = source.getChunk(context, sampleRows);
+            ChunkEquals.makeEqual(source.getChunkType()).equalNext(chunk, isEqualNext);
+            int numRuns = 1;
+            for (int i = 0; i < isEqualNext.size(); ++i) {
+                if (!isEqualNext.get(i)) {
+                    ++numRuns;
+                }
+            }
+            return (double) numRuns / n;
+        }
+    }
+
+    static Map<String, ColumnEncoding> inferEncodings(@NotNull final Table table) {
+        final Map<String, ColumnEncoding> encodings = new HashMap<>();
 
         // Single-value sources are an obvious win, should always be encoded.
         table.getColumnSourceMap().forEach((name, source) -> {
             if (source instanceof NullValueColumnSource || source instanceof SingleValueColumnSource) {
-                builder.putEncoding(name, ColumnEncoding.RUN_END_ENCODED);
+                encodings.put(name, ColumnEncoding.RUN_END_ENCODED);
             }
         });
 
@@ -1216,37 +1290,30 @@ public class BarrageUtil {
         if (Boolean.TRUE.equals(table.getAttribute(Table.MERGED_TABLE_ATTRIBUTE))
                 && table.hasAttribute(Table.KEY_COLUMNS_ATTRIBUTE)) {
             for (final String col : ((String) table.getAttribute(Table.KEY_COLUMNS_ATTRIBUTE)).split(",")) {
-                builder.putEncoding(col, ColumnEncoding.RUN_END_ENCODED);
+                encodings.put(col, ColumnEncoding.RUN_END_ENCODED);
             }
         }
 
-        // TODO: add a sampling mechanism to detect runs and decide on the fly. With Int16 encoding the default,
-        // we can be optimistic and allow REE when we think it *might* be effective.
+        /// GO AHEAD AND snapshot (will let us know usePrev = /true/false for accurate data)
 
-        // User-specified control overrides auto-detected encodings (not the other way around).
-        builder.putAllEncodings(control.encodings());
+        // Sample the table to detect columns with repetitive data patterns. Refreshing tables are only sampled when the
+        // update-graph lock is already held by the current thread.
+        final UpdateGraph updateGraph = table.getUpdateGraph();
+        final boolean lockHeld = updateGraph.sharedLock().isHeldByCurrentThread()
+                || updateGraph.exclusiveLock().isHeldByCurrentThread();
+        if (REE_SAMPLING_ENABLED && (!table.isRefreshing() || lockHeld) && table.size() >= REE_MIN_SAMPLE_SIZE) {
+            final RowSet rowSet = table.getRowSet();
+            table.getColumnSourceMap().forEach((name, source) -> {
+                if (encodings.containsKey(name)) {
+                    return;
+                }
+                if (estimateRunRatio(source, rowSet, REE_SAMPLE_SIZE) < REE_RUN_RATIO_THRESHOLD) {
+                    encodings.put(name, ColumnEncoding.RUN_END_ENCODED);
+                }
+            });
+        }
 
-        return builder.build();
-    }
-
-    private static Field arrowReeFieldFor(
-            final String name,
-            final Class<?> type,
-            final Class<?> componentType,
-            final Map<String, String> metadata,
-            final int maxBatchSize) {
-        final ArrowType runEndsType = maxBatchSize <= Short.MAX_VALUE
-                ? Types.MinorType.SMALLINT.getType()
-                : Types.MinorType.INT.getType();
-        final Field runEndsField = new Field(
-                "run_ends",
-                new FieldType(false, runEndsType, null),
-                Collections.emptyList());
-        final Field valuesField = arrowFieldFor("values", type, componentType, Collections.emptyMap(), false);
-        return new Field(
-                name,
-                new FieldType(false, new ArrowType.RunEndEncoded(), null, metadata),
-                List.of(runEndsField, valuesField));
+        return encodings;
     }
 
     public static Field arrowFieldFor(
@@ -1394,6 +1461,70 @@ public class BarrageUtil {
         return new Field(name, fieldType, children);
     }
 
+    /**
+     * Returns the effective Arrow SDK schema for {@code table}, honoring {@link Table#BARRAGE_SCHEMA_ATTRIBUTE} when
+     * present, otherwise building from the table definition with inferred REE encodings applied. This schema is
+     * authoritative for both the schema IPC message and chunk-writer initialization.
+     */
+    private static Schema computeEffectiveSchema(
+            @NotNull final BarrageOptions options,
+            @NotNull final BaseTable<?> table) {
+        if (table.hasAttribute(Table.BARRAGE_SCHEMA_ATTRIBUTE)) {
+            return (Schema) table.getAttribute(Table.BARRAGE_SCHEMA_ATTRIBUTE);
+        }
+        return makeSchema(options, table.getDefinition(), table.getAttributes(), table.isFlat(), inferEncodings(table));
+    }
+
+    /**
+     * Returns the maximum batch size imposed by the schema: {@link Short#MAX_VALUE} when any field uses Int16 Run-End
+     * Encoding, otherwise {@link BarrageMessageWriterImpl#DEFAULT_BATCH_SIZE}.
+     */
+    private static int maxBatchSizeForSchema(@NotNull final Schema schema) {
+        return schema.getFields().stream().anyMatch(BarrageUtil::isReeInt16Field)
+                ? Short.MAX_VALUE
+                : BarrageMessageWriterImpl.DEFAULT_BATCH_SIZE;
+    }
+
+    /**
+     * Converts an Arrow SDK schema to a column-name → flatbuf-Field map for use by chunk writers.
+     */
+    private static Map<String, org.apache.arrow.flatbuf.Field> buildFlatbufFieldMap(
+            @NotNull final Schema schema) {
+        final Map<String, org.apache.arrow.flatbuf.Field> fieldFor = new HashMap<>();
+        // noinspection DataFlowIssue
+        schema.getFields().forEach(f -> {
+            final FlatBufferBuilder fbb = new FlatBufferBuilder();
+            final int offset = f.getField(fbb);
+            fbb.finish(offset);
+            fieldFor.put(f.getName(), org.apache.arrow.flatbuf.Field.getRootAsField(fbb.dataBuffer()));
+        });
+        return fieldFor;
+    }
+
+    /**
+     * Returns snapshot options whose effective batch size does not exceed {@code maxBatchSize}. When
+     * {@code maxBatchSize} equals {@link BarrageMessageWriterImpl#DEFAULT_BATCH_SIZE} the original options are returned
+     * unchanged.
+     */
+    private static BarrageSnapshotOptions effectiveSnapshotOptions(
+            @NotNull final BarrageSnapshotOptions options,
+            final int maxBatchSize) {
+        if (maxBatchSize == BarrageMessageWriterImpl.DEFAULT_BATCH_SIZE) {
+            return options;
+        }
+        final int requested = options.batchSize();
+        final int effective = requested <= 0 ? maxBatchSize : Math.min(requested, maxBatchSize);
+        if (effective == requested) {
+            return options;
+        }
+        return BarrageSnapshotOptions.builder()
+                .useDeephavenNulls(options.useDeephavenNulls())
+                .batchSize(effective)
+                .maxMessageSize(options.maxMessageSize())
+                .previewListLengthLimit(options.previewListLengthLimit())
+                .build();
+    }
+
     public static void createAndSendStaticSnapshot(
             BarrageMessageWriter.Factory bmwFactory,
             BaseTable<?> table,
@@ -1407,27 +1538,17 @@ public class BarrageUtil {
         long snapshotTargetCellCount = MIN_SNAPSHOT_CELL_COUNT;
         double snapshotNanosPerCell = 0.0;
 
-        final Map<String, org.apache.arrow.flatbuf.Field> fieldFor;
-        if (table.hasAttribute(Table.BARRAGE_SCHEMA_ATTRIBUTE)) {
-            fieldFor = new HashMap<>();
-            final Schema targetSchema = (Schema) table.getAttribute(Table.BARRAGE_SCHEMA_ATTRIBUTE);
-            // noinspection DataFlowIssue
-            targetSchema.getFields().forEach(f -> {
-                final FlatBufferBuilder fbb = new FlatBufferBuilder();
-                final int offset = f.getField(fbb);
-                fbb.finish(offset);
-                fieldFor.put(f.getName(), org.apache.arrow.flatbuf.Field.getRootAsField(fbb.dataBuffer()));
-            });
-        } else {
-            fieldFor = null;
-        }
+        final Schema effectiveSchema = computeEffectiveSchema(snapshotRequestOptions, table);
+        final Map<String, org.apache.arrow.flatbuf.Field> fieldFor = buildFlatbufFieldMap(effectiveSchema);
+        snapshotRequestOptions =
+                effectiveSnapshotOptions(snapshotRequestOptions, maxBatchSizeForSchema(effectiveSchema));
 
         // noinspection unchecked
         final ChunkWriter<Chunk<Values>>[] chunkWriters = table.getDefinition().getColumns().stream()
                 .map(cd -> DefaultChunkWriterFactory.INSTANCE.newWriter(BarrageTypeInfo.make(
                         ReinterpretUtils.maybeConvertToPrimitiveDataType(cd.getDataType()),
                         cd.getComponentType(),
-                        fieldFor != null ? fieldFor.get(cd.getName()) : flatbufFieldFor(cd, Map.of()))))
+                        fieldFor.getOrDefault(cd.getName(), flatbufFieldFor(cd, Map.of())))))
                 .toArray(ChunkWriter[]::new);
 
         final long columnCount =
@@ -1539,30 +1660,16 @@ public class BarrageUtil {
             return;
         }
 
-        final Map<String, org.apache.arrow.flatbuf.Field> fieldFor;
-        if (table.hasAttribute(Table.BARRAGE_SCHEMA_ATTRIBUTE)) {
-            fieldFor = new HashMap<>();
-            // Extract the target schema from the table attributes
-            final Schema targetSchema = (Schema) table.getAttribute(Table.BARRAGE_SCHEMA_ATTRIBUTE);
-            // noinspection DataFlowIssue
-            // Iterate over each field, serialize it to a FlatBuffer, and store it in the map
-            targetSchema.getFields().forEach(f -> {
-                final FlatBufferBuilder fbb = new FlatBufferBuilder();
-                final int offset = f.getField(fbb);
-                fbb.finish(offset);
-                fieldFor.put(f.getName(), org.apache.arrow.flatbuf.Field.getRootAsField(fbb.dataBuffer()));
-            });
-        } else {
-            // No custom schema provided, keep the map null to rely on default field generation
-            fieldFor = null;
-        }
+        final Schema effectiveSchema = computeEffectiveSchema(options, table);
+        final Map<String, org.apache.arrow.flatbuf.Field> fieldFor = buildFlatbufFieldMap(effectiveSchema);
+        options = effectiveSnapshotOptions(options, maxBatchSizeForSchema(effectiveSchema));
 
         // noinspection unchecked
         final ChunkWriter<Chunk<Values>>[] chunkWriters = table.getDefinition().getColumns().stream()
                 .map(cd -> DefaultChunkWriterFactory.INSTANCE.newWriter(BarrageTypeInfo.make(
                         ReinterpretUtils.maybeConvertToPrimitiveDataType(cd.getDataType()),
                         cd.getComponentType(),
-                        fieldFor != null ? fieldFor.get(cd.getName()) : flatbufFieldFor(cd, Map.of()))))
+                        fieldFor.getOrDefault(cd.getName(), flatbufFieldFor(cd, Map.of())))))
                 .toArray(ChunkWriter[]::new);
 
         // otherwise snapshot the entire request and send to the client
