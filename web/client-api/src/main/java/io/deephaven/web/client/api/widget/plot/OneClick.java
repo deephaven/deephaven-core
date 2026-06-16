@@ -271,12 +271,12 @@ public class OneClick {
     /**
      * Gets the currently selected value for {@code columnName}.
      *
-     * @param columName the column name
+     * @param columnName the column name
      * @return the selected value, or {@code null} if no value has been set
      */
     @JsMethod
-    public Any getValueForColumn(String columName) {
-        return values.get(columName);
+    public Any getValueForColumn(String columnName) {
+        return values.get(columnName);
     }
 
     public boolean allValuesSet() {

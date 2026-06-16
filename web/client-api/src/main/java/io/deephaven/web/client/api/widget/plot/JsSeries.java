@@ -284,7 +284,7 @@ public class JsSeries {
     }
 
     /**
-     * indicates that this series belongs to a MultiSeries, null otherwise
+     * Indicates that this series belongs to a MultiSeries, null otherwise
      * 
      * @return dh.plot.MultiSeries
      */
@@ -294,7 +294,7 @@ public class JsSeries {
     }
 
     /**
-     * A one-click configuration for this series.
+     * The one-click configuration for this series.
      */
     @JsProperty
     public OneClick getOneClick() {
