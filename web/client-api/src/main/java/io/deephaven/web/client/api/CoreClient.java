@@ -133,6 +133,7 @@ public class CoreClient extends HasEventHandling {
         return login;
     }
 
+    @Deprecated
     public Promise<Void> relogin(@TsTypeRef(JsRefreshToken.class) Object token) {
         return login(Js.cast(LoginCredentials.reconnect(JsRefreshToken.fromObject(token).getBytes())));
     }

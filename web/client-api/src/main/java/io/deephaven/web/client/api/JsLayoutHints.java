@@ -16,17 +16,17 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-@TsInterface
-@JsType(namespace = "dh", name = "LayoutHints")
 /**
  * Layout hint values that can be used by clients when rendering a table.
  */
+@TsInterface
+@JsType(namespace = "dh", name = "LayoutHints")
 public class JsLayoutHints {
-    @TsInterface
-    @JsType(namespace = "dh")
     /**
      * Describes a column group to use when rendering a table.
      */
+    @TsInterface
+    @JsType(namespace = "dh")
     public static class ColumnGroup {
         /**
          * The group name.
@@ -82,9 +82,6 @@ public class JsLayoutHints {
 
     private boolean savedLayoutsAllowed = true;
 
-    /**
-     * The display mode for the search bar.
-     */
     private String searchDisplayMode = SearchDisplayMode.SEARCH_DISPLAY_DEFAULT;
     private String[] frontColumns;
     private String[] backColumns;

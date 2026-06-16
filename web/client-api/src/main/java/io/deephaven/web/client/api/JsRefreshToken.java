@@ -9,11 +9,9 @@ import elemental2.core.JsDate;
 import jsinterop.annotations.JsProperty;
 import jsinterop.base.JsPropertyMap;
 
+@Deprecated
 @TsInterface
 @TsName(name = "RefreshToken", namespace = "dh")
-/**
- * A refresh token and its expiration time.
- */
 public class JsRefreshToken {
 
     public static JsRefreshToken fromObject(Object token) {
@@ -23,13 +21,7 @@ public class JsRefreshToken {
         return new JsRefreshToken((JsPropertyMap<Object>) token);
     }
 
-    /**
-     * The refresh token bytes.
-     */
     private String bytes;
-    /**
-     * The token expiry time.
-     */
     private double expiry;
 
     public JsRefreshToken(String token, double tokenDuration) {

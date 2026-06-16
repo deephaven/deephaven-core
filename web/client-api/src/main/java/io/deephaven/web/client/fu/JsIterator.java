@@ -65,11 +65,9 @@ public class JsIterator<T> {
     }
 
     /**
-     * Copied from elemental2, but has a concrete subclass to permit us to export it back to TS.
-     * 
-     * <p>
-     * This type is used as the return value of {@link JsIterator#next()} and matches the shape of JavaScript iterator
-     * results: a boolean {@code done} flag and an optional {@code value}.
+     * A native GWT overlay ({@code isNative = true}) for the global {@code IIterableResult} JS type. The
+     * {@link JsOverlay} {@link #create()} factory constructs plain JS objects matching the iterator result shape, which
+     * are then returned from {@link JsIterator#next()} as the non-native, TS-exportable {@link IIterableResult}.
      */
     @JsType(name = "IIterableResult", namespace = JsPackage.GLOBAL, isNative = true)
     @TsInterface
