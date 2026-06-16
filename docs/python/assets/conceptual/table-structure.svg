@@ -1,0 +1,154 @@
+<svg viewBox="0 0 1000 700" xmlns="http://www.w3.org/2000/svg">
+  <!-- Light background for dark theme compatibility -->
+  <rect width="100%" height="100%" fill="#ffffff" rx="8"/>
+  <defs>
+    <style>
+      .title { font: bold 16px sans-serif; fill: #1f2937; }
+      .label { font: 14px sans-serif; fill: #374151; }
+      .code { font: 12px 'Courier New', monospace; fill: #1f2937; }
+      .description { font: 11px sans-serif; fill: #6b7280; }
+      .table-box { fill: #e0e7ff; stroke: #6366f1; stroke-width: 2.5; }
+      .rowset { fill: #fef3c7; stroke: #f59e0b; stroke-width: 2.5; }
+      .column { fill: #dcfce7; stroke: #22c55e; stroke-width: 2.5; }
+      .shared { fill: #fce7f3; stroke: #ec4899; stroke-width: 2.5; }
+      .arrow { stroke: #6b7280; stroke-width: 2; fill: none; marker-end: url(#arrowhead); }
+      .share-arrow { stroke: #ec4899; stroke-width: 2.5; fill: none; marker-end: url(#share); stroke-dasharray: 5,5; }
+      .shadow { filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1)); }
+    </style>
+    
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#6b7280" />
+    </marker>
+    
+    <marker id="share" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#ec4899" />
+    </marker>
+  </defs>
+  
+  <!-- Title -->
+  <text class="title" x="500" y="30" text-anchor="middle">Deephaven Table Structure: RowSets + ColumnSources</text>
+  <text class="description" x="500" y="50" text-anchor="middle">Efficient sharing enables zero-copy operations and reduced memory usage</text>
+  
+  <!-- Table 1: Source -->
+  <g class="shadow" transform="translate(50, 80)">
+    <rect class="table-box" x="0" y="0" width="280" height="200" rx="10"/>
+    <text class="label" x="140" y="25" text-anchor="middle" font-weight="bold">Table: source</text>
+    <text class="code" x="140" y="45" text-anchor="middle">time_table("PT1S")</text>
+    
+    <!-- RowSet -->
+    <rect class="rowset" x="10" y="60" width="260" height="60" rx="5"/>
+    <text class="label" x="20" y="80" font-weight="bold">RowSet</text>
+    <text class="description" x="20" y="98">Keys: [0, 1, 2, 3, ...]</text>
+    <text class="description" x="20" y="113">All rows in table</text>
+    
+    <!-- ColumnSources -->
+    <rect class="column" x="10" y="130" width="120" height="60" rx="5"/>
+    <text class="label" x="20" y="150" font-size="12">ColumnSource</text>
+    <text class="code" x="20" y="168" font-size="11">"A"</text>
+    <text class="description" x="20" y="183" font-size="10">[0, 1, 2, 3, ...]</text>
+    
+    <rect class="column" x="140" y="130" width="120" height="60" rx="5"/>
+    <text class="label" x="150" y="150" font-size="12">ColumnSource</text>
+    <text class="code" x="150" y="168" font-size="11">"B"</text>
+    <text class="description" x="150" y="183" font-size="10">[0, 2, 4, 6, ...]</text>
+  </g>
+  
+  <!-- Table 2: Filtered (shares RowSet and Column A) -->
+  <g class="shadow" transform="translate(380, 80)">
+    <rect class="table-box" x="0" y="0" width="280" height="200" rx="10"/>
+    <text class="label" x="140" y="25" text-anchor="middle" font-weight="bold">Table: filtered</text>
+    <text class="code" x="140" y="45" text-anchor="middle">.where("B > 10")</text>
+    
+    <!-- RowSet (subset) -->
+    <rect class="rowset" x="10" y="60" width="260" height="60" rx="5"/>
+    <text class="label" x="20" y="80" font-weight="bold">RowSet (new)</text>
+    <text class="description" x="20" y="98">Keys: [6, 7, 8, ...]</text>
+    <text class="description" x="20" y="113">Subset where B > 10</text>
+    
+    <!-- Shared ColumnSource A -->
+    <rect class="shared" x="10" y="130" width="120" height="60" rx="5"/>
+    <text class="label" x="20" y="150" font-size="12">ColumnSource</text>
+    <text class="code" x="20" y="168" font-size="11">"A" (shared)</text>
+    <text class="description" x="20" y="183" font-size="10">→ source.A</text>
+    
+    <!-- Shared ColumnSource B -->
+    <rect class="shared" x="140" y="130" width="120" height="60" rx="5"/>
+    <text class="label" x="150" y="150" font-size="12">ColumnSource</text>
+    <text class="code" x="150" y="168" font-size="11">"B" (shared)</text>
+    <text class="description" x="150" y="183" font-size="10">→ source.B</text>
+  </g>
+  
+  <!-- Table 3: Renamed (shares RowSet and Column A) -->
+  <g class="shadow" transform="translate(710, 80)">
+    <rect class="table-box" x="0" y="0" width="240" height="200" rx="10"/>
+    <text class="label" x="120" y="25" text-anchor="middle" font-weight="bold">Table: renamed</text>
+    <text class="code" x="120" y="45" text-anchor="middle">.view(["A", "C=B"])</text>
+    
+    <!-- Shared RowSet -->
+    <rect class="shared" x="10" y="60" width="220" height="60" rx="5"/>
+    <text class="label" x="20" y="80" font-weight="bold">RowSet (shared)</text>
+    <text class="description" x="20" y="98">→ source.RowSet</text>
+    <text class="description" x="20" y="113">Same keys</text>
+    
+    <!-- Shared ColumnSource A -->
+    <rect class="shared" x="10" y="130" width="100" height="60" rx="5"/>
+    <text class="label" x="20" y="150" font-size="12">ColumnSource</text>
+    <text class="code" x="20" y="168" font-size="11">"A" (shared)</text>
+    <text class="description" x="20" y="183" font-size="10">→ source.A</text>
+    
+    <!-- Renamed Column -->
+    <rect class="shared" x="120" y="130" width="100" height="60" rx="5"/>
+    <text class="label" x="130" y="150" font-size="12">ColumnSource</text>
+    <text class="code" x="130" y="168" font-size="11">"C" (shared)</text>
+    <text class="description" x="130" y="183" font-size="10">→ source.B</text>
+  </g>
+  
+  <!-- Sharing arrows -->
+  <path class="share-arrow" d="M 200 290 L 200 320 L 480 320 L 480 290"/>
+  <text class="description" x="330" y="315" text-anchor="middle" fill="#ec4899" font-weight="bold">Column A shared</text>
+  
+  <path class="share-arrow" d="M 200 340 L 200 370 L 820 370 L 820 290"/>
+  <text class="description" x="500" y="365" text-anchor="middle" fill="#ec4899" font-weight="bold">RowSet + Column A shared</text>
+  
+  <!-- Memory efficiency callout -->
+  <g class="shadow" transform="translate(50, 420)">
+    <rect fill="#f0f9ff" stroke="#3b82f6" stroke-width="2" x="0" y="0" width="900" height="100" rx="8"/>
+    <text class="label" x="20" y="25" font-weight="bold">💾 Memory Efficiency Through Sharing</text>
+    <text class="description" x="30" y="50">• Column A is stored once in memory, referenced by all three tables</text>
+    <text class="description" x="30" y="68">• RowSet for "renamed" table is shared with "source" (zero-copy view operation)</text>
+    <text class="description" x="30" y="86">• Updates to source.A automatically appear in filtered.A and renamed.A</text>
+  </g>
+  
+  <!-- Architecture details -->
+  <g transform="translate(50, 540)">
+    <text class="label" x="0" y="0" font-weight="bold">Key Concepts:</text>
+    
+    <g transform="translate(0, 20)">
+      <rect class="rowset" x="0" y="0" width="150" height="40" rx="5"/>
+      <text class="label" x="10" y="25">RowSet</text>
+      <text class="description" x="180" y="12">Sparse set of 64-bit row keys</text>
+      <text class="description" x="180" y="28">Can be shared or derived (filtered/redirected)</text>
+    </g>
+    
+    <g transform="translate(500, 20)">
+      <rect class="column" x="0" y="0" width="150" height="40" rx="5"/>
+      <text class="label" x="10" y="25">ColumnSource</text>
+      <text class="description" x="180" y="12">Column data indexed by row keys</text>
+      <text class="description" x="180" y="28">Shared across tables when possible</text>
+    </g>
+    
+    <g transform="translate(0, 80)">
+      <rect class="shared" x="0" y="0" width="150" height="40" rx="5"/>
+      <text class="label" x="10" y="25">Shared Reference</text>
+      <text class="description" x="180" y="12">Points to parent table's data structure</text>
+      <text class="description" x="180" y="28">Zero memory overhead for the data itself</text>
+    </g>
+    
+    <g transform="translate(500, 80)">
+      <rect class="table-box" x="0" y="0" width="150" height="40" rx="5"/>
+      <text class="label" x="10" y="25">Table</text>
+      <text class="description" x="180" y="12">Combines RowSet + Map of ColumnSources</text>
+      <text class="description" x="180" y="28">Lightweight structure, heavy sharing</text>
+    </g>
+  </g>
+</svg>

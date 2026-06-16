@@ -20,9 +20,6 @@ public final class PermanentLivenessManager implements LivenessManager {
 
     @Override
     public boolean tryManage(@NotNull LivenessReferent referent) {
-        if (Liveness.REFERENCE_TRACKING_DISABLED) {
-            return true;
-        }
         if (!referent.tryRetainReference()) {
             return false;
         }

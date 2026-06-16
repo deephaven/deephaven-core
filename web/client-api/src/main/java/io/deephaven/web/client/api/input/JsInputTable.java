@@ -5,15 +5,16 @@ package io.deephaven.web.client.api.input;
 
 import elemental2.core.JsObject;
 import elemental2.promise.Promise;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.inputtable_pb.AddTableRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.inputtable_pb.DeleteTableRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.BatchTableRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.ExportedTableCreationResponse;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.MergeTablesRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.SelectOrUpdateRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.TableReference;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.batchtablerequest.Operation;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.ticket_pb.Ticket;
+import io.deephaven.proto.backplane.grpc.AddTableRequest;
+import io.deephaven.proto.backplane.grpc.AddTableResponse;
+import io.deephaven.proto.backplane.grpc.BatchTableRequest;
+import io.deephaven.proto.backplane.grpc.DeleteTableRequest;
+import io.deephaven.proto.backplane.grpc.DeleteTableResponse;
+import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
+import io.deephaven.proto.backplane.grpc.MergeTablesRequest;
+import io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest;
+import io.deephaven.proto.backplane.grpc.TableReference;
+import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.web.client.api.Callbacks;
 import io.deephaven.web.client.api.Column;
 import io.deephaven.web.client.api.JsLazy;
@@ -22,6 +23,7 @@ import io.deephaven.web.client.api.barrage.stream.ResponseStreamWrapper;
 import io.deephaven.web.shared.fu.JsRunnable;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsOptional;
+import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
 import jsinterop.base.JsPropertyMap;
@@ -29,6 +31,7 @@ import jsinterop.base.JsPropertyMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 /**
@@ -113,7 +116,7 @@ public class JsInputTable {
      * @param userTimeZone
      * @return Promise of dh.InputTable
      */
-    public Promise<JsInputTable> addRow(JsPropertyMap<?> row, @JsOptional String userTimeZone) {
+    public Promise<JsInputTable> addRow(JsPropertyMap<?> row, @JsOptional @JsNullable String userTimeZone) {
         return addRows(new JsPropertyMap[] {row}, userTimeZone);
     }
 
@@ -124,7 +127,7 @@ public class JsInputTable {
      * @param userTimeZone
      * @return Promise of dh.InputTable
      */
-    public Promise<JsInputTable> addRows(JsPropertyMap<?>[] rows, @JsOptional String userTimeZone) {
+    public Promise<JsInputTable> addRows(JsPropertyMap<?>[] rows, @JsOptional @JsNullable String userTimeZone) {
         // Filter out columns that are not keys or values of the input table
         Column[] filteredColumns = Arrays.stream(table.lastVisibleState().getColumns())
                 .filter(column -> column.isInputTableKeyColumn() || column.isInputTableValueColumn())
@@ -149,7 +152,7 @@ public class JsInputTable {
         }
 
         // TODO deephaven-core#2529 parallelize this
-        return table.getConnection().newTable(names, types, data, userTimeZone, null)
+        return table.getConnection().newTable(names, types, data, userTimeZone)
                 .then(this::addTable);
     }
 
@@ -190,12 +193,12 @@ public class JsInputTable {
         return mergePromise
                 .then(merged -> {
                     // noinspection CodeBlock2Expr - easier readability for chained then()
-                    return Callbacks.grpcUnaryPromise(c -> {
-                        AddTableRequest addTableRequest = new AddTableRequest();
-                        addTableRequest.setInputTable(table.getHeadHandle().makeTicket());
-                        addTableRequest.setTableToAdd(merged.getHeadHandle().makeTicket());
-                        table.getConnection().inputTableServiceClient().addTableToInputTable(addTableRequest,
-                                table.getConnection().metadata(), c::apply);
+                    return Callbacks.<AddTableResponse>grpcUnaryPromise(c -> {
+                        AddTableRequest addTableRequest = AddTableRequest.newBuilder()
+                                .setInputTable(table.getHeadHandle().makeTicket())
+                                .setTableToAdd(merged.getHeadHandle().makeTicket())
+                                .build();
+                        table.getConnection().inputTableServiceClient().addTableToInputTable(addTableRequest, c);
                     }).then(success -> {
                         if (closeIntermediateTable) {
                             // this is an intermediate table for the merge, close it
@@ -249,40 +252,48 @@ public class JsInputTable {
                 ticketToDelete = table.getConnection().getTickets().newExportTicket();
                 cleanups.add(() -> table.getConnection().releaseTicket(ticketToDelete));
 
-                SelectOrUpdateRequest view = new SelectOrUpdateRequest();
-                view.setSourceId(onlyTable.state().getHandle().makeTableReference());
-                view.setResultId(ticketToDelete);
-                view.setColumnSpecsList(keys);
-                failureToReport = Callbacks.grpcUnaryPromise(c -> table.getConnection().tableServiceClient()
-                        .view(view, table.getConnection().metadata(), c::apply));
+                SelectOrUpdateRequest view = SelectOrUpdateRequest.newBuilder()
+                        .setSourceId(onlyTable.state().getHandle().makeTableReference())
+                        .setResultId(ticketToDelete)
+                        .addAllColumnSpecs(Arrays.asList(keys))
+                        .build();
+                failureToReport = Callbacks
+                        .<ExportedTableCreationResponse>grpcUnaryPromise(c -> table.getConnection().tableServiceClient()
+                                .view(view, c));
             }
         } else {
             // there is more than one table here, construct a merge after making a view of each table
             ticketToDelete = table.getConnection().getTickets().newExportTicket();
             cleanups.add(() -> table.getConnection().releaseTicket(ticketToDelete));
 
-            BatchTableRequest batch = new BatchTableRequest();
+            BatchTableRequest.Builder batch = BatchTableRequest.newBuilder();
             for (int i = 0; i < tablesToDelete.length; i++) {
                 JsTable toDelete = tablesToDelete[i];
 
-                SelectOrUpdateRequest view = new SelectOrUpdateRequest();
-                view.setSourceId(toDelete.state().getHandle().makeTableReference());
-                view.setColumnSpecsList(keys);
-                batch.addOps(new Operation()).setView(view);
+                SelectOrUpdateRequest view = SelectOrUpdateRequest.newBuilder()
+                        .setSourceId(toDelete.state().getHandle().makeTableReference())
+                        .addAllColumnSpecs(Arrays.asList(keys))
+                        .build();
+                BatchTableRequest.Operation.Builder op = BatchTableRequest.Operation.newBuilder()
+                        .setView(view);
+                batch.addOps(op);
             }
 
-            MergeTablesRequest mergeRequest = new MergeTablesRequest();
-            mergeRequest.setSourceIdsList(IntStream.range(0, tablesToDelete.length).mapToObj(i -> {
-                TableReference ref = new TableReference();
-                ref.setBatchOffset(i);
-                return ref;
-            }).toArray(TableReference[]::new));
-            mergeRequest.setResultId(ticketToDelete);
-            batch.addOps(new Operation()).setMerge(mergeRequest);
+            MergeTablesRequest mergeRequest = MergeTablesRequest.newBuilder()
+                    .addAllSourceIds(IntStream.range(0, tablesToDelete.length).mapToObj(i -> {
+                        return TableReference.newBuilder()
+                                .setBatchOffset(i)
+                                .build();
+                    }).collect(Collectors.toList()))
+                    .setResultId(ticketToDelete)
+                    .build();
+            BatchTableRequest.Operation.Builder op = BatchTableRequest.Operation.newBuilder();
+            op.setMerge(mergeRequest);
+            batch.addOps(op);
 
             failureToReport = new Promise<>((resolve, reject) -> {
-                ResponseStreamWrapper<ExportedTableCreationResponse> wrapper = ResponseStreamWrapper.of(
-                        table.getConnection().tableServiceClient().batch(batch, table.getConnection().metadata()));
+                ResponseStreamWrapper<ExportedTableCreationResponse> wrapper = ResponseStreamWrapper
+                        .of(observer -> table.getConnection().tableServiceClient().batch(batch.build(), observer));
                 wrapper.onData(response -> {
                     // kill the promise on the first failure we see
                     if (!response.getSuccess()) {
@@ -294,12 +305,12 @@ public class JsInputTable {
         }
 
         // perform the delete on the current input table
-        DeleteTableRequest deleteRequest = new DeleteTableRequest();
-        deleteRequest.setInputTable(table.getHeadHandle().makeTicket());
-        deleteRequest.setTableToRemove(ticketToDelete);
-        return Callbacks.grpcUnaryPromise(c -> {
-            table.getConnection().inputTableServiceClient().deleteTableFromInputTable(deleteRequest,
-                    table.getConnection().metadata(), c::apply);
+        DeleteTableRequest deleteRequest = DeleteTableRequest.newBuilder()
+                .setInputTable(table.getHeadHandle().makeTicket())
+                .setTableToRemove(ticketToDelete)
+                .build();
+        return Callbacks.<DeleteTableResponse>grpcUnaryPromise(c -> {
+            table.getConnection().inputTableServiceClient().deleteTableFromInputTable(deleteRequest, c);
         }).then(success -> {
             cleanups.forEach(JsRunnable::run);
             return Promise.resolve(this);

@@ -5,8 +5,10 @@ package io.deephaven.parquet.table;
 
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.api.ColumnName;
+import io.deephaven.api.RawString;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.SortColumn;
+import io.deephaven.api.filter.Filter;
 import io.deephaven.base.FileUtils;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
@@ -29,6 +31,8 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.PartitionedTableFactory;
+import io.deephaven.engine.table.impl.SortedColumnsAttribute;
+import io.deephaven.engine.table.impl.SortingOrder;
 import io.deephaven.engine.table.impl.SourceTable;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.*;
@@ -37,9 +41,7 @@ import io.deephaven.engine.table.impl.dataindex.DataIndexUtils;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.locations.ColumnLocation;
 import io.deephaven.engine.table.impl.locations.impl.StandaloneTableKey;
-import io.deephaven.engine.table.impl.select.FormulaEvaluationException;
-import io.deephaven.engine.table.impl.select.FunctionalColumn;
-import io.deephaven.engine.table.impl.select.SelectColumn;
+import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.table.iterators.*;
@@ -50,8 +52,12 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.util.file.TrackedFileHandleFactory;
 import io.deephaven.parquet.base.BigDecimalParquetBytesCodec;
 import io.deephaven.parquet.base.BigIntegerParquetBytesCodec;
+import io.deephaven.parquet.base.ColumnWriter;
 import io.deephaven.parquet.base.InvalidParquetFileException;
+import io.deephaven.parquet.base.NullParquetMetadataFileWriter;
 import io.deephaven.parquet.base.NullStatistics;
+import io.deephaven.parquet.base.ParquetFileWriter;
+import io.deephaven.parquet.base.RowGroupWriter;
 import io.deephaven.parquet.base.materializers.ParquetMaterializerUtils;
 import io.deephaven.parquet.table.location.ParquetTableLocation;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
@@ -76,6 +82,7 @@ import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableDouble;
 import org.apache.commons.lang3.mutable.MutableFloat;
 import org.apache.commons.lang3.mutable.MutableObject;
+import org.apache.parquet.bytes.HeapByteBufferAllocator;
 import org.apache.parquet.column.Encoding;
 import org.apache.parquet.column.statistics.DoubleStatistics;
 import org.apache.parquet.column.statistics.IntStatistics;
@@ -112,6 +119,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -133,6 +141,7 @@ import static io.deephaven.parquet.table.ParquetTools.writeTables;
 import static io.deephaven.util.QueryConstants.*;
 import static org.apache.parquet.schema.LogicalTypeAnnotation.decimalType;
 import static org.apache.parquet.schema.LogicalTypeAnnotation.intType;
+import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.BINARY;
 import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.FIXED_LEN_BYTE_ARRAY;
 import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.INT32;
 import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.INT64;
@@ -605,6 +614,42 @@ public final class ParquetTableReadWriteTest {
                 SortColumn.asc(ColumnName.of("someString"))));
         final Table index2Table = DataIndexer.getDataIndex(fromDisk, "someInt", "someString").table();
         assertTableEquals(index2Table, index2Table.sort("someInt", "someString"));
+    }
+
+    @Test
+    public void testSortedColumnsAttributeRoundTrip() {
+        // Single ascending sort column
+        final Table sorted = TableTools.emptyTable(10).select("x = i", "y = i * 2").sort("x");
+        final File dest = new File(rootFile, "ParquetTest_sortedColumnsAttribute_test.parquet");
+        writeTable(sorted, dest.getPath());
+
+        // Coalescing populates the sort attribute from parquet metadata onto the SourceTable
+        final Table fromDisk = readTable(dest.getPath());
+        fromDisk.coalesce();
+        assertEquals(Optional.of(SortingOrder.Ascending),
+                SortedColumnsAttribute.getOrderForColumn(fromDisk, "x"));
+        assertEquals(Optional.empty(),
+                SortedColumnsAttribute.getOrderForColumn(fromDisk, "y"));
+
+        // Two-column sort: ParquetTableWriter only serializes the first sort column, so only "x" round-trips
+        final Table sorted2 = TableTools.emptyTable(10).select("x = i", "y = i * 2").sort("x", "y");
+        final File dest2 = new File(rootFile, "ParquetTest_sortedColumnsAttribute_test2.parquet");
+        writeTable(sorted2, dest2.getPath());
+
+        final Table fromDisk2 = readTable(dest2.getPath());
+        fromDisk2.coalesce();
+        assertEquals(Optional.of(SortingOrder.Ascending),
+                SortedColumnsAttribute.getOrderForColumn(fromDisk2, "x"));
+
+        // Descending sort
+        final Table sortedDesc = TableTools.emptyTable(10).select("x = i").sortDescending("x");
+        final File dest3 = new File(rootFile, "ParquetTest_sortedColumnsAttribute_desc_test.parquet");
+        writeTable(sortedDesc, dest3.getPath());
+
+        final Table fromDisk3 = readTable(dest3.getPath());
+        fromDisk3.coalesce();
+        assertEquals(Optional.of(SortingOrder.Descending),
+                SortedColumnsAttribute.getOrderForColumn(fromDisk3, "x"));
     }
 
     static void verifyIndexingInfoExists(final Table table, final String... columnNames) {
@@ -3083,7 +3128,8 @@ public final class ParquetTableReadWriteTest {
             writer.writeTable(badTable, destFile);
             TestCase.fail("Exception expected for invalid formula");
         } catch (UncheckedDeephavenException e) {
-            assertTrue(e.getCause() instanceof FormulaEvaluationException);
+            assertTrue(e.getCause() instanceof UncheckedDeephavenException);
+            assertTrue(e.getCause().getCause() instanceof FormulaEvaluationException);
         }
 
         // Make sure that original file is preserved and no temporary files
@@ -3202,7 +3248,8 @@ public final class ParquetTableReadWriteTest {
                     ParquetInstructions.EMPTY.withTableDefinition(firstTable.getDefinition()));
             TestCase.fail("Exception expected for invalid formula");
         } catch (UncheckedDeephavenException e) {
-            assertTrue(e.getCause() instanceof FormulaEvaluationException);
+            assertTrue(e.getCause() instanceof UncheckedDeephavenException);
+            assertTrue(e.getCause().getCause() instanceof FormulaEvaluationException);
         }
 
         // All files should be deleted even though first table would be written successfully
@@ -3624,7 +3671,8 @@ public final class ParquetTableReadWriteTest {
             writer.writeTable(badTable, destFile);
             TestCase.fail("Exception expected for invalid formula");
         } catch (UncheckedDeephavenException e) {
-            assertTrue(e.getCause() instanceof FormulaEvaluationException);
+            assertTrue(e.getCause() instanceof UncheckedDeephavenException);
+            assertTrue(e.getCause().getCause() instanceof FormulaEvaluationException);
         }
 
         // Make sure that original file is preserved and no temporary files
@@ -3975,7 +4023,8 @@ public final class ParquetTableReadWriteTest {
             writer.writeTable(badTable, destFile);
             TestCase.fail();
         } catch (UncheckedDeephavenException e) {
-            assertTrue(e.getCause() instanceof FormulaEvaluationException);
+            assertTrue(e.getCause() instanceof UncheckedDeephavenException);
+            assertTrue(e.getCause().getCause() instanceof FormulaEvaluationException);
         }
 
         // Close all old file handles so that we read the file path fresh instead of using any old handles
@@ -4090,7 +4139,7 @@ public final class ParquetTableReadWriteTest {
                 .build();
 
         final ColumnDefinition<byte[]> columnDefinition =
-                ColumnDefinition.fromGenericType("VariableWidthByteArrayColumn", byte[].class, byte.class);
+                ColumnDefinition.of("VariableWidthByteArrayColumn", Type.byteType().arrayType());
         final TableDefinition tableDefinition = TableDefinition.of(columnDefinition);
         final byte[] byteArray = new byte[pageSize / 2];
         final Table table = newTable(tableDefinition,
@@ -4201,21 +4250,21 @@ public final class ParquetTableReadWriteTest {
         // APIs from ColumnLocation
         verifyMakeHandleException(nonExistentColumnLocation::exists);
         verifyMakeHandleException(() -> nonExistentColumnLocation.makeColumnRegionChar(
-                ColumnDefinition.fromGenericType("A", char.class, Character.class)));
+                ColumnDefinition.ofChar("A")));
         verifyMakeHandleException(() -> nonExistentColumnLocation.makeColumnRegionByte(
-                ColumnDefinition.fromGenericType("A", byte.class, Byte.class)));
+                ColumnDefinition.ofByte("A")));
         verifyMakeHandleException(() -> nonExistentColumnLocation.makeColumnRegionShort(
-                ColumnDefinition.fromGenericType("A", short.class, Short.class)));
+                ColumnDefinition.ofShort("A")));
         verifyMakeHandleException(() -> nonExistentColumnLocation.makeColumnRegionInt(
-                ColumnDefinition.fromGenericType("A", int.class, Integer.class)));
+                ColumnDefinition.ofInt("A")));
         verifyMakeHandleException(() -> nonExistentColumnLocation.makeColumnRegionLong(
-                ColumnDefinition.fromGenericType("A", long.class, Long.class)));
+                ColumnDefinition.ofLong("A")));
         verifyMakeHandleException(() -> nonExistentColumnLocation.makeColumnRegionFloat(
-                ColumnDefinition.fromGenericType("A", float.class, Float.class)));
+                ColumnDefinition.ofFloat("A")));
         verifyMakeHandleException(() -> nonExistentColumnLocation.makeColumnRegionDouble(
-                ColumnDefinition.fromGenericType("A", double.class, Double.class)));
+                ColumnDefinition.ofDouble("A")));
         verifyMakeHandleException(() -> nonExistentColumnLocation.makeColumnRegionObject(
-                ColumnDefinition.fromGenericType("A", String.class, String.class)));
+                ColumnDefinition.ofString("A")));
     }
 
     @Test
@@ -4256,7 +4305,7 @@ public final class ParquetTableReadWriteTest {
     public void readWriteStatisticsTest() {
         // Test simple structured table.
         final ColumnDefinition<byte[]> columnDefinition =
-                ColumnDefinition.fromGenericType("VariableWidthByteArrayColumn", byte[].class, byte.class);
+                ColumnDefinition.of("VariableWidthByteArrayColumn", Type.byteType().arrayType());
         final TableDefinition tableDefinition = TableDefinition.of(columnDefinition);
         final byte[] byteArray = new byte[] {1, 2, 3, 4, NULL_BYTE, 6, 7, 8, 9, NULL_BYTE, 11, 12, 13};
         final Table simpleTable = newTable(tableDefinition,
@@ -5000,6 +5049,291 @@ public final class ParquetTableReadWriteTest {
         assertTrue(result.getDefinition().getColumn("String").isDirect());
         assertTrue(result.getDefinition().getColumn("Int").isDirect());
         assertTrue(result.getDefinition().getColumn("Double").isDirect());
+    }
+
+    @Test
+    public void testReadEnumLogicalTypeAsString() throws IOException {
+        final MessageType schema = Types.buildMessage()
+                .required(BINARY).as(LogicalTypeAnnotation.enumType()).named("status")
+                .named("schema");
+        final File dest = new File(rootFile, "enum_logical_type.parquet");
+        final Binary[] values = {Binary.fromString("RED"), Binary.fromString("GREEN"), Binary.fromString("BLUE")};
+        final Statistics<?> stats = Statistics.createStats(schema.getType("status"));
+        for (final Binary v : values) {
+            stats.updateStats(v);
+        }
+        // ParquetFileWriter is AutoCloseable, so nest it in its own try-with-resources to
+        // guarantee the file is finalised even if an exception is thrown mid-write.
+        try (final java.io.OutputStream os = Files.newOutputStream(dest.toPath());
+                final ParquetFileWriter fileWriter = new ParquetFileWriter(dest.toURI(), os,
+                        ParquetInstructions.EMPTY.getTargetPageSize(), new HeapByteBufferAllocator(), schema,
+                        "UNCOMPRESSED", Collections.emptyMap(), NullParquetMetadataFileWriter.INSTANCE, true)) {
+            final RowGroupWriter rowGroupWriter = fileWriter.addRowGroup(values.length);
+            try (final ColumnWriter columnWriter = rowGroupWriter.addColumn("status")) {
+                columnWriter.addPageNoNulls(values, values.length, stats);
+            }
+        }
+        checkSingleTable(newTable(stringCol("status", "RED", "GREEN", "BLUE")), dest);
+    }
+
+    private Table[] splitTableEvenly(final Table source, final int numSplits,
+            final String sortColumnName, final SortingOrder sortOrder) {
+        final long splitSize = source.size() / numSplits;
+        final Table[] result = new Table[numSplits];
+        for (int i = 0; i < numSplits - 1; i++) {
+            // Maintain the sort order for the slice.
+            result[i] = SortedColumnsAttribute.withOrderForColumn(
+                    source.slice(i * splitSize, (i + 1) * splitSize), sortColumnName, sortOrder);
+        }
+        result[numSplits - 1] = SortedColumnsAttribute.withOrderForColumn(
+                source.slice((numSplits - 1) * splitSize, source.size()), sortColumnName, sortOrder);
+        return result;
+    }
+
+    private void writeTablesFlat(final File destDir, final Table[] tables,
+            final ParquetInstructions instructions) {
+        destDir.mkdirs();
+        for (int i = 0; i < tables.length; i++) {
+            final String name = "table_" + String.format("%05d", i) + ".parquet";
+            writeTable(tables[i], Path.of(destDir.getPath(), name).toString(), instructions);
+        }
+    }
+
+    private void testSortedFilteringInternal(final Table table, final String columnName, final String filter,
+            final int partitionCount) {
+        testSortedFilteringInternal(table, columnName, RawString.of(filter), partitionCount);
+    }
+
+    private void testSortedFilteringInternal(
+            final Table source,
+            final String columnName,
+            final Filter filter,
+            final int partitionCount) {
+
+        final Table sortedAsc = source.sort(columnName);
+        final Table sortedDesc = source.sortDescending(columnName);
+        final ParquetInstructions multiRowGroupInstructions = ParquetInstructions.builder()
+                .setRowGroupInfo(RowGroupInfo.maxRows(1_000))
+                .build();
+
+        if (partitionCount == 1) {
+            final File destAsc = new File(rootFile, "ParquetTest_sortedColumnFilteringAsc.parquet");
+            writeTable(sortedAsc, destAsc.getPath());
+            final Table fromDiskAsc = checkSingleTable(sortedAsc, destAsc);
+            assertTableEquals(source.where(filter).sort(columnName), sortedAsc.where(filter));
+            assertTableEquals(sortedAsc.where(filter), fromDiskAsc.where(filter));
+            // Test on a sparse table to force the row intersection logic.
+            assertTableEquals(sortedAsc.where("index % 2 == 0").where(filter),
+                    fromDiskAsc.where("index % 2 == 0").where(filter));
+
+            final File destDesc = new File(rootFile, "ParquetTest_sortedColumnFilteringDesc.parquet");
+            writeTable(sortedDesc, destDesc.getPath());
+            final Table fromDiskDesc = checkSingleTable(sortedDesc, destDesc);
+            assertTableEquals(source.where(filter).sortDescending(columnName), sortedDesc.where(filter));
+            assertTableEquals(sortedDesc.where(filter), fromDiskDesc.where(filter));
+            // Test on a sparse table to force the row intersection logic.
+            assertTableEquals(sortedDesc.where("index % 2 == 0").where(filter),
+                    fromDiskDesc.where("index % 2 == 0").where(filter));
+
+            // Force multiple row groups to get the page-store action tested.
+            final File destMultiRowGroupAsc =
+                    new File(rootFile, "ParquetTest_sortedColumnFilteringMultipleRowGroups.parquet");
+            writeTable(sortedAsc, destMultiRowGroupAsc.getPath(), multiRowGroupInstructions);
+            final Table fromDiskMultiGroupAsc = checkSingleTable(sortedAsc, destMultiRowGroupAsc);
+            assertTableEquals(sortedAsc.where(filter), fromDiskMultiGroupAsc.where(filter));
+            // Test on a sparse table to force the row intersection logic.
+            assertTableEquals(sortedAsc.where("index % 2 == 0").where(filter),
+                    fromDiskMultiGroupAsc.where("index % 2 == 0").where(filter));
+
+            final File destMultiRowGroupDesc =
+                    new File(rootFile, "ParquetTest_sortedColumnFilteringMultipleRowGroupsDesc.parquet");
+            writeTable(sortedDesc, destMultiRowGroupDesc.getPath(), multiRowGroupInstructions);
+            final Table fromDiskMultiGroupDesc = checkSingleTable(sortedDesc, destMultiRowGroupDesc);
+            assertTableEquals(sortedDesc.where(filter), fromDiskMultiGroupDesc.where(filter));
+            // Test on a sparse table to force the row intersection logic.
+            assertTableEquals(sortedDesc.where("index % 2 == 0").where(filter),
+                    fromDiskMultiGroupDesc.where("index % 2 == 0").where(filter));
+        } else {
+            // Split into partitionCount files in a directory and read back as a flat partitioned table.
+            final File destDirAsc =
+                    new File(rootFile, "ParquetTest_sortedColumnFilteringAsc_" + partitionCount);
+            writeTablesFlat(destDirAsc,
+                    splitTableEvenly(sortedAsc, partitionCount, columnName, SortingOrder.Ascending), EMPTY);
+            final Table fromDiskAsc = ParquetTools.readTable(destDirAsc.getPath());
+            assertTableEquals(sortedAsc.where(filter), fromDiskAsc.where(filter));
+            // Test on a sparse table to force the row intersection logic.
+            assertTableEquals(sortedAsc.where("index % 2 == 0").where(filter),
+                    fromDiskAsc.where("index % 2 == 0").where(filter));
+
+            final File destDirDesc =
+                    new File(rootFile, "ParquetTest_sortedColumnFilteringDesc_" + partitionCount);
+            writeTablesFlat(destDirDesc,
+                    splitTableEvenly(sortedDesc, partitionCount, columnName, SortingOrder.Descending), EMPTY);
+            final Table fromDiskDesc = ParquetTools.readTable(destDirDesc.getPath());
+            assertTableEquals(sortedDesc.where(filter), fromDiskDesc.where(filter));
+            // Test on a sparse table to force the row intersection logic.
+            assertTableEquals(sortedDesc.where("index % 2 == 0").where(filter),
+                    fromDiskDesc.where("index % 2 == 0").where(filter));
+        }
+    }
+
+    @Test
+    public void testSortedColumnFiltering() {
+        // Need to disable metadata to trigger the estimation action on the regions and force coverage.
+        final boolean restore = QueryTable.DISABLE_WHERE_PUSHDOWN_PARQUET_ROW_GROUP_METADATA;
+        try (final SafeCloseable ignored =
+                () -> QueryTable.DISABLE_WHERE_PUSHDOWN_PARQUET_ROW_GROUP_METADATA = restore) {
+            QueryTable.DISABLE_WHERE_PUSHDOWN_PARQUET_ROW_GROUP_METADATA = true;
+            final Table testTable = TableTools.emptyTable(10_000)
+                    .update(
+                            "index = ii",
+                            "byteCol = i % 97 == 0 ? null : (byte)(i % 97)",
+                            "charCol = i % 997 == 0 ? null : (char)(i % 997)",
+                            "shortCol = i % 997 == 0 ? null : (short)(i % 997)",
+                            "intCol = i % 997 == 0 ? null : i % 997",
+                            "longCol = i % 997 == 0 ? null : ii % 997",
+                            "floatCol = (i % 997 == 0) ? null : (i % 997 == 996) ? Float.NaN : (i % 997 == 995) ? Float.POSITIVE_INFINITY : (i % 997 == 994) ? Float.NEGATIVE_INFINITY : (float)(i % 997)",
+                            "doubleCol = (i % 997 == 0) ? null : (i % 997 == 996) ? Double.NaN : (i % 997 == 995) ? Double.POSITIVE_INFINITY : (i % 997 == 994) ? Double.NEGATIVE_INFINITY : (double)(i % 997)",
+                            "stringCol = i % 997 == 0 ? null : `Str` + (i % 997)",
+                            "bdCol = i % 997 == 0 ? (java.math.BigDecimal)null : java.math.BigDecimal.valueOf(ii % 997)",
+                            "instantCol = i % 997 == 0 ? null : DateTimeUtils.epochNanosToInstant((long)(i % 997) * 1_000_000_000L)");
+
+            // NB: when partition count == 1, column sorting will propagate to the QueryTable and the table-level
+            // manager will be used. When partition count > 1, sorted region pushdown will be used.
+            for (int count : new int[] {1, 4}) {
+                testSortedFilteringInternal(testTable, "byteCol", "byteCol in 30, 50, 70", count);
+                testSortedFilteringInternal(testTable, "byteCol", "byteCol not in 30, 50, 70", count);
+                testSortedFilteringInternal(testTable, "byteCol", "byteCol > 30", count);
+                testSortedFilteringInternal(testTable, "byteCol", "byteCol <= 50", count);
+
+                testSortedFilteringInternal(testTable, "charCol", "charCol in 'a', 'b', 'c'", count);
+                testSortedFilteringInternal(testTable, "charCol", "charCol not in 'a', 'b', 'c'", count);
+                testSortedFilteringInternal(testTable, "charCol", "charCol > 'a'", count);
+                testSortedFilteringInternal(testTable, "charCol", "charCol <= 'b'", count);
+
+                testSortedFilteringInternal(testTable, "shortCol", "shortCol in 300, 500, 700", count);
+                testSortedFilteringInternal(testTable, "shortCol", "shortCol not in 300, 500, 700", count);
+                testSortedFilteringInternal(testTable, "shortCol", "shortCol > 300", count);
+                testSortedFilteringInternal(testTable, "shortCol", "shortCol <= 500", count);
+
+                testSortedFilteringInternal(testTable, "intCol", "intCol in 300, 500, 700", count);
+                testSortedFilteringInternal(testTable, "intCol", "intCol not in 300, 500, 700", count);
+                testSortedFilteringInternal(testTable, "intCol", "intCol > 300", count);
+                testSortedFilteringInternal(testTable, "intCol", "intCol <= 500", count);
+
+                testSortedFilteringInternal(testTable, "longCol", "longCol in 300, 500, 700", count);
+                testSortedFilteringInternal(testTable, "longCol", "longCol not in 300, 500, 700", count);
+                testSortedFilteringInternal(testTable, "longCol", "longCol > 300", count);
+                testSortedFilteringInternal(testTable, "longCol", "longCol <= 500", count);
+
+                testSortedFilteringInternal(testTable, "floatCol", "floatCol in 300.0, 500.0, 700.0", count);
+                testSortedFilteringInternal(testTable, "floatCol", "floatCol not in 300.0, 500.0, 700.0", count);
+                testSortedFilteringInternal(testTable, "floatCol", "floatCol in NaN", count);
+                testSortedFilteringInternal(testTable, "floatCol", "floatCol > 300.0", count);
+                testSortedFilteringInternal(testTable, "floatCol", "floatCol <= 500.0", count);
+                testSortedFilteringInternal(testTable, "floatCol", "floatCol > Float.POSITIVE_INFINITY", count);
+                testSortedFilteringInternal(testTable, "floatCol", "floatCol >= NaN", count);
+
+                testSortedFilteringInternal(testTable, "doubleCol", "doubleCol in 300.0, 500.0, 700.0", count);
+                testSortedFilteringInternal(testTable, "doubleCol", "doubleCol not in 300.0, 500.0, 700.0", count);
+                testSortedFilteringInternal(testTable, "doubleCol", "doubleCol in NaN", count);
+                testSortedFilteringInternal(testTable, "doubleCol", "doubleCol > 300.0", count);
+                testSortedFilteringInternal(testTable, "doubleCol", "doubleCol <= 500.0", count);
+                testSortedFilteringInternal(testTable, "doubleCol", "doubleCol > Float.POSITIVE_INFINITY", count);
+                testSortedFilteringInternal(testTable, "doubleCol", "doubleCol >= NaN", count);
+
+                testSortedFilteringInternal(testTable, "stringCol", "stringCol in `Str300`, `Str500`, `Str700`",
+                        count);
+                testSortedFilteringInternal(testTable, "stringCol",
+                        "stringCol not in `Str300`, `Str500`, `Str700`", count);
+                testSortedFilteringInternal(testTable, "stringCol", "stringCol > `Str300`", count);
+                testSortedFilteringInternal(testTable, "stringCol", "stringCol <= `Str500`", count);
+
+                // Single Sided
+                ExecutionContext.getContext().getQueryScope().putParam("bd_300", BigDecimal.valueOf(300.0));
+                ExecutionContext.getContext().getQueryScope().putParam("bd_500", BigDecimal.valueOf(500.00));
+                testSortedFilteringInternal(testTable, "bdCol", "bdCol < bd_300", count);
+                testSortedFilteringInternal(testTable, "bdCol", "bdCol >= bd_500", count);
+
+                // Comparable
+                testSortedFilteringInternal(testTable, "bdCol",
+                        ComparableRangeFilter.makeForTest("bdCol",
+                                BigDecimal.valueOf(300.0), BigDecimal.valueOf(500.00), true, true),
+                        count);
+                testSortedFilteringInternal(testTable, "bdCol",
+                        ComparableRangeFilter.makeForTest("bdCol",
+                                BigDecimal.valueOf(300.0), BigDecimal.valueOf(500.00), false, true),
+                        count);
+                testSortedFilteringInternal(testTable, "bdCol",
+                        ComparableRangeFilter.makeForTest("bdCol",
+                                BigDecimal.valueOf(300.0), BigDecimal.valueOf(500.00), true, false),
+                        count);
+                testSortedFilteringInternal(testTable, "bdCol",
+                        ComparableRangeFilter.makeForTest("bdCol",
+                                BigDecimal.valueOf(300.0), BigDecimal.valueOf(500.00), false, false),
+                        count);
+
+                // Instant — single-sided via query scope params
+                final Instant inst300 = DateTimeUtils.epochNanosToInstant(300L * 1_000_000_000L);
+                final Instant inst500 = DateTimeUtils.epochNanosToInstant(500L * 1_000_000_000L);
+                ExecutionContext.getContext().getQueryScope().putParam("inst_300", inst300);
+                ExecutionContext.getContext().getQueryScope().putParam("inst_500", inst500);
+                testSortedFilteringInternal(testTable, "instantCol",
+                        new MatchFilter(MatchOptions.REGULAR, "instantCol", inst300), count);
+                testSortedFilteringInternal(testTable, "instantCol", "instantCol in inst_300,inst_500", count);
+                testSortedFilteringInternal(testTable, "instantCol", "instantCol < inst_300", count);
+                testSortedFilteringInternal(testTable, "instantCol", "instantCol >= inst_500", count);
+
+                // Instant — range via InstantRangeFilter
+                testSortedFilteringInternal(testTable, "instantCol",
+                        new InstantRangeFilter("instantCol", inst300, inst500, true, true), count);
+                testSortedFilteringInternal(testTable, "instantCol",
+                        new InstantRangeFilter("instantCol", inst300, inst500, false, true), count);
+                testSortedFilteringInternal(testTable, "instantCol",
+                        new InstantRangeFilter("instantCol", inst300, inst500, true, false), count);
+                testSortedFilteringInternal(testTable, "instantCol",
+                        new InstantRangeFilter("instantCol", inst300, inst500, false, false), count);
+            }
+        }
+    }
+
+    @Test
+    public void testSortedColumnDescFiltering() {
+        final Table testDesc = TableTools.emptyTable(100_000)
+                .update("A = i % 97 == 0 ? null : i % 97", "B = i % 997 == 0 ? null : i % 997")
+                .sortDescending("B");
+
+        final File dest = new File(rootFile, "ParquetTest_sortedColumnFiltering.parquet");
+        writeTable(testDesc, dest.getPath());
+
+        final Table fromDisk = checkSingleTable(testDesc, dest);
+
+        Table result;
+        Filter f;
+
+        f = RawString.of("A in 50, 30, 20");
+        result = fromDisk.where(f);
+        assertTableEquals(testDesc.where(f), result);
+
+        f = RawString.of("B in 500, 300, 200");
+        result = fromDisk.where(f);
+        assertTableEquals(testDesc.where(f), result);
+
+        f = RawString.of("A > 30");
+        result = fromDisk.where(f);
+        assertTableEquals(testDesc.where(f), result);
+
+        f = RawString.of("B > 300");
+        result = fromDisk.where(f);
+        assertTableEquals(testDesc.where(f), result);
+
+        f = RawString.of("A < 30");
+        result = fromDisk.where(f);
+        assertTableEquals(testDesc.where(f), result);
+
+        f = RawString.of("B < 300");
+        result = fromDisk.where(f);
+        assertTableEquals(testDesc.where(f), result);
     }
 
     private void assertTableStatistics(Table inputTable, File dest) {

@@ -26,9 +26,6 @@ public class SingletonLivenessManager implements ReleasableLivenessManager {
     public SingletonLivenessManager() {}
 
     public SingletonLivenessManager(@NotNull final LivenessReferent referent) {
-        if (Liveness.REFERENCE_TRACKING_DISABLED) {
-            return;
-        }
         referent.retainReference();
         initializeRetainedReference(referent.getWeakReference());
     }
@@ -49,9 +46,6 @@ public class SingletonLivenessManager implements ReleasableLivenessManager {
 
     @Override
     public final boolean tryManage(@NotNull LivenessReferent referent) {
-        if (Liveness.REFERENCE_TRACKING_DISABLED) {
-            return true;
-        }
         if (!referent.tryRetainReference()) {
             return false;
         }
@@ -69,8 +63,7 @@ public class SingletonLivenessManager implements ReleasableLivenessManager {
     @Override
     public boolean tryUnmanage(@NotNull LivenessReferent referent) {
         final WeakReference<? extends LivenessReferent> localRetainedReference;
-        if (!Liveness.REFERENCE_TRACKING_DISABLED
-                && (localRetainedReference = retainedReference) != null
+        if ((localRetainedReference = retainedReference) != null
                 && localRetainedReference.get() == referent) {
             release();
         }
@@ -90,9 +83,6 @@ public class SingletonLivenessManager implements ReleasableLivenessManager {
 
     @Override
     public final void release() {
-        if (Liveness.REFERENCE_TRACKING_DISABLED) {
-            return;
-        }
         final WeakReference<? extends LivenessReferent> localRetainedReference = getAndClearRetainedReference();
         if (localRetainedReference == null) {
             return;

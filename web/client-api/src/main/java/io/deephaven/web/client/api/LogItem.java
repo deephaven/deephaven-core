@@ -17,7 +17,7 @@ import java.io.Serializable;
 @TsName(namespace = "dh.ide")
 public class LogItem implements Serializable {
 
-    private double micros; // not using long, as js numbers are all floating point anyway
+    private long micros;
 
     private String logLevel; // not an enum because fishlib LogLevel is a class that allows you to create your own
 
@@ -30,10 +30,15 @@ public class LogItem implements Serializable {
      */
     @JsProperty
     public double getMicros() {
+        // Deliberately allowing precision loss, as JS doesn't support 64bit int 'number' values
         return micros;
     }
 
-    public void setMicros(double timestamp) {
+    public long getMicrosLong() {
+        return micros;
+    }
+
+    public void setMicros(long timestamp) {
         this.micros = timestamp;
     }
 

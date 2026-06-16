@@ -7,10 +7,12 @@ import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
 import elemental2.core.JsArray;
 import elemental2.core.JsObject;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.application_pb.FieldInfo;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.application_pb.FieldsChangeUpdate;
+import io.deephaven.proto.backplane.grpc.FieldInfo;
+import io.deephaven.proto.backplane.grpc.FieldsChangeUpdate;
 import jsinterop.annotations.JsProperty;
 import jsinterop.base.Js;
+
+import java.util.List;
 
 
 /**
@@ -34,10 +36,10 @@ public class JsVariableChanges {
         return new JsVariableChanges(created, updated, removed);
     }
 
-    private static JsVariableDefinition[] toVariableDefinitions(JsArray<FieldInfo> createdList) {
-        final JsVariableDefinition[] definitions = new JsVariableDefinition[createdList.length];
-        for (int i = 0; i < createdList.length; i++) {
-            definitions[i] = new JsVariableDefinition(createdList.getAt(i));
+    private static JsVariableDefinition[] toVariableDefinitions(List<FieldInfo> createdList) {
+        final JsVariableDefinition[] definitions = new JsVariableDefinition[createdList.size()];
+        for (int i = 0; i < createdList.size(); i++) {
+            definitions[i] = new JsVariableDefinition(createdList.get(i));
         }
         return definitions;
     }

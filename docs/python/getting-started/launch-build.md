@@ -37,6 +37,16 @@ java --version
 > [!NOTE]
 > The Java build process uses [Gradle Auto Provisioning](https://docs.gradle.org/current/userguide/toolchains.html#sec:provisioning) to download and use the appropriate Java version for building and testing.
 
+### Gradle
+
+Deephaven uses [Gradle](https://gradle.org/) as its build tool. You do not need to install Gradle manually — the repository includes the [Gradle Wrapper](https://docs.gradle.org/current/userguide/gradle_wrapper.html) (`gradlew` / `gradlew.bat`), which downloads and runs the correct version of Gradle automatically.
+
+You can verify the wrapper is present after cloning:
+
+```bash
+ls gradlew
+```
+
 ### Python
 
 It is recommended you stay up-to-date with the latest Python version. Deephaven requires Python **3.9** or later. You can check your Python version with:

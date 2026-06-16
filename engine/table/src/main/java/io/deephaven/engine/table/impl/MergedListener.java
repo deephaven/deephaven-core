@@ -3,7 +3,7 @@
 //
 package io.deephaven.engine.table.impl;
 
-import gnu.trove.list.array.TLongArrayList;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
@@ -96,7 +96,7 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
 
     private static long[] getParentIdentifiers(@NotNull Iterable<? extends ListenerRecorder> recorders,
             @Nullable Iterable<NotificationQueue.Dependency> dependencies) {
-        final TLongArrayList parentList = new TLongArrayList();
+        final LongArrayList parentList = new LongArrayList();
         recorders.forEach(rec -> {
             if (rec.getParent() instanceof HasParentPerformanceIds) {
                 final HasParentPerformanceIds parentBase = (HasParentPerformanceIds) (rec.getParent());
@@ -110,7 +110,7 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
                 }
             });
         }
-        return parentList.toArray();
+        return parentList.toLongArray();
     }
 
     private void releaseFromRecorders() {

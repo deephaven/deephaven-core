@@ -9,6 +9,11 @@
 
 namespace deephaven::client {
 
+// Header/option key constants
+inline constexpr const char *kAuthorizationHeader = "authorization";
+inline constexpr const char *kBearerPrefix = "Bearer ";
+inline constexpr const char *kEnvoyPrefixHeader = "envoy-prefix";
+
 class Client;
 
 /**
