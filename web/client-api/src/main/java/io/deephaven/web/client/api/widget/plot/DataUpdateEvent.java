@@ -56,8 +56,8 @@ public class DataUpdateEvent {
     /**
      * Gets a contiguous JS array of values for the given series and data source type.
      */
-    public JsArray<Any> getArray(JsSeries series, int sourceName) {
-        return getArray(series, sourceName, null);
+    public JsArray<Any> getArray(JsSeries series, int sourceType) {
+        return getArray(series, sourceType, null);
     }
 
     /**
