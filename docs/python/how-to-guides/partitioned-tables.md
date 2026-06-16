@@ -328,6 +328,11 @@ pt_joined = pt_proxy_joined.target
 result_via_proxy = pt_joined.merge()
 ```
 
+> [!CAUTION]
+> `PartitionedTable` transforms and proxies produce different results than on a single-table join (e.g., `natural_join`), `where_in`, or `where_not_in` when the filter or join keys span partitions. You must ensure that your data's keys map to appropriate partitions to enable correct answers.
+>
+> When the second argument `sanityCheckJoins` to the `proxy` method is true, the engine validates that join keys exist only in a single partition, but it does not validate that a key exists in the same partition in both the left and right table.
+
 ## Why use partitioned tables?
 
 So far this guide has shown how you can use partitioned tables in your queries. But it doesn't cover why you may want to use them. Initially, we discussed that partitioned tables are useful for:

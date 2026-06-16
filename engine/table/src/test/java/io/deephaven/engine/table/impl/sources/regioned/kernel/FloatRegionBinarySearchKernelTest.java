@@ -1,9 +1,6 @@
 //
 // Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
-// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
-// ****** Edit CharRegionBinarySearchKernelTest and run "./gradlew replicateRegionAndRegionedSourceTests" to regenerate
-//
 // @formatter:off
 package io.deephaven.engine.table.impl.sources.regioned.kernel;
 
@@ -12,16 +9,15 @@ import io.deephaven.api.SortColumn;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.impl.sources.regioned.ColumnRegionFloat;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSource;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.generic.region.AppendOnlyFixedSizePageRegionFloat;
 import io.deephaven.generic.region.AppendOnlyRegionAccessor;
 import io.deephaven.test.types.ParallelTest;
-import io.deephaven.util.QueryConstants;
 import io.deephaven.util.compare.FloatComparisons;
 import org.jetbrains.annotations.NotNull;
-import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -31,6 +27,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.function.IntToLongFunction;
+import static io.deephaven.util.QueryConstants.NULL_FLOAT;
+import static org.junit.Assert.*;
 
 @Category(ParallelTest.class)
 public class FloatRegionBinarySearchKernelTest {
@@ -41,16 +39,36 @@ public class FloatRegionBinarySearchKernelTest {
     @Rule
     public final EngineCleanup framework = new EngineCleanup();
 
+    private static List<Float> makeSortedData(int size, Random rnd) {
+        final List<Float> data = new ArrayList<>(size);
+        for (int ii = 0; ii < size; ++ii) {
+            data.add((float) rnd.nextInt());
+        }
+        data.sort(FloatComparisons::compare);
+        return data;
+    }
+
+    private static List<Float> findAbsentValues(List<Float> sortedData, int num, int maxFailures, Random rnd) {
+        final List<Float> missingValues = new ArrayList<>();
+        int numFailedLookups = 0;
+        while (missingValues.size() < num && numFailedLookups < maxFailures) {
+            final float value = (float) rnd.nextInt();
+            if (value == NULL_FLOAT
+                    || Collections.binarySearch(sortedData, value, FloatComparisons::compare) >= 0) {
+                numFailedLookups++;
+                continue;
+            }
+            missingValues.add(value);
+        }
+        return missingValues;
+    }
+
     private void randomizedTestRunner(
             int size, int seed, boolean inverted, IntToLongFunction firstKey, IntToLongFunction lastKey) {
 
         final Random rnd = new Random(seed);
-        final List<Float> origData = new ArrayList<>(size);
-        for (int ii = 0; ii < size; ++ii) {
-            origData.add((float) rnd.nextInt());
-        }
-        origData.sort(FloatComparisons::compare);
-        final List<Float> data = new ArrayList<>(origData);
+        final List<Float> sortedData = makeSortedData(size, rnd);
+        final List<Float> data = new ArrayList<>(sortedData);
         if (inverted) {
             java.util.Collections.reverse(data);
         }
@@ -62,40 +80,54 @@ public class FloatRegionBinarySearchKernelTest {
             final float value = data.get(ii);
             final long startRow = Math.max(0, firstKey.applyAsLong(ii));
             final long endRow = Math.min(size - 1, lastKey.applyAsLong(ii));
-            try (final RowSet valuesFound = FloatRegionBinarySearchKernel.binarySearchMatch(
-                    region,
-                    startRow, endRow,
-                    sortColumn,
-                    new Float[] {value})) {
-                if (startRow <= ii && ii <= endRow) {
-                    Assert.assertTrue("Expected to find " + value + " at index " + ii,
-                            valuesFound.containsRange(ii, ii));
-                } else {
-                    Assert.assertFalse("Index should not be populated.",
-                            valuesFound.containsRange(ii, ii));
+            // Test match search and min/max search give the same results for this value.
+            try (final RowSet matchRs = FloatRegionBinarySearchKernel.binarySearchMatch(
+                    region, startRow, endRow, sortColumn, new Float[] {value});
+                 final RowSet minMaxRs = FloatRegionBinarySearchKernel.binarySearchMinMax(
+                         region, startRow, endRow, sortColumn, value, value, true, true)) {
+                // Ensure match search and min/max search give the same results.
+                assertEquals(matchRs, minMaxRs);
+
+                // Test the results for correctness.
+                if (matchRs.isNonempty()) {
+                    // Ensure not returning outside row limits.
+                    assertTrue(matchRs.firstRowKey() >= startRow);
+                    assertTrue(matchRs.lastRowKey() <= endRow);
                 }
+                if (startRow <= ii && ii <= endRow) {
+                    assertTrue("Expected to find " + ii, matchRs.containsRange(ii, ii));
+                } else {
+                    assertFalse("Not expected to find " + ii, matchRs.containsRange(ii, ii));
+                }
+            }
+            // Ensure not found when not expected.
+            try (final RowSet valuesFound = FloatRegionBinarySearchKernel.binarySearchMinMax(
+                    region, startRow, endRow, sortColumn, value, value, true, false)) {
+                assertTrue(valuesFound.isEmpty());
+            }
+            try (final RowSet valuesFound = FloatRegionBinarySearchKernel.binarySearchMinMax(
+                    region, startRow, endRow, sortColumn, value, value, false, true)) {
+                assertTrue(valuesFound.isEmpty());
+            }
+            try (final RowSet valuesFound = FloatRegionBinarySearchKernel.binarySearchMinMax(
+                    region, startRow, endRow, sortColumn, value, value, false, false)) {
+                assertTrue(valuesFound.isEmpty());
             }
         }
 
         // Test negative lookups
-        int numFailedLookups = 0;
-        for (int ii = 0; ii < NUM_NEGATIVE_LOOKUPS && numFailedLookups < MAX_FAILED_LOOKUPS; ++ii) {
-            final float value = (float) rnd.nextInt();
-            if (value == QueryConstants.NULL_FLOAT
-                    || Collections.binarySearch(origData, value, FloatComparisons::compare) >= 0) {
-                --ii;
-                ++numFailedLookups;
-                continue;
-            }
-
+        final List<Float> missingValues =
+                findAbsentValues(sortedData, NUM_NEGATIVE_LOOKUPS, MAX_FAILED_LOOKUPS, rnd);
+        for (Float missingValue : missingValues) {
             final long startRow = 0;
             final long endRow = size - 1;
             try (final RowSet valuesFound = FloatRegionBinarySearchKernel.binarySearchMatch(
-                    region,
-                    startRow, endRow,
-                    sortColumn,
-                    new Float[] {value})) {
-                Assert.assertTrue(valuesFound.isEmpty());
+                    region, startRow, endRow, sortColumn, new Float[] {missingValue})) {
+                assertTrue(valuesFound.isEmpty());
+            }
+            try (final RowSet valuesFound = FloatRegionBinarySearchKernel.binarySearchMinMax(
+                    region, startRow, endRow, sortColumn, missingValue, missingValue, true, true)) {
+                assertTrue(valuesFound.isEmpty());
             }
         }
     }
@@ -219,6 +251,471 @@ public class FloatRegionBinarySearchKernelTest {
     public void testInvertedRowIsRange() {
         for (int size : SIZES) {
             invertedRandomizedTestRunner(size, 0, i -> i, i -> i);
+        }
+    }
+
+    @Test
+    public void testSerial() {
+        // Simple serial test with small data size
+        randomizedTestRunner(10, 0, i -> 0, i -> 10);
+        invertedRandomizedTestRunner(10, 0, i -> 0, i -> 10);
+    }
+
+    /**
+     * Match searches for special float values (NULL_FLOAT, negative infinity, positive infinity, NaN, and -0.0f) should
+     * return all rows with that value, and only rows with that value, even NaN (due to the definition of "match")
+     */
+    @Test
+    public void testMatchSpecialFloats() {
+        final List<Float> specialValues = List.of(NULL_FLOAT, Float.NEGATIVE_INFINITY, (float)-0.0, Float.POSITIVE_INFINITY, Float.NaN);
+
+        // This list will have 2 of each special value.
+        final List<Float> sortedData = new ArrayList<>(specialValues);
+        sortedData.addAll(specialValues);
+        Collections.sort(sortedData, FloatComparisons::compare);
+
+        final SortColumn sortColumnAsc = SortColumn.asc(ColumnName.of("test"));
+        final ColumnRegionFloat<Values> regionAsc = makeColumnRegionFloat(sortedData);
+
+        for (float f : specialValues) {
+            try (final RowSet matches = FloatRegionBinarySearchKernel.binarySearchMatch(
+                    regionAsc,
+                    0, sortedData.size() - 1,
+                    sortColumnAsc,
+                    new Float[] {f})) {
+
+                assertEquals(2, matches.size());
+                matches.forAllRowKeys(rowKey -> {
+                    final float value = sortedData.get((int) rowKey);
+                    assertTrue(FloatComparisons.eq(value, f));
+                });
+            }
+        }
+
+        // Repeat the same test for descending order.
+        final List<Float> sortedDataDesc = new ArrayList<>(sortedData);
+        Collections.reverse(sortedDataDesc);
+        final SortColumn sortColumnDesc = SortColumn.desc(ColumnName.of("test"));
+        final ColumnRegionFloat<Values> regionDesc = makeColumnRegionFloat(sortedDataDesc);
+
+        for (float f : specialValues) {
+            try (final RowSet matches = FloatRegionBinarySearchKernel.binarySearchMatch(
+                    regionDesc,
+                    0, sortedData.size() - 1,
+                    sortColumnDesc,
+                    new Float[] {f})) {
+
+                assertEquals(2, matches.size());
+                matches.forAllRowKeys(rowKey -> {
+                    final float value = sortedDataDesc.get((int) rowKey);
+                    assertTrue(FloatComparisons.eq(value, f));
+                });
+            }
+        }
+    }
+
+    /**
+     * Range searches for special float values (NULL_FLOAT, negative infinity, positive infinity, NaN, and -0.0f) should
+     * return all rows with that value, and only rows with that value.
+     *
+     * Note that NaN is not special in this case. When greater than RangeFilter for float are created, the upper
+     * bound is set to NaN (exclusive) and the FloatRegionBinarySearchKernel will honor the exclusive upper bound
+     * and exclude NaN values from the results.
+     */
+    @Test
+    public void testMinMaxSpecialFloats() {
+        final List<Float> specialValues = List.of(NULL_FLOAT, Float.NEGATIVE_INFINITY, (float)-0.0, Float.POSITIVE_INFINITY, Float.NaN);
+
+        // This list will have 2 of each special value.
+        final List<Float> sortedData = new ArrayList<>(specialValues);
+        sortedData.addAll(specialValues);
+        Collections.sort(sortedData, FloatComparisons::compare);
+
+        final SortColumn sortColumnAsc = SortColumn.asc(ColumnName.of("test"));
+        final ColumnRegionFloat<Values> regionAsc = makeColumnRegionFloat(sortedData);
+
+        for (float f : specialValues) {
+            try (final RowSet matches = FloatRegionBinarySearchKernel.binarySearchMinMax(
+                    regionAsc,
+                    0, sortedData.size() - 1,
+                    sortColumnAsc,
+                    f, f, true, true)) {
+
+                assertEquals(2, matches.size());
+                matches.forAllRowKeys(rowKey -> {
+                    final float value = sortedData.get((int) rowKey);
+                    assertTrue(FloatComparisons.eq(value, f));
+                });
+            }
+        }
+
+        // Repeat the same test for descending order.
+        final List<Float> sortedDataDesc = new ArrayList<>(sortedData);
+        Collections.reverse(sortedDataDesc);
+        final SortColumn sortColumnDesc = SortColumn.desc(ColumnName.of("test"));
+        final ColumnRegionFloat<Values> regionDesc = makeColumnRegionFloat(sortedDataDesc);
+
+        for (float f : specialValues) {
+            try (final RowSet matches = FloatRegionBinarySearchKernel.binarySearchMinMax(
+                    regionDesc,
+                    0, sortedDataDesc.size() - 1,
+                    sortColumnDesc,
+                    f, f, true, true)) {
+
+                assertEquals(2, matches.size());
+                matches.forAllRowKeys(rowKey -> {
+                    final float value = sortedDataDesc.get((int) rowKey);
+                    assertTrue(FloatComparisons.eq(value, f));
+                });
+            }
+        }
+    }
+
+    @Test
+    public void testBinSearchMaxRandom() {
+        final Random rnd = new Random(0);
+
+        final int steps = 20;
+        for (int size : SIZES) {
+            final List<Float> data = makeSortedData(size, rnd);
+
+            for (int step = 0; step < steps; ++step) {
+                System.out.println("Size = " + size + ", step = " + step);
+                final float maxValue = (float) rnd.nextInt();
+
+                final long firstKeyCandidate = rnd.nextInt(size);
+                final long lastKeyCandidate = rnd.nextInt(size);
+
+                final long firstKey = Math.min(firstKeyCandidate, lastKeyCandidate);
+                final long lastKey = Math.max(firstKeyCandidate, lastKeyCandidate);
+
+                maxTestRunner(data, false, firstKey, lastKey, maxValue, true);
+                maxTestRunner(data, false, firstKey, lastKey, maxValue, false);
+
+                maxTestRunner(data, true, firstKey, lastKey, maxValue, true);
+                maxTestRunner(data, true, firstKey, lastKey, maxValue, false);
+            }
+        }
+    }
+
+    @Test
+    public void testBinSearchMinRandom() {
+        final Random rnd = new Random(0);
+
+        final int steps = 20;
+        for (int size : SIZES) {
+            final List<Float> data = makeSortedData(size, rnd);
+
+            for (int step = 0; step < steps; ++step) {
+                System.out.println("Size = " + size + ", step = " + step);
+                final float minValue = (float) rnd.nextInt();
+
+                final long firstKeyCandidate = rnd.nextInt(size);
+                final long lastKeyCandidate = rnd.nextInt(size);
+
+                final long firstKey = Math.min(firstKeyCandidate, lastKeyCandidate);
+                final long lastKey = Math.max(firstKeyCandidate, lastKeyCandidate);
+
+                minTestRunner(data, false, firstKey, lastKey, minValue, true);
+                minTestRunner(data, false, firstKey, lastKey, minValue, false);
+
+                minTestRunner(data, true, firstKey, lastKey, minValue, true);
+                minTestRunner(data, true, firstKey, lastKey, minValue, false);
+            }
+        }
+    }
+
+    @Test
+    public void testBinSearchMinMaxRandom() {
+        final Random rnd = new Random(0);
+
+        final int steps = 20;
+        for (int size : SIZES) {
+            final List<Float> data = makeSortedData(size, rnd);
+
+            for (int step = 0; step < steps; ++step) {
+                System.out.println("Size = " + size + ", step = " + step);
+                final float minCandidate = (float) rnd.nextInt();
+                final float maxCandidate = (float) rnd.nextInt();
+
+                final float minValue = (float) Math.min(minCandidate, maxCandidate);
+                final float maxValue = (float) Math.max(minCandidate, maxCandidate);
+
+                final long firstKeyCandidate = rnd.nextInt(size);
+                final long lastKeyCandidate = rnd.nextInt(size);
+
+                final long firstKey = Math.min(firstKeyCandidate, lastKeyCandidate);
+                final long lastKey = Math.max(firstKeyCandidate, lastKeyCandidate);
+
+                // Test all combinations of inverted/inclusive/exclusive min/max.
+                minMaxTestRunner(data, false, firstKey, lastKey, minValue, true, maxValue, true);
+                minMaxTestRunner(data, false, firstKey, lastKey, minValue, true, maxValue, false);
+                minMaxTestRunner(data, false, firstKey, lastKey, minValue, false, maxValue, true);
+                minMaxTestRunner(data, false, firstKey, lastKey, minValue, false, maxValue, false);
+
+                minMaxTestRunner(data, true, firstKey, lastKey, minValue, true, maxValue, true);
+                minMaxTestRunner(data, true, firstKey, lastKey, minValue, true, maxValue, false);
+                minMaxTestRunner(data, true, firstKey, lastKey, minValue, false, maxValue, true);
+                minMaxTestRunner(data, true, firstKey, lastKey, minValue, false, maxValue, false);
+            }
+        }
+    }
+
+    // NOTE: missing 3 and 7 to create gaps in the data.
+    private static final List<Float> GAPS_DATA = List.of(
+            (float) 0, // row 0
+            (float) 1, // row 1
+            (float) 2, // row 2
+            (float) 4, // row 3
+            (float) 5, // row 4
+            (float) 6, // row 5
+            (float) 8, // row 6
+            (float) 9); // row 7
+
+    @Test
+    public void testBinSearchWithGaps() {
+        binSearchWithGapsHelper(false);
+    }
+
+    @Test
+    public void testBinSearchWithGapsInverted() {
+        binSearchWithGapsHelper(true);
+    }
+
+    private void binSearchWithGapsHelper(boolean inverted) {
+        // From 0 to 9
+        binSearchWithGaps(inverted, (float) 0, true, (float) 9, true, 8, 0, 7);
+        binSearchWithGaps(inverted, (float) 0, true, (float) 9, false, 7, 0, 6);
+        binSearchWithGaps(inverted, (float) 0, false, (float) 9, true, 7, 1, 7);
+        binSearchWithGaps(inverted, (float) 0, false, (float) 9, false, 6, 1, 6);
+        // From first to 3
+        binSearchWithGaps(inverted, (float) 0, true, (float) 3, true, 3, 0, 2);
+        binSearchWithGaps(inverted, (float) 0, true, (float) 3, false, 3, 0, 2);
+        binSearchWithGaps(inverted, (float) 0, false, (float) 3, true, 2, 1, 2);
+        binSearchWithGaps(inverted, (float) 0, false, (float) 3, false, 2, 1, 2);
+        // From first to 7
+        binSearchWithGaps(inverted, (float) 0, true, (float) 7, true, 6, 0, 5);
+        binSearchWithGaps(inverted, (float) 0, true, (float) 7, false, 6, 0, 5);
+        binSearchWithGaps(inverted, (float) 0, false, (float) 7, true, 5, 1, 5);
+        binSearchWithGaps(inverted, (float) 0, false, (float) 7, false, 5, 1, 5);
+        // From 3 to last
+        binSearchWithGaps(inverted, (float) 3, true, (float) 9, true, 5, 3, 7);
+        binSearchWithGaps(inverted, (float) 3, true, (float) 9, false, 4, 3, 6);
+        binSearchWithGaps(inverted, (float) 3, false, (float) 9, true, 5, 3, 7);
+        binSearchWithGaps(inverted, (float) 3, false, (float) 9, false, 4, 3, 6);
+        // From 7 to last
+        binSearchWithGaps(inverted, (float) 7, true, (float) 9, true, 2, 6, 7);
+        binSearchWithGaps(inverted, (float) 7, true, (float) 9, false, 1, 6, 6);
+        binSearchWithGaps(inverted, (float) 7, false, (float) 9, true, 2, 6, 7);
+        binSearchWithGaps(inverted, (float) 7, false, (float) 9, false, 1, 6, 6);
+        // From 3 to 7
+        binSearchWithGaps(inverted, (float) 3, true, (float) 7, true, 3, 3, 5);
+        binSearchWithGaps(inverted, (float) 3, true, (float) 7, false, 3, 3, 5);
+        binSearchWithGaps(inverted, (float) 3, false, (float) 7, true, 3, 3, 5);
+        binSearchWithGaps(inverted, (float) 3, false, (float) 7, false, 3, 3, 5);
+        // From 2 to 8
+        binSearchWithGaps(inverted, (float) 2, true, (float) 8, true, 5, 2, 6);
+        binSearchWithGaps(inverted, (float) 2, true, (float) 8, false, 4, 2, 5);
+        binSearchWithGaps(inverted, (float) 2, false, (float) 8, true, 4, 3, 6);
+        binSearchWithGaps(inverted, (float) 2, false, (float) 8, false, 3, 3, 5);
+    }
+
+    private void binSearchWithGaps(
+            boolean inverted,
+            float minValue, boolean minInclusive,
+            float maxValue, boolean maxInclusive,
+            int expectedSize, long expectedFirstRowAsc, long expectedLastRowAsc) {
+        final List<Float> data;
+        final SortColumn sortColumn;
+        if (inverted) {
+            data = new ArrayList<>(GAPS_DATA);
+            Collections.reverse(data);
+            sortColumn = SortColumn.desc(ColumnName.of("test"));
+        } else {
+            data = GAPS_DATA;
+            sortColumn = SortColumn.asc(ColumnName.of("test"));
+        }
+        // Adjust the expected first and last rows for inverted case.
+        final long expectedFirstRow =
+                inverted ? data.size() - 1 - expectedLastRowAsc : expectedFirstRowAsc;
+        final long expectedLastRow =
+                inverted ? data.size() - 1 - expectedFirstRowAsc : expectedLastRowAsc;
+
+        final ColumnRegionFloat<Values> region = makeColumnRegionFloat(data);
+        try (final RowSet result = FloatRegionBinarySearchKernel.binarySearchMinMax(
+                region, 0, data.size() - 1, sortColumn,
+                minValue, maxValue, minInclusive, maxInclusive)) {
+            assertEquals(expectedSize, result.size());
+            assertEquals(expectedFirstRow, result.firstRowKey());
+            assertEquals(expectedLastRow, result.lastRowKey());
+        }
+    }
+
+    private void minMaxTestRunner(
+            List<Float> data,
+            final boolean inverted,
+            final long firstKey,
+            final long lastKey,
+            final float minValue,
+            final boolean minInclusive,
+            final float maxValue,
+            final boolean maxInclusive) {
+
+        final List<Float> dataToUse;
+        final SortColumn sortColumn;
+        if (inverted) {
+            dataToUse = new ArrayList<>(data);
+            Collections.reverse(dataToUse);
+            sortColumn = SortColumn.desc(ColumnName.of("test"));
+        } else {
+            dataToUse = data;
+            sortColumn = SortColumn.asc(ColumnName.of("test"));
+        }
+
+        final ColumnRegionFloat<Values> region = makeColumnRegionFloat(dataToUse);
+
+        try (final RowSet result = FloatRegionBinarySearchKernel.binarySearchMinMax(
+                region, firstKey, lastKey, sortColumn, minValue, maxValue, minInclusive, maxInclusive)) {
+
+            // Test from 0 to firstKey - 1 to make sure no false positives are found below the first key.
+            if (firstKey > 0) {
+                try (final RowSet excludedLow = RowSetFactory.fromRange(0, firstKey - 1);
+                        final RowSet intersection = result.intersect(excludedLow)) {
+                    assertTrue(intersection.isEmpty());
+                }
+            }
+
+            // Go through every value in the result and ensure it is within the min/max bounds.
+            result.forAllRowKeys(rowKey -> {
+                // Must be within the first/last key bounds
+                assertTrue(rowKey >= firstKey && rowKey <= lastKey);
+
+                // The value at the row key must be within the min/max bounds.
+                final float value = dataToUse.get((int) rowKey);
+                if (minInclusive) {
+                    assertTrue(FloatComparisons.compare(value, minValue) >= 0);
+                } else {
+                    assertTrue(FloatComparisons.compare(value, minValue) > 0);
+                }
+                if (maxInclusive) {
+                    assertTrue(FloatComparisons.compare(value, maxValue) <= 0);
+                } else {
+                    assertTrue(FloatComparisons.compare(value, maxValue) < 0);
+                }
+            });
+
+            // Test from lastKey + 1 to make sure no false positives are found above the lastKey.
+            try (final RowSet excludedHigh = RowSetFactory.fromRange(lastKey + 1, Long.MAX_VALUE);
+                 final RowSet intersection = result.intersect(excludedHigh)) {
+                assertTrue(intersection.isEmpty());
+            }
+        }
+    }
+
+    private void minTestRunner(
+            List<Float> data,
+            final boolean inverted,
+            final long firstKey,
+            final long lastKey,
+            final float minValue,
+            final boolean minInclusive) {
+
+        final List<Float> dataToUse;
+        final SortColumn sortColumn;
+        if (inverted) {
+            dataToUse = new ArrayList<>(data);
+            Collections.reverse(dataToUse);
+            sortColumn = SortColumn.desc(ColumnName.of("test"));
+        } else {
+            dataToUse = data;
+            sortColumn = SortColumn.asc(ColumnName.of("test"));
+        }
+
+        final ColumnRegionFloat<Values> region = makeColumnRegionFloat(dataToUse);
+
+        try (final RowSet result = FloatRegionBinarySearchKernel.binarySearchMin(
+                region, firstKey, lastKey, sortColumn, minValue, minInclusive)) {
+            // Test from 0 to firstKey - 1 to make sure no false positives are found below the first key.
+            if (firstKey > 0) {
+                try (final RowSet excludedLow = RowSetFactory.fromRange(0, firstKey - 1);
+                     final RowSet intersection = result.intersect(excludedLow)) {
+                    assertTrue(intersection.isEmpty());
+                }
+            }
+
+            // Go through every value in the result and ensure it is within the min/max bounds.
+            result.forAllRowKeys(rowKey -> {
+                // Must be within the first/last key bounds
+                assertTrue(rowKey >= firstKey && rowKey <= lastKey);
+
+                // The value at the row key must be within the min/max bounds.
+                final float value = dataToUse.get((int) rowKey);
+                if (minInclusive) {
+                    assertTrue(FloatComparisons.compare(value, minValue) >= 0);
+                } else {
+                    assertTrue(FloatComparisons.compare(value, minValue) > 0);
+                }
+            });
+
+            // Test from lastKey + 1 to make sure no false positives are found above the lastKey.
+            try (final RowSet excludedHigh = RowSetFactory.fromRange(lastKey + 1, Long.MAX_VALUE);
+                 final RowSet intersection = result.intersect(excludedHigh)) {
+                assertTrue(intersection.isEmpty());
+            }
+        }
+    }
+
+    private void maxTestRunner(
+            List<Float> data,
+            final boolean inverted,
+            final long firstKey,
+            final long lastKey,
+            final float maxValue,
+            final boolean maxInclusive) {
+
+        final List<Float> dataToUse;
+        final SortColumn sortColumn;
+        if (inverted) {
+            dataToUse = new ArrayList<>(data);
+            Collections.reverse(dataToUse);
+            sortColumn = SortColumn.desc(ColumnName.of("test"));
+        } else {
+            dataToUse = data;
+            sortColumn = SortColumn.asc(ColumnName.of("test"));
+        }
+
+        final ColumnRegionFloat<Values> region = makeColumnRegionFloat(dataToUse);
+
+        try (final RowSet result = FloatRegionBinarySearchKernel.binarySearchMax(
+                region, firstKey, lastKey, sortColumn, maxValue, maxInclusive)) {
+
+            // Test from 0 to firstKey - 1 to make sure no false positives are found below the first key.
+            if (firstKey > 0) {
+                try (final RowSet excludedLow = RowSetFactory.fromRange(0, firstKey - 1);
+                     final RowSet intersection = result.intersect(excludedLow)) {
+                    assertTrue(intersection.isEmpty());
+                }
+            }
+
+            // Go through every value in the result and ensure it is within the min/max bounds.
+            result.forAllRowKeys(rowKey -> {
+                // Must be within the first/last key bounds
+                assertTrue(rowKey >= firstKey && rowKey <= lastKey);
+
+                // The value at the row key must be within the min/max bounds.
+                final float value = dataToUse.get((int) rowKey);
+                if (maxInclusive) {
+                    assertTrue(FloatComparisons.compare(value, maxValue) <= 0);
+                } else {
+                    assertTrue(FloatComparisons.compare(value, maxValue) < 0);
+                }
+            });
+
+            // Test from lastKey + 1 to make sure no false positives are found above the lastKey.
+            try (final RowSet excludedHigh = RowSetFactory.fromRange(lastKey + 1, Long.MAX_VALUE);
+                 final RowSet intersection = result.intersect(excludedHigh)) {
+                assertTrue(intersection.isEmpty());
+            }
         }
     }
 

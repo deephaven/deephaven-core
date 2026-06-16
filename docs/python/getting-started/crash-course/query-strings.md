@@ -7,7 +7,7 @@ Deephaven query strings are the primary way of expressing commands directly to t
 
 ## Syntax
 
-Query strings are just Python strings that get passed into table operations.
+Query strings are just Python strings that get passed into table operations. Deephaven **highly** recommends using double quotes to encapsulate query strings.
 
 ```python test-set=1
 from deephaven import empty_table

@@ -8,7 +8,6 @@ import com.google.flatbuffers.FlatBufferBuilder;
 import com.google.protobuf.ByteStringAccess;
 import com.google.protobuf.CodedOutputStream;
 import com.google.protobuf.WireFormat;
-import gnu.trove.list.array.TIntArrayList;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
@@ -82,17 +81,18 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
         public BarrageMessageWriter newMessageWriter(
                 @NotNull final BarrageMessage message,
                 @NotNull final ChunkWriter<Chunk<Values>>[] chunkWriters,
-                @NotNull final BarragePerformanceLog.WriteMetricsConsumer metricsConsumer) {
+                @NotNull final BarrageMessageWriter.WriteMetricsConsumer metricsConsumer) {
             return new BarrageMessageWriterImpl(message, chunkWriters, metricsConsumer);
         }
 
         @Override
-        public MessageView getSchemaView(@NotNull final ToIntFunction<FlatBufferBuilder> schemaPayloadWriter) {
+        public MessageView getSchemaView(@NotNull final ToIntFunction<FlatBufferBuilder> schemaPayloadWriter,
+                Flight.FlightDescriptor flightDescriptor) {
             final FlatBufferBuilder builder = new FlatBufferBuilder();
             final int schemaOffset = schemaPayloadWriter.applyAsInt(builder);
             builder.finish(MessageHelper.wrapInMessage(builder, schemaOffset,
                     org.apache.arrow.flatbuf.MessageHeader.Schema));
-            return new SchemaMessageView(builder.dataBuffer());
+            return new SchemaMessageView(builder.dataBuffer(), flightDescriptor);
         }
     }
 
@@ -104,7 +104,7 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
         public BarrageMessageWriter newMessageWriter(
                 @NotNull final BarrageMessage message,
                 @NotNull final ChunkWriter<Chunk<Values>>[] chunkWriters,
-                @NotNull final BarragePerformanceLog.WriteMetricsConsumer metricsConsumer) {
+                @NotNull final BarrageMessageWriter.WriteMetricsConsumer metricsConsumer) {
             return new BarrageMessageWriterImpl(message, chunkWriters, metricsConsumer) {
                 @Override
                 protected void writeHeader(
@@ -136,7 +136,7 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
     }
 
     private final BarrageMessage message;
-    private final BarragePerformanceLog.WriteMetricsConsumer writeConsumer;
+    private final WriteMetricsConsumer writeConsumer;
 
     private final long firstSeq;
     private final long lastSeq;
@@ -161,7 +161,7 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
     public BarrageMessageWriterImpl(
             @NotNull final BarrageMessage message,
             @NotNull final ChunkWriter<Chunk<Values>>[] chunkWriters,
-            @NotNull final BarragePerformanceLog.WriteMetricsConsumer writeConsumer) {
+            @NotNull final BarrageMessageWriter.WriteMetricsConsumer writeConsumer) {
         this.message = message;
         this.writeConsumer = writeConsumer;
         try {
@@ -484,7 +484,7 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
             }
 
             // now add mod-column streams, and write the mod column indexes
-            final TIntArrayList modOffsets = new TIntArrayList(modColumnData.length);
+            final int[] modOffsets = new int[modColumnData.length];
             for (int ii = 0; ii < modColumnData.length; ++ii) {
                 final int myModRowOffset;
                 if (hasViewport) {
@@ -494,14 +494,13 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
                 } else {
                     myModRowOffset = modColumnData[ii].rowsModified.addToFlatBuffer(metadata);
                 }
-                modOffsets.add(BarrageModColumnMetadata.createBarrageModColumnMetadata(metadata, myModRowOffset));
+                modOffsets[ii] = BarrageModColumnMetadata.createBarrageModColumnMetadata(metadata, myModRowOffset);
             }
 
-            BarrageUpdateMetadata.startModColumnNodesVector(metadata, modOffsets.size());
-            modOffsets.forEachDescending(offset -> {
-                metadata.addOffset(offset);
-                return true;
-            });
+            BarrageUpdateMetadata.startModColumnNodesVector(metadata, modOffsets.length);
+            for (int ii = modOffsets.length - 1; ii >= 0; --ii) {
+                metadata.addOffset(modOffsets[ii]);
+            }
             final int nodesOffset = metadata.endVector();
 
             BarrageUpdateMetadata.startBarrageUpdateMetadata(metadata);
@@ -545,7 +544,7 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
         return getSnapshotView(options, null, false, null, null);
     }
 
-    private final class SnapshotView implements RecordBatchMessageView {
+    protected class SnapshotView implements RecordBatchMessageView {
         private final BarrageSnapshotOptions options;
         private final boolean reverseViewport;
         private final BitSet subscribedColumns;
@@ -555,7 +554,7 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
         private final WritableRowSet clientAddedRows;
         private final WritableRowSet clientAddedRowOffsets;
 
-        public SnapshotView(final BarrageSnapshotOptions options,
+        protected SnapshotView(final BarrageSnapshotOptions options,
                 @Nullable final RowSet viewport,
                 final boolean reverseViewport,
                 @Nullable final RowSet keyspaceViewport,
@@ -627,7 +626,7 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
             throw new UnsupportedOperationException("asked for mod row on SnapshotView");
         }
 
-        private ByteBuffer getSnapshotMetadata() throws IOException {
+        protected ByteBuffer getSnapshotMetadata() throws IOException {
             final FlatBufferBuilder metadata = new FlatBufferBuilder();
 
             int effectiveViewportOffset = 0;
@@ -683,9 +682,13 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
     private static final class SchemaMessageView implements MessageView {
         private final byte[] msgBytes;
 
-        public SchemaMessageView(final ByteBuffer buffer) {
-            this.msgBytes = Flight.FlightData.newBuilder()
-                    .setDataHeader(ByteStringAccess.wrap(buffer))
+        public SchemaMessageView(final ByteBuffer buffer, Flight.FlightDescriptor flightDescriptor) {
+            Flight.FlightData.Builder builder = Flight.FlightData.newBuilder()
+                    .setDataHeader(ByteStringAccess.wrap(buffer));
+            if (flightDescriptor != null) {
+                builder.setFlightDescriptor(flightDescriptor);
+            }
+            this.msgBytes = builder
                     .build()
                     .toByteArray();
         }
@@ -862,9 +865,6 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
         final int clientMaxMessageSize = view.options().maxMessageSize();
         final int maxMessageSize = clientMaxMessageSize > 0 ? clientMaxMessageSize : DEFAULT_MESSAGE_SIZE_LIMIT;
 
-        // TODO (deephaven-core#188): remove this when JS API can accept multiple batches
-        boolean sendAllowed = numRows <= batchSize;
-
         while (offset < numRows) {
             try {
                 final DefensiveDrainable is =
@@ -877,7 +877,7 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
 
                 // treat this as a hard limit, exceeding fails a client or w2w (unless we are sending a single
                 // row then we must send and let it potentially fail)
-                if (sendAllowed && (bytesToWrite < maxMessageSize || batchSize == 1)) {
+                if (bytesToWrite < maxMessageSize || batchSize == 1) {
                     // let's write the data
                     visitor.accept(is);
 
@@ -887,7 +887,6 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
                 } else {
                     // can't write this, so close the input stream and retry
                     is.close();
-                    sendAllowed = true;
                 }
 
                 // recompute the batch limit for the next message
@@ -970,7 +969,6 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
         if (endPos == RowSet.NULL_ROW_KEY) {
             endPos = Long.MAX_VALUE;
         }
-        final long baseEndPos = endPos;
         if (addColumnData[0].chunks().length != 0) {
             final ChunkWriter.Context writer = addColumnData[0].chunks()[chunkIdx];
             endPos = Math.min(endPos, writer.getLastRowOffset());
@@ -1084,6 +1082,9 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
                 startPos = modOffsets.get(startRange);
                 final long endRange = startRange + maxLength - 1;
                 endPos = endRange >= modOffsets.size() ? modOffsets.lastRowKey() : modOffsets.get(endRange);
+                if (context != null) {
+                    endPos = Math.min(endPos, context.getLastRowOffset());
+                }
             } else if (startRange >= mcd.rowsModified.original.size()) {
                 startPos = RowSet.NULL_ROW_KEY;
                 endPos = RowSet.NULL_ROW_KEY;

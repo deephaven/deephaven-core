@@ -16,7 +16,7 @@ import io.deephaven.engine.table.impl.sources.SwitchColumnSource;
 import io.deephaven.engine.table.impl.sources.sparse.SparseConstants;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.VisibleForTesting;
-import gnu.trove.map.hash.TLongIntHashMap;
+import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
 import org.apache.commons.lang3.mutable.MutableObject;
 
 import java.util.*;
@@ -37,14 +37,14 @@ public class SelectOverheadLimiter {
     private SelectOverheadLimiter() {}
 
     private static class OverheadTracker implements RowSetShiftData.SingleElementShiftCallback {
-        TLongIntHashMap blockReferences = new TLongIntHashMap();
+        Long2IntOpenHashMap blockReferences = new Long2IntOpenHashMap();
         long size;
 
         void addIndex(RowSet rowSet) {
             size += rowSet.size();
             rowSet.forAllRowKeys(key -> {
                 final long block = key >> SparseConstants.LOG_BLOCK_SIZE;
-                blockReferences.adjustOrPutValue(block, 1, 1);
+                blockReferences.addTo(block, 1);
             });
         }
 
@@ -52,7 +52,7 @@ public class SelectOverheadLimiter {
             size -= rowSet.size();
             rowSet.forAllRowKeys(key -> {
                 final long block = key >> SparseConstants.LOG_BLOCK_SIZE;
-                final long newReferences = blockReferences.adjustOrPutValue(block, -1, -1);
+                final long newReferences = blockReferences.addTo(block, -1) - 1;
                 Assert.geqZero(newReferences, "newReferences");
                 if (newReferences == 0) {
                     blockReferences.remove(block);
@@ -82,12 +82,12 @@ public class SelectOverheadLimiter {
             final long oldBlock = key >> SparseConstants.LOG_BLOCK_SIZE;
             final long newBlock = (key + shiftDelta) >> SparseConstants.LOG_BLOCK_SIZE;
             if (oldBlock != newBlock) {
-                final long oldReferences = blockReferences.adjustOrPutValue(oldBlock, -1, -1);
+                final long oldReferences = blockReferences.addTo(oldBlock, -1) - 1;
                 Assert.geqZero(oldReferences, "newReferences");
                 if (oldReferences == 0) {
                     blockReferences.remove(oldBlock);
                 }
-                blockReferences.adjustOrPutValue(newBlock, 1, 1);
+                blockReferences.addTo(newBlock, 1);
             }
         }
     }

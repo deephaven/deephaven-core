@@ -3,9 +3,7 @@
 //
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.engine.table.ColumnDefinition;
-
-import java.util.List;
+import io.deephaven.engine.table.TableDefinition;
 
 /**
  * Factory for source table components.
@@ -16,5 +14,5 @@ public interface SourceTableComponentFactory {
             boolean isRefreshing,
             boolean removeAllowed,
             ColumnToCodecMappings codecMappings,
-            List<ColumnDefinition<?>> columnDefinitions);
+            TableDefinition tableDefinition);
 }

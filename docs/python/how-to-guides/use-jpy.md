@@ -49,7 +49,7 @@ import jpy
 
 _JURL = jpy.get_type("java.net.URL")
 
-# the print function is overloaded to print the classpath of the underlying Java type
+# the print function is overloaded to print the fully qualified class name of the underlying Java type
 print(_JURL)
 # the class gets recognized as a Python type, confirming that this is a Python object
 print(type(_JURL))
@@ -63,6 +63,48 @@ help(_JURL)
 ```
 
 Check the [Javadoc for `java.net.URL`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/URL.html) to confirm that all of its methods are represented by the Python wrapping.
+
+### Access nested (inner) classes
+
+In Java, inner classes are accessed with dot notation: `OuterClass.InnerClass`. However, [`jpy.get_type`](/core/pydoc/code/jpy.html#jpy.get_type) expects the JVM's internal binary class name, which uses `$` as the separator between outer and inner class names. Using dot notation will fail.
+
+```python should-fail
+import jpy
+
+# ❌ Dot notation does not work for inner classes
+_JMapEntry = jpy.get_type("java.util.Map.Entry")
+```
+
+Use `$` instead:
+
+```python test-set=inner-classes
+import jpy
+
+# ✅ Use $ to separate the outer and inner class names
+_JMapEntry = jpy.get_type("java.util.Map$Entry")
+```
+
+The pattern is: `jpy.get_type("fully.qualified.OuterClass$InnerClass")`. This applies to all levels of nesting — `OuterClass$InnerClass$DeepInner` for classes nested two levels deep.
+
+Here are examples using Deephaven types:
+
+```python test-set=inner-classes
+# Builder inner class of SyncTableFilter
+_JSyncTableFilterBuilder = jpy.get_type(
+    "io.deephaven.engine.table.impl.util.SyncTableFilter$Builder"
+)
+
+# Builder inner classes of LeaderTableFilter
+_JLeaderTableFilterTableBuilder = jpy.get_type(
+    "io.deephaven.engine.util.LeaderTableFilter$TableBuilder"
+)
+_JLeaderTableFilterPartitionedTableBuilder = jpy.get_type(
+    "io.deephaven.engine.util.LeaderTableFilter$PartitionedTableBuilder"
+)
+```
+
+> [!NOTE]
+> The `$`-separated name is the JVM's internal binary class name. You can find it in the Java source or Javadoc — look for `static class InnerClass` inside the outer class definition. The separator is always `$`, never `.`.
 
 ## Call methods on Java types
 
@@ -109,9 +151,9 @@ print(float_instance_as_string)
 print(type(float_instance_as_string))
 
 # the compareTo method returns -1 if float is less than the argument, 0 if equal, and 1 if greater
-less_than_or_grearter_than = float_instance.compareTo(654.321)
-print(less_than_or_grearter_than)
-print(type(less_than_or_grearter_than))
+less_than_or_greater_than = float_instance.compareTo(654.321)
+print(less_than_or_greater_than)
+print(type(less_than_or_greater_than))
 
 # the equals method returns True if the float is equal to the argument, and False otherwise
 are_floats_equal = float_instance.equals(123.456)
@@ -647,7 +689,7 @@ transformed_t = Table(_j_transformed_t)
 ## Related documentation
 
 - [Python-Java Boundary](../conceptual/python-java-boundary.md)
-- [Jpy Github](https://github.com/jpy-consortium/jpy)
-- [Jpy Javadoc](/core/javadoc/io/deephaven/jpy/package-summary.html)
+- [jpy GitHub](https://github.com/jpy-consortium/jpy)
+- [jpy documentation](https://jpy.readthedocs.io/en/latest/)
 - [Jpy Pydoc](/core/pydoc/code/jpy.html#module-jpy)
 - [Type signatures](https://docs.oracle.com/en/java/javase/17/docs/specs/jni/types.html)

@@ -213,6 +213,25 @@ public class TestParquetTools {
     }
 
     @Test
+    public void testWriteTableEmptyStrings() {
+        final Table emptyStringsTable = TableTools.emptyTable(1_000_000)
+                .updateView("StrValue=i % 10000 == 0 ? Integer.toString(i) : \"\"");
+
+        final ParquetInstructions instructions = ParquetInstructions.builder()
+                .setCompressionCodecName("UNCOMPRESSED")
+                .useDictionary("StrValue", false)
+                .setMaximumDictionaryKeys(0)
+                .build();
+
+        String path = testRoot + File.separator + "emptyStringsTable.parquet";
+        ParquetTools.writeTable(emptyStringsTable, path, instructions);
+        Table result = ParquetTools.readTable(path);
+        assertTableEquals(emptyStringsTable, result);
+        result.close();
+        emptyStringsTable.close();
+    }
+
+    @Test
     public void testWriteTableRenames() {
         final String path = testRoot + File.separator + "Table_W_Renames.parquet";
         final ParquetInstructions instructions = ParquetInstructions.builder()
@@ -393,10 +412,8 @@ public class TestParquetTools {
                 "Date=2021-07-21" + File.separator + "Num=300" + File.separator + "file3.parquet").getPath());
 
         final List<ColumnDefinition<?>> allColumns = new ArrayList<>();
-        allColumns.add(
-                ColumnDefinition.fromGenericType("Date", String.class, null, ColumnDefinition.ColumnType.Partitioning));
-        allColumns.add(
-                ColumnDefinition.fromGenericType("Num", int.class, null, ColumnDefinition.ColumnType.Partitioning));
+        allColumns.add(ColumnDefinition.ofString("Date").withPartitioning());
+        allColumns.add(ColumnDefinition.ofInt("Num").withPartitioning());
         allColumns.addAll(table1.getDefinition().getColumns());
         final TableDefinition partitionedDefinition = TableDefinition.of(allColumns);
 
@@ -676,7 +693,7 @@ public class TestParquetTools {
         // to know whenever serialization changes in any way.
         // For example, this test can fail when we upgrade the parquet version simply because the "createdBy" field
         // captures this version.
-        assertEquals("19ee4c6dda4c96d64d95786ae2bfad4aaa557c41bb49103e228a9ce05fbce009", sha256sum(file.toPath()));
+        assertEquals("47c2bad907b6ae3f7ed86be40524b61bbb6021938dfe34aad9c9d16a90773264", sha256sum(file.toPath()));
 
         // This test is a bit circular; but assuming we trust our reading code, we should have relative confidence that
         // we are writing it down correctly if we can read it correctly.

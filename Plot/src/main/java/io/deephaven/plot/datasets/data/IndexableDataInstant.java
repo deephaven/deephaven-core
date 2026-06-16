@@ -5,8 +5,9 @@ package io.deephaven.plot.datasets.data;
 
 import io.deephaven.plot.errors.PlotInfo;
 import io.deephaven.plot.util.ArgumentValidations;
-import gnu.trove.map.hash.TLongObjectHashMap;
 import io.deephaven.time.DateTimeUtils;
+import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
+import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 
 import java.time.Instant;
 
@@ -20,7 +21,7 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
 public class IndexableDataInstant extends IndexableData<Instant> {
     private static final long serialVersionUID = 8122162323328323447L;
     private final long[] data;
-    private final TLongObjectHashMap<Instant> instantMap = new TLongObjectHashMap<>();
+    private final Long2ObjectMap<Instant> instantMap = new Long2ObjectOpenHashMap<>();
 
     /**
      * Creates an IndexableDataInstant instance.

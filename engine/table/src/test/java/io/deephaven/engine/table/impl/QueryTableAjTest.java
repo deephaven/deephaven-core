@@ -26,7 +26,7 @@ import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.SafeCloseable;
-import gnu.trove.list.array.TIntArrayList;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
 import io.deephaven.util.type.ArrayTypeUtils;
 import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
@@ -1433,8 +1433,8 @@ public class QueryTableAjTest {
     private void checkAjResult(Table leftTable, Table rightTable, Table result, boolean reverse, boolean noexact) {
         leftTable = leftTable.withAttributes(Map.of(BaseTable.TEST_SOURCE_TABLE_ATTRIBUTE, true));
 
-        final TIntArrayList expectedStamp = new TIntArrayList();
-        final TIntArrayList expectedSentinel = new TIntArrayList();
+        final IntArrayList expectedStamp = new IntArrayList();
+        final IntArrayList expectedSentinel = new IntArrayList();
 
         final int[] leftStampArray = ColumnVectors.ofInt(leftTable, "LeftStamp").toArray();
         final int[] rightStampArray = rightTable == null
@@ -1505,8 +1505,8 @@ public class QueryTableAjTest {
 
         QueryScope.addParam("__rightStampExpected", expectedStamp);
         QueryScope.addParam("__rightSentinelExpected", expectedSentinel);
-        final Table expected = leftTable.update("RightStamp=__rightStampExpected.get(i)",
-                "RightSentinel=__rightSentinelExpected.get(i)");
+        final Table expected = leftTable.update("RightStamp=__rightStampExpected.getInt(i)",
+                "RightSentinel=__rightSentinelExpected.getInt(i)");
 
         if (RefreshingTableTestCase.printTableUpdates) {
             System.out.println("Left:");

@@ -4,5 +4,13 @@
 package io.deephaven.engine.rowset;
 
 public interface WritableRowSet extends RowSet {
-    WritableRowSet shift(long shiftAmount);
+    void insert(long key);
+    void insert(RowSet rowSet);
+
+    void shiftInPlace(long shiftAmount);
+
+    void retain(RowSet rowSetToIntersect);
+
+    void removeRange(long startKey, long endKey);
+    void remove(RowSet removed);
 }

@@ -7,30 +7,30 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.select.setinclusion;
 
-import gnu.trove.iterator.TShortIterator;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.util.type.TypeUtils;
-import gnu.trove.set.TShortSet;
-import gnu.trove.set.hash.TShortHashSet;
+import it.unimi.dsi.fastutil.shorts.ShortIterator;
+import it.unimi.dsi.fastutil.shorts.ShortOpenHashSet;
+import it.unimi.dsi.fastutil.shorts.ShortSet;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
 
 public class ShortSetInclusionKernel implements SetInclusionKernel {
 
-    private final TShortSet liveValues;
+    private final ShortSet liveValues;
     private final boolean inclusion;
 
     ShortSetInclusionKernel(@NotNull final Collection<Object> liveValues, final boolean inclusion) {
-        this.liveValues = new TShortHashSet(liveValues.size());
+        this.liveValues = new ShortOpenHashSet(liveValues.size());
         liveValues.forEach(x -> this.liveValues.add(TypeUtils.unbox((Short) x)));
         this.inclusion = inclusion;
     }
 
     ShortSetInclusionKernel(final boolean inclusion) {
-        this.liveValues = new TShortHashSet();
+        this.liveValues = new ShortOpenHashSet();
         this.inclusion = inclusion;
     }
 
@@ -51,9 +51,9 @@ public class ShortSetInclusionKernel implements SetInclusionKernel {
 
     private static final class Iterator implements java.util.Iterator<Object> {
 
-        private final TShortIterator inner;
+        private final ShortIterator inner;
 
-        private Iterator(@NotNull final TShortIterator inner) {
+        private Iterator(@NotNull final ShortIterator inner) {
             this.inner = inner;
         }
 
@@ -64,7 +64,7 @@ public class ShortSetInclusionKernel implements SetInclusionKernel {
 
         @Override
         public Short next() {
-            return TypeUtils.box(inner.next());
+            return TypeUtils.box(inner.nextShort());
         }
     }
 

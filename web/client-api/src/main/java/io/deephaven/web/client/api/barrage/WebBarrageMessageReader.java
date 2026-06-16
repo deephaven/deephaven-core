@@ -12,13 +12,12 @@ import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.extensions.barrage.BarrageOptions;
-import io.deephaven.extensions.barrage.BarrageTypeInfo;
 import io.deephaven.extensions.barrage.chunk.ChunkWriter;
 import io.deephaven.extensions.barrage.chunk.ChunkReader;
 import io.deephaven.extensions.barrage.util.FlatBufferIteratorAdapter;
 import io.deephaven.io.streams.ByteBufferInputStream;
-import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.FlightData;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
+import io.deephaven.web.client.api.barrage.data.BarrageColumnType;
 import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.shared.data.RangeSet;
 import io.deephaven.web.shared.data.ShiftedRange;
@@ -27,7 +26,7 @@ import org.apache.arrow.flatbuf.Message;
 import org.apache.arrow.flatbuf.MessageHeader;
 import org.apache.arrow.flatbuf.RecordBatch;
 import org.apache.arrow.flatbuf.Schema;
-import org.gwtproject.nio.TypedArrayHelper;
+import org.apache.arrow.flight.impl.Flight;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -59,13 +58,11 @@ public class WebBarrageMessageReader {
 
     public WebBarrageMessage parseFrom(
             final BarrageOptions options,
-            Class<?>[] columnTypes,
-            Class<?>[] componentTypes,
-            FlightData flightData) throws IOException {
-        ByteBuffer headerAsBB = TypedArrayHelper.wrap(flightData.getDataHeader_asU8());
+            Flight.FlightData flightData) throws IOException {
+        ByteBuffer headerAsBB = flightData.getDataHeader().asReadOnlyByteBuffer();
         Message header = headerAsBB.hasRemaining() ? Message.getRootAsMessage(headerAsBB) : null;
 
-        ByteBuffer msgAsBB = TypedArrayHelper.wrap(flightData.getAppMetadata_asU8());
+        ByteBuffer msgAsBB = flightData.getAppMetadata().asReadOnlyByteBuffer();
         if (msgAsBB.hasRemaining()) {
             BarrageMessageWrapper wrapper =
                     BarrageMessageWrapper.getRootAsBarrageMessageWrapper(msgAsBB);
@@ -111,7 +108,7 @@ public class WebBarrageMessageReader {
 
                 final ByteBuffer rowsIncluded = metadata.addedRowsIncludedAsByteBuffer();
                 msg.rowsIncluded = rowsIncluded != null ? extractIndex(rowsIncluded) : msg.rowsAdded;
-                msg.addColumnData = new WebBarrageMessage.AddColumnData[columnTypes.length];
+                msg.addColumnData = new WebBarrageMessage.AddColumnData[readers.size()];
                 for (int ci = 0; ci < msg.addColumnData.length; ++ci) {
                     msg.addColumnData[ci] = new WebBarrageMessage.AddColumnData();
                     // msg.addColumnData[ci].type = columnTypes[ci];
@@ -157,15 +154,14 @@ public class WebBarrageMessageReader {
             header.header(schema);
             for (int i = 0; i < schema.fieldsLength(); i++) {
                 Field field = schema.fields(i);
-                readers.add(chunkReaderFactory.newReader(
-                        BarrageTypeInfo.make(columnTypes[i], componentTypes[i], field), options));
+                BarrageColumnType barrageColumnType = BarrageColumnType.fromArrowField(field);
+                readers.add(chunkReaderFactory.newReader(barrageColumnType.typeInfo(), options));
             }
             return null;
         }
         if (headerType != MessageHeader.RecordBatch) {
             throw new IllegalStateException("Only know how to decode Schema/RecordBatch messages");
         }
-
 
         // throw an error when no app metadata (snapshots now provide by default)
         if (msg == null) {
@@ -175,7 +171,7 @@ public class WebBarrageMessageReader {
 
         final RecordBatch batch = (RecordBatch) header.header(new RecordBatch());
         msg.length = batch.length();
-        ByteBuffer body = TypedArrayHelper.wrap(flightData.getDataBody_asU8());
+        ByteBuffer body = flightData.getDataBody().asReadOnlyByteBuffer();
         final LittleEndianDataInputStream ois =
                 new LittleEndianDataInputStream(new ByteBufferInputStream(body));
         final Iterator<ChunkWriter.FieldNodeInfo> fieldNodeIter =

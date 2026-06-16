@@ -72,9 +72,6 @@ The dropdown list expects unique values for the column source. You can create a 
 
 The Linker feature in Deephaven enables you to interactively filter the content in one table based on the content selected in another table. The objects must first be "linked" with each other, with one table as the source and one or more as the target. When a cell in the source table is double-clicked, the respective columns in the target table are filtered to that value.
 
-> [!NOTE]
-> The default (and only) operation is an equals filter.
-
 When you select the **Linker** tool from the **Controls** menu, the following instructions will appear in Deephaven:
 
 ![The Linker panel](../../assets/how-to/linker1.png)
@@ -82,6 +79,10 @@ When you select the **Linker** tool from the **Controls** menu, the following in
 After you click a column source, drag the arrow cursor to your desired target:
 
 ![Drag the arrow cursor from the column source to the target](../../assets/how-to/linker2.png)
+
+Expand the menu for filter options:
+
+![The expanded filter options menu](../../assets/how-to/ui/linker5.png)
 
 Click **Done** to save your changes.
 
@@ -132,7 +133,7 @@ Selecting either of them will add a new filter set to the dialog window:
 
 ![Once one filter is selected, an option to add more filters appears](../../assets/how-to/advanced-filters3.gif)
 
-In the example above, we added a second filter added using the **OR** option. The table filters to only those rows of data where the Instrument value contains BTC or ETH.
+In the example above, we added a second filter using the **OR** option. The table filters to only those rows of data where the Instrument value contains BTC or ETH.
 
 Click the trash can icon to the right of the filter value to remove it.
 
@@ -158,6 +159,10 @@ The upper and lower portions of the **Advanced Filter** work conjunctively - the
 Right-clicking a table cell will show the Filter By Value feature:
 
 ![The Filter By Value feature](../../assets/how-to/filter-by-value.png)
+
+You can also select multiple values to filter by:
+
+![Filtering by multiple values](../../assets/how-to/filter_by_values.gif)
 
 There are six options to filter the column based on the value of the table cell. After the first filter is applied, the context menu provides option to apply additional filters, or clear the filters.
 
@@ -191,6 +196,18 @@ Click the gear at the top right of the Filter Set Manager to return to the edito
 The **Clear All Filters** option in the **Controls** menu removes all filters of any type in the active workspace at once:
 
 ![Clear all filters via the Controls menu](../../assets/how-to/clearall.png)
+
+## Advanced Settings
+
+Advanced filter settings can be found in the **Table Options** menu.
+
+![The Advanced Settings options menu](../../assets/how-to/ui/advanced_settings.png)
+
+Two options are available:
+
+- **Control filters clear existing table filters** - Control filters are applied by a control, such as an input filter or dropdown filter. Setting this button to "On" will allow control filters to clear / override any filters previously applied.
+
+- **Inbound filters clear existing table filters** - Inbound filters are applied to a table by the Linker tool. Setting this button to "On" will allow inbound filters to clear / override any filters previously applied.
 
 ## Related documentation
 

@@ -303,4 +303,3 @@ public class DoubleSsaSsaStamp implements SsaSsaStamp {
         return doComparison(lhs, rhs) <= 0;
     }
 }
-
