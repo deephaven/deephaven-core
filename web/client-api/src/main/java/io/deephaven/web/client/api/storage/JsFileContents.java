@@ -36,7 +36,8 @@ public class JsFileContents {
     /**
      * Creates an instance from text.
      *
-     * @param text One or more string parts to combine into a <a href="https://developer.mozilla.org/en-US/docs/Web/API/Blob">Blob</a>.
+     * @param text One or more string parts to combine into a
+     *        <a href="https://developer.mozilla.org/en-US/docs/Web/API/Blob">Blob</a>.
      * @return A {@link JsFileContents} instance containing the provided data.
      */
     public static JsFileContents text(String... text) {
@@ -44,9 +45,12 @@ public class JsFileContents {
     }
 
     /**
-     * Creates an instance from one or more <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer">ArrayBuffer</a> values.
+     * Creates an instance from one or more <a href=
+     * "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer">ArrayBuffer</a>
+     * values.
      *
-     * @param buffers One or more buffers to combine into a <a href="https://developer.mozilla.org/en-US/docs/Web/API/Blob">Blob</a>.
+     * @param buffers One or more buffers to combine into a
+     *        <a href="https://developer.mozilla.org/en-US/docs/Web/API/Blob">Blob</a>.
      * @return A {@link JsFileContents} instance containing the provided data.
      */
     public static JsFileContents arrayBuffers(ArrayBuffer... buffers) {
@@ -87,9 +91,11 @@ public class JsFileContents {
     }
 
     /**
-     * Reads the contents as an <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer">ArrayBuffer</a>.
+     * Reads the contents as an <a href=
+     * "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer">ArrayBuffer</a>.
      *
-     * @return A promise that resolves to the file contents as an <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer">ArrayBuffer</a>.
+     * @return A promise that resolves to the file contents as an <a href=
+     *         "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer">ArrayBuffer</a>.
      */
     @JsMethod
     public Promise<ArrayBuffer> arrayBuffer() {
