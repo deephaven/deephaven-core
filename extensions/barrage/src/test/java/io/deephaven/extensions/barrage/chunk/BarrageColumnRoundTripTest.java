@@ -1205,14 +1205,14 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
     }
 
     /**
-     * setRunEnd's default branch (non-Short/Int/Long run_ends chunk) must throw IllegalStateException.
+     * runEndAdder's default branch (non-Short/Int/Long run_ends chunk) must throw IllegalStateException.
      */
-    public void testSetRunEndDefaultThrows() {
+    public void testRunEndAdderDefaultThrows() {
         try (final WritableByteChunk<Values> byteChunk = WritableByteChunk.makeWritableChunk(1)) {
-            byteChunk.setSize(1);
+            byteChunk.setSize(0);
             try {
-                RunEndEncodedChunkWriter.setRunEnd(byteChunk, 0, 1);
-                fail("Expected IllegalStateException from setRunEnd with non-integer chunk type");
+                BarrageRunKernel.runEndAdder(byteChunk);
+                fail("Expected IllegalStateException from runEndAdder with non-integer chunk type");
             } catch (final IllegalStateException e) {
                 // expected
             }

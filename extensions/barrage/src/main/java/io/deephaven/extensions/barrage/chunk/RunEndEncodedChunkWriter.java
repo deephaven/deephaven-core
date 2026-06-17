@@ -7,19 +7,16 @@ import com.google.rpc.Code;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.ObjectChunk;
-import io.deephaven.chunk.WritableBooleanChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.WritableShortChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.chunk.util.hashing.ChunkEquals;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.extensions.barrage.BarrageOptions;
 import io.deephaven.proto.util.Exceptions;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
-import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
@@ -50,6 +47,7 @@ public class RunEndEncodedChunkWriter extends BaseChunkWriter<Chunk<Values>> {
     private final ChunkWriter<Chunk<Values>> valuesWriter;
     private final ChunkType runEndsChunkType;
     private final ChunkType valuesChunkType;
+    private final BarrageRunKernel runKernel;
 
     public RunEndEncodedChunkWriter(
             @NotNull final ChunkWriter<Chunk<Values>> runEndsWriter,
@@ -62,6 +60,7 @@ public class RunEndEncodedChunkWriter extends BaseChunkWriter<Chunk<Values>> {
         this.valuesWriter = valuesWriter;
         this.runEndsChunkType = runEndsChunkType;
         this.valuesChunkType = valuesChunkType;
+        this.runKernel = BarrageRunKernel.makeBarrageRunKernel(valuesChunkType);
     }
 
     @Override
@@ -91,9 +90,6 @@ public class RunEndEncodedChunkWriter extends BaseChunkWriter<Chunk<Values>> {
     private class RunEndEncodedChunkInputStream extends BaseChunkInputStream<ChunkWriter.Context> {
         private int cachedSize = -1;
 
-        // temp dense projection — owned and closed by this stream (null when no projection needed)
-        @Nullable
-        private final WritableChunk<Values> denseValues;
         // child contexts and drainable columns — owned and closed by this stream
         private final ChunkWriter.Context runEndsCtx;
         private final ChunkWriter.Context valuesCtx;
@@ -108,9 +104,8 @@ public class RunEndEncodedChunkWriter extends BaseChunkWriter<Chunk<Values>> {
 
             final int logicalSize = subset.intSize(DEBUG_NAME);
 
-            // Fast path for empty subset: no projection or run detection needed.
+            // Fast path for empty subset.
             if (logicalSize == 0) {
-                this.denseValues = null;
                 // noinspection unchecked
                 final WritableChunk<Values> emptyRunEnds = (WritableChunk<Values>) makeRunEndsChunk(0);
                 final WritableChunk<Values> emptyValues = valuesChunkType.makeWritableChunk(0);
@@ -124,65 +119,12 @@ public class RunEndEncodedChunkWriter extends BaseChunkWriter<Chunk<Values>> {
             // Validate: the last run_end value equals logicalSize, so logicalSize must fit in the index type.
             checkRunEndsOverflow(logicalSize, runEndsChunkType);
 
-            // Determine the dense source chunk for run detection.
-            final WritableChunk<Values> tempDense;
-            final Chunk<Values> srcForRuns;
-            if (subset.size() == context.size()) {
-                // Use the full source chunk directly — no projection needed.
-                tempDense = null;
-                srcForRuns = context.getChunk();
-            } else {
-                // Project the subset into a contiguous dense temp chunk.
-                tempDense = valuesChunkType.makeWritableChunk(logicalSize);
-                tempDense.setSize(logicalSize);
-                final MutableInt destPos = new MutableInt(0);
-                subset.forAllRowKeyRanges((start, end) -> {
-                    final int rangeLength = (int) (end - start + 1);
-                    tempDense.copyFromChunk(context.getChunk(), (int) start, destPos.get(), rangeLength);
-                    destPos.add(rangeLength);
-                });
-                srcForRuns = tempDense;
-            }
-            this.denseValues = tempDense;
-
-            // Detect run boundaries using typed element-wise equality (no boxing).
-            final WritableChunk<Values> tempRunEnds;
-            final WritableChunk<Values> tempRunValues;
-            try (final WritableBooleanChunk<Values> isEqualNext =
-                    WritableBooleanChunk.makeWritableChunk(logicalSize - 1)) {
-                // NB: ChunkEquals delegates the Comparisons class, so will handle off-nominal
-                // values properly.
-                ChunkEquals.makeEqual(valuesChunkType).equalNext(srcForRuns, isEqualNext);
-
-                // Count runs: starts at 1, increments at each inequality boundary.
-                int numRuns = 1;
-                for (int i = 0; i < isEqualNext.size(); ++i) {
-                    if (!isEqualNext.get(i)) {
-                        ++numRuns;
-                    }
-                }
-
-                // noinspection unchecked
-                tempRunEnds = (WritableChunk<Values>) makeRunEndsChunk(numRuns);
-                tempRunValues = valuesChunkType.makeWritableChunk(numRuns);
-
-                // Fill run_ends (cumulative 1-based end indices) and per-run value representatives.
-                int runIndex = 0;
-                int runStart = 0;
-                for (int i = 0; i < isEqualNext.size(); ++i) {
-                    if (!isEqualNext.get(i)) {
-                        setRunEnd(tempRunEnds, runIndex, i + 1);
-                        tempRunValues.copyFromChunk(srcForRuns, runStart, runIndex, 1);
-                        ++runIndex;
-                        runStart = i + 1;
-                    }
-                }
-                // Last run: ends at logicalSize.
-                setRunEnd(tempRunEnds, runIndex, logicalSize);
-                tempRunValues.copyFromChunk(srcForRuns, runStart, runIndex, 1);
-                tempRunEnds.setSize(numRuns);
-                tempRunValues.setSize(numRuns);
-            }
+            // Single-pass run detection directly from the source chunk over the subset.
+            // Pre-allocate worst-case capacity; the kernel resets sizes to zero and uses add().
+            // noinspection unchecked
+            final WritableChunk<Values> tempRunEnds = (WritableChunk<Values>) makeRunEndsChunk(logicalSize);
+            final WritableChunk<Values> tempRunValues = valuesChunkType.makeWritableChunk(logicalSize);
+            runKernel.computeRuns(context.getChunk(), subset, tempRunEnds, tempRunValues);
 
             // Create child contexts (contexts own the chunks and close them on ref-count zero).
             this.runEndsCtx = runEndsWriter.makeContext(tempRunEnds, 0);
@@ -233,9 +175,6 @@ public class RunEndEncodedChunkWriter extends BaseChunkWriter<Chunk<Values>> {
         @Override
         public void close() throws IOException {
             super.close();
-            if (denseValues != null) {
-                denseValues.close();
-            }
             runEndsColumn.close();
             valuesColumn.close();
             runEndsCtx.close();
@@ -278,24 +217,4 @@ public class RunEndEncodedChunkWriter extends BaseChunkWriter<Chunk<Values>> {
         }
     }
 
-    /**
-     * Set run_ends[r] = value, dispatching on the underlying chunk type.
-     */
-    @VisibleForTesting
-    static void setRunEnd(
-            final WritableChunk<Values> runEnds, final int r, final int value) {
-        switch (runEnds.getChunkType()) {
-            case Short:
-                runEnds.asWritableShortChunk().set(r, (short) value);
-                break;
-            case Int:
-                runEnds.asWritableIntChunk().set(r, value);
-                break;
-            case Long:
-                runEnds.asWritableLongChunk().set(r, value);
-                break;
-            default:
-                throw new IllegalStateException("Unexpected run_ends ChunkType: " + runEnds.getChunkType());
-        }
-    }
 }

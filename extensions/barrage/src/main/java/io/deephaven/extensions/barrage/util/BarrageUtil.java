@@ -1303,29 +1303,31 @@ public class BarrageUtil {
             }
         }
         // For every column, fill a chunk with the sampled values and count the runs.
-        try (final WritableRowSet sampleRowSet = builder.build();
-                final WritableBooleanChunk<Values> isEqualNext =
-                        WritableBooleanChunk.makeWritableChunk(sampleSize - 1)) {
-            table.getColumnSourceMap().forEach((name, source) -> {
-                if (encodings.containsKey(name)) {
-                    return;
-                }
-                try (final ColumnSource.GetContext context = source.makeGetContext(sampleSize)) {
-                    final Chunk<? extends Values> chunk = usePrev
-                            ? source.getPrevChunk(context, sampleRowSet)
-                            : source.getChunk(context, sampleRowSet);
-                    ChunkEquals.makeEqual(source.getChunkType()).equalNext(chunk, isEqualNext);
-                    int numRuns = 1;
-                    for (int i = 0; i < isEqualNext.size(); ++i) {
-                        if (!isEqualNext.get(i)) {
-                            ++numRuns;
+        try (final WritableRowSet sampleRowSet = builder.build()) {
+            final int actualSampleSize = sampleRowSet.intSize();
+            try (final WritableBooleanChunk<Values> isEqualNext =
+                    WritableBooleanChunk.makeWritableChunk(actualSampleSize - 1)) {
+                table.getColumnSourceMap().forEach((name, source) -> {
+                    if (encodings.containsKey(name)) {
+                        return;
+                    }
+                    try (final ColumnSource.GetContext context = source.makeGetContext(actualSampleSize)) {
+                        final Chunk<? extends Values> chunk = usePrev
+                                ? source.getPrevChunk(context, sampleRowSet)
+                                : source.getChunk(context, sampleRowSet);
+                        ChunkEquals.makeEqual(source.getChunkType()).equalNext(chunk, isEqualNext);
+                        int numRuns = 1;
+                        for (int i = 0; i < isEqualNext.size(); ++i) {
+                            if (!isEqualNext.get(i)) {
+                                ++numRuns;
+                            }
+                        }
+                        if ((double) numRuns / chunk.size() < REE_RUN_RATIO_THRESHOLD) {
+                            encodings.put(name, ColumnEncoding.RUN_END_ENCODED);
                         }
                     }
-                    if ((double) numRuns / chunk.size() < REE_RUN_RATIO_THRESHOLD) {
-                        encodings.put(name, ColumnEncoding.RUN_END_ENCODED);
-                    }
-                }
-            });
+                });
+            }
         }
         return true;
     }
