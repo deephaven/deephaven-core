@@ -23,12 +23,13 @@ import io.deephaven.chunk.WritableBooleanChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.util.hashing.ChunkEquals;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.GridAttributes;
 import io.deephaven.engine.table.Table;
@@ -38,6 +39,7 @@ import io.deephaven.engine.table.impl.ComparatorRegistry;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
+import io.deephaven.engine.table.impl.NotificationStepSource;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.extensions.barrage.BarrageMessageWriter;
@@ -160,7 +162,10 @@ public class BarrageUtil {
     private static final double REE_RUN_RATIO_THRESHOLD =
             Configuration.getInstance().getDoubleWithDefault("BarrageUtil.ree.runRatioThreshold", 0.5);
 
-    /** Minimum table row count before sampling is attempted; too few rows make the estimate noisy. */
+    /**
+     * Minimum table row count before sampling is attempted; too few rows make the estimate noisy. Must be strictly less
+     * than {@link #REE_SAMPLE_SIZE}.
+     */
     static final int REE_MIN_SAMPLE_SIZE =
             Configuration.getInstance().getIntegerWithDefault("BarrageUtil.ree.minSampleSize", 16);
 
@@ -1247,33 +1252,6 @@ public class BarrageUtil {
      * Samples {@code sampleSize} rows from {@code rowSet} and returns the ratio of estimated run count to rows sampled.
      * A ratio near 0 means the column is highly repetitive; 1.0 means every consecutive pair differs.
      */
-    private static double estimateRunRatio(
-            @NotNull final ColumnSource<?> source,
-            @NotNull final RowSet rowSet,
-            final int sampleSize) {
-        final int n = (int) Math.min(sampleSize, rowSet.size());
-        if (n < 2) {
-            return 1.0;
-        }
-        // read 64 samples of ~16 samples == 1000 rows distributed
-
-
-        try (final RowSet sampleRows = rowSet.subSetByPositionRange(0, n);
-                final ColumnSource.GetContext context = source.makeGetContext(n);
-                final WritableBooleanChunk<Values> isEqualNext =
-                        WritableBooleanChunk.makeWritableChunk(n - 1)) {
-            final Chunk<? extends Values> chunk = source.getChunk(context, sampleRows);
-            ChunkEquals.makeEqual(source.getChunkType()).equalNext(chunk, isEqualNext);
-            int numRuns = 1;
-            for (int i = 0; i < isEqualNext.size(); ++i) {
-                if (!isEqualNext.get(i)) {
-                    ++numRuns;
-                }
-            }
-            return (double) numRuns / n;
-        }
-    }
-
     static Map<String, ColumnEncoding> inferEncodings(@NotNull final Table table) {
         final Map<String, ColumnEncoding> encodings = new HashMap<>();
 
@@ -1292,26 +1270,64 @@ public class BarrageUtil {
             }
         }
 
-        /// GO AHEAD AND snapshot (will let us know usePrev = /true/false for accurate data)
+        // Sample the table to detect columns with repetitive data patterns.
+        if (REE_SAMPLING_ENABLED) {
+            ConstructSnapshot.callDataSnapshotFunction("BarrageUtil.inferEncodings",
+                    ConstructSnapshot.makeSnapshotControl(false, table.isRefreshing(),
+                            (NotificationStepSource) table),
+                    (usePrev, beforeClockValue) -> sampleColumnsForREE(table, encodings, usePrev));
+        }
 
-        // Sample the table to detect columns with repetitive data patterns. Refreshing tables are only sampled when the
-        // update-graph lock is already held by the current thread.
-        final UpdateGraph updateGraph = table.getUpdateGraph();
-        final boolean lockHeld = updateGraph.sharedLock().isHeldByCurrentThread()
-                || updateGraph.exclusiveLock().isHeldByCurrentThread();
-        if (REE_SAMPLING_ENABLED && (!table.isRefreshing() || lockHeld) && table.size() >= REE_MIN_SAMPLE_SIZE) {
-            final RowSet rowSet = table.getRowSet();
+        return encodings;
+    }
+
+    private static boolean sampleColumnsForREE(
+            @NotNull final Table table,
+            @NotNull final Map<String, ColumnEncoding> encodings,
+            final boolean usePrev) {
+        final RowSet rowSetToUse = usePrev ? table.getRowSet().prev() : table.getRowSet();
+        if (rowSetToUse.size() < REE_MIN_SAMPLE_SIZE) {
+            return true;
+        }
+        // Build a single RowSet of REE_MIN_SAMPLE_SIZE chunks evenly distributed across the rowset.
+        final int chunkSize = (int) Math.min(REE_MIN_SAMPLE_SIZE, rowSetToUse.size());
+        final int sampleSize = (int) Math.min(REE_SAMPLE_SIZE, rowSetToUse.size());
+        final int numChunks = sampleSize / chunkSize;
+        final int stride = (int) rowSetToUse.size() / numChunks;
+        final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
+        try (final RowSequence.Iterator it = rowSetToUse.getRowSequenceIterator()) {
+            while (it.hasMore()) {
+                final RowSequence rows = it.getNextRowSequenceWithLength(chunkSize);
+                builder.appendRowSequence(rows);
+                it.getNextRowSequenceWithLength(stride - chunkSize);
+            }
+        }
+        // For every column, fill a chunk with the sampled values and count the runs.
+        try (final WritableRowSet sampleRowSet = builder.build();
+                final WritableBooleanChunk<Values> isEqualNext =
+                        WritableBooleanChunk.makeWritableChunk(sampleSize - 1)) {
             table.getColumnSourceMap().forEach((name, source) -> {
                 if (encodings.containsKey(name)) {
                     return;
                 }
-                if (estimateRunRatio(source, rowSet, REE_SAMPLE_SIZE) < REE_RUN_RATIO_THRESHOLD) {
-                    encodings.put(name, ColumnEncoding.RUN_END_ENCODED);
+                try (final ColumnSource.GetContext context = source.makeGetContext(sampleSize)) {
+                    final Chunk<? extends Values> chunk = usePrev
+                            ? source.getPrevChunk(context, sampleRowSet)
+                            : source.getChunk(context, sampleRowSet);
+                    ChunkEquals.makeEqual(source.getChunkType()).equalNext(chunk, isEqualNext);
+                    int numRuns = 1;
+                    for (int i = 0; i < isEqualNext.size(); ++i) {
+                        if (!isEqualNext.get(i)) {
+                            ++numRuns;
+                        }
+                    }
+                    if ((double) numRuns / chunk.size() < REE_RUN_RATIO_THRESHOLD) {
+                        encodings.put(name, ColumnEncoding.RUN_END_ENCODED);
+                    }
                 }
             });
         }
-
-        return encodings;
+        return true;
     }
 
     public static Field arrowFieldFor(
