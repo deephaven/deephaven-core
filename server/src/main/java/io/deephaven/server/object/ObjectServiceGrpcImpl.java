@@ -163,7 +163,7 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
 
                     ObjectType.MessageStream clientConnection = new PluginMessageSender(responseObserver, session);
                     if (shouldTransformReferences(objectType)) {
-                        clientConnection = new AuthorizingMessageStream(clientConnection);
+                        clientConnection = new AuthorizingMessageStream(clientConnection, objectType.name());
                     }
                     messageStream = objectType.clientConnection(o, clientConnection);
                 });
@@ -326,7 +326,7 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
                         ObjectType.MessageStream connection =
                                 new PluginMessageSender(wrappedResponseObserver, session);
                         if (shouldTransformReferences(objectTypeInstance)) {
-                            connection = new AuthorizingMessageStream(connection);
+                            connection = new AuthorizingMessageStream(connection, objectTypeInstance.name());
                         }
                         objectTypeInstance.clientConnection(o, connection);
 
@@ -431,9 +431,11 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
      */
     private final class AuthorizingMessageStream implements ObjectType.MessageStream {
         private final ObjectType.MessageStream delegate;
+        private final String name;
 
-        AuthorizingMessageStream(ObjectType.MessageStream delegate) {
+        AuthorizingMessageStream(ObjectType.MessageStream delegate, String name) {
             this.delegate = delegate;
+            this.name = name;
         }
 
         @Override
@@ -453,7 +455,7 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
                             .append(": class=").append(reference.getClass().getCanonicalName())
                             .append(", index=").append(ii).endl();
                     transformed[ii] = new FailedAuthorization(reference, Exceptions.statusRuntimeException(
-                            Code.PERMISSION_DENIED, "Not authorized to access a reference returned by the plugin"));
+                            Code.PERMISSION_DENIED, "Not authorized to access a reference returned by the " + name + " plugin"));
                 } else {
                     transformed[ii] = authorized;
                 }
