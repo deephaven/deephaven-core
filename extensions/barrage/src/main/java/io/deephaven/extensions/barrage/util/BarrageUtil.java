@@ -500,50 +500,17 @@ public class BarrageUtil {
     }
 
     public static Schema schemaFromTable(@NotNull final Table table) {
+        return schemaForTable(DEFAULT_SNAPSHOT_OPTIONS, table);
+    }
+
+    private static Schema schemaForTable(
+            @NotNull final BarrageOptions options,
+            @NotNull final Table table) {
         if (table.hasAttribute(Table.BARRAGE_SCHEMA_ATTRIBUTE)) {
-            return makeSchema(DEFAULT_SNAPSHOT_OPTIONS, table.getDefinition(), table.getAttributes(), table.isFlat());
+            return makeSchema(options, table.getDefinition(), table.getAttributes(), table.isFlat());
         }
-        return makeSchema(DEFAULT_SNAPSHOT_OPTIONS, table.getDefinition(), table.getAttributes(), table.isFlat(),
+        return makeSchema(options, table.getDefinition(), table.getAttributes(), table.isFlat(),
                 inferEncodings(table));
-    }
-
-    public static Schema toSchema(final TableDefinition definition, Map<String, Object> attributes, boolean isFlat) {
-        return makeSchema(DEFAULT_SNAPSHOT_OPTIONS, definition, attributes, isFlat);
-    }
-
-    /**
-     * Returns {@code true} when the given Arrow SDK field is Run-End Encoded with Int16 (16-bit signed) run_ends. Used
-     * to detect whether any column's chunk writer is constrained to batches of at most {@link Short#MAX_VALUE} rows.
-     */
-    public static boolean isReeInt16Field(final Field field) {
-        if (!(field.getType() instanceof ArrowType.RunEndEncoded)) {
-            return false;
-        }
-        final List<Field> children = field.getChildren();
-        if (children.isEmpty()) {
-            return false;
-        }
-        final Field runEnds = children.get(0);
-        return (runEnds.getType() instanceof ArrowType.Int)
-                && ((ArrowType.Int) runEnds.getType()).getBitWidth() == 16;
-    }
-
-    private static Field toReeField(final Field field) {
-        if (field.getType().getTypeID() == ArrowType.ArrowTypeID.RunEndEncoded) {
-            return field;
-        }
-        final Field runEndsField = new Field(
-                "run_ends",
-                new FieldType(false, Types.MinorType.INT.getType(), null),
-                Collections.emptyList());
-        final Field valuesField = new Field(
-                "values",
-                new FieldType(field.isNullable(), field.getType(), field.getDictionary(), Collections.emptyMap()),
-                field.getChildren());
-        return new Field(
-                field.getName(),
-                new FieldType(false, new ArrowType.RunEndEncoded(), null, field.getMetadata()),
-                List.of(runEndsField, valuesField));
     }
 
     public static ByteString schemaBytes(@NotNull final ToIntFunction<FlatBufferBuilder> schemaPayloadWriter) {
@@ -563,11 +530,7 @@ public class BarrageUtil {
             @NotNull final FlatBufferBuilder builder,
             @NotNull final BarrageOptions options,
             @NotNull final Table table) {
-        if (table.hasAttribute(Table.BARRAGE_SCHEMA_ATTRIBUTE)) {
-            return makeSchema(options, table.getDefinition(), table.getAttributes(), table.isFlat()).getSchema(builder);
-        }
-        return makeSchema(options, table.getDefinition(), table.getAttributes(), table.isFlat(),
-                inferEncodings(table)).getSchema(builder);
+        return schemaForTable(options, table).getSchema(builder);
     }
 
     public static Schema makeSchema(
@@ -709,7 +672,6 @@ public class BarrageUtil {
                     .collect(Collectors.toSet());
         }
 
-        final Schema targetSchema;
         final Set<String> formatColumns = new HashSet<>();
         final Map<String, Field> fieldMap = new LinkedHashMap<>();
 
@@ -807,7 +769,7 @@ public class BarrageUtil {
         };
 
         if (wireFormatSpecified) {
-            targetSchema = (Schema) attributes.get(Table.BARRAGE_SCHEMA_ATTRIBUTE);
+            final Schema targetSchema = (Schema) attributes.get(Table.BARRAGE_SCHEMA_ATTRIBUTE);
             targetSchema.getFields().forEach(field -> fieldMap.put(field.getName(), field));
 
             fieldMap.keySet().stream()
@@ -1243,6 +1205,41 @@ public class BarrageUtil {
             return isTypeNativelySupported(typ.getComponentType());
         }
         return false;
+    }
+
+    /**
+     * Returns {@code true} when the given Arrow SDK field is Run-End Encoded with Int16 (16-bit signed) run_ends. Used
+     * to detect whether any column's chunk writer is constrained to batches of at most {@link Short#MAX_VALUE} rows.
+     */
+    public static boolean isReeInt16Field(final Field field) {
+        if (!(field.getType() instanceof ArrowType.RunEndEncoded)) {
+            return false;
+        }
+        final List<Field> children = field.getChildren();
+        if (children.isEmpty()) {
+            return false;
+        }
+        final Field runEnds = children.get(0);
+        return (runEnds.getType() instanceof ArrowType.Int)
+                && ((ArrowType.Int) runEnds.getType()).getBitWidth() == 16;
+    }
+
+    private static Field toReeField(final Field field) {
+        if (field.getType().getTypeID() == ArrowType.ArrowTypeID.RunEndEncoded) {
+            return field;
+        }
+        final Field runEndsField = new Field(
+                "run_ends",
+                new FieldType(false, Types.MinorType.INT.getType(), null),
+                Collections.emptyList());
+        final Field valuesField = new Field(
+                "values",
+                new FieldType(field.isNullable(), field.getType(), field.getDictionary(), Collections.emptyMap()),
+                field.getChildren());
+        return new Field(
+                field.getName(),
+                new FieldType(false, new ArrowType.RunEndEncoded(), null, field.getMetadata()),
+                List.of(runEndsField, valuesField));
     }
 
     /**

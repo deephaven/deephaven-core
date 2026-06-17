@@ -146,7 +146,7 @@ public class FlightSqlTicketResolverTest {
     }
 
     private static void isSimilar(TableDefinition definition, Schema expected) {
-        isSimilar(BarrageUtil.toSchema(definition, Map.of(), true), expected);
+        isSimilar(BarrageUtil.makeSchema(BarrageUtil.DEFAULT_SNAPSHOT_OPTIONS, definition, Map.of(), true), expected);
     }
 
     private static void isSimilar(Schema actual, Schema expected) {

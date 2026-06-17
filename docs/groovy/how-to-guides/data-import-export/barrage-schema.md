@@ -9,7 +9,7 @@ Use this when your Deephaven column type is too generic for the intended wire ty
 
 ## How It Works
 
-1. Extract a base schema with `BarrageUtil.schemaFromTable(...)`. Manages basic type mapping for primitive types and collections of primitives. An optional `ArrowSchemaControl` can be passed to specify column encodings.
+1. Extract a base schema with `BarrageUtil.schemaFromTable(...)`. Manages basic type mapping for primitive types and collections of primitives.
 2. Replace the target field with explicit Arrow types.
 3. Attach the schema using `withAttributes(Map.of(Table.BARRAGE_SCHEMA_ATTRIBUTE, newSchema))`.
 
@@ -326,34 +326,7 @@ map_union_table_w_attributes = map_union_table.withAttributes(java.util.Map.of(T
 - `run_ends` — a non-nullable integer array of cumulative 1-based end indices, one per run. The last value always equals the logical row count.
 - `values` — the values that will be repeated in the run.
 
-A column of 1,000 rows where the same integer repeats 100 times in a row costs 10 run_end entries + 10 value entries instead of 1,000 integers. Deephaven stores the column flat (unchanged type); REE is a transport-only optimization. The `run_ends` integer width is chosen automatically based on the configured batch size. The batch size defaults to 32,767 (Short.MAX_VALUE), enabling Int16 encoding by default. You can override this via [`BarrageSnapshotOptions`](https://docs.deephaven.io/core/javadoc/io/deephaven/extensions/barrage/BarrageSnapshotOptions.html) or [`BarrageSubscriptionOptions`](https://docs.deephaven.io/core/javadoc/io/deephaven/extensions/barrage/BarrageSubscriptionOptions.html).
-
-### Using `ArrowSchemaControl` (recommended)
-
-Pass an `ArrowSchemaControl` to `schemaFromTable`. The server picks the correct `run_ends` integer width automatically and merges any auto-detected encodings.
-
-```groovy order=ree_table,ree_table_w_attributes
-import io.deephaven.engine.table.Table
-import io.deephaven.extensions.barrage.ArrowSchemaControl
-import io.deephaven.extensions.barrage.ColumnEncoding
-import io.deephaven.extensions.barrage.util.BarrageUtil
-
-ree_table = emptyTable(100).update(
-    "status = (ii % 10 < 7) ? `OPEN` : `CLOSED`",
-    "value  = (int) ii"
-)
-
-def control = ArrowSchemaControl.builder()
-    .putEncoding("status", ColumnEncoding.RUN_END_ENCODED)
-    .build()
-def new_schema = BarrageUtil.schemaFromTable(ree_table, control)
-
-ree_table_w_attributes = ree_table.withAttributes(java.util.Map.of(Table.BARRAGE_SCHEMA_ATTRIBUTE, new_schema))
-```
-
-### Using Arrow field construction
-
-Use this approach when you need explicit control over the `run_ends` integer width or want to customise the `values` child field metadata.
+A column of 1,000 rows where the same integer repeats 100 times in a row costs 10 run_end entries + 10 value entries instead of 1,000 integers. Deephaven stores the column flat (unchanged type); REE is a transport-only optimization. The `run_ends` integer width is determined by the Arrow field structure you supply via `BARRAGE_SCHEMA_ATTRIBUTE`. Use `Int32` unless you have a specific reason to use `Int16` (note that `Int16` run_ends constrain the effective batch size to at most `Short.MAX_VALUE` / 32,767 rows) per record batch). 
 
 ```groovy order=ree_table_arrow,ree_table_arrow_w_attributes
 import io.deephaven.engine.table.Table
