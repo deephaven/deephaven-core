@@ -123,10 +123,10 @@ docker compose logs -f
 You will see each call traced in the log:
 
 ```text
-deephaven-1  | [DEBUG] processValue called: x=0
-deephaven-1  | [DEBUG] processValue returning: 1
-deephaven-1  | [DEBUG] processValue called: x=1
-deephaven-1  | [DEBUG] processValue returning: 2
+deephaven-1  | [DEBUG] addOne called: x=0
+deephaven-1  | [DEBUG] addOne returning: 1
+deephaven-1  | [DEBUG] addOne called: x=1
+deephaven-1  | [DEBUG] addOne returning: 2
 ...
 ```
 
