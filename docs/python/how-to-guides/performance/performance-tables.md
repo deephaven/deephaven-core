@@ -50,7 +50,7 @@ qup = pm.query_update_performance(n)
 ```
 
 | Column Name             | Data Type | Description                                                                                                                                                    |
-|-------------------------| --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ----------------------- | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `EvaluationNumber`      | `long`    | An increasing integral value for requests made to the worker.                                                                                                  |
 | `OperationNumber`       | `int`     | An identifier for an operation within an evaluation.                                                                                                           |
 | `Ratio`                 | `double`  | The ratio of time in an update cycle spent performing calculations. `1` would mean that the entirety of the update cycle was spent performing calculations.    |
@@ -59,7 +59,7 @@ qup = pm.query_update_performance(n)
 | `IntervalEndTime`       | `Instant` | The end of the interval this row represents.                                                                                                                   |
 | `RowsPerSec`            | `long`    | The number of rows per second.                                                                                                                                 |
 | `RowsPerCPUSec`         | `long`    | The number of rows per CPU second.                                                                                                                             |
-| `RowsPerOpSec`          | `long`    | The number of rows per second spent performing the operation.                                                                                                                             |
+| `RowsPerOpSec`          | `long`    | The number of rows per second spent performing the operation.                                                                                                  |
 | `EntryDescription`      | `String`  | A textual description of the operation, generally including the name and some of the arguments.                                                                |
 | `EntryId`               | `long`    | A numeric identifier for this performance entry, which can be used to identify the same operation across cycles.                                               |
 | `EntryCallerLine`       | `String`  | The file and line number where the operation was initiated, if available.                                                                                      |

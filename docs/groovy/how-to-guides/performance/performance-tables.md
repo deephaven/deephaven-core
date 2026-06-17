@@ -49,41 +49,41 @@ import io.deephaven.engine.table.impl.util.TableLoggers
 qup = queryUpdatePerformance(n)
 ```
 
-| Column Name              | Data Type | Description                                                                                                                                                    |
-|--------------------------| --------- |----------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `EvaluationNumber`       | `long`    | An increasing integral value for requests made to the worker.                                                                                                  |
-| `OperationNumber`        | `int`     | An identifier for an operation within an evaluation.                                                                                                           |
-| `Ratio`                  | `double`  | The ratio of time in an update cycle spent performing calculations. `1` would mean that the entirety of the update cycle was spent performing calculations.    |
-| `QueryMemUsed`           | `long`    | The total memory used by a query, in KB.                                                                                                                       |
-| `QueryMemUsedPct`        | `double`  | The percentage of total memory used by the query.                                                                                                              |
-| `IntervalEndTime`        | `Instant` | The end of the interval this row represents.                                                                                                                   |
-| `RowsPerSec`             | `long`    | The number of rows per second.                                                                                                                                 |
-| `RowsPerCPUSec`          | `long`    | The number of rows per CPU second.                                                                                                                             |
-| `RowsPerOpSec`           | `long`    | The number of rows per second spent performing the operation.                                                                                                  |
-| `EntryDescription`       | `String`  | A textual description of the operation, generally including the name and some of the arguments.                                                                |
-| `EntryId`                | `long`    | A numeric identifier for this performance entry, which can be used to identify the same operation across cycles.                                               |
-| `EntryCallerLine`        | `String`  | The file and line number where the operation was initiated, if available.                                                                                      |
-| `IntervalStartTime`      | `Instant` | The beginning of the interval this row represents.                                                                                                             |
-| `UsageNanos`             | `long`    | How long, in nanoseconds, this operation took in this interval.                                                                                                |
-| `CpuNanos`               | `long`    | How long, in nanoseconds, this operation used the CPU in this interval.                                                                                        |
-| `UserCpuNanos`           | `long`    | How long, in nanoseconds, this operation used the CPU in user-space in this interval. System time can be derived by subtracting UserCpuNanos from CpuNanos.    |
-| `RowsAdded`              | `long`    | How many rows were added in this interval.                                                                                                                     |
-| `RowsRemoved`            | `long`    | How many rows were removed in this interval.                                                                                                                   |
-| `RowsModified`           | `long`    | How many rows were modified in this interval.                                                                                                                  |
-| `RowsShifted`            | `long`    | How many rows were shifted in this interval (this may not be an exact count, a sparse region may be shifted and the number of present rows is not calculated). |
-| `InvocationCount`        | `long`    | How many times this entry was executed in this interval.                                                                                                       |
-| `MinFreeMemory`          | `long`    | The minimum memory at the end of an operation.                                                                                                                 |
-| `MaxTotalMemory`         | `long`    | The maximum total memory at the end of an operation.                                                                                                           |
-| `Collections`            | `long`    | The number of garbage collections while executing this operation in this interval.                                                                             |
-| `CollectionTimeNanos`    | `long`    | The number of nanoseconds spent in the garbage collector while executing this operation in this interval.                                                      |
-| `AllocatedBytes`         | `long`    | The number of bytes allocated by this operation in this interval.                                                                                              |
-| `PoolAllocatedBytes`     | `long`    | The number of bytes allocated from pools by this operation in this interval.                                                                                   |
-| `AuthContext`            | `String`  | The authentication context used for executing this operation.                                                                                                  |
-| `UpdateGraph`            | `String`  | The name of the update graph for this entry.                                                                                                                   |
-| `IntervalDurationNanos`  | `long`    | The duration of the interval in nanoseconds.                                                                                                                   |
-| `WorkerHeapSize`         | `long`    | The size of the worker heap.                                                                                                                                   |
-| `QueryMemFree`           | `long`    | The amount of free memory in the query.                                                                                                                        |
-| `NRows`                  | `long`    | The number of rows in the query.                                                                                                                               |
+| Column Name             | Data Type | Description                                                                                                                                                    |
+| ----------------------- | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `EvaluationNumber`      | `long`    | An increasing integral value for requests made to the worker.                                                                                                  |
+| `OperationNumber`       | `int`     | An identifier for an operation within an evaluation.                                                                                                           |
+| `Ratio`                 | `double`  | The ratio of time in an update cycle spent performing calculations. `1` would mean that the entirety of the update cycle was spent performing calculations.    |
+| `QueryMemUsed`          | `long`    | The total memory used by a query, in KB.                                                                                                                       |
+| `QueryMemUsedPct`       | `double`  | The percentage of total memory used by the query.                                                                                                              |
+| `IntervalEndTime`       | `Instant` | The end of the interval this row represents.                                                                                                                   |
+| `RowsPerSec`            | `long`    | The number of rows per second.                                                                                                                                 |
+| `RowsPerCPUSec`         | `long`    | The number of rows per CPU second.                                                                                                                             |
+| `RowsPerOpSec`          | `long`    | The number of rows per second spent performing the operation.                                                                                                  |
+| `EntryDescription`      | `String`  | A textual description of the operation, generally including the name and some of the arguments.                                                                |
+| `EntryId`               | `long`    | A numeric identifier for this performance entry, which can be used to identify the same operation across cycles.                                               |
+| `EntryCallerLine`       | `String`  | The file and line number where the operation was initiated, if available.                                                                                      |
+| `IntervalStartTime`     | `Instant` | The beginning of the interval this row represents.                                                                                                             |
+| `UsageNanos`            | `long`    | How long, in nanoseconds, this operation took in this interval.                                                                                                |
+| `CpuNanos`              | `long`    | How long, in nanoseconds, this operation used the CPU in this interval.                                                                                        |
+| `UserCpuNanos`          | `long`    | How long, in nanoseconds, this operation used the CPU in user-space in this interval. System time can be derived by subtracting UserCpuNanos from CpuNanos.    |
+| `RowsAdded`             | `long`    | How many rows were added in this interval.                                                                                                                     |
+| `RowsRemoved`           | `long`    | How many rows were removed in this interval.                                                                                                                   |
+| `RowsModified`          | `long`    | How many rows were modified in this interval.                                                                                                                  |
+| `RowsShifted`           | `long`    | How many rows were shifted in this interval (this may not be an exact count, a sparse region may be shifted and the number of present rows is not calculated). |
+| `InvocationCount`       | `long`    | How many times this entry was executed in this interval.                                                                                                       |
+| `MinFreeMemory`         | `long`    | The minimum memory at the end of an operation.                                                                                                                 |
+| `MaxTotalMemory`        | `long`    | The maximum total memory at the end of an operation.                                                                                                           |
+| `Collections`           | `long`    | The number of garbage collections while executing this operation in this interval.                                                                             |
+| `CollectionTimeNanos`   | `long`    | The number of nanoseconds spent in the garbage collector while executing this operation in this interval.                                                      |
+| `AllocatedBytes`        | `long`    | The number of bytes allocated by this operation in this interval.                                                                                              |
+| `PoolAllocatedBytes`    | `long`    | The number of bytes allocated from pools by this operation in this interval.                                                                                   |
+| `AuthContext`           | `String`  | The authentication context used for executing this operation.                                                                                                  |
+| `UpdateGraph`           | `String`  | The name of the update graph for this entry.                                                                                                                   |
+| `IntervalDurationNanos` | `long`    | The duration of the interval in nanoseconds.                                                                                                                   |
+| `WorkerHeapSize`        | `long`    | The size of the worker heap.                                                                                                                                   |
+| `QueryMemFree`          | `long`    | The amount of free memory in the query.                                                                                                                        |
+| `NRows`                 | `long`    | The number of rows in the query.                                                                                                                               |
 
 ### Query Operation Performance
 
