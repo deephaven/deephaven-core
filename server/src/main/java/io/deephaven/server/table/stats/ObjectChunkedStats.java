@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CharacterChunkedStats and run "./gradlew replicateColumnStats" to regenerate
@@ -7,11 +7,8 @@
 // @formatter:off
 package io.deephaven.server.table.stats;
 
-import java.util.Set;
-import java.util.HashSet;
+import io.deephaven.util.type.ArrayTypeUtils;
 
-import gnu.trove.map.TObjectLongMap;
-import gnu.trove.map.hash.TObjectLongHashMap;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
@@ -19,9 +16,12 @@ import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.table.iterators.ObjectColumnIterator;
 import io.deephaven.engine.table.iterators.ChunkedObjectColumnIterator;
 import io.deephaven.engine.util.TableTools;
+import it.unimi.dsi.fastutil.objects.Object2LongMaps;
+import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap;
+import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
+import it.unimi.dsi.fastutil.objects.ObjectSet;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -41,9 +41,9 @@ public class ObjectChunkedStats implements ChunkedStatsKernel {
         long count = 0;
         int uniqueCount = 0;
 
-        final TObjectLongMap<Object> countValues = new TObjectLongHashMap<>();
+        final Object2LongOpenHashMap<Object> countValues = new Object2LongOpenHashMap<>();
         boolean useSet = false;
-        final Set<Object> uniqueValues = new HashSet<>();
+        final ObjectSet<Object> uniqueValues = new ObjectOpenHashSet<>();
 
         try (ObjectColumnIterator<Object> iterator =
                 new ChunkedObjectColumnIterator<>(usePrev ? columnSource.getPrevSource() : columnSource, rowSet)) {
@@ -54,7 +54,9 @@ public class ObjectChunkedStats implements ChunkedStatsKernel {
                 }
                 count++;
 
-                if (countValues.adjustOrPutValue(val, 1, 1) == 1 && ++uniqueCount > maxUniqueToCollect) {
+                // Object2LongOpenHashMap.addTo returns the previous value (defaultReturnValue() == 0 if absent).
+                // Counts start at 1 and only grow, so a 0 return means the key was absent on this call.
+                if (countValues.addTo(val, 1) == 0 && ++uniqueCount > maxUniqueToCollect) {
                     // we no longer want to track counts for these items; fall back to a Set to get at least a count
                     uniqueValues.addAll(countValues.keySet());
                     countValues.clear();
@@ -83,10 +85,15 @@ public class ObjectChunkedStats implements ChunkedStatsKernel {
         }
         List<Map.Entry<String, Long>> sorted = new ArrayList<>(countValues.size());
 
-        countValues.forEachEntry((o, c) -> {
-            sorted.add(Map.entry(Objects.toString(o), c));
-            return true;
-        });
+        // region add_entries
+        if (columnSource.getType().isArray()) {
+            Object2LongMaps.fastForEach(countValues, entry -> sorted
+                    .add(Map.entry(ArrayTypeUtils.toString(entry.getKey()), entry.getLongValue())));
+        } else {
+            Object2LongMaps.fastForEach(countValues, entry -> sorted
+                    .add(Map.entry(Objects.toString(entry.getKey()), entry.getLongValue())));
+        }
+        // endregion add_entries
         sorted.sort(Map.Entry.<String, Long>comparingByValue().reversed());
 
         int resultCount = Math.min(maxUniqueToDisplay, sorted.size());

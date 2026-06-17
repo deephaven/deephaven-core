@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl;
 
@@ -17,7 +17,7 @@ public class TestLiveAttributeMap {
     private static final class AttrMap extends LiveAttributeMap<AttrMap, AttrMap> {
 
         private AttrMap(@Nullable final Map<String, Object> initialAttributes) {
-            super(initialAttributes);
+            super(initialAttributes, false);
         }
 
         @Override

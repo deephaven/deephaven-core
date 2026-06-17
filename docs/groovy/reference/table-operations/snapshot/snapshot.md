@@ -32,7 +32,7 @@ result = source.snapshot()
 
 - [Create a new table](../../../how-to-guides/new-and-empty-table.md#newtable)
 - [How to capture the history of ticking tables](../../../how-to-guides/capture-table-history.md)
-- [How to reduce the update frequency of ticking tables](../../../how-to-guides/reduce-update-frequency.md)
+- [How to reduce the update frequency of ticking tables](../../../how-to-guides/performance/reduce-update-frequency.md)
 - [`snapshotWhen`](./snapshot-when.md)
 - [`timeTable`](../create/timeTable.md)
 - [`update`](../select/update.md)

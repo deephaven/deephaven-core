@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.util.datastructures.hash;
 
@@ -51,31 +51,31 @@ public abstract class HashMapK2V2 extends HashMapBase {
             rehash(kvs, wantResize, 2);
         }
 
-        return noEntryValue;
+        return defaultReturnValue();
     }
 
     final long getImpl(long[] kvs, long key) {
         if (kvs == null) {
-            return noEntryValue;
+            return defaultReturnValue();
         }
         key = fixKey(key);
         // To minimize possible painful effects of nonsynchronized access to our array, we get the reference once.
         final int location = getLocationFor(kvs, key);
         if (location < 0) {
-            return noEntryValue;
+            return defaultReturnValue();
         }
         return kvs[location + 1];
     }
 
     final long removeImpl(long[] kvs, long key) {
         if (kvs == null) {
-            return noEntryValue;
+            return defaultReturnValue();
         }
         key = fixKey(key);
         // To minimize possible painful effects of nonsynchronized access to our array, we get the reference once.
         final int location = getLocationFor(kvs, key);
         if (location < 0) {
-            return noEntryValue;
+            return defaultReturnValue();
         }
         --size;
         kvs[location] = SPECIAL_KEY_FOR_DELETED_SLOT;

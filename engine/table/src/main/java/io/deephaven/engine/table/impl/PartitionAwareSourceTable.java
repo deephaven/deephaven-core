@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl;
 
@@ -112,6 +112,13 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
         }
 
         @Override
+        protected boolean shouldCoalesce(WhereFilter... whereFilters) {
+            return Arrays.stream(whereFilters)
+                    .anyMatch(whereFilter -> ((PartitionAwareSourceTable) table).isValidAgainstColumnPartitionTable(
+                            whereFilter.getColumns(), whereFilter.getColumnArrays()));
+        }
+
+        @Override
         protected TableAndRemainingFilters getWithWhere(WhereFilter... whereFilters) {
             final List<WhereFilter> partitionFilters = new ArrayList<>();
             final List<WhereFilter> otherFilters = new ArrayList<>();
@@ -119,7 +126,7 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
             boolean serialFilterFound = false;
             final Set<Object> partitionBarriers = new HashSet<>();
             for (WhereFilter whereFilter : whereFilters) {
-                if (!whereFilter.permitParallelization()) {
+                if (whereFilter.isSerial()) {
                     serialFilterFound = true;
                 }
 
@@ -146,7 +153,8 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
                     : table.where(Filter.and(partitionFilters));
 
             if (!partitionBarriers.isEmpty()) {
-                otherFilters.add(0, WhereAllFilter.INSTANCE.withBarriers(partitionBarriers.toArray(Object[]::new)));
+                otherFilters.add(0,
+                        WhereAllFilter.INSTANCE.withDeclaredBarriers(partitionBarriers.toArray(Object[]::new)));
             }
 
             return new TableAndRemainingFilters(result.coalesce(),
@@ -185,11 +193,7 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
     }
 
     @Override
-    protected final BaseTable<?> redefine(@NotNull final TableDefinition newDefinition) {
-        if (newDefinition.getColumnNames().equals(definition.getColumnNames())) {
-            // Nothing changed - we have the same columns in the same order.
-            return this;
-        }
+    protected final BaseTable<?> redefineImpl(@NotNull final TableDefinition newDefinition) {
         if (newDefinition.numColumns() == definition.numColumns()
                 || newDefinition.getPartitioningColumns().size() == partitioningColumnDefinitions.size()) {
             // Nothing changed except ordering, *or* some columns were dropped but the partitioning column was retained.
@@ -304,7 +308,8 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
         for (WhereFilter whereFilter : whereFilters) {
             whereFilter.init(definition, compilationProcessor);
 
-            if (!whereFilter.permitParallelization()) {
+            // Test for user-mandated serial filters (e.g. FilterSerial.of() or Filter.serial())
+            if (whereFilter.isSerial()) {
                 serialFilterFound = true;
             }
 
@@ -318,7 +323,7 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
 
             // similarly, anytime we prioritize a partitioning filter, we record the barriers that it declares. A filter
             // that respects no barriers, or only those prioritized barriers may also be prioritized. A filter that
-            // respects any barrier which was not in partition filters (meaning it must be in in otherFilters - because
+            // respects any barrier which was not in partition filters (meaning it must be in otherFilters - because
             // otherwise you would be respecting an undeclared barrier); cannot be prioritized because that would jump
             // the barrier.
             if (serialFilterFound || missingBarrier) {
@@ -354,7 +359,7 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
         final Table coalesced = withPartitionsFiltered.coalesce();
 
         if (!partitionBarriers.isEmpty()) {
-            otherFilters.add(0, WhereAllFilter.INSTANCE.withBarriers(partitionBarriers.toArray(Object[]::new)));
+            otherFilters.add(0, WhereAllFilter.INSTANCE.withDeclaredBarriers(partitionBarriers.toArray(Object[]::new)));
         }
 
         return otherFilters.isEmpty()

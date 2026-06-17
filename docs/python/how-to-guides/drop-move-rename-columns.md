@@ -12,9 +12,9 @@ The following methods drop columns from a table:
 
 The following methods move columns in a table:
 
+- [`move_columns`](../reference/table-operations/select/move-columns.md)
 - [`move_columns_up`](../reference/table-operations/select/move-columns-up.md)
 - [`move_columns_down`](../reference/table-operations/select/move-columns-down.md)
-- [`move_columns`](../reference/table-operations/select/move-columns.md)
 - [`select`](../reference/table-operations/select/select.md)
 - [`view`](../reference/table-operations/select/view.md)
 
@@ -116,6 +116,9 @@ result_grades_last = source.move_columns_down(["TestGrade", "HomeworkGrade"])
 ### `rename_columns`
 
 [`rename_columns`](../reference/table-operations/select/rename-columns.md) renames one or more columns in a table. Renaming a column follows the syntax `NewColumnName = OldColumnName`.
+
+> [!IMPORTANT]
+> If the new column name conflicts with an existing column name in the table, the existing column will be silently replaced.
 
 The following example renames `StudentID` to `ID` and `GPA` to `GradePointAverage`.
 

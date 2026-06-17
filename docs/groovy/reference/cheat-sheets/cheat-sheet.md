@@ -122,7 +122,7 @@ myInputTable = AppendOnlyArrayBackedInputTable.make(
 
 ### Ring tables
 
-A [`Ring Table`](/core/javadoc/io/deephaven/engine/table/impl/sources/ring/RingTableTools.html)<!--TODO: link Groovy RingTableTools.of doc when available--> is a table that contains the `n` most recent rows from a source table. If the table is non-static, rows outside of `n` will disappear from the ring table as the source table updates.
+A [`Ring Table`](../table-operations/create/ringTable.md) is a table that contains the `n` most recent rows from a source table. If the table is non-static, rows outside of `n` will disappear from the ring table as the source table updates.
 
 ```groovy order=tt,rt
 import io.deephaven.engine.table.impl.sources.ring.RingTableTools
@@ -191,7 +191,7 @@ static1Meta = staticSource1.meta()
 
 Most queries benefit by starting with filters. Less data generally means better performance.
 
-For SQL developers: In Deephaven, joins are not the primary filtering operation. Use [`where`](../table-operations/filter/where.md), [`whereIn`](../table-operations/filter/where-in.md), and [`whereNotIn`](../table-operations/filter/where-not-in.md).
+For SQL developers: In Deephaven, joins are not a primary operation for filtering. Use [`where`](../table-operations/filter/where.md), [`whereIn`](../table-operations/filter/where-in.md), and [`whereNotIn`](../table-operations/filter/where-not-in.md).
 
 > [!NOTE]
 > Backticks `\` in query strings denote a string within it. Single quotes``'` denote a literal value that gets parsed by the engine.
@@ -403,7 +403,7 @@ multiSort = staticSource1.sort(
 ```
 
 > [!TIP]
-> Reversing tables is faster than sorting and is often used in UIs for seeing appending rows at the top of the table.
+> Reversing tables is faster than sorting, and is often used in UIs for seeing appending rows at the top of the table.
 
 ```groovy syntax
 reverseTable = staticSource1.reverse()
@@ -458,7 +458,7 @@ lazyUpdateExample = staticSource2.lazyUpdate(
 )
 ```
 
-### Getting the row number
+### Get the row number
 
 ```groovy test-set=1 order=null
 getRowNum = staticSource2.updateView("RowNumInt = i", "RowNumLong = ii")
@@ -508,7 +508,7 @@ arrayExamples = staticSource2.updateView(
 )
 ```
 
-# Create a slice or sub-vector
+## Create a slice or sub-vector
 
 ```groovy test-set=1 order=null
 sliceAndRolling = staticSource2.update(
@@ -568,11 +568,6 @@ timeStuff = staticSource2.view(
     "LastBizOfWeek = isLastBusinessDayOfWeek(CurrentTime)",
 )
 ```
-
-<!--TODO: add these lines back in when Chip is done with calendar changes:
-# "NextNonBizDay = nextNonBusinessDay()", \
-            # "NextBizDayCurrent = nextBusinessDay()", \
- -->
 
 ## Bin data
 
@@ -663,7 +658,7 @@ result = emptyTable(5).update("Y = a")
 
 See our guides:
 
-- [How to write a Groovy closure](../../how-to-guides/user-defined-functions.md)
+- [How to write a Groovy closure](../../how-to-guides/groovy-closures.md)
 
 ```groovy test-set=1 order=null
 // Create and Use a custom function
@@ -690,7 +685,7 @@ grFuncExample = staticSource2.update(
 This is useful when working with operations that require more or less precision than the pre-cast data type.
 See [casting](../query-language/control-flow/casting.md).
 
-### cast numeric types
+### Cast numeric types
 
 ```groovy order=numbersMax,numbersMin,numbersMinMeta,numbersMaxMeta
 numbersMax = newTable(
@@ -785,8 +780,6 @@ putColsWherever = staticSource2.moveColumns(1, "String4", "Int2")
 ## Group and aggregate
 
 See [How to group and ungroup data](../../how-to-guides/grouping-data.md) for more details.
-
-<!--TODO: add group -->
 
 ### Simple grouping
 
@@ -1440,7 +1433,7 @@ result = source.snapshotWhen(trigger, myOpts)
 
 ### Use DynamicTableWriter
 
-See our guide [How to write data to an in-memory, real-time table](../../how-to-guides/dynamic-table-writer.md).
+See our guide [How to write data to an in-memory, real-time table](../../how-to-guides/table-publisher.md#table-publisher).
 
 ```groovy order=null
 import io.deephaven.engine.table.impl.util.DynamicTableWriter

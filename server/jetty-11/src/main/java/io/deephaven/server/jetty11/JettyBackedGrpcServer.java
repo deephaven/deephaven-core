@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.server.jetty11;
 
@@ -355,6 +355,8 @@ public class JettyBackedGrpcServer implements GrpcServer {
     private static ServerConnector createConnector(Server server, JettyConfig config) {
         // https://www.eclipse.org/jetty/documentation/jetty-11/programming-guide/index.html#pg-server-http-connector-protocol-http2-tls
         final HttpConfiguration httpConfig = new HttpConfiguration();
+        httpConfig.setSendServerVersion(
+                Configuration.getInstance().getBooleanWithDefault("http.send.server.version", false));
         httpConfig.addCustomizer(new ForwardedRequestCustomizer());
         httpConfig.addCustomizer(new AllowedHttpMethodsCustomizer(config.allowedHttpMethods()));
         if (!config.extraHeaders().isEmpty()) {

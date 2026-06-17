@@ -13,3 +13,8 @@ from deephaven import __version__
 
 print(__version__)
 ```
+
+## Related documentation
+
+- [Retrieve logs](./logs.md)
+- [Triage errors in queries](./triage-errors.md)

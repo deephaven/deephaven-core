@@ -4,9 +4,9 @@ title: Connect to a Kafka stream
 
 Kafka is a distributed event streaming platform that lets you read, write, store, and process events, also called records.
 
-Kafka topics take on many forms, such as raw input, [JSON](#read-kafka-topic-in-json-format), [AVRO](#read-kafka-topic-in-avro-format), or [Protobuf](#read-kafka-topic-in-protobuf-format) In this guide, we show you how to import each of these formats as Deephaven tables.
+Kafka topics take on many forms, such as raw input, [JSON](#read-kafka-topic-in-json-format), [AVRO](#read-kafka-topic-in-avro-format), or [Protobuf](#read-kafka-topic-in-protobuf-format). In this guide, we show you how to read each of these formats into Deephaven tables.
 
-Please see our overview, [Kafka in Deephaven: Basic terms](../../conceptual/kafka-in-deephaven.md), for a detailed discussion of Kafka topics and supported formats. See the [Apache Kafka Documentation](https://kafka.apache.org/22/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html) for full details on how to use Kafka.
+Please see our overview, [Kafka in Deephaven: Basic terms](../../conceptual/kafka-basic-terms.md), for a detailed discussion of Kafka topics and supported formats. See the [Apache Kafka Documentation](https://kafka.apache.org/22/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html) for full details on how to use Kafka.
 
 ## Standard data fields
 
@@ -61,10 +61,10 @@ Kafka streams store data in the `KafkaKey` and `KafkaValue` columns. This inform
 
 The `KafkaKey` and `KafkaValue` attributes can be:
 
-- [simple type](/core/pydoc/code/deephaven.stream.kafka.consumer.html#deephaven.stream.kafka.consumer.simple_spec)
-- [JSON encoded](/core/pydoc/code/deephaven.stream.kafka.consumer.html#deephaven.stream.kafka.consumer.json_spec)
-- [Avro encoded](/core/pydoc/code/deephaven.stream.kafka.consumer.html#deephaven.stream.kafka.consumer.avro_spec)
-- [Protbuf encoded](/core/pydoc/code/deephaven.stream.kafka.consumer.html#deephaven.stream.kafka.consumer.protobuf_spec)
+- [simple type](https://deephaven.io/core/pydoc/code/deephaven.stream.kafka.consumer.html#deephaven.stream.kafka.consumer.simple_spec)
+- [JSON encoded](https://deephaven.io/core/pydoc/code/deephaven.stream.kafka.consumer.html#deephaven.stream.kafka.consumer.json_spec)
+- [Avro encoded](https://deephaven.io/core/pydoc/code/deephaven.stream.kafka.consumer.html#deephaven.stream.kafka.consumer.avro_spec)
+- [Protbuf encoded](https://deephaven.io/core/pydoc/code/deephaven.stream.kafka.consumer.html#deephaven.stream.kafka.consumer.protobuf_spec)
 - ignored (cannot ignore both key and value)
 
 ## Table types
@@ -85,7 +85,7 @@ Save this locally as a `docker-compose.yml` file, and launch with `docker compos
 
 In this example, we consume a Kafka topic (`test.topic`) as a Deephaven table. The Kafka topic is populated by commands entered into the terminal.
 
-For demonstration purposes, we will be using an `append` table and ignoring the Kafka key.
+For demonstration purposes, we will be using an [append-only](../../conceptual/table-types.md#specialization-1-append-only) table and ignoring the Kafka key.
 
 ```python docker-config=kafka test-set=2 order=null
 from deephaven.stream.kafka import consumer as kc
@@ -150,7 +150,7 @@ Since the `result_blink` table doesn't show the values in the topic, let's add a
 last_blink = result_blink.last_by()
 ```
 
-### Import a Kafka stream with append
+### Read a Kafka stream with append
 
 In this example, [`consume`](../../reference/data-import-export/Kafka/consume.md) reads the Kafka topic `share.price`. The specific key and value result in a table that appends new rows.
 
@@ -187,7 +187,7 @@ AAPL 135.99
 AAPL 136.82
 ```
 
-### Import a Kafka stream ignoring keys
+### Read a Kafka stream ignoring keys
 
 In this example, [`consume`](../../reference/data-import-export/Kafka/consume.md) reads the Kafka topic `share.price` and ignores the partition and key values.
 
@@ -212,7 +212,7 @@ As you can see, the key column is not included in the output table.
 
 The following two examples read a Kafka topic called `orders` in JSON format.
 
-This example uses [`json_spec`](/core/pydoc/code/deephaven.stream.kafka.consumer.html#deephaven.stream.kafka.consumer.json_spec):
+This example uses [`json_spec`](https://deephaven.io/core/pydoc/code/deephaven.stream.kafka.consumer.html#deephaven.stream.kafka.consumer.json_spec):
 
 ```python docker-config=kafka order=null
 from deephaven.stream.kafka import consumer as kc
@@ -230,7 +230,7 @@ result = kc.consume(
 )
 ```
 
-This example uses [`object_processor_spec`](/core/pydoc/code/deephaven.stream.kafka.consumer.html#deephaven.stream.kafka.consumer.object_processor_spec) with a [Jackson provider](/core/pydoc/code/deephaven.json.jackson.html):
+This example uses [`object_processor_spec`](https://deephaven.io/core/pydoc/code/deephaven.stream.kafka.consumer.html#deephaven.stream.kafka.consumer.object_processor_spec) with a [Jackson provider](/core/pydoc/code/deephaven.json.jackson.html):
 
 ```python docker-config=kafka order=null
 from deephaven import kafka_consumer as kc
@@ -451,40 +451,9 @@ result_append = kc.consume_to_partitioned_table(
 
 ### Custom Kafka parser
 
-Some use cases will call for custom parsing of Kafka streams. In such cases, it's common to extend Deephaven's library to match requirements. The following example shows how to create a `Person` class containing `name` and `age` attributes derived from a binary Kafka stream of JSON strings. It then calls [`update`](../../reference/table-operations/select/update.md) to create a new column containing the value of the parsed stream.
+Some use cases call for custom parsing of Kafka streams, such as when payloads use non-standard encodings or need complex transformation.
 
-```python docker-config=kafka order=null
-from deephaven.stream.kafka import consumer as ck
-from deephaven import dtypes as dht
-from dataclasses import dataclass
-import json
-
-
-@dataclass
-class Person:
-    age: int
-    name: str
-
-
-def my_parser(raw_bytes) -> Person:
-    json_object = json.loads(bytes(raw_bytes))
-    return Person(age=json_object["age"], name=json_object["name"])
-
-
-my_raw_table = ck.consume(
-    {
-        "bootstrap.servers": "redpanda:9092",
-    },
-    "test.topic",
-    table_type=ck.TableType.append(),
-    key_spec=ck.KeyValueSpec.IGNORE,
-    value_spec=ck.simple_spec("Bytes", dht.byte_array),
-    offsets=ck.ALL_PARTITIONS_SEEK_TO_END,
-)
-my_parsed_table = my_raw_table.update(
-    ["Person = (org.jpy.PyObject) my_parser(Bytes)"]
-).view(["Age = (int) Person.age", "Name = (String) Person.name"])
-```
+See the dedicated guide, [Write your own custom parser for Kafka](./write-your-own-custom-parser-for-kafka.md), for a step-by-step walkthrough and complete examples.
 
 ## Write to a Kafka stream
 
@@ -534,8 +503,8 @@ write_topic_group = pk.produce(
 
 ## Related documentation
 
-- [Kafka basic terminology](../../conceptual/kafka-in-deephaven.md)
-- [Kafka in Deephaven](../../conceptual/kafka-in-deephaven.md)
+- [Kafka basic terminology](../../conceptual/kafka-basic-terms.md)
+- [Custom parser for Kafka](./write-your-own-custom-parser-for-kafka.md)
 - [`consume`](../../reference/data-import-export/Kafka/consume.md)
 - [`time_table`](../../reference/table-operations/create/timeTable.md)
 - [`last_by`](../../reference/table-operations/group-and-aggregate/lastBy.md)

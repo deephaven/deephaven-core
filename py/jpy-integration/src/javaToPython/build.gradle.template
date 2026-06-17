@@ -7,13 +7,14 @@ test.classpath = fileTree('/classpath/').plus(files('/classpath'))
 test.testClassesDirs = files('/classes')
 
 test.systemProperties([
-        'jpy.jpyLib':'/opt/deephaven/venv/lib/python3.10/site-packages/jpy.cpython-310-x86_64-linux-gnu.so',
-        'jpy.jdlLib':'/opt/deephaven/venv/lib/python3.10/site-packages/jdl.cpython-310-x86_64-linux-gnu.so',
-        'jpy.pythonLib':'/usr/lib/python3.10/config-3.10-x86_64-linux-gnu/libpython3.10.so',
+        'jpy.jpyLib':'/opt/deephaven/venv/lib/python3.12/site-packages/jpy.cpython-312-x86_64-linux-gnu.so',
+        'jpy.jdlLib':'/opt/deephaven/venv/lib/python3.12/site-packages/jdl.cpython-312-x86_64-linux-gnu.so',
+        'jpy.pythonLib':'/usr/lib/python3.12/config-3.12-x86_64-linux-gnu/libpython3.12.so',
         // Cleaning up on a dedicated thread has some issues when there is frequent starting
         // and stopping of the python virtual environment. We'll rely on cleaning up inline
         // when necessary.
         // TODO issue #651 to see if we can remove this
         'PyObject.cleanup_on_thread':'false',
-//        'jpy.debug':'true'
+        //'jpy.debug':'true',
+        //'jpy.flags':'ALL'
 ])

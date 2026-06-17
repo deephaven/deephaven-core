@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.util;
 
@@ -13,9 +13,8 @@ import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.table.impl.TupleSourceFactory;
-import gnu.trove.impl.Constants;
-import gnu.trove.map.TObjectLongMap;
-import gnu.trove.map.hash.TObjectLongHashMap;
+import it.unimi.dsi.fastutil.objects.Object2LongMap;
+import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import org.jetbrains.annotations.NotNull;
 
@@ -35,8 +34,13 @@ public class KeyedArrayBackedInputTable extends BaseArrayBackedInputTable {
 
     protected final ObjectArraySource<?>[] arrayValueSources;
 
-    private final TObjectLongMap<Object> keyToRowMap =
-            new TObjectLongHashMap<>(Constants.DEFAULT_CAPACITY, Constants.DEFAULT_LOAD_FACTOR, Long.MIN_VALUE);
+    private final Object2LongMap<Object> keyToRowMap = makeKeyToRowMap();
+
+    private static Object2LongMap<Object> makeKeyToRowMap() {
+        final Object2LongOpenHashMap<Object> map = new Object2LongOpenHashMap<>();
+        map.defaultReturnValue(Long.MIN_VALUE);
+        return map;
+    }
 
     /**
      * Create an empty KeyedArrayBackedMutableTable.
@@ -114,10 +118,11 @@ public class KeyedArrayBackedInputTable extends BaseArrayBackedInputTable {
                     final ChunkBoxer.BoxerKernel boxer = ChunkBoxer.getBoxer(keySource.getChunkType(), chunkCapacity)) {
                 final Chunk<? extends Values> keys = keySource.getChunk(getContext, addRowSet);
                 final ObjectChunk<?, ? extends Values> boxed = boxer.box(keys);
+                final long defaultReturnValue = keyToRowMap.defaultReturnValue();
                 for (int ii = 0; ii < boxed.size(); ++ii) {
                     final Object key = boxed.get(ii);
                     long rowNumber = keyToRowMap.putIfAbsent(key, rowToInsert);
-                    if (rowNumber == keyToRowMap.getNoEntryValue()) {
+                    if (rowNumber == defaultReturnValue) {
                         rowNumber = rowToInsert++;
                         destinations.set(ii, rowNumber);
                     } else if (isDeletedRowNumber(rowNumber)) {
@@ -169,8 +174,8 @@ public class KeyedArrayBackedInputTable extends BaseArrayBackedInputTable {
                 destinations.setSize(0);
                 for (int ii = 0; ii < boxed.size(); ++ii) {
                     final Object key = boxed.get(ii);
-                    long rowNumber = keyToRowMap.get(key);
-                    if (rowNumber != keyToRowMap.getNoEntryValue() && !isDeletedRowNumber(rowNumber)) {
+                    long rowNumber = keyToRowMap.getLong(key);
+                    if (rowNumber != keyToRowMap.defaultReturnValue() && !isDeletedRowNumber(rowNumber)) {
                         rowSetChangeRecorder.removeRowKey(rowNumber);
                         destinations.add(rowNumber);
                         keyToRowMap.put(key, rowNumberToDeletedRowNumber(rowNumber));

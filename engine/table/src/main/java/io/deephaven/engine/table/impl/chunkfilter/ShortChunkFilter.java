@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CharChunkFilter and run "./gradlew replicateChunkFilters" to regenerate
@@ -64,4 +64,3 @@ public abstract class ShortChunkFilter implements ChunkFilter {
         return count;
     }
 }
-

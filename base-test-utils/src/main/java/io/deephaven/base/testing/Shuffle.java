@@ -1,9 +1,9 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.base.testing;
 
-import gnu.trove.list.array.TLongArrayList;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
 
 import java.util.Random;
 
@@ -30,11 +30,11 @@ public class Shuffle {
         }
     }
 
-    public static void shuffleArray(Random r, final TLongArrayList ar) {
+    public static void shuffleArray(final Random r, LongArrayList ar) {
         shuffle(r, ar.size(), (final int i, final int j) -> {
-            final long a = ar.get(j);
-            ar.set(j, ar.get(i));
-            ar.set(i, a);
+            final long a = ar.getLong(i);
+            ar.set(i, ar.getLong(j));
+            ar.set(j, a);
         });
     }
 

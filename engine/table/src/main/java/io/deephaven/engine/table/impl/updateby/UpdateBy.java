@@ -1,10 +1,11 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.updateby;
 
-import gnu.trove.list.array.TIntArrayList;
-import gnu.trove.map.hash.TObjectIntHashMap;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.objects.Object2IntMap;
+import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.updateby.ColumnUpdateOperation;
 import io.deephaven.api.updateby.UpdateByControl;
@@ -34,6 +35,7 @@ import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableArray;
+import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedNode;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedQueue;
 import org.apache.commons.lang3.ArrayUtils;
@@ -660,22 +662,22 @@ public abstract class UpdateBy {
             final Integer[] sortedDirtyOperators = ArrayUtils.addAll(dirtyConstantOperators, dirtyDynamicOperators);
 
             final List<int[]> operatorSets = new ArrayList<>(sortedDirtyOperators.length);
-            final TIntArrayList opList = new TIntArrayList(sortedDirtyOperators.length);
+            final IntArrayList opList = new IntArrayList(sortedDirtyOperators.length);
 
-            opList.add(sortedDirtyOperators[0]);
+            opList.add(sortedDirtyOperators[0].intValue());
             int lastOpIdx = sortedDirtyOperators[0];
             for (int ii = 1; ii < sortedDirtyOperators.length; ii++) {
                 final int opIdx = sortedDirtyOperators[ii];
                 if (Arrays.equals(win.operatorInputSourceSlots[opIdx], win.operatorInputSourceSlots[lastOpIdx])) {
                     opList.add(opIdx);
                 } else {
-                    operatorSets.add(opList.toArray());
-                    opList.clear(sortedDirtyOperators.length);
+                    operatorSets.add(opList.toIntArray());
+                    opList.clear();
                     opList.add(opIdx);
                 }
                 lastOpIdx = opIdx;
             }
-            operatorSets.add(opList.toArray());
+            operatorSets.add(opList.toIntArray());
 
             // Process each set of similar operators in this window serially.
             jobScheduler.iterateSerial(executionContext,
@@ -694,8 +696,10 @@ public abstract class UpdateBy {
                             processWindowOperatorSet(winIdx, opIndices, srcIndices, maxAffectedChunkSize,
                                     maxInfluencerChunkSize,
                                     () -> {
-                                        // Release the cached sources that are no longer needed.
-                                        releaseInputSources(srcIndices);
+                                        // Release the cached sources that are no longer needed. Decrement once
+                                        // per (operator, distinct srcIdx) pair to match how computeCachedColumnRowSets
+                                        // accumulates useCount.
+                                        releaseInputSources(srcIndices, opIndices.length);
                                         opSetComplete.run();
                                     }, nestedErrorConsumer);
                         }, nestedErrorConsumer);
@@ -872,15 +876,21 @@ public abstract class UpdateBy {
 
 
         /** Release the input sources that will not be needed for the rest of this update */
-        private void releaseInputSources(int[] sources) {
+        private void releaseInputSources(int[] sources, int opCount) {
             try (final ResettableWritableObjectChunk<?, ?> backingChunk =
                     ResettableWritableObjectChunk.makeResettableChunk()) {
+                // `sources` may list the same srcIdx multiple times (an operator whose value column equals its
+                // weight column has slot array [k, k]). Each operator in the set contributes 1 to the refcount
+                // per distinct srcIdx it touches, so decrement opCount times per unique srcIdx — not once per
+                // occurrence in `sources` — to avoid over-releasing.
+                final BitSet seen = new BitSet();
                 for (int srcIdx : sources) {
-                    if (!inputSourceCacheNeeded[srcIdx]) {
+                    if (!inputSourceCacheNeeded[srcIdx] || seen.get(srcIdx)) {
                         continue;
                     }
+                    seen.set(srcIdx);
 
-                    if (inputSourceReferenceCounts.decrementAndGet(srcIdx) == 0) {
+                    if (inputSourceReferenceCounts.addAndGet(srcIdx, -opCount) == 0) {
                         // Last use of this set, let's clean up
                         try (final RowSet rows = inputSourceRowSets.get(srcIdx)) {
                             // release any objects we are holding in the cache
@@ -1248,7 +1258,8 @@ public abstract class UpdateBy {
             final Set<String> opResultColumnSet = new HashSet<>();
 
             final ArrayList<String> inputColumnList = new ArrayList<>();
-            final TObjectIntHashMap<String> inputColumnToSlotMap = new TObjectIntHashMap<>();
+            final Object2IntMap<String> inputColumnToSlotMap = new Object2IntOpenHashMap<>();
+            inputColumnToSlotMap.defaultReturnValue(-1);
 
             final UpdateByWindow[] windowArr = windowSpecs.stream().map(clauseList -> {
                 final UpdateByOperator[] windowOps =
@@ -1286,8 +1297,8 @@ public abstract class UpdateBy {
 
                     for (int colIdx = 0; colIdx < inputColumnNames.length; colIdx++) {
                         final String name = inputColumnNames[colIdx];
-                        final int maybeExistingSlot = inputColumnToSlotMap.get(name);
-                        if (maybeExistingSlot == inputColumnToSlotMap.getNoEntryValue()) {
+                        final int maybeExistingSlot = inputColumnToSlotMap.getInt(name);
+                        if (maybeExistingSlot == inputColumnToSlotMap.defaultReturnValue()) {
                             // create a new input source
                             final int srcIdx = inputColumnList.size();
                             inputColumnList.add(name);
@@ -1355,6 +1366,11 @@ public abstract class UpdateBy {
                     description,
                     localWindowArr);
         }
+
+        @InternalUseOnly
+        public List<String> getPreservedColumnNames() {
+            return List.of(preservedColumnNames);
+        }
     }
 
     public static Table updateBy(@NotNull final QueryTable source,
@@ -1385,13 +1401,18 @@ public abstract class UpdateBy {
                 "OperatorCollection TableDef",
                 "Source TableDef");
 
-        // Verify the timestamp column is a supported data type (currently long and Instant)
+        // Verify the timestamp column is a supported data type (already long or can be reinterpreted as long)
         if (operatorCollection.timestampColumnName != null) {
             final ColumnSource<?> timestampSource = source.getColumnSource(operatorCollection.timestampColumnName);
-            if (!timestampSource.allowsReinterpret(long.class)) {
-                final Class<?> type = timestampSource.getType();
-                throw new IllegalArgumentException("Unsupported timestamp column type " + type +
-                        " for column '" + operatorCollection.timestampColumnName + "'");
+            final Class<?> timestampType = timestampSource.getType();
+            if (timestampType != long.class && timestampType != Long.class) {
+                // Can we reinterpret the column as a long
+                final ColumnSource<?> reinterpreted = ReinterpretUtils.maybeConvertToPrimitive(timestampSource);
+                final Class<?> reinterpretedType = reinterpreted.getType();
+                if (reinterpretedType != long.class && reinterpretedType != Long.class) {
+                    throw new IllegalArgumentException("Unsupported timestamp column type " + timestampType +
+                            " for column '" + operatorCollection.timestampColumnName + "'");
+                }
             }
         }
 
@@ -1427,7 +1448,7 @@ public abstract class UpdateBy {
                 .map(colName -> ReinterpretUtils.maybeConvertToPrimitive(source.getColumnSource(colName)))
                 .toArray(ColumnSource[]::new);
 
-        final Map<String, ColumnSource<?>> resultSources = new LinkedHashMap<>(source.getColumnSourceMap());
+        final LinkedHashMap<String, ColumnSource<?>> resultSources = new LinkedHashMap<>(source.getColumnSourceMap());
 
         final Map<String, ColumnSource<?>> unorderedResultSources = new HashMap<>();
         // We have the source table and the row redirection; we can initialize the operators and collect the output

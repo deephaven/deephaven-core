@@ -1,9 +1,10 @@
 #
-# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 #
 """This module provides the ability to create, check, and retrieve DataIndex objects from Deephaven tables."""
 
-from typing import List, Optional
+from collections.abc import Sequence
+from typing import Optional
 
 import jpy
 
@@ -32,8 +33,8 @@ class DataIndex(JObjectWrapper):
         return self._j_data_index
 
     @property
-    def keys(self) -> List[str]:
-        """The names of the columns indexed by the DataIndex. """
+    def keys(self) -> list[str]:
+        """The names of the columns indexed by the DataIndex."""
         return j_list_to_list(self._j_data_index.keyColumnNames())
 
     @property
@@ -42,12 +43,12 @@ class DataIndex(JObjectWrapper):
         return Table(self._j_data_index.table())
 
 
-def has_data_index(table: Table, key_cols: List[str]) -> bool:
+def has_data_index(table: Table, key_cols: Sequence[str]) -> bool:
     """Checks if a table currently has a DataIndex for the given key columns.
 
     Args:
         table (Table): the table to check
-        key_cols (List[str]): the names of the key columns indexed
+        key_cols (Sequence[str]): the names of the key columns indexed
 
     Returns:
         bool: True if the table has a DataIndex, False otherwise
@@ -55,12 +56,12 @@ def has_data_index(table: Table, key_cols: List[str]) -> bool:
     return _JDataIndexer.hasDataIndex(table.j_table, key_cols)
 
 
-def _get_data_index(table: Table, key_cols: List[str]) -> Optional[DataIndex]:
+def _get_data_index(table: Table, key_cols: Sequence[str]) -> Optional[DataIndex]:
     """Gets a DataIndex for the given key columns. Returns None if the DataIndex does not exist.
 
     Args:
         table (Table): the table to get the DataIndex from
-        key_cols (List[str]): the names of the key columns indexed
+        key_cols (Sequence[str]): the names of the key columns indexed
 
     Returns:
         a DataIndex or None
@@ -69,14 +70,16 @@ def _get_data_index(table: Table, key_cols: List[str]) -> Optional[DataIndex]:
     return DataIndex(j_di) if j_di else None
 
 
-def data_index(table: Table, key_cols: List[str], create_if_absent: bool = True) -> Optional[DataIndex]:
+def data_index(
+    table: Table, key_cols: Sequence[str], create_if_absent: bool = True
+) -> Optional[DataIndex]:
     """Gets the DataIndex for the given key columns on the provided table. When the DataIndex already exists, returns it.
     When the DataIndex doesn't already exist, if create_if_absent is True, creates the DataIndex first then returns it;
     otherwise returns None.
 
     Args:
         table (Table): the table to index
-        key_cols (List[str]): the names of the key columns to index
+        key_cols (Sequence[str]): the names of the key columns to index
         create_if_absent (bool): if True, create the DataIndex if it does not already exist, default is True
 
     Returns:

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.by;
 
@@ -202,8 +202,9 @@ public class TDigestPercentileOperator implements IterativeChunkedAggregationOpe
     }
 
     @Override
-    public void resetForStep(@NotNull final TableUpdate upstream, final int startingDestinationsCount) {
+    public boolean resetForStep(@NotNull final TableUpdate upstream, final int startingDestinationsCount) {
         modifiedThisStep = false;
+        return false;
     }
 
     @Override

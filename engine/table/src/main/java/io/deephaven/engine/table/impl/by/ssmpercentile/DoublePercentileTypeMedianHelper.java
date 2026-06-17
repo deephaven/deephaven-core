@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit FloatPercentileTypeMedianHelper and run "./gradlew replicateSegmentedSortedMultiset" to regenerate
@@ -33,6 +33,14 @@ public class DoublePercentileTypeMedianHelper extends DoublePercentileTypeHelper
         if (totalSize == 0) {
             return setResult(destination, NULL_DOUBLE);
         } else {
+            // region maybeHandleNaN
+            final DoubleSegmentedSortedMultiset doubleSsmLo = (DoubleSegmentedSortedMultiset) ssmLo;
+            final DoubleSegmentedSortedMultiset doubleSsmHi = (DoubleSegmentedSortedMultiset) ssmHi;
+            if ((hiSize > 0 && Double.isNaN(doubleSsmHi.getMax())) || (loSize > 0 && Double.isNaN(doubleSsmLo.getMax()))) {
+                // No need to pivot while we have NaN values present
+                return setResult(destination, Double.NaN);
+            }
+            // endregion maybeHandleNaN
             final long targetLo = (int) ((totalSize - 1) * percentile) + 1;
             if (loSize < targetLo) {
                 ssmHi.moveFrontToBack(ssmLo, targetLo - loSize);

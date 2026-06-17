@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.api.agg;
 
@@ -88,6 +88,7 @@ public final class AggregationDescriptions implements Aggregation.Visitor {
 
     @Override
     public void visit(Formula formula) {
-        out.put(formula.column().name(), "from formula `" + Strings.of(formula.expression()) + "`");
+        out.put(formula.column().name(), "from formula `" + Strings.of(formula.expression()) + "`"
+                + (formula.reaggregateAggregatedValues() ? " (reaggregates values)" : ""));
     }
 }

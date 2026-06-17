@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CharVector and run "./gradlew replicateVectors" to regenerate
@@ -8,9 +8,9 @@
 package io.deephaven.vector;
 
 import io.deephaven.base.verify.Require;
+import io.deephaven.util.annotations.UserInvocationPermitted;
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfShort;
 import io.deephaven.engine.primitive.value.iterator.ValueIteratorOfShort;
-import io.deephaven.qst.type.ShortType;
 import io.deephaven.qst.type.PrimitiveVectorType;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.FinalDefault;
@@ -28,7 +28,7 @@ public interface ShortVector extends Vector<ShortVector>, Iterable<Short> {
     long serialVersionUID = -1373264425081841175L;
 
     static PrimitiveVectorType<ShortVector, Short> type() {
-        return PrimitiveVectorType.of(ShortVector.class, ShortType.of());
+        return Types.SHORT_VECTOR_TYPE;
     }
 
     /**
@@ -38,6 +38,7 @@ public interface ShortVector extends Vector<ShortVector>, Iterable<Short> {
      * @param index An offset into this ShortVector
      * @return The element at the specified offset, or the {@link QueryConstants#NULL_SHORT null short}
      */
+    @UserInvocationPermitted({"vector"})
     short get(long index);
 
     @Override
@@ -55,6 +56,7 @@ public interface ShortVector extends Vector<ShortVector>, Iterable<Short> {
     @Override
     ShortVector getDirect();
 
+    @UserInvocationPermitted({"vector"})
     @Override
     @FinalDefault
     default ValueIteratorOfShort iterator() {
@@ -246,6 +248,7 @@ public interface ShortVector extends Vector<ShortVector>, Iterable<Short> {
      */
     abstract class Indirect implements ShortVector {
 
+        @UserInvocationPermitted({"vector"})
         @Override
         public short[] toArray() {
             final int size = intSize("ShortVector.toArray");

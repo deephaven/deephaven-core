@@ -1,9 +1,11 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.chunkfilter;
 
-import gnu.trove.set.hash.TCharHashSet;
+import io.deephaven.engine.table.MatchOptions;
+import it.unimi.dsi.fastutil.chars.CharOpenHashSet;
+import it.unimi.dsi.fastutil.chars.CharSet;
 
 /**
  * Creates chunk filters for char values.
@@ -16,8 +18,8 @@ import gnu.trove.set.hash.TCharHashSet;
 public class CharChunkMatchFilterFactory {
     private CharChunkMatchFilterFactory() {} // static use only
 
-    public static CharChunkFilter makeFilter(boolean invertMatch, char... values) {
-        if (invertMatch) {
+    public static CharChunkFilter makeFilter(final MatchOptions matchOptions, final char... values) {
+        if (matchOptions.inverted()) {
             if (values.length == 1) {
                 return new InverseSingleValueCharChunkFilter(values[0]);
             }
@@ -133,10 +135,10 @@ public class CharChunkMatchFilterFactory {
     }
 
     private final static class MultiValueCharChunkFilter extends CharChunkFilter {
-        private final TCharHashSet values;
+        private final CharSet values;
 
         private MultiValueCharChunkFilter(char... values) {
-            this.values = new TCharHashSet(values);
+            this.values = new CharOpenHashSet(values);
         }
 
         @Override
@@ -146,10 +148,10 @@ public class CharChunkMatchFilterFactory {
     }
 
     private final static class InverseMultiValueCharChunkFilter extends CharChunkFilter {
-        private final TCharHashSet values;
+        private final CharSet values;
 
         private InverseMultiValueCharChunkFilter(char... values) {
-            this.values = new TCharHashSet(values);
+            this.values = new CharOpenHashSet(values);
         }
 
         @Override

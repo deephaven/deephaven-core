@@ -1,11 +1,11 @@
 #
-# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 #
 
 import unittest
 
-from deephaven import DHError, new_table, TableReplayer, time
-from deephaven.column import int_col, datetime_col
+from deephaven import DHError, TableReplayer, new_table, time
+from deephaven.column import datetime_col, int_col
 from tests.testbase import BaseTestCase
 
 
@@ -70,6 +70,7 @@ class ReplayTestCase(BaseTestCase):
         end_time = time.to_datetime(time.to_j_instant("2000-01-01T00:00:05 ET"))
 
         self.historical_table_replayer(start_time, end_time)
+
 
 if __name__ == "__main__":
     unittest.main()

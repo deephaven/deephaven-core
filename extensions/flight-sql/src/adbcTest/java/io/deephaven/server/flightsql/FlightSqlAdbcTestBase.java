@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.server.flightsql;
 
@@ -34,12 +34,7 @@ public abstract class FlightSqlAdbcTestBase extends DeephavenServerTestBase {
 
     private static final Map<String, String> DEEPHAVEN_INT = Map.of(
             "deephaven:isSortable", "true",
-            "deephaven:isRowStyle", "false",
-            "deephaven:isPartitioning", "false",
-            "deephaven:type", "int",
-            "deephaven:isNumberFormat", "false",
-            "deephaven:isStyle", "false",
-            "deephaven:isDateFormat", "false");
+            "deephaven:type", "int");
 
     BufferAllocator allocator;
     AdbcDatabase database;

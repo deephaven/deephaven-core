@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.testutil.filters;
 
@@ -10,6 +10,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import io.deephaven.engine.table.impl.select.WhereFilter;
+import io.deephaven.engine.table.impl.select.WhereFilterDelegating;
 import io.deephaven.engine.table.impl.select.WhereFilterImpl;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
@@ -27,9 +28,9 @@ import java.util.List;
  * <p>
  * Once used, or between-uses, it is expected that the {@link #reset()} method is called to clear the captured RowSets.
  */
-public class RowSetCapturingFilter extends WhereFilterImpl implements SafeCloseable {
-    private final List<RowSet> rowSets;
-    private final WhereFilter innerFilter;
+public class RowSetCapturingFilter extends WhereFilterImpl implements WhereFilterDelegating, SafeCloseable {
+    final List<RowSet> rowSets;
+    final WhereFilter innerFilter;
 
     /**
      * Creates a RowSetCapturingFilter that assumes an always-true filter.
@@ -54,9 +55,19 @@ public class RowSetCapturingFilter extends WhereFilterImpl implements SafeClosea
      * @param filter the filter to wrap, may be null
      *
      */
-    private RowSetCapturingFilter(final WhereFilter filter, final List<RowSet> rowSets) {
+    RowSetCapturingFilter(final WhereFilter filter, final List<RowSet> rowSets) {
         this.rowSets = rowSets;
         this.innerFilter = filter;
+    }
+
+    @Override
+    public WhereFilter getWrappedFilter() {
+        return innerFilter;
+    }
+
+    @Override
+    public WhereFilter maybeUnwrapFilter() {
+        return WhereFilterDelegating.maybeUnwrapFilter(innerFilter);
     }
 
     @Override
@@ -105,6 +116,11 @@ public class RowSetCapturingFilter extends WhereFilterImpl implements SafeClosea
     @Override
     public boolean permitParallelization() {
         return innerFilter == null || innerFilter.permitParallelization();
+    }
+
+    @Override
+    public boolean isSerial() {
+        return innerFilter != null && innerFilter.isSerial();
     }
 
     @Override
@@ -160,5 +176,10 @@ public class RowSetCapturingFilter extends WhereFilterImpl implements SafeClosea
         synchronized (rowSets) {
             return rowSets.stream().mapToLong(RowSet::size).sum();
         }
+    }
+
+    @Override
+    public String toString() {
+        return "RowSetCapturingFilter{" + innerFilter + '}';
     }
 }

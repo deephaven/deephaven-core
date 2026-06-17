@@ -1,4 +1,5 @@
 <module>
     <source path="" includes="MathUtil.java" />
     <source path="verify" />
+    <source path="log" />
 </module>

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.stream;
 
@@ -144,8 +144,7 @@ class TableStreamPublisherImpl implements StreamPublisher {
             // sources is in the same order as definition columns
             int i = 0;
             for (ColumnDefinition<?> column : definition.getColumns()) {
-                sources[i++] = ReinterpretUtils.maybeConvertToPrimitive(
-                        table.getColumnSource(column.getName(), column.getDataType(), column.getComponentType()));
+                sources[i++] = ReinterpretUtils.maybeConvertToPrimitive(table.getColumnSource(column));
             }
             this.outstandingChunks = new ArrayList<>();
         }

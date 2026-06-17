@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.extensions.barrage.chunk;
 
@@ -222,6 +222,13 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
                 return reader;
             }
         } else if (!isSpecialType) {
+            if (field.getType().getTypeID() == ArrowType.ArrowTypeID.Utf8) {
+                // Server wants to send us utf8 for some column type, but we don't have a way to handle it, give a
+                // useful error
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, String.format(
+                        "Column with type %s cannot be serialized directly. Consider an updateView() expression to convert to String or registering ChunkReaderFactory/ChunkWriterFactory types for custom serialization.",
+                        typeInfo.type().getCanonicalName()));
+            }
             throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, String.format(
                     "No known Barrage ChunkReader for arrow type %s to %s. \nSupported types: \n\t%s",
                     field.getType().toString(),

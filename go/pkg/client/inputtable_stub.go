@@ -3,9 +3,9 @@ package client
 import (
 	"context"
 
-	"github.com/apache/arrow/go/v8/arrow"
-	"github.com/apache/arrow/go/v8/arrow/flight"
-	"github.com/apache/arrow/go/v8/arrow/memory"
+	"github.com/apache/arrow/go/v17/arrow"
+	"github.com/apache/arrow/go/v17/arrow/flight"
+	"github.com/apache/arrow/go/v17/arrow/memory"
 	inputtablepb2 "github.com/deephaven/deephaven-core/go/internal/proto/inputtable"
 	tablepb2 "github.com/deephaven/deephaven-core/go/internal/proto/table"
 	ticketpb2 "github.com/deephaven/deephaven-core/go/internal/proto/ticket"

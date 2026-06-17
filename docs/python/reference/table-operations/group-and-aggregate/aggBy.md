@@ -4,6 +4,9 @@ title: agg_by
 
 `agg_by` applies a list of aggregations to table data.
 
+> [!WARNING]
+> Aggregation keys consume memory that persists for the lifetime of the worker, even after the keys are removed from the table. Avoid including unnecessary columns in grouping keys, especially if they contain a high number of unique values.
+
 ## Syntax
 
 ```python syntax
@@ -29,6 +32,7 @@ A list of aggregations to compute. The following aggregations are available:
 - [`agg.count_`](./AggCount.md)
 - [`agg.count_distinct`](./AggCountDistinct.md)
 - [`agg.count_where`](./AggCountWhere.md)
+- [`agg.distinct`](./AggDistinct.md)
 - [`agg.first`](./AggFirst.md)
 - [`agg.formula`](./AggFormula.md)
 - [`agg.group`](./AggGroup.md)
@@ -36,6 +40,7 @@ A list of aggregations to compute. The following aggregations are available:
 - [`agg.max_`](./AggMax.md)
 - [`agg.median`](./AggMed.md)
 - [`agg.min_`](./AggMin.md)
+- [`agg.partition`](./AggPartition.md)
 - [`agg.pct`](./AggPct.md)
 - [`agg.sorted_first`](./AggSortedFirst.md)
 - [`agg.sorted_last`](./AggSortedLast.md)

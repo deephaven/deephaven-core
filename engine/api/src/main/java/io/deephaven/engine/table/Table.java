@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table;
 
@@ -252,10 +252,11 @@ public interface Table extends
     <T> ColumnSource<T> getColumnSource(String sourceName);
 
     /**
-     * Retrieves a {@code ColumnSource} and {@link ColumnSource#cast(Class) casts} it to the target class {@code clazz}.
+     * Retrieves a {@code ColumnSource} and {@link ColumnSource#cast(Class, String) casts} it to the target class
+     * {@code clazz}.
      *
      * <p>
-     * The success of this call is equivalent to {@code getDefinition().checkColumn(sourceName, clazz)}, which is the
+     * The success of this call is equivalent to {@code getDefinition().checkHasColumn(sourceName, clazz)}, which is the
      * preferred way to check for compatibility in scenarios where the caller does not want to the implementation to
      * potentially invoke {@link #coalesce()}.
      *
@@ -263,29 +264,47 @@ public interface Table extends
      * @param clazz The target type
      * @param <T> The target type, as a type parameter. Intended to be inferred from {@code clazz}.
      * @return The column source for {@code sourceName}, parameterized by {@code T}
-     * @see ColumnSource#cast(Class)
+     * @see ColumnSource#cast(Class, String)
      * @see TableDefinition#checkHasColumn(String, Class)
      */
     <T> ColumnSource<T> getColumnSource(String sourceName, Class<? extends T> clazz);
 
     /**
-     * Retrieves a {@code ColumnSource} and {@link ColumnSource#cast(Class, Class)} casts} it to the target class
+     * Retrieves a {@code ColumnSource} and {@link ColumnSource#cast(Class, Class, String) casts} it to the target class
      * {@code clazz} and {@code componentType}.
      *
      * <p>
-     * The success of this call is equivalent to {@code getDefinition().checkColumn(sourceName, clazz, componentType)},
-     * which is the preferred way to check for compatibility in scenarios where the caller does not want the
-     * implementation to potentially invoke {@link #coalesce()}.
+     * The success of this call is equivalent to
+     * {@code getDefinition().checkHasColumn(sourceName, clazz, componentType)}, which is the preferred way to check for
+     * compatibility in scenarios where the caller does not want the implementation to potentially invoke
+     * {@link #coalesce()}.
      *
      * @param sourceName The name of the column
      * @param clazz The target type
      * @param componentType The target component type, may be null
      * @param <T> The target type, as a type parameter. Intended to be inferred from {@code clazz}.
      * @return The column source for {@code sourceName}, parameterized by {@code T}
-     * @see ColumnSource#cast(Class, Class)
+     * @see ColumnSource#cast(Class, Class, String)
      * @see TableDefinition#checkHasColumn(String, Class, Class)
      */
     <T> ColumnSource<T> getColumnSource(String sourceName, Class<? extends T> clazz, @Nullable Class<?> componentType);
+
+    /**
+     * Retrieves a {@code ColumnSource} and {@link ColumnSource#cast(Class, Class, String) casts} it to the target
+     * {@link ColumnDefinition#getDataType() dataType} and {@link ColumnDefinition#getComponentType() componentType}.
+     *
+     * <p>
+     * The success of this call is equivalent to {@code getDefinition().checkHasColumn(columnDefinition)}, which is the
+     * preferred way to check for compatibility in scenarios where the caller does not want the implementation to
+     * potentially invoke {@link #coalesce()}.
+     *
+     * @param columnDefinition the column definition
+     * @param <T> The target type, as a type parameter.
+     * @return The column source for {@code columnDefinition.getName()}, parameterized by {@code T}
+     * @see ColumnSource#cast(Class, Class, String)
+     * @see TableDefinition#checkHasColumn(ColumnDefinition)
+     */
+    <T> ColumnSource<T> getColumnSource(ColumnDefinition<? extends T> columnDefinition);
 
     Map<String, ? extends ColumnSource<?>> getColumnSourceMap();
 
@@ -345,6 +364,9 @@ public interface Table extends
      * simultaneous and unordered, enabling direct swaps between column names. The resulting table retains the original
      * column ordering after applying the specified renames.
      * <p>
+     * NOTE: If a new column name conflicts with an existing column name in the table, the existing column will be
+     * silently replaced.
+     * <p>
      * {@link IllegalArgumentException} will be thrown:
      * <ul>
      * <li>if a source column does not exist</li>
@@ -363,6 +385,9 @@ public interface Table extends
      * The renames are simultaneous and unordered, enabling direct swaps between column names. The resulting table
      * retains the original column ordering after applying the specified renames.
      * <p>
+     * NOTE: If a new column name conflicts with an existing column name in the table, the existing column will be
+     * silently replaced.
+     * <p>
      * {@link IllegalArgumentException} will be thrown:
      * <ul>
      * <li>if a source column does not exist</li>
@@ -380,6 +405,9 @@ public interface Table extends
      * Produce a new table with the specified columns renamed using the provided function. The renames are simultaneous
      * and unordered, enabling direct swaps between column names. The resulting table retains the original column
      * ordering after applying the specified renames.
+     * <p>
+     * NOTE: If a new column name conflicts with an existing column name in the table, the existing column will be
+     * silently replaced.
      * <p>
      * {@link IllegalArgumentException} will be thrown:
      * <ul>
@@ -555,6 +583,11 @@ public interface Table extends
      * table. On each cycle, all existing rows are removed. When used with an aggregation this has the effect of
      * providing the aggregated values for only this cycle, because aggregating the result table will no longer apply
      * special blink semantics.
+     * </p>
+     *
+     * <p>
+     * A blink table can be converted to an append-only table with
+     * {@link io.deephaven.engine.table.impl.BlinkTableTools#blinkToAppendOnly(io.deephaven.engine.table.Table)}.
      * </p>
      *
      * <p>

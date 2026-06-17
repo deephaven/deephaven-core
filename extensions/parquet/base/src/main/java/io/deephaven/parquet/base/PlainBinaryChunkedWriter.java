@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.parquet.base;
 
@@ -38,8 +38,9 @@ final class PlainBinaryChunkedWriter extends AbstractBulkValuesWriter<Binary[]> 
     }
 
     @Override
-    public final void writeBytes(Binary v) {
-        ensureCapacityFor(v);
+    public void writeBytes(@NotNull final Binary v) {
+        // ensure we have enough capacity to write the "size" and "bytes"
+        ensureRemainingCapacity(Integer.BYTES + v.length());
         innerBuffer.putInt(v.length());
         innerBuffer.put(v.toByteBuffer());
     }
@@ -137,14 +138,14 @@ final class PlainBinaryChunkedWriter extends AbstractBulkValuesWriter<Binary[]> 
         return new WriteResult(nonNullLeafCount, nullOffsets);
     }
 
-    private void ensureCapacityFor(@NotNull final Binary v) {
-        if (v.length() == 0 || innerBuffer.remaining() >= v.length() + Integer.BYTES) {
+    private void ensureRemainingCapacity(final int ensureCapacity) {
+        if (innerBuffer.remaining() >= ensureCapacity) {
             return;
         }
 
         final int currentCapacity = innerBuffer.capacity();
         final int currentPosition = innerBuffer.position();
-        final long requiredCapacity = (long) currentPosition + v.length() + Integer.BYTES;
+        final long requiredCapacity = (long) currentPosition + ensureCapacity;
         if (requiredCapacity > MAXIMUM_TOTAL_CAPACITY) {
             throw new IllegalStateException("Unable to write " + requiredCapacity + " values. (Maximum capacity: "
                     + MAXIMUM_TOTAL_CAPACITY + ".)");

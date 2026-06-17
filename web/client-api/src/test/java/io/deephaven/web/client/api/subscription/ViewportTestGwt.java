@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api.subscription;
 
@@ -27,6 +27,7 @@ import jsinterop.base.Any;
 import jsinterop.base.Js;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Supplier;
@@ -53,7 +54,12 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
             .script("blinkOne",
                     "time_table(\"PT00:00:01\").update([\"I=i\", \"J=1\"]).last_by(by=\"J\").where(\"I%2 != 0\")")
             .script("big", "empty_table(1_000_000).update_view(['I=i', 'Str=``+I']).where('I % 2 == 0')")
-            .script("small", "big.head(100)");
+            .script("small", "big.head(100)")
+            .script("arrays", "small.update('A = I % 4').group_by('A').update('J = I.toArray()')")
+            .script("more_arrays",
+                    "empty_table(1).update([\"doublevector_int=i\", \"doublevector_string=``\"]).group_by()" +
+                            ".update([\"vector_int=i\", \"vector_string=``\"]).group_by()" +
+                            ".update([\"array_int=new int[]{i}\", \"doublearray_int=new int[][] {{i}}\",\"array_string=new String[]{``}\",\"doublearray_string=new String[][]{{``}}\"])");
 
     public void testViewportOnStaticTable() {
         connect(tables)
@@ -865,6 +871,166 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                                             });
                             return Promise.all(viewportCheck, snapshotCheck);
                         }).then(ignore -> Promise.resolve(table));
+                    });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    public void testArrayPreviewLength() {
+        connect(tables)
+                .then(table("arrays"))
+                .then(t -> {
+                    delayTestFinish(8412);
+
+                    Column iColumn = t.findColumn("I");
+                    Column strColumn = t.findColumn("Str");
+                    Column jColumn = t.findColumn("J");
+
+                    DataOptions.SnapshotOptions snapshotOptions = new DataOptions.SnapshotOptions();
+                    snapshotOptions.columns = t.getColumns();
+                    snapshotOptions.rows = Js.uncheckedCast(JsRangeSet.ofRange(0, 1));
+                    snapshotOptions.previewOptions = new DataOptions.PreviewOptions();
+                    snapshotOptions.previewOptions.array = 3.;
+                    Promise<?> snapshotTest = t.createSnapshot(snapshotOptions).then(snapshot -> {
+                        assertEquals(2, snapshot.getRows().length);
+                        assertTrue(JsArray.isArray(snapshot.get(0).get(iColumn)));
+                        assertTrue(JsArray.isArray(snapshot.get(0).get(strColumn)));
+                        assertTrue(JsArray.isArray(snapshot.get(0).get(jColumn)));
+
+                        assertEquals(4, snapshot.get(0).get(iColumn).asArrayLike().getLength());
+                        assertEquals(4, snapshot.get(0).get(strColumn).asArrayLike().getLength());
+                        assertEquals(4, snapshot.get(0).get(jColumn).asArrayLike().getLength());
+
+                        assertEquals(Arrays.asList("0", "4", "8", "12"),
+                                snapshot.get(0).get(strColumn).asArrayLike().asList());
+                        assertEquals(Arrays.asList(0.0, 4.0, 8.0, 12.0),
+                                snapshot.get(0).get(iColumn).asArrayLike().asList());
+                        assertEquals(Arrays.asList(0.0, 4.0, 8.0, 12.0),
+                                snapshot.get(0).get(jColumn).asArrayLike().asList());
+                        return null;
+                    }).then(ignore -> {
+                        snapshotOptions.previewOptions.array = 300.;
+                        return t.createSnapshot(snapshotOptions);
+                    }).then(snapshot -> {
+                        assertEquals(2, snapshot.getRows().length);
+                        assertTrue(JsArray.isArray(snapshot.get(0).get(iColumn)));
+                        assertTrue(JsArray.isArray(snapshot.get(0).get(strColumn)));
+                        assertTrue(JsArray.isArray(snapshot.get(0).get(jColumn)));
+
+                        assertEquals(50, snapshot.get(0).get(iColumn).asArrayLike().getLength());
+                        assertEquals(50, snapshot.get(0).get(strColumn).asArrayLike().getLength());
+                        assertEquals(50, snapshot.get(0).get(jColumn).asArrayLike().getLength());
+                        return null;
+                    });
+                    DataOptions.SubscriptionOptions subscriptionOptions = new DataOptions.SubscriptionOptions();
+                    subscriptionOptions.columns = t.getColumns();
+                    subscriptionOptions.previewOptions = new DataOptions.PreviewOptions();
+                    subscriptionOptions.previewOptions.array = 3.;
+                    TableSubscription subscription1 = t.createSubscription(subscriptionOptions);
+                    Promise<?> subPromise = assertUpdateReceived(subscription1, data -> {
+                        assertEquals(2, data.getRows().length);
+                        assertTrue(JsArray.isArray(data.get(0).get(iColumn)));
+                        assertTrue(JsArray.isArray(data.get(0).get(strColumn)));
+                        assertTrue(JsArray.isArray(data.get(0).get(jColumn)));
+
+                        assertEquals(4, data.get(0).get(iColumn).asArrayLike().getLength());
+                        assertEquals(4, data.get(0).get(strColumn).asArrayLike().getLength());
+                        assertEquals(4, data.get(0).get(jColumn).asArrayLike().getLength());
+
+                        assertEquals(Arrays.asList("0", "4", "8", "12"),
+                                data.get(0).get(strColumn).asArrayLike().asList());
+                        assertEquals(Arrays.asList(0.0, 4.0, 8.0, 12.0),
+                                data.get(0).get(iColumn).asArrayLike().asList());
+                        assertEquals(Arrays.asList(0.0, 4.0, 8.0, 12.0),
+                                data.get(0).get(jColumn).asArrayLike().asList());
+                    }, 1234).then(ignore -> {
+                        subscriptionOptions.previewOptions.array = 300.;
+                        TableSubscription subscription2 = t.createSubscription(subscriptionOptions);
+                        return assertUpdateReceived(subscription2, data -> {
+                            assertEquals(2, data.getRows().length);
+                            assertTrue(JsArray.isArray(data.get(0).get(iColumn)));
+                            assertTrue(JsArray.isArray(data.get(0).get(strColumn)));
+                            assertTrue(JsArray.isArray(data.get(0).get(jColumn)));
+
+                            assertEquals(50, data.get(0).get(iColumn).asArrayLike().getLength());
+                            assertEquals(50, data.get(0).get(strColumn).asArrayLike().getLength());
+                            assertEquals(50, data.get(0).get(jColumn).asArrayLike().getLength());
+                        }, 1235);
+                    });
+
+                    DataOptions.ViewportSubscriptionOptions viewportSubOptions =
+                            new DataOptions.ViewportSubscriptionOptions();
+                    viewportSubOptions.columns = t.getColumns();
+                    viewportSubOptions.rows = Js.uncheckedCast(JsRangeSet.ofRange(0, 1));
+                    viewportSubOptions.previewOptions = new DataOptions.PreviewOptions();
+                    viewportSubOptions.previewOptions.array = 3.;
+                    TableViewportSubscription subscription3 = t.createViewportSubscription(viewportSubOptions);
+                    Promise<?> viewportSubPromise = assertUpdateReceived(subscription3, data -> {
+                        assertEquals(2, data.getRows().length);
+                        assertTrue(JsArray.isArray(data.get(0).get(iColumn)));
+                        assertTrue(JsArray.isArray(data.get(0).get(strColumn)));
+                        assertTrue(JsArray.isArray(data.get(0).get(jColumn)));
+
+                        assertEquals(4, data.get(0).get(iColumn).asArrayLike().getLength());
+                        assertEquals(4, data.get(0).get(strColumn).asArrayLike().getLength());
+                        assertEquals(4, data.get(0).get(jColumn).asArrayLike().getLength());
+
+                        assertEquals(Arrays.asList("0", "4", "8", "12"),
+                                data.get(0).get(strColumn).asArrayLike().asList());
+                        assertEquals(Arrays.asList(0.0, 4.0, 8.0, 12.0),
+                                data.get(0).get(iColumn).asArrayLike().asList());
+                        assertEquals(Arrays.asList(0.0, 4.0, 8.0, 12.0),
+                                data.get(0).get(jColumn).asArrayLike().asList());
+                    }, 1234).then(ignore -> {
+                        viewportSubOptions.previewOptions.array = 300.;
+                        TableViewportSubscription subscription4 = t.createViewportSubscription(viewportSubOptions);
+                        return assertUpdateReceived(subscription4, data -> {
+                            assertEquals(2, data.getRows().length);
+                            assertTrue(JsArray.isArray(data.get(0).get(iColumn)));
+                            assertTrue(JsArray.isArray(data.get(0).get(strColumn)));
+                            assertTrue(JsArray.isArray(data.get(0).get(jColumn)));
+
+                            assertEquals(50, data.get(0).get(iColumn).asArrayLike().getLength());
+                            assertEquals(50, data.get(0).get(strColumn).asArrayLike().getLength());
+                            assertEquals(50, data.get(0).get(jColumn).asArrayLike().getLength());
+                        }, 1235);
+                    });
+
+                    return Promise.all(
+                            snapshotTest,
+                            subPromise,
+                            viewportSubPromise);
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    public void testNestedArrays() {
+        connect(tables)
+                .then(table("more_arrays"))
+                .then(t -> {
+                    delayTestFinish(8413);
+
+                    DataOptions.SnapshotOptions snapshotOptions = new DataOptions.SnapshotOptions();
+                    snapshotOptions.columns = t.getColumns();
+                    snapshotOptions.rows = Js.uncheckedCast(JsRangeSet.ofRange(0, 1));
+                    return t.createSnapshot(snapshotOptions).then(snapshot -> {
+                        for (int i = 0; i < t.getColumns().length; i++) {
+                            Column c = t.getColumns().getAt(i);
+                            Any data = snapshot.getData(0, c);
+                            assertNotNull(data);
+                            // single array/vector
+                            assertTrue(JsArray.isArray(data));
+                            assertEquals(1, data.asArrayLike().getLength());
+                            if (c.getName().startsWith("double") || c.getName().startsWith("triple")) {
+                                // double array/vector
+                                assertTrue(JsArray.isArray(data.asArray()[0]));
+                                if (c.getName().startsWith("triple")) {
+                                    // triple array/vector
+                                    assertTrue(JsArray.isArray(data.asArray()[0].asArray()[0]));
+                                }
+                            }
+                        }
+                        return Promise.resolve(snapshot);
                     });
                 })
                 .then(this::finish).catch_(this::report);

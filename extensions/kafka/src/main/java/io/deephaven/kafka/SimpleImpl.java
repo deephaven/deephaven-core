@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.kafka;
 
@@ -27,6 +27,9 @@ import io.deephaven.qst.type.FloatType;
 import io.deephaven.qst.type.GenericType;
 import io.deephaven.qst.type.InstantType;
 import io.deephaven.qst.type.IntType;
+import io.deephaven.qst.type.DurationType;
+import io.deephaven.qst.type.LocalDateType;
+import io.deephaven.qst.type.LocalTimeType;
 import io.deephaven.qst.type.LongType;
 import io.deephaven.qst.type.PrimitiveType;
 import io.deephaven.qst.type.ShortType;
@@ -348,6 +351,21 @@ class SimpleImpl {
 
         @Override
         public Serde<?> visit(InstantType instantType) {
+            return null;
+        }
+
+        @Override
+        public Serde<?> visit(LocalTimeType localTimeType) {
+            return null;
+        }
+
+        @Override
+        public Serde<?> visit(LocalDateType localDateType) {
+            return null;
+        }
+
+        @Override
+        public Serde<?> visit(DurationType durationType) {
             return null;
         }
 

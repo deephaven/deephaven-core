@@ -72,7 +72,7 @@ source = timeTable(startTime, "PT1S")
 
 <!--TODO: add more code examples. Given the large number of overloads, that would be helpful. Esp. the one using a clock. -->
 
-![The above `source` table](../../../assets/reference/create/timeTable2.gif)
+![The above time table](../../../assets/reference/create/timeTable2.gif)
 
 ## Details on the `startTime` parameter
 
@@ -99,7 +99,7 @@ The first row of the ticking table is roughly 5 seconds ahead of the initial exe
 ## Related documentation
 
 - [Create a table with `timeTable`](../../../how-to-guides/time-table.md)
-- [How to reduce the update frequency of ticking tables](../../../how-to-guides/reduce-update-frequency.md)
+- [How to reduce the update frequency of ticking tables](../../../how-to-guides/performance/reduce-update-frequency.md)
 - [How to capture the history of ticking tables](../../../how-to-guides/capture-table-history.md)
 - [`emptyTable`](./emptyTable.md)
 - [`newTable`](./newTable.md)

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.sources.aggregate;
 
@@ -345,5 +345,10 @@ public abstract class RangeAggregateColumnSource<VECTOR_TYPE extends Vector<VECT
                 && rowSets.isImmutable()
                 && startPositionsInclusive.isImmutable()
                 && endPositionsExclusive.isImmutable();
+    }
+
+    @Override
+    public ColumnSource<COMPONENT_TYPE> getAggregatedSource() {
+        return aggregated;
     }
 }

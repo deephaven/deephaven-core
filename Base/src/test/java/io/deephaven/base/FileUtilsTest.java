@@ -1,10 +1,11 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.base;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
@@ -66,7 +67,9 @@ public class FileUtilsTest extends TestCase {
         // the following possibly does nothing (like if we're on *nix system)
         final DosFileAttributeView dosView =
                 Files.getFileAttributeView(hiddenFile, DosFileAttributeView.class, LinkOption.NOFOLLOW_LINKS);
-        dosView.setHidden(true);
+        if (dosView != null) {
+            dosView.setHidden(true);
+        }
     }
 
     public void testConvertToFileURI() throws IOException {
@@ -123,5 +126,110 @@ public class FileUtilsTest extends TestCase {
             Assert.fail("Expected IllegalArgumentException");
         } catch (IllegalArgumentException expected) {
         }
+    }
+
+    /**
+     * Before the {@link FileUtils#startsWithScheme(String)} check, this was "successfully" parsing via the
+     * file-fallback path, to logic that looked something like:
+     *
+     * <pre>{@code
+     * // this is a valid relative File location
+     * final File relativeFile = new File("s3://bucket/path with spaces/cool");
+     * final URI uri = convertToURI(relativeFile, true);
+     * }</pre>
+     */
+    public void testInvalidURIPaths() {
+        badUriString("s3://bucket/path with spaces/cool", false,
+                "Failed to convert to URI: 's3://bucket/path with spaces/cool'");
+        badUriString("s3://bucket/path with spaces/cool/", true,
+                "Failed to convert to URI: 's3://bucket/path with spaces/cool/'");
+        badUriString("file:/bad/file uri", false, "Failed to convert to URI: 'file:/bad/file uri'");
+        badUriString("file:/bad/file uri/", true, "Failed to convert to URI: 'file:/bad/file uri/'");
+    }
+
+    public void testStartsWithScheme() {
+        Assert.assertTrue(FileUtils.startsWithScheme("myScheme:something"));
+        Assert.assertTrue(FileUtils.startsWithScheme("dh+plain://localhost"));
+        Assert.assertTrue(FileUtils.startsWithScheme("x-y://localhost"));
+        Assert.assertTrue(FileUtils.startsWithScheme("x.y://localhost"));
+        Assert.assertTrue(FileUtils.startsWithScheme("justScheme:"));
+        Assert.assertTrue(FileUtils.startsWithScheme("s3://my/bucket"));
+        Assert.assertTrue(
+                FileUtils.startsWithScheme("scheme: anything after scheme is okay, doesn't have to be a real URI"));
+
+        Assert.assertFalse(FileUtils.startsWithScheme("3://scheme-must-start-with-alpha"));
+        Assert.assertFalse(FileUtils.startsWithScheme("nocolon"));
+        Assert.assertFalse(FileUtils.startsWithScheme("/file/path"));
+        Assert.assertFalse(FileUtils.startsWithScheme("/file/path:something"));
+    }
+
+    public void testGoodFileURIs() {
+        assertEqualUriString(URI.create("file:/"), FileUtils.convertToURI("file:/", false));
+        assertEqualUriString(URI.create("file:/"), FileUtils.convertToURI("file:/", true));
+        assertEqualUriString(URI.create("file:/foo"), FileUtils.convertToURI("file:/foo/", false));
+        assertEqualUriString(URI.create("file:/foo/"), FileUtils.convertToURI("file:/foo", true));
+
+        assertEqualUriString(URI.create("file:/"), FileUtils.convertToURI("file:///", false));
+        assertEqualUriString(URI.create("file:/"), FileUtils.convertToURI("file:///", true));
+        assertEqualUriString(URI.create("file:/foo"), FileUtils.convertToURI("file:///foo/", false));
+        assertEqualUriString(URI.create("file:/foo/"), FileUtils.convertToURI("file:///foo", true));
+    }
+
+    public void testFileSourceWithNoScheme() {
+        checkFileSource("my/foo-fake-name");
+        checkFileSource("my/foo-fake-name/");
+        checkFileSource("/my/foo-fake-name");
+        checkFileSource("/my/foo-fake-name/");
+        // These are invalid URIs as-is, but work with File
+        checkFileSource("/my/foo fake name with spaces");
+        checkFileSource("/my/foo fake name with spaces/");
+    }
+
+    public void testBadFileURIs() {
+        // If the user explicitly passes a file: scheme, we should not be more lenient than new File(uri)
+        badFileURI(URI.create("file:foo"), "URI is not hierarchical");
+        badFileURI(URI.create("file://foo"), "URI has an authority component");
+        badFileURI(URI.create("file:///foo#frag"), "URI has a fragment component");
+        badFileURI(URI.create("file:///foo?frag"), "URI has a query component");
+    }
+
+    private static void checkFileSource(final String pathname) {
+        assertFalse("FileUtils.hasScheme(pathname)", FileUtils.startsWithScheme(pathname));
+        final File file = new File(pathname);
+        // File.toURI is weird in that it does a filesystem operation to check if the directory exists. Since we don't
+        // want to go around creating random files from the working directory just to satisfy File.toURI code path
+        // behavior, we'll use paths we are pretty sure don't exist and assert as such.
+        assertFalse(file.exists());
+        assertEqualUriString(file.toURI(), FileUtils.convertToURI(pathname, false));
+        assertEqualUriString(FileUtils.convertToURI(file, false), FileUtils.convertToURI(pathname, false));
+        assertEqualUriString(FileUtils.convertToURI(file, true), FileUtils.convertToURI(pathname, true));
+    }
+
+    private static void badFileURI(URI uri, String expectedError) {
+        assertEquals("file", uri.getScheme());
+        try {
+            new File(uri);
+            Assert.fail("Expected IllegalArgumentException");
+        } catch (IllegalArgumentException e) {
+            Assert.assertEquals(expectedError, e.getMessage());
+        }
+        badUriString(uri.toString(), false, expectedError);
+        badUriString(uri.toString(), true, expectedError);
+    }
+
+    private static void badUriString(String uriWithScheme, boolean isDirectory, String expectedError) {
+        assertTrue("FileUtils.hasScheme(uriWithScheme)", FileUtils.startsWithScheme(uriWithScheme));
+        try {
+            FileUtils.convertToURI(uriWithScheme, isDirectory);
+            Assert.fail("Expected IllegalArgumentException");
+        } catch (IllegalArgumentException e) {
+            Assert.assertEquals(expectedError, e.getMessage());
+        }
+    }
+
+    private static void assertEqualUriString(URI expected, URI actual) {
+        // Two URIs can be equal but have _different_ toString representations; this is a stricter equality check.
+        // ie URI.create("file:///myfile.txt") vs URI.create("file:/myfile.txt")
+        Assert.assertEquals(expected.toString(), actual.toString());
     }
 }

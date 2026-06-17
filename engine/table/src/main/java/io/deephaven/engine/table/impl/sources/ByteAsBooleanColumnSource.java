@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.sources;
 
@@ -15,7 +15,7 @@ import io.deephaven.chunk.*;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Reinterpret result {@link ColumnSource} implementations that translates {@link byte} to {@code Boolean} values.
+ * Reinterpret result {@link ColumnSource} implementations that translates {@code byte} to {@code Boolean} values.
  */
 public class ByteAsBooleanColumnSource extends AbstractColumnSource<Boolean>
         implements MutableColumnSourceGetDefaults.ForBoolean, FillUnordered<Values> {

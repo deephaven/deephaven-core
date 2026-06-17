@@ -18,16 +18,16 @@ Aggregators are applied to data by the [`aggBy`](../reference/table-operations/g
 
 The general syntax follows:
 
-```groovy skip-test
+```groovy syntax
 import static io.deephaven.api.agg.Aggregation.AggAvg
 import static io.deephaven.api.agg.Aggregation.AggLast
 
-agg_list = [
+aggList = [
     AggAvg(sourceColumns),                 // first aggregation
     AggLast("inputColumn = outputColumn")  // second aggregation
 ]
 
-result = source.aggBy(agg_list, groupingColumns...) // apply the aggregations to data .aggBy
+result = source.aggBy(aggList, groupingColumns...) // apply the aggregations to data
 ```
 
 ## What aggregations are available?
@@ -37,8 +37,8 @@ A number of built-in aggregations are available:
 - [`AggAbsSum`](../reference/table-operations/group-and-aggregate/AggAbsSum.md) - Sum of absolute values for each group.
 - [`AggAvg`](../reference/table-operations/group-and-aggregate/AggAvg.md) - Average value for each group.
 - [`AggCount`](../reference/table-operations/group-and-aggregate/AggCount.md) - Number of rows for each group.
-- [`AggCountWhere`](../reference/table-operations/group-and-aggregate/AggCountWhere.md) - Number of values for each group that pass a set of filters.
 - [`AggCountDistinct`](../reference/table-operations/group-and-aggregate/AggCountDistinct.md) - Number of unique values for each group.
+- [`AggCountWhere`](../reference/table-operations/group-and-aggregate/AggCountWhere.md) - Number of values for each group that pass a set of filters.
 - [`AggDistinct`](../reference/table-operations/group-and-aggregate/AggDistinct.md) - Array of unique values for each group.
 - [`AggFirst`](../reference/table-operations/group-and-aggregate/AggFirst.md) - First value for each group.
 - [`AggFormula`](../reference/table-operations/group-and-aggregate/AggFormula.md) - Custom formula for each group.
@@ -49,12 +49,12 @@ A number of built-in aggregations are available:
 - [`AggMin`](../reference/table-operations/group-and-aggregate/AggMin.md) - Minimum value for each group.
 - [`AggPartition`](../reference/table-operations/group-and-aggregate/AggPartition.md) - Creates partition for the aggregation group.
 - [`AggPct`](../reference/table-operations/group-and-aggregate/AggPct.md) - Percentile of values for each group.
-- [`AggSortedFirst`](../reference/table-operations/group-and-aggregate/AggSortedFirst.md) - First value of each column within an aggregation group, sorted.
-- [`AggSortedLast`](../reference/table-operations/group-and-aggregate/AggSortedLast.md) - Last value of each column within an aggregation group, sorted.
-- [`AggStd`](../reference/table-operations/group-and-aggregate/AggStd.md) - Standard deviation for each group.
+- [`AggSortedFirst`](../reference/table-operations/group-and-aggregate/AggSortedFirst.md) - Sorts in ascending order, then computes the first value for each group.
+- [`AggSortedLast`](../reference/table-operations/group-and-aggregate/AggSortedLast.md) - Sorts in descending order, then computes the last value for each group.
+- [`AggStd`](../reference/table-operations/group-and-aggregate/AggStd.md) - Sample standard deviation for each group.
 - [`AggSum`](../reference/table-operations/group-and-aggregate/AggSum.md) - Sum of values for each group.
 - [`AggUnique`](../reference/table-operations/group-and-aggregate/AggUnique.md) - Returns one single value for a column, or a default.
-- [`AggVar`](../reference/table-operations/group-and-aggregate/AggVar.md) - Variance for each group.
+- [`AggVar`](../reference/table-operations/group-and-aggregate/AggVar.md) - Sample variance for each group.
 - [`AggWAvg`](../reference/table-operations/group-and-aggregate/AggWAvg.md) - Weighted average for each group.
 - [`AggWSum`](../reference/table-operations/group-and-aggregate/AggWSum.md) - Weighted sum for each group.
 

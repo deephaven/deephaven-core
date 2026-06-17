@@ -1,8 +1,9 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.server.jetty11;
 
+import com.google.auto.service.AutoService;
 import dagger.Component;
 import dagger.Module;
 import dagger.Provides;
@@ -11,7 +12,11 @@ import io.deephaven.server.jetty11.js.Sentinel;
 import io.deephaven.server.plugin.js.JsPluginsManifestRegistration;
 import io.deephaven.server.plugin.js.JsPluginsNpmPackageRegistration;
 import io.deephaven.server.runner.ExecutionContextUnitTestModule;
+import io.deephaven.server.table.validation.ExpressionValidatorModule;
 import io.deephaven.server.test.FlightMessageRoundTripTest;
+import jakarta.servlet.ServletContainerInitializer;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpFields;
@@ -20,6 +25,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.junit.Test;
 
 import javax.inject.Singleton;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
@@ -49,6 +55,7 @@ public class JettyFlightRoundTripTest extends FlightMessageRoundTripTest {
             FlightTestModule.class,
             JettyServerModule.class,
             JettyTestConfig.class,
+            ExpressionValidatorModule.class,
     })
     public interface JettyTestComponent extends TestComponent {
     }
@@ -88,6 +95,32 @@ public class JettyFlightRoundTripTest extends FlightMessageRoundTripTest {
         new JsPluginsNpmPackageRegistration(example2Root)
                 .registerInto(component.registration());
         testJsPluginExamples(true, true, false);
+    }
+
+    @Override
+    public void setupBefore() throws IOException, InterruptedException {
+        MyInitializer.initialized = false;
+        super.setupBefore();
+    }
+
+    @AutoService(ServletContainerInitializer.class)
+    public static class MyInitializer implements ServletContainerInitializer {
+
+        private static boolean initialized;
+
+        @Override
+        public void onStartup(Set<Class<?>> c, ServletContext ctx) throws ServletException {
+            initialized = true;
+        }
+    }
+
+    @Test
+    public void servletContainerInitializerNotCalled() {
+        // Note: our setup in does _not_ involve org.eclipse.jetty.webapp.WebAppContext, so
+        // jakarta.servlet.ServletContainerInitializer is not invoked. If this changes in the future, we will want to
+        // consider adding the "logbackDisableServletContainerInitializer" workaround like our Jetty 12 implementation
+        // does.
+        assertThat(MyInitializer.initialized).isFalse();
     }
 
     private void testJsPluginExamples(boolean example1IsLimited, boolean example2IsLimited, boolean hasExample3)

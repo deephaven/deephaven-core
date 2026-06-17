@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.util;
 
@@ -39,10 +39,8 @@ public class PerformanceQueriesGeneral {
             queryPerformanceLog = queryPerformanceLog.where(whereConditionForEvaluationNumber(evaluationNumber));
         }
 
-        final long workerHeapSizeBytes = getWorkerHeapSizeBytes();
         queryPerformanceLog = queryPerformanceLog
                 .updateView(
-                        "WorkerHeapSize = " + workerHeapSizeBytes + "L",
                         // How long this query ran for, in nanoseconds
                         "DurationNanos = EndTime - StartTime",
                         // How long this query ran for, in seconds
@@ -106,11 +104,9 @@ public class PerformanceQueriesGeneral {
             queryUpdatePerformance = queryUpdatePerformance.where(whereConditionForEvaluationNumber(evaluationNumber));
         }
 
-        final long workerHeapSizeBytes = getWorkerHeapSizeBytes();
         queryUpdatePerformance = queryUpdatePerformance
                 .updateView(
                         "IntervalDurationNanos = IntervalEndTime - IntervalStartTime",
-                        "WorkerHeapSize = " + workerHeapSizeBytes + "L",
                         // % of time during this interval that the operation was using CPU
                         "Ratio = UsageNanos / IntervalDurationNanos",
                         // Memory in use by the query. (Only includes active heap memory.)
@@ -370,10 +366,6 @@ public class PerformanceQueriesGeneral {
 
     private static Table formatColumnsAsPctUpdatePerformance(final Table updatePerformanceTable) {
         return formatColumnsAsPct(updatePerformanceTable, "Ratio", "QueryMemUsedPct");
-    }
-
-    private static long getWorkerHeapSizeBytes() {
-        return EngineMetrics.getProcessInfo().getMemoryInfo().heap().max().orElse(0);
     }
 
     private static String whereConditionForEvaluationNumber(final long evaluationNumber) {

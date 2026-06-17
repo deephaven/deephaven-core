@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl;
 
@@ -12,7 +12,10 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.DataIndex;
 import io.deephaven.engine.table.ModifiedColumnSet;
+import io.deephaven.engine.table.impl.dataindex.DataIndexPushdownManager;
+import io.deephaven.engine.table.impl.sort.SortedColumnPushdownManager;
 import io.deephaven.engine.table.impl.filter.ExtractBarriers;
 import io.deephaven.engine.table.impl.filter.ExtractRespectedBarriers;
 import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
@@ -33,6 +36,8 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static io.deephaven.engine.table.impl.PushdownResult.UNSUPPORTED_ACTION_COST;
 
 /**
  * The AbstractFilterExecution incorporates the idea that we have an added and modified RowSet to filter and that there
@@ -57,6 +62,11 @@ abstract class AbstractFilterExecution {
     final QueryTable sourceTable;
     final WhereFilter[] filters;
 
+    /**
+     * Maps a {@link WhereFilter} to a data index.
+     */
+    final Map<WhereFilter, DataIndex> filterDataIndexMap;
+
     final boolean runModifiedFilters;
     final ModifiedColumnSet sourceModColumns;
 
@@ -76,15 +86,17 @@ abstract class AbstractFilterExecution {
     final boolean usePrev;
 
     AbstractFilterExecution(
-            final QueryTable sourceTable,
+            @NotNull final QueryTable sourceTable,
             final WhereFilter[] filters,
+            @NotNull final Map<WhereFilter, DataIndex> filterDataIndexMap,
             @NotNull final RowSet addedInput,
             @NotNull final RowSet modifiedInput,
             final boolean usePrev,
             final boolean runModifiedFilters,
-            final ModifiedColumnSet sourceModColumns) {
+            @NotNull final ModifiedColumnSet sourceModColumns) {
         this.sourceTable = sourceTable;
         this.filters = filters;
+        this.filterDataIndexMap = filterDataIndexMap;
         this.addedInput = addedInput;
         this.modifiedInput = modifiedInput;
         this.usePrev = usePrev;
@@ -201,7 +213,7 @@ abstract class AbstractFilterExecution {
         /**
          * The cost of the pushdown filter operation.
          */
-        public long pushdownFilterCost = Long.MAX_VALUE;
+        public long pushdownFilterCost = UNSUPPORTED_ACTION_COST;
         /**
          * The result of the pushdown filter operation, or null if pushdown is not supported.
          */
@@ -228,7 +240,7 @@ abstract class AbstractFilterExecution {
             this.pushdownMatcher = pushdownMatcher;
             this.context = context;
             this.declaredBarriers = ExtractBarriers.of(filter);
-            this.respectedBarriers = ExtractRespectedBarriers.of(filter).stream()
+            this.respectedBarriers = ExtractRespectedBarriers.stream(filter)
                     .flatMap(barrier -> {
                         final Collection<Object> dependencies = barrierDependencies.get(barrier);
                         if (dependencies == null) {
@@ -241,12 +253,13 @@ abstract class AbstractFilterExecution {
 
         /**
          * Schedules pushdown filter cost estimation for {@link #pushdownMatcher}. After {@link #pushdownFilterCost} has
-         * been set (or set to {@link Long#MAX_VALUE} if pushdown is not supported), {@code onComplete} will be called.
+         * been set (or set to {@link PushdownResult#UNSUPPORTED_ACTION_COST} if pushdown is not supported),
+         * {@code onComplete} will be called.
          */
         public void scheduleUpdatePushdownFilterCost(final RowSet selection, final Runnable onComplete,
                 final Consumer<Exception> onError) {
             if (pushdownMatcher == null) {
-                pushdownFilterCost = Long.MAX_VALUE;
+                pushdownFilterCost = UNSUPPORTED_ACTION_COST;
                 onComplete.run();
                 return;
             }
@@ -434,7 +447,7 @@ abstract class AbstractFilterExecution {
         };
 
         final RowSet input = localInput.get();
-        if (sf.pushdownMatcher != null && sf.pushdownFilterCost < Long.MAX_VALUE) {
+        if (sf.pushdownMatcher != null && sf.pushdownFilterCost != UNSUPPORTED_ACTION_COST) {
             // Execute the pushdown filter and return.
             sf.pushdownMatcher.pushdownFilter(sf.filter, input, usePrev, sf.context,
                     costCeiling, jobScheduler(), onPushdownComplete, filterNec);
@@ -484,17 +497,29 @@ abstract class AbstractFilterExecution {
         try {
             for (int ii = 0; ii < filters.size(); ii++) {
                 final WhereFilter filter = filters.get(ii);
-
-                final List<ColumnSource<?>> filterSources = filter.getColumns().stream()
-                        .map(sourceTable::getColumnSource).collect(Collectors.toList());
-                final PushdownFilterMatcher executor =
-                        PushdownFilterMatcher.getPushdownFilterMatcher(filter, filterSources);
-                if (executor != null) {
-                    final PushdownFilterContext context = executor.makePushdownFilterContext(filter, filter.getColumns()
-                            .stream().map(sourceTable::getColumnSource).collect(Collectors.toList()));
-                    statelessFilters[ii] = new StatelessFilter(ii, filter, executor, context, barrierDependencies);
-                } else {
+                if (!PushdownFilterMatcher.canPushdownFilter(filter)) {
                     statelessFilters[ii] = new StatelessFilter(ii, filter, null, null, barrierDependencies);
+                } else {
+                    // Only consider column sources that are actually present in the source table,because filters may
+                    // refer to columns like "i" or "ii" that are not actually in the table.
+                    final Map<String, ColumnSource<?>> columnSourceMap = sourceTable.getColumnSourceMap();
+                    final List<ColumnSource<?>> filterSources = filter.getColumns().stream()
+                            .filter(columnSourceMap::containsKey)
+                            .map(sourceTable::getColumnSource)
+                            .collect(Collectors.toList());
+
+                    PushdownFilterMatcher executor =
+                            PushdownFilterMatcher.getPushdownFilterMatcher(filter, filterSources);
+                    // Wrap the executor to add DataIndex support (if applicable).
+                    executor = DataIndexPushdownManager.wrap(filterDataIndexMap.get(filter), executor);
+                    // Wrap the executor to add SortedColumn support (if applicable)
+                    executor = SortedColumnPushdownManager.wrap(sourceTable, filter, filterSources, executor);
+                    if (executor != null) {
+                        final PushdownFilterContext context = executor.makePushdownFilterContext(filter, filterSources);
+                        statelessFilters[ii] = new StatelessFilter(ii, filter, executor, context, barrierDependencies);
+                    } else {
+                        statelessFilters[ii] = new StatelessFilter(ii, filter, null, null, barrierDependencies);
+                    }
                 }
                 for (Object barrier : statelessFilters[ii].declaredBarriers) {
                     if (barrierDependencies.containsKey(barrier)) {

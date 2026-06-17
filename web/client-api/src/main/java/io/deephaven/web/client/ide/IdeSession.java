@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.ide;
 
@@ -8,24 +8,25 @@ import com.vertispan.tsdefs.annotations.TsTypeRef;
 import elemental2.core.JsArray;
 import elemental2.core.JsSet;
 import elemental2.promise.Promise;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.AutoCompleteRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.AutoCompleteResponse;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.BindTableToVariableRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.ChangeDocumentRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.CloseDocumentRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.CompletionContext;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.DocumentRange;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.ExecuteCommandRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.ExecuteCommandResponse;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.GetCompletionItemsRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.GetHoverRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.GetSignatureHelpRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.OpenDocumentRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.Position;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.TextDocumentItem;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.VersionedTextDocumentIdentifier;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.changedocumentrequest.TextDocumentContentChangeEvent;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.ticket_pb.Ticket;
+import io.deephaven.proto.backplane.grpc.Ticket;
+import io.deephaven.proto.backplane.script.grpc.AutoCompleteRequest;
+import io.deephaven.proto.backplane.script.grpc.AutoCompleteResponse;
+import io.deephaven.proto.backplane.script.grpc.BindTableToVariableRequest;
+import io.deephaven.proto.backplane.script.grpc.BindTableToVariableResponse;
+import io.deephaven.proto.backplane.script.grpc.BrowserNextResponse;
+import io.deephaven.proto.backplane.script.grpc.ChangeDocumentRequest;
+import io.deephaven.proto.backplane.script.grpc.CloseDocumentRequest;
+import io.deephaven.proto.backplane.script.grpc.CompletionContext;
+import io.deephaven.proto.backplane.script.grpc.DocumentRange;
+import io.deephaven.proto.backplane.script.grpc.ExecuteCommandRequest;
+import io.deephaven.proto.backplane.script.grpc.ExecuteCommandResponse;
+import io.deephaven.proto.backplane.script.grpc.GetCompletionItemsRequest;
+import io.deephaven.proto.backplane.script.grpc.GetHoverRequest;
+import io.deephaven.proto.backplane.script.grpc.GetSignatureHelpRequest;
+import io.deephaven.proto.backplane.script.grpc.OpenDocumentRequest;
+import io.deephaven.proto.backplane.script.grpc.Position;
+import io.deephaven.proto.backplane.script.grpc.TextDocumentItem;
+import io.deephaven.proto.backplane.script.grpc.VersionedTextDocumentIdentifier;
 import io.deephaven.web.client.api.Callbacks;
 import io.deephaven.web.client.api.DateWrapper;
 import io.deephaven.web.client.api.JsPartitionedTable;
@@ -47,8 +48,11 @@ import io.deephaven.web.client.fu.LazyPromise;
 import io.deephaven.web.shared.fu.JsConsumer;
 import io.deephaven.web.shared.fu.JsRunnable;
 import io.deephaven.web.shared.ide.ExecutionHandle;
+import io.deephaven.web.shared.ide.lsp.CompletionItem;
+import io.deephaven.web.shared.ide.lsp.SignatureInformation;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsOptional;
+import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsType;
 import jsinterop.base.Any;
 import jsinterop.base.Js;
@@ -107,11 +111,10 @@ public class IdeSession extends HasEventHandling {
         this.closer = closer;
 
         BiDiStream.Factory<AutoCompleteRequest, AutoCompleteResponse> factory = connection.streamFactory();
-        streamFactory = () -> factory.create(
-                connection.consoleServiceClient()::autoCompleteStream,
-                (first, headers) -> connection.consoleServiceClient().openAutoCompleteStream(first, headers),
-                (next, headers, c) -> connection.consoleServiceClient().nextAutoCompleteStream(next, headers, c::apply),
-                new AutoCompleteRequest());
+        streamFactory = () -> factory.<BrowserNextResponse>create(
+                o -> connection.consoleServiceClient().autoCompleteStream(o),
+                (first, o) -> connection.consoleServiceClient().openAutoCompleteStream(first, o),
+                (next, c) -> connection.consoleServiceClient().nextAutoCompleteStream(next, c));
     }
 
     /**
@@ -122,9 +125,12 @@ public class IdeSession extends HasEventHandling {
      * @return a {@link Promise} that will resolve to the table, or reject with an error if it cannot be loaded.
      * @deprecated Added to resolve a specific issue, in the future preview will be applied as part of the subscription.
      */
-    // TODO (deephaven-core#188): improve usage of subscriptions (w.r.t. this optional param)
     @Deprecated
-    public Promise<JsTable> getTable(String name, @JsOptional Boolean applyPreviewColumns) {
+    public Promise<JsTable> getTable(String name, @JsOptional @JsNullable Boolean applyPreviewColumns) {
+        if (applyPreviewColumns == Boolean.FALSE) {
+            JsLog.warn(
+                    "getTable is deprecated, please use getObject instead. The applyPreviewColumns parameter no longer applies, the new APIs to access data from the resulting Table should be used instead.");
+        }
         return connection.getVariableDefinition(name, JsVariableType.TABLE).then(varDef -> {
             final Promise<JsTable> table = connection.getTable(varDef, applyPreviewColumns);
             fireEvent(EVENT_TABLE_OPENED, table);
@@ -133,7 +139,7 @@ public class IdeSession extends HasEventHandling {
     }
 
     /**
-     * Load the named Figure, including its tables and tablemaps as needed.
+     * Load the named {@code Figure}, including its tables and tablemaps as needed.
      * 
      * @param name
      * @return promise of dh.plot.Figure
@@ -169,7 +175,7 @@ public class IdeSession extends HasEventHandling {
     }
 
     public Promise<JsTable> newTable(String[] columnNames, String[] types, String[][] data, String userTimeZone) {
-        return connection.newTable(columnNames, types, data, userTimeZone, this).then(table -> {
+        return connection.newTable(columnNames, types, data, userTimeZone).then(table -> {
             fireEvent(EVENT_TABLE_OPENED, table);
 
             return Promise.resolve(table);
@@ -191,32 +197,32 @@ public class IdeSession extends HasEventHandling {
     }
 
     public Promise<Void> bindTableToVariable(JsTable table, String name) {
-        BindTableToVariableRequest bindRequest = new BindTableToVariableRequest();
-        bindRequest.setTableId(table.getHandle().makeTicket());
-        bindRequest.setVariableName(name);
-        return Callbacks
-                .grpcUnaryPromise(c -> connection.consoleServiceClient().bindTableToVariable(bindRequest,
-                        connection.metadata(), c::apply))
+        BindTableToVariableRequest bindRequest = BindTableToVariableRequest.newBuilder()
+                .setTableId(table.getHandle().makeTicket())
+                .setVariableName(name)
+                .build();
+        return Callbacks.<BindTableToVariableResponse>grpcUnaryPromise(
+                c -> connection.consoleServiceClient().bindTableToVariable(bindRequest, c))
                 .then(ignore -> Promise.resolve((Void) null));
     }
 
     /**
      * Makes the {@code object} available to another user or another client on this same server which knows the value of
-     * the {@code sharedTicketBytes}. Use that sharedTicketBytes value like a one-time use password - any other client
-     * which knows this value can read the same object.
+     * the {@code sharedTicketBytes}. Use that {@code sharedTicketBytes} value like a one-time use password - any other
+     * client which knows this value can read the same object.
      * <p>
-     * Shared objects will remain available using the sharedTicketBytes until the client that first shared them
+     * Shared objects will remain available using the {@code sharedTicketBytes} until the client that first shared them
      * releases/closes their copy of the object. Whatever side-channel is used to share the bytes, be sure to wait until
      * the remote end has signaled that it has successfully fetched the object before releasing it from this client.
      * <p>
      * Be sure to use an unpredictable value for the shared ticket bytes, like a UUID or other large, random value to
      * prevent access by unauthorized clients.
      *
-     * @param object the object to share with another client/user
-     * @param sharedTicketBytes the value which another client/user must know to obtain the object. It may be a unicode
+     * @param object The object to share with another client/user.
+     * @param sharedTicketBytes The value which another client/user must know to obtain the object. It may be a unicode
      *        string (will be encoded as utf8 bytes), or a {@link elemental2.core.Uint8Array} value.
-     * @return A promise that will resolve to the value passed as sharedTicketBytes when the object is ready to be read
-     *         by another client, or will reject if an error occurs.
+     * @return A promise that will resolve to the value passed as {@code sharedTicketBytes} when the object is ready to
+     *         be read by another client, or will reject if an error occurs.
      */
     public Promise<SharedExportBytesUnion> shareObject(ServerObject.Union object,
             SharedExportBytesUnion sharedTicketBytes) {
@@ -227,12 +233,12 @@ public class IdeSession extends HasEventHandling {
      * Reads an object shared by another client to this server with the {@code sharedTicketBytes}. Until the other
      * client releases this object (or their session ends), the object will be available on the server.
      * <p>
-     * The type of the object must be passed so that the object can be read from the server correct - the other client
+     * The type of the object must be passed so that the object can be read from the server correctly - the other client
      * should provide this information.
      *
-     * @param sharedTicketBytes the value provided by another client/user to obtain the object. It may be a unicode
+     * @param sharedTicketBytes The value provided by another client/user to obtain the object. It may be a unicode
      *        string (will be encoded as utf8 bytes), or a {@link elemental2.core.Uint8Array} value.
-     * @param type The type of the object, so it can be correctly read from the server
+     * @param type The type of the object, so it can be correctly read from the server.
      * @return A promise that will resolve to the shared object, or will reject with an error if it cannot be read.
      */
     public Promise<?> getSharedObject(SharedExportBytesUnion sharedTicketBytes, String type) {
@@ -250,18 +256,21 @@ public class IdeSession extends HasEventHandling {
 
     public CancellablePromise<JsCommandResult> runCode(String code) {
         LazyPromise<JsCommandResult> promise = new LazyPromise<>();
-        ExecuteCommandRequest request = new ExecuteCommandRequest();
-        request.setConsoleId(this.result);
-        request.setCode(code);
+        ExecuteCommandRequest request = ExecuteCommandRequest.newBuilder()
+                .setConsoleId(this.result)
+                .setCode(code)
+                .build();
         Promise<ExecuteCommandResponse> runCodePromise = Callbacks.grpcUnaryPromise(c -> {
-            connection.consoleServiceClient().executeCommand(request, connection.metadata(), c::apply);
+            connection.consoleServiceClient().executeCommand(request, c);
         });
         runCodePromise.then(response -> {
             JsVariableChanges changes = JsVariableChanges.from(response.getChanges());
-            if (response.getErrorMessage() == null || response.getErrorMessage().isEmpty()) {
-                promise.succeed(new JsCommandResult(changes, null));
+            final long startTimestamp = response.getStartTimestamp();
+            final long endTimestamp = response.getEndTimestamp();
+            if (response.getErrorMessage().isEmpty()) {
+                promise.succeed(new JsCommandResult(changes, null, startTimestamp, endTimestamp));
             } else {
-                promise.succeed(new JsCommandResult(changes, response.getErrorMessage()));
+                promise.succeed(new JsCommandResult(changes, response.getErrorMessage(), startTimestamp, endTimestamp));
             }
             return null;
         }, err -> {
@@ -305,9 +314,9 @@ public class IdeSession extends HasEventHandling {
         });
         currentStream.onStatus(status -> {
             if (!status.isOk()) {
-                fireEvent(EVENT_REQUEST_FAILED, status.getDetails());
+                fireEvent(EVENT_REQUEST_FAILED, status.getDescription());
                 pendingAutocompleteCalls.values().forEach(p -> {
-                    p.fail("Connection error" + status.getDetails());
+                    p.fail("Connection error " + status.getDescription());
                 });
                 pendingAutocompleteCalls.clear();
             }
@@ -322,40 +331,41 @@ public class IdeSession extends HasEventHandling {
 
     public void openDocument(Object params) {
         final JsPropertyMap<Object> jsMap = Js.uncheckedCast(params);
-        final OpenDocumentRequest request = new OpenDocumentRequest();
-
-        request.setConsoleId(result);
         final JsPropertyMap<Object> textDoc = jsMap.getAsAny("textDocument").asPropertyMap();
-        final TextDocumentItem textDocument = new TextDocumentItem();
-        textDocument.setText(textDoc.getAsAny("text").asString());
-        textDocument.setLanguageId(textDoc.getAsAny("languageId").asString());
-        textDocument.setUri(textDoc.getAsAny("uri").asString());
-        textDocument.setVersion(textDoc.getAsAny("version").asDouble());
-        request.setTextDocument(textDocument);
+        final OpenDocumentRequest request = OpenDocumentRequest.newBuilder()
+                .setConsoleId(result)
+                .setTextDocument(TextDocumentItem.newBuilder()
+                        .setText(textDoc.getAsAny("text").asString())
+                        .setLanguageId(textDoc.getAsAny("languageId").asString())
+                        .setUri(textDoc.getAsAny("uri").asString())
+                        .setVersion(textDoc.getAsAny("version").asInt()))
+                .build();
 
         JsLog.debug("Opening document for autocomplete ", request);
-        AutoCompleteRequest wrapper = new AutoCompleteRequest();
-        wrapper.setConsoleId(result);
-        wrapper.setOpenDocument(request);
+        AutoCompleteRequest wrapper = AutoCompleteRequest.newBuilder()
+                .setConsoleId(result)
+                .setOpenDocument(request)
+                .build();
         ensureStream().send(wrapper);
     }
 
     public void changeDocument(Object params) {
         // translate arbitrary value from js to our "properly typed request object".
         final JsPropertyMap<Object> jsMap = (JsPropertyMap<Object>) params;
-        final ChangeDocumentRequest request = new ChangeDocumentRequest();
-        request.setConsoleId(result);
         final JsPropertyMap<Object> textDoc = jsMap.getAsAny("textDocument").asPropertyMap();
-        final VersionedTextDocumentIdentifier textDocument = new VersionedTextDocumentIdentifier();
-        textDocument.setUri(textDoc.getAsAny("uri").asString());
-        textDocument.setVersion(textDoc.getAsAny("version").asDouble());
+        final ChangeDocumentRequest.Builder request = ChangeDocumentRequest.newBuilder();
+        request.setConsoleId(result);
+        final VersionedTextDocumentIdentifier textDocument = VersionedTextDocumentIdentifier.newBuilder()
+                .setUri(textDoc.getAsAny("uri").asString())
+                .setVersion(textDoc.getAsAny("version").asInt())
+                .build();
         request.setTextDocument(textDocument);
 
         final JsArrayLike<Object> changes = jsMap.getAsAny("contentChanges").asArrayLike();
-        final JsArray<TextDocumentContentChangeEvent> changeList = new JsArray<>();
         for (int i = 0; i < changes.getLength(); i++) {
             final JsPropertyMap<Object> change = changes.getAtAsAny(i).asPropertyMap();
-            final TextDocumentContentChangeEvent changeItem = new TextDocumentContentChangeEvent();
+            final ChangeDocumentRequest.TextDocumentContentChangeEvent.Builder changeItem =
+                    ChangeDocumentRequest.TextDocumentContentChangeEvent.newBuilder();
             changeItem.setText(change.getAsAny("text").asString());
             if (change.has("rangeLength")) {
                 changeItem.setRangeLength(change.getAsAny("rangeLength").asInt());
@@ -363,69 +373,70 @@ public class IdeSession extends HasEventHandling {
             if (change.has("range")) {
                 changeItem.setRange(toRange(change.getAsAny("range")));
             }
-            changeList.push(changeItem);
+            request.addContentChanges(changeItem);
         }
-        request.setContentChangesList(changeList);
 
         JsLog.debug("Sending content changes", request);
-        AutoCompleteRequest wrapper = new AutoCompleteRequest();
-        wrapper.setConsoleId(result);
-        wrapper.setChangeDocument(request);
+        AutoCompleteRequest wrapper = AutoCompleteRequest.newBuilder()
+                .setConsoleId(result)
+                .setChangeDocument(request)
+                .build();
         ensureStream().send(wrapper);
     }
 
     private DocumentRange toRange(final Any range) {
         final JsPropertyMap<Object> rangeObj = range.asPropertyMap();
-        final DocumentRange result = new DocumentRange();
-        result.setStart(toPosition(rangeObj.getAsAny("start")));
-        result.setEnd(toPosition(rangeObj.getAsAny("end")));
-        return result;
+        return DocumentRange.newBuilder()
+                .setStart(toPosition(rangeObj.getAsAny("start")))
+                .setEnd(toPosition(rangeObj.getAsAny("end")))
+                .build();
     }
 
     private Position toPosition(final Any pos) {
         final JsPropertyMap<Object> posObj = pos.asPropertyMap();
-        final Position result = new Position();
-        result.setLine(posObj.getAsAny("line").asInt());
-        result.setCharacter(posObj.getAsAny("character").asInt());
-        return result;
+        return Position.newBuilder()
+                .setLine(posObj.getAsAny("line").asInt())
+                .setCharacter(posObj.getAsAny("character").asInt())
+                .build();
     }
 
-    private AutoCompleteRequest getAutoCompleteRequest() {
-        AutoCompleteRequest request = new AutoCompleteRequest();
-        request.setConsoleId(this.result);
-        request.setRequestId(nextAutocompleteRequestId);
-        nextAutocompleteRequestId++;
-        return request;
+    private AutoCompleteRequest.Builder getAutoCompleteRequest() {
+        return AutoCompleteRequest.newBuilder()
+                .setConsoleId(this.result)
+                .setRequestId(nextAutocompleteRequestId++);
     }
 
-    public Promise<JsArray<io.deephaven.web.shared.ide.lsp.CompletionItem>> getCompletionItems(Object params) {
+    public Promise<JsArray<CompletionItem>> getCompletionItems(Object params) {
         final JsPropertyMap<Object> jsMap = Js.uncheckedCast(params);
-        final GetCompletionItemsRequest completionRequest = new GetCompletionItemsRequest();
-
         final VersionedTextDocumentIdentifier textDocument = toVersionedTextDoc(jsMap.getAsAny("textDocument"));
-        completionRequest.setTextDocument(textDocument);
-        completionRequest.setPosition(toPosition(jsMap.getAsAny("position")));
-        completionRequest.setContext(toContext(jsMap.getAsAny("context")));
+        final GetCompletionItemsRequest completionRequest = GetCompletionItemsRequest.newBuilder()
 
-        final AutoCompleteRequest request = getAutoCompleteRequest();
-        request.setGetCompletionItems(completionRequest);
-
-        // Set these in case running against an old server implementation
-        completionRequest.setConsoleId(request.getConsoleId());
-        completionRequest.setRequestId(request.getRequestId());
+                .setTextDocument(textDocument)
+                .setPosition(toPosition(jsMap.getAsAny("position")))
+                .setContext(toContext(jsMap.getAsAny("context")))
+                .build();
 
         LazyPromise<AutoCompleteResponse> promise = new LazyPromise<>();
+
+        final AutoCompleteRequest request = getAutoCompleteRequest()
+                .setGetCompletionItems(completionRequest)
+                .build();
         pendingAutocompleteCalls.put(request.getRequestId(), promise);
         ensureStream().send(request);
 
         return promise
                 .timeout(JsTable.MAX_BATCH_TIME)
                 .asPromise()
-                .then(res -> Promise.resolve(
-                        res.getCompletionItems().getItemsList().map((item, index) -> LspTranslate.toJs(item))),
+                .then(res -> {
+                    JsArray<CompletionItem> results = Js.uncheckedCast(res.getCompletionItems().getItemsList()
+                            .stream()
+                            .map(LspTranslate::toJs)
+                            .toArray());
+                    return Promise.resolve(results);
+                },
                         fail -> {
                             // noinspection unchecked, rawtypes
-                            return (Promise<JsArray<io.deephaven.web.shared.ide.lsp.CompletionItem>>) (Promise) Promise
+                            return (Promise<JsArray<CompletionItem>>) (Promise) Promise
                                     .reject(fail);
                         });
     }
@@ -433,14 +444,14 @@ public class IdeSession extends HasEventHandling {
 
     public Promise<JsArray<io.deephaven.web.shared.ide.lsp.SignatureInformation>> getSignatureHelp(Object params) {
         final JsPropertyMap<Object> jsMap = Js.uncheckedCast(params);
-        final GetSignatureHelpRequest signatureHelpRequest = new GetSignatureHelpRequest();
-
         final VersionedTextDocumentIdentifier textDocument = toVersionedTextDoc(jsMap.getAsAny("textDocument"));
-        signatureHelpRequest.setTextDocument(textDocument);
-        signatureHelpRequest.setPosition(toPosition(jsMap.getAsAny("position")));
+        final GetSignatureHelpRequest signatureHelpRequest = GetSignatureHelpRequest.newBuilder()
+                .setTextDocument(textDocument)
+                .setPosition(toPosition(jsMap.getAsAny("position")))
+                .build();
 
-        final AutoCompleteRequest request = getAutoCompleteRequest();
-        request.setGetSignatureHelp(signatureHelpRequest);
+        final AutoCompleteRequest request = getAutoCompleteRequest().setGetSignatureHelp(signatureHelpRequest)
+                .build();
 
         LazyPromise<AutoCompleteResponse> promise = new LazyPromise<>();
         pendingAutocompleteCalls.put(request.getRequestId(), promise);
@@ -449,8 +460,13 @@ public class IdeSession extends HasEventHandling {
         return promise
                 .timeout(JsTable.MAX_BATCH_TIME)
                 .asPromise()
-                .then(res -> Promise.resolve(
-                        res.getSignatures().getSignaturesList().map((item, index) -> LspTranslate.toJs(item))),
+                .then(res -> {
+                    JsArray<SignatureInformation> array = Js.uncheckedCast(res.getSignatures().getSignaturesList()
+                            .stream()
+                            .map(LspTranslate::toJs)
+                            .toArray());
+                    return Promise.resolve(array);
+                },
                         fail -> {
                             // noinspection unchecked, rawtypes
                             return (Promise<JsArray<io.deephaven.web.shared.ide.lsp.SignatureInformation>>) (Promise) Promise
@@ -460,14 +476,13 @@ public class IdeSession extends HasEventHandling {
 
     public Promise<io.deephaven.web.shared.ide.lsp.Hover> getHover(Object params) {
         final JsPropertyMap<Object> jsMap = Js.uncheckedCast(params);
-        final GetHoverRequest hoverRequest = new GetHoverRequest();
-
         final VersionedTextDocumentIdentifier textDocument = toVersionedTextDoc(jsMap.getAsAny("textDocument"));
-        hoverRequest.setTextDocument(textDocument);
-        hoverRequest.setPosition(toPosition(jsMap.getAsAny("position")));
+        final GetHoverRequest hoverRequest = GetHoverRequest.newBuilder()
+                .setTextDocument(textDocument)
+                .setPosition(toPosition(jsMap.getAsAny("position")))
+                .build();
 
-        final AutoCompleteRequest request = getAutoCompleteRequest();
-        request.setGetHover(hoverRequest);
+        final AutoCompleteRequest request = getAutoCompleteRequest().setGetHover(hoverRequest).build();
 
         LazyPromise<AutoCompleteResponse> promise = new LazyPromise<>();
         pendingAutocompleteCalls.put(request.getRequestId(), promise);
@@ -487,36 +502,37 @@ public class IdeSession extends HasEventHandling {
     private CompletionContext toContext(final Any context) {
         JsLog.debug("toContext", context);
         final JsPropertyMap<Object> contextObj = context.asPropertyMap();
-        final CompletionContext result = new CompletionContext();
+        final CompletionContext.Builder result = CompletionContext.newBuilder();
         if (contextObj.has("triggerCharacter")) {
             result.setTriggerCharacter(contextObj.getAsAny("triggerCharacter").asString());
         }
         result.setTriggerKind(contextObj.getAsAny("triggerKind").asInt());
-        return result;
+        return result.build();
     }
 
     public void closeDocument(Object params) {
         final JsPropertyMap<Object> jsMap = Js.uncheckedCast(params);
-        final CloseDocumentRequest request = new CloseDocumentRequest();
-        request.setConsoleId(result);
-        final VersionedTextDocumentIdentifier textDocument = toVersionedTextDoc(jsMap.getAsAny("textDocument"));
-        request.setTextDocument(textDocument);
+        final CloseDocumentRequest request = CloseDocumentRequest.newBuilder()
+                .setConsoleId(result)
+                .setTextDocument(toVersionedTextDoc(jsMap.getAsAny("textDocument")))
+                .build();
 
         JsLog.debug("Closing document for autocomplete ", request);
-        AutoCompleteRequest wrapper = new AutoCompleteRequest();
-        wrapper.setConsoleId(result);
-        wrapper.setCloseDocument(request);
+        AutoCompleteRequest wrapper = AutoCompleteRequest.newBuilder()
+                .setConsoleId(result)
+                .setCloseDocument(request)
+                .build();
         ensureStream().send(wrapper);
     }
 
     private VersionedTextDocumentIdentifier toVersionedTextDoc(final Any textDoc) {
         final JsPropertyMap<Object> textDocObj = textDoc.asPropertyMap();
-        final VersionedTextDocumentIdentifier textDocument = new VersionedTextDocumentIdentifier();
+        final VersionedTextDocumentIdentifier.Builder textDocument = VersionedTextDocumentIdentifier.newBuilder();
         textDocument.setUri(textDocObj.getAsAny("uri").asString());
         if (textDocObj.has("version")) {
-            textDocument.setVersion(textDocObj.getAsAny("version").asDouble());
+            textDocument.setVersion(textDocObj.getAsAny("version").asInt());
         }
-        return textDocument;
+        return textDocument.build();
     }
 
     /**
@@ -538,7 +554,7 @@ public class IdeSession extends HasEventHandling {
      * @param startTime
      * @return {@link Promise} of {@link JsTable}
      */
-    public Promise<JsTable> timeTable(double periodNanos, @JsOptional DateWrapper startTime) {
+    public Promise<JsTable> timeTable(double periodNanos, @JsOptional @JsNullable DateWrapper startTime) {
         return connection.timeTable(periodNanos, startTime);
     }
 }

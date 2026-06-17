@@ -3,7 +3,7 @@ title: Iceberg and Deephaven
 sidebar_label: Iceberg
 ---
 
-[Apache Iceberg](https://iceberg.apache.org/) is a high-performance format for tabular data. Deephaven's Iceberg integration enables users to interact with Iceberg catalogs, namespaces, tables, and snapshots. This guide walks through reading from Iceberg with a single table and snapshot, then writes multiple Deephaven tables to the same Iceberg namespace. The examples presented this guide interact with a [REST catalog](https://www.tabular.io/apache-iceberg-cookbook/getting-started-catalog-background/).
+[Apache Iceberg](https://iceberg.apache.org/) is a high-performance format for tabular data. Deephaven's Iceberg integration enables users to interact with Iceberg catalogs, namespaces, tables, and snapshots. This guide walks through reading from Iceberg with a single table and snapshot, then writes multiple Deephaven tables to the same Iceberg namespace. The examples presented this guide interact with a [REST catalog](https://iceberg.apache.org/rest-catalog-spec/).
 
 The API enables you to interact with many types of catalogs. They include:
 
@@ -71,7 +71,7 @@ restAdapter = IcebergTools.createAdapter(
 
 If you are working with a REST catalog backed by S3 storage, you can use the more specific [`createS3Rest`](https://deephaven.io/core/javadoc/io/deephaven/iceberg/util/IcebergToolsS3.html#createS3Rest(java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.lang.String)) method:
 
-```groovy docker-config=iceberg test-set=1 order=null
+```groovy docker-config=iceberg test-set=1 order=null reset
 import io.deephaven.iceberg.util.*
 
 restAdapter = IcebergToolsS3.createS3Rest(
@@ -110,7 +110,7 @@ At this point, you can load a table from the catalog with [`loadTable`](https://
 icebergTaxis = restAdapter.loadTable("nyc.taxis")
 ```
 
-With the table adapter and instructions in hand, the Iceberg table can be read into a Deephaven table.
+Now that we have the table adapter and the instructions, we can read the table into a Deephaven table:
 
 ```groovy docker-config=iceberg test-set=1 order=taxis
 taxis = icebergTaxis.table(staticInstructions)
@@ -193,9 +193,11 @@ When writing data to an unpartitioned Iceberg table, you need the Deephaven tabl
 sourceDef = source2024.getDefinition()
 ```
 
-Then, create an [`IcebergTableAdapter`](/core/javadoc/io/deephaven/iceberg/util/IcebergTableAdapter.html) from the `source2024` table's definition, and a table identifier, which must include the Iceberg namespace (`nyc`):
+Then, create an [`IcebergTableAdapter`](/core/javadoc/io/deephaven/iceberg/util/IcebergTableAdapter.html) from a table definition and table identifier, which must include the Iceberg namespace (`nyc`):
 
-```groovy docker-config=iceberg test-set=1 order=null
+<!-- This reset is needed because another example also creates nyc.source table and that throws an error if it already exists -->
+
+```groovy docker-config=iceberg test-set=1 order=null reset
 sourceAdapter = restAdapter.createTable("nyc.source", sourceDef)
 ```
 
@@ -239,13 +241,13 @@ sourceDefPartitioned = TableDefinition.of(
 )
 ```
 
-First, create an [`IcebergTableAdapter`](/core/javadoc/io/deephaven/iceberg/util/IcebergTableAdapter.html) from the `source` table's definition, and a table identifier, which must include the Iceberg namespace (`nyc`):
+Then, create an [`IcebergTableAdapter`](/core/javadoc/io/deephaven/iceberg/util/IcebergTableAdapter.html) from a table definition and table identifier, which must include the Iceberg namespace:
 
 ```groovy docker-config=iceberg test-set=1 order=null
 sourceAdapterPartitioned = restAdapter.createTable("nyc.sourcePartitioned", sourceDefPartitioned)
 ```
 
-To write the table to Iceberg, you'll need to create an [`IcebergTableWriter`](/core/javadoc/io/deephaven/iceberg/util/IcebergTableWriter.html). A single writer instance with a fixed table definition can write as many Deephaven tables as desired, given that all tables have the same definition as provided to the writer. Most of the heavy lifting is done when the writer is created, so it's more efficient to create a writer once and write many tables than to create a writer for each table.
+To write the table to Iceberg, you'll need to create an [`IcebergTableWriter`](/core/javadoc/io/deephaven/iceberg/util/IcebergTableWriter.html). A single writer instance with a fixed table definition can write as many Deephaven tables as desired if they all have the same definition as provided to the writer. Most of the heavy lifting is done when the writer is created, so it's more efficient to create a writer once and write many tables than to create a writer for each table.
 
 To create a writer instance, you need to define the [`TableParquetWriterOptions`](/core/javadoc/io/deephaven/iceberg/util/TableParquetWriterOptions.html) to configure the writer:
 
@@ -289,7 +291,7 @@ sourcePartitionedFromIceberg = sourceAdapterPartitioned.table()
 
 ### Custom Iceberg instructions
 
-You can set custom instructions when reading from or writing to Iceberg in Deephaven. The following sections deal with different custom instructions you can set.
+You can specify custom instructions when creating an [`IcebergReadInstructions`](/core/javadoc/io/deephaven/iceberg/util/IcebergReadInstructions.html) instance. Each subsection below covers a different custom instruction that can be passed in when reading Iceberg tables.
 
 #### Refreshing Iceberg tables
 
@@ -367,7 +369,7 @@ snapshotInstructions = IcebergReadInstructions.builder()
 
 ## Next steps
 
-This guide presented a basic example of reading from and writing to an Iceberg catalog in Deephaven. These examples can be extended to include other catalog types, more complex queries, catalogs with multiple namespaces, snapshots, custom instructions, and more.
+This guide presented a basic example of interacting with an Iceberg catalog in Deephaven. These examples can be extended to include more complex queries, catalogs with multiple namespaces, snapshots, custom instructions, and more.
 
 ## Related documentation
 

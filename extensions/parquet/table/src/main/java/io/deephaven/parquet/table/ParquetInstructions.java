@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.parquet.table;
 
@@ -102,6 +102,8 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
     static final String FILE_INDEX_TOKEN = "{i}";
     private static final String DEFAULT_BASE_NAME_FOR_PARTITIONED_PARQUET_DATA = UUID_TOKEN;
 
+    private static boolean DEFAULT_WRITE_ROW_GROUP_STATISTICS = true;
+
     private ParquetInstructions() {}
 
     public final String getColumnNameFromParquetColumnNameOrDefault(final String parquetColumnName) {
@@ -174,6 +176,12 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
     public abstract RowGroupInfo getRowGroupInfo();
 
     public abstract Optional<ParquetColumnResolver.Factory> getColumnResolverFactory();
+
+    /**
+     * Whether the parquet writer should write row group statistics, enabled by default.
+     */
+    @InternalUseOnly
+    abstract boolean writeRowGroupStatistics();
 
     /**
      * Creates a new {@link ParquetInstructions} object with the same properties as the current object but definition
@@ -342,6 +350,11 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         }
 
         @Override
+        boolean writeRowGroupStatistics() {
+            return DEFAULT_WRITE_ROW_GROUP_STATISTICS;
+        }
+
+        @Override
         public ParquetInstructions withTableDefinition(@Nullable final TableDefinition useDefinition) {
             return withTableDefinitionAndLayout(useDefinition, null);
         }
@@ -358,7 +371,8 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             return new ReadOnly(null, null, getCompressionCodecName(), getMaximumDictionaryKeys(),
                     getMaximumDictionarySize(), isLegacyParquet(), getTargetPageSize(), isRefreshing(),
                     getSpecialInstructions(), generateMetadataFiles(), baseNameForPartitionedParquetData(),
-                    useLayout, useDefinition, null, getRowGroupInfo(), null, null, null);
+                    useLayout, useDefinition, null, getRowGroupInfo(), null, null, null,
+                    writeRowGroupStatistics());
         }
 
         @Override
@@ -366,7 +380,8 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             return new ReadOnly(null, null, getCompressionCodecName(), getMaximumDictionaryKeys(),
                     getMaximumDictionarySize(), isLegacyParquet(), getTargetPageSize(), isRefreshing(),
                     getSpecialInstructions(), generateMetadataFiles(), baseNameForPartitionedParquetData(),
-                    null, null, indexColumns, getRowGroupInfo(), null, null, null);
+                    null, null, indexColumns, getRowGroupInfo(), null, null, null,
+                    writeRowGroupStatistics());
         }
 
         @Override
@@ -486,6 +501,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         private final OnWriteCompleted onWriteCompleted;
         private final ParquetColumnResolver.Factory columnResolver;
         private final SeekableChannelsProvider seekableChannelsProviderForWriting;
+        private final boolean writeRowGroupStatistics;
 
         private ReadOnly(
                 final KeyedObjectHashMap<String, ColumnInstructions> columnNameToInstructions,
@@ -505,7 +521,8 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
                 final RowGroupInfo rowGroupInfo,
                 final OnWriteCompleted onWriteCompleted,
                 final ParquetColumnResolver.Factory columnResolver,
-                final SeekableChannelsProvider seekableChannelsProviderForWriting) {
+                final SeekableChannelsProvider seekableChannelsProviderForWriting,
+                final boolean writeRowGroupStatistics) {
             this.columnNameToInstructions = columnNameToInstructions;
             this.parquetColumnNameToInstructions = parquetColumnNameToColumnName;
             this.compressionCodecName = compressionCodecName;
@@ -532,6 +549,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
                 }
             }
             this.seekableChannelsProviderForWriting = seekableChannelsProviderForWriting;
+            this.writeRowGroupStatistics = writeRowGroupStatistics;
         }
 
         private <T> T getOrDefault(final String columnName, final T defaultValue,
@@ -672,6 +690,11 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         }
 
         @Override
+        boolean writeRowGroupStatistics() {
+            return writeRowGroupStatistics;
+        }
+
+        @Override
         public ParquetInstructions withTableDefinition(@Nullable final TableDefinition useDefinition) {
             return withTableDefinitionAndLayout(useDefinition, fileLayout);
         }
@@ -689,7 +712,8 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
                     getCompressionCodecName(), getMaximumDictionaryKeys(), getMaximumDictionarySize(),
                     isLegacyParquet(), getTargetPageSize(), isRefreshing(), getSpecialInstructions(),
                     generateMetadataFiles(), baseNameForPartitionedParquetData(), useLayout, useDefinition,
-                    indexColumns, rowGroupInfo, onWriteCompleted, columnResolver, seekableChannelsProviderForWriting);
+                    indexColumns, rowGroupInfo, onWriteCompleted, columnResolver, seekableChannelsProviderForWriting,
+                    writeRowGroupStatistics);
         }
 
         @Override
@@ -699,7 +723,8 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
                     isLegacyParquet(), getTargetPageSize(), isRefreshing(), getSpecialInstructions(),
                     generateMetadataFiles(), baseNameForPartitionedParquetData(), fileLayout,
                     tableDefinition, useIndexColumns, rowGroupInfo, onWriteCompleted, columnResolver,
-                    seekableChannelsProviderForWriting);
+                    seekableChannelsProviderForWriting,
+                    writeRowGroupStatistics);
         }
 
         @Override
@@ -767,6 +792,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         private OnWriteCompleted onWriteCompleted;
         private ParquetColumnResolver.Factory columnResolverFactory;
         private SeekableChannelsProvider seekableChannelsProviderForWriting;
+        private boolean writeRowGroupStatistics = DEFAULT_WRITE_ROW_GROUP_STATISTICS;
 
         /**
          * For each additional field added, make sure to update the copy constructor builder
@@ -799,6 +825,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             columnResolverFactory = readOnlyParquetInstructions.getColumnResolverFactory().orElse(null);
             seekableChannelsProviderForWriting =
                     readOnlyParquetInstructions.getSeekableChannelsProviderForWriting().orElse(null);
+            writeRowGroupStatistics = readOnlyParquetInstructions.writeRowGroupStatistics();
         }
 
         public Builder addColumnNameMapping(final String parquetColumnName, final String columnName) {
@@ -1078,6 +1105,15 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             return this;
         }
 
+        /**
+         * @param writeRowGroupStatistics whether to write statistics for each column in the row group
+         */
+        @InternalUseOnly
+        public Builder setWriteRowGroupStatistics(final boolean writeRowGroupStatistics) {
+            this.writeRowGroupStatistics = writeRowGroupStatistics;
+            return this;
+        }
+
         public ParquetInstructions build() {
             final KeyedObjectHashMap<String, ColumnInstructions> columnNameToInstructionsOut = columnNameToInstructions;
             columnNameToInstructions = null;
@@ -1088,7 +1124,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
                     maximumDictionaryKeys, maximumDictionarySize, isLegacyParquet, targetPageSize, isRefreshing,
                     specialInstructions, generateMetadataFiles, baseNameForPartitionedParquetData, fileLayout,
                     tableDefinition, indexColumns, rowGroupInfo, onWriteCompleted, columnResolverFactory,
-                    seekableChannelsProviderForWriting);
+                    seekableChannelsProviderForWriting, writeRowGroupStatistics);
         }
     }
 

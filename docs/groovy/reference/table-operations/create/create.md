@@ -1,5 +1,5 @@
 ---
-title: create
+title: FunctionGeneratedTableFactory
 ---
 
 The [`FunctionGeneratedTableFactory`](/core/javadoc/io/deephaven/engine/table/impl/util/FunctionGeneratedTableFactory.html)'s `create` method is useful for creating tables that are dependent on one or more ticking tables, or for creating tables that need to be refreshed at a regular interval.

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.sources.regioned;
 
@@ -142,6 +142,11 @@ class MergedDataIndex extends AbstractDataIndex implements DataIndexer.Retainabl
     @NotNull
     public Map<ColumnSource<?>, String> keyColumnNamesByIndexedColumn() {
         return keyColumnNamesByIndexedColumn;
+    }
+
+    @Override
+    public boolean tableIsCached() {
+        return indexTable != null || lazyTable != null;
     }
 
     @Override

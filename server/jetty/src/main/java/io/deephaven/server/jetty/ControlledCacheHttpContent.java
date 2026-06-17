@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.server.jetty;
 
@@ -56,11 +56,5 @@ public class ControlledCacheHttpContent extends HttpContent.Wrapper {
     public Instant getLastModifiedInstant() {
         // Always return -1, so that we don't get the build system timestamp.
         return Instant.ofEpochMilli(-1);
-    }
-
-    @Override
-    public String getLastModifiedValue() {
-        Instant lm = getLastModifiedInstant();
-        return DateGenerator.formatDate(lm);
     }
 }

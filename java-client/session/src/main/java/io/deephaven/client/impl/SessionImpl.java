@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.client.impl;
 
@@ -54,9 +54,6 @@ import java.util.function.Function;
 /**
  * A {@link Session} implementation that uses {@link io.deephaven.proto.backplane.grpc.BatchTableRequest batch requests}
  * and memoizes based on {@link io.deephaven.qst.table.TableSpec} equality.
- *
- * <p>
- * {@inheritDoc}
  */
 public final class SessionImpl extends SessionBase {
     private static final Logger log = LoggerFactory.getLogger(SessionImpl.class);

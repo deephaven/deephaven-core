@@ -32,7 +32,7 @@ def sphinxDockerfile = tasks.register('sphinxDockerfile', Dockerfile) {
     from Docker.localImageName('server-jetty')
 
     copyFile "./wheel", "/wheel"
-    copyFile "./lib", '${VIRTUAL_ENV}/lib/python3.10/site-packages/'
+    copyFile "./lib", '${VIRTUAL_ENV}/lib/python3.12/site-packages/'
 
     environmentVariable 'DEEPHAVEN_CLASSPATH', "/opt/deephaven/server/lib/*.jar"
     environmentVariable 'DEEPHAVEN_WORKSPACE', '/tmp/workspace'

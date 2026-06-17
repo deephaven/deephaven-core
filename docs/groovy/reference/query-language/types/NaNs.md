@@ -39,7 +39,8 @@ result = source.update(
 
 ## Related Documentation
 
-- [How to handle null, infinity, and not-a-number values](../../../how-to-guides/handle-null-inf-nan.md)
-- [How to use Deephaven's built-in query language functions](../../../how-to-guides/query-language-functions.md)
-- [Query language functions](../query-library/query-language-function-reference.md)
+- [Built-in query language constants](../../../how-to-guides/built-in-constants.md)
+- [How to handle null, infinity, and not-a-number values](../../../how-to-guides/null-inf-nan.md)
+- [How to use Deephaven's built-in query language functions](../../../how-to-guides/built-in-functions.md)
 - [`isNaN`](https://deephaven.io/core/javadoc/io/deephaven/function/Numeric.html#isNaN(byte))
+- [Nulls](./nulls.md)

@@ -1,8 +1,9 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.util;
 
+import io.deephaven.api.util.NameValidator;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -68,7 +69,7 @@ abstract class BaseArrayBackedInputTable extends UpdatableTable {
     protected static Map<String, ? extends WritableColumnSource<?>> makeColumnSourceMap(TableDefinition definition) {
         final Map<String, WritableColumnSource<?>> resultMap = new LinkedHashMap<>();
         for (final ColumnDefinition<?> columnDefinition : definition.getColumns()) {
-            resultMap.put(columnDefinition.getName(),
+            resultMap.put(NameValidator.validateColumnName(columnDefinition.getName()),
                     ArrayBackedColumnSource.getMemoryColumnSource(0, columnDefinition.getDataType()));
         }
         return resultMap;

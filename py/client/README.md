@@ -66,7 +66,7 @@ $ python3 -m examples.demo_asof_join
 Note the actual name of the `.whl` file may be different depending on system details.
 
 ``` shell
-$ pip3 install dist/pydeephaven-<x.y.z>-py3-none-any.whl
+$ pip3 install dist/pydeephaven-<x.y>-py3-none-any.whl
 ```
 ## Quick start
 

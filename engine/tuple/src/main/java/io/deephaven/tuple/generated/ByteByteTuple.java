@@ -1,10 +1,10 @@
 package io.deephaven.tuple.generated;
 
-import gnu.trove.map.TIntObjectMap;
 import io.deephaven.tuple.CanonicalizableTuple;
 import io.deephaven.tuple.serialization.SerializationUtils;
 import io.deephaven.tuple.serialization.StreamingExternalizable;
 import io.deephaven.util.compare.ByteComparisons;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.Externalizable;
@@ -47,8 +47,8 @@ public class ByteByteTuple implements Comparable<ByteByteTuple>, Externalizable,
         this.element1 = element1;
         this.element2 = element2;
         cachedHashCode = (31 +
-                Byte.hashCode(element1)) * 31 +
-                Byte.hashCode(element2);
+                ByteComparisons.hashCode(element1)) * 31 +
+                ByteComparisons.hashCode(element2);
     }
 
     public final byte getFirstElement() {
@@ -74,8 +74,8 @@ public class ByteByteTuple implements Comparable<ByteByteTuple>, Externalizable,
         }
         final ByteByteTuple typedOther = (ByteByteTuple) other;
         // @formatter:off
-        return element1 == typedOther.element1 &&
-               element2 == typedOther.element2;
+        return ByteComparisons.eq(element1, typedOther.element1) &&
+               ByteComparisons.eq(element2, typedOther.element2);
         // @formatter:on
     }
 
@@ -106,13 +106,13 @@ public class ByteByteTuple implements Comparable<ByteByteTuple>, Externalizable,
     }
 
     @Override
-    public void writeExternalStreaming(@NotNull final ObjectOutput out, @NotNull final TIntObjectMap<SerializationUtils.Writer> cachedWriters) throws IOException {
+    public void writeExternalStreaming(@NotNull final ObjectOutput out, @NotNull final Int2ObjectMap<SerializationUtils.Writer> cachedWriters) throws IOException {
         out.writeByte(element1);
         out.writeByte(element2);
     }
 
     @Override
-    public void readExternalStreaming(@NotNull final ObjectInput in, @NotNull final TIntObjectMap<SerializationUtils.Reader> cachedReaders) throws Exception {
+    public void readExternalStreaming(@NotNull final ObjectInput in, @NotNull final Int2ObjectMap<SerializationUtils.Reader> cachedReaders) throws Exception {
         initialize(
                 in.readByte(),
                 in.readByte()

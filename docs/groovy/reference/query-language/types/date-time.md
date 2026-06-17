@@ -51,7 +51,7 @@ result = source.where("DateTimes = '2021-09-06T12:30:00 ET'")
 
 - [Create a new table](../../../how-to-guides/new-and-empty-table.md#newtable)
 - [Time in Deephaven](../../../conceptual/time-in-deephaven.md)
-- [How to use Deephaven's built-in query language functions](../../../how-to-guides/query-language-functions.md)
+- [How to use Deephaven's built-in query language functions](../../../how-to-guides/built-in-functions.md)
 - [Query language functions](../query-library/query-language-function-reference.md)
 - [`instantCol`](../../table-operations/create/instantCol.md)
 - [Strings](./strings.md)

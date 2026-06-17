@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.preview;
 
@@ -12,6 +12,7 @@ import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.select.FunctionalColumn;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import org.apache.commons.lang3.StringUtils;
+import org.jetbrains.annotations.NotNull;
 import org.jpy.PyListWrapper;
 
 import java.time.Instant;
@@ -69,16 +70,18 @@ public class ColumnPreviewManager {
     }
 
     /**
-     * Iterates over a tables columns and applies a preview (or wraps non-serializable).
+     * Iterates over a tables columns and applies formulas to allow data to be read in a client UI. Any types not
+     * specified in the unpreviewedTypes list will be wrapped in a DisplayWrapper, and if convertArrays is true,
+     * arrays/Vectors/PyListWrapper will be converted to ArrayPreview.
      *
      * @param table the table to apply the preview
-     * @return the table containing the preview columns
+     * @param convertArrays if true, arrays/Vectors/PyListWrapper will be converted to a string for serialization
+     * @param unpreviewedTypes a list of types (by Java canonical name) that should not be previewed or wrapped
+     * @return the original table if no columns were changed, otherwise a new table with the preview columns
      */
-    public static Table applyPreview(final Table table) {
-        BaseTable<?> result = (BaseTable<?>) table;
-        final List<SelectColumn> selectColumns = new ArrayList<>();
+    public static Table applyPreview(Table table, boolean convertArrays, List<String> unpreviewedTypes) {
+        final Map<String, SelectColumn> selectColumns = new HashMap<>();
         final Map<String, ColumnDefinition<?>> columns = table.getDefinition().getColumnNameMap();
-        final Map<String, String> originalTypes = new HashMap<>();
         for (String name : columns.keySet()) {
             final ColumnDefinition<?> columnSource = columns.get(name);
             final Class<?> type = columnSource.getDataType();
@@ -86,52 +89,103 @@ public class ColumnPreviewManager {
             if (typeName == null) {
                 typeName = type.getName();
             }
+            if (Vector.class.isAssignableFrom(type)) {
+                if (convertArrays) {
+                    selectColumns.put(name, vectorPreviewFactory.makeColumn(name));
+                }
+            } else if (PyListWrapper.class.isAssignableFrom(type)) {
+                if (convertArrays) {
+                    selectColumns.put(name, pyListWrapperPreviewFactory.makeColumn(name));
+                }
+            } else if (type.isArray()) {
+                if (convertArrays) {
+                    selectColumns.put(name, arrayPreviewFactory.makeColumn(name));
+                }
+            } else if (shouldPreview(type) && !unpreviewedTypes.contains(typeName)) {
+                final PreviewColumnFactory<?, ?> factory = previewMap.get(type);
+                selectColumns.put(name, factory.makeColumn(name));
+            } else if (!unpreviewedTypes.contains(typeName)) {
+                // Always wrap non-displayable and non-serializable types
+                selectColumns.put(name, nonDisplayableFactory.makeColumn(name));
+            }
+        }
+
+        if (selectColumns.isEmpty()) {
+            return table;
+        }
+        return makePreviewTable((BaseTable<?>) table, selectColumns);
+    }
+
+    /**
+     * Iterates over a tables columns and applies a preview (or wraps non-serializable).
+     *
+     * @param table the table to apply the preview
+     * @return the table containing the preview columns
+     */
+    public static Table applyPreview(final Table table) {
+        final Map<String, SelectColumn> selectColumns = new HashMap<>();
+        final Map<String, ColumnDefinition<?>> columns = table.getDefinition().getColumnNameMap();
+        for (final String name : columns.keySet()) {
+            final Class<?> type = columns.get(name).getDataType();
             if (shouldPreview(type)) {
                 final PreviewColumnFactory<?, ?> factory = previewMap.get(type);
-                selectColumns.add(factory.makeColumn(name));
-                originalTypes.put(name, typeName);
+                selectColumns.put(name, factory.makeColumn(name));
             } else if (Vector.class.isAssignableFrom(type)) {
                 // Always wrap Vectors
-                selectColumns.add(vectorPreviewFactory.makeColumn(name));
-                originalTypes.put(name, typeName);
+                selectColumns.put(name, vectorPreviewFactory.makeColumn(name));
             } else if (PyListWrapper.class.isAssignableFrom(type)) {
                 // Always wrap PyListWrapper
-                selectColumns.add(pyListWrapperPreviewFactory.makeColumn(name));
-                originalTypes.put(name, typeName);
+                selectColumns.put(name, pyListWrapperPreviewFactory.makeColumn(name));
             } else if (type.isArray()) {
                 // Always wrap arrays
-                selectColumns.add(arrayPreviewFactory.makeColumn(name));
-                originalTypes.put(name, typeName);
+                selectColumns.put(name, arrayPreviewFactory.makeColumn(name));
             } else if (!isColumnTypeDisplayable(type)) {
                 // Always wrap non-displayable and non-serializable types
-                selectColumns.add(nonDisplayableFactory.makeColumn(name));
-                originalTypes.put(name, typeName);
+                selectColumns.put(name, nonDisplayableFactory.makeColumn(name));
             }
         }
 
-        if (!selectColumns.isEmpty()) {
-            result = (BaseTable<?>) table.updateView(selectColumns);
-            ((BaseTable<?>) table).copyAttributes(result, BaseTable.CopyAttributeOperation.Preview);
-            result.setAttribute(Table.PREVIEW_PARENT_TABLE, table);
-
-            // Add original types to the column descriptions
-            final Object attribute = table.getAttribute(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE);
-
-            // noinspection unchecked
-            final Map<String, String> columnDescriptions =
-                    attribute != null ? new HashMap<>((Map<String, String>) attribute) : new HashMap<>();
-
-            for (String name : originalTypes.keySet()) {
-                String message = "Preview of type: " + originalTypes.get(name);
-                final String currentDescription = columnDescriptions.get(name);
-                if (StringUtils.isNotEmpty(currentDescription)) {
-                    message = message + "\n" + currentDescription;
-                }
-                columnDescriptions.put(name, message);
-            }
-
-            result.setAttribute(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE, columnDescriptions);
+        if (selectColumns.isEmpty()) {
+            return table;
         }
+        return makePreviewTable((BaseTable<?>) table, selectColumns);
+    }
+
+    /**
+     * Helper to apply the preview columns to a table, and copy relevant attributes, and update the column descriptions
+     * to describe changes made.
+     *
+     * @param table the table to apply the preview columns
+     * @param selectColumns the map of column names to SelectColumns
+     * @return the new previewed table
+     */
+    private static @NotNull BaseTable<?> makePreviewTable(BaseTable<?> table, Map<String, SelectColumn> selectColumns) {
+        BaseTable<?> result = (BaseTable<?>) table.updateView(selectColumns.values());
+        table.copyAttributes(result, BaseTable.CopyAttributeOperation.Preview);
+        result.setAttribute(Table.PREVIEW_PARENT_TABLE, table);
+
+        // Add original types to the column descriptions
+        final Object attribute = table.getAttribute(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE);
+
+        // noinspection unchecked
+        final Map<String, String> columnDescriptions =
+                attribute != null ? new HashMap<>((Map<String, String>) attribute) : new HashMap<>();
+
+        for (final String name : selectColumns.keySet()) {
+            final Class<?> type = table.getDefinition().getColumn(name).getDataType();
+            String typeName = type.getCanonicalName();
+            if (typeName == null) {
+                typeName = type.getName();
+            }
+            String message = "Preview of type: " + typeName;
+            final String currentDescription = columnDescriptions.get(name);
+            if (StringUtils.isNotEmpty(currentDescription)) {
+                message = message + "\n" + currentDescription;
+            }
+            columnDescriptions.put(name, message);
+        }
+
+        result.setAttribute(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE, columnDescriptions);
 
         return result;
     }

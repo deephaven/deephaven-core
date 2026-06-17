@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.generator.primitivetemplate;
 
@@ -160,7 +160,7 @@ public class PrimitiveType {
                 new PrimitiveType("char", "Character",
                         "CharVector", "CharVectorDirect",
                         "CloseablePrimitiveIteratorOfChar", "nextChar",
-                        "NULL_CHAR", null, null,
+                        "NULL_CHAR", "MAX_CHAR", "MIN_CHAR",
                         ValueType.CHARACTER),
                 new PrimitiveType("byte", "Byte",
                         "ByteVector", "ByteVectorDirect",

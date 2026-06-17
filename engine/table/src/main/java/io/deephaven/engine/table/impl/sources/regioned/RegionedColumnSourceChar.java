@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.sources.regioned;
 
@@ -74,7 +74,9 @@ abstract class RegionedColumnSourceChar<ATTR extends Values>
                         "Unexpected partitioning column value type for " + columnDefinition.getName()
                                 + ": " + partitioningColumnValue + " is not a Character at location " + locationKey);
             }
-            return new ColumnRegionChar.Constant<>(regionMask(), unbox((Character) partitioningColumnValue));
+            return partitioningColumnValue == null
+                    ? ColumnRegionChar.createNull(regionMask())
+                    : new ColumnRegionChar.Constant<>(regionMask(), unbox((Character) partitioningColumnValue));
         }
     }
 }

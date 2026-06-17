@@ -112,6 +112,9 @@ resultGradesLast = source.moveColumnsDown("TestGrade", "HomeworkGrade")
 
 [`renameColumns`](../reference/table-operations/select/rename-columns.md) renames one or more columns in a table. Renaming a column follows the syntax `NewColumnName = OldColumnName`.
 
+> [!IMPORTANT]
+> If the new column name conflicts with an existing column name in the table, the existing column will be silently replaced.
+
 The following example renames `StudentID` to `ID` and `GPA` to `GradePointAverage`.
 
 ```groovy test-set=1
@@ -142,8 +145,8 @@ resultViewRenamed = source.view(
 - [Selecting and creating columns](./use-select-view-update.md)
 - [`dropColumns`](../reference/table-operations/select/drop-columns.md)
 - [`moveColumns`](../reference/table-operations/select/move-columns.md)
-- [`moveColumns_down`](../reference/table-operations/select/move-columns-down.md)
-- [`moveColumns_up`](../reference/table-operations/select/move-columns-up.md)
+- [`moveColumnsDown`](../reference/table-operations/select/move-columns-down.md)
+- [`moveColumnsUp`](../reference/table-operations/select/move-columns-up.md)
 - [`renameColumns`](../reference/table-operations/select/rename-columns.md)
 - [`select`](../reference/table-operations/select/select.md)
 - [`view`](../reference/table-operations/select/view.md)

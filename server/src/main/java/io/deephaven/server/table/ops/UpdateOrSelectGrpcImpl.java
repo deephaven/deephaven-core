@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.server.table.ops;
 
@@ -13,7 +13,8 @@ import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest;
 import io.deephaven.server.session.SessionState;
-import io.deephaven.server.table.validation.ColumnExpressionValidator;
+import io.deephaven.engine.validation.ColumnExpressionValidator;
+import org.jetbrains.annotations.NotNull;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -30,15 +31,19 @@ public abstract class UpdateOrSelectGrpcImpl extends GrpcTableOperation<SelectOr
 
     private final RealTableOperation realTableOperation;
     private final boolean requiresSharedLock;
+    @NotNull
+    private final ColumnExpressionValidator columnExpressionValidator;
 
     protected UpdateOrSelectGrpcImpl(
             final PermissionFunction<SelectOrUpdateRequest> permission,
             final Function<BatchTableRequest.Operation, SelectOrUpdateRequest> getRequest,
             final RealTableOperation realTableOperation,
-            final boolean requiresSharedLock) {
+            final boolean requiresSharedLock,
+            @NotNull final ColumnExpressionValidator columnExpressionValidator) {
         super(permission, getRequest, SelectOrUpdateRequest::getResultId, SelectOrUpdateRequest::getSourceId);
         this.realTableOperation = realTableOperation;
         this.requiresSharedLock = requiresSharedLock;
+        this.columnExpressionValidator = columnExpressionValidator;
     }
 
     @Override
@@ -49,7 +54,7 @@ public abstract class UpdateOrSelectGrpcImpl extends GrpcTableOperation<SelectOr
         final Table parent = sourceTables.get(0).get();
         final String[] columnSpecs = request.getColumnSpecsList().toArray(String[]::new);
         final SelectColumn[] expressions = SelectColumnFactory.getExpressions(columnSpecs);
-        ColumnExpressionValidator.validateColumnExpressions(expressions, columnSpecs, parent);
+        columnExpressionValidator.validateColumnExpressions(expressions, columnSpecs, parent.getDefinition());
 
         if (parent.isRefreshing() && requiresSharedLock) {
             final UpdateGraph updateGraph = parent.getUpdateGraph();
@@ -63,45 +68,50 @@ public abstract class UpdateOrSelectGrpcImpl extends GrpcTableOperation<SelectOr
     @Singleton
     public static class UpdateGrpcImpl extends UpdateOrSelectGrpcImpl {
         @Inject
-        public UpdateGrpcImpl(final TableServiceContextualAuthWiring authWiring) {
+        public UpdateGrpcImpl(final TableServiceContextualAuthWiring authWiring,
+                @NotNull final ColumnExpressionValidator columnExpressionValidator) {
             super(authWiring::checkPermissionUpdate, BatchTableRequest.Operation::getUpdate,
-                    Table::update, true);
+                    Table::update, true, columnExpressionValidator);
         }
     }
 
     @Singleton
     public static class LazyUpdateGrpcImpl extends UpdateOrSelectGrpcImpl {
         @Inject
-        public LazyUpdateGrpcImpl(final TableServiceContextualAuthWiring authWiring) {
+        public LazyUpdateGrpcImpl(final TableServiceContextualAuthWiring authWiring,
+                @NotNull final ColumnExpressionValidator columnExpressionValidator) {
             super(authWiring::checkPermissionLazyUpdate, BatchTableRequest.Operation::getLazyUpdate,
-                    Table::lazyUpdate, true);
+                    Table::lazyUpdate, true, columnExpressionValidator);
         }
     }
 
     @Singleton
     public static class ViewGrpcImpl extends UpdateOrSelectGrpcImpl {
         @Inject
-        public ViewGrpcImpl(final TableServiceContextualAuthWiring authWiring) {
+        public ViewGrpcImpl(final TableServiceContextualAuthWiring authWiring,
+                @NotNull final ColumnExpressionValidator columnExpressionValidator) {
             super(authWiring::checkPermissionView, BatchTableRequest.Operation::getView,
-                    Table::view, false);
+                    Table::view, false, columnExpressionValidator);
         }
     }
 
     @Singleton
     public static class UpdateViewGrpcImpl extends UpdateOrSelectGrpcImpl {
         @Inject
-        public UpdateViewGrpcImpl(final TableServiceContextualAuthWiring authWiring) {
+        public UpdateViewGrpcImpl(final TableServiceContextualAuthWiring authWiring,
+                @NotNull final ColumnExpressionValidator columnExpressionValidator) {
             super(authWiring::checkPermissionUpdateView, BatchTableRequest.Operation::getUpdateView,
-                    Table::updateView, false);
+                    Table::updateView, false, columnExpressionValidator);
         }
     }
 
     @Singleton
     public static class SelectGrpcImpl extends UpdateOrSelectGrpcImpl {
         @Inject
-        public SelectGrpcImpl(final TableServiceContextualAuthWiring authWiring) {
+        public SelectGrpcImpl(final TableServiceContextualAuthWiring authWiring,
+                @NotNull final ColumnExpressionValidator columnExpressionValidator) {
             super(authWiring::checkPermissionSelect, BatchTableRequest.Operation::getSelect,
-                    Table::select, true);
+                    Table::select, true, columnExpressionValidator);
         }
     }
 }

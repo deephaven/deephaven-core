@@ -1,14 +1,21 @@
 #
-# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 #
 
 import unittest
 
-from deephaven import dtypes
-from deephaven.jcompat import j_function, j_lambda, AutoCloseable, j_array_list, j_collection_to_list, j_hashset
-from tests.testbase import BaseTestCase
-
 import jpy
+
+from deephaven import dtypes
+from deephaven.jcompat import (
+    AutoCloseable,
+    j_array_list,
+    j_collection_to_list,
+    j_function,
+    j_hashset,
+    j_lambda,
+)
+from tests.testbase import BaseTestCase
 
 _JSharedContext = jpy.get_type("io.deephaven.engine.table.SharedContext")
 
@@ -27,7 +34,9 @@ class JCompatTestCase(BaseTestCase):
         def int_to_str(v: int) -> str:
             return str(v)
 
-        j_func = j_lambda(int_to_str, jpy.get_type('java.util.function.Function'), dtypes.string)
+        j_func = j_lambda(
+            int_to_str, jpy.get_type("java.util.function.Function"), dtypes.string
+        )
 
         r = j_func.apply(10)
         self.assertEqual(r, "10")

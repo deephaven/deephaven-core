@@ -1,0 +1,4 @@
+jpy
+deephaven-core
+java-utilities
+click

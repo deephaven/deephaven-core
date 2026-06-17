@@ -1,15 +1,14 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.base.text;
 
 import junit.framework.TestCase;
 
 import java.nio.ByteBuffer;
-import java.text.DateFormat;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.TimeZone;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 
 @SuppressWarnings("UnusedAssignment")
 public class TestConvert extends TestCase {
@@ -149,9 +148,9 @@ public class TestConvert extends TestCase {
 
     // ################################################################
 
-    public void testAppendISO8601Millis() throws ParseException {
-        DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS");
-        dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
+    public void testAppendISO8601Millis() {
+        DateTimeFormatter dateFormat =
+                DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS").withZone(ZoneId.of("GMT"));
 
         long[] testCases = {
                 0L, 1L, 10L, 100L, 1000L, 10000L, 100000L, 1000000L, 10000000L, 100000000L, 1000000000L, 10000000000L,
@@ -160,7 +159,7 @@ public class TestConvert extends TestCase {
                 -10000000000L, -100000000000L, -1000000000000L, -10000000000000L,
         };
         for (long testCase : testCases) {
-            checkAppendIso8601Millis(testCase, dateFormat.format(testCase));
+            checkAppendIso8601Millis(testCase, dateFormat.format(Instant.ofEpochMilli(testCase)));
         }
 
         checkAppendIso8601Millis(-62167132799999L, "0000-01-01T00:00:00.001");
@@ -170,9 +169,12 @@ public class TestConvert extends TestCase {
         checkAppendIso8601Millis(253402300799999L, "9999-12-31T23:59:59.999");
         checkAppendIso8601Millis(253402300800000L, "9999-99-99T99:99:99.999");
 
-        checkAppendIso8601Millis(dateFormat.parse("2004-02-20T11:12:13.014").getTime(), "2004-02-20T11:12:13.014");
-        checkAppendIso8601Millis(dateFormat.parse("2000-02-20T11:12:13.014").getTime(), "2000-02-20T11:12:13.014");
-        checkAppendIso8601Millis(dateFormat.parse("1900-02-20T11:12:13.014").getTime(), "1900-02-20T11:12:13.014");
+        checkAppendIso8601Millis(Instant.from(dateFormat.parse("2004-02-20T11:12:13.014")).toEpochMilli(),
+                "2004-02-20T11:12:13.014");
+        checkAppendIso8601Millis(Instant.from(dateFormat.parse("2000-02-20T11:12:13.014")).toEpochMilli(),
+                "2000-02-20T11:12:13.014");
+        checkAppendIso8601Millis(Instant.from(dateFormat.parse("1900-02-20T11:12:13.014")).toEpochMilli(),
+                "1900-02-20T11:12:13.014");
 
         {
             ByteBuffer byteBuffer = ByteBuffer.allocate(100);
@@ -188,9 +190,9 @@ public class TestConvert extends TestCase {
         assertBufferEqual(byteBuffer, 0, expectedString);
     }
 
-    public void testAppendISO8601Micros() throws ParseException {
-        DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS");
-        dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
+    public void testAppendISO8601Micros() {
+        DateTimeFormatter dateFormat =
+                DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS").withZone(ZoneId.of("GMT"));
 
         long[] testCases = {
                 0L,
@@ -225,7 +227,7 @@ public class TestConvert extends TestCase {
                 -10000000000000000L
         };
         for (long testCase : testCases) {
-            checkAppendIso8601Micros(testCase, dateFormat.format(testCase / 1000) + "000");
+            checkAppendIso8601Micros(testCase, dateFormat.format(Instant.ofEpochMilli(testCase / 1000)) + "000");
         }
 
         checkAppendIso8601Micros(-62167132799999999L, "0000-01-01T00:00:00.000001");
@@ -235,11 +237,11 @@ public class TestConvert extends TestCase {
         checkAppendIso8601Micros(253402300799999000L, "9999-12-31T23:59:59.999000");
         checkAppendIso8601Micros(253402300800000000L, "9999-99-99T99:99:99.999999");
 
-        checkAppendIso8601Micros(dateFormat.parse("2004-02-20T11:12:13.014").getTime() * 1000,
+        checkAppendIso8601Micros(Instant.from(dateFormat.parse("2004-02-20T11:12:13.014")).toEpochMilli() * 1000,
                 "2004-02-20T11:12:13.014000");
-        checkAppendIso8601Micros(dateFormat.parse("2000-02-20T11:12:13.014").getTime() * 1000,
+        checkAppendIso8601Micros(Instant.from(dateFormat.parse("2000-02-20T11:12:13.014")).toEpochMilli() * 1000,
                 "2000-02-20T11:12:13.014000");
-        checkAppendIso8601Micros(dateFormat.parse("1900-02-20T11:12:13.014").getTime() * 1000,
+        checkAppendIso8601Micros(Instant.from(dateFormat.parse("1900-02-20T11:12:13.014")).toEpochMilli() * 1000,
                 "1900-02-20T11:12:13.014000");
 
         {

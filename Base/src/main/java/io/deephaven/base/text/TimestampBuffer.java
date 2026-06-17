@@ -1,11 +1,12 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.base.text;
 
 import java.nio.ByteBuffer;
 import java.nio.BufferOverflowException;
 import java.time.Instant;
+import java.time.ZoneId;
 import java.time.zone.ZoneOffsetTransition;
 import java.time.zone.ZoneRules;
 import java.util.TimeZone;
@@ -83,8 +84,17 @@ public class TimestampBuffer {
     private ThreadLocal<TimestampBuffer.ThreadLocalState> threadLocals =
             ThreadLocal.withInitial(TimestampBuffer.ThreadLocalState::new);
 
+    public TimestampBuffer(final ZoneId zoneId) {
+        zoneRules = zoneId.getRules();
+    }
+
+    /**
+     * @param tz the timezone
+     * @deprecated use {@link #TimestampBuffer(ZoneId)}
+     */
+    @Deprecated
     public TimestampBuffer(TimeZone tz) {
-        zoneRules = tz.toZoneId().getRules();
+        this(tz.toZoneId());
     }
 
     @Deprecated

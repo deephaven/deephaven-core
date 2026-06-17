@@ -9,11 +9,11 @@ Periods are a special type of string used to represent a period of time.
 `-#Y#M#DT#H#M#S`
 
 - `-` - An optional sign to indicate that the period is negative. Omitting this makes the period positive.
-- `#` - Any numeric value
+- `#` - Any numeric value.
 - `Y` - Years
 - `M` (left of `T`) - Months
 - `D` - Days
-- `T` - A divider between the year/month/day and hour/minute/second times
+- `T` - A divider between the year/month/day and hour/minute/second times.
 - `H` - Hours
 - `M` (right of `T`) - Minutes
 - `S` - Seconds
@@ -48,6 +48,6 @@ println plus(dateTime, periodNegative)
 
 ## Related Documentation
 
-- [How to use Deephaven's built-in query language functions](../../../how-to-guides/query-language-functions.md)
+- [How to use Deephaven's built-in query language functions](../../../how-to-guides/built-in-functions.md)
 - [Query language functions](../query-library/query-language-function-reference.md)
 - [Javadoc](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Period.html)

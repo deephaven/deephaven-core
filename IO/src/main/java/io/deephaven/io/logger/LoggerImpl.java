@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.io.logger;
 
@@ -10,6 +10,7 @@ import io.deephaven.io.log.LogLevel;
 import io.deephaven.io.log.LogSink;
 import org.jetbrains.annotations.Nullable;
 
+import java.time.ZoneId;
 import java.util.TimeZone;
 
 public class LoggerImpl implements Logger {
@@ -18,7 +19,6 @@ public class LoggerImpl implements Logger {
     protected final LogEntryPool logEntryPool;
     protected final LogSink logSink;
     protected final String name;
-    protected final TimeZone tz;
     protected final LoggerTimeSource timeSource;
     protected TimestampBufferMicros localTimestamp;
     protected LogLevel loggingLevel;
@@ -36,18 +36,26 @@ public class LoggerImpl implements Logger {
     };
 
     public LoggerImpl(LogEntryPool logEntryPool, LogSink logSink, String prefix, LogLevel loggingLevel,
-            LoggerTimeSource timeSource, TimeZone tz, boolean showLevel, boolean showThreadName) {
+            LoggerTimeSource timeSource, ZoneId zoneId, boolean showLevel, boolean showThreadName) {
         this.logEntryPool = logEntryPool;
         this.logSink = logSink;
-
         this.name = prefix;
         this.timeSource = timeSource;
-        this.tz = tz;
-        this.localTimestamp = tz == null ? null : new TimestampBufferMicros(tz);
+        this.localTimestamp = zoneId == null ? null : new TimestampBufferMicros(zoneId);
         this.showLevel = showLevel;
         this.showThreadName = showThreadName;
-
         this.loggingLevel = loggingLevel;
+    }
+
+    /**
+     * @deprecated use
+     *             {@link #LoggerImpl(LogEntryPool, LogSink, String, LogLevel, LoggerTimeSource, ZoneId, boolean, boolean)}
+     */
+    @Deprecated
+    public LoggerImpl(LogEntryPool logEntryPool, LogSink logSink, String prefix, LogLevel loggingLevel,
+            LoggerTimeSource timeSource, TimeZone tz, boolean showLevel, boolean showThreadName) {
+        this(logEntryPool, logSink, prefix, loggingLevel, timeSource, tz == null ? null : tz.toZoneId(), showLevel,
+                showThreadName);
     }
 
     @Override
@@ -78,7 +86,7 @@ public class LoggerImpl implements Logger {
         } else {
             LogEntry entry = logEntryPool.take().start(logSink, level, currentTimeMicros, t);
 
-            if (tz != null) {
+            if (localTimestamp != null) {
                 entry.append("[").appendTimestampMicros(entry.getTimestampMicros(), localTimestamp).append("] ");
             }
 
@@ -94,7 +102,7 @@ public class LoggerImpl implements Logger {
                 entry.append("- ").append(THREAD_NAME.get()).append(" ");
             }
 
-            if (tz != null || showLevel || name != null || showThreadName) {
+            if (localTimestamp != null || showLevel || name != null || showThreadName) {
                 entry.append("- ");
             }
 

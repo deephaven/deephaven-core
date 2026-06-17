@@ -1,16 +1,14 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.json.jackson;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
-import io.deephaven.base.MathUtil;
+import io.deephaven.base.ArrayUtil;
 import io.deephaven.chunk.WritableByteChunk;
 import io.deephaven.chunk.WritableChunk;
-import io.deephaven.chunk.sized.SizedByteChunk;
 import io.deephaven.json.ByteValue;
-import io.deephaven.json.Value;
 import io.deephaven.qst.type.Type;
 import io.deephaven.util.QueryConstants;
 
@@ -69,7 +67,7 @@ final class ByteMixin extends Mixin<ByteValue> {
     }
 
     final class ByteRepeaterImpl extends RepeaterProcessorBase<byte[]> {
-        private final SizedByteChunk<?> chunk = new SizedByteChunk<>(0);
+        private byte[] buffer = new byte[0];
 
         public ByteRepeaterImpl() {
             super(null, null, Type.byteType().arrayType());
@@ -77,24 +75,17 @@ final class ByteMixin extends Mixin<ByteValue> {
 
         @Override
         public void processElementImpl(JsonParser parser, int index) throws IOException {
-            final int newSize = index + 1;
-            final WritableByteChunk<?> chunk = this.chunk.ensureCapacityPreserve(MathUtil.roundUpArraySize(newSize));
-            chunk.set(index, ByteMixin.this.parseValue(parser));
-            chunk.setSize(newSize);
+            buffer = ArrayUtil.put(buffer, index, parseValue(parser));
         }
 
         @Override
         public void processElementMissingImpl(JsonParser parser, int index) throws IOException {
-            final int newSize = index + 1;
-            final WritableByteChunk<?> chunk = this.chunk.ensureCapacityPreserve(MathUtil.roundUpArraySize(newSize));
-            chunk.set(index, ByteMixin.this.parseMissing(parser));
-            chunk.setSize(newSize);
+            buffer = ArrayUtil.put(buffer, index, parseMissing(parser));
         }
 
         @Override
         public byte[] doneImpl(JsonParser parser, int length) {
-            final WritableByteChunk<?> chunk = this.chunk.get();
-            return Arrays.copyOfRange(chunk.array(), chunk.arrayOffset(), chunk.arrayOffset() + length);
+            return Arrays.copyOfRange(buffer, 0, length);
         }
     }
 

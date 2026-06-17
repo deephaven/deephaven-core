@@ -3,12 +3,12 @@
 #
 from __future__ import annotations
 
-import pydeephaven as pyd
 import pyarrow as pa
-from typing import Dict, List, Tuple
+import pydeephaven as pyd
 from pydeephaven import TableListener, TableUpdate, listen
 
 session = pyd.Session(host="localhost", port=10000)
+
 
 class MyDiffListener(TableListener):
     def on_update(self, update: TableUpdate) -> None:
@@ -17,7 +17,7 @@ class MyDiffListener(TableListener):
         self._show_deltas("MODIFIED-PREV", update.modified_prev())
         self._show_deltas("MODIFIED", update.modified())
 
-    def _show_deltas(self, what: str, dict: Dict[str, pa.Array]):
+    def _show_deltas(self, what: str, dict: dict[str, pa.Array]):
         if len(dict) == 0:
             return
 
@@ -25,12 +25,14 @@ class MyDiffListener(TableListener):
         for name, data in dict.items():
             print(f"{name}: {data}")
 
+
 def print_diffs():
     table_name = input("Please enter the table name: ")
     table = session.open_table(table_name)
     listener_handle = listen(table, MyDiffListener())
     listener_handle.start()
     return listener_handle
+
 
 while True:
     listener_handle = print_diffs()

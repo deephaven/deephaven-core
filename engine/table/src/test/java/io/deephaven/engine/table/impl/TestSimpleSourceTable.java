@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl;
 
@@ -30,6 +30,8 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static io.deephaven.engine.testutil.TstUtils.assertRowSetEquals;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
 /**
  * Tests for {@link SimpleSourceTable}.
@@ -75,6 +77,8 @@ public class TestSimpleSourceTable extends RefreshingTableTestCase {
             {
                 allowing(columnSourceManager).allLocations();
                 will(returnValue(Collections.EMPTY_MAP));
+                allowing(columnSourceManager).includedLocations();
+                will(returnValue(Collections.emptyList()));
                 allowing(columnSourceManager).getTableAttributes(with(any(TableUpdateMode.class)),
                         with(any(TableUpdateMode.class)));
                 will(returnValue(Collections.EMPTY_MAP));
@@ -83,6 +87,9 @@ public class TestSimpleSourceTable extends RefreshingTableTestCase {
 
         columnSources = TABLE_DEFINITION.getColumnStream().map(cd -> {
             final ColumnSource<?> mocked = mock(ColumnSource.class, cd.getName());
+            final ChunkSource.FillContext mockedFillContext =
+                    mock(ChunkSource.FillContext.class, "_FC_" + cd.getName());
+            final ChunkSource.GetContext mockedGetContext = mock(ChunkSource.GetContext.class, "_GC_" + cd.getName());
             checking(new Expectations() {
                 {
                     allowing(mocked).getType();
@@ -91,6 +98,12 @@ public class TestSimpleSourceTable extends RefreshingTableTestCase {
                     will(returnValue(cd.getComponentType()));
                     allowing(mocked).isStateless();
                     will(returnValue(true));
+                    allowing(mocked).makeFillContext(0);
+                    will(returnValue(mockedFillContext));
+                    allowing(mocked).makeGetContext(0);
+                    will(returnValue(mockedGetContext));
+                    allowing(mockedFillContext).close();
+                    allowing(mockedGetContext).close();
                 }
             });
             return mocked;
@@ -142,7 +155,7 @@ public class TestSimpleSourceTable extends RefreshingTableTestCase {
                         with(false),
                         with(false),
                         with(ColumnToCodecMappings.EMPTY),
-                        with(equal(TABLE_DEFINITION.getColumns())));
+                        with(equal(TABLE_DEFINITION)));
                 will(returnValue(columnSourceManager));
             }
         });
@@ -248,13 +261,15 @@ public class TestSimpleSourceTable extends RefreshingTableTestCase {
         // Test 1: Drop a column
         // Setup the table
         final int[] includedColumnIndices1 = new int[] {1, 2, 3};
+        final TableDefinition includeTableDefinition1 =
+                TableDefinition.of(getIncludedColumnDefs(includedColumnIndices1));
         checking(new Expectations() {
             {
                 oneOf(componentFactory).createColumnSourceManager(
                         with(false),
                         with(false),
                         with(ColumnToCodecMappings.EMPTY),
-                        with(equal(getIncludedColumnDefs(includedColumnIndices1))));
+                        with(equal(includeTableDefinition1)));
                 will(returnValue(columnSourceManager));
             }
         });
@@ -282,13 +297,15 @@ public class TestSimpleSourceTable extends RefreshingTableTestCase {
         // Test 2: Drop another column
         // Setup the table
         final int[] includedColumnIndices2 = new int[] {2, 3};
+        final TableDefinition includeTableDefinition2 =
+                TableDefinition.of(getIncludedColumnDefs(includedColumnIndices2));
         checking(new Expectations() {
             {
                 oneOf(componentFactory).createColumnSourceManager(
                         with(false),
                         with(false),
                         with(ColumnToCodecMappings.EMPTY),
-                        with(equal(getIncludedColumnDefs(includedColumnIndices2))));
+                        with(equal(includeTableDefinition2)));
                 will(returnValue(columnSourceManager));
             }
         });
@@ -326,13 +343,15 @@ public class TestSimpleSourceTable extends RefreshingTableTestCase {
         // Test 4: Use view to slice us down to one column
         // Setup the table
         final int[] includedColumnIndices3 = new int[] {2};
+        final TableDefinition includeTableDefinition3 =
+                TableDefinition.of(getIncludedColumnDefs(includedColumnIndices3));
         checking(new Expectations() {
             {
                 oneOf(componentFactory).createColumnSourceManager(
                         with(false),
                         with(false),
                         with(ColumnToCodecMappings.EMPTY),
-                        with(equal(getIncludedColumnDefs(includedColumnIndices3))));
+                        with(equal(includeTableDefinition3)));
                 will(returnValue(columnSourceManager));
             }
         });
@@ -375,5 +394,21 @@ public class TestSimpleSourceTable extends RefreshingTableTestCase {
         assertEquals(NUM_COLUMNS - 3, viewResult4.getColumnSources().size());
         assertNotNull(viewResult4.getColumnSource("SizeSquared"));
         assertIsSatisfied();
+    }
+
+    @Test
+    public void testNonDirectColumnTypes() {
+        final TableDefinition td = TableDefinition.of(
+                ColumnDefinition.ofString("P1").withPartitioning(),
+                ColumnDefinition.ofInt("P2").withPartitioning(),
+                ColumnDefinition.ofInt("X1"),
+                ColumnDefinition.ofInt("X2"));
+        try {
+            new SimpleSourceTable(td, "", componentFactory, locationProvider, null);
+            failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
+        } catch (final IllegalArgumentException e) {
+            assertThat(e).hasMessageContaining(
+                    "Can't construct SimpleSourceTable with column type(s) [ColumnDefinition {name=P1, dataType=class java.lang.String, componentType=null, columnType=Partitioning}, ColumnDefinition {name=P2, dataType=int, componentType=null, columnType=Partitioning}]");
+        }
     }
 }

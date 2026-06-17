@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 #
 """
 Support for running operations on JVM server threads, so that they can be given work from python. Initially, there
@@ -8,13 +8,14 @@ executor, otherwise the concurrent executor should be used. In the future there 
 when there is no chance of using either lock.
 """
 
-from typing import Callable, Dict, List
+from typing import Callable
+
 import jpy
-from deephaven.jcompat import j_runnable
+
 from deephaven import DHError
+from deephaven.jcompat import j_runnable
 
-
-_executors: Dict[str, Callable[[Callable[[], None]], None]] = {}
+_executors: dict[str, Callable[[Callable[[], None]], None]] = {}
 
 
 def has_executor(executor_name: str) -> bool:
@@ -24,7 +25,7 @@ def has_executor(executor_name: str) -> bool:
     return executor_name in executor_names()
 
 
-def executor_names() -> List[str]:
+def executor_names() -> list[str]:
     """
     Returns: the List of known executor names
     """

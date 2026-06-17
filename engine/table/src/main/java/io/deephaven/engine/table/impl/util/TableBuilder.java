@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.util;
 
@@ -87,6 +87,7 @@ public class TableBuilder {
      * @return the table
      */
     public Table build() {
+        def.checkHasValidColumnNames();
         Map<String, WritableColumnSource<Object>> map = new LinkedHashMap<>();
         for (ColumnDefinition<?> columnDefinition : def.getColumns()) {
             WritableColumnSource<?> cs = ArrayBackedColumnSource.getMemoryColumnSource(

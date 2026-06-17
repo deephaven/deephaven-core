@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.select;
 
@@ -16,6 +16,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * {@link SelectColumn} implementation that wraps another {@link SelectColumn}.
@@ -118,6 +119,11 @@ abstract class WrappedSelectColumn implements SelectColumn {
     }
 
     @Override
+    public boolean isParallelizable() {
+        return inner.isParallelizable();
+    }
+
+    @Override
     public boolean hasVirtualRowVariables() {
         return inner.hasVirtualRowVariables();
     }
@@ -135,5 +141,35 @@ abstract class WrappedSelectColumn implements SelectColumn {
     @Override
     public Expression expression() {
         return inner.expression();
+    }
+
+    @Override
+    public boolean hasConstantArrayAccess() {
+        return inner.hasConstantArrayAccess();
+    }
+
+    @Override
+    public boolean hasConstantValue() {
+        return inner.hasConstantValue();
+    }
+
+    @Override
+    public Optional<SourceColumn> maybeGetSourceColumn() {
+        return inner.maybeGetSourceColumn();
+    }
+
+    @Override
+    public Optional<FormulaColumn> maybeGetFormulaColumn() {
+        return inner.maybeGetFormulaColumn();
+    }
+
+    @Override
+    public Object[] respectedBarriers() {
+        return inner.respectedBarriers();
+    }
+
+    @Override
+    public Object[] declaredBarriers() {
+        return inner.declaredBarriers();
     }
 }

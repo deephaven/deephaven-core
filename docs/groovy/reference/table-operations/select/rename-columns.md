@@ -37,6 +37,9 @@ Columns that will be renamed in the new table.
 </Param>
 </ParamTable>
 
+> [!IMPORTANT]
+> If the new column name conflicts with an existing column name in the table, the existing column will be silently replaced.
+
 ## Returns
 
 A new table that renames the specified columns.
@@ -54,6 +57,19 @@ source = newTable(
 )
 
 result = source.renameColumns("Fruit = A", "Type = C")
+```
+
+The following example renames column `C` to `A`. Because `A` already exists, it is silently replaced with the renamed `C` column:
+
+```groovy order=source,result
+source = newTable(
+    stringCol("A", "apple", "apple", "orange", "orange", "plum", "plum"),
+    intCol("B", 1, 1, 2, 2, 3, 3),
+    stringCol("C", "Macoun", "Opal", "Navel", "Cara Cara ", "Greengage", "Mirabelle"),
+    intCol("D", 1, 2, 12, 3, 2, 3),
+)
+
+result = source.renameColumns("A = C")
 ```
 
 ## Related documentation

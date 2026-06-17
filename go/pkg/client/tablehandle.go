@@ -8,7 +8,7 @@ import (
 	"runtime/debug"
 	"sync"
 
-	"github.com/apache/arrow/go/v8/arrow"
+	"github.com/apache/arrow/go/v17/arrow"
 
 	tablepb2 "github.com/deephaven/deephaven-core/go/internal/proto/table"
 	ticketpb2 "github.com/deephaven/deephaven-core/go/internal/proto/ticket"

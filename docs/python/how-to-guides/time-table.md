@@ -34,9 +34,9 @@ In this example, the `start_time` argument was not provided, so the first row of
 > [!TIP]
 > Duration strings are formatted as `"PTnHnMnS"`, where:
 >
-> - `PT` is the prefix to indicate a [duration](../reference/query-language/types/durations.md)
-> - `n` is a number
-> - `H`, `M`, and `S` are the units of time (hours, minutes, and seconds, respectively)
+> - `PT` is the prefix to indicate a [duration](../reference/query-language/types/durations.md).
+> - `n` is a number.
+> - `H`, `M`, and `S` are the units of time (hours, minutes, and seconds, respectively).
 
 <LoopedVideo src='../assets/tutorials/timetable.mp4' />
 
@@ -59,7 +59,7 @@ When this code is run, `result` is initially populated with 1800 rows of data, o
 
 ### time_table as a blink table
 
-By default, the result of time_table is [append-only](../conceptual/table-types.md#specialization-1-append-only). You can set the `blink_table` parameter to `True` to create a [blink](../conceptual/table-types.md#specialization-3-blink) table, which only retains rows from the most recent update cycle:
+By default, the result of `time_table` is [append-only](../conceptual/table-types.md#specialization-1-append-only). You can set the `blink_table` parameter to `True` to create a [blink](../conceptual/table-types.md#specialization-3-blink) table, which only retains rows from the most recent update cycle:
 
 ```python ticking-table order=null
 from deephaven import time_table

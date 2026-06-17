@@ -88,12 +88,22 @@ class JavaDependencies {
         }
     }
 
+    private static void verifyShadowConfiguration(Project project, ProjectDependency dep) {
+        if (dep.targetConfiguration == null || dep.targetConfiguration != 'shadow') {
+            throw new IllegalStateException("Project '${project.name}' [${ProjectType.getType(project)}] has a dependency on the '${dep.targetConfiguration}' configuration of project '${dep.name}', should be a shadow dependency.")
+        }
+    }
+
     private static void verifyConfigurationHasPublicDependencies(Project project, Configuration configuration) {
         allDependencies(configuration, { dependency ->
-            verifyDefaultConfiguration(project, dependency)
             def dp = dependency.dependencyProject
-            if (!ProjectType.isPublic(dp)) {
-                throw new IllegalStateException("Project '${project.name}' [${ProjectType.getType(project)}] has a dependency on a non-public project '${dp.name}' [${ProjectType.getType(dp)}]")
+            if (ProjectType.JAVA_PUBLIC_SHADOW == ProjectType.getType(dp)) {
+                verifyShadowConfiguration(project, dependency)
+            } else {
+                verifyDefaultConfiguration(project, dependency)
+                if (!ProjectType.isPublic(dp)) {
+                    throw new IllegalStateException("Project '${project.name}' [${ProjectType.getType(project)}] has a dependency on a non-public project '${dp.name}' [${ProjectType.getType(dp)}]")
+                }
             }
         })
         allDependencyConstraints(configuration, { dependency ->
@@ -107,10 +117,14 @@ class JavaDependencies {
 
     private static void verifyConfigurationHasNoPublicTestingDependencies(Project project, Configuration configuration) {
         allDependencies(configuration, { dependency ->
-            verifyDefaultConfiguration(project, dependency)
             def dp = dependency.dependencyProject
-            if (ProjectType.getType(dp) == ProjectType.JAVA_PUBLIC_TESTING) {
-                throw new IllegalStateException("Project '${project.name}' [${ProjectType.getType(project)}] has a dependency on a testing project '${dp.name}' [${ProjectType.getType(dp)}]")
+            if (ProjectType.JAVA_PUBLIC_SHADOW == ProjectType.getType(dp)) {
+                verifyShadowConfiguration(project, dependency)
+            } else {
+                verifyDefaultConfiguration(project, dependency)
+                if (ProjectType.getType(dp) == ProjectType.JAVA_PUBLIC_TESTING) {
+                    throw new IllegalStateException("Project '${project.name}' [${ProjectType.getType(project)}] has a dependency on a testing project '${dp.name}' [${ProjectType.getType(dp)}]")
+                }
             }
         })
         allDependencyConstraints(configuration, { dependency ->

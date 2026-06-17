@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.extensions.barrage.chunk;
 
@@ -184,7 +184,7 @@ public class MapChunkWriter<T>
                 valueColumn = valueWriter.getInputStream(context.valueContext, null, options);
             } else {
                 // note that we maintain dense offsets within the writer, but write per the wire format
-                myOffsets = WritableIntChunk.makeWritableChunk(context.size() + 1);
+                myOffsets = WritableIntChunk.makeWritableChunk(subset.intSize() + 1);
                 myOffsets.setSize(0);
                 myOffsets.add(0);
 

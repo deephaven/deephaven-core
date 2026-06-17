@@ -3,10 +3,9 @@ title: Build and run Deephaven from source code
 sidebar_label: Source code
 ---
 
-This guide will show you how to build and launch Deephaven Community Core from source code.
-It provides a starting point for tinkerers and developers who want to dig into configuration or
-experiment with code changes. These instructions show how to build on multiple operating
-systems, including Linux, Windows, and Mac.
+This guide will show you how to build and launch Deephaven Community Core from source code. It provides a starting point for tinkerers and developers who want to dig into configuration or experiment with code changes.
+
+These instructions show how to build on multiple operating systems, including Linux, Windows, and Mac.
 
 > [!TIP]
 > Launching from source code is recommended for users who wish to tinker with and modify source code. For an easier installation method, see [Launch Deephaven from pre-built images](./docker-install.md).
@@ -38,6 +37,16 @@ java --version
 > [!NOTE]
 > The Java build process uses [Gradle Auto Provisioning](https://docs.gradle.org/current/userguide/toolchains.html#sec:provisioning) to download and use the appropriate Java version for building and testing.
 
+### Gradle
+
+Deephaven uses [Gradle](https://gradle.org/) as its build tool. You do not need to install Gradle manually — the repository includes the [Gradle Wrapper](https://docs.gradle.org/current/userguide/gradle_wrapper.html) (`gradlew` / `gradlew.bat`), which downloads and runs the correct version of Gradle automatically.
+
+You can verify the wrapper is present after cloning:
+
+```bash
+ls gradlew
+```
+
 ### Python
 
 It is recommended you stay up-to-date with the latest Python version. Deephaven requires Python **3.9** or later. You can check your Python version with:
@@ -55,9 +64,6 @@ You can download a ZIP file of the repository from GitHub. However, this is not 
 ## Build and run Deephaven
 
 The following instructions are a condensed version of instructions found in the [deephaven-core repository](https://github.com/deephaven/deephaven-core). For the full instructions with explanations of configuration parameters, SSL, and more, see the [README](https://github.com/deephaven/deephaven-core/blob/main/server/jetty-app/README.md).
-
-> [!NOTE]
-> The following steps show how to build and run Deephaven with Python from source. For Groovy, see [here](/core/groovy/docs/how-to-guides/launch-build/).
 
 ### Clone the deephaven-core repository
 

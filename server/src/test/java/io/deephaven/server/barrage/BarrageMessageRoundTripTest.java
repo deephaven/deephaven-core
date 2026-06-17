@@ -1,11 +1,12 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.server.barrage;
 
 import dagger.BindsInstance;
 import dagger.Component;
 import io.deephaven.api.ColumnName;
+import io.deephaven.api.RawString;
 import io.deephaven.api.Selectable;
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
@@ -33,6 +34,7 @@ import io.deephaven.extensions.barrage.table.BarrageTable;
 import io.deephaven.extensions.barrage.util.BarrageMessageReaderImpl;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.extensions.barrage.util.ExposedByteArrayOutputStream;
+import io.deephaven.extensions.barrage.util.GrpcMarshallingException;
 import io.deephaven.server.arrow.ArrowModule;
 import io.deephaven.server.session.SessionService;
 import io.deephaven.server.util.Scheduler;
@@ -40,8 +42,10 @@ import io.deephaven.server.util.TestControlledScheduler;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.annotations.ReferentialIntegrity;
+import io.deephaven.util.annotations.ScriptApi;
 import io.deephaven.util.mutable.MutableInt;
 import io.deephaven.vector.IntVector;
+import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableObject;
@@ -49,12 +53,16 @@ import org.junit.experimental.categories.Category;
 
 import javax.inject.Singleton;
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.function.UnaryOperator;
+import java.util.stream.Collectors;
 
 import static io.deephaven.engine.table.impl.remote.ConstructSnapshot.SNAPSHOT_CHUNK_SIZE;
 import static io.deephaven.engine.testutil.TstUtils.*;
@@ -160,6 +168,8 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
         private final Queue<BarrageMessage> commandQueue = new ArrayDeque<>();
         private final DummyObserver dummyObserver;
 
+        private UnaryOperator<QueryTable> transform = null;
+
         // The replicated table's TableUpdateValidator will be confused if the table is a viewport. Instead we rely on
         // comparing the producer table to the consumer table to validate contents are correct.
         RemoteClient(final RowSet viewport, final BitSet subscribedColumns,
@@ -194,8 +204,8 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                     .useDeephavenNulls(useDeephavenNulls)
                     .build();
             final BarrageDataMarshaller marshaller = new BarrageDataMarshaller(
-                    options, barrageTable.getWireChunkTypes(), barrageTable.getWireTypes(),
-                    barrageTable.getWireComponentTypes(),
+                    options, schema.computeWireChunkTypes(), schema.computeWireTypes(),
+                    schema.computeWireComponentTypes(),
                     new BarrageMessageReaderImpl(barrageTable.getDeserializationTmConsumer()));
             this.dummyObserver = new DummyObserver(marshaller, commandQueue);
 
@@ -214,6 +224,10 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
             if (!deferSubscription) {
                 doSubscribe();
             }
+        }
+
+        public void setTransform(UnaryOperator<QueryTable> transform) {
+            this.transform = transform;
         }
 
         public void doSubscribe() {
@@ -244,6 +258,11 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                 }
                 expected = (QueryTable) expected.view(columns);
                 toCheck = (QueryTable) toCheck.view(columns);
+            }
+
+            if (transform != null) {
+                expected = transform.apply(expected);
+                toCheck = transform.apply(toCheck);
             }
 
             // Data should be identical and in-order.
@@ -1283,6 +1302,90 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
         remoteNugget.validate("large mod rows update");
     }
 
+    /**
+     * Bug-fix verification: when a full subscription and a gapped-viewport subscription coexist, the producer stores
+     * all modified rows in a single delta (not just the viewport intersection). The viewport client's modOffsets then
+     * map contiguous viewport positions to non-contiguous data positions (with a gap). In appendModColumns, maxLength
+     * is computed as a data-position-space distance but then used as a row-index count, so modOffsets.get(endRange) can
+     * return a data position past the chunk boundary, triggering "Subset is out of bounds for context of size N".
+     */
+    public void testModColumnChunkBoundaryWithGappedViewport() {
+        final BitSet allColumns = new BitSet(1);
+        allColumns.set(0);
+
+        // Use a flat table with enough rows to span 2+ delta chunks when fully modified.
+        final long numRows = 2L * BarrageMessageProducer.DELTA_CHUNK_SIZE + 100;
+
+        final QueryTable sourceTable = TstUtils.testRefreshingTable(i().toTracking());
+        sourceTable.setFlat();
+        final QueryTable queryTable = (QueryTable) sourceTable.updateView("data = (short) k");
+
+        final RemoteNugget remoteNugget = new RemoteNugget(() -> queryTable);
+
+        // A full subscription is required so that modsToRecord = allRows (not just the viewport
+        // intersection). This makes rowsModified.original contiguous over all rows, which in turn
+        // makes clientModdedRowOffsets for the gapped-viewport client non-contiguous (gapped) —
+        // the precondition for the appendModColumns chunk-boundary bug.
+        // noinspection unused
+        final RemoteClient fullClient = remoteNugget.newClient(null, allColumns, "full");
+
+        // Create a viewport with a gap in the first chunk's range. The gap ensures that modOffsets
+        // is non-contiguous: viewport row indices 0..N map to data positions with a hole, so N row
+        // indices can map to data positions past the chunk boundary.
+        final long gapStart = BarrageMessageProducer.DELTA_CHUNK_SIZE / 2;
+        final long gapSize = BarrageMessageProducer.DELTA_CHUNK_SIZE / 4;
+        final RemoteClient remoteClient;
+        try (final RowSet before = RowSetFactory.fromRange(0, gapStart - 1);
+                final RowSet after = RowSetFactory.fromRange(gapStart + gapSize, numRows - 1)) {
+            final RowSet viewport = before.union(after);
+
+            // noinspection unused
+            remoteClient = remoteNugget.newClient(viewport, allColumns, "gapped-viewport");
+        }
+
+        // Obtain snapshot.
+        flushProducerTable();
+        remoteNugget.flushClientEvents();
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
+
+        // Add all rows in one delta.
+        final RowSet allRows = RowSetFactory.fromRange(0, numRows - 1);
+        updateGraph.runWithinUnitTestCycle(() -> {
+            TstUtils.addToTable(sourceTable, allRows);
+            // This results in queryTable downstream update and the BMP propagating the adds.
+            sourceTable.notifyListeners(new TableUpdateImpl(
+                    allRows.copy(),
+                    RowSetFactory.empty(),
+                    RowSetFactory.empty(),
+                    RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
+        });
+
+        flushProducerTable();
+        remoteNugget.flushClientEvents();
+        updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
+        remoteNugget.validate("after initial add");
+
+        // Modify ALL rows in a single delta. With the gapped viewport, the mod offsets will have
+        // a hole that causes appendModColumns to compute endPos past the first chunk's boundary.
+        updateGraph.runWithinUnitTestCycle(() -> {
+            // Faking a mods update from queryTable (since mods on a column-less table are impossible,
+            // doing this to trigger the BMP to reproduce the bug).
+            queryTable.notifyListeners(new TableUpdateImpl(
+                    RowSetFactory.empty(),
+                    RowSetFactory.empty(),
+                    allRows.copy(),
+                    RowSetShiftData.EMPTY, ModifiedColumnSet.ALL));
+        });
+
+        // This flush serializes the mod message; without the fix it throws:
+        // "Subset {..} is out of bounds for context of size N"
+        flushProducerTable();
+        remoteNugget.flushClientEvents();
+        updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
+        remoteNugget.validate("mod spanning chunks with gapped viewport");
+    }
+
     public void testAllUniqueChunkTypeColumnSourcesWithValidityBuffers() {
         testAllUniqueChunkTypeColumnSources(false);
     }
@@ -1372,7 +1475,8 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                             // note we use column name `Sym` instead of `objCol` for the groupBy op in #createNuggets
                             columnInfo = initColumnInfos(
                                     new String[] {"longCol", "intCol", "Sym", "byteCol", "doubleCol", "floatCol",
-                                            "shortCol", "charCol", "boolCol", "strCol", "strArrCol", "datetimeCol"},
+                                            "shortCol", "charCol", "boolCol", "strCol", "strArrCol", "datetimeCol",
+                                            "zdtCol", "localTimeCol", "localDateCol"},
                                     new SortedLongGenerator(0, Long.MAX_VALUE - 1),
                                     new IntGenerator(10, 100, 0.1),
                                     new SetGenerator<>("a", "b", "c", "d"), // covers strings
@@ -1387,7 +1491,23 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                                             new String[] {}, null),
                                     new UnsortedInstantGenerator(
                                             DateTimeUtils.parseInstant("2020-02-14T00:00:00 NY"),
-                                            DateTimeUtils.parseInstant("2020-02-25T00:00:00 NY")));
+                                            DateTimeUtils.parseInstant("2020-02-25T00:00:00 NY")),
+                                    new SetGenerator<>(
+                                            DateTimeUtils.parseInstant("2025-11-13T00:00:00 NY")
+                                                    .atZone(ZoneId.of("UTC")),
+                                            DateTimeUtils.parseInstant("2025-11-14T00:00:00 NY")
+                                                    .atZone(ZoneId.of("UTC")),
+                                            null),
+                                    new SetGenerator<>(
+                                            LocalTime.of(10, 30, 45),
+                                            LocalTime.of(14, 15, 30),
+                                            LocalTime.of(22, 45, 0),
+                                            null),
+                                    new SetGenerator<>(
+                                            LocalDate.of(2025, 11, 13),
+                                            LocalDate.of(2025, 11, 14),
+                                            LocalDate.of(2025, 11, 15),
+                                            null));
                             sourceTable = getTable(size / 4, random, columnInfo);
                         }
                     };
@@ -1489,8 +1609,98 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
         remoteNugget.validate("end-of-test tables should match");
     }
 
+    public void testNestedArrays() {
+        // Two cases that aren't expected to work in the java client, since it doesn't have enough type info:
+        // * triply nested groupBy(), where we have ObjectVector of ObjectVector of some vector
+        // * double nested groupBy() where the inner type is not a primitive
+        final Table queryTable = TableTools.emptyTable(1)
+                // .update("triplevector_int=i", "triplevector_string=``").groupBy()
+                .update("doublevector_int=i"/* , "doublevector_string=``" */).groupBy()
+                .update("vector_int=i", "vector_string=``").groupBy()
+                .update("array_int=new int[]{i}", "doublearray_int=new int[][] {{i}}",
+                        "array_string=new String[]{``}",
+                        "doublearray_string=new String[][]{{``}}");
+        queryTable.setRefreshing(true);
+        final BitSet allColumns = new BitSet(queryTable.getColumnSourceMap().size());
+        for (int i = 0; i < queryTable.getColumnSourceMap().size(); i++) {
+            allColumns.set(i);
+        }
+        final RemoteNugget remoteNugget = new RemoteNugget(() -> queryTable);
+
+        final RemoteClient remoteClient =
+                remoteNugget.newClient(RowSetFactory.fromRange(0, 0), allColumns, "snapshot");
+        remoteClient.setTransform(t -> {
+            // Based on the column type, if we see an array turn it into a string. While this seems to mask the types
+            // that we're getting over the wire, it doesn't function correctly without those types having arrived, so we
+            // should still be correctly validating the table.
+            return (QueryTable) t.updateView(t.getDefinition().getColumnNameMap().entrySet().stream()
+                    .map(entry -> {
+                        String colName = entry.getKey();
+                        Class<?> type = entry.getValue().getDataType();
+                        if (type.isArray()) {
+                            return Selectable.of(
+                                    ColumnName.of(colName),
+                                    RawString
+                                            .of("io.deephaven.server.barrage.BarrageMessageRoundTripTest.arrayToString("
+                                                    + colName + ")"));
+                        }
+                        return null;
+                    })
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList()));
+        });
+        // Obtain snapshot of original viewport.
+        flushProducerTable();
+        remoteNugget.flushClientEvents();
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
+        remoteNugget.validate("snapshot");
+    }
+
+    public void testFailingNestedVectors() {
+        // Same as testNestedArrays, except we verify that we get expected exceptions for cases where BarrageTable can't
+        // handle the type
+        final Table failingTable = TableTools.emptyTable(1)
+                .update("triplevector_int=i", "triplevector_string=``").groupBy()
+                .update("doublevector_string=``").groupBy()
+                .groupBy();
+
+        failingTable.setRefreshing(true);
+        for (int i = 0; i < failingTable.getColumnSourceMap().size(); i++) {
+            BitSet oneColumn = new BitSet(failingTable.getColumnSourceMap().size());
+            oneColumn.set(i);
+            final RemoteNugget remoteNugget = new RemoteNugget(() -> failingTable);
+
+            final RemoteClient remoteClient =
+                    remoteNugget.newClient(RowSetFactory.fromRange(0, 0), oneColumn, "snapshot");
+            flushProducerTable();
+            remoteNugget.flushClientEvents();
+            final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+            updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
+
+            assertNotNull(remoteClient.dummyObserver.failure);
+            assertTrue(remoteClient.dummyObserver.failure.getCause() instanceof GrpcMarshallingException);
+            assertTrue(remoteClient.dummyObserver.failure.getCause().getCause() instanceof StatusRuntimeException);
+            StatusRuntimeException sre =
+                    (StatusRuntimeException) remoteClient.dummyObserver.failure.getCause().getCause();
+            assertTrue(sre.getMessage().contains("Column with type java.lang.Object cannot be serialized directly"));
+        }
+    }
+
+    // Helpers for testNestedArrays
+    @ScriptApi
+    public static String arrayToString(int[] arr) {
+        return Arrays.toString(arr);
+    }
+
+    @ScriptApi
+    public static String arrayToString(Object[] arr) {
+        return Arrays.deepToString(arr);
+    }
+
     public static class DummyObserver implements StreamObserver<BarrageMessageWriter.MessageView> {
         volatile boolean completed = false;
+        volatile Throwable failure = null;
 
         private final BarrageDataMarshaller marshaller;
         private final Queue<BarrageMessage> receivedCommands;
@@ -1513,11 +1723,13 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                         if (message != null) {
                             receivedCommands.add(message);
                         }
-                    } catch (final IOException e) {
+                    } catch (final Exception e) {
+                        this.failure = e;
                         throw new IllegalStateException("Failed to parse barrage message: ", e);
                     }
                 });
-            } catch (final IOException e) {
+            } catch (final Exception e) {
+                this.failure = e;
                 throw new IllegalStateException("Failed to parse barrage message: ", e);
             }
         }

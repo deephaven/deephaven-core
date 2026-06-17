@@ -1,17 +1,16 @@
 #
-# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 #
-from typing import Union, TypeVar, List
+from collections.abc import Sequence
+from typing import Any
 
-T = TypeVar("T")
 
-
-def to_list(v: Union[T, List[T]]) -> List[T]:
+def to_list(v: Any = None) -> list[Any]:
     """Converts the input value to a list of the same type, if it is not already a list."""
-    if v is None or isinstance(v, List) and not v:
+    if v is None or isinstance(v, list) and not v:
         return []
 
-    if not isinstance(v, List) or isinstance(v, str):
+    if not isinstance(v, Sequence) or isinstance(v, str):
         return [v]
     else:
         return list(v)

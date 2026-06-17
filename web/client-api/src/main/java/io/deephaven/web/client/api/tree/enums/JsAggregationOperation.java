@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api.tree.enums;
 
@@ -8,7 +8,7 @@ import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsType;
 
 /**
- * This enum describes the name of each supported operation/aggregation type when creating a `TreeTable`.
+ * This enum describes the name of each supported operation/aggregation type when creating a {@code TreeTable}.
  */
 @JsType(name = "AggregationOperation", namespace = "dh")
 @TsTypeDef(tsType = "string")

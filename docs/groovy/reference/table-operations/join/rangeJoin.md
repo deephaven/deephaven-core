@@ -32,8 +32,8 @@ A collection of [`JoinMatch`es](/core/javadoc/io/deephaven/api/JoinMatch.html) t
 
 For example:
 
-- Match on the same column name in both tables: `"commonColumn"`
-- Match on `LeftCol` and `RightCol` in the left and right tables, respectively: `"LeftCol = RightCol"`
+- Match on the same column name in both tables: `"commonColumn"`.
+- Match on `LeftCol` and `RightCol` in the left and right tables, respectively: `"LeftCol = RightCol"`.
 
 This collection may be left empty.
 
@@ -68,8 +68,8 @@ Exact match expressions are parsed like other [join operations](../../../how-to-
 
 For example:
 
-- Match on the same column name in both tables: `"commonColumn"`
-- Match on `LeftCol` and `RightCol` in the left and right tables, respectively: `"LeftCol = RightCol"`
+- Match on the same column name in both tables: `"commonColumn"`.
+- Match on `LeftCol` and `RightCol` in the left and right tables, respectively: `"LeftCol = RightCol"`.
 
 #### Range Match Expressions
 

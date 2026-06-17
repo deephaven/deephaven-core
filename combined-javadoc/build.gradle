@@ -1,6 +1,7 @@
 plugins {
     id 'io.deephaven.project.register'
     id 'java'
+    id 'io.deephaven.javadoc-conventions'
 }
 
 configurations {
@@ -30,7 +31,7 @@ def allJavadoc = tasks.register 'allJavadoc', Javadoc, {
         jdoc.options.overview = new File(javaDocOverviewLocation)
 
         // Fail on warnings to ensure correctness for our published docs
-        jdoc.options.addBooleanOption('Xwerror', true)
+        jdoc.options.addBooleanOption('Werror', true)
 
         def isForJavadocs = { Project p -> return io.deephaven.project.util.CombinedJavadoc.includeProject(p) }
 
@@ -52,8 +53,6 @@ def allJavadoc = tasks.register 'allJavadoc', Javadoc, {
         jdoc.destinationDir = file("${buildDir}/docs/javadoc")
         jdoc.dependsOn(writeJavadocVersion)
 }
-
-apply plugin: 'io.deephaven.javadoc-conventions'
 
 artifacts {
     combinedJavadoc allJavadoc

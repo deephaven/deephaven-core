@@ -30,7 +30,7 @@ The data is in memory. We can replay it with the following steps:
 - Import [`TableReplayer`](../reference/table-operations/create/Replayer.md).
 - Set a start and end time for data replay.
   - These times correspond to those in the table itself.
-- Create the replayer using the start and end time.
+- Create the replayer using the set start and end time.
 - Call [`add_table`](../reference/table-operations/create/Replayer.md#methods) to prepare the replayed table.
   - This takes two inputs: the table and the `DateTime` column name.
 - Call [`start`](../reference/table-operations/create/Replayer.md#methods) to start replaying data.
@@ -115,4 +115,5 @@ replayer.start()
 ## Related documentation
 
 - [Time in Deephaven](../conceptual/time-in-deephaven.md)
+- [How to write data to a real-time in-memory table](./table-publisher.md)
 - [TableReplayer](../reference/table-operations/create/Replayer.md)

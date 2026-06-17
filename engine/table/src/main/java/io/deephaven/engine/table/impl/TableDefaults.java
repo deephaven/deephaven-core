@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl;
 
@@ -110,6 +110,13 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
         ColumnSource rawColumnSource = getColumnSource(sourceName);
         // noinspection unchecked
         return rawColumnSource.cast(clazz, componentType, sourceName);
+    }
+
+    @Override
+    @FinalDefault
+    default <T> ColumnSource<T> getColumnSource(ColumnDefinition<? extends T> columnDefinition) {
+        return getColumnSource(columnDefinition.getName(), columnDefinition.getDataType(),
+                columnDefinition.getComponentType());
     }
 
     // -----------------------------------------------------------------------------------------------------------------

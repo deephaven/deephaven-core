@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.liveness;
 
@@ -36,9 +36,6 @@ public class StandaloneLivenessManager implements LivenessManager, LogOutputAppe
      */
     @VisibleForTesting
     public final void initializeTransientFieldsForLiveness() {
-        if (Liveness.REFERENCE_TRACKING_DISABLED) {
-            return;
-        }
         tracker = new RetainedReferenceTracker<>(this, enforceStrongReachability);
         if (Liveness.DEBUG_MODE_ENABLED) {
             Liveness.log.info().append("LivenessDebug: Created tracker ").append(Utils.REFERENT_FORMATTER, tracker)
@@ -48,9 +45,6 @@ public class StandaloneLivenessManager implements LivenessManager, LogOutputAppe
 
     @Override
     public final boolean tryManage(@NotNull final LivenessReferent referent) {
-        if (Liveness.REFERENCE_TRACKING_DISABLED) {
-            return true;
-        }
         if (Liveness.DEBUG_MODE_ENABLED) {
             Liveness.log.info().append("LivenessDebug: ").append(this).append(" managing ")
                     .append(referent.getReferentDescription()).endl();
@@ -64,18 +58,12 @@ public class StandaloneLivenessManager implements LivenessManager, LogOutputAppe
 
     @Override
     public final boolean tryUnmanage(@NotNull final LivenessReferent referent) {
-        if (Liveness.REFERENCE_TRACKING_DISABLED) {
-            return true;
-        }
         tracker.dropReference(referent);
         return true;
     }
 
     @Override
     public final boolean tryUnmanage(@NotNull final Stream<? extends LivenessReferent> referents) {
-        if (Liveness.REFERENCE_TRACKING_DISABLED) {
-            return true;
-        }
         tracker.dropReferences(referents);
         return true;
     }

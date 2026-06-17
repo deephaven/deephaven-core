@@ -1,8 +1,9 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.util;
 
+import io.deephaven.api.util.NameValidator;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
@@ -25,6 +26,12 @@ import static io.deephaven.engine.util.TableTools.*;
 public class TestDynamicTableWriter {
     @Rule
     public final EngineCleanup ltc = new EngineCleanup();
+
+    @Test
+    public void testValidatesColumnNames() {
+        org.junit.Assert.assertThrows(NameValidator.InvalidNameException.class,
+                () -> new DynamicTableWriter(new String[] {"Asdf:"}, new Class[] {int.class}));
+    }
 
     @Test
     public void testTypes() throws IOException {

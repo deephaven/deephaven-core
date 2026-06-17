@@ -15,9 +15,13 @@ __gradlew="${__dir}/../../../gradlew"
 # Get the (potentially) new IDs
 server_base_image_id="$(${__gradlew} -q docker-server-base:showImageId)"
 
-# Write down the (potentially) new requirements
-# Need to manually remove pkg-resources
-# https://bugs.launchpad.net/ubuntu/+source/python-pip/+bug/1635463
-docker run --rm "${server_base_image_id}" pip freeze | grep -v "pkg.resources" > "${__dir}/../../server-jetty/src/main/server-jetty/requirements.txt"
-docker run --rm "${server_base_image_id}" pip freeze | grep -v "pkg.resources" > "${__dir}/../../server/src/main/server-netty/requirements.txt"
-
+# The behavior of pip freeze has changed between Python 3.10 and Python 3.12, and now includes wheel and setuptools
+# versions in the output. While we shouldn't technically need to preserve this behavior, we'll continue excluding them
+# from the output here.
+docker run --rm "${server_base_image_id}" \
+  pip freeze \
+  --exclude wheel \
+  --exclude setuptools \
+  | tee \
+  "${__dir}/../../server-jetty/src/main/server-jetty/requirements.txt" \
+  "${__dir}/../../server/src/main/server-netty/requirements.txt"

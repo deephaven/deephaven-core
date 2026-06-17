@@ -66,8 +66,7 @@ for chunk in source.iter_dict(cols=["X", "Z"]):
 
 ## Related documentation
 
-<!-- TODO: Link to API documentation when it's available. -->
-
 - [`iter_chunk_dict`](./iter-chunk-dict.md)
 - [`iter_chunk_tuple`](./iter-chunk-tuple.md)
 - [`iter_tuple`](./iter-tuple.md)
+- [Pydoc](https://docs.deephaven.io/core/pydoc/code/deephaven.table.html#deephaven.table.Table.iter_dict)

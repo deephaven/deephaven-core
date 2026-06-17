@@ -99,9 +99,9 @@ result2 = compute(source, 3)
 ## Related documentation
 
 - [Create a new table](../../../how-to-guides/new-and-empty-table.md#newtable)
-- [How to use variables and functions in query strings](../../../how-to-guides/queryscope.md)
-- [Use variables in query strings](../../../conceptual/queryscope.md)
-- [How to use Deephaven's built-in query language functions](../../../how-to-guides/query-language-functions.md)
+- [How to use variables and functions in query strings](../../../how-to-guides/query-scope.md)
+- [Use variables in query strings](../../../how-to-guides/query-scope.md)
+- [How to use Deephaven's built-in query language functions](../../../how-to-guides/built-in-functions.md)
 - [Query language functions](../query-library/query-language-function-reference.md)
 - [`emptyTable`](../../table-operations/create/emptyTable.md)
 - [`newTable`](../../table-operations/create/newTable.md)

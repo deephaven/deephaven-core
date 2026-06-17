@@ -47,7 +47,7 @@ dependencies {
     annotationProcessor libs.immutables.value
 
     implementation project(':ssl-kickstart')
-    implementation libs.sslcontext.kickstart.jetty
+    implementation libs.ayza.jetty
 
     implementation project(':grpc-java:grpc-mtls')
 
@@ -57,6 +57,9 @@ dependencies {
 
     testRuntimeOnly project(':log-to-slf4j')
     testRuntimeOnly libs.slf4j.simple
+
+    testCompileOnly libs.autoservice
+    testAnnotationProcessor libs.autoservice.compiler
 }
 
 test.systemProperty "PeriodicUpdateGraph.allowUnitTestMode", false

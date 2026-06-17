@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api;
 
@@ -44,11 +44,7 @@ public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
     }
 
     private static Promise<Void> importDhInternal() {
-        return importScript(localServer + "/jsapi/dh-internal.js")
-                .then(module -> {
-                    Js.asPropertyMap(DomGlobal.window).set("dhinternal", module.get("dhinternal"));
-                    return Promise.resolve((Void) null);
-                });
+        return Promise.resolve((Void) null);
     }
 
     public static final String localServer = System.getProperty("dh.server", "http://localhost:10000");
@@ -240,8 +236,9 @@ public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
                 timeoutInMillis);
     }
 
-    protected Promise<JsTable> assertUpdateReceived(JsTable table, Consumer<ViewportData> check, int timeoutInMillis) {
-        return Promise.race(this.<JsTable, ViewportData>waitForEvent(table, JsTable.EVENT_UPDATED, e -> {
+    protected <T extends HasEventHandling> Promise<T> assertUpdateReceived(T table, Consumer<ViewportData> check,
+            int timeoutInMillis) {
+        return Promise.race(this.<T, ViewportData>waitForEvent(table, JsTable.EVENT_UPDATED, e -> {
             ViewportData viewportData = e.getDetail();
             check.accept(viewportData);
         }, timeoutInMillis),

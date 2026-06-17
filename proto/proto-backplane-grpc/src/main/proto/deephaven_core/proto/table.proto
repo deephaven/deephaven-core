@@ -313,9 +313,22 @@ message FetchTableRequest {
   Ticket result_id = 2;
 }
 
+// Transforms the source table to avoid complex objects in columns. If no unpreviewed types are defined, this
+// defaults to legacy behavior of:
+//  - Limiting string columns to a server-defined max length
+//  - Converting arrays/vectors to comma separated strings of the first N elements (again, server defined)
+//  - Converting all non-string, non-number, non-date types to their string representation
 message ApplyPreviewColumnsRequest {
   TableReference source_id = 1;
   Ticket result_id = 2;
+
+  // True to convert all arrays to strings, limiting to a server-defined max length. Expected to be unset if
+  // unpreviewed_types is empty.
+  bool convert_arrays = 3;
+
+  // Java types to leave unconverted - all other types will be converted to strings. If empty, the server's
+  // legacy behavior will be used.
+  repeated string unpreviewed_types = 4;
 }
 
 message ExportedTableUpdatesRequest {
@@ -1198,6 +1211,8 @@ message Condition {
     ContainsCondition contains = 9;
 
     SearchCondition search = 10;
+
+    IsNaNCondition is_nan = 11;
   }
 }
 
@@ -1236,12 +1251,23 @@ enum MatchType {
   INVERTED = 1;
 }
 
+// Controls how NaN values are treated in InCondition (i.e. MatchFilter) filters.
+enum NanComparison {
+  // defaults to NAN_NOT_EQUALS_NAN
+  NAN_COMPARISON_TYPE_NOT_SPECIFIED = 0;
+  // NaN in match list: NaN values wil NOT match (follows IEEE 754 equality semantics)
+  NAN_NOT_EQUALS_NAN = 1;
+  // NaN in match list: NaN values will match
+  NAN_EQUALS_NAN = 2;
+}
+
 message InCondition {
   Value target = 1;
   repeated Value candidates = 2;
 
   CaseSensitivity case_sensitivity = 3;
   MatchType match_type = 4;
+  NanComparison nan_comparison = 5;
 }
 
 message InvokeCondition {
@@ -1249,7 +1275,12 @@ message InvokeCondition {
   Value target = 2;
   repeated Value arguments = 3;
 }
+
 message IsNullCondition {
+  Reference reference = 1;
+}
+
+message IsNaNCondition {
   Reference reference = 1;
 }
 

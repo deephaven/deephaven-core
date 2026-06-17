@@ -11,6 +11,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.stream.IntStream;
 
+import io.deephaven.util.annotations.UserInvocationPermitted;
 import static io.deephaven.util.QueryConstants.*;
 import static io.deephaven.function.Basic.isNull;
 import static io.deephaven.function.Numeric.compare;
@@ -18,6 +19,7 @@ import static io.deephaven.function.Numeric.compare;
 /**
  * Functions for sorting primitive types.
  */
+@UserInvocationPermitted({"function_library"})
 public class Sort {
 
     //////////////////////////// Object ////////////////////////////
@@ -258,7 +260,6 @@ public class Sort {
     }
 
     <#list primitiveTypes as pt>
-    <#if pt.valueType.isNumber >
 
     //////////////////////////// ${pt.primitive} ////////////////////////////
 
@@ -278,9 +279,9 @@ public class Sort {
             return values.toArray();
         }
 
-        final ${pt.boxed}[] vb = ArrayUtils.toObject(values.toArray());
-        Arrays.sort(vb, Numeric::compare);
-        return ArrayUtils.toPrimitive(vb);
+        final ${pt.primitive}[] result = values.copyToArray();
+        ArraySort.sort(result, 0, result.length);
+        return result;
     }
 
     /**
@@ -294,7 +295,9 @@ public class Sort {
             return null;
         }
 
-        return sort(new ${pt.vectorDirect}(values));
+        final ${pt.primitive}[] result = values.clone();
+        ArraySort.sort(result, 0, result.length);
+        return result;
     }
 
     /**
@@ -312,9 +315,9 @@ public class Sort {
             return new ${pt.primitive}[]{};
         }
 
-        final ${pt.boxed}[] vb = values.clone();
-        Arrays.sort(vb, Numeric::compare);
-        return ArrayUtils.toPrimitive(vb);
+        final ${pt.primitive}[] result = ArrayUtils.toPrimitive(values);
+        ArraySort.sort(result, 0, result.length);
+        return result;
     }
 
     /**
@@ -477,6 +480,5 @@ public class Sort {
         return rankDescending(new ${pt.vectorDirect}(vs));
     }
 
-    </#if>
     </#list>
 }

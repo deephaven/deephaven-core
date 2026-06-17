@@ -1,8 +1,8 @@
 #
-# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 #
 
-""" This module defines the Shape enum for all supported shapes that are used to paint points on a plot. """
+"""This module defines the Shape enum for all supported shapes that are used to paint points on a plot."""
 
 from enum import Enum
 

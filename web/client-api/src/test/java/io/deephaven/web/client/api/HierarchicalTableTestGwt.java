@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api;
 
@@ -15,6 +15,7 @@ import jsinterop.base.JsPropertyMap;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -38,7 +39,12 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
             .script("table_to_rollup",
                     "time_table('PT0.1s').update(['Y=Math.sin(i/3)', 'X=i%3', 'Z=`abc` + i']).format_columns(['Y=Y>0 ? GREEN : RED', 'Timestamp=RED'])")
             .script("ticking_rollup",
-                    "table_to_rollup.rollup(aggs=[agg.first('Y')],by=['X'],include_constituents=True)");
+                    "table_to_rollup.rollup(aggs=[agg.first('Y')],by=['X'],include_constituents=True)")
+            .script("from deephaven.query_library import import_class\n" +
+                    "from deephaven import empty_table\n" +
+                    "import_class('java.time.ZoneId')\n" +
+                    "import_class('java.time.LocalDate')\n" +
+                    "times = empty_table(100).update([\"I=i\", \"J=i%1001\", \"K=new int[i%17]\"]).ungroup(\"K\").update([\"LocalTime=LocalTime.now()\", \"LocalDate=LocalDate.now()\"])");
 
     public void testStaticTreeTable() {
         connect(tables)
@@ -702,7 +708,7 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                         cfg.groupingColumns = Js.uncheckedCast(JsArray.of("X"));
                         cfg.aggregations = JsPropertyMap.of(JsAggregationOperation.SUM, JsArray.of("Y"));
                         cfg.includeConstituents = includeConstituents;
-                        tests.add(() -> table.rollup(new JsRollupConfig((JsPropertyMap<Object>) cfg)).then(r -> {
+                        tests.add(() -> table.rollup(cfg).then(r -> {
                             // Rollup with or without constituents should populate aggregated columns
                             assertEquals(1, r.getAggregatedColumns().length);
                             assertEquals("Y", r.getAggregatedColumns().getAt(0).getName());
@@ -725,7 +731,7 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                         cfg.groupingColumns = Js.uncheckedCast(JsArray.of("X"));
                         cfg.aggregations = JsPropertyMap.of(JsAggregationOperation.SKIP, JsArray.of("Y"));
                         cfg.includeConstituents = includeConstituents;
-                        tests.add(() -> table.rollup((JsPropertyMap<Object>) cfg).then(r -> {
+                        tests.add(() -> table.rollup(cfg).then(r -> {
                             // Rollup should not include Skip aggregation in aggregated columns
                             assertEquals(0, r.getAggregatedColumns().length);
                             assertEquals("X", r.getColumns().getAt(0).getName());
@@ -755,5 +761,354 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                 })
                 .then(this::finish)
                 .catch_(this::report);
+    }
+
+    public void testRollupMultipleAggsOneColumnConstituents() {
+        connect(tables)
+                .then(table("table_to_rollup"))
+                .then(table -> {
+                    JsRollupConfig cfg = new JsRollupConfig();
+                    cfg.groupingColumns = Js.uncheckedCast(JsArray.of("X"));
+                    cfg.aggregations = JsPropertyMap.of(JsAggregationOperation.MIN, JsArray.of("Y"),
+                            JsAggregationOperation.MAX, JsArray.of("Y"));
+                    cfg.includeConstituents = true;
+                    return table.rollup(cfg);
+                })
+                .then(rollup -> {
+                    // Get the columns we expect to find
+                    Column xCol = rollup.findColumn("X");
+                    Column minCol = rollup.findColumn("Y_Min");
+                    Column maxCol = rollup.findColumn("Y_Max");
+                    Column zCol = rollup.findColumn("Z");
+
+                    // Check that all expected columns are present, check constituent types
+                    rollup.expandAll();
+                    rollup.setViewport(0, 99, rollup.getColumns(), null);
+                    return waitForEventWhere(rollup, JsTreeTable.EVENT_UPDATED,
+                            (Event<TreeViewportData> d) -> rollup.getSize() > 3,
+                            12123)
+                            .then(JsTreeTable::getViewportData)
+                            .then(data -> {
+                                // ensure that the constituent data is available at the expected level rather than
+                                // missing
+                                TreeViewportData treeData = (TreeViewportData) data;
+                                TreeViewportData.TreeRow row2 = (TreeViewportData.TreeRow) treeData.getRows().getAt(2);
+                                assertFalse(row2.hasChildren());
+                                assertNotNull(row2.get(xCol));
+                                assertNotNull(row2.get(minCol));
+                                assertNotNull(row2.get(maxCol));
+                                assertNotNull(row2.get(zCol));
+                                return null;
+                            });
+                })
+                .then(this::finish)
+                .catch_(this::report);
+    }
+
+    public void testTreeTableCopy() {
+        connect(tables)
+                .then(treeTable("static_tree"))
+                .then(treeTable -> {
+                    delayTestFinish(3500);
+                    return treeTable.copy().then(copy -> {
+                        // Check table and copy have same properties initially
+                        assertEquals(treeTable.getSize(), copy.getSize());
+                        assertEquals(treeTable.getColumns().length, copy.getColumns().length);
+                        assertEquals(treeTable.isIncludeConstituents(), copy.isIncludeConstituents());
+                        assertEquals(treeTable.isRefreshing(), copy.isRefreshing());
+
+                        treeTable.close();
+                        assertTrue(treeTable.isClosed());
+                        assertFalse(copy.isClosed());
+
+                        copy.setViewport(0, 99, copy.getColumns(), null);
+                        return copy.<TreeViewportData>nextEvent(
+                                JsTreeTable.EVENT_UPDATED,
+                                2000.0)
+                                .then(ignore -> {
+                                    // Need to wait for updated before expanding so the subscription exists or expand
+                                    // throws
+                                    copy.expand(JsTreeTable.RowReferenceUnion.of(0), null);
+                                    return copy.<TreeViewportData>nextEvent(
+                                            JsTreeTable.EVENT_UPDATED,
+                                            2000.0);
+                                })
+                                .then(event -> {
+                                    // Check the size changed for the copy after expanding
+                                    assertFalse(treeTable.getSize() == copy.getSize());
+                                    assertEquals(copy.getSize(), event.getDetail().getTreeSize());
+                                    return null;
+                                });
+                    })
+                            .then(this::finish)
+                            .catch_(this::report);
+                });
+    }
+
+    public void testTreeTableSortBeforeSubscribe() {
+        connect(tables)
+                .then(treeTable("static_tree"))
+                .then(treeTable -> {
+                    delayTestFinish(3500);
+                    treeTable.applySort(new Sort[] {});
+                    return treeTable.nextEvent(JsTreeTable.EVENT_REQUEST_FAILED, 2000.0)
+                            .then(err -> Promise.reject(err.getDetail()), Promise::resolve);
+                })
+                .then(this::finish)
+                .catch_(this::report);
+    }
+
+    /**
+     * Tests expand-to-depth via setExpanded(row, true, depth) on the static_tree table. The tree has the structure:
+     * <ul>
+     * <li>Root (ID=0, depth 1)</li>
+     * <li>Children (ID=1..9, depth 2, parent=0)</li>
+     * <li>Grandchildren (ID=10..99, depth 3, parent=ID/10)</li>
+     * <li>Great-grandchildren (ID=100..999, depth 4, parent=ID/10)</li>
+     * </ul>
+     * Expanding root to depth 2 should expand root and all 9 children, yielding 1 + 9 + 90 = 100 visible rows.
+     */
+    public void testExpandToDepth() {
+        connect(tables)
+                .then(treeTable("static_tree"))
+                .then(treeTable -> {
+                    delayTestFinish(5000);
+                    treeTable.setViewport(0, 199, treeTable.getColumns(), null);
+                    return treeTable.getViewportData()
+                            .then(data -> Promise.resolve((TreeViewportData) data))
+                            .then(data -> {
+                                assertEquals(1d, data.getTreeSize());
+
+                                // Expand root (row 0) to depth 2 using the union-typed expand API
+                                treeTable.setExpanded(
+                                        JsTreeTable.RowReferenceUnion.of(0),
+                                        true,
+                                        JsTreeTable.ExpandDescendantsUnion.of(2));
+
+                                return treeTable.<TreeViewportData>nextEvent(
+                                        JsTreeTable.EVENT_UPDATED, 2501d);
+                            }).then(event -> {
+                                // Root (depth 1) + 9 children (depth 2) + 90 grandchildren (depth 3) = 100
+                                assertEquals(100d, event.getDetail().getTreeSize());
+                                JsArray<TableData.Row> rows = event.getDetail().getRows();
+
+                                // Row 0 is the root, expanded
+                                TreeViewportData.TreeRow row0 = (TreeViewportData.TreeRow) rows.getAt(0);
+                                assertTrue(row0.isExpanded());
+                                assertTrue(row0.hasChildren());
+                                assertEquals(1, row0.depth());
+
+                                // Row 1 is child ID=1, which should also be expanded (depth 2 expands 2 levels)
+                                TreeViewportData.TreeRow row1 = (TreeViewportData.TreeRow) rows.getAt(1);
+                                assertTrue(row1.isExpanded());
+                                assertTrue(row1.hasChildren());
+                                assertEquals(2, row1.depth());
+
+                                // First grandchild of child 1 should be collapsed (depth 3, not expanded)
+                                TreeViewportData.TreeRow row2 = (TreeViewportData.TreeRow) rows.getAt(2);
+                                assertFalse(row2.isExpanded());
+                                assertTrue(row2.hasChildren());
+                                assertEquals(3, row2.depth());
+
+                                treeTable.close();
+                                return null;
+                            });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    /**
+     * Tests expand-to-depth via the expand(row, depth) shorthand on the static_tree table. Expanding root to depth 1
+     * should be equivalent to a regular expand, yielding 1 + 9 = 10 visible rows.
+     */
+    public void testExpandToDepthOne() {
+        connect(tables)
+                .then(treeTable("static_tree"))
+                .then(treeTable -> {
+                    delayTestFinish(5000);
+                    treeTable.setViewport(0, 99, treeTable.getColumns(), null);
+                    return treeTable.getViewportData()
+                            .then(data -> Promise.resolve((TreeViewportData) data))
+                            .then(data -> {
+                                assertEquals(1d, data.getTreeSize());
+
+                                // Expand root to depth 1 using the expand() shorthand
+                                treeTable.expand(
+                                        JsTreeTable.RowReferenceUnion.of(0),
+                                        JsTreeTable.ExpandDescendantsUnion.of(1));
+
+                                return treeTable.<TreeViewportData>nextEvent(
+                                        JsTreeTable.EVENT_UPDATED, 2502d);
+                            }).then(event -> {
+                                // Depth 1 = single expand: root + 9 children = 10
+                                assertEquals(10d, event.getDetail().getTreeSize());
+                                JsArray<TableData.Row> rows = event.getDetail().getRows();
+
+                                TreeViewportData.TreeRow row0 = (TreeViewportData.TreeRow) rows.getAt(0);
+                                assertTrue(row0.isExpanded());
+                                assertEquals(1, row0.depth());
+
+                                // Children should all be collapsed
+                                for (int i = 1; i < 10; i++) {
+                                    TreeViewportData.TreeRow row = (TreeViewportData.TreeRow) rows.getAt(i);
+                                    assertFalse(row.isExpanded());
+                                    assertTrue(row.hasChildren());
+                                    assertEquals(2, row.depth());
+                                }
+
+                                treeTable.close();
+                                return null;
+                            });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    /**
+     * Tests that passing a boolean true to expand() still works as expand-all (backwards compatibility).
+     */
+    public void testExpandWithBooleanTrue() {
+        connect(tables)
+                .then(treeTable("static_tree"))
+                .then(treeTable -> {
+                    delayTestFinish(5000);
+                    treeTable.setViewport(0, 99, treeTable.getColumns(), null);
+                    return treeTable.getViewportData()
+                            .then(data -> Promise.resolve((TreeViewportData) data))
+                            .then(data -> {
+                                assertEquals(1d, data.getTreeSize());
+
+                                // Expand root with boolean true (expand all descendants)
+                                treeTable.expand(
+                                        JsTreeTable.RowReferenceUnion.of(0),
+                                        JsTreeTable.ExpandDescendantsUnion.of(true));
+
+                                return treeTable.<TreeViewportData>nextEvent(
+                                        JsTreeTable.EVENT_UPDATED, 2503d);
+                            }).then(event -> {
+                                // All 1000 rows should be visible
+                                assertEquals(1000d, event.getDetail().getTreeSize());
+
+                                treeTable.close();
+                                return null;
+                            });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    public void testExpandDateAndTimeValues() {
+        connect(tables)
+                .then(table("times")).then(table -> {
+                    delayTestFinish(5000);
+                    JsRollupConfig config = new JsRollupConfig();
+                    config.groupingColumns = JsArray.of("LocalDate", "LocalTime");
+                    config.aggregations = JsPropertyMap.of(JsAggregationOperation.SUM, JsArray.of("I"));
+                    config.aggregations = JsPropertyMap.of(JsAggregationOperation.AVG, JsArray.of("J"));
+                    config.includeConstituents = true;
+                    return table.rollup(config);
+                })
+                .then(rollup -> {
+                    // Validate the schema of the rollup
+                    Column localDateCol = rollup.findColumn("LocalDate");
+                    Column localTimeCol = rollup.findColumn("LocalTime");
+                    assertEquals("java.time.LocalDate", localDateCol.getType());
+                    assertEquals("java.time.LocalTime", localTimeCol.getType());
+
+                    // Create a subscription so we can get the size (should be more than 10, less than 200)
+                    // and expand rows
+                    rollup.setViewport(0, 100, null, null);
+                    return rollup.getViewportData().then(data -> Promise.resolve(rollup));
+                }).then(rollup -> {
+                    assertEquals(2, (int) rollup.getSize());
+                    // expand the only "LocalDate" value
+                    rollup.expand(JsTreeTable.RowReferenceUnion.of(1), null);
+                    return rollup.<TreeViewportData>nextEvent(JsTreeTable.EVENT_UPDATED, 3501d)
+                            .then(data -> {
+                                // Expand rows individually
+                                double startingSize = rollup.getSize();
+                                assertTrue("startingSize=" + startingSize, startingSize > 10);
+                                for (int i = 2; i < 10; i++) {
+                                    rollup.expand(JsTreeTable.RowReferenceUnion.of(2), null);
+                                }
+                                // wait for next update, validate total size has increased
+                                return rollup.<TreeViewportData>nextEvent(JsTreeTable.EVENT_UPDATED, 3502d)
+                                        .then(data2 -> {
+                                            assertTrue(((TreeViewportData.TreeRow) data2.getDetail().getRows().getAt(2))
+                                                    .isExpanded());
+                                            assertTrue(rollup.getSize() + " > " + startingSize,
+                                                    rollup.getSize() > startingSize);
+                                            return null;
+                                        });
+                            });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+
+    public void testSaveRestoreState() {
+        connect(tables)
+                .then(treeTable("static_tree"))
+                .then(tree -> {
+                    delayTestFinish(5000);
+                    String empty = tree.saveExpandedState();
+                    AtomicReference<String> rootExpanded = new AtomicReference<>();
+                    AtomicReference<String> outOfViewExpanded = new AtomicReference<>();
+                    int startingSize = 1;
+
+                    tree.setViewport(0, 5, null, null);
+                    return tree.<TreeViewportData>nextEvent(JsTreeTable.EVENT_UPDATED, 1901d)
+                            .then(e -> {
+                                // Confirm initial state is just one node, expand root and save it to use later
+                                assertEquals(startingSize, (int) e.getDetail().getTreeSize());
+                                tree.expand(JsTreeTable.RowReferenceUnion.of(0), null);
+                                rootExpanded.set(tree.saveExpandedState());
+                                return tree.<TreeViewportData>nextEvent(JsTreeTable.EVENT_UPDATED, 1902d);
+                            }).then(e -> {
+                                // Now that we're expanded, restore the initial state
+                                assertEquals(10, (int) e.getDetail().getTreeSize());
+                                rootExpanded.set(tree.saveExpandedState());
+
+                                tree.restoreExpandedState(empty);
+                                return tree.<TreeViewportData>nextEvent(JsTreeTable.EVENT_UPDATED, 1903d);
+                            }).then(e -> {
+                                // Confirm we're back to the initial state, re-expand the root node
+                                assertEquals(startingSize, (int) e.getDetail().getTreeSize());
+
+                                tree.restoreExpandedState(rootExpanded.get());
+                                return tree.<TreeViewportData>nextEvent(JsTreeTable.EVENT_UPDATED, 1904d);
+                            }).then(e -> {
+                                assertEquals(10, (int) e.getDetail().getTreeSize());
+
+                                // With the root node expanded again, expand some other child and save the state
+                                tree.expand(JsTreeTable.RowReferenceUnion.of(1), null);
+                                tree.setViewport(6, 100, null, null);
+                                outOfViewExpanded.set(tree.saveExpandedState());
+                                return tree.<TreeViewportData>nextEvent(JsTreeTable.EVENT_UPDATED, 1905d);
+                            }).then(e -> {
+                                assertEquals(20, (int) e.getDetail().getTreeSize());
+                                // Restore original state again, let it load, then use the saved state to expand things
+                                // we can't se
+                                tree.collapseAll();
+                                return tree.<TreeViewportData>nextEvent(JsTreeTable.EVENT_UPDATED, 1906d);
+                            }).then(e -> {
+                                assertEquals(1, (int) e.getDetail().getTreeSize());
+                                for (TableData.Row row : e.getDetail().getRows().asList()) {
+                                    assertFalse(((TreeViewportData.TreeRow) row).isExpanded());
+                                }
+                                tree.restoreExpandedState(outOfViewExpanded.get());
+
+                                // Scroll back up and ensure rows 0 and 1 are expanded
+                                tree.setViewport(0, 5, null, null);
+                                return tree.<TreeViewportData>nextEvent(JsTreeTable.EVENT_UPDATED, 1907d);
+                            }).then(e -> {
+                                assertEquals(20, (int) e.getDetail().getTreeSize());
+
+                                JsArray<TreeViewportData.TreeRow> rows = Js.cast(e.getDetail().getRows());
+                                assertTrue(rows.getAt(0).isExpanded());
+                                assertTrue(rows.getAt(1).isExpanded());
+                                assertFalse(rows.getAt(2).isExpanded());
+                                return null;
+                            });
+                })
+                .then(this::finish).catch_(this::report);
     }
 }

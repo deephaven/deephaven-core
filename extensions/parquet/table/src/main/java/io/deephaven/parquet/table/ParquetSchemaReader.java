@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.parquet.table;
 
@@ -9,6 +9,7 @@ import io.deephaven.base.ClassUtil;
 import io.deephaven.base.Pair;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.parquet.impl.ParquetSchemaUtil;
+import io.deephaven.qst.type.Type;
 import io.deephaven.stringset.StringSet;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.parquet.table.metadata.CodecInfo;
@@ -325,7 +326,7 @@ public class ParquetSchemaReader {
             } else {
                 if (parquetColDef.isArray) {
                     if (baseType == byte.class && parquetColDef.noLogicalType) {
-                        colDef = ColumnDefinition.fromGenericType(parquetColDef.name, byte[].class, byte.class);
+                        colDef = ColumnDefinition.of(parquetColDef.name, Type.byteType().arrayType());
                     } else {
                         // TODO: ParquetInstruction.loadAsVector
                         final Class<?> componentType = baseType;
@@ -361,22 +362,9 @@ public class ParquetSchemaReader {
         return new LogicalTypeAnnotation.LogicalTypeAnnotationVisitor<Class<?>>() {
             @Override
             public Optional<Class<?>> visit(final LogicalTypeAnnotation.StringLogicalTypeAnnotation stringLogicalType) {
-                final ColumnDescriptor column = currentColumn.getValue();
-                final String columnName = column.getPath()[0];
-                final ColumnTypeInfo columnTypeInfo = nonDefaultTypeColumns.get(columnName);
-                final ColumnTypeInfo.SpecialType specialType =
-                        columnTypeInfo == null ? null : columnTypeInfo.specialType().orElse(null);
-                if (specialType != null) {
-                    if (specialType == ColumnTypeInfo.SpecialType.StringSet) {
-                        return Optional.of(StringSet.class);
-                    }
-                    if (specialType != ColumnTypeInfo.SpecialType.Vector) {
-                        throw new UncheckedDeephavenException("Type " + column.getPrimitiveType()
-                                + " for column " + Arrays.toString(column.getPath())
-                                + " with unknown or incompatible special type " + specialType);
-                    }
-                }
-                return Optional.of(String.class);
+                // Delegate to the shared helper so STRING and ENUM are resolved identically,
+                // including any Deephaven-specific SpecialType metadata (StringSet, Vector).
+                return visitStringLike(currentColumn.getValue(), nonDefaultTypeColumns);
             }
 
             @Override
@@ -393,8 +381,10 @@ public class ParquetSchemaReader {
 
             @Override
             public Optional<Class<?>> visit(final LogicalTypeAnnotation.EnumLogicalTypeAnnotation enumLogicalType) {
-                errorString.setValue("EnumLogicalType");
-                return Optional.empty();
+                // ENUM is physically identical to STRING (UTF-8 encoded BINARY). Delegate to the
+                // shared helper so any future Deephaven SpecialType metadata on ENUM columns is
+                // handled consistently with STRING columns.
+                return visitStringLike(currentColumn.getValue(), nonDefaultTypeColumns);
             }
 
             @Override
@@ -500,5 +490,31 @@ public class ParquetSchemaReader {
                 return Optional.empty();
             }
         };
+    }
+
+    /**
+     * Shared resolution logic for string-like logical types (STRING and ENUM). Both are physically BINARY with UTF-8
+     * encoding, so they map to the same Java types. Centralising the logic here ensures that any Deephaven-specific
+     * {@link ColumnTypeInfo.SpecialType} metadata (e.g. {@code StringSet}, {@code Vector}) is respected for both
+     * annotations consistently, including any new special types added in the future.
+     */
+    private static Optional<Class<?>> visitStringLike(
+            final ColumnDescriptor column,
+            final Map<String, ColumnTypeInfo> nonDefaultTypeColumns) {
+        final String columnName = column.getPath()[0];
+        final ColumnTypeInfo columnTypeInfo = nonDefaultTypeColumns.get(columnName);
+        final ColumnTypeInfo.SpecialType specialType =
+                columnTypeInfo == null ? null : columnTypeInfo.specialType().orElse(null);
+        if (specialType != null) {
+            if (specialType == ColumnTypeInfo.SpecialType.StringSet) {
+                return Optional.of(StringSet.class);
+            }
+            if (specialType != ColumnTypeInfo.SpecialType.Vector) {
+                throw new UncheckedDeephavenException("Type " + column.getPrimitiveType()
+                        + " for column " + Arrays.toString(column.getPath())
+                        + " with unknown or incompatible special type " + specialType);
+            }
+        }
+        return Optional.of(String.class);
     }
 }

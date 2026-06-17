@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Run StaticCalendarMethodsGenerator or "./gradlew :Generators:generateStaticCalendarMethods" to regenerate
@@ -20,6 +20,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Map;
 import java.util.Set;
+import io.deephaven.util.annotations.UserInvocationPermitted;
 
 /**
  * Static versions of business calendar methods that use the default business calendar.
@@ -29,6 +30,7 @@ import java.util.Set;
  * @see io.deephaven.time.calendar.BusinessCalendar
  * @see io.deephaven.time.calendar.Calendars
  */
+@UserInvocationPermitted("function_library")
 public class StaticCalendarMethods {
     /** @see io.deephaven.time.calendar.BusinessCalendar#businessDates(java.lang.String,java.lang.String) */
     public static  java.lang.String[] businessDates( java.lang.String start, java.lang.String end ) {return Calendars.calendar().businessDates( start, end );}

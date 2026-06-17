@@ -8,8 +8,8 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/apache/arrow/go/v8/arrow/flight"
-	"github.com/apache/arrow/go/v8/arrow/memory"
+	"github.com/apache/arrow/go/v17/arrow/flight"
+	"github.com/apache/arrow/go/v17/arrow/memory"
 	"google.golang.org/grpc"
 
 	tablepb2 "github.com/deephaven/deephaven-core/go/internal/proto/table"

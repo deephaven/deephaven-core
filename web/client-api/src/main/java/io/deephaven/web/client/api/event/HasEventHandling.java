@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api.event;
 
@@ -15,6 +15,7 @@ import io.deephaven.web.client.fu.LazyPromise;
 import io.deephaven.web.shared.fu.RemoverFn;
 import javaemul.internal.annotations.DoNotAutobox;
 import jsinterop.annotations.JsMethod;
+import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsOptional;
 import jsinterop.base.Js;
 import jsinterop.base.JsArrayLike;
@@ -37,10 +38,10 @@ public class HasEventHandling {
     /**
      * Listen for events on this object.
      *
-     * @param name the name of the event to listen for
-     * @param callback a function to call when the event occurs
+     * @param name The name of the event to listen for.
+     * @param callback A function to call when the event occurs.
      * @return Returns a cleanup function.
-     * @param <T> the type of the data that the event will provide
+     * @param <T> The type of the data that the event will provide.
      */
     @JsMethod
     public <T> RemoverFn addEventListener(String name, EventFn<T> callback) {
@@ -105,7 +106,7 @@ public class HasEventHandling {
     }
 
     @JsMethod
-    public <T> Promise<Event<T>> nextEvent(String eventName, @JsOptional Double timeoutInMillis) {
+    public <T> Promise<Event<T>> nextEvent(String eventName, @JsOptional @JsNullable Double timeoutInMillis) {
         LazyPromise<Event<T>> promise = new LazyPromise<>();
 
         addEventListenerOneShot(eventName, promise::succeed);

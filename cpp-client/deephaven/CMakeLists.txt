@@ -8,8 +8,12 @@ endif()
 
 project(deephaven)
 
-set(deephaven_VERSION 0.40.0)
+set(deephaven_VERSION 42.0)
 set(CMAKE_CXX_STANDARD 17)
+
+if(WIN32)
+    add_compile_definitions(WIN32_LEAN_AND_MEAN NOMINMAX)
+endif()
 
 # for CMAKE_INSTALL_{dir}
 include(GNUInstallDirs)

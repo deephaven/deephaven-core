@@ -1,0 +1,8 @@
+pydeephaven
+cython
+setuptools
+wheel
+packaging
+pip
+ruff
+mypy

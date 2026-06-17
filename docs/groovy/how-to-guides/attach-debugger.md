@@ -19,13 +19,8 @@ manually, add the following the option to the command line:
 The `-agentlib:jdwp` option enables remote debugging by instructing the JVM to listen for [JDWP](https://docs.oracle.com/en/java/javase/11/docs/specs/jdwp/jdwp-spec.html)
 debugger connections. The sub-options `suspend` and `address` help control how the JVM listens for these connections:
 
-- The `suspend=n` sub-option tells the JVM not to wait for a debugger connection before starting. Setting `suspend=y` will
-  make the JVM wait until the debugger is connected before initializing the application. Using `suspend=y` is helpful
-  when investigating issues that occur during startup, such errors initializing or loading classes.
-- The `address=5005` sub-option tells the JVM to listen for debugger connections on port `5005`. (Port `5005` can be
-  replaced with any other valid, unused port number greater than `1023`.) By default, the JVM only listens
-  on `localhost`. A specific IP address or hostname to listen on can be specified as well
-  (e.g., `address=localhost:5005`), or an asterisk (`address=*:5005`) to listen on all network interfaces.
+- The `suspend=n` sub-option tells the JVM not to wait for a debugger connection before starting. Setting `suspend=y` will make the JVM wait until the debugger is connected before initializing the application. Using `suspend=y` is helpful when investigating issues that occur during startup, such errors initializing or loading classes.
+- The `address=5005` sub-option tells the JVM to listen for debugger connections on port `5005`. (Port `5005` can be replaced with any other valid, unused port number greater than `1023`.) By default, the JVM only listens on `localhost`. A specific IP address or hostname to listen on can be specified as well (e.g., `address=localhost:5005`), or an asterisk (`address=*:5005`) to listen on all network interfaces.
 
 The next section deals with debugging Deephaven within Docker.
 
@@ -39,13 +34,8 @@ Starting from Deephaven's
 standard [docker-compose.yml](https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/python/base/docker-compose.yml)
 file, two changes must be made to enable debugging:
 
-1. Under the `ports` section, add an entry to expose the port on which the JVM will listen for debugger connections. (In
-   this guide, port `5005` is used.)
-2. Expand the `START_OPTS` environment variable to include the `agentlib` command. For example if the
-   `docker-compose.yml` file's `environment` key contains `START_OPTS=-Xmx4g`, it should be expanded to
-   `START_OPTS=-Xmx4g -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005`. Note that when debugging
-   Deephaven running inside a Docker container, the `address` sub-option must include an asterisk, so that the JVM
-   listens for debugger connections from outside the Docker container (including from your computer).
+1. Under the `ports` section, add an entry to expose the port on which the JVM will listen for debugger connections. (In this guide, port `5005` is used.)
+2. Expand the `START_OPTS` environment variable to include the `agentlib` command. For example if the `docker-compose.yml` file's `environment` key contains `START_OPTS=-Xmx4g`, it should be expanded to `START_OPTS=-Xmx4g -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005`. Note that when debugging Deephaven running inside a Docker container, the `address` sub-option must include an asterisk, so that the JVM listens for debugger connections from outside the Docker container (including from your computer).
 
 > [!NOTE]
 > The `START_OPTS` variable should be set only once, but may include multiple JVM options (e.g., both `-Xmx` and

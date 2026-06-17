@@ -1,5 +1,1 @@
-data
-
-# Iceberg containers use this (could possibly just be
-warehouse
-notebooks
+/data

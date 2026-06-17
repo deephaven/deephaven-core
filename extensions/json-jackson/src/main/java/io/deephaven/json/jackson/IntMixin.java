@@ -1,14 +1,13 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.json.jackson;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
-import io.deephaven.base.MathUtil;
+import io.deephaven.base.ArrayUtil;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableIntChunk;
-import io.deephaven.chunk.sized.SizedIntChunk;
 import io.deephaven.json.IntValue;
 import io.deephaven.qst.type.Type;
 import io.deephaven.util.QueryConstants;
@@ -69,7 +68,7 @@ final class IntMixin extends Mixin<IntValue> {
     }
 
     final class IntRepeaterImpl extends RepeaterProcessorBase<int[]> {
-        private final SizedIntChunk<?> chunk = new SizedIntChunk<>(0);
+        private int[] buffer = new int[0];
 
         public IntRepeaterImpl() {
             super(null, null, Type.intType().arrayType());
@@ -77,24 +76,17 @@ final class IntMixin extends Mixin<IntValue> {
 
         @Override
         public void processElementImpl(JsonParser parser, int index) throws IOException {
-            final int newSize = index + 1;
-            final WritableIntChunk<?> chunk = this.chunk.ensureCapacityPreserve(MathUtil.roundUpArraySize(newSize));
-            chunk.set(index, IntMixin.this.parseValue(parser));
-            chunk.setSize(newSize);
+            buffer = ArrayUtil.put(buffer, index, parseValue(parser));
         }
 
         @Override
         public void processElementMissingImpl(JsonParser parser, int index) throws IOException {
-            final int newSize = index + 1;
-            final WritableIntChunk<?> chunk = this.chunk.ensureCapacityPreserve(MathUtil.roundUpArraySize(newSize));
-            chunk.set(index, IntMixin.this.parseMissing(parser));
-            chunk.setSize(newSize);
+            buffer = ArrayUtil.put(buffer, index, parseMissing(parser));
         }
 
         @Override
         public int[] doneImpl(JsonParser parser, int length) {
-            final WritableIntChunk<?> chunk = this.chunk.get();
-            return Arrays.copyOfRange(chunk.array(), chunk.arrayOffset(), chunk.arrayOffset() + length);
+            return Arrays.copyOfRange(buffer, 0, length);
         }
     }
 

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CharVector and run "./gradlew replicateVectors" to regenerate
@@ -10,9 +10,9 @@ package io.deephaven.vector;
 import io.deephaven.util.compare.FloatComparisons;
 
 import io.deephaven.base.verify.Require;
+import io.deephaven.util.annotations.UserInvocationPermitted;
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfFloat;
 import io.deephaven.engine.primitive.value.iterator.ValueIteratorOfFloat;
-import io.deephaven.qst.type.FloatType;
 import io.deephaven.qst.type.PrimitiveVectorType;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.FinalDefault;
@@ -30,7 +30,7 @@ public interface FloatVector extends Vector<FloatVector>, Iterable<Float> {
     long serialVersionUID = -1373264425081841175L;
 
     static PrimitiveVectorType<FloatVector, Float> type() {
-        return PrimitiveVectorType.of(FloatVector.class, FloatType.of());
+        return Types.FLOAT_VECTOR_TYPE;
     }
 
     /**
@@ -40,6 +40,7 @@ public interface FloatVector extends Vector<FloatVector>, Iterable<Float> {
      * @param index An offset into this FloatVector
      * @return The element at the specified offset, or the {@link QueryConstants#NULL_FLOAT null float}
      */
+    @UserInvocationPermitted({"vector"})
     float get(long index);
 
     @Override
@@ -57,6 +58,7 @@ public interface FloatVector extends Vector<FloatVector>, Iterable<Float> {
     @Override
     FloatVector getDirect();
 
+    @UserInvocationPermitted({"vector"})
     @Override
     @FinalDefault
     default ValueIteratorOfFloat iterator() {
@@ -248,6 +250,7 @@ public interface FloatVector extends Vector<FloatVector>, Iterable<Float> {
      */
     abstract class Indirect implements FloatVector {
 
+        @UserInvocationPermitted({"vector"})
         @Override
         public float[] toArray() {
             final int size = intSize("FloatVector.toArray");

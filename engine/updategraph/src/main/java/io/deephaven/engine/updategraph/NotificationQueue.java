@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.updategraph;
 
@@ -75,6 +75,20 @@ public interface NotificationQueue {
 
         default UpdateGraph getUpdateGraph(Dependency... dependencies) {
             return NotificationQueue.Dependency.getUpdateGraph(this, dependencies);
+        }
+
+        /**
+         * Is this dependency satisfied?
+         *
+         * @param dependency a possible dependency
+         * @param step the current step
+         * @return true if the dependency is satisfied (or not actually a Dependency), false otherwise
+         */
+        static boolean satisfied(@NotNull final Object dependency, final long step) {
+            if (!(dependency instanceof Dependency)) {
+                return true;
+            }
+            return ((Dependency) dependency).satisfied(step);
         }
 
         /**

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.io.logger;
 
@@ -17,7 +17,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.nio.ByteBuffer;
-import java.util.TimeZone;
+import java.time.ZoneId;
 
 /**
  * Logger implementation that calls Interceptors on log entries, but doesn't write them to anything. Note that this
@@ -36,8 +36,8 @@ public class NullLoggerImpl extends LoggerImpl {
     private NullLoggerImpl(@NotNull final LogEntryPool logEntryPool,
             @NotNull final LogLevel loggingLevel,
             @NotNull final LoggerTimeSource timeSource,
-            final TimeZone tz) {
-        super(logEntryPool, new NullLoggerImpl.Sink(logEntryPool), null, loggingLevel, timeSource, tz, true, false);
+            final ZoneId zoneId) {
+        super(logEntryPool, new NullLoggerImpl.Sink(logEntryPool), null, loggingLevel, timeSource, zoneId, true, false);
     }
 
     public NullLoggerImpl(@NotNull final LogLevel loggingLevel) {

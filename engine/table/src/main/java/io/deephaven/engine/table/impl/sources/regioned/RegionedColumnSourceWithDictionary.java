@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.sources.regioned;
 
@@ -223,11 +223,14 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
         } else {
             final RowSetBuilderSequential symbolTableIndexBuilder = RowSetFactory.builderSequential();
             try (final RowSet.SearchIterator keysToVisit = sourceIndex.searchIterator()) {
+                boolean remaining = true;
                 keysToVisit.nextLong(); // Safe, since sourceIndex must be non-empty
-                do {
-                    dictionaryColumn.lookupRegion(keysToVisit.currentValue()).gatherDictionaryValuesRowSet(keysToVisit,
-                            RowSequenceFactory.EMPTY_ITERATOR, symbolTableIndexBuilder);
-                } while (keysToVisit.hasNext());
+                while (remaining) {
+                    final ColumnRegionObject<DATA_TYPE, Values> region =
+                            dictionaryColumn.lookupRegion(keysToVisit.currentValue());
+                    remaining = region.gatherDictionaryValuesRowSet(keysToVisit, RowSequenceFactory.EMPTY_ITERATOR,
+                            symbolTableIndexBuilder);
+                }
             }
             // noinspection resource
             symbolTableRowSet = symbolTableIndexBuilder.build().toTracking();
@@ -305,11 +308,13 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
 
             try (final RowSet.SearchIterator keysToVisit = upstream.added().searchIterator();
                     final RowSequence.Iterator knownKeys = symbolTable.getRowSet().getRowSequenceIterator()) {
+                boolean remaining = true;
                 keysToVisit.nextLong(); // Safe, since sourceIndex must be non-empty
-                do {
-                    dictionaryColumn.lookupRegion(keysToVisit.currentValue()).gatherDictionaryValuesRowSet(keysToVisit,
-                            knownKeys, symbolTableAddedBuilder);
-                } while (keysToVisit.hasNext());
+                while (remaining) {
+                    ColumnRegionObject<DATA_TYPE, Values> region =
+                            dictionaryColumn.lookupRegion(keysToVisit.currentValue());
+                    remaining = region.gatherDictionaryValuesRowSet(keysToVisit, knownKeys, symbolTableAddedBuilder);
+                }
             }
 
             final RowSet symbolTableAdded = symbolTableAddedBuilder.build();

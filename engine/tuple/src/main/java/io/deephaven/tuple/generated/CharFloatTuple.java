@@ -1,11 +1,11 @@
 package io.deephaven.tuple.generated;
 
-import gnu.trove.map.TIntObjectMap;
 import io.deephaven.tuple.CanonicalizableTuple;
 import io.deephaven.tuple.serialization.SerializationUtils;
 import io.deephaven.tuple.serialization.StreamingExternalizable;
 import io.deephaven.util.compare.CharComparisons;
 import io.deephaven.util.compare.FloatComparisons;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.Externalizable;
@@ -48,8 +48,8 @@ public class CharFloatTuple implements Comparable<CharFloatTuple>, Externalizabl
         this.element1 = element1;
         this.element2 = element2;
         cachedHashCode = (31 +
-                Character.hashCode(element1)) * 31 +
-                Float.hashCode(element2);
+                CharComparisons.hashCode(element1)) * 31 +
+                FloatComparisons.hashCode(element2);
     }
 
     public final char getFirstElement() {
@@ -75,8 +75,8 @@ public class CharFloatTuple implements Comparable<CharFloatTuple>, Externalizabl
         }
         final CharFloatTuple typedOther = (CharFloatTuple) other;
         // @formatter:off
-        return element1 == typedOther.element1 &&
-               element2 == typedOther.element2;
+        return CharComparisons.eq(element1, typedOther.element1) &&
+               FloatComparisons.eq(element2, typedOther.element2);
         // @formatter:on
     }
 
@@ -107,13 +107,13 @@ public class CharFloatTuple implements Comparable<CharFloatTuple>, Externalizabl
     }
 
     @Override
-    public void writeExternalStreaming(@NotNull final ObjectOutput out, @NotNull final TIntObjectMap<SerializationUtils.Writer> cachedWriters) throws IOException {
+    public void writeExternalStreaming(@NotNull final ObjectOutput out, @NotNull final Int2ObjectMap<SerializationUtils.Writer> cachedWriters) throws IOException {
         out.writeChar(element1);
         out.writeFloat(element2);
     }
 
     @Override
-    public void readExternalStreaming(@NotNull final ObjectInput in, @NotNull final TIntObjectMap<SerializationUtils.Reader> cachedReaders) throws Exception {
+    public void readExternalStreaming(@NotNull final ObjectInput in, @NotNull final Int2ObjectMap<SerializationUtils.Reader> cachedReaders) throws Exception {
         initialize(
                 in.readChar(),
                 in.readFloat()

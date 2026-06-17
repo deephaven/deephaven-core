@@ -1,18 +1,15 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.server.runner;
 
-import dagger.BindsInstance;
-import dagger.Component;
+import dagger.*;
 import dagger.Module;
-import dagger.Provides;
 import io.deephaven.client.impl.BarrageSessionFactoryConfig;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
-import io.deephaven.engine.util.AbstractScriptSession;
 import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.io.logger.LogBuffer;
 import io.deephaven.io.logger.LogBufferGlobal;
@@ -27,7 +24,7 @@ import io.deephaven.server.plugin.js.JsPluginNoopConsumerModule;
 import io.deephaven.server.runner.scheduler.SchedulerDelegatingImplModule;
 import io.deephaven.server.session.ClientChannelFactoryModule;
 import io.deephaven.server.session.ClientChannelFactoryModule.UserAgent;
-import io.deephaven.server.session.ObfuscatingErrorTransformerModule;
+import io.deephaven.server.session.SessionService;
 import io.deephaven.server.session.SslConfigModule;
 import io.deephaven.server.util.Scheduler;
 import io.deephaven.time.calendar.CalendarsFromConfigurationModule;
@@ -66,6 +63,12 @@ public abstract class DeephavenApiServerTestBase {
         }
     }
 
+    @Module
+    public interface RecordingErrorTransformerModule {
+        @Binds
+        SessionService.ErrorTransformer bindRecordingErrorTransformer(final RecordingErrorTransformer transformer);
+    }
+
     @Module(includes = {
             DeephavenApiServerModule.class,
             DeephavenApiConfigModule.class,
@@ -74,7 +77,7 @@ public abstract class DeephavenApiServerTestBase {
             ServerBuilderInProcessModule.class,
             RpcServerStateInterceptor.Module.class,
             ExecutionContextUnitTestModule.class,
-            ObfuscatingErrorTransformerModule.class,
+            RecordingErrorTransformerModule.class,
             JsPluginNoopConsumerModule.class,
             SchedulerDelegatingImplModule.class,
             CalendarsFromConfigurationModule.class,
@@ -121,6 +124,9 @@ public abstract class DeephavenApiServerTestBase {
 
     @Inject
     DeephavenApiServer server;
+
+    @Inject
+    protected SessionService.ErrorTransformer errorTransformer;
 
     @Inject
     Scheduler.DelegatingImpl scheduler;

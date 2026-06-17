@@ -121,9 +121,9 @@ result = source.updateBy([emaTickX, emaTickY, emaTimeX, emaTimeY], "Letter", "Tr
 
 ## Related documentation
 
-- [How to use `updateBy`](../../../how-to-guides/use-update-by.md)
+- [How to use `updateBy`](../../../how-to-guides/rolling-aggregations.md)
 - [How to create an empty table](../../../how-to-guides/new-and-empty-table.md#emptytable)
-- [How to calculate an EMA](../../../how-to-guides/rolling-calculations.md#exponential-moving-statistics)
+- [How to calculate an EMA](../../../how-to-guides/rolling-aggregations.md#exponential-moving-aggregations)
 - [ternary conditional operator](../../../how-to-guides/ternary-if-how-to.md)
 - [`update`](../select/update.md)
 - [`updateBy`](./updateBy.md)

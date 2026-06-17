@@ -15,7 +15,7 @@ A node with no parent is known as an _orphan_, and will appear in the table outs
 
 ## `tree`
 
-In Deephaven, tree tables are created using the `tree` method. This method takes three arguments:
+In Deephaven, tree tables are created using the `tree` method:
 
 ```python syntax
 result = source.tree(id_col, parent_col, promote_orphans)
@@ -66,7 +66,7 @@ source = t1.join(t2, "ID = I")
 result = source.tree(id_col="ID", parent_col="Parent")
 ```
 
-![The above real-time tree table](../assets/reference/create/tree-table-realtime.gif)
+![Animated GIF showing how a tree table updates in real time as data changes](../assets/reference/create/tree-table-realtime.gif)
 
 ## Orphan nodes
 
@@ -82,7 +82,7 @@ Non-root nodes where the parent is `null` _are not considered orphans_. They can
 
 Note that these rows appear on the same level as the root node, outside of the tree structure.
 
-Orphan nodes appear outside of the tree table's tree structure by default. In order to include orphans in a tree table as children of the root node, the optional argument `promote_orphans` can be switched to `True`.
+Orphan nodes appear outside of the tree table's tree structure by default. To include orphans in a tree table as children of the root node, switch the optional argument `promote_orphans` to `True`.
 
 The following example shows how the resulting tree table changes if orphans are promoted.
 
@@ -105,4 +105,4 @@ result_w_orphans = source.tree(id_col="ID", parent_col="Parent", promote_orphans
 - [How to create a time table](../how-to-guides/time-table.md)
 - [Joins: Exact and Relational](../how-to-guides/joins-exact-relational.md)
 - [Joins: Time-Series and Range](../how-to-guides/joins-timeseries-range.md)
-- [tree](../reference/table-operations/create/tree.md)
+- [`tree`](../reference/table-operations/create/tree.md)

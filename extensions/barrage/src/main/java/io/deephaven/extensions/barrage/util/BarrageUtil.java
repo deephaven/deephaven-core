@@ -1,10 +1,11 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.extensions.barrage.util;
 
 import com.google.flatbuffers.Constants;
 import com.google.flatbuffers.FlatBufferBuilder;
+import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.ByteStringAccess;
 import com.google.rpc.Code;
@@ -31,6 +32,7 @@ import io.deephaven.engine.table.GridAttributes;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.BaseTable;
+import io.deephaven.engine.table.impl.ComparatorRegistry;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
@@ -50,7 +52,10 @@ import io.deephaven.extensions.barrage.chunk.ChunkReader;
 import io.deephaven.extensions.barrage.chunk.vector.VectorExpansionKernel;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.proto.backplane.grpc.DeephavenTableMetadata;
 import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
+import io.deephaven.proto.backplane.grpc.InputTableMetadata;
+import io.deephaven.proto.backplane.grpc.InputTableColumnInfo;
 import io.deephaven.proto.flight.util.MessageHelper;
 import io.deephaven.proto.flight.util.SchemaHelper;
 import io.deephaven.proto.util.Exceptions;
@@ -87,6 +92,7 @@ import java.time.Period;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.Collections;
@@ -108,6 +114,11 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class BarrageUtil {
+    /**
+     * Re-usable constant for the "true" value.
+     */
+    private static final String TRUE_STRING = Boolean.toString(true);
+
     public static final BarrageSubscriptionOptions DEFAULT_SUBSCRIPTION_OPTIONS =
             BarrageSubscriptionOptions.builder().build();
     public static final BarrageSnapshotOptions DEFAULT_SNAPSHOT_OPTIONS =
@@ -121,13 +132,12 @@ public class BarrageUtil {
             Configuration.getInstance().getDoubleForClassWithDefault(BarrageUtil.class,
                     "targetSnapshotPercentage", 0.25);
 
-    // TODO (deephaven-core#188): drop this default to 50k once the jsapi can handle many batches
     public static final long MIN_SNAPSHOT_CELL_COUNT =
             Configuration.getInstance().getLongForClassWithDefault(BarrageUtil.class,
-                    "minSnapshotCellCount", Long.MAX_VALUE);
+                    "minSnapshotCellCount", 1L << 13);
     public static final long MAX_SNAPSHOT_CELL_COUNT =
             Configuration.getInstance().getLongForClassWithDefault(BarrageUtil.class,
-                    "maxSnapshotCellCount", Long.MAX_VALUE);
+                    "maxSnapshotCellCount", 1L << 24);
 
     /**
      * Note that arrow's wire format states that Timestamps without timezones are not UTC -- that they are no timezone
@@ -171,6 +181,11 @@ public class BarrageUtil {
      * The deephaven metadata tag to indicate the deephaven column component type.
      */
     public static final String ATTR_COMPONENT_TYPE_TAG = "componentType";
+
+    /**
+     * The deephaven metadata tag to indicate the input table information.
+     */
+    public static final String ATTR_PROTO_METADATA_TAG = "tableMetadata";
 
     private static final boolean ENFORCE_FLATBUFFER_VERSION_CHECK =
             Configuration.getInstance().getBooleanWithDefault("barrage.version.check", true);
@@ -498,12 +513,50 @@ public class BarrageUtil {
         final Map<String, String> schemaMetadata = attributesToMetadata(attributes, isFlat);
         final Map<String, String> descriptions = GridAttributes.getColumnDescriptions(attributes);
         final InputTableUpdater inputTableUpdater = (InputTableUpdater) attributes.get(Table.INPUT_TABLE_ATTRIBUTE);
+        maybeAddInputTableMetadata(tableDefinition, schemaMetadata, inputTableUpdater);
         final List<Field> fields = columnDefinitionsToFields(
                 descriptions, inputTableUpdater, tableDefinition, tableDefinition.getColumns(),
                 ignored -> new HashMap<>(),
                 attributes, options.columnsAsList())
                 .collect(Collectors.toList());
         return new Schema(fields, schemaMetadata);
+    }
+
+    private static void maybeAddInputTableMetadata(@NotNull TableDefinition tableDefinition,
+            Map<String, String> schemaMetadata, InputTableUpdater inputTableUpdater) {
+        if (inputTableUpdater == null) {
+            return;
+        }
+
+        final InputTableMetadata.Builder builder = InputTableMetadata.newBuilder();
+
+        for (final ColumnDefinition<?> columnDefinition : tableDefinition.getColumns()) {
+            final String name = columnDefinition.getName();
+
+            final InputTableColumnInfo.Builder columnBuilder = InputTableColumnInfo.newBuilder();
+
+            if (inputTableUpdater.getKeyNames().contains(name)) {
+                columnBuilder.setKind(InputTableColumnInfo.Kind.KIND_KEY);
+            } else if (inputTableUpdater.getValueNames().contains(name)) {
+                columnBuilder.setKind(InputTableColumnInfo.Kind.KIND_VALUE);
+            } else {
+                continue;
+            }
+
+            final List<Any> columnRestrictions = inputTableUpdater.getColumnRestrictions(name);
+            if (columnRestrictions != null) {
+                columnBuilder.addAllRestrictions(columnRestrictions);
+            }
+
+            builder.putColumnInfo(name, columnBuilder.build());
+        }
+
+        final DeephavenTableMetadata metadata =
+                DeephavenTableMetadata.newBuilder().setInputTableMetadata(builder).build();
+
+        final byte[] bytes = metadata.toByteArray();
+        final String base64 = Base64.getEncoder().encodeToString(bytes);
+        putMetadata(schemaMetadata, ATTR_PROTO_METADATA_TAG, base64);
     }
 
     @NotNull
@@ -517,7 +570,7 @@ public class BarrageUtil {
             final boolean isFlat) {
         final Map<String, String> metadata = new HashMap<>();
         if (isFlat) {
-            putMetadata(metadata, ATTR_ATTR_TAG + "." + TABLE_ATTRIBUTE_IS_FLAT, "true");
+            putMetadata(metadata, ATTR_ATTR_TAG + "." + TABLE_ATTRIBUTE_IS_FLAT, TRUE_STRING);
             putMetadata(metadata, ATTR_ATTR_TYPE_TAG + "." + TABLE_ATTRIBUTE_IS_FLAT,
                     Boolean.class.getCanonicalName());
         }
@@ -552,7 +605,8 @@ public class BarrageUtil {
     }
 
     private static boolean isDataTypeSortable(final Class<?> dataType) {
-        return dataType.isPrimitive() || Comparable.class.isAssignableFrom(dataType);
+        return dataType.isPrimitive() || Comparable.class.isAssignableFrom(dataType)
+                || ComparatorRegistry.INSTANCE.getComparator(dataType) != null;
     }
 
     public static Stream<Field> columnDefinitionsToFields(
@@ -591,8 +645,12 @@ public class BarrageUtil {
             Class<?> componentType = column.getComponentType();
             final Map<String, String> metadata = fieldMetadataFactory.apply(name);
 
-            putMetadata(metadata, "isPartitioning", column.isPartitioning() + "");
-            putMetadata(metadata, "isSortable", String.valueOf(sortableColumns.contains(name)));
+            if (column.isPartitioning()) {
+                putMetadata(metadata, "isPartitioning", TRUE_STRING);
+            }
+            if (sortableColumns.contains(name)) {
+                putMetadata(metadata, "isSortable", TRUE_STRING);
+            }
 
             // Wire up style and format column references
             final String styleFormatName = ColumnFormatting.getStyleFormatColumn(name);
@@ -620,22 +678,35 @@ public class BarrageUtil {
                     }
                 }
             } else {
-                // Otherwise, data type will be converted to a String
-                putMetadata(metadata, ATTR_TYPE_TAG, String.class.getCanonicalName());
+                // Otherwise, send the data type as is, but we will serialize to a string
+                putMetadata(metadata, ATTR_TYPE_TAG, dataType.getCanonicalName());
             }
 
             // Only one of these will be true, if any are true the column will not be visible
-            putMetadata(metadata, "isRowStyle", ColumnFormatting.isRowStyleFormatColumn(name) + "");
-            putMetadata(metadata, "isStyle", ColumnFormatting.isStyleFormatColumn(name) + "");
-            putMetadata(metadata, "isNumberFormat", ColumnFormatting.isNumberFormatColumn(name) + "");
-            putMetadata(metadata, "isDateFormat", ColumnFormatting.isDateFormatColumn(name) + "");
+            if (ColumnFormatting.isRowStyleFormatColumn(name)) {
+                putMetadata(metadata, "isRowStyle", TRUE_STRING);
+            }
+            if (ColumnFormatting.isStyleFormatColumn(name)) {
+                putMetadata(metadata, "isStyle", TRUE_STRING);
+            }
+            if (ColumnFormatting.isNumberFormatColumn(name)) {
+                putMetadata(metadata, "isNumberFormat", TRUE_STRING);
+            }
+            if (ColumnFormatting.isDateFormatColumn(name)) {
+                putMetadata(metadata, "isDateFormat", TRUE_STRING);
+            }
 
             final String columnDescription = columnDescriptions.get(name);
             if (columnDescription != null) {
                 putMetadata(metadata, "description", columnDescription);
             }
             if (inputTableUpdater != null) {
-                putMetadata(metadata, "inputtable.isKey", inputTableUpdater.getKeyNames().contains(name) + "");
+                if (inputTableUpdater.getKeyNames().contains(name)) {
+                    putMetadata(metadata, "inputtable.isKey", TRUE_STRING);
+                }
+                if (inputTableUpdater.getValueNames().contains(name)) {
+                    putMetadata(metadata, "inputtable.isValue", TRUE_STRING);
+                }
             }
 
             if (field != null) {
@@ -847,8 +918,14 @@ public class BarrageUtil {
 
         public ChunkType[] computeWireChunkTypes() {
             return tableDef.getColumnStream()
-                    .map(ColumnDefinition::getDataType)
-                    .map(ReinterpretUtils::maybeConvertToWritablePrimitiveChunkType)
+                    .map(def -> {
+                        final Field field = arrowSchema.findField(def.getName());
+                        if (field != null && field.getType().getTypeID() == ArrowType.ArrowTypeID.Timestamp) {
+                            // An Arrow timestamp is a long; so we should interpret it as such.
+                            return ChunkType.Long;
+                        }
+                        return ReinterpretUtils.maybeConvertToWritablePrimitiveChunkType(def.getDataType());
+                    })
                     .toArray(ChunkType[]::new);
         }
 
@@ -1093,9 +1170,18 @@ public class BarrageUtil {
 
         final FieldType fieldType = arrowFieldTypeFor(type, metadata, columnAsList);
         if (fieldType.getType().isComplex()) {
-            if (type.isArray() || Vector.class.isAssignableFrom(type)) {
+            if (type.isArray()) {
+                Assert.eq(componentType, "componentType", type.getComponentType(), "type.getComponentType()");
                 children = Collections.singletonList(arrowFieldFor(
-                        "", componentType, componentType == null ? null : componentType.getComponentType(),
+                        "", componentType, componentType.getComponentType(),
+                        Collections.emptyMap(),
+                        false));
+            } else if (Vector.class.isAssignableFrom(type)) {
+                Class<?> vectorComponentType =
+                        componentType == null ? VectorExpansionKernel.getComponentType(type, null) : componentType;
+                children = Collections.singletonList(arrowFieldFor(
+                        "", vectorComponentType,
+                        vectorComponentType == null ? null : vectorComponentType.getComponentType(),
                         Collections.emptyMap(),
                         false));
             } else {
@@ -1160,37 +1246,42 @@ public class BarrageUtil {
             case Double:
                 return Types.MinorType.FLOAT8.getType();
             case Object:
-                if (type.isArray()) {
-                    if (type.getComponentType() == byte.class && !columnAsList) {
+                if (type != null) {
+                    if (type.isArray()) {
+                        if (type.getComponentType() == byte.class && !columnAsList) {
+                            return Types.MinorType.VARBINARY.getType();
+                        }
+                        return Types.MinorType.LIST.getType();
+                    }
+                    if (Vector.class.isAssignableFrom(type)) {
+                        return Types.MinorType.LIST.getType();
+                    }
+                    if (type == LocalDate.class) {
+                        return Types.MinorType.DATEMILLI.getType();
+                    }
+                    if (type == LocalTime.class) {
+                        return Types.MinorType.TIMENANO.getType();
+                    }
+                    if (type == BigDecimal.class
+                            || type == BigInteger.class
+                            || type == Schema.class) {
                         return Types.MinorType.VARBINARY.getType();
                     }
-                    return Types.MinorType.LIST.getType();
-                }
-                if (Vector.class.isAssignableFrom(type)) {
-                    return Types.MinorType.LIST.getType();
-                }
-                if (type == LocalDate.class) {
-                    return Types.MinorType.DATEMILLI.getType();
-                }
-                if (type == LocalTime.class) {
-                    return Types.MinorType.TIMENANO.getType();
-                }
-                if (type == BigDecimal.class
-                        || type == BigInteger.class
-                        || type == Schema.class) {
-                    return Types.MinorType.VARBINARY.getType();
-                }
-                if (type == Instant.class || type == ZonedDateTime.class) {
-                    return NANO_SINCE_EPOCH_TYPE;
-                }
-                if (type == Duration.class) {
-                    return NANO_DURATION_TYPE;
-                }
-                if (type == Period.class) {
-                    return new ArrowType.Interval(IntervalUnit.YEAR_MONTH);
-                }
-                if (type == PeriodDuration.class) {
-                    return new ArrowType.Interval(IntervalUnit.MONTH_DAY_NANO);
+                    if (type == Instant.class || type == ZonedDateTime.class) {
+                        // Note: We are choosing to discard the time zone for a ZonedDateTime here.
+                        return NANO_SINCE_EPOCH_TYPE;
+                    }
+                    if (type == Duration.class) {
+                        return NANO_DURATION_TYPE;
+                    }
+                    if (type == Period.class) {
+                        // TODO: DH-22159: Period support with Flight/barrage. (MONTH_DAY_NANO is probably a better
+                        // choice; captures full precision of Period.)
+                        return new ArrowType.Interval(IntervalUnit.YEAR_MONTH);
+                    }
+                    if (type == PeriodDuration.class) {
+                        return new ArrowType.Interval(IntervalUnit.MONTH_DAY_NANO);
+                    }
                 }
 
                 // everything gets converted to a string
@@ -1304,20 +1395,7 @@ public class BarrageUtil {
                     }
 
                     if (!msg.rowsIncluded.isEmpty()) {
-                        // very simplistic logic to take the last snapshot and extrapolate max
-                        // number of rows that will not exceed the target UGP processing time
-                        // percentage
-                        final long targetCycleDurationMillis;
-                        final UpdateGraph updateGraph = table.getUpdateGraph();
-                        if (updateGraph == null || updateGraph instanceof PoisonedUpdateGraph) {
-                            targetCycleDurationMillis = PeriodicUpdateGraph.getDefaultTargetCycleDurationMillis();
-                        } else {
-                            targetCycleDurationMillis = updateGraph.<PeriodicUpdateGraph>cast()
-                                    .getTargetCycleDurationMillis();
-                        }
-                        long targetNanos = (long) (TARGET_SNAPSHOT_PERCENTAGE
-                                * targetCycleDurationMillis
-                                * 1000000);
+                        final long targetNanos = targetSnapshotTime(table.getUpdateGraph());
 
                         long nanosPerCell = elapsed / (msg.rowsIncluded.size() * columnCount);
 
@@ -1338,6 +1416,24 @@ public class BarrageUtil {
         }
     }
 
+    /**
+     * Very simplistic logic to take the last snapshot and extrapolate max number of rows that will not exceed the
+     * target update graph processing time percentage.
+     * 
+     * @param updateGraph the update graph for the table
+     * @return the target snapshot time, in nanos
+     */
+    public static long targetSnapshotTime(final UpdateGraph updateGraph) {
+        long targetCycleDurationMillis;
+        if (updateGraph instanceof PeriodicUpdateGraph) {
+            final PeriodicUpdateGraph periodicUpdateGraph = updateGraph.cast();
+            targetCycleDurationMillis = periodicUpdateGraph.getTargetCycleDurationMillis();
+        } else {
+            targetCycleDurationMillis = PeriodicUpdateGraph.getDefaultTargetCycleDurationMillis();
+        }
+        return (long) (TARGET_SNAPSHOT_PERCENTAGE * targetCycleDurationMillis * 1000000);
+    }
+
     public static void createAndSendSnapshot(
             BarrageMessageWriter.Factory bwmFactory,
             BaseTable<?> table,
@@ -1354,12 +1450,30 @@ public class BarrageUtil {
             return;
         }
 
+        final Map<String, org.apache.arrow.flatbuf.Field> fieldFor;
+        if (table.hasAttribute(Table.BARRAGE_SCHEMA_ATTRIBUTE)) {
+            fieldFor = new HashMap<>();
+            // Extract the target schema from the table attributes
+            final Schema targetSchema = (Schema) table.getAttribute(Table.BARRAGE_SCHEMA_ATTRIBUTE);
+            // noinspection DataFlowIssue
+            // Iterate over each field, serialize it to a FlatBuffer, and store it in the map
+            targetSchema.getFields().forEach(f -> {
+                final FlatBufferBuilder fbb = new FlatBufferBuilder();
+                final int offset = f.getField(fbb);
+                fbb.finish(offset);
+                fieldFor.put(f.getName(), org.apache.arrow.flatbuf.Field.getRootAsField(fbb.dataBuffer()));
+            });
+        } else {
+            // No custom schema provided, keep the map null to rely on default field generation
+            fieldFor = null;
+        }
+
         // noinspection unchecked
         final ChunkWriter<Chunk<Values>>[] chunkWriters = table.getDefinition().getColumns().stream()
                 .map(cd -> DefaultChunkWriterFactory.INSTANCE.newWriter(BarrageTypeInfo.make(
                         ReinterpretUtils.maybeConvertToPrimitiveDataType(cd.getDataType()),
                         cd.getComponentType(),
-                        flatbufFieldFor(cd, Map.of()))))
+                        fieldFor != null ? fieldFor.get(cd.getName()) : flatbufFieldFor(cd, Map.of()))))
                 .toArray(ChunkWriter[]::new);
 
         // otherwise snapshot the entire request and send to the client

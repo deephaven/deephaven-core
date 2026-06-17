@@ -132,18 +132,25 @@ public class TestSort extends BaseArrayTestCase {
     }
 
     <#list primitiveTypes as pt>
-    <#if pt.valueType.isNumber >
 
     public void test${pt.boxed}Sort() {
+    <#if pt.valueType.isChar>
+        final ${pt.primitive}[] ${pt.primitive}s = new ${pt.primitive}[]{1, 5, 2, 2, 96, 0, 12, ${pt.null}, ${pt.null}};
+        final ${pt.boxed}[] ${pt.boxed}s = new ${pt.boxed}[]{(${pt.primitive})1, (${pt.primitive})5, (${pt.primitive})2, (${pt.primitive})2, (${pt.primitive})96, (${pt.primitive})0, (${pt.primitive})12, (${pt.primitive})${pt.null}, (${pt.primitive})${pt.null}};
+    <#else>
         final ${pt.primitive}[] ${pt.primitive}s = new ${pt.primitive}[]{1, -5, -2, -2, 96, 0, 12, ${pt.null}, ${pt.null}};
         final ${pt.boxed}[] ${pt.boxed}s = new ${pt.boxed}[]{(${pt.primitive})1, (${pt.primitive})-5, (${pt.primitive})-2, (${pt.primitive})-2, (${pt.primitive})96, (${pt.primitive})0, (${pt.primitive})12, (${pt.primitive})${pt.null}, (${pt.primitive})${pt.null}};
-
+    </#if>
         final ${pt.primitive}[] sort = sort(new ${pt.vectorDirect}(${pt.primitive}s));
+    <#if pt.valueType.isChar>
+        final ${pt.primitive}[] expected = new ${pt.primitive}[]{${pt.null}, ${pt.null}, 0, 1, 2, 2, 5, 12, 96};
+    <#else>
         final ${pt.primitive}[] expected = new ${pt.primitive}[]{${pt.null}, ${pt.null}, -5, -2, -2, 0, 1, 12, 96};
-        assertEquals(expected, sort);
+    </#if>
 
-        assertEquals(new ${pt.primitive}[]{${pt.null}, ${pt.null}, -5, -2, -2, 0, 1, 12, 96}, sort(${pt.primitive}s));
-        assertEquals(new ${pt.primitive}[]{${pt.null}, ${pt.null}, -5, -2, -2, 0, 1, 12, 96}, sort(${pt.boxed}s));
+        assertEquals(expected, sort);
+        assertEquals(expected, sort(${pt.primitive}s));
+        assertEquals(expected, sort(${pt.boxed}s));
 
         assertNull(sort((${pt.vector})null));
         assertNull(sort((${pt.primitive}[])null));
@@ -154,13 +161,22 @@ public class TestSort extends BaseArrayTestCase {
     }
 
     public void test${pt.boxed}Rank() {
+    <#if pt.valueType.isChar>
+        final ${pt.primitive}[] ${pt.primitive}s = new ${pt.primitive}[]{1, 5, 2, 2, 96, 0, 12, ${pt.null}, ${pt.null}};
+        final ${pt.boxed}[] ${pt.boxed}s = new ${pt.boxed}[]{(${pt.primitive})1, (${pt.primitive})5, (${pt.primitive})2, (${pt.primitive})2, (${pt.primitive})96, (${pt.primitive})0, (${pt.primitive})12, (${pt.primitive})${pt.null}, (${pt.primitive})${pt.null}};
+    <#else>
         final ${pt.primitive}[] ${pt.primitive}s = new ${pt.primitive}[]{1, -5, -2, -2, 96, 0, 12, ${pt.null}, ${pt.null}};
         final ${pt.boxed}[] ${pt.boxed}s = new ${pt.boxed}[]{(${pt.primitive})1, (${pt.primitive})-5, (${pt.primitive})-2, (${pt.primitive})-2, (${pt.primitive})96, (${pt.primitive})0, (${pt.primitive})12, (${pt.primitive})${pt.null}, (${pt.primitive})${pt.null}};
+    </#if>
 
-        final int[] sort = rank(new ${pt.vectorDirect}(${pt.primitive}s));
+        final int[] rank = rank(new ${pt.vectorDirect}(${pt.primitive}s));
+    <#if pt.valueType.isChar>
+        final int[] expected = new int[]{7, 8, 5, 0, 2, 3, 1, 6, 4};
+    <#else>
         final int[] expected = new int[]{7, 8, 1, 2, 3, 5, 0, 6, 4};
-        assertEquals(expected, sort);
+    </#if>
 
+        assertEquals(expected, rank);
         assertEquals(expected, rank(${pt.primitive}s));
         assertEquals(expected, rank(${pt.boxed}s));
 
@@ -173,15 +189,24 @@ public class TestSort extends BaseArrayTestCase {
     }
 
     public void test${pt.boxed}SortDescending() {
+    <#if pt.valueType.isChar>
+        final ${pt.primitive}[] ${pt.primitive}s = new ${pt.primitive}[]{1, 5, 2, 2, 96, 0, 12, ${pt.null}, ${pt.null}};
+        final ${pt.boxed}[] ${pt.boxed}s = new ${pt.boxed}[]{(${pt.primitive})1, (${pt.primitive})5, (${pt.primitive})2, (${pt.primitive})2, (${pt.primitive})96, (${pt.primitive})0, (${pt.primitive})12, (${pt.primitive})${pt.null}, (${pt.primitive})${pt.null}};
+    <#else>
         final ${pt.primitive}[] ${pt.primitive}s = new ${pt.primitive}[]{1, -5, -2, -2, 96, 0, 12, ${pt.null}, ${pt.null}};
         final ${pt.boxed}[] ${pt.boxed}s = new ${pt.boxed}[]{(${pt.primitive})1, (${pt.primitive})-5, (${pt.primitive})-2, (${pt.primitive})-2, (${pt.primitive})96, (${pt.primitive})0, (${pt.primitive})12, (${pt.primitive})${pt.null}, (${pt.primitive})${pt.null}};
+    </#if>
 
         final ${pt.primitive}[] sort = sortDescending(new ${pt.vectorDirect}(${pt.primitive}s));
+    <#if pt.valueType.isChar>
+        final ${pt.primitive}[] expected = new ${pt.primitive}[]{96, 12, 5, 2, 2, 1, 0, ${pt.null}, ${pt.null}};
+    <#else>
         final ${pt.primitive}[] expected = new ${pt.primitive}[]{96, 12, 1, 0, -2, -2, -5, ${pt.null}, ${pt.null}};
-        assertEquals(expected, sort);
+    </#if>
 
-        assertEquals(new ${pt.primitive}[]{96, 12, 1, 0, -2, -2, -5, ${pt.null}, ${pt.null}}, sortDescending(${pt.primitive}s));
-        assertEquals(new ${pt.primitive}[]{96, 12, 1, 0, -2, -2, -5, ${pt.null}, ${pt.null}}, sortDescending(${pt.boxed}s));
+        assertEquals(expected, sort);
+        assertEquals(expected, sortDescending(${pt.primitive}s));
+        assertEquals(expected, sortDescending(${pt.boxed}s));
 
         assertNull(sortDescending((${pt.vector})null));
         assertNull(sortDescending((${pt.primitive}[])null));
@@ -191,14 +216,23 @@ public class TestSort extends BaseArrayTestCase {
         assertEquals(new ${pt.primitive}[]{}, sortDescending(new ${pt.boxed}[]{}));
     }
 
-    public void test${pt.boxed}rankDescending() {
+    public void test${pt.boxed}RankDescending() {
+    <#if pt.valueType.isChar>
+        final ${pt.primitive}[] ${pt.primitive}s = new ${pt.primitive}[]{1, 5, 2, 2, 96, 0, 12, ${pt.null}, ${pt.null}};
+        final ${pt.boxed}[] ${pt.boxed}s = new ${pt.boxed}[]{(${pt.primitive})1, (${pt.primitive})5, (${pt.primitive})2, (${pt.primitive})2, (${pt.primitive})96, (${pt.primitive})0, (${pt.primitive})12, (${pt.primitive})${pt.null}, (${pt.primitive})${pt.null}};
+    <#else>
         final ${pt.primitive}[] ${pt.primitive}s = new ${pt.primitive}[]{1, -5, -2, -2, 96, 0, 12, ${pt.null}, ${pt.null}};
         final ${pt.boxed}[] ${pt.boxed}s = new ${pt.boxed}[]{(${pt.primitive})1, (${pt.primitive})-5, (${pt.primitive})-2, (${pt.primitive})-2, (${pt.primitive})96, (${pt.primitive})0, (${pt.primitive})12, (${pt.primitive})${pt.null}, (${pt.primitive})${pt.null}};
+    </#if>
 
         final int[] sort = rankDescending(new ${pt.vectorDirect}(${pt.primitive}s));
+    <#if pt.valueType.isChar>
+        final int[] expected = new int[]{4, 6, 1, 2, 3, 0, 5, 7, 8};
+    <#else>
         final int[] expected = new int[]{4, 6, 0, 5, 2, 3, 1, 7, 8};
-        assertEquals(expected, sort);
+    </#if>
 
+        assertEquals(expected, sort);
         assertEquals(expected, rankDescending(${pt.primitive}s));
         assertEquals(expected, rankDescending(${pt.boxed}s));
 
@@ -261,7 +295,7 @@ public class TestSort extends BaseArrayTestCase {
         assertTrue(ArrayUtils.isEmpty(sortArray));
     }
 
-    public void test${pt.boxed}rankDescendingExceptions() {
+    public void test${pt.boxed}RankDescendingExceptions() {
         ${pt.vector} db${pt.boxed}Array = null;
         int[] sort = rankDescending(db${pt.boxed}Array);
         assertNull(sort);
@@ -278,6 +312,5 @@ public class TestSort extends BaseArrayTestCase {
         assertTrue(ArrayUtils.isEmpty(sortArray));
     }
 
-    </#if>
     </#list>
 }

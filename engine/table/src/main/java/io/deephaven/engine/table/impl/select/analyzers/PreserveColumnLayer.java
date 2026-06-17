@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.select.analyzers;
 
@@ -21,9 +21,9 @@ final public class PreserveColumnLayer extends DependencyLayerBase {
             final SelectAndViewAnalyzer.AnalyzerContext context,
             final SelectColumn sc,
             final ColumnSource<?> cs,
-            final String[] deps,
+            final String[] recomputeDependencies,
             final ModifiedColumnSet mcsBuilder) {
-        super(context, sc, cs, deps, mcsBuilder);
+        super(context, sc, cs, recomputeDependencies, mcsBuilder);
     }
 
     @Override

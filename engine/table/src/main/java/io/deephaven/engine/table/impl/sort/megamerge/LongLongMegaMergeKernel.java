@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CharLongMegaMergeKernel and run "./gradlew replicateSortKernel" to regenerate
@@ -12,12 +12,10 @@ import io.deephaven.util.compare.LongComparisons;
 import io.deephaven.engine.table.impl.sort.LongMegaMergeKernel;
 import io.deephaven.engine.table.impl.sort.timsort.TimsortUtils;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
-import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.Indices;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.Chunk;
-import io.deephaven.chunk.LongChunk;
 
 public class LongLongMegaMergeKernel {
     private LongLongMegaMergeKernel() {

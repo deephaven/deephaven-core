@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.replay;
 
@@ -7,7 +7,7 @@ import io.deephaven.base.clock.Clock;
 import io.deephaven.base.clock.ClockNanoBase;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.table.ColumnSource;
-import gnu.trove.list.array.TLongArrayList;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
 import io.deephaven.engine.rowset.RowSet;
 
 import java.time.Instant;
@@ -23,7 +23,7 @@ public class DataDrivenReplayer extends Replayer {
         currentTime = startTime;
     }
 
-    TLongArrayList allTimestamp = new TLongArrayList();
+    LongArrayList allTimestamp = new LongArrayList();
 
     @Override
     public void registerTimeSource(RowSet rowSet, ColumnSource<Instant> timestampSource) {
@@ -50,8 +50,8 @@ public class DataDrivenReplayer extends Replayer {
 
     @Override
     public void start() {
-        allTimestamp.sort();
-        while (pos < allTimestamp.size() && allTimestamp.get(pos) < DateTimeUtils.epochNanos(startTime)) {
+        allTimestamp.sort(null);
+        while (pos < allTimestamp.size() && allTimestamp.getLong(pos) < DateTimeUtils.epochNanos(startTime)) {
             pos++;
         }
         super.start();

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.ssms;
 
@@ -74,6 +74,22 @@ public interface SegmentedSortedMultiSet<T> extends LongSizedDataStructure {
     boolean insert(WritableChunk<? extends Values> valuesToInsert, WritableIntChunk<ChunkLengths> counts);
 
     /**
+     * Insert the {@code length} new valuesToInsert beginning at {@code offset} into this SSMS. The valuesToInsert to
+     * insert must be sorted, without duplicates, within the specified range.
+     *
+     * The valuesToInsert and counts chunks will be modified within the specified range during this call, and the
+     * resulting values within the range are undefined.
+     *
+     * @param valuesToInsert the valuesToInsert to insert
+     * @param counts the number of times each value occurs
+     * @param offset the first position in valuesToInsert and counts to insert
+     * @param length the number of positions in valuesToInsert and counts to insert
+     * @return true if any new values were inserted
+     */
+    boolean insert(WritableChunk<? extends Values> valuesToInsert, WritableIntChunk<ChunkLengths> counts, int offset,
+            int length);
+
+    /**
      * Remove valuesToRemove from this SSMS. The valuesToRemove to remove must be sorted.
      *
      * @param removeContext removalContext
@@ -82,6 +98,19 @@ public interface SegmentedSortedMultiSet<T> extends LongSizedDataStructure {
      */
     boolean remove(RemoveContext removeContext, WritableChunk<? extends Values> valuesToRemove,
             WritableIntChunk<ChunkLengths> lengths);
+
+    /**
+     * Remove the {@code length} valuesToRemove beginning at {@code offset} from this SSMS. The valuesToRemove to remove
+     * must be sorted within the specified range.
+     *
+     * @param removeContext removalContext
+     * @param valuesToRemove the valuesToRemove to remove
+     * @param offset the first position in valuesToRemove and lengths to remove
+     * @param length the number of positions in valuesToRemove and lengths to remove
+     * @return true if any values were removed.
+     */
+    boolean remove(RemoveContext removeContext, WritableChunk<? extends Values> valuesToRemove,
+            WritableIntChunk<ChunkLengths> lengths, int offset, int length);
 
     @NotNull
     @VisibleForTesting
@@ -162,7 +191,6 @@ public interface SegmentedSortedMultiSet<T> extends LongSizedDataStructure {
     T getMin();
 
     T getMax();
-
 
     void setTrackDeltas(boolean shouldTrackDeltas);
 

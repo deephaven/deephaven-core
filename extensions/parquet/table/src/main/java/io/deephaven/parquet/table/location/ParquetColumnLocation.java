@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.parquet.table.location;
 
@@ -69,7 +69,8 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
     // -----------------------------------------------------------------------
     /**
      * Factory object needed for deferred initialization of the remaining fields. We delay initializing this field
-     * itself till we need to read the column data.
+     * itself till we need to read the column data. The number of entries in this array will match the number of row
+     * groups for non-empty table.
      */
     private ColumnChunkReader[] columnChunkReaders;
 
@@ -83,6 +84,7 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
     private final Object pagesLock;
 
     // Access to following variables must be guarded by initializePages()
+    // The number of entries in this array will match the number of row groups for non-empty table.
     // -----------------------------------------------------------------------
     private ColumnChunkPageStore<ATTR>[] pageStores;
     private Supplier<Chunk<ATTR>>[] dictionaryChunkSuppliers;
@@ -178,9 +180,9 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
             @NotNull final ColumnDefinition<?> columnDefinition) {
         // noinspection unchecked
         return (ColumnRegionChar<Values>) makeColumnRegion(this::getPageStores, columnDefinition,
-                ColumnRegionChar::createNull, ParquetColumnRegionChar::new,
+                ColumnRegionChar::createNull, cs -> new ParquetColumnRegionChar<>(cs, this),
                 rs -> new ColumnRegionChar.StaticPageStore<>(tl().getRegionParameters(),
-                        rs.toArray(ColumnRegionChar[]::new)));
+                        rs.toArray(ColumnRegionChar[]::new), this));
     }
 
     @Override
@@ -188,9 +190,9 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
             @NotNull final ColumnDefinition<?> columnDefinition) {
         // noinspection unchecked
         return (ColumnRegionByte<Values>) makeColumnRegion(this::getPageStores, columnDefinition,
-                ColumnRegionByte::createNull, ParquetColumnRegionByte::new,
+                ColumnRegionByte::createNull, cs -> new ParquetColumnRegionByte<>(cs, this),
                 rs -> new ColumnRegionByte.StaticPageStore<>(tl().getRegionParameters(),
-                        rs.toArray(ColumnRegionByte[]::new)));
+                        rs.toArray(ColumnRegionByte[]::new), this));
     }
 
     @Override
@@ -198,9 +200,9 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
             @NotNull final ColumnDefinition<?> columnDefinition) {
         // noinspection unchecked
         return (ColumnRegionShort<Values>) makeColumnRegion(this::getPageStores, columnDefinition,
-                ColumnRegionShort::createNull, ParquetColumnRegionShort::new,
+                ColumnRegionShort::createNull, cs -> new ParquetColumnRegionShort<>(cs, this),
                 rs -> new ColumnRegionShort.StaticPageStore<>(tl().getRegionParameters(),
-                        rs.toArray(ColumnRegionShort[]::new)));
+                        rs.toArray(ColumnRegionShort[]::new), this));
     }
 
     @Override
@@ -208,9 +210,9 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
             @NotNull final ColumnDefinition<?> columnDefinition) {
         // noinspection unchecked
         return (ColumnRegionInt<Values>) makeColumnRegion(this::getPageStores, columnDefinition,
-                ColumnRegionInt::createNull, ParquetColumnRegionInt::new,
+                ColumnRegionInt::createNull, cs -> new ParquetColumnRegionInt<>(cs, this),
                 rs -> new ColumnRegionInt.StaticPageStore<>(tl().getRegionParameters(),
-                        rs.toArray(ColumnRegionInt[]::new)));
+                        rs.toArray(ColumnRegionInt[]::new), this));
     }
 
     @Override
@@ -218,9 +220,9 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
             @NotNull final ColumnDefinition<?> columnDefinition) {
         // noinspection unchecked
         return (ColumnRegionLong<Values>) makeColumnRegion(this::getPageStores, columnDefinition,
-                ColumnRegionLong::createNull, ParquetColumnRegionLong::new,
+                ColumnRegionLong::createNull, cs -> new ParquetColumnRegionLong<>(cs, this),
                 rs -> new ColumnRegionLong.StaticPageStore<>(tl().getRegionParameters(),
-                        rs.toArray(ColumnRegionLong[]::new)));
+                        rs.toArray(ColumnRegionLong[]::new), this));
     }
 
     @Override
@@ -228,9 +230,9 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
             @NotNull final ColumnDefinition<?> columnDefinition) {
         // noinspection unchecked
         return (ColumnRegionFloat<Values>) makeColumnRegion(this::getPageStores, columnDefinition,
-                ColumnRegionFloat::createNull, ParquetColumnRegionFloat::new,
+                ColumnRegionFloat::createNull, cs -> new ParquetColumnRegionFloat<>(cs, this),
                 rs -> new ColumnRegionFloat.StaticPageStore<>(tl().getRegionParameters(),
-                        rs.toArray(ColumnRegionFloat[]::new)));
+                        rs.toArray(ColumnRegionFloat[]::new), this));
     }
 
     @Override
@@ -238,9 +240,9 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
             @NotNull final ColumnDefinition<?> columnDefinition) {
         // noinspection unchecked
         return (ColumnRegionDouble<Values>) makeColumnRegion(this::getPageStores, columnDefinition,
-                ColumnRegionDouble::createNull, ParquetColumnRegionDouble::new,
+                ColumnRegionDouble::createNull, cs -> new ParquetColumnRegionDouble<>(cs, this),
                 rs -> new ColumnRegionDouble.StaticPageStore<>(tl().getRegionParameters(),
-                        rs.toArray(ColumnRegionDouble[]::new)));
+                        rs.toArray(ColumnRegionDouble[]::new), this));
     }
 
     @Override
@@ -263,7 +265,8 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
                 IntStream.range(0, sources.length)
                         .mapToObj(ri -> makeSingleColumnRegionObject(dataType, sources[ri],
                                 dictKeySources[ri], dictionaryChunkSuppliers[ri]))
-                        .toArray(ColumnRegionObject[]::new));
+                        .toArray(ColumnRegionObject[]::new),
+                this);
     }
 
     private <TYPE> ColumnRegionObject<TYPE, ATTR> makeSingleColumnRegionObject(
@@ -275,9 +278,10 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
             return ColumnRegionObject.createNull(tl().getRegionParameters().regionMask);
         }
         return new ParquetColumnRegionObject<>(source,
-                () -> new ParquetColumnRegionLong<>(Require.neqNull(dictKeySource, "dictKeySource")),
+                () -> new ParquetColumnRegionLong<>(Require.neqNull(dictKeySource, "dictKeySource"), this),
                 () -> ColumnRegionChunkDictionary.create(tl().getRegionParameters().regionMask,
-                        dataType, Require.neqNull(dictValuesSupplier, "dictValuesSupplier")));
+                        dataType, Require.neqNull(dictValuesSupplier, "dictValuesSupplier")),
+                this);
     }
 
     /**
@@ -287,19 +291,20 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
      * @return The page stores
      */
     @NotNull
-    private ColumnChunkPageStore<ATTR>[] getPageStores(
+    ColumnChunkPageStore<ATTR>[] getPageStores(
             @NotNull final ColumnDefinition<?> columnDefinition) {
         initializePages(columnDefinition);
         return pageStores;
     }
 
     /**
-     * Get suppliers to access the {@link Chunk dictionary chunks} backing this column location.
+     * Get suppliers to access the {@link Chunk dictionary chunks} backing this column location. The entries may be null
+     * if the corresponding row group does not have a dictionary.
      *
      * @param columnDefinition The {@link ColumnDefinition} used to lookup type information
      * @return The dictionary values chunk suppliers, or null if none exist
      */
-    private Supplier<Chunk<ATTR>>[] getDictionaryChunkSuppliers(
+    Supplier<Chunk<ATTR>>[] getDictionaryChunkSuppliers(
             @NotNull final ColumnDefinition<?> columnDefinition) {
         initializePages(columnDefinition);
         return dictionaryChunkSuppliers;
@@ -307,12 +312,12 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
 
     /**
      * Get the {@link ColumnChunkPageStore page stores} backing the indices for this column location. Only usable when
-     * there are dictionaries.
+     * there are dictionaries. The entries may be null if the corresponding row group does not have a dictionary.
      *
      * @param columnDefinition The {@link ColumnDefinition} used to lookup type information
      * @return The page stores
      */
-    private ColumnChunkPageStore<DictionaryKeys>[] getDictionaryKeysPageStores(
+    ColumnChunkPageStore<DictionaryKeys>[] getDictionaryKeysPageStores(
             @NotNull final ColumnDefinition<?> columnDefinition) {
         initializePages(columnDefinition);
         return dictionaryKeysPageStores;
@@ -529,6 +534,12 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
         @Override
         public Optional<ToPage<ATTR, ?>> visit(
                 final LogicalTypeAnnotation.StringLogicalTypeAnnotation stringLogicalType) {
+            return Optional.of(ToStringPage.create(pageType, columnChunkReader.getDictionarySupplier()));
+        }
+
+        @Override
+        public Optional<ToPage<ATTR, ?>> visit(
+                final LogicalTypeAnnotation.EnumLogicalTypeAnnotation enumLogicalType) {
             return Optional.of(ToStringPage.create(pageType, columnChunkReader.getDictionarySupplier()));
         }
 

@@ -1,13 +1,12 @@
 #
-# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 #
 
-""" This module is an internal module to simplify usage patterns around jpy.
-"""
+"""This module is an internal module to simplify usage patterns around jpy."""
 
 import jpy
 
-from deephaven import DHError
+from .dherror import DHError
 
 
 def strict_cast(j_obj: jpy.JType, to_type: type) -> jpy.JType:
