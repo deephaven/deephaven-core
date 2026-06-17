@@ -8,6 +8,9 @@ import com.vertispan.tsdefs.annotations.TsName;
 import io.deephaven.proto.backplane.script.grpc.GetHeapInfoResponse;
 import jsinterop.annotations.JsProperty;
 
+/**
+ * Heap memory information for a Deephaven worker.
+ */
 @TsInterface
 @TsName(name = "WorkerHeapInfo", namespace = "dh")
 public class JsWorkerHeapInfo {
@@ -31,9 +34,6 @@ public class JsWorkerHeapInfo {
         return freeMemory;
     }
 
-    /**
-     * Total heap size available for this worker.
-     */
     @JsProperty
     public double getTotalHeapSize() {
         return totalHeapSize;
