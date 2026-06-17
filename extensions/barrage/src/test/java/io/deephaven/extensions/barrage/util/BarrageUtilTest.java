@@ -206,43 +206,46 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
     public void testSamplingSkipsDistinctColumn() {
         // All-distinct values produce a run ratio of 1.0, which is above the threshold — no REE.
         final int N = 100;
-        final int[] prices = new int[N];
+        final int[] x = new int[N];
         for (int i = 0; i < N; i++) {
-            prices[i] = i;
+            x[i] = i;
         }
-        final Table table = newTable(intCol("Price", prices));
+        final Table table = newTable(intCol("X", x));
 
         final Map<String, ColumnEncoding> detected = BarrageUtil.inferEncodings(table);
 
-        assertThat(detected).doesNotContainKey("Price");
+        assertThat(detected).doesNotContainKey("X");
     }
 
     public void testSamplingMixedTable() {
-        // Repetitive column gets REE; all-distinct column does not.
+        // Repetitive column (runs of 4) gets REE; all-distinct column does not.
         final int N = 100;
-        final String[] symbols = new String[N];
-        Arrays.fill(symbols, "AAPL");
-        final int[] prices = new int[N];
+        final int[] y = new int[N];
+        final int[] x = new int[N];
         for (int i = 0; i < N; i++) {
-            prices[i] = i;
+            y[i] = i / 4; // runs of 4
+            x[i] = i;
         }
-        final Table table = newTable(stringCol("Symbol", symbols), intCol("Price", prices));
+        final Table table = newTable(intCol("Y", y), intCol("X", x));
 
         final Map<String, ColumnEncoding> detected = BarrageUtil.inferEncodings(table);
 
-        assertThat(detected.get("Symbol")).isEqualTo(ColumnEncoding.RUN_END_ENCODED);
-        assertThat(detected).doesNotContainKey("Price");
+        assertThat(detected.get("Y")).isEqualTo(ColumnEncoding.RUN_END_ENCODED);
+        assertThat(detected).doesNotContainKey("X");
     }
 
     public void testSamplingSkippedForSmallTable() {
-        // Tables with fewer than REE_MIN_SAMPLE_SIZE (16) rows are not sampled.
-        final String[] symbols = new String[15];
-        Arrays.fill(symbols, "AAPL");
-        final Table table = newTable(stringCol("Symbol", symbols));
+        // Tables with fewer than REE_MIN_SAMPLE_SIZE rows are not sampled.
+        final int N = BarrageUtil.REE_MIN_SAMPLE_SIZE - 1;
+        final int[] y = new int[N];
+        for (int i = 0; i < N; i++) {
+            y[i] = i / 4; // runs of 4
+        }
+        final Table table = newTable(intCol("Y", y));
 
         final Map<String, ColumnEncoding> detected = BarrageUtil.inferEncodings(table);
 
-        assertThat(detected).doesNotContainKey("Symbol");
+        assertThat(detected).doesNotContainKey("Y");
     }
 
     private static void assertFieldIsREE(final Schema schema, final String columnName) {

@@ -161,7 +161,8 @@ public class BarrageUtil {
             Configuration.getInstance().getDoubleWithDefault("BarrageUtil.ree.runRatioThreshold", 0.5);
 
     /** Minimum table row count before sampling is attempted; too few rows make the estimate noisy. */
-    private static final int REE_MIN_SAMPLE_SIZE = 16;
+    static final int REE_MIN_SAMPLE_SIZE =
+            Configuration.getInstance().getIntegerWithDefault("BarrageUtil.ree.minSampleSize", 16);
 
     /**
      * Note that arrow's wire format states that Timestamps without timezones are not UTC -- that they are no timezone
@@ -1514,12 +1515,7 @@ public class BarrageUtil {
         if (effective == requested) {
             return options;
         }
-        return BarrageSnapshotOptions.builder()
-                .useDeephavenNulls(options.useDeephavenNulls())
-                .batchSize(effective)
-                .maxMessageSize(options.maxMessageSize())
-                .previewListLengthLimit(options.previewListLengthLimit())
-                .build();
+        return options.withBatchSize(effective);
     }
 
     public static void createAndSendStaticSnapshot(

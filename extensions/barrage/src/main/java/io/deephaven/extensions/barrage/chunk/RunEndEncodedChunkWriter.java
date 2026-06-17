@@ -19,6 +19,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.extensions.barrage.BarrageOptions;
 import io.deephaven.proto.util.Exceptions;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
+import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
@@ -134,12 +135,11 @@ public class RunEndEncodedChunkWriter extends BaseChunkWriter<Chunk<Values>> {
                 // Project the subset into a contiguous dense temp chunk.
                 tempDense = valuesChunkType.makeWritableChunk(logicalSize);
                 tempDense.setSize(logicalSize);
-                // Array over MutableInt for efficiency.
-                final int[] destPos = {0};
+                final MutableInt destPos = new MutableInt(0);
                 subset.forAllRowKeyRanges((start, end) -> {
                     final int rangeLength = (int) (end - start + 1);
-                    tempDense.copyFromChunk(context.getChunk(), (int) start, destPos[0], rangeLength);
-                    destPos[0] += rangeLength;
+                    tempDense.copyFromChunk(context.getChunk(), (int) start, destPos.get(), rangeLength);
+                    destPos.add(rangeLength);
                 });
                 srcForRuns = tempDense;
             }

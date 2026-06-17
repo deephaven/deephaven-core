@@ -429,14 +429,7 @@ public class BarrageMessageProducer extends LivenessArtifact
         if (effective == requested) {
             return options;
         }
-        return BarrageSubscriptionOptions.builder()
-                .useDeephavenNulls(options.useDeephavenNulls())
-                .minUpdateIntervalMs(options.minUpdateIntervalMs())
-                .batchSize(effective)
-                .maxMessageSize(options.maxMessageSize())
-                .columnsAsList(options.columnsAsList())
-                .previewListLengthLimit(options.previewListLengthLimit())
-                .build();
+        return options.withBatchSize(effective);
     }
 
     @VisibleForTesting
