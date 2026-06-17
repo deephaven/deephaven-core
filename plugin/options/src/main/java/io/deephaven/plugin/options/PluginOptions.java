@@ -4,6 +4,7 @@
 package io.deephaven.plugin.options;
 
 import io.deephaven.annotations.BuildableStyle;
+import io.deephaven.plugin.type.ObjectType;
 import org.immutables.value.Value;
 
 import io.deephaven.engine.validation.ColumnExpressionValidator;
@@ -40,10 +41,14 @@ public abstract class PluginOptions {
      * <p>
      * Plugins may provide objects to the user by invoking
      * {@link io.deephaven.plugin.type.ObjectType.MessageStream#onData(java.nio.ByteBuffer, java.lang.Object...)} with a
-     * number of arguments. These arguments are exported via an export ticket, which is not further transformed when
-     * retrieved from the session. If a plugin is sending an object to the user, it must apply the authorization
-     * transform first - before passing it to the onData callback. If the AuthorizationTransformer returns null, then
-     * the user is not permitted to access the object.
+     * number of arguments. These arguments are exported via an export ticket.
+     *
+     * A plugin may specify a {@link ObjectType.AuthorizationExportBehavior}. If
+     * {@link ObjectType.AuthorizationExportBehavior#TRANSFORM} is set then the server automatically transforms objects
+     * before sending them to a client. If the behavior is {@link ObjectType.AuthorizationExportBehavior#MANUAL}, then
+     * the plugin must apply the authorization transform first - before passing it to the onData callback. If the
+     * AuthorizationTransformer returns null, then the user is not permitted to access the object. If the behavior is
+     * {@link ObjectType.AuthorizationExportBehavior#UNSET}, the behavior is dependent on the server's default.
      * </p>
      *
      * @return a {@link AuthorizationTransformer} that should be used to transform objects before providing them to a

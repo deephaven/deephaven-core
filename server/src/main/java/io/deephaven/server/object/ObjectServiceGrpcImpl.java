@@ -495,6 +495,9 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
                         // error reporting useful in terms of seeing "Error: Not authorized to access a reference
                         // returned by the plugin" in our UI. Without the type, we see "Error: Unsupported descriptor".
                         type = typeLookup.type(failedAuthorization.originalReference).orElse(null);
+                    } else if (reference == null) {
+                        exportObject = sessionState.newServerSideExport(null);
+                        type = null;
                     } else {
                         exportObject = sessionState.newServerSideExport(reference);
                         type = typeLookup.type(reference).orElse(null);

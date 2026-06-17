@@ -2,7 +2,7 @@
 # Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 #
 
-from typing import TYPE_CHECKING, Any, Literal, Optional, cast
+from typing import TYPE_CHECKING, Any, Literal, Optional, cast, get_args
 
 import jpy
 from deephaven.plugin.object_type import (
@@ -18,6 +18,9 @@ from deephaven.liveness_scope import liveness_scope
 
 if TYPE_CHECKING:
     from typing_extensions import TypeAlias  # novermin  # noqa
+
+AuthorizationExportBehavior = Literal["transform", "manual", "unset"]
+_valid_authorization_export_behaviors = get_args(AuthorizationExportBehavior)
 
 JReference = cast(type, jpy.get_type("io.deephaven.plugin.type.Exporter$Reference"))  # type: TypeAlias
 JExporterAdapter = cast(
@@ -94,7 +97,7 @@ class ObjectTypeAdapter:
     def is_fetch_only(self) -> bool:
         return isinstance(self._user_object_type, FetchOnlyObjectType)
 
-    def authorization_export_behavior(self) -> Literal["transform", "manual", "unset"]:
+    def authorization_export_behavior(self) -> AuthorizationExportBehavior:
         # Read via getattr so plugins that predate this method (or use an older deephaven-plugin package that does not
         # yet declare it on ObjectType) continue to work with the default "unset" behavior. Once deephaven-plugin
         # adds authorization_export_behavior() to ObjectType with a default of "unset", the getattr fallback becomes
@@ -103,12 +106,12 @@ class ObjectTypeAdapter:
         if callable(behavior):
             behavior = behavior()
         result = str(behavior).lower() if behavior is not None else "unset"
-        if result not in ("transform", "manual", "unset"):
+        if result not in _valid_authorization_export_behaviors:
             raise ValueError(
                 f"ObjectType '{self._user_object_type}' returned invalid authorization_export_behavior "
-                f"'{result}'; must be 'transform', 'manual', or 'unset'"
+                f"'{result}'; must be in {_valid_authorization_export_behaviors}"
             )
-        return result  # type: ignore[return-value]
+        return cast(AuthorizationExportBehavior, result)
 
     def to_bytes(self, exporter: JExporterAdapter, obj: Any) -> bytes:
         return self._user_object_type.to_bytes(  # type: ignore
