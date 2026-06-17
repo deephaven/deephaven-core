@@ -455,7 +455,8 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
                             .append(": class=").append(reference.getClass().getCanonicalName())
                             .append(", index=").append(ii).endl();
                     transformed[ii] = new FailedAuthorization(reference, Exceptions.statusRuntimeException(
-                            Code.PERMISSION_DENIED, "Not authorized to access a reference returned by the " + name + " plugin"));
+                            Code.PERMISSION_DENIED,
+                            "Not authorized to access a reference returned by the " + name + " plugin"));
                 } else {
                     transformed[ii] = authorized;
                 }
