@@ -312,7 +312,7 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
                     BarrageUtil.getDefaultType(field.getChildren().get(0));
             final BarrageTypeInfo<Field> valuesTypeInfo =
                     BarrageUtil.getDefaultType(field.getChildren().get(1));
-            final ChunkWriter<Chunk<Values>> runEndsWriter = newWriterPojo(runEndsTypeInfo);
+            final ChunkWriter<IntChunk<Values>> runEndsWriter = intFromInt(runEndsTypeInfo);
             final ChunkWriter<Chunk<Values>> valuesWriter = newWriterPojo(valuesTypeInfo);
             // noinspection unchecked
             return (ChunkWriter<T>) new RunEndEncodedChunkWriter(

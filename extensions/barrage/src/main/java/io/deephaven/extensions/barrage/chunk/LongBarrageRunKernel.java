@@ -9,13 +9,13 @@ package io.deephaven.extensions.barrage.chunk;
 
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.util.compare.LongComparisons;
-import java.util.function.IntConsumer;
-import java.util.function.IntUnaryOperator;
 
 public class LongBarrageRunKernel {
 
@@ -26,11 +26,10 @@ public class LongBarrageRunKernel {
         public void encodeRunEnds(
                 final Chunk<Values> src,
                 final RowSequence subset,
-                final WritableChunk<Values> runEnds,
+                final WritableIntChunk<Values> runEnds,
                 final WritableChunk<Values> runValues) {
             final LongChunk<Values> typedSrc = src.asLongChunk();
             final WritableLongChunk<Values> typedRunValues = runValues.asWritableLongChunk();
-            final IntConsumer adder = BarrageRunKernel.runEndAdder(runEnds);
             typedRunValues.setSize(0);
             runEnds.setSize(0);
 
@@ -46,7 +45,7 @@ public class LongBarrageRunKernel {
                     final long cur = typedSrc.get((int) key);
                     rsIt.advance(key + 1);
                     if (!LongComparisons.eq(prev, cur)) {
-                        adder.accept(logicalPos);
+                        runEnds.add(logicalPos);
                         typedRunValues.add(prev);
                         prev = cur;
                     }
@@ -54,14 +53,14 @@ public class LongBarrageRunKernel {
                 }
 
                 // Final run
-                adder.accept(logicalPos);
+                runEnds.add(logicalPos);
                 typedRunValues.add(prev);
             }
         }
 
         @Override
         public void decodeRunEnds(
-                final IntUnaryOperator runEndReader,
+                final IntChunk<Values> runEnds,
                 final Chunk<Values> runValues,
                 final WritableChunk<Values> dst,
                 final int outOffset) {
@@ -70,7 +69,7 @@ public class LongBarrageRunKernel {
             int start = 0;
             final int numRuns = runValues.size();
             for (int runIndex = 0; runIndex < numRuns; ++runIndex) {
-                final int end = runEndReader.applyAsInt(runIndex);
+                final int end = runEnds.get(runIndex);
                 typedDst.fillWithValue(outOffset + start, end - start, typedRunValues.get(runIndex));
                 start = end;
             }

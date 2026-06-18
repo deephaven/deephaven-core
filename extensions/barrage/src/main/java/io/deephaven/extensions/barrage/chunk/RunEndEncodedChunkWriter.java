@@ -6,11 +6,10 @@ package io.deephaven.extensions.barrage.chunk;
 import com.google.rpc.Code;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ChunkType;
+import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableIntChunk;
-import io.deephaven.chunk.WritableLongChunk;
-import io.deephaven.chunk.WritableShortChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
@@ -19,7 +18,6 @@ import io.deephaven.proto.util.Exceptions;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jetbrains.annotations.VisibleForTesting;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -43,14 +41,14 @@ import java.io.OutputStream;
 public class RunEndEncodedChunkWriter extends BaseChunkWriter<Chunk<Values>> {
     private static final String DEBUG_NAME = "RunEndEncodedChunkWriter";
 
-    private final ChunkWriter<Chunk<Values>> runEndsWriter;
+    private final ChunkWriter<IntChunk<Values>> runEndsWriter;
     private final ChunkWriter<Chunk<Values>> valuesWriter;
     private final ChunkType runEndsChunkType;
     private final ChunkType valuesChunkType;
     private final BarrageRunKernel runKernel;
 
     public RunEndEncodedChunkWriter(
-            @NotNull final ChunkWriter<Chunk<Values>> runEndsWriter,
+            @NotNull final ChunkWriter<IntChunk<Values>> runEndsWriter,
             @NotNull final ChunkWriter<Chunk<Values>> valuesWriter,
             @NotNull final ChunkType runEndsChunkType,
             @NotNull final ChunkType valuesChunkType,
@@ -106,8 +104,7 @@ public class RunEndEncodedChunkWriter extends BaseChunkWriter<Chunk<Values>> {
 
             // Fast path for empty subset.
             if (logicalSize == 0) {
-                // noinspection unchecked
-                final WritableChunk<Values> emptyRunEnds = (WritableChunk<Values>) makeRunEndsChunk(0);
+                final WritableIntChunk<Values> emptyRunEnds = WritableIntChunk.makeWritableChunk(0);
                 final WritableChunk<Values> emptyValues = valuesChunkType.makeWritableChunk(0);
                 this.runEndsCtx = runEndsWriter.makeContext(emptyRunEnds, 0);
                 this.valuesCtx = valuesWriter.makeContext(emptyValues, 0);
@@ -121,8 +118,7 @@ public class RunEndEncodedChunkWriter extends BaseChunkWriter<Chunk<Values>> {
 
             // Single-pass run detection directly from the source chunk over the subset.
             // Pre-allocate worst-case capacity; the kernel resets sizes to zero and uses add().
-            // noinspection unchecked
-            final WritableChunk<Values> tempRunEnds = (WritableChunk<Values>) makeRunEndsChunk(logicalSize);
+            final WritableIntChunk<Values> tempRunEnds = WritableIntChunk.makeWritableChunk(logicalSize);
             final WritableChunk<Values> tempRunValues = valuesChunkType.makeWritableChunk(logicalSize);
             runKernel.encodeRunEnds(context.getChunk(), subset, tempRunEnds, tempRunValues);
 
@@ -199,22 +195,5 @@ public class RunEndEncodedChunkWriter extends BaseChunkWriter<Chunk<Values>> {
         // Note: Int32 and Int64 cannot overflow for any Deephaven batch (which is int-bounded).
     }
 
-    /**
-     * Allocate a run_ends chunk whose element type matches {@link #runEndsChunkType} with capacity {@code numRuns}.
-     */
-    @VisibleForTesting
-    WritableChunk<?> makeRunEndsChunk(final int numRuns) {
-        switch (runEndsChunkType) {
-            case Short:
-                return WritableShortChunk.makeWritableChunk(numRuns);
-            case Int:
-                return WritableIntChunk.makeWritableChunk(numRuns);
-            case Long:
-                return WritableLongChunk.makeWritableChunk(numRuns);
-            default:
-                throw new IllegalArgumentException("run_ends ChunkType must be Short, Int, or Long; got: "
-                        + runEndsChunkType);
-        }
-    }
 
 }

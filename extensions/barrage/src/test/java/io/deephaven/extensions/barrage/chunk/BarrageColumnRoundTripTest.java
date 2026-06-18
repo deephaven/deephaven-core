@@ -1165,44 +1165,6 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
     }
 
     /**
-     * makeRunEndsChunk's default branch (runEndsChunkType not Short/Int/Long) must throw IllegalArgumentException.
-     */
-    public void testMakeRunEndsChunkDefaultThrows() throws Exception {
-        final ByteString stdSchemaBytes = BarrageUtil.schemaBytesFromTableDefinition(
-                TableDefinition.of(ColumnDefinition.of("col", Type.find(int.class))),
-                Collections.emptyMap(), false);
-        final Schema stdSchema = SchemaHelper.flatbufSchema(stdSchemaBytes.asReadOnlyByteBuffer());
-        final Field intField = stdSchema.fields(0);
-        final ChunkWriter<Chunk<Values>> intWriter = DefaultChunkWriterFactory.INSTANCE
-                .newWriter(BarrageTypeInfo.make(int.class, null, intField));
-
-        // runEndsChunkType=Byte is invalid (only Short/Int/Long are valid).
-        final RunEndEncodedChunkWriter badWriter =
-                new RunEndEncodedChunkWriter(intWriter, intWriter, ChunkType.Byte, ChunkType.Int, true);
-        try {
-            badWriter.makeRunEndsChunk(1);
-            fail("Expected IllegalArgumentException from makeRunEndsChunk with ChunkType.Byte");
-        } catch (final IllegalArgumentException e) {
-            // expected
-        }
-    }
-
-    /**
-     * runEndAdder's default branch (non-Short/Int/Long run_ends chunk) must throw IllegalStateException.
-     */
-    public void testRunEndAdderDefaultThrows() {
-        try (final WritableByteChunk<Values> byteChunk = WritableByteChunk.makeWritableChunk(1)) {
-            byteChunk.setSize(0);
-            try {
-                BarrageRunKernel.runEndAdder(byteChunk);
-                fail("Expected IllegalStateException from runEndAdder with non-integer chunk type");
-            } catch (final IllegalStateException e) {
-                // expected
-            }
-        }
-    }
-
-    /**
      * REE-encoded wire size must be smaller than plain encoding when all rows share the same long value.
      *
      * <p>

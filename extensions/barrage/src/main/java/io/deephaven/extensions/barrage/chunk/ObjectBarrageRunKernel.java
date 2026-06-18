@@ -4,14 +4,14 @@
 package io.deephaven.extensions.barrage.chunk;
 
 import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.util.compare.ObjectComparisons;
-import java.util.function.IntConsumer;
-import java.util.function.IntUnaryOperator;
 
 public class ObjectBarrageRunKernel {
 
@@ -22,11 +22,10 @@ public class ObjectBarrageRunKernel {
         public void encodeRunEnds(
                 final Chunk<Values> src,
                 final RowSequence subset,
-                final WritableChunk<Values> runEnds,
+                final WritableIntChunk<Values> runEnds,
                 final WritableChunk<Values> runValues) {
             final ObjectChunk<Object, Values> typedSrc = src.asObjectChunk();
             final WritableObjectChunk<Object, Values> typedRunValues = runValues.asWritableObjectChunk();
-            final IntConsumer adder = BarrageRunKernel.runEndAdder(runEnds);
             typedRunValues.setSize(0);
             runEnds.setSize(0);
 
@@ -42,7 +41,7 @@ public class ObjectBarrageRunKernel {
                     final Object cur = typedSrc.get((int) key);
                     rsIt.advance(key + 1);
                     if (!ObjectComparisons.eq(prev, cur)) {
-                        adder.accept(logicalPos);
+                        runEnds.add(logicalPos);
                         typedRunValues.add(prev);
                         prev = cur;
                     }
@@ -50,14 +49,14 @@ public class ObjectBarrageRunKernel {
                 }
 
                 // Final run
-                adder.accept(logicalPos);
+                runEnds.add(logicalPos);
                 typedRunValues.add(prev);
             }
         }
 
         @Override
         public void decodeRunEnds(
-                final IntUnaryOperator runEndReader,
+                final IntChunk<Values> runEnds,
                 final Chunk<Values> runValues,
                 final WritableChunk<Values> dst,
                 final int outOffset) {
@@ -66,7 +65,7 @@ public class ObjectBarrageRunKernel {
             int start = 0;
             final int numRuns = runValues.size();
             for (int runIndex = 0; runIndex < numRuns; ++runIndex) {
-                final int end = runEndReader.applyAsInt(runIndex);
+                final int end = runEnds.get(runIndex);
                 typedDst.fillWithValue(outOffset + start, end - start, typedRunValues.get(runIndex));
                 start = end;
             }
