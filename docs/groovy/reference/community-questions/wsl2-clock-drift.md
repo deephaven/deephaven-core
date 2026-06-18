@@ -3,9 +3,9 @@ title: Why do my ticking tables stall on WSL 2?
 sidebar_label: Why do ticking tables stall on WSL 2?
 ---
 
-_I'm running Deephaven on WSL 2. My ticking tables seem to stop ticking at random, and I sometimes see warnings like `System clock's jumped back by ~13 sec` from my IDE or `Time jumped backwards, rotating` in `journalctl`. What's going on?_
+_I'm running Deephaven on WSL 2. My [ticking tables](../../conceptual/table-types.md) seem to stop ticking at random, and I sometimes see warnings like `System clock's jumped back by ~13 sec` from my IDE or `Time jumped backwards, rotating` in `journalctl`. What's going on?_
 
-This is a structural quirk of how WSL 2 keeps time, not anything wrong with Deephaven or your distro. WSL 2 runs every distro inside a single Microsoft-supplied kernel that pushes a Windows-host time sample into the guest every five seconds via Hyper-V TimeSync. At the same time, the guest's own NTP daemon (`systemd-timesyncd` on Ubuntu 24.04 and earlier, `chrony` on 25.10+) disciplines the clock toward public NTP servers. The Windows host's `w32time` service polls `time.windows.com` once a week by default and is often off by several seconds. When the two authorities disagree, they take turns stepping the guest's wall clock and it yo-yos by 10–20 seconds. Anything that depends on a monotonically advancing clock — Deephaven's update graph, TLS, `apt`'s freshness checks, log timestamps — misbehaves.
+This is a structural quirk of how WSL 2 keeps time, not anything wrong with Deephaven or your distro. WSL 2 runs every distro inside a single Microsoft-supplied kernel that pushes a Windows-host time sample into the guest every five seconds via Hyper-V TimeSync. At the same time, the guest's own NTP daemon (`systemd-timesyncd` on Ubuntu 24.04 and earlier, `chrony` on 25.10+) disciplines the clock toward public NTP servers. The Windows host's `w32time` service polls `time.windows.com` once a week by default and is often off by several seconds. When the two authorities disagree, they take turns stepping the guest's wall clock and it yo-yos by 10–20 seconds. Anything that depends on a monotonically advancing clock — Deephaven's [update graph](../../conceptual/dag.md), TLS, `apt`'s freshness checks, log timestamps — misbehaves.
 
 You can stop the fight in either of two ways. Pick one.
 
