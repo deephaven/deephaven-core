@@ -1679,11 +1679,16 @@ public class BarrageMessageProducer extends LivenessArtifact
                                             subscription.snapshotReverseViewport)) {
 
                 if (subscription.pendingInitialSnapshot) {
-                    // Send the pre-computed schema (matches chunkWriters encoding). Using the stored
-                    // schema avoids re-running inferSchemaProperties and guarantees that the REE
-                    // run_ends type (Int16/Int32) matches what the chunk writers will actually produce.
+                    // Send the schema matches what the data writer will actually produce.
+                    // chunkWriterSchema holds the raw (non-columnsAsList) schema used by chunkWriters;
+                    // when the subscription requests columnsAsList, wrap each field in an outer List to
+                    // match the wire transformation applied by BarrageMessageWriterImpl.
+                    final org.apache.arrow.vector.types.pojo.Schema schemaToUse =
+                            subscription.options.columnsAsList()
+                                    ? BarrageUtil.schemaWithColumnsAsList(chunkWriterSchema)
+                                    : chunkWriterSchema;
                     subscription.listener.onNext(streamGeneratorFactory.getSchemaView(
-                            fbb -> chunkWriterSchema.getSchema(fbb)));
+                            schemaToUse::getSchema));
                 }
 
                 // some messages may be empty of rows, but we need to update the client viewport and column set

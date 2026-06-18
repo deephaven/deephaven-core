@@ -9,6 +9,8 @@ import elemental2.core.JsArray;
 import elemental2.promise.Promise;
 import io.deephaven.web.client.api.subscription.DataOptions;
 import io.deephaven.web.client.api.subscription.TableSubscription;
+import io.deephaven.web.client.api.tree.JsTreeTable;
+import io.deephaven.web.client.api.tree.TreeViewportData;
 import jsinterop.base.Js;
 
 @DoNotRunWith(Platform.HtmlUnitBug)
@@ -62,7 +64,20 @@ public class RunEndEncodedTestGwt extends AbstractAsyncGwtTestCase {
                     + "_null_schema = _JSchema(_null_fields)")
             // annotated tables: attach BARRAGE_SCHEMA_ATTRIBUTE so server encodes as REE
             .script("ree_table_annotated = _flat_ree.with_attributes({'BarrageSchema': _ree_schema})")
-            .script("ree_null_table_annotated = _flat_null.with_attributes({'BarrageSchema': _null_schema})");
+            .script("ree_null_table_annotated = _flat_null.with_attributes({'BarrageSchema': _null_schema})")
+            // tree table source: 11 rows, all children share Parent=0, Category has two runs
+            .script("_flat_tree_ree",
+                    "empty_table(11).update(["
+                            + "\"ID=i\","
+                            + "\"Parent=i==0 ? null : (int)0\","
+                            + "\"Category=(String)(i<6?`A`:`B`)\"])")
+            // REE schema covering the Category column
+            .script("_tree_ree_fields = _JArrayList()\n"
+                    + "_tree_ree_fields.add(_make_ree_field('Category', _JUtf8, 'java.lang.String'))\n"
+                    + "_tree_ree_schema = _JSchema(_tree_ree_fields)")
+            // annotate the source before building the tree so the attribute is inherited
+            .script("ree_tree_table",
+                    "_flat_tree_ree.with_attributes({'BarrageSchema': _tree_ree_schema}).tree('ID', 'Parent')");
 
     public void testReeColumnTypes() {
         connect(tables)
@@ -135,6 +150,50 @@ public class RunEndEncodedTestGwt extends AbstractAsyncGwtTestCase {
                                     rows.getAt(i).get(repNullInt).asInt());
                         }
                     }, 5000);
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    // Proves that REE encoding on the server is safe for tree tables: the client receives
+    // REE-encoded snapshots correctly, and the expand interaction (client -> server) remains
+    // a lightweight key-table control message — not an REE-encoded record batch.
+    public void testReeTreeTable() {
+        connect(tables)
+                .then(session -> session.getTreeTable("ree_tree_table"))
+                .then(treeTable -> {
+                    delayTestFinish(10000);
+                    treeTable.setViewport(0, 20, treeTable.getColumns(), null);
+                    return treeTable.getViewportData()
+                            .then(data -> Promise.resolve((TreeViewportData) data))
+                            .then(data -> {
+                                // Before any expand, only the root is visible
+                                assertEquals(1d, data.getTreeSize());
+                                Column category = treeTable.findColumn("Category");
+                                assertEquals("A", data.getRows().getAt(0).get(category).asString());
+
+                                // expand() sends a lightweight key-table update to the server,
+                                // not an REE-encoded record batch
+                                treeTable.expand(JsTreeTable.RowReferenceUnion.of(0), null);
+                                return treeTable.<TreeViewportData>nextEvent(
+                                        JsTreeTable.EVENT_UPDATED, 5000d);
+                            })
+                            .then(event -> {
+                                TreeViewportData data = event.getDetail();
+                                // root + 10 children all visible
+                                assertEquals(11d, data.getTreeSize());
+
+                                Column category = treeTable.findColumn("Category");
+                                // rows 0-5 are the "A" run, rows 6-10 are the "B" run
+                                for (int i = 0; i < 6; i++) {
+                                    assertEquals("Category[" + i + "]", "A",
+                                            data.getRows().getAt(i).get(category).asString());
+                                }
+                                for (int i = 6; i < 11; i++) {
+                                    assertEquals("Category[" + i + "]", "B",
+                                            data.getRows().getAt(i).get(category).asString());
+                                }
+                                return Promise.resolve(treeTable);
+                            });
                 })
                 .then(this::finish).catch_(this::report);
     }

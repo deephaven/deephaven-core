@@ -2117,17 +2117,38 @@ public class BarrageChunkFactoryTest {
                                     (UnionVector) getWrapModeVector(rpcMethod, source),
                                     (UnionVector) getWrapModeVector(rpcMethod, dest));
                         } else if (wrapMode != TestWrapMode.NONE) {
-                            validateList(wrapMode, rpcMethod,
-                                    (BaseListVector) getWrapModeVector(rpcMethod, source),
-                                    (BaseListVector) getWrapModeVector(rpcMethod, dest));
+                            final FieldVector destWrapVec = getWrapModeVector(rpcMethod, dest);
+                            if (destWrapVec instanceof RunEndEncodedVector) {
+                                // REE auto-encoding applied to a list-typed column; expand before comparison
+                                try (final FieldVector expandedWrap =
+                                        expandReeVector((RunEndEncodedVector) destWrapVec)) {
+                                    validateList(wrapMode, rpcMethod,
+                                            (BaseListVector) getWrapModeVector(rpcMethod, source),
+                                            (BaseListVector) expandedWrap);
+                                }
+                            } else {
+                                validateList(wrapMode, rpcMethod,
+                                        (BaseListVector) getWrapModeVector(rpcMethod, source),
+                                        (BaseListVector) destWrapVec);
+                            }
                         }
 
                         if (nullMode == TestNullMode.NULL_WIRE) {
                             // no-op as long as we can round-trip the null wire type
                         } else if (wrapMode == TestWrapMode.NONE || wrapMode.isUnion()) {
-                            // noinspection unchecked
-                            validate(nullMode, (T) dataVector,
-                                    (T) getDataVector(wrapMode, nullMode, rpcMethod, dest, listItemLength));
+                            final FieldVector destDataVector =
+                                    getDataVector(wrapMode, nullMode, rpcMethod, dest, listItemLength);
+                            if (destDataVector instanceof RunEndEncodedVector) {
+                                // REE auto-encoding was applied server-side; expand to flat for comparison
+                                try (final FieldVector expanded =
+                                        expandReeVector((RunEndEncodedVector) destDataVector)) {
+                                    // noinspection unchecked
+                                    validate(nullMode, (T) dataVector, (T) expanded);
+                                }
+                            } else {
+                                // noinspection unchecked
+                                validate(nullMode, (T) dataVector, (T) destDataVector);
+                            }
                         } else if (wrapMode.isView()) {
                             // TODO: rm this branch when https://github.com/apache/arrow-java/issues/471 is fixed
 
@@ -2238,9 +2259,33 @@ public class BarrageChunkFactoryTest {
                                         valueVectors = ((StructVector) valueVectors).getChild("value");
                                     }
 
-                                    // noinspection unchecked
-                                    validate(nullMode, (T) valueVectors,
-                                            (T) getDataVector(wrapMode, nullMode, rpcMethod, dest, listItemLength));
+                                    final FieldVector destWrapVecForData = getWrapModeVector(rpcMethod, dest);
+                                    if (destWrapVecForData instanceof RunEndEncodedVector) {
+                                        // REE auto-encoding applied to a list-typed column; expand before comparison
+                                        try (final FieldVector expandedDest =
+                                                expandReeVector((RunEndEncodedVector) destWrapVecForData)) {
+                                            final FieldVector innerData;
+                                            if (listItemLength != 0) {
+                                                innerData = ((FixedSizeListVector) expandedDest).getDataVector();
+                                            } else if (wrapMode.isVariableLength()) {
+                                                innerData = ((ListVector) expandedDest).getDataVector();
+                                            } else if (wrapMode == TestWrapMode.MAP_KEY) {
+                                                innerData = ((StructVector) ((MapVector) expandedDest)
+                                                        .getDataVector()).getChild("key");
+                                            } else if (wrapMode == TestWrapMode.MAP_VALUE) {
+                                                innerData = ((StructVector) ((MapVector) expandedDest)
+                                                        .getDataVector()).getChild("value");
+                                            } else {
+                                                innerData = ((ListViewVector) expandedDest).getDataVector();
+                                            }
+                                            // noinspection unchecked
+                                            validate(nullMode, (T) valueVectors, (T) innerData);
+                                        }
+                                    } else {
+                                        // noinspection unchecked
+                                        validate(nullMode, (T) valueVectors,
+                                                (T) getDataVector(wrapMode, nullMode, rpcMethod, dest, listItemLength));
+                                    }
                                 }
                             }
                         }
@@ -2722,6 +2767,26 @@ public class BarrageChunkFactoryTest {
                 return arrayVector.getDataVector();
             }
         }
+    }
+
+    private FieldVector expandReeVector(final RunEndEncodedVector reeVec) {
+        final FieldVector valuesVec = reeVec.getValuesVector();
+        final IntVector runEndsVec = (IntVector) reeVec.getRunEndsVector();
+        final int logicalSize = reeVec.getValueCount();
+        final FieldVector result = valuesVec.getField().createVector(allocator);
+        result.setInitialCapacity(logicalSize);
+        result.allocateNew();
+        int numRuns = runEndsVec.getValueCount();
+        int startPos = 0;
+        for (int run = 0; run < numRuns; run++) {
+            final int endPos = runEndsVec.get(run);
+            for (int pos = startPos; pos < endPos; pos++) {
+                result.copyFromSafe(run, pos, valuesVec);
+            }
+            startPos = endPos;
+        }
+        result.setValueCount(logicalSize);
+        return result;
     }
 
     private abstract class IntRoundTripTest<T extends FieldVector> extends RoundTripTest<T> {

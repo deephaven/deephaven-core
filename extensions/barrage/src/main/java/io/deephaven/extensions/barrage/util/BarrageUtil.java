@@ -539,6 +539,21 @@ public class BarrageUtil {
         return schemaForTable(options, table).getSchema(builder);
     }
 
+    /**
+     * Wraps each field of {@code base} in an outer Arrow {@code List} type, mirroring the columnsAsList wire
+     * transformation applied by {@link io.deephaven.extensions.barrage.BarrageMessageWriterImpl}. Use this when the
+     * schema message must match data that will be sent with columnsAsList=true but the base schema was computed without
+     * that option (e.g. in {@code io.deephaven.server.barrage.BarrageMessageProducer}).
+     */
+    public static Schema schemaWithColumnsAsList(@NotNull final Schema base) {
+        final List<Field> wrapped = base.getFields().stream()
+                .map(f -> new Field(f.getName(),
+                        new FieldType(false, Types.MinorType.LIST.getType(), null, f.getMetadata()),
+                        Collections.singletonList(f)))
+                .collect(Collectors.toList());
+        return new Schema(wrapped, base.getCustomMetadata());
+    }
+
     public static Schema makeSchema(
             @NotNull final BarrageOptions options,
             @NotNull final TableDefinition tableDefinition,

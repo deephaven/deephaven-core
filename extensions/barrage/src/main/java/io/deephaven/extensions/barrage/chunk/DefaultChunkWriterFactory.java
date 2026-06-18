@@ -310,14 +310,18 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
         if (typeId == ArrowType.ArrowTypeID.RunEndEncoded) {
             final BarrageTypeInfo<Field> runEndsTypeInfo =
                     BarrageUtil.getDefaultType(field.getChildren().get(0));
-            final BarrageTypeInfo<Field> valuesTypeInfo =
-                    BarrageUtil.getDefaultType(field.getChildren().get(1));
+            // Use the outer typeInfo's DH type (which may be reinterpreted, e.g. long for Instant/ZonedDateTime,
+            // byte for Boolean) so that the run kernel and values writer match the actual chunk type produced by the
+            // column source. Without this, ObjectBarrageRunKernel is used for reinterpreted types, but the
+            // column source provides LongChunk/ByteChunk — not ObjectChunk.
+            final BarrageTypeInfo<Field> effectiveValuesTypeInfo = new BarrageTypeInfo<>(
+                    typeInfo.type(), typeInfo.componentType(), field.getChildren().get(1));
             final ChunkWriter<IntChunk<Values>> runEndsWriter = intFromInt(runEndsTypeInfo);
-            final ChunkWriter<Chunk<Values>> valuesWriter = newWriterPojo(valuesTypeInfo);
+            final ChunkWriter<Chunk<Values>> valuesWriter = newWriterPojo(effectiveValuesTypeInfo);
             // noinspection unchecked
             return (ChunkWriter<T>) new RunEndEncodedChunkWriter(
                     runEndsWriter, valuesWriter,
-                    runEndsTypeInfo.chunkType(), valuesTypeInfo.chunkType(),
+                    runEndsTypeInfo.chunkType(), effectiveValuesTypeInfo.chunkType(),
                     field.isNullable());
         }
 
