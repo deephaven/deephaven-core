@@ -3,14 +3,13 @@
 //
 package io.deephaven.extensions.barrage.chunk;
 
-import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.util.datastructures.LongSizedDataStructure;
+
+import java.util.function.IntUnaryOperator;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jetbrains.annotations.VisibleForTesting;
 
 import java.io.DataInput;
 import java.io.IOException;
@@ -81,85 +80,11 @@ public class RunEndEncodedChunkReader extends BaseChunkReader<WritableChunk<Valu
                 final WritableChunk<Values> runValues =
                         valuesReader.readChunk(fieldNodeIter, bufferInfoIter, is, null, 0, 0)) {
 
-            final int numRuns = LongSizedDataStructure.intSize(DEBUG_NAME, runEnds.size());
-
-            // Expand runs into the flat output chunk without boxing (typed dispatch per ChunkType).
-            int start = 0;
-            for (int runIndex = 0; runIndex < numRuns; ++runIndex) {
-                final int end = getRunEnd(runEnds, runIndex);
-                final int length = end - start;
-                fillRunRange(chunk, outOffset + start, length, runValues, runIndex);
-                start = end;
-            }
+            final BarrageRunKernel kernel = BarrageRunKernel.makeBarrageRunKernel(valuesChunkType);
+            final IntUnaryOperator reader = BarrageRunKernel.runEndReader(runEnds);
+            kernel.decodeRunEnds(reader, runValues, chunk, outOffset);
         }
 
         return chunk;
-    }
-
-    // ---- static helpers ----
-
-    /**
-     * Read the cumulative run-end index at position {@code runIndex}, casting to {@code int}. Incoming batches are
-     * always int-bounded, so run_end values never exceed {@link Integer#MAX_VALUE} regardless of the Arrow index type.
-     */
-    @VisibleForTesting
-    static int getRunEnd(final Chunk<Values> runEnds, final int runIndex) {
-        switch (runEnds.getChunkType()) {
-            case Short:
-                // run_ends for Int16 are always positive (writer enforces numRows <= Short.MAX_VALUE).
-                return runEnds.asShortChunk().get(runIndex);
-            case Int:
-                return runEnds.asIntChunk().get(runIndex);
-            case Long:
-                return LongSizedDataStructure.intSize(DEBUG_NAME, runEnds.asLongChunk().get(runIndex));
-            default:
-                throw new IllegalStateException(
-                        "run_ends ChunkType must be Short, Int, or Long; got: " + runEnds.getChunkType());
-        }
-    }
-
-    /**
-     * Fill {@code dest[destStart .. destStart+length)} with the value at {@code src[srcPos]}. Dispatches on the actual
-     * chunk type to avoid boxing; handles null values correctly for both primitive (NULL sentinel) and Object (null
-     * reference) chunk types.
-     */
-    @VisibleForTesting
-    static void fillRunRange(
-            final WritableChunk<Values> dest,
-            final int destStart,
-            final int length,
-            final Chunk<Values> src,
-            final int srcPos) {
-        switch (dest.getChunkType()) {
-            case Boolean:
-                dest.asWritableBooleanChunk().fillWithValue(destStart, length, src.asBooleanChunk().get(srcPos));
-                break;
-            case Byte:
-                dest.asWritableByteChunk().fillWithValue(destStart, length, src.asByteChunk().get(srcPos));
-                break;
-            case Char:
-                dest.asWritableCharChunk().fillWithValue(destStart, length, src.asCharChunk().get(srcPos));
-                break;
-            case Short:
-                dest.asWritableShortChunk().fillWithValue(destStart, length, src.asShortChunk().get(srcPos));
-                break;
-            case Int:
-                dest.asWritableIntChunk().fillWithValue(destStart, length, src.asIntChunk().get(srcPos));
-                break;
-            case Long:
-                dest.asWritableLongChunk().fillWithValue(destStart, length, src.asLongChunk().get(srcPos));
-                break;
-            case Float:
-                dest.asWritableFloatChunk().fillWithValue(destStart, length, src.asFloatChunk().get(srcPos));
-                break;
-            case Double:
-                dest.asWritableDoubleChunk().fillWithValue(destStart, length, src.asDoubleChunk().get(srcPos));
-                break;
-            case Object:
-                dest.asWritableObjectChunk().fillWithValue(destStart, length, src.asObjectChunk().get(srcPos));
-                break;
-            default:
-                throw new IllegalStateException("Unsupported ChunkType: " + dest.getChunkType());
-        }
     }
 }

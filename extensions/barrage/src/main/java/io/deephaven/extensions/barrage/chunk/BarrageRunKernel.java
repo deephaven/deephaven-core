@@ -8,7 +8,9 @@ import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.util.datastructures.LongSizedDataStructure;
 import java.util.function.IntConsumer;
+import java.util.function.IntUnaryOperator;
 
 /**
  * Typed kernel for single-pass run detection over a row subset, used by {@link RunEndEncodedChunkWriter}. Each
@@ -44,11 +46,22 @@ public interface BarrageRunKernel {
      * The caller must pre-allocate {@code runEnds} and {@code runValues} to capacity {@code subset.intSize()}
      * (worst-case scenario)
      */
-    void computeRuns(
+    void encodeRunEnds(
             Chunk<Values> src,
             RowSequence subset,
             WritableChunk<Values> runEnds,
             WritableChunk<Values> runValues);
+
+    /**
+     * Expands run-end encoded data back into a flat chunk. Reads {@code runEndReader} (maps run index to cumulative
+     * 1-based end position) and {@code runValues} (one value per run) and fills {@code dst} starting at
+     * {@code outOffset}.
+     */
+    void decodeRunEnds(
+            IntUnaryOperator runEndReader,
+            Chunk<Values> runValues,
+            WritableChunk<Values> dst,
+            int outOffset);
 
     /**
      * Create a type-specialized {@link IntConsumer} that appends to {@code runEnds}.
@@ -70,6 +83,30 @@ public interface BarrageRunKernel {
             default:
                 throw new IllegalStateException(
                         "Unexpected run_ends ChunkType: " + runEnds.getChunkType());
+        }
+    }
+
+    /**
+     * Create a type-specialized {@link IntUnaryOperator} that reads a cumulative run-end index from {@code runEnds},
+     * casting to {@code int}.
+     */
+    static IntUnaryOperator runEndReader(final Chunk<Values> runEnds) {
+        switch (runEnds.getChunkType()) {
+            case Short: {
+                final var c = runEnds.asShortChunk();
+                return c::get;
+            }
+            case Int: {
+                final var c = runEnds.asIntChunk();
+                return c::get;
+            }
+            case Long: {
+                final var c = runEnds.asLongChunk();
+                return i -> LongSizedDataStructure.intSize("BarrageRunKernel", c.get(i));
+            }
+            default:
+                throw new IllegalStateException(
+                        "run_ends ChunkType must be Short, Int, or Long; got: " + runEnds.getChunkType());
         }
     }
 }

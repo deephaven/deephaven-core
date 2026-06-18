@@ -28,7 +28,6 @@ import io.deephaven.chunk.WritableFloatChunk;
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.WritableObjectChunk;
-import io.deephaven.chunk.WritableBooleanChunk;
 import io.deephaven.chunk.WritableShortChunk;
 import io.deephaven.extensions.barrage.BarrageTypeInfo;
 import io.grpc.Status;
@@ -1166,22 +1165,6 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
     }
 
     /**
-     * getRunEnd's default branch (non-Short/Int/Long run_ends chunk) must throw IllegalStateException.
-     */
-    public void testGetRunEndDefaultThrows() {
-        try (final WritableByteChunk<Values> byteChunk = WritableByteChunk.makeWritableChunk(1)) {
-            byteChunk.set(0, (byte) 1);
-            byteChunk.setSize(1);
-            try {
-                RunEndEncodedChunkReader.getRunEnd(byteChunk, 0);
-                fail("Expected IllegalStateException from getRunEnd with non-integer chunk type");
-            } catch (final IllegalStateException e) {
-                // expected
-            }
-        }
-    }
-
-    /**
      * makeRunEndsChunk's default branch (runEndsChunkType not Short/Int/Long) must throw IllegalArgumentException.
      */
     public void testMakeRunEndsChunkDefaultThrows() throws Exception {
@@ -1216,20 +1199,6 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
             } catch (final IllegalStateException e) {
                 // expected
             }
-        }
-    }
-
-    /** Exercises the Boolean case in fillRunRange. */
-    public void testFillRunRangeBooleanCase() {
-        try (final WritableBooleanChunk<Values> dest = WritableBooleanChunk.makeWritableChunk(3);
-                final WritableBooleanChunk<Values> src = WritableBooleanChunk.makeWritableChunk(1)) {
-            dest.setSize(3);
-            src.set(0, true);
-            src.setSize(1);
-            RunEndEncodedChunkReader.fillRunRange(dest, 0, 3, src, 0);
-            assertTrue(dest.get(0));
-            assertTrue(dest.get(1));
-            assertTrue(dest.get(2));
         }
     }
 

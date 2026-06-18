@@ -124,7 +124,7 @@ public class RunEndEncodedChunkWriter extends BaseChunkWriter<Chunk<Values>> {
             // noinspection unchecked
             final WritableChunk<Values> tempRunEnds = (WritableChunk<Values>) makeRunEndsChunk(logicalSize);
             final WritableChunk<Values> tempRunValues = valuesChunkType.makeWritableChunk(logicalSize);
-            runKernel.computeRuns(context.getChunk(), subset, tempRunEnds, tempRunValues);
+            runKernel.encodeRunEnds(context.getChunk(), subset, tempRunEnds, tempRunValues);
 
             // Create child contexts (contexts own the chunks and close them on ref-count zero).
             this.runEndsCtx = runEndsWriter.makeContext(tempRunEnds, 0);

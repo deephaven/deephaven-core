@@ -15,6 +15,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.util.compare.DoubleComparisons;
 import java.util.function.IntConsumer;
+import java.util.function.IntUnaryOperator;
 
 public class DoubleBarrageRunKernel {
 
@@ -22,7 +23,7 @@ public class DoubleBarrageRunKernel {
 
     private static class Impl implements BarrageRunKernel {
         @Override
-        public void computeRuns(
+        public void encodeRunEnds(
                 final Chunk<Values> src,
                 final RowSequence subset,
                 final WritableChunk<Values> runEnds,
@@ -55,6 +56,23 @@ public class DoubleBarrageRunKernel {
                 // Final run
                 adder.accept(logicalPos);
                 typedRunValues.add(prev);
+            }
+        }
+
+        @Override
+        public void decodeRunEnds(
+                final IntUnaryOperator runEndReader,
+                final Chunk<Values> runValues,
+                final WritableChunk<Values> dst,
+                final int outOffset) {
+            final DoubleChunk<Values> typedRunValues = runValues.asDoubleChunk();
+            final WritableDoubleChunk<Values> typedDst = dst.asWritableDoubleChunk();
+            int start = 0;
+            final int numRuns = runValues.size();
+            for (int runIndex = 0; runIndex < numRuns; ++runIndex) {
+                final int end = runEndReader.applyAsInt(runIndex);
+                typedDst.fillWithValue(outOffset + start, end - start, typedRunValues.get(runIndex));
+                start = end;
             }
         }
     }
