@@ -10,8 +10,9 @@ import io.deephaven.chunk.WritableCharChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.util.compare.CharComparisons;
+import io.deephaven.util.mutable.MutableInt;
 
 public class CharBarrageRunKernel {
 
@@ -21,7 +22,7 @@ public class CharBarrageRunKernel {
         @Override
         public void encodeRunEnds(
                 final Chunk<Values> src,
-                final RowSequence subset,
+                final RowSet subset,
                 final WritableIntChunk<Values> runEnds,
                 final WritableChunk<Values> runValues) {
             final CharChunk<Values> typedSrc = src.asCharChunk();
@@ -29,29 +30,28 @@ public class CharBarrageRunKernel {
             typedRunValues.setSize(0);
             runEnds.setSize(0);
 
-            try (final RowSequence.Iterator rsIt = subset.getRowSequenceIterator()) {
-                // subset will always contain at least BarrageUtil#REE_MIN_SAMPLE_SIZE values
-                long key = rsIt.peekNextKey();
-                char prev = typedSrc.get((int) key);
-                rsIt.advance(key + 1);
-                int logicalPos = 1;
+            // subset will always contain at least BarrageUtil#REE_MIN_SAMPLE_SIZE values
+            final long firstKey = subset.firstRowKey();
+            // Acceptable use of arrays to prevent boxing/unboxing from Mutable<T>
+            final char[] prev = {typedSrc.get((int) firstKey)};
+            final MutableInt logicalPos = new MutableInt(1);
 
-                while (rsIt.hasMore()) {
-                    key = rsIt.peekNextKey();
-                    final char cur = typedSrc.get((int) key);
-                    rsIt.advance(key + 1);
-                    if (!CharComparisons.eq(prev, cur)) {
-                        runEnds.add(logicalPos);
-                        typedRunValues.add(prev);
-                        prev = cur;
-                    }
-                    logicalPos++;
+            subset.forAllRowKeys(key -> {
+                if (key == firstKey) {
+                    return;
                 }
+                final char cur = typedSrc.get((int) key);
+                if (!CharComparisons.eq(prev[0], cur)) {
+                    runEnds.add(logicalPos.get());
+                    typedRunValues.add(prev[0]);
+                    prev[0] = cur;
+                }
+                logicalPos.increment();
+            });
 
-                // Final run
-                runEnds.add(logicalPos);
-                typedRunValues.add(prev);
-            }
+            // Final run
+            runEnds.add(logicalPos.get());
+            typedRunValues.add(prev[0]);
         }
 
         @Override

@@ -9,7 +9,7 @@ import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.RowSet;
 
 /**
  * Typed kernel for single-pass run detection over a row subset, used by {@link RunEndEncodedChunkWriter}. Each
@@ -47,7 +47,7 @@ public interface BarrageRunKernel {
      */
     void encodeRunEnds(
             Chunk<Values> src,
-            RowSequence subset,
+            RowSet subset,
             WritableIntChunk<Values> runEnds,
             WritableChunk<Values> runValues);
 
