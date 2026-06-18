@@ -1443,6 +1443,10 @@
                     "path": "reference/table-operations/metadata/getAttributes.md"
                   },
                   {
+                    "label": "getColumnSource",
+                    "path": "reference/table-operations/metadata/getColumnSource.md"
+                  },
+                  {
                     "label": "getDefinition",
                     "path": "reference/table-operations/metadata/getDefinition.md"
                   },
