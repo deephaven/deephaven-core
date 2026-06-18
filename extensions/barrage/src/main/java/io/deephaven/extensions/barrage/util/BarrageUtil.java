@@ -1240,7 +1240,7 @@ public class BarrageUtil {
                 Collections.emptyList());
         final Field valuesField = new Field(
                 "values",
-                new FieldType(field.isNullable(), field.getType(), field.getDictionary(), Collections.emptyMap()),
+                new FieldType(field.isNullable(), field.getType(), field.getDictionary(), field.getMetadata()),
                 field.getChildren());
         return new Field(
                 field.getName(),
