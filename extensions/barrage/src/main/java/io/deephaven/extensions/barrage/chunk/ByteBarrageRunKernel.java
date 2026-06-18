@@ -17,6 +17,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.util.compare.ByteComparisons;
 import io.deephaven.util.mutable.MutableInt;
+
 public class ByteBarrageRunKernel {
 
     static final BarrageRunKernel INSTANCE = new Impl();
@@ -33,8 +34,9 @@ public class ByteBarrageRunKernel {
             typedRunValues.setSize(0);
             runEnds.setSize(0);
 
-            // subset will always contain at least BarrageUtil#REE_MIN_SAMPLE_SIZE values
-            final long firstKey = subset.firstRowKey();
+            // subset will always contain at least BarrageUtil#REE_MIN_SAMPLE_SIZE values, using get(0) to be
+            // compatible with GWT RowSet implementation
+            final long firstKey = subset.get(0);
             // Acceptable use of arrays to prevent boxing/unboxing from Mutable<T>
             final byte[] prev = {typedSrc.get((int) firstKey)};
             final MutableInt logicalPos = new MutableInt(1);
