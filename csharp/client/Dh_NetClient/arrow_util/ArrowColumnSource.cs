@@ -181,9 +181,11 @@ abstract class FillChunkHelper {
 
 sealed class ValueCopier<T>(Chunk<T> typedDest, BooleanChunk? nullFlags, T? deephavenNullValue)
   : FillChunkHelper where T : struct {
-  protected override void DoCopy(IArrowArray src, int srcOffset, int destOffset, int count) {
+  protected override void DoCopy(IArrowArray src, int srcStart, int destStart, int count) {
     var typedSrc = (IReadOnlyList<T?>)src;
     for (var i = 0; i < count; ++i) {
+      var srcOffset = srcStart + i;
+      var destOffset = destStart + i;
       var value = typedSrc[srcOffset];
       var isNull = !value.HasValue || value.Value.Equals(deephavenNullValue);
       T destToUse;
@@ -201,9 +203,6 @@ sealed class ValueCopier<T>(Chunk<T> typedDest, BooleanChunk? nullFlags, T? deep
         // it comes through DoGet, we're not getting null values when it comes through Barrage.
         nullFlags.Data[destOffset] = isNull;
       }
-
-      ++srcOffset;
-      ++destOffset;
     }
   }
 }
@@ -215,9 +214,12 @@ sealed class TransformingCopier<TSrc, TDest>(
   TDest transformedNullValue,
   Func<TSrc, TDest> transformer)
   : FillChunkHelper where TSrc : struct where TDest : struct {
-  protected override void DoCopy(IArrowArray src, int srcOffset, int destOffset, int count) {
+  protected override void DoCopy(IArrowArray src, int srcStart, int destStart, int count) {
     var typedSrc = (IReadOnlyList<TSrc?>)src;
     for (var i = 0; i < count; ++i) {
+      var srcOffset = srcStart + i;
+      var destOffset = destStart + i;
+
       var value = typedSrc[srcOffset];
       bool isNull;
       if (!value.HasValue || value.Value.Equals(deephavenNullValue)) {
@@ -231,46 +233,47 @@ sealed class TransformingCopier<TSrc, TDest>(
       if (nullFlags != null) {
         nullFlags.Data[destOffset] = isNull;
       }
-
-      ++srcOffset;
-      ++destOffset;
     }
   }
 }
 
 sealed class ReferenceCopier<T>(Chunk<T> typedDest, BooleanChunk? nullFlags) : FillChunkHelper {
-  protected override void DoCopy(IArrowArray src, int srcOffset, int destOffset, int count) {
+  protected override void DoCopy(IArrowArray src, int srcStart, int destStart, int count) {
     var typedSrc = (IReadOnlyList<T>)src;
     for (var i = 0; i < count; ++i) {
+      var srcOffset = srcStart + i;
+      var destOffset = destStart + i;
+
       typedDest.Data[destOffset] = typedSrc[srcOffset];
       if (nullFlags != null) {
         nullFlags.Data[destOffset] = src.IsNull(srcOffset);
       }
-
-      ++srcOffset;
-      ++destOffset;
     }
   }
 }
 
 sealed class ListCopier(ListChunk typedDest, BooleanChunk? nullFlags) : FillChunkHelper {
-  protected override void DoCopy(IArrowArray src, int srcOffset, int destOffset, int count) {
+  protected override void DoCopy(IArrowArray src, int srcStart, int destStart, int count) {
     var typedSrc = (ListArray)src;
-    // var srcValues = (Apache.Arrow.Array)typedSrc.Values;
-    for (var i = 0; i < count; ++i, ++srcOffset, ++destOffset) {
-      var isNull = src.IsNull(srcOffset);
-      if (nullFlags != null) {
-        nullFlags.Data[destOffset] = isNull;
-      }
-      if (isNull) {
-        typedDest.Data[destOffset] = null;
+    for (var i = 0; i < count; ++i) {
+      var srcOffset = srcStart + i;
+      var destOffset = destStart + i;
+
+      var isNull = src.IsNull(srcOffset);
+
+      if (nullFlags != null) {
+        nullFlags.Data[destOffset] = isNull;
+      }
+
+      if (isNull) {
+        typedDest.Data[destOffset] = null;
         continue;
       }
 
       var slicedData = typedSrc.GetSlicedValues(srcOffset);
-      var sn = new AdaptorSelector();
-      slicedData.Accept(sn);
-      typedDest.Data[destOffset] = sn.Result;
+      var selector = new AdapterSelector();
+      slicedData.Accept(selector);
+      typedDest.Data[destOffset] = selector.Result;
     }
   }
 }
@@ -388,7 +391,7 @@ class ArrowColumnSourceMaker(ChunkedArray chunkedArray) :
   }
 }
 
-public class ElementTypeVisitor :
+internal class ElementTypeVisitor :
   IArrowTypeVisitor<UInt16Type>,
   IArrowTypeVisitor<Int8Type>,
   IArrowTypeVisitor<Int16Type>,
@@ -446,7 +449,7 @@ public class ElementTypeVisitor :
   }
 }
 
-public class ListArrowColumnSource(ChunkedArray chunkedArray, Type elementType) : ArrowColumnSource, IListColumnSource, IHasElementType {
+internal class ListArrowColumnSource(ChunkedArray chunkedArray, Type elementType) : ArrowColumnSource, IListColumnSource, IHasElementType {
   public Type ElementType => elementType;
 
   public override void FillChunk(RowSequence rows, Chunk dest, BooleanChunk? nullFlags) {

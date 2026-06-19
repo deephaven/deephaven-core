@@ -4,7 +4,6 @@
 
 using System.Collections;
 using Deephaven.Dh_NetClient;
-using Microsoft.CSharp.RuntimeBinder;
 
 namespace Deephaven.Dh_NetClientTests;
 

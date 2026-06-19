@@ -7,7 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Deephaven.Dh_NetClient;
 
-public abstract class ColumnBuilder {
+internal abstract class ColumnBuilder {
   public static ColumnBuilder<T> ForType<T>(IArrowArrayBuilder? callerProvidedBuilder) {
     return (ColumnBuilder<T>)ForType(typeof(T), callerProvidedBuilder);
   }
@@ -201,11 +201,11 @@ public abstract class ColumnBuilder {
   public abstract void AppendNull();
 }
 
-public abstract class ColumnBuilder<T> : ColumnBuilder {
+internal abstract class ColumnBuilder<T> : ColumnBuilder {
   public abstract void Append(T item);
 }
 
-public sealed class TypicalBuilder<T, TArray, TBuilder> : ColumnBuilder<T>
+internal sealed class TypicalBuilder<T, TArray, TBuilder> : ColumnBuilder<T>
   where T : struct, IEquatable<T>
   where TArray : Apache.Arrow.IArrowArray
   where TBuilder : Apache.Arrow.IArrowArrayBuilder<TArray> {
@@ -259,7 +259,7 @@ public sealed class TypicalBuilder<T, TArray, TBuilder> : ColumnBuilder<T>
   }
 }
 
-public sealed class CharColumnBuilder : ColumnBuilder<char> {
+internal sealed class CharColumnBuilder : ColumnBuilder<char> {
   private readonly Apache.Arrow.UInt16Array.Builder _builder;
 
   public CharColumnBuilder(UInt16Array.Builder builder) {
@@ -303,7 +303,7 @@ public sealed class CharColumnBuilder : ColumnBuilder<char> {
   }
 }
 
-public sealed class StringColumnBuilder : ColumnBuilder<string> {
+internal sealed class StringColumnBuilder : ColumnBuilder<string> {
   private readonly Apache.Arrow.StringArray.Builder _builder;
 
   public StringColumnBuilder(StringArray.Builder builder) {
@@ -344,7 +344,7 @@ public sealed class StringColumnBuilder : ColumnBuilder<string> {
   }
 }
 
-public sealed class NullableBuilder<T> : ColumnBuilder<T?> where T : struct {
+internal sealed class NullableBuilder<T> : ColumnBuilder<T?> where T : struct {
   private readonly ColumnBuilder<T> _underlyingBuilder;
 
   public NullableBuilder(ColumnBuilder<T> underlyingBuilder) {
@@ -388,7 +388,7 @@ public sealed class NullableBuilder<T> : ColumnBuilder<T?> where T : struct {
   }
 }
 
-public sealed class ListBuilder<TList, TUnderlying> : ColumnBuilder<TList> where TList : class, IList<TUnderlying> {
+internal sealed class ListBuilder<TList, TUnderlying> : ColumnBuilder<TList> where TList : class, IList<TUnderlying> {
   private readonly Apache.Arrow.ListArray.Builder _listBuilder;
   private readonly ColumnBuilder<TUnderlying> _underlyingBuilder;
 
@@ -400,7 +400,11 @@ public sealed class ListBuilder<TList, TUnderlying> : ColumnBuilder<TList> where
   public override void Append(TList list) {
     _listBuilder.Append();
     foreach (var element in list) {
-      _underlyingBuilder.Append(element);
+      if (element is not null) {
+        _underlyingBuilder.Append(element);
+      } else {
+        _underlyingBuilder.AppendNull();
+      }
     }
   }
 

@@ -31,8 +31,16 @@ public class RoundTripTest {
     tm.AddColumn<string?[]?>("string", [["", "hello"], ["a", "b", null], null, ["c"]]);
     tm.AddColumn<char?[]?>("char", [['a', 'X'], ['a', 'b', null], null, ['c']]);
     tm.AddColumn<DateTimeOffset?[]?>("DateTimeOffset", [[dto1, dto2], [DateTimeOffset.MinValue, DateTimeOffset.MaxValue, null], null, [dto2]]);
-    tm.AddColumn<DateOnly?[]?>("DateOnly", [[DateOnly.FromDateTime(dto1.Date), DateOnly.FromDateTime(dto2.Date)], [DateOnly.MinValue, DateOnly.MaxValue, null], null, [DateOnly.FromDateTime(dto2.Date)]]);
-    tm.AddColumn<TimeOnly?[]?>("TimeOnly", [[TimeOnly.FromDateTime(dto1.Date), TimeOnly.FromDateTime(dto2.Date)], [TimeOnly.MinValue, TimeOnly.MaxValue, null], null, [TimeOnly.FromDateTime(dto2.Date)]]);
+    tm.AddColumn<DateOnly?[]?>("DateOnly", [
+      [DateOnly.FromDateTime(dto1.DateTime), DateOnly.FromDateTime(dto2.DateTime)],
+      [DateOnly.MinValue, DateOnly.MaxValue, null],
+      null,
+      [DateOnly.FromDateTime(dto2.DateTime)]]);
+    tm.AddColumn<TimeOnly?[]?>("TimeOnly", [
+      [TimeOnly.FromDateTime(dto1.DateTime), TimeOnly.FromDateTime(dto2.DateTime)],
+      [TimeOnly.MinValue, TimeOnly.MaxValue, null],
+      null,
+      [TimeOnly.FromDateTime(dto2.DateTime)]]);
 
     var at = tm.ToArrowTable();
 

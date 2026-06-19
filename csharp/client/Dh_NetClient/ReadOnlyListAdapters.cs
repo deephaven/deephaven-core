@@ -24,7 +24,7 @@ namespace Deephaven.Dh_NetClient;
 /// IList and List&lt;Nullable&lt;Int32&gt;&gt; (via its base class), and
 /// also IList&lt;Int32&gt; via the derived class.
 /// 
-/// Background and rationale for this class hierarchy:. The library initially supported a set of
+/// Background and rationale for this class hierarchy: The library initially supported a set of
 /// scalar types: char, bool, int32, float, string, etc. For each simple type S, there is a
 /// ColumnSource&lt;S&gt; that can represent its data and a Chunk&lt;S&gt; that can be used to
 /// hold batches of data. When it came time to add support for List types, we had to decide, among
@@ -38,7 +38,7 @@ namespace Deephaven.Dh_NetClient;
 /// When programmers work with these IList elements, they can use them as ILists directly,
 /// or, to avoid boxing, they can cast them down to their actual concrete type. We promise that
 /// the IList elements contained in these ColumnSource and Chunk Types will always implement
-/// all ofIList, IList&lt;T&gt; and, for value types, IList&lt;Nullable&lt;T&gt;&gt;.
+/// all of IList, IList&lt;T&gt; and, for value types, IList&lt;Nullable&lt;T&gt;&gt;.
 ///
 /// Note: it might have been preferable to use IReadOnlyList&lt;T&gt; and
 /// IReadOnlyList&lt;Nullable&lt;T&gt;&gt; instead of IList. The problem is of course that
@@ -215,7 +215,7 @@ public sealed class ReadOnlyListAdapterForReferenceTypes<T> : ReadOnlyListAdapte
   public ReadOnlyListAdapterForReferenceTypes(IReadOnlyList<T> data) : base(data) { }
 }
 
-public class AdaptorSelector : IArrowArrayVisitor,
+public class AdapterSelector : IArrowArrayVisitor,
   IArrowArrayVisitor<UInt16Array>,
   IArrowArrayVisitor<Int8Array>,
   IArrowArrayVisitor<Int16Array>,
