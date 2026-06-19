@@ -258,19 +258,16 @@ sealed class ListCopier(ListChunk typedDest, BooleanChunk? nullFlags) : FillChun
     var typedSrc = (ListArray)src;
     // var srcValues = (Apache.Arrow.Array)typedSrc.Values;
     for (var i = 0; i < count; ++i, ++srcOffset, ++destOffset) {
-      if (src.IsNull(i)) {
-        if (nullFlags != null) {
-          typedDest.Data[destOffset] = null;
-          nullFlags.Data[destOffset] = true;
-        }
+      var isNull = src.IsNull(srcOffset);
+      if (nullFlags != null) {
+        nullFlags.Data[destOffset] = isNull;
+      }
+      if (isNull) {
+        typedDest.Data[destOffset] = null;
         continue;
       }
 
       var slicedData = typedSrc.GetSlicedValues(srcOffset);
-
-      // var start = typedSrc.ValueOffsets[srcOffset];
-      // var end = typedSrc.ValueOffsets[srcOffset + 1];
-      // var slicedData = srcValues.Slice(start, end - start);
       var sn = new AdaptorSelector();
       slicedData.Accept(sn);
       typedDest.Data[destOffset] = sn.Result;
