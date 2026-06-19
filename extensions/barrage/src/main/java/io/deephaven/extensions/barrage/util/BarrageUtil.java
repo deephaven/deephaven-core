@@ -513,7 +513,8 @@ public class BarrageUtil {
             @NotNull final BarrageOptions options,
             @NotNull final Table table) {
         if (table.hasAttribute(Table.BARRAGE_SCHEMA_ATTRIBUTE)) {
-            return makeSchema(options, table.getDefinition(), table.getAttributes(), table.isFlat());
+            final Schema base = (Schema) table.getAttribute(Table.BARRAGE_SCHEMA_ATTRIBUTE);
+            return options.columnsAsList() ? schemaWithColumnsAsList(base) : base;
         }
         return makeSchema(options, table.getDefinition(), table.getAttributes(), table.isFlat(),
                 inferEncodings(table));
@@ -572,13 +573,25 @@ public class BarrageUtil {
         final Map<String, String> descriptions = GridAttributes.getColumnDescriptions(attributes);
         final InputTableUpdater inputTableUpdater = (InputTableUpdater) attributes.get(Table.INPUT_TABLE_ATTRIBUTE);
         maybeAddInputTableMetadata(tableDefinition, schemaMetadata, inputTableUpdater);
+        final boolean columnsAsList = options.columnsAsList();
         final List<Field> fields = columnDefinitionsToFields(
                 descriptions, inputTableUpdater, tableDefinition, tableDefinition.getColumns(),
                 ignored -> new HashMap<>(),
-                attributes, options.columnsAsList())
-                .map(field -> encodings.get(field.getName()) == ColumnEncoding.RUN_END_ENCODED
-                        ? toReeField(field)
-                        : field)
+                attributes, columnsAsList)
+                .map(field -> {
+                    if (encodings.get(field.getName()) != ColumnEncoding.RUN_END_ENCODED) {
+                        return field;
+                    }
+                    // When columnsAsList wraps the logical field in an outer List, apply REE to the inner
+                    // child so the encoding order is List<REE<values>> rather than REE<List<values>>.
+                    if (columnsAsList && field.getType().getTypeID() == ArrowType.ArrowTypeID.List) {
+                        final Field inner = toReeField(field.getChildren().get(0));
+                        return new Field(field.getName(),
+                                new FieldType(false, Types.MinorType.LIST.getType(), null, field.getMetadata()),
+                                Collections.singletonList(inner));
+                    }
+                    return toReeField(field);
+                })
                 .collect(Collectors.toList());
         return new Schema(fields, schemaMetadata);
     }
@@ -1501,7 +1514,8 @@ public class BarrageUtil {
             @NotNull final BarrageOptions options,
             @NotNull final BaseTable<?> table) {
         if (table.hasAttribute(Table.BARRAGE_SCHEMA_ATTRIBUTE)) {
-            return (Schema) table.getAttribute(Table.BARRAGE_SCHEMA_ATTRIBUTE);
+            final Schema base = (Schema) table.getAttribute(Table.BARRAGE_SCHEMA_ATTRIBUTE);
+            return options.columnsAsList() ? schemaWithColumnsAsList(base) : base;
         }
         return makeSchema(options, table.getDefinition(), table.getAttributes(), table.isFlat(), inferEncodings(table));
     }

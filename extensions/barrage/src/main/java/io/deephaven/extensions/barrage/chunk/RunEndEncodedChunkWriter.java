@@ -178,8 +178,6 @@ public class RunEndEncodedChunkWriter extends BaseChunkWriter<Chunk<Values>> {
         }
     }
 
-    // ---- static helpers ----
-
     /**
      * Throws INVALID_ARGUMENT if the logical length {@code logicalSize} cannot be represented as a run_end value in the
      * given index type. Because run_ends stores cumulative end indices and the last value always equals logicalSize,
@@ -194,6 +192,4 @@ public class RunEndEncodedChunkWriter extends BaseChunkWriter<Chunk<Values>> {
         }
         // Note: Int32 and Int64 cannot overflow for any Deephaven batch (which is int-bounded).
     }
-
-
 }
