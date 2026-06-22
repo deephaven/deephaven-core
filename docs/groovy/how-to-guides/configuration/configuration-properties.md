@@ -35,7 +35,7 @@ services:
       - START_OPTS=-Xmx4g
 ```
 
-Alternatively, set properties directly via the `START_OPTS` environment variable using `-D` flags:
+For quick testing or a small number of properties, you can set them directly via the `START_OPTS` environment variable using `-D` flags. For production or complex configurations, prefer the mounted config file approach above:
 
 ```yaml
 services:
@@ -58,7 +58,7 @@ export START_OPTS="-Xmx4g"
 
 ## Bootstrap configuration
 
-Deephaven sets bootstrap configuration parameters early in the application startup lifecycle, before reading configuration files. They can be set via environment variables or system properties.
+Deephaven sets bootstrap configuration parameters early in the application startup lifecycle, before reading configuration files. Set them via environment variables or system properties.
 
 | Property         | Environment Variable    | System Property         | Description                                                | Default      |
 | ---------------- | ----------------------- | ----------------------- | ---------------------------------------------------------- | ------------ |
@@ -186,7 +186,7 @@ These properties configure the query engine behavior.
 
 ## SSL/TLS configuration
 
-SSL configuration is typically done via system properties. See [mTLS authentication](../authentication/auth-mtls.md) for detailed examples.
+Configure SSL via system properties. See [mTLS authentication](../authentication/auth-mtls.md) for detailed examples.
 
 | Property                        | Description                                        |
 | ------------------------------- | -------------------------------------------------- |
@@ -223,15 +223,21 @@ services:
       - "8080:8080"
     volumes:
       - ./data:/data
-      - ./config/deephaven.prop:/opt/deephaven/config/deephaven.prop
+      - ./config/deephaven.prop:/opt/deephaven/config/deephaven.prop:ro
     environment:
-      - START_OPTS=-Xmx8g -Dhttp.port=8080 -Dhttp.session.durationMs=3600000
+      - START_OPTS=-Xmx8g
 ```
 
-With a configuration file:
+With a configuration file (`./config/deephaven.prop`):
 
 ```properties
 includefiles=dh-defaults.prop
+
+# Server port
+http.port=8080
+
+# Session timeout (1 hour)
+http.session.durationMs=3600000
 
 # Use anonymous authentication
 AuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler
