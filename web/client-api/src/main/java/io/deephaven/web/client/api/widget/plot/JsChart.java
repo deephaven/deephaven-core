@@ -6,7 +6,7 @@ package io.deephaven.web.client.api.widget.plot;
 import com.vertispan.tsdefs.annotations.TsTypeRef;
 import elemental2.core.JsArray;
 import elemental2.core.JsObject;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.figuredescriptor.ChartDescriptor;
+import io.deephaven.proto.backplane.script.grpc.FigureDescriptor;
 import io.deephaven.web.client.api.event.HasEventHandling;
 import io.deephaven.web.client.api.widget.plot.enums.JsChartType;
 import jsinterop.annotations.JsIgnore;
@@ -28,25 +28,25 @@ public class JsChart extends HasEventHandling {
      */
     public static final String EVENT_SERIES_ADDED = "seriesadded";
 
-    private final ChartDescriptor descriptor;
+    private final FigureDescriptor.ChartDescriptor descriptor;
     private final JsSeries[] series;
     private final JsMultiSeries[] multiSeries;
     private final JsAxis[] axes;
 
     @JsIgnore
-    public JsChart(ChartDescriptor descriptor, JsFigure jsFigure) {
+    public JsChart(FigureDescriptor.ChartDescriptor descriptor, JsFigure jsFigure) {
         this.descriptor = descriptor;
         // build axes first, key them in a map for easy reuse when constructing series instances
-        axes = descriptor.getAxesList().asList().stream().map((axisDescriptor) -> new JsAxis(axisDescriptor, jsFigure))
+        axes = descriptor.getAxesList().stream().map((axisDescriptor) -> new JsAxis(axisDescriptor, jsFigure))
                 .toArray(JsAxis[]::new);
         JsObject.freeze(axes);
         Map<String, JsAxis> indexed = new HashMap<>();
         for (int i = 0; i < axes.length; i++) {
             indexed.put(axes[i].getId(), axes[i]);
         }
-        series = descriptor.getSeriesList().asList().stream()
+        series = descriptor.getSeriesList().stream()
                 .map((seriesDescriptor) -> new JsSeries(seriesDescriptor, jsFigure, indexed)).toArray(JsSeries[]::new);
-        multiSeries = descriptor.getMultiSeriesList().asList().stream()
+        multiSeries = descriptor.getMultiSeriesList().stream()
                 .map((multiSeriesDescriptor) -> new JsMultiSeries(multiSeriesDescriptor, jsFigure, indexed, this))
                 .toArray(JsMultiSeries[]::new);
         JsObject.freeze(multiSeries);
@@ -80,7 +80,7 @@ public class JsChart extends HasEventHandling {
     @JsProperty
     @TsTypeRef(JsChartType.class)
     public int getChartType() {
-        return descriptor.getChartType();
+        return descriptor.getChartType().getNumber();
     }
 
     /**
@@ -124,7 +124,7 @@ public class JsChart extends HasEventHandling {
 
     @JsProperty(name = "is3d")
     public boolean isIs3d() {
-        return descriptor.getIs3d();
+        return descriptor.getIs3D();
     }
 
     // exposed for JS, do not use this from java methods

@@ -11,7 +11,7 @@ An in-depth look at what we’ve done, why we’ve done it, and why you should c
 
 We built Deephaven to be an incredible tool for working with tabular data — full stop. To us, tables are dynamic, powerful constructs, but we certainly care about static, batch ones too. In this piece, we explore some of the underlying technical and architectural decisions that, taken together, deliver Deephaven's value proposition.
 
-This guide assumes familiarity with distributed systems, JVM architecture, and modern data platforms. For hands-on tutorials, see our how-to guides.
+This guide assumes familiarity with distributed systems, JVM architecture, and modern data platforms. For hands-on tutorials, see our [how-to guides](../intro.md#how-to-guides).
 
 Deephaven's architecture is built on several key innovations:
 
@@ -347,6 +347,7 @@ Deephaven Community Core is specifically designed, delivered, and packaged to be
 - [Directed acyclic graph (DAG)](./dag.md)
 - [Table update model](./table-update-model.md)
 - [Core API design](./deephaven-core-api.md)
+- [Column types](./column-types.md)
 
 ### How-to guides
 

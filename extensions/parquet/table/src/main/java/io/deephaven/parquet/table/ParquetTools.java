@@ -19,6 +19,7 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.TableUpdateMode;
 import io.deephaven.engine.table.impl.locations.util.PartitionFormatter;
 import io.deephaven.engine.table.impl.locations.util.TableDataRefreshService;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.parquet.base.ParquetMetadataFileWriter;
 import io.deephaven.parquet.base.NullParquetMetadataFileWriter;
@@ -110,6 +111,7 @@ public class ParquetTools {
      * Reads in a table from a single parquet file, metadata file, or directory with recognized layout. The source
      * provided can be a local file path or a URI to be resolved.
      *
+     *
      * <p>
      * If the {@link ParquetFileLayout} is not provided in the {@link ParquetInstructions instructions}, this method
      * attempts to "do the right thing." It examines the source to determine if it's a single parquet file, a metadata
@@ -143,13 +145,27 @@ public class ParquetTools {
                     return readPartitionedTableWithMetadata(sourceURI, readInstructions, null);
             }
         }
-        if (isParquetFile) {
-            return readSingleFileTable(sourceURI, readInstructions);
+        final StringBuilder displayPath = new StringBuilder();
+        if (sourceURI.isOpaque()) {
+            displayPath.append(sourceURI);
+        } else {
+            displayPath.append(sourceURI.getScheme()).append("://");
+            if (sourceURI.getAuthority() != null) {
+                displayPath.append(sourceURI.getAuthority());
+            }
+            if (sourceURI.getPath() != null) {
+                displayPath.append(sourceURI.getPath());
+            }
         }
-        if (isMetadataFile) {
-            return readPartitionedTableWithMetadata(sourceURI, readInstructions, null);
-        }
-        return readPartitionedTableDirectory(sourceURI, readInstructions);
+        return QueryPerformanceRecorder.withNugget("ParquetTools.readTable(" + displayPath + ")", () -> {
+            if (isParquetFile) {
+                return readSingleFileTable(sourceURI, readInstructions);
+            }
+            if (isMetadataFile) {
+                return readPartitionedTableWithMetadata(sourceURI, readInstructions, null);
+            }
+            return readPartitionedTableDirectory(sourceURI, readInstructions);
+        });
     }
 
     /**

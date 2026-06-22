@@ -5,26 +5,10 @@ package io.deephaven.web.client.api.tree;
 
 import elemental2.core.JsArray;
 import elemental2.core.JsObject;
-import elemental2.core.JsString;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.Table_pb;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.hierarchicaltable_pb.RollupRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.AggSpec;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.Aggregation;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.aggregation.AggregationColumns;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.aggregation.AggregationCount;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.aggspec.AggSpecAbsSum;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.aggspec.AggSpecAvg;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.aggspec.AggSpecCountDistinct;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.aggspec.AggSpecDistinct;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.aggspec.AggSpecFirst;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.aggspec.AggSpecLast;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.aggspec.AggSpecMax;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.aggspec.AggSpecMin;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.aggspec.AggSpecNonUniqueSentinel;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.aggspec.AggSpecStd;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.aggspec.AggSpecSum;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.aggspec.AggSpecUnique;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.aggspec.AggSpecVar;
+import io.deephaven.proto.backplane.grpc.AggSpec;
+import io.deephaven.proto.backplane.grpc.Aggregation;
+import io.deephaven.proto.backplane.grpc.NullValue;
+import io.deephaven.proto.backplane.grpc.RollupRequest;
 import io.deephaven.web.client.api.Column;
 import io.deephaven.web.client.api.tree.enums.JsAggregationOperation;
 import io.deephaven.web.client.fu.JsLog;
@@ -42,7 +26,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
 /**
  * Describes a grouping and aggregations for a roll-up table. Pass to the {@code Table.rollup} function to create a
@@ -54,7 +38,7 @@ public class JsRollupConfig {
     /**
      * Ordered list of columns to group by to form the hierarchy of the resulting roll-up table.
      */
-    public JsArray<JsString> groupingColumns = null;
+    public JsArray<String> groupingColumns = null;
     /**
      * Mapping from each aggregation name to the ordered list of columns it should be applied to in the resulting
      * roll-up table.
@@ -108,12 +92,11 @@ public class JsRollupConfig {
 
     @JsIgnore
     public RollupRequest buildRequest(JsArray<Column> tableColumns) {
-        RollupRequest request = new RollupRequest();
+        RollupRequest.Builder request = RollupRequest.newBuilder();
 
-        request.setGroupByColumnsList(Js.<JsArray<String>>uncheckedCast(groupingColumns));
+        request.addAllGroupByColumns(groupingColumns.asList());
         request.setIncludeConstituents(includeConstituents);
-        JsArray<Aggregation> aggregations = new JsArray<>();
-        request.setAggregationsList(aggregations);
+        List<Aggregation> aggregations = new ArrayList<>();
         Map<String, LinkedHashSet<String>> aggs = new HashMap<>();
         List<String> colsNeedingCompoundNames = new ArrayList<>();
         Set<String> seenColNames = new HashSet<>();
@@ -134,128 +117,136 @@ public class JsRollupConfig {
         });
 
         aggs.forEach((aggregationType, cols) -> {
-            Aggregation agg = new Aggregation();
+            Aggregation.Builder agg = Aggregation.newBuilder();
 
-            JsArray<String> aggColumns = dedup(cols, colsNeedingCompoundNames, aggregationType);
-            AggregationColumns columns = null;
+            List<String> aggColumns = dedup(cols, colsNeedingCompoundNames, aggregationType);
+            Aggregation.AggregationColumns columns = null;
 
             switch (aggregationType) {
                 case JsAggregationOperation.COUNT: {
-                    AggregationCount count = new AggregationCount();
-                    count.setColumnName(unusedColumnName(tableColumns, "Count", "count", "RollupCount"));
-                    agg.setCount(count);
+                    agg.setCount(Aggregation.AggregationCount.newBuilder()
+                            .setColumnName(unusedColumnName(tableColumns, "Count", "count", "RollupCount"))
+                            .build());
                     break;
                 }
                 case JsAggregationOperation.COUNT_DISTINCT: {
-                    AggSpec spec = new AggSpec();
-                    spec.setCountDistinct(new AggSpecCountDistinct());
-                    columns = new AggregationColumns();
-                    columns.setSpec(spec);
+                    AggSpec.Builder spec = AggSpec.newBuilder();
+                    spec.setCountDistinct(AggSpec.AggSpecCountDistinct.getDefaultInstance());
+                    columns = Aggregation.AggregationColumns.newBuilder()
+                            .setSpec(spec)
+                            .addAllMatchPairs(aggColumns)
+                            .build();
                     agg.setColumns(columns);
-                    columns.setMatchPairsList(aggColumns);
                     break;
                 }
                 case JsAggregationOperation.DISTINCT: {
-                    AggSpec spec = new AggSpec();
-                    spec.setDistinct(new AggSpecDistinct());
-                    columns = new AggregationColumns();
-                    columns.setSpec(spec);
+                    AggSpec.Builder spec = AggSpec.newBuilder();
+                    spec.setDistinct(AggSpec.AggSpecDistinct.getDefaultInstance());
+                    columns = Aggregation.AggregationColumns.newBuilder().setSpec(spec)
+                            .addAllMatchPairs(aggColumns)
+                            .build();
                     agg.setColumns(columns);
-                    columns.setMatchPairsList(aggColumns);
                     break;
                 }
                 case JsAggregationOperation.MIN: {
-                    AggSpec spec = new AggSpec();
-                    spec.setMin(new AggSpecMin());
-                    columns = new AggregationColumns();
-                    columns.setSpec(spec);
+                    AggSpec.Builder spec = AggSpec.newBuilder();
+                    spec.setMin(AggSpec.AggSpecMin.newBuilder());
+                    columns = Aggregation.AggregationColumns.newBuilder().setSpec(spec)
+                            .addAllMatchPairs(aggColumns)
+                            .build();
                     agg.setColumns(columns);
-                    columns.setMatchPairsList(aggColumns);
                     break;
                 }
                 case JsAggregationOperation.MAX: {
-                    AggSpec spec = new AggSpec();
-                    spec.setMax(new AggSpecMax());
-                    columns = new AggregationColumns();
-                    columns.setSpec(spec);
+                    AggSpec.Builder spec = AggSpec.newBuilder();
+                    spec.setMax(AggSpec.AggSpecMax.getDefaultInstance());
+                    columns = Aggregation.AggregationColumns.newBuilder()
+                            .setSpec(spec)
+                            .addAllMatchPairs(aggColumns)
+                            .build();
                     agg.setColumns(columns);
-                    columns.setMatchPairsList(aggColumns);
                     break;
                 }
                 case JsAggregationOperation.SUM: {
-                    AggSpec spec = new AggSpec();
-                    spec.setSum(new AggSpecSum());
-                    columns = new AggregationColumns();
-                    columns.setSpec(spec);
+                    AggSpec.Builder spec = AggSpec.newBuilder();
+                    spec.setSum(AggSpec.AggSpecSum.getDefaultInstance());
+                    columns = Aggregation.AggregationColumns.newBuilder()
+                            .setSpec(spec)
+                            .addAllMatchPairs(aggColumns)
+                            .build();
                     agg.setColumns(columns);
-                    columns.setMatchPairsList(aggColumns);
                     break;
                 }
                 case JsAggregationOperation.ABS_SUM: {
-                    AggSpec spec = new AggSpec();
-                    spec.setAbsSum(new AggSpecAbsSum());
-                    columns = new AggregationColumns();
-                    columns.setSpec(spec);
+                    AggSpec.Builder spec = AggSpec.newBuilder();
+                    spec.setAbsSum(AggSpec.AggSpecAbsSum.getDefaultInstance());
+                    columns = Aggregation.AggregationColumns.newBuilder()
+                            .setSpec(spec)
+                            .addAllMatchPairs(aggColumns)
+                            .build();
                     agg.setColumns(columns);
-                    columns.setMatchPairsList(aggColumns);
                     break;
                 }
                 case JsAggregationOperation.VAR: {
-                    AggSpec spec = new AggSpec();
-                    spec.setVar(new AggSpecVar());
-                    columns = new AggregationColumns();
-                    columns.setSpec(spec);
+                    AggSpec.Builder spec = AggSpec.newBuilder();
+                    spec.setVar(AggSpec.AggSpecVar.getDefaultInstance());
+                    columns = Aggregation.AggregationColumns.newBuilder()
+                            .setSpec(spec)
+                            .addAllMatchPairs(aggColumns)
+                            .build();
                     agg.setColumns(columns);
-                    columns.setMatchPairsList(aggColumns);
                     break;
                 }
                 case JsAggregationOperation.AVG: {
-                    AggSpec spec = new AggSpec();
-                    spec.setAvg(new AggSpecAvg());
-                    columns = new AggregationColumns();
-                    columns.setSpec(spec);
+                    AggSpec.Builder spec = AggSpec.newBuilder();
+                    spec.setAvg(AggSpec.AggSpecAvg.getDefaultInstance());
+                    columns = Aggregation.AggregationColumns.newBuilder()
+                            .setSpec(spec)
+                            .addAllMatchPairs(aggColumns)
+                            .build();
                     agg.setColumns(columns);
-                    columns.setMatchPairsList(aggColumns);
                     break;
                 }
                 case JsAggregationOperation.STD: {
-                    AggSpec spec = new AggSpec();
-                    spec.setStd(new AggSpecStd());
-                    columns = new AggregationColumns();
-                    columns.setSpec(spec);
+                    AggSpec.Builder spec = AggSpec.newBuilder();
+                    spec.setStd(AggSpec.AggSpecStd.getDefaultInstance());
+                    columns = Aggregation.AggregationColumns.newBuilder()
+                            .setSpec(spec)
+                            .addAllMatchPairs(aggColumns)
+                            .build();
                     agg.setColumns(columns);
-                    columns.setMatchPairsList(aggColumns);
                     break;
                 }
                 case JsAggregationOperation.FIRST: {
-                    AggSpec spec = new AggSpec();
-                    spec.setFirst(new AggSpecFirst());
-                    columns = new AggregationColumns();
-                    columns.setSpec(spec);
+                    AggSpec.Builder spec = AggSpec.newBuilder();
+                    spec.setFirst(AggSpec.AggSpecFirst.getDefaultInstance());
+                    columns = Aggregation.AggregationColumns.newBuilder()
+                            .setSpec(spec)
+                            .addAllMatchPairs(aggColumns)
+                            .build();
                     agg.setColumns(columns);
-                    columns.setMatchPairsList(aggColumns);
                     break;
                 }
                 case JsAggregationOperation.LAST: {
-                    AggSpec spec = new AggSpec();
-                    spec.setLast(new AggSpecLast());
-                    columns = new AggregationColumns();
-                    columns.setSpec(spec);
+                    AggSpec.Builder spec = AggSpec.newBuilder();
+                    spec.setLast(AggSpec.AggSpecLast.getDefaultInstance());
+                    columns = Aggregation.AggregationColumns.newBuilder()
+                            .setSpec(spec)
+                            .addAllMatchPairs(aggColumns)
+                            .build();
                     agg.setColumns(columns);
-                    columns.setMatchPairsList(aggColumns);
                     break;
                 }
                 case JsAggregationOperation.UNIQUE: {
-                    AggSpec spec = new AggSpec();
-                    AggSpecUnique unique = new AggSpecUnique();
-                    AggSpecNonUniqueSentinel sentinel = new AggSpecNonUniqueSentinel();
-                    sentinel.setNullValue(Table_pb.NullValue.getNULL_VALUE());
-                    unique.setNonUniqueSentinel(sentinel);
-                    spec.setUnique(unique);
-                    columns = new AggregationColumns();
-                    columns.setSpec(spec);
+                    AggSpec.Builder spec = AggSpec.newBuilder();
+                    spec.setUnique(AggSpec.AggSpecUnique.newBuilder()
+                            .setNonUniqueSentinel(
+                                    AggSpec.AggSpecNonUniqueSentinel.newBuilder().setNullValue(NullValue.NULL_VALUE)));
+                    columns = Aggregation.AggregationColumns.newBuilder()
+                            .setSpec(spec)
+                            .addAllMatchPairs(aggColumns)
+                            .build();
                     agg.setColumns(columns);
-                    columns.setMatchPairsList(aggColumns);
                     break;
                 }
                 // case JsAggregationOperation.SORTED_FIRST: {
@@ -275,29 +266,26 @@ public class JsRollupConfig {
                     JsLog.warn("Aggregation " + aggregationType + " not supported, ignoring");
             }
 
-            if (columns == null || columns.getMatchPairsList().length > 0) {
-                aggregations.push(agg);
+            if (columns == null || !columns.getMatchPairsList().isEmpty()) {
+                aggregations.add(agg.build());
             }
         });
 
-        if (aggregations.length != 0) {
-            request.setAggregationsList(aggregations);
+        if (!aggregations.isEmpty()) {
+            request.addAllAggregations(aggregations);
         }
 
-        return request;
+        return request.build();
     }
 
-    private JsArray<String> dedup(LinkedHashSet<String> cols, List<String> colsNeedingCompoundNames,
+    private List<String> dedup(LinkedHashSet<String> cols, List<String> colsNeedingCompoundNames,
             String aggregationType) {
         return cols.stream().map(col -> {
             if (colsNeedingCompoundNames.contains(col)) {
                 return col + "_" + aggregationType + " = " + col;
             }
             return col;
-        }).collect(Collector.of(
-                JsArray<String>::new,
-                JsArray::push,
-                (arr1, arr2) -> arr1.concat(arr2.asArray(new String[0]))));
+        }).collect(Collectors.toList());
     }
 
     private String unusedColumnName(JsArray<Column> existingColumns, String... suggestedNames) {

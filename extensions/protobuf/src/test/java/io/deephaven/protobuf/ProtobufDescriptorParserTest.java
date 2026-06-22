@@ -452,7 +452,7 @@ public class ProtobufDescriptorParserTest {
 
     @Test
     void aDuration() {
-        checkKey(ADuration.getDescriptor(), List.of("dur"), Type.ofCustom(Duration.class), Map.of(
+        checkKey(ADuration.getDescriptor(), List.of("dur"), Type.durationType(), Map.of(
                 ADuration.newBuilder()
                         .setDur(com.google.protobuf.Duration.newBuilder().setSeconds(4200).setNanos(4300)
                                 .build())
@@ -1016,7 +1016,7 @@ public class ProtobufDescriptorParserTest {
 
     @Test
     void repeatedDuration() {
-        checkKey(RepeatedDuration.getDescriptor(), List.of("dur"), Type.ofCustom(Duration.class).arrayType(), Map.of(
+        checkKey(RepeatedDuration.getDescriptor(), List.of("dur"), Type.durationType().arrayType(), Map.of(
                 RepeatedDuration.getDefaultInstance(), new Duration[] {},
                 RepeatedDuration.newBuilder()
                         .addDur(com.google.protobuf.Duration.newBuilder().setSeconds(1).setNanos(2).build())

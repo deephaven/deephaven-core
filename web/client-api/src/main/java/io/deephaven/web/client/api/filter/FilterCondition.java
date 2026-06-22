@@ -4,20 +4,21 @@
 package io.deephaven.web.client.api.filter;
 
 import elemental2.core.JsArray;
-import elemental2.core.Uint8Array;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.AndCondition;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.Condition;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.InvokeCondition;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.NotCondition;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.OrCondition;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.Reference;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.SearchCondition;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.Value;
+import io.deephaven.proto.backplane.grpc.AndCondition;
+import io.deephaven.proto.backplane.grpc.CompareCondition;
+import io.deephaven.proto.backplane.grpc.Condition;
+import io.deephaven.proto.backplane.grpc.InCondition;
+import io.deephaven.proto.backplane.grpc.InvokeCondition;
+import io.deephaven.proto.backplane.grpc.NotCondition;
+import io.deephaven.proto.backplane.grpc.OrCondition;
+import io.deephaven.proto.backplane.grpc.SearchCondition;
+import io.deephaven.proto.backplane.grpc.Value;
 import io.deephaven.web.client.api.Column;
 import jsinterop.annotations.*;
 
 import java.util.Arrays;
-import java.util.Objects;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -61,12 +62,14 @@ public class FilterCondition {
      */
     @JsMethod(namespace = "dh.FilterCondition")
     public static FilterCondition invoke(String function, FilterValue... args) {
-        InvokeCondition invoke = new InvokeCondition();
-        invoke.setMethod(function);
-        invoke.setArgumentsList(Arrays.stream(args).map(v -> v.descriptor).toArray(Value[]::new));
+        InvokeCondition invoke = InvokeCondition.newBuilder()
+                .setMethod(function)
+                .addAllArguments(Arrays.stream(args).map(v -> v.descriptor).collect(Collectors.toList()))
+                .build();
 
-        Condition c = new Condition();
-        c.setInvoke(invoke);
+        Condition c = Condition.newBuilder()
+                .setInvoke(invoke)
+                .build();
 
         return createAndValidate(c);
     }
@@ -85,16 +88,17 @@ public class FilterCondition {
      * @return dh.FilterCondition
      */
     @JsMethod(namespace = "dh.FilterCondition")
-    public static FilterCondition search(FilterValue value, @JsOptional FilterValue[] columns) {
-        SearchCondition search = new SearchCondition();
+    public static FilterCondition search(FilterValue value, @JsOptional @JsNullable FilterValue[] columns) {
+        SearchCondition.Builder search = SearchCondition.newBuilder();
         search.setSearchString(value.descriptor.getLiteral().getStringValue());
         if (columns != null) {
-            search.setOptionalReferencesList(
-                    Arrays.stream(columns).map(v -> v.descriptor.getReference()).toArray(Reference[]::new));
+            search.addAllOptionalReferences(
+                    Arrays.stream(columns).map(v -> v.descriptor.getReference()).collect(Collectors.toList()));
         }
 
-        Condition c = new Condition();
-        c.setSearch(search);
+        Condition c = Condition.newBuilder()
+                .setSearch(search)
+                .build();
 
         return createAndValidate(c);
     }
@@ -110,11 +114,13 @@ public class FilterCondition {
      * @return FilterCondition
      */
     public FilterCondition not() {
-        NotCondition not = new NotCondition();
-        not.setFilter(descriptor);
+        NotCondition not = NotCondition.newBuilder()
+                .setFilter(descriptor)
+                .build();
 
-        Condition c = new Condition();
-        c.setNot(not);
+        Condition c = Condition.newBuilder()
+                .setNot(not)
+                .build();
 
         return createAndValidate(c);
     }
@@ -133,12 +139,14 @@ public class FilterCondition {
      * @return FilterCondition
      */
     public FilterCondition and(FilterCondition... filters) {
-        AndCondition and = new AndCondition();
-        and.setFiltersList(Stream.concat(Stream.of(descriptor), Arrays.stream(filters).map(v -> v.descriptor))
-                .toArray(Condition[]::new));
+        AndCondition and = AndCondition.newBuilder()
+                .addAllFilters(Stream.concat(Stream.of(descriptor), Arrays.stream(filters).map(v -> v.descriptor))
+                        .collect(Collectors.toList()))
+                .build();
 
-        Condition c = new Condition();
-        c.setAnd(and);
+        Condition c = Condition.newBuilder()
+                .setAnd(and)
+                .build();
 
         return createAndValidate(c);
     }
@@ -151,12 +159,14 @@ public class FilterCondition {
      * @return FilterCondition.
      */
     public FilterCondition or(FilterCondition... filters) {
-        OrCondition or = new OrCondition();
-        or.setFiltersList(Stream.concat(Stream.of(descriptor), Arrays.stream(filters).map(v -> v.descriptor))
-                .toArray(Condition[]::new));
+        OrCondition or = OrCondition.newBuilder()
+                .addAllFilters(Stream.concat(Stream.of(descriptor), Arrays.stream(filters).map(v -> v.descriptor))
+                        .collect(Collectors.toList()))
+                .build();
 
-        Condition c = new Condition();
-        c.setOr(or);
+        Condition c = Condition.newBuilder()
+                .setOr(or)
+                .build();
 
         return createAndValidate(c);
     }
@@ -169,13 +179,65 @@ public class FilterCondition {
 
     /**
      * A string suitable for debugging showing the details of this condition.
-     * 
+     *
      * @return String.
      */
     @JsMethod
     public String toString() {
-        // TODO (deephaven-core#723) implement a readable tostring rather than turning the pb object into a string
-        return descriptor.toString();
+        return toString(descriptor);
+    }
+
+    private static String toString(Condition descriptor) {
+        Function<Condition, String> condString = FilterCondition::toString;
+        Function<Value, String> valueString = FilterCondition::toString;
+        return switch (descriptor.getDataCase()) {
+            case AND -> descriptor.getAnd().getFiltersList().stream()
+                    .map(condString)
+                    .collect(Collectors.joining(" && "));
+            case OR -> descriptor.getOr().getFiltersList().stream()
+                    .map(condString)
+                    .collect(Collectors.joining(" || "));
+            case NOT -> "!(" + toString(descriptor.getNot().getFilter()) + ")";
+            case COMPARE -> {
+                CompareCondition compare = descriptor.getCompare();
+                yield toString(compare.getLhs()) + " " + compare.getCaseSensitivity() + " " + compare.getOperation()
+                        + " " + toString(compare.getRhs());
+            }
+            case IN -> {
+                InCondition in = descriptor.getIn();
+                yield toString(in.getTarget()) + " " + in.getMatchType() + " " + in.getCaseSensitivity() + " "
+                        + in.getNanComparison() + " in "
+                        + in.getCandidatesList().stream().map(valueString).collect(Collectors.joining(", "));
+            }
+            case INVOKE -> {
+                InvokeCondition invoke = descriptor.getInvoke();
+                if (invoke.hasTarget()) {
+                    yield toString(invoke.getTarget()) + "." + invoke.getMethod() + "("
+                            + invoke.getArgumentsList().stream().map(valueString).collect(Collectors.joining(", "))
+                            + ")";
+                }
+                yield invoke.getMethod() + "("
+                        + invoke.getArgumentsList().stream().map(valueString).collect(Collectors.joining(", ")) + ")";
+            }
+            case IS_NULL -> "isNull(" + descriptor.getIsNull().getReference().getColumnName() + ")";
+            case MATCHES -> "matches(" + descriptor.getMatches().getReference().getColumnName() + ", "
+                    + descriptor.getMatches().getRegex() + ", " + descriptor.getMatches().getCaseSensitivity() + ", "
+                    + descriptor.getMatches().getMatchType() + ")";
+            case CONTAINS -> "contains(" + descriptor.getContains().getReference().getColumnName() + ", "
+                    + descriptor.getContains().getSearchString() + ", " + descriptor.getContains().getCaseSensitivity()
+                    + ", " + descriptor.getContains().getMatchType() + ")";
+            case SEARCH -> "searchTableColumns(" + descriptor.getSearch().getSearchString() + ", "
+                    + descriptor.getSearch().getOptionalReferencesList() + ")";
+            case IS_NAN -> "isNaN(" + descriptor.getIsNan().getReference().getColumnName() + ")";
+            case DATA_NOT_SET -> "unknown";
+        };
+    }
+
+    private static String toString(Value value) {
+        if (value.hasReference()) {
+            return value.getReference().getColumnName();
+        }
+        return value.getLiteral().getStringValue();
     }
 
     @JsProperty
@@ -193,20 +255,7 @@ public class FilterCondition {
 
         final FilterCondition that = (FilterCondition) o;
 
-        // TODO (deephaven-core#723): implement a reasonable equality method; comparing pb serialization is expensive
-        final Uint8Array mBinary = descriptor.serializeBinary();
-        final Uint8Array oBinary = that.descriptor.serializeBinary();
-        if (mBinary.length != oBinary.length) {
-            return false;
-        }
-
-        for (int i = 0; i < mBinary.length; ++i) {
-            if (!Objects.equals(mBinary.getAt(i), oBinary.getAt(i))) {
-                return false;
-            }
-        }
-
-        return true;
+        return descriptor.equals(that.descriptor);
     }
 
     @Override

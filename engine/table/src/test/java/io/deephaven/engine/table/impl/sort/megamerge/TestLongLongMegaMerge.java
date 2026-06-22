@@ -9,8 +9,6 @@ package io.deephaven.engine.table.impl.sort.megamerge;
 
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.chunk.util.hashing.LongChunkEquals;
-import io.deephaven.chunk.util.hashing.LongChunkEquals;
-import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;

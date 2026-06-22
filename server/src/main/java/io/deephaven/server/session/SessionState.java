@@ -8,7 +8,9 @@ import com.google.rpc.Code;
 import dagger.assisted.Assisted;
 import dagger.assisted.AssistedFactory;
 import dagger.assisted.AssistedInject;
+import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.reference.WeakSimpleReference;
+import io.deephaven.base.text.TimestampBuffer;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.liveness.LivenessReferent;
@@ -47,6 +49,7 @@ import javax.annotation.OverridingMethodsMustInvokeSuper;
 import javax.inject.Provider;
 import java.io.Closeable;
 import java.io.IOException;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -57,7 +60,6 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Consumer;
 
-import static io.deephaven.base.log.LogOutput.MILLIS_FROM_EPOCH_FORMATTER;
 import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyComplete;
 import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyError;
 
@@ -89,6 +91,13 @@ import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyError;
  * </ul>
  */
 public class SessionState {
+    private static final TimestampBuffer millisFormatter = new TimestampBuffer(ZoneId.systemDefault());
+    /**
+     * Formats long millis from epoch based on the default timezone
+     */
+    LogOutput.LongFormatter MILLIS_FROM_EPOCH_FORMATTER =
+            (logOutput, millis) -> logOutput.append(millisFormatter.getTimestamp(millis));
+
     // Some work items will be dependent on other exports, but do not export anything themselves.
     public static final int NON_EXPORT_ID = 0;
 

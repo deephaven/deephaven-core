@@ -44,11 +44,7 @@ public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
     }
 
     private static Promise<Void> importDhInternal() {
-        return importScript(localServer + "/jsapi/dh-internal.js")
-                .then(module -> {
-                    Js.asPropertyMap(DomGlobal.window).set("dhinternal", module.get("dhinternal"));
-                    return Promise.resolve((Void) null);
-                });
+        return Promise.resolve((Void) null);
     }
 
     public static final String localServer = System.getProperty("dh.server", "http://localhost:10000");

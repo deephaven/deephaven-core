@@ -43,6 +43,10 @@
                 "path": "getting-started/crash-course/table-ops.md"
               },
               {
+                "label": "Time and Calendars",
+                "path": "getting-started/crash-course/time-calendars.md"
+              },
+              {
                 "label": "Query Strings",
                 "path": "getting-started/crash-course/query-strings.md"
               },
@@ -110,8 +114,16 @@
                 "path": "conceptual/table-types.md"
               },
               {
+                "label": "Column types",
+                "path": "conceptual/column-types.md"
+              },
+              {
                 "label": "Initialization and updates",
                 "path": "how-to-guides/initialization-and-updates.md"
+              },
+              {
+                "label": "Deephaven Vectors",
+                "path": "conceptual/arrays-vs-vectors.md"
               },
               {
                 "label": "Core API design",
@@ -151,7 +163,7 @@
                 "label": "Advanced table constructors",
                 "items": [
                   {
-                    "label": "Convert add-only tables to blink tables",
+                    "label": "Convert add- and append-only tables to blink tables",
                     "path": "how-to-guides/add-only-to-blink.md"
                   },
                   {
@@ -182,8 +194,25 @@
                 ]
               },
               {
+                "label": "HTML",
+                "items": [
+                  {
+                    "label": "Read HTML files",
+                    "path": "how-to-guides/data-import-export/html-import.md"
+                  },
+                  {
+                    "label": "Export HTML files",
+                    "path": "how-to-guides/data-import-export/html-export.md"
+                  }
+                ]
+              },
+              {
                 "label": "Arrow Flight",
                 "path": "how-to-guides/data-import-export/arrow-flight.md"
+              },
+              {
+                "label": "Arrow/Barrage Schema",
+                "path": "how-to-guides/data-import-export/barrage-schema.md"
               },
               {
                 "label": "Iceberg",
@@ -489,6 +518,10 @@
                 "path": "conceptual/liveness-scope-concept.md"
               },
               {
+                "label": "Systemic Object Marking",
+                "path": "conceptual/systemic-object-marking.md"
+              },
+              {
                 "label": "Generate query strings",
                 "path": "how-to-guides/generate-query-strings.md"
               }
@@ -512,6 +545,10 @@
                   {
                     "label": "Navigate the GUI",
                     "path": "how-to-guides/user-interface/navigating-the-ui.md"
+                  },
+                  {
+                    "label": "Upload a table from a file",
+                    "path": "how-to-guides/user-interface/upload-table-from-file.md"
                   },
                   {
                     "label": "Set date-time format",
@@ -842,6 +879,10 @@
                     "path": "how-to-guides/triage-errors.md"
                   },
                   {
+                    "label": "Decipher Groovy errors",
+                    "path": "how-to-guides/groovy-errors.md"
+                  },
+                  {
                     "label": "Attach a JVM debugger",
                     "path": "how-to-guides/attach-debugger.md"
                   },
@@ -1007,6 +1048,10 @@
                 "path": "reference/cheat-sheets/csv.md"
               },
               {
+                "label": "Kafka",
+                "path": "reference/cheat-sheets/kafka.md"
+              },
+              {
                 "label": "Parquet",
                 "path": "reference/cheat-sheets/parquet.md"
               },
@@ -1090,6 +1135,10 @@
           {
             "label": "Create your own plugin",
             "path": "how-to-guides/create-plugins.md"
+          },
+          {
+            "label": "Create a JavaScript plugin",
+            "path": "how-to-guides/create-js-plugins.md"
           }
         ]
       },
@@ -1296,6 +1345,10 @@
                   {
                     "label": "writeTable",
                     "path": "reference/data-import-export/Parquet/writeTable.md"
+                  },
+                  {
+                    "label": "writeKeyValuePartitionedTable",
+                    "path": "reference/data-import-export/Parquet/writeKeyValuePartitionedTable.md"
                   }
                 ]
               },

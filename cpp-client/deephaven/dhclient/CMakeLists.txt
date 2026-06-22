@@ -58,8 +58,12 @@ add_custom_command(
 )
 
 set(ALL_FILES
+    src/server/bearer_middleware.cc
     src/server/server.cc
+    src/server/server_shared_state.cc
+    include/private/deephaven/client/server/bearer_middleware.h
     include/private/deephaven/client/server/server.h
+    include/private/deephaven/client/server/server_shared_state.h
 
     src/impl/aggregate_impl.cc
     src/impl/client_impl.cc

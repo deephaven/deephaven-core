@@ -4,8 +4,8 @@
 package io.deephaven.web.client.api.storage;
 
 import com.vertispan.tsdefs.annotations.TsTypeRef;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.Storage_pb;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.storage_pb.ItemInfo;
+import io.deephaven.proto.backplane.grpc.ItemInfo;
+import io.deephaven.proto.backplane.grpc.ItemType;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsProperty;
@@ -18,12 +18,12 @@ import jsinterop.annotations.JsType;
 public class JsItemDetails {
     private final String parentPath;
     private final String path;
-    private final int type;
-    private final String size;
+    private final ItemType type;
+    private final double size;
     private final String etag;
 
     @JsIgnore
-    public JsItemDetails(String parentPath, String path, int kind, String size, String etag) {
+    public JsItemDetails(String parentPath, String path, ItemType kind, long size, String etag) {
         this.parentPath = parentPath;
         this.path = path;
         this.type = kind;
@@ -58,12 +58,12 @@ public class JsItemDetails {
     @JsProperty
     @TsTypeRef(JsItemType.class)
     public String getType() {
-        return type == Storage_pb.ItemType.getDIRECTORY() ? JsItemType.DIRECTORY : JsItemType.FILE;
+        return type == ItemType.DIRECTORY ? JsItemType.DIRECTORY : JsItemType.FILE;
     }
 
     @JsProperty
     public double getSize() {
-        return size == null ? 0 : Double.parseDouble(size);
+        return size;
     }
 
     @JsProperty

@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl.sources.immutable;
 
 import io.deephaven.base.verify.Require;
+import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableObjectChunk;
@@ -12,9 +13,7 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.impl.AbstractColumnSource;
-import io.deephaven.engine.table.impl.PushdownFilterContext;
-import io.deephaven.engine.table.impl.PushdownResult;
+import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.table.impl.util.JobScheduler;
@@ -25,6 +24,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 
@@ -171,6 +171,18 @@ public abstract class ImmutableConstantNanosBasedTimeSource<TIME_TYPE> extends A
     }
     // endregion Reinterpretation
 
+    /**
+     * Returns a chunk containing the value for this column source.
+     */
+    protected abstract Chunk<Values> getValueChunk();
+
+    @Override
+    public PushdownFilterContext makePushdownFilterContext(
+            final WhereFilter filter,
+            final List<ColumnSource<?>> filterSources) {
+        return new BasePushdownFilterContextImpl(filter, filterSources);
+    }
+
     @Override
     public void estimatePushdownFilterCost(
             final WhereFilter filter,
@@ -180,9 +192,7 @@ public abstract class ImmutableConstantNanosBasedTimeSource<TIME_TYPE> extends A
             final JobScheduler jobScheduler,
             final LongConsumer onComplete,
             final Consumer<Exception> onError) {
-        // Delegate to the shared code for RowKeyAgnosticChunkSource
-        RowKeyAgnosticChunkSource.estimatePushdownFilterCostHelper(
-                filter, selection, usePrev, context, jobScheduler, onComplete, onError);
+        onComplete.accept(PushdownResult.TABLE_SINGLE_VALUE_COLUMN_COST);
     }
 
     @Override
@@ -195,8 +205,15 @@ public abstract class ImmutableConstantNanosBasedTimeSource<TIME_TYPE> extends A
             final JobScheduler jobScheduler,
             final Consumer<PushdownResult> onComplete,
             final Consumer<Exception> onError) {
-        // Delegate to the shared code for RowKeyAgnosticChunkSource
-        RowKeyAgnosticChunkSource.pushdownFilterHelper(this, filter, selection, usePrev, context, costCeiling,
-                jobScheduler, onComplete, onError);
+        if (selection.isEmpty()) {
+            // If the selection is empty, we can skip all pushdown filtering.
+            onComplete.accept(PushdownResult.noneMatch(selection));
+            return;
+        }
+
+        final BasePushdownFilterContext filterCtx = (BasePushdownFilterContext) context;
+        final boolean matches =
+                SingleValuePushdownHelper.filter(selection, usePrev, filterCtx, this::getValueChunk, this);
+        onComplete.accept(matches ? PushdownResult.allMatch(selection) : PushdownResult.noneMatch(selection));
     }
 }

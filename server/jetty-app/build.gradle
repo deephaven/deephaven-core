@@ -13,6 +13,8 @@ dependencies {
 
     implementation project(':extensions-flight-sql')
 
+    implementation project(':util-processenvironment')
+
     implementation libs.dagger
     annotationProcessor libs.dagger.compiler
 
