@@ -163,14 +163,15 @@ See [Parallelization](../../../conceptual/query-engine/parallelization.md) for m
 
 ## Related documentation
 
-- [How to create static tables](../../../how-to-guides/new-and-empty-table.md)
+- [Create a new table](../../../how-to-guides/new-and-empty-table.md)
 - [How to use filters](../../../how-to-guides/use-filters.md)
 - [Parallelization](../../../conceptual/query-engine/parallelization.md)
+- [Filter](../../query-language/types/Filter.md)
 - [equals](../../query-language/match-filters/equals.md)
-- [not equals (`!=`)](../../query-language/match-filters/not-equals.md)
-- [`icase in`](../..//query-language/match-filters/icase-in.md)
+- [`icase in`](../../query-language/match-filters/icase-in.md)
 - [`icase not in`](../../query-language/match-filters/icase-not-in.md)
 - [`in`](../../query-language/match-filters/in.md)
+- [not equals (`!=`)](../../query-language/match-filters/not-equals.md)
 - [`not in`](../../query-language/match-filters/not-in.md)
 - [Javadoc](https://deephaven.io/core/javadoc/io/deephaven/api/TableOperations.html#where(java.lang.String...))
 - [Pydoc](/core/pydoc/code/deephaven.table.html#deephaven.table.Table.where)

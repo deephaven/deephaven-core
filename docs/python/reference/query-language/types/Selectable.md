@@ -6,13 +6,15 @@ A [`Selectable`](https://docs.deephaven.io/core/pydoc/code/deephaven.table.html#
 
 ## Creating a Selectable
 
-Use `Selectable.parse` to create a `Selectable` from a formula string:
+Use `Selectable.parse` to create a `Selectable` from a formula string. The formula follows the same `"ColumnName = expression"` syntax used in [`select`](../../table-operations/select/select.md) and [`update`](../../table-operations/select/update.md) calls:
 
 ```python syntax
 from deephaven.table import Selectable
 
 col = Selectable.parse("NewColumn = ExistingColumn * 2")
 ```
+
+Once created, you can chain concurrency control methods like `with_serial` before passing the `Selectable` to a table operation.
 
 ## Methods
 
@@ -81,9 +83,9 @@ If you're unsure whether your formula is safe for parallel execution, ask: "Woul
 ## Related documentation
 
 - [Parallelization](../../../conceptual/query-engine/parallelization.md) - Full guide on controlling parallel execution
-- [`update`](../../table-operations/select/update.md) - Uses Selectable objects
-- [`select`](../../table-operations/select/select.md) - Uses Selectable objects
 - [Filter](./Filter.md) - Similar concurrency controls for filter operations
-- [Selectable Pydoc](https://docs.deephaven.io/core/pydoc/code/deephaven.table.html#deephaven.table.Selectable)
-- [ConcurrencyControl Pydoc](https://docs.deephaven.io/core/pydoc/code/deephaven.concurrency_control.html#deephaven.concurrency_control.ConcurrencyControl) - base class defining `with_serial` and barrier methods
+- [`select`](../../table-operations/select/select.md) - Uses Selectable objects
+- [`update`](../../table-operations/select/update.md) - Uses Selectable objects
 - [Barrier Pydoc](https://docs.deephaven.io/core/pydoc/code/deephaven.concurrency_control.html#deephaven.concurrency_control.Barrier)
+- [ConcurrencyControl Pydoc](https://docs.deephaven.io/core/pydoc/code/deephaven.concurrency_control.html#deephaven.concurrency_control.ConcurrencyControl)
+- [Selectable Pydoc](https://docs.deephaven.io/core/pydoc/code/deephaven.table.html#deephaven.table.Selectable)

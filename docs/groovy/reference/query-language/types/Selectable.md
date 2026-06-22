@@ -20,7 +20,7 @@ col = Selectable.parse("NewColumn = ExistingColumn * 2")
 
 ### From column name and expression
 
-Use `Selectable.of` with `ColumnName` and `RawString` when the column name and expression are separate values, such as when they come from variables or user input.
+Use `Selectable.of` with [`ColumnName`](https://deephaven.io/core/javadoc/io/deephaven/api/ColumnName.html) and [`RawString`](https://deephaven.io/core/javadoc/io/deephaven/api/RawString.html) when the column name and expression are separate values, such as when they come from variables or user input.
 
 ```groovy syntax
 import io.deephaven.api.Selectable
@@ -51,7 +51,7 @@ result = emptyTable(10).update([col])
 ```
 
 > [!IMPORTANT]
-> `Selectable` objects can only be used with [`select`](../../table-operations/select/select.md) and [`update`](../../table-operations/select/update.md). The [`view`](../../table-operations/select/view.md), [`updateView`](../../table-operations/select/update-view.md), and [`lazyUpdate`](../../table-operations/select/lazy-update.md) methods do not accept `Selectable` objects because they compute values on-demand and cannot guarantee processing order.
+> Concurrency control methods (`withSerial`, `withDeclaredBarriers`, `withRespectedBarriers`) only work with [`select`](../../table-operations/select/select.md) and [`update`](../../table-operations/select/update.md). While [`view`](../../table-operations/select/view.md) and [`updateView`](../../table-operations/select/update-view.md) accept `Selectable` objects, they compute values on-demand and cannot enforce processing order. [`lazyUpdate`](../../table-operations/select/lazy-update.md) does not accept `Selectable` objects.
 
 ### `withDeclaredBarriers` and `withRespectedBarriers`
 
@@ -92,8 +92,9 @@ If you're unsure whether your formula is safe for parallel execution, ask: "Woul
 ## Related documentation
 
 - [Parallelization](../../../conceptual/query-engine/parallelization.md) - Full guide on controlling parallel execution
-- [`update`](../../table-operations/select/update.md) - Uses Selectable objects
-- [`select`](../../table-operations/select/select.md) - Uses Selectable objects
 - [Filter](./Filter.md) - Similar concurrency controls for filter operations
+- [`select`](../../table-operations/select/select.md) - Uses Selectable objects
+- [`update`](../../table-operations/select/update.md) - Uses Selectable objects
+- [Barrier Javadoc](https://deephaven.io/core/javadoc/io/deephaven/api/ConcurrencyControl.Barrier.html)
+- [ConcurrencyControl Javadoc](https://deephaven.io/core/javadoc/io/deephaven/api/ConcurrencyControl.html)
 - [Selectable Javadoc](https://deephaven.io/core/javadoc/io/deephaven/api/Selectable.html)
-- [ConcurrencyControl Javadoc](https://deephaven.io/core/javadoc/io/deephaven/api/ConcurrencyControl.html) - base interface defining `withSerial` and barrier methods

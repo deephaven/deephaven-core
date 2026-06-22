@@ -114,8 +114,8 @@ You need a `Filter` object in two situations:
 ## Related documentation
 
 - [Parallelization](../../../conceptual/query-engine/parallelization.md) - Full guide on controlling parallel execution
-- [`where`](../../table-operations/filter/where.md) - Uses Filter objects
 - [Selectable](./Selectable.md) - Similar concurrency controls for column calculations
-- [Filter Pydoc](https://docs.deephaven.io/core/pydoc/code/deephaven.filters.html)
-- [ConcurrencyControl Pydoc](https://docs.deephaven.io/core/pydoc/code/deephaven.concurrency_control.html#deephaven.concurrency_control.ConcurrencyControl) - base class defining `with_serial` and barrier methods
+- [`where`](../../table-operations/filter/where.md) - Uses Filter objects
 - [Barrier Pydoc](https://docs.deephaven.io/core/pydoc/code/deephaven.concurrency_control.html#deephaven.concurrency_control.Barrier)
+- [ConcurrencyControl Pydoc](https://docs.deephaven.io/core/pydoc/code/deephaven.concurrency_control.html#deephaven.concurrency_control.ConcurrencyControl)
+- [Filter Pydoc](https://docs.deephaven.io/core/pydoc/code/deephaven.filters.html)

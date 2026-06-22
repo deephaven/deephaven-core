@@ -6,7 +6,7 @@ sidebar_label: Parallelization
 Parallelization is running multiple calculations at the same time on different CPU cores instead of one after another. Deephaven automatically parallelizes table operations like [`select`](../../reference/table-operations/select/select.md), [`update`](../../reference/table-operations/select/update.md), and [`where`](../../reference/table-operations/filter/where.md) to make queries faster. This guide explains how parallelization works and when you need to control it.
 
 > [!IMPORTANT]
-> **Breaking change in Deephaven 0.41+**: Queries now run in parallel by default. Code that modifies shared variables or depends on row order will produce incorrect results.
+> **Breaking change in Deephaven 41+**: Queries now run in parallel by default. Code that modifies shared variables or depends on row order will produce incorrect results.
 >
 > **Quick check**: Does your code use global variables, depend on row order, or modify external state? If yes, the [crash course guide](../../getting-started/crash-course/parallelization.md) shows how to fix it.
 
@@ -157,11 +157,11 @@ result4 = source4.update("Squared = sqrt(X)")
 ```
 
 > [!WARNING]
-> **Breaking change in Deephaven 0.41+**
+> **Breaking change in Deephaven 41+**
 >
-> **Deephaven 0.40 and earlier**: Assumed all formulas required sequential processing by default.
+> **Deephaven 40 and earlier**: Assumed all formulas required sequential processing by default.
 >
-> **Deephaven 0.41 and later**: Assumes all formulas can run in parallel by default.
+> **Deephaven 41 and later**: Assumes all formulas can run in parallel by default.
 >
 > If your formula uses global state or depends on row order, you **must** mark it with `withSerial` or it will produce incorrect results.
 
@@ -495,13 +495,13 @@ result = source.update([colA, colB])
 Deephaven automatically parallelizes queries across all available CPU cores. Most code works correctly without changes.
 
 - Deephaven assumes all formulas can run in parallel by default.
-- Use [`withSerial`](../../reference/query-language/types/Selectable.md#withserial) when your code uses global variables, depends on row order, or calls functions that aren't safe to run from multiple threads.
+- Use [`withSerial`](../../reference/query-language/types/Selectable.md#withserial) when your code has side effects, depends on row order, or calls functions that aren't safe to run from multiple threads.
 - Use **barriers** when one operation must complete before another starts.
 - Both thread pools use all CPU cores by default.
 
 For a quick introduction, see the [crash course](../../getting-started/crash-course/parallelization.md).
 
-### Related documentation
+## Related documentation
 
 - [Update graph (table dependencies)](../dag.md)
 - [Multithreading: Synchronization, locks, and snapshots](./engine-locking.md)
