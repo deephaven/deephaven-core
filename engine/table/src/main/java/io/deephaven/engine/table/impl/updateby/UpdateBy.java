@@ -1071,8 +1071,10 @@ public abstract class UpdateBy {
                 AsyncClientErrorNotifier.reportError(error);
             }
         } catch (IOException e) {
-            throw new UncheckedTableException(
+            final UncheckedTableException uncheckedTableException = new UncheckedTableException(
                     "Exception while delivering async client error notification for " + sourceEntry, error);
+            uncheckedTableException.addSuppressed(e);
+            throw uncheckedTableException;
         }
     }
 

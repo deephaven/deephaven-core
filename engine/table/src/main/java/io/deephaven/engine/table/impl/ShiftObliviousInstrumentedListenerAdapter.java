@@ -95,7 +95,10 @@ public abstract class ShiftObliviousInstrumentedListenerAdapter extends ShiftObl
             try {
                 AsyncClientErrorNotifier.reportError(originalException);
             } catch (IOException e) {
-                throw new UncheckedTableException("Exception in " + sourceEntry.toString(), originalException);
+                final UncheckedTableException uncheckedTableException =
+                        new UncheckedTableException("Exception in " + sourceEntry.toString(), originalException);
+                uncheckedTableException.addSuppressed(e);
+                throw uncheckedTableException;
             }
         }
     }

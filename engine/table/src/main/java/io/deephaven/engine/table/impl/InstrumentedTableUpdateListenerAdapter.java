@@ -21,7 +21,6 @@ import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.io.IOException;
-import java.util.stream.LongStream;
 
 /**
  * This class is used for ShiftAwareListeners that represent "leaf" nodes in the update propagation tree.
@@ -43,7 +42,7 @@ public abstract class InstrumentedTableUpdateListenerAdapter extends Instrumente
      * object to consult, so we capture the systemic state of the thread that created us (see
      * {@link SystemicObjectTracker}).
      */
-    private boolean systemic = SystemicObjectTracker.isSystemicThread();
+    private volatile boolean systemic = SystemicObjectTracker.isSystemicThread();
 
     @ReferentialIntegrity
     protected final Table source;
@@ -103,7 +102,10 @@ public abstract class InstrumentedTableUpdateListenerAdapter extends Instrumente
             try {
                 AsyncClientErrorNotifier.reportError(originalException);
             } catch (IOException e) {
-                throw new UncheckedTableException("Exception in " + sourceEntry.toString(), originalException);
+                final UncheckedTableException uncheckedTableException =
+                        new UncheckedTableException("Exception in " + sourceEntry.toString(), originalException);
+                uncheckedTableException.addSuppressed(e);
+                throw uncheckedTableException;
             }
         }
     }
