@@ -46,4 +46,4 @@ def transform(obj: Optional[Any]) -> Optional[Any]:
     if obj is None:
         return None
     result = get_transformer().transform(javaify(obj))
-    return pythonify(result) if result is not None else None
+    return pythonify(result)
