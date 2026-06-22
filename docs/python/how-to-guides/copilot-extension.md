@@ -54,9 +54,9 @@ For Python:
 
 For Java/Groovy:
 
-- [Docker](/core/groovy/docs/tutorials/docker-install/)
-- [Build from source](/core/groovy/docs/how-to-guides/launch-build/)
-- [Production application](/core/groovy/docs/tutorials/production-application/)
+- [Docker](/core/docs/groovy/tutorials/docker-install/)
+- [Build from source](/core/docs/groovy/how-to-guides/launch-build/)
+- [Production application](/core/docs/groovy/tutorials/production-application/)
 
 3. Install the Deephaven GitHub Copilot extension
 
