@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.util;
 
@@ -87,7 +87,8 @@ public final class BridgingLogHandler extends Handler {
                     if (pending == null) {
                         pending = new ArrayList<>();
                         if (flushPendingOnShutdown) {
-                            Runtime.getRuntime().addShutdownHook(new Thread(BridgingLogHandler::pushPendingToStdout));
+                            Runtime.getRuntime().addShutdownHook(new Thread(BridgingLogHandler::pushPendingToStdout,
+                                    "BridgingLogHandlerShutdownHook"));
                         }
                     }
                     pending.add(new PendingLogRecord(

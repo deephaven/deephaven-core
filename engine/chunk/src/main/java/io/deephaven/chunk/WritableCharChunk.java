@@ -1,11 +1,12 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.chunk;
 
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.util.pools.MultiChunkPool;
 
+import io.deephaven.function.ArraySort;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
 
@@ -206,7 +207,7 @@ public class WritableCharChunk<ATTR extends Any> extends CharChunk<ATTR> impleme
     // region sort
     @Override
     public final void sort(int start, int length) {
-        WritableChunkUtils.sort(data, offset + start, offset + start + length);
+        ArraySort.sort(data, offset + start, offset + start + length);
     }
     // endregion sort
 

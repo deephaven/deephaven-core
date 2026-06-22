@@ -36,7 +36,7 @@ source = new_table(
 )
 ```
 
-NaN values can be detected using the `isNaN` filter.
+NaN values can be detected using the [`isNaN`](https://deephaven.io/core/javadoc/io/deephaven/function/Numeric.html#isNaN(byte)) filter.
 
 ```python test-set=1
 result = source.update(
@@ -51,4 +51,6 @@ result = source.update(
 
 - [Built-in query language constants](../../../how-to-guides/built-in-constants.md)
 - [How to handle null, infinity, and not-a-number values](../../../how-to-guides/null-inf-nan.md)
+- [How to use Deephaven's built-in query language functions](../../../how-to-guides/built-in-functions.md)
+- [`isNaN`](https://deephaven.io/core/javadoc/io/deephaven/function/Numeric.html#isNaN(byte))
 - [Nulls](./nulls.md)

@@ -11,7 +11,13 @@ import deephaven_core.proto.ticket_pb2
 import google.protobuf.descriptor
 import google.protobuf.internal.containers
 import google.protobuf.message
+import sys
 import typing
+
+if sys.version_info >= (3, 10):
+    import typing as typing_extensions
+else:
+    import typing_extensions
 
 DESCRIPTOR: google.protobuf.descriptor.FileDescriptor
 
@@ -27,10 +33,12 @@ class FetchObjectRequest(google.protobuf.message.Message):
         *,
         source_id: deephaven_core.proto.ticket_pb2.TypedTicket | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing.Literal["source_id", b"source_id"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing.Literal["source_id", b"source_id"]) -> None: ...
+    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["source_id", b"source_id"]
+    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
+    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["source_id", b"source_id"]
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
 
-global___FetchObjectRequest = FetchObjectRequest
+Global___FetchObjectRequest: typing_extensions.TypeAlias = FetchObjectRequest
 
 @typing.final
 class FetchObjectResponse(google.protobuf.message.Message):
@@ -50,9 +58,10 @@ class FetchObjectResponse(google.protobuf.message.Message):
         data: builtins.bytes = ...,
         typed_export_ids: collections.abc.Iterable[deephaven_core.proto.ticket_pb2.TypedTicket] | None = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing.Literal["data", b"data", "type", b"type", "typed_export_ids", b"typed_export_ids"]) -> None: ...
+    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["data", b"data", "type", b"type", "typed_export_ids", b"typed_export_ids"]
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
 
-global___FetchObjectResponse = FetchObjectResponse
+Global___FetchObjectResponse: typing_extensions.TypeAlias = FetchObjectResponse
 
 @typing.final
 class ConnectRequest(google.protobuf.message.Message):
@@ -71,10 +80,12 @@ class ConnectRequest(google.protobuf.message.Message):
         *,
         source_id: deephaven_core.proto.ticket_pb2.TypedTicket | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing.Literal["source_id", b"source_id"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing.Literal["source_id", b"source_id"]) -> None: ...
+    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["source_id", b"source_id"]
+    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
+    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["source_id", b"source_id"]
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
 
-global___ConnectRequest = ConnectRequest
+Global___ConnectRequest: typing_extensions.TypeAlias = ConnectRequest
 
 @typing.final
 class ClientData(google.protobuf.message.Message):
@@ -107,9 +118,10 @@ class ClientData(google.protobuf.message.Message):
         payload: builtins.bytes = ...,
         references: collections.abc.Iterable[deephaven_core.proto.ticket_pb2.TypedTicket] | None = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing.Literal["payload", b"payload", "references", b"references"]) -> None: ...
+    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["payload", b"payload", "references", b"references"]
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
 
-global___ClientData = ClientData
+Global___ClientData: typing_extensions.TypeAlias = ClientData
 
 @typing.final
 class ServerData(google.protobuf.message.Message):
@@ -142,9 +154,10 @@ class ServerData(google.protobuf.message.Message):
         payload: builtins.bytes = ...,
         exported_references: collections.abc.Iterable[deephaven_core.proto.ticket_pb2.TypedTicket] | None = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing.Literal["exported_references", b"exported_references", "payload", b"payload"]) -> None: ...
+    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["exported_references", b"exported_references", "payload", b"payload"]
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
 
-global___ServerData = ServerData
+Global___ServerData: typing_extensions.TypeAlias = ServerData
 
 @typing.final
 class StreamRequest(google.protobuf.message.Message):
@@ -157,26 +170,30 @@ class StreamRequest(google.protobuf.message.Message):
     CONNECT_FIELD_NUMBER: builtins.int
     DATA_FIELD_NUMBER: builtins.int
     @property
-    def connect(self) -> global___ConnectRequest:
+    def connect(self) -> Global___ConnectRequest:
         """Indicates that this is the first request of the stream, asking to connect to
         a specific object on the server.
         """
 
     @property
-    def data(self) -> global___ClientData:
+    def data(self) -> Global___ClientData:
         """Data to pass to the object on the server."""
 
     def __init__(
         self,
         *,
-        connect: global___ConnectRequest | None = ...,
-        data: global___ClientData | None = ...,
+        connect: Global___ConnectRequest | None = ...,
+        data: Global___ClientData | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing.Literal["connect", b"connect", "data", b"data", "message", b"message"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing.Literal["connect", b"connect", "data", b"data", "message", b"message"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing.Literal["message", b"message"]) -> typing.Literal["connect", "data"] | None: ...
+    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["connect", b"connect", "data", b"data", "message", b"message"]
+    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
+    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["connect", b"connect", "data", b"data", "message", b"message"]
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    _WhichOneofReturnType_message: typing_extensions.TypeAlias = typing.Literal["connect", "data"]
+    _WhichOneofArgType_message: typing_extensions.TypeAlias = typing.Literal["message", b"message"]
+    def WhichOneof(self, oneof_group: _WhichOneofArgType_message) -> _WhichOneofReturnType_message | None: ...
 
-global___StreamRequest = StreamRequest
+Global___StreamRequest: typing_extensions.TypeAlias = StreamRequest
 
 @typing.final
 class StreamResponse(google.protobuf.message.Message):
@@ -188,19 +205,23 @@ class StreamResponse(google.protobuf.message.Message):
 
     DATA_FIELD_NUMBER: builtins.int
     @property
-    def data(self) -> global___ServerData:
+    def data(self) -> Global___ServerData:
         """Data to pass to the client about the object on the server."""
 
     def __init__(
         self,
         *,
-        data: global___ServerData | None = ...,
+        data: Global___ServerData | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing.Literal["data", b"data", "message", b"message"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing.Literal["data", b"data", "message", b"message"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing.Literal["message", b"message"]) -> typing.Literal["data"] | None: ...
+    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["data", b"data", "message", b"message"]
+    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
+    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["data", b"data", "message", b"message"]
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    _WhichOneofReturnType_message: typing_extensions.TypeAlias = typing.Literal["data"]
+    _WhichOneofArgType_message: typing_extensions.TypeAlias = typing.Literal["message", b"message"]
+    def WhichOneof(self, oneof_group: _WhichOneofArgType_message) -> _WhichOneofReturnType_message | None: ...
 
-global___StreamResponse = StreamResponse
+Global___StreamResponse: typing_extensions.TypeAlias = StreamResponse
 
 @typing.final
 class BrowserNextResponse(google.protobuf.message.Message):
@@ -210,4 +231,4 @@ class BrowserNextResponse(google.protobuf.message.Message):
         self,
     ) -> None: ...
 
-global___BrowserNextResponse = BrowserNextResponse
+Global___BrowserNextResponse: typing_extensions.TypeAlias = BrowserNextResponse

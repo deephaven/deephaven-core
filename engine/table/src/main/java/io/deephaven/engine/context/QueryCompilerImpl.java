@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.context;
 
@@ -17,6 +17,7 @@ import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.table.impl.util.OperationInitializerJobScheduler;
 import io.deephaven.internal.log.LoggerFactory;
+import io.deephaven.io.log.LogEntry;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.ByteUtils;
@@ -72,6 +73,41 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
             Configuration.getInstance().getLongWithDefault(CODEGEN_LOOP_DELAY_PROP, CODEGEN_LOOP_DELAY_MS_DEFAULT);
 
     private static boolean logEnabled = Configuration.getInstance().getBoolean("QueryCompiler.logEnabledDefault");
+
+    private static final String TRACE_PREFIX_PROPERTY = "QueryCompiler.tracePrefixes";
+    private static final String TRACE_EXCLUDE_PREFIX_PROPERTY = "QueryCompiler.excludeTracePrefixes";
+    private static final Set<String> TRACE_INCLUDE_PREFIXES = computeTracePackages(TRACE_PREFIX_PROPERTY);
+    private static final Set<String> TRACE_EXCLUDE_PREFIXES = computeTracePackages(TRACE_EXCLUDE_PREFIX_PROPERTY);
+
+    private static Set<String> computeTracePackages(final String property) {
+        if (!Configuration.getInstance().hasProperty(property)) {
+            return Collections.emptySet();
+        }
+        final String propertyValue = Configuration.getInstance().getProperty(property);
+        return Arrays.stream(propertyValue.split(",")).map(String::trim).collect(Collectors.toSet());
+    }
+
+    /**
+     * Should this class (or package) be traced? Even with only trace logging, we may not want to flood the log with
+     * "uninteresting" classes, so we provide an inclusion and an exclusion list.
+     *
+     * <p>
+     * Excludes take precedence over includes.
+     * </p>
+     *
+     * @param className the class/package name to check against our trace prefixes
+     * @return if this class/package should be traced
+     */
+    private static boolean shouldTrace(String className) {
+        if (!log.isTraceEnabled()) {
+            return false;
+        }
+        if (TRACE_EXCLUDE_PREFIXES.stream().anyMatch(className::startsWith)) {
+            return false;
+        }
+        return TRACE_INCLUDE_PREFIXES.stream().anyMatch(className::startsWith);
+    }
+
 
     private static JavaCompiler compiler;
     private static final AtomicReference<JavaFileManager> fileManagerCache = new AtomicReference<>();
@@ -155,12 +191,18 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
             throw new UncheckedDeephavenException(e);
         }
         this.ucl = new WritableURLClassLoader(urls, parentClassLoader);
+        log.trace().append("Class destination is ").append(classDestination.toString()).endl();
 
         if (classDestinationIsAlsoClassSource) {
             addClassSource(classDestination);
         }
 
         this.classNamesForAnnotationProcessing = classNamesForAnnotationProcessing;
+
+        if (log.isTraceEnabled()) {
+            log.trace().append("QueryCompiler Class Path: ").append(getClassPath()).append(File.pathSeparator)
+                    .append(getJavaClassPath()).endl();
+        }
     }
 
     @Override
@@ -206,7 +248,13 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
         final File destinationFile = new File(destinationDirectory,
                 className.replace('.', File.separatorChar) + JavaFileObject.Kind.CLASS.extension);
 
+        final boolean shouldTrace = shouldTrace(className);
+
         if (destinationFile.exists()) {
+            if (shouldTrace) {
+                log.trace().append("Destination class file already exists ").append(destinationFile.toString()).endl();
+            }
+
             final byte[] existingBytes = Files.readAllBytes(destinationFile.toPath());
             if (Arrays.equals(existingBytes, data)) {
                 if (message == null) {
@@ -229,6 +277,9 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
                     throw new IOException("Could not delete existing class file: " + destinationFile);
                 }
             }
+        } else if (shouldTrace) {
+            log.trace().append("Destination class file does not already exist ").append(destinationFile.toString())
+                    .endl();
         }
 
         final File parentDir = destinationFile.getParentFile();
@@ -243,6 +294,10 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
         final FileOutputStream fileOutStream = new FileOutputStream(destinationFile);
         byteOutStream.writeTo(fileOutStream);
         fileOutStream.close();
+
+        if (shouldTrace) {
+            log.trace().append("Wrote destination class file ").append(destinationFile.toString()).endl();
+        }
     }
 
     @Override
@@ -254,6 +309,22 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
         }
         if (requests.length != resolvers.length) {
             throw new IllegalArgumentException("Requests and resolvers must be the same length");
+        }
+
+        final boolean shouldTrace =
+                log.isTraceEnabled() && Arrays.stream(requests).map(QueryCompilerRequest::packageNameRoot)
+                        .anyMatch(QueryCompilerImpl::shouldTrace);
+        if (shouldTrace) {
+            log.trace().append("Compilation request for ").append((logOutput, queryCompilerRequests) -> {
+                logOutput.append("[");
+                for (int ii = 0; ii < queryCompilerRequests.length; ++ii) {
+                    if (ii > 0) {
+                        logOutput.append(", ");
+                    }
+                    requests[ii].appendSummary(logOutput);
+                }
+                logOutput.append("]");
+            }, requests).endl();
         }
 
         // noinspection unchecked
@@ -273,6 +344,9 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
                     newRequests.add(request);
                     newResolvers.add(resolver);
                     future = resolver.getFuture();
+                } else if (shouldTrace) {
+                    log.trace().append("Found existing future in knownClasses for ").append(request.className())
+                            .append(" (done=").append(future.isDone()).append(")").endl();
                 }
                 allFutures[ii] = future;
             }
@@ -332,28 +406,52 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
 
             @Override
             protected Class<?> findClass(String name) throws ClassNotFoundException {
+                final boolean shouldTrace = shouldTrace(name);
+
                 // If we have a parameter that uses this class, return it
                 final Class<?> paramClass = parameterClasses.get(name);
                 if (paramClass != null) {
+                    if (shouldTrace) {
+                        log.trace().append("findClass(").append(name).append("): matched parameter class").endl();
+                    }
                     return paramClass;
                 }
 
                 // Unless we are looking for a formula or Groovy class, we should use the default behavior
                 if (!isFormulaClass(name)) {
+                    if (shouldTrace) {
+                        log.trace().append("findClass(").append(name)
+                                .append("): not a formula class, delegating to super.findClass").endl();
+                    }
                     return super.findClass(name);
                 }
 
                 // if it is a groovy class, always try to use the instance in the shell
                 if (name.startsWith(DYNAMIC_CLASS_PREFIX)) {
                     try {
-                        return ucl.getParent().loadClass(name);
+                        final Class<?> dynamicResult = ucl.getParent().loadClass(name);
+                        if (shouldTrace) {
+                            log.trace().append("findClass(").append(name)
+                                    .append("): loaded dynamic class from parent of WritableURLClassLoader").endl();
+                        }
+                        return dynamicResult;
                     } catch (final ClassNotFoundException ignored) {
+                        if (shouldTrace) {
+                            log.trace().append("findClass(").append(name)
+                                    .append("): dynamic class not found in parent of WritableURLClassLoader,"
+                                            + " falling through")
+                                    .endl();
+                        }
                         // we'll try to load it otherwise
                     }
                 }
 
                 // We've already not found this class, so we should not try to search again
                 if (missingClasses.contains(name)) {
+                    if (shouldTrace) {
+                        log.trace().append("findClass(").append(name)
+                                .append("): previously cached as missing, delegating to super.findClass").endl();
+                    }
                     return super.findClass(name);
                 }
 
@@ -361,8 +459,17 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
                 try {
                     bytes = loadClassData(name);
                 } catch (IOException ioe) {
+                    if (shouldTrace) {
+                        log.trace().append("findClass(").append(name)
+                                .append("): loadClassData failed (").append(ioe.getMessage())
+                                .append("), caching as missing and delegating to super.loadClass").endl();
+                    }
                     missingClasses.add(name);
                     return super.loadClass(name);
+                }
+                if (shouldTrace) {
+                    log.trace().append("findClass(").append(name).append("): defining class from ")
+                            .append(bytes.length).append(" bytes").endl();
                 }
                 return defineClass(name, bytes, 0, bytes.length);
             }
@@ -381,20 +488,42 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
             }
 
             private byte[] loadClassData(String name) throws IOException {
+                final boolean shouldTrace = shouldTrace(name);
+
                 final File destFile = new File(classDestination,
                         name.replace('.', File.separatorChar) + JavaFileObject.Kind.CLASS.extension);
                 if (destFile.exists()) {
+                    if (shouldTrace) {
+                        log.trace().append("loadClassData(").append(name).append("): found at ")
+                                .append(destFile.toString()).endl();
+                    }
                     return Files.readAllBytes(destFile.toPath());
+                }
+                if (shouldTrace) {
+                    log.trace().append("loadClassData(").append(name).append("): not present at ")
+                            .append(destFile.toString()).endl();
                 }
 
                 for (File location : additionalClassLocations) {
                     final File checkFile = new File(location,
                             name.replace('.', File.separatorChar) + JavaFileObject.Kind.CLASS.extension);
                     if (checkFile.exists()) {
+                        if (shouldTrace) {
+                            log.trace().append("loadClassData(").append(name).append("): found at ")
+                                    .append(checkFile.toString()).endl();
+                        }
                         return Files.readAllBytes(checkFile.toPath());
+                    }
+                    if (shouldTrace) {
+                        log.trace().append("loadClassData(").append(name).append("): not present at ")
+                                .append(checkFile.toString()).endl();
                     }
                 }
 
+                if (shouldTrace) {
+                    log.trace().append("loadClassData(").append(name)
+                            .append("): not found in any class location").endl();
+                }
                 throw new FileNotFoundException(name);
             }
         };
@@ -407,16 +536,41 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
 
         @Override
         protected synchronized Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
+            final boolean shouldTrace = shouldTrace(name);
+            final int loaderId = System.identityHashCode(this);
+
             Class<?> clazz = findLoadedClass(name);
             if (clazz != null) {
+                if (shouldTrace) {
+                    log.trace().append("WritableURLClassLoader@").append(loaderId)
+                            .append(".loadClass(").append(name).append(") returned from findLoadedClass").endl();
+                }
                 return clazz;
             }
 
             try {
                 clazz = findClass(name);
+                if (shouldTrace) {
+                    log.trace().append("WritableURLClassLoader@").append(loaderId)
+                            .append(".loadClass(").append(name).append(") returned from findClass").endl();
+                }
             } catch (ClassNotFoundException e) {
                 if (getParent() != null) {
+                    if (shouldTrace) {
+                        log.trace().append("WritableURLClassLoader@").append(loaderId)
+                                .append(".loadClass(").append(name).append(") delegating to parent").endl();
+                    }
                     clazz = getParent().loadClass(name);
+                    if (shouldTrace) {
+                        log.trace().append("WritableURLClassLoader@").append(loaderId)
+                                .append(".loadClass(").append(name).append(") parent returned class").endl();
+                    }
+                } else {
+                    if (shouldTrace) {
+                        log.trace().append("WritableURLClassLoader@").append(loaderId)
+                                .append(".loadClass(").append(name)
+                                .append(") not found by findClass and no parent loader; returning null").endl();
+                    }
                 }
             }
 
@@ -541,11 +695,18 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
                         break; // we'll try to compile it
                     }
 
+                    final boolean shouldTrace = shouldTrace(state.fqClassName);
                     if (completeIfResultMatchesQueryCompilerRequest(state.packageName, request, resolvers.get(ii),
                             result)) {
+                        if (shouldTrace) {
+                            log.trace().append("Successfully found existing class for ").append(state.fqClassName)
+                                    .endl();
+                        }
                         state.complete = true;
                         ++numComplete;
                         break;
+                    } else if (shouldTrace) {
+                        log.trace().append("Existing class did not match for ").append(state.fqClassName).endl();
                     }
                 }
             }
@@ -592,15 +753,34 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
                 // B. Lost a race to another process on the same file system which is compiling the identical formula
                 // C. Lost a race to another process on the same file system compiling a different formula that collides
 
+                final boolean shouldTrace = shouldTrace(state.fqClassName);
                 Class<?> clazz = tryLoadClassByFqName(state.fqClassName, request.parameterClasses());
-                try {
-                    while (clazz == null && System.currentTimeMillis() < deadline) {
-                        // noinspection BusyWait
-                        Thread.sleep(CODEGEN_LOOP_DELAY_MS);
-                        clazz = tryLoadClassByFqName(state.fqClassName, request.parameterClasses());
+                if (clazz == null) {
+                    final long waitStart = System.currentTimeMillis();
+                    if (shouldTrace) {
+                        log.trace().append("Class not loadable immediately after compile;"
+                                + " entering retry loop for ").append(state.fqClassName).endl();
                     }
-                } catch (final InterruptedException ie) {
-                    throw new UncheckedDeephavenException("Interrupted while waiting for codegen", ie);
+                    try {
+                        while (clazz == null && System.currentTimeMillis() < deadline) {
+                            // noinspection BusyWait
+                            Thread.sleep(CODEGEN_LOOP_DELAY_MS);
+                            clazz = tryLoadClassByFqName(state.fqClassName, request.parameterClasses());
+                        }
+                    } catch (final InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        throw new UncheckedDeephavenException("Interrupted while waiting for codegen", ie);
+                    }
+                    if (shouldTrace) {
+                        final long waited = System.currentTimeMillis() - waitStart;
+                        if (clazz != null) {
+                            log.trace().append("Class loaded after waiting ").append(waited)
+                                    .append(" ms: ").append(state.fqClassName).endl();
+                        } else {
+                            log.trace().append("Retry loop timed out after ").append(waited)
+                                    .append(" ms: ").append(state.fqClassName).endl();
+                        }
+                    }
                 }
 
                 // However, regardless of A-C, there will be *some* class being found
@@ -611,8 +791,13 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
                 }
 
                 if (completeIfResultMatchesQueryCompilerRequest(state.packageName, request, resolver, clazz)) {
+                    if (shouldTrace) {
+                        log.trace().append("Loaded matching compiled class ").append(state.fqClassName).endl();
+                    }
                     state.complete = true;
                     ++numComplete;
+                } else if (shouldTrace) {
+                    log.trace().append("Existing class did not match for ").append(state.fqClassName).endl();
                 }
             }
         }
@@ -625,6 +810,14 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
             final Class<?> result) {
         final String identifyingFieldValue = loadIdentifyingField(result);
         if (!request.classBody().equals(identifyingFieldValue)) {
+            final LogEntry logOutput = log.trace().append("Hash collision for ").append(result.getName())
+                    .append(": loaded identifying field length=");
+            if (identifyingFieldValue == null) {
+                logOutput.append("null");
+            } else {
+                logOutput.append(identifyingFieldValue.length());
+            }
+            logOutput.append(", expected class body length=").append(request.classBody().length()).endl();
             return false;
         }
 
@@ -650,9 +843,18 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
     }
 
     private Class<?> tryLoadClassByFqName(String fqClassName, Map<String, Class<?>> parameterClasses) {
+        final boolean shouldTrace = shouldTrace(fqClassName);
         try {
+            if (shouldTrace) {
+                log.trace().append("Attempting to load ").append(fqClassName)
+                        .append(" with parameter classes ")
+                        .append(LogOutput.STRING_COLLECTION_FORMATTER, parameterClasses.keySet()).endl();
+            }
             return getClassLoaderForFormula(parameterClasses).loadClass(fqClassName);
         } catch (ClassNotFoundException cnfe) {
+            if (shouldTrace) {
+                log.trace().append("Class not found for ").append(fqClassName).endl();
+            }
             return null;
         }
     }
@@ -786,6 +988,8 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
 
             if (logEnabled) {
                 log.info().append("Generating code ").append(finalCode).endl();
+            } else if (shouldTrace(fqClassName)) {
+                log.trace().append("Generating code for ").append(fqClassName).endl();
             }
 
             splitPackageName = packageName.split("\\.");
@@ -860,6 +1064,10 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
             numTasks = (requests.size() + requestsPerTask - 1) / requestsPerTask;
             jobScheduler = new OperationInitializerJobScheduler();
         }
+
+        log.trace().append("maybeCreateClasses: ").append(requests.size()).append(" requests, ")
+                .append(numTasks).append(" tasks, ").append(requestsPerTask)
+                .append(" requests per task, tempDir=").append(tempDirAsString).endl();
 
         final JavaFileManager fileManager = acquireFileManager();
         final AtomicReference<RuntimeException> exception = new AtomicReference<>();
@@ -994,6 +1202,11 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
                         .collect(Collectors.toList()))
                 .call();
 
+        final String compilerOutputText = compilerOutput.toString();
+        if (!compilerOutputText.isEmpty()) {
+            log.trace().append("Compiler output:\n").append(compilerOutputText).endl();
+        }
+
         if (!globalFailures.isEmpty()) {
             final RuntimeException e0 = globalFailures.get(0);
             for (int ii = 1; ii < globalFailures.size(); ++ii) {
@@ -1014,6 +1227,10 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
             final Path destDir = Paths.get(rootPathAsString, request.splitPackageName);
             try {
                 Files.move(srcDir, destDir, StandardCopyOption.ATOMIC_MOVE);
+                if (shouldTrace(request.fqClassName)) {
+                    log.trace().append("Successfully moved ").append(srcDir.toString()).append(" to ")
+                            .append(destDir.toString()).endl();
+                }
             } catch (IOException ioe) {
                 // The name "isDone" might be misleading here. We haven't called "complete" on the successful
                 // futures yet, so the only way they would be "done" at this point is if they completed

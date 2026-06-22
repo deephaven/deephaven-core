@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CharacterArraySource and run "./gradlew replicateSourcesAndChunks" to regenerate
@@ -7,7 +7,7 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.sources;
 
-import gnu.trove.list.array.TIntArrayList;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
@@ -41,7 +41,7 @@ import static io.deephaven.util.type.TypeUtils.unbox;
  */
 public class ByteArraySource extends ArraySourceHelper<Byte, byte[]>
         implements MutableColumnSourceGetDefaults.ForByte /* MIXIN_IMPLS */ {
-    private static final SoftRecycler<byte[]> recycler = new SoftRecycler<>(DEFAULT_RECYCLER_CAPACITY,
+    private static final SoftRecycler<byte[]> recycler = new SoftRecycler<>(ArrayColumnSourceConfiguration.BYTE_RECYCLER_CAPACITY,
             () -> new byte[BLOCK_SIZE], null);
 
     private byte[][] blocks;
@@ -104,7 +104,7 @@ public class ByteArraySource extends ArraySourceHelper<Byte, byte[]>
                     prevBlocks[block] = recycler.borrowItem();
                     prevInUse[block] = inUse = inUseRecycler.borrowItem();
                     if (prevAllocated == null) {
-                        prevAllocated = new TIntArrayList();
+                        prevAllocated = new IntArrayList();
                     }
                     prevAllocated.add(block);
                 } else {

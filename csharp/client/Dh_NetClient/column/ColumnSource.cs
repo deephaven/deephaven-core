@@ -1,5 +1,5 @@
 ﻿//
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 global using ICharColumnSource = Deephaven.Dh_NetClient.IColumnSource<char>;
 global using IByteColumnSource = Deephaven.Dh_NetClient.IColumnSource<sbyte>;

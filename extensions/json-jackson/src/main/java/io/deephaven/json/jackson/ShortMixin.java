@@ -1,14 +1,13 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.json.jackson;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
-import io.deephaven.base.MathUtil;
+import io.deephaven.base.ArrayUtil;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableShortChunk;
-import io.deephaven.chunk.sized.SizedShortChunk;
 import io.deephaven.json.ShortValue;
 import io.deephaven.qst.type.Type;
 import io.deephaven.util.QueryConstants;
@@ -68,7 +67,7 @@ final class ShortMixin extends Mixin<ShortValue> {
     }
 
     final class ShortRepeaterImpl extends RepeaterProcessorBase<short[]> {
-        private final SizedShortChunk<?> chunk = new SizedShortChunk<>(0);
+        private short[] buffer = new short[0];
 
         public ShortRepeaterImpl() {
             super(null, null, Type.shortType().arrayType());
@@ -76,24 +75,17 @@ final class ShortMixin extends Mixin<ShortValue> {
 
         @Override
         public void processElementImpl(JsonParser parser, int index) throws IOException {
-            final int newSize = index + 1;
-            final WritableShortChunk<?> chunk = this.chunk.ensureCapacityPreserve(MathUtil.roundUpArraySize(newSize));
-            chunk.set(index, ShortMixin.this.parseValue(parser));
-            chunk.setSize(newSize);
+            buffer = ArrayUtil.put(buffer, index, parseValue(parser));
         }
 
         @Override
         public void processElementMissingImpl(JsonParser parser, int index) throws IOException {
-            final int newSize = index + 1;
-            final WritableShortChunk<?> chunk = this.chunk.ensureCapacityPreserve(MathUtil.roundUpArraySize(newSize));
-            chunk.set(index, ShortMixin.this.parseMissing(parser));
-            chunk.setSize(newSize);
+            buffer = ArrayUtil.put(buffer, index, parseMissing(parser));
         }
 
         @Override
         public short[] doneImpl(JsonParser parser, int length) {
-            final WritableShortChunk<?> chunk = this.chunk.get();
-            return Arrays.copyOfRange(chunk.array(), chunk.arrayOffset(), chunk.arrayOffset() + length);
+            return Arrays.copyOfRange(buffer, 0, length);
         }
     }
 

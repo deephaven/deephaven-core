@@ -1,16 +1,21 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.configuration.Configuration;
+import io.deephaven.io.log.LogEntry;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.util.annotations.TestUseOnly;
+import io.deephaven.util.annotations.VisibleForTesting;
 
+import java.lang.management.BufferPoolMXBean;
 import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
 import java.text.DecimalFormat;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.List;
 
 /**
@@ -43,6 +48,8 @@ public class RuntimeMemory {
     private final int cacheInterval;
     /** How long between logging Jvm Heap lines (in ms). */
     private final int logInterval;
+    /** Should we display the pools as part of our periodic log line. */
+    private final boolean displayPools;
 
     private static class Snapshot {
         /**
@@ -91,6 +98,7 @@ public class RuntimeMemory {
         this.runtime = Runtime.getRuntime();
         logInterval = Configuration.getInstance().getIntegerWithDefault("RuntimeMemory.logIntervalMillis", 60 * 1000);
         cacheInterval = Configuration.getInstance().getIntegerWithDefault("RuntimeMemory.cacheIntervalMillis", 1);
+        displayPools = Configuration.getInstance().getBooleanWithDefault("RuntimeMemory.displayPools", true);
         maxMemory = runtime.maxMemory();
 
         commaFormat = new DecimalFormat();
@@ -183,6 +191,10 @@ public class RuntimeMemory {
      */
     public void read(final Sample buf) {
         final long now = System.currentTimeMillis();
+        readInternal(now, buf);
+    }
+
+    private long readInternal(final long now, final Sample buf) {
         Snapshot snapshot = currSnapshot;
         if (now >= snapshot.nextCheck) {
             synchronized (this) {
@@ -211,10 +223,34 @@ public class RuntimeMemory {
                     log.info().append("Jvm Heap: ").append(commaFormat.format(buf.freeMemory)).append(" Free / ")
                             .append(commaFormat.format(buf.totalMemory)).append(" Total (")
                             .append(commaFormat.format(maxMemory)).append(" Max)").endl();
+                    if (displayPools) {
+                        final List<BufferPoolMXBean> pools =
+                                ManagementFactory.getPlatformMXBeans(BufferPoolMXBean.class);
+                        final LogEntry entry = log.info().append("Jvm Memory Pools: ");
+                        char delim = '[';
+                        boolean foundPool = false;
+                        for (final BufferPoolMXBean pool : pools) {
+                            if (pool.getMemoryUsed() == 0) {
+                                continue;
+                            }
+                            entry.append(delim).append(pool.getName()).append(", count=").append(pool.getCount())
+                                    .append(", ").append(commaFormat.format(pool.getMemoryUsed())).append(" Used / ")
+                                    .append(commaFormat.format(pool.getTotalCapacity())).append(" Total");
+                            delim = ',';
+                            foundPool = true;
+                        }
+                        if (foundPool) {
+                            entry.append("]");
+                        } else {
+                            entry.append("no active pools");
+                        }
+                        entry.endl();
+                    }
                     currSnapshot.nextLog = now + logInterval;
                 }
             }
         }
+        return snapshot.nextCheck;
     }
 
     /**
@@ -224,6 +260,31 @@ public class RuntimeMemory {
      */
     public void readOnly(final Sample buf) {
         currSnapshot.readInto(buf);
+    }
+
+    private static final ThreadLocal<Deque<PooledSample>> pooledSample = ThreadLocal.withInitial(ArrayDeque::new);
+
+    public static class PooledSample extends Sample {
+        @VisibleForTesting
+        long nextCheck;
+    }
+
+    public PooledSample readPooledSample() {
+        Deque<PooledSample> pooledSamples = pooledSample.get();
+
+        PooledSample result = pooledSamples.pollLast();
+        if (result == null) {
+            result = new PooledSample();
+        }
+        final long now = System.currentTimeMillis();
+        if (now >= result.nextCheck) {
+            result.nextCheck = readInternal(now, result);
+        }
+        return result;
+    }
+
+    public void returnPooledSample(PooledSample sample) {
+        pooledSample.get().add(sample);
     }
 
     /**

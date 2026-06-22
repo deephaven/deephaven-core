@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl;
 
@@ -33,10 +33,10 @@ public class PushdownResultTest {
     }
 
     @Test
-    public void allNoMatch() {
+    public void noneMatch() {
         try (
                 final WritableRowSet selection = RowSetFactory.fromRange(0, 29);
-                final PushdownResult r = PushdownResult.allNoMatch(selection)) {
+                final PushdownResult r = PushdownResult.noneMatch(selection)) {
             assertThat(r.match().isEmpty()).isTrue();
             assertThat(r.maybeMatch().isEmpty()).isTrue();
         }

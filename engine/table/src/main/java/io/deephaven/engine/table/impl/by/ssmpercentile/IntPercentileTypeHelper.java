@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CharPercentileTypeHelper and run "./gradlew replicateSegmentedSortedMultiset" to regenerate
@@ -14,7 +14,6 @@ import io.deephaven.util.compare.IntComparisons;
 import io.deephaven.engine.table.impl.sources.IntegerArraySource;
 import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.Chunk;
-import io.deephaven.chunk.IntChunk;
 import io.deephaven.engine.table.impl.ssms.IntSegmentedSortedMultiset;
 import io.deephaven.engine.table.impl.ssms.SegmentedSortedMultiSet;
 import io.deephaven.util.mutable.MutableInt;

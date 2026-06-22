@@ -8,12 +8,12 @@ Kafka topics often contain data that does not fit neatly into Deephaven's built-
 This guide shows how to:
 
 - **Understand when you need a custom parser**.
-- **Consume raw bytes from Kafka into a Deephaven table**.
+- **Consume raw bytes or structured data from Kafka into a Deephaven table**.
 - **Apply a Python function to parse those bytes into a rich object**.
 - **Project that object into regular Deephaven columns**.
 
 > [!NOTE]
-> If you are new to Kafka in Deephaven, read [Connect to a Kafka stream](./kafka-stream.md) and [Kafka basic terminology](../../conceptual/kafka-in-deephaven.md) first.
+> If you are new to Kafka in Deephaven, read [Connect to a Kafka stream](./kafka-stream.md) and [Kafka basic terminology](../../conceptual/kafka-basic-terms.md) first.
 
 ## When to use a custom parser
 
@@ -37,7 +37,7 @@ In this guide, you will:
 - Kafka is running with a topic you can read from.
 - Deephaven is running with access to that Kafka cluster.
 - You are comfortable with basic Python and functions.
-- You understand the basics of [Kafka in Deephaven](../../conceptual/kafka-in-deephaven.md).
+- You understand the basics of [Kafka in Deephaven](../../conceptual/kafka-basic-terms.md).
 
 ## Step 1: Consume raw bytes from Kafka
 
@@ -153,6 +153,6 @@ For example, the [`consume`](../../reference/data-import-export/Kafka/consume.md
 ## Related documentation
 
 - [Connect to a Kafka stream](./kafka-stream.md).
-- [Kafka in Deephaven](../../conceptual/kafka-in-deephaven.md).
+- [Kafka in Deephaven](../../conceptual/kafka-basic-terms.md).
 - [`consume`](../../reference/data-import-export/Kafka/consume.md).
 - [Table operations `update`](../../reference/table-operations/select/update.md).

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api.barrage;
 
@@ -279,10 +279,11 @@ public class WebChunkReaderFactory implements ChunkReader.Factory {
                                     outChunk, outOffset, totalRows);
                 }
 
-                // noinspection DataFlowIssue,ConstantValue
-                final BarrageTypeInfo<Field> componentTypeInfo = new BarrageTypeInfo<>(
-                        componentType,
-                        componentType == null ? null : componentType.getComponentType(),
+                // Disregard the actual component type and request one that can hold Object, as all transformers
+                // will yield some kind of reference type since this is JS.
+                final BarrageTypeInfo<Field> componentTypeInfo = BarrageTypeInfo.make(
+                        Object.class,
+                        null,
                         typeInfo.arrowField().children(0));
                 final ChunkType chunkType = ListChunkReader.getChunkTypeFor(componentTypeInfo.type());
                 final ExpansionKernel<?> kernel =

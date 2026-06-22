@@ -82,7 +82,7 @@ result = arrayTable.ungroup("Y")
 
 ## Related documentation
 
-- [Create a new table](../../../how-to-guides/new-and-empty-table.md#newtable)
+- [How to create static tables](../../../how-to-guides/new-and-empty-table.md)
 - [How to group and ungroup data](../../../how-to-guides/grouping-data.md)
 - [How to perform dedicated aggregations](../../../how-to-guides/dedicated-aggregations.md)
 - [`groupBy``](./groupBy.md)

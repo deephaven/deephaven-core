@@ -5,7 +5,7 @@ sidebar_label: Adjust heap size
 
 When launching Deephaven, you may have very specific and perhaps large data needs that require fine-tuned resource management, such as adjusting your heap size (memory).
 
-If you [launch Deephaven from pre-built images](../tutorials/docker-install.md) or [build and launch Deephaven from source code](../how-to-guides/launch-build.md), you use [Docker](https://www.docker.com/) to facilitate your containers and resource management. Depending on the applications and data you run, it may be necessary to change the amount of heap available to each of the containers in the system.
+If you [launch Deephaven from pre-built images](../getting-started/docker-install.md) or [build and launch Deephaven from source code](../getting-started/launch-build.md), you use [Docker](https://www.docker.com/) to facilitate your containers and resource management. Depending on the applications and data you run, it may be necessary to change the amount of heap available to each of the containers in the system.
 
 ## See memory settings
 
@@ -34,21 +34,19 @@ The column `MEM USAGE / LIMIT` includes information like `20.00MiB / 5.804GiB`, 
 
 ## Change default heap size
 
-The `JAVA_TOOL_OPTIONS=-Xmx4g` parameter in the `grpc-api` container `environment` controls the amount of memory available to Deephaven. By default, this is set to 4GB of Docker RAM.
+The `START_OPTS=-Xmx4g` parameter in the `server` container `environment` controls the amount of memory available to Deephaven. By default, this is set to 4GB of Docker RAM.
 
 To change this setting, nagivate to your Docker-Compose YAML file located in your Deephaven deployment directory. See our guide [Docker data volumes](../conceptual/docker-data-volumes.md) for more information.
 
 The Docker-Compose YAML file your installation uses depends on how you launch Deephaven:
 
-- If you [launch Deephaven from pre-built images](../tutorials/docker-install.md), your Docker Compose file is called `docker-compose.yml`.
+- If you [launch Deephaven from pre-built images](../getting-started/docker-install.md), your Docker Compose file is called `docker-compose.yml`.
 
-- If you [build and launch Deephaven from source code](../how-to-guides/launch-build.md), your Docker Compose file is called `docker-compose-common.yml`.
+- If you [build and launch Deephaven from source code](../getting-started/launch-build.md), your Docker Compose file is called `docker-compose-common.yml`.
 
 Open the Docker-Compose YAML file with the text editor of your choice. You will see several containers listed separately under `services`. Each container can be fine-tuned.
 
-![A docker-compose file](../assets/how-to/heap.png)
-
-For instance, to use up to 8GB of RAM, change the first parameter to `JAVA_TOOL_OPTIONS=-Xmx8g`. When the `-Xmx` parameters are not set, the JVM sizes the heap based on the system specifications.
+For instance, to use up to 8GB of RAM, change the first parameter to `START_OPTS=-Xmx8g`. When the `-Xmx` parameters are not set, the JVM sizes the heap based on the system specifications.
 
 > [!NOTE]
 > If you are using Docker Desktop, this value is also limited by what is specified in your Docker `Preferences->Resources->Memory` setting.
@@ -79,6 +77,6 @@ cpus: 4.0
 
 ## Related documentation
 
-- [Quick start](../tutorials/docker-install.md)
-- [Build and launch Deephaven from source code](../how-to-guides/launch-build.md)
+- [Install guide for Docker](../getting-started/docker-install.md)
+- [Build and launch Deephaven from source code](../getting-started/launch-build.md)
 - [Access your file system with Docker data volumes](../conceptual/docker-data-volumes.md)

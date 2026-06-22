@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 #
 
 import unittest
@@ -84,7 +84,11 @@ class PandasTestCase(BaseTestCase):
                 if col.data_type.np_type != np.str_:
                     self.assertEqual(col.data_type.np_type, df_series[i].dtype)
                 else:
-                    self.assertEqual(object, df_series[i].dtype)
+                    # in pandas 3.0.0+, for string data, the default inferred type is now StringDtype instead of np.object_
+                    self.assertIn(
+                        df_series[i].dtype,
+                        (np.object_, pd.StringDtype(na_value=np.nan)),
+                    )
                 self.assertEqual(col.name, df_series[i].name)
 
     def test_to_pandas_remaps(self):

@@ -3,9 +3,9 @@ title: Barrage metrics for performance monitoring
 sidebar_label: Barrage metrics
 ---
 
-This guide covers what Barrage statistics are recorded and how to access them. Barrage is the name of the IPC table transport used by Deephaven.
+Barrage is the name of Deephaven's IPC table transport. This guide explains what statistics are recorded and how to access them.
 
-## Accessing Barrage metrics tables
+## Access Barrage metrics tables
 
 You can access these tables as follows:
 
@@ -54,7 +54,7 @@ Snapshot statistics are presented once per request.
 | WriteMillis    | The time it took to write the snapshot                                  |
 | WriteMegabits  | The payload size of the snapshot in megabits                            |
 
-## Identifying a table
+## Identify a table
 
 Tables are identified by their `TableId` and `TableKey`. The `TableId` is determined by the source table's [`System.identityHashCode()`](https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/System.html#identityHashCode(java.lang.Object)). The `TableKey` defaults to [`Table.getDescription()`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/Table.html#getDescription()) but can be overridden by setting the table attribute via [`withAttributes`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/AttributeMap.html#withAttributes(java.util.Map)).
 

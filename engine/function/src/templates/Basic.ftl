@@ -9,9 +9,14 @@ import io.deephaven.engine.primitive.iterator.*;
 import io.deephaven.util.annotations.UserInvocationPermitted;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.util.QueryConstants;
-import gnu.trove.list.array.*;
-import gnu.trove.set.*;
-import gnu.trove.set.hash.*;
+import it.unimi.dsi.fastutil.bytes.*;
+import it.unimi.dsi.fastutil.chars.*;
+import it.unimi.dsi.fastutil.doubles.*;
+import it.unimi.dsi.fastutil.floats.*;
+import it.unimi.dsi.fastutil.ints.*;
+import it.unimi.dsi.fastutil.longs.*;
+import it.unimi.dsi.fastutil.objects.*;
+import it.unimi.dsi.fastutil.shorts.*;
 import org.apache.commons.lang3.ArrayUtils;
 import java.lang.reflect.Array;
 
@@ -440,7 +445,7 @@ public class Basic {
             return !countNull && isNull(values.get(0)) ? 0 : 1;
         }
 
-        final THashSet<T> keys = new THashSet<>();
+        final ObjectSet<T> keys = new ObjectOpenHashSet<>();
 
         try (final CloseableIterator<T> vi = values.iterator()) {
             while ( vi.hasNext() ) {
@@ -533,7 +538,7 @@ public class Basic {
         }
 
         final List<T> orderedList = new ArrayList<>();
-        final THashSet<T> counts = new THashSet<>();
+        final ObjectSet<T> counts = new ObjectOpenHashSet<>();
 
         try (final CloseableIterator<T> vi = values.iterator()) {
             while ( vi.hasNext() ) {
@@ -1273,7 +1278,7 @@ public class Basic {
             return !countNull && values.get(0) == QueryConstants.${pt.null} ? 0 : 1;
         }
 
-        final T${pt.primitive?capitalize}Set keys = new T${pt.primitive?capitalize}HashSet();
+        final ${pt.primitive?capitalize}Set keys = new ${pt.primitive?capitalize}OpenHashSet();
 
         try (final ${pt.vectorIterator} vi = values.iterator()) {
             while ( vi.hasNext() ) {
@@ -1333,8 +1338,8 @@ public class Basic {
             return !includeNull && values[0] == QueryConstants.${pt.null} ? new ${pt.primitive}[0] : new ${pt.primitive}[] { values[0] };
         }
 
-        final T${pt.primitive?capitalize}ArrayList orderedList = new T${pt.primitive?capitalize}ArrayList();
-        final T${pt.primitive?capitalize}Set counts = new T${pt.primitive?capitalize}HashSet();
+        final ${pt.primitive?capitalize}List orderedList = new ${pt.primitive?capitalize}ArrayList();
+        final ${pt.primitive?capitalize}Set counts = new ${pt.primitive?capitalize}OpenHashSet();
 
         for (${pt.primitive} val : values) {
             if ((includeNull || val != QueryConstants.${pt.null}) && counts.add(val)) {
@@ -1342,7 +1347,7 @@ public class Basic {
             }
         }
 
-        return orderedList.toArray();
+        return orderedList.to${pt.primitive?capitalize}Array();
     }
 
     /**
@@ -1367,8 +1372,8 @@ public class Basic {
             return !includeNull && values.get(0) == QueryConstants.${pt.null} ? new ${pt.primitive}[0] : values.copyToArray();
         }
 
-        final T${pt.primitive?capitalize}ArrayList orderedList = new T${pt.primitive?capitalize}ArrayList();
-        final T${pt.primitive?capitalize}Set counts = new T${pt.primitive?capitalize}HashSet();
+        final ${pt.primitive?capitalize}List orderedList = new ${pt.primitive?capitalize}ArrayList();
+        final ${pt.primitive?capitalize}Set counts = new ${pt.primitive?capitalize}OpenHashSet();
 
         try (final ${pt.vectorIterator} vi = values.iterator()) {
             while ( vi.hasNext() ) {
@@ -1379,7 +1384,7 @@ public class Basic {
             }
         }
 
-        return orderedList.toArray();
+        return orderedList.to${pt.primitive?capitalize}Array();
     }
 
     /**

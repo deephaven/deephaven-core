@@ -1,8 +1,9 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.api.SortColumn;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.liveness.LiveSupplier;
@@ -15,6 +16,7 @@ import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.TableUpdateListener;
 import io.deephaven.engine.table.impl.locations.ImmutableTableLocationKey;
 import io.deephaven.engine.table.impl.locations.TableDataException;
+import io.deephaven.engine.table.impl.locations.TableLocation;
 import io.deephaven.engine.table.impl.locations.TableLocationProvider;
 import io.deephaven.engine.table.impl.locations.TableLocationRemovedException;
 import io.deephaven.engine.table.impl.perf.PerformanceEntry;
@@ -30,7 +32,6 @@ import org.jetbrains.annotations.NotNull;
 import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
 /**
@@ -107,8 +108,7 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
                     isRefreshing,
                     removeAllowed,
                     ColumnToCodecMappings.EMPTY,
-                    definition.getColumns() // This is the *re-written* definition passed to the super-class constructor
-            );
+                    definition);
             if (isRefreshing) {
                 manage(columnSourceManager);
             }
@@ -307,6 +307,18 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
     protected final QueryTable doCoalesce() {
         initialize();
 
+        if (!isRefreshing()) {
+            final Collection<TableLocation> includedLocations = columnSourceManager.includedLocations();
+            if (includedLocations.size() == 1) {
+                for (final SortColumn sc : includedLocations.iterator().next().getSortedColumns()) {
+                    final SortingOrder order = sc.order() == SortColumn.Order.ASCENDING
+                            ? SortingOrder.Ascending
+                            : SortingOrder.Descending;
+                    SortedColumnsAttribute.setOrderForColumn(this, sc.column().name(), order);
+                }
+            }
+        }
+
         final OperationSnapshotControl snapshotControl =
                 createSnapshotControlIfRefreshing((final BaseTable<?> parent) -> new OperationSnapshotControl(parent) {
 
@@ -346,7 +358,7 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
             return true;
         });
 
-        return result.getValue();
+        return result.get();
     }
 
     @OverridingMethodsMustInvokeSuper

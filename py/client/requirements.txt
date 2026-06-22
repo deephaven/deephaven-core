@@ -3,3 +3,4 @@ grpcio
 protobuf
 bitstring
 numpy
+pandas

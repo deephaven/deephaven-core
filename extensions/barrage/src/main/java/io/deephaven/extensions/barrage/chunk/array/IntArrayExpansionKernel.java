@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CharArrayExpansionKernel and run "./gradlew replicateBarrageUtils" to regenerate
@@ -9,11 +9,9 @@ package io.deephaven.extensions.barrage.chunk.array;
 
 import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.Chunk;
-import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.WritableChunk;
-import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.ChunkLengths;

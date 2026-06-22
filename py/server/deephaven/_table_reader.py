@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 #
 """This module supports reading the data in a Deephaven table in a chunked manner."""
 
@@ -19,7 +19,7 @@ import numpy as np
 
 from deephaven import update_graph
 from deephaven.column import ColumnDefinition
-from deephaven.jcompat import _to_sequence
+from deephaven.jcompat import to_sequence
 from deephaven.numpy import _column_to_numpy_array
 from deephaven.table import Table
 
@@ -36,7 +36,7 @@ def _col_defs(
     if not cols:
         col_defs = table.columns
     else:
-        cols = _to_sequence(cols)
+        cols = to_sequence(cols)
         col_defs = [col for col in table.columns if col.name in cols]
         if len(col_defs) != len(cols):
             raise ValueError(

@@ -22,3 +22,9 @@ The Deephaven user interface (GUI) offers a comprehensive suite of advanced tool
 - **<font color="#4564D9">Column Header menu</font>**: Right-click on a column header to reveal the header menu. Here you will find options to freeze, filter, sort, and more.
 - **<font color="#0F7007">Table options menu</font>**: Click on the hamburger icon in the top right corner of a table to reveal the table options menu. Here you will find tools to organize columns, perform conditional formatting, perform aggregations, download a CSV of the table data, and more.
 - **<font color="#E98A00">Plot menu</font>**: Hover over the title of a plot to reveal the plot menu. Here you will find options to save the plot as an image, zoom in and out, and more.
+
+## Related documentation
+
+- [Create custom themes](../custom-themes.md)
+- [Markdown widgets](./markdown-widget.md)
+- [Create and organize notebooks](./file-explorer.md)

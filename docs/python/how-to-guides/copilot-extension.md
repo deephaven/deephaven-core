@@ -43,9 +43,7 @@ Head to [github.com/features/copilot](https://github.com/features/copilot) and g
 
 2. Install Deephaven
 
-If you do not yet have Deephaven installed, there are several ways to get started.
-
-For Python:
+If you do not yet have Deephaven installed, there are several ways to get started:
 
 - [Docker](../getting-started/docker-install.md)
 - [pip](../getting-started/pip-install.md)

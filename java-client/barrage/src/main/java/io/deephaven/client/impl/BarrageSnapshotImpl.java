@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.client.impl;
 
@@ -111,8 +111,12 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
         observer = (ClientCallStreamObserver<FlightData>) ClientCalls
                 .asyncBidiStreamingCall(call, new DoExchangeObserver());
 
-        // Allow the server to send us all commands when there is sufficient bandwidth:
-        observer.request(Integer.MAX_VALUE);
+        // Allow the server to send us all messages when there is sufficient bandwidth. gRPC tracks the number of
+        // requested messages in an int counter within the transport's message deframer. ClientCalls.startCall() always
+        // issues an initial request(1), so we use MAX_VALUE - 1 to avoid overflowing that counter to MIN_VALUE, which
+        // would prevent any messages from being delivered (particularly visible in in-process transports where both
+        // request() calls accumulate before any message is consumed).
+        observer.request(Integer.MAX_VALUE - 1);
     }
 
     private class DoExchangeObserver implements ClientResponseObserver<FlightData, BarrageMessage> {

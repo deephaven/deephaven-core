@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.replicators;
 
@@ -452,10 +452,10 @@ public class ReplicateSourcesAndChunks {
 
         lines = ReplicationUtils.replaceRegion(lines, "constructor", Arrays.asList(
                 "    protected ObjectChunkColumnSource(Class<T> type, Class<?> componentType) {",
-                "        this(type, componentType, new TLongArrayList());",
+                "        this(type, componentType, new LongArrayList());",
                 "    }",
                 "",
-                "    protected ObjectChunkColumnSource(Class<T> type, Class<?> componentType, final TLongArrayList firstOffsetForData) {",
+                "    protected ObjectChunkColumnSource(Class<T> type, Class<?> componentType, final LongArrayList firstOffsetForData) {",
                 "        super(type, componentType);",
                 "        this.firstOffsetForData = firstOffsetForData;",
                 "    }"
@@ -1511,13 +1511,13 @@ public class ReplicateSourcesAndChunks {
                 "Object oldValue", "T oldValue");
 
         lines = replaceRegion(lines, "recyclers", Arrays.asList(
-                "    private static final SoftRecycler recycler = new SoftRecycler<>(DEFAULT_RECYCLER_CAPACITY,",
+                "    private static final SoftRecycler recycler = new SoftRecycler<>(SparseArrayColumnSourceConfiguration.OBJECT_RECYCLER_CAPACITY,",
                 "            () -> new Object[BLOCK_SIZE], block -> Arrays.fill(block, null)); // we'll hold onto previous values, fix that",
-                "    private static final SoftRecycler recycler2 = new SoftRecycler<>(DEFAULT_RECYCLER_CAPACITY,",
+                "    private static final SoftRecycler recycler2 = new SoftRecycler<>(SparseArrayColumnSourceConfiguration.OBJECT_RECYCLER_CAPACITY2,",
                 "            () -> new Object[BLOCK2_SIZE][], null);",
-                "    private static final SoftRecycler recycler1 = new SoftRecycler<>(DEFAULT_RECYCLER_CAPACITY,",
+                "    private static final SoftRecycler recycler1 = new SoftRecycler<>(SparseArrayColumnSourceConfiguration.OBJECT_RECYCLER_CAPACITY1,",
                 "            () -> new ObjectOneOrN.Block2[BLOCK1_SIZE], null);",
-                "    private static final SoftRecycler recycler0 = new SoftRecycler<>(DEFAULT_RECYCLER_CAPACITY,",
+                "    private static final SoftRecycler recycler0 = new SoftRecycler<>(SparseArrayColumnSourceConfiguration.OBJECT_RECYCLER_CAPACITY0,",
                 "            () -> new ObjectOneOrN.Block1[BLOCK0_SIZE], null);"));
 
         lines = replaceRegion(lines, "constructor", Arrays.asList(

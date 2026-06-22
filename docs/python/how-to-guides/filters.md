@@ -89,6 +89,11 @@ result_in = source.where("X in 2,4,6")
 result_notin = source.where("X not in 2,4,6")
 ```
 
+> [!NOTE]
+> Match filters created using the equality operators (`=`, `==` or `!=`) follow standard IEEE 754 rules for handling `NaN` values. Any comparison involving `NaN` returns `false`, except for `!=`, which returns `true` for all values.
+>
+> In contrast, match filters created with set inclusion syntax (`in`, `not in`) _will_ match `NaN` values. For example: `value in NaN, 10.0` will return `true` if `value` is `NaN` or `10.0`. Alternatively, you can use the `isNaN(value)` function to explicitly test for NaN values such as `isNaN(value) || value < 10.0`.
+
 ### Range filters
 
 Range filters evaluate to true if the column value is within a specified range. This type of filter is typically applied to numeric columns but can be applied to any column that supports comparison operators.
@@ -102,6 +107,12 @@ result_lessthan = source.where("X < 5")
 result_range = source.where("X >= 2 && X < 6")
 result_inrange = source.where("inRange(X, 2, 6)")
 ```
+
+> [!NOTE]
+> Null values are considered less than any non-null value for sorting and comparison purposes. Therefore, `<` and `<=` comparisons will always include `null`. To prevent this behavior, you can add an explicit null check; for example: `!isNull(value) && value < 10`.
+
+> [!NOTE]
+> Comparison operators on floating-point values follow standard IEEE 754 rules for handling `NaN` values. Any comparison involving `NaN` returns `false`, except for `!=`, which returns `true` for all values. To include `NaN` values in your comparisons, use the `isNaN(value)` function to explicitly test for NaN values, such as `isNaN(value) || value < 10.0`.
 
 Both `result_range` and `result_inrange` can instead be implemented by [conjunctively](#conjunctive) combining two separate range filters:
 
@@ -198,6 +209,81 @@ Disjunctive filters return only rows that match _any_ of the specified filters. 
   - [`where_not_in`](../reference/table-operations/filter/where-not-in.md)
 - Pass multiple query strings into the following table operation:
   - [`where_one_of`](../reference/table-operations/filter/where-one-of.md)
+
+## Filter performance
+
+How you structure filter clauses can affect query performance. The following guidelines help optimize filter execution.
+
+These guidelines provide useful rules of thumb, but they won't perform best for all filters and data combinations. Filters exercise many aspects of the Deephaven engine: each filter constructs a `RowSet` representing the rows that pass, and rowset construction can be expensive. Simple filters (like match or range filters) may take advantage of optimizations like Parquet row group statistics. To evaluate a filter, data must be read from its source (e.g., disk or a network server). For important queries, measure performance to determine the optimal order and structure of filters.
+
+### Combine filters on the same column
+
+When filtering the same column multiple times, combine the conditions in a single clause. This reads the column data once instead of multiple times:
+
+```python order=source,result_combined,result_separate
+from deephaven import empty_table
+
+source = empty_table(1000).update("X = randomInt(0, 100)")
+
+# Better: reads X once
+result_combined = source.where("X > 10 && X < 90")
+
+# Worse: reads X twice
+result_separate = source.where(["X > 10", "X < 90"])
+```
+
+Both produce the same result, but `result_combined` is more efficient because it evaluates both conditions in a single pass over the data.
+
+### Separate filters on different columns
+
+When filtering different columns, separating them into different clauses can improve performance. The engine evaluates each clause sequentially, so earlier filters reduce the data that later filters must examine:
+
+```python order=source,result_separate
+from deephaven import empty_table
+
+source = empty_table(1000).update(
+    ["Bid = randomDouble(0, 200)", "Ask = randomDouble(0, 200)"]
+)
+
+# Each filter is evaluated independently
+result_separate = source.where(["Bid > 100", "Ask > 100"])
+```
+
+> [!NOTE]
+> The performance benefit of separating filters on different columns depends on the selectivity of the filters. If the first filter removes most rows, subsequent filters have less work to do. However, if filters are not very selective, combining them may perform similarly.
+
+### Order matters
+
+Put more selective filters first. A filter that eliminates most rows early reduces the work for subsequent filters:
+
+```python order=source,result_ordered
+from deephaven import empty_table
+
+source = empty_table(10000).update(
+    ["Category = (ii % 100 == 0) ? `rare` : `common`", "Value = randomInt(0, 1000)"]
+)
+
+# Better: rare category filter first (eliminates ~99% of rows)
+result_ordered = source.where(["Category == `rare`", "Value > 500"])
+```
+
+### Keep match filters separate from formulas
+
+Match filters (equality checks like `X == 5` or `X in 1, 2, 3`) are optimized differently than formula filters (expressions like `X > 5 && X < 10`). When combining them in a single clause, the match filter optimization may not apply:
+
+```python order=source,result_separate,result_combined
+from deephaven import empty_table
+
+source = empty_table(1000).update(
+    ["Symbol = (ii % 10 == 0) ? `AAPL` : `OTHER`", "Price = randomDouble(0, 200)"]
+)
+
+# Better: match filter is optimized independently
+result_separate = source.where(["Symbol == `AAPL`", "Price > 100 && Price < 150"])
+
+# Match filter optimization may not apply when combined with formula
+result_combined = source.where("Symbol == `AAPL` && Price > 100 && Price < 150")
+```
 
 ## Related documentation
 

@@ -73,5 +73,5 @@ new_plot = (
 ## Related documentation
 
 - [How to use the Chart Builder](../../how-to-guides/user-interface/chart-builder.md)
-- [How to create plots with the built-in API](../../how-to-guides/plotting/api-plotting.md)
+- [How to create pie charts](../../how-to-guides/plotting/api-plotting.md#pie)
 - [Pydoc](/core/pydoc/code/deephaven.plot.figure.html#deephaven.plot.figure.Figure.plot_pie)

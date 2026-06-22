@@ -143,8 +143,16 @@
                 "path": "conceptual/table-types.md"
               },
               {
+                "label": "Initialization and updates",
+                "path": "how-to-guides/initialization-and-updates.md"
+              },
+              {
                 "label": "Column types",
                 "path": "conceptual/column-types.md"
+              },
+              {
+                "label": "Deephaven Vectors",
+                "path": "conceptual/arrays-vs-vectors.md"
               },
               {
                 "label": "Core API design",
@@ -183,6 +191,10 @@
               {
                 "label": "Advanced table constructors",
                 "items": [
+                  {
+                    "label": "Convert add- and append-only tables to blink tables",
+                    "path": "how-to-guides/add-only-to-blink.md"
+                  },
                   {
                     "label": "Write data to a real-time table",
                     "path": "how-to-guides/table-publisher.md"
@@ -236,7 +248,7 @@
                   },
                   {
                     "label": "Basic terms",
-                    "path": "conceptual/kafka-in-deephaven.md"
+                    "path": "conceptual/kafka-basic-terms.md"
                   },
                   {
                     "label": "Connect to a Kafka stream",
@@ -394,6 +406,10 @@
               {
                 "label": "Partition",
                 "path": "how-to-guides/partitioned-tables.md"
+              },
+              {
+                "label": "Synchronize tables",
+                "path": "how-to-guides/synchronizing-tables.md"
               },
               {
                 "label": "Snapshot",
@@ -655,6 +671,10 @@
                     "path": "how-to-guides/user-interface/navigating-the-ui.md"
                   },
                   {
+                    "label": "Upload a table from a file",
+                    "path": "how-to-guides/user-interface/upload-table-from-file.md"
+                  },
+                  {
                     "label": "Set date-time format",
                     "path": "how-to-guides/set-date-time-format.md"
                   },
@@ -873,15 +893,6 @@
                 "path": "how-to-guides/flight-sql.md"
               },
               {
-                "label": "Excel",
-                "items": [
-                  {
-                    "label": "Excel Client",
-                    "path": "how-to-guides/excel/excel-client.md"
-                  }
-                ]
-              },
-              {
                 "label": "Protobuf",
                 "items": [
                   {
@@ -902,6 +913,10 @@
               {
                 "label": "Create your own plugin",
                 "path": "how-to-guides/create-plugins.md"
+              },
+              {
+                "label": "Create a JavaScript plugin",
+                "path": "how-to-guides/create-js-plugins.md"
               }
             ]
           },
@@ -951,6 +966,10 @@
                   {
                     "label": "Synchronization and locking",
                     "path": "conceptual/query-engine/engine-locking.md"
+                  },
+                  {
+                    "label": "Formulas and threads",
+                    "path": "how-to-guides/performance/formula-threads.md"
                   },
                   {
                     "label": "Python-Java boundary",
@@ -1115,7 +1134,11 @@
                     "path": "how-to-guides/configuration/configure-web.md"
                   },
                   {
-                    "label": "Custom environmental variables",
+                    "label": "JS plugin configuration",
+                    "path": "how-to-guides/configuration/js-plugins.md"
+                  },
+                  {
+                    "label": "Custom environment variables",
                     "path": "how-to-guides/custom-environmental-variables.md"
                   },
                   {
@@ -1459,6 +1482,27 @@
                 ]
               },
               {
+                "label": "Session",
+                "items": [
+                  {
+                    "label": "publish",
+                    "path": "reference/client-api/session/publish.md"
+                  },
+                  {
+                    "label": "publish_table",
+                    "path": "reference/client-api/session/publish-table.md"
+                  },
+                  {
+                    "label": "fetch",
+                    "path": "reference/client-api/session/fetch.md"
+                  },
+                  {
+                    "label": "fetch_table",
+                    "path": "reference/client-api/session/fetch-table.md"
+                  }
+                ]
+              },
+              {
                 "label": "CSV",
                 "items": [
                   {
@@ -1511,6 +1555,10 @@
                   {
                     "label": "write",
                     "path": "reference/data-import-export/Parquet/writeTable.md"
+                  },
+                  {
+                    "label": "write_partitioned",
+                    "path": "reference/data-import-export/Parquet/writePartitioned.md"
                   }
                 ]
               },
@@ -2632,7 +2680,56 @@
             "items": [
               {
                 "label": "Auto-imported functions",
-                "path": "reference/query-language/query-library/auto-imported-functions.md"
+                "items": [
+                  {
+                    "label": "Overview",
+                    "path": "reference/query-language/query-library/auto-imported/index.md"
+                  },
+                  {
+                    "label": "Basic",
+                    "path": "reference/query-language/query-library/auto-imported/basic.md"
+                  },
+                  {
+                    "label": "Math",
+                    "path": "reference/query-language/query-library/auto-imported/math.md"
+                  },
+                  {
+                    "label": "Time",
+                    "path": "reference/query-language/query-library/auto-imported/time.md"
+                  },
+                  {
+                    "label": "Logic",
+                    "path": "reference/query-language/query-library/auto-imported/logic.md"
+                  },
+                  {
+                    "label": "Parse",
+                    "path": "reference/query-language/query-library/auto-imported/parse.md"
+                  },
+                  {
+                    "label": "Sort",
+                    "path": "reference/query-language/query-library/auto-imported/sort.md"
+                  },
+                  {
+                    "label": "Search",
+                    "path": "reference/query-language/query-library/auto-imported/search.md"
+                  },
+                  {
+                    "label": "GUI",
+                    "path": "reference/query-language/query-library/auto-imported/gui.md"
+                  },
+                  {
+                    "label": "Constants",
+                    "path": "reference/query-language/query-library/auto-imported/constants.md"
+                  },
+                  {
+                    "label": "Java",
+                    "path": "reference/query-language/query-library/auto-imported/java.md"
+                  },
+                  {
+                    "label": "Data types",
+                    "path": "reference/query-language/query-library/auto-imported/data-types.md"
+                  }
+                ]
               },
               {
                 "label": "Backend Imports",
@@ -2907,6 +3004,10 @@
               {
                 "label": "Integrations: AWS",
                 "items": [
+                  {
+                    "label": "How do I run Deephaven behind AWS ALB?",
+                    "path": "reference/community-questions/aws-alb-configuration.md"
+                  },
                   {
                     "label": "Why can't I read from S3?",
                     "path": "reference/community-questions/aws-timeout.md"

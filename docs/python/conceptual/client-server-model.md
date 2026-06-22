@@ -18,8 +18,8 @@ Platforms generally support two software architectures: Client-server and peer-t
 
 Client-server architecture in modern software development follows a model where:
 
-- A centralized process, called the server, provides services to users.
-- Decentralized processes, called clients, send requests to the server to access services.
+- A centralized computer called the server, located on-premises or in the cloud, provides services to users.
+- Decentralized processes, called clients, send requests to the server to access services. Clients may be workstations running on people's desks, or more powerful machines running in the machine room or in the cloud.
 
 ### Peer-to-peer software architecture
 
@@ -37,8 +37,8 @@ Key characteristics of Deephaven's client-server model:
 
 - **Server-side processing**: The vast majority of computational work happens on the server, where data is stored and transformed.
 - **Lightweight clients**: Clients do little to no real data processing. They send requests to the server and receive responses with the requested information.
-- **Ticking table support**: Some of Deephaven's client APIs (Python, JavaScript, Java) support subscribing to ticking tables and receiving real-time updates. Other client APIs may receive static snapshots of table data at the time of the request.
-- **Language agnostic**: Clients are agnostic to the server-side API language being used. A Python client can connect to a server running Groovy code, and vice versa.
+- **Ticking table support**: Some of Deephaven's client APIs (Python, JavaScript, Java, C++) support subscribing to ticking tables and receiving real-time updates. Other client APIs may receive static snapshots of table data at the time of the request.
+- **Language-agnostic**: Clients are agnostic to the server-side API language being used. A Python client can connect to a server running Groovy code, and vice versa.
 
 ## Deephaven's language support
 
@@ -76,7 +76,7 @@ Data intensity depends on multiple factors that interact in complex ways:
 
 - **Row volume**: The number of rows processed per unit of time.
 - **Column count**: Tables with many columns require more memory and processing power.
-- **Data types**: Numeric data (integers, doubles) is compact and fast to process. String data, especially long strings or those with high cardinality, consumes significantly more memory. Complex types (arrays, nested structures) add further overhead.
+- **Data types**: Numeric data (integers, doubles) is compact and fast to process. Strings, especially long strings or those with high cardinality, consumes significantly more memory. Complex types (arrays, nested structures) add further overhead.
 - **Data retention**: How long data needs to be kept in memory affects total capacity requirements.
 - **Query complexity**: Simple aggregations have different performance characteristics than complex joins or window operations.
 - **Update frequency**: High-frequency updates to ticking tables create more work than batch updates.
@@ -89,7 +89,7 @@ Your server architecture depends on matching computational resources to workload
 
 - **Memory (RAM)**: Deephaven keeps active tables in memory for fast access. Your memory needs depend on the size of your tables (rows × columns × data type sizes), the number of concurrent tables, and any intermediate results from queries. Running out of memory forces the JVM to garbage collect more frequently, degrading performance.
 - **CPU cores**: Query operations, joins, aggregations, and formula evaluations benefit from multiple cores. Higher core counts improve throughput for complex queries and allow multiple operations to run in parallel.
-- **Disk I/O**: While Deephaven is primarily in-memory, disk performance matters for operations like loading historical data, writing logs, or persisting snapshots. SSD storage is preferred for these operations.
+- **Disk I/O**: While Deephaven operates primarily in-memory, disk performance matters for operations like loading historical data, writing logs, or persisting snapshots. SSD storage is preferred for these operations.
 - **Network bandwidth**: For applications sharing data between servers or serving many clients, network capacity can become a bottleneck.
 
 When your workload exceeds what a single server can handle efficiently, distributing across multiple servers becomes necessary. The decision point depends on your specific resource constraints and performance requirements, not arbitrary thresholds.

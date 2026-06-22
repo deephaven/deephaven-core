@@ -18,7 +18,7 @@ Primary releases bump the middle of the three numbers (e.g., `0.25.0` -> `0.26.0
 
 ## Update Deephaven
 
-When using [Deephaven run from Docker](../../tutorials/docker-install.md), a user will build the application from a `docker-compose.yml` file or a `Dockerfile`. In both cases, you can specify a version via one of the following:
+When using [Deephaven run from Docker](../../getting-started/docker-install.md), a user will build the application from a `docker-compose.yml` file or a `Dockerfile`. In both cases, you can specify a version via one of the following:
 
 - A specific version number, e.g. `0.26.1`.
 - `latest`: The latest version to be released. The first release shown in the [releases](https://github.com/deephaven/deephaven-core/releases) page should always have this tag.
@@ -50,4 +50,4 @@ If deploying with a `Dockerfile`, the syntax remains the same. The version is se
 ## Related documentation
 
 - [How to configure the Deephaven Docker application](./docker-application.md)
-- [Install guide for Docker](../../tutorials/docker-install.md)
+- [Install guide for Docker](../../getting-started/docker-install.md)

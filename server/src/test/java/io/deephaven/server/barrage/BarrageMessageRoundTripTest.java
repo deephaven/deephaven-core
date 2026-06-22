@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.server.barrage;
 
@@ -55,6 +55,8 @@ import javax.inject.Singleton;
 import java.io.ByteArrayInputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.*;
 import java.util.function.Consumer;
@@ -1300,6 +1302,90 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
         remoteNugget.validate("large mod rows update");
     }
 
+    /**
+     * Bug-fix verification: when a full subscription and a gapped-viewport subscription coexist, the producer stores
+     * all modified rows in a single delta (not just the viewport intersection). The viewport client's modOffsets then
+     * map contiguous viewport positions to non-contiguous data positions (with a gap). In appendModColumns, maxLength
+     * is computed as a data-position-space distance but then used as a row-index count, so modOffsets.get(endRange) can
+     * return a data position past the chunk boundary, triggering "Subset is out of bounds for context of size N".
+     */
+    public void testModColumnChunkBoundaryWithGappedViewport() {
+        final BitSet allColumns = new BitSet(1);
+        allColumns.set(0);
+
+        // Use a flat table with enough rows to span 2+ delta chunks when fully modified.
+        final long numRows = 2L * BarrageMessageProducer.DELTA_CHUNK_SIZE + 100;
+
+        final QueryTable sourceTable = TstUtils.testRefreshingTable(i().toTracking());
+        sourceTable.setFlat();
+        final QueryTable queryTable = (QueryTable) sourceTable.updateView("data = (short) k");
+
+        final RemoteNugget remoteNugget = new RemoteNugget(() -> queryTable);
+
+        // A full subscription is required so that modsToRecord = allRows (not just the viewport
+        // intersection). This makes rowsModified.original contiguous over all rows, which in turn
+        // makes clientModdedRowOffsets for the gapped-viewport client non-contiguous (gapped) —
+        // the precondition for the appendModColumns chunk-boundary bug.
+        // noinspection unused
+        final RemoteClient fullClient = remoteNugget.newClient(null, allColumns, "full");
+
+        // Create a viewport with a gap in the first chunk's range. The gap ensures that modOffsets
+        // is non-contiguous: viewport row indices 0..N map to data positions with a hole, so N row
+        // indices can map to data positions past the chunk boundary.
+        final long gapStart = BarrageMessageProducer.DELTA_CHUNK_SIZE / 2;
+        final long gapSize = BarrageMessageProducer.DELTA_CHUNK_SIZE / 4;
+        final RemoteClient remoteClient;
+        try (final RowSet before = RowSetFactory.fromRange(0, gapStart - 1);
+                final RowSet after = RowSetFactory.fromRange(gapStart + gapSize, numRows - 1)) {
+            final RowSet viewport = before.union(after);
+
+            // noinspection unused
+            remoteClient = remoteNugget.newClient(viewport, allColumns, "gapped-viewport");
+        }
+
+        // Obtain snapshot.
+        flushProducerTable();
+        remoteNugget.flushClientEvents();
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
+
+        // Add all rows in one delta.
+        final RowSet allRows = RowSetFactory.fromRange(0, numRows - 1);
+        updateGraph.runWithinUnitTestCycle(() -> {
+            TstUtils.addToTable(sourceTable, allRows);
+            // This results in queryTable downstream update and the BMP propagating the adds.
+            sourceTable.notifyListeners(new TableUpdateImpl(
+                    allRows.copy(),
+                    RowSetFactory.empty(),
+                    RowSetFactory.empty(),
+                    RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
+        });
+
+        flushProducerTable();
+        remoteNugget.flushClientEvents();
+        updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
+        remoteNugget.validate("after initial add");
+
+        // Modify ALL rows in a single delta. With the gapped viewport, the mod offsets will have
+        // a hole that causes appendModColumns to compute endPos past the first chunk's boundary.
+        updateGraph.runWithinUnitTestCycle(() -> {
+            // Faking a mods update from queryTable (since mods on a column-less table are impossible,
+            // doing this to trigger the BMP to reproduce the bug).
+            queryTable.notifyListeners(new TableUpdateImpl(
+                    RowSetFactory.empty(),
+                    RowSetFactory.empty(),
+                    allRows.copy(),
+                    RowSetShiftData.EMPTY, ModifiedColumnSet.ALL));
+        });
+
+        // This flush serializes the mod message; without the fix it throws:
+        // "Subset {..} is out of bounds for context of size N"
+        flushProducerTable();
+        remoteNugget.flushClientEvents();
+        updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
+        remoteNugget.validate("mod spanning chunks with gapped viewport");
+    }
+
     public void testAllUniqueChunkTypeColumnSourcesWithValidityBuffers() {
         testAllUniqueChunkTypeColumnSources(false);
     }
@@ -1390,7 +1476,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                             columnInfo = initColumnInfos(
                                     new String[] {"longCol", "intCol", "Sym", "byteCol", "doubleCol", "floatCol",
                                             "shortCol", "charCol", "boolCol", "strCol", "strArrCol", "datetimeCol",
-                                            "zdtCol"},
+                                            "zdtCol", "localTimeCol", "localDateCol"},
                                     new SortedLongGenerator(0, Long.MAX_VALUE - 1),
                                     new IntGenerator(10, 100, 0.1),
                                     new SetGenerator<>("a", "b", "c", "d"), // covers strings
@@ -1411,6 +1497,16 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                                                     .atZone(ZoneId.of("UTC")),
                                             DateTimeUtils.parseInstant("2025-11-14T00:00:00 NY")
                                                     .atZone(ZoneId.of("UTC")),
+                                            null),
+                                    new SetGenerator<>(
+                                            LocalTime.of(10, 30, 45),
+                                            LocalTime.of(14, 15, 30),
+                                            LocalTime.of(22, 45, 0),
+                                            null),
+                                    new SetGenerator<>(
+                                            LocalDate.of(2025, 11, 13),
+                                            LocalDate.of(2025, 11, 14),
+                                            LocalDate.of(2025, 11, 15),
                                             null));
                             sourceTable = getTable(size / 4, random, columnInfo);
                         }

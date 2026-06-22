@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.sql;
 
@@ -24,6 +24,11 @@ enum FilterSimplifier implements Visitor<Filter> {
     @Override
     public Filter visit(FilterIsNull isNull) {
         return isNull;
+    }
+
+    @Override
+    public Filter visit(FilterIsNaN isNaN) {
+        return isNaN;
     }
 
     @Override

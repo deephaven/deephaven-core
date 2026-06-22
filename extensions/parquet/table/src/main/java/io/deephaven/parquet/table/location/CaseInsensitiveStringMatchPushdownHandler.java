@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.parquet.table.location;
 
@@ -14,7 +14,7 @@ final class CaseInsensitiveStringMatchPushdownHandler {
             @NotNull final MatchFilter matchFilter,
             @NotNull final Statistics<?> statistics) {
         final Object[] values = matchFilter.getValues();
-        final boolean invertMatch = matchFilter.getInvertMatch();
+        final boolean invertMatch = matchFilter.getMatchOptions().inverted();
         if (values == null || values.length == 0) {
             // No values to check against
             return invertMatch;
@@ -34,9 +34,9 @@ final class CaseInsensitiveStringMatchPushdownHandler {
             return true;
         }
         if (!invertMatch) {
-            return maybeMatchesImpl(mutableMin.getValue(), mutableMax.getValue(), values);
+            return maybeMatchesImpl(mutableMin.get(), mutableMax.get(), values);
         }
-        return maybeMatchesInverseImpl(mutableMin.getValue(), mutableMax.getValue(), values);
+        return maybeMatchesInverseImpl(mutableMin.get(), mutableMax.get(), values);
     }
 
     /**

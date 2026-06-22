@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api;
 
@@ -9,7 +9,7 @@ import com.vertispan.tsdefs.annotations.TsTypeRef;
 import elemental2.core.JsArray;
 import elemental2.core.JsString;
 import elemental2.promise.Promise;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.ticket_pb.TypedTicket;
+import io.deephaven.proto.backplane.grpc.TypedTicket;
 import io.deephaven.web.client.api.console.JsVariableType;
 import io.deephaven.web.client.api.event.Event;
 import io.deephaven.web.client.api.event.EventFn;
@@ -29,21 +29,21 @@ import jsinterop.annotations.JsProperty;
 import jsinterop.base.Js;
 
 /**
- * Behaves like a Table, but doesn't expose all of its API for changing the internal state. Instead, state is driven by
- * the upstream table - when it changes handle, this listens and updates its own handle accordingly.
+ * Behaves like a {@code Table}, but doesn't expose all of its API for changing the internal state. Instead, state is
+ * driven by the upstream table - when it changes handle, this listens and updates its own handle accordingly.
  *
  * Additionally, this is automatically subscribed to its one and only row, across all columns.
  *
  * A new config is returned any time it is accessed, to prevent accidental mutation, and to allow it to be used as a
  * template when fetching a new totals table, or changing the totals table in use.
  *
- * A simplistic Table, providing access to aggregation of the table it is sourced from. This table is always
+ * A simplistic {@code Table}, providing access to aggregation of the table it is sourced from. This table is always
  * automatically subscribed to its parent, and adopts changes automatically from it. This class has limited methods
  * found on Table. Instances of this type always have a size of one when no groupBy is set on the config, but may
  * potentially contain as few as zero rows, or as many as the parent table if each row gets its own group.
  *
- * When using the `groupBy` feature, it may be desireable to also provide a row to the user with all values across all
- * rows. To achieve this, request the same Totals Table again, but remove the `groupBy` setting.
+ * When using the {@code groupBy} feature, it may be desireable to also provide a row to the user with all values across
+ * all rows. To achieve this, request the same Totals Table again, but remove the {@code groupBy} setting.
  */
 @TsInterface
 @TsName(namespace = "dh", name = "TotalsTable")
@@ -61,8 +61,8 @@ public class JsTotalsTable implements JoinableTable, ServerObject {
     private Double updateIntervalMs;
 
     /**
-     * Table is wrapped to let us delegate calls to it, the directive is a serialized string, and the groupBy is copied
-     * when passed in, as well as when it is accessed, to prevent accidental mutation of the array.
+     * Table is wrapped to let us delegate calls to it, the directive is a serialized string, and the {@code groupBy} is
+     * copied when passed in, as well as when it is accessed, to prevent accidental mutation of the array.
      */
     public JsTotalsTable(JsTable wrappedTable, String directive, JsArray<String> groupBy) {
         this.wrappedTable = wrappedTable;
@@ -94,10 +94,10 @@ public class JsTotalsTable implements JoinableTable, ServerObject {
 
     @Override
     public TypedTicket typedTicket() {
-        TypedTicket typedTicket = new TypedTicket();
-        typedTicket.setTicket(state().getHandle().makeTicket());
-        typedTicket.setType(JsVariableType.TABLE);
-        return typedTicket;
+        return TypedTicket.newBuilder()
+                .setTicket(state().getHandle().makeTicket())
+                .setType(JsVariableType.TABLE)
+                .build();
     }
 
     @JsProperty
@@ -121,8 +121,8 @@ public class JsTotalsTable implements JoinableTable, ServerObject {
      */
     @JsMethod
     @Deprecated
-    public void setViewport(double firstRow, double lastRow, @JsOptional JsArray<Column> columns,
-            @JsOptional Double updateIntervalMs, @JsOptional @JsNullable Boolean isReverseViewport) {
+    public void setViewport(double firstRow, double lastRow, @JsOptional @JsNullable JsArray<Column> columns,
+            @JsOptional @JsNullable Double updateIntervalMs, @JsOptional @JsNullable Boolean isReverseViewport) {
         this.firstRow = firstRow;
         this.lastRow = lastRow;
         this.columns = columns != null ? Js.uncheckedCast(columns.slice()) : null;
@@ -195,8 +195,8 @@ public class JsTotalsTable implements JoinableTable, ServerObject {
     }
 
     /**
-     * a column by the given name. You should prefer to always retrieve a new Column instance instead of caching a
-     * returned value.
+     * A column by the given name. You should prefer to always retrieve a new {@code Column} instance instead of caching
+     * a returned value.
      * 
      * @param key
      * @return {@link Column}
@@ -208,7 +208,7 @@ public class JsTotalsTable implements JoinableTable, ServerObject {
     }
 
     /**
-     * multiple columns specified by the given names.
+     * Multiple columns specified by the given names.
      * 
      * @param keys
      * @return {@link Column} array
@@ -219,8 +219,8 @@ public class JsTotalsTable implements JoinableTable, ServerObject {
     }
 
     /**
-     * True if this table may receive updates from the server, including size changed events, updated events after
-     * initial snapshot.
+     * {@code true} if this table may receive updates from the server, including size changed events, updated events
+     * after initial snapshot.
      *
      * @return boolean
      */
@@ -230,7 +230,7 @@ public class JsTotalsTable implements JoinableTable, ServerObject {
     }
 
     /**
-     * True if this table has been closed.
+     * {@code true} if this table has been closed.
      *
      * @return boolean
      */
@@ -331,9 +331,9 @@ public class JsTotalsTable implements JoinableTable, ServerObject {
     }
 
     /**
-     * An ordered list of Sorts to apply to the table. To update, call applySort(). Note that this getter will return
-     * the new value immediately, even though it may take a little time to update on the server. You may listen for the
-     * <b>sortchanged</b> event to know when to update the UI.
+     * An ordered list of Sorts to apply to the table. To update, call {@code applySort}. Note that this getter will
+     * return the new value immediately, even though it may take a little time to update on the server. You may listen
+     * for the <b>sortchanged</b> event to know when to update the UI.
      * 
      * @return {@link Sort} array
      */
@@ -343,9 +343,9 @@ public class JsTotalsTable implements JoinableTable, ServerObject {
     }
 
     /**
-     * An ordered list of Filters to apply to the table. To update, call applyFilter(). Note that this getter will
+     * An ordered list of Filters to apply to the table. To update, call {@code applyFilter}. Note that this getter will
      * return the new value immediately, even though it may take a little time to update on the server. You may listen
-     * for the <b>filterchanged</b> event to know when to update the UI.
+     * for the {@code filterchanged} event to know when to update the UI.
      * 
      * @return {@link FilterCondition} array
      */
@@ -356,7 +356,7 @@ public class JsTotalsTable implements JoinableTable, ServerObject {
 
     /**
      * Read-only. An ordered list of custom column formulas to add to the table, either adding new columns or replacing
-     * existing ones. To update, call <b>applyCustomColumns()</b>.
+     * existing ones. To update, call {@code applyCustomColumns}.
      * 
      * @return {@link CustomColumn} array
      */
@@ -381,7 +381,7 @@ public class JsTotalsTable implements JoinableTable, ServerObject {
     @Override
     @JsMethod
     public Promise<JsTable> join(String joinType, JoinableTable rightTable, JsArray<String> columnsToMatch,
-            @JsOptional JsArray<String> columnsToAdd, @JsOptional String asOfMatchRule) {
+            @JsOptional @JsNullable JsArray<String> columnsToAdd, @JsOptional @JsNullable String asOfMatchRule) {
         return wrappedTable.join(joinType, rightTable, columnsToMatch, columnsToAdd, asOfMatchRule);
     }
 

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CharRollingWAvgOperator and run "./gradlew replicateUpdateBy" to regenerate
@@ -15,7 +15,6 @@ import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 
 public class DoubleRollingWAvgOperator extends BasePrimitiveRollingWAvgOperator {

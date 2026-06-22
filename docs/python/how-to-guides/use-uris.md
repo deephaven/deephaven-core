@@ -1,5 +1,4 @@
 ---
-id: use-uris
 title: Use URIs to share tables
 sidebar_label: URI
 ---
@@ -10,6 +9,14 @@ A URI, short for [Uniform Resource Identifier](https://en.wikipedia.org/wiki/Uni
 
 > [!NOTE]
 > URIs can be used to share tables across Groovy and Python instances interchangeably. For how to use URIs in Groovy, see [the equivalent guide](/core/groovy/docs/how-to-guides/use-uris).
+
+> [!NOTE]
+> URI and Shared Tickets are two different ways to pull tables. Both work on static or dynamic tables. URI pulls tables already on the server via a URL-like string. Shared Tickets let you pull tables you create or access via the Python Client. Learn more about using Shared Tickets with Deephaven in the [Shared Tickets guide](../how-to-guides/capture-tables.md).
+
+> [!IMPORTANT]
+> URI resolution in Deephaven Community (Core) requires **anonymous authentication**. PSK (pre-shared key) authentication is not currently supported — attempting to resolve a URI when PSK is enabled will fail. This is a known limitation tracked in GitHub issues [#5383](https://github.com/deephaven/deephaven-core/issues/5383) and [#3421](https://github.com/deephaven/deephaven-core/issues/3421).
+>
+> If you found this page while looking for `ui.resolve`, note that the [Deephaven UI URI component](https://deephaven.io/core/ui/docs/components/uri/) is a separate, **Deephaven Enterprise**-only feature for Persistent Queries (PQ). It is not the same as `deephaven.uri.resolve` documented here.
 
 ## Why use URIs?
 
@@ -24,9 +31,6 @@ Deephaven URIs provide several key benefits:
 - **Environmental isolation**: Access data across different containers, servers, or networks.
 
 By using URIs, you enable others to directly access your tables without needing to replicate your data pipeline, understand your query logic, or maintain duplicate datasets. This is particularly valuable in collaborative environments and distributed systems.
-
-> [!NOTE]
-> URI and Shared Tickets are two different ways to pull tables. Both work on static or dynamic tables. URI pulls tables already on the server via a URL-like string. Shared Tickets let you pull tables you create or access via the Python Client. Learn more about using Shared Tickets with Deephaven in the [Shared Tickets guide](../how-to-guides/capture-tables.md).
 
 ## Syntax
 
@@ -84,6 +88,29 @@ table = resolve("dh+plain://hostname:9876/scope/table_name")
 
 The `resolve` function connects to the specified Deephaven instance, retrieves the table, and returns it as a local reference that you can use in your code.
 
+> [!CAUTION]
+> When you resolve a URI, the first update cycle of the subscribed table is empty. If you run `resolve` and immediately operate on the table data in the same execution, you may see an empty table. To work with the actual data, either:
+>
+> - **In a notebook**: Run the `resolve` call in a separate execution before operating on the table.
+> - **In a script**: Use `table.await_update()` to wait for the table to populate before accessing its data.
+
+For example, the following code often prints 0:
+
+```python skip-test
+remote_table = resolve("dh+plain://hostname/scope/some_table")
+print(remote_table.size)  # Often prints 0 before the table populates
+```
+
+To get the actual table size, use `await_update()` to wait for the table to populate:
+
+```python skip-test
+remote_table = resolve("dh+plain://hostname/scope/some_table")
+remote_table.await_update()
+print(remote_table.size)  # Prints the actual size
+```
+
+Let's explore this with a couple of examples.
+
 ## Share tables locally
 
 For this first example, we will spin up two Docker containers that run Deephaven with Python on different ports.
@@ -107,6 +134,9 @@ services:
 ```
 
 After a `docker compose pull` and `docker compose up --build -d`, both instances are up and running.
+
+> [!NOTE]
+> PSK authentication is intentionally omitted from this configuration. URI resolution requires anonymous authentication — adding `START_OPTS=-Dauthentication.psk=...` to either container will prevent URI resolution from working.
 
 ### Create a table
 
@@ -246,6 +276,8 @@ When using URIs to share tables across instances, particularly over networks, th
 - [`empty_table`](../reference/table-operations/create/emptyTable.md)
 - [`time_table`](../reference/table-operations/create/timeTable.md)
 - [`update`](../reference/table-operations/select/update.md)
+- [Enterprise URIs](https://deephaven.io/enterprise/docs/deephaven-database/remote-tables-python/#uris)
 - [Capture Python client tables](./capture-tables.md)
 - [Application Mode](./application-mode.md)
+- [Enterprise URIs](https://deephaven.io/enterprise/docs/deephaven-database/remote-tables-python/#uris)
 - [Pydoc](https://deephaven.io/core/pydoc/code/deephaven.uri.html)

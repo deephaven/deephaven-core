@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl;
 
@@ -22,7 +22,6 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.exceptions.TableInitializationException;
-import io.deephaven.engine.liveness.Liveness;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.primitive.iterator.*;
 import io.deephaven.engine.rowset.*;
@@ -31,10 +30,7 @@ import io.deephaven.engine.table.hierarchical.RollupTable;
 import io.deephaven.engine.table.hierarchical.TreeTable;
 import io.deephaven.engine.table.impl.MemoizedOperationKey.SelectUpdateViewOrUpdateView.Flavor;
 import io.deephaven.engine.table.impl.by.*;
-import io.deephaven.engine.table.impl.filter.ExtractBarriers;
-import io.deephaven.engine.table.impl.filter.ExtractInnerConjunctiveFilters;
-import io.deephaven.engine.table.impl.filter.ExtractShiftedColumnDefinitions;
-import io.deephaven.engine.table.impl.filter.ExtractRespectedBarriers;
+import io.deephaven.engine.table.impl.filter.*;
 import io.deephaven.engine.table.impl.hierarchical.RollupTableImpl;
 import io.deephaven.engine.table.impl.hierarchical.TreeTableImpl;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
@@ -61,8 +57,6 @@ import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.IterableUtils;
 import io.deephaven.engine.util.TableTools;
-import io.deephaven.engine.util.systemicmarking.SystemicObject;
-import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.SafeCloseable;
@@ -79,7 +73,6 @@ import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.lang.ref.WeakReference;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -289,8 +282,15 @@ public class QueryTable extends BaseTable<QueryTable> {
     /**
      * Disable the usage of parquet row group dictionaries during push-down filtering.
      */
-    public static boolean DISABLE_WHERE_PUSHDOWN_PARQUET_DICTIONARY =
-            Configuration.getInstance().getBooleanWithDefault("QueryTable.disableWherePushdownParquetDictionary",
+    public static boolean DISABLE_WHERE_PUSHDOWN_DICTIONARY =
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.disableWherePushdownDictionary",
+                    false);
+
+    /**
+     * Disable the usage of sorted column regions during push-down filtering.
+     */
+    public static boolean DISABLE_WHERE_PUSHDOWN_SORTED_COLUMN_LOCATION =
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.disableWherePushdownSortedColumn",
                     false);
 
     /**
@@ -659,14 +659,18 @@ public class QueryTable extends BaseTable<QueryTable> {
                 final Table partitioned = aggBy(Partition.of(CONSTITUENT, !dropKeys), columns);
                 final Set<String> keyColumnNamesSet =
                         Arrays.stream(keyColumnNames).collect(Collectors.toCollection(LinkedHashSet::new));
+                final Set<String> consistentKeyColumns;
                 final TableDefinition constituentDefinition;
                 if (dropKeys) {
                     constituentDefinition = TableDefinition.of(definition.getColumnStream()
                             .filter(cd -> !keyColumnNamesSet.contains(cd.getName())).toArray(ColumnDefinition[]::new));
+                    consistentKeyColumns = Collections.emptySet();
                 } else {
                     constituentDefinition = definition;
+                    consistentKeyColumns = keyColumnNamesSet;
                 }
-                return new PartitionedTableImpl(partitioned, keyColumnNamesSet, true, CONSTITUENT.name(),
+                return new PartitionedTableImpl(partitioned, keyColumnNamesSet, consistentKeyColumns, true,
+                        CONSTITUENT.name(),
                         constituentDefinition, isRefreshing(), false);
             });
         }
@@ -693,13 +697,17 @@ public class QueryTable extends BaseTable<QueryTable> {
             final Set<String> keyColumnNamesSet =
                     Arrays.stream(keyColumnNames).collect(Collectors.toCollection(LinkedHashSet::new));
             final TableDefinition constituentDefinition;
+            final Collection<String> consistentKeyColumns;
             if (partition.includeGroupByColumns()) {
                 constituentDefinition = definition;
+                consistentKeyColumns = keyColumnNamesSet;
             } else {
                 constituentDefinition = TableDefinition.of(definition.getColumnStream()
                         .filter(cd -> !keyColumnNamesSet.contains(cd.getName())).toArray(ColumnDefinition[]::new));
+                consistentKeyColumns = Collections.emptySet();
             }
-            return new PartitionedTableImpl(aggregated, keyColumnNamesSet, true, partition.column().name(),
+            return new PartitionedTableImpl(aggregated, keyColumnNamesSet, consistentKeyColumns, true,
+                    partition.column().name(),
                     constituentDefinition, isRefreshing(), false);
         }
     }
@@ -1071,6 +1079,11 @@ public class QueryTable extends BaseTable<QueryTable> {
         }
 
         @Override
+        public String toString() {
+            return "FilteredTable(" + whereListener + ")";
+        }
+
+        @Override
         public void requestRecompute() {
             refilterMatchedRequested = refilterUnmatchedRequested = true;
             Require.neqNull(whereListener, "whereListener").notifyChanges();
@@ -1332,6 +1345,21 @@ public class QueryTable extends BaseTable<QueryTable> {
         compilationProcessor.compile();
     }
 
+    /**
+     * Create a copy of the array of filters, introducing the declared barriers into the first filter if any are
+     * provided.
+     */
+    private WhereFilter[] cloneFiltersForReindexing(final WhereFilter[] filters,
+            final Collection<Object> declaredBarriers) {
+        if (filters.length == 0 || declaredBarriers.isEmpty()) {
+            return filters;
+        }
+        final WhereFilter[] toUse = filters.clone();
+        // Force the first filter to declare all the barriers we have already processed.
+        toUse[0] = toUse[0].withDeclaredBarriers(declaredBarriers.toArray());
+        return toUse;
+    }
+
     private QueryTable whereInternal(final WhereFilter... filters) {
         if (filters.length == 0) {
             return (QueryTable) prepareReturnThis();
@@ -1346,32 +1374,74 @@ public class QueryTable extends BaseTable<QueryTable> {
                 () -> {
                     initializeFilters(extractedFilters);
 
-                    for (int fi = 0; fi < extractedFilters.length; ++fi) {
-                        if (!(extractedFilters[fi] instanceof ReindexingFilter)) {
-                            continue;
+                    final boolean hasReindexingFilter = Arrays.stream(extractedFilters)
+                            .anyMatch(filter -> !ExtractReindexingFilters.of(filter).isEmpty());
+                    if (hasReindexingFilter) {
+                        // Filters will be processed in subsets of the provided list. Need to track all the
+                        // declared barriers that we have encountered.
+                        final Set<Object> declaredBarriers = new HashSet<>();
+
+                        for (int fi = 0; fi < extractedFilters.length; ++fi) {
+                            final WhereFilter filter = extractedFilters[fi];
+                            final Collection<ReindexingFilter> reindexingFilters = ExtractReindexingFilters.of(filter);
+                            if (reindexingFilters.isEmpty()) {
+                                continue;
+                            }
+                            if (reindexingFilters.size() > 1) {
+                                throw new IllegalStateException(
+                                        "Expected at most one reindexing filter per component filter: " + filter);
+                            }
+                            final ReindexingFilter reindexingFilter = reindexingFilters.iterator().next();
+                            final boolean first = fi == 0;
+                            final boolean last = fi == extractedFilters.length - 1;
+                            if (last && !reindexingFilter.requiresSorting()) {
+                                // If this is the last (or only) filter, we can just run it as normal unless it requires
+                                // sorting.
+                                break;
+                            }
+                            QueryTable result = this;
+                            if (!first) {
+                                final WhereFilter[] subset = Arrays.copyOf(extractedFilters, fi);
+                                final WhereFilter[] toUse = cloneFiltersForReindexing(subset, declaredBarriers);
+                                result = result.whereInternal(toUse);
+                                // collect all the newly declared barriers
+                                for (final WhereFilter priorFilter : subset) {
+                                    declaredBarriers.addAll(ExtractBarriers.of(priorFilter));
+                                }
+                            }
+                            if (reindexingFilter.requiresSorting()) {
+                                result = (QueryTable) result.sort(reindexingFilter.getSortColumns());
+                                if (!result.isFlat()) {
+                                    // The only reindexing filters are ClockFilters; and the SortedClockFilter is the
+                                    // only one that requires sorting. It makes the assumption that sort flattens the
+                                    // table, which is generally true for a historical sort - but if the input was
+                                    // already sorted, we don't create a new table but rather just return a copy of the
+                                    // table with the sorted columns set.
+                                    result = (QueryTable) result.flatten();
+                                }
+                                reindexingFilter.sortingDone();
+                            }
+                            // Execute the current filter (which is or wraps a reindexing filter)
+                            // adding all previous encountered barriers as declared barriers.
+                            if (!declaredBarriers.isEmpty()) {
+                                result = result.whereInternal(filter.withDeclaredBarriers(declaredBarriers.toArray()));
+                            } else {
+                                result = result.whereInternal(filter);
+                            }
+                            // Add the barriers from the current filter.
+                            declaredBarriers.addAll(ExtractBarriers.of(filter));
+                            if (!last) {
+                                final WhereFilter[] subset =
+                                        Arrays.copyOfRange(extractedFilters, fi + 1, extractedFilters.length);
+                                final WhereFilter[] toUse = cloneFiltersForReindexing(subset, declaredBarriers);
+                                result = result.whereInternal(toUse);
+                                // collect all the new barriers that may have been processed
+                                for (final WhereFilter priorFilter : subset) {
+                                    declaredBarriers.addAll(ExtractBarriers.of(priorFilter));
+                                }
+                            }
+                            return result;
                         }
-                        final ReindexingFilter reindexingFilter = (ReindexingFilter) extractedFilters[fi];
-                        final boolean first = fi == 0;
-                        final boolean last = fi == extractedFilters.length - 1;
-                        if (last && !reindexingFilter.requiresSorting()) {
-                            // If this is the last (or only) filter, we can just run it as normal unless it requires
-                            // sorting.
-                            break;
-                        }
-                        QueryTable result = this;
-                        if (!first) {
-                            result = result.whereInternal(Arrays.copyOf(extractedFilters, fi));
-                        }
-                        if (reindexingFilter.requiresSorting()) {
-                            result = (QueryTable) result.sort(reindexingFilter.getSortColumns());
-                            reindexingFilter.sortingDone();
-                        }
-                        result = result.whereInternal(reindexingFilter);
-                        if (!last) {
-                            result = result.whereInternal(
-                                    Arrays.copyOfRange(extractedFilters, fi + 1, extractedFilters.length));
-                        }
-                        return result;
                     }
 
                     boolean hasConstArrayOffsetFilter = false;
@@ -1932,6 +2002,12 @@ public class QueryTable extends BaseTable<QueryTable> {
                                         flavor == Flavor.UpdateView
                                                 ? SelectAndViewAnalyzer.UpdateFlavor.UpdateView
                                                 : SelectAndViewAnalyzer.UpdateFlavor.View;
+                                // We set the notification step to our (i.e. the parent of queryTable) step; because
+                                // the applyShiftsAndRemainingColumns does downstream operations on queryTable. The
+                                // snapshot completion normally does this, but if we don't set it, then those operations
+                                // initialize with an incorrect step. If the step ends up being wrong, we're going to
+                                // be inconsistent and throw the result away anyway.
+                                queryTable.setLastNotificationStep(getLastNotificationStep());
                                 queryTable = analyzerContext.applyShiftsAndRemainingColumns(
                                         this, queryTable, updateFlavor);
 
@@ -2763,6 +2839,7 @@ public class QueryTable extends BaseTable<QueryTable> {
             final boolean incremental = options.has(Flag.INCREMENTAL);
             final boolean history = options.has(Flag.HISTORY);
             final String description = options.description();
+            final QueryTable triggerQueryTable = (QueryTable) trigger.coalesce();
             if (history) {
                 if (initial || incremental) {
                     // noinspection ThrowableNotThrown
@@ -2770,12 +2847,13 @@ public class QueryTable extends BaseTable<QueryTable> {
                             "SnapshotWhenOptions should disallow history with initial or incremental");
                     return null;
                 }
-                return ((QueryTable) trigger).snapshotHistory(description, this, options.stampColumns());
+                return triggerQueryTable.snapshotHistory(description, this, options.stampColumns());
             }
             if (incremental) {
-                return ((QueryTable) trigger).snapshotIncremental(description, this, initial, options.stampColumns());
+                return triggerQueryTable.snapshotIncremental(description, this, initial,
+                        options.stampColumns());
             }
-            return ((QueryTable) trigger).snapshot(description, this, initial, options.stampColumns());
+            return triggerQueryTable.snapshot(description, this, initial, options.stampColumns());
         }
     }
 
@@ -2825,7 +2903,8 @@ public class QueryTable extends BaseTable<QueryTable> {
      * 2^minimumUngroupBase rows in the output table at startup. If rows are added to the table, this base may need to
      * grow. If a single row in the input has more than 2^base rows, then the base must change for all of the rows.
      */
-    static int minimumUngroupBase = 10;
+    static int minimumUngroupBase =
+            Configuration.getInstance().getIntegerWithDefault("QueryTable.minimumUngroupBase", 10);
 
     /**
      * For unit testing, it can be useful to reduce the minimum ungroup base.
@@ -3162,59 +3241,6 @@ public class QueryTable extends BaseTable<QueryTable> {
             Map<MemoizedOperationKey, MemoizedResult<?>> cachedOperations) {
         // noinspection unchecked
         return (MemoizedResult<R>) cachedOperations.computeIfAbsent(memoKey, k -> new MemoizedResult<>());
-    }
-
-    private static class MemoizedResult<R> {
-        private volatile WeakReference<R> reference;
-
-        R getOrCompute(Supplier<R> operation) {
-            final R cachedResult = getIfValid();
-            if (cachedResult != null) {
-                return maybeMarkSystemic(cachedResult);
-            }
-
-            synchronized (this) {
-                final R cachedResultLocked = getIfValid();
-                if (cachedResultLocked != null) {
-                    return maybeMarkSystemic(cachedResultLocked);
-                }
-
-                final R result;
-                result = operation.get();
-
-                reference = new WeakReference<>(result);
-
-                return result;
-            }
-        }
-
-        private R maybeMarkSystemic(R cachedResult) {
-            if (cachedResult instanceof SystemicObject && SystemicObjectTracker.isSystemicThread()) {
-                // noinspection unchecked
-                return (R) ((SystemicObject) cachedResult).markSystemic();
-            }
-            return cachedResult;
-        }
-
-        R getIfValid() {
-            if (reference != null) {
-                final R cachedResult = reference.get();
-                if (!isFailed(cachedResult) && Liveness.verifyCachedObjectForReuse(cachedResult)) {
-                    return cachedResult;
-                }
-            }
-            return null;
-        }
-
-        private boolean isFailed(R cachedResult) {
-            if (cachedResult instanceof Table) {
-                return ((Table) cachedResult).isFailed();
-            }
-            if (cachedResult instanceof PartitionedTable) {
-                return ((PartitionedTable) cachedResult).table().isFailed();
-            }
-            return false;
-        }
     }
 
     public <T extends DynamicNode & NotificationStepReceiver> T getResult(final Operation<T> operation) {

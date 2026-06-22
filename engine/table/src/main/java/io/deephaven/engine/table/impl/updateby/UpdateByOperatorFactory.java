@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.updateby;
 
@@ -1617,7 +1617,7 @@ public class UpdateByOperatorFactory {
                         ColumnDefinition::getName,
                         (final ColumnDefinition<?> cd) -> groupByColumnSet.contains(cd.getName())
                                 ? cd
-                                : ColumnDefinition.fromGenericType(
+                                : ColumnDefinition.ofVector(
                                         cd.getName(),
                                         VectorFactory.forElementType(cd.getDataType()).vectorType(),
                                         cd.getDataType())));

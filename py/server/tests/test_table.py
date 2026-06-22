@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 #
 import unittest
 from types import SimpleNamespace
@@ -93,9 +93,9 @@ class TableTestCase(BaseTestCase):
             abs_sum(["aggAbsSum=var"]),
             var(["aggVar=var"]),
             weighted_avg("var", ["weights"]),
+            group(["aggGroup=var"]),
         ]
         self.aggs_not_for_rollup = [
-            group(["aggGroup=var"]),
             partition("aggPartition"),
             median(["aggMed=var"]),
             pct(0.20, ["aggPct=var"]),
@@ -353,8 +353,57 @@ class TableTestCase(BaseTestCase):
         sorted_table2 = self.test_table.sort_descending(order_by="b")
         self.assertEqual(sorted_table, sorted_table2)
 
+    def test_with_order_for_column(self):
+        import jpy
+
+        _JSortedColumnsAttribute = jpy.get_type(
+            "io.deephaven.engine.table.impl.SortedColumnsAttribute"
+        )
+        _JSortingOrder = jpy.get_type("io.deephaven.engine.table.impl.SortingOrder")
+
+        asc_table = self.test_table.with_order_for_column("a")
+        self.assertEqual(asc_table.size, self.test_table.size)
+        order = _JSortedColumnsAttribute.getOrderForColumn(asc_table.j_table, "a")
+        self.assertEqual(order.get(), _JSortingOrder.Ascending)
+
+        desc_table = self.test_table.with_order_for_column(
+            "a", SortDirection.DESCENDING
+        )
+        order = _JSortedColumnsAttribute.getOrderForColumn(desc_table.j_table, "a")
+        self.assertEqual(order.get(), _JSortingOrder.Descending)
+
+        no_order = _JSortedColumnsAttribute.getOrderForColumn(desc_table.j_table, "b")
+        self.assertTrue(no_order.isEmpty())
+
         with self.assertRaises(TypeError):
             sorted_table3 = self.test_table.sort_descending()
+
+    def test_assert_sorted(self):
+        import jpy
+
+        _JSortedColumnsAttribute = jpy.get_type(
+            "io.deephaven.engine.table.impl.SortedColumnsAttribute"
+        )
+        _JSortingOrder = jpy.get_type("io.deephaven.engine.table.impl.SortingOrder")
+
+        pre_sorted = self.test_table.sort(order_by="a")
+        result = pre_sorted.assert_sorted("a")
+        self.assertEqual(result.size, pre_sorted.size)
+        order = _JSortedColumnsAttribute.getOrderForColumn(result.j_table, "a")
+        self.assertEqual(order.get(), _JSortingOrder.Ascending)
+
+        pre_sorted_desc = self.test_table.sort_descending(order_by="a")
+        result_desc = pre_sorted_desc.assert_sorted("a", SortDirection.DESCENDING)
+        order_desc = _JSortedColumnsAttribute.getOrderForColumn(
+            result_desc.j_table, "a"
+        )
+        self.assertEqual(order_desc.get(), _JSortingOrder.Descending)
+
+        with self.assertRaises(DHError):
+            pre_sorted.assert_sorted("a", SortDirection.DESCENDING)
+
+        with self.assertRaises(DHError):
+            self.test_table.assert_sorted("a", description="my_sort_check")
 
     def test_reverse(self):
         reversed_table = self.test_table.reverse()
@@ -1138,6 +1187,19 @@ class TableTestCase(BaseTestCase):
             aggs=self.aggs_for_rollup, include_constituents=True
         )
         self.assertIsNotNone(rollup_table)
+
+        rollup_reagg = test_table.rollup(
+            formula("var=sum(var)", reaggregating=True),
+            by="grp_id",
+        )
+        self.assertIsNotNone(rollup_reagg)
+
+        with self.assertRaises(DHError) as cm:
+            test_table.agg_by(aggs=formula("var=sum(var)", reaggregating=True))
+        self.assertRegex(
+            str(cm.exception),
+            r".+AggFormula does not support reaggregating except in a rollup.",
+        )
 
     def test_tree(self):
         # column 'a' contains duplicate values

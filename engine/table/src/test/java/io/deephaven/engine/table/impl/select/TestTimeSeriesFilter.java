@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.select;
 
@@ -419,5 +419,32 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
         final Table filtered2 = source.where(timeSeriesFilter2);
         assertFalse(filtered2.isRefreshing());
         assertEquals(size, filtered2.size());
+    }
+
+    public void testComposed() {
+        final long start = DateTimeUtils.epochNanos(DateTimeUtils.parseInstant("2026-03-10T09:00:00 NY"));
+
+        final TestClock testClock = new TestClock().setNanos(start + 30 * DateTimeUtils.MINUTE);
+
+        final TimeSeriesFilter timeSeriesFilter =
+                TimeSeriesFilter.newBuilder().columnName("Timestamp").period("PT5m").clock(testClock).invert(true)
+                        .build();
+
+        final Filter disjunctiveOne = DisjunctiveFilter.of(timeSeriesFilter);
+        assertTrue(disjunctiveOne instanceof TimeSeriesFilter);
+
+        final Filter disjunctiveTwo =
+                DisjunctiveFilter.of(timeSeriesFilter, WhereFilterFactory.getExpression("A in `Apple`"));
+        assertTrue(disjunctiveTwo instanceof DisjunctiveFilter);
+
+        final Filter conjunctiveOne = ConjunctiveFilter.of(timeSeriesFilter);
+        assertTrue(conjunctiveOne instanceof TimeSeriesFilter);
+
+        final Filter conjunctiveTwo =
+                ConjunctiveFilter.of(timeSeriesFilter, WhereFilterFactory.getExpression("A in `Apple`"));
+        assertTrue(conjunctiveTwo instanceof ConjunctiveFilter);
+
+        final WhereFilter inverted = WhereFilterInvertedImpl.of(timeSeriesFilter);
+        assertTrue(inverted instanceof WhereFilterInvertedImpl);
     }
 }

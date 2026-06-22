@@ -13,10 +13,8 @@ import io.deephaven.util.datastructures.LongSizedDataStructure;
 import java.util.Arrays;
 import java.lang.Math;
 
-import static io.deephaven.base.CompareUtils.compare;
 import static io.deephaven.util.QueryConstants.*;
 import static io.deephaven.function.Basic.*;
-import static io.deephaven.function.Sort.*;
 import static io.deephaven.function.Cast.castDouble;
 
 /**
@@ -189,7 +187,6 @@ public class Numeric {
 
 
     <#list primitiveTypes as pt>
-    <#if pt.valueType.isNumber >
 
     //////////////////////////// ${pt.primitive} ////////////////////////////
 
@@ -277,6 +274,9 @@ public class Numeric {
         if (values == null) {
             return NULL_LONG;
         }
+    <#if pt.valueType.isChar >
+        return 0;
+    <#else>
 
         long count = 0;
         final long n = values.size();
@@ -291,6 +291,7 @@ public class Numeric {
         }
 
         return count;
+    </#if>
     }
 
     /**
@@ -436,6 +437,9 @@ public class Numeric {
      * @return mean of the absolute value of non-null values.
      */
     public static double absAvg(${pt.vector} values) {
+    <#if pt.valueType.isChar >
+        return avg(values);
+    <#else>
         if (values == null) {
             return NULL_DOUBLE;
         }
@@ -469,6 +473,7 @@ public class Numeric {
         }
 
         return sum / count;
+    </#if>
     }
 
 
@@ -517,6 +522,9 @@ public class Numeric {
      * @return sum of the absolute value of non-null values.
      */
     public static long absSum(${pt.vector} values) {
+    <#if pt.valueType.isChar >
+        return sum(values);
+    <#else>
         if (values == null) {
             return NULL_LONG;
         }
@@ -541,6 +549,7 @@ public class Numeric {
         }
 
         return sum;
+    </#if>
     }
     </#if>
 
@@ -660,8 +669,6 @@ public class Numeric {
     }
 
     <#list primitiveTypes as pt2>
-    <#if pt2.valueType.isNumber >
-
     /**
      * Returns the weighted sample variance.  Null values are excluded.
      *
@@ -788,7 +795,6 @@ public class Numeric {
         return (count * sum2 - sum * sum) / (count * count - count2);
     }
 
-    </#if>
     </#list>
 
 
@@ -841,7 +847,6 @@ public class Numeric {
     }
 
     <#list primitiveTypes as pt2>
-    <#if pt2.valueType.isNumber >
 
     /**
      * Returns the weighted sample standard deviation.  Null values are excluded.
@@ -916,7 +921,6 @@ public class Numeric {
         return v == NULL_DOUBLE ? NULL_DOUBLE : Math.sqrt(v);
     }
 
-    </#if>
     </#list>
 
 
@@ -961,7 +965,6 @@ public class Numeric {
     }
 
     <#list primitiveTypes as pt2>
-    <#if pt2.valueType.isNumber >
 
     /**
      * Returns the weighted standard error.  Null values are excluded.
@@ -1049,7 +1052,6 @@ public class Numeric {
         return s * Math.sqrt(sumw2/sumw/sumw);
     }
 
-    </#if>
     </#list>
 
 
@@ -1094,7 +1096,6 @@ public class Numeric {
     }
 
     <#list primitiveTypes as pt2>
-    <#if pt2.valueType.isNumber >
 
     /**
      * Returns the weighted t-statistic.  Null values are excluded.
@@ -1166,7 +1167,6 @@ public class Numeric {
         return a / s;
     }
 
-    </#if>
     </#list>
 
 
@@ -1583,7 +1583,7 @@ public class Numeric {
         }
 
         ${pt.primitive}[] sorted = values.copyToArray();
-        Arrays.sort(sorted);
+        ArraySort.sort(sorted, 0, sorted.length);
 
         <#if pt.valueType.isFloat >
         if (isNaN(sorted[sorted.length - 1])) {
@@ -1677,7 +1677,7 @@ public class Numeric {
         int n = values.intSize("percentile");
 
         ${pt.primitive}[] sorted = values.copyToArray();
-        Arrays.sort(sorted);
+        ArraySort.sort(sorted, 0, sorted.length);
 
         <#if pt.valueType.isFloat >
         if (isNaN(sorted[sorted.length - 1])) {
@@ -1724,7 +1724,6 @@ public class Numeric {
 
 
     <#list primitiveTypes as pt2>
-    <#if pt2.valueType.isNumber >
 
     /**
      * Returns the covariance.  Null values are excluded.
@@ -1936,7 +1935,6 @@ public class Numeric {
         return cov / Math.sqrt(var0 * var1);
     }
 
-    </#if>
     </#list>
 
 
@@ -2134,6 +2132,7 @@ public class Numeric {
     }
     </#if>
 
+    <#if !pt.valueType.isChar >
     /**
      * Returns the differences between elements in the input vector separated by a stride.
      * A stride of k returns v(i)=e(i+k)-e(i), where v(i) is the ith computed value, and e(i) is the ith input value.
@@ -2200,6 +2199,7 @@ public class Numeric {
 
         return result;
     }
+    </#if>
 
     /**
      * Returns the cumulative minimum.  Null values are excluded.
@@ -2698,7 +2698,6 @@ public class Numeric {
     }
 
     <#list primitiveTypes as pt2>
-    <#if pt2.valueType.isNumber >
 
     /**
      * Returns the value of the first argument raised to the second argument.
@@ -2715,7 +2714,6 @@ public class Numeric {
         return Math.pow(a, b);
     }
 
-    </#if>
     </#list>
 
     /**
@@ -2967,7 +2965,6 @@ public class Numeric {
 
 
     <#list primitiveTypes as pt2>
-    <#if pt2.valueType.isNumber >
 
     /**
      * Returns the weighted sum.  Null values are excluded.
@@ -2976,7 +2973,8 @@ public class Numeric {
      * @param weights weights
      * @return weighted sum of non-null values.
      */
-   <#if pt.valueType.isInteger && pt2.valueType.isInteger >
+   <#if (pt.valueType.isInteger || pt.valueType.isChar) && (pt2.valueType.isInteger || pt2.valueType.isChar) >
+
    public static long wsum(${pt.primitive}[] values, ${pt2.primitive}[] weights) {
         if (values == null || weights == null) {
             return NULL_LONG;
@@ -3001,7 +2999,7 @@ public class Numeric {
      * @param weights weights
      * @return weighted sum of non-null values.
      */
-   <#if pt.valueType.isInteger && pt2.valueType.isInteger >
+   <#if (pt.valueType.isInteger || pt.valueType.isChar) && (pt2.valueType.isInteger || pt2.valueType.isChar) >
     public static long wsum(${pt.primitive}[] values, ${pt2.vector} weights) {
         if (values == null || weights == null) {
             return NULL_LONG;
@@ -3026,7 +3024,7 @@ public class Numeric {
      * @param weights weights
      * @return weighted sum of non-null values.
      */
-   <#if pt.valueType.isInteger && pt2.valueType.isInteger >
+    <#if (pt.valueType.isInteger || pt.valueType.isChar) && (pt2.valueType.isInteger || pt2.valueType.isChar) >
     public static long wsum(${pt.vector} values, ${pt2.primitive}[] weights) {
         if (values == null || weights == null) {
             return NULL_LONG;
@@ -3051,7 +3049,7 @@ public class Numeric {
      * @param weights weights
      * @return weighted sum of non-null values.
      */
-   <#if pt.valueType.isInteger && pt2.valueType.isInteger >
+    <#if (pt.valueType.isInteger || pt.valueType.isChar) && (pt2.valueType.isInteger || pt2.valueType.isChar) >
     public static long wsum(${pt.vector} values, ${pt2.vector} weights) {
         if (values == null || weights == null) {
             return NULL_LONG;
@@ -3241,10 +3239,10 @@ public class Numeric {
         return vsum / wsum;
     }
 
-    </#if>
     </#list>
 
 
+    <#if !pt.valueType.isChar >
     /**
      * Returns a sequence of values.
      *
@@ -3272,7 +3270,7 @@ public class Numeric {
 
         return result;
     }
-
+    </#if>
 
     <#if pt.valueType.isFloat >
 
@@ -3850,7 +3848,7 @@ public class Numeric {
         </#if>
     }
 
-    <#if pt.valueType.isInteger>
+    <#if pt.valueType.isInteger || pt.valueType.isChar>
     /**
      * Returns the sum of its arguments, throwing an exception if the result overflows.
      *
@@ -3872,6 +3870,14 @@ public class Numeric {
         }
 
         return (${pt.primitive}) val;
+        <#elseif pt.primitive == "char">
+        int val = (int)x + (int)y;
+
+        if ( val > ${pt.maxValue} || val < ${pt.minValue} || isNull(val) ) {
+            throw new ArithmeticException("Overflow: " + x + " + " + y);
+        }
+
+        return (${pt.primitive}) val;
         <#else>
         ${pt.primitive} val = Math.addExact(x, y);
 
@@ -3884,7 +3890,7 @@ public class Numeric {
     }
     </#if>
 
-    <#if pt.valueType.isInteger>
+    <#if pt.valueType.isInteger || pt.valueType.isChar>
     /**
      * Returns the difference of its arguments, throwing an exception if the result overflows.
      *
@@ -3906,6 +3912,14 @@ public class Numeric {
         }
 
         return (${pt.primitive}) val;
+        <#elseif pt.primitive == "char">
+        int val = (int)x - (int)y;
+
+        if ( val > ${pt.maxValue} || val < ${pt.minValue} || isNull(val) ) {
+            throw new ArithmeticException("Overflow: " + x + " - " + y);
+        }
+
+        return (${pt.primitive}) val;
         <#else>
         ${pt.primitive} val = Math.subtractExact(x, y);
 
@@ -3918,8 +3932,8 @@ public class Numeric {
     }
     </#if>
 
-     <#if pt.valueType.isInteger>
-     /**
+    <#if pt.valueType.isInteger || pt.valueType.isChar>
+    /**
       * Returns the product of the arguments, throwing an exception if the result overflows.
       *
       * @param x the first value.
@@ -3940,6 +3954,14 @@ public class Numeric {
          }
 
          return (${pt.primitive}) val;
+        <#elseif pt.primitive == "char">
+        int val = (int)x * (int)y;
+
+        if ( val > ${pt.maxValue} || val < ${pt.minValue} || isNull(val) ) {
+            throw new ArithmeticException("Overflow: " + x + " * " + y);
+        }
+
+        return (${pt.primitive}) val;
          <#else>
         ${pt.primitive} val = Math.multiplyExact(x, y);
 
@@ -3952,7 +3974,7 @@ public class Numeric {
      }
      </#if>
 
-    <#if pt.valueType.isInteger>
+    <#if pt.valueType.isInteger || pt.valueType.isChar>
     /**
      * Returns the argument incremented by one, throwing an exception if the result overflows.
      *
@@ -3967,6 +3989,14 @@ public class Numeric {
 
         <#if pt.primitive == "byte" || pt.primitive == "short">
         int val = Math.incrementExact(x);
+
+        if ( val > ${pt.maxValue} || val < ${pt.minValue} || isNull(val) ) {
+            throw new ArithmeticException("Overflow: " + x);
+        }
+
+        return (${pt.primitive}) val;
+        <#elseif pt.primitive == "char">
+        int val = (int)x + 1;
 
         if ( val > ${pt.maxValue} || val < ${pt.minValue} || isNull(val) ) {
             throw new ArithmeticException("Overflow: " + x);
@@ -3989,7 +4019,7 @@ public class Numeric {
     }
     </#if>
 
-    <#if pt.valueType.isInteger>
+    <#if pt.valueType.isInteger || pt.valueType.isChar>
     /**
      * Returns the argument decremented by one, throwing an exception if the result overflows.
      *
@@ -4004,6 +4034,14 @@ public class Numeric {
 
         <#if pt.primitive == "byte" || pt.primitive == "short">
         int val = Math.decrementExact(x);
+
+        if ( val > ${pt.maxValue} || val < ${pt.minValue} || isNull(val) ) {
+            throw new ArithmeticException("Overflow: " + x);
+        }
+
+        return (${pt.primitive}) val;
+        <#elseif pt.primitive == "char">
+        int val = (int)x - 1;
 
         if ( val > ${pt.maxValue} || val < ${pt.minValue} || isNull(val) ) {
             throw new ArithmeticException("Overflow: " + x);
@@ -4026,7 +4064,7 @@ public class Numeric {
     }
     </#if>
 
-     <#if pt.valueType.isInteger>
+    <#if pt.valueType.isInteger || pt.valueType.isChar>
      /**
       * Returns the negation of the argument, throwing an exception if the result overflows.
       *
@@ -4047,6 +4085,8 @@ public class Numeric {
          }
 
          return (${pt.primitive}) val;
+         <#elseif pt.primitive == "char">
+         throw new ArithmeticException("Overflow: " + x);
          <#else>
          ${pt.primitive} val = Math.negateExact(x);
 
@@ -4059,7 +4099,7 @@ public class Numeric {
      }
      </#if>
 
-    <#if pt.valueType.isInteger>
+    <#if pt.valueType.isInteger || pt.valueType.isChar>
      /**
       * Returns the largest (closest to positive infinity) int value that is less than or equal to the
       * algebraic quotient.
@@ -4078,7 +4118,7 @@ public class Numeric {
     }
     </#if>
 
-    <#if pt.valueType.isInteger>
+    <#if pt.valueType.isInteger || pt.valueType.isChar>
      /**
       * Returns the floor modulus of the arguments.
       *
@@ -4214,7 +4254,7 @@ public class Numeric {
         return Math.toRadians(x);
     }
 
-    <#if pt.valueType.isInteger>
+    <#if pt.valueType.isInteger || pt.valueType.isChar>
     /**
      * Returns the value of the argument as an int, throwing an exception if the value overflows an int.
      *
@@ -4241,7 +4281,7 @@ public class Numeric {
     }
     </#if>
 
-    <#if pt.valueType.isInteger>
+    <#if pt.valueType.isInteger || pt.valueType.isChar>
     /**
      * Returns the value of the argument as a short, throwing an exception if the value overflows a short.
      *
@@ -4268,7 +4308,7 @@ public class Numeric {
     }
     </#if>
 
-    <#if pt.valueType.isInteger>
+    <#if pt.valueType.isInteger || pt.valueType.isChar>
     /**
      * Returns the value of the argument as a byte, throwing an exception if the value overflows a byte.
      *
@@ -4313,6 +4353,5 @@ public class Numeric {
     }
     </#if>
 
-    </#if>
     </#list>
 }

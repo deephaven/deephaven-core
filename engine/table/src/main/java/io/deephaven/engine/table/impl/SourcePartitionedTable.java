@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl;
 
@@ -209,6 +209,7 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                 // will eventually manage the TLs, and we need the key suppliers to keep them from being fully removed
                 // until then.
                 retainReference();
+                ensureCleanupOnGC();
                 final Collection<LocationState> locationStates = new ArrayList<>();
                 tableLocationProvider.getTableLocationKeys(
                         lstlk -> locationStates.add(new LocationState(lstlk)),

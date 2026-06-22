@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.util;
 
@@ -44,5 +44,9 @@ public final class DelayedErrorNotifier implements Runnable {
 
         table.notifyListenersOnError(error, entry);
         table.forceReferenceCountToZero();
+    }
+
+    public Throwable getError() {
+        return error;
     }
 }

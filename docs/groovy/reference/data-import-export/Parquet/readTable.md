@@ -51,7 +51,7 @@ A new in-memory table from a Parquet file, metadata file, or directory with a re
 ### Single Parquet file
 
 > [!NOTE]
-> For the following examples, the example data found in [Deephaven's example repository](https://github.com/deephaven/examples) will be used. Follow the instructions in [`Launch Deephaven from pre-built images`](../../../tutorials/docker-install.md) to download and manage the example data.
+> For the following examples, the example data found in [Deephaven's example repository](https://github.com/deephaven/examples) will be used. Follow the instructions in [`Launch Deephaven from pre-built images`](../../../getting-started/docker-install.md) to download and manage the example data.
 
 In this example, `readTable` is used to load the file `/data/examples/Taxi/parquet/taxi.parquet` into a Deephaven table.
 
@@ -93,7 +93,7 @@ source = ParquetTools.readTable("/data/output_GZIP.parquet", ParquetTools.GZIP)
 > For a directory of Parquet files, all sub-directories are also searched. Only files with a `.parquet` extension or `_common_metadata` and `_metadata` files should be located in these directories. All files ending with `.parquet` need the same schema.
 
 > [!NOTE]
-> The following examples use data in [Deephaven's example repository](https://github.com/deephaven/examples). Follow the instructions in [`Launch Deephaven from pre-built images`](../../../tutorials/docker-install.md) to download and manage the example data.
+> The following examples use data in [Deephaven's example repository](https://github.com/deephaven/examples). Follow the instructions in [`Launch Deephaven from pre-built images`](../../../getting-started/docker-install.md) to download and manage the example data.
 
 In this example, `readTable` is used to load the directory `/data/examples/Pems/parquet/pems` into a Deephaven table.
 

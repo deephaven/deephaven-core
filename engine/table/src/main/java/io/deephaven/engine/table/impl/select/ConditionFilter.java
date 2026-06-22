@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.select;
 
@@ -21,6 +21,7 @@ import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
 import io.deephaven.engine.table.impl.util.codegen.CodeGenerator;
 import io.deephaven.engine.context.QueryScopeParam;
+import io.deephaven.engine.util.PyCallableWrapper;
 import io.deephaven.time.TimeLiteralReplacedExpression;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.chunk.*;
@@ -31,6 +32,7 @@ import io.deephaven.util.type.TypeUtils;
 import groovy.json.StringEscapeUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jpy.PyObject;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
@@ -55,6 +57,7 @@ public class ConditionFilter extends AbstractConditionFilter {
     private List<Pair<String, Class<?>>> usedInputs; // that is columns and special variables
     private String classBody;
     private Filter filter = null;
+    private boolean pythonFilter = false;
     private boolean filterValidForCopy = true;
 
     private ConditionFilter(@NotNull String formula) {
@@ -745,8 +748,9 @@ public class ConditionFilter extends AbstractConditionFilter {
     }
 
     @Override
-    protected void setFilter(Filter filter) {
+    protected void setPythonFilter(Filter filter) {
         this.filter = filter;
+        this.pythonFilter = true;
     }
 
     @Override
@@ -771,6 +775,16 @@ public class ConditionFilter extends AbstractConditionFilter {
 
     @Override
     public boolean permitParallelization() {
+        // If we have a vectorizable Python function or any Python inputs, then we must check for free-threaded Python
+        // before using the default value of statelessness.
+        final boolean usesPython =
+                pythonFilter || usedInputs.stream().anyMatch(pp -> PyCallableWrapper.class.isAssignableFrom(pp.second)
+                        || PyObject.class.isAssignableFrom(pp.second));
+        if (usesPython) {
+            if (!PythonFreeThreadUtil.isPythonFreeThreaded()) {
+                return false;
+            }
+        }
         return QueryTable.STATELESS_FILTERS_BY_DEFAULT;
     }
 }

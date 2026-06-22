@@ -22,6 +22,9 @@ In the following example, `@jit` and `@vectorize` are used to JIT compile `funct
 
 ```python
 import math
+import os
+
+os.system("pip install numba")
 from numba import jit, vectorize, double, int64
 
 
@@ -43,6 +46,9 @@ The example below uses lazy compilation on the function `func`. When the code is
 
 ```python
 import numpy as np
+import os
+
+os.system("pip install numba")
 from numba import jit
 import time
 
@@ -76,6 +82,9 @@ If the decorator is used with a function signature, Numba will compile the funct
 The example below uses eager compilation on the function `func` by specifying one or more function signatures. These function signatures denote the allowed input and output data types to and from the function. With eager compilation, the code is compiled into optimized machine code at the function definition. When the code is run the first time, it has already been compiled into optimized machine code, so it's just as fast as the second function call. If the compiled function is used with a data type not specified in the function signature, an error will occur.
 
 ```python
+import os
+
+os.system("pip install numba")
 from numba import vectorize, int64, double
 import numpy as np
 import time
@@ -131,6 +140,9 @@ We've seen the `@jit` and `@vectorize` decorators used to optimize various funct
 This can be visualized with a simple example:
 
 ```python skip-test
+import os
+
+os.system("pip install numba")
 from numba import jit, vectorize, int64
 import numpy as np
 
@@ -170,6 +182,9 @@ The `@guvectorize` decorator takes the concepts from `@vectorize` one step furth
 The following example shows a `@guvectorize` decorated function.
 
 ```python order=:log
+import os
+
+os.system("pip install numba")
 from numba import guvectorize, int64
 import numpy as np
 
@@ -206,6 +221,9 @@ This example looks at three cases:
 The first time the JIT-enabled function is run on a matrix of integers, it's almost ten times slower than the standard function. However, after compilation, the JIT-enabled function is almost two hundred times faster!
 
 ```python
+import os
+
+os.system("pip install numba")
 from numba import jit
 import numpy as np
 import time
@@ -256,6 +274,9 @@ To show how the performance of `@jit` and `@vectorize` differ when applied to De
 
 ```python order=t,t2,t3,t4,t5,t6
 from deephaven import empty_table
+import os
+
+os.system("pip install numba")
 from numba import jit, vectorize, double, int64
 import time
 
@@ -336,6 +357,9 @@ The use of `@vectorize` with functions operating on Deephaven tables results in 
 The following example uses the `@guvectorize` decorator on the function `g`, which is used in an [`update`](../reference/table-operations/select/update.md) operation.
 
 ```python order=result,source
+import os
+
+os.system("pip install numba")
 from numba import guvectorize, int64
 from deephaven import empty_table
 from numpy import typing as npt

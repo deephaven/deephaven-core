@@ -1,9 +1,9 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.sources;
 
-import gnu.trove.list.array.TIntArrayList;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
@@ -25,8 +25,9 @@ import java.util.Arrays;
 public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]>
         implements MutableColumnSourceGetDefaults.ForObject<T> {
     @SuppressWarnings("rawtypes")
-    private static final SoftRecycler recycler = new SoftRecycler<>(DEFAULT_RECYCLER_CAPACITY,
-            () -> new Object[BLOCK_SIZE], (item) -> Arrays.fill(item, null));
+    private static final SoftRecycler recycler =
+            new SoftRecycler<>(ArrayColumnSourceConfiguration.OBJECT_RECYCLER_CAPACITY,
+                    () -> new Object[BLOCK_SIZE], (item) -> Arrays.fill(item, null));
     transient private T[][] prevBlocks;
     private T[][] blocks;
     private final boolean isArrayType;
@@ -101,7 +102,7 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]>
                     prevBlocks[block] = (T[]) recycler.borrowItem();
                     prevInUse[block] = inUse = inUseRecycler.borrowItem();
                     if (prevAllocated == null) {
-                        prevAllocated = new TIntArrayList();
+                        prevAllocated = new IntArrayList();
                     }
                     prevAllocated.add(block);
                 } else {

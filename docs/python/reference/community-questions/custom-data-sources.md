@@ -16,14 +16,14 @@ There are three main integration approaches:
 
 Each Deephaven table consists of:
 
-- A [RowSet](https://deephaven.io/core/javadoc/io/deephaven/engine/rowset/RowSet.html) - An ordered set of long keys representing valid row addresses.
-- Named [ColumnSources](https://deephaven.io/core/javadoc/io/deephaven/engine/table/ColumnSource.html) - A map from column name to ColumnSource, which acts as a dictionary from row key to cell value.
+- A [`RowSet`](/core/javadoc/io/deephaven/engine/rowset/RowSet.html) - An ordered set of long keys representing valid row addresses.
+- Named [`ColumnSources`](/core/javadoc/io/deephaven/engine/table/ColumnSource.html) - A map from column name to `ColumnSource`, which acts as a dictionary from row key to cell value.
 
-In Python, you typically use higher-level APIs like `new_table()`, `DynamicTableWriter`, or pandas integration rather than working directly with RowSets and ColumnSources.
+In Python, you typically use higher-level APIs like `new_table`, [`table_publisher`](../table-operations/create/TablePublisher.md), or pandas integration rather than working directly with `RowSet`s and `ColumnSource`s.
 
 ## Static in-memory tables
 
-For simple static data sources, use `new_table()` to create tables from Python data structures.
+For simple static data sources, use `new_table` to create tables from Python data structures.
 
 Here's an example of creating a static table from custom data:
 
@@ -46,7 +46,7 @@ custom_table = new_table(
 )
 ```
 
-The `new_table()` function automatically infers column types from the provided data.
+The `new_table` function requires explicit column type objects (such as `string_col`, `double_col`) to define each column.
 
 ### Alternative: Using pandas
 
@@ -73,26 +73,26 @@ custom_table = dhpd.to_table(df)
 
 Dynamic tables allow you to integrate real-time data feeds. These tables update on each Deephaven update cycle and notify downstream operations of changes.
 
-The easiest way to create dynamic tables in Python is using `DynamicTableWriter`:
+For most use cases, [`table_publisher`](../table-operations/create/TablePublisher.md) is the recommended way to create dynamic tables in Python. It produces a [blink table](../../conceptual/table-types.md#specialization-3-blink) and exposes an `add` method for publishing data. See the [how-to guide](../../how-to-guides/table-publisher.md) for full details.
 
-```python order=dynamic_table
-from deephaven import DynamicTableWriter
-import deephaven.dtypes as dht
+```python order=null
+from deephaven.stream.table_publisher import table_publisher
+from deephaven import dtypes as dht, new_table
+from deephaven.column import string_col, double_col
 
-# Define the table schema
-column_definitions = {"Symbol": dht.string, "Price": dht.double}
+# Create the blink table and its publisher
+blink_table, publisher = table_publisher(
+    name="Price feed",
+    col_defs={"Symbol": dht.string, "Price": dht.double},
+)
 
-# Create a dynamic table writer
-table_writer = DynamicTableWriter(column_definitions)
-dynamic_table = table_writer.table
-
-# Write initial data
-for i in range(100):
-    table_writer.write_row(f"SYM{i}", 100.0 + i)
-
-# In your update logic, continue writing rows:
-# table_writer.write_row("AAPL", 150.25)
+# Publish data by passing a compatible table to add()
+publisher.add(
+    new_table([string_col("Symbol", ["AAPL"]), double_col("Price", [150.25])])
+)
 ```
+
+[`DynamicTableWriter`](../table-operations/create/DynamicTableWriter.md) remains available for append-only use cases where you want a persistent table rather than a blink table.
 
 ### Using table replayer for time-based data
 
@@ -133,7 +133,7 @@ replayer.start()
 For advanced use cases requiring custom data loading logic, you can use Java interop to create custom ColumnSources. This approach is similar to the Groovy examples but uses Python's Java integration.
 
 > [!WARNING]
-> This is an advanced technique requiring knowledge of Deephaven's Java internals. For most use cases, `new_table()`, `DynamicTableWriter`, or pandas integration are recommended.
+> This is an advanced technique requiring knowledge of Deephaven's Java internals. For most use cases, `new_table`, [`table_publisher`](../table-operations/create/TablePublisher.md), or pandas integration are recommended.
 
 ```python order=custom_table
 from deephaven.jcompat import j_hashmap
@@ -176,7 +176,7 @@ custom_table = QueryTable(row_set, column_sources)
 
 ### Reading from custom file formats
 
-For custom file formats, read the data into Python structures and use `new_table()`:
+For custom file formats, read the data into Python structures and use `new_table`:
 
 ```python skip-test
 import struct
@@ -203,49 +203,46 @@ custom_table = new_table([double_col("Value", data)])
 
 ### Streaming data from APIs
 
-For streaming data from external APIs, use `DynamicTableWriter` with a background thread:
+For streaming data from external APIs, use `table_publisher` with a background thread:
 
 ```python skip-test
 import threading
 import time
-from deephaven import DynamicTableWriter
-import deephaven.dtypes as dht
+from deephaven.stream.table_publisher import table_publisher
+from deephaven import dtypes as dht, new_table
+from deephaven.column import string_col, double_col
 
-# Create dynamic table
-column_definitions = {
-    "Timestamp": dht.Instant,
-    "Symbol": dht.string,
-    "Price": dht.double,
-}
-
-table_writer = DynamicTableWriter(column_definitions)
-streaming_table = table_writer.table
+blink_table, publisher = table_publisher(
+    name="Streaming feed",
+    col_defs={"Symbol": dht.string, "Price": dht.double},
+)
 
 
-def fetch_and_write_data():
+def fetch_and_publish():
     """Background thread that fetches data from an API"""
     while True:
         # Fetch data from your API
         # data = fetch_from_api()
 
-        # Write to table
-        # table_writer.write_row(data['timestamp'], data['symbol'], data['price'])
+        # Build a compatible table and publish it
+        # publisher.add(new_table([string_col("Symbol", [data["symbol"]]), double_col("Price", [data["price"]])]))
 
         time.sleep(1)  # Poll interval
 
 
 # Start background thread
-thread = threading.Thread(target=fetch_and_write_data, daemon=True)
+thread = threading.Thread(target=fetch_and_publish, daemon=True)
 thread.start()
 ```
 
 ## Related documentation
 
-- [Parquet](../../how-to-guides/data-import-export/parquet-export.md)
-- [Iceberg](../../how-to-guides/data-import-export/iceberg.md)
-- [DynamicTableWriter](../table-operations/create/DynamicTableWriter.md)
-- [new_table](../table-operations/create/newTable.md)
 - [Deephaven Core Javadoc](https://deephaven.io/core/javadoc/)
+- [`DynamicTableWriter`](../table-operations/create/DynamicTableWriter.md)
+- [Iceberg](../../how-to-guides/data-import-export/iceberg.md)
+- [`new_table`](../table-operations/create/newTable.md)
+- [Parquet](../../how-to-guides/data-import-export/parquet-export.md)
+- [Write data to a real-time table](../../how-to-guides/table-publisher.md)
 
 > [!NOTE]
 > These FAQ pages contain answers to questions about Deephaven Community Core that our users have asked in our [Community Slack](/slack). If you have a question that is not in our documentation, [join our Community](/slack) and we'll be happy to help!

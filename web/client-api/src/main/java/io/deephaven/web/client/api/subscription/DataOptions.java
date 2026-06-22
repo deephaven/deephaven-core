@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api.subscription;
 
@@ -23,9 +23,9 @@ import jsinterop.base.JsPropertyMap;
 /**
  * Options for requesting table data, either as a snapshot or a subscription. See subtypes for more specific options:
  * <ul>
- * <li>{@link SnapshotOptions} for snapshot-specific options</li>
- * <li>{@link SubscriptionOptions} for full-table subscription-specific options</li>
- * <li>{@link ViewportSubscriptionOptions} for viewport subscription-specific options</li>
+ * <li>{@link SnapshotOptions} for snapshot-specific options.</li>
+ * <li>{@link SubscriptionOptions} for full-table subscription-specific options.</li>
+ * <li>{@link ViewportSubscriptionOptions} for viewport subscription-specific options.</li>
  * </ul>
  */
 @TsInterface

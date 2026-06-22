@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 #
 """This module implements the Session class which provides methods to connect to and interact with the Deephaven
 server."""
@@ -594,7 +594,7 @@ class Session:
             if isinstance(e.__cause__, grpc.RpcError):
                 if e.__cause__.code() == grpc.StatusCode.INVALID_ARGUMENT:
                     raise DHError(f"no table by the name {name}") from None
-            raise e
+            raise
         finally:
             # Explicitly close the table without releasing it (because it isn't ours)
             fake_table._closed = True

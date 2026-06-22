@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit TestCharSegmentedSortedMultiset and run "./gradlew replicateSegmentedSortedMultisetTests" to regenerate
@@ -28,6 +28,8 @@ import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.ssa.SsaTestHelpers;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.vector.LongVectorDirect;
+import io.deephaven.vector.ObjectVectorDirect;
 import io.deephaven.engine.table.impl.util.compact.LongCompactKernel;
 import io.deephaven.test.types.ParallelTest;
 import io.deephaven.util.SafeCloseable;
@@ -93,6 +95,268 @@ public class TestLongSegmentedSortedMultiset extends RefreshingTableTestCase {
                 }
             }
         }
+    }
+
+    public void testEqualsArray() {
+        // exercise the singleton (size == 1), single-leaf, and multi-leaf representations
+        checkEqualsArray(1);
+        checkEqualsArray(3);
+        checkEqualsArray(20);
+    }
+
+    public void testMoveSingletonSource() {
+        final int nodeSize = 4;
+        final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
+        // destination states: empty, singleton, partial leaf, full single leaf, multi-leaf (last leaf partial and full)
+        for (final int destCount : new int[] {0, 1, 3, 4, 6, 8}) {
+            checkAppendMaximum(nodeSize, destCount, desc);
+            checkPrependMinimum(nodeSize, destCount, desc);
+        }
+    }
+
+    public void testMoveSingletonMerge() {
+        final int nodeSize = 4;
+        final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
+        final long v = (long) ('a' + 5);
+        final long w = (long) ('a' + 6);
+
+        // moveFrontToBack: a singleton whose value equals the destination's (singleton) maximum merges via addMaxCount
+        {
+            final LongSegmentedSortedMultiset source = makeSsm(nodeSize, new long[] {v}, new int[] {2});
+            final LongSegmentedSortedMultiset dest = makeSsm(nodeSize, new long[] {v}, new int[] {3});
+            source.moveFrontToBack(dest, source.totalSize());
+            verifySsm(source, new long[0], desc);
+            verifySsm(dest, new long[] {v, v, v, v, v}, desc);
+        }
+
+        // moveBackToFront: a singleton whose value equals the destination's (singleton) minimum merges via addMinCount
+        {
+            final LongSegmentedSortedMultiset source = makeSsm(nodeSize, new long[] {v}, new int[] {2});
+            final LongSegmentedSortedMultiset dest = makeSsm(nodeSize, new long[] {v}, new int[] {3});
+            source.moveBackToFront(dest, source.totalSize());
+            verifySsm(source, new long[0], desc);
+            verifySsm(dest, new long[] {v, v, v, v, v}, desc);
+        }
+
+        // moveFrontToBack: a non-singleton source whose minimum equals the destination's maximum, moving fewer than the
+        // minimum's count, reduces the source minimum in place (addMinCount(-count)) rather than removing it
+        {
+            final LongSegmentedSortedMultiset source = makeSsm(nodeSize, new long[] {v, w}, new int[] {3, 1});
+            final LongSegmentedSortedMultiset dest = makeSsm(nodeSize, new long[] {v}, new int[] {1});
+            source.moveFrontToBack(dest, 1);
+            verifySsm(source, new long[] {v, v, w}, desc);
+            verifySsm(dest, new long[] {v, v}, desc);
+        }
+
+        // moveBackToFront: the symmetric case, reducing the source maximum in place (addMaxCount(-count))
+        {
+            final LongSegmentedSortedMultiset source = makeSsm(nodeSize, new long[] {v, w}, new int[] {1, 3});
+            final LongSegmentedSortedMultiset dest = makeSsm(nodeSize, new long[] {w}, new int[] {1});
+            source.moveBackToFront(dest, 1);
+            verifySsm(source, new long[] {v, w, w}, desc);
+            verifySsm(dest, new long[] {w, w}, desc);
+        }
+    }
+
+    public void testInsertIntoMiddleLeafSplit() {
+        final int nodeSize = 4;
+        final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
+
+        // three full leaves at even offsets; inserting new odd-offset values into the first leaf overflows it, forcing a
+        // hole that shifts the trailing leaves (copyLeavesAndDirectory) and runs the existing-value merge (maybeCompact)
+        final long[] initial = new long[12];
+        for (int ii = 0; ii < 12; ++ii) {
+            initial[ii] = (long) ('a' + 2 * ii);
+        }
+        final LongSegmentedSortedMultiset ssm = makeSsm(nodeSize, initial);
+
+        try (final WritableLongChunk<Values> values = WritableLongChunk.makeWritableChunk(3);
+                final WritableIntChunk<ChunkLengths> counts = WritableIntChunk.makeWritableChunk(3)) {
+            values.set(0, (long) ('a' + 1));
+            values.set(1, (long) ('a' + 3));
+            values.set(2, (long) ('a' + 5));
+            counts.set(0, 1);
+            counts.set(1, 1);
+            counts.set(2, 1);
+            ssm.insert(values, counts);
+        }
+
+        final long[] expected = new long[] {
+                (long) ('a' + 0), (long) ('a' + 1), (long) ('a' + 2), (long) ('a' + 3), (long) ('a' + 4),
+                (long) ('a' + 5), (long) ('a' + 6), (long) ('a' + 8), (long) ('a' + 10), (long) ('a' + 12),
+                (long) ('a' + 14), (long) ('a' + 16), (long) ('a' + 18), (long) ('a' + 20), (long) ('a' + 22)};
+        verifySsm(ssm, expected, desc);
+    }
+
+    public void testRemoveMaxMultiLeaf() {
+        final int nodeSize = 4;
+        final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
+
+        // a multi-leaf source whose maximum equals the destination minimum, moving the whole maximum entry, exercises
+        // removeMax's leafCount > 1 branch
+        final LongSegmentedSortedMultiset source = makeSsm(nodeSize, new long[] {
+                (long) ('a' + 0), (long) ('a' + 1), (long) ('a' + 2), (long) ('a' + 3), (long) ('a' + 4)});
+        final LongSegmentedSortedMultiset dest =
+                makeSsm(nodeSize, new long[] {(long) ('a' + 4), (long) ('a' + 5)});
+        source.moveBackToFront(dest, 1);
+        verifySsm(source, new long[] {(long) ('a' + 0), (long) ('a' + 1), (long) ('a' + 2), (long) ('a' + 3)}, desc);
+        verifySsm(dest, new long[] {(long) ('a' + 4), (long) ('a' + 4), (long) ('a' + 5)}, desc);
+    }
+
+    public void testRemoveMaxSizeOne() {
+        final int nodeSize = 4;
+        final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
+
+        // a two-value single-leaf directory; removing its maximum leaves a size-1 directory (removeMax's leafCount == 1
+        // branch) rather than collapsing to the singleton representation
+        final LongSegmentedSortedMultiset source =
+                makeSsm(nodeSize, new long[] {(long) ('a' + 3), (long) ('a' + 4)});
+        final LongSegmentedSortedMultiset dest1 =
+                makeSsm(nodeSize, new long[] {(long) ('a' + 4), (long) ('a' + 5)});
+        source.moveBackToFront(dest1, 1);
+        verifySsm(source, new long[] {(long) ('a' + 3)}, desc);
+        verifySsm(dest1, new long[] {(long) ('a' + 4), (long) ('a' + 4), (long) ('a' + 5)}, desc);
+
+        // removing the maximum of that size-1 directory clears the set (removeMax's size == 1 branch)
+        final LongSegmentedSortedMultiset dest2 =
+                makeSsm(nodeSize, new long[] {(long) ('a' + 3), (long) ('a' + 6)});
+        source.moveBackToFront(dest2, 1);
+        verifySsm(source, new long[0], desc);
+        verifySsm(dest2, new long[] {(long) ('a' + 3), (long) ('a' + 3), (long) ('a' + 6)}, desc);
+    }
+
+    public void testMoveFrontToBackPartialAppend() {
+        final int nodeSize = 4;
+        final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
+
+        // single-leaf directory destination: moving part of the source minimum's count appends the partial value into
+        // the destination directory (the directoryCount != null branch of the partial-append handling)
+        {
+            final LongSegmentedSortedMultiset source =
+                    makeSsm(nodeSize, new long[] {(long) ('a' + 2), (long) ('a' + 3)}, new int[] {2, 2});
+            final LongSegmentedSortedMultiset dest =
+                    makeSsm(nodeSize, new long[] {(long) ('a' + 0), (long) ('a' + 1)});
+            source.moveFrontToBack(dest, 1);
+            verifySsm(source, new long[] {(long) ('a' + 2), (long) ('a' + 3), (long) ('a' + 3)}, desc);
+            verifySsm(dest, new long[] {(long) ('a' + 0), (long) ('a' + 1), (long) ('a' + 2)}, desc);
+        }
+
+        // multi-leaf destination: the same partial move appends into the destination's last leaf, and the leftover count
+        // is decremented on that leaf (the directoryCount == null leftover branch)
+        {
+            final LongSegmentedSortedMultiset source =
+                    makeSsm(nodeSize, new long[] {(long) ('a' + 5), (long) ('a' + 6)}, new int[] {2, 2});
+            final LongSegmentedSortedMultiset dest = makeSsm(nodeSize, new long[] {
+                    (long) ('a' + 0), (long) ('a' + 1), (long) ('a' + 2), (long) ('a' + 3), (long) ('a' + 4)});
+            source.moveFrontToBack(dest, 1);
+            verifySsm(source, new long[] {(long) ('a' + 5), (long) ('a' + 6), (long) ('a' + 6)}, desc);
+            verifySsm(dest, new long[] {(long) ('a' + 0), (long) ('a' + 1), (long) ('a' + 2), (long) ('a' + 3),
+                    (long) ('a' + 4), (long) ('a' + 5)}, desc);
+        }
+    }
+
+    public void testMoveBackToFrontCompleteLeaves() {
+        final int nodeSize = 4;
+        final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
+
+        // a three-leaf source where the boundary value's count is split: moving the six largest transfers two complete
+        // leaves plus a leftover slot of the boundary value (the multi-leaf complete-leaf move with a leftover slot)
+        final LongSegmentedSortedMultiset source = makeSsm(nodeSize, new long[] {
+                (long) ('a' + 0), (long) ('a' + 1), (long) ('a' + 2), (long) ('a' + 3), (long) ('a' + 4),
+                (long) ('a' + 5), (long) ('a' + 6), (long) ('a' + 7), (long) ('a' + 8)},
+                new int[] {1, 1, 1, 2, 1, 1, 1, 1, 1});
+        final LongSegmentedSortedMultiset dest =
+                makeSsm(nodeSize, new long[] {(long) ('a' + 9), (long) ('a' + 10)});
+        source.moveBackToFront(dest, 6);
+        verifySsm(source,
+                new long[] {(long) ('a' + 0), (long) ('a' + 1), (long) ('a' + 2), (long) ('a' + 3)}, desc);
+        verifySsm(dest, new long[] {(long) ('a' + 3), (long) ('a' + 4), (long) ('a' + 5), (long) ('a' + 6),
+                (long) ('a' + 7), (long) ('a' + 8), (long) ('a' + 9), (long) ('a' + 10)}, desc);
+    }
+
+    public void testScalarInsertRemove() {
+        final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
+        final int alphabet = 12;
+        // a small node size so the scalar inserts/removes exercise the directory, multi-leaf, split, and collapse
+        // paths with only a handful of distinct values
+        final int nodeSize = 4;
+        for (int seed = 0; seed < 20; ++seed) {
+            final Random rng = new Random(seed);
+            final LongSegmentedSortedMultiset ssm = new LongSegmentedSortedMultiset(nodeSize);
+            final long[] refCounts = new long[alphabet];
+
+            for (int ii = 0; ii < 60; ++ii) {
+                final int offset = rng.nextInt(alphabet);
+                final int count = 1 + rng.nextInt(3);
+                final boolean wasPresent = refCounts[offset] > 0;
+                final boolean added = ssm.insert((long) ('a' + offset), count);
+                refCounts[offset] += count;
+                assertEquals(!wasPresent, added);
+                verifyScalar(ssm, refCounts, desc);
+            }
+
+            while (true) {
+                final int[] present = new int[alphabet];
+                int presentCount = 0;
+                for (int offset = 0; offset < alphabet; ++offset) {
+                    if (refCounts[offset] > 0) {
+                        present[presentCount++] = offset;
+                    }
+                }
+                if (presentCount == 0) {
+                    break;
+                }
+                final int offset = present[rng.nextInt(presentCount)];
+                final int count = 1 + rng.nextInt((int) refCounts[offset]);
+                final boolean fully = count == refCounts[offset];
+                final boolean removed = ssm.remove((long) ('a' + offset), count);
+                refCounts[offset] -= count;
+                assertEquals(fully, removed);
+                verifyScalar(ssm, refCounts, desc);
+            }
+
+            assertEquals(0, ssm.size());
+            assertEquals(0, ssm.totalSize());
+        }
+    }
+
+    private void verifyScalar(LongSegmentedSortedMultiset ssm, long[] refCounts, SsaTestHelpers.TestDescriptor desc) {
+        int total = 0;
+        int distinct = 0;
+        for (int offset = 0; offset < refCounts.length; ++offset) {
+            total += refCounts[offset];
+            if (refCounts[offset] > 0) {
+                distinct++;
+            }
+        }
+        final long[] expanded = new long[total];
+        int position = 0;
+        for (int offset = 0; offset < refCounts.length; ++offset) {
+            for (long kk = 0; kk < refCounts[offset]; ++kk) {
+                expanded[position++] = (long) ('a' + offset);
+            }
+        }
+        verifySsm(ssm, expanded, desc);
+        assertEquals(distinct, ssm.size());
+        assertEquals(total, ssm.totalSize());
+    }
+
+    public void testInsertRemoveWithOffset() {
+        final int nodeSize = 4;
+        final int prefix = 3;
+        // `subject` is built with offset inserts/removes (from chunks carrying a junk prefix that must be ignored);
+        // `reference` is built with the plain (offset 0) calls. After every step the contents must be identical.
+        final LongSegmentedSortedMultiset subject = new LongSegmentedSortedMultiset(nodeSize);
+        final LongSegmentedSortedMultiset reference = new LongSegmentedSortedMultiset(nodeSize);
+
+        // empty -> multiple leaves (makeLeavesInitial with an offset)
+        applyInsert(subject, reference, prefix, range(1, 10), ones(10));
+        // a new minimum plus merges into existing values (insertExisting + distributeNewIntoLeaves with an offset)
+        applyInsert(subject, reference, prefix, new int[] {0, 1, 3}, new int[] {1, 2, 3});
+        // new maximums (doAppend with an offset)
+        applyInsert(subject, reference, prefix, new int[] {11, 12}, new int[] {5, 5});
+        // removals from an offset (removeFromLeaf with an offset)
+        applyRemove(subject, reference, prefix, new int[] {1, 3, 11}, new int[] {1, 2, 1});
     }
 
     public void testPartialCopy() {
@@ -334,5 +598,277 @@ public class TestLongSegmentedSortedMultiset extends RefreshingTableTestCase {
         } catch (AssertionFailure e) {
             TestCase.fail("Check failed at " + desc + ": " + e.getMessage());
         }
+    }
+
+    private LongSegmentedSortedMultiset makeSsm(int nodeSize, long[] values) {
+        final int[] counts = new int[values.length];
+        Arrays.fill(counts, 1);
+        return makeSsm(nodeSize, values, counts);
+    }
+
+    private LongSegmentedSortedMultiset makeSsm(int nodeSize, long[] values, int[] counts) {
+        final LongSegmentedSortedMultiset ssm = new LongSegmentedSortedMultiset(nodeSize);
+        if (values.length > 0) {
+            try (final WritableLongChunk<Values> valuesChunk = WritableLongChunk.makeWritableChunk(values.length);
+                 final WritableIntChunk<ChunkLengths> countsChunk = WritableIntChunk.makeWritableChunk(values.length)) {
+                for (int ii = 0; ii < values.length; ++ii) {
+                    valuesChunk.set(ii, values[ii]);
+                    countsChunk.set(ii, counts[ii]);
+                }
+                ssm.insert(valuesChunk, countsChunk);
+            }
+        }
+        return ssm;
+    }
+
+    private static int[] range(int start, int count) {
+        final int[] result = new int[count];
+        for (int ii = 0; ii < count; ++ii) {
+            result[ii] = start + ii;
+        }
+        return result;
+    }
+
+    private static int[] ones(int count) {
+        final int[] result = new int[count];
+        Arrays.fill(result, 1);
+        return result;
+    }
+
+    private void applyInsert(LongSegmentedSortedMultiset subject, LongSegmentedSortedMultiset reference, int prefix,
+            int[] valueOffsets, int[] counts) {
+        final long[] values = new long[valueOffsets.length];
+        for (int ii = 0; ii < values.length; ++ii) {
+            values[ii] = (long) ('a' + valueOffsets[ii]);
+        }
+
+        // reference: a plain (offset 0) insert
+        try (final WritableLongChunk<Values> valuesChunk = WritableLongChunk.makeWritableChunk(values.length);
+             final WritableIntChunk<ChunkLengths> countsChunk = WritableIntChunk.makeWritableChunk(values.length)) {
+            for (int ii = 0; ii < values.length; ++ii) {
+                valuesChunk.set(ii, values[ii]);
+                countsChunk.set(ii, counts[ii]);
+            }
+            reference.insert(valuesChunk, countsChunk);
+        }
+
+        // subject: an offset insert from a chunk with a junk prefix that must be left untouched
+        final long junk = (long) ('a' - 1);
+        try (final WritableLongChunk<Values> valuesChunk = WritableLongChunk.makeWritableChunk(prefix + values.length);
+             final WritableIntChunk<ChunkLengths> countsChunk =
+                     WritableIntChunk.makeWritableChunk(prefix + values.length)) {
+            for (int ii = 0; ii < prefix; ++ii) {
+                valuesChunk.set(ii, junk);
+                countsChunk.set(ii, 7);
+            }
+            for (int ii = 0; ii < values.length; ++ii) {
+                valuesChunk.set(prefix + ii, values[ii]);
+                countsChunk.set(prefix + ii, counts[ii]);
+            }
+            subject.insert(valuesChunk, countsChunk, prefix, values.length);
+            for (int ii = 0; ii < prefix; ++ii) {
+                assertEquals(junk, valuesChunk.get(ii));
+            }
+        }
+
+        assertSameContents(subject, reference);
+    }
+
+    private void applyRemove(LongSegmentedSortedMultiset subject, LongSegmentedSortedMultiset reference, int prefix,
+            int[] valueOffsets, int[] counts) {
+        final long[] values = new long[valueOffsets.length];
+        for (int ii = 0; ii < values.length; ++ii) {
+            values[ii] = (long) ('a' + valueOffsets[ii]);
+        }
+        final SegmentedSortedMultiSet.RemoveContext removeContext =
+                SegmentedSortedMultiSet.makeRemoveContext(reference.getNodeSize());
+
+        try (final WritableLongChunk<Values> valuesChunk = WritableLongChunk.makeWritableChunk(values.length);
+             final WritableIntChunk<ChunkLengths> countsChunk = WritableIntChunk.makeWritableChunk(values.length)) {
+            for (int ii = 0; ii < values.length; ++ii) {
+                valuesChunk.set(ii, values[ii]);
+                countsChunk.set(ii, counts[ii]);
+            }
+            reference.remove(removeContext, valuesChunk, countsChunk);
+        }
+
+        final long junk = (long) ('a' - 1);
+        try (final WritableLongChunk<Values> valuesChunk = WritableLongChunk.makeWritableChunk(prefix + values.length);
+             final WritableIntChunk<ChunkLengths> countsChunk =
+                     WritableIntChunk.makeWritableChunk(prefix + values.length)) {
+            for (int ii = 0; ii < prefix; ++ii) {
+                valuesChunk.set(ii, junk);
+                countsChunk.set(ii, 7);
+            }
+            for (int ii = 0; ii < values.length; ++ii) {
+                valuesChunk.set(prefix + ii, values[ii]);
+                countsChunk.set(prefix + ii, counts[ii]);
+            }
+            subject.remove(removeContext, valuesChunk, countsChunk, prefix, values.length);
+            for (int ii = 0; ii < prefix; ++ii) {
+                assertEquals(junk, valuesChunk.get(ii));
+            }
+        }
+
+        assertSameContents(subject, reference);
+    }
+
+    private void assertSameContents(LongSegmentedSortedMultiset subject, LongSegmentedSortedMultiset reference) {
+        subject.validate();
+        reference.validate();
+        assertEquals(reference.size(), subject.size());
+        assertEquals(reference.totalSize(), subject.totalSize());
+        try (final WritableLongChunk<?> subjectKeys = subject.keyChunk();
+             final WritableLongChunk<?> subjectCounts = subject.countChunk();
+             final WritableLongChunk<?> referenceKeys = reference.keyChunk();
+             final WritableLongChunk<?> referenceCounts = reference.countChunk()) {
+            assertEquals(referenceKeys.size(), subjectKeys.size());
+            for (int ii = 0; ii < referenceKeys.size(); ++ii) {
+                assertEquals(referenceKeys.get(ii), subjectKeys.get(ii));
+                assertEquals(referenceCounts.get(ii), subjectCounts.get(ii));
+            }
+        }
+    }
+
+    private void checkEqualsArray(int valueCount) {
+        final int nodeSize = 4;
+        final long[] values = new long[valueCount];
+        for (int ii = 0; ii < valueCount; ++ii) {
+            values[ii] = (long) ('a' + ii);
+        }
+        final LongSegmentedSortedMultiset ssm = makeSsm(nodeSize, values);
+
+        final Long[] boxed = new Long[valueCount];
+        for (int ii = 0; ii < valueCount; ++ii) {
+            boxed[ii] = values[ii];
+        }
+
+        // a Vector with identical contents is equal (the primitive Vector becomes an ObjectVector after Object
+        // replication, so this exercises both equalsArray overloads across the type variants)
+        assertTrue(ssm.equals(ssm.getDirect()));
+        assertTrue(ssm.equals(new LongVectorDirect(values)));
+        assertTrue(ssm.equals(new ObjectVectorDirect<>(boxed)));
+
+        // a Vector of a different length is not equal
+        final long[] longer = new long[valueCount + 1];
+        for (int ii = 0; ii < longer.length; ++ii) {
+            longer[ii] = (long) ('a' + ii);
+        }
+        assertFalse(ssm.equals(new LongVectorDirect(longer)));
+        final Long[] longerBoxed = new Long[valueCount + 1];
+        for (int ii = 0; ii < longerBoxed.length; ++ii) {
+            longerBoxed[ii] = (long) ('a' + ii);
+        }
+        assertFalse(ssm.equals(new ObjectVectorDirect<>(longerBoxed)));
+
+        // a Vector that differs from the original in a single position is not equal; check the first, middle, and last
+        if (valueCount > 0) {
+            final long different = (long) ('a' + 20);
+            for (final int position : new int[] {0, valueCount / 2, valueCount - 1}) {
+                final long[] modifiedValues = values.clone();
+                modifiedValues[position] = different;
+                assertFalse(ssm.equals(new LongVectorDirect(modifiedValues)));
+
+                final Long[] modifiedBoxed = boxed.clone();
+                modifiedBoxed[position] = different;
+                assertFalse(ssm.equals(new ObjectVectorDirect<>(modifiedBoxed)));
+            }
+        }
+    }
+
+    // region NullEquals
+    public void testEqualsArrayNull() {
+        // a singleton holding the null sentinel
+        checkEqualsArrayNull(4, new long[] {NULL_LONG});
+        // a single leaf containing the null sentinel
+        checkEqualsArrayNull(4, new long[] {NULL_LONG, (long) ('a' + 1), (long) ('a' + 2)});
+        // multiple leaves containing the null sentinel
+        checkEqualsArrayNull(4, new long[] {NULL_LONG,
+                (long) ('a' + 1), (long) ('a' + 2), (long) ('a' + 3), (long) ('a' + 4), (long) ('a' + 5)});
+    }
+
+    private void checkEqualsArrayNull(int nodeSize, long[] sortedValues) {
+        // sortedValues must be sorted and distinct and contain the null sentinel (which sorts first)
+        final LongSegmentedSortedMultiset ssm = makeSsm(nodeSize, sortedValues);
+        final long[] stored = ssm.toArray();
+
+        // boxing the null sentinel yields a non-null element holding the sentinel value, which compares equal
+        final Long[] boxedSentinel = new Long[stored.length];
+        for (int ii = 0; ii < stored.length; ++ii) {
+            boxedSentinel[ii] = stored[ii];
+        }
+        assertTrue(ssm.equals(new ObjectVectorDirect<>(boxedSentinel)));
+
+        // a literal null also compares equal to the stored null sentinel
+        final Long[] boxedNull = boxedSentinel.clone();
+        for (int ii = 0; ii < stored.length; ++ii) {
+            if (stored[ii] == NULL_LONG) {
+                boxedNull[ii] = null;
+            }
+        }
+        assertTrue(ssm.equals(new ObjectVectorDirect<>(boxedNull)));
+
+        // a null at a position holding a non-null value is not equal
+        for (int ii = 0; ii < stored.length; ++ii) {
+            if (stored[ii] != NULL_LONG) {
+                final Long[] boxedWrongNull = boxedSentinel.clone();
+                boxedWrongNull[ii] = null;
+                assertFalse(ssm.equals(new ObjectVectorDirect<>(boxedWrongNull)));
+                break;
+            }
+        }
+    }
+    // endregion NullEquals
+
+    private void verifySsm(LongSegmentedSortedMultiset ssm, long[] expanded, SsaTestHelpers.TestDescriptor desc) {
+        try (final WritableLongChunk<Values> valueChunk =
+                WritableLongChunk.makeWritableChunk(Math.max(expanded.length, 1))) {
+            valueChunk.setSize(expanded.length);
+            for (int ii = 0; ii < expanded.length; ++ii) {
+                valueChunk.set(ii, expanded[ii]);
+            }
+            checkSsm(ssm, valueChunk, true, desc);
+        }
+    }
+
+    private void checkAppendMaximum(int nodeSize, int destCount, SsaTestHelpers.TestDescriptor desc) {
+        final long[] destValues = new long[destCount];
+        for (int ii = 0; ii < destCount; ++ii) {
+            destValues[ii] = (long) ('a' + 1 + ii);
+        }
+        // strictly greater than everything in the destination, so it becomes the new maximum (exercises appendMaximum)
+        final long value = (long) ('a' + 20);
+
+        final LongSegmentedSortedMultiset source = makeSsm(nodeSize, new long[] {value});
+        final LongSegmentedSortedMultiset dest = makeSsm(nodeSize, destValues);
+
+        source.moveFrontToBack(dest, source.totalSize());
+
+        verifySsm(source, new long[0], desc);
+        final long[] expected = Arrays.copyOf(destValues, destCount + 1);
+        expected[destCount] = value;
+        verifySsm(dest, expected, desc);
+    }
+
+    private void checkPrependMinimum(int nodeSize, int destCount, SsaTestHelpers.TestDescriptor desc) {
+        final long[] destValues = new long[destCount];
+        for (int ii = 0; ii < destCount; ++ii) {
+            destValues[ii] = (long) ('a' + 1 + ii);
+        }
+        // strictly less than everything in the destination, so it becomes the new minimum (exercises prependMinimum).
+        // Use ('a' + 0) rather than a bare 'a' so that the Object replication boxes to the same type as the other
+        // values (int arithmetic boxes to Integer; a bare long literal would box to Long and break comparisons).
+        final long value = (long) ('a' + 0);
+
+        final LongSegmentedSortedMultiset source = makeSsm(nodeSize, new long[] {value});
+        final LongSegmentedSortedMultiset dest = makeSsm(nodeSize, destValues);
+
+        source.moveBackToFront(dest, source.totalSize());
+
+        verifySsm(source, new long[0], desc);
+        final long[] expected = new long[destCount + 1];
+        expected[0] = value;
+        System.arraycopy(destValues, 0, expected, 1, destCount);
+        verifySsm(dest, expected, desc);
     }
 }

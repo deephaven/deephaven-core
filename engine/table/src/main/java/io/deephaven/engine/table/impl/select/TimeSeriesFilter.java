@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.select;
 
@@ -331,7 +331,7 @@ public class TimeSeriesFilter
             // The original filter did not include nulls for a regular filter, so we do not include them here either to
             // maintain compatibility. That also means the inverted filter is going to include nulls (as the null is
             // less than the current time using Deephaven long comparisons).
-            final RowSet matched = windowColumnSource.match(false, false, false, rowSet, Boolean.TRUE);
+            final RowSet matched = windowColumnSource.match(false, MatchOptions.REGULAR, rowSet, Boolean.TRUE);
             inWindowRowSet.insert(matched);
             return matched;
         }

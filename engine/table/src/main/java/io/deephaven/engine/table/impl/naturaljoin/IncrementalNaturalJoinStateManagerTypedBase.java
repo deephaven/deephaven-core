@@ -1,9 +1,9 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.naturaljoin;
 
-import gnu.trove.list.array.TLongArrayList;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
 import io.deephaven.api.NaturalJoinType;
 import io.deephaven.base.MathUtil;
 import io.deephaven.base.verify.Assert;
@@ -87,7 +87,7 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
     protected ObjectArraySource<WritableRowSet> rightSideDuplicateRowSets =
             new ObjectArraySource<>(WritableRowSet.class);
     protected long nextDuplicateRightSide = 0;
-    protected TLongArrayList freeDuplicateValues = new TLongArrayList();
+    protected LongArrayList freeDuplicateValues = new LongArrayList();
 
     // the mask for insertion into the main table (this is used so that we can identify whether a slot belongs to the
     // main or alternate table)
@@ -415,10 +415,7 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
             rightSideDuplicateRowSets.ensureCapacity(nextDuplicateRightSide + 1);
             return nextDuplicateRightSide++;
         } else {
-            final int offset = freeDuplicateValues.size() - 1;
-            final long value = freeDuplicateValues.get(offset);
-            freeDuplicateValues.remove(offset, 1);
-            return value;
+            return freeDuplicateValues.removeLong(freeDuplicateValues.size() - 1);
         }
     }
 

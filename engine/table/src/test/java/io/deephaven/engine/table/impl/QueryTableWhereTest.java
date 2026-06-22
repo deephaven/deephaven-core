@@ -1,13 +1,14 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl;
 
 import com.google.common.collect.Lists;
-import gnu.trove.list.TLongList;
-import gnu.trove.list.array.TLongArrayList;
+import it.unimi.dsi.fastutil.longs.LongList;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
 import io.deephaven.api.RawString;
 import io.deephaven.api.filter.Filter;
+import io.deephaven.base.FileUtils;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
@@ -40,6 +41,7 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.gui.table.filters.Condition;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
@@ -53,8 +55,11 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.File;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.nio.file.Files;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.*;
@@ -1062,7 +1067,8 @@ public abstract class QueryTableWhereTest {
                     called.setValue(true);
                     return (ConditionFilter) ConditionFilter.createConditionFilter("var1 != var2");
                 }),
-                MatchFilter.CaseSensitivity.IgnoreCase, MatchFilter.MatchType.Inverted, "var1", "var2");
+                MatchOptions.builder().caseInsensitive(true).inverted(true).build(),
+                "var1", new String[] {"var2"}, null);
 
         final Table result = table.where(filter);
         assertTableEquals(table, result);
@@ -2656,13 +2662,17 @@ public abstract class QueryTableWhereTest {
                 filter0.withRespectedBarriers("1").withDeclaredBarriers("2"),
                 postFilter.withRespectedBarriers("2")));
         assertEquals(100_000, preFilter.numRowsProcessed());
-        assertEquals(1, filter0.numRowsProcessed());
+        assertTrue(filter0.numRowsProcessed() <= 1); // Constant (0 if chunk filtered, 1 if table filtered)
         assertEquals(100_000, postFilter.numRowsProcessed()); // All rows passed
 
         assertEquals(100_000, res0.size());
 
         preFilter.reset();
         postFilter.reset();
+
+        // The rowset capturing filters ignore some optimization opportunities (like chunk filtering) so run these
+        // again without wrappers and compare the results.
+        assertTableEquals(res0, source.where(filterAllPass));
 
         final RowSetCapturingFilter filter1 = new ParallelizedRowSetCapturingFilter(RawString.of(filterNonePass));
 
@@ -2672,10 +2682,12 @@ public abstract class QueryTableWhereTest {
                 filter1.withRespectedBarriers("1").withDeclaredBarriers("2"),
                 postFilter.withRespectedBarriers("2")));
         assertEquals(100_000, preFilter.numRowsProcessed());
-        assertEquals(1, filter1.numRowsProcessed());
+        assertTrue(filter1.numRowsProcessed() <= 1); // Constant (0 if chunk filtered, 1 if table filtered)
         assertEquals(0, postFilter.numRowsProcessed()); // No rows passed
 
         assertEquals(0, res1.size());
+
+        assertTableEquals(res1, source.where(filterNonePass));
     }
 
     @Test
@@ -2700,7 +2712,7 @@ public abstract class QueryTableWhereTest {
                 filter0.withRespectedBarriers("1").withDeclaredBarriers("2"),
                 postFilter.withRespectedBarriers("2")));
         assertEquals(200_000, preFilter.numRowsProcessed());
-        assertEquals(100_001, filter0.numRowsProcessed()); // 100_000 from source1, 1 from source2
+        assertEquals(100_000, filter0.numRowsProcessed()); // 100_000 from source1, 0 from source2
         assertEquals(100_001, postFilter.numRowsProcessed()); // 1 from source1, 100_000 from source2
 
         assertEquals(100_001, res0.size()); // 1 from source1, 100_000 from source2
@@ -2714,7 +2726,7 @@ public abstract class QueryTableWhereTest {
                 filter1.withRespectedBarriers("1").withDeclaredBarriers("2"),
                 postFilter.withRespectedBarriers("2")));
         assertEquals(200_000, preFilter.numRowsProcessed());
-        assertEquals(100_001, filter1.numRowsProcessed()); // 100_000 from source1, 1 from source2
+        assertEquals(100_000, filter1.numRowsProcessed()); // 100_000 from source1, 0 from source2
         assertEquals(99_999, postFilter.numRowsProcessed()); // 99_000 from source1, 0 from source2
 
         assertEquals(99_999, res1.size());
@@ -2742,7 +2754,7 @@ public abstract class QueryTableWhereTest {
                 filter0.withRespectedBarriers("1").withDeclaredBarriers("2"),
                 postFilter.withRespectedBarriers("2")));
         assertEquals(200_000, preFilter.numRowsProcessed());
-        assertEquals(100_001, filter0.numRowsProcessed()); // 100_000 from source1, 1 from source2
+        assertEquals(100_000, filter0.numRowsProcessed()); // 100_000 from source1, source2 constant
         assertEquals(100_001, postFilter.numRowsProcessed()); // 1 from source1, 100_000 from source2
 
         assertEquals(100_001, res0.size()); // 1 from source1, 100_000 from source2
@@ -2759,6 +2771,7 @@ public abstract class QueryTableWhereTest {
                 .update("A = 42", "B=2", "C=3");
 
         final RowSetCapturingFilter preFilter = new RowSetCapturingFilter();
+        // NOTE: filter0 won't be tracked, will be applied as a chunk filter to constant regions.
         final RowSetCapturingFilter filter0 = new ParallelizedRowSetCapturingFilter(RawString.of("B = 42"));
         final RowSetCapturingFilter postFilter = new RowSetCapturingFilter();
 
@@ -2774,7 +2787,7 @@ public abstract class QueryTableWhereTest {
         TableTools.showWithRowSet(res0);
 
         assertEquals(10, preFilter.numRowsProcessed());
-        assertEquals(2, filter0.numRowsProcessed()); // 1 from source1, 1 from source2
+        assertEquals(0, filter0.numRowsProcessed());
         assertEquals(5, postFilter.numRowsProcessed()); // 5 from source2
         assertEquals(5, res0.size());
 
@@ -2806,7 +2819,7 @@ public abstract class QueryTableWhereTest {
                 filter.withRespectedBarriers("1").withDeclaredBarriers("2"),
                 postFilter.withRespectedBarriers("2")));
         assertEquals(47620, preFilter.numRowsProcessed()); // 33334 from source1, 14286 from source2
-        assertEquals(33335, filter.numRowsProcessed()); // 33334 from source1, 1 from source2
+        assertEquals(33334, filter.numRowsProcessed()); // 33334 from source1, source2 constant (not tracked)
         assertEquals(14287, postFilter.numRowsProcessed()); // 1 from source1, 14286 from source2
 
         assertEquals(14287, res0.size()); // 1 from source1, 100_000 from source2
@@ -2858,8 +2871,8 @@ public abstract class QueryTableWhereTest {
                 filter0.withRespectedBarriers("1").withDeclaredBarriers("2"),
                 postFilter.withRespectedBarriers("2")));
         assertEquals(400_000, preFilter.numRowsProcessed());
-        // 100_000 from source1, 1 from source2, 100_000 from source3, 1 from source4
-        assertEquals(200_002, filter0.numRowsProcessed());
+        // 100_000 from source1, 100_000 from source3, source2 and source4 are constant (not tracked)
+        assertEquals(200_000, filter0.numRowsProcessed());
         assertEquals(100_001, postFilter.numRowsProcessed()); // 1 from source1, 100_000 from source2
 
         assertEquals(100_001, res0.size()); // 1 from source1, 100_000 from source2
@@ -2873,8 +2886,8 @@ public abstract class QueryTableWhereTest {
                 filter1.withRespectedBarriers("1").withDeclaredBarriers("2"),
                 postFilter.withRespectedBarriers("2")));
         assertEquals(400_000, preFilter.numRowsProcessed());
-        // 100_000 from source1, 1 from source2, 100_000 from source3, 1 from source4
-        assertEquals(200_002, filter1.numRowsProcessed());
+        // 100_000 from source1, 100_000 from source3, , source2 and source4 are constant (not tracked)
+        assertEquals(200_000, filter1.numRowsProcessed());
         // 44 from source1, 100_000 from source2, 100_000 from source4
         assertEquals(200044, postFilter.numRowsProcessed());
         assertEquals(200044, res1.size());
@@ -2905,6 +2918,7 @@ public abstract class QueryTableWhereTest {
                 .update("A = 2L"); // RowKeyAgnosticColumnSource
 
         final RowSetCapturingFilter preFilter = new RowSetCapturingFilter();
+        // NOTE: filter0 won't be tracked, will be applied as a chunk filter to constant regions.
         final RowSetCapturingFilter filter0 = new ParallelizedRowSetCapturingFilter(RawString.of("A = 42"));
         final RowSetCapturingFilter postFilter = new RowSetCapturingFilter();
 
@@ -2918,7 +2932,7 @@ public abstract class QueryTableWhereTest {
                 filter0.withRespectedBarriers("1").withDeclaredBarriers("2"),
                 postFilter.withRespectedBarriers("2")));
         assertEquals(300_000, preFilter.numRowsProcessed());
-        assertEquals(200_001, filter0.numRowsProcessed()); // 100_000 source1, 100_000 source2, 1 source3
+        assertEquals(200_000, filter0.numRowsProcessed()); // 100_000 source1, 100_000 source2
         assertEquals(100_001, postFilter.numRowsProcessed()); // 1 source1, 100_000 source2, 0 source3
 
         assertEquals(100_001, res0.size()); // 1 from source1, 100_000 from source2
@@ -2932,7 +2946,7 @@ public abstract class QueryTableWhereTest {
                 RawString.of("A != 42").withRespectedBarriers("1").withDeclaredBarriers("2"),
                 postFilter.withRespectedBarriers("2")));
         assertEquals(300_000, preFilter.numRowsProcessed());
-        assertEquals(200_001, filter0.numRowsProcessed()); // 100_000 source1, 1 source2, 100_000 source3
+        assertEquals(200_000, filter0.numRowsProcessed()); // 100_000 source1, 1 source2, 100_000 source3
         assertEquals(199_999, postFilter.numRowsProcessed()); // 99_999 source1, 0 source2, 100_000 source3
 
         assertEquals(199_999, res1.size());
@@ -2941,13 +2955,13 @@ public abstract class QueryTableWhereTest {
         postFilter.reset();
     }
 
-    protected static TLongList getAndSortSizes(final RowSetCapturingFilter filter) {
+    protected static LongList getAndSortSizes(final RowSetCapturingFilter filter) {
         final List<RowSet> rowSets = filter.rowSets();
-        TLongList sizes = new TLongArrayList(rowSets.size());
+        LongList sizes = new LongArrayList(rowSets.size());
         filter.rowSets().stream()
                 .mapToLong(RowSet::size)
                 .forEach(sizes::add);
-        sizes.sort();
+        sizes.sort(null);
         return sizes;
     }
 
@@ -2974,6 +2988,28 @@ public abstract class QueryTableWhereTest {
         final Table fa2 = a2.where(Filter.or(whereFilters3));
         assertTableEquals(a2.where("Y in 1"), fa2);
 
+    }
+
+    @Test
+    public void testFilterType() throws IOException {
+        final Table t1 =
+                newTable(stringCol("Key", "A", "B", "C"), longCol("Value", 1, 2, 3), intCol("Sentinel", 101, 102, 103));
+        // The type doesn't match here, when we try to compare the long to a String we get a false
+        final Table t2 = t1.where("Value = `2`");
+        assertTableEquals(t1.head(0), t2);
+
+        final File tmpDir = Files.createTempDirectory("QueryTableWhereTest-FilterType").toFile();
+        try {
+            ParquetTools.writeTable(t1, tmpDir + "/Partition=p0/data.parquet");
+
+            final Table fromDisk = ParquetTools.readTable(tmpDir.getPath());
+
+            final Table t3 = fromDisk.where("Value = `2`").coalesce();
+            // make sure we have the same behavior for the regioned column sources
+            assertTableEquals(t1.view("Partition=`p0`", "Key", "Value", "Sentinel").head(0), t3);
+        } finally {
+            FileUtils.deleteRecursively(tmpDir);
+        }
     }
 
     /**

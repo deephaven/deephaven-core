@@ -1,11 +1,11 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.util;
 
-import gnu.trove.list.array.TLongArrayList;
-import gnu.trove.map.TObjectLongMap;
-import gnu.trove.map.hash.TObjectLongHashMap;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
+import it.unimi.dsi.fastutil.objects.Object2LongMap;
+import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap;
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.attributes.Any;
@@ -65,7 +65,7 @@ public class SyncTableFilter {
     private final TupleSource<?>[] keySources;
     private final List<ColumnSource<Long>> idSources;
     private final List<Map<Object, KeyState>> objectToState;
-    private final TObjectLongMap<Object> minimumid;
+    private final Object2LongMap<Object> minimumid;
     private final HashSet<Object> pendingKeys = new HashSet<>();
     private final List<ListenerRecorder> recorders;
 
@@ -74,7 +74,7 @@ public class SyncTableFilter {
         WritableRowSet matchedRows = RowSetFactory.empty();
         RowSetBuilderSequential unprocessedBuilder = null;
         RowSetBuilderSequential currentIdBuilder = null;
-        final TLongArrayList unprocessedIds = new TLongArrayList();
+        final LongArrayList unprocessedIds = new LongArrayList();
         int sortStart = -1;
     }
 
@@ -120,7 +120,8 @@ public class SyncTableFilter {
         this.idSources = new ArrayList<>(tableCount);
         this.results = new QueryTable[tableCount];
         this.resultRowSet = new TrackingWritableRowSet[tableCount];
-        this.minimumid = new TObjectLongHashMap<>(0, 0.5f, QueryConstants.NULL_LONG);
+        this.minimumid = new Object2LongOpenHashMap<>(0, 0.5f);
+        this.minimumid.defaultReturnValue(QueryConstants.NULL_LONG);
         this.recorders = new ArrayList<>(tableCount);
 
         ColumnSource<?>[] keySourcePrototype = null;
@@ -170,7 +171,7 @@ public class SyncTableFilter {
             final RowSetBuilderRandom addedBuilder = RowSetFactory.builderRandom();
             for (Object key : keysToRefilter) {
                 final KeyState state = objectToState.get(tt).get(key);
-                doMatch(tt, state, minimumid.get(key));
+                doMatch(tt, state, minimumid.getLong(key));
                 addedBuilder.addRowSet(state.matchedRows);
             }
             resultRowSet[tt].insert(addedBuilder.build());
@@ -211,7 +212,7 @@ public class SyncTableFilter {
                 for (Object key : keysToRefilter) {
                     final KeyState state = objectToState.get(tt).get(key);
                     removedBuilder.addRowSet(state.matchedRows);
-                    doMatch(tt, state, minimumid.get(key));
+                    doMatch(tt, state, minimumid.getLong(key));
                     addedBuilder.addRowSet(state.matchedRows);
                 }
 
@@ -337,20 +338,20 @@ public class SyncTableFilter {
                     keysWithNewCurrent.add(pendingKey);
                 }
                 if (keyState.sortStart > -1) {
-                    final TLongArrayList unprocessedIds = keyState.unprocessedIds;
-                    unprocessedIds.sort();
+                    final LongArrayList unprocessedIds = keyState.unprocessedIds;
+                    unprocessedIds.sort(null);
                     keyState.sortStart = -1;
                     int wp = 1;
                     for (int rp = 1; rp < unprocessedIds.size(); ++rp) {
-                        if (unprocessedIds.get(rp - 1) != unprocessedIds.get(rp)) {
-                            unprocessedIds.set(wp++, unprocessedIds.get(rp));
+                        if (unprocessedIds.getLong(rp - 1) != unprocessedIds.getLong(rp)) {
+                            unprocessedIds.set(wp++, unprocessedIds.getLong(rp));
                         }
                     }
                     if (wp != unprocessedIds.size()) {
-                        unprocessedIds.remove(wp, unprocessedIds.size() - wp);
+                        unprocessedIds.removeElements(wp, unprocessedIds.size());
                     }
                 }
-                if (keyState.unprocessedIds.size() == 0) {
+                if (keyState.unprocessedIds.isEmpty()) {
                     allPresent = false;
                 }
             }
@@ -362,15 +363,15 @@ public class SyncTableFilter {
 
                 int rp = keyStates[0].unprocessedIds.size() - 1;
                 while (rp >= 0) {
-                    final long maxUnprocessed = keyStates[0].unprocessedIds.get(rp);
+                    final long maxUnprocessed = keyStates[0].unprocessedIds.getLong(rp);
                     boolean foundInAllTables = true;
                     for (int tt = 1; tt < tableCount; ++tt) {
                         while (checkRps[tt - 1] >= 0
-                                && keyStates[tt].unprocessedIds.get(checkRps[tt - 1]) > maxUnprocessed) {
+                                && keyStates[tt].unprocessedIds.getLong(checkRps[tt - 1]) > maxUnprocessed) {
                             checkRps[tt - 1]--;
                         }
                         if (checkRps[tt - 1] < 0
-                                || keyStates[tt].unprocessedIds.get(checkRps[tt - 1]) != maxUnprocessed) {
+                                || keyStates[tt].unprocessedIds.getLong(checkRps[tt - 1]) != maxUnprocessed) {
                             foundInAllTables = false;
                             break;
                         }
@@ -382,9 +383,9 @@ public class SyncTableFilter {
                         minimumid.put(pendingKey, maxUnprocessed);
                         keysToRefilter.add(pendingKey);
                         // we need to clear out unprocessed IDS <= maxUnprocessed
-                        keyStates[0].unprocessedIds.remove(0, rp + 1);
+                        keyStates[0].unprocessedIds.removeElements(0, rp + 1);
                         for (int tt = 1; tt < tableCount; ++tt) {
-                            keyStates[tt].unprocessedIds.remove(0, checkRps[tt - 1] + 1);
+                            keyStates[tt].unprocessedIds.removeElements(0, checkRps[tt - 1] + 1);
                         }
                         break;
                     }
@@ -425,7 +426,7 @@ public class SyncTableFilter {
                     if (currentState.unprocessedBuilder == null) {
                         currentState.unprocessedBuilder = RowSetFactory.builderSequential();
                     }
-                    final long minid = minimumid.get(key);
+                    final long minid = minimumid.getLong(key);
 
                     final long id = idChunk.get(ii);
                     if (id == QueryConstants.NULL_LONG || (id < minid)) {
@@ -443,7 +444,7 @@ public class SyncTableFilter {
                     if (unprocessedCount == 0) {
                         currentState.unprocessedIds.add(id);
                     } else {
-                        final long lastUnprocessed = currentState.unprocessedIds.get(unprocessedCount - 1);
+                        final long lastUnprocessed = currentState.unprocessedIds.getLong(unprocessedCount - 1);
                         if (lastUnprocessed != id) {
                             if (lastUnprocessed < id) {
                                 currentState.unprocessedIds.add(id);

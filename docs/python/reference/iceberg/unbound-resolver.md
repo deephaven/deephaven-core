@@ -116,4 +116,4 @@ resolver_ids = iceberg.UnboundResolver(
 - [`InferenceResolver`](./inference-resolver.md)
 - [`IcebergCatalogAdapter`](./iceberg-catalog-adapter.md)
 - [`SchemaProvider`](./table-parquet-writer-options.md)
-- [Pydoc](/core/pydoc/code/deephaven.experimental.iceberg.html#deephaven.experimental.iceberg.UnboundResolver)
+- [Pydoc](https://docs.deephaven.io/core/pydoc/code/deephaven.experimental.iceberg.html#deephaven.experimental.iceberg.UnboundResolver)

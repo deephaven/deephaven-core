@@ -61,11 +61,12 @@ result = RingTableTools.of(source, 5, false)
 
 ## Related documentation
 
-- [How to create an empty table](../how-to-guides/new-and-empty-table.md#emptytable)
+- [Create an empty table](../how-to-guides/new-and-empty-table.md#emptytable)
 - [How to create a time table](./time-table.md)
 - [Table types](../conceptual/table-types.md)
 - [`dropColumns`](../reference/table-operations/select/drop-columns.md)
 - [`merge`](../reference/table-operations/merge/merge.md)
 - [`tail`](../reference/table-operations/filter/tail.md)
+- [`RingTableTools.of`](../reference/table-operations/create/ringTable.md)
 - [`update`](../reference/table-operations/select/update.md)
 - [Javadoc](/core/javadoc/io/deephaven/engine/table/impl/sources/ring/RingTableTools.html)

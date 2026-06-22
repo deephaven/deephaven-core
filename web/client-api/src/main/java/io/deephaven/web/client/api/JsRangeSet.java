@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api;
 
@@ -17,7 +17,7 @@ import java.util.stream.StreamSupport;
 /**
  * This class allows iteration over non-contiguous indexes. In the future, this will support the EcmaScript 2015
  * Iteration protocol, but for now has one method which returns an iterator, and also supports querying the size.
- * Additionally, we may add support for creating RangeSet objects to better serve some use cases.
+ * Additionally, we may add support for creating {@code RangeSet} objects to better serve some use cases.
  */
 @JsType(namespace = "dh", name = "RangeSet")
 public class JsRangeSet {
@@ -60,7 +60,7 @@ public class JsRangeSet {
     }
 
     /**
-     * a new iterator over all indexes in this collection.
+     * A new iterator over all indexes in this collection.
      * 
      * @return Iterator of {@link LongWrapper}
      */

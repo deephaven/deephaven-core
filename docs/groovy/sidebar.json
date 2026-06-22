@@ -17,46 +17,54 @@
         "items": [
           {
             "label": "Quickstart",
-            "path": "tutorials/quickstart.md"
+            "path": "getting-started/quickstart.md"
           },
           {
             "label": "A Crash Course in Deephaven",
             "items": [
               {
+                "label": "Overview",
+                "path": "getting-started/crash-course/overview.md"
+              },
+              {
                 "label": "Get Started",
-                "path": "tutorials/crash-course/get-started.md"
+                "path": "getting-started/crash-course/get-started.md"
               },
               {
                 "label": "Architecture Overview",
-                "path": "tutorials/crash-course/architecture-overview.md"
+                "path": "getting-started/crash-course/architecture-overview.md"
               },
               {
                 "label": "Create Tables",
-                "path": "tutorials/crash-course/create-tables.md"
+                "path": "getting-started/crash-course/create-tables.md"
               },
               {
                 "label": "Table Operations",
-                "path": "tutorials/crash-course/table-ops.md"
+                "path": "getting-started/crash-course/table-ops.md"
+              },
+              {
+                "label": "Time and Calendars",
+                "path": "getting-started/crash-course/time-calendars.md"
               },
               {
                 "label": "Query Strings",
-                "path": "tutorials/crash-course/query-strings.md"
+                "path": "getting-started/crash-course/query-strings.md"
               },
               {
                 "label": "Real-time Plots",
-                "path": "tutorials/crash-course/plots.md"
+                "path": "getting-started/crash-course/plots.md"
               },
               {
                 "label": "Data I/O",
-                "path": "tutorials/crash-course/export-data.md"
+                "path": "getting-started/crash-course/export-data.md"
               },
               {
                 "label": "Configure your Instance",
-                "path": "tutorials/crash-course/configure.md"
+                "path": "getting-started/crash-course/configure.md"
               },
               {
                 "label": "Wrapping Up",
-                "path": "tutorials/crash-course/crash-course-wrap-up.md"
+                "path": "getting-started/crash-course/crash-course-wrap-up.md"
               }
             ]
           },
@@ -65,15 +73,15 @@
             "items": [
               {
                 "label": "Docker",
-                "path": "tutorials/docker-install.md"
+                "path": "getting-started/docker-install.md"
               },
               {
                 "label": "Source code",
-                "path": "how-to-guides/launch-build.md"
+                "path": "getting-started/launch-build.md"
               },
               {
                 "label": "Production application",
-                "path": "tutorials/production-application.md"
+                "path": "getting-started/production-application.md"
               }
             ]
           }
@@ -100,6 +108,18 @@
               {
                 "label": "Table types",
                 "path": "conceptual/table-types.md"
+              },
+              {
+                "label": "Column types",
+                "path": "conceptual/column-types.md"
+              },
+              {
+                "label": "Initialization and updates",
+                "path": "how-to-guides/initialization-and-updates.md"
+              },
+              {
+                "label": "Deephaven Vectors",
+                "path": "conceptual/arrays-vs-vectors.md"
               },
               {
                 "label": "Core API design",
@@ -139,12 +159,12 @@
                 "label": "Advanced table constructors",
                 "items": [
                   {
-                    "label": "Convert add-only tables to blink tables",
+                    "label": "Convert add- and append-only tables to blink tables",
                     "path": "how-to-guides/add-only-to-blink.md"
                   },
                   {
                     "label": "Write data to a real-time table",
-                    "path": "how-to-guides/dynamic-table-writer.md"
+                    "path": "how-to-guides/table-publisher.md"
                   },
                   {
                     "label": "Generate tables with Groovy functions",
@@ -157,11 +177,11 @@
                 "items": [
                   {
                     "label": "Import CSV files",
-                    "path": "how-to-guides/csv-import.md"
+                    "path": "how-to-guides/data-import-export/csv-import.md"
                   },
                   {
                     "label": "Export CSV files",
-                    "path": "how-to-guides/csv-export.md"
+                    "path": "how-to-guides/data-import-export/csv-export.md"
                   },
                   {
                     "label": "The Deephaven CSV library",
@@ -170,8 +190,25 @@
                 ]
               },
               {
+                "label": "HTML",
+                "items": [
+                  {
+                    "label": "Read HTML files",
+                    "path": "how-to-guides/data-import-export/html-import.md"
+                  },
+                  {
+                    "label": "Export HTML files",
+                    "path": "how-to-guides/data-import-export/html-export.md"
+                  }
+                ]
+              },
+              {
                 "label": "Arrow Flight",
                 "path": "how-to-guides/data-import-export/arrow-flight.md"
+              },
+              {
+                "label": "Arrow/Barrage Schema",
+                "path": "how-to-guides/data-import-export/barrage-schema.md"
               },
               {
                 "label": "Iceberg",
@@ -203,7 +240,7 @@
                 "items": [
                   {
                     "label": "Supported Parquet formats",
-                    "path": "conceptual/parquet-formats.md"
+                    "path": "how-to-guides/data-import-export/parquet-formats.md"
                   },
                   {
                     "label": "Import Parquet files",
@@ -271,6 +308,10 @@
                 "path": "how-to-guides/format-columns.md"
               },
               {
+                "label": "Filter",
+                "path": "how-to-guides/use-filters.md"
+              },
+              {
                 "label": "Sort",
                 "path": "how-to-guides/sort.md"
               },
@@ -324,6 +365,10 @@
               {
                 "label": "Partition",
                 "path": "how-to-guides/partitioned-tables.md"
+              },
+              {
+                "label": "Synchronize tables",
+                "path": "how-to-guides/synchronizing-tables.md"
               },
               {
                 "label": "Snapshot",
@@ -419,7 +464,7 @@
                 "items": [
                   {
                     "label": "Query Scope",
-                    "path": "how-to-guides/queryscope.md"
+                    "path": "how-to-guides/query-scope.md"
                   },
                   {
                     "label": "Variables",
@@ -449,7 +494,7 @@
               },
               {
                 "label": "Strings",
-                "path": "how-to-guides/strings.md"
+                "path": "how-to-guides/work-with-strings.md"
               },
               {
                 "label": "Java classes & objects",
@@ -467,6 +512,10 @@
               {
                 "label": "Liveness Scopes",
                 "path": "conceptual/liveness-scope-concept.md"
+              },
+              {
+                "label": "Systemic Object Marking",
+                "path": "conceptual/systemic-object-marking.md"
               },
               {
                 "label": "Generate query strings",
@@ -492,6 +541,10 @@
                   {
                     "label": "Navigate the GUI",
                     "path": "how-to-guides/user-interface/navigating-the-ui.md"
+                  },
+                  {
+                    "label": "Upload a table from a file",
+                    "path": "how-to-guides/user-interface/upload-table-from-file.md"
                   },
                   {
                     "label": "Set date-time format",
@@ -557,7 +610,7 @@
                       },
                       {
                         "label": "Use IFrames",
-                        "path": "how-to-guides/user-interface/use-iframes.md"
+                        "path": "how-to-guides/use-iframes.md"
                       }
                     ]
                   }
@@ -730,15 +783,6 @@
                 "path": "how-to-guides/flight-sql.md"
               },
               {
-                "label": "Excel",
-                "items": [
-                  {
-                    "label": "Excel Client",
-                    "path": "how-to-guides/excel/excel-client.md"
-                  }
-                ]
-              },
-              {
                 "label": "Protobuf",
                 "items": [
                   {
@@ -774,11 +818,11 @@
                 "items": [
                   {
                     "label": "Use performance tables",
-                    "path": "how-to-guides/performance-tables.md"
+                    "path": "how-to-guides/performance/performance-tables.md"
                   },
                   {
                     "label": "Dial down the update frequency of ticking tables",
-                    "path": "how-to-guides/reduce-update-frequency.md"
+                    "path": "how-to-guides/performance/reduce-update-frequency.md"
                   },
                   {
                     "label": "Data Indexes",
@@ -824,20 +868,15 @@
                 ]
               },
               {
-                "label": "Imports",
-                "items": [
-                  {
-                    "label": "Auto-imported functions",
-                    "path": "reference/query-language/query-library/auto-imported-functions.md"
-                  }
-                ]
-              },
-              {
                 "label": "Errors and troubleshooting",
                 "items": [
                   {
                     "label": "Triage errors in queries",
                     "path": "how-to-guides/triage-errors.md"
+                  },
+                  {
+                    "label": "Decipher Groovy errors",
+                    "path": "how-to-guides/groovy-errors.md"
                   },
                   {
                     "label": "Attach a JVM debugger",
@@ -927,7 +966,7 @@
                     "items": [
                       {
                         "label": "Application Mode",
-                        "path": "how-to-guides/app-mode.md"
+                        "path": "how-to-guides/application-mode.md"
                       },
                       {
                         "label": "Application Mode libraries",
@@ -1003,6 +1042,10 @@
               {
                 "label": "CSV",
                 "path": "reference/cheat-sheets/csv.md"
+              },
+              {
+                "label": "Kafka",
+                "path": "reference/cheat-sheets/kafka.md"
               },
               {
                 "label": "Parquet",
@@ -1088,6 +1131,10 @@
           {
             "label": "Create your own plugin",
             "path": "how-to-guides/create-plugins.md"
+          },
+          {
+            "label": "Create a JavaScript plugin",
+            "path": "how-to-guides/create-js-plugins.md"
           }
         ]
       },
@@ -1221,6 +1268,14 @@
                 "label": "Advanced table constructors",
                 "items": [
                   {
+                    "label": "addOnlyToBlink",
+                    "path": "reference/table-operations/create/addOnlyToBlink.md"
+                  },
+                  {
+                    "label": "blinkToAppendOnly",
+                    "path": "reference/table-operations/create/blink-to-append-only.md"
+                  },
+                  {
                     "label": "FunctionGeneratedTableFactory",
                     "path": "reference/table-operations/create/create.md"
                   },
@@ -1237,28 +1292,12 @@
                     "path": "reference/table-operations/create/TablePublisher.md"
                   },
                   {
-                    "label": "blinkToAppendOnly",
-                    "path": "reference/table-operations/create/blink-to-append-only.md"
-                  },
-                  {
-                    "label": "toBlink",
-                    "path": "reference/table-operations/create/toBlink.md"
-                  },
-                  {
                     "label": "removeBlink",
                     "path": "reference/table-operations/create/remove-blink.md"
                   },
                   {
-                    "label": "assertAddOnly",
-                    "path": "reference/table-operations/create/assert-add-only.md"
-                  },
-                  {
-                    "label": "assertAppendOnly",
-                    "path": "reference/table-operations/create/assert-append-only.md"
-                  },
-                  {
-                    "label": "assertBlink",
-                    "path": "reference/table-operations/create/assert-blink.md"
+                    "label": "toBlink",
+                    "path": "reference/table-operations/create/toBlink.md"
                   }
                 ]
               },
@@ -1302,6 +1341,10 @@
                   {
                     "label": "writeTable",
                     "path": "reference/data-import-export/Parquet/writeTable.md"
+                  },
+                  {
+                    "label": "writeKeyValuePartitionedTable",
+                    "path": "reference/data-import-export/Parquet/writeKeyValuePartitionedTable.md"
                   }
                 ]
               },
@@ -1410,6 +1453,10 @@
                   {
                     "label": "hasColumns",
                     "path": "reference/table-operations/metadata/hasColumns.md"
+                  },
+                  {
+                    "label": "isBlink",
+                    "path": "reference/table-operations/metadata/isBlink.md"
                   },
                   {
                     "label": "isEmpty",
@@ -1524,6 +1571,10 @@
                   {
                     "label": "tailPct",
                     "path": "reference/table-operations/filter/tail-pct.md"
+                  },
+                  {
+                    "label": "TailInitializationFilter",
+                    "path": "reference/table-operations/filter/TailInitializationFilter.md"
                   },
                   {
                     "label": "where",
@@ -2670,7 +2721,56 @@
             "items": [
               {
                 "label": "Auto-imported functions",
-                "path": "reference/query-language/formulas/auto-imported-functions.md"
+                "items": [
+                  {
+                    "label": "Overview",
+                    "path": "reference/query-language/query-library/auto-imported/index.md"
+                  },
+                  {
+                    "label": "Basic",
+                    "path": "reference/query-language/query-library/auto-imported/basic.md"
+                  },
+                  {
+                    "label": "Math",
+                    "path": "reference/query-language/query-library/auto-imported/math.md"
+                  },
+                  {
+                    "label": "Time",
+                    "path": "reference/query-language/query-library/auto-imported/time.md"
+                  },
+                  {
+                    "label": "Logic",
+                    "path": "reference/query-language/query-library/auto-imported/logic.md"
+                  },
+                  {
+                    "label": "Parse",
+                    "path": "reference/query-language/query-library/auto-imported/parse.md"
+                  },
+                  {
+                    "label": "Sort",
+                    "path": "reference/query-language/query-library/auto-imported/sort.md"
+                  },
+                  {
+                    "label": "Search",
+                    "path": "reference/query-language/query-library/auto-imported/search.md"
+                  },
+                  {
+                    "label": "GUI",
+                    "path": "reference/query-language/query-library/auto-imported/gui.md"
+                  },
+                  {
+                    "label": "Constants",
+                    "path": "reference/query-language/query-library/auto-imported/constants.md"
+                  },
+                  {
+                    "label": "Java",
+                    "path": "reference/query-language/query-library/auto-imported/java.md"
+                  },
+                  {
+                    "label": "Data types",
+                    "path": "reference/query-language/query-library/auto-imported/data-types.md"
+                  }
+                ]
               },
               {
                 "label": "Automatic Groovy Imports",
@@ -2793,6 +2893,10 @@
                     "path": "reference/community-questions/blink-ring.md"
                   },
                   {
+                    "label": "How do I create a partitioned blink table?",
+                    "path": "reference/community-questions/partitioned-blink-tables-drop-attribute.md"
+                  },
+                  {
                     "label": "How do I filter by time of day across all dates?",
                     "path": "reference/community-questions/filter-time-window-all-dates.md"
                   }
@@ -2889,6 +2993,10 @@
               {
                 "label": "Integrations: AWS",
                 "items": [
+                  {
+                    "label": "How do I run Deephaven behind AWS ALB?",
+                    "path": "reference/community-questions/aws-alb-configuration.md"
+                  },
                   {
                     "label": "Why can't I read from S3?",
                     "path": "reference/community-questions/aws-timeout.md"

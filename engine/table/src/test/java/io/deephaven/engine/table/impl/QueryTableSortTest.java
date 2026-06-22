@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl;
 
@@ -31,8 +31,8 @@ import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.mutable.MutableInt;
-import gnu.trove.list.TIntList;
-import gnu.trove.list.array.TIntArrayList;
+import it.unimi.dsi.fastutil.ints.IntList;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
 
 import java.io.File;
 import java.io.IOException;
@@ -871,10 +871,10 @@ public class QueryTableSortTest extends QueryTableTestBase {
 
         final Table mergeSorted = merged.sort("Timestamp");
 
-        final TIntList sentinels = new TIntArrayList();
+        final IntList sentinels = new IntArrayList();
         mergeSorted.columnIterator("Sentinel").forEachRemaining(sentinel -> sentinels.add((int) sentinel));
         assertEquals("sentinels",
-                new TIntArrayList(
+                new IntArrayList(
                         new int[] {100, 0, 104, 4, 108, 8, 101, 1, 105, 5, 109, 9, 102, 2, 106, 6, 103, 3, 107, 7}),
                 sentinels);
         sentinels.clear();
@@ -883,7 +883,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
 
         mergeSorted2.columnIterator("Sentinel").forEachRemaining(sentinel -> sentinels.add((int) sentinel));
         assertEquals("sentinels",
-                new TIntArrayList(
+                new IntArrayList(
                         new int[] {100, 0, 104, 4, 108, 8, 101, 1, 105, 5, 109, 9, 102, 2, 106, 6, 103, 3, 107, 7}),
                 sentinels);
         sentinels.clear();
@@ -891,7 +891,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
         final Table boolSorted = merged.sort("Truthiness");
         boolSorted.columnIterator("Sentinel").forEachRemaining(sentinel -> sentinels.add((int) sentinel));
         assertEquals("sentinels",
-                new TIntArrayList(
+                new IntArrayList(
                         new int[] {102, 105, 108, 2, 5, 8, 101, 104, 107, 1, 4, 7, 100, 103, 106, 109, 0, 3, 6, 9}),
                 sentinels);
         sentinels.clear();
@@ -900,7 +900,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
         final Table boolInverseSorted = boolSorted.sortDescending("Timestamp");
         boolInverseSorted.columnIterator("Sentinel").forEachRemaining(sentinel -> sentinels.add((int) sentinel));
         assertEquals("sentinels",
-                new TIntArrayList(
+                new IntArrayList(
                         new int[] {107, 7, 103, 3, 106, 6, 102, 2, 109, 9, 105, 5, 101, 1, 108, 8, 104, 4, 100, 0}),
                 sentinels);
         sentinels.clear();
@@ -920,10 +920,10 @@ public class QueryTableSortTest extends QueryTableTestBase {
             updateGraph.runWithinUnitTestCycle(filter::run);
         }
 
-        final TIntList sentinels = new TIntArrayList();
+        final IntList sentinels = new IntArrayList();
         mergeSorted.columnIterator("Sentinel").forEachRemaining(sentinel -> sentinels.add((int) sentinel));
         assertEquals("sentinels",
-                new TIntArrayList(
+                new IntArrayList(
                         new int[] {100, 0, 104, 4, 108, 8, 101, 1, 105, 5, 109, 9, 102, 2, 106, 6, 103, 3, 107, 7}),
                 sentinels);
         sentinels.clear();
@@ -931,21 +931,21 @@ public class QueryTableSortTest extends QueryTableTestBase {
 
         mergeSorted2.columnIterator("Sentinel").forEachRemaining(sentinel -> sentinels.add((int) sentinel));
         assertEquals("sentinels",
-                new TIntArrayList(
+                new IntArrayList(
                         new int[] {100, 0, 104, 4, 108, 8, 101, 1, 105, 5, 109, 9, 102, 2, 106, 6, 103, 3, 107, 7}),
                 sentinels);
         sentinels.clear();
 
         boolSorted.columnIterator("Sentinel").forEachRemaining(sentinel -> sentinels.add((int) sentinel));
         assertEquals("sentinels",
-                new TIntArrayList(
+                new IntArrayList(
                         new int[] {102, 105, 108, 2, 5, 8, 101, 104, 107, 1, 4, 7, 100, 103, 106, 109, 0, 3, 6, 9}),
                 sentinels);
         sentinels.clear();
 
         boolInverseSorted.columnIterator("Sentinel").forEachRemaining(sentinel -> sentinels.add((int) sentinel));
         assertEquals("sentinels",
-                new TIntArrayList(
+                new IntArrayList(
                         new int[] {107, 7, 103, 3, 106, 6, 102, 2, 109, 9, 105, 5, 101, 1, 108, 8, 104, 4, 100, 0}),
                 sentinels);
         sentinels.clear();
@@ -986,21 +986,21 @@ public class QueryTableSortTest extends QueryTableTestBase {
         final Table symbolSorted = table.sort("Symbol");
         showWithRowSet(symbolSorted);
 
-        final TIntList sentinels = new TIntArrayList();
+        final IntList sentinels = new IntArrayList();
         symbolSorted.columnIterator("Sentinel").forEachRemaining(sentinel -> sentinels.add((int) sentinel));
-        assertEquals("sentinels", new TIntArrayList(new int[] {0, 3, 6, 9, 1, 4, 7, 2, 5, 8}), sentinels);
+        assertEquals("sentinels", new IntArrayList(new int[] {0, 3, 6, 9, 1, 4, 7, 2, 5, 8}), sentinels);
         sentinels.clear();
 
         final Table tsSorted = table.sort("Timestamp");
         showWithRowSet(tsSorted);
         tsSorted.columnIterator("Sentinel").forEachRemaining(sentinel -> sentinels.add((int) sentinel));
-        assertEquals("sentinels", new TIntArrayList(new int[] {0, 4, 8, 1, 5, 9, 2, 6, 3, 7}), sentinels);
+        assertEquals("sentinels", new IntArrayList(new int[] {0, 4, 8, 1, 5, 9, 2, 6, 3, 7}), sentinels);
         sentinels.clear();
 
         final Table boolSorted = table.sort("Truthiness");
         showWithRowSet(boolSorted);
         boolSorted.columnIterator("Sentinel").forEachRemaining(sentinel -> sentinels.add((int) sentinel));
-        assertEquals("sentinels", new TIntArrayList(new int[] {2, 5, 8, 1, 4, 7, 0, 3, 6, 9}), sentinels);
+        assertEquals("sentinels", new IntArrayList(new int[] {2, 5, 8, 1, 4, 7, 0, 3, 6, 9}), sentinels);
         sentinels.clear();
     }
 
@@ -1028,9 +1028,9 @@ public class QueryTableSortTest extends QueryTableTestBase {
 
         showWithRowSet(symbolSorted);
 
-        final TIntList sentinels = new TIntArrayList();
+        final IntList sentinels = new IntArrayList();
         symbolSorted.columnIterator("Sentinel").forEachRemaining(sentinel -> sentinels.add((int) sentinel));
-        assertEquals("sentinels", new TIntArrayList(new int[] {0, 3, 6, 9, 1, 4, 7, 2, 5, 8}), sentinels);
+        assertEquals("sentinels", new IntArrayList(new int[] {0, 3, 6, 9, 1, 4, 7, 2, 5, 8}), sentinels);
         sentinels.clear();
     }
 
@@ -1192,6 +1192,30 @@ public class QueryTableSortTest extends QueryTableTestBase {
                     List.of(ColumnName.of("Sym")));
             TableTools.show(resultRowsComparator);
             checkMixed(resultRowsComparator, true);
+        } finally {
+            tempFolder.delete();
+        }
+    }
+
+    public void testOneValuePerPartition() throws IOException {
+        final TemporaryFolder tempFolder = new TemporaryFolder();
+        tempFolder.create();
+        try {
+            final String[] syms = new String[] {"Apple", "Cantaloupe", "Banana"};
+
+            final List<Table> constituents = new ArrayList<>();
+
+            for (int ss = 0; ss < syms.length; ++ss) {
+                final Table t = emptyTable(1).update("Row=i", "Sym=`" + syms[ss] + "`");
+                constituents.add(t);
+                final String fileName = tempFolder.getRoot().toPath().resolve("part" + ss + ".parquet").toString();
+                ParquetTools.writeTable(t, fileName, ParquetInstructions.EMPTY);
+            }
+            final Table readback = ParquetTools.readTable(tempFolder.getRoot().toPath().toString());
+            TableTools.show(readback);
+
+            final Table dictionarySorted = readback.sort("Sym");
+            assertTableEquals(TableTools.merge(constituents).sort("Sym"), dictionarySorted);
         } finally {
             tempFolder.delete();
         }

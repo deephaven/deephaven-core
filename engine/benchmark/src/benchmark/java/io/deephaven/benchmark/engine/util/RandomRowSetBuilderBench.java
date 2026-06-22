@@ -1,13 +1,13 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.benchmark.engine.util;
 
 import io.deephaven.engine.rowset.RowSetBuilderRandom;
 import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.rowset.impl.rsp.RspBitmap;
-import gnu.trove.set.hash.TLongHashSet;
 import io.deephaven.benchmarking.BenchUtil;
+import io.deephaven.engine.rowset.impl.rsp.RspBitmap;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
 import org.openjdk.jmh.runner.RunnerException;
@@ -54,8 +54,8 @@ public class RandomRowSetBuilderBench {
     }
 
     @Benchmark
-    public void a01_buildAndPopulateTLongHashSet(final Blackhole bh) {
-        final TLongHashSet tset = new TLongHashSet(values);
+    public void a01_buildAndPopulateLongOpenHashSet(final Blackhole bh) {
+        final LongOpenHashSet tset = new LongOpenHashSet(values);
         bh.consume(tset);
     }
 

@@ -9,8 +9,11 @@ dependencies {
     implementation project(':log-factory')
     implementation libs.jdom2
     implementation libs.commons.compress
+    api libs.dsi.fastutil
 
     implementation project(':Configuration')
+
+    compileOnlyApi project(':util-annotations')
 
     testRuntimeOnly project(':configs')
     testRuntimeOnly project(':test-configs')

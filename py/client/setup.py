@@ -56,6 +56,6 @@ setup(
         "Programming Language :: Python :: 3.13",
     ],
     python_requires=">=3.9",
-    install_requires=["pyarrow", "bitstring", "grpcio", "protobuf", "numpy"],
+    install_requires=["pyarrow", "bitstring", "grpcio", "protobuf", "numpy", "pandas"],
     package_data={"pydeephaven": ["py.typed"]},
 )

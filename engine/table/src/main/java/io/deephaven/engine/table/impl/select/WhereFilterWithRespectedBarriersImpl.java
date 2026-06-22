@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.select;
 
@@ -29,6 +29,11 @@ public class WhereFilterWithRespectedBarriersImpl extends WhereFilterDelegatingB
             Object... respectedBarriers) {
         super(filter);
         this.respectedBarriers = respectedBarriers;
+    }
+
+    @Override
+    public WhereFilter maybeUnwrapFilter() {
+        return WhereFilterDelegating.maybeUnwrapFilter(filter);
     }
 
     public Object[] respectedBarriers() {

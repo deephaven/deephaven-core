@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.server.arrow;
 
@@ -7,10 +7,12 @@ import com.google.rpc.Code;
 import dagger.assisted.Assisted;
 import dagger.assisted.AssistedFactory;
 import dagger.assisted.AssistedInject;
-import gnu.trove.map.hash.TByteObjectHashMap;
+import it.unimi.dsi.fastutil.bytes.Byte2ObjectMap;
+import it.unimi.dsi.fastutil.bytes.Byte2ObjectOpenHashMap;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.liveness.SingletonLivenessManager;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.Table;
@@ -34,6 +36,7 @@ import io.deephaven.server.session.SessionService;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.TicketRouter;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.annotations.TestUseOnly;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 import org.apache.arrow.flatbuf.MessageHeader;
@@ -355,7 +358,7 @@ public class ArrowFlightUtil {
 
         private final StreamObserver<BarrageMessageWriter.MessageView> listener;
 
-        private boolean isClosed = false;
+        private volatile boolean isClosed = false;
 
         private boolean isFirstMsg = true;
 
@@ -367,7 +370,7 @@ public class ArrowFlightUtil {
         /**
          * A map from the wire request type to the handler factory for a DoExchange request.
          */
-        private final TByteObjectHashMap<ExchangeRequestHandlerFactory> requestHandlerFactories;
+        private final Byte2ObjectMap<ExchangeRequestHandlerFactory> requestHandlerFactories;
 
 
         /**
@@ -384,6 +387,15 @@ public class ArrowFlightUtil {
         }
 
         private Handler requestHandler = null;
+
+        /**
+         * This is only used for testing; never call this method outside of a unit test.
+         */
+        @TestUseOnly
+        synchronized void setRequestHandler(final Handler handler) {
+            Assert.eqNull(requestHandler, "requestHandler");
+            requestHandler = handler;
+        }
 
         @AssistedInject
         public DoExchangeMarshaller(
@@ -403,7 +415,7 @@ public class ArrowFlightUtil {
             this.errorTransformer = errorTransformer;
             this.marshallers = exchangeMarshallers;
 
-            this.requestHandlerFactories = new TByteObjectHashMap<>(requestHandlerFactories.size());
+            this.requestHandlerFactories = new Byte2ObjectOpenHashMap<>(requestHandlerFactories.size());
             for (final ExchangeRequestHandlerFactory factory : requestHandlerFactories) {
                 final ExchangeRequestHandlerFactory old = this.requestHandlerFactories.put(factory.type(), factory);
                 if (old != null) {
@@ -427,6 +439,8 @@ public class ArrowFlightUtil {
             } catch (final IOException err) {
                 throw errorTransformer.transform(err);
             }
+
+            final Handler handler;
             synchronized (this) {
 
                 // `FlightData` messages from Barrage clients will provide app_metadata describing the request but
@@ -436,11 +450,8 @@ public class ArrowFlightUtil {
 
                 if (requestHandler != null) {
                     // rely on the handler to verify message type
-                    requestHandler.handleMessage(message);
-                    return;
-                }
-
-                if (message.app_metadata != null) {
+                    handler = requestHandler;
+                } else if (message.app_metadata != null) {
                     // handle the different message types that can come over DoExchange
                     final byte type = message.app_metadata.msgType();
                     final ExchangeRequestHandlerFactory factory = requestHandlerFactories.get(type);
@@ -453,19 +464,21 @@ public class ArrowFlightUtil {
                         throw new IllegalStateException(
                                 "ExchangeRequestHandlerFactory returned null for message of type " + type);
                     }
-                    requestHandler.handleMessage(message);
+                    handler = requestHandler;
+                } else {
+                    // handle the possible error cases
+                    if (!isFirstMsg) {
+                        // only the first messages is allowed to have null metadata
+                        throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                                myPrefix + "failed to receive Barrage request metadata");
+                    }
+
+                    isFirstMsg = false;
                     return;
                 }
-
-                // handle the possible error cases
-                if (!isFirstMsg) {
-                    // only the first messages is allowed to have null metadata
-                    throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
-                            myPrefix + "failed to receive Barrage request metadata");
-                }
-
-                isFirstMsg = false;
             }
+
+            handler.handleMessage(message);
         }
 
         public List<ExchangeMarshaller> getMarshallers() {

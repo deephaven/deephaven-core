@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.vector.*;
-import io.deephaven.util.compare.CharComparisons;
 import io.deephaven.util.QueryConstants;
 
 import java.math.BigDecimal;
@@ -12,26 +11,9 @@ import java.math.BigInteger;
 import java.math.RoundingMode;
 
 import static io.deephaven.function.Basic.isNull;
-import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 
 public class QueryTableAggregationTestFormulaStaticMethods {
 
-    @SuppressWarnings("unused")
-    public static long sumChar(CharVector values) {
-        if (values.isEmpty()) {
-            return QueryConstants.NULL_LONG;
-        }
-        long sum = 0;
-        int count = 0;
-        for (int ii = 0; ii < values.size(); ++ii) {
-            final char c = values.get(ii);
-            if (c != QueryConstants.NULL_CHAR) {
-                sum += c;
-                count++;
-            }
-        }
-        return count == 0 ? QueryConstants.NULL_LONG : sum;
-    }
 
     @SuppressWarnings("unused")
     public static long sumBool(ObjectVector<Boolean> values) {
@@ -120,39 +102,6 @@ public class QueryTableAggregationTestFormulaStaticMethods {
         return count == 0 ? null : sum;
     }
 
-    @SuppressWarnings("unused")
-    public static double varChar(CharVector values) {
-        double sum = 0;
-        double sum2 = 0;
-        int count = 0;
-        int nullCount = 0;
-
-        for (int ii = 0; ii < values.size(); ++ii) {
-            final char c = values.get(ii);
-            if (c != QueryConstants.NULL_CHAR) {
-                sum += c;
-                sum2 += c * c;
-                count++;
-            } else {
-                nullCount++;
-            }
-        }
-        if (nullCount == values.size()) {
-            return NULL_DOUBLE;
-        }
-
-        return (sum2 - sum * sum / count) / (count - 1);
-    }
-
-    @SuppressWarnings("unused")
-    public static double stdChar(CharVector values) {
-        if (values == null) {
-            return NULL_DOUBLE;
-        }
-
-        final double v = varChar(values);
-        return v == NULL_DOUBLE ? NULL_DOUBLE : Math.sqrt(v);
-    }
 
     @SuppressWarnings("unused")
     public static BigDecimal varBigInt(ObjectVector<BigInteger> values) {
@@ -201,45 +150,6 @@ public class QueryTableAggregationTestFormulaStaticMethods {
                 RoundingMode.HALF_UP);
     }
 
-    @SuppressWarnings("unused")
-    public static char minChar(CharVector values) {
-        if (values.isEmpty()) {
-            return QueryConstants.NULL_CHAR;
-        }
-        char min = 0;
-        int count = 0;
-        for (int ii = 0; ii < values.size(); ++ii) {
-            final char c = values.get(ii);
-            if (c != QueryConstants.NULL_CHAR) {
-                if (count++ == 0) {
-                    min = c;
-                } else if (CharComparisons.lt(c, min)) {
-                    min = c;
-                }
-            }
-        }
-        return count == 0 ? QueryConstants.NULL_CHAR : min;
-    }
-
-    @SuppressWarnings("unused")
-    public static char maxChar(CharVector values) {
-        if (values.isEmpty()) {
-            return QueryConstants.NULL_CHAR;
-        }
-        char max = 0;
-        int count = 0;
-        for (int ii = 0; ii < values.size(); ++ii) {
-            final char c = values.get(ii);
-            if (c != QueryConstants.NULL_CHAR) {
-                if (count++ == 0) {
-                    max = c;
-                } else if (CharComparisons.gt(c, max)) {
-                    max = c;
-                }
-            }
-        }
-        return count == 0 ? QueryConstants.NULL_CHAR : max;
-    }
 
     @SuppressWarnings("unused")
     public static BigDecimal avgBigInt(ObjectVector<BigInteger> bigIntegerObjectVector) {
@@ -293,8 +203,6 @@ public class QueryTableAggregationTestFormulaStaticMethods {
     static String sumFunction(String col) {
         final String className = QueryTableAggregationTestFormulaStaticMethods.class.getCanonicalName();
         switch (col) {
-            case "charCol":
-                return className + ".sumChar(" + col + ")";
             case "boolCol":
                 return className + ".sumBool(" + col + ")";
             case "bigI":
@@ -309,8 +217,6 @@ public class QueryTableAggregationTestFormulaStaticMethods {
     static String minFunction(String col) {
         final String className = QueryTableAggregationTestFormulaStaticMethods.class.getCanonicalName();
         switch (col) {
-            case "charCol":
-                return className + ".minChar(" + col + ")";
             case "Sym":
             case "boolCol":
             case "bigI":
@@ -325,8 +231,6 @@ public class QueryTableAggregationTestFormulaStaticMethods {
     static String maxFunction(String col) {
         final String className = QueryTableAggregationTestFormulaStaticMethods.class.getCanonicalName();
         switch (col) {
-            case "charCol":
-                return className + ".maxChar(" + col + ")";
             case "Sym":
             case "boolCol":
             case "bigI":
@@ -341,8 +245,6 @@ public class QueryTableAggregationTestFormulaStaticMethods {
     static String varFunction(String col) {
         final String className = QueryTableAggregationTestFormulaStaticMethods.class.getCanonicalName();
         switch (col) {
-            case "charCol":
-                return className + ".varChar(" + col + ")";
             case "bigI":
                 return className + ".varBigInt(" + col + ")";
             case "bigD":
@@ -355,8 +257,6 @@ public class QueryTableAggregationTestFormulaStaticMethods {
     static String stdFunction(String col) {
         final String className = QueryTableAggregationTestFormulaStaticMethods.class.getCanonicalName();
         switch (col) {
-            case "charCol":
-                return className + ".stdChar(" + col + ")";
             case "bigI":
             case "bigD":
                 return "io.deephaven.util.BigDecimalUtils.sqrt(" + varFunction(col) + ", 10)";
@@ -379,8 +279,6 @@ public class QueryTableAggregationTestFormulaStaticMethods {
     static String absSumFunction(String col) {
         final String className = QueryTableAggregationTestFormulaStaticMethods.class.getCanonicalName();
         switch (col) {
-            case "charCol":
-                return className + ".sumChar(" + col + ")";
             case "boolCol":
                 return className + ".sumBool(" + col + ")";
             case "bigI":
@@ -406,15 +304,5 @@ public class QueryTableAggregationTestFormulaStaticMethods {
 
     static String wavgFunction(String col, String wcol) {
         return "wavg(" + col + "," + wcol + ")";
-        // final String className = QueryTableAggregationTestFormulaStaticMethods.class.getCanonicalName();
-        // switch (col) {
-        // case "bigI":
-        // return className + ".wavgBigInt(" + col + ")";
-        // case "bigD":
-        // return className + ".wavgBigDec(" + col + ")";
-        // default:
-        // return "wavg(" + col + "," + wcol + ")";
-        // }
     }
-
 }

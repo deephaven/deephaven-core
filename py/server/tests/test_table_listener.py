@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 #
 
 import time
@@ -13,7 +13,7 @@ from deephaven import DHError, empty_table, input_table, new_table, time_table
 from deephaven.column import bool_col, string_col
 from deephaven.execution_context import get_exec_ctx
 from deephaven.experimental import time_window
-from deephaven.jcompat import _to_sequence
+from deephaven.jcompat import to_sequence
 from deephaven.table import Table
 from deephaven.table_listener import (
     MergedListener,
@@ -133,7 +133,7 @@ class TableListenerTestCase(BaseTestCase):
     def verify_data_changes(self, changes, cols: Union[str, list[str]]):
         changes = [c for c in changes if c]
         self.assertGreater(len(changes), 0)
-        cols = _to_sequence(cols)
+        cols = to_sequence(cols)
         for change in changes:
             self.assertTrue(isinstance(change, dict))
             if not cols:

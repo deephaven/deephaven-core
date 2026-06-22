@@ -1,12 +1,12 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api.widget.plot;
 
 import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
 import com.vertispan.tsdefs.annotations.TsTypeRef;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.figuredescriptor.SourceDescriptor;
+import io.deephaven.proto.backplane.script.grpc.FigureDescriptor;
 import io.deephaven.web.client.api.JsTable;
 import io.deephaven.web.client.api.widget.plot.enums.JsSourceType;
 import jsinterop.annotations.JsProperty;
@@ -20,10 +20,10 @@ import java.util.Map;
 @TsName(namespace = "dh.plot")
 public class SeriesDataSource {
     private final JsAxis axis;
-    private final SourceDescriptor sourceDescriptor;
+    private final FigureDescriptor.SourceDescriptor sourceDescriptor;
     private String columnType;
 
-    public SeriesDataSource(JsAxis axis, SourceDescriptor type) {
+    public SeriesDataSource(JsAxis axis, FigureDescriptor.SourceDescriptor type) {
         this.axis = axis;
         this.sourceDescriptor = type;
     }
@@ -40,7 +40,7 @@ public class SeriesDataSource {
     }
 
     /**
-     * the axis that this source should be drawn on.
+     * The axis that this source should be drawn on.
      * 
      * @return dh.plot.Axis
      */
@@ -50,18 +50,18 @@ public class SeriesDataSource {
     }
 
     /**
-     * the feature of this series represented by this source. See the <b>SourceType</b> enum for more details.
+     * The feature of this series represented by this source. See the {@code SourceType} enum for more details.
      * 
      * @return int
      */
     @JsProperty
     @TsTypeRef(JsSourceType.class)
     public int getType() {
-        return sourceDescriptor.getType();
+        return sourceDescriptor.getType().getNumber();
     }
 
     /**
-     * the type of data stored in the underlying table's Column.
+     * The type of data stored in the underlying table's column.
      * 
      * @return String
      */
@@ -70,7 +70,7 @@ public class SeriesDataSource {
         return columnType;
     }
 
-    public SourceDescriptor getDescriptor() {
+    public FigureDescriptor.SourceDescriptor getDescriptor() {
         return sourceDescriptor;
     }
 

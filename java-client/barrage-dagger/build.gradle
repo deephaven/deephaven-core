@@ -14,13 +14,14 @@ dependencies {
     annotationProcessor libs.dagger.compiler
 
     testImplementation libs.assertj
-    testImplementation platform(libs.junit.bom)
-    testImplementation libs.junit.jupiter
-    testRuntimeOnly libs.junit.platform.launcher
 
+    testImplementation project(':server')
+    testImplementation project(':server-test-utils')
+    testImplementation project(':engine-test-utils')
     testImplementation project(':log-to-slf4j')
 }
 
 test {
-    useJUnitPlatform()
 }
+
+apply plugin: 'io.deephaven.java-open-nio'

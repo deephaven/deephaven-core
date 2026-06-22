@@ -288,4 +288,4 @@ This package contains Java's [collections framework](https://docs.oracle.com/jav
 
 ## Related documentation
 
-- [Query Language Function Reference](../../reference/query-language/query-library/auto-imported-functions.md)
+- [Query Language Function Reference](../../reference/query-language/query-library/auto-imported/index.md)
