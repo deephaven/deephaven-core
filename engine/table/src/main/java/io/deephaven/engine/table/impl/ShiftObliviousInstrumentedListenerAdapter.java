@@ -41,7 +41,7 @@ public abstract class ShiftObliviousInstrumentedListenerAdapter extends ShiftObl
      * object to consult, so we capture the systemic state of the thread that created us (see
      * {@link SystemicObjectTracker}).
      */
-    private boolean systemic = SystemicObjectTracker.isSystemicThread();
+    private volatile boolean systemic = SystemicObjectTracker.isSystemicThread();
 
     @ReferentialIntegrity
     protected final Table source;
