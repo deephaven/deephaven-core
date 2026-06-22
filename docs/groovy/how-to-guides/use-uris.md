@@ -3,12 +3,12 @@ title: Use URIs to share tables
 sidebar_label: URI
 ---
 
-This guide will show you how to use Deephaven's [URIs](https://deephaven.io/core/javadoc/io/deephaven/uri/package-summary.html) to share tables across server instances and networks.
+This guide shows you how to use Deephaven's [URIs](https://deephaven.io/core/javadoc/io/deephaven/uri/package-summary.html) to share tables across server instances and networks.
 
 A URI, short for [Uniform Resource Identifier](https://en.wikipedia.org/wiki/Uniform_Resource_Identifier), is a sequence of characters that identifies a resource on the web. Think of a URI as a generalization of a URL. A Deephaven URI identifies a table on a server instance. By linking to a URI, you can access and work with tables from other Deephaven server instances without needing to replicate the data or queries that created them.
 
 > [!NOTE]
-> URIs can be used to share tables across Groovy and Python instances interchangably. For how to use URIs in Python, see [the equivalent guide](/core/docs/how-to-guides/use-uris).
+> URIs can be used to share tables across Groovy and Python instances interchangeably. For how to use URIs in Python, see [the equivalent guide](/core/docs/how-to-guides/use-uris).
 
 > [!NOTE]
 > URI and Shared Tickets are two different ways to pull tables. Both work on static or dynamic tables. URI pulls tables already on the server via a URL-like string. Shared Tickets let you pull tables you create or access via the Python Client. Learn more about using Shared Tickets with Deephaven in the [Shared Tickets guide](./capture-tables.md).
@@ -16,7 +16,7 @@ A URI, short for [Uniform Resource Identifier](https://en.wikipedia.org/wiki/Uni
 > [!IMPORTANT]
 > URI resolution in Deephaven Community (Core) requires **anonymous authentication**. PSK (pre-shared key) authentication is not currently supported — attempting to resolve a URI when PSK is enabled will fail. This is a known limitation tracked in GitHub issues [#5383](https://github.com/deephaven/deephaven-core/issues/5383) and [#3421](https://github.com/deephaven/deephaven-core/issues/3421).
 >
-> If you found this page while looking for `ui.resolve`, note that the [Deephaven UI URI component](https://deephaven.io/core/ui/docs/components/uri/) is a separate, **Deephaven Enterprise**-only feature for Persistent Queries (PQ). It is not the same as `deephaven.uri.resolve` documented here.
+> If you found this page while looking for `ui.resolve`, note that the [Deephaven UI URI component](https://deephaven.io/core/ui/docs/components/uri/) is a separate, **Deephaven Enterprise**-only feature for Persistent Queries (PQ). It is not the same as `io.deephaven.uri.ResolveTools.resolve` documented here.
 
 ## Why use URIs?
 
@@ -41,7 +41,7 @@ URLs (Uniform Resource Locators) are a common example of URIs. Their syntax typi
 The above URL can be broken down as follows:
 
 - Scheme
-  - The scheme, in this case, is `https`, which is short for `hypertext transfer protocol secure`.
+  - The scheme, in this case, is `https`, which is short for "hypertext transfer protocol secure".
 - Authority
   - The authority, in this case, is `deephaven.io`. It is the host name of the web resource.
 - Path
@@ -279,7 +279,7 @@ When using URIs to share tables across instances, particularly over networks, th
 ### Network impact
 
 - **Latency**: Table access over a network introduces latency that varies based on network conditions. For operations requiring low latency, consider co-locating instances when possible.
-- **Bandwidth**: The initial table snapshot and subsequent incremental updates consume bandwidth. Deephaven's Barrage protocol optimizes this by transmitting only changes rather than full table refreshes.
+- **Bandwidth**: The initial table snapshot and subsequent incremental updates consume bandwidth. Deephaven's [Barrage protocol](../conceptual/barrage-metrics.md) optimizes this by transmitting only changes rather than full table refreshes.
 - **Connection reliability**: Unstable network connections can affect the reliability of table access. Implement appropriate error handling for network disruptions.
 
 ### Table characteristics
@@ -301,5 +301,6 @@ When using URIs to share tables across instances, particularly over networks, th
 - [`update`](../reference/table-operations/select/update.md)
 - [Capture Python client tables](./capture-tables.md)
 - [Application Mode](./application-mode.md)
+- [URI cheat sheet](../reference/cheat-sheets/uri-cheat-sheet.md)
 - [Enterprise URIs](https://deephaven.io/enterprise/docs/deephaven-database/remote-tables-groovy/#uris)
 - [Javadoc](https://deephaven.io/core/javadoc/io/deephaven/uri/package-summary.html)
