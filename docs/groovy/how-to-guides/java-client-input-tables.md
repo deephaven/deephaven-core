@@ -19,13 +19,13 @@ Use client-side input tables when:
 
 ## Setup
 
-Add the Deephaven Java client dependencies to your project. For Gradle:
+Add the Deephaven Java client dependencies to your project. Use the version that matches your Deephaven server. For Gradle:
 
 ```groovy syntax
 dependencies {
-    implementation 'io.deephaven:deephaven-java-client-session:0.37.0'
-    implementation 'io.deephaven:deephaven-java-client-flight:0.37.0'
-    implementation 'io.deephaven:deephaven-qst:0.37.0'
+    implementation 'io.deephaven:deephaven-java-client-session:0.36.1'
+    implementation 'io.deephaven:deephaven-java-client-flight:0.36.1'
+    implementation 'io.deephaven:deephaven-qst:0.36.1'
 }
 ```
 
@@ -96,16 +96,15 @@ public class DeviceStatusTracker {
             // Adding a row with an existing DeviceId updates that row
             TableSpec inputTableSpec = InMemoryKeyBackedInputTable.of(
                     header, java.util.List.of("DeviceId"));
-            TableHandle inputTableHandle = flight.session().execute(inputTableSpec);
 
-            // Publish so it's visible in the UI (check http://localhost:10000)
-            flight.session().publish("device_status", inputTableHandle).get(5, TimeUnit.SECONDS);
-
-            // Close the handle - the server-side table persists via the query scope
-            inputTableHandle.close();
-
-            // Reference the table via its scope name
-            ScopeId scopeId = new ScopeId("device_status");
+            // Use try-with-resources to ensure handle is closed even if publish() fails
+            ScopeId scopeId;
+            try (TableHandle inputTableHandle = flight.session().execute(inputTableSpec)) {
+                // Publish so it's visible in the UI (check http://localhost:10000)
+                flight.session().publish("device_status", inputTableHandle).get(5, TimeUnit.SECONDS);
+                // Handle closes here - the server-side table persists via the query scope
+                scopeId = new ScopeId("device_status");
+            }
 
             // Add initial devices
             updateDevice(flight, scopeId, allocator, deviceIdCol, statusCol, lastSeenCol,
@@ -222,9 +221,13 @@ If you need more control, you can use the lower-level `Session` API:
 ```java
 // Manual approach (use FlightSession.addToInputTable instead when possible)
 ScopeId scopeId = new ScopeId("device_status");
-ExportId exportId = flight.putExportManual(newTable, allocator);
+NewTable row = deviceIdCol.header(statusCol).header(lastSeenCol)
+        .row("sensor-001", "online", Instant.now())
+        .newTable();
+
+ExportId exportId = flight.putExportManual(row, allocator);
 try {
-    flight.session().addToInputTable(scopeId, exportId).get();
+    flight.session().addToInputTable(scopeId, exportId).get(5, TimeUnit.SECONDS);
 } finally {
     flight.release(exportId);
 }
