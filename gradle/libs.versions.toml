@@ -48,7 +48,7 @@ grpc-gwt='1.76.2-2'
 grpc-web-gwt-fetch='1.2.0'
 
 guava = "33.5.0-jre"
-gwt = "2.13.0"
+gwt = "2.13.1"
 # used by GwtTools
 gwtJetty = "9.4.44.v20210927"
 hadoop = "3.4.3"
