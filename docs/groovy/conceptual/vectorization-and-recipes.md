@@ -10,15 +10,16 @@ Deephaven's query engine uses vectorized operations and a declarative "recipe" p
 
 ### Traditional programming: Imperative SISD
 
-In traditional Python, you write **imperative** code that processes one data element at a time. This is Single Instruction, Single Data (SISD) — each instruction operates on a single value:
+In traditional programming, you write **imperative** code that processes one data element at a time. This is Single Instruction, Single Data (SISD) — each instruction operates on a single value:
 
-```python skip-test
-# Traditional Python: Imperative, SISD
-data = [1, 2, 3, 4, 5]
-results = []
-for value in data:  # One iteration at a time
-    result = value * value  # One calculation
-    results.append(result)  # One append
+```groovy skip-test
+// Traditional Groovy: Imperative, SISD
+def data = [1, 2, 3, 4, 5]
+def results = []
+for (value in data) {  // One iteration at a time
+    def result = value * value  // One calculation
+    results.add(result)  // One append
+}
 ```
 
 This approach:
@@ -26,34 +27,32 @@ This approach:
 - Executes instructions sequentially.
 - Processes one data element per instruction.
 - Requires explicit loops for multiple elements.
-- Creates intermediate Python objects for each value.
+- Creates intermediate objects for each value.
 
 ### Deephaven: Declarative SIMD
 
 Deephaven uses a **declarative** approach. The engine processes data in chunks — Single Instruction, Multiple Data (SIMD) — applying one operation across many values at once:
 
-```python order=result test-set=simd-example
-from deephaven import empty_table
-
-# Deephaven: Declarative, SIMD
-result = empty_table(5).update(["X = i + 1", "XSquared = X * X"])
+```groovy order=result test-set=groovy-simd-example
+// Deephaven: Declarative, SIMD
+result = emptyTable(5).update("X = i + 1", "XSquared = X * X")
 ```
 
-See [`empty_table`](../reference/table-operations/create/emptyTable.md) and [`update`](../reference/table-operations/select/update.md) for more details.
+See [`emptyTable`](../reference/table-operations/create/emptyTable.md) and [`update`](../reference/table-operations/select/update.md) for more details.
 
 This approach:
 
 - Specifies **what** to compute, not **how**.
 - Processes data in optimized chunks (vectorization).
 - Enables CPU-level SIMD instructions when available.
-- Avoids intermediate Python objects.
+- Avoids intermediate objects.
 
 ### Why the recipe approach is faster
 
-The recipe approach avoids the overhead of the Python interpreter for data-processing work:
+The recipe approach avoids the overhead of interpreted loops for data-processing work:
 
 1. **Vectorization** - Processes multiple values per CPU instruction.
-2. **No Python overhead** - Computation stays in compiled code.
+2. **No interpreter overhead** - Computation stays in compiled code.
 3. **Better memory access** - Sequential columnar reads are cache-friendly.
 4. **Parallelization** - Engine can split work across cores.
 
@@ -94,7 +93,7 @@ Chunk = contiguous block of typed data (e.g., 4096 doubles)
 
 When you write:
 
-```python skip-test
+```groovy skip-test
 t.update("Y = X * 2")
 ```
 
@@ -117,14 +116,12 @@ This approach:
 
 When you write a Deephaven query:
 
-```python order=null test-set=recipe-spec
-from deephaven import time_table
-
-t1 = time_table("PT1s").update("X = i")
+```groovy order=null test-set=groovy-recipe-spec
+t1 = timeTable("PT1s").update("X = i")
 t2 = t1.update("Y = X * 2")
 ```
 
-See [`time_table`](../reference/table-operations/create/timeTable.md) for more details.
+See [`timeTable`](../reference/table-operations/create/timeTable.md) for more details.
 
 You're creating a **specification** (recipe) that says "Y should always equal X times 2". You're **not** executing a loop or directly computing values.
 
@@ -149,18 +146,17 @@ This requires significant additional infrastructure with imperative loops — a 
 
 ### Update propagation example
 
-```python ticking-table order=null test-set=update-propagation
-from deephaven import time_table
-from deephaven.updateby import cum_sum
+```groovy ticking-table order=null test-set=groovy-update-propagation
+import static io.deephaven.api.updateby.UpdateByOperation.CumSum
 
-# Create a ticking table (adds row every second)
-source = time_table("PT1s").update(["X = i", "XSquared = X * X"])
+// Create a ticking table (adds row every second)
+source = timeTable("PT1s").update("X = i", "XSquared = X * X")
 
-# Add a cumulative sum - updates automatically!
-result = source.update_by(cum_sum("SumX = X"))
+// Add a cumulative sum - updates automatically!
+result = source.updateBy(CumSum("SumX = X"))
 ```
 
-See [`update_by`](../reference/table-operations/update-by-operations/updateBy.md) and [`cum_sum`](../reference/table-operations/update-by-operations/cum-sum.md) for more details.
+See [`updateBy`](../reference/table-operations/update-by-operations/updateBy.md) and [`CumSum`](../reference/table-operations/update-by-operations/cum-sum.md) for more details.
 
 Watch this table in the UI. Every second:
 
@@ -173,24 +169,20 @@ Watch this table in the UI. Every second:
 
 Here's a more complex example that demonstrates multiple concepts working together - time manipulation, chained operations, and Java function integration:
 
-```python ticking-table order=null test-set=time-operations
-from deephaven import time_table
+```groovy ticking-table order=null test-set=groovy-time-operations
+// Create a table that ticks every second -- add a column that is nanos since the epoch
+t1 = timeTable("PT1s").update("TsEpochNs = epochNanos(Timestamp)")
 
-# Create a table that ticks every second -- add a column that is nanos since the epoch
-t1 = time_table("PT1s").update(["TsEpochNs = epochNanos(Timestamp)"])
-
-# Create a new table that adds a Java instant column from the TsEpochNs column
-# epochNanosToInstant is a Java function from DateTimeUtils
+// Create a new table that adds a Java instant column from the TsEpochNs column
+// epochNanosToInstant is a Java function from DateTimeUtils
 t2 = t1.update("TS2 = epochNanosToInstant(TsEpochNs)")
 
-# Do some time operations
+// Do some time operations
 t3 = t2.update(
-    [
-        "TS3 = epochNanosToInstant(TsEpochNs + 2*SECOND)",
-        "TS4 = Timestamp + 'PT2s'",
-        "D3 = TS3-Timestamp",
-        "D4 = TS4-Timestamp",
-    ]
+    "TS3 = epochNanosToInstant(TsEpochNs + 2*SECOND)",
+    "TS4 = Timestamp + 'PT2s'",
+    "D3 = TS3-Timestamp",
+    "D4 = TS4-Timestamp"
 )
 ```
 
@@ -234,7 +226,7 @@ class GeneratedFormula {
 
 This compiled code:
 
-- Has no Python overhead.
+- Has no interpreter overhead.
 - Can be JIT-optimized by the JVM.
 - Can be vectorized by the CPU.
 - Runs at native speed.
@@ -247,31 +239,30 @@ The recipe paradigm makes real-time processing trivial. Compare:
 
 #### Loop approach (doesn't work for real-time):
 
-```python skip-test
-# ❌ This only runs once!
+```groovy skip-test
+// ❌ This only runs once!
 results = []
-for row in source.iter_tuple():
-    results.append(row.X * 2)
-# What happens when new data arrives? Nothing!
+source.columnIterator("X").forEachRemaining { x ->
+    results.add(x * 2)
+}
+// What happens when new data arrives? Nothing!
 ```
 
 #### Recipe approach (automatically handles updates):
 
-```python skip-test
-# ✓ This updates automatically!
+```groovy skip-test
+// ✓ This updates automatically!
 result = source.update("Y = X * 2")
-# New data arrives? Y is computed for new rows automatically!
+// New data arrives? Y is computed for new rows automatically!
 ```
 
 ### Incremental computation
 
 The engine is smart about updates. It doesn't recompute everything - it only processes what changed:
 
-```python ticking-table order=null test-set=incremental
-from deephaven import time_table
-
-# Ticking source with multiple operations
-source = time_table("PT1s").update(["X = i", "Y = X * X", "Z = Y + 10", "W = Z * 2"])
+```groovy ticking-table order=null test-set=groovy-incremental
+// Ticking source with multiple operations
+source = timeTable("PT1s").update("X = i", "Y = X * X", "Z = Y + 10", "W = Z * 2")
 ```
 
 When a new row arrives:
@@ -289,23 +280,18 @@ For updates or modifications:
 
 ### Real-world example: Live aggregations
 
-```python ticking-table order=null test-set=live-agg
-from deephaven import time_table
-from deephaven.updateby import rolling_avg_tick
+```groovy ticking-table order=null test-set=groovy-live-agg
+import static io.deephaven.api.updateby.UpdateByOperation.RollingAvg
 
-# Streaming data with rolling statistics
-trades = time_table("PT0.1s").update(
-    [
-        "Symbol = (i % 3 == 0) ? `AAPL` : (i % 3 == 1) ? `GOOGL` : `MSFT`",
-        "Price = 100 + randomGaussian(0, 5)",
-        "Size = randomInt(1, 100)",
-    ]
+// Streaming data with rolling statistics
+trades = timeTable("PT0.1s").update(
+    "Symbol = (i % 3 == 0) ? `AAPL` : (i % 3 == 1) ? `GOOGL` : `MSFT`",
+    "Price = 100 + randomGaussian(0, 5)",
+    "Size = randomInt(1, 100)"
 )
 
-# Calculate 10-row rolling average - updates in real-time!
-result = trades.update_by(
-    rolling_avg_tick("AvgPrice = Price", rev_ticks=10), by="Symbol"
-)
+// Calculate 10-row rolling average - updates in real-time!
+result = trades.updateBy(RollingAvg(10, "AvgPrice = Price"), "Symbol")
 ```
 
 This query:
@@ -317,37 +303,33 @@ This query:
 
 ## Memory efficiency
 
-### No intermediate Python objects
+### No intermediate objects
 
-Loop approach creates Python objects:
+Loop approach creates objects:
 
-```python skip-test
-# Creates 1,000,000 Python int objects!
-results = [x * x for x in range(1_000_000)]
+```groovy skip-test
+// Creates 1,000,000 Integer objects!
+results = (0..<1_000_000).collect { it * it }
 ```
 
 Recipe approach stays in native memory:
 
-```python order=null test-set=memory-no-objects
-from deephaven import empty_table
-
-# No Python objects created for data!
-result = empty_table(1_000_000).update("XSquared = i * i")
+```groovy order=null test-set=groovy-memory-no-objects
+// No intermediate objects created for data!
+result = emptyTable(1_000_000).update("XSquared = i * i")
 ```
 
 ### Column sharing and copy-on-write
 
 Deephaven uses smart memory management:
 
-```python order=t1,t2,t3 test-set=memory-efficient
-from deephaven import empty_table
+```groovy order=t1,t2,t3 test-set=groovy-memory-efficient
+t1 = emptyTable(1_000_000).update("X = i")
 
-t1 = empty_table(1_000_000).update("X = i")
-
-# t2 shares the X column with t1 - no copy!
+// t2 shares the X column with t1 - no copy!
 t2 = t1.update("Y = X * 2")
 
-# t3 also shares the X column - still no copy!
+// t3 also shares the X column - still no copy!
 t3 = t1.where("X > 500000")
 ```
 
@@ -357,7 +339,7 @@ Deephaven tables can share their RowSet with other tables in the same update gra
 
 ### Columnar vs row-oriented storage
 
-**Row-oriented** (like Python lists of dicts):
+**Row-oriented** (like lists of maps):
 
 ```
 [{X: 1, Y: 2}, {X: 3, Y: 4}, {X: 5, Y: 6}]
@@ -382,15 +364,11 @@ Y: [2, 4, 6]
 
 ### Pattern: Element-wise operations
 
-```python order=result test-set=element-wise
-from deephaven import empty_table
-
-result = empty_table(10).update(
-    [
-        "X = i",
-        "Y = i * 10",
-        "Z = sqrt(X * X + Y * Y)",  # Pythagorean theorem
-    ]
+```groovy order=result test-set=groovy-element-wise
+result = emptyTable(10).update(
+    "X = i",
+    "Y = i * 10",
+    "Z = sqrt(X * X + Y * Y)"  // Pythagorean theorem
 )
 ```
 
@@ -399,31 +377,28 @@ Engine execution:
 1. Reads `X` and `Y` columns in chunks.
 2. Applies vectorized operations chunk-by-chunk.
 3. Writes results to `Z` column.
-4. No Python overhead, no intermediate objects.
+4. No interpreter overhead, no intermediate objects.
 
 ### Pattern: Conditional operations
 
-```python order=result test-set=conditional
-from deephaven import empty_table
-
-result = empty_table(10).update(
-    ["X = i", "Category = (X < 3) ? `Small` : (X < 7) ? `Medium` : `Large`"]
+```groovy order=result test-set=groovy-conditional
+result = emptyTable(10).update(
+    "X = i",
+    "Category = (X < 3) ? `Small` : (X < 7) ? `Medium` : `Large`"
 )
 ```
 
-The ternary operator compiles to generated Java code with no Python interpreter overhead.
+The ternary operator compiles to generated Java code with no interpreter overhead.
 
 ### Pattern: Cross-row operations
 
-```python order=result test-set=cross-row
-from deephaven import empty_table
-from deephaven.updateby import cum_sum, rolling_avg_tick
+```groovy order=result test-set=groovy-cross-row
+import static io.deephaven.api.updateby.UpdateByOperation.CumSum
+import static io.deephaven.api.updateby.UpdateByOperation.RollingAvg
 
-result = (
-    empty_table(10)
+result = emptyTable(10)
     .update("X = i + 1")
-    .update_by([cum_sum("CumSum = X"), rolling_avg_tick("RollingAvg = X", rev_ticks=3)])
-)
+    .updateBy([CumSum("CumSum = X"), RollingAvg(3, "RollingAvg = X")])
 ```
 
 These operations:
@@ -437,49 +412,46 @@ These operations:
 
 ### Valid use case: Data extraction
 
-```python order=source test-set=valid-extract
-from deephaven import empty_table
+```groovy skip-test
+source = emptyTable(5).update("X = i", "Y = X * 2")
 
-source = empty_table(5).update(["X = i", "Y = X * 2"])
-
-# Extracting data to Python - loops are fine here
-for row in source.iter_tuple():
-    # Process in Python, make API calls, etc.
-    print(f"X={row.X}, Y={row.Y}")
+// Extracting data to Groovy - loops are fine here
+for (x in source.getColumnSource("X")) {
+    // Process in Groovy, make API calls, etc.
+    println "X=${x}"
+}
 ```
 
 This is **extraction**, not **transformation**. The data is leaving Deephaven.
 
 ### Valid use case: Control flow
 
-```python order=null test-set=valid-control
-from deephaven import empty_table
-
-source = empty_table(100).update(
-    [
-        "Symbol = (i % 3 == 0) ? `AAPL` : (i % 3 == 1) ? `GOOGL` : `MSFT`",
-        "Price = 100 + randomGaussian(0, 5)",
-    ]
+```groovy order=null test-set=groovy-valid-control
+source = emptyTable(100).update(
+    "Symbol = (i % 3 == 0) ? `AAPL` : (i % 3 == 1) ? `GOOGL` : `MSFT`",
+    "Price = 100 + randomGaussian(0, 5)"
 )
 
-# Using loops for control flow - fine!
-tables = {}
-for symbol in ["AAPL", "GOOGL", "MSFT"]:
-    tables[symbol] = source.where(f"Symbol = `{symbol}`")
+// Using loops for control flow - fine!
+tables = [:]
+["AAPL", "GOOGL", "MSFT"].each { symbol ->
+    tables[symbol] = source.where("Symbol = `${symbol}`")
+}
 ```
 
 You're using loops to **control** table creation, not to **transform** table data.
 
 ### Invalid use case: Column transformations
 
-```python skip-test
-# ❌ NEVER do this!
+```groovy skip-test
+// ❌ NEVER do this!
 results = []
-for row in source.iter_tuple():
-    results.append(row.X * row.Y)
+source.columnIterator("X").forEachRemaining { x ->
+    results.add(x * source.getColumnSource("Y").get(/* ??? */))
+}
 
-# Now what? How do you get this back into a table?
-# And what happens when data ticks?
+// Now what? How do you get this back into a table?
+// And what happens when data ticks?
 ```
 
 Use `.update()` instead!
@@ -490,96 +462,69 @@ Use `.update()` instead!
 
 ✅ **Good** - Vectorizable:
 
-```python order=good test-set=best-practice-1
-from deephaven import empty_table
-
-good = empty_table(10).update(
-    [
-        "X = i",
-        "Y = X * 2 + 5",  # Simple arithmetic - vectorizes well
-    ]
+```groovy order=good test-set=groovy-best-practice-1
+good = emptyTable(10).update(
+    "X = i",
+    "Y = X * 2 + 5"  // Simple arithmetic - vectorizes well
 )
 ```
 
-⚠️ **Careful** - Complex functions may not vectorize:
+⚠️ **Careful** - Complex logic in query strings may not vectorize:
 
-```python order=careful test-set=best-practice-2
-from deephaven import empty_table
-
-
-def complex_calculation(x):
-    # Complex Python function - called per value, not vectorized
-    result = 0
-    for i in range(int(x)):
-        result += i**2
-    return result
-
-
-careful = empty_table(10).update(
-    [
-        "X = i + 1",
-        "Y = complex_calculation(X)",  # Python function - not vectorized
-    ]
+```groovy skip-test
+// Complex inline logic - may not vectorize efficiently
+careful = emptyTable(10).update(
+    "X = i + 1",
+    "Y = (int)(X > 5 ? X * X : X + 1)"  // Complex ternary chains
 )
 ```
 
 ### 2. Minimize cross-language calls
 
-❌ **Slow** - Calls Python for every row:
+❌ **Slow** - Calls closure for every row:
 
-```python skip-test
-def python_func(x):
+```groovy skip-test
+def groovyFunc(x) {
     return x * 2
+}
 
-
-t.update("Y = python_func(X)")  # Python call per row - slow!
+t.update("Y = groovyFunc(X)")  // Closure call per row - slow!
 ```
 
 ✅ **Fast** - Stays in compiled code:
 
-```python skip-test
-t.update("Y = X * 2")  # Compiled code - fast!
+```groovy skip-test
+t.update("Y = X * 2")  // Compiled code - fast!
 ```
 
 ### 3. Use appropriate operations
 
-For rolling calculations, use `update_by`:
+For rolling calculations, use `updateBy`:
 
-```python order=result test-set=best-practice-3
-from deephaven import empty_table
-from deephaven.updateby import rolling_avg_tick
+```groovy order=result test-set=groovy-best-practice-3
+import static io.deephaven.api.updateby.UpdateByOperation.RollingAvg
 
-result = (
-    empty_table(100)
+result = emptyTable(100)
     .update("X = i")
-    .update_by(rolling_avg_tick("AvgX = X", rev_ticks=10))
-)
+    .updateBy(RollingAvg(10, "AvgX = X"))
 ```
 
 For aggregations, use dedicated methods:
 
-```python order=result test-set=best-practice-4
-from deephaven import empty_table
-
-result = (
-    empty_table(100)
-    .update(["Group = i % 5", "Value = randomDouble(0, 100)"])
-    .avg_by("Group")
-)
+```groovy order=result test-set=groovy-best-practice-4
+result = emptyTable(100)
+    .update("Group = i % 5", "Value = randomDouble(0, 100)")
+    .avgBy("Group")
 ```
 
 ### 4. Filter early
 
-```python order=result test-set=best-practice-5
-from deephaven import empty_table
-
-# Filter first to minimize data processed
-result = (
-    empty_table(1_000_000)
+```groovy order=result test-set=groovy-best-practice-5
+// Filter first to minimize data processed
+result = emptyTable(1_000_000)
     .update("X = i")
-    .where("X > 900000")  # Filter early!
-    .update("Y = X * X")  # Only processes 100k rows
-)
+    .where("X > 900000")  // Filter early!
+    .update("Y = X * X")  // Only processes 100k rows
 ```
 
 ## Advanced: JVM and vectorization
@@ -604,7 +549,7 @@ This means:
 1. **Think declaratively** - Specify what to compute, not how to iterate.
 2. **Recipes enable real-time** - Declarative queries update automatically.
 3. **Vectorization = performance** - SIMD operations process multiple elements at once.
-4. **No Python overhead** - Computation stays in compiled code.
+4. **No interpreter overhead** - Computation stays in compiled code.
 5. **Use loops for extraction, not transformation** - Get data out, don't transform inside loops.
 
 **The paradigm shift:**
@@ -622,9 +567,6 @@ This shift unlocks:
 ## Related documentation
 
 - [Think like a Deephaven ninja](./ninja.md#looping-dont-do-it)
-- [Crash course: Vectorization](../getting-started/crash-course/vectorization-vs-loops.md)
 - [Deephaven's design](./deephaven-design.md)
 - [Table update model](./table-update-model.md)
 - [Query engine parallelization](./query-engine/parallelization.md)
-- [Table operations](../getting-started/crash-course/table-ops.md)
-- [`update_by` operations](../how-to-guides/rolling-aggregations.md)

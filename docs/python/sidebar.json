@@ -127,10 +127,6 @@
                 "path": "conceptual/deephaven-design.md"
               },
               {
-                "label": "Vectorization and the recipe paradigm",
-                "path": "conceptual/vectorization-and-recipes.md"
-              },
-              {
                 "label": "Incremental update model",
                 "path": "conceptual/table-update-model.md"
               },
@@ -939,6 +935,10 @@
               {
                 "label": "Think like a Deephaven ninja",
                 "path": "conceptual/ninja.md"
+              },
+              {
+                "label": "Vectorization and the recipe paradigm",
+                "path": "conceptual/vectorization-and-recipes.md"
               },
               {
                 "label": "Performance",
