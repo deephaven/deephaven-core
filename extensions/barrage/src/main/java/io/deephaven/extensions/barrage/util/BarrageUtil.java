@@ -513,11 +513,24 @@ public class BarrageUtil {
             @NotNull final BarrageOptions options,
             @NotNull final Table table) {
         if (table.hasAttribute(Table.BARRAGE_SCHEMA_ATTRIBUTE)) {
+            // Use the encodings from the explicit schema to suppress auto-REE inference,
+            // but rebuild metadata from the table definition so clients get Deephaven type info.
             final Schema base = (Schema) table.getAttribute(Table.BARRAGE_SCHEMA_ATTRIBUTE);
-            return options.columnsAsList() ? schemaWithColumnsAsList(base) : base;
+            return makeSchema(options, table.getDefinition(), table.getAttributes(), table.isFlat(),
+                    encodingsFromSchema(base));
         }
         return makeSchema(options, table.getDefinition(), table.getAttributes(), table.isFlat(),
                 inferEncodings(table));
+    }
+
+    private static Map<String, ColumnEncoding> encodingsFromSchema(final Schema schema) {
+        final Map<String, ColumnEncoding> encodings = new HashMap<>();
+        for (final Field field : schema.getFields()) {
+            if (field.getType().getTypeID() == ArrowType.ArrowTypeID.RunEndEncoded) {
+                encodings.put(field.getName(), ColumnEncoding.RUN_END_ENCODED);
+            }
+        }
+        return encodings;
     }
 
     public static ByteString schemaBytes(@NotNull final ToIntFunction<FlatBufferBuilder> schemaPayloadWriter) {
