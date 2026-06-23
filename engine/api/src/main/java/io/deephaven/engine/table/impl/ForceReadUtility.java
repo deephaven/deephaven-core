@@ -6,7 +6,6 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.annotations.BuildableStyle;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.SharedContext;
@@ -29,7 +28,7 @@ import java.util.Set;
 public abstract class ForceReadUtility {
 
     private static final int DEFAULT_READ_SIZE = ChunkedColumnIterator.DEFAULT_CHUNK_SIZE;
-    private static final int DEFAULT_COLUMN_CONSIDERATION = 32;
+    private static final int DEFAULT_MAX_COLUMNS = 32;
 
     /**
      * Construct a new builder.
@@ -51,15 +50,18 @@ public abstract class ForceReadUtility {
     }
 
     /**
-     * Force reads all column data of {@code columnName} from {@code table}. Equivalent to
-     * {@code of(builder().table(table).addColumnNames(columnName).build())}.
+     * Force reads all column data of {@code columnNames} from {@code table}; {@code columnNames} must have at least one
+     * element. Equivalent to {@code of(builder().table(table).addColumnNames(columnNames).build())}.
      *
      * @param table the table
-     * @param columnName the column name
+     * @param columnNames the column names
      * @see #of(ForceReadUtility)
      */
-    public static void of(Table table, String columnName) {
-        of(builder().table(table).addColumnNames(columnName).build());
+    public static void of(Table table, String... columnNames) {
+        if (columnNames.length == 0) {
+            throw new IllegalArgumentException("columnNames must be non-empty");
+        }
+        of(builder().table(table).addColumnNames(columnNames).build());
     }
 
     /**
@@ -106,13 +108,13 @@ public abstract class ForceReadUtility {
      * The maximum number of columns to consider at any given time. Setting this to {@code 1} means that each column
      * will be fully read before moving on to the next column; setting this to {@link Integer#MAX_VALUE} means that all
      * columns will be read together (that is, {@link #rowSet()} will be iterated through exactly once). By default, is
-     * {@value #DEFAULT_COLUMN_CONSIDERATION}.
+     * {@value #DEFAULT_MAX_COLUMNS}.
      *
      * @return the column consideration
      */
     @Value.Default
-    public int columnConsideration() {
-        return DEFAULT_COLUMN_CONSIDERATION;
+    public int maxColumns() {
+        return DEFAULT_MAX_COLUMNS;
     }
 
     public interface Builder {
@@ -129,7 +131,7 @@ public abstract class ForceReadUtility {
 
         Builder readSize(int readSize);
 
-        Builder columnConsideration(int columnConsideration);
+        Builder maxColumns(int maxColumns);
 
         ForceReadUtility build();
     }
@@ -142,9 +144,9 @@ public abstract class ForceReadUtility {
     }
 
     @Value.Check
-    final void checkColumnConsideration() {
-        if (columnConsideration() < 1) {
-            throw new IllegalArgumentException("columnConsideration must be positive");
+    final void checkMaxColumns() {
+        if (maxColumns() < 1) {
+            throw new IllegalArgumentException("maxColumns must be positive");
         }
     }
 
@@ -154,7 +156,7 @@ public abstract class ForceReadUtility {
         if (desiredRowSet == null) {
             return;
         }
-        final TrackingRowSet tableRowSet = table().getRowSet();
+        final RowSet tableRowSet = table().getRowSet();
         if (desiredRowSet == tableRowSet) {
             return;
         }
@@ -172,13 +174,13 @@ public abstract class ForceReadUtility {
         final RowSet rowSet = rowSet().orElseGet(table()::getRowSet);
         final ColumnSource<?>[] columnSources = columnSources();
         final int readSize = readSize();
-        final int maxColumns = columnConsideration();
-        for (int i = 0; i < columnSources.length; i += maxColumns) {
-            readAll(rowSet, columnSources, i, Math.min(columnSources.length - i, maxColumns), readSize);
+        final int maxColumns = maxColumns();
+        for (int ci = 0; ci < columnSources.length; ci += maxColumns) {
+            readAll(rowSet, columnSources, ci, Math.min(columnSources.length - ci, maxColumns), readSize);
         }
     }
 
-    private static void readAll(RowSet rowSet, ColumnSource<?> columnSource, int readSize) {
+    private static void readAll(final RowSet rowSet, final ColumnSource<?> columnSource, final int readSize) {
         try (final ChunkSource.GetContext context = columnSource.makeGetContext(readSize)) {
             try (final RowSequence.Iterator it = rowSet.getRowSequenceIterator()) {
                 while (it.hasMore()) {
@@ -189,8 +191,8 @@ public abstract class ForceReadUtility {
         }
     }
 
-    private static void readAll(RowSet rowSet, ColumnSource<?>[] columnSources, int columnSourcesIx,
-            int columnSourcesLen, int readSize) {
+    private static void readAll(final RowSet rowSet, final ColumnSource<?>[] columnSources, final int columnSourcesIx,
+            final int columnSourcesLen, final int readSize) {
         if (columnSourcesLen == 1) {
             readAll(rowSet, columnSources[columnSourcesIx], readSize);
             return;
@@ -199,16 +201,16 @@ public abstract class ForceReadUtility {
         try (
                 final SharedContext sharedContext = SharedContext.makeSharedContext();
                 final SafeCloseable ignored = new SafeCloseableArray<>(contexts)) {
-            for (int i = 0; i < columnSourcesLen; i++) {
-                contexts[i] = columnSources[columnSourcesIx + i].makeGetContext(readSize, sharedContext);
+            for (int ci = 0; ci < columnSourcesLen; ci++) {
+                contexts[ci] = columnSources[columnSourcesIx + ci].makeGetContext(readSize, sharedContext);
             }
             try (final RowSequence.Iterator it = rowSet.getRowSequenceIterator()) {
                 while (it.hasMore()) {
-                    sharedContext.reset();
                     final RowSequence rs = it.getNextRowSequenceWithLength(readSize);
-                    for (int i = 0; i < columnSourcesLen; i++) {
-                        columnSources[columnSourcesIx + i].getChunk(contexts[i], rs);
+                    for (int ci = 0; ci < columnSourcesLen; ci++) {
+                        columnSources[columnSourcesIx + ci].getChunk(contexts[ci], rs);
                     }
+                    sharedContext.reset();
                 }
             }
         }

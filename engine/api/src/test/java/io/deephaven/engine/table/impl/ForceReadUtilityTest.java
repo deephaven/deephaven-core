@@ -78,7 +78,7 @@ public class ForceReadUtilityTest {
         final ForceReadUtility options = ForceReadUtility.builder()
                 .table(table)
                 .readSize(33)
-                .columnConsideration(2)
+                .maxColumns(2)
                 .addColumnNames("CS4", "CS1", "CS2")
                 .rowSet(table.getRowSet().minus(RowSetFactory.fromRange(40, 59)))
                 .build();
@@ -225,15 +225,15 @@ public class ForceReadUtilityTest {
     }
 
     @Test
-    public void badColumnConsideration() {
+    public void badMaxColumns() {
         try {
             ForceReadUtility.builder()
                     .table(TableTools.emptyTable(42))
-                    .columnConsideration(0)
+                    .maxColumns(0)
                     .build();
             fail("Expected exception");
         } catch (IllegalArgumentException e) {
-            assertEquals("columnConsideration must be positive", e.getMessage());
+            assertEquals("maxColumns must be positive", e.getMessage());
         }
     }
 }
