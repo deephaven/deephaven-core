@@ -6,8 +6,29 @@ namespace Deephaven.Dh_NetClient;
 public class TableMaker {
   private readonly List<ColumnInfo> _columnInfos = new();
 
+  /// <summary>
+  /// Adds a column to the table. "values" must be a list of a supported type.
+  /// That is, container types implementing IReadOnlyList of a supported type.
+  /// Type inference can often be used to avoid specifying the type parameter explicitly.
+  /// Supported types are bool, char, sbyte, short, int, long, float, double, string,
+  /// DateTimeOffset, DateOnly, TimeOnly, their nullable counterparts, and lists of those
+  /// types (that is, container types implementing IReadOnlyList of a supported type).
+  /// Example:
+  /// <code>
+  ///   // values has type int[]; underlying element type is int
+  ///   AddColumn("myIntColumn1", [1, 2, 3]);  // values has type int[]
+  ///   // values has type List&lt;int&gt;; underlying element type is int
+  ///   AddColumn("myIntColumn2", new List&lt;int&gt;{1, 2, 3});
+  ///   // values has type int[][], underlying element type is int[]
+  ///   AddColumn("myIntListColumn", [[1, 2, 3], [4,5,6]]);
+  /// </code>
+  /// </summary>
+  /// <typeparam name="T">The underlying element type of the values</typeparam>
+  /// <param name="name">The column name</param>
+  /// <param name="values">The values for the column</param>
   public void AddColumn<T>(string name, IReadOnlyList<T> values) {
     var cb = ColumnBuilder.ForType<T>(null);
+
     foreach (var value in values) {
       if (value == null) {
         cb.AppendNull();
@@ -15,6 +36,7 @@ public class TableMaker {
       }
       cb.Append(value);
     }
+
     var array = cb.Build();
     var (_, typeName, componentTypeName) = cb.GetTypeInfo();
 

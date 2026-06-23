@@ -16,12 +16,12 @@ namespace Deephaven.Dh_NetClient;
 /// Apache.Arrow.StringArray is an example of an array containing reference types.
 /// It implements IReadOnlyList&lt;string&gt;. We would wrap it as
 /// ReadOnlyListAdapterForReferenceTypes&lt;string&gt; which would provide
-/// IList and List&lt;string&gt; to the user.
+/// IList and IList&lt;string&gt; to the user.
 ///
 /// Apache.Arrow.Int32Array is an example of an array containing value types.
 /// It implements IReadOnlyList&lt;Nullable&lt;Int32&gt;&gt;. We would wrap it as
 /// ReadOnlyListAdapterForValueTypes&lt;Int32&gt; which would provide
-/// IList and List&lt;Nullable&lt;Int32&gt;&gt; (via its base class), and
+/// IList and IList&lt;Nullable&lt;Int32&gt;&gt; (via its base class), and
 /// also IList&lt;Int32&gt; via the derived class.
 /// 
 /// Background and rationale for this class hierarchy: The library initially supported a set of
@@ -44,7 +44,7 @@ namespace Deephaven.Dh_NetClient;
 /// IReadOnlyList&lt;Nullable&lt;T&gt;&gt; instead of IList. The problem is of course that
 /// there is no bare (non-generic) IReadOnlyList type, so for the bare type we would still have
 /// to use IList. It would have been confusing and inconsistent to use IList for the bare
-/// non-generic type, but IReadOnlyList&lt;T&gt; for the generic type.. By using IList we can at least
+/// non-generic type, but IReadOnlyList&lt;T&gt; for the generic type. By using IList we can at least
 /// be consistent, even though it's a big interface with a bunch of mutating methods that we don't
 /// care about and will always throw exceptions for our case.
 /// </summary>

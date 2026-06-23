@@ -8,6 +8,15 @@ using System.Diagnostics.CodeAnalysis;
 namespace Deephaven.Dh_NetClient;
 
 internal abstract class ColumnBuilder {
+  /// <summary>
+  /// Makes a ColumnBuilder&lt;T&gt; for a given type T
+  /// Supported types are bool, char, sbyte, short, int, long, float, double, string,
+  /// DateTimeOffset, DateOnly, TimeOnly, their nullable counterparts, and lists of those
+  /// types (that is, container types implementing IReadOnlyList of a supported type).
+  /// </summary>
+  /// <typeparam name="T">The specified type</typeparam>
+  /// <param name="callerProvidedBuilder"></param>
+  /// <returns>The constructed ColumnBuilder</returns>
   public static ColumnBuilder<T> ForType<T>(IArrowArrayBuilder? callerProvidedBuilder) {
     return (ColumnBuilder<T>)ForType(typeof(T), callerProvidedBuilder);
   }
@@ -125,16 +134,26 @@ internal abstract class ColumnBuilder {
         null);
     }
 
+    // example: type = List<int>; underlying type = int
+    // example: type = int[]; underlying type = int
     if (TryMatchTypeToIListOfUnderlying(type, out var underlyingType)) {
       var miGeneric = typeof(ColumnBuilder).GetMethod(nameof(ForIListType)) ??
         throw new Exception($"Can't find {nameof(ForIListType)}");
+      // miGeneric is MethodInfo for ForIListType<,>
+
       var miInstantiated = miGeneric.MakeGenericMethod(type, underlyingType);
+      // miInstantiated is MethodInfo e.g. ForIListType<List<int>, int>
+
+      // first null argument is "this"; Because it's a static method, there is no "this".
+      // second argument is the list of arguments to ForIListType, which is the single
+      // argument callerProvidedBuilder.
       return (ColumnBuilder)miInstantiated.Invoke(null, [callerProvidedBuilder])!;
     }
 
     throw new Exception($"ColumnBuilder does not support type {Utility.FriendlyTypeName(type)}");
   }
 
+  // If the caller type was T? aka Nullable<T>, then this method is called with T as the type parameter.
   public static ColumnBuilder<T?> ForNullableType<T>(IArrowArrayBuilder? callerProvidedBuilder) where T : struct {
     var underlyingCb = ForType<T>(callerProvidedBuilder);
     return new NullableBuilder<T>(underlyingCb);
@@ -154,6 +173,7 @@ internal abstract class ColumnBuilder {
     Apache.Arrow.ListArray.Builder builderToUse;
     if (callerProvidedBuilder == null) {
       // Make a temporary column builder just so I can get the correct Arrow data type
+      // int -> Int32Type, string -> StringType, DateTimeOffset -> TimestampType, etc.
       var tempCb = ForType<TUnderlying>(null);
       var (underlyingArrowType, _, _) = tempCb.GetTypeInfo();
       builderToUse = new Apache.Arrow.ListArray.Builder(underlyingArrowType);
@@ -176,6 +196,7 @@ internal abstract class ColumnBuilder {
     if (TryMatch(target, out underlying)) {
       return true;
     }
+
     foreach (var iface in target.GetInterfaces()) {
       if (TryMatch(iface, out underlying)) {
         return true;
