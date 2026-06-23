@@ -4,7 +4,7 @@
 package io.deephaven.engine.util;
 
 import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.context.QueryCompilerImpl;
+import io.deephaven.engine.context.InMemoryQueryCompiler;
 import io.deephaven.engine.context.QueryCompilerRequest;
 
 import java.util.*;
@@ -60,7 +60,7 @@ public class DynamicCompileUtils {
                         .description("Simple Function: " + code)
                         .className(className)
                         .classBody(classBody.toString())
-                        .packageNameRoot(QueryCompilerImpl.FORMULA_CLASS_PREFIX)
+                        .packageNameRoot(InMemoryQueryCompiler.FORMULA_CLASS_PREFIX)
                         .build());
 
         try {
@@ -86,7 +86,7 @@ public class DynamicCompileUtils {
                         .description("Formula: return " + object + ".class")
                         .className(className)
                         .classBody(classBody.toString())
-                        .packageNameRoot(QueryCompilerImpl.FORMULA_CLASS_PREFIX)
+                        .packageNameRoot(InMemoryQueryCompiler.FORMULA_CLASS_PREFIX)
                         .build());
 
         try {

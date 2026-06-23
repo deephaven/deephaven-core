@@ -225,7 +225,7 @@ The following example demonstrates how to build an `ExecutionContext` from scrat
 
 ```groovy skip-test
 import io.deephaven.engine.context.ExecutionContext
-import io.deephaven.engine.context.QueryCompilerImpl
+import io.deephaven.engine.context.InMemoryQueryCompiler
 import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph
 import io.deephaven.engine.updategraph.OperationInitializer
 import java.nio.file.Files
@@ -235,7 +235,7 @@ executionContext = ExecutionContext.newBuilder()
     .newQueryScope()
     .setOperationInitializer(OperationInitializer.NON_PARALLELIZABLE)
     .setUpdateGraph(PeriodicUpdateGraph.newBuilder("MyCustomGraph").build())
-    .setQueryCompiler(QueryCompilerImpl.create(Files.createTempDirectory("qc_").toFile(), ClassLoader.getSystemClassLoader()))
+    .setQueryCompiler(InMemoryQueryCompiler.create(Files.createTempDirectory("qc_").toFile()))
     .build()
 ```
 
@@ -262,7 +262,7 @@ executionContext = ExecutionContext.newBuilder()
     .newQueryScope()
     .setOperationInitializer(OperationInitializer.NON_PARALLELIZABLE)
     .setUpdateGraph(eventDrivenGraph)
-    .setQueryCompiler(QueryCompilerImpl.create(Files.createTempDirectory("qc_").toFile(), ClassLoader.getSystemClassLoader()))
+    .setQueryCompiler(InMemoryQueryCompiler.create(Files.createTempDirectory("qc_").toFile()))
     .build()
 ```
 

@@ -4,7 +4,7 @@
 package io.deephaven.engine.table.impl.select.codegen;
 
 import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.context.QueryCompilerImpl;
+import io.deephaven.engine.context.InMemoryQueryCompiler;
 import io.deephaven.engine.context.QueryCompilerRequest;
 import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import io.deephaven.util.CompletionStageFuture;
@@ -50,7 +50,7 @@ public class JavaKernelBuilder {
                 .description("FormulaKernel: " + originalFormulaString)
                 .className(CLASS_NAME)
                 .classBody(classBody)
-                .packageNameRoot(QueryCompilerImpl.FORMULA_CLASS_PREFIX)
+                .packageNameRoot(InMemoryQueryCompiler.FORMULA_CLASS_PREFIX)
                 .build()).thenApply(clazz -> {
                     final FormulaKernelFactory fkf;
                     try {
@@ -242,7 +242,7 @@ public class JavaKernelBuilder {
                 null);
         g.replace("ARGS", makeCommaSeparatedList(args));
         g.replace("FORMULA_STRING", ta.wrapWithCastIfNecessary(cookedFormulaString));
-        final String joinedFormulaString = QueryCompilerImpl.createEscapedJoinedString(originalFormulaString);
+        final String joinedFormulaString = InMemoryQueryCompiler.createEscapedJoinedString(originalFormulaString);
         g.replace("JOINED_FORMULA_STRING", joinedFormulaString);
         g.replace("EXCEPTION_TYPE", FormulaEvaluationException.class.getCanonicalName());
         return g.freeze();

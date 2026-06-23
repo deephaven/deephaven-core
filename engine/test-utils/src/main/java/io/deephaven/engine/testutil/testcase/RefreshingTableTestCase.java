@@ -7,7 +7,7 @@ import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.chunk.util.pools.ChunkPoolReleaseTracking;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.context.QueryCompilerImpl;
+import io.deephaven.engine.context.InMemoryQueryCompiler;
 import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
@@ -86,7 +86,7 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
         delayedErrors.clear();
         livenessScopeCloseable = LivenessScopeStack.open(new LivenessScope(true), true);
 
-        oldLogEnabled = QueryCompilerImpl.setLogEnabled(ENABLE_QUERY_COMPILER_LOGGING);
+        oldLogEnabled = InMemoryQueryCompiler.setLogEnabled(ENABLE_QUERY_COMPILER_LOGGING);
         oldSerialSafe = updateGraph.setSerialTableOperationsSafe(true);
         AsyncErrorLogger.init();
         ChunkPoolReleaseTracking.enableStrict();
@@ -127,7 +127,7 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
         }
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.setSerialTableOperationsSafe(oldSerialSafe);
-        QueryCompilerImpl.setLogEnabled(oldLogEnabled);
+        InMemoryQueryCompiler.setLogEnabled(oldLogEnabled);
 
         // reset the execution context
         executionContext.close();

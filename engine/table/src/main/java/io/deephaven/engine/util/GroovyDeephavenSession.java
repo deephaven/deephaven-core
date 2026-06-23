@@ -81,7 +81,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
     private static final Logger log = LoggerFactory.getLogger(GroovyDeephavenSession.class);
 
     public static final String SCRIPT_TYPE = "Groovy";
-    private static final String PACKAGE = QueryCompilerImpl.DYNAMIC_CLASS_PREFIX;
+    private static final String PACKAGE = InMemoryQueryCompiler.DYNAMIC_CLASS_PREFIX;
     private static final String SCRIPT_PREFIX = "io.deephaven.engine.util.Script";
 
     private static final String DEFAULT_SCRIPT_PATH = Configuration.getInstance()

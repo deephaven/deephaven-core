@@ -5,7 +5,7 @@ package io.deephaven.benchmark.parquet.table;
 
 import io.deephaven.base.FileUtils;
 import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.context.QueryCompilerImpl;
+import io.deephaven.engine.context.InMemoryQueryCompiler;
 import io.deephaven.engine.context.QueryLibrary;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.table.Table;
@@ -51,7 +51,7 @@ public class TableWriteBenchmark {
                 .newQueryLibrary()
                 .newQueryScope()
                 .setQueryCompiler(
-                        QueryCompilerImpl.create(rootPath.resolve("cache").toFile(), getClass().getClassLoader()))
+                        InMemoryQueryCompiler.create(null))
                 .build();
         exContextCloseable = context.open();
 

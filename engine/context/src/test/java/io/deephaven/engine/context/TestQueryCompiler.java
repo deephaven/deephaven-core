@@ -14,9 +14,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 
-import java.io.IOException;
 import java.lang.reflect.Method;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -60,18 +58,14 @@ public class TestQueryCompiler {
     @Rule
     public final EngineCleanup framework = new EngineCleanup();
 
-    @Rule
-    public TemporaryFolder folder = new TemporaryFolder();
-
     private SafeCloseable executionContextClosable;
 
     @Before
-    public void setUp() throws IOException {
+    public void setUp() {
         executionContextClosable = ExecutionContext.newBuilder()
                 .captureQueryLibrary()
                 .captureQueryScope()
-                .setQueryCompiler(QueryCompilerImpl.create(
-                        folder.newFolder(), TestQueryCompiler.class.getClassLoader()))
+                .setQueryCompiler(InMemoryQueryCompiler.create(null))
                 .build()
                 .open();
     }
@@ -375,7 +369,8 @@ public class TestQueryCompiler {
                         CompletionStageFuture.make(),
                 };
 
-        final QueryCompilerImpl badCompiler = QueryCompilerImpl.createForUnitTests(List.of("InvalidClassArgument"));
+        final InMemoryQueryCompiler badCompiler =
+                InMemoryQueryCompiler.createForUnitTests(List.of("InvalidClassArgument"));
         UncheckedDeephavenException e = org.junit.Assert.assertThrows(UncheckedDeephavenException.class,
                 () -> badCompiler.compile(requests, resolvers));
         org.junit.Assert.assertEquals("Error Invoking Compiler, no source present in diagnostic:\n" +
