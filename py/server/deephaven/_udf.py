@@ -325,9 +325,34 @@ def _np_dtype_char(t: Union[type, str]) -> str:
         return "X"
 
 
+def _unwrap_type_alias(t: type) -> type:
+    """If t is a bare PEP 695 TypeAliasType (Python 3.12+), return its underlying __value__, recursively unwrapping
+    chained aliases. Otherwise return t unchanged. Safe on Python < 3.12 where TypeAliasType does not exist."""
+    if sys.version_info < (3, 12):
+        return t
+    seen: set[int] = set()
+    while isinstance(t, typing.TypeAliasType):
+        if id(t) in seen:  # guard against self-referential aliases
+            break
+        seen.add(id(t))
+        t = t.__value__
+    return t
+
+
+def _resolve_origin(t: type) -> Any:
+    """Returns get_origin(t), unwrapping a TypeAliasType origin (e.g. numpy.typing.NDArray in numpy 2.5.0+) to the
+    origin of its underlying value. Never raises."""
+    origin = get_origin(t)
+    if sys.version_info >= (3, 12) and isinstance(origin, typing.TypeAliasType):
+        underlying = origin.__value__
+        origin = get_origin(underlying) or underlying
+    return origin
+
+
 def _component_np_dtype_char(t: type) -> Optional[str]:
     """Returns the numpy dtype character code for the given type's component type if the type is a Sequence type or
     numpy ndarray, otherwise return None."""
+    t = _unwrap_type_alias(t)
     component_type = _py_sequence_component_type(t)
 
     if not component_type:
@@ -346,15 +371,15 @@ def _component_np_dtype_char(t: type) -> Optional[str]:
 def _py_sequence_component_type(t: type) -> Optional[type]:
     """Returns the component type of Python subscribed sequence type, otherwise return None."""
     component_type = None
-    import types
 
-    if isinstance(t, types.GenericAlias) and issubclass(
-        get_origin(t), Sequence
+    origin = _resolve_origin(t)
+    if isinstance(t, types.GenericAlias) and isinstance(origin, type) and issubclass(
+        origin, Sequence
     ):  # novermin
         component_type = t.__args__[0]
 
     if not component_type:
-        if isinstance(t, typing._GenericAlias) and issubclass(get_origin(t), Sequence):  # type: ignore[attr-defined]
+        if isinstance(t, typing._GenericAlias) and isinstance(origin, type) and issubclass(origin, Sequence):  # type: ignore[attr-defined]
             component_type = t.__args__[0]
 
     # if the component type is a DType, get its numpy type
@@ -368,7 +393,7 @@ def _np_ndarray_component_type(t: type) -> Optional[type]:
     """Returns the numpy ndarray component type if the type is a numpy ndarray, otherwise return None."""
 
     component_type = None
-    if isinstance(t, types.GenericAlias) and get_origin(t) is np.ndarray:  # novermin
+    if isinstance(t, types.GenericAlias) and _resolve_origin(t) is np.ndarray:  # novermin
         nargs = len(t.__args__)
         if nargs == 1:
             component_type = t.__args__[0]
@@ -388,11 +413,11 @@ def _np_ndarray_component_type(t: type) -> Optional[type]:
 
 def _is_union_type(t: type) -> bool:
     """Return True if the type is a Union type"""
+    if get_origin(t) is Union:
+        return True
     if sys.version_info >= (3, 10):
-        if isinstance(t, types.UnionType):  # novermin
-            return True
-
-    return isinstance(t, typing._GenericAlias) and get_origin(t) is Union  # type: ignore[attr-defined]
+        return get_origin(t) is types.UnionType
+    return False
 
 
 def _parse_param(name: str, annotation: type) -> _ParsedParam:
@@ -403,9 +428,12 @@ def _parse_param(name: str, annotation: type) -> _ParsedParam:
         p_param.effective_types.append(object)
         p_param.encoded_types.append("O")
         p_param.none_allowed = True
-    elif _is_union_type(annotation):
+        return p_param
+
+    annotation = _unwrap_type_alias(annotation)
+    if _is_union_type(annotation):
         for t in get_args(annotation):
-            _parse_type_no_nested(annotation, p_param, t)
+            _parse_type_no_nested(annotation, p_param, _unwrap_type_alias(t))
     else:
         _parse_type_no_nested(annotation, p_param, annotation)
     return p_param
@@ -445,16 +473,17 @@ def _parse_return_annotation(annotation: Any) -> _ParsedReturnAnnotation:
 
     pra = _ParsedReturnAnnotation()
 
-    t = annotation
+    t = _unwrap_type_alias(annotation)
     pra.orig_type = t
-    if _is_union_type(annotation) and len(annotation.__args__) == 2:
+    args = get_args(t)
+    if _is_union_type(t) and len(args) == 2:
         # if the annotation is a Union of two types, we'll use the non-None type
-        if annotation.__args__[1] is type(None):  # noqa: E721
+        if args[1] is type(None):  # noqa: E721
             pra.none_allowed = True
-            t = annotation.__args__[0]
-        elif annotation.__args__[0] is type(None):  # noqa: E721
+            t = _unwrap_type_alias(args[0])
+        elif args[0] is type(None):  # noqa: E721
             pra.none_allowed = True
-            t = annotation.__args__[1]
+            t = _unwrap_type_alias(args[1])
 
     # if the annotation is a DH DType instance, we'll use its numpy type
     if isinstance(t, dtypes.DType):
