@@ -415,7 +415,9 @@ These operations:
 source = emptyTable(5).update("X = i", "Y = X * 2")
 
 // Extracting data to Groovy - loops are fine here
-for (x in source.getColumnSource("X")) {
+iter = source.columnIterator("X")
+while (iter.hasNext()) {
+    x = iter.next()
     // Process in Groovy, make API calls, etc.
     println "X=${x}"
 }
@@ -442,7 +444,7 @@ You're using loops to **control** table creation, not to **transform** table dat
 
 ### Invalid use case: Column transformations
 
-```groovy skip-test
+```groovy skip-test should-fail
 // ❌ NEVER do this!
 results = []
 source.columnIterator("X").forEachRemaining { x ->

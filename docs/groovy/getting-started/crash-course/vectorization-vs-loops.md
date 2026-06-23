@@ -95,7 +95,9 @@ There are valid uses for loops in Deephaven:
 source = emptyTable(5).update("X = i", "Y = X * 2")
 
 // This is fine — you're extracting, not transforming
-for (x in source.getColumnSource("X")) {
+iter = source.columnIterator("X")
+while (iter.hasNext()) {
+    x = iter.next()
     println "X=${x}"
 }
 ```
