@@ -343,9 +343,9 @@ def _resolve_origin(t: type) -> Any:
     """Returns get_origin(t), unwrapping a TypeAliasType origin (e.g. numpy.typing.NDArray in numpy 2.5.0+) to the
     origin of its underlying value. Never raises."""
     origin = get_origin(t)
-    if sys.version_info >= (3, 12) and isinstance(
+    if sys.version_info >= (3, 12) and isinstance(  # novermin
         origin, typing.TypeAliasType
-    ):  # novermin
+    ):
         underlying = origin.__value__
         origin = get_origin(underlying) or underlying
     return origin
