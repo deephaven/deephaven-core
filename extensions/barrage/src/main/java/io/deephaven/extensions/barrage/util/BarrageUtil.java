@@ -525,9 +525,20 @@ public class BarrageUtil {
     private static Map<String, ColumnEncoding> encodingsFromSchema(final Schema schema) {
         final Map<String, ColumnEncoding> encodings = new HashMap<>();
         for (final Field field : schema.getFields()) {
-            if (field.getType().getTypeID() == ArrowType.ArrowTypeID.RunEndEncoded) {
-                encodings.put(field.getName(), ColumnEncoding.RUN_END_ENCODED);
+            if (field.getType().getTypeID() != ArrowType.ArrowTypeID.RunEndEncoded) {
+                continue;
             }
+            ColumnEncoding encoding = ColumnEncoding.RUN_END_ENCODED_INT32;
+            final List<Field> children = field.getChildren();
+            if (!children.isEmpty() && children.get(0).getType() instanceof ArrowType.Int) {
+                final int bitWidth = ((ArrowType.Int) children.get(0).getType()).getBitWidth();
+                if (bitWidth == 16) {
+                    encoding = ColumnEncoding.RUN_END_ENCODED_INT16;
+                } else if (bitWidth == 64) {
+                    encoding = ColumnEncoding.RUN_END_ENCODED_INT64;
+                }
+            }
+            encodings.put(field.getName(), encoding);
         }
         return encodings;
     }
@@ -591,18 +602,19 @@ public class BarrageUtil {
                 ignored -> new HashMap<>(),
                 attributes, columnsAsList)
                 .map(field -> {
-                    if (encodings.get(field.getName()) != ColumnEncoding.RUN_END_ENCODED) {
+                    final ColumnEncoding encoding = encodings.get(field.getName());
+                    if (encoding == null || !encoding.isRunEndEncoded()) {
                         return field;
                     }
                     // When columnsAsList wraps the logical field in an outer List, apply REE to the inner
                     // child so the encoding order is List<REE<values>> rather than REE<List<values>>.
                     if (columnsAsList && field.getType().getTypeID() == ArrowType.ArrowTypeID.List) {
-                        final Field inner = toReeField(field.getChildren().get(0));
+                        final Field inner = toReeField(field.getChildren().get(0), encoding);
                         return new Field(field.getName(),
                                 new FieldType(false, Types.MinorType.LIST.getType(), null, field.getMetadata()),
                                 Collections.singletonList(inner));
                     }
-                    return toReeField(field);
+                    return toReeField(field, encoding);
                 })
                 .collect(Collectors.toList());
         return new Schema(fields, schemaMetadata);
@@ -1270,13 +1282,21 @@ public class BarrageUtil {
                 && ((ArrowType.Int) runEnds.getType()).getBitWidth() == 16;
     }
 
-    private static Field toReeField(final Field field) {
+    private static Field toReeField(final Field field, final ColumnEncoding encoding) {
         if (field.getType().getTypeID() == ArrowType.ArrowTypeID.RunEndEncoded) {
             return field;
         }
+        final ArrowType runEndsType;
+        if (encoding == ColumnEncoding.RUN_END_ENCODED_INT16) {
+            runEndsType = Types.MinorType.SMALLINT.getType();
+        } else if (encoding == ColumnEncoding.RUN_END_ENCODED_INT64) {
+            runEndsType = Types.MinorType.BIGINT.getType();
+        } else {
+            runEndsType = Types.MinorType.INT.getType();
+        }
         final Field runEndsField = new Field(
                 "run_ends",
-                new FieldType(false, Types.MinorType.INT.getType(), null),
+                new FieldType(false, runEndsType, null),
                 Collections.emptyList());
         final Field valuesField = new Field(
                 "values",
@@ -1298,7 +1318,7 @@ public class BarrageUtil {
         // Single-value sources are an obvious win, should always be encoded.
         table.getColumnSourceMap().forEach((name, source) -> {
             if (source instanceof NullValueColumnSource || source instanceof SingleValueColumnSource) {
-                encodings.put(name, ColumnEncoding.RUN_END_ENCODED);
+                encodings.put(name, ColumnEncoding.RUN_END_ENCODED_INT32);
             }
         });
 
@@ -1306,7 +1326,7 @@ public class BarrageUtil {
         if (Boolean.TRUE.equals(table.getAttribute(Table.MERGED_TABLE_ATTRIBUTE))
                 && table.hasAttribute(Table.KEY_COLUMNS_ATTRIBUTE)) {
             for (final String col : ((String) table.getAttribute(Table.KEY_COLUMNS_ATTRIBUTE)).split(",")) {
-                encodings.put(col, ColumnEncoding.RUN_END_ENCODED);
+                encodings.put(col, ColumnEncoding.RUN_END_ENCODED_INT32);
             }
         }
 
@@ -1363,7 +1383,7 @@ public class BarrageUtil {
                             }
                         }
                         if ((double) numRuns / chunk.size() < REE_RUN_RATIO_THRESHOLD) {
-                            encodings.put(name, ColumnEncoding.RUN_END_ENCODED);
+                            encodings.put(name, ColumnEncoding.RUN_END_ENCODED_INT32);
                         }
                     }
                 });

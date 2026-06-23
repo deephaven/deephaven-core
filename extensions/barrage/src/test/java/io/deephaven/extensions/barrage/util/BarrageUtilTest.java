@@ -10,11 +10,15 @@ import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.ColumnEncoding;
 import io.deephaven.proto.flight.util.SchemaHelper;
+import org.apache.arrow.vector.types.Types;
 import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.Field;
+import org.apache.arrow.vector.types.pojo.FieldType;
 import org.apache.arrow.vector.types.pojo.Schema;
 
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 import static io.deephaven.engine.util.TableTools.*;
@@ -90,9 +94,9 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
 
         final Map<String, ColumnEncoding> detected = BarrageUtil.inferEncodings(table);
 
-        assertThat(detected.get("X")).isEqualTo(ColumnEncoding.RUN_END_ENCODED);
-        assertThat(detected.get("Y")).isEqualTo(ColumnEncoding.RUN_END_ENCODED);
-        assertThat(detected.get("Z")).isEqualTo(ColumnEncoding.RUN_END_ENCODED);
+        assertThat(detected.get("X")).isEqualTo(ColumnEncoding.RUN_END_ENCODED_INT32);
+        assertThat(detected.get("Y")).isEqualTo(ColumnEncoding.RUN_END_ENCODED_INT32);
+        assertThat(detected.get("Z")).isEqualTo(ColumnEncoding.RUN_END_ENCODED_INT32);
     }
 
     public void testNullValueColumnSourceGetREE() {
@@ -103,7 +107,7 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
 
         final Map<String, ColumnEncoding> detected = BarrageUtil.inferEncodings(table);
 
-        assertThat(detected.get("X")).isEqualTo(ColumnEncoding.RUN_END_ENCODED);
+        assertThat(detected.get("X")).isEqualTo(ColumnEncoding.RUN_END_ENCODED_INT32);
     }
 
     public void testREEFieldStructureInt32RunEndsForLargeBatch() {
@@ -199,8 +203,8 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
 
         final Map<String, ColumnEncoding> detected = BarrageUtil.inferEncodings(table);
 
-        assertThat(detected.get("Symbol")).isEqualTo(ColumnEncoding.RUN_END_ENCODED);
-        assertThat(detected.get("Price")).isEqualTo(ColumnEncoding.RUN_END_ENCODED);
+        assertThat(detected.get("Symbol")).isEqualTo(ColumnEncoding.RUN_END_ENCODED_INT32);
+        assertThat(detected.get("Price")).isEqualTo(ColumnEncoding.RUN_END_ENCODED_INT32);
     }
 
     public void testSamplingSkipsDistinctColumn() {
@@ -230,7 +234,7 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
 
         final Map<String, ColumnEncoding> detected = BarrageUtil.inferEncodings(table);
 
-        assertThat(detected.get("Y")).isEqualTo(ColumnEncoding.RUN_END_ENCODED);
+        assertThat(detected.get("Y")).isEqualTo(ColumnEncoding.RUN_END_ENCODED_INT32);
         assertThat(detected).doesNotContainKey("X");
     }
 
@@ -254,6 +258,58 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
         assertThat(field.getType().getTypeID())
                 .as("field %s should be RunEndEncoded", columnName)
                 .isEqualTo(ArrowType.ArrowTypeID.RunEndEncoded);
+    }
+
+    public void testUserSuppliedInt16ReeSchemaPreservesWidth() {
+        final Table base = newTable(intCol("X", 1, 2), stringCol("Y", "a", "b"));
+        final Schema userSchema = buildReeSchema("X", Types.MinorType.SMALLINT, "Y", Types.MinorType.INT);
+        final Table table = base.withAttributes(Map.of(Table.BARRAGE_SCHEMA_ATTRIBUTE, userSchema));
+
+        final Schema schema = BarrageUtil.schemaFromTable(table);
+
+        assertRunEndsWidth(schema, "X", 16);
+        assertRunEndsWidth(schema, "Y", 32);
+    }
+
+    public void testUserSuppliedInt64ReeSchemaPreservesWidth() {
+        final Table base = newTable(intCol("X", 1, 2), stringCol("Y", "a", "b"));
+        final Schema userSchema = buildReeSchema("X", Types.MinorType.BIGINT, "Y", Types.MinorType.INT);
+        final Table table = base.withAttributes(Map.of(Table.BARRAGE_SCHEMA_ATTRIBUTE, userSchema));
+
+        final Schema schema = BarrageUtil.schemaFromTable(table);
+
+        assertRunEndsWidth(schema, "X", 64);
+        assertRunEndsWidth(schema, "Y", 32);
+    }
+
+    private static Schema buildReeSchema(
+            final String col1, final Types.MinorType col1RunEndsType,
+            final String col2, final Types.MinorType col2RunEndsType) {
+        return new Schema(List.of(
+                buildReeField(col1, col1RunEndsType, Types.MinorType.INT),
+                buildReeField(col2, col2RunEndsType, Types.MinorType.VARCHAR)));
+    }
+
+    private static Field buildReeField(
+            final String name, final Types.MinorType runEndsType, final Types.MinorType valuesType) {
+        final Field runEndsField = new Field(
+                "run_ends", new FieldType(false, runEndsType.getType(), null), Collections.emptyList());
+        final Field valuesField = new Field(
+                "values", new FieldType(true, valuesType.getType(), null), Collections.emptyList());
+        return new Field(
+                name, new FieldType(false, new ArrowType.RunEndEncoded(), null), List.of(runEndsField, valuesField));
+    }
+
+    private static void assertRunEndsWidth(final Schema schema, final String columnName, final int expectedBitWidth) {
+        final Field field = schema.findField(columnName);
+        assertThat(field).as("field %s", columnName).isNotNull();
+        assertThat(field.getType().getTypeID())
+                .as("field %s should be RunEndEncoded", columnName)
+                .isEqualTo(ArrowType.ArrowTypeID.RunEndEncoded);
+        final Field runEnds = field.getChildren().get(0);
+        assertThat(((ArrowType.Int) runEnds.getType()).getBitWidth())
+                .as("field %s run_ends bitWidth", columnName)
+                .isEqualTo(expectedBitWidth);
     }
 
     private static void assertFieldIsNotREE(final Schema schema, final String columnName) {
