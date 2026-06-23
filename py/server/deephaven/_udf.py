@@ -331,7 +331,7 @@ def _unwrap_type_alias(t: type) -> type:
     if sys.version_info < (3, 12):
         return t
     seen: set[int] = set()
-    while isinstance(t, typing.TypeAliasType):
+    while isinstance(t, typing.TypeAliasType):  # novermin
         if id(t) in seen:  # guard against self-referential aliases
             break
         seen.add(id(t))
@@ -343,7 +343,9 @@ def _resolve_origin(t: type) -> Any:
     """Returns get_origin(t), unwrapping a TypeAliasType origin (e.g. numpy.typing.NDArray in numpy 2.5.0+) to the
     origin of its underlying value. Never raises."""
     origin = get_origin(t)
-    if sys.version_info >= (3, 12) and isinstance(origin, typing.TypeAliasType):
+    if sys.version_info >= (3, 12) and isinstance(
+        origin, typing.TypeAliasType
+    ):  # novermin
         underlying = origin.__value__
         origin = get_origin(underlying) or underlying
     return origin
@@ -369,18 +371,14 @@ def _component_np_dtype_char(t: type) -> Optional[str]:
 
 
 def _py_sequence_component_type(t: type) -> Optional[type]:
-    """Returns the component type of Python subscribed sequence type, otherwise return None."""
+    """Returns the component type of a Python subscripted sequence type, otherwise return None."""
     component_type = None
 
     origin = _resolve_origin(t)
-    if isinstance(t, types.GenericAlias) and isinstance(origin, type) and issubclass(
-        origin, Sequence
-    ):  # novermin
-        component_type = t.__args__[0]
-
-    if not component_type:
-        if isinstance(t, typing._GenericAlias) and isinstance(origin, type) and issubclass(origin, Sequence):  # type: ignore[attr-defined]
-            component_type = t.__args__[0]
+    if isinstance(origin, type) and issubclass(origin, Sequence):
+        args = get_args(t)
+        if args:
+            component_type = args[0]
 
     # if the component type is a DType, get its numpy type
     if isinstance(component_type, DType):
@@ -393,21 +391,18 @@ def _np_ndarray_component_type(t: type) -> Optional[type]:
     """Returns the numpy ndarray component type if the type is a numpy ndarray, otherwise return None."""
 
     component_type = None
-    if isinstance(t, types.GenericAlias) and _resolve_origin(t) is np.ndarray:  # novermin
-        nargs = len(t.__args__)
-        if nargs == 1:
-            component_type = t.__args__[0]
-        elif nargs == 2:  # for npt.NDArray[np.int64], etc.
-            a0 = t.__args__[0]
-            a1 = t.__args__[1]
+    if _resolve_origin(t) is np.ndarray:
+        args = get_args(t)
+        if len(args) == 1:
+            component_type = args[0]
+        elif len(args) == 2:  # for npt.NDArray[np.int64], etc.
+            a0, a1 = args
             # a0 is typing.Any before numpy 2.2.0 or a generic alias of tuple[int, ...] in numpy 2.2.0+. The latter
             # is to support shape typing for numpy arrays. e.g. np.ndarray[tuple[Literal[2], Literal[3]], np.int32]
             # is a 2x3 array of int32.
-            if (
-                a0 == typing.Any
-                or (isinstance(a0, types.GenericAlias) and get_origin(a0) is tuple)
-            ) and isinstance(a1, types.GenericAlias):  # novermin  # noqa
-                component_type = a1.__args__[0]
+            dtype_args = get_args(a1)
+            if (a0 == typing.Any or get_origin(a0) is tuple) and dtype_args:
+                component_type = dtype_args[0]
     return component_type
 
 
@@ -415,7 +410,7 @@ def _is_union_type(t: type) -> bool:
     """Return True if the type is a Union type"""
     if get_origin(t) is Union:
         return True
-    if sys.version_info >= (3, 10):
+    if sys.version_info >= (3, 10):  # novermin
         return get_origin(t) is types.UnionType
     return False
 
