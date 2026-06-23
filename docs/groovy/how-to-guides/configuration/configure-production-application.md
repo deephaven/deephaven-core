@@ -15,6 +15,9 @@ Only Java is required to run the Deephaven production application. Deephaven rec
 
 The production application also requires Linux or Mac OS. Running on Windows requires Windows Subsystem for Linux v2 (WSL 2)[<sup>[1]</sup>](#footnotes).
 
+> [!WARNING]
+> WSL 2's default time-sync setup can cause spurious 10–20-second clock jumps that stall Deephaven ticking tables. Before running Deephaven on WSL 2, apply one of the [time-sync workarounds](../../reference/community-questions/wsl2-clock-drift.md).
+
 ## Production application configuration
 
 The inner structure of the application is a root directory of the form `server-jetty-<version>/` with further subdirectories:

@@ -2776,6 +2776,10 @@
                   {
                     "label": "Is docker compose required?",
                     "path": "reference/community-questions/is-docker-compose-required.md"
+                  },
+                  {
+                    "label": "Why do ticking tables stall on WSL 2?",
+                    "path": "reference/community-questions/wsl2-clock-drift.md"
                   }
                 ]
               },
