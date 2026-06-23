@@ -45,7 +45,7 @@ This approach:
 
 - Specifies **what** to compute, not **how**.
 - Processes data in optimized chunks (vectorization).
-- Enables CPU-level SIMD instructions when available.
+- Enables SIMD-style operations across many values.
 - Avoids intermediate Python objects.
 
 ### Why the recipe approach is faster
@@ -70,7 +70,7 @@ Regular: A + B = C (one addition)
 Vectorized CPUs can do:
 
 ```
-SIMD: [A1, A2, A3, A4] + [B1, B2, B3, B4] = [C1, C2, C3, C4] (four additions in one instruction)
+SIMD: [A1, A2, A3, A4] + [B1, B2, B3, B4] = [C1, C2, C3, C4] (four additions in one operation)
 ```
 
 ### How Deephaven enables vectorization
@@ -603,7 +603,7 @@ This means:
 
 1. **Think declaratively** - Specify what to compute, not how to iterate.
 2. **Recipes enable real-time** - Declarative queries update automatically.
-3. **Vectorization = performance** - SIMD operations process multiple elements at once.
+3. **Vectorization = performance** - SIMD-style operations process multiple elements at once.
 4. **No Python overhead** - Computation stays in compiled code.
 5. **Use loops for extraction, not transformation** - Get data out, don't transform inside loops.
 

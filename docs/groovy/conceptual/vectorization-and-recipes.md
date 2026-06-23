@@ -29,12 +29,12 @@ This approach:
 - Requires explicit loops for multiple elements.
 - Creates intermediate objects for each value.
 
-### Deephaven: Declarative SIMD
+### Deephaven: Declarative and chunked
 
-Deephaven uses a **declarative** approach. The engine processes data in chunks — Single Instruction, Multiple Data (SIMD) — applying one operation across many values at once:
+Deephaven uses a **declarative** approach. The engine processes data in optimized chunks, applying one operation across many values at once:
 
 ```groovy order=result test-set=groovy-simd-example
-// Deephaven: Declarative, SIMD
+// Deephaven: Declarative, chunked
 result = emptyTable(5).update("X = i + 1", "XSquared = X * X")
 ```
 
@@ -44,7 +44,6 @@ This approach:
 
 - Specifies **what** to compute, not **how**.
 - Processes data in optimized chunks (vectorization).
-- Enables CPU-level SIMD instructions when available.
 - Avoids intermediate objects.
 
 ### Why the recipe approach is faster
@@ -69,7 +68,7 @@ Regular: A + B = C (one addition)
 Vectorized CPUs can do:
 
 ```
-SIMD: [A1, A2, A3, A4] + [B1, B2, B3, B4] = [C1, C2, C3, C4] (four additions in one instruction)
+Chunked: [A1, A2, A3, A4] + [B1, B2, B3, B4] = [C1, C2, C3, C4] (processed as a batch)
 ```
 
 ### How Deephaven enables vectorization
@@ -548,7 +547,7 @@ This means:
 
 1. **Think declaratively** - Specify what to compute, not how to iterate.
 2. **Recipes enable real-time** - Declarative queries update automatically.
-3. **Vectorization = performance** - SIMD operations process multiple elements at once.
+3. **Vectorization = performance** - Chunked operations process multiple elements at once.
 4. **No interpreter overhead** - Computation stays in compiled code.
 5. **Use loops for extraction, not transformation** - Get data out, don't transform inside loops.
 
