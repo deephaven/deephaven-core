@@ -512,15 +512,14 @@ public class BarrageUtil {
     private static Schema schemaForTable(
             @NotNull final BarrageOptions options,
             @NotNull final Table table) {
-        if (table.hasAttribute(Table.BARRAGE_SCHEMA_ATTRIBUTE)) {
-            // Use the encodings from the explicit schema to suppress auto-REE inference,
-            // but rebuild metadata from the table definition so clients get Deephaven type info.
-            final Schema base = (Schema) table.getAttribute(Table.BARRAGE_SCHEMA_ATTRIBUTE);
-            return makeSchema(options, table.getDefinition(), table.getAttributes(), table.isFlat(),
-                    encodingsFromSchema(base));
-        }
-        return makeSchema(options, table.getDefinition(), table.getAttributes(), table.isFlat(),
-                inferEncodings(table));
+        // When the user has supplied an explicit schema, take the encodings from it verbatim so
+        // that auto-inference never overrides an explicit choice. Otherwise infer encodings from
+        // the live table data. In both cases rebuild Deephaven field metadata from the table
+        // definition so clients always receive complete type information.
+        final Map<String, ColumnEncoding> encodings = table.hasAttribute(Table.BARRAGE_SCHEMA_ATTRIBUTE)
+                ? encodingsFromSchema((Schema) table.getAttribute(Table.BARRAGE_SCHEMA_ATTRIBUTE))
+                : inferEncodings(table);
+        return makeSchema(options, table.getDefinition(), table.getAttributes(), table.isFlat(), encodings);
     }
 
     private static Map<String, ColumnEncoding> encodingsFromSchema(final Schema schema) {
@@ -1519,21 +1518,6 @@ public class BarrageUtil {
     }
 
     /**
-     * Returns the effective Arrow SDK schema for {@code table}, honoring {@link Table#BARRAGE_SCHEMA_ATTRIBUTE} when
-     * present, otherwise building from the table definition with inferred REE encodings applied. This schema is
-     * authoritative for both the schema IPC message and chunk-writer initialization.
-     */
-    private static Schema computeEffectiveSchema(
-            @NotNull final BarrageOptions options,
-            @NotNull final BaseTable<?> table) {
-        if (table.hasAttribute(Table.BARRAGE_SCHEMA_ATTRIBUTE)) {
-            final Schema base = (Schema) table.getAttribute(Table.BARRAGE_SCHEMA_ATTRIBUTE);
-            return options.columnsAsList() ? schemaWithColumnsAsList(base) : base;
-        }
-        return makeSchema(options, table.getDefinition(), table.getAttributes(), table.isFlat(), inferEncodings(table));
-    }
-
-    /**
      * Returns the maximum batch size imposed by the schema: {@link Short#MAX_VALUE} when any field uses Int16 Run-End
      * Encoding, otherwise {@link BarrageMessageWriterImpl#DEFAULT_BATCH_SIZE}.
      */
@@ -1591,7 +1575,7 @@ public class BarrageUtil {
         long snapshotTargetCellCount = MIN_SNAPSHOT_CELL_COUNT;
         double snapshotNanosPerCell = 0.0;
 
-        final Schema effectiveSchema = computeEffectiveSchema(snapshotRequestOptions, table);
+        final Schema effectiveSchema = schemaForTable(snapshotRequestOptions, table);
         final Map<String, org.apache.arrow.flatbuf.Field> fieldFor = buildFlatbufFieldMap(effectiveSchema);
         snapshotRequestOptions =
                 effectiveSnapshotOptions(snapshotRequestOptions, maxBatchSizeForSchema(effectiveSchema));
@@ -1713,7 +1697,7 @@ public class BarrageUtil {
             return;
         }
 
-        final Schema effectiveSchema = computeEffectiveSchema(options, table);
+        final Schema effectiveSchema = schemaForTable(options, table);
         final Map<String, org.apache.arrow.flatbuf.Field> fieldFor = buildFlatbufFieldMap(effectiveSchema);
         options = effectiveSnapshotOptions(options, maxBatchSizeForSchema(effectiveSchema));
 

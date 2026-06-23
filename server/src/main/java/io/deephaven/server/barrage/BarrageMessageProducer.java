@@ -382,9 +382,7 @@ public class BarrageMessageProducer extends LivenessArtifact
         // Compute the schema once; store the SDK form for schema-message generation and REE detection,
         // then derive the flatbuf form for chunk-writer initialization. Honour BARRAGE_SCHEMA_ATTRIBUTE
         // when present so that subscription chunk writers agree with snapshot chunk writers.
-        chunkWriterSchema = parent.hasAttribute(Table.BARRAGE_SCHEMA_ATTRIBUTE)
-                ? (org.apache.arrow.vector.types.pojo.Schema) parent.getAttribute(Table.BARRAGE_SCHEMA_ATTRIBUTE)
-                : BarrageUtil.schemaFromTable(parent);
+        chunkWriterSchema = BarrageUtil.schemaFromTable(parent);
         maxBatchSize = chunkWriterSchema.getFields().stream().anyMatch(BarrageUtil::isReeInt16Field)
                 ? Short.MAX_VALUE
                 : BarrageMessageWriterImpl.DEFAULT_BATCH_SIZE;

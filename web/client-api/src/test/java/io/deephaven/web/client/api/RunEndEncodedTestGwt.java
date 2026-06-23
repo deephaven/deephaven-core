@@ -16,7 +16,7 @@ import jsinterop.base.Js;
 @DoNotRunWith(Platform.HtmlUnitBug)
 public class RunEndEncodedTestGwt extends AbstractAsyncGwtTestCase {
 
-    // Complicated JPY mess that creates a table and assignes the BARRAGE_SCHEMA_ATTRIBUTE to trigger REE encoding on
+    // Complicated JPY mess that creates a table and assigns the BARRAGE_SCHEMA_ATTRIBUTE to trigger REE encoding on
     // the server. The table has two columns:
     // 1) RepInt: runs of 0, 1, and 2
     // 2) RepStr: runs of "hello" and "world"
