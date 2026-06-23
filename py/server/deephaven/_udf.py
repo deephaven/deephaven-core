@@ -325,14 +325,14 @@ def _np_dtype_char(t: Union[type, str]) -> str:
         return "X"
 
 
-def _unwrap_type_alias(t: type) -> type:
+def _unwrap_type_alias(t: Any) -> Any:
     """If t is a bare PEP 695 TypeAliasType (Python 3.12+), return its underlying __value__, recursively unwrapping
     chained aliases. Otherwise return t unchanged. Safe on Python < 3.12 where TypeAliasType does not exist."""
     if sys.version_info < (3, 12):
         return t
     seen: set[int] = set()
     while isinstance(t, typing.TypeAliasType):  # novermin
-        if id(t) in seen:  # guard against self-referential aliases
+        if id(t) in seen:  # guard against pathological self-referential aliases
             break
         seen.add(id(t))
         t = t.__value__
@@ -341,14 +341,13 @@ def _unwrap_type_alias(t: type) -> type:
 
 def _resolve_origin(t: type) -> Any:
     """Returns get_origin(t), unwrapping a TypeAliasType origin (e.g. numpy.typing.NDArray in numpy 2.5.0+) to the
-    origin of its underlying value. Never raises."""
-    origin = get_origin(t)
-    if sys.version_info >= (3, 12) and isinstance(  # novermin
-        origin, typing.TypeAliasType
-    ):
-        underlying = origin.__value__
-        origin = get_origin(underlying) or underlying
-    return origin
+    origin of its underlying value. Never raises.
+
+    For realistic annotations a single unwrap yields a concrete origin (e.g. np.ndarray). In the pathological case of
+    chained parameterized aliases (e.g. ``type Outer[T] = Inner[T]``), the result may still be a TypeAliasType, which
+    callers safely treat as an unsupported type."""
+    origin = _unwrap_type_alias(get_origin(t))
+    return get_origin(origin) or origin
 
 
 def _component_np_dtype_char(t: type) -> Optional[str]:
