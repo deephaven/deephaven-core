@@ -126,9 +126,6 @@ pydevd.settrace(
 )
 ```
 
-> [!NOTE]
-> **Linux users**: `host.docker.internal` works on Docker Desktop for Mac/Windows. On Linux, use `--add-host=host.docker.internal:host-gateway` in your docker-compose.yml or replace `host.docker.internal` with your host machine's IP address (e.g., `192.168.1.x`).
-
 ![img](../../assets/how-to/debugging/doc-6.png)
 
 Navigate back to PyCharm and verify that Deephaven is connected by finding this new line of output in the debugging console:
@@ -180,7 +177,6 @@ Navigating over to PyCharm, the debugger's full suite of capabilities is on offe
 
 - Verify the PyCharm debug server is running (green bug icon should be active).
 - Check that port 4444 is not blocked by a firewall.
-- On Linux, verify `host.docker.internal` is correctly configured.
 - Ensure the port in `settrace` matches the PyCharm configuration.
 
 ### Path mapping not working
