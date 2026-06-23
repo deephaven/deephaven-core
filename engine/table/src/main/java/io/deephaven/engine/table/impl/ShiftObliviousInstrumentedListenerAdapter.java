@@ -97,7 +97,8 @@ public abstract class ShiftObliviousInstrumentedListenerAdapter extends ShiftObl
             } catch (IOException e) {
                 final UncheckedTableException uncheckedTableException =
                         new UncheckedTableException(
-                                "Exception while delivering async client error notification for " + sourceEntry.toString(),
+                                "Exception while delivering async client error notification for "
+                                        + sourceEntry.toString(),
                                 originalException);
                 uncheckedTableException.addSuppressed(e);
                 throw uncheckedTableException;
