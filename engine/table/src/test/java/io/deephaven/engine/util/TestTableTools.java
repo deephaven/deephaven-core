@@ -61,6 +61,7 @@ import static io.deephaven.util.QueryConstants.NULL_FLOAT;
 import static io.deephaven.util.QueryConstants.NULL_INT;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Unit tests for {@link TableTools}.
@@ -1269,5 +1270,40 @@ public class TestTableTools {
         Assert.assertTrue(res.isFailed());
         Assert.assertTrue(errRef.get() instanceof ConstituentTableException);
         Assert.assertEquals(err, errRef.get().getCause());
+    }
+
+    @Test
+    public void testMergeAddOnly() {
+        testMergeAddOnly(true);
+        testMergeAddOnly(false);
+    }
+
+    private void testMergeAddOnly(boolean systemic) {
+        final io.deephaven.engine.updategraph.UpdateSourceCombiner combiner =
+                new io.deephaven.engine.updategraph.UpdateSourceCombiner(
+                        ExecutionContext.getContext().getUpdateGraph());
+        final TestClock clock = new TestClock(0);
+        final Table timeTable =
+                io.deephaven.engine.table.impl.TimeTable.newBuilder()
+                        .registrar(combiner)
+                        .clock(clock)
+                        .period(1)
+                        .build();
+
+        final QueryTable merged =
+                (QueryTable) io.deephaven.engine.util.systemicmarking.SystemicObjectTracker.executeSystemically(
+                        systemic,
+                        () -> merge(emptyTable(500_000_000), timeTable.dropColumns("Timestamp")));
+
+        assertTrue(merged.isAddOnly());
+        assertTrue(merged.isAppendOnly());
+
+        final QueryTable bigTable =
+                (QueryTable) io.deephaven.engine.util.systemicmarking.SystemicObjectTracker.executeSystemically(
+                        systemic,
+                        () -> merged.updateView("Row=ii"));
+
+        assertTrue(bigTable.isAddOnly());
+        assertTrue(bigTable.isAppendOnly());
     }
 }
