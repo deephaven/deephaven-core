@@ -2,11 +2,12 @@
 // Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 using Deephaven.Dh_NetClient;
+using TUnit.Assertions.Exceptions;
 
 namespace Deephaven.Dh_NetClientTests;
 
 public class StringFilterTest {
-  [Fact]
+  [Test]
   public void StringFilter() {
     using var ctx = CommonContextForTests.Create(new ClientOptions());
     var testTable = ctx.TestTable;
@@ -44,7 +45,7 @@ public class StringFilterTest {
     try {
       TableComparer.AssertSame(expected, filteredTable);
     } catch (Exception e) {
-      throw new AggregateException($"While processing {description}", e);
+      throw new AssertionException($"While processing {description}: {e.Message}", e);
     }
   }
 }

@@ -3,8 +3,8 @@
 namespace Deephaven.Dh_NetClientTests;
 
 public class RoundTripTest {
-  [Fact]
-  public void Elements() {
+  [Test]
+  public async Task Elements() {
     var tm = new TableMaker();
     tm.AddColumn("Col1", [0, 1, 2, 3, 4, 5]);
     tm.AddColumn("Col2", ["a", "b", "c", "d", "e", "f"]);
@@ -12,11 +12,11 @@ public class RoundTripTest {
     var at = tm.ToArrowTable();
     var ct = ArrowUtil.ToClientTable(at);
     var at2 = ct.ToArrowTable();
-    TableComparer.AssertSame(at, at2);
+    await Assert.That(() => TableComparer.AssertSame(at, at2)).ThrowsNothing();
   }
 
-  [Fact]
-  public void Nested() {
+  [Test]
+  public async Task Nested() {
     var tm = new TableMaker();
     var dto1 = new DateTimeOffset(1966, 3, 1, 12, 34, 56, TimeSpan.Zero);
     var dto2 = new DateTimeOffset(1999, 12, 31, 3, 44, 55, TimeSpan.Zero);
@@ -46,6 +46,6 @@ public class RoundTripTest {
 
     var ct = ArrowUtil.ToClientTable(at);
     var at2 = ct.ToArrowTable();
-    TableComparer.AssertSame(at, at2);
+    await Assert.That(() => TableComparer.AssertSame(at, at2)).ThrowsNothing();
   }
 }

@@ -6,8 +6,8 @@ using Deephaven.Dh_NetClient;
 namespace Deephaven.Dh_NetClientTests;
 
 public class NullSentinelPassthroughTest {
-  [Fact]
-  public void SentinelsVisible() {
+  [Test]
+  public async Task SentinelsVisible() {
     using var ctx = CommonContextForTests.Create(new ClientOptions());
     var manager = ctx.Client.Manager;
     using var t = manager.EmptyTable(1)
@@ -22,13 +22,13 @@ public class NullSentinelPassthroughTest {
       );
 
     var ct = t.ToClientTable();
-    AssertHasSentinel(ct, 0, DeephavenConstants.NullChar);
-    AssertHasSentinel(ct, 1, DeephavenConstants.NullByte);
-    AssertHasSentinel(ct, 2, DeephavenConstants.NullShort);
-    AssertHasSentinel(ct, 3, DeephavenConstants.NullInt);
-    AssertHasSentinel(ct, 4, DeephavenConstants.NullLong);
-    AssertHasSentinel(ct, 5, DeephavenConstants.NullFloat);
-    AssertHasSentinel(ct, 6, DeephavenConstants.NullDouble);
+    await Assert.That(() => AssertHasSentinel(ct, 0, DeephavenConstants.NullChar)).ThrowsNothing();
+    await Assert.That(() => AssertHasSentinel(ct, 1, DeephavenConstants.NullByte)).ThrowsNothing();
+    await Assert.That(() => AssertHasSentinel(ct, 2, DeephavenConstants.NullShort)).ThrowsNothing();
+    await Assert.That(() => AssertHasSentinel(ct, 3, DeephavenConstants.NullInt)).ThrowsNothing();
+    await Assert.That(() => AssertHasSentinel(ct, 4, DeephavenConstants.NullLong)).ThrowsNothing();
+    await Assert.That(() => AssertHasSentinel(ct, 5, DeephavenConstants.NullFloat)).ThrowsNothing();
+    await Assert.That(() => AssertHasSentinel(ct, 6, DeephavenConstants.NullDouble)).ThrowsNothing();
   }
 
   private static void AssertHasSentinel<T>(IClientTable ct, int columnIndex, T sentinel) where T : struct, IEquatable<T> {
