@@ -10,7 +10,10 @@ suite is skipped on older interpreters.
 """
 
 import sys
+import typing  # noqa: F401
 import unittest
+
+import numpy as np  # noqa: F401
 
 from deephaven import DHError, dtypes, empty_table
 from tests.testbase import BaseTestCase
