@@ -22,8 +22,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Apache.Arrow" Version="20.0.0" />
-    <PackageReference Include="Apache.Arrow.Flight" Version="20.0.0" />
+    <PackageReference Include="Apache.Arrow" Version="23.0.0" />
+    <PackageReference Include="Apache.Arrow.Flight" Version="23.0.0" />
     <PackageReference Include="C5" Version="3.0.0" />
     <PackageReference Include="Google.FlatBuffers" Version="23.5.26" />
     <PackageReference Include="Google.Protobuf" Version="3.31.1" />
@@ -39,10 +39,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="$(MSBuildProjectDirectory)\README-nuget.md"
-        Pack="true"
-        PackagePath="\"
-        Link="README-nuget.md"
-        Visible="false" />
+    <None Include="$(MSBuildProjectDirectory)\README-nuget.md" Pack="true" PackagePath="\" Link="README-nuget.md" Visible="false" />
   </ItemGroup>
 </Project>
