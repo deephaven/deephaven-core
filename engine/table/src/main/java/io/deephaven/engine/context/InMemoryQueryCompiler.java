@@ -4,6 +4,7 @@
 package io.deephaven.engine.context;
 
 import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.base.FileUtils;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.verify.Assert;
@@ -38,6 +39,8 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.jar.Attributes;
+import java.util.jar.Manifest;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -63,17 +66,51 @@ import java.util.stream.Stream;
 public class InMemoryQueryCompiler implements QueryCompiler, LogOutputAppendable {
 
     private static final Logger log = LoggerFactory.getLogger(InMemoryQueryCompiler.class);
-
+    /**
+     * We pick a number just shy of 65536, leaving a little elbow room for good luck.
+     */
     private static final int DEFAULT_MAX_STRING_LITERAL_LENGTH = 65500;
+
     private static final String JAVA_CLASS_VERSION = System.getProperty("java.class.version").replace('.', '_');
+
     private static final String IDENTIFYING_FIELD_NAME = "_CLASS_BODY_";
 
     private static boolean logEnabled = Configuration.getInstance().getBoolean("QueryCompiler.logEnabledDefault");
 
-    public static final String FORMULA_CLASS_PREFIX = "io.deephaven.temp";
-    public static final String DYNAMIC_CLASS_PREFIX = "io.deephaven.dynamic";
+    private static final String TRACE_PREFIX_PROPERTY = "QueryCompiler.tracePrefixes";
+    private static final String TRACE_EXCLUDE_PREFIX_PROPERTY = "QueryCompiler.excludeTracePrefixes";
+    private static final Set<String> TRACE_INCLUDE_PREFIXES = computeTracePackages(TRACE_PREFIX_PROPERTY);
+    private static final Set<String> TRACE_EXCLUDE_PREFIXES = computeTracePackages(TRACE_EXCLUDE_PREFIX_PROPERTY);
 
-    // --- Static compiler state ---
+    private static Set<String> computeTracePackages(final String property) {
+        if (!Configuration.getInstance().hasProperty(property)) {
+            return Collections.emptySet();
+        }
+        final String propertyValue = Configuration.getInstance().getProperty(property);
+        return Arrays.stream(propertyValue.split(",")).map(String::trim).collect(Collectors.toSet());
+    }
+
+    /**
+     * Should this class (or package) be traced? Even with only trace logging, we may not want to flood the log with
+     * "uninteresting" classes, so we provide an inclusion and an exclusion list.
+     *
+     * <p>
+     * Excludes take precedence over includes.
+     * </p>
+     *
+     * @param className the class/package name to check against our trace prefixes
+     * @return if this class/package should be traced
+     */
+    private static boolean shouldTrace(String className) {
+        if (!log.isTraceEnabled()) {
+            return false;
+        }
+        if (TRACE_EXCLUDE_PREFIXES.stream().anyMatch(className::startsWith)) {
+            return false;
+        }
+        return TRACE_INCLUDE_PREFIXES.stream().anyMatch(className::startsWith);
+    }
+
 
     private static JavaCompiler compiler;
     private static final AtomicReference<JavaFileManager> fileManagerCache = new AtomicReference<>();
@@ -99,6 +136,8 @@ public class InMemoryQueryCompiler implements QueryCompiler, LogOutputAppendable
     }
 
     private static void releaseFileManager(@NotNull final JavaFileManager fileManager) {
+        // Reusing the file manager saves a lot of the time in the compilation process. However, we need to be careful
+        // to avoid keeping too many file handles open so we'll limit ourselves to just one outstanding file manager.
         if (!fileManagerCache.compareAndSet(null, fileManager)) {
             try {
                 fileManager.close();
@@ -108,9 +147,27 @@ public class InMemoryQueryCompiler implements QueryCompiler, LogOutputAppendable
         }
     }
 
-    // --- Instance state ---
+    public static final String FORMULA_CLASS_PREFIX = "io.deephaven.temp";
+    public static final String DYNAMIC_CLASS_PREFIX = "io.deephaven.dynamic";
 
-    /** Deduplication map: classBody → future holding the compiled Class. */
+    /**
+     * Creates a new InMemoryQueryCompiler. Uses the current thread's context classloader as the parent for per-batch
+     * classloaders (as required by {@link QueryCompiler}'s contract).
+     *
+     * @param additionalClassPathDir optional directory to add to the compiler's classpath (e.g., groovy bytecode dir)
+     */
+    public static InMemoryQueryCompiler create(@Nullable final File additionalClassPathDir) {
+        return new InMemoryQueryCompiler(additionalClassPathDir, null);
+    }
+
+    public static InMemoryQueryCompiler createForUnitTests() {
+        return createForUnitTests(null);
+    }
+
+    static InMemoryQueryCompiler createForUnitTests(final List<String> classNamesForAnnotationProcessing) {
+        return new InMemoryQueryCompiler(null, classNamesForAnnotationProcessing);
+    }
+
     private final Map<String, CompletionStageFuture<Class<?>>> knownClasses = new HashMap<>();
 
     /** Set of fully-qualified class names already assigned, for collision avoidance. */
@@ -123,28 +180,8 @@ public class InMemoryQueryCompiler implements QueryCompiler, LogOutputAppendable
     @Nullable
     private final File additionalClassPathDir;
 
-    /** For test use only: specifying a non-null list causes an annotation processing error. */
+    // This is for test use only, specifying a non-null list causes an error without a specific source to be generated.
     private final List<String> classNamesForAnnotationProcessing;
-
-    // --- Factory methods ---
-
-    /**
-     * Creates a new InMemoryQueryCompiler. Uses the current thread's context classloader as the parent for per-batch
-     * classloaders (as required by {@link QueryCompiler}'s contract).
-     *
-     * @param additionalClassPathDir optional directory to add to the compiler's classpath (e.g., groovy bytecode dir)
-     */
-    public static InMemoryQueryCompiler create(@Nullable final File additionalClassPathDir) {
-        return new InMemoryQueryCompiler(additionalClassPathDir, null);
-    }
-
-    static InMemoryQueryCompiler createForUnitTests() {
-        return createForUnitTests(null);
-    }
-
-    static InMemoryQueryCompiler createForUnitTests(final List<String> classNamesForAnnotationProcessing) {
-        return new InMemoryQueryCompiler(null, classNamesForAnnotationProcessing);
-    }
 
     private InMemoryQueryCompiler(
             @Nullable final File additionalClassPathDir,
@@ -153,9 +190,12 @@ public class InMemoryQueryCompiler implements QueryCompiler, LogOutputAppendable
         this.additionalClassPathDir = additionalClassPathDir;
         this.parentClassLoader = Thread.currentThread().getContextClassLoader();
         this.classNamesForAnnotationProcessing = classNamesForAnnotationProcessing;
-    }
 
-    // --- Public API ---
+        if (log.isTraceEnabled()) {
+            log.trace().append("QueryCompiler Class Path: ").append(getClassPath()).append(File.pathSeparator)
+                    .append(getJavaClassPath()).endl();
+        }
+    }
 
     @Override
     public LogOutput append(LogOutput logOutput) {
@@ -192,6 +232,22 @@ public class InMemoryQueryCompiler implements QueryCompiler, LogOutputAppendable
             throw new IllegalArgumentException("Requests and resolvers must be the same length");
         }
 
+        final boolean shouldTrace =
+                log.isTraceEnabled() && Arrays.stream(requests).map(QueryCompilerRequest::packageNameRoot)
+                        .anyMatch(InMemoryQueryCompiler::shouldTrace);
+        if (shouldTrace) {
+            log.trace().append("Compilation request for ").append((logOutput, queryCompilerRequests) -> {
+                logOutput.append("[");
+                for (int ii = 0; ii < queryCompilerRequests.length; ++ii) {
+                    if (ii > 0) {
+                        logOutput.append(", ");
+                    }
+                    requests[ii].appendSummary(logOutput);
+                }
+                logOutput.append("]");
+            }, requests).endl();
+        }
+
         // noinspection unchecked
         final CompletionStageFuture<Class<?>>[] allFutures = new CompletionStageFuture[requests.length];
 
@@ -209,18 +265,21 @@ public class InMemoryQueryCompiler implements QueryCompiler, LogOutputAppendable
                     newRequests.add(request);
                     newResolvers.add(resolver);
                     future = resolver.getFuture();
+                } else if (shouldTrace) {
+                    log.trace().append("Found existing future in knownClasses for ").append(request.className())
+                            .append(" (done=").append(future.isDone()).append(")").endl();
                 }
                 allFutures[ii] = future;
             }
         }
 
         if (!newResolvers.isEmpty()) {
-            log.info().append("InMemoryQueryCompiler.compile: compiling ").append(newResolvers.size())
-                    .append(" new requests out of ").append(requests.length).append(" total").endl();
+            // It's my job to fulfill these futures.
             try {
                 compileHelper(newRequests, newResolvers);
             } catch (RuntimeException e) {
-                log.error().append("InMemoryQueryCompiler.compile: compileHelper threw ").append(e.toString()).endl();
+                // These failures are not applicable to a single request, so we can't just complete the future and
+                // leave the failure in the cache.
                 synchronized (this) {
                     for (int ii = 0; ii < newRequests.size(); ++ii) {
                         if (newResolvers.get(ii).completeExceptionally(e)) {
@@ -230,25 +289,13 @@ public class InMemoryQueryCompiler implements QueryCompiler, LogOutputAppendable
                 }
                 throw e;
             }
-            log.info().append("InMemoryQueryCompiler.compile: compileHelper completed successfully").endl();
-        } else {
-            log.info().append("InMemoryQueryCompiler.compile: all ").append(requests.length)
-                    .append(" requests resolved from cache").endl();
         }
 
         for (int ii = 0; ii < requests.length; ++ii) {
             try {
                 final CompletionStageFuture<Class<?>> future = allFutures[ii];
-                if (!future.isDone()) {
-                    log.info().append("InMemoryQueryCompiler: waiting for future[").append(ii)
-                            .append("] className=").append(requests[ii].className())
-                            .append(" classBody hash=").append(
-                                    Integer.toHexString(requests[ii].classBody().hashCode()))
-                            .append(" future=").append(future.toString())
-                            .endl();
-                }
-                final Class<?> result = future.get(10, TimeUnit.SECONDS);
-                resolvers[ii].complete(result);
+                // TODO do we want a timeout here, knowing that this might leave other bad state?
+                resolvers[ii].complete(future.get(10, TimeUnit.SECONDS));
             } catch (TimeoutException err) {
                 final String msg = "InMemoryQueryCompiler: Timed out (10s) waiting for class compilation"
                         + " request[" + ii + "] className=" + requests[ii].className()
@@ -264,17 +311,15 @@ public class InMemoryQueryCompiler implements QueryCompiler, LogOutputAppendable
             } catch (ExecutionException err) {
                 resolvers[ii].completeExceptionally(err.getCause());
             } catch (InterruptedException err) {
+                // This can only occur if we are interrupted while waiting for the future to complete from another
+                // compilation request.
                 Assert.notEquals(resolvers[ii], "resolvers[ii]", allFutures[ii], "allFutures[ii]");
                 resolvers[ii].completeExceptionally(err);
             } catch (Throwable err) {
                 resolvers[ii].completeExceptionally(err);
             }
         }
-        log.info().append("InMemoryQueryCompiler.compile: returning, all ").append(requests.length)
-                .append(" resolvers processed").endl();
     }
-
-    // --- Compilation logic ---
 
     private void compileHelper(
             @NotNull final List<QueryCompilerRequest> requests,
@@ -352,6 +397,7 @@ public class InMemoryQueryCompiler implements QueryCompiler, LogOutputAppendable
     private void compileAndDefine(@NotNull final List<CompilationRequestAttempt> requests) {
         final ExecutionContext executionContext = ExecutionContext.getContext();
         final int parallelismFactor = executionContext.getOperationInitializer().parallelismFactor();
+
         final int requestsPerTask = Math.max(32, (requests.size() + parallelismFactor - 1) / parallelismFactor);
 
         final int numTasks;
@@ -366,6 +412,9 @@ public class InMemoryQueryCompiler implements QueryCompiler, LogOutputAppendable
             jobScheduler = new OperationInitializerJobScheduler();
         }
 
+        log.trace().append("maybeCreateClasses: ").append(requests.size()).append(" requests, ")
+                .append(numTasks).append(" tasks, ").append(requestsPerTask).endl();
+
         final JavaFileManager fileManager = acquireFileManager();
         final AtomicReference<RuntimeException> exception = new AtomicReference<>();
         final CountDownLatch latch = new CountDownLatch(1);
@@ -373,7 +422,7 @@ public class InMemoryQueryCompiler implements QueryCompiler, LogOutputAppendable
             try {
                 releaseFileManager(fileManager);
             } catch (Exception e) {
-                // ignore
+                // ignore errors here
             } finally {
                 latch.countDown();
             }
@@ -400,9 +449,8 @@ public class InMemoryQueryCompiler implements QueryCompiler, LogOutputAppendable
                 onError);
 
         try {
-            log.info().append("InMemoryQueryCompiler.compileAndDefine: awaiting latch for ").append(numTasks)
-                    .append(" task(s), ").append(requests.size()).append(" request(s), canParallelize=")
-                    .append(canParallelize).endl();
+            // TODO Probably should be configurable, probably shouldn't be indefinite?
+            //      Allowing timeout like this may require cleanup
             final boolean completed = latch.await(10, TimeUnit.SECONDS);
             if (!completed) {
                 final String msg = "InMemoryQueryCompiler.compileAndDefine: latch timed out after 10s!"
@@ -410,7 +458,6 @@ public class InMemoryQueryCompiler implements QueryCompiler, LogOutputAppendable
                 log.error().append(msg).endl();
                 throw new UncheckedDeephavenException(msg);
             }
-            log.info().append("InMemoryQueryCompiler.compileAndDefine: latch completed").endl();
             final BasePerformanceEntry perfEntry = jobScheduler.getAccumulatedPerformance();
             if (perfEntry != null) {
                 QueryPerformanceRecorder.getInstance().getEnclosingNugget().accumulate(perfEntry);
@@ -456,6 +503,7 @@ public class InMemoryQueryCompiler implements QueryCompiler, LogOutputAppendable
         final String classPathAsString = getClassPath();
         final List<String> compilerOptions = Arrays.asList(
                 "-cp", classPathAsString,
+                // this option allows the compiler to attempt to process all source files even if some of them fail
                 "--should-stop=ifError=GENERATE");
 
         final MutableInt numFailures = new MutableInt(0);
@@ -471,6 +519,7 @@ public class InMemoryQueryCompiler implements QueryCompiler, LogOutputAppendable
                     final JavaSourceFromString source = (JavaSourceFromString) diagnostic.getSource();
 
                     if (source == null) {
+                        // If we have no source, then mark every request as a failure.
                         final UncheckedDeephavenException err = new UncheckedDeephavenException(
                                 "Error Invoking Compiler, no source present in diagnostic:\n"
                                         + diagnostic.getMessage(Locale.getDefault()));
@@ -481,6 +530,7 @@ public class InMemoryQueryCompiler implements QueryCompiler, LogOutputAppendable
                     final UncheckedDeephavenException err = new UncheckedDeephavenException("Error Compiling "
                             + source.description + "\n" + diagnostic.getMessage(Locale.getDefault()));
                     if (source.resolver.completeExceptionally(err)) {
+                        // only count the first failure for each source
                         numFailures.increment();
                     }
                 },
@@ -493,7 +543,7 @@ public class InMemoryQueryCompiler implements QueryCompiler, LogOutputAppendable
 
         final String compilerOutputText = compilerOutput.toString();
         if (!compilerOutputText.isEmpty()) {
-            log.info().append("Compiler output:\n").append(compilerOutputText).endl();
+            log.trace().append("Compiler output:\n").append(compilerOutputText).endl();
         }
 
         if (!globalFailures.isEmpty()) {
@@ -815,6 +865,7 @@ public class InMemoryQueryCompiler implements QueryCompiler, LogOutputAppendable
 
             final String teamCityWorkDir = System.getProperty("teamcity.build.workingDir");
             if (teamCityWorkDir != null) {
+                // We are running in TeamCity, get the classpath differently
                 final File[] classDirs = new File(teamCityWorkDir + "/_out_/classes").listFiles();
                 if (classDirs != null) {
                     for (File f : classDirs) {
@@ -828,32 +879,43 @@ public class InMemoryQueryCompiler implements QueryCompiler, LogOutputAppendable
                         javaClasspathBuilder.append(File.pathSeparator).append(f.getAbsolutePath());
                     }
                 }
+
+                final File[] jars = FileUtils.findAllFiles(new File(teamCityWorkDir + "/lib"));
+                for (File f : jars) {
+                    if (f.getName().endsWith(".jar")) {
+                        javaClasspathBuilder.append(File.pathSeparator).append(f.getAbsolutePath());
+                    }
+                }
             }
             javaClasspath = javaClasspathBuilder.toString();
         }
 
+        // IntelliJ will bundle a very large class path into an empty jar with a Manifest that will define the full
+        // class path. Look for this being used during compile time, so the full class path can be sent into the compile
+        // call.
         final String intellijClassPathJarRegex = ".*classpath[0-9]*\\.jar.*";
         if (javaClasspath.matches(intellijClassPathJarRegex)) {
             try {
                 final Enumeration<URL> resources =
-                        InMemoryQueryCompiler.class.getClassLoader().getResources("META-INF/MANIFEST.MF");
-                final java.util.jar.Attributes.Name createdByAttribute =
-                        new java.util.jar.Attributes.Name("Created-By");
-                final java.util.jar.Attributes.Name classPathAttribute =
-                        new java.util.jar.Attributes.Name("Class-Path");
+                        QueryCompilerImpl.class.getClassLoader().getResources("META-INF/MANIFEST.MF");
+                final Attributes.Name createdByAttribute = new Attributes.Name("Created-By");
+                final Attributes.Name classPathAttribute = new Attributes.Name("Class-Path");
                 while (resources.hasMoreElements()) {
-                    final java.util.jar.Manifest manifest =
-                            new java.util.jar.Manifest(resources.nextElement().openStream());
-                    final java.util.jar.Attributes attributes = manifest.getMainAttributes();
+                    // Check all manifests -- looking for the Intellij created one
+                    final Manifest manifest = new Manifest(resources.nextElement().openStream());
+                    final Attributes attributes = manifest.getMainAttributes();
                     final Object createdBy = attributes.get(createdByAttribute);
                     if ("IntelliJ IDEA".equals(createdBy)) {
                         final String extendedClassPath = (String) attributes.get(classPathAttribute);
                         if (extendedClassPath != null) {
+                            // Parses the files in the manifest description an changes their format to drop the "file:/"
+                            // and use the default path separator
                             final String filePaths = Stream.of(extendedClassPath.split("file:/"))
                                     .map(String::trim)
                                     .filter(fileName -> !fileName.isEmpty())
                                     .collect(Collectors.joining(File.pathSeparator));
 
+                            // Remove the classpath jar in question, and expand it with the files from the manifest
                             javaClasspath = Stream.of(javaClasspath.split(File.pathSeparator))
                                     .map(cp -> cp.matches(intellijClassPathJarRegex) ? filePaths : cp)
                                     .collect(Collectors.joining(File.pathSeparator));

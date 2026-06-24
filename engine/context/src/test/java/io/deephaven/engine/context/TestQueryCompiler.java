@@ -65,7 +65,7 @@ public class TestQueryCompiler {
         executionContextClosable = ExecutionContext.newBuilder()
                 .captureQueryLibrary()
                 .captureQueryScope()
-                .setQueryCompiler(InMemoryQueryCompiler.create(null))
+                .setQueryCompiler(InMemoryQueryCompiler.createForUnitTests())
                 .build()
                 .open();
     }

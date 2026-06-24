@@ -114,7 +114,7 @@ public class TestEventDrivenUpdateGraph {
     }
 
     private QueryCompiler compilerForUnitTests() {
-        return InMemoryQueryCompiler.create(null);
+        return InMemoryQueryCompiler.createForUnitTests();
     }
 
     @Test
