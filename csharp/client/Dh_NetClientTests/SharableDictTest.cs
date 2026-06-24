@@ -52,7 +52,7 @@ public class SharableDictTest {
       new(10, 2000)
     };
 
-    await Assert.That(list).IsEquivalentTo(expected);
+    await Assert.That(list.SequenceEqual(expected)).IsTrue();
   }
 
   [Test]
