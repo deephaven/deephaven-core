@@ -21,6 +21,7 @@ import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.annotations.TestUseOnly;
 import io.deephaven.util.annotations.VisibleForTesting;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.vector.DoubleVector;
 import io.deephaven.vector.ObjectVector;
 import io.deephaven.vector.ShortVector;
@@ -707,6 +708,36 @@ public class TestRollingWAvg extends BaseUpdateByTest {
         final Table result = t.updateBy(
                 UpdateByOperation.RollingWAvg(10, "x", "rwx = x", "rwy = y"));
         Assert.eq(result.size(), "result.size()", t.size());
+    }
+
+    /**
+     * Repro for DH-22949, where getting NPE when single operator has duplicate input columns (e.g. value==weight for
+     * RollingWAvg).
+     */
+    @Test
+    public void testDH22949() {
+        final QueryTable table = createTestTable(100, true, false, false, 0xABCDEF,
+                new String[] {"x", "y"},
+                new TestDataGenerator[] {
+                        new DoubleGenerator(10.1, 20.1, 0.0),
+                        new DoubleGenerator(30.1, 40.1, 0.0)
+                }).t;
+
+        // This is a probabilistic test, not guaranteed to fail on every run without the fix. Local testing failed
+        // 20/20 runs with NPE with a maximum of 5 seconds before failure. 10 seconds is anticipated to be sufficient
+        // to repro even on slower hardware (without delaying overall testing).
+        final int SECONDS_TO_RUN = 10;
+
+        final boolean restoreValue = QueryTable.setMemoizeResults(false);
+        try (final SafeCloseable ignored = () -> QueryTable.setMemoizeResults(restoreValue)) {
+            final long deadlineNanos =
+                    System.nanoTime() + java.util.concurrent.TimeUnit.SECONDS.toNanos(SECONDS_TO_RUN);
+            do {
+                final Table result = table.updateBy(
+                        UpdateByOperation.RollingWAvg(10, "x", "rwx = x", "rwy = y"), "Sym");
+                Assert.eq(result.size(), "result.size()", table.size());
+            } while (System.nanoTime() < deadlineNanos);
+        }
     }
 
     @Test
