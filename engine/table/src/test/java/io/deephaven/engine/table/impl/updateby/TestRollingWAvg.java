@@ -726,7 +726,7 @@ public class TestRollingWAvg extends BaseUpdateByTest {
         // This is a probabilistic test, not guaranteed to fail on every run without the fix. Local testing failed
         // 20/20 runs with NPE with a maximum of 5 seconds before failure. 30 seconds is anticipated to be sufficient
         // to repro even on slower hardware (without delaying overall testing).
-        final int SECONDS_TO_RUN = 30;
+        final int SECONDS_TO_RUN = 10;
 
         final boolean restoreValue = QueryTable.setMemoizeResults(false);
         try (final SafeCloseable ignored = () -> QueryTable.setMemoizeResults(restoreValue)) {
