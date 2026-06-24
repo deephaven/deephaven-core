@@ -186,9 +186,9 @@ public class ParquetSchemaReader {
             colDef.name = colName;
             colDef.dhSpecialType = columnTypeInfo.flatMap(ColumnTypeInfo::specialType).orElse(null);
             final Optional<CodecInfo> codecInfo = columnTypeInfo.flatMap(ColumnTypeInfo::codec);
-            String codecName = codecInfo.map(CodecInfo::codecName).orElse(null);
+            String codecName = maybeMapClassName(codecInfo.map(CodecInfo::codecName).orElse(null));
             String codecArgs = codecInfo.flatMap(CodecInfo::codecArg).orElse(null);
-            colDef.codecType = codecInfo.map(CodecInfo::dataType).orElse(null);
+            colDef.codecType = maybeMapClassName(codecInfo.map(CodecInfo::dataType).orElse(null));
             if (codecName != null && !codecName.isEmpty()) {
                 builderSupplier.get().addColumnCodec(colName, codecName, codecArgs);
             }
@@ -268,6 +268,31 @@ public class ParquetSchemaReader {
         return (instructionsBuilder.getValue() == null)
                 ? readInstructions
                 : instructionsBuilder.getValue().build();
+    }
+
+    private final static Map<String, String> CLASS_NAME_MAP = new HashMap<>();
+
+    /**
+     * Add a class name mapping to use when reading from parquet metadata
+     *
+     * @param from the name of the class as identified in the metadata
+     * @param to the name of the class that should be used as a 1:1 basis from the written metadata class
+     * @return the previous value associates with the {@code from}, if any, or null
+     */
+    public static String addClassNameMap(@NotNull final String from, @NotNull final String to) {
+        synchronized (CLASS_NAME_MAP) {
+            return CLASS_NAME_MAP.put(from, to);
+        }
+    }
+
+    private static String maybeMapClassName(final String input) {
+        if (input == null) {
+            return null;
+        }
+
+        synchronized (CLASS_NAME_MAP) {
+            return CLASS_NAME_MAP.getOrDefault(input, input);
+        }
     }
 
     /**

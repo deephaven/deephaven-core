@@ -46,11 +46,15 @@ import org.apache.parquet.schema.Types;
 import org.assertj.core.api.Assertions;
 import org.junit.*;
 
+import io.deephaven.util.codec.ObjectCodec;
+import io.deephaven.util.codec.ObjectDecoder;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.reflect.Proxy;
 import java.net.URI;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.DigestOutputStream;
@@ -1376,6 +1380,172 @@ public class TestParquetTools {
             final Table actual = ParquetTools.readTable(f.getPath(), instructions);
             assertEquals(td, actual.getDefinition());
             assertTableEquals(expected, actual);
+        }
+    }
+
+    /**
+     * Verify functionality of {@link ParquetSchemaReader#addClassNameMap(String, String)}. In this test, we are
+     * serializing a column as an array of integers, and "mapping" the codec and column-type so that they are read back
+     * as negated longs
+     */
+    @Test
+    public void testClassNameMap() {
+        final String writeCodecName = WriteCodec.class.getName();
+        final String writeTypeName = WriteType.class.getName();
+
+        final Path parquetFile = Path.of(testRoot, "testClassNameMap.parquet");
+
+        final WriteType row0 = new WriteType(1, 2, 3);
+        final WriteType row1 = new WriteType(4, 5);
+
+        final TableDefinition writeDef = TableDefinition.of(
+                ColumnDefinition.fromGenericType("Values", WriteType.class));
+        final Table writeTable = TableTools.newTable(writeDef,
+                new ColumnHolder<>("Values", WriteType.class, null, false, row0, row1));
+
+        // @formatter:off
+        // parquet metadata should contain the following:
+        // "columnTypes": [{
+        //   "columnName": "Values",
+        //   "codec": {
+        //     "codecName" :"io.deephaven.parquet.table.TestParquetTools$WriteCodec",
+        //     "dataType" :"io.deephaven.parquet.table.TestParquetTools$WriteType"
+        //   }
+        // }]
+        // @formatter:on
+        final ParquetInstructions writeInstructions = ParquetInstructions.builder()
+                .addColumnCodec("Values", writeCodecName)
+                .build();
+
+        ParquetTools.writeTable(writeTable, parquetFile.toString(), writeInstructions);
+
+        final String readCodecName = ReadCodec.class.getName();
+        final String readTypeName = "long[]";
+
+        // add class mappings so that we use a different codec for reading, and expect a different column-type back
+        ParquetSchemaReader.addClassNameMap(writeCodecName, readCodecName);
+        ParquetSchemaReader.addClassNameMap(writeTypeName, readTypeName);
+
+        final Table readTable = ParquetTools.readTable(parquetFile.toString());
+
+        assertEquals(long[].class, readTable.getDefinition().getColumn("Values").getDataType());
+
+        final ObjectVector<long[]> values = ColumnVectors.ofObject(readTable, "Values", long[].class);
+        assertThat(values.get(0)).containsExactly(-1L, -2L, -3L);
+        assertThat(values.get(1)).containsExactly(-4L, -5L);
+    }
+
+    /**
+     * An example non-standard column-type which simply wraps an array of int
+     */
+    public static class WriteType {
+        public final int[] values;
+
+        public WriteType(int... values) {
+            this.values = values;
+        }
+
+        @Override
+        public String toString() {
+            return String.format("WT: %s", Arrays.toString(values));
+        }
+    }
+
+    /**
+     * An example codec used to persist an array of int to a parquet file
+     */
+    public static class WriteCodec implements ObjectCodec<WriteType> {
+
+        @SuppressWarnings("unused")
+        public WriteCodec(final String args) {}
+
+        @Override
+        public byte[] encode(final WriteType input) {
+            if (input == null || input.values.length == 0) {
+                return new byte[0];
+            }
+            final ByteBuffer buf = ByteBuffer.allocate(input.values.length * Integer.BYTES);
+            for (final int v : input.values) {
+                buf.putInt(v);
+            }
+            return buf.array();
+        }
+
+        @Override
+        public boolean isNullable() {
+            return true;
+        }
+
+        @Override
+        public int getPrecision() {
+            return 0;
+        }
+
+        @Override
+        public int getScale() {
+            return 0;
+        }
+
+        @Override
+        public WriteType decode(final byte[] input, final int offset, final int length) {
+            if (length == 0) {
+                return null;
+            }
+            final ByteBuffer buf = ByteBuffer.wrap(input, offset, length);
+            final int[] values = new int[length / Integer.BYTES];
+            for (int i = 0; i < values.length; i++) {
+                values[i] = buf.getInt();
+            }
+            return new WriteType(values);
+        }
+
+        @Override
+        public int expectedObjectWidth() {
+            return ObjectDecoder.VARIABLE_WIDTH_SENTINEL;
+        }
+    }
+
+    public static class ReadCodec implements ObjectCodec<long[]> {
+
+        @SuppressWarnings("unused")
+        public ReadCodec(final String args) {}
+
+        @Override
+        public byte[] encode(final long[] input) {
+            throw new IllegalStateException("Not intended for writing");
+        }
+
+        @Override
+        public boolean isNullable() {
+            return true;
+        }
+
+        @Override
+        public int getPrecision() {
+            return 0;
+        }
+
+        @Override
+        public int getScale() {
+            return 0;
+        }
+
+        @Override
+        public long[] decode(final byte[] input, final int offset, final int length) {
+            if (length == 0) {
+                return null;
+            }
+            final ByteBuffer buf = ByteBuffer.wrap(input, offset, length);
+            final long[] values = new long[length / Integer.BYTES];
+            for (int i = 0; i < values.length; i++) {
+                values[i] = -(long) buf.getInt();
+            }
+            return values;
+        }
+
+        @Override
+        public int expectedObjectWidth() {
+            return ObjectDecoder.VARIABLE_WIDTH_SENTINEL;
         }
     }
 
