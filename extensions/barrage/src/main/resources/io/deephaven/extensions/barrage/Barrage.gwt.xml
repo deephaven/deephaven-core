@@ -26,6 +26,7 @@
         <exclude name="DefaultChunkWriterFactory.java" />
         <exclude name="MapChunkReader.java" />
         <exclude name="MapChunkWriter.java" />
+        <exclude name="RunEndEncodedChunkWriter.java" />
         <exclude name="UnionChunkWriter.java" />
         <exclude name="UnionChunkReader.java" />
         <exclude name="BigDecimalChunkWriter.java" />

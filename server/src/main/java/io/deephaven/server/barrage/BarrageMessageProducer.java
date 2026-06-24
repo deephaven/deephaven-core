@@ -24,8 +24,8 @@ import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.engine.table.impl.util.ShiftInversionHelper;
 import io.deephaven.engine.table.impl.util.UpdateCoalescer;
 import io.deephaven.engine.updategraph.*;
-import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.extensions.barrage.BarrageMessageWriter;
+import io.deephaven.extensions.barrage.BarrageMessageWriterImpl;
 import io.deephaven.extensions.barrage.BarragePerformanceLog;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.BarrageSubscriptionPerformanceLogger;
@@ -63,7 +63,6 @@ import java.util.stream.Stream;
 import static io.deephaven.engine.table.impl.remote.ConstructSnapshot.SNAPSHOT_CHUNK_SIZE;
 import static io.deephaven.extensions.barrage.util.BarrageUtil.MAX_SNAPSHOT_CELL_COUNT;
 import static io.deephaven.extensions.barrage.util.BarrageUtil.MIN_SNAPSHOT_CELL_COUNT;
-import static io.deephaven.extensions.barrage.util.BarrageUtil.TARGET_SNAPSHOT_PERCENTAGE;
 
 /**
  * The server-side implementation of a Barrage replication source.
@@ -202,6 +201,10 @@ public class BarrageMessageProducer extends LivenessArtifact
     private final ChunkSource.WithPrev<Values>[] chunkSources;
     /** the chunk writer per source column */
     private final ChunkWriter<Chunk<Values>>[] chunkWriters;
+    /** the Arrow SDK schema used to initialize chunkWriters; sent to each new subscriber as-is */
+    private final org.apache.arrow.vector.types.pojo.Schema chunkWriterSchema;
+    /** effective maximum batch size; Short.MAX_VALUE when any column uses Int16 REE, otherwise DEFAULT_BATCH_SIZE */
+    private final int maxBatchSize;
     /** internally, booleans are reinterpretted to bytes; however we need to be packed bitsets over Arrow */
     private final Class<?>[] realColumnType;
     private final Class<?>[] realColumnComponentType;
@@ -376,10 +379,17 @@ public class BarrageMessageProducer extends LivenessArtifact
         // noinspection unchecked
         chunkWriters = (ChunkWriter<Chunk<Values>>[]) new ChunkWriter[sources.length];
 
-        final MutableInt mi = new MutableInt();
+        // Compute the schema once; store the SDK form for schema-message generation and REE detection,
+        // then derive the flatbuf form for chunk-writer initialization. Honour BARRAGE_SCHEMA_ATTRIBUTE
+        // when present so that subscription chunk writers agree with snapshot chunk writers.
+        chunkWriterSchema = BarrageUtil.schemaFromTable(parent);
+        maxBatchSize = chunkWriterSchema.getFields().stream().anyMatch(BarrageUtil::isReeInt16Field)
+                ? Short.MAX_VALUE
+                : BarrageMessageWriterImpl.DEFAULT_BATCH_SIZE;
         final Schema schema = SchemaHelper.flatbufSchema(
-                BarrageUtil.schemaBytesFromTable(parent).asReadOnlyByteBuffer());
+                BarrageUtil.schemaBytes(chunkWriterSchema::getSchema).asReadOnlyByteBuffer());
 
+        final MutableInt mi = new MutableInt();
         parent.getColumnSourceMap().forEach((columnName, columnSource) -> {
             int ii = mi.getAndIncrement();
             chunkWriters[ii] = DefaultChunkWriterFactory.INSTANCE.newWriter(BarrageTypeInfo.make(
@@ -400,6 +410,24 @@ public class BarrageMessageProducer extends LivenessArtifact
                 chunkSources[ci] = sources[ci];
             }
         }
+    }
+
+    /**
+     * Returns subscription options whose effective batch size does not exceed {@link #maxBatchSize}. When
+     * {@code maxBatchSize} equals {@link BarrageMessageWriterImpl#DEFAULT_BATCH_SIZE} the original options are returned
+     * unchanged. Otherwise (e.g. Int16 REE columns are present) the batch size is capped to prevent run-end overflow in
+     * the chunk writer.
+     */
+    private BarrageSubscriptionOptions effectiveOptions(final BarrageSubscriptionOptions options) {
+        if (maxBatchSize == BarrageMessageWriterImpl.DEFAULT_BATCH_SIZE) {
+            return options;
+        }
+        final int requested = options.batchSize();
+        final int effective = requested <= 0 ? maxBatchSize : Math.min(requested, maxBatchSize);
+        if (effective == requested) {
+            return options;
+        }
+        return options.withBatchSize(effective);
     }
 
     @VisibleForTesting
@@ -1598,7 +1626,7 @@ public class BarrageMessageProducer extends LivenessArtifact
                         final RowSet clientView =
                                 vp != null ? propRowSetForMessage.subSetForPositions(vp, isReversed) : null) {
                     subscription.listener.onNext(bmw.getSubView(
-                            subscription.options, false, subscription.isFullSubscription(), vp,
+                            effectiveOptions(subscription.options), false, subscription.isFullSubscription(), vp,
                             subscription.reverseViewport, clientViewPrev, clientView, cols));
                 } catch (final Exception e) {
                     try {
@@ -1649,15 +1677,22 @@ public class BarrageMessageProducer extends LivenessArtifact
                                             subscription.snapshotReverseViewport)) {
 
                 if (subscription.pendingInitialSnapshot) {
-                    // Send schema metadata to this new client.
+                    // Send the schema matches what the data writer will actually produce.
+                    // chunkWriterSchema holds the raw (non-columnsAsList) schema used by chunkWriters;
+                    // when the subscription requests columnsAsList, wrap each field in an outer List to
+                    // match the wire transformation applied by BarrageMessageWriterImpl.
+                    final org.apache.arrow.vector.types.pojo.Schema schemaToUse =
+                            subscription.options.columnsAsList()
+                                    ? BarrageUtil.schemaWithColumnsAsList(chunkWriterSchema)
+                                    : chunkWriterSchema;
                     subscription.listener.onNext(streamGeneratorFactory.getSchemaView(
-                            fbb -> BarrageUtil.makeTableSchemaPayload(fbb, subscription.options,
-                                    parent.getDefinition(), parent.getAttributes(), parent.isFlat())));
+                            schemaToUse::getSchema));
                 }
 
                 // some messages may be empty of rows, but we need to update the client viewport and column set
                 subscription.listener
-                        .onNext(snapshotGenerator.getSubView(subscription.options, subscription.pendingInitialSnapshot,
+                        .onNext(snapshotGenerator.getSubView(effectiveOptions(subscription.options),
+                                subscription.pendingInitialSnapshot,
                                 fullSubscription, subscription.viewport, subscription.reverseViewport,
                                 keySpaceViewportPrev, keySpaceViewport, subscription.subscribedColumns));
 

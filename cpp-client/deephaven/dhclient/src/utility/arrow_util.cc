@@ -134,6 +134,13 @@ struct ArrowToElementTypeId final : public arrow::TypeVisitor {
     return result;
   }
 
+  // Arrow handles REE decoding internally when values are requested.
+  // Random access is O(log n) via binary search over run_ends (n = number of runs) but
+  // sequential access via Arrow's REE iterator is O(1) amortized.
+  arrow::Status Visit(const arrow::RunEndEncodedType &type) final {
+    return type.value_type()->Accept(this);
+  }
+
   arrow::Status Visit(const arrow::Time64Type &/*type*/) final {
     element_type_ = ElementType::Of(ElementTypeId::kLocalTime);
     return arrow::Status::OK();

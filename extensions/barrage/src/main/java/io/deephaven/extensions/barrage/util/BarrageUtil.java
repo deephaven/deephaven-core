@@ -19,14 +19,17 @@ import io.deephaven.base.ArrayUtil;
 import io.deephaven.base.ClassUtil;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.WritableBooleanChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.ChunkType;
-import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.context.PoisonedUpdateGraph;
+import io.deephaven.chunk.util.hashing.ChunkEquals;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.GridAttributes;
 import io.deephaven.engine.table.Table;
@@ -36,10 +39,13 @@ import io.deephaven.engine.table.impl.ComparatorRegistry;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
+import io.deephaven.engine.table.impl.NotificationStepSource;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.extensions.barrage.BarrageMessageWriter;
+import io.deephaven.extensions.barrage.BarrageMessageWriterImpl;
 import io.deephaven.extensions.barrage.BarrageOptions;
+import io.deephaven.extensions.barrage.ColumnEncoding;
 import io.deephaven.engine.util.ColumnFormatting;
 import io.deephaven.engine.util.input.InputTableUpdater;
 import io.deephaven.extensions.barrage.BarragePerformanceLog;
@@ -50,6 +56,8 @@ import io.deephaven.extensions.barrage.chunk.ChunkWriter;
 import io.deephaven.extensions.barrage.chunk.DefaultChunkWriterFactory;
 import io.deephaven.extensions.barrage.chunk.ChunkReader;
 import io.deephaven.extensions.barrage.chunk.vector.VectorExpansionKernel;
+import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
+import io.deephaven.engine.table.impl.sources.SingleValueColumnSource;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.backplane.grpc.DeephavenTableMetadata;
@@ -138,6 +146,28 @@ public class BarrageUtil {
     public static final long MAX_SNAPSHOT_CELL_COUNT =
             Configuration.getInstance().getLongForClassWithDefault(BarrageUtil.class,
                     "maxSnapshotCellCount", 1L << 24);
+
+    /** Whether to sample columns at schema-inference time to detect run patterns for REE auto-encoding. */
+    private static final boolean REE_SAMPLING_ENABLED =
+            Configuration.getInstance().getBooleanWithDefault("BarrageUtil.ree.samplingEnabled", true);
+
+    /** Number of rows to sample per column when estimating run ratios. */
+    private static final int REE_SAMPLE_SIZE =
+            Configuration.getInstance().getIntegerWithDefault("BarrageUtil.ree.sampleSize", 1024);
+
+    /**
+     * Maximum ratio of (estimated runs / sampled rows) that triggers REE auto-encoding. At the default of 0.5, a column
+     * must average at least 2 rows per run to be encoded.
+     */
+    private static final double REE_RUN_RATIO_THRESHOLD =
+            Configuration.getInstance().getDoubleWithDefault("BarrageUtil.ree.runRatioThreshold", 0.5);
+
+    /**
+     * Minimum table row count before sampling is attempted; too few rows make the estimate noisy. Must be strictly less
+     * than {@link #REE_SAMPLE_SIZE}.
+     */
+    static final int REE_MIN_SAMPLE_SIZE =
+            Configuration.getInstance().getIntegerWithDefault("BarrageUtil.ree.minSampleSize", 16);
 
     /**
      * Note that arrow's wire format states that Timestamps without timezones are not UTC -- that they are no timezone
@@ -464,23 +494,53 @@ public class BarrageUtil {
     }
 
     public static ByteString schemaBytesFromTable(@NotNull final Table table) {
-        return schemaBytesFromTableDefinition(table.getDefinition(), table.getAttributes(), table.isFlat());
+        return schemaBytes(fbb -> makeTableSchemaPayload(fbb, DEFAULT_SNAPSHOT_OPTIONS, table));
     }
 
     public static ByteString schemaBytesFromTableDefinition(
             @NotNull final TableDefinition tableDefinition,
             @NotNull final Map<String, Object> attributes,
             final boolean isFlat) {
-        return schemaBytes(fbb -> makeTableSchemaPayload(
-                fbb, DEFAULT_SNAPSHOT_OPTIONS, tableDefinition, attributes, isFlat));
+        return schemaBytes(fbb -> makeSchema(DEFAULT_SNAPSHOT_OPTIONS, tableDefinition, attributes, isFlat)
+                .getSchema(fbb));
     }
 
     public static Schema schemaFromTable(@NotNull final Table table) {
-        return makeSchema(DEFAULT_SNAPSHOT_OPTIONS, table.getDefinition(), table.getAttributes(), table.isFlat());
+        return schemaForTable(DEFAULT_SNAPSHOT_OPTIONS, table);
     }
 
-    public static Schema toSchema(final TableDefinition definition, Map<String, Object> attributes, boolean isFlat) {
-        return makeSchema(DEFAULT_SNAPSHOT_OPTIONS, definition, attributes, isFlat);
+    private static Schema schemaForTable(
+            @NotNull final BarrageOptions options,
+            @NotNull final Table table) {
+        // When the user has supplied an explicit schema, take the encodings from it verbatim so
+        // that auto-inference never overrides an explicit choice. Otherwise infer encodings from
+        // the live table data. In both cases rebuild Deephaven field metadata from the table
+        // definition so clients always receive complete type information.
+        final Map<String, ColumnEncoding> encodings = table.hasAttribute(Table.BARRAGE_SCHEMA_ATTRIBUTE)
+                ? encodingsFromSchema((Schema) table.getAttribute(Table.BARRAGE_SCHEMA_ATTRIBUTE))
+                : inferEncodings(table);
+        return makeSchema(options, table.getDefinition(), table.getAttributes(), table.isFlat(), encodings);
+    }
+
+    private static Map<String, ColumnEncoding> encodingsFromSchema(final Schema schema) {
+        final Map<String, ColumnEncoding> encodings = new HashMap<>();
+        for (final Field field : schema.getFields()) {
+            if (field.getType().getTypeID() != ArrowType.ArrowTypeID.RunEndEncoded) {
+                continue;
+            }
+            ColumnEncoding encoding = ColumnEncoding.RUN_END_ENCODED_INT32;
+            final List<Field> children = field.getChildren();
+            if (!children.isEmpty() && children.get(0).getType() instanceof ArrowType.Int) {
+                final int bitWidth = ((ArrowType.Int) children.get(0).getType()).getBitWidth();
+                if (bitWidth == 16) {
+                    encoding = ColumnEncoding.RUN_END_ENCODED_INT16;
+                } else if (bitWidth == 64) {
+                    encoding = ColumnEncoding.RUN_END_ENCODED_INT64;
+                }
+            }
+            encodings.put(field.getName(), encoding);
+        }
+        return encodings;
     }
 
     public static ByteString schemaBytes(@NotNull final ToIntFunction<FlatBufferBuilder> schemaPayloadWriter) {
@@ -499,10 +559,23 @@ public class BarrageUtil {
     public static int makeTableSchemaPayload(
             @NotNull final FlatBufferBuilder builder,
             @NotNull final BarrageOptions options,
-            @NotNull final TableDefinition tableDefinition,
-            @NotNull final Map<String, Object> attributes,
-            final boolean isFlat) {
-        return makeSchema(options, tableDefinition, attributes, isFlat).getSchema(builder);
+            @NotNull final Table table) {
+        return schemaForTable(options, table).getSchema(builder);
+    }
+
+    /**
+     * Wraps each field of {@code base} in an outer Arrow {@code List} type, mirroring the columnsAsList wire
+     * transformation applied by {@link io.deephaven.extensions.barrage.BarrageMessageWriterImpl}. Use this when the
+     * schema message must match data that will be sent with columnsAsList=true but the base schema was computed without
+     * that option (e.g. in {@code io.deephaven.server.barrage.BarrageMessageProducer}).
+     */
+    public static Schema schemaWithColumnsAsList(@NotNull final Schema base) {
+        final List<Field> wrapped = base.getFields().stream()
+                .map(f -> new Field(f.getName(),
+                        new FieldType(false, Types.MinorType.LIST.getType(), null, f.getMetadata()),
+                        Collections.singletonList(f)))
+                .collect(Collectors.toList());
+        return new Schema(wrapped, base.getCustomMetadata());
     }
 
     public static Schema makeSchema(
@@ -510,14 +583,39 @@ public class BarrageUtil {
             @NotNull final TableDefinition tableDefinition,
             @NotNull final Map<String, Object> attributes,
             final boolean isFlat) {
+        return makeSchema(options, tableDefinition, attributes, isFlat, Map.of());
+    }
+
+    private static Schema makeSchema(
+            @NotNull final BarrageOptions options,
+            @NotNull final TableDefinition tableDefinition,
+            @NotNull final Map<String, Object> attributes,
+            final boolean isFlat,
+            @NotNull final Map<String, ColumnEncoding> encodings) {
         final Map<String, String> schemaMetadata = attributesToMetadata(attributes, isFlat);
         final Map<String, String> descriptions = GridAttributes.getColumnDescriptions(attributes);
         final InputTableUpdater inputTableUpdater = (InputTableUpdater) attributes.get(Table.INPUT_TABLE_ATTRIBUTE);
         maybeAddInputTableMetadata(tableDefinition, schemaMetadata, inputTableUpdater);
+        final boolean columnsAsList = options.columnsAsList();
         final List<Field> fields = columnDefinitionsToFields(
                 descriptions, inputTableUpdater, tableDefinition, tableDefinition.getColumns(),
                 ignored -> new HashMap<>(),
-                attributes, options.columnsAsList())
+                attributes, columnsAsList)
+                .map(field -> {
+                    final ColumnEncoding encoding = encodings.get(field.getName());
+                    if (encoding == null || !encoding.isRunEndEncoded()) {
+                        return field;
+                    }
+                    // When columnsAsList wraps the logical field in an outer List, apply REE to the inner
+                    // child so the encoding order is List<REE<values>> rather than REE<List<values>>.
+                    if (columnsAsList && field.getType().getTypeID() == ArrowType.ArrowTypeID.List) {
+                        final Field inner = toReeField(field.getChildren().get(0), encoding);
+                        return new Field(field.getName(),
+                                new FieldType(false, Types.MinorType.LIST.getType(), null, field.getMetadata()),
+                                Collections.singletonList(inner));
+                    }
+                    return toReeField(field, encoding);
+                })
                 .collect(Collectors.toList());
         return new Schema(fields, schemaMetadata);
     }
@@ -599,9 +697,7 @@ public class BarrageUtil {
             @NotNull final Function<String, Map<String, String>> fieldMetadataFactory,
             @NotNull final Map<String, Object> attributes) {
         return columnDefinitionsToFields(columnDescriptions, inputTableUpdater, tableDefinition, columnDefinitions,
-                fieldMetadataFactory,
-                attributes,
-                false);
+                fieldMetadataFactory, attributes, false);
     }
 
     private static boolean isDataTypeSortable(final Class<?> dataType) {
@@ -634,7 +730,6 @@ public class BarrageUtil {
                     .collect(Collectors.toSet());
         }
 
-        final Schema targetSchema;
         final Set<String> formatColumns = new HashSet<>();
         final Map<String, Field> fieldMap = new LinkedHashMap<>();
 
@@ -732,7 +827,7 @@ public class BarrageUtil {
         };
 
         if (wireFormatSpecified) {
-            targetSchema = (Schema) attributes.get(Table.BARRAGE_SCHEMA_ATTRIBUTE);
+            final Schema targetSchema = (Schema) attributes.get(Table.BARRAGE_SCHEMA_ATTRIBUTE);
             targetSchema.getFields().forEach(field -> fieldMap.put(field.getName(), field));
 
             fieldMap.keySet().stream()
@@ -785,6 +880,13 @@ public class BarrageUtil {
 
         if (field.getType().getTypeID() == ArrowType.ArrowTypeID.Map) {
             return new BarrageTypeInfo<>(Map.class, null, field);
+        }
+
+        if (field.getType().getTypeID() == ArrowType.ArrowTypeID.RunEndEncoded) {
+            // The Deephaven column type is determined by the values child (child[1]); the run_ends
+            // child (child[0]) is purely an index. Delegate to the values child so that its
+            // deephaven:type / deephaven:componentType metadata are honoured.
+            return getDefaultType(field.getChildren().get(1));
         }
 
         final Class<?> columnType = getDefaultType(field, explicitClass);
@@ -886,6 +988,9 @@ public class BarrageUtil {
                 }
             case Map:
                 return Map.class;
+            case RunEndEncoded:
+                // Delegate to the values child (child[1]); run_ends (child[0]) is just an index.
+                return getDefaultType(arrowField.getChildren().get(1), null);
             case Union:
             case Null:
                 return Object.class;
@@ -1160,6 +1265,133 @@ public class BarrageUtil {
         return false;
     }
 
+    /**
+     * Returns {@code true} when the given Arrow SDK field is Run-End Encoded with Int16 (16-bit signed) run_ends. Used
+     * to detect whether any column's chunk writer is constrained to batches of at most {@link Short#MAX_VALUE} rows.
+     */
+    public static boolean isReeInt16Field(final Field field) {
+        if (!(field.getType() instanceof ArrowType.RunEndEncoded)) {
+            return false;
+        }
+        final List<Field> children = field.getChildren();
+        if (children.isEmpty()) {
+            return false;
+        }
+        final Field runEnds = children.get(0);
+        return (runEnds.getType() instanceof ArrowType.Int)
+                && ((ArrowType.Int) runEnds.getType()).getBitWidth() == 16;
+    }
+
+    private static Field toReeField(final Field field, final ColumnEncoding encoding) {
+        if (field.getType().getTypeID() == ArrowType.ArrowTypeID.RunEndEncoded) {
+            return field;
+        }
+        final ArrowType runEndsType;
+        if (encoding == ColumnEncoding.RUN_END_ENCODED_INT16) {
+            runEndsType = Types.MinorType.SMALLINT.getType();
+        } else if (encoding == ColumnEncoding.RUN_END_ENCODED_INT64) {
+            runEndsType = Types.MinorType.BIGINT.getType();
+        } else {
+            runEndsType = Types.MinorType.INT.getType();
+        }
+        final Field runEndsField = new Field(
+                "run_ends",
+                new FieldType(false, runEndsType, null),
+                Collections.emptyList());
+        final Field valuesField = new Field(
+                "values",
+                new FieldType(field.isNullable(), field.getType(), field.getDictionary(), field.getMetadata()),
+                field.getChildren());
+        return new Field(
+                field.getName(),
+                new FieldType(false, new ArrowType.RunEndEncoded(), null, field.getMetadata()),
+                List.of(runEndsField, valuesField));
+    }
+
+    /**
+     * Samples {@code sampleSize} rows from {@code rowSet} and returns the ratio of estimated run count to rows sampled.
+     * A ratio near 0 means the column is highly repetitive; 1.0 means every consecutive pair differs.
+     */
+    static Map<String, ColumnEncoding> inferEncodings(@NotNull final Table table) {
+        final Map<String, ColumnEncoding> encodings = new HashMap<>();
+
+        // Single-value sources are an obvious win, should always be encoded.
+        table.getColumnSourceMap().forEach((name, source) -> {
+            if (source instanceof NullValueColumnSource || source instanceof SingleValueColumnSource) {
+                encodings.put(name, ColumnEncoding.RUN_END_ENCODED_INT32);
+            }
+        });
+
+        // Partition tables that have been merged will have constant key columns per region.
+        if (Boolean.TRUE.equals(table.getAttribute(Table.MERGED_TABLE_ATTRIBUTE))
+                && table.hasAttribute(Table.KEY_COLUMNS_ATTRIBUTE)) {
+            for (final String col : ((String) table.getAttribute(Table.KEY_COLUMNS_ATTRIBUTE)).split(",")) {
+                encodings.put(col, ColumnEncoding.RUN_END_ENCODED_INT32);
+            }
+        }
+
+        // Sample the table to detect columns with repetitive data patterns.
+        if (REE_SAMPLING_ENABLED) {
+            ConstructSnapshot.callDataSnapshotFunction("BarrageUtil.inferEncodings",
+                    ConstructSnapshot.makeSnapshotControl(false, table.isRefreshing(),
+                            (NotificationStepSource) table),
+                    (usePrev, beforeClockValue) -> sampleColumnsForREE(table, encodings, usePrev));
+        }
+
+        return encodings;
+    }
+
+    private static boolean sampleColumnsForREE(
+            @NotNull final Table table,
+            @NotNull final Map<String, ColumnEncoding> encodings,
+            final boolean usePrev) {
+        final RowSet rowSetToUse = usePrev ? table.getRowSet().prev() : table.getRowSet();
+        if (rowSetToUse.size() < REE_MIN_SAMPLE_SIZE) {
+            return true;
+        }
+        // Build a single RowSet of REE_MIN_SAMPLE_SIZE chunks evenly distributed across the rowset.
+        final int chunkSize = (int) Math.min(REE_MIN_SAMPLE_SIZE, rowSetToUse.size());
+        final int sampleSize = (int) Math.min(REE_SAMPLE_SIZE, rowSetToUse.size());
+        final int numChunks = sampleSize / chunkSize;
+        final int stride = (int) rowSetToUse.size() / numChunks;
+        final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
+        try (final RowSequence.Iterator it = rowSetToUse.getRowSequenceIterator()) {
+            while (it.hasMore()) {
+                final RowSequence rows = it.getNextRowSequenceWithLength(chunkSize);
+                builder.appendRowSequence(rows);
+                it.getNextRowSequenceWithLength(stride - chunkSize);
+            }
+        }
+        // For every column, fill a chunk with the sampled values and count the runs.
+        try (final WritableRowSet sampleRowSet = builder.build()) {
+            final int actualSampleSize = sampleRowSet.intSize();
+            try (final WritableBooleanChunk<Values> isEqualNext =
+                    WritableBooleanChunk.makeWritableChunk(actualSampleSize - 1)) {
+                table.getColumnSourceMap().forEach((name, source) -> {
+                    if (encodings.containsKey(name)) {
+                        return;
+                    }
+                    try (final ColumnSource.GetContext context = source.makeGetContext(actualSampleSize)) {
+                        final Chunk<? extends Values> chunk = usePrev
+                                ? source.getPrevChunk(context, sampleRowSet)
+                                : source.getChunk(context, sampleRowSet);
+                        ChunkEquals.makeEqual(source.getChunkType()).equalNext(chunk, isEqualNext);
+                        int numRuns = 1;
+                        for (int i = 0; i < isEqualNext.size(); ++i) {
+                            if (!isEqualNext.get(i)) {
+                                ++numRuns;
+                            }
+                        }
+                        if ((double) numRuns / chunk.size() < REE_RUN_RATIO_THRESHOLD) {
+                            encodings.put(name, ColumnEncoding.RUN_END_ENCODED_INT32);
+                        }
+                    }
+                });
+            }
+        }
+        return true;
+    }
+
     public static Field arrowFieldFor(
             final String name,
             final Class<?> type,
@@ -1305,6 +1537,51 @@ public class BarrageUtil {
         return new Field(name, fieldType, children);
     }
 
+    /**
+     * Returns the maximum batch size imposed by the schema: {@link Short#MAX_VALUE} when any field uses Int16 Run-End
+     * Encoding, otherwise {@link BarrageMessageWriterImpl#DEFAULT_BATCH_SIZE}.
+     */
+    private static int maxBatchSizeForSchema(@NotNull final Schema schema) {
+        return schema.getFields().stream().anyMatch(BarrageUtil::isReeInt16Field)
+                ? Short.MAX_VALUE
+                : BarrageMessageWriterImpl.DEFAULT_BATCH_SIZE;
+    }
+
+    /**
+     * Converts an Arrow SDK schema to a column-name → flatbuf-Field map for use by chunk writers.
+     */
+    private static Map<String, org.apache.arrow.flatbuf.Field> buildFlatbufFieldMap(
+            @NotNull final Schema schema) {
+        final Map<String, org.apache.arrow.flatbuf.Field> fieldFor = new HashMap<>();
+        // noinspection DataFlowIssue
+        schema.getFields().forEach(f -> {
+            final FlatBufferBuilder fbb = new FlatBufferBuilder();
+            final int offset = f.getField(fbb);
+            fbb.finish(offset);
+            fieldFor.put(f.getName(), org.apache.arrow.flatbuf.Field.getRootAsField(fbb.dataBuffer()));
+        });
+        return fieldFor;
+    }
+
+    /**
+     * Returns snapshot options whose effective batch size does not exceed {@code maxBatchSize}. When
+     * {@code maxBatchSize} equals {@link BarrageMessageWriterImpl#DEFAULT_BATCH_SIZE} the original options are returned
+     * unchanged.
+     */
+    private static BarrageSnapshotOptions effectiveSnapshotOptions(
+            @NotNull final BarrageSnapshotOptions options,
+            final int maxBatchSize) {
+        if (maxBatchSize == BarrageMessageWriterImpl.DEFAULT_BATCH_SIZE) {
+            return options;
+        }
+        final int requested = options.batchSize();
+        final int effective = requested <= 0 ? maxBatchSize : Math.min(requested, maxBatchSize);
+        if (effective == requested) {
+            return options;
+        }
+        return options.withBatchSize(effective);
+    }
+
     public static void createAndSendStaticSnapshot(
             BarrageMessageWriter.Factory bmwFactory,
             BaseTable<?> table,
@@ -1318,27 +1595,17 @@ public class BarrageUtil {
         long snapshotTargetCellCount = MIN_SNAPSHOT_CELL_COUNT;
         double snapshotNanosPerCell = 0.0;
 
-        final Map<String, org.apache.arrow.flatbuf.Field> fieldFor;
-        if (table.hasAttribute(Table.BARRAGE_SCHEMA_ATTRIBUTE)) {
-            fieldFor = new HashMap<>();
-            final Schema targetSchema = (Schema) table.getAttribute(Table.BARRAGE_SCHEMA_ATTRIBUTE);
-            // noinspection DataFlowIssue
-            targetSchema.getFields().forEach(f -> {
-                final FlatBufferBuilder fbb = new FlatBufferBuilder();
-                final int offset = f.getField(fbb);
-                fbb.finish(offset);
-                fieldFor.put(f.getName(), org.apache.arrow.flatbuf.Field.getRootAsField(fbb.dataBuffer()));
-            });
-        } else {
-            fieldFor = null;
-        }
+        final Schema effectiveSchema = schemaForTable(snapshotRequestOptions, table);
+        final Map<String, org.apache.arrow.flatbuf.Field> fieldFor = buildFlatbufFieldMap(effectiveSchema);
+        snapshotRequestOptions =
+                effectiveSnapshotOptions(snapshotRequestOptions, maxBatchSizeForSchema(effectiveSchema));
 
         // noinspection unchecked
         final ChunkWriter<Chunk<Values>>[] chunkWriters = table.getDefinition().getColumns().stream()
                 .map(cd -> DefaultChunkWriterFactory.INSTANCE.newWriter(BarrageTypeInfo.make(
                         ReinterpretUtils.maybeConvertToPrimitiveDataType(cd.getDataType()),
                         cd.getComponentType(),
-                        fieldFor != null ? fieldFor.get(cd.getName()) : flatbufFieldFor(cd, Map.of()))))
+                        fieldFor.getOrDefault(cd.getName(), flatbufFieldFor(cd, Map.of())))))
                 .toArray(ChunkWriter[]::new);
 
         final long columnCount =
@@ -1450,30 +1717,16 @@ public class BarrageUtil {
             return;
         }
 
-        final Map<String, org.apache.arrow.flatbuf.Field> fieldFor;
-        if (table.hasAttribute(Table.BARRAGE_SCHEMA_ATTRIBUTE)) {
-            fieldFor = new HashMap<>();
-            // Extract the target schema from the table attributes
-            final Schema targetSchema = (Schema) table.getAttribute(Table.BARRAGE_SCHEMA_ATTRIBUTE);
-            // noinspection DataFlowIssue
-            // Iterate over each field, serialize it to a FlatBuffer, and store it in the map
-            targetSchema.getFields().forEach(f -> {
-                final FlatBufferBuilder fbb = new FlatBufferBuilder();
-                final int offset = f.getField(fbb);
-                fbb.finish(offset);
-                fieldFor.put(f.getName(), org.apache.arrow.flatbuf.Field.getRootAsField(fbb.dataBuffer()));
-            });
-        } else {
-            // No custom schema provided, keep the map null to rely on default field generation
-            fieldFor = null;
-        }
+        final Schema effectiveSchema = schemaForTable(options, table);
+        final Map<String, org.apache.arrow.flatbuf.Field> fieldFor = buildFlatbufFieldMap(effectiveSchema);
+        options = effectiveSnapshotOptions(options, maxBatchSizeForSchema(effectiveSchema));
 
         // noinspection unchecked
         final ChunkWriter<Chunk<Values>>[] chunkWriters = table.getDefinition().getColumns().stream()
                 .map(cd -> DefaultChunkWriterFactory.INSTANCE.newWriter(BarrageTypeInfo.make(
                         ReinterpretUtils.maybeConvertToPrimitiveDataType(cd.getDataType()),
                         cd.getComponentType(),
-                        fieldFor != null ? fieldFor.get(cd.getName()) : flatbufFieldFor(cd, Map.of()))))
+                        fieldFor.getOrDefault(cd.getName(), flatbufFieldFor(cd, Map.of())))))
                 .toArray(ChunkWriter[]::new);
 
         // otherwise snapshot the entire request and send to the client

@@ -81,6 +81,7 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
             ArrowType.ArrowTypeID.ListView,
             ArrowType.ArrowTypeID.FixedSizeList,
             ArrowType.ArrowTypeID.Map,
+            ArrowType.ArrowTypeID.RunEndEncoded,
             ArrowType.ArrowTypeID.Struct,
             ArrowType.ArrowTypeID.Union,
             ArrowType.ArrowTypeID.Null);
@@ -185,7 +186,6 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
             @NotNull final BarrageTypeInfo<Field> typeInfo,
             @NotNull final BarrageOptions options,
             final boolean isTopLevel) {
-        // TODO (deephaven/deephaven-core#6033): Run-End Support
         // TODO (deephaven/deephaven-core#6034): Dictionary Support
         // TODO (deephaven/deephaven-core#): Utf8View Support
         // TODO (deephaven/deephaven-core#): BinaryView Support
@@ -312,6 +312,20 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
 
             // noinspection unchecked
             return (ChunkReader<T>) new MapChunkReader<>(keyReader, valueReader);
+        }
+
+        if (typeId == ArrowType.ArrowTypeID.RunEndEncoded) {
+            final BarrageTypeInfo<Field> runEndsTypeInfo =
+                    BarrageUtil.getDefaultType(field.getChildren().get(0));
+            final BarrageTypeInfo<Field> valuesTypeInfo =
+                    BarrageUtil.getDefaultType(field.getChildren().get(1));
+            final ChunkReader<WritableChunk<Values>> runEndsReader =
+                    newReaderPojo(runEndsTypeInfo, options, false);
+            final ChunkReader<WritableChunk<Values>> valuesReader =
+                    newReaderPojo(valuesTypeInfo, options, false);
+            // noinspection unchecked
+            return (ChunkReader<T>) new RunEndEncodedChunkReader(
+                    runEndsReader, valuesReader, valuesTypeInfo.chunkType());
         }
 
         // TODO (DH-18679): struct support
