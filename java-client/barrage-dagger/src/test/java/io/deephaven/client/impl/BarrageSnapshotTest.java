@@ -8,6 +8,8 @@ package io.deephaven.client.impl;//
 
 import io.deephaven.engine.table.Table;
 
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.impl.InMemoryTable;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
@@ -23,6 +25,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.BitSet;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -128,6 +131,49 @@ public class BarrageSnapshotTest extends DeephavenApiServerTestBase {
             final Table result = snapshot.entireTable().get();
             assertThat(result.size()).isEqualTo(3);
             TstUtils.assertTableEquals(inMemoryTable, result);
+        }
+    }
+
+    @Test(timeout = 10000)
+    public void subscriptionSnapshotPartialTableWithExplicitAllColumnsCompletes() throws Exception {
+        final Table sourceTable = InMemoryTable.from(TestDataUtil.getTestDataNewTable());
+
+        final ExportObject<Table> export = serverSessionState.newServerSideExport(sourceTable);
+        final io.deephaven.qst.table.TableSpec tableSpec = io.deephaven.qst.table.TableSpec
+                .ticket(export.getExportId().getTicket().toByteArray());
+
+        try (final TableHandle handle = barrageSession.session().serial().execute(tableSpec)) {
+            assertThat(handle.isSuccessful()).isTrue();
+
+            final BarrageSubscription subscription = barrageSession.subscribe(handle);
+            final BitSet allColumns = new BitSet(sourceTable.numColumns());
+            allColumns.set(0, sourceTable.numColumns());
+
+            final Table result = subscription.snapshotPartialTable(null, allColumns).get(5, TimeUnit.SECONDS);
+            TstUtils.assertTableEquals(sourceTable, result);
+        }
+    }
+
+    @Test(timeout = 10000)
+    public void subscriptionPartialTableWithExplicitAllColumnsCompletes() throws Exception {
+        final Table sourceTable = InMemoryTable.from(TestDataUtil.getTestDataNewTable());
+
+        final ExportObject<Table> export = serverSessionState.newServerSideExport(sourceTable);
+        final io.deephaven.qst.table.TableSpec tableSpec = io.deephaven.qst.table.TableSpec
+                .ticket(export.getExportId().getTicket().toByteArray());
+
+        try (final TableHandle handle = barrageSession.session().serial().execute(tableSpec)) {
+            assertThat(handle.isSuccessful()).isTrue();
+
+            final BarrageSubscription subscription = barrageSession.subscribe(handle);
+            final BitSet allColumns = new BitSet(sourceTable.numColumns());
+            allColumns.set(0, sourceTable.numColumns());
+            final Table expected = sourceTable.head(2);
+
+            try (final RowSet viewport = RowSetFactory.flat(2)) {
+                final Table result = subscription.snapshotPartialTable(viewport, allColumns).get(5, TimeUnit.SECONDS);
+                TstUtils.assertTableEquals(expected, result);
+            }
         }
     }
 
