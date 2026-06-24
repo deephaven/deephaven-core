@@ -1,10 +1,7 @@
 //
 // Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
-package io.deephaven.client.impl;//
-
-// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
-//
+package io.deephaven.client.impl;
 
 import io.deephaven.engine.table.Table;
 
@@ -19,6 +16,7 @@ import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.SessionState.ExportObject;
 import io.deephaven.server.util.TestDataUtil;
 import io.grpc.ManagedChannel;
+import io.deephaven.util.SafeCloseable;
 import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.memory.RootAllocator;
 import org.junit.After;
@@ -135,7 +133,58 @@ public class BarrageSnapshotTest extends DeephavenApiServerTestBase {
     }
 
     @Test(timeout = 10000)
-    public void subscriptionSnapshotPartialTableWithExplicitAllColumnsCompletes() throws Exception {
+    public void subscribeFullViewportWithExplicitAllColumnsCompletes() throws Exception {
+        final Table sourceTable = InMemoryTable.from(TestDataUtil.getTestDataNewTable());
+
+        final ExportObject<Table> export = serverSessionState.newServerSideExport(sourceTable);
+        final io.deephaven.qst.table.TableSpec tableSpec = io.deephaven.qst.table.TableSpec
+                .ticket(export.getExportId().getTicket().toByteArray());
+
+        try (final TableHandle handle = barrageSession.session().serial().execute(tableSpec)) {
+            assertThat(handle.isSuccessful()).isTrue();
+
+            // @Test(timeout) runs the body on a new thread; open the execution context so BarrageTable
+            // picks up a refreshing-capable UpdateGraph instead of PoisonedUpdateGraph.
+            try (final SafeCloseable ignored = getExecutionContext().open()) {
+                final BarrageSubscription subscription = barrageSession.subscribe(handle);
+                final BitSet allColumns = new BitSet(sourceTable.numColumns());
+                allColumns.set(0, sourceTable.numColumns());
+
+                final Table result = subscription.partialTable(null, allColumns).get(5, TimeUnit.SECONDS);
+                TstUtils.assertTableEquals(sourceTable, result);
+            }
+        }
+    }
+
+    @Test(timeout = 10000)
+    public void subscribePartialViewportWithExplicitAllColumnsCompletes() throws Exception {
+        final Table sourceTable = InMemoryTable.from(TestDataUtil.getTestDataNewTable());
+
+        final ExportObject<Table> export = serverSessionState.newServerSideExport(sourceTable);
+        final io.deephaven.qst.table.TableSpec tableSpec = io.deephaven.qst.table.TableSpec
+                .ticket(export.getExportId().getTicket().toByteArray());
+
+        try (final TableHandle handle = barrageSession.session().serial().execute(tableSpec)) {
+            assertThat(handle.isSuccessful()).isTrue();
+
+            // @Test(timeout) runs the body on a new thread; open the execution context so BarrageTable
+            // picks up a refreshing-capable UpdateGraph instead of PoisonedUpdateGraph.
+            try (final SafeCloseable ignored = getExecutionContext().open()) {
+                final BarrageSubscription subscription = barrageSession.subscribe(handle);
+                final BitSet allColumns = new BitSet(sourceTable.numColumns());
+                allColumns.set(0, sourceTable.numColumns());
+                final Table expected = sourceTable.head(2);
+
+                try (final RowSet viewport = RowSetFactory.flat(2)) {
+                    final Table result = subscription.partialTable(viewport, allColumns).get(5, TimeUnit.SECONDS);
+                    TstUtils.assertTableEquals(expected, result);
+                }
+            }
+        }
+    }
+
+    @Test(timeout = 10000)
+    public void snapshotPartialTableFullViewportWithExplicitAllColumnsCompletes() throws Exception {
         final Table sourceTable = InMemoryTable.from(TestDataUtil.getTestDataNewTable());
 
         final ExportObject<Table> export = serverSessionState.newServerSideExport(sourceTable);
@@ -155,7 +204,7 @@ public class BarrageSnapshotTest extends DeephavenApiServerTestBase {
     }
 
     @Test(timeout = 10000)
-    public void subscriptionPartialTableWithExplicitAllColumnsCompletes() throws Exception {
+    public void snapshotPartialTablePartialViewportWithExplicitAllColumnsCompletes() throws Exception {
         final Table sourceTable = InMemoryTable.from(TestDataUtil.getTestDataNewTable());
 
         final ExportObject<Table> export = serverSessionState.newServerSideExport(sourceTable);
