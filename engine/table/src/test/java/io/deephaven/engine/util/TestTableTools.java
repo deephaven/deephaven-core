@@ -1303,7 +1303,7 @@ public class TestTableTools {
                         systemic,
                         () -> merged.updateView("Row=ii"));
 
-        assertTrue(merged.isAddOnly());
-        assertTrue(merged.isAppendOnly());
+        assertTrue(bigTable.isAddOnly());
+        assertTrue(bigTable.isAppendOnly());
     }
 }
