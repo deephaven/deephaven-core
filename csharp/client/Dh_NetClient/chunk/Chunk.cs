@@ -13,6 +13,7 @@ global using DoubleChunk = Deephaven.Dh_NetClient.Chunk<double>;
 global using DateTimeOffsetChunk = Deephaven.Dh_NetClient.Chunk<System.DateTimeOffset>;
 global using DateOnlyChunk = Deephaven.Dh_NetClient.Chunk<System.DateOnly>;
 global using TimeOnlyChunk = Deephaven.Dh_NetClient.Chunk<System.TimeOnly>;
+global using ListChunk = Deephaven.Dh_NetClient.Chunk<System.Collections.IList>;
 
 namespace Deephaven.Dh_NetClient;
 
@@ -22,12 +23,12 @@ public abstract class Chunk(int size) {
 
 public sealed class Chunk<T> : Chunk {
   public static Chunk<T> Create(int size) {
-    return new Chunk<T>(new T[size]);
+    return new Chunk<T>(new T?[size]);
   }
 
-  public T[] Data { get; }
+  public T?[] Data { get; }
 
-  private Chunk(T[] data) : base(data.Length) {
+  private Chunk(T?[] data) : base(data.Length) {
     Data = data;
   }
 }
