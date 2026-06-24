@@ -8,11 +8,9 @@ return-annotation parsing, including chained aliases and pathological self-refer
 The ``type`` statement is a 3.12+ parser feature, so the alias definitions live in ``exec``'d strings and the whole
 suite is skipped on older interpreters.
 """
-import sys
-import typing
-import unittest
 
-import numpy as np
+import sys
+import unittest
 
 from deephaven import DHError, dtypes, empty_table
 from tests.testbase import BaseTestCase
