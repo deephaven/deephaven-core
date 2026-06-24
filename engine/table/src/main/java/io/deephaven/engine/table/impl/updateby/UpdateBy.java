@@ -727,7 +727,7 @@ public abstract class UpdateBy {
 
             // Operations with multiple column inputs like WeightedAvg/WeightedSum may have duplicate source indices
             // (when the value and weight columns are the same, e.g.). This isn't an error, but will break our caching
-            // strategy if we don't filter for duplicates,
+            // strategy if we don't filter for duplicates.
             final int[] uniqueSrcIndices = IntStream.of(srcIndices).distinct().toArray();
 
             jobScheduler.iterateParallel(executionContext,
