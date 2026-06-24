@@ -12,7 +12,7 @@ internal abstract class ColumnBuilder {
   /// Makes a ColumnBuilder&lt;T&gt; for a given type T
   /// Supported types are bool, char, sbyte, short, int, long, float, double, string,
   /// DateTimeOffset, DateOnly, TimeOnly, their nullable counterparts, and lists of those
-  /// types (that is, container types implementing IReadOnlyList of a supported type).
+  /// types (that is, container types implementing IList of a supported type).
   /// </summary>
   /// <typeparam name="T">The specified type</typeparam>
   /// <param name="callerProvidedBuilder"></param>
