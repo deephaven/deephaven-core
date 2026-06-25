@@ -119,10 +119,10 @@ public abstract class ForceReadUtility {
     /**
      * The maximum number of columns to consider at any given time. Setting this to {@code 1} means that each column
      * will be fully read before moving on to the next column; setting this to {@link Integer#MAX_VALUE} means that all
-     * columns will be read together (that is, the {@link Table#getRowSet() row set} will be iterated through exactly
-     * once). By default, is {@value #DEFAULT_MAX_COLUMNS}.
+     * columns will be read together (that is, {@code rowSet} in {@link #of(ForceReadUtility, RowSet)} will be iterated
+     * through exactly once). By default, is {@value #DEFAULT_MAX_COLUMNS}.
      *
-     * @return the column consideration
+     * @return the maximum number of columns to consider at any given time
      */
     @Value.Default
     public int maxColumns() {
