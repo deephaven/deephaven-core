@@ -29,11 +29,11 @@ from deephaven_internal.plugin._authorization import get_transformer
 __all__ = ["transform"]
 
 
-def transform(obj: Optional[Any]) -> Optional[Any]:
+def transform(obj: Any) -> Any:
     """Apply the server's authorization transform to ``obj`` for the current user's context.
 
     Args:
-        obj: the object to transform (typically a table or other exportable object). ``None`` is returned unchanged.
+        obj (Any): the object to transform (typically a table or other exportable object). ``None`` is returned unchanged.
 
     Returns:
         the transformed object (which may be the same object, or a derived/filtered one), or ``None`` if the current

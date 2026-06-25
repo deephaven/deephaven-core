@@ -11,7 +11,7 @@ Java plugin-registration bridge at server startup (see ``register.initialize_all
 
 from typing import Any, Optional
 
-_j_transformer: Optional[Any] = None
+_j_transformer: Any = None
 
 
 def set_transformer(j_transformer: Any) -> None:
