@@ -29,7 +29,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class BarrageUtilTest extends RefreshingTableTestCase {
 
     public void testMergedTableKeyColumnsGetREE() {
-        // newTable produces array-backed sources; only the key columns get REE via attribute detection
+        // Tests inferEncodings directly: merged key columns always get REE
         final Table table = newTable(
                 stringCol("Symbol", "AAPL", "AAPL", "MSFT"),
                 intCol("Exchange", 1, 1, 2),
@@ -39,12 +39,12 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
                         Table.MERGED_TABLE_ATTRIBUTE, Boolean.TRUE,
                         Table.KEY_COLUMNS_ATTRIBUTE, "Symbol,Exchange"));
 
-        final Schema schema = BarrageUtil.schemaFromTable(table);
+        final Map<String, ColumnEncoding> encodings = BarrageUtil.inferEncodings(table);
 
-        assertFieldIsREE(schema, "Symbol");
-        assertFieldIsREE(schema, "Exchange");
-        assertFieldIsNotREE(schema, "Price");
-        assertFieldIsNotREE(schema, "Size");
+        assertThat(encodings.get("Symbol")).isEqualTo(ColumnEncoding.RUN_END_ENCODED_INT32);
+        assertThat(encodings.get("Exchange")).isEqualTo(ColumnEncoding.RUN_END_ENCODED_INT32);
+        assertThat(encodings).doesNotContainKey("Price");
+        assertThat(encodings).doesNotContainKey("Size");
     }
 
     public void testNonMergedTableNoAutoREE() {
@@ -111,7 +111,8 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
     }
 
     public void testREEFieldStructureInt32RunEndsForLargeBatch() {
-        // REE fields always use Int32 run_ends regardless of batch size; verify via makeTableSchemaPayload.
+        // Verify the flatbuf IPC path: Int32 run_ends regardless of batch size.
+        // Uses explicit encodings to bypass the global REE_AUTO_DETECT_ENABLED flag.
         final Table table = newTable(
                 stringCol("Symbol", "AAPL", "AAPL"))
                 .withAttributes(Map.of(
@@ -122,9 +123,11 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
                 .batchSize(Short.MAX_VALUE + 1)
                 .build();
 
-        // schemaBytes handles IPC framing; makeTableSchemaPayload provides the payload.
+        final Map<String, ColumnEncoding> encodings = Map.of("Symbol", ColumnEncoding.RUN_END_ENCODED_INT32);
+        final Schema schema = BarrageUtil.makeSchema(
+                options, table.getDefinition(), table.getAttributes(), table.isFlat(), encodings);
         final com.google.protobuf.ByteString schemaBytes =
-                BarrageUtil.schemaBytes(b -> BarrageUtil.makeTableSchemaPayload(b, options, table));
+                BarrageUtil.schemaBytes(schema::getSchema);
         final org.apache.arrow.flatbuf.Schema flatSchema =
                 SchemaHelper.flatbufSchema(schemaBytes.asReadOnlyByteBuffer());
         final Field symbolField = Field.convertField(flatSchema.fields(0));
@@ -137,6 +140,7 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
     }
 
     public void testREEFieldStructure() {
+        // Uses explicit encodings to bypass the global REE_AUTO_DETECT_ENABLED flag.
         final Table table = newTable(
                 stringCol("Symbol", "AAPL", "AAPL"),
                 intCol("Exchange", 1, 1))
@@ -144,7 +148,10 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
                         Table.MERGED_TABLE_ATTRIBUTE, Boolean.TRUE,
                         Table.KEY_COLUMNS_ATTRIBUTE, "Symbol"));
 
-        final Schema schema = BarrageUtil.schemaFromTable(table);
+        final Map<String, ColumnEncoding> encodings = Map.of("Symbol", ColumnEncoding.RUN_END_ENCODED_INT32);
+        final Schema schema = BarrageUtil.makeSchema(
+                BarrageUtil.DEFAULT_SNAPSHOT_OPTIONS, table.getDefinition(), table.getAttributes(),
+                table.isFlat(), encodings);
         final Field symbolField = schema.findField("Symbol");
 
         assertThat(symbolField.getType().getTypeID()).isEqualTo(ArrowType.ArrowTypeID.RunEndEncoded);
@@ -162,7 +169,7 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
     }
 
     public void testConvertArrowSchemaRoundtrip() {
-        // Build a merged table so Symbol and Exchange get REE auto-detected, while Price and Size stay plain.
+        // Uses explicit encodings to bypass the global REE_AUTO_DETECT_ENABLED flag.
         final Table table = newTable(
                 stringCol("Symbol", "AAPL", "AAPL", "MSFT"),
                 intCol("Exchange", 1, 1, 2),
@@ -172,7 +179,12 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
                         Table.MERGED_TABLE_ATTRIBUTE, Boolean.TRUE,
                         Table.KEY_COLUMNS_ATTRIBUTE, "Symbol,Exchange"));
 
-        final Schema schema = BarrageUtil.schemaFromTable(table);
+        final Map<String, ColumnEncoding> encodings = Map.of(
+                "Symbol", ColumnEncoding.RUN_END_ENCODED_INT32,
+                "Exchange", ColumnEncoding.RUN_END_ENCODED_INT32);
+        final Schema schema = BarrageUtil.makeSchema(
+                BarrageUtil.DEFAULT_SNAPSHOT_OPTIONS, table.getDefinition(), table.getAttributes(),
+                table.isFlat(), encodings);
 
         // Confirm the schema has REE on the key columns before converting back.
         assertFieldIsREE(schema, "Symbol");
@@ -192,8 +204,7 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
     }
 
     public void testSamplingDetectsRepetitiveColumn() {
-        // Array-backed columns (not SingleValueColumnSource) with all identical values should be
-        // auto-detected via sampling.
+        // Calls sampleColumnsForREE directly to validate sampling logic regardless of the enable flag.
         final int N = 100;
         final String[] symbols = new String[N];
         Arrays.fill(symbols, "AAPL");
@@ -201,14 +212,15 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
         Arrays.fill(prices, 42);
         final Table table = newTable(stringCol("Symbol", symbols), intCol("Price", prices));
 
-        final Map<String, ColumnEncoding> detected = BarrageUtil.inferEncodings(table);
+        final Map<String, ColumnEncoding> detected = new java.util.HashMap<>();
+        BarrageUtil.sampleColumnsForREE(table, detected, false);
 
         assertThat(detected.get("Symbol")).isEqualTo(ColumnEncoding.RUN_END_ENCODED_INT32);
         assertThat(detected.get("Price")).isEqualTo(ColumnEncoding.RUN_END_ENCODED_INT32);
     }
 
     public void testSamplingSkipsDistinctColumn() {
-        // All-distinct values produce a run ratio of 1.0, which is above the threshold — no REE.
+        // All-distinct values produce a run ratio of 1.0, above the threshold — no REE.
         final int N = 100;
         final int[] x = new int[N];
         for (int i = 0; i < N; i++) {
@@ -216,7 +228,8 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
         }
         final Table table = newTable(intCol("X", x));
 
-        final Map<String, ColumnEncoding> detected = BarrageUtil.inferEncodings(table);
+        final Map<String, ColumnEncoding> detected = new java.util.HashMap<>();
+        BarrageUtil.sampleColumnsForREE(table, detected, false);
 
         assertThat(detected).doesNotContainKey("X");
     }
@@ -232,14 +245,15 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
         }
         final Table table = newTable(intCol("Y", y), intCol("X", x));
 
-        final Map<String, ColumnEncoding> detected = BarrageUtil.inferEncodings(table);
+        final Map<String, ColumnEncoding> detected = new java.util.HashMap<>();
+        BarrageUtil.sampleColumnsForREE(table, detected, false);
 
         assertThat(detected.get("Y")).isEqualTo(ColumnEncoding.RUN_END_ENCODED_INT32);
         assertThat(detected).doesNotContainKey("X");
     }
 
     public void testSamplingSkippedForSmallTable() {
-        // Tables with fewer than REE_MIN_SAMPLE_SIZE rows are not sampled.
+        // Tables with fewer than REE_MIN_SAMPLE_SIZE rows return early without sampling.
         final int N = BarrageUtil.REE_MIN_SAMPLE_SIZE - 1;
         final int[] y = new int[N];
         for (int i = 0; i < N; i++) {
@@ -247,9 +261,49 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
         }
         final Table table = newTable(intCol("Y", y));
 
-        final Map<String, ColumnEncoding> detected = BarrageUtil.inferEncodings(table);
+        final Map<String, ColumnEncoding> detected = new java.util.HashMap<>();
+        BarrageUtil.sampleColumnsForREE(table, detected, false);
 
         assertThat(detected).doesNotContainKey("Y");
+    }
+
+    public void testExplicitReeSchemaHonoredWhenGlobalDisabled() {
+        // Even when REE_AUTO_DETECT_ENABLED is false, a user-supplied BARRAGE_SCHEMA_ATTRIBUTE with
+        // REE columns must be passed through verbatim.
+        //
+        // Build the REE schema the exhaustive way per barrage-schema.md: extract the base schema,
+        // reuse the original field's FieldType so deephaven:type metadata is preserved, then
+        // construct the run_ends / values children and the REE parent field manually.
+        final Table base = newTable(
+                stringCol("Symbol", "AAPL", "MSFT"),
+                intCol("Exchange", 1, 2));
+
+        final Schema baseSchema = BarrageUtil.schemaFromTable(base);
+        final java.util.List<Field> fields = new java.util.ArrayList<>(baseSchema.getFields());
+
+        final Field originalSymbol = baseSchema.findField("Symbol");
+        final Field runEndsField = new Field(
+                "run_ends",
+                new FieldType(false, new ArrowType.Int(32, true), null, null),
+                Collections.emptyList());
+        final Field valuesField = new Field(
+                "values",
+                originalSymbol.getFieldType(),
+                originalSymbol.getChildren());
+        final Field reeSymbolField = new Field(
+                "Symbol",
+                new FieldType(true, new ArrowType.RunEndEncoded(), null, null),
+                List.of(runEndsField, valuesField));
+
+        fields.set(fields.indexOf(originalSymbol), reeSymbolField);
+        final Schema reedSchema = new Schema(fields);
+
+        final Table table = base.withAttributes(Map.of(Table.BARRAGE_SCHEMA_ATTRIBUTE, reedSchema));
+
+        final Schema schema = BarrageUtil.schemaFromTable(table);
+
+        assertFieldIsREE(schema, "Symbol");
+        assertFieldIsNotREE(schema, "Exchange");
     }
 
     private static void assertFieldIsREE(final Schema schema, final String columnName) {
