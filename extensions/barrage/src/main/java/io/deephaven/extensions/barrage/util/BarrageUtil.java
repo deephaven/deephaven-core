@@ -147,8 +147,12 @@ public class BarrageUtil {
             Configuration.getInstance().getLongForClassWithDefault(BarrageUtil.class,
                     "maxSnapshotCellCount", 1L << 24);
 
+    /** Global switch: when false, auto-inference never selects REE; user-supplied schema REE is always honored. */
+    static final boolean REE_ENCODING_ENABLED =
+            Configuration.getInstance().getBooleanWithDefault("BarrageUtil.ree.encodingEnabled", false);
+
     /** Whether to sample columns at schema-inference time to detect run patterns for REE auto-encoding. */
-    private static final boolean REE_SAMPLING_ENABLED =
+    static final boolean REE_SAMPLING_ENABLED =
             Configuration.getInstance().getBooleanWithDefault("BarrageUtil.ree.samplingEnabled", true);
 
     /** Number of rows to sample per column when estimating run ratios. */
@@ -514,11 +518,17 @@ public class BarrageUtil {
             @NotNull final Table table) {
         // When the user has supplied an explicit schema, take the encodings from it verbatim so
         // that auto-inference never overrides an explicit choice. Otherwise infer encodings from
-        // the live table data. In both cases rebuild Deephaven field metadata from the table
-        // definition so clients always receive complete type information.
-        final Map<String, ColumnEncoding> encodings = table.hasAttribute(Table.BARRAGE_SCHEMA_ATTRIBUTE)
-                ? encodingsFromSchema((Schema) table.getAttribute(Table.BARRAGE_SCHEMA_ATTRIBUTE))
-                : inferEncodings(table);
+        // the live table data only when the global REE enable is set. In both cases rebuild
+        // Deephaven field metadata from the table definition so clients always receive complete
+        // type information.
+        final Map<String, ColumnEncoding> encodings;
+        if (table.hasAttribute(Table.BARRAGE_SCHEMA_ATTRIBUTE)) {
+            encodings = encodingsFromSchema((Schema) table.getAttribute(Table.BARRAGE_SCHEMA_ATTRIBUTE));
+        } else if (REE_ENCODING_ENABLED) {
+            encodings = inferEncodings(table);
+        } else {
+            encodings = Map.of();
+        }
         return makeSchema(options, table.getDefinition(), table.getAttributes(), table.isFlat(), encodings);
     }
 
@@ -586,7 +596,7 @@ public class BarrageUtil {
         return makeSchema(options, tableDefinition, attributes, isFlat, Map.of());
     }
 
-    private static Schema makeSchema(
+    static Schema makeSchema(
             @NotNull final BarrageOptions options,
             @NotNull final TableDefinition tableDefinition,
             @NotNull final Map<String, Object> attributes,
@@ -1341,7 +1351,7 @@ public class BarrageUtil {
         return encodings;
     }
 
-    private static boolean sampleColumnsForREE(
+    static boolean sampleColumnsForREE(
             @NotNull final Table table,
             @NotNull final Map<String, ColumnEncoding> encodings,
             final boolean usePrev) {
