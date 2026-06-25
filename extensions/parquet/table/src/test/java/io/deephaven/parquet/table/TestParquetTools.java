@@ -37,6 +37,8 @@ import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.channel.SeekableChannelsProvider;
 import io.deephaven.util.channel.SeekableChannelsProviderLoader;
+import io.deephaven.util.codec.ObjectCodec;
+import io.deephaven.util.codec.ObjectDecoder;
 import io.deephaven.vector.*;
 import junit.framework.TestCase;
 import org.apache.parquet.schema.LogicalTypeAnnotation;
@@ -45,9 +47,6 @@ import org.apache.parquet.schema.PrimitiveType;
 import org.apache.parquet.schema.Types;
 import org.assertj.core.api.Assertions;
 import org.junit.*;
-
-import io.deephaven.util.codec.ObjectCodec;
-import io.deephaven.util.codec.ObjectDecoder;
 
 import java.io.File;
 import java.io.IOException;

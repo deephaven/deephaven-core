@@ -194,7 +194,7 @@ public class ParquetSchemaReader {
             }
             colDef.isArray = column.getMaxRepetitionLevel() > 0;
             if (colDef.codecType != null && !colDef.codecType.isEmpty()) {
-                colDef.codecComponentType = codecInfo.flatMap(CodecInfo::componentType).orElse(null);
+                colDef.codecComponentType = maybeMapClassName(codecInfo.flatMap(CodecInfo::componentType).orElse(null));
                 consumer.accept(colDef);
                 continue;
             }
