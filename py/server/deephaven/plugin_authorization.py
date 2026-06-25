@@ -21,7 +21,7 @@ Notes:
       behavior under an authorization provider that implements transformations.
 """
 
-from typing import Any, Optional
+from typing import Any
 
 from deephaven._wrapper import javaify, pythonify
 from deephaven_internal.plugin._authorization import get_transformer
