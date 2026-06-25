@@ -1428,6 +1428,7 @@ public class TestParquetTools {
         final String readTypeName = "long[]";
 
         // add class mappings so that we use a different codec for reading, and expect a different column-type back.
+        // NOTE that these mappings will not be removed, and may be used by other unit-tests that run in this JVM.
         // NOTE that these mappings will not be removed, and may be used by other unit-tests that run in this JVM
         ParquetSchemaReader.addClassNameMap(writeCodecName, readCodecName);
         ParquetSchemaReader.addClassNameMap(writeTypeName, readTypeName);
