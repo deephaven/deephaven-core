@@ -20,7 +20,7 @@ public class TestExecutionContext {
                 .markSystemic()
                 .newQueryScope()
                 .newQueryLibrary()
-                .setQueryCompiler(QueryCompilerImpl.create(null))
+                .setQueryCompiler(QueryCompilerImpl.createForUnitTests())
                 .setUpdateGraph(UPDATE_GRAPH)
                 .setOperationInitializer(OPERATION_INITIALIZATION)
                 .build();

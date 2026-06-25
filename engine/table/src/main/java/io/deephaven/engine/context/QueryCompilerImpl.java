@@ -50,16 +50,7 @@ import java.util.stream.Stream;
  * The compiler resolves dependencies from {@code java.class.path} and an optional additional classpath directory
  * (typically where Groovy writes its bytecode). Compiled classes are loaded in per-batch child classloaders of the
  * provided parent classloader, enabling GC of both classes and classloaders when neither the compiled Class nor this
- * compiler instance are reachable.
- *
- * <h2>Constraints</h2>
- * <ul>
- * <li>Compiled classes must not depend on other classes compiled by this or any other QueryCompiler instance.</li>
- * <li>The caller must ensure the parent classloader already contains any classes referenced by compiled formulas (e.g.,
- * Groovy-defined classes).</li>
- * <li>Each compilation request produces a single top-level class (matching {@link QueryCompilerRequest#className()})
- * which may contain static inner classes and anonymous classes.</li>
- * </ul>
+ * compiler instance are reachable. Returned classes then
  */
 public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
 
@@ -154,11 +145,14 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
      *
      * @param additionalClassPathDir optional directory to add to the compiler's classpath (e.g., groovy bytecode dir)
      */
-    public static QueryCompilerImpl create(@Nullable final File additionalClassPathDir) {
+    public static QueryCompiler create(@Nullable final File additionalClassPathDir) {
         return new QueryCompilerImpl(additionalClassPathDir, null);
     }
 
-    public static QueryCompilerImpl createForUnitTests() {
+    /**
+     * Creates a new compiler that has no extra directory to read from, suitable for unit tests.
+     */
+    public static QueryCompiler createForUnitTests() {
         return createForUnitTests(null);
     }
 
@@ -166,12 +160,10 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
         return new QueryCompilerImpl(null, classNamesForAnnotationProcessing);
     }
 
+    /** Map from SHA-256 hash of class body → future for the compiled class. Keyed by hash to avoid retaining source. */
     private final Map<String, CompletionStageFuture<Class<?>>> knownClasses = new HashMap<>();
 
-    /** Set of fully-qualified class names already assigned, for collision avoidance. */
-    private final Set<String> takenNames = new HashSet<>();
-
-    /** The context classloader captured at construction time; used as parent for per-batch classloaders. */
+    /** The context classloader captured at construction time; used as fallback parent for per-batch classloaders. */
     private final ClassLoader parentClassLoader;
 
     /** Optional additional classpath directory (e.g., where Groovy writes bytecode). */
@@ -246,11 +238,25 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
             }, requests).endl();
         }
 
+        // Compute content hashes for deduplication
+        final MessageDigest digest;
+        try {
+            digest = MessageDigest.getInstance("SHA-256");
+        } catch (NoSuchAlgorithmException e) {
+            throw new UncheckedDeephavenException("Unable to create SHA-256 hashing digest", e);
+        }
+        final String[] hashes = new String[requests.length];
+        for (int ii = 0; ii < requests.length; ++ii) {
+            hashes[ii] = ByteUtils.byteArrToHex(digest.digest(
+                    requests[ii].classBody().getBytes(StandardCharsets.UTF_8)));
+        }
+
         // noinspection unchecked
         final CompletionStageFuture<Class<?>>[] allFutures = new CompletionStageFuture[requests.length];
 
         final List<QueryCompilerRequest> newRequests = new ArrayList<>();
         final List<CompletionStageFuture.Resolver<Class<?>>> newResolvers = new ArrayList<>();
+        final List<String> newHashes = new ArrayList<>();
 
         synchronized (this) {
             for (int ii = 0; ii < requests.length; ++ii) {
@@ -258,10 +264,11 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
                 final CompletionStageFuture.Resolver<Class<?>> resolver = resolvers[ii];
 
                 CompletionStageFuture<Class<?>> future =
-                        knownClasses.putIfAbsent(request.classBody(), resolver.getFuture());
+                        knownClasses.putIfAbsent(hashes[ii], resolver.getFuture());
                 if (future == null) {
                     newRequests.add(request);
                     newResolvers.add(resolver);
+                    newHashes.add(hashes[ii]);
                     future = resolver.getFuture();
                 } else if (shouldTrace) {
                     log.trace().append("Found existing future in knownClasses for ").append(request.className())
@@ -274,14 +281,14 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
         if (!newResolvers.isEmpty()) {
             // It's my job to fulfill these futures.
             try {
-                compileHelper(newRequests, newResolvers);
+                compileHelper(newRequests, newResolvers, newHashes);
             } catch (RuntimeException e) {
                 // These failures are not applicable to a single request, so we can't just complete the future and
                 // leave the failure in the cache.
                 synchronized (this) {
                     for (int ii = 0; ii < newRequests.size(); ++ii) {
                         if (newResolvers.get(ii).completeExceptionally(e)) {
-                            knownClasses.remove(newRequests.get(ii).classBody());
+                            knownClasses.remove(newHashes.get(ii));
                         }
                     }
                 }
@@ -321,60 +328,24 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
 
     private void compileHelper(
             @NotNull final List<QueryCompilerRequest> requests,
-            @NotNull final List<CompletionStageFuture.Resolver<Class<?>>> resolvers) {
-        final MessageDigest digest;
-        try {
-            digest = MessageDigest.getInstance("SHA-256");
-        } catch (NoSuchAlgorithmException e) {
-            throw new UncheckedDeephavenException("Unable to create SHA-256 hashing digest", e);
-        }
-
-        // Assign unique FQ class names for each request
+            @NotNull final List<CompletionStageFuture.Resolver<Class<?>>> resolvers,
+            @NotNull final List<String> hashes) {
+        // Assign unique FQ class names for each request using pre-computed hashes
         final String[] fqClassNames = new String[requests.size()];
         final String[] packageNames = new String[requests.size()];
 
-        synchronized (this) {
-            for (int ii = 0; ii < requests.size(); ++ii) {
-                final QueryCompilerRequest request = requests.get(ii);
-                final String hashText = ByteUtils.byteArrToHex(digest.digest(
-                        request.classBody().getBytes(StandardCharsets.UTF_8)));
-
-                String fqClassName = null;
-                String packageName = null;
-                for (int pi = 0; pi < 128; ++pi) {
-                    final String packageNameSuffix = "c_" + hashText
-                            + (pi == 0 ? "" : ("p" + pi))
-                            + "v" + JAVA_CLASS_VERSION;
-                    packageName = request.getPackageName(packageNameSuffix);
-                    fqClassName = packageName + "." + request.className();
-                    if (!takenNames.contains(fqClassName)) {
-                        break;
-                    }
-                    fqClassName = null;
-                }
-                if (fqClassName == null) {
-                    resolvers.get(ii).completeExceptionally(new IllegalStateException(
-                            "Unable to assign unique class name for " + request.className()));
-                    continue;
-                }
-                takenNames.add(fqClassName);
-                fqClassNames[ii] = fqClassName;
-                packageNames[ii] = packageName;
-            }
+        for (int ii = 0; ii < requests.size(); ++ii) {
+            final QueryCompilerRequest request = requests.get(ii);
+            final String packageNameSuffix = "c_" + hashes.get(ii) + "v" + JAVA_CLASS_VERSION;
+            packageNames[ii] = request.getPackageName(packageNameSuffix);
+            fqClassNames[ii] = packageNames[ii] + "." + request.className();
         }
 
-        // Build compilation attempts for requests that got a valid name
+        // Build compilation attempts
         final List<CompilationRequestAttempt> attempts = new ArrayList<>();
         for (int ii = 0; ii < requests.size(); ++ii) {
-            if (fqClassNames[ii] == null) {
-                continue; // already failed
-            }
             attempts.add(new CompilationRequestAttempt(
                     requests.get(ii), packageNames[ii], fqClassNames[ii], resolvers.get(ii)));
-        }
-
-        if (attempts.isEmpty()) {
-            return;
         }
 
         // Compile and define
@@ -556,7 +527,7 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
 
         // Define compiled classes into a per-batch classloader
         final Map<String, byte[]> compiledClasses = outputFm.getCompiledClasses();
-        log.info().append("compilation produced ").append(compiledClasses.size())
+        log.trace().append("compilation produced ").append(compiledClasses.size())
                 .append(" classes, numFailures=").append(numFailures.get())
                 .append(", range=[").append(startInclusive).append(",").append(endExclusive).append(")")
                 .endl();
@@ -604,14 +575,8 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
                                 request.request.className(), request.request.classBody(), request.packageName)));
 
                 // Complete the future
-                log.info().append("Resolving ").append(request.fqClassName).endl();
+                log.trace().append("Resolving ").append(request.fqClassName).endl();
                 request.resolver.complete(clazz);
-
-                // Canonicalize the knownClasses entry
-                synchronized (this) {
-                    knownClasses.remove(identifyingFieldValue);
-                    knownClasses.put(identifyingFieldValue, request.resolver.getFuture());
-                }
             }
         } else {
             // No output at all - if there are non-failed requests, they need retry
