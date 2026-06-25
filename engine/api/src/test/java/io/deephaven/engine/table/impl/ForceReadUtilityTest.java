@@ -75,12 +75,12 @@ public class ForceReadUtilityTest {
         // [86, 99]
         // exclude CS3, read out-of-order: CS4, CS1, CS2
         // column consideration 2, we expect CS4 & CS1 to be fully read before CS2 is read
+        final RowSet rowSet = table.getRowSet().minus(RowSetFactory.fromRange(40, 59));
         final ForceReadUtility options = ForceReadUtility.builder()
                 .table(table)
                 .readSize(33)
                 .maxColumns(2)
                 .addColumnNames("CS4", "CS1", "CS2")
-                .rowSet(table.getRowSet().minus(RowSetFactory.fromRange(40, 59)))
                 .build();
 
         mockery.checking(new Expectations() {
@@ -171,7 +171,7 @@ public class ForceReadUtilityTest {
             }
         });
 
-        ForceReadUtility.of(options);
+        ForceReadUtility.of(options, rowSet);
     }
 
     @Test
@@ -182,19 +182,6 @@ public class ForceReadUtilityTest {
         } catch (IllegalStateException e) {
             assertEquals("Cannot build ForceReadUtility, some of required attributes are not set [table]",
                     e.getMessage());
-        }
-    }
-
-    @Test
-    public void badRowSet() {
-        try {
-            ForceReadUtility.builder()
-                    .table(TableTools.emptyTable(42))
-                    .rowSet(RowSetFactory.flat(100))
-                    .build();
-            fail("Expected exception");
-        } catch (IllegalArgumentException e) {
-            assertEquals("rowSet must be a subset of the table's rowSet", e.getMessage());
         }
     }
 

@@ -11,6 +11,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.iterators.ChunkedColumnIterator;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableArray;
 import org.immutables.value.Value;
@@ -65,12 +66,30 @@ public abstract class ForceReadUtility {
     }
 
     /**
-     * Force reads column data from {@link ForceReadUtility#table() table}.
+     * Force reads column data from {@link ForceReadUtility#table() table}. Equivalent to
+     * {@code of(options, options.table().getRowSet())}.
+     *
+     * <p>
+     * Callers must take an appropriate lock if necessary, see {@link UpdateGraph#checkInitiateSerialTableOperation()}.
      *
      * @param options the options
      */
     public static void of(ForceReadUtility options) {
-        options.execute();
+        of(options, options.table().getRowSet());
+    }
+
+    /**
+     * Force reads {@code rowSet} column data from {@link ForceReadUtility#table() table}. {@code rowSet} is expected to
+     * be the {@link ForceReadUtility#table() table's} row set or subset.
+     *
+     * <p>
+     * Callers must take an appropriate lock if necessary, see {@link UpdateGraph#checkInitiateSerialTableOperation()}.
+     *
+     * @param options the options
+     * @param rowSet the row set
+     */
+    public static void of(ForceReadUtility options, RowSet rowSet) {
+        options.execute(rowSet);
     }
 
     /**
@@ -79,13 +98,6 @@ public abstract class ForceReadUtility {
      * @return the table
      */
     public abstract Table table();
-
-    /**
-     * The row set to read. If unset, the {@link #table() table's} {@link Table#getRowSet() full row set} will be used.
-     *
-     * @return the row set
-     */
-    public abstract Optional<RowSet> rowSet();
 
     /**
      * The column names to read. If empty, all of {@link #table() table's} columns will be used.
@@ -107,8 +119,8 @@ public abstract class ForceReadUtility {
     /**
      * The maximum number of columns to consider at any given time. Setting this to {@code 1} means that each column
      * will be fully read before moving on to the next column; setting this to {@link Integer#MAX_VALUE} means that all
-     * columns will be read together (that is, {@link #rowSet()} will be iterated through exactly once). By default, is
-     * {@value #DEFAULT_MAX_COLUMNS}.
+     * columns will be read together (that is, the {@link Table#getRowSet() row set} will be iterated through exactly
+     * once). By default, is {@value #DEFAULT_MAX_COLUMNS}.
      *
      * @return the column consideration
      */
@@ -120,8 +132,6 @@ public abstract class ForceReadUtility {
     public interface Builder {
 
         Builder table(Table table);
-
-        Builder rowSet(RowSet rowSet);
 
         Builder addColumnNames(String element);
 
@@ -151,27 +161,14 @@ public abstract class ForceReadUtility {
     }
 
     @Value.Check
-    final void checkRowSet() {
-        final RowSet desiredRowSet = rowSet().orElse(null);
-        if (desiredRowSet == null) {
-            return;
-        }
-        final RowSet tableRowSet = table().getRowSet();
-        if (desiredRowSet == tableRowSet) {
-            return;
-        }
-        if (!desiredRowSet.subsetOf(tableRowSet)) {
-            throw new IllegalArgumentException("rowSet must be a subset of the table's rowSet");
-        }
-    }
-
-    @Value.Check
     final void checkColumns() {
         table().getDefinition().checkHasColumns(columnNames());
     }
 
-    private void execute() {
-        final RowSet rowSet = rowSet().orElseGet(table()::getRowSet);
+    private void execute(final RowSet rowSet) {
+        if (table().isRefreshing()) {
+            table().getUpdateGraph().checkInitiateSerialTableOperation();
+        }
         final ColumnSource<?>[] columnSources = columnSources();
         final int readSize = readSize();
         final int maxColumns = maxColumns();
