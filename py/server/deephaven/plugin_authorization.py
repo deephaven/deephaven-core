@@ -14,7 +14,7 @@ on its ``ObjectType`` so that the server does not additionally transform the ref
 Notes:
     * :func:`transform` consults the authorization context that is active *when it is called*. Call it on the thread
       that is rendering for the intended user (for example, inside a ``deephaven.ui`` ``@ui.component``), so that the
-      object is transformed for the viewer rather than the query owner.
+      object is transformed in the authentication context of the request rather than a context with distinct permissions.
     * The transform may produce a new derived object (e.g. an ACL-filtered table). Call it within a liveness scope that
       remains open until the object is exported.
     * In Deephaven Community the transform is the identity, so calling :func:`transform` is always safe; it only changes
