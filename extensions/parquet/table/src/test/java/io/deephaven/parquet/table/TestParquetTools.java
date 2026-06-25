@@ -1387,6 +1387,11 @@ public class TestParquetTools {
      * Verify functionality of {@link ParquetSchemaReader#addClassNameMap(String, String)}. In this test, we are
      * serializing a column as an array of integers, and "mapping" the codec and column-type so that they are read back
      * as negated longs
+     * <p>
+     * Note that this test leaves the static CLASS_NAME_MAP (in {@link ParquetSchemaReader}) in an altered state. This
+     * should not impact any other unit tests executed in the same JVM because only this particular test is using the
+     * "mapped from" classes ({@link WriteType} and {@link WriteCodec}). If the existence of those DOES alter the
+     * outcome of any other tests, it indicates a problem
      */
     @Test
     public void testClassNameMap() {
