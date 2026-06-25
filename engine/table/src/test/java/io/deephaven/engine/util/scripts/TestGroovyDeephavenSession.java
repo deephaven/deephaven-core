@@ -4,7 +4,7 @@
 package io.deephaven.engine.util.scripts;
 
 import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.context.InMemoryQueryCompiler;
+import io.deephaven.engine.context.QueryCompilerImpl;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
@@ -660,7 +660,7 @@ public class TestGroovyDeephavenSession {
 
         final ColumnHolder<String> strValues = stringCol("StrValue", "hello", "world");
         final Table source = TableTools.newTable(strValues);
-        InMemoryQueryCompiler.setLogEnabled(true);
+        QueryCompilerImpl.setLogEnabled(true);
         final Table updated = source.update("P=pred.test(StrValue)");
         assertTableEquals(TableTools.newTable(strValues, booleanCol("P", true, false)), updated);
         final Table filtered = source.where("pred.test(StrValue)");

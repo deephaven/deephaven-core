@@ -9,7 +9,6 @@ import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.configuration.DataDir;
 import io.deephaven.engine.context.util.SynchronizedJavaFileManager;
 import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
@@ -17,7 +16,6 @@ import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.table.impl.util.OperationInitializerJobScheduler;
 import io.deephaven.internal.log.LoggerFactory;
-import io.deephaven.io.log.LogEntry;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.ByteUtils;
@@ -25,31 +23,44 @@ import io.deephaven.util.CompletionStageFuture;
 import io.deephaven.util.mutable.MutableInt;
 import org.apache.commons.text.StringEscapeUtils;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import javax.tools.*;
 import java.io.*;
 import java.lang.reflect.Field;
-import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
-import java.net.URLClassLoader;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+/**
+ * A {@link QueryCompiler} implementation that compiles Java source to bytecode in memory and defines the resulting
+ * classes via {@link ClassLoader#defineClass}, avoiding filesystem writes for compilation output.
+ *
+ * <p>
+ * The compiler resolves dependencies from {@code java.class.path} and an optional additional classpath directory
+ * (typically where Groovy writes its bytecode). Compiled classes are loaded in per-batch child classloaders of the
+ * provided parent classloader, enabling GC of both classes and classloaders when neither the compiled Class nor this
+ * compiler instance are reachable.
+ *
+ * <h2>Constraints</h2>
+ * <ul>
+ * <li>Compiled classes must not depend on other classes compiled by this or any other QueryCompiler instance.</li>
+ * <li>The caller must ensure the parent classloader already contains any classes referenced by compiled formulas (e.g.,
+ * Groovy-defined classes).</li>
+ * <li>Each compilation request produces a single top-level class (matching {@link QueryCompilerRequest#className()})
+ * which may contain static inner classes and anonymous classes.</li>
+ * </ul>
+ */
 public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
 
     private static final Logger log = LoggerFactory.getLogger(QueryCompilerImpl.class);
@@ -59,18 +70,8 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
     private static final int DEFAULT_MAX_STRING_LITERAL_LENGTH = 65500;
 
     private static final String JAVA_CLASS_VERSION = System.getProperty("java.class.version").replace('.', '_');
-    private static final int MAX_CLASS_COLLISIONS = 128;
 
     private static final String IDENTIFYING_FIELD_NAME = "_CLASS_BODY_";
-
-    private static final String CODEGEN_TIMEOUT_PROP = "QueryCompiler.codegen.timeoutMs";
-    private static final long CODEGEN_TIMEOUT_MS_DEFAULT = TimeUnit.SECONDS.toMillis(10); // 10 seconds
-    private static final String CODEGEN_LOOP_DELAY_PROP = "QueryCompiler.codegen.retry.delay";
-    private static final long CODEGEN_LOOP_DELAY_MS_DEFAULT = 100;
-    private static final long CODEGEN_TIMEOUT_MS =
-            Configuration.getInstance().getLongWithDefault(CODEGEN_TIMEOUT_PROP, CODEGEN_TIMEOUT_MS_DEFAULT);
-    private static final long CODEGEN_LOOP_DELAY_MS =
-            Configuration.getInstance().getLongWithDefault(CODEGEN_LOOP_DELAY_PROP, CODEGEN_LOOP_DELAY_MS_DEFAULT);
 
     private static boolean logEnabled = Configuration.getInstance().getBoolean("QueryCompiler.logEnabledDefault");
 
@@ -147,56 +148,45 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
     public static final String FORMULA_CLASS_PREFIX = "io.deephaven.temp";
     public static final String DYNAMIC_CLASS_PREFIX = "io.deephaven.dynamic";
 
-    public static QueryCompilerImpl create(File cacheDirectory, ClassLoader classLoader) {
-        return new QueryCompilerImpl(cacheDirectory, classLoader, true, null);
+    /**
+     * Creates a new QueryCompilerImpl. Uses the current thread's context classloader as the parent for per-batch
+     * classloaders (as required by {@link QueryCompiler}'s contract).
+     *
+     * @param additionalClassPathDir optional directory to add to the compiler's classpath (e.g., groovy bytecode dir)
+     */
+    public static QueryCompilerImpl create(@Nullable final File additionalClassPathDir) {
+        return new QueryCompilerImpl(additionalClassPathDir, null);
     }
 
-    static QueryCompilerImpl createForUnitTests() {
+    public static QueryCompilerImpl createForUnitTests() {
         return createForUnitTests(null);
     }
 
     static QueryCompilerImpl createForUnitTests(final List<String> classNamesForAnnotationProcessing) {
-        final Path queryCompilerDir = DataDir.get()
-                .resolve("io.deephaven.engine.context.QueryCompiler.createForUnitTests");
-        return new QueryCompilerImpl(queryCompilerDir.toFile(), QueryCompilerImpl.class.getClassLoader(), false,
-                classNamesForAnnotationProcessing);
+        return new QueryCompilerImpl(null, classNamesForAnnotationProcessing);
     }
 
     private final Map<String, CompletionStageFuture<Class<?>>> knownClasses = new HashMap<>();
 
-    private final String[] dynamicPatterns = new String[] {DYNAMIC_CLASS_PREFIX, FORMULA_CLASS_PREFIX};
+    /** Set of fully-qualified class names already assigned, for collision avoidance. */
+    private final Set<String> takenNames = new HashSet<>();
 
-    private final File classDestination;
-    private final Set<File> additionalClassLocations;
-    private final WritableURLClassLoader ucl;
+    /** The context classloader captured at construction time; used as parent for per-batch classloaders. */
+    private final ClassLoader parentClassLoader;
+
+    /** Optional additional classpath directory (e.g., where Groovy writes bytecode). */
+    @Nullable
+    private final File additionalClassPathDir;
+
     // This is for test use only, specifying a non-null list causes an error without a specific source to be generated.
     private final List<String> classNamesForAnnotationProcessing;
 
     private QueryCompilerImpl(
-            @NotNull final File classDestination,
-            @NotNull final ClassLoader parentClassLoader,
-            boolean classDestinationIsAlsoClassSource,
+            @Nullable final File additionalClassPathDir,
             final List<String> classNamesForAnnotationProcessing) {
         ensureJavaCompiler();
-
-        this.classDestination = classDestination;
-        ensureDirectories(this.classDestination, () -> "Failed to create missing class destination directory " +
-                classDestination.getAbsolutePath());
-        additionalClassLocations = new LinkedHashSet<>();
-
-        URL[] urls = new URL[1];
-        try {
-            urls[0] = (classDestination.toURI().toURL());
-        } catch (MalformedURLException e) {
-            throw new UncheckedDeephavenException(e);
-        }
-        this.ucl = new WritableURLClassLoader(urls, parentClassLoader);
-        log.trace().append("Class destination is ").append(classDestination.toString()).endl();
-
-        if (classDestinationIsAlsoClassSource) {
-            addClassSource(classDestination);
-        }
-
+        this.additionalClassPathDir = additionalClassPathDir;
+        this.parentClassLoader = Thread.currentThread().getContextClassLoader();
         this.classNamesForAnnotationProcessing = classNamesForAnnotationProcessing;
 
         if (log.isTraceEnabled()) {
@@ -207,7 +197,8 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
 
     @Override
     public LogOutput append(LogOutput logOutput) {
-        return logOutput.append("QueryCompiler{classDestination=").append(classDestination.getAbsolutePath())
+        return logOutput.append("QueryCompilerImpl{additionalClassPathDir=")
+                .append(additionalClassPathDir == null ? "null" : additionalClassPathDir.getAbsolutePath())
                 .append("}");
     }
 
@@ -226,78 +217,6 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
         boolean original = QueryCompilerImpl.logEnabled;
         QueryCompilerImpl.logEnabled = logEnabled;
         return original;
-    }
-
-    /*
-     * NB: This is (obviously) not thread safe if code tries to write the same className to the same
-     * destinationDirectory from multiple threads. Seeing as we don't currently have this use case, leaving
-     * synchronization as an external concern.
-     */
-    public static void writeClass(final File destinationDirectory, final String className, final byte[] data)
-            throws IOException {
-        writeClass(destinationDirectory, className, data, null);
-    }
-
-    /*
-     * NB: This is (obviously) not thread safe if code tries to write the same className to the same
-     * destinationDirectory from multiple threads. Seeing as we don't currently have this use case, leaving
-     * synchronization as an external concern.
-     */
-    public static void writeClass(final File destinationDirectory, final String className, final byte[] data,
-            final String message) throws IOException {
-        final File destinationFile = new File(destinationDirectory,
-                className.replace('.', File.separatorChar) + JavaFileObject.Kind.CLASS.extension);
-
-        final boolean shouldTrace = shouldTrace(className);
-
-        if (destinationFile.exists()) {
-            if (shouldTrace) {
-                log.trace().append("Destination class file already exists ").append(destinationFile.toString()).endl();
-            }
-
-            final byte[] existingBytes = Files.readAllBytes(destinationFile.toPath());
-            if (Arrays.equals(existingBytes, data)) {
-                if (message == null) {
-                    log.info().append("Ignoring pushed class ").append(className)
-                            .append(" because it already exists in this context!").endl();
-                } else {
-                    log.info().append("Ignoring pushed class ").append(className).append(message)
-                            .append(" because it already exists in this context!").endl();
-                }
-                return;
-            } else {
-                if (message == null) {
-                    log.info().append("Pushed class ").append(className)
-                            .append(" already exists in this context, but has changed!").endl();
-                } else {
-                    log.info().append("Pushed class ").append(className).append(message)
-                            .append(" already exists in this context, but has changed!").endl();
-                }
-                if (!destinationFile.delete()) {
-                    throw new IOException("Could not delete existing class file: " + destinationFile);
-                }
-            }
-        } else if (shouldTrace) {
-            log.trace().append("Destination class file does not already exist ").append(destinationFile.toString())
-                    .endl();
-        }
-
-        final File parentDir = destinationFile.getParentFile();
-        ensureDirectories(parentDir,
-                () -> "Unable to create missing destination directory " + parentDir.getAbsolutePath());
-        if (!destinationFile.createNewFile()) {
-            throw new UncheckedDeephavenException(
-                    "Unable to create destination file " + destinationFile.getAbsolutePath());
-        }
-        final ByteArrayOutputStream byteOutStream = new ByteArrayOutputStream(data.length);
-        byteOutStream.write(data, 0, data.length);
-        final FileOutputStream fileOutStream = new FileOutputStream(destinationFile);
-        byteOutStream.writeTo(fileOutStream);
-        fileOutStream.close();
-
-        if (shouldTrace) {
-            log.trace().append("Wrote destination class file ").append(destinationFile.toString()).endl();
-        }
     }
 
     @Override
@@ -372,7 +291,21 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
 
         for (int ii = 0; ii < requests.length; ++ii) {
             try {
-                resolvers[ii].complete(allFutures[ii].get());
+                final CompletionStageFuture<Class<?>> future = allFutures[ii];
+                // TODO do we want a timeout here, knowing that this might leave other bad state?
+                resolvers[ii].complete(future.get(10, TimeUnit.SECONDS));
+            } catch (TimeoutException err) {
+                final String msg = "Timed out (10s) waiting for class compilation"
+                        + " request[" + ii + "] className=" + requests[ii].className()
+                        + " future=" + allFutures[ii]
+                        + " isDone=" + allFutures[ii].isDone();
+                log.error().append(msg).endl();
+                // Fail all remaining resolvers and throw immediately
+                final UncheckedDeephavenException timeout = new UncheckedDeephavenException(msg);
+                for (int jj = ii; jj < requests.length; ++jj) {
+                    resolvers[jj].completeExceptionally(timeout);
+                }
+                throw timeout;
             } catch (ExecutionException err) {
                 resolvers[ii].completeExceptionally(err.getCause());
             } catch (InterruptedException err) {
@@ -386,242 +319,6 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
         }
     }
 
-    private static void ensureDirectories(final File file, final Supplier<String> runtimeErrMsg) {
-        // File.mkdirs() checks for existence on entry, in which case it returns false.
-        // It may also return false on a failure to create.
-        // Also note, two separate threads or JVMs may be running this code in parallel. It's possible that we could
-        // lose the race
-        // (and therefore mkdirs() would return false), but still get the directory we need (and therefore exists()
-        // would return true)
-        if (!file.mkdirs() && !file.isDirectory()) {
-            throw new UncheckedDeephavenException(runtimeErrMsg.get());
-        }
-    }
-
-    private ClassLoader getClassLoaderForFormula(final Map<String, Class<?>> parameterClasses) {
-        return new URLClassLoader(ucl.getURLs(), ucl) {
-            // Once we find a class that is missing, we should not attempt to load it again,
-            // otherwise we can end up with a StackOverflow Exception
-            final HashSet<String> missingClasses = new HashSet<>();
-
-            @Override
-            protected Class<?> findClass(String name) throws ClassNotFoundException {
-                final boolean shouldTrace = shouldTrace(name);
-
-                // If we have a parameter that uses this class, return it
-                final Class<?> paramClass = parameterClasses.get(name);
-                if (paramClass != null) {
-                    if (shouldTrace) {
-                        log.trace().append("findClass(").append(name).append("): matched parameter class").endl();
-                    }
-                    return paramClass;
-                }
-
-                // Unless we are looking for a formula or Groovy class, we should use the default behavior
-                if (!isFormulaClass(name)) {
-                    if (shouldTrace) {
-                        log.trace().append("findClass(").append(name)
-                                .append("): not a formula class, delegating to super.findClass").endl();
-                    }
-                    return super.findClass(name);
-                }
-
-                // if it is a groovy class, always try to use the instance in the shell
-                if (name.startsWith(DYNAMIC_CLASS_PREFIX)) {
-                    try {
-                        final Class<?> dynamicResult = ucl.getParent().loadClass(name);
-                        if (shouldTrace) {
-                            log.trace().append("findClass(").append(name)
-                                    .append("): loaded dynamic class from parent of WritableURLClassLoader").endl();
-                        }
-                        return dynamicResult;
-                    } catch (final ClassNotFoundException ignored) {
-                        if (shouldTrace) {
-                            log.trace().append("findClass(").append(name)
-                                    .append("): dynamic class not found in parent of WritableURLClassLoader,"
-                                            + " falling through")
-                                    .endl();
-                        }
-                        // we'll try to load it otherwise
-                    }
-                }
-
-                // We've already not found this class, so we should not try to search again
-                if (missingClasses.contains(name)) {
-                    if (shouldTrace) {
-                        log.trace().append("findClass(").append(name)
-                                .append("): previously cached as missing, delegating to super.findClass").endl();
-                    }
-                    return super.findClass(name);
-                }
-
-                final byte[] bytes;
-                try {
-                    bytes = loadClassData(name);
-                } catch (IOException ioe) {
-                    if (shouldTrace) {
-                        log.trace().append("findClass(").append(name)
-                                .append("): loadClassData failed (").append(ioe.getMessage())
-                                .append("), caching as missing and delegating to super.loadClass").endl();
-                    }
-                    missingClasses.add(name);
-                    return super.loadClass(name);
-                }
-                if (shouldTrace) {
-                    log.trace().append("findClass(").append(name).append("): defining class from ")
-                            .append(bytes.length).append(" bytes").endl();
-                }
-                return defineClass(name, bytes, 0, bytes.length);
-            }
-
-            @SuppressWarnings("BooleanMethodIsAlwaysInverted")
-            private boolean isFormulaClass(String name) {
-                return Arrays.stream(dynamicPatterns).anyMatch(name::startsWith);
-            }
-
-            @Override
-            public Class<?> loadClass(String name) throws ClassNotFoundException {
-                if (!isFormulaClass(name)) {
-                    return super.loadClass(name);
-                }
-                return findClass(name);
-            }
-
-            private byte[] loadClassData(String name) throws IOException {
-                final boolean shouldTrace = shouldTrace(name);
-
-                final File destFile = new File(classDestination,
-                        name.replace('.', File.separatorChar) + JavaFileObject.Kind.CLASS.extension);
-                if (destFile.exists()) {
-                    if (shouldTrace) {
-                        log.trace().append("loadClassData(").append(name).append("): found at ")
-                                .append(destFile.toString()).endl();
-                    }
-                    return Files.readAllBytes(destFile.toPath());
-                }
-                if (shouldTrace) {
-                    log.trace().append("loadClassData(").append(name).append("): not present at ")
-                            .append(destFile.toString()).endl();
-                }
-
-                for (File location : additionalClassLocations) {
-                    final File checkFile = new File(location,
-                            name.replace('.', File.separatorChar) + JavaFileObject.Kind.CLASS.extension);
-                    if (checkFile.exists()) {
-                        if (shouldTrace) {
-                            log.trace().append("loadClassData(").append(name).append("): found at ")
-                                    .append(checkFile.toString()).endl();
-                        }
-                        return Files.readAllBytes(checkFile.toPath());
-                    }
-                    if (shouldTrace) {
-                        log.trace().append("loadClassData(").append(name).append("): not present at ")
-                                .append(checkFile.toString()).endl();
-                    }
-                }
-
-                if (shouldTrace) {
-                    log.trace().append("loadClassData(").append(name)
-                            .append("): not found in any class location").endl();
-                }
-                throw new FileNotFoundException(name);
-            }
-        };
-    }
-
-    private static class WritableURLClassLoader extends URLClassLoader {
-        private WritableURLClassLoader(URL[] urls, ClassLoader parent) {
-            super(urls, parent);
-        }
-
-        @Override
-        protected synchronized Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
-            final boolean shouldTrace = shouldTrace(name);
-            final int loaderId = System.identityHashCode(this);
-
-            Class<?> clazz = findLoadedClass(name);
-            if (clazz != null) {
-                if (shouldTrace) {
-                    log.trace().append("WritableURLClassLoader@").append(loaderId)
-                            .append(".loadClass(").append(name).append(") returned from findLoadedClass").endl();
-                }
-                return clazz;
-            }
-
-            try {
-                clazz = findClass(name);
-                if (shouldTrace) {
-                    log.trace().append("WritableURLClassLoader@").append(loaderId)
-                            .append(".loadClass(").append(name).append(") returned from findClass").endl();
-                }
-            } catch (ClassNotFoundException e) {
-                if (getParent() != null) {
-                    if (shouldTrace) {
-                        log.trace().append("WritableURLClassLoader@").append(loaderId)
-                                .append(".loadClass(").append(name).append(") delegating to parent").endl();
-                    }
-                    clazz = getParent().loadClass(name);
-                    if (shouldTrace) {
-                        log.trace().append("WritableURLClassLoader@").append(loaderId)
-                                .append(".loadClass(").append(name).append(") parent returned class").endl();
-                    }
-                } else {
-                    if (shouldTrace) {
-                        log.trace().append("WritableURLClassLoader@").append(loaderId)
-                                .append(".loadClass(").append(name)
-                                .append(") not found by findClass and no parent loader; returning null").endl();
-                    }
-                }
-            }
-
-            if (resolve) {
-                resolveClass(clazz);
-            }
-            return clazz;
-        }
-
-        @Override
-        public synchronized void addURL(URL url) {
-            super.addURL(url);
-        }
-    }
-
-    private void addClassSource(File classSourceDirectory) {
-        synchronized (additionalClassLocations) {
-            if (additionalClassLocations.contains(classSourceDirectory)) {
-                return;
-            }
-            additionalClassLocations.add(classSourceDirectory);
-        }
-        try {
-            ucl.addURL(classSourceDirectory.toURI().toURL());
-        } catch (MalformedURLException e) {
-            throw new UncheckedDeephavenException(e);
-        }
-    }
-
-    private File getClassDestination() {
-        return classDestination;
-    }
-
-    private String getClassPath() {
-        StringBuilder sb = new StringBuilder();
-        sb.append(classDestination.getAbsolutePath());
-        synchronized (additionalClassLocations) {
-            for (File classLoc : additionalClassLocations) {
-                sb.append(File.pathSeparatorChar).append(classLoc.getAbsolutePath());
-            }
-        }
-        return sb.toString();
-    }
-
-    private static class CompilationState {
-        int nextProbeIndex;
-        boolean complete;
-        String packageName;
-        String fqClassName;
-    }
-
     private void compileHelper(
             @NotNull final List<QueryCompilerRequest> requests,
             @NotNull final List<CompletionStageFuture.Resolver<Class<?>>> resolvers) {
@@ -632,422 +329,70 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
             throw new UncheckedDeephavenException("Unable to create SHA-256 hashing digest", e);
         }
 
-        final String[] basicHashText = new String[requests.size()];
-        for (int ii = 0; ii < requests.size(); ++ii) {
-            basicHashText[ii] = ByteUtils.byteArrToHex(digest.digest(
-                    requests.get(ii).classBody().getBytes(StandardCharsets.UTF_8)));
-        }
-
-        int numComplete = 0;
-        final CompilationState[] states = new CompilationState[requests.size()];
-        for (int ii = 0; ii < requests.size(); ++ii) {
-            states[ii] = new CompilationState();
-        }
-
-        /*
-         * @formatter:off
-         * 1. try to resolve without compiling; retain next hash to try
-         * 2. compile all remaining with a single compilation task
-         * 3. goto step 1 if any are unresolved
-         * @formatter:on
-         */
-
-        while (numComplete < requests.size()) {
-            for (int ii = 0; ii < requests.size(); ++ii) {
-                final CompilationState state = states[ii];
-                if (state.complete) {
-                    continue;
-                }
-
-                next_probe: while (true) {
-                    final int pi = state.nextProbeIndex++;
-                    final String packageNameSuffix = "c_" + basicHashText[ii]
-                            + (pi == 0 ? "" : ("p" + pi))
-                            + "v" + JAVA_CLASS_VERSION;
-
-                    final QueryCompilerRequest request = requests.get(ii);
-                    if (pi >= MAX_CLASS_COLLISIONS) {
-                        Exception err = new IllegalStateException("Found too many collisions for package name root "
-                                + request.packageNameRoot() + ", class name=" + request.className() + ", class body "
-                                + "hash=" + basicHashText[ii] + " - contact Deephaven support!");
-                        resolvers.get(ii).completeExceptionally(err);
-                        state.complete = true;
-                        ++numComplete;
-                        break;
-                    }
-
-                    state.packageName = request.getPackageName(packageNameSuffix);
-                    state.fqClassName = state.packageName + "." + request.className();
-
-                    for (int jj = 0; jj < ii; ++jj) {
-                        if (states[jj].fqClassName.equals(state.fqClassName)) {
-                            // collision within batch
-                            continue next_probe;
-                        }
-                    }
-
-                    // Ask the classloader to load an existing class with this name. This might:
-                    // 1. Fail to find a class (returning null)
-                    // 2. Find a class whose body has the formula we are looking for
-                    // 3. Find a class whose body has a different formula (hash collision)
-                    Class<?> result = tryLoadClassByFqName(state.fqClassName, request.parameterClasses());
-                    if (result == null) {
-                        break; // we'll try to compile it
-                    }
-
-                    final boolean shouldTrace = shouldTrace(state.fqClassName);
-                    if (completeIfResultMatchesQueryCompilerRequest(state.packageName, request, resolvers.get(ii),
-                            result)) {
-                        if (shouldTrace) {
-                            log.trace().append("Successfully found existing class for ").append(state.fqClassName)
-                                    .endl();
-                        }
-                        state.complete = true;
-                        ++numComplete;
-                        break;
-                    } else if (shouldTrace) {
-                        log.trace().append("Existing class did not match for ").append(state.fqClassName).endl();
-                    }
-                }
-            }
-
-            if (numComplete == requests.size()) {
-                return;
-            }
-
-            // Couldn't resolve at least one of the requests, so try a round of compilation.
-            final List<CompilationRequestAttempt> compilationRequestAttempts = new ArrayList<>();
-            for (int ii = 0; ii < requests.size(); ++ii) {
-                final CompilationState state = states[ii];
-                if (!state.complete) {
-                    final QueryCompilerRequest request = requests.get(ii);
-                    compilationRequestAttempts.add(new CompilationRequestAttempt(
-                            request,
-                            state.packageName,
-                            state.fqClassName,
-                            resolvers.get(ii)));
-                }
-            }
-
-            maybeCreateClasses(compilationRequestAttempts);
-
-            // We could be running on a screwy filesystem that is slow (e.g. NFS). If we wrote a file and can't load it
-            // ... then give the filesystem some time. All requests should use the same deadline.
-            final long deadline = System.currentTimeMillis() + CODEGEN_TIMEOUT_MS - CODEGEN_LOOP_DELAY_MS;
-            for (int ii = 0; ii < requests.size(); ++ii) {
-                final CompilationState state = states[ii];
-                if (state.complete) {
-                    continue;
-                }
-
-                final QueryCompilerRequest request = requests.get(ii);
-                final CompletionStageFuture.Resolver<Class<?>> resolver = resolvers.get(ii);
-                if (resolver.getFuture().isDone()) {
-                    state.complete = true;
-                    ++numComplete;
-                    continue;
-                }
-
-                // This request may have:
-                // A. succeeded
-                // B. Lost a race to another process on the same file system which is compiling the identical formula
-                // C. Lost a race to another process on the same file system compiling a different formula that collides
-
-                final boolean shouldTrace = shouldTrace(state.fqClassName);
-                Class<?> clazz = tryLoadClassByFqName(state.fqClassName, request.parameterClasses());
-                if (clazz == null) {
-                    final long waitStart = System.currentTimeMillis();
-                    if (shouldTrace) {
-                        log.trace().append("Class not loadable immediately after compile;"
-                                + " entering retry loop for ").append(state.fqClassName).endl();
-                    }
-                    try {
-                        while (clazz == null && System.currentTimeMillis() < deadline) {
-                            // noinspection BusyWait
-                            Thread.sleep(CODEGEN_LOOP_DELAY_MS);
-                            clazz = tryLoadClassByFqName(state.fqClassName, request.parameterClasses());
-                        }
-                    } catch (final InterruptedException ie) {
-                        Thread.currentThread().interrupt();
-                        throw new UncheckedDeephavenException("Interrupted while waiting for codegen", ie);
-                    }
-                    if (shouldTrace) {
-                        final long waited = System.currentTimeMillis() - waitStart;
-                        if (clazz != null) {
-                            log.trace().append("Class loaded after waiting ").append(waited)
-                                    .append(" ms: ").append(state.fqClassName).endl();
-                        } else {
-                            log.trace().append("Retry loop timed out after ").append(waited)
-                                    .append(" ms: ").append(state.fqClassName).endl();
-                        }
-                    }
-                }
-
-                // However, regardless of A-C, there will be *some* class being found
-                if (clazz == null) {
-                    throw new IllegalStateException("Unable to load class after delay of " + CODEGEN_TIMEOUT_MS
-                            + ".  state index=" + ii + ", fqClassName=" + state.fqClassName + ", parameterClasses"
-                            + request.parameterClasses() + ", destination=" + getClassDestination().getAbsolutePath());
-                }
-
-                if (completeIfResultMatchesQueryCompilerRequest(state.packageName, request, resolver, clazz)) {
-                    if (shouldTrace) {
-                        log.trace().append("Loaded matching compiled class ").append(state.fqClassName).endl();
-                    }
-                    state.complete = true;
-                    ++numComplete;
-                } else if (shouldTrace) {
-                    log.trace().append("Existing class did not match for ").append(state.fqClassName).endl();
-                }
-            }
-        }
-    }
-
-    private boolean completeIfResultMatchesQueryCompilerRequest(
-            final String packageName,
-            final QueryCompilerRequest request,
-            final CompletionStageFuture.Resolver<Class<?>> resolver,
-            final Class<?> result) {
-        final String identifyingFieldValue = loadIdentifyingField(result);
-        if (!request.classBody().equals(identifyingFieldValue)) {
-            final LogEntry logOutput = log.trace().append("Hash collision for ").append(result.getName())
-                    .append(": loaded identifying field length=");
-            if (identifyingFieldValue == null) {
-                logOutput.append("null");
-            } else {
-                logOutput.append(identifyingFieldValue.length());
-            }
-            logOutput.append(", expected class body length=").append(request.classBody().length()).endl();
-            return false;
-        }
-
-        // If the caller wants a textual copy of the code we either made, or just found in the cache.
-        request.codeLog()
-                .ifPresent(sb -> sb.append(makeFinalCode(request.className(), request.classBody(), packageName)));
-
-        // If the class we found was indeed the class we were looking for, then complete the future and return it.
-        resolver.complete(result);
+        // Assign unique FQ class names for each request
+        final String[] fqClassNames = new String[requests.size()];
+        final String[] packageNames = new String[requests.size()];
 
         synchronized (this) {
-            // Note we are doing something kind of subtle here. We are removing an entry whose key was matched
-            // by value equality and replacing it with a value-equal but reference-different string that is a
-            // static member of the class we just loaded. This should be easier on the garbage collector because
-            // we are replacing a calculated value with a classloaded value and so in effect we are
-            // "canonicalizing" the string. This is important because these long strings stay in knownClasses
-            // forever.
-            knownClasses.remove(identifyingFieldValue);
-            knownClasses.put(identifyingFieldValue, resolver.getFuture());
-        }
+            for (int ii = 0; ii < requests.size(); ++ii) {
+                final QueryCompilerRequest request = requests.get(ii);
+                final String hashText = ByteUtils.byteArrToHex(digest.digest(
+                        request.classBody().getBytes(StandardCharsets.UTF_8)));
 
-        return true;
-    }
-
-    private Class<?> tryLoadClassByFqName(String fqClassName, Map<String, Class<?>> parameterClasses) {
-        final boolean shouldTrace = shouldTrace(fqClassName);
-        try {
-            if (shouldTrace) {
-                log.trace().append("Attempting to load ").append(fqClassName)
-                        .append(" with parameter classes ")
-                        .append(LogOutput.STRING_COLLECTION_FORMATTER, parameterClasses.keySet()).endl();
-            }
-            return getClassLoaderForFormula(parameterClasses).loadClass(fqClassName);
-        } catch (ClassNotFoundException cnfe) {
-            if (shouldTrace) {
-                log.trace().append("Class not found for ").append(fqClassName).endl();
-            }
-            return null;
-        }
-    }
-
-    private static String loadIdentifyingField(Class<?> c) {
-        try {
-            final Field field = c.getDeclaredField(IDENTIFYING_FIELD_NAME);
-            return (String) field.get(null);
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            throw new IllegalStateException("Malformed class in cache", e);
-        }
-    }
-
-    private static String makeFinalCode(String className, String classBody, String packageName) {
-        if (classBody.contains("$CLASSNAME$")) {
-            throw new IllegalArgumentException("QueryCompiler's support of the $CLASSNAME$ variable has been removed as"
-                    + " the final class name affects the compiled byte code and therefore cannot be dynamically "
-                    + "replaced.");
-        }
-
-        final String joinedEscapedBody = createEscapedJoinedString(classBody);
-        classBody = classBody.substring(0, classBody.lastIndexOf("}"));
-        classBody += "    public static String " + IDENTIFYING_FIELD_NAME + " = " + joinedEscapedBody + ";\n}";
-        return "package " + packageName + ";\n" + classBody;
-    }
-
-    /**
-     * Transform a string into the corresponding Java source code that compiles into that string. This involves escaping
-     * special characters, surrounding it with quotes, and (if the string is larger than the max string length for Java
-     * literals), splitting it into substrings and constructing a call to String.join() that combines those substrings.
-     */
-    public static String createEscapedJoinedString(final String originalString) {
-        return createEscapedJoinedString(originalString, DEFAULT_MAX_STRING_LITERAL_LENGTH);
-    }
-
-    public static String createEscapedJoinedString(final String originalString, int maxStringLength) {
-        final String[] splits = splitByModifiedUtf8Encoding(originalString, maxStringLength);
-
-        // Turn each split into a Java source string by escaping it and surrounding it with "
-        for (int ii = 0; ii < splits.length; ++ii) {
-            final String escaped = StringEscapeUtils.escapeJava(splits[ii]);
-            splits[ii] = "\"" + escaped + "\"";
-
-        }
-        assert splits.length > 0;
-        if (splits.length == 1) {
-            return splits[0];
-        }
-        final String formattedInnards = String.join(",\n", splits);
-        return "String.join(\"\", " + formattedInnards + ")";
-    }
-
-    private static String[] splitByModifiedUtf8Encoding(final String originalString, int maxBytes) {
-        final List<String> splits = new ArrayList<>();
-        // exclusive end position of the previous substring.
-        int previousEnd = 0;
-        // Number of bytes in the "modified UTF-8" representation of the substring we are currently scanning.
-        int currentByteCount = 0;
-        for (int ii = 0; ii < originalString.length(); ++ii) {
-            final int bytesConsumed = calcBytesConsumed(originalString.charAt(ii));
-            if (currentByteCount + bytesConsumed > maxBytes) {
-                // This character won't fit in this string, so we flush the buffer.
-                splits.add(originalString.substring(previousEnd, ii));
-                previousEnd = ii;
-                currentByteCount = 0;
-            }
-            currentByteCount += bytesConsumed;
-        }
-        // At the end of the loop, either
-        // 1. there are one or more characters that still need to be added to splits
-        // 2. originalString was empty and so splits is empty and we need to add a single empty string to splits
-        splits.add(originalString.substring(previousEnd));
-        return splits.toArray(String[]::new);
-    }
-
-    private static int calcBytesConsumed(final char ch) {
-        if (ch == 0) {
-            return 2;
-        }
-        if (ch <= 0x7f) {
-            return 1;
-        }
-        if (ch <= 0x7ff) {
-            return 2;
-        }
-        return 3;
-    }
-
-    private static class JavaSourceFromString extends SimpleJavaFileObject {
-        final String description;
-        final String code;
-        final CompletionStageFuture.Resolver<Class<?>> resolver;
-
-        JavaSourceFromString(
-                final String description,
-                final String name,
-                final String code,
-                final CompletionStageFuture.Resolver<Class<?>> resolver) {
-            super(URI.create("string:///" + name.replace('.', '/') + Kind.SOURCE.extension), Kind.SOURCE);
-            this.description = description;
-            this.code = code;
-            this.resolver = resolver;
-        }
-
-        public CharSequence getCharContent(boolean ignoreEncodingErrors) {
-            return code;
-        }
-    }
-
-    private static class CompilationRequestAttempt {
-        final String description;
-        final String fqClassName;
-        final String finalCode;
-        final String packageName;
-        final String[] splitPackageName;
-        final QueryCompilerRequest request;
-        final CompletionStageFuture.Resolver<Class<?>> resolver;
-
-        private CompilationRequestAttempt(
-                @NotNull final QueryCompilerRequest request,
-                @NotNull final String packageName,
-                @NotNull final String fqClassName,
-                @NotNull final CompletionStageFuture.Resolver<Class<?>> resolver) {
-            this.description = request.description();
-            this.fqClassName = fqClassName;
-            this.resolver = resolver;
-            this.packageName = packageName;
-            this.request = request;
-
-            finalCode = makeFinalCode(request.className(), request.classBody(), packageName);
-
-            if (logEnabled) {
-                log.info().append("Generating code ").append(finalCode).endl();
-            } else if (shouldTrace(fqClassName)) {
-                log.trace().append("Generating code for ").append(fqClassName).endl();
-            }
-
-            splitPackageName = packageName.split("\\.");
-            if (splitPackageName.length == 0) {
-                final Exception err = new UncheckedDeephavenException(String.format(
-                        "packageName %s expected to have at least one .", packageName));
-                resolver.completeExceptionally(err);
+                String fqClassName = null;
+                String packageName = null;
+                for (int pi = 0; pi < 128; ++pi) {
+                    final String packageNameSuffix = "c_" + hashText
+                            + (pi == 0 ? "" : ("p" + pi))
+                            + "v" + JAVA_CLASS_VERSION;
+                    packageName = request.getPackageName(packageNameSuffix);
+                    fqClassName = packageName + "." + request.className();
+                    if (!takenNames.contains(fqClassName)) {
+                        break;
+                    }
+                    fqClassName = null;
+                }
+                if (fqClassName == null) {
+                    resolvers.get(ii).completeExceptionally(new IllegalStateException(
+                            "Unable to assign unique class name for " + request.className()));
+                    continue;
+                }
+                takenNames.add(fqClassName);
+                fqClassNames[ii] = fqClassName;
+                packageNames[ii] = packageName;
             }
         }
 
-        public void ensureDirectories(@NotNull final String rootPath) {
-            if (splitPackageName.length == 0) {
-                // we've already failed
-                return;
+        // Build compilation attempts for requests that got a valid name
+        final List<CompilationRequestAttempt> attempts = new ArrayList<>();
+        for (int ii = 0; ii < requests.size(); ++ii) {
+            if (fqClassNames[ii] == null) {
+                continue; // already failed
             }
-
-            final String[] truncatedSplitPackageName = Arrays.copyOf(splitPackageName, splitPackageName.length - 1);
-            final Path rootPathWithPackage = Paths.get(rootPath, truncatedSplitPackageName);
-            final File rpf = rootPathWithPackage.toFile();
-            QueryCompilerImpl.ensureDirectories(rpf,
-                    () -> "Couldn't create package directories: " + rootPathWithPackage);
+            attempts.add(new CompilationRequestAttempt(
+                    requests.get(ii), packageNames[ii], fqClassNames[ii], resolvers.get(ii)));
         }
 
-        public JavaSourceFromString makeSource() {
-            return new JavaSourceFromString(description, fqClassName, finalCode, resolver);
-        }
-    }
-
-    private void maybeCreateClasses(
-            @NotNull final List<CompilationRequestAttempt> requests) {
-        // Get the destination root directory (e.g. /tmp/workspace/cache/classes) and populate it with the package
-        // directories (e.g. io/deephaven/test) if they are not already there. This will be useful later.
-        // Also create a temp directory e.g. /tmp/workspace/cache/classes/temporaryCompilationDirectory12345
-        // This temp directory will be where the compiler drops files into, e.g.
-        // /tmp/workspace/cache/classes/temporaryCompilationDirectory12345/io/deephaven/test/cm12862183232603186v52_0/Formula.class
-        // Foreshadowing: we will eventually atomically move cm12862183232603186v52_0 from the above to
-        // /tmp/workspace/cache/classes/io/deephaven/test
-        // Note: for this atomic move to work, this temp directory must be on the same file system as the destination
-        // directory.
-        final String rootPathAsString;
-        final String tempDirAsString;
-        try {
-            rootPathAsString = getClassDestination().getAbsolutePath();
-            for (final CompilationRequestAttempt request : requests) {
-                request.ensureDirectories(rootPathAsString);
-            }
-
-            final Path tempPath =
-                    Files.createTempDirectory(Paths.get(rootPathAsString), "temporaryCompilationDirectory");
-            tempDirAsString = tempPath.toFile().getAbsolutePath();
-        } catch (IOException ioe) {
-            Exception err = new UncheckedIOException(ioe);
-            for (final CompilationRequestAttempt request : requests) {
-                request.resolver.completeExceptionally(err);
-            }
+        if (attempts.isEmpty()) {
             return;
         }
 
+        // Compile and define
+        compileAndDefine(attempts);
+
+        // Validate _CLASS_BODY_ field on successfully defined classes
+        for (int ii = 0; ii < requests.size(); ++ii) {
+            final CompletionStageFuture.Resolver<Class<?>> resolver = resolvers.get(ii);
+            if (resolver.getFuture().isDone()) {
+                continue; // already completed (success or failure)
+            }
+            // This shouldn't happen - compileAndDefine should have resolved everything
+            resolver.completeExceptionally(new IllegalStateException(
+                    "Class was not resolved after compilation: " + fqClassNames[ii]));
+        }
+    }
+
+    private void compileAndDefine(@NotNull final List<CompilationRequestAttempt> requests) {
         final ExecutionContext executionContext = ExecutionContext.getContext();
         final int parallelismFactor = executionContext.getOperationInitializer().parallelismFactor();
 
@@ -1066,24 +411,16 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
         }
 
         log.trace().append("maybeCreateClasses: ").append(requests.size()).append(" requests, ")
-                .append(numTasks).append(" tasks, ").append(requestsPerTask)
-                .append(" requests per task, tempDir=").append(tempDirAsString).endl();
+                .append(numTasks).append(" tasks, ").append(requestsPerTask).endl();
 
         final JavaFileManager fileManager = acquireFileManager();
         final AtomicReference<RuntimeException> exception = new AtomicReference<>();
         final CountDownLatch latch = new CountDownLatch(1);
         final Runnable cleanup = () -> {
             try {
-                try {
-                    FileUtils.deleteRecursively(new File(tempDirAsString));
-                } catch (Exception e) {
-                    // ignore errors here
-                }
-                try {
-                    releaseFileManager(fileManager);
-                } catch (Exception e) {
-                    // ignore errors here
-                }
+                releaseFileManager(fileManager);
+            } catch (Exception e) {
+                // ignore errors here
             } finally {
                 latch.countDown();
             }
@@ -1102,8 +439,7 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
                 0, numTasks, (context, jobId, nestedErrorConsumer) -> {
                     final int startInclusive = jobId * requestsPerTask;
                     final int endExclusive = Math.min(requests.size(), (jobId + 1) * requestsPerTask);
-                    doCreateClasses(
-                            fileManager, requests, rootPathAsString, tempDirAsString, startInclusive, endExclusive);
+                    doCompileAndDefine(fileManager, requests, startInclusive, endExclusive);
                 },
                 () -> {
                 },
@@ -1111,7 +447,15 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
                 onError);
 
         try {
-            latch.await();
+            // TODO Probably should be configurable, probably shouldn't be indefinite?
+            //      Allowing timeout like this may require cleanup
+            final boolean completed = latch.await(10, TimeUnit.SECONDS);
+            if (!completed) {
+                final String msg = "QueryCompilerImpl.compileAndDefine: latch timed out after 10s!"
+                        + " numTasks=" + numTasks + " requests=" + requests.size();
+                log.error().append(msg).endl();
+                throw new UncheckedDeephavenException(msg);
+            }
             final BasePerformanceEntry perfEntry = jobScheduler.getAccumulatedPerformance();
             if (perfEntry != null) {
                 QueryPerformanceRecorder.getInstance().getEnclosingNugget().accumulate(perfEntry);
@@ -1125,53 +469,46 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
         }
     }
 
-    private void doCreateClasses(
+    private void doCompileAndDefine(
             @NotNull final JavaFileManager fileManager,
             @NotNull final List<CompilationRequestAttempt> requests,
-            @NotNull final String rootPathAsString,
-            @NotNull final String tempDirAsString,
             final int startInclusive,
             final int endExclusive) {
         final List<CompilationRequestAttempt> toRetry = new ArrayList<>();
-        // If any of our requests fail to compile then the JavaCompiler will not write any class files at all. The
-        // non-failing requests will be retried in a second pass that is expected to succeed. This enables us to
-        // fulfill futures independent of each other; otherwise a single failure would taint all requests in a batch.
-        final boolean wantRetry = doCreateClassesSingleRound(fileManager, requests, rootPathAsString, tempDirAsString,
-                startInclusive, endExclusive, toRetry);
+        final boolean wantRetry = doCompileAndDefineSingleRound(
+                fileManager, requests, startInclusive, endExclusive, toRetry);
         if (!wantRetry) {
             return;
         }
-
+        // Retry non-failing requests from the first pass
         final List<CompilationRequestAttempt> ignored = new ArrayList<>();
-        if (doCreateClassesSingleRound(fileManager, toRetry, rootPathAsString, tempDirAsString, 0, toRetry.size(),
-                ignored)) {
-            // We only retried compilation units that did not fail on the first pass, so we should not have any failures
-            // on the second pass.
+        if (doCompileAndDefineSingleRound(fileManager, toRetry, 0, toRetry.size(), ignored)) {
             throw new IllegalStateException("Unexpected failure during second pass of compilation");
         }
     }
 
-    private boolean doCreateClassesSingleRound(
+    private boolean doCompileAndDefineSingleRound(
             @NotNull final JavaFileManager fileManager,
             @NotNull final List<CompilationRequestAttempt> requests,
-            @NotNull final String rootPathAsString,
-            @NotNull final String tempDirAsString,
             final int startInclusive,
             final int endExclusive,
-            List<CompilationRequestAttempt> toRetry) {
+            @NotNull final List<CompilationRequestAttempt> toRetry) {
+
+        // Create an in-memory file manager that captures compiled output
+        final InMemoryOutputFileManager outputFm = new InMemoryOutputFileManager(fileManager);
         final StringWriter compilerOutput = new StringWriter();
 
-        final String classPathAsString = getClassPath() + File.pathSeparator + getJavaClassPath();
+        final String classPathAsString = getClassPath();
         final List<String> compilerOptions = Arrays.asList(
-                "-d", tempDirAsString,
                 "-cp", classPathAsString,
                 // this option allows the compiler to attempt to process all source files even if some of them fail
                 "--should-stop=ifError=GENERATE");
 
         final MutableInt numFailures = new MutableInt(0);
         final List<RuntimeException> globalFailures = new ArrayList<>();
+
         compiler.getTask(compilerOutput,
-                fileManager,
+                outputFm,
                 diagnostic -> {
                     if (diagnostic.getKind() != Diagnostic.Kind.ERROR) {
                         return;
@@ -1217,44 +554,303 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
 
         final boolean wantRetry = numFailures.get() > 0 && numFailures.get() != endExclusive - startInclusive;
 
-        // The above has compiled into e.g.
-        // /tmp/workspace/cache/classes/temporaryCompilationDirectory12345/io/deephaven/test/cm12862183232603186v52_0/{various
-        // class files}
-        // We want to atomically move it to e.g.
-        // /tmp/workspace/cache/classes/io/deephaven/test/cm12862183232603186v52_0/{various class files}
-        requests.subList(startInclusive, endExclusive).forEach(request -> {
-            final Path srcDir = Paths.get(tempDirAsString, request.splitPackageName);
-            final Path destDir = Paths.get(rootPathAsString, request.splitPackageName);
-            try {
-                Files.move(srcDir, destDir, StandardCopyOption.ATOMIC_MOVE);
-                if (shouldTrace(request.fqClassName)) {
-                    log.trace().append("Successfully moved ").append(srcDir.toString()).append(" to ")
-                            .append(destDir.toString()).endl();
-                }
-            } catch (IOException ioe) {
-                // The name "isDone" might be misleading here. We haven't called "complete" on the successful
-                // futures yet, so the only way they would be "done" at this point is if they completed
-                // exceptionally.
-                final boolean hasException = request.resolver.getFuture().isDone();
+        // Define compiled classes into a per-batch classloader
+        final Map<String, byte[]> compiledClasses = outputFm.getCompiledClasses();
+        log.info().append("compilation produced ").append(compiledClasses.size())
+                .append(" classes, numFailures=").append(numFailures.get())
+                .append(", range=[").append(startInclusive).append(",").append(endExclusive).append(")")
+                .endl();
+        if (!compiledClasses.isEmpty()) {
+            // Use the current thread's context classloader as parent so that Groovy-defined classes
+            // (which may have been loaded after this QueryCompilerImpl was constructed) are visible.
+            final ClassLoader currentContextCl = Thread.currentThread().getContextClassLoader();
+            final ClassLoader batchParent = currentContextCl != null ? currentContextCl : parentClassLoader;
+            final BatchClassLoader batchCl = new BatchClassLoader(batchParent, compiledClasses);
 
-                if (wantRetry && !Files.exists(srcDir) && !hasException) {
-                    // The move failed, the source directory does not exist, and this compilation unit actually
-                    // succeeded. However, it was not written because some other compilation unit failed. Let's schedule
-                    // this work to try again.
-                    toRetry.add(request);
-                    return;
+            for (final CompilationRequestAttempt request : requests.subList(startInclusive, endExclusive)) {
+                if (request.resolver.getFuture().isDone()) {
+                    // already failed
+                    continue;
                 }
 
-                if (!Files.exists(destDir) && !hasException) {
-                    // Propagate an error here only if the destination does not exist; ignoring issues related to
-                    // collisions with another process.
-                    request.resolver.completeExceptionally(new UncheckedIOException(
-                            "Move failed for some reason other than destination already existing", ioe));
+                if (!compiledClasses.containsKey(request.fqClassName)) {
+                    if (wantRetry) {
+                        toRetry.add(request);
+                    }
+                    continue;
+                }
+
+                // Load the top-level class (which triggers loading of inner/anonymous classes as needed)
+                final Class<?> clazz;
+                try {
+                    clazz = batchCl.loadClass(request.fqClassName);
+                } catch (ClassNotFoundException e) {
+                    request.resolver.completeExceptionally(new UncheckedDeephavenException(
+                            "Failed to load compiled class: " + request.fqClassName, e));
+                    continue;
+                }
+
+                // Validate the identifying field
+                final String identifyingFieldValue = loadIdentifyingField(clazz);
+                if (!request.request.classBody().equals(identifyingFieldValue)) {
+                    request.resolver.completeExceptionally(new IllegalStateException(
+                            "Compiled class body validation failed for " + request.fqClassName));
+                    continue;
+                }
+
+                // Notify caller with codeLog if requested
+                request.request.codeLog().ifPresent(
+                        sb -> sb.append(makeFinalCode(
+                                request.request.className(), request.request.classBody(), request.packageName)));
+
+                // Complete the future
+                log.info().append("Resolving ").append(request.fqClassName).endl();
+                request.resolver.complete(clazz);
+
+                // Canonicalize the knownClasses entry
+                synchronized (this) {
+                    knownClasses.remove(identifyingFieldValue);
+                    knownClasses.put(identifyingFieldValue, request.resolver.getFuture());
                 }
             }
-        });
+        } else {
+            // No output at all - if there are non-failed requests, they need retry
+            for (final CompilationRequestAttempt request : requests.subList(startInclusive, endExclusive)) {
+                if (!request.resolver.getFuture().isDone() && wantRetry) {
+                    toRetry.add(request);
+                }
+            }
+        }
 
         return wantRetry && !toRetry.isEmpty();
+    }
+
+    // --- Classpath construction ---
+
+    private String getClassPath() {
+        final StringBuilder sb = new StringBuilder(getJavaClassPath());
+        if (additionalClassPathDir != null) {
+            sb.append(File.pathSeparator).append(additionalClassPathDir.getAbsolutePath());
+        }
+        return sb.toString();
+    }
+
+    // --- BatchClassLoader ---
+
+    /**
+     * A classloader that defines classes from a map of name→bytes. All classes from a single compilation batch are
+     * loaded together. The parent classloader handles all other class resolution.
+     */
+    private static class BatchClassLoader extends ClassLoader {
+        private final Map<String, byte[]> classBytes;
+
+        BatchClassLoader(@NotNull ClassLoader parent, @NotNull Map<String, byte[]> classBytes) {
+            super(parent);
+            this.classBytes = classBytes;
+        }
+
+        @Override
+        protected Class<?> findClass(String name) throws ClassNotFoundException {
+            final byte[] bytes = classBytes.get(name);
+            if (bytes != null) {
+                return defineClass(name, bytes, 0, bytes.length);
+            }
+            throw new ClassNotFoundException(name);
+        }
+    }
+
+    // --- InMemoryOutputFileManager ---
+
+    /**
+     * A forwarding JavaFileManager that intercepts class output, storing compiled bytecode in memory rather than
+     * writing to the filesystem. All other operations are delegated.
+     */
+    private static class InMemoryOutputFileManager extends ForwardingJavaFileManager<JavaFileManager> {
+        private final ConcurrentHashMap<String, InMemoryClassFileObject> outputClasses = new ConcurrentHashMap<>();
+
+        InMemoryOutputFileManager(JavaFileManager delegate) {
+            super(delegate);
+        }
+
+        Map<String, byte[]> getCompiledClasses() {
+            final Map<String, byte[]> result = new HashMap<>();
+            for (Map.Entry<String, InMemoryClassFileObject> entry : outputClasses.entrySet()) {
+                result.put(entry.getKey(), entry.getValue().getBytes());
+            }
+            return result;
+        }
+
+        @Override
+        public JavaFileObject getJavaFileForOutput(
+                Location location, String className, JavaFileObject.Kind kind, FileObject sibling) {
+            final InMemoryClassFileObject fileObject = new InMemoryClassFileObject(className);
+            outputClasses.put(className, fileObject);
+            return fileObject;
+        }
+
+        @Override
+        public boolean hasLocation(Location location) {
+            if (location == StandardLocation.CLASS_OUTPUT) {
+                return true;
+            }
+            return super.hasLocation(location);
+        }
+    }
+
+    // --- InMemoryClassFileObject ---
+
+    private static class InMemoryClassFileObject extends SimpleJavaFileObject {
+        private final String className;
+        private ByteArrayOutputStream outputStream;
+
+        InMemoryClassFileObject(String className) {
+            super(URI.create("mem:///" + className.replace('.', '/') + Kind.CLASS.extension), Kind.CLASS);
+            this.className = className;
+        }
+
+        @Override
+        public OutputStream openOutputStream() {
+            outputStream = new ByteArrayOutputStream();
+            return outputStream;
+        }
+
+        byte[] getBytes() {
+            if (outputStream == null) {
+                throw new IllegalStateException("No bytes available for " + className);
+            }
+            return outputStream.toByteArray();
+        }
+    }
+
+    // --- Source representation ---
+
+    private static class JavaSourceFromString extends SimpleJavaFileObject {
+        final String description;
+        final String code;
+        final CompletionStageFuture.Resolver<Class<?>> resolver;
+
+        JavaSourceFromString(
+                final String description,
+                final String name,
+                final String code,
+                final CompletionStageFuture.Resolver<Class<?>> resolver) {
+            super(URI.create("string:///" + name.replace('.', '/') + Kind.SOURCE.extension), Kind.SOURCE);
+            this.description = description;
+            this.code = code;
+            this.resolver = resolver;
+        }
+
+        @Override
+        public CharSequence getCharContent(boolean ignoreEncodingErrors) {
+            return code;
+        }
+    }
+
+    private static class CompilationRequestAttempt {
+        final String description;
+        final String fqClassName;
+        final String finalCode;
+        final String packageName;
+        final QueryCompilerRequest request;
+        final CompletionStageFuture.Resolver<Class<?>> resolver;
+
+        private CompilationRequestAttempt(
+                @NotNull final QueryCompilerRequest request,
+                @NotNull final String packageName,
+                @NotNull final String fqClassName,
+                @NotNull final CompletionStageFuture.Resolver<Class<?>> resolver) {
+            this.description = request.description();
+            this.fqClassName = fqClassName;
+            this.resolver = resolver;
+            this.packageName = packageName;
+            this.request = request;
+
+            finalCode = makeFinalCode(request.className(), request.classBody(), packageName);
+
+            if (logEnabled) {
+                log.info().append("Generating code ").append(finalCode).endl();
+            }
+        }
+
+        JavaSourceFromString makeSource() {
+            return new JavaSourceFromString(description, fqClassName, finalCode, resolver);
+        }
+    }
+
+    // --- Utilities ---
+
+    private static String loadIdentifyingField(Class<?> c) {
+        try {
+            final Field field = c.getDeclaredField(IDENTIFYING_FIELD_NAME);
+            return (String) field.get(null);
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            throw new IllegalStateException("Malformed class in cache", e);
+        }
+    }
+
+    static String makeFinalCode(String className, String classBody, String packageName) {
+        if (classBody.contains("$CLASSNAME$")) {
+            throw new IllegalArgumentException("QueryCompiler's support of the $CLASSNAME$ variable has been removed as"
+                    + " the final class name affects the compiled byte code and therefore cannot be dynamically "
+                    + "replaced.");
+        }
+
+        final String joinedEscapedBody = createEscapedJoinedString(classBody);
+        classBody = classBody.substring(0, classBody.lastIndexOf("}"));
+        classBody += "    public static String " + IDENTIFYING_FIELD_NAME + " = " + joinedEscapedBody + ";\n}";
+        return "package " + packageName + ";\n" + classBody;
+    }
+
+    /**
+     * Transform a string into the corresponding Java source code that compiles into that string.
+     */
+    public static String createEscapedJoinedString(final String originalString) {
+        return createEscapedJoinedString(originalString, DEFAULT_MAX_STRING_LITERAL_LENGTH);
+    }
+
+    public static String createEscapedJoinedString(final String originalString, int maxStringLength) {
+        final String[] splits = splitByModifiedUtf8Encoding(originalString, maxStringLength);
+
+        for (int ii = 0; ii < splits.length; ++ii) {
+            final String escaped = StringEscapeUtils.escapeJava(splits[ii]);
+            splits[ii] = "\"" + escaped + "\"";
+        }
+        assert splits.length > 0;
+        if (splits.length == 1) {
+            return splits[0];
+        }
+        final String formattedInnards = String.join(",\n", splits);
+        return "String.join(\"\", " + formattedInnards + ")";
+    }
+
+    private static String[] splitByModifiedUtf8Encoding(final String originalString, int maxBytes) {
+        final List<String> splits = new ArrayList<>();
+        int previousEnd = 0;
+        int currentByteCount = 0;
+        for (int ii = 0; ii < originalString.length(); ++ii) {
+            final int bytesConsumed = calcBytesConsumed(originalString.charAt(ii));
+            if (currentByteCount + bytesConsumed > maxBytes) {
+                splits.add(originalString.substring(previousEnd, ii));
+                previousEnd = ii;
+                currentByteCount = 0;
+            }
+            currentByteCount += bytesConsumed;
+        }
+        splits.add(originalString.substring(previousEnd));
+        return splits.toArray(String[]::new);
+    }
+
+    private static int calcBytesConsumed(final char ch) {
+        if (ch == 0) {
+            return 2;
+        }
+        if (ch <= 0x7f) {
+            return 1;
+        }
+        if (ch <= 0x7ff) {
+            return 2;
+        }
+        return 3;
     }
 
     /**
@@ -1331,3 +927,5 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
         return javaClasspath;
     }
 }
+
+

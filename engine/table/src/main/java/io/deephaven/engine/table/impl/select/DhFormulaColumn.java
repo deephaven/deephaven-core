@@ -8,7 +8,7 @@ import io.deephaven.base.Pair;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.context.InMemoryQueryCompiler;
+import io.deephaven.engine.context.QueryCompilerImpl;
 import io.deephaven.engine.context.QueryCompilerRequest;
 import io.deephaven.engine.context.QueryScopeParam;
 import io.deephaven.engine.table.ColumnDefinition;
@@ -367,7 +367,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
                 null);
         g.replace("ARGS", makeCommaSeparatedList(args));
         g.replace("FORMULA_STRING", ta.wrapWithCastIfNecessary(formulaString));
-        final String joinedFormulaString = InMemoryQueryCompiler.createEscapedJoinedString(originalFormulaString);
+        final String joinedFormulaString = QueryCompilerImpl.createEscapedJoinedString(originalFormulaString);
         g.replace("JOINED_FORMULA_STRING", joinedFormulaString);
         g.replace("EXCEPTION_TYPE", EVALUATION_EXCEPTION_CLASSNAME);
         return g.freeze();
@@ -817,7 +817,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
                 .description("Formula Expression: " + formulaString)
                 .className(FORMULA_CLASS_NAME)
                 .classBody(classBody)
-                .packageNameRoot(InMemoryQueryCompiler.FORMULA_CLASS_PREFIX)
+                .packageNameRoot(QueryCompilerImpl.FORMULA_CLASS_PREFIX)
                 .putAllParameterClasses(QueryScopeParamTypeUtil.expandParameterClasses(paramClasses))
                 .build()).thenApply(clazz -> {
                     try {

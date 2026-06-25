@@ -7,7 +7,7 @@ import io.deephaven.base.Pair;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.context.InMemoryQueryCompiler;
+import io.deephaven.engine.context.QueryCompilerImpl;
 import io.deephaven.engine.context.QueryCompilerRequest;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.Context;
@@ -478,7 +478,7 @@ public class ConditionFilter extends AbstractConditionFilter {
                 .description("Filter Expression: " + formula)
                 .className(CLASS_NAME)
                 .classBody(this.classBody)
-                .packageNameRoot(InMemoryQueryCompiler.FORMULA_CLASS_PREFIX)
+                .packageNameRoot(QueryCompilerImpl.FORMULA_CLASS_PREFIX)
                 .putAllParameterClasses(QueryScopeParamTypeUtil.expandParameterClasses(paramClasses))
                 .build());
     }

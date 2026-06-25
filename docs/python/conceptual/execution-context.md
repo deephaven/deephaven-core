@@ -244,7 +244,7 @@ from deephaven.jcompat import j_hashmap
 import tempfile
 
 ExecutionContext = jpy.get_type("io.deephaven.engine.context.ExecutionContext")
-InMemoryQueryCompiler = jpy.get_type("io.deephaven.engine.context.InMemoryQueryCompiler")
+QueryCompilerImpl = jpy.get_type("io.deephaven.engine.context.QueryCompilerImpl")
 PeriodicUpdateGraph = jpy.get_type(
     "io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph"
 )
@@ -261,7 +261,7 @@ execution_context = (
     .setOperationInitializer(OperationInitializer.NON_PARALLELIZABLE)
     .setUpdateGraph(PeriodicUpdateGraph.newBuilder("MyCustomGraph").build())
     .setQueryCompiler(
-        InMemoryQueryCompiler.create(
+        QueryCompilerImpl.create(
             jpy.get_type("java.io.File")(temp_dir),
         )
     )
@@ -287,7 +287,7 @@ import jpy
 import tempfile
 
 ExecutionContext = jpy.get_type("io.deephaven.engine.context.ExecutionContext")
-InMemoryQueryCompiler = jpy.get_type("io.deephaven.engine.context.InMemoryQueryCompiler")
+QueryCompilerImpl = jpy.get_type("io.deephaven.engine.context.QueryCompilerImpl")
 EventDrivenUpdateGraph = jpy.get_type(
     "io.deephaven.engine.updategraph.impl.EventDrivenUpdateGraph"
 )
@@ -306,7 +306,7 @@ execution_context = (
     .setOperationInitializer(OperationInitializer.NON_PARALLELIZABLE)
     .setUpdateGraph(event_driven_graph)
     .setQueryCompiler(
-        InMemoryQueryCompiler.create(
+        QueryCompilerImpl.create(
             jpy.get_type("java.io.File")(temp_dir),
         )
     )

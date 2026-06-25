@@ -5,7 +5,7 @@ package io.deephaven.engine.table.impl.select;
 
 import groovy.lang.Closure;
 import groovy.lang.GroovyObject;
-import io.deephaven.engine.context.InMemoryQueryCompiler;
+import io.deephaven.engine.context.QueryCompilerImpl;
 import io.deephaven.util.type.TypeUtils;
 
 import java.lang.reflect.Modifier;
@@ -51,7 +51,7 @@ public class QueryScopeParamTypeUtil {
         }
 
         final String name = cls.getName();
-        if (!name.startsWith(InMemoryQueryCompiler.DYNAMIC_CLASS_PREFIX)) {
+        if (!name.startsWith(QueryCompilerImpl.DYNAMIC_CLASS_PREFIX)) {
             return;
         }
 

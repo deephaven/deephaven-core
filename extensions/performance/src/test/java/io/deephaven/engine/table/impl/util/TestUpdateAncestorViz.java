@@ -9,7 +9,7 @@ import guru.nidi.graphviz.model.*;
 import io.deephaven.auth.AuthContext;
 import io.deephaven.base.FileUtils;
 import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.context.InMemoryQueryCompiler;
+import io.deephaven.engine.context.QueryCompilerImpl;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.liveness.StandaloneLivenessManager;
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfLong;
@@ -56,7 +56,7 @@ public class TestUpdateAncestorViz {
         cacheDir.deleteOnExit();
 
         executionContext = ExecutionContext.newBuilder().newQueryLibrary().newQueryScope()
-                .setQueryCompiler(InMemoryQueryCompiler.create(null))
+                .setQueryCompiler(QueryCompilerImpl.create(null))
                 .setOperationInitializer(ForkJoinPoolOperationInitializer.fromCommonPool())
                 .setUpdateGraph(defaultUpdateGraph).build().withAuthContext(new AuthContext.Anonymous());
     }
