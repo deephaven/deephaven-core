@@ -148,8 +148,8 @@ public class BarrageUtil {
                     "maxSnapshotCellCount", 1L << 24);
 
     /** Global switch: when false, auto-inference never selects REE; user-supplied schema REE is always honored. */
-    static final boolean REE_ENCODING_ENABLED =
-            Configuration.getInstance().getBooleanWithDefault("BarrageUtil.ree.encodingEnabled", false);
+    static final boolean REE_AUTO_DETECT_ENABLED =
+            Configuration.getInstance().getBooleanWithDefault("BarrageUtil.ree.autoDetectEnabled", false);
 
     /** Whether to sample columns at schema-inference time to detect run patterns for REE auto-encoding. */
     static final boolean REE_SAMPLING_ENABLED =
@@ -524,7 +524,7 @@ public class BarrageUtil {
         final Map<String, ColumnEncoding> encodings;
         if (table.hasAttribute(Table.BARRAGE_SCHEMA_ATTRIBUTE)) {
             encodings = encodingsFromSchema((Schema) table.getAttribute(Table.BARRAGE_SCHEMA_ATTRIBUTE));
-        } else if (REE_ENCODING_ENABLED) {
+        } else if (REE_AUTO_DETECT_ENABLED) {
             encodings = inferEncodings(table);
         } else {
             encodings = Map.of();

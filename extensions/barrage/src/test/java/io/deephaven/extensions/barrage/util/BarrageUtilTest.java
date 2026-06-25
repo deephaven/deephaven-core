@@ -112,7 +112,7 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
 
     public void testREEFieldStructureInt32RunEndsForLargeBatch() {
         // Verify the flatbuf IPC path: Int32 run_ends regardless of batch size.
-        // Uses explicit encodings to bypass the global REE_ENCODING_ENABLED flag.
+        // Uses explicit encodings to bypass the global REE_AUTO_DETECT_ENABLED flag.
         final Table table = newTable(
                 stringCol("Symbol", "AAPL", "AAPL"))
                 .withAttributes(Map.of(
@@ -140,7 +140,7 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
     }
 
     public void testREEFieldStructure() {
-        // Uses explicit encodings to bypass the global REE_ENCODING_ENABLED flag.
+        // Uses explicit encodings to bypass the global REE_AUTO_DETECT_ENABLED flag.
         final Table table = newTable(
                 stringCol("Symbol", "AAPL", "AAPL"),
                 intCol("Exchange", 1, 1))
@@ -169,7 +169,7 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
     }
 
     public void testConvertArrowSchemaRoundtrip() {
-        // Uses explicit encodings to bypass the global REE_ENCODING_ENABLED flag.
+        // Uses explicit encodings to bypass the global REE_AUTO_DETECT_ENABLED flag.
         final Table table = newTable(
                 stringCol("Symbol", "AAPL", "AAPL", "MSFT"),
                 intCol("Exchange", 1, 1, 2),
@@ -268,7 +268,7 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
     }
 
     public void testExplicitReeSchemaHonoredWhenGlobalDisabled() {
-        // Even when REE_ENCODING_ENABLED is false, a user-supplied BARRAGE_SCHEMA_ATTRIBUTE with
+        // Even when REE_AUTO_DETECT_ENABLED is false, a user-supplied BARRAGE_SCHEMA_ATTRIBUTE with
         // REE columns must be passed through verbatim.
         //
         // Build the REE schema the exhaustive way per barrage-schema.md: extract the base schema,
