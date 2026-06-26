@@ -22,6 +22,7 @@ dependencies {
 }
 
 test {
+    systemProperty "PeriodicUpdateGraph.allowUnitTestMode", false
 }
 
 apply plugin: 'io.deephaven.java-open-nio'
