@@ -68,6 +68,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
@@ -1438,12 +1439,12 @@ public class TestParquetTools {
         public TestCodecAdapter() {}
 
         @Override
-        public CodecInfo adapt(@NotNull final CodecInfo original) {
+        public Optional<CodecInfo> adapt(@NotNull final CodecInfo original) {
             if (WriteCodec.class.getName().equals(original.codecName())
                     && WriteType.class.getName().equals(original.dataType())) {
-                return TEST_CODEC_ADAPTER_INSTANCE;
+                return Optional.of(TEST_CODEC_ADAPTER_INSTANCE);
             }
-            return null;
+            return Optional.empty();
         }
     }
 

@@ -185,7 +185,8 @@ public class ParquetSchemaReader {
 
             colDef.name = colName;
             colDef.dhSpecialType = columnTypeInfo.flatMap(ColumnTypeInfo::specialType).orElse(null);
-            final Optional<CodecInfo> codecInfo = columnTypeInfo.flatMap(ColumnTypeInfo::codec).map(ParquetSchemaReader::maybeMapCodec);
+            final Optional<CodecInfo> codecInfo =
+                    columnTypeInfo.flatMap(ColumnTypeInfo::codec).map(ParquetSchemaReader::maybeMapCodec);
             String codecName = codecInfo.map(CodecInfo::codecName).orElse(null);
             String codecArgs = codecInfo.flatMap(CodecInfo::codecArg).orElse(null);
             colDef.codecType = codecInfo.map(CodecInfo::dataType).orElse(null);
@@ -274,14 +275,22 @@ public class ParquetSchemaReader {
      * Allows adapting codecs between systems that may not have the same classes available to them during reading.
      * Implementations should be registered with {@link ServiceLoader}
      */
-    interface CodecAdapter {
-        CodecInfo adapt(CodecInfo original);
+    public interface CodecAdapter {
+        /**
+         * Optionally converts from {@code original} {@link CodecInfo}. If no conversion should be done for a specific
+         * implementation, then the implementation should return {@link Optional#empty()}
+         *
+         * @param original the original codec
+         * @return an Optional {@link CodecInfo}, which should be {@link Optional#empty()} if there is no conversion
+         */
+        Optional<CodecInfo> adapt(CodecInfo original);
     }
 
     private static CodecInfo maybeMapCodec(final CodecInfo originalCodec) {
         return ServiceLoader.load(CodecAdapter.class).stream()
                 .map(p -> p.get().adapt(originalCodec))
-                .filter(Objects::nonNull)
+                .filter(Optional::isPresent)
+                .map(Optional::get)
                 .findFirst()
                 .orElse(originalCodec);
     }
