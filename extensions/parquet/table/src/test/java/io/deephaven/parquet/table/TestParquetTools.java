@@ -3,6 +3,7 @@
 //
 package io.deephaven.parquet.table;
 
+import com.google.auto.service.AutoService;
 import com.google.common.io.BaseEncoding;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.FileUtils;
@@ -30,6 +31,7 @@ import io.deephaven.parquet.table.location.ParquetColumnResolver;
 import io.deephaven.parquet.table.location.ParquetColumnResolverMap;
 import io.deephaven.parquet.table.location.ParquetFieldIdColumnResolverFactory;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
+import io.deephaven.parquet.table.metadata.CodecInfo;
 import io.deephaven.qst.type.Type;
 import io.deephaven.stringset.HashStringSet;
 import io.deephaven.stringset.StringSet;
@@ -46,6 +48,7 @@ import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.PrimitiveType;
 import org.apache.parquet.schema.Types;
 import org.assertj.core.api.Assertions;
+import org.jetbrains.annotations.NotNull;
 import org.junit.*;
 
 import java.io.File;
@@ -1383,19 +1386,12 @@ public class TestParquetTools {
     }
 
     /**
-     * Verify functionality of {@link ParquetSchemaReader#addClassNameMap(String, String)}. In this test, we are
-     * serializing a column as an array of integers, and "mapping" the codec and column-type so that they are read back
-     * as negated longs
-     * <p>
-     * Note that this test leaves the static CLASS_NAME_MAP (in {@link ParquetSchemaReader}) in an altered state. This
-     * should not impact any other unit tests executed in the same JVM because only this particular test is using the
-     * "mapped from" classes ({@link WriteType} and {@link WriteCodec}). If the existence of those DOES alter the
-     * outcome of any other tests, it indicates a problem
+     * Verify functionality of {@link ParquetSchemaReader.CodecAdapter}. In this test, we are serializing a column as an
+     * array of integers, and "mapping" the codec and column-type so that they are read back as negated longs
      */
     @Test
     public void testClassNameMap() {
         final String writeCodecName = WriteCodec.class.getName();
-        final String writeTypeName = WriteType.class.getName();
 
         final Path parquetFile = Path.of(testRoot, "testClassNameMap.parquet");
 
@@ -1423,14 +1419,6 @@ public class TestParquetTools {
 
         ParquetTools.writeTable(writeTable, parquetFile.toString(), writeInstructions);
 
-        final String readCodecName = ReadCodec.class.getName();
-        final String readTypeName = "long[]";
-
-        // add class mappings so that we use a different codec for reading, and expect a different column-type back.
-        // NOTE that these mappings will not be removed, and may be used by other unit-tests that run in this JVM.
-        ParquetSchemaReader.addClassNameMap(writeCodecName, readCodecName);
-        ParquetSchemaReader.addClassNameMap(writeTypeName, readTypeName);
-
         final Table readTable = ParquetTools.readTable(parquetFile.toString());
 
         assertEquals(long[].class, readTable.getDefinition().getColumn("Values").getDataType());
@@ -1438,6 +1426,25 @@ public class TestParquetTools {
         final ObjectVector<long[]> values = ColumnVectors.ofObject(readTable, "Values", long[].class);
         assertThat(values.get(0)).containsExactly(-1L, -2L, -3L);
         assertThat(values.get(1)).containsExactly(-4L, -5L);
+    }
+
+    private static final CodecInfo TEST_CODEC_ADAPTER_INSTANCE = CodecInfo.builder()
+            .codecName(ReadCodec.class.getName())
+            .dataType("long[]")
+            .build();
+
+    @AutoService(ParquetSchemaReader.CodecAdapter.class)
+    public static class TestCodecAdapter implements ParquetSchemaReader.CodecAdapter {
+        public TestCodecAdapter() {}
+
+        @Override
+        public CodecInfo adapt(@NotNull final CodecInfo original) {
+            if (WriteCodec.class.getName().equals(original.codecName())
+                    && WriteType.class.getName().equals(original.dataType())) {
+                return TEST_CODEC_ADAPTER_INSTANCE;
+            }
+            return null;
+        }
     }
 
     /**
