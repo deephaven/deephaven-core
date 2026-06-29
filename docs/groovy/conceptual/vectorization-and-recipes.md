@@ -141,7 +141,7 @@ When data ticks:
 3. Engine automatically computes `Y` for the new rows.
 4. Updates propagate through the DAG.
 
-This requires significant additional infrastructure with imperative loops — a loop executes once and stops, so you would need to build your own subscription and recomputation logic.
+This requires significant additional infrastructure with imperative loops — because loops execute once and stop, you need to build your own subscription and recomputation logic.
 
 ### Update propagation example
 
@@ -162,7 +162,8 @@ Watch this table in the UI. Every second:
 - A new row arrives in `source`.
 - `XSquared` is computed for the new row.
 - `SumX` is updated for the new row.
-- **You wrote the recipe once, it runs forever**.
+
+**Write the recipe once, and it runs forever**.
 
 ### Real-world example: Time operations
 
@@ -277,12 +278,12 @@ For updates or modifications:
 - Dependencies are tracked automatically.
 - Downstream tables update accordingly.
 
-### Real-world example: Live aggregations
+### Example: Live aggregations
 
 ```groovy ticking-table order=null test-set=groovy-live-agg
 import static io.deephaven.api.updateby.UpdateByOperation.RollingAvg
 
-// Streaming data with rolling statistics
+// Streaming example data with rolling statistics
 trades = timeTable("PT0.1s").update(
     "Symbol = (i % 3 == 0) ? `AAPL` : (i % 3 == 1) ? `GOOGL` : `MSFT`",
     "Price = 100 + randomGaussian(0, 5)",
@@ -334,7 +335,7 @@ t3 = t1.where("X > 500000")
 
 See [`where`](../reference/table-operations/filter/where.md) for more details.
 
-Deephaven tables can share their RowSet with other tables in the same update graph that contain the same row keys. This sharing avoids copying data unnecessarily.
+Deephaven tables can share their `RowSet` with other tables in the same update graph that contain the same row keys. This sharing avoids copying data unnecessarily.
 
 ### Columnar vs row-oriented storage
 
