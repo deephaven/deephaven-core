@@ -3,7 +3,7 @@ title: Configuration properties reference
 sidebar_label: Configuration properties
 ---
 
-This document covers the most frequently used Deephaven Community configuration properties. Properties can be set in several ways depending on your deployment method.
+This document covers the most frequently used Deephaven Community configuration properties. You can set properties in several ways depending on your deployment method.
 
 ## How to set properties
 
@@ -146,7 +146,7 @@ These properties configure the Deephaven web interface defaults.
 
 ## Security headers
 
-These properties configure HTTP security headers for production deployments. Each header has an `.enabled` and `.value` property.
+These properties configure HTTP security headers for production deployments. Each header has a `.value` and `.enabled` property.
 
 | Header                       | Enabled Property                                       | Value Property                                       | Default Enabled | Default Value                         |
 | ---------------------------- | ------------------------------------------------------ | ---------------------------------------------------- | --------------- | ------------------------------------- |
