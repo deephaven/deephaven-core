@@ -273,7 +273,7 @@ class StockTableLocation extends AbstractTableLocation {
 
 A [`TableLocationProvider`](/core/javadoc/io/deephaven/engine/table/impl/locations/TableLocationProvider.html) discovers and manages the set of [`TableLocation`](/core/javadoc/io/deephaven/engine/table/impl/locations/TableLocation.html) objects for a given [`TableKey`](/core/javadoc/io/deephaven/engine/table/impl/locations/TableKey.html). Extend [`AbstractTableLocationProvider`](/core/javadoc/io/deephaven/engine/table/impl/locations/impl/AbstractTableLocationProvider.html) and implement:
 
-- `makeTableLocation(locationKey)`: Returns the [`TableLocation`](/core/javadoc/io/deephaven/engine/table/impl/locations/TableLocation.html) for the given [`TableKey`](/core/javadoc/io/deephaven/engine/table/impl/locations/TableKey.html).
+- `makeTableLocation(locationKey)`: Returns the [`TableLocation`](/core/javadoc/io/deephaven/engine/table/impl/locations/TableLocation.html) for the given [`TableLocationKey`](/core/javadoc/io/deephaven/engine/table/impl/locations/TableLocationKey.html).
 - `refresh()`: Re-enumerates locations; call `handleTableLocationKeyAdded` for each known key.
 - `activateUnderlyingDataSource()`: Subscribe and register known locations; call `activationSuccessful`.
 - `deactivateUnderlyingDataSource()`: Unsubscribe.
