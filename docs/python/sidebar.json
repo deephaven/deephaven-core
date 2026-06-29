@@ -64,6 +64,10 @@
                 "path": "getting-started/crash-course/query-strings.md"
               },
               {
+                "label": "Recipes, not loops!",
+                "path": "getting-started/crash-course/vectorization-vs-loops.md"
+              },
+              {
                 "label": "Python Integrations",
                 "path": "getting-started/crash-course/py-integrations.md"
               },
@@ -931,6 +935,10 @@
               {
                 "label": "Think like a Deephaven ninja",
                 "path": "conceptual/ninja.md"
+              },
+              {
+                "label": "Vectorization and the recipe paradigm",
+                "path": "conceptual/vectorization-and-recipes.md"
               },
               {
                 "label": "Performance",
