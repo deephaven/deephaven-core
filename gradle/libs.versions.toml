@@ -40,7 +40,7 @@ groovy = "3.0.25"
 # Only bump this in concert with netty (which will update boringssl). See the dependency matrix
 # for particular gRPC versions at https://github.com/grpc/grpc-java/blob/master/SECURITY.md#netty
 grpc = "1.76.2"
-netty = "4.1.135.Final"
+netty = "4.2.15.Final"
 
 protobuf-gwt='4.33.2-2'
 grpc-gwt='1.76.2-2'
