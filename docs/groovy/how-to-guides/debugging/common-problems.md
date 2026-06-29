@@ -7,7 +7,7 @@ sidebar_label: Common problems
 This guide describes common Deephaven-specific issues you may encounter when debugging Groovy code.
 
 > [!NOTE]
-> These issues are specific to how Deephaven works and are not related to your debugger setup. The examples use an [application mode](../../how-to-guides/application-mode.md) script loaded at server startup. The same limitations apply to code entered interactively in the Deephaven console.
+> These issues are specific to how Deephaven works and are not related to your debugger setup. The examples use an [application mode](../application-mode.md) script loaded at server startup. The same limitations apply to code entered interactively in the Deephaven console.
 
 ## Setup for the examples
 

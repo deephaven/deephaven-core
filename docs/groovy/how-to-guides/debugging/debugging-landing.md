@@ -24,7 +24,7 @@ The Deephaven web IDE does not have a built-in debugger. You must use an externa
 | IntelliJ IDEA Ultimate  | ✅     | ✅     |
 
 > [!NOTE]
-> Any IDE or tool that supports JDWP can connect to the debug port. This guide focuses on IntelliJ IDEA, which has first-class Groovy support.
+> Any IDE or tool that supports JDWP can connect to the debug port. This guide focuses on IntelliJ IDEA because of its excellent Groovy tooling.
 
 ## Getting started
 

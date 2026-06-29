@@ -81,7 +81,7 @@ Breakpoints work for code whose source file IntelliJ knows about. There are two 
 
 **Debugging Deephaven's internals**: Open any Java or Groovy source file from the `deephaven-core` project in IntelliJ and set a breakpoint on a line. Then run a command from the Deephaven web IDE console that exercises that code path. IntelliJ will pause when the JVM reaches that line, giving you full access to the call stack, local variables, and the ability to step through the code.
 
-**Debugging your own Groovy scripts**: Code typed interactively into the Deephaven console is compiled dynamically at runtime and cannot be matched to a source file in IntelliJ. To set breakpoints in your own code, save it as a `.groovy` file on disk and configure the server to load it at startup (see [application mode](../../how-to-guides/application-mode.md)). IntelliJ can then match breakpoints in that file to the running JVM.
+**Debugging your own Groovy scripts**: Code typed interactively into the Deephaven console is compiled dynamically at runtime and cannot be matched to a source file in IntelliJ. To set breakpoints in your own code, save it as a `.groovy` file on disk and configure the server to load it at startup (see [application mode](../application-mode.md)). IntelliJ can then match breakpoints in that file to the running JVM.
 
 IntelliJ IDEA's debugger can step through Groovy and Java source, inspect variables, evaluate expressions, and navigate the call stack. [JetBrains' debugging guide](https://www.jetbrains.com/help/idea/debugging-code.html) is a good starting point for general debugger usage.
 

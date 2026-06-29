@@ -12,7 +12,7 @@ Both [IntelliJ IDEA Community and Ultimate](https://www.jetbrains.com/idea/) edi
 
 ## 1. Configure Docker for debugging
 
-To enable JDWP, two changes are needed in your `docker-compose.yml`:
+To enable JDWP, make two changes to your `docker-compose.yml`:
 
 1. Expose the debug port (5005) from the container.
 2. Add the `-agentlib:jdwp` JVM option to `START_OPTS`.
@@ -36,7 +36,7 @@ services:
 > `START_OPTS` should only appear once in the `environment` section, but can include multiple JVM options.
 
 > [!WARNING]
-> Anonymous authentication is required for this setup. The `DAuthHandlers` setting above enables it.
+> Anonymous authentication is required for this setup. The `-DAuthHandlers` setting above enables it.
 
 The `-agentlib:jdwp` sub-options used here:
 
@@ -164,7 +164,7 @@ IntelliJ IDEA's debugger can step through and inspect variables when breakpoints
 
 **Solutions**:
 
-- Ensure anonymous authentication is enabled via `DAuthHandlers` in `START_OPTS` (see step 1).
+- Ensure anonymous authentication is enabled via `-DAuthHandlers` in `START_OPTS` (see step 1).
 - Check the IntelliJ debug console for error messages indicating the cause.
 - Try increasing JVM memory if you see out-of-memory errors (adjust `-Xmx4g` in `START_OPTS`).
 
