@@ -3,7 +3,7 @@
 //
 package io.deephaven.engine.table.impl.updateby.hashing;
 
-import com.squareup.javapoet.CodeBlock;
+import com.palantir.javapoet.CodeBlock;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.engine.rowset.RowSetFactory;
