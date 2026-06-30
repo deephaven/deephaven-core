@@ -16,7 +16,7 @@ the build uses Gradle toolchain auto-provisioning to fetch the right JDK.
 ## Build & Run
 
 The build is driven by `./gradlew` from the repo root. Subprojects are addressed by Gradle path
-(e.g. `:engine:table`, `:server-jetty-app`, `:extensions:parquet:table`).
+(e.g. `:engine-table`, `:server-jetty-app`, `:extensions-parquet-table`).
 
 ```bash
 # Run the server (Python flavor) — serves the web IDE at https://localhost:10000/ide
@@ -37,22 +37,25 @@ The PSK auth key is printed to the server log on startup; override with `-Dauthe
 ## Testing
 
 Tests use **JUnit 4 with `@Category` annotations** that route tests to different Gradle test tasks.
-The default `test` task **excludes** the categorized tests; the categorized tasks
-(`testParallel`, `testSerial`, `testOutOfBand`) **only run when `CI=true`** by default.
+The default `test` task **excludes** the three categorized types (`ParallelTest`, `SerialTest`,
+`OutOfBandTest`); each type has its own task (`testParallel`, `testSerial`, `testOutOfBand`) that
+runs *only* that category. These categorized tasks are **not** wired into `check` — run them
+explicitly by name. CI runs them nightly: the root `nightly` task and
+`.github/workflows/nightly-check-ci.yml` invoke `check`, `testParallel`, `testSerial`, and
+`testOutOfBand` directly.
 
 ```bash
 # Run the (uncategorized) tests for a module
-./gradlew :engine:table:test
+./gradlew :engine-table:test
 
 # Run a single test class or method (standard Gradle filtering)
-./gradlew :engine:table:test --tests "io.deephaven.engine.table.impl.SomeTest"
-./gradlew :engine:table:test --tests "*SomeTest.someMethod"
+./gradlew :engine-table:test --tests "io.deephaven.engine.table.impl.SomeTest"
+./gradlew :engine-table:test --tests "*SomeTest.someMethod"
 
-# Run the special categorized test suites locally
-CI=true ./gradlew :engine:table:test          # runs all categories
-./gradlew :engine:table:testParallel          # @Category(ParallelTest.class)
-./gradlew :engine:table:testSerial            # @Category(SerialTest.class) — runs single-forked
-./gradlew :engine:table:testOutOfBand         # @Category(OutOfBandTest.class)
+# Run the categorized test suites (invoke each task explicitly; CI runs them nightly)
+./gradlew :engine-table:testParallel          # @Category(ParallelTest.class)
+./gradlew :engine-table:testSerial            # @Category(SerialTest.class) — runs single-forked
+./gradlew :engine-table:testOutOfBand         # @Category(OutOfBandTest.class)
 
 # Re-run tests even if cached/unchanged
 ./gradlew :module:test -PforceTest=true
