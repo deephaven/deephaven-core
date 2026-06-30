@@ -192,8 +192,8 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
     /**
      * Cache from SHA-256 hash of class body to entry. While compilation is in-flight, the entry holds a future for
      * coordination. Once complete, the entry transitions to a weak reference so the class (and its classloader and
-     * bytecode) can be GC'd when no longer in use. All transitions are atomic via per-entry synchronization.
-     * Stale entries are cleaned up via a {@link ReferenceQueue} drained at the start of each {@link #compile} call.
+     * bytecode) can be GC'd when no longer in use. All transitions are atomic via per-entry synchronization. Stale
+     * entries are cleaned up via a {@link ReferenceQueue} drained at the start of each {@link #compile} call.
      */
     private final ConcurrentHashMap<String, CacheEntry> cache = new ConcurrentHashMap<>();
 
@@ -223,13 +223,15 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
 
     /**
      * A cache entry that transitions from in-flight (future-based coordination) to weakly-cached (reclaimable).
-     * Thread-safe: all reads/writes are synchronized on the entry itself. The entry self-transitions to weak-ref
-     * state when its future completes successfully, via a callback registered at construction time.
+     * Thread-safe: all reads/writes are synchronized on the entry itself. The entry self-transitions to weak-ref state
+     * when its future completes successfully, via a callback registered at construction time.
      *
-     * <p>Safety invariant: {@code CompletionStageFutureImpl} (extends {@code CompletableFuture}) retains its result
+     * <p>
+     * Safety invariant: {@code CompletionStageFutureImpl} (extends {@code CompletableFuture}) retains its result
      * strongly in an internal field even after listeners fire. This means any thread holding a reference to the future
-     * can still retrieve the class via {@code get()}, even after this entry has transitioned to weak-ref state.
-     * The weak reference only governs the <em>cache's</em> retention — not in-flight callers'.</p>
+     * can still retrieve the class via {@code get()}, even after this entry has transitioned to weak-ref state. The
+     * weak reference only governs the <em>cache's</em> retention — not in-flight callers'.
+     * </p>
      */
     private static final class CacheEntry {
         private CompletionStageFuture<Class<?>> future;
@@ -259,9 +261,9 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
         /**
          * Atomically resolve this entry's state. Returns one of:
          * <ul>
-         *   <li>A {@code Class<?>} — cache hit, class still alive</li>
-         *   <li>A {@code CompletionStageFuture<Class<?>>} — compilation in flight, wait on it</li>
-         *   <li>{@code null} — entry is stale (class was GC'd), caller should retry</li>
+         * <li>A {@code Class<?>} — cache hit, class still alive</li>
+         * <li>A {@code CompletionStageFuture<Class<?>>} — compilation in flight, wait on it</li>
+         * <li>{@code null} — entry is stale (class was GC'd), caller should retry</li>
          * </ul>
          */
         synchronized Optional<Future<Class<?>>> resolve() {
@@ -541,7 +543,7 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
 
         try {
             // TODO Probably should be configurable, probably shouldn't be indefinite?
-            //      Allowing timeout like this may require cleanup
+            // Allowing timeout like this may require cleanup
             final boolean completed = latch.await(10, TimeUnit.SECONDS);
             if (!completed) {
                 final String msg = "QueryCompilerImpl.compileAndDefine: latch timed out after 10s!"
