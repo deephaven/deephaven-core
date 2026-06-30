@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.context;
 
+import com.google.common.hash.Hashing;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.FileUtils;
 import io.deephaven.base.log.LogOutput;
@@ -18,23 +19,51 @@ import io.deephaven.engine.table.impl.util.OperationInitializerJobScheduler;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.util.ByteUtils;
 import io.deephaven.util.CompletionStageFuture;
 import io.deephaven.util.mutable.MutableInt;
 import org.apache.commons.text.StringEscapeUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import javax.tools.*;
-import java.io.*;
+import javax.tools.Diagnostic;
+import javax.tools.FileObject;
+import javax.tools.ForwardingJavaFileManager;
+import javax.tools.JavaCompiler;
+import javax.tools.JavaFileManager;
+import javax.tools.JavaFileObject;
+import javax.tools.SimpleJavaFileObject;
+import javax.tools.StandardLocation;
+import javax.tools.ToolProvider;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.StringWriter;
+import java.io.UncheckedIOException;
+import java.lang.ref.ReferenceQueue;
+import java.lang.ref.WeakReference;
 import java.lang.reflect.Field;
 import java.net.URI;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.jar.Attributes;
@@ -160,8 +189,94 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
         return new QueryCompilerImpl(null, classNamesForAnnotationProcessing);
     }
 
-    /** Map from SHA-256 hash of class body → future for the compiled class. Keyed by hash to avoid retaining source. */
-    private final Map<String, CompletionStageFuture<Class<?>>> knownClasses = new HashMap<>();
+    /**
+     * Cache from SHA-256 hash of class body to entry. While compilation is in-flight, the entry holds a future for
+     * coordination. Once complete, the entry transitions to a weak reference so the class (and its classloader and
+     * bytecode) can be GC'd when no longer in use. All transitions are atomic via per-entry synchronization.
+     * Stale entries are cleaned up via a {@link ReferenceQueue} drained at the start of each {@link #compile} call.
+     */
+    private final ConcurrentHashMap<String, CacheEntry> cache = new ConcurrentHashMap<>();
+
+    /** Queue that receives cleared weak references, allowing us to remove stale cache entries. */
+    private final ReferenceQueue<Class<?>> staleQueue = new ReferenceQueue<>();
+
+    /** Drains the stale queue and removes any cache entries whose weak references have been cleared by GC. */
+    private void evictStaleEntries() {
+        KeyedWeakReference ref;
+        while ((ref = (KeyedWeakReference) staleQueue.poll()) != null) {
+            cache.remove(ref.key);
+        }
+    }
+
+    /**
+     * A WeakReference that remembers its cache key, so we can remove the entry when the referent is GC'd.
+     */
+    private static final class KeyedWeakReference extends WeakReference<Class<?>> {
+        final String key;
+
+        KeyedWeakReference(@NotNull Class<?> referent, @NotNull String key,
+                @NotNull ReferenceQueue<Class<?>> queue) {
+            super(referent, queue);
+            this.key = key;
+        }
+    }
+
+    /**
+     * A cache entry that transitions from in-flight (future-based coordination) to weakly-cached (reclaimable).
+     * Thread-safe: all reads/writes are synchronized on the entry itself. The entry self-transitions to weak-ref
+     * state when its future completes successfully, via a callback registered at construction time.
+     *
+     * <p>Safety invariant: {@code CompletionStageFutureImpl} (extends {@code CompletableFuture}) retains its result
+     * strongly in an internal field even after listeners fire. This means any thread holding a reference to the future
+     * can still retrieve the class via {@code get()}, even after this entry has transitioned to weak-ref state.
+     * The weak reference only governs the <em>cache's</em> retention — not in-flight callers'.</p>
+     */
+    private static final class CacheEntry {
+        private CompletionStageFuture<Class<?>> future;
+        private WeakReference<Class<?>> classRef;
+
+        CacheEntry(@NotNull CompletionStageFuture<Class<?>> future,
+                @NotNull String key,
+                @NotNull ReferenceQueue<Class<?>> queue) {
+            this.future = future;
+            // Self-transition: when compilation completes, swap to keyed weak ref
+            future.whenComplete((clazz, err) -> {
+                if (clazz != null) {
+                    complete(clazz, key, queue);
+                }
+                // On failure, the entry stays in-flight with a failed future.
+                // The caller will remove it from the cache.
+            });
+        }
+
+        /** Transition to weak-ref state: releases the strong reference held by the completed future. */
+        private synchronized void complete(
+                @NotNull Class<?> clazz, @NotNull String key, @NotNull ReferenceQueue<Class<?>> queue) {
+            this.classRef = new KeyedWeakReference(clazz, key, queue);
+            this.future = null;
+        }
+
+        /**
+         * Atomically resolve this entry's state. Returns one of:
+         * <ul>
+         *   <li>A {@code Class<?>} — cache hit, class still alive</li>
+         *   <li>A {@code CompletionStageFuture<Class<?>>} — compilation in flight, wait on it</li>
+         *   <li>{@code null} — entry is stale (class was GC'd), caller should retry</li>
+         * </ul>
+         */
+        synchronized Optional<Future<Class<?>>> resolve() {
+            if (classRef != null) {
+                final Class<?> c = classRef.get();
+                return Optional.ofNullable(c).map(CompletableFuture::completedFuture);
+            }
+            return Optional.of(future);
+        }
+
+        /** True if completed but the class has been GC'd (stale). Used inside compute() lambda. */
+        synchronized boolean isStale() {
+            return future == null && (classRef == null || classRef.get() == null);
+        }
+    }
 
     /** The context classloader captured at construction time; used as fallback parent for per-batch classloaders. */
     private final ClassLoader parentClassLoader;
@@ -222,6 +337,9 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
             throw new IllegalArgumentException("Requests and resolvers must be the same length");
         }
 
+        // Opportunistically clean up stale cache entries whose classes have been GC'd
+        evictStaleEntries();
+
         final boolean shouldTrace =
                 log.isTraceEnabled() && Arrays.stream(requests).map(QueryCompilerRequest::packageNameRoot)
                         .anyMatch(QueryCompilerImpl::shouldTrace);
@@ -238,76 +356,80 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
             }, requests).endl();
         }
 
-        // Compute content hashes for deduplication
-        final MessageDigest digest;
-        try {
-            digest = MessageDigest.getInstance("SHA-256");
-        } catch (NoSuchAlgorithmException e) {
-            throw new UncheckedDeephavenException("Unable to create SHA-256 hashing digest", e);
-        }
-        final String[] hashes = new String[requests.length];
-        for (int ii = 0; ii < requests.length; ++ii) {
-            hashes[ii] = ByteUtils.byteArrToHex(digest.digest(
-                    requests[ii].classBody().getBytes(StandardCharsets.UTF_8)));
-        }
-
-        // noinspection unchecked
-        final CompletionStageFuture<Class<?>>[] allFutures = new CompletionStageFuture[requests.length];
-
+        // For each request: cache hit, in-flight wait, or needs compilation
         final List<QueryCompilerRequest> newRequests = new ArrayList<>();
         final List<CompletionStageFuture.Resolver<Class<?>>> newResolvers = new ArrayList<>();
         final List<String> newHashes = new ArrayList<>();
+        final List<Future<Class<?>>> allFutures = new ArrayList<>(requests.length);
 
-        synchronized (this) {
-            for (int ii = 0; ii < requests.length; ++ii) {
-                final QueryCompilerRequest request = requests[ii];
-                final CompletionStageFuture.Resolver<Class<?>> resolver = resolvers[ii];
+        for (int ii = 0; ii < requests.length; ++ii) {
+            // Compute content hash for deduplication
+            QueryCompilerRequest req = requests[ii];
+            String hash = Hashing.sha256().hashString(req.classBody(), StandardCharsets.UTF_8).toString();
 
-                CompletionStageFuture<Class<?>> future =
-                        knownClasses.putIfAbsent(hashes[ii], resolver.getFuture());
-                if (future == null) {
-                    newRequests.add(request);
+            final CompletionStageFuture.Resolver<Class<?>> resolver = resolvers[ii];
+
+            // Resolve cache state, retrying if we hit a stale entry race
+            Optional<Future<Class<?>>> resolved;
+            while (true) {
+                final CacheEntry entry = cache.compute(hash, (key, existing) -> {
+                    if (existing != null && !existing.isStale()) {
+                        return existing;
+                    }
+
+                    // No/stale existing entry, we will do the compilation ourselves
                     newResolvers.add(resolver);
-                    newHashes.add(hashes[ii]);
-                    future = resolver.getFuture();
-                } else if (shouldTrace) {
-                    log.trace().append("Found existing future in knownClasses for ").append(request.className())
-                            .append(" (done=").append(future.isDone()).append(")").endl();
+                    newRequests.add(req);
+                    newHashes.add(hash);
+                    return new CacheEntry(resolver.getFuture(), key, staleQueue);
+                });
+
+                resolved = entry.resolve();
+                if (resolved.isPresent()) {
+                    // Got a future, either to our work, or someone else's
+                    allFutures.add(resolved.get());
+                    break;
                 }
-                allFutures[ii] = future;
+                // Stale race: entry transitioned between compute() and resolve(). Remove and retry.
+                cache.remove(hash, entry);
             }
         }
 
+        // Compile new requests
         if (!newResolvers.isEmpty()) {
-            // It's my job to fulfill these futures.
             try {
                 compileHelper(newRequests, newResolvers, newHashes);
             } catch (RuntimeException e) {
-                // These failures are not applicable to a single request, so we can't just complete the future and
-                // leave the failure in the cache.
-                synchronized (this) {
-                    for (int ii = 0; ii < newRequests.size(); ++ii) {
-                        if (newResolvers.get(ii).completeExceptionally(e)) {
-                            knownClasses.remove(newHashes.get(ii));
-                        }
+                for (int ii = 0; ii < newHashes.size(); ++ii) {
+                    if (newResolvers.get(ii).completeExceptionally(e)) {
+                        cache.remove(newHashes.get(ii));
                     }
                 }
                 throw e;
             }
+
+            // Remove cache entries for failed or incomplete compilations
+            // (successful ones self-transitioned to weak refs via whenComplete)
+            for (int ii = 0; ii < newHashes.size(); ++ii) {
+                try {
+                    newResolvers.get(ii).getFuture().get(); // throws if completed exceptionally
+                } catch (Exception ex) {
+                    cache.remove(newHashes.get(ii));
+                }
+            }
         }
 
+        // Wait on in-flight futures from other compilations
         for (int ii = 0; ii < requests.length; ++ii) {
+            final Future<Class<?>> future = allFutures.get(ii);
             try {
-                final CompletionStageFuture<Class<?>> future = allFutures[ii];
-                // TODO do we want a timeout here, knowing that this might leave other bad state?
                 resolvers[ii].complete(future.get(10, TimeUnit.SECONDS));
             } catch (TimeoutException err) {
                 final String msg = "Timed out (10s) waiting for class compilation"
                         + " request[" + ii + "] className=" + requests[ii].className()
-                        + " future=" + allFutures[ii]
-                        + " isDone=" + allFutures[ii].isDone();
+                        + " future=" + future
+                        + " isDone=" + future.isDone();
                 log.error().append(msg).endl();
-                // Fail all remaining resolvers and throw immediately
                 final UncheckedDeephavenException timeout = new UncheckedDeephavenException(msg);
                 for (int jj = ii; jj < requests.length; ++jj) {
                     resolvers[jj].completeExceptionally(timeout);
@@ -318,7 +440,7 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
             } catch (InterruptedException err) {
                 // This can only occur if we are interrupted while waiting for the future to complete from another
                 // compilation request.
-                Assert.notEquals(resolvers[ii], "resolvers[ii]", allFutures[ii], "allFutures[ii]");
+                Assert.notEquals(resolvers[ii], "resolvers[ii]", allFutures.get(ii), "allFutures.get(ii)");
                 resolvers[ii].completeExceptionally(err);
             } catch (Throwable err) {
                 resolvers[ii].completeExceptionally(err);
@@ -477,7 +599,6 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
 
         final MutableInt numFailures = new MutableInt(0);
         final List<RuntimeException> globalFailures = new ArrayList<>();
-
         compiler.getTask(compilerOutput,
                 outputFm,
                 diagnostic -> {
