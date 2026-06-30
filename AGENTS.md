@@ -36,7 +36,11 @@ The PSK auth key is printed to the server log on startup; override with `-Dauthe
 
 ## Testing
 
-Tests use **JUnit 4 with `@Category` annotations** that route tests to different Gradle test tasks.
+Most tests — including the engine suite — use **JUnit 4**, where **`@Category` annotations** route
+tests to different Gradle test tasks. (The repo also contains other frameworks: many newer
+client/extension modules use **JUnit 5** (Jupiter) via `useJUnitPlatform()`, and some legacy modules
+such as `Plot` still use **JUnit 3** / `junit.framework.TestCase`.) The category-based routing below
+applies to the JUnit 4 tests.
 The default `test` task **excludes** the three categorized types (`ParallelTest`, `SerialTest`,
 `OutOfBandTest`); each type has its own task (`testParallel`, `testSerial`, `testOutOfBand`) that
 runs *only* that category. These categorized tasks are **not** wired into `check` — run them
