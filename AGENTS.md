@@ -10,7 +10,7 @@ data. The core engine is Java; it is consumed from Python, Groovy, and a set of 
 (Java, Python, C++, JS, Go, R) that communicate over gRPC + Apache Arrow Flight + the Barrage
 streaming protocol.
 
-This is a large Gradle multi-project monorepo (200+ subprojects). Java 11–22 is required;
+This is a large Gradle multi-project monorepo (200+ subprojects). Java 11–25 is required;
 the build uses Gradle toolchain auto-provisioning to fetch the right JDK.
 
 ## Build & Run
