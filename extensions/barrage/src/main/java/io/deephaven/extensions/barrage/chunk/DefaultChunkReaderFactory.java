@@ -181,16 +181,107 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
         return newReaderPojo(fieldTypeInfo, options, true);
     }
 
+    /** Like {@link #newReader} but also wires dictionary registry and values-reader collection. */
+    public <T extends WritableChunk<Values>> ChunkReader<T> newReader(
+            @NotNull final BarrageTypeInfo<org.apache.arrow.flatbuf.Field> typeInfo,
+            @NotNull final BarrageOptions options,
+            @Nullable final DictionaryReaderRegistry registry,
+            @Nullable final Map<Long, ChunkReader<? extends WritableChunk<Values>>> dictValuesReadersOut) {
+        final BarrageTypeInfo<Field> fieldTypeInfo = new BarrageTypeInfo<>(
+                typeInfo.type(),
+                typeInfo.componentType(),
+                Field.convertField(typeInfo.arrowField()));
+        return newReaderPojo(fieldTypeInfo, options, true, registry, dictValuesReadersOut);
+    }
 
+
+    /** Shim for internal (non-dict-aware) callers; delegates to the registry-aware overload with null registry. */
     public <T extends WritableChunk<Values>> ChunkReader<T> newReaderPojo(
             @NotNull final BarrageTypeInfo<Field> typeInfo,
             @NotNull final BarrageOptions options,
             final boolean isTopLevel) {
-        // TODO (deephaven/deephaven-core#6034): Dictionary Support
+        return newReaderPojo(typeInfo, options, isTopLevel, null, null);
+    }
+
+    /**
+     * Creates a chunk reader for a schema field, supporting dictionary-encoded fields.
+     *
+     * @param typeInfo field metadata
+     * @param options barrage options
+     * @param isTopLevel whether this is a top-level column (as opposed to a nested child)
+     * @param registry per-stream dictionary registry; {@code null} means dictionary encoding is not supported and a
+     *        dict-encoded field will throw
+     * @param dictValuesReadersOut if non-null, populated with {@code (dictId → valuesReader)} entries for each
+     *        dictionary-encoded field encountered; callers use these to decode DictionaryBatch bodies
+     */
+    public <T extends WritableChunk<Values>> ChunkReader<T> newReaderPojo(
+            @NotNull final BarrageTypeInfo<Field> typeInfo,
+            @NotNull final BarrageOptions options,
+            final boolean isTopLevel,
+            @Nullable final DictionaryReaderRegistry registry,
+            @Nullable final java.util.Map<Long, ChunkReader<? extends WritableChunk<Values>>> dictValuesReadersOut) {
+        final Field field = typeInfo.arrowField();
+
+        // Dictionary encoding is identified by the presence of a DictionaryEncoding on the field, not by typeId.
+        final org.apache.arrow.vector.types.pojo.DictionaryEncoding dictEncoding = field.getDictionary();
+        if (dictEncoding != null) {
+            if (registry == null) {
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                        "Dictionary-encoded field '" + field.getName()
+                                + "' requires a DictionaryReaderRegistry; none was provided");
+            }
+            final long dictId = dictEncoding.getId();
+            final ArrowType.Int indexArrowType = dictEncoding.getIndexType();
+            final int indexBitWidth = indexArrowType.getBitWidth();
+            final Class<?> indexJavaType;
+            switch (indexBitWidth) {
+                case 8:
+                    indexJavaType = byte.class;
+                    break;
+                case 16:
+                    indexJavaType = short.class;
+                    break;
+                case 64:
+                    indexJavaType = long.class;
+                    break;
+                default:
+                    indexJavaType = int.class;
+                    break;
+            }
+            // Build a synthetic Int field for the index reader.
+            final Field indexField = new Field("",
+                    new org.apache.arrow.vector.types.pojo.FieldType(
+                            true, new ArrowType.Int(indexBitWidth, true), null),
+                    java.util.Collections.emptyList());
+            // Delegate to the standard reader for the index type (reads raw Int16/Int32/Int64).
+            final ChunkReader<? extends WritableChunk<Values>> indexReader = newReaderPojo(
+                    new BarrageTypeInfo<>(indexJavaType, null, indexField),
+                    options, false, null, null);
+
+            // Values reader: strips the DictionaryEncoding and reads as the base value type.
+            final Field valuesField = new Field(field.getName(),
+                    new org.apache.arrow.vector.types.pojo.FieldType(
+                            field.isNullable(), field.getType(), null, field.getMetadata()),
+                    field.getChildren());
+            final BarrageTypeInfo<Field> valuesTypeInfo =
+                    new BarrageTypeInfo<>(typeInfo.type(), typeInfo.componentType(), valuesField);
+            final ChunkType valuesChunkType = BarrageUtil.getDefaultType(valuesField).chunkType();
+            final ChunkReader<? extends WritableChunk<Values>> valuesReader =
+                    newReaderPojo(valuesTypeInfo, options, false, null, null);
+
+            if (dictValuesReadersOut != null) {
+                // Register only once per dict id (multiple columns may share the same id).
+                dictValuesReadersOut.putIfAbsent(dictId, valuesReader);
+            }
+
+            // noinspection unchecked
+            return (ChunkReader<T>) new DictionaryChunkReader(dictId, indexReader, valuesChunkType, registry);
+        }
+
         // TODO (deephaven/deephaven-core#): Utf8View Support
         // TODO (deephaven/deephaven-core#): BinaryView Support
 
-        final Field field = typeInfo.arrowField();
+
 
         final ArrowType.ArrowTypeID typeId = field.getType().getTypeID();
         final boolean isSpecialType = SPECIAL_TYPES.contains(typeId);

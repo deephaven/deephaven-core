@@ -3,8 +3,10 @@
 //
 package io.deephaven.extensions.barrage.util;
 
+import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
@@ -12,6 +14,7 @@ import io.deephaven.extensions.barrage.ColumnEncoding;
 import io.deephaven.proto.flight.util.SchemaHelper;
 import org.apache.arrow.vector.types.Types;
 import org.apache.arrow.vector.types.pojo.ArrowType;
+import org.apache.arrow.vector.types.pojo.DictionaryEncoding;
 import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.arrow.vector.types.pojo.FieldType;
 import org.apache.arrow.vector.types.pojo.Schema;
@@ -372,5 +375,99 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
         assertThat(field.getType().getTypeID())
                 .as("field %s should not be RunEndEncoded", columnName)
                 .isNotEqualTo(ArrowType.ArrowTypeID.RunEndEncoded);
+    }
+
+    // -------------------------------------------------------------------------
+    // Dictionary encoding schema tests
+    // -------------------------------------------------------------------------
+
+    public void testMakeSchemaWithDictionaryInt32() {
+        final TableDefinition tableDef = TableDefinition.of(ColumnDefinition.ofString("Symbol"));
+        final Schema schema = BarrageUtil.makeSchema(
+                BarrageSubscriptionOptions.builder().build(),
+                tableDef,
+                Collections.emptyMap(),
+                false,
+                Map.of("Symbol", io.deephaven.extensions.barrage.ColumnEncoding.DICTIONARY_ENCODED_INT32));
+
+        assertFieldIsDictionary(schema, "Symbol", 32);
+        final DictionaryEncoding enc = schema.findField("Symbol").getDictionary();
+        assertThat(enc.getId()).isEqualTo(0L);
+    }
+
+    public void testMakeSchemaWithDictionaryInt8() {
+        final TableDefinition tableDef = TableDefinition.of(ColumnDefinition.ofString("Symbol"));
+        final Schema schema = BarrageUtil.makeSchema(
+                BarrageSubscriptionOptions.builder().build(),
+                tableDef,
+                Collections.emptyMap(),
+                false,
+                Map.of("Symbol", io.deephaven.extensions.barrage.ColumnEncoding.DICTIONARY_ENCODED_INT8));
+
+        assertFieldIsDictionary(schema, "Symbol", 8);
+        final DictionaryEncoding enc = schema.findField("Symbol").getDictionary();
+        assertThat(enc.getId()).isEqualTo(0L);
+    }
+
+    public void testMakeSchemaWithDictionaryInt16() {
+        final TableDefinition tableDef = TableDefinition.of(ColumnDefinition.ofString("Symbol"));
+        final Schema schema = BarrageUtil.makeSchema(
+                BarrageSubscriptionOptions.builder().build(),
+                tableDef,
+                Collections.emptyMap(),
+                false,
+                Map.of("Symbol", io.deephaven.extensions.barrage.ColumnEncoding.DICTIONARY_ENCODED_INT16));
+
+        assertFieldIsDictionary(schema, "Symbol", 16);
+        final DictionaryEncoding enc = schema.findField("Symbol").getDictionary();
+        assertThat(enc.getId()).isEqualTo(0L);
+    }
+
+    public void testTwoDictionaryColumnsGetSequentialIds() {
+        final TableDefinition tableDef = TableDefinition.of(
+                ColumnDefinition.ofString("Symbol"),
+                ColumnDefinition.ofString("Exchange"));
+        final Schema schema = BarrageUtil.makeSchema(
+                BarrageSubscriptionOptions.builder().build(),
+                tableDef,
+                Collections.emptyMap(),
+                false,
+                Map.of(
+                        "Symbol", io.deephaven.extensions.barrage.ColumnEncoding.DICTIONARY_ENCODED_INT32,
+                        "Exchange", io.deephaven.extensions.barrage.ColumnEncoding.DICTIONARY_ENCODED_INT32));
+
+        assertFieldIsDictionary(schema, "Symbol", 32);
+        assertFieldIsDictionary(schema, "Exchange", 32);
+        final long symbolId = schema.findField("Symbol").getDictionary().getId();
+        final long exchangeId = schema.findField("Exchange").getDictionary().getId();
+        assertThat(new long[] {symbolId, exchangeId}).containsExactlyInAnyOrder(0L, 1L);
+    }
+
+    public void testEncodingsFromSchemaRoundTripsDictionary() {
+        final TableDefinition tableDef = TableDefinition.of(ColumnDefinition.ofString("Symbol"));
+        final Schema dictSchema = BarrageUtil.makeSchema(
+                BarrageSubscriptionOptions.builder().build(),
+                tableDef,
+                Collections.emptyMap(),
+                false,
+                Map.of("Symbol", io.deephaven.extensions.barrage.ColumnEncoding.DICTIONARY_ENCODED_INT16));
+
+        final Table base = newTable(stringCol("Symbol", "AAPL"));
+        final Table annotated = base.withAttributes(Map.of(Table.BARRAGE_SCHEMA_ATTRIBUTE, dictSchema));
+        final Schema result = BarrageUtil.schemaFromTable(annotated);
+
+        assertFieldIsDictionary(result, "Symbol", 16);
+    }
+
+    private static void assertFieldIsDictionary(final Schema schema, final String columnName,
+            final int expectedIndexBitWidth) {
+        final Field field = schema.findField(columnName);
+        assertThat(field).as("field %s", columnName).isNotNull();
+        final DictionaryEncoding enc = field.getDictionary();
+        assertThat(enc).as("field %s should have DictionaryEncoding", columnName).isNotNull();
+        assertThat(enc.getIndexType()).as("field %s index type", columnName).isInstanceOf(ArrowType.Int.class);
+        assertThat(((ArrowType.Int) enc.getIndexType()).getBitWidth())
+                .as("field %s index bit width", columnName)
+                .isEqualTo(expectedIndexBitWidth);
     }
 }

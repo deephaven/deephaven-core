@@ -11,10 +11,18 @@ package io.deephaven.extensions.barrage;
  */
 public enum ColumnEncoding {
     // Int32 is default run-end encoding if not specified
-    RUN_END_ENCODED_INT16, RUN_END_ENCODED_INT32, RUN_END_ENCODED_INT64, DICTIONARY_ENCODED;
+    RUN_END_ENCODED_INT16, RUN_END_ENCODED_INT32, RUN_END_ENCODED_INT64,
+    // Int32 is default dictionary-index encoding if not specified
+    DICTIONARY_ENCODED_INT8, DICTIONARY_ENCODED_INT16, DICTIONARY_ENCODED_INT32, DICTIONARY_ENCODED_INT64;
 
     /** Returns {@code true} for any run-end encoding variant. */
     public boolean isRunEndEncoded() {
         return this == RUN_END_ENCODED_INT16 || this == RUN_END_ENCODED_INT32 || this == RUN_END_ENCODED_INT64;
+    }
+
+    /** Returns {@code true} for any dictionary encoding variant. */
+    public boolean isDictionaryEncoded() {
+        return this == DICTIONARY_ENCODED_INT8 || this == DICTIONARY_ENCODED_INT16
+                || this == DICTIONARY_ENCODED_INT32 || this == DICTIONARY_ENCODED_INT64;
     }
 }

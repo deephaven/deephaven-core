@@ -120,7 +120,10 @@ import org.apache.arrow.vector.types.IntervalUnit;
 import org.apache.arrow.vector.types.TimeUnit;
 import org.apache.arrow.vector.types.Types;
 import org.apache.arrow.vector.types.UnionMode;
+import org.apache.arrow.vector.dictionary.Dictionary;
+import org.apache.arrow.vector.dictionary.DictionaryProvider;
 import org.apache.arrow.vector.types.pojo.ArrowType;
+import org.apache.arrow.vector.types.pojo.DictionaryEncoding;
 import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.arrow.vector.types.pojo.FieldType;
 import org.apache.arrow.vector.types.pojo.Schema;
@@ -3659,6 +3662,104 @@ public class BarrageChunkFactoryTest {
             return QueryConstants.MAX_LONG;
         }
         throw new IllegalArgumentException("Unexpected type: " + dhType);
+    }
+
+    // ---- Dictionary Encoded interop test ----
+
+    /**
+     * Verifies Arrow Flight interop for Dictionary-Encoded columns (download direction):
+     * <ol>
+     * <li>Upload plain Utf8 from stock Arrow → confirm DH stores as flat String column.</li>
+     * <li>Annotate the table with a BARRAGE_SCHEMA_ATTRIBUTE containing DictionaryEncoding.</li>
+     * <li>Download the annotated table → confirm stock Arrow receives dictionary-encoded data (schema field has
+     * DictionaryEncoding, DictionaryProvider carries the values).</li>
+     * </ol>
+     *
+     * <p>
+     * Note: DH's DoPut handler does not yet accept incoming DictionaryBatch IPC messages, so the upload direction of
+     * the interop is not tested here. Only the download (DH → Arrow) direction is exercised.
+     */
+    @Test
+    public void testDictionaryEncodedInterop() throws Exception {
+        final String[] logicalValues = {"apple", null, "banana", "apple", "cherry", null, "banana", "apple"};
+        final int numRows = logicalValues.length;
+
+        // --- Step 1: Upload plain Utf8 data (no dict encoding; server accepts regular RecordBatch) ---
+        final int rawTicket = nextTicket++;
+        try (final VarCharVector plainVec =
+                new VarCharVector(COLUMN_NAME, FieldType.nullable(Types.MinorType.VARCHAR.getType()), allocator)) {
+            plainVec.allocateNew();
+            for (int i = 0; i < numRows; ++i) {
+                if (logicalValues[i] == null) {
+                    plainVec.setNull(i);
+                } else {
+                    plainVec.setSafe(i, logicalValues[i].getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                }
+            }
+            plainVec.setValueCount(numRows);
+
+            try (final VectorSchemaRoot source = VectorSchemaRoot.of(plainVec)) {
+                source.setRowCount(numRows);
+                final FlightDescriptor descriptor =
+                        FlightDescriptor.path("export", Integer.toString(rawTicket));
+                final FlightClient.ClientStreamListener putStream =
+                        flightClient.startPut(descriptor, source, new AsyncPutListener());
+                putStream.putNext();
+                putStream.completed();
+                putStream.getResult();
+            }
+        }
+
+        // --- Step 2: Verify DH stored the data as a flat String column ---
+        final CompletableFuture<Table> rawFuture = new CompletableFuture<>();
+        final SessionState.ExportObject<Table> rawExport = currentSession.getExport(rawTicket);
+        currentSession.nonExport()
+                .onErrorHandler(e -> rawFuture.cancel(true))
+                .require(rawExport)
+                .submit(() -> rawFuture.complete(rawExport.get()));
+        final Table uploadedTable = rawFuture.get();
+
+        assertEquals(numRows, uploadedTable.size());
+        assertEquals(String.class, uploadedTable.getColumnSource(COLUMN_NAME).getType());
+        final ColumnSource<String> strSrc = uploadedTable.getColumnSource(COLUMN_NAME);
+        for (int i = 0; i < numRows; ++i) {
+            assertEquals("Value mismatch at row " + i, logicalValues[i], strSrc.get(i));
+        }
+
+        // --- Step 3: Create annotated export with BARRAGE_SCHEMA_ATTRIBUTE = dict schema ---
+        // Build the dict schema directly: a single nullable Utf8 field with DictionaryEncoding(id=0, Int32).
+        // BarrageUtil.encodingsFromSchema() reads this and yields DICTIONARY_ENCODED_INT32 for the column.
+        final Schema dictSchema = new Schema(Collections.singletonList(new Field(
+                COLUMN_NAME,
+                new FieldType(true, new ArrowType.Utf8(),
+                        new DictionaryEncoding(0L, false, new ArrowType.Int(32, true)), null),
+                Collections.emptyList())));
+
+        final int annotatedTicket = nextTicket++;
+        currentSession.newExport(annotatedTicket)
+                .require(rawExport)
+                .submit(() -> rawExport.get().withAttributes(
+                        Map.of(Table.BARRAGE_SCHEMA_ATTRIBUTE, dictSchema)));
+
+        // --- Step 4: Download and confirm stock Arrow receives dictionary-encoded data ---
+        try (final FlightStream stream = flightClient.getStream(flightTicketFor(annotatedTicket))) {
+            final Schema downloadSchema = stream.getSchema();
+            final Field downloadField = downloadSchema.findField(COLUMN_NAME);
+            assertNotNull("Field not found in download schema: " + COLUMN_NAME, downloadField);
+            assertNotNull(
+                    "Expected DictionaryEncoding on downloaded field " + COLUMN_NAME,
+                    downloadField.getDictionary());
+
+            assertTrue("Expected at least one payload on download", stream.next());
+            assertEquals("Row count mismatch on download", numRows, stream.getRoot().getRowCount());
+
+            // DictionaryProvider must carry the dict values for id=0.
+            final DictionaryProvider dp = stream.getDictionaryProvider();
+            final Dictionary downloadedDict = dp.lookup(0L);
+            assertNotNull("Expected dictionary id=0 in download stream", downloadedDict);
+            assertTrue("Dict values vector must be non-empty",
+                    downloadedDict.getVector().getValueCount() > 0);
+        }
     }
 
     // ---- Run-End Encoded interop test ----

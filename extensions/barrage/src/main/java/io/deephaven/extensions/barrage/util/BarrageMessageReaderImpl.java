@@ -26,10 +26,12 @@ import io.deephaven.extensions.barrage.BarrageTypeInfo;
 import io.deephaven.extensions.barrage.chunk.ChunkWriter;
 import io.deephaven.extensions.barrage.chunk.ChunkReader;
 import io.deephaven.extensions.barrage.chunk.DefaultChunkReaderFactory;
+import io.deephaven.extensions.barrage.chunk.DictionaryReaderRegistry;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
+import org.apache.arrow.flatbuf.DictionaryBatch;
 import org.apache.arrow.flatbuf.Field;
 import org.apache.arrow.flatbuf.Message;
 import org.apache.arrow.flatbuf.MessageHeader;
@@ -42,8 +44,10 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.PrimitiveIterator;
 import java.util.function.LongConsumer;
 
@@ -65,6 +69,8 @@ public class BarrageMessageReaderImpl implements BarrageMessageReader {
 
     private final ChunkReader.Factory chunkReaderFactory = DefaultChunkReaderFactory.INSTANCE;
     private final List<ChunkReader<?>> readers = new ArrayList<>();
+    private final DictionaryReaderRegistry dictionaryRegistry = new DictionaryReaderRegistry();
+    private final Map<Long, ChunkReader<? extends WritableChunk<Values>>> dictValuesReaders = new HashMap<>();
 
     public BarrageMessageReaderImpl() {
         this(tm -> {
@@ -213,7 +219,52 @@ public class BarrageMessageReaderImpl implements BarrageMessageReader {
                     throw new IllegalStateException("Missing metadata header; cannot decode body");
                 }
 
-                if (header.headerType() != org.apache.arrow.flatbuf.MessageHeader.RecordBatch) {
+                if (header.headerType() == MessageHeader.DictionaryBatch) {
+                    // Update the dictionary registry; return null to continue processing the message
+                    bodyParsed = true;
+                    final int dictBodySize = decoder.readRawVarint32();
+                    final DictionaryBatch dictBatch =
+                            (DictionaryBatch) header.header(new DictionaryBatch());
+                    final long dictId = dictBatch.id();
+                    final boolean dictIsDelta = dictBatch.isDelta();
+                    final RecordBatch valuesBatch = dictBatch.data();
+
+                    final ChunkReader<? extends WritableChunk<Values>> valuesReader =
+                            dictValuesReaders.get(dictId);
+                    if (valuesReader == null) {
+                        throw new IllegalStateException(
+                                "Unknown dictionary id " + dictId + " (no dict-encoded column in schema)");
+                    }
+                    try (final LittleEndianDataInputStream ois = new LittleEndianDataInputStream(
+                            new BarrageProtoUtil.ObjectInputStreamAdapter(decoder, dictBodySize))) {
+                        final Iterator<ChunkWriter.FieldNodeInfo> fieldNodeIter =
+                                new FlatBufferIteratorAdapter<>(valuesBatch.nodesLength(),
+                                        i -> new ChunkWriter.FieldNodeInfo(valuesBatch.nodes(i)));
+
+                        final long[] bufferInfo = new long[valuesBatch.buffersLength()];
+                        for (int bi = 0; bi < valuesBatch.buffersLength(); ++bi) {
+                            int offset = LongSizedDataStructure.intSize("DictionaryBatch.BufferInfo",
+                                    valuesBatch.buffers(bi).offset());
+                            int length = LongSizedDataStructure.intSize("DictionaryBatch.BufferInfo",
+                                    valuesBatch.buffers(bi).length());
+                            if (bi < valuesBatch.buffersLength() - 1) {
+                                final int nextOffset = LongSizedDataStructure.intSize(
+                                        "DictionaryBatch.BufferInfo", valuesBatch.buffers(bi + 1).offset());
+                                length += Math.max(0, nextOffset - offset - length);
+                            }
+                            bufferInfo[bi] = length;
+                        }
+                        final PrimitiveIterator.OfLong bufferInfoIter = Arrays.stream(bufferInfo).iterator();
+
+                        try (final WritableChunk<Values> valuesChunk =
+                                valuesReader.readChunk(fieldNodeIter, bufferInfoIter, ois, null, 0, 0)) {
+                            dictionaryRegistry.update(dictId, valuesChunk, dictIsDelta);
+                        }
+                    }
+                    continue;
+                }
+
+                if (header.headerType() != MessageHeader.RecordBatch) {
                     throw new IllegalStateException("Only know how to decode Schema/BarrageRecordBatch messages");
                 }
 
@@ -352,8 +403,9 @@ public class BarrageMessageReaderImpl implements BarrageMessageReader {
                     Field field = schema.fields(i);
 
                     final Class<?> columnType = ReinterpretUtils.maybeConvertToPrimitiveDataType(columnTypes[i]);
-                    readers.add(chunkReaderFactory.newReader(
-                            BarrageTypeInfo.make(columnType, componentTypes[i], field), options));
+                    final BarrageTypeInfo<Field> typeInfo = BarrageTypeInfo.make(columnType, componentTypes[i], field);
+                    readers.add(DefaultChunkReaderFactory.INSTANCE.newReader(
+                            typeInfo, options, dictionaryRegistry, dictValuesReaders));
                 }
                 return null;
             }
