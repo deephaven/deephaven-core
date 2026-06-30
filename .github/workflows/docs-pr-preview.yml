@@ -37,7 +37,7 @@ jobs:
 
       - name: No changes comment
         if: ${{ !contains(steps.filter.outputs.*, 'true') }}
-        uses: marocchino/sticky-pull-request-comment@v2
+        uses: marocchino/sticky-pull-request-comment@v3
         with:
           message: |
             ## No docs changes detected for ${{ github.event.pull_request.head.sha }}
@@ -53,7 +53,7 @@ jobs:
 
     steps:
       - name: Deploy preview comment
-        uses: marocchino/sticky-pull-request-comment@v2
+        uses: marocchino/sticky-pull-request-comment@v3
         with:
           message: |
             ## Deploying docs previews for ${{ github.event.pull_request.head.sha }} (available for 14 days)
@@ -82,7 +82,7 @@ jobs:
           aws-role: ${{ vars.DOCS_AWS_ROLE }}
       - name: Update PR comment
         if: ${{ steps.sync-python.outcome == 'success' }}
-        uses: marocchino/sticky-pull-request-comment@v2
+        uses: marocchino/sticky-pull-request-comment@v3
         with:
           append: true
           message: |
@@ -100,7 +100,7 @@ jobs:
           aws-role: ${{ vars.DOCS_AWS_ROLE }}
       - name: Update PR comment
         if: ${{ steps.sync-groovy.outcome == 'success' }}
-        uses: marocchino/sticky-pull-request-comment@v2
+        uses: marocchino/sticky-pull-request-comment@v3
         with:
           append: true
           message: |
@@ -108,7 +108,7 @@ jobs:
 
       - name: Update PR comment on fail
         if: ${{ failure() }}
-        uses: marocchino/sticky-pull-request-comment@v2
+        uses: marocchino/sticky-pull-request-comment@v3
         with:
           message: |
             ## :warning: Failed to deploy docs previews for ${{ github.event.pull_request.head.sha }}
