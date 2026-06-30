@@ -57,7 +57,7 @@ public abstract class SessionImplConfig {
             ScheduledExecutorService defaultScheduler) {
         final SessionImplConfig.Builder builder = SessionImplConfig.builder()
                 .executor(sessionConfig.scheduler().orElse(defaultScheduler))
-                .channel(new DeephavenChannelImpl(managedChannel))
+                .channel(new DeephavenChannel(managedChannel))
                 .delegateToBatch(sessionConfig.delegateToBatch())
                 .mixinStacktrace(sessionConfig.mixinStacktrace())
                 .executeTimeout(sessionConfig.executeTimeout())
