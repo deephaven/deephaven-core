@@ -46,7 +46,7 @@ public final class DictionaryReaderRegistry {
             dictValues.put(dictId, current);
         }
         for (int i = 0; i < n; ++i) {
-            current.add(DictionaryChunkWriter.boxValue(valuesChunk, i));
+            current.add(DictionaryChunkWriter.rawBoxValue(valuesChunk, i));
         }
     }
 

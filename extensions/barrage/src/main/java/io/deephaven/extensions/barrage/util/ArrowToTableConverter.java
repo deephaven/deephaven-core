@@ -136,9 +136,11 @@ public class ArrowToTableConverter {
     }
 
     /**
-     * Updates the per-stream {@link DictionaryReaderRegistry} from a parsed {@code DictionaryBatch} message. Silently
-     * skips unknown dictionary ids (no reader registered for that id). Callable by subclasses that receive
-     * {@code DictionaryBatch} messages through a different transport path (e.g. gRPC doPut streaming).
+     * Updates the per-stream {@link DictionaryReaderRegistry} from a parsed {@code DictionaryBatch} message. Callable
+     * by subclasses that receive {@code DictionaryBatch} messages through a different transport path (e.g. gRPC doPut
+     * streaming).
+     *
+     * @throws IllegalStateException if the dictionary id is not present in the schema
      */
     protected void applyDictionaryBatch(@NotNull final BarrageProtoUtil.MessageInfo mi) {
         final DictionaryBatch dictBatch = (DictionaryBatch) mi.header.header(new DictionaryBatch());
@@ -147,17 +149,19 @@ public class ArrowToTableConverter {
         final RecordBatch valuesBatch = dictBatch.data();
 
         final ChunkReader<? extends WritableChunk<Values>> valuesReader = dictValuesReaders.get(dictId);
-        if (valuesReader != null) {
-            final Iterator<ChunkWriter.FieldNodeInfo> fieldNodeIter =
-                    new FlatBufferIteratorAdapter<>(valuesBatch.nodesLength(),
-                            i -> new ChunkWriter.FieldNodeInfo(valuesBatch.nodes(i)));
-            final PrimitiveIterator.OfLong bufferInfoIter = extractBufferInfo(valuesBatch);
-            try (final WritableChunk<Values> valuesChunk =
-                    valuesReader.readChunk(fieldNodeIter, bufferInfoIter, mi.inputStream, null, 0, 0)) {
-                dictionaryRegistry.update(dictId, valuesChunk, dictIsDelta);
-            } catch (final IOException e) {
-                throw new UncheckedDeephavenException("Failed to decode DictionaryBatch id=" + dictId, e);
-            }
+        if (valuesReader == null) {
+            throw new IllegalStateException(
+                    "Unknown dictionary id " + dictId + " (no dict-encoded column in schema)");
+        }
+        final Iterator<ChunkWriter.FieldNodeInfo> fieldNodeIter =
+                new FlatBufferIteratorAdapter<>(valuesBatch.nodesLength(),
+                        i -> new ChunkWriter.FieldNodeInfo(valuesBatch.nodes(i)));
+        final PrimitiveIterator.OfLong bufferInfoIter = extractBufferInfo(valuesBatch);
+        try (final WritableChunk<Values> valuesChunk =
+                valuesReader.readChunk(fieldNodeIter, bufferInfoIter, mi.inputStream, null, 0, 0)) {
+            dictionaryRegistry.update(dictId, valuesChunk, dictIsDelta);
+        } catch (final IOException e) {
+            throw new UncheckedDeephavenException("Failed to decode DictionaryBatch id=" + dictId, e);
         }
     }
 

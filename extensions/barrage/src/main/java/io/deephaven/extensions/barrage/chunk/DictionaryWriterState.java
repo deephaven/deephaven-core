@@ -35,7 +35,10 @@ public interface DictionaryWriterState {
 
     /**
      * Returns the 0-based dictionary index for {@code value}, adding it to the dictionary if not already present. Must
-     * not be called with {@code null}; null rows should be handled by the caller (null index, validity bit = 0).
+     * not be called with {@code null}. When {@code useDeephavenNulls} is false (Arrow standard), null rows are handled
+     * by the caller via a null-sentinel index with a 0-bit in the validity bitmap. When {@code useDeephavenNulls} is
+     * true, callers pass the boxed null sentinel (e.g. {@code Integer.valueOf(QueryConstants.NULL_INT)}) as a real
+     * dictionary entry instead.
      */
     int indexFor(@NotNull Object value);
 

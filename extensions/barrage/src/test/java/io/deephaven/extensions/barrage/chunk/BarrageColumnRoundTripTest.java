@@ -1728,6 +1728,83 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         } // end try(b1Src)
     }
 
+    /**
+     * Verifies that the Arrow standard path (useDeephavenNulls = false) emits a validity bitmap on the index column
+     * when null rows are present, and omits it when there are none.
+     */
+    public void testDictionaryEncodedIndexValidityBitmap() throws IOException {
+        final int NUM_ROWS = 8;
+        final Field writerField = buildDictionaryField(int.class, 32, 0L);
+        final DictionaryChunkWriter dictWriter = (DictionaryChunkWriter) DefaultChunkWriterFactory.INSTANCE.newWriter(
+                BarrageTypeInfo.make(int.class, null, writerField));
+
+        // --- case 1: column contains nulls — validity buffer must be present ---
+        {
+            // rows: 0=NULL, 1=1, 2=2, 3=NULL, 4=1, 5=3, 6=NULL, 7=2 => 3 nulls
+            final int expectedNullCount = 3;
+            try (final WritableIntChunk<Values> src = WritableIntChunk.makeWritableChunk(NUM_ROWS)) {
+                src.setSize(NUM_ROWS);
+                src.set(0, QueryConstants.NULL_INT);
+                src.set(1, 1);
+                src.set(2, 2);
+                src.set(3, QueryConstants.NULL_INT);
+                src.set(4, 1);
+                src.set(5, 3);
+                src.set(6, QueryConstants.NULL_INT);
+                src.set(7, 2);
+
+                final WritableIntChunk<Values> work = WritableIntChunk.makeWritableChunk(NUM_ROWS);
+                work.copyFromChunk(src, 0, 0, NUM_ROWS);
+                final DictionaryWriterState state = new LocalDictionaryWriterState(0L);
+                try (final ChunkWriter.Context ctx = dictWriter.makeContext(work, 0);
+                        final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream()) {
+                    final LongStream.Builder bufBld = LongStream.builder();
+                    final List<ChunkWriter.FieldNodeInfo> fieldNodes = new ArrayList<>();
+                    try (final ChunkWriter.DrainableColumn col =
+                            dictWriter.getInputStream(ctx, null, OPT_DEFAULT, state)) {
+                        col.visitFieldNodes((n, nc) -> fieldNodes.add(new ChunkWriter.FieldNodeInfo(n, nc)));
+                        col.visitBuffers(bufBld::add);
+                        col.drainTo(baos);
+                    }
+                    final long[] buffers = bufBld.build().toArray();
+
+                    Assert.eq(expectedNullCount, "expectedNullCount",
+                            fieldNodes.get(0).nullCount, "fieldNodes.get(0).nullCount");
+                    assertTrue("validity buffer must be present when nulls exist", buffers[0] > 0);
+                }
+            }
+        }
+
+        // --- case 2: no nulls — validity buffer must be absent (Arrow spec: optional when nullCount == 0) ---
+        {
+            try (final WritableIntChunk<Values> src = WritableIntChunk.makeWritableChunk(NUM_ROWS)) {
+                src.setSize(NUM_ROWS);
+                for (int i = 0; i < NUM_ROWS; ++i) {
+                    src.set(i, i % 3);
+                }
+
+                final WritableIntChunk<Values> work = WritableIntChunk.makeWritableChunk(NUM_ROWS);
+                work.copyFromChunk(src, 0, 0, NUM_ROWS);
+                final DictionaryWriterState state = new LocalDictionaryWriterState(0L);
+                try (final ChunkWriter.Context ctx = dictWriter.makeContext(work, 0);
+                        final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream()) {
+                    final LongStream.Builder bufBld = LongStream.builder();
+                    final List<ChunkWriter.FieldNodeInfo> fieldNodes = new ArrayList<>();
+                    try (final ChunkWriter.DrainableColumn col =
+                            dictWriter.getInputStream(ctx, null, OPT_DEFAULT, state)) {
+                        col.visitFieldNodes((n, nc) -> fieldNodes.add(new ChunkWriter.FieldNodeInfo(n, nc)));
+                        col.visitBuffers(bufBld::add);
+                        col.drainTo(baos);
+                    }
+                    final long[] buffers = bufBld.build().toArray();
+
+                    Assert.eq(0, "zero", fieldNodes.get(0).nullCount, "fieldNodes.get(0).nullCount");
+                    assertTrue("validity buffer must be absent when no nulls exist", buffers[0] == 0);
+                }
+            }
+        }
+    }
+
     private enum SpecialMode {
         NONE, MAP, VAR_LEN_LIST, FIXED_LEN_LIST, ZDT, ZDT_WITH_FACTOR, SPARSE_UNION, DENSE_UNION, RUN_END_ENCODED, RUN_END_ENCODED_INT16, RUN_END_ENCODED_INT64, DICTIONARY_ENCODED, DICTIONARY_ENCODED_INT8, DICTIONARY_ENCODED_INT16, DICTIONARY_ENCODED_INT64
     }

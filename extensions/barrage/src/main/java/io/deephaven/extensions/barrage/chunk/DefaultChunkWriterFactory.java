@@ -197,9 +197,13 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
             final int indexBitWidth = indexArrowType.getBitWidth();
 
             // Build a synthetic field with the index integer type for the index writer factory methods.
+            // The index field is nullable when the column is nullable: null rows produce a null-sentinel
+            // index value and a 0-bit in the validity bitmap (Arrow standard path), or a real sentinel
+            // dictionary entry (useDeephavenNulls path). Either way the index writer must see the field
+            // as nullable so it computes nullCount correctly and emits the validity bitmap when needed.
             final Field indexField = new Field("",
                     new org.apache.arrow.vector.types.pojo.FieldType(
-                            false, new ArrowType.Int(indexBitWidth, true), null),
+                            field.isNullable(), new ArrowType.Int(indexBitWidth, true), null),
                     java.util.Collections.emptyList());
             final ChunkType indexChunkType;
             final ChunkWriter<Chunk<Values>> indexWriter;
