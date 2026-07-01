@@ -62,8 +62,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.jar.Attributes;
@@ -425,18 +423,7 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
         for (int ii = 0; ii < requests.length; ++ii) {
             final Future<Class<?>> future = allFutures.get(ii);
             try {
-                resolvers[ii].complete(future.get(10, TimeUnit.SECONDS));
-            } catch (TimeoutException err) {
-                final String msg = "Timed out (10s) waiting for class compilation"
-                        + " request[" + ii + "] className=" + requests[ii].className()
-                        + " future=" + future
-                        + " isDone=" + future.isDone();
-                log.error().append(msg).endl();
-                final UncheckedDeephavenException timeout = new UncheckedDeephavenException(msg);
-                for (int jj = ii; jj < requests.length; ++jj) {
-                    resolvers[jj].completeExceptionally(timeout);
-                }
-                throw timeout;
+                resolvers[ii].complete(future.get());
             } catch (ExecutionException err) {
                 resolvers[ii].completeExceptionally(err.getCause());
             } catch (InterruptedException err) {
@@ -542,15 +529,7 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
                 onError);
 
         try {
-            // TODO Probably should be configurable, probably shouldn't be indefinite?
-            // Allowing timeout like this may require cleanup
-            final boolean completed = latch.await(10, TimeUnit.SECONDS);
-            if (!completed) {
-                final String msg = "QueryCompilerImpl.compileAndDefine: latch timed out after 10s!"
-                        + " numTasks=" + numTasks + " requests=" + requests.size();
-                log.error().append(msg).endl();
-                throw new UncheckedDeephavenException(msg);
-            }
+            latch.await();
             final BasePerformanceEntry perfEntry = jobScheduler.getAccumulatedPerformance();
             if (perfEntry != null) {
                 QueryPerformanceRecorder.getInstance().getEnclosingNugget().accumulate(perfEntry);
@@ -876,7 +855,7 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
         }
     }
 
-    static String makeFinalCode(String className, String classBody, String packageName) {
+    private static String makeFinalCode(String className, String classBody, String packageName) {
         if (classBody.contains("$CLASSNAME$")) {
             throw new IllegalArgumentException("QueryCompiler's support of the $CLASSNAME$ variable has been removed as"
                     + " the final class name affects the compiled byte code and therefore cannot be dynamically "
