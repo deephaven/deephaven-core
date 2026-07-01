@@ -212,7 +212,7 @@ public class TableViewportSubscription extends AbstractTableSubscription {
         }
     }
 
-    private void retainForExternalUse() {
+    public void retainForExternalUse() {
         retained = true;
     }
 

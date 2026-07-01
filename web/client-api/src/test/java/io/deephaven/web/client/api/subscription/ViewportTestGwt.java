@@ -3,6 +3,8 @@
 //
 package io.deephaven.web.client.api.subscription;
 
+import com.google.common.cache.RemovalListener;
+import com.google.gwt.core.client.GWT;
 import elemental2.core.JsArray;
 import elemental2.dom.DomGlobal;
 import elemental2.promise.IThenable;
@@ -23,6 +25,8 @@ import io.deephaven.web.client.api.filter.FilterCondition;
 import io.deephaven.web.client.api.filter.FilterValue;
 import io.deephaven.web.shared.fu.JsConsumer;
 import io.deephaven.web.shared.fu.RemoverFn;
+import javaemul.internal.annotations.DoNotAutobox;
+import jsinterop.annotations.JsFunction;
 import jsinterop.base.Any;
 import jsinterop.base.Js;
 
@@ -30,6 +34,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -1032,6 +1038,50 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                         }
                         return Promise.resolve(snapshot);
                     });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    @JsFunction
+    interface LogMethod {
+        void write(@DoNotAutobox Object... msgs);
+    }
+
+    public void testSubscriptionsOutlivingTables() {
+        // DH-20800 resulted in a logged error, but no exception. This test instruments the browser's log functionality
+        // so we can detect that an error was written out, and confirm through its absence that the bug was fixed.
+        LogMethod originalConsoleError = console::error;
+        AtomicBoolean seenUnhandledError = new AtomicBoolean(false);
+        LogMethod replacementConsoleError = (args) -> {
+            seenUnhandledError.set(true);
+            originalConsoleError.write("The following error was captured by test handler");
+            originalConsoleError.write(args);
+        };
+        Js.asPropertyMap(DomGlobal.console).set("error", replacementConsoleError);
+        connect(tables)
+                .then(table("growingForward"))
+                .then(t -> {
+                    delayTestFinish(9001);
+
+                    DataOptions.ViewportSubscriptionOptions options = new DataOptions.ViewportSubscriptionOptions();
+                    options.columns = t.getColumns();
+                    options.rows = Js.uncheckedCast(JsRangeSet.ofRange(0, 1));
+                    TableViewportSubscription sub = t.createViewportSubscription(options);
+                    return waitForEvent(sub, TableSubscription.EVENT_UPDATED, 2000).onInvoke(sub)
+                            .then(s -> {
+                                t.close();
+                                // even though the table is closed, we should still get updates without errors
+                                return waitForEvent(s, TableSubscription.EVENT_UPDATED, 2000).onInvoke(sub);
+                            }).then(s -> {
+                                // The next event isn't quite sufficient, because handlers could go off out of order,
+                                // wait one more.
+                                return waitForEvent(s, TableSubscription.EVENT_UPDATED, 2000).onInvoke(sub);
+                            }).then(s -> {
+                                // close the subscription and end the test
+                                s.close();
+                                assertFalse(seenUnhandledError.get());
+                                return null;
+                            });
                 })
                 .then(this::finish).catch_(this::report);
     }
