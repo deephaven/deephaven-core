@@ -135,6 +135,32 @@ public class ArrowToTableConverter {
         }
     }
 
+    /**
+     * Updates the per-stream {@link DictionaryReaderRegistry} from a parsed {@code DictionaryBatch} message. Silently
+     * skips unknown dictionary ids (no reader registered for that id). Callable by subclasses that receive
+     * {@code DictionaryBatch} messages through a different transport path (e.g. gRPC doPut streaming).
+     */
+    protected void applyDictionaryBatch(@NotNull final BarrageProtoUtil.MessageInfo mi) {
+        final DictionaryBatch dictBatch = (DictionaryBatch) mi.header.header(new DictionaryBatch());
+        final long dictId = dictBatch.id();
+        final boolean dictIsDelta = dictBatch.isDelta();
+        final RecordBatch valuesBatch = dictBatch.data();
+
+        final ChunkReader<? extends WritableChunk<Values>> valuesReader = dictValuesReaders.get(dictId);
+        if (valuesReader != null) {
+            final Iterator<ChunkWriter.FieldNodeInfo> fieldNodeIter =
+                    new FlatBufferIteratorAdapter<>(valuesBatch.nodesLength(),
+                            i -> new ChunkWriter.FieldNodeInfo(valuesBatch.nodes(i)));
+            final PrimitiveIterator.OfLong bufferInfoIter = extractBufferInfo(valuesBatch);
+            try (final WritableChunk<Values> valuesChunk =
+                    valuesReader.readChunk(fieldNodeIter, bufferInfoIter, mi.inputStream, null, 0, 0)) {
+                dictionaryRegistry.update(dictId, valuesChunk, dictIsDelta);
+            } catch (final IOException e) {
+                throw new UncheckedDeephavenException("Failed to decode DictionaryBatch id=" + dictId, e);
+            }
+        }
+    }
+
     @ScriptApi
     public synchronized void addRecordBatch(final ByteBuffer ipcMessage) {
         // The input ByteBuffer instance (especially originated from Python) can't be assumed to be valid after the
@@ -149,25 +175,7 @@ public class ArrowToTableConverter {
 
         final BarrageProtoUtil.MessageInfo mi = parseArrowIpcMessage(ipcMessage);
         if (mi.header.headerType() == MessageHeader.DictionaryBatch) {
-            // Update the per-stream dictionary registry and return; no rows added.
-            final DictionaryBatch dictBatch = (DictionaryBatch) mi.header.header(new DictionaryBatch());
-            final long dictId = dictBatch.id();
-            final boolean dictIsDelta = dictBatch.isDelta();
-            final RecordBatch valuesBatch = dictBatch.data();
-
-            final ChunkReader<? extends WritableChunk<Values>> valuesReader = dictValuesReaders.get(dictId);
-            if (valuesReader != null) {
-                final Iterator<ChunkWriter.FieldNodeInfo> fieldNodeIter =
-                        new FlatBufferIteratorAdapter<>(valuesBatch.nodesLength(),
-                                i -> new ChunkWriter.FieldNodeInfo(valuesBatch.nodes(i)));
-                final PrimitiveIterator.OfLong bufferInfoIter = extractBufferInfo(valuesBatch);
-                try (final WritableChunk<Values> valuesChunk =
-                        valuesReader.readChunk(fieldNodeIter, bufferInfoIter, mi.inputStream, null, 0, 0)) {
-                    dictionaryRegistry.update(dictId, valuesChunk, dictIsDelta);
-                } catch (final IOException e) {
-                    throw new UncheckedDeephavenException("Failed to decode DictionaryBatch id=" + dictId, e);
-                }
-            }
+            applyDictionaryBatch(mi);
             return;
         }
         if (mi.header.headerType() != MessageHeader.RecordBatch) {

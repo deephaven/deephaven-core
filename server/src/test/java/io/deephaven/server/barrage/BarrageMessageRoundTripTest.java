@@ -1733,6 +1733,27 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
     }
 
     /**
+     * Builds a schema where {@code col1Name} and {@code col2Name} both carry {@link DictionaryEncoding} with the same
+     * dictionary id (0). Two columns sharing a single id means a single {@link DictionaryBatch} per update covers both.
+     */
+    private static Schema buildSharedDictEncodedSchema(
+            final TableDefinition def, final String col1Name, final String col2Name) {
+        final Schema natural = BarrageUtil.makeSchema(
+                BarrageUtil.DEFAULT_SNAPSHOT_OPTIONS, def, Map.of(), false);
+        final DictionaryEncoding sharedEncoding =
+                new DictionaryEncoding(0L, false, new ArrowType.Int(32, true));
+        final List<Field> fields = natural.getFields().stream().map(f -> {
+            if (!col1Name.equals(f.getName()) && !col2Name.equals(f.getName())) {
+                return f;
+            }
+            return new Field(f.getName(),
+                    new FieldType(f.isNullable(), f.getType(), sharedEncoding, f.getMetadata()),
+                    f.getChildren());
+        }).collect(Collectors.toList());
+        return new Schema(fields, natural.getCustomMetadata());
+    }
+
+    /**
      * Creates a two-column refreshing QueryTable ({@code Sym} String + {@code intCol} int) and annotates {@code Sym}
      * with a dictionary encoding via {@link Table#BARRAGE_SCHEMA_ATTRIBUTE}. Returns the column-info array so callers
      * can drive incremental updates via {@link GenerateTableUpdates}.
@@ -1746,6 +1767,24 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
         System.arraycopy(columnInfo, 0, columnInfoOut, 0, columnInfo.length);
         final QueryTable table = getTable(initialSize, random, columnInfo);
         table.setAttribute(Table.BARRAGE_SCHEMA_ATTRIBUTE, buildDictEncodedSchema(table.getDefinition(), "Sym"));
+        return table;
+    }
+
+    /**
+     * Creates a three-column refreshing QueryTable ({@code Sym1} String + {@code Sym2} String + {@code intCol} int)
+     * where both string columns share dictionary id=0 via {@link #buildSharedDictEncodedSchema}.
+     */
+    private QueryTable makeSharedDictTable(final int initialSize, final Random random,
+            final ColumnInfo<?, ?>[] columnInfoOut) {
+        final ColumnInfo<?, ?>[] columnInfo = initColumnInfos(
+                new String[] {"Sym1", "Sym2", "intCol"},
+                new SetGenerator<>("a", "b", "c"),
+                new SetGenerator<>("x", "y", "z"),
+                new IntGenerator(0, 100));
+        System.arraycopy(columnInfo, 0, columnInfoOut, 0, columnInfo.length);
+        final QueryTable table = getTable(initialSize, random, columnInfo);
+        table.setAttribute(Table.BARRAGE_SCHEMA_ATTRIBUTE,
+                buildSharedDictEncodedSchema(table.getDefinition(), "Sym1", "Sym2"));
         return table;
     }
 
@@ -1787,6 +1826,36 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
         final RemoteNugget nugget = new RemoteNugget(() -> sourceTable);
         nugget.newClient(null, allCols, "full-dict-1");
         nugget.newClient(null, allCols, "full-dict-2");
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        for (int step = 0; step < steps; step++) {
+            updateGraph.runWithinUnitTestCycle(() -> GenerateTableUpdates.generateShiftAwareTableUpdates(
+                    GenerateTableUpdates.DEFAULT_PROFILE, size, random, sourceTable, columnInfo));
+            flushProducerTable();
+            nugget.flushClientEvents();
+            updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
+            nugget.validate("step " + step);
+        }
+    }
+
+    /**
+     * Verifies that two columns sharing the same Arrow dictionary id (id=0) are correctly encoded and decoded through a
+     * full ticking subscription. The shared {@link DictionaryWriterRegistry} must emit exactly one
+     * {@code DictionaryBatch} per id per update even though two columns reference it, and both columns must decode to
+     * their correct values.
+     */
+    public void testDictionaryEncodedSharedIdAcrossColumns() {
+        final int steps = 20;
+        final int size = 100;
+        final Random random = new Random(5);
+        final ColumnInfo<?, ?>[] columnInfo = new ColumnInfo<?, ?>[3];
+        final QueryTable sourceTable = makeSharedDictTable(size / 4, random, columnInfo);
+
+        final BitSet allCols = new BitSet();
+        allCols.set(0, sourceTable.numColumns());
+
+        final RemoteNugget nugget = new RemoteNugget(() -> sourceTable);
+        nugget.newClient(null, allCols, "shared-id-full");
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         for (int step = 0; step < steps; step++) {
