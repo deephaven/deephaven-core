@@ -20,10 +20,17 @@
         <include name="ConsecutiveDrainableStreams.java" />
     </source>
     <source path="util" includes="Float16.java,FlatBufferIteratorAdapter.java,DefensiveDrainable.java,DefensiveCapture.java,ExposedByteArrayOutputStream.java" />
+    <super-source path="super" />
     <source path="chunk">
         <exclude name="vector/*" />
         <exclude name="DefaultChunkReaderFactory.java" />
         <exclude name="DefaultChunkWriterFactory.java" />
+        <exclude name="DictionaryChunkWriter.java" />
+        <exclude name="DictionaryWriterRegistry.java" />
+        <exclude name="DictionaryWriterState.java" />
+        <exclude name="FullSubscriptionDictionaryState.java" />
+        <exclude name="LocalDictionaryWriterState.java" />
+        <exclude name="SharedDictionaryWriterState.java" />
         <exclude name="MapChunkReader.java" />
         <exclude name="MapChunkWriter.java" />
         <exclude name="RunEndEncodedChunkWriter.java" />

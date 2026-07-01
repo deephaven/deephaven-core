@@ -519,40 +519,11 @@ public class DictionaryChunkWriter extends BaseChunkWriter<Chunk<Values>> {
     }
 
     /**
-     * Returns the boxed value at {@code position} in {@code chunk}, preserving DH null sentinels as their boxed
-     * primitive form rather than converting them to Java {@code null}. Used when {@code useDeephavenNulls} is true so
-     * that null sentinels are stored as real dictionary entries. For Object chunks, where there is no sentinel, null is
-     * returned as-is.
+     * Delegates to {@link DictionaryReaderRegistry#rawBoxValue} to avoid duplicating the boxing logic. Kept here as a
+     * package-level alias so existing call sites within this file compile without change.
      */
     @Nullable
     static Object rawBoxValue(@NotNull final Chunk<Values> chunk, final int position) {
-        switch (chunk.getChunkType()) {
-            case Byte:
-                return chunk.asByteChunk().get(position);
-            case Char:
-                return chunk.asCharChunk().get(position);
-            case Short:
-                return chunk.asShortChunk().get(position);
-            case Int:
-                return chunk.asIntChunk().get(position);
-            case Long:
-                return chunk.asLongChunk().get(position);
-            case Float: {
-                final float v = chunk.asFloatChunk().get(position);
-                // NULL_FLOAT is not NaN, so the isNaN check passes it through unchanged.
-                // Canonicalize all true NaN bit patterns to a single dictionary entry.
-                return Float.isNaN(v) ? Float.NaN : v;
-            }
-            case Double: {
-                final double v = chunk.asDoubleChunk().get(position);
-                // NULL_DOUBLE is not NaN, so the isNaN check passes it through unchanged.
-                // Canonicalize all true NaN bit patterns to a single dictionary entry.
-                return Double.isNaN(v) ? Double.NaN : v;
-            }
-            case Object:
-                return chunk.asObjectChunk().get(position);
-            default:
-                throw new IllegalArgumentException("Unsupported chunk type: " + chunk.getChunkType());
-        }
+        return DictionaryReaderRegistry.rawBoxValue(chunk, position);
     }
 }

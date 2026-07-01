@@ -3,6 +3,7 @@
 //
 package io.deephaven.extensions.barrage.chunk;
 
+import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 import org.jetbrains.annotations.NotNull;
@@ -46,7 +47,7 @@ public final class DictionaryReaderRegistry {
             dictValues.put(dictId, current);
         }
         for (int i = 0; i < n; ++i) {
-            current.add(DictionaryChunkWriter.rawBoxValue(valuesChunk, i));
+            current.add(rawBoxValue(valuesChunk, i));
         }
     }
 
@@ -57,5 +58,38 @@ public final class DictionaryReaderRegistry {
     @Nullable
     public List<Object> get(final long dictId) {
         return dictValues.get(dictId);
+    }
+
+    /**
+     * Boxes a single element from a chunk into an Object, preserving primitive sentinels and canonicalizing NaN. Shared
+     * with {@link DictionaryChunkWriter#rawBoxValue} semantics; kept here so GWT-compiled readers (which exclude the
+     * writer) can call it without a dependency on the writer.
+     */
+    @Nullable
+    static Object rawBoxValue(@NotNull final Chunk<Values> chunk, final int position) {
+        switch (chunk.getChunkType()) {
+            case Byte:
+                return chunk.asByteChunk().get(position);
+            case Char:
+                return chunk.asCharChunk().get(position);
+            case Short:
+                return chunk.asShortChunk().get(position);
+            case Int:
+                return chunk.asIntChunk().get(position);
+            case Long:
+                return chunk.asLongChunk().get(position);
+            case Float: {
+                final float v = chunk.asFloatChunk().get(position);
+                return Float.isNaN(v) ? Float.NaN : v;
+            }
+            case Double: {
+                final double v = chunk.asDoubleChunk().get(position);
+                return Double.isNaN(v) ? Double.NaN : v;
+            }
+            case Object:
+                return chunk.asObjectChunk().get(position);
+            default:
+                throw new IllegalArgumentException("Unsupported chunk type: " + chunk.getChunkType());
+        }
     }
 }
