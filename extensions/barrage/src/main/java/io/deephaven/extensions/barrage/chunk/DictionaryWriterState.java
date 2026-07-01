@@ -3,90 +3,72 @@
 //
 package io.deephaven.extensions.barrage.chunk;
 
-import it.unimi.dsi.fastutil.objects.Object2IntMap;
-import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Tracks the cumulative dictionary for one Arrow dictionary id within a single barrage stream (snapshot or subscription
- * update sequence). Shared by all {@link DictionaryChunkWriter} instances that reference the same id.
+ * Tracks the cumulative dictionary for one Arrow dictionary id within a barrage stream. Shared by all
+ * {@link DictionaryChunkWriter} instances that reference the same id.
  *
  * <p>
- * {@link #indexFor(Object)} is called once per logical row (non-null) while building a batch. Values added since the
- * last reset are accumulated in insertion order as the delta for the current batch. After the batch's
- * {@link org.apache.arrow.flatbuf.DictionaryBatch} has been emitted, call {@link #resetDelta()} to clear the delta.
+ * {@link #indexFor(Object)} is called once per logical row (non-null) while building a batch. After the batch's
+ * {@link org.apache.arrow.flatbuf.DictionaryBatch} has been emitted, call {@link #resetDelta()} to advance the delta
+ * boundary.
+ *
+ * <p>
+ * Two concrete implementations exist:
+ * <ul>
+ * <li>{@link LocalDictionaryWriterState} — for viewport subscriptions and snapshots. {@code resetDelta()} clears the
+ * delta list entirely; only newly-seen values since the last reset are tracked.</li>
+ * <li>{@link FullSubscriptionDictionaryState} — for full subscriptions and growing subscriptions. The full cumulative
+ * value list is retained so that a new subscriber joining mid-stream can receive all current values as an initial
+ * {@code isDelta=false} batch.</li>
+ * </ul>
  *
  * <p>
  * Thread-safety: not thread-safe; single-threaded barrage stream serialization is assumed.
  */
-public final class DictionaryWriterState {
+public interface DictionaryWriterState {
 
-    private final long dictId;
-    /** Maps every value ever seen to its 0-based dictionary index. Never cleared. */
-    private final Object2IntMap<Object> valueToIndex = new Object2IntOpenHashMap<>();
-    /** Values added since the last {@link #resetDelta}; cleared on each reset. */
-    private final List<Object> deltaValues = new ArrayList<>();
-    /** Total number of values ever added (= global dictionary size; used to assign the next index). */
-    private int totalSize = 0;
-    /** True until the first DictionaryBatch has been emitted for this stream. */
-    private boolean firstBatch = true;
-
-    public DictionaryWriterState(final long dictId) {
-        this.dictId = dictId;
-        valueToIndex.defaultReturnValue(-1);
-    }
-
-    public long getDictId() {
-        return dictId;
-    }
+    long getDictId();
 
     /**
      * Returns the 0-based dictionary index for {@code value}, adding it to the dictionary if not already present. Must
      * not be called with {@code null}; null rows should be handled by the caller (null index, validity bit = 0).
      */
-    public int indexFor(@NotNull final Object value) {
-        final int existing = valueToIndex.getInt(value);
-        if (existing != -1) {
-            return existing;
-        }
-
-        final int index = totalSize++;
-        deltaValues.add(value);
-        valueToIndex.put(value, index);
-        return index;
-    }
+    int indexFor(@NotNull Object value);
 
     /**
      * Returns {@code true} if a DictionaryBatch message needs to be emitted before the current RecordBatch — either
-     * because this is the first batch for the stream ({@code isDelta=false}) or because new values have been added
+     * because this is the first batch for this subscriber ({@code isDelta=false}) or because new values have been added
      * since the last reset.
      */
-    public boolean hasDelta() {
-        return firstBatch || !deltaValues.isEmpty();
-    }
+    boolean hasDelta();
 
-    public boolean isFirstBatch() {
-        return firstBatch;
-    }
+    boolean needsFullBatch();
 
     /**
      * Returns the ordered list of values that form the current delta (values added since the last {@link #resetDelta}
-     * call, or all values if this is the first batch).
+     * call, or all values if this is the first batch for this subscriber).
      */
     @NotNull
-    public List<Object> getDeltaValues() {
-        return deltaValues;
-    }
+    List<Object> getDeltaValues();
 
     /**
-     * Clears the delta and advances the first-batch flag. Call this after successfully emitting the DictionaryBatch for
-     * the current batch.
+     * Advances the delta boundary after a DictionaryBatch has been successfully emitted. Unlike {@link #reset()}, this
+     * does not discard the accumulated value-to-index mapping — it only moves the boundary so that already-sent values
+     * are excluded from future delta batches. The client's cached dictionary remains valid after this call.
      */
-    public void resetDelta() {
-        deltaValues.clear();
-        firstBatch = false;
-    }
+    void resetDelta();
+
+    /** Total number of distinct values ever added to the dictionary (across all resets). */
+    int totalSize();
+
+    /**
+     * Resets the dictionary to an empty state, as if no values had ever been seen. The next DictionaryBatch emitted
+     * will be {@code isDelta=false} with only the values encountered in the next batch. Call this when the cumulative
+     * dictionary size exceeds the live row count and compaction is needed.
+     */
+    void reset();
 }

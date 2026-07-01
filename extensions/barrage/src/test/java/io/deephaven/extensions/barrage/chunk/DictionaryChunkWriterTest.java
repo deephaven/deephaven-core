@@ -3,8 +3,13 @@
 //
 package io.deephaven.extensions.barrage.chunk;
 
+import io.deephaven.chunk.WritableByteChunk;
+import io.deephaven.chunk.WritableCharChunk;
 import io.deephaven.chunk.WritableDoubleChunk;
 import io.deephaven.chunk.WritableFloatChunk;
+import io.deephaven.chunk.WritableIntChunk;
+import io.deephaven.chunk.WritableLongChunk;
+import io.deephaven.chunk.WritableShortChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.util.QueryConstants;
 import org.junit.Test;
@@ -57,7 +62,7 @@ public class DictionaryChunkWriterTest {
         chunk.set(2, Float.intBitsToFloat(0xffc00000)); // negative quiet NaN
         chunk.setSize(3);
 
-        final DictionaryWriterState state = new DictionaryWriterState(1);
+        final DictionaryWriterState state = new LocalDictionaryWriterState(1);
         final Object v0 = DictionaryChunkWriter.boxValue(chunk, 0);
         final Object v1 = DictionaryChunkWriter.boxValue(chunk, 1);
         final Object v2 = DictionaryChunkWriter.boxValue(chunk, 2);
@@ -119,7 +124,7 @@ public class DictionaryChunkWriterTest {
         chunk.set(2, Double.longBitsToDouble(0xfff8000000000000L)); // negative quiet NaN
         chunk.setSize(3);
 
-        final DictionaryWriterState state = new DictionaryWriterState(2);
+        final DictionaryWriterState state = new LocalDictionaryWriterState(2);
         final Object v0 = DictionaryChunkWriter.boxValue(chunk, 0);
         final Object v1 = DictionaryChunkWriter.boxValue(chunk, 1);
         final Object v2 = DictionaryChunkWriter.boxValue(chunk, 2);
@@ -135,5 +140,58 @@ public class DictionaryChunkWriterTest {
         final WritableDoubleChunk<Values> chunk = WritableDoubleChunk.makeWritableChunk(1);
         chunk.set(0, 2.71828);
         assertThat(DictionaryChunkWriter.boxValue(chunk, 0)).isEqualTo(2.71828);
+    }
+
+    // -------------------------------------------------------------------------
+    // boxValue - integer primitives (null sentinel -> null)
+    // -------------------------------------------------------------------------
+
+    @Test
+    public void testBoxIntNullReturnsNull() {
+        final WritableIntChunk<Values> chunk = WritableIntChunk.makeWritableChunk(1);
+        chunk.set(0, QueryConstants.NULL_INT);
+        assertThat(DictionaryChunkWriter.boxValue(chunk, 0)).isNull();
+    }
+
+    @Test
+    public void testBoxIntNormalValueIsPreserved() {
+        final WritableIntChunk<Values> chunk = WritableIntChunk.makeWritableChunk(1);
+        chunk.set(0, 42);
+        assertThat(DictionaryChunkWriter.boxValue(chunk, 0)).isEqualTo(42);
+    }
+
+    @Test
+    public void testBoxLongNullReturnsNull() {
+        final WritableLongChunk<Values> chunk = WritableLongChunk.makeWritableChunk(1);
+        chunk.set(0, QueryConstants.NULL_LONG);
+        assertThat(DictionaryChunkWriter.boxValue(chunk, 0)).isNull();
+    }
+
+    @Test
+    public void testBoxLongNormalValueIsPreserved() {
+        final WritableLongChunk<Values> chunk = WritableLongChunk.makeWritableChunk(1);
+        chunk.set(0, 123456789L);
+        assertThat(DictionaryChunkWriter.boxValue(chunk, 0)).isEqualTo(123456789L);
+    }
+
+    @Test
+    public void testBoxShortNullReturnsNull() {
+        final WritableShortChunk<Values> chunk = WritableShortChunk.makeWritableChunk(1);
+        chunk.set(0, QueryConstants.NULL_SHORT);
+        assertThat(DictionaryChunkWriter.boxValue(chunk, 0)).isNull();
+    }
+
+    @Test
+    public void testBoxByteNullReturnsNull() {
+        final WritableByteChunk<Values> chunk = WritableByteChunk.makeWritableChunk(1);
+        chunk.set(0, QueryConstants.NULL_BYTE);
+        assertThat(DictionaryChunkWriter.boxValue(chunk, 0)).isNull();
+    }
+
+    @Test
+    public void testBoxCharNullReturnsNull() {
+        final WritableCharChunk<Values> chunk = WritableCharChunk.makeWritableChunk(1);
+        chunk.set(0, QueryConstants.NULL_CHAR);
+        assertThat(DictionaryChunkWriter.boxValue(chunk, 0)).isNull();
     }
 }

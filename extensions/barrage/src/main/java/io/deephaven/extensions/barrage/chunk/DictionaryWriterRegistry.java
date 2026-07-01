@@ -8,6 +8,7 @@ import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.attributes.Values;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 
@@ -16,8 +17,19 @@ import java.util.Collection;
  * update sequence), one per Arrow dictionary id.
  *
  * <p>
+ * Two construction modes:
+ * <ul>
+ * <li><b>Local</b> (default constructor) — for viewport subscriptions and snapshots. Each registry creates
+ * {@link LocalDictionaryWriterState} instances that are fully private to this stream.</li>
+ * <li><b>Shared-backed</b> ({@link #DictionaryWriterRegistry(Long2ObjectOpenHashMap)} constructor) — for full
+ * subscriptions and growing subscriptions targeting a full subscription. Each registry creates
+ * {@link FullSubscriptionDictionaryState} instances that delegate index lookups to the table-level
+ * {@link SharedDictionaryWriterState}, so all full subscribers share the same value-to-index mapping.</li>
+ * </ul>
+ *
+ * <p>
  * When {@link io.deephaven.extensions.barrage.BarrageMessageWriterImpl} processes a batch, it calls
- * {@link #getOrCreate} for each {@link DictionaryChunkWriter} column to obtain (or register) the shared state for that
+ * {@link #getOrCreate} for each {@link DictionaryChunkWriter} column to obtain (or register) the state for that
  * column's dictionary id. After the batch's column data is serialized, the manager's {@link #entries()} are inspected
  * to determine which dictionary ids have pending deltas that need a {@link org.apache.arrow.flatbuf.DictionaryBatch}
  * message.
@@ -40,14 +52,36 @@ public final class DictionaryWriterRegistry {
         }
     }
 
+    /**
+     * If non-null, this registry creates {@link FullSubscriptionDictionaryState} instances backed by the shared states
+     * in this map. If null, it creates standalone {@link LocalDictionaryWriterState} instances.
+     */
+    @Nullable
+    private final Long2ObjectOpenHashMap<SharedDictionaryWriterState> sharedStates;
+
     private final Long2ObjectOpenHashMap<Entry> entries = new Long2ObjectOpenHashMap<>();
+
+    /** Creates a local registry for viewport subscriptions and snapshots. */
+    public DictionaryWriterRegistry() {
+        this.sharedStates = null;
+    }
+
+    /**
+     * Creates a shared-backed registry for full subscriptions and growing subscriptions targeting a full subscription.
+     * The {@code sharedStates} map is owned by the {@code io.deephaven.server.barrage.BarrageMessageProducer} and lives
+     * for the lifetime of the table's producer; it is never cleared.
+     */
+    public DictionaryWriterRegistry(
+            @NotNull final Long2ObjectOpenHashMap<SharedDictionaryWriterState> sharedStates) {
+        this.sharedStates = sharedStates;
+    }
 
     /**
      * Returns (or creates) the {@link DictionaryWriterState} for the given dictionary id.
      *
      * <p>
-     * The first call for a given {@code dictId} registers the {@code valuesWriter} for that id. Subsequent calls for
-     * the same id may pass any consistent writer value.
+     * The first call for a given {@code dictId} registers the {@code valuesWriter} for that id and creates the
+     * appropriate state type (local or shared-backed). Subsequent calls for the same id return the existing state.
      */
     @NotNull
     public DictionaryWriterState getOrCreate(
@@ -56,7 +90,18 @@ public final class DictionaryWriterRegistry {
             @NotNull final ChunkType valuesChunkType) {
         Entry entry = entries.get(dictId);
         if (entry == null) {
-            entry = new Entry(new DictionaryWriterState(dictId), valuesWriter, valuesChunkType);
+            final DictionaryWriterState state;
+            if (sharedStates != null) {
+                SharedDictionaryWriterState shared = sharedStates.get(dictId);
+                if (shared == null) {
+                    shared = new SharedDictionaryWriterState(dictId);
+                    sharedStates.put(dictId, shared);
+                }
+                state = new FullSubscriptionDictionaryState(shared);
+            } else {
+                state = new LocalDictionaryWriterState(dictId);
+            }
+            entry = new Entry(state, valuesWriter, valuesChunkType);
             entries.put(dictId, entry);
         }
         return entry.state;
@@ -83,6 +128,23 @@ public final class DictionaryWriterRegistry {
         for (final Entry e : entries.values()) {
             if (e.state.hasDelta()) {
                 e.state.resetDelta();
+            }
+        }
+    }
+
+    /**
+     * Checks each registered {@link DictionaryWriterState} for overflow: if its
+     * {@link DictionaryWriterState#totalSize() totalSize} exceeds {@code liveRowCount}, calls
+     * {@link DictionaryWriterState#reset()} so the next DictionaryBatch will be {@code isDelta=false} with a compacted
+     * dictionary. Only call this for local (viewport/snapshot) registries; for shared-backed registries the
+     * {@link SharedDictionaryWriterState} is reset externally.
+     *
+     * @param liveRowCount the current number of live rows visible to this subscription
+     */
+    public void resetOverflowedEntries(final long liveRowCount) {
+        for (final Entry e : entries.values()) {
+            if (e.state.totalSize() > liveRowCount) {
+                e.state.reset();
             }
         }
     }

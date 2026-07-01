@@ -15,6 +15,7 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.InstrumentedTableUpdateListener;
 import io.deephaven.engine.table.impl.QueryTable;
@@ -62,6 +63,11 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
+import org.apache.arrow.vector.types.pojo.ArrowType;
+import org.apache.arrow.vector.types.pojo.DictionaryEncoding;
+import org.apache.arrow.vector.types.pojo.Field;
+import org.apache.arrow.vector.types.pojo.FieldType;
+import org.apache.arrow.vector.types.pojo.Schema;
 import java.util.stream.Collectors;
 
 import static io.deephaven.engine.table.impl.remote.ConstructSnapshot.SNAPSHOT_CHUNK_SIZE;
@@ -1697,6 +1703,296 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
     @ScriptApi
     public static String arrayToString(Object[] arr) {
         return Arrays.deepToString(arr);
+    }
+
+    // ---- Dictionary-encoding ticking tests ----
+
+    /**
+     * Builds a pojo {@link Schema} based on the natural schema of {@code def} except that the named column is annotated
+     * with an Arrow {@link DictionaryEncoding} (Int32 index, dict id 0).
+     * <p>
+     * Accepts a {@link TableDefinition} rather than a live {@link Table} to avoid calling
+     * {@link Table#getAttributes()}, which would publish the attribute map and prevent subsequent
+     * {@link Table#setAttribute} calls.
+     */
+    private static Schema buildDictEncodedSchema(final TableDefinition def, final String dictColumnName) {
+        // Build the natural schema using an empty attributes map so getAttributes() is never called on the live table.
+        final Schema natural = BarrageUtil.makeSchema(
+                BarrageUtil.DEFAULT_SNAPSHOT_OPTIONS, def, Map.of(), false);
+        final List<Field> fields = natural.getFields().stream().map(f -> {
+            if (!dictColumnName.equals(f.getName())) {
+                return f;
+            }
+            return new Field(f.getName(),
+                    new FieldType(f.isNullable(), f.getType(),
+                            new DictionaryEncoding(0L, false, new ArrowType.Int(32, true)),
+                            f.getMetadata()),
+                    f.getChildren());
+        }).collect(Collectors.toList());
+        return new Schema(fields, natural.getCustomMetadata());
+    }
+
+    /**
+     * Creates a two-column refreshing QueryTable ({@code Sym} String + {@code intCol} int) and annotates {@code Sym}
+     * with a dictionary encoding via {@link Table#BARRAGE_SCHEMA_ATTRIBUTE}. Returns the column-info array so callers
+     * can drive incremental updates via {@link GenerateTableUpdates}.
+     */
+    private QueryTable makeDictTable(final int initialSize, final Random random,
+            final ColumnInfo<?, ?>[] columnInfoOut) {
+        final ColumnInfo<?, ?>[] columnInfo = initColumnInfos(
+                new String[] {"Sym", "intCol"},
+                new SetGenerator<>("a", "b", "c"),
+                new IntGenerator(0, 100));
+        System.arraycopy(columnInfo, 0, columnInfoOut, 0, columnInfo.length);
+        final QueryTable table = getTable(initialSize, random, columnInfo);
+        table.setAttribute(Table.BARRAGE_SCHEMA_ATTRIBUTE, buildDictEncodedSchema(table.getDefinition(), "Sym"));
+        return table;
+    }
+
+    public void testDictionaryEncodedFullSubscriptionTicking() {
+        final int steps = 20;
+        final int size = 100;
+        final Random random = new Random(0);
+        final ColumnInfo<?, ?>[] columnInfo = new ColumnInfo<?, ?>[2];
+        final QueryTable sourceTable = makeDictTable(size / 4, random, columnInfo);
+
+        final BitSet allCols = new BitSet();
+        allCols.set(0, sourceTable.numColumns());
+
+        final RemoteNugget nugget = new RemoteNugget(() -> sourceTable);
+        nugget.newClient(null, allCols, "full-dict");
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        for (int step = 0; step < steps; step++) {
+            updateGraph.runWithinUnitTestCycle(() -> GenerateTableUpdates.generateShiftAwareTableUpdates(
+                    GenerateTableUpdates.DEFAULT_PROFILE, size, random, sourceTable, columnInfo));
+            flushProducerTable();
+            nugget.flushClientEvents();
+            updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
+            nugget.validate("step " + step);
+        }
+    }
+
+    public void testDictionaryEncodedSharedDictionaryAcrossFullSubscribers() {
+        final int steps = 20;
+        final int size = 100;
+        final Random random = new Random(1);
+        final ColumnInfo<?, ?>[] columnInfo = new ColumnInfo<?, ?>[2];
+        final QueryTable sourceTable = makeDictTable(size / 4, random, columnInfo);
+
+        final BitSet allCols = new BitSet();
+        allCols.set(0, sourceTable.numColumns());
+
+        // Two full subscribers on the same producer share a single DictionaryWriterRegistry
+        final RemoteNugget nugget = new RemoteNugget(() -> sourceTable);
+        nugget.newClient(null, allCols, "full-dict-1");
+        nugget.newClient(null, allCols, "full-dict-2");
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        for (int step = 0; step < steps; step++) {
+            updateGraph.runWithinUnitTestCycle(() -> GenerateTableUpdates.generateShiftAwareTableUpdates(
+                    GenerateTableUpdates.DEFAULT_PROFILE, size, random, sourceTable, columnInfo));
+            flushProducerTable();
+            nugget.flushClientEvents();
+            updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
+            nugget.validate("step " + step);
+        }
+    }
+
+    public void testDictionaryEncodedViewportSubscriptionTicking() {
+        final int steps = 20;
+        final int size = 100;
+        final Random random = new Random(2);
+        final ColumnInfo<?, ?>[] columnInfo = new ColumnInfo<?, ?>[2];
+        final QueryTable sourceTable = makeDictTable(size / 4, random, columnInfo);
+
+        final BitSet allCols = new BitSet();
+        allCols.set(0, sourceTable.numColumns());
+
+        // Viewport subscriber gets its own private DictionaryWriterRegistry
+        final RemoteNugget nugget = new RemoteNugget(() -> sourceTable);
+        nugget.newClient(RowSetFactory.fromRange(0, size / 10), allCols, "viewport-dict");
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        for (int step = 0; step < steps; step++) {
+            updateGraph.runWithinUnitTestCycle(() -> GenerateTableUpdates.generateShiftAwareTableUpdates(
+                    GenerateTableUpdates.DEFAULT_PROFILE, size, random, sourceTable, columnInfo));
+            flushProducerTable();
+            nugget.flushClientEvents();
+            updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
+            nugget.validate("step " + step);
+        }
+    }
+
+    public void testDictionaryEncodedGrowingSubscription() {
+        final int steps = 20;
+        final int size = 100;
+        final Random random = new Random(3);
+        final ColumnInfo<?, ?>[] columnInfo = new ColumnInfo<?, ?>[2];
+        final QueryTable sourceTable = makeDictTable(size / 4, random, columnInfo);
+
+        final BitSet allCols = new BitSet();
+        allCols.set(0, sourceTable.numColumns());
+
+        final RemoteNugget nugget = new RemoteNugget(() -> sourceTable);
+        // Start as viewport subscription.
+        nugget.newClient(RowSetFactory.fromRange(0, size / 10), allCols, "growing-dict");
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
+        // Run a few steps as viewport
+        for (int step = 0; step < 5; step++) {
+            updateGraph.runWithinUnitTestCycle(() -> GenerateTableUpdates.generateShiftAwareTableUpdates(
+                    GenerateTableUpdates.DEFAULT_PROFILE, size, random, sourceTable, columnInfo));
+            flushProducerTable();
+            nugget.flushClientEvents();
+            updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
+            nugget.validate("viewport step " + step);
+        }
+
+        // Add a full subscription after a few viewport steps.
+        nugget.newClient(null, allCols, "growing-dict-full");
+
+        // Run remaining steps with both clients active.
+        for (int step = 5; step < steps; step++) {
+            updateGraph.runWithinUnitTestCycle(() -> GenerateTableUpdates.generateShiftAwareTableUpdates(
+                    GenerateTableUpdates.DEFAULT_PROFILE, size, random, sourceTable, columnInfo));
+            flushProducerTable();
+            nugget.flushClientEvents();
+            updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
+            nugget.validate("mixed step " + step);
+        }
+    }
+
+    /**
+     * Creates a two-column refreshing QueryTable with many distinct Sym values (one per row by construction) so the
+     * dictionary accumulates quickly, enabling reliable overflow testing.
+     */
+    private QueryTable makeDictTableWithManyValues(final int initialSize, final String[] symValues,
+            final ColumnInfo<?, ?>[] columnInfoOut) {
+        final ColumnInfo<?, ?>[] columnInfo = initColumnInfos(
+                new String[] {"Sym", "intCol"},
+                new SetGenerator<>(symValues),
+                new IntGenerator(0, 1000));
+        System.arraycopy(columnInfo, 0, columnInfoOut, 0, columnInfo.length);
+        final QueryTable table = getTable(initialSize, new Random(42), columnInfo);
+        table.setAttribute(Table.BARRAGE_SCHEMA_ATTRIBUTE, buildDictEncodedSchema(table.getDefinition(), "Sym"));
+        return table;
+    }
+
+    /**
+     * Verifies that when the cumulative dictionary size exceeds the live row count, the server resets the dictionary
+     * (emitting {@code isDelta=false}) so the client stays consistent. Tests both full and viewport subscriptions.
+     */
+    public void testDictionaryEncodedOverflowCompaction() {
+        // Use 50 distinct values so the dictionary fills up quickly.
+        final String[] symValues = new String[50];
+        for (int i = 0; i < symValues.length; i++) {
+            symValues[i] = "val" + i;
+        }
+
+        final ColumnInfo<?, ?>[] columnInfo = new ColumnInfo<?, ?>[2];
+        // Start large enough that all 50 values are likely represented in the initial snapshot.
+        final QueryTable sourceTable = makeDictTableWithManyValues(200, symValues, columnInfo);
+
+        final BitSet allCols = new BitSet();
+        allCols.set(0, sourceTable.numColumns());
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
+        // Subscribe both a full client and a viewport client.
+        final RemoteNugget nugget = new RemoteNugget(() -> sourceTable);
+        nugget.newClient(null, allCols, "overflow-full");
+        nugget.newClient(RowSetFactory.fromRange(0, 9), allCols, "overflow-viewport");
+
+        // Flush the initial snapshot.
+        flushProducerTable();
+        nugget.flushClientEvents();
+        updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
+        nugget.validate("initial snapshot");
+
+        // Remove most rows: keep only the first 5 live rows. The dictionary still has ~50 entries,
+        // but the live row count drops to 5 — triggering overflow on the next propagation.
+        final RowSet rowsToKeep = RowSetFactory.fromRange(0, 4);
+        final RowSet rowsToRemove = sourceTable.getRowSet().minus(rowsToKeep);
+        updateGraph.runWithinUnitTestCycle(() -> {
+            TstUtils.removeRows(sourceTable, rowsToRemove);
+            sourceTable.notifyListeners(new TableUpdateImpl(
+                    RowSetFactory.empty(),
+                    rowsToRemove.copy(),
+                    RowSetFactory.empty(),
+                    RowSetShiftData.EMPTY,
+                    ModifiedColumnSet.EMPTY));
+        });
+        rowsToRemove.close();
+
+        // propagateToSubscribers detects overflow (dict.size()~50 > liveRowCount=5) and resets the shared state.
+        flushProducerTable();
+        nugget.flushClientEvents();
+        updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
+        nugget.validate("after mass removal - overflow triggered");
+
+        // Run a few more normal updates to confirm the dictionary rebuilds and correctness is maintained.
+        final Random random = new Random(99);
+        for (int step = 0; step < 10; step++) {
+            updateGraph.runWithinUnitTestCycle(() -> GenerateTableUpdates.generateShiftAwareTableUpdates(
+                    GenerateTableUpdates.DEFAULT_PROFILE, 20, random, sourceTable, columnInfo));
+            flushProducerTable();
+            nugget.flushClientEvents();
+            updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
+            nugget.validate("post-overflow step " + step);
+        }
+    }
+
+    /**
+     * Verifies that a viewport subscription with a dictionary-encoded column correctly updates its local
+     * {@link io.deephaven.extensions.barrage.chunk.LocalDictionaryWriterState} when the viewport is shifted to rows
+     * that contain previously-unseen dictionary values.
+     *
+     * <p>
+     * This exercises the code path in {@link BarrageMessageProducer#propagateSnapshotForSubscription} that is reached
+     * after {@link RemoteClient#setViewport} triggers a new snapshot: the snapshot uses the subscription's private
+     * {@link io.deephaven.extensions.barrage.chunk.DictionaryWriterRegistry}, which must emit a fresh
+     * {@code isDelta=false} DictionaryBatch for the new window of values.
+     */
+    public void testDictionaryEncodedViewportChange() {
+        final int steps = 20;
+        final int size = 100;
+        final Random random = new Random(4);
+        final ColumnInfo<?, ?>[] columnInfo = new ColumnInfo<?, ?>[2];
+        final QueryTable sourceTable = makeDictTable(size / 4, random, columnInfo);
+
+        final BitSet allCols = new BitSet();
+        allCols.set(0, sourceTable.numColumns());
+
+        // Start with a narrow viewport at the head of the table.
+        final int vpSize = size / 10;
+        final RemoteNugget nugget = new RemoteNugget(() -> sourceTable);
+        final RemoteClient client = nugget.newClient(RowSetFactory.fromRange(0, vpSize - 1), allCols, "vp-dict");
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
+        // Run a few steps with the initial viewport, then shift the viewport every few steps.
+        // Shifting into new rows forces the producer to snapshot those rows; the dictionary must
+        // include any values in the new window that the client has not previously seen.
+        long vpStart = 0;
+        for (int step = 0; step < steps; step++) {
+            updateGraph.runWithinUnitTestCycle(() -> GenerateTableUpdates.generateShiftAwareTableUpdates(
+                    GenerateTableUpdates.DEFAULT_PROFILE, size, random, sourceTable, columnInfo));
+
+            // Every 4 steps, shift the viewport forward by the viewport size so it lands on a
+            // completely disjoint set of rows — maximizing the chance of encountering new Sym values.
+            if (step > 0 && step % 4 == 0) {
+                vpStart = (vpStart + vpSize) % Math.max(1, sourceTable.size() - vpSize);
+                final long finalVpStart = vpStart;
+                client.setViewport(RowSetFactory.fromRange(finalVpStart, finalVpStart + vpSize - 1));
+            }
+
+            flushProducerTable();
+            nugget.flushClientEvents();
+            updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
+            nugget.validate("step " + step);
+        }
     }
 
     public static class DummyObserver implements StreamObserver<BarrageMessageWriter.MessageView> {

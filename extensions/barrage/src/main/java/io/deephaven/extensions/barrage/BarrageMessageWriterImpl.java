@@ -241,12 +241,27 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
             @Nullable final RowSet keyspaceViewport,
             @Nullable final BitSet subscribedColumns) {
         return new SubView(options, isInitialSnapshot, isFullSubscription, viewport, reverseViewport,
-                keyspaceViewportPrev, keyspaceViewport, subscribedColumns);
+                keyspaceViewportPrev, keyspaceViewport, subscribedColumns, null);
+    }
+
+    @Override
+    public MessageView getSubView(
+            final BarrageSubscriptionOptions options,
+            final boolean isInitialSnapshot,
+            final boolean isFullSubscription,
+            @Nullable final RowSet viewport,
+            final boolean reverseViewport,
+            @Nullable final RowSet keyspaceViewportPrev,
+            @Nullable final RowSet keyspaceViewport,
+            @Nullable final BitSet subscribedColumns,
+            @Nullable final DictionaryWriterRegistry dictionaryRegistry) {
+        return new SubView(options, isInitialSnapshot, isFullSubscription, viewport, reverseViewport,
+                keyspaceViewportPrev, keyspaceViewport, subscribedColumns, dictionaryRegistry);
     }
 
     @Override
     public MessageView getSubView(final BarrageSubscriptionOptions options, final boolean isInitialSnapshot) {
-        return getSubView(options, isInitialSnapshot, true, null, false, null, null, null);
+        return getSubView(options, isInitialSnapshot, true, null, false, null, null, null, null);
     }
 
     protected class SubView implements RecordBatchMessageView {
@@ -266,6 +281,9 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
         private final WritableRowSet[] clientModdedRowOffsets;
         private final WritableRowSet clientRemovedRows;
 
+        @Nullable
+        private final DictionaryWriterRegistry dictionaryRegistry;
+
         protected SubView(final BarrageSubscriptionOptions options,
                 final boolean isInitialSnapshot,
                 final boolean isFullSubscription,
@@ -273,7 +291,8 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
                 final boolean reverseViewport,
                 @Nullable final RowSet keyspaceViewportPrev,
                 @Nullable final RowSet keyspaceViewport,
-                @Nullable final BitSet subscribedColumns) {
+                @Nullable final BitSet subscribedColumns,
+                @Nullable final DictionaryWriterRegistry dictionaryRegistry) {
             this.options = options;
             this.isInitialSnapshot = isInitialSnapshot;
             this.isFullSubscription = isFullSubscription;
@@ -281,20 +300,28 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
             this.reverseViewport = reverseViewport;
             this.hasViewport = keyspaceViewport != null;
             this.subscribedColumns = subscribedColumns;
+            this.dictionaryRegistry = dictionaryRegistry;
 
             // precompute the included rows / offsets and viewport removed rows
             if (isFullSubscription) {
-                clientRemovedRows = null; // we'll send full subscriptions the full removed set
-
                 if (keyspaceViewport != null) {
+                    // Growing-to-full subscriptions are still materializing rows on the client side. Restrict
+                    // removals to the previous visible key-space to avoid freeing redirected rows that were never
+                    // allocated on the client.
+                    clientRemovedRows = keyspaceViewportPrev == null
+                            ? RowSetFactory.empty()
+                            : keyspaceViewportPrev.intersect(rowsRemoved.original);
+
                     // growing viewport clients need to know about all rows, including those that were scoped into view
                     clientIncludedRows = keyspaceViewport.intersect(rowsIncluded.original);
                     clientIncludedRowOffsets = rowsIncluded.original.invert(clientIncludedRows);
                 } else if (!rowsAdded.original.equals(rowsIncluded.original)) {
+                    clientRemovedRows = null; // we'll send full subscriptions the full removed set
                     // there are scoped rows that need to be removed from the data sent to the client
                     clientIncludedRows = rowsAdded.original.copy();
                     clientIncludedRowOffsets = rowsIncluded.original.invert(clientIncludedRows);
                 } else {
+                    clientRemovedRows = null; // we'll send full subscriptions the full removed set
                     clientIncludedRows = rowsAdded.original.copy();
                     clientIncludedRowOffsets = RowSetFactory.flat(rowsAdded.original.size());
                 }
@@ -443,6 +470,12 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
             return clientModdedRowOffsets[col];
         }
 
+        @Override
+        @Nullable
+        public DictionaryWriterRegistry dictionaryRegistry() {
+            return dictionaryRegistry;
+        }
+
         /**
          * Generate the metadata for this subscription. For a standard subscription, this is a flatbuffer representing a
          * {@link BarrageMessageWrapper} containing a payload of {@link BarrageUpdateMetadata}.
@@ -471,8 +504,9 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
                 try (final RowSetWriter clientIncludedRowsGen = new RowSetWriter(clientIncludedRows)) {
                     rowsAddedOffset = clientIncludedRowsGen.addToFlatBuffer(metadata);
                 }
-            } else if (isSnapshot && !isInitialSnapshot) {
-                // Growing viewport clients don't need/want to receive the full RowSet on every snapshot
+            } else if (isSnapshot && !isInitialSnapshot && !hasViewport) {
+                // Stable full subscriptions don't need the full RowSet on every snapshot.
+                // Growing-to-full snapshots still need incremental added keys to materialize unseen rows.
                 rowsAddedOffset = EmptyRowSetWriter.INSTANCE.addToFlatBuffer(metadata);
             } else {
                 rowsAddedOffset = rowsAdded.addToFlatBuffer(metadata);
@@ -481,6 +515,11 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
             final int rowsRemovedOffset;
             if (!isFullSubscription) {
                 // viewport clients need to also remove rows that were scoped out of view; computed in the constructor
+                try (final RowSetWriter clientRemovedRowsGen = new RowSetWriter(clientRemovedRows)) {
+                    rowsRemovedOffset = clientRemovedRowsGen.addToFlatBuffer(metadata);
+                }
+            } else if (hasViewport) {
+                // Growing-to-full subscriptions only remove keys that were previously visible to the client.
                 try (final RowSetWriter clientRemovedRowsGen = new RowSetWriter(clientRemovedRows)) {
                     rowsRemovedOffset = clientRemovedRowsGen.addToFlatBuffer(metadata);
                 }
@@ -899,7 +938,7 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
             @NotNull final BarrageOptions options) throws IOException {
         final DictionaryWriterState state = entry.state;
         final List<Object> deltaValues = state.getDeltaValues();
-        final boolean isDelta = !state.isFirstBatch();
+        final boolean isDelta = !state.needsFullBatch();
 
         // Serialize the delta values via the values writer into a single-column inner RecordBatch body.
         final ArrayDeque<DefensiveDrainable> bodyStreams = new ArrayDeque<>();
@@ -1264,6 +1303,7 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
             final ChunkWriter.FieldNodeListener fieldNodeListener,
             final ChunkWriter.BufferListener bufferListener) throws IOException {
         final int[] columnChunkIdx = new int[modColumnData.length];
+        final DictionaryWriterRegistry dictionaryRegistry = view.dictionaryRegistry();
 
         // for each column identify the chunk that holds this startRange
         long maxLength = targetBatchSize;
@@ -1343,7 +1383,19 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
                 }
 
                 final ChunkWriter.DrainableColumn drainableColumn;
-                if (numElements == 0) {
+                if (mcd.chunkListWriter.writer() instanceof DictionaryChunkWriter && dictionaryRegistry != null) {
+                    final DictionaryChunkWriter dictWriter = (DictionaryChunkWriter) mcd.chunkListWriter.writer();
+                    if (numElements == 0) {
+                        drainableColumn = dictWriter.getEmptyIndexStream(view.options());
+                        drainableColumn.visitFieldNodes(fieldNodeListener);
+                        drainableColumn.visitBuffers(bufferListener);
+                    } else {
+                        final DictionaryWriterState state = dictionaryRegistry.getOrCreate(
+                                dictWriter.getDictId(), dictWriter.getValuesWriter(), dictWriter.getValuesChunkType());
+                        drainableColumn = modDict(view, fieldNodeListener, bufferListener, context, myModOffsets,
+                                dictWriter, state);
+                    }
+                } else if (numElements == 0) {
                     // use the empty writer to publish the column data
                     drainableColumn = addEmpty(view, fieldNodeListener, bufferListener, mcd.chunkListWriter);
                 } else {
@@ -1367,6 +1419,26 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
         try (final WritableRowSet adjustedOffsets = shift == 0 ? null : myModOffsets.shift(shift)) {
             drainableColumn = mcd.chunkListWriter.writer().getInputStream(
                     context, shift == 0 ? myModOffsets : adjustedOffsets, view.options());
+            drainableColumn.visitFieldNodes(fieldNodeListener);
+            drainableColumn.visitBuffers(bufferListener);
+        }
+        return drainableColumn;
+    }
+
+    private static ChunkWriter.@NotNull DrainableColumn modDict(RecordBatchMessageView view,
+            ChunkWriter.FieldNodeListener fieldNodeListener, ChunkWriter.BufferListener bufferListener,
+            ChunkWriter.Context context, RowSet myModOffsets,
+            @NotNull final DictionaryChunkWriter dictWriter,
+            @NotNull final DictionaryWriterState state) throws IOException {
+        final ChunkWriter.DrainableColumn drainableColumn;
+        final long shift = -context.getRowOffset();
+        // normalize to the chunk offsets
+        try (final WritableRowSet adjustedOffsets = shift == 0 ? null : myModOffsets.shift(shift)) {
+            drainableColumn = dictWriter.getInputStream(
+                    context,
+                    shift == 0 ? myModOffsets : adjustedOffsets,
+                    view.options(),
+                    state);
             drainableColumn.visitFieldNodes(fieldNodeListener);
             drainableColumn.visitBuffers(bufferListener);
         }
