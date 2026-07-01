@@ -372,7 +372,7 @@ table_w_attributes = table.withAttributes(java.util.Map.of(Table.BARRAGE_SCHEMA_
 
 ## Example: Dictionary-Encoded Columns
 
-[Dictionary Encoding](https://arrow.apache.org/docs/format/Columnar.html#dictionary-encoded-layout) is a wire-level optimization for low-cardinality columns. Instead of sending each value in full, Deephaven sends each unique value once in a `DictionaryBatch` message and replaces each row with a compact integer index.
+[Dictionary Encoding](https://arrow.apache.org/docs/format/Columnar.html#dictionary-encoded-layout) is a wire-level optimization for low-cardinality columns. Instead of sending each value in full, Deephaven sends each unique value once (in a `DictionaryBatch` message) and replaces each row with a compact integer index.
 
 A string column with 1,000 rows drawn from only 5 distinct values costs 5 full string entries (in the dictionary) + 1,000 integer indices, rather than 1,000 full strings. Deephaven stores the column flat (unchanged type); dictionary encoding is a transport-only optimization.
 
@@ -384,7 +384,7 @@ The `DictionaryEncoding` index width controls the integer type used for indices:
 - `Int64` (64-bit signed) — rarely needed; use only when distinct values exceed 1 billion.
 
 :::caution
-Because Deephaven sends dictionary updates as deltas, the dictionary grows monotonically over the lifetime of the stream: once a value is assigned an index it is never removed. The index type limit therefore applies to the **total number of distinct values ever seen** across all batches, not just within a single batch. If that cumulative count exceeds 128 (`Int8`) or 32,768 (`Int16`), Deephaven throws an error at serialization time. Prefer `Int32` unless you are certain the column's total cardinality stays within the smaller limit. If you see an error mentioning "has exceeded … distinct values", either switch to a wider index type or reduce the overall number of distinct values in the stream.
+Dictionary updates are sent as deltas, so entries accumulate as new unique values appear. To prevent unbounded growth on the server and client, Deephaven resets the dictionary when its size exceeds the table or viewport size by flushing the current dictionary and accumulating only newly encountered values. Despite this safety net, if a single table (or viewport) contains more distinct values than the index type can represent (128 for `Int8`, 32,768 for `Int16`), Deephaven throws an error at serialization time. Prefer `Int32` unless you are certain the column's active cardinality stays within the smaller limit.
 :::
 
 ```groovy order=table,table_w_attributes
