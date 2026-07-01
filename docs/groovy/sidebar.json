@@ -891,10 +891,6 @@
                     "path": "how-to-guides/groovy-errors.md"
                   },
                   {
-                    "label": "Attach a JVM debugger",
-                    "path": "how-to-guides/attach-debugger.md"
-                  },
-                  {
                     "label": "Get version information",
                     "path": "how-to-guides/get-version.md"
                   },
