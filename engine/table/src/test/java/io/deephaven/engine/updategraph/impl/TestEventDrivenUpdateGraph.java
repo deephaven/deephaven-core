@@ -112,7 +112,7 @@ public class TestEventDrivenUpdateGraph {
     }
 
     private QueryCompiler compilerForUnitTests() {
-        return QueryCompilerImpl.createForUnitTests();
+        return QueryCompilerImpl.create();
     }
 
     @Test

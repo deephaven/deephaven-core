@@ -51,7 +51,7 @@ public class TableWriteBenchmark {
                 .newQueryLibrary()
                 .newQueryScope()
                 .setQueryCompiler(
-                        QueryCompilerImpl.createForUnitTests())
+                        QueryCompilerImpl.create())
                 .build();
         exContextCloseable = context.open();
 

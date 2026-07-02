@@ -65,7 +65,7 @@ public class TestQueryCompiler {
         executionContextClosable = ExecutionContext.newBuilder()
                 .captureQueryLibrary()
                 .captureQueryScope()
-                .setQueryCompiler(QueryCompilerImpl.createForUnitTests())
+                .setQueryCompiler(QueryCompilerImpl.create())
                 .build()
                 .open();
     }
@@ -368,14 +368,6 @@ public class TestQueryCompiler {
                 (CompletionStageFuture.Resolver<Class<?>>[]) new CompletionStageFuture.Resolver[] {
                         CompletionStageFuture.make(),
                 };
-
-        final QueryCompilerImpl badCompiler =
-                QueryCompilerImpl.createForUnitTests(List.of("InvalidClassArgument"));
-        UncheckedDeephavenException e = org.junit.Assert.assertThrows(UncheckedDeephavenException.class,
-                () -> badCompiler.compile(requests, resolvers));
-        org.junit.Assert.assertEquals("Error Invoking Compiler, no source present in diagnostic:\n" +
-                "Class names, 'InvalidClassArgument', are only accepted if annotation processing is explicitly requested",
-                e.getMessage());
     }
 
     @Test

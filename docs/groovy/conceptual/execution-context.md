@@ -235,7 +235,7 @@ executionContext = ExecutionContext.newBuilder()
     .newQueryScope()
     .setOperationInitializer(OperationInitializer.NON_PARALLELIZABLE)
     .setUpdateGraph(PeriodicUpdateGraph.newBuilder("MyCustomGraph").build())
-    .setQueryCompiler(QueryCompilerImpl.create(Files.createTempDirectory("qc_").toFile()))
+    .setQueryCompiler(QueryCompilerImpl.create())
     .build()
 ```
 
@@ -248,7 +248,7 @@ This approach allows you to specify:
 - **Query scope**: A new, empty query scope via `newQueryScope`.
 - **Operation initializer**: Parallelization behavior of operations.
 - **Update graph**: A custom update graph (e.g., `PeriodicUpdateGraph` or `EventDrivenUpdateGraph`).
-- **Query compiler**: A compiler instance with a specified working directory and class loader.
+- **Query compiler**: A compiler instance with an optional directory to load classes from and classloader.
 
 For use cases requiring event-driven updates instead of periodic updates, you can substitute an `EventDrivenUpdateGraph`:
 
@@ -262,7 +262,7 @@ executionContext = ExecutionContext.newBuilder()
     .newQueryScope()
     .setOperationInitializer(OperationInitializer.NON_PARALLELIZABLE)
     .setUpdateGraph(eventDrivenGraph)
-    .setQueryCompiler(QueryCompilerImpl.create(Files.createTempDirectory("qc_").toFile()))
+    .setQueryCompiler(QueryCompilerImpl.create())
     .build()
 ```
 

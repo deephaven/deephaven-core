@@ -56,7 +56,7 @@ public class TestUpdateAncestorViz {
         cacheDir.deleteOnExit();
 
         executionContext = ExecutionContext.newBuilder().newQueryLibrary().newQueryScope()
-                .setQueryCompiler(QueryCompilerImpl.createForUnitTests())
+                .setQueryCompiler(QueryCompilerImpl.create())
                 .setOperationInitializer(ForkJoinPoolOperationInitializer.fromCommonPool())
                 .setUpdateGraph(defaultUpdateGraph).build().withAuthContext(new AuthContext.Anonymous());
     }

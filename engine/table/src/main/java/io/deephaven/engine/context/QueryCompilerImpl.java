@@ -76,8 +76,8 @@ import java.util.stream.Stream;
  * <p>
  * The compiler resolves dependencies from {@code java.class.path} and an optional additional classpath directory
  * (typically where Groovy writes its bytecode). Compiled classes are loaded in per-batch child classloaders of the
- * provided parent classloader, enabling GC of both classes and classloaders when neither the compiled Class nor this
- * compiler instance are reachable. Returned classes then
+ * provided parent classloader, enabling GC of both classes and classloaders when neither the compiled Classes nor this
+ * compiler instance are reachable.
  */
 public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
 
@@ -173,18 +173,25 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
      * @param additionalClassPathDir optional directory to add to the compiler's classpath (e.g., groovy bytecode dir)
      */
     public static QueryCompiler create(@Nullable final File additionalClassPathDir) {
-        return new QueryCompilerImpl(additionalClassPathDir, null);
+        return create(additionalClassPathDir, null);
     }
 
     /**
-     * Creates a new compiler that has no extra directory to read from, suitable for unit tests.
+     * Creates a new QueryCompilerImpl. Uses the current thread's context classloader as the parent for per-batch
+     * classloaders (as required by {@link QueryCompiler}'s contract).
+     *
+     * @param additionalClassPathDir optional directory to add to the compiler's classpath (e.g., groovy bytecode dir)
      */
-    public static QueryCompiler createForUnitTests() {
-        return createForUnitTests(null);
+    public static QueryCompiler create(@Nullable final File additionalClassPathDir, @Nullable ClassLoader classLoader) {
+        return new QueryCompilerImpl(additionalClassPathDir, classLoader);
     }
 
-    static QueryCompilerImpl createForUnitTests(final List<String> classNamesForAnnotationProcessing) {
-        return new QueryCompilerImpl(null, classNamesForAnnotationProcessing);
+    /**
+     * Creates a new compiler that has no extra directory to read from, suitable for unit tests or cases where the
+     * existing classpath is sufficient.
+     */
+    public static QueryCompiler create() {
+        return create(null, null);
     }
 
     /**
@@ -278,23 +285,20 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
         }
     }
 
-    /** The context classloader captured at construction time; used as fallback parent for per-batch classloaders. */
+    /** The context classloader provided at creation time, or null if none set */
+    @Nullable
     private final ClassLoader parentClassLoader;
 
     /** Optional additional classpath directory (e.g., where Groovy writes bytecode). */
     @Nullable
     private final File additionalClassPathDir;
 
-    // This is for test use only, specifying a non-null list causes an error without a specific source to be generated.
-    private final List<String> classNamesForAnnotationProcessing;
-
     private QueryCompilerImpl(
             @Nullable final File additionalClassPathDir,
-            final List<String> classNamesForAnnotationProcessing) {
+            @Nullable final ClassLoader parentClassLoader) {
         ensureJavaCompiler();
         this.additionalClassPathDir = additionalClassPathDir;
-        this.parentClassLoader = Thread.currentThread().getContextClassLoader();
-        this.classNamesForAnnotationProcessing = classNamesForAnnotationProcessing;
+        this.parentClassLoader = parentClassLoader;
 
         if (log.isTraceEnabled()) {
             log.trace().append("QueryCompiler Class Path: ").append(getClassPath()).append(File.pathSeparator)
@@ -606,7 +610,7 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
                     }
                 },
                 compilerOptions,
-                classNamesForAnnotationProcessing,
+                null,
                 requests.subList(startInclusive, endExclusive).stream()
                         .map(CompilationRequestAttempt::makeSource)
                         .collect(Collectors.toList()))
@@ -634,10 +638,10 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
                 .append(", range=[").append(startInclusive).append(",").append(endExclusive).append(")")
                 .endl();
         if (!compiledClasses.isEmpty()) {
-            // Use the current thread's context classloader as parent so that Groovy-defined classes
-            // (which may have been loaded after this QueryCompilerImpl was constructed) are visible.
-            final ClassLoader currentContextCl = Thread.currentThread().getContextClassLoader();
-            final ClassLoader batchParent = currentContextCl != null ? currentContextCl : parentClassLoader;
+            // Use the current thread's context classloader as parent, unless we were explicitly provided a different
+            // one
+            final ClassLoader batchParent =
+                    parentClassLoader != null ? parentClassLoader : Thread.currentThread().getContextClassLoader();;
             final BatchClassLoader batchCl = new BatchClassLoader(batchParent, compiledClasses);
 
             for (final CompilationRequestAttempt request : requests.subList(startInclusive, endExclusive)) {
@@ -653,7 +657,7 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
                     continue;
                 }
 
-                // Load the top-level class (which triggers loading of inner/anonymous classes as needed)
+                // Load the outer class for this request
                 final Class<?> clazz;
                 try {
                     clazz = batchCl.loadClass(request.fqClassName);
@@ -750,8 +754,14 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
         @Override
         public JavaFileObject getJavaFileForOutput(
                 Location location, String className, JavaFileObject.Kind kind, FileObject sibling) {
+            if (location != StandardLocation.CLASS_OUTPUT || kind != JavaFileObject.Kind.CLASS) {
+                throw new IllegalArgumentException("In-memory output file manager only supports writing bytecode");
+            }
             final InMemoryClassFileObject fileObject = new InMemoryClassFileObject(className);
-            outputClasses.put(className, fileObject);
+            InMemoryClassFileObject existing = outputClasses.put(className, fileObject);
+            if (existing != null) {
+                throw new IllegalArgumentException("Attempted to write duplicate class name " + className);
+            }
             return fileObject;
         }
 
