@@ -635,6 +635,10 @@
                   {
                     "label": "Extract data with a Java client",
                     "path": "how-to-guides/java-client.md"
+                  },
+                  {
+                    "label": "Stream data with input tables",
+                    "path": "how-to-guides/java-client-input-tables.md"
                   }
                 ]
               },

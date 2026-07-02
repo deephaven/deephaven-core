@@ -798,6 +798,10 @@
                   {
                     "label": "Capture Python client tables",
                     "path": "how-to-guides/capture-tables.md"
+                  },
+                  {
+                    "label": "Stream data with input tables",
+                    "path": "how-to-guides/client-input-tables.md"
                   }
                 ]
               },
