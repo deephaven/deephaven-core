@@ -369,3 +369,59 @@ def new_schema = new Schema(fields)
 // Apply attributes, creating a new table reference which can be used for export; the original table is unchanged
 table_w_attributes = table.withAttributes(java.util.Map.of(Table.BARRAGE_SCHEMA_ATTRIBUTE, new_schema))
 ```
+
+## Example: Dictionary-Encoded Columns
+
+[Dictionary Encoding](https://arrow.apache.org/docs/format/Columnar.html#dictionary-encoded-layout) is a wire-level optimization for low-cardinality columns. Instead of sending each value in full, Deephaven sends each unique value once (in a `DictionaryBatch` message) and replaces each row with a compact integer index.
+
+A string column with 1,000 rows drawn from only 5 distinct values costs 5 full string entries (in the dictionary) + 1,000 integer indices, rather than 1,000 full strings. Deephaven stores the column flat (unchanged type); dictionary encoding is a transport-only optimization.
+
+The `DictionaryEncoding` index width controls the integer type used for indices:
+
+- `Int32` (32-bit signed) — handles up to about 1 billion distinct values; suitable for almost all use cases.
+- `Int8` (8-bit signed) — the most compact option, but limits the dictionary to at most 128 distinct values.
+- `Int16` (16-bit signed) — more compact than `Int32`, but limits the dictionary to at most 32,768 distinct values.
+- `Int64` (64-bit signed) — rarely needed; use only when distinct values exceed 1 billion.
+
+:::caution
+Dictionary updates are sent as deltas, so entries accumulate as new unique values appear. To prevent unbounded growth on the server and client, Deephaven resets the dictionary when its size exceeds the table or viewport size by flushing the current dictionary and accumulating only newly encountered values. Despite this safety net, if a single table (or viewport) contains more distinct values than the index type can represent (128 for `Int8`, 32,768 for `Int16`), Deephaven throws an error at serialization time. Prefer `Int32` unless you are certain the column's active cardinality stays within the smaller limit.
+:::
+
+```groovy order=table,table_w_attributes
+import io.deephaven.engine.table.Table
+import io.deephaven.extensions.barrage.util.BarrageUtil
+import org.apache.arrow.vector.types.pojo.ArrowType
+import org.apache.arrow.vector.types.pojo.DictionaryEncoding
+import org.apache.arrow.vector.types.pojo.Field
+import org.apache.arrow.vector.types.pojo.FieldType
+import org.apache.arrow.vector.types.pojo.Schema
+
+table = emptyTable(100).update(
+    "status = (ii % 3 == 0) ? `OPEN` : (ii % 3 == 1) ? `CLOSED` : `PENDING`",
+    "value  = (int) ii"
+)
+
+// Extract the default schema to borrow existing field metadata (e.g. deephaven:type tags)
+def baseSchema = BarrageUtil.schemaFromTable(table)
+def fields = new java.util.ArrayList<>(baseSchema.getFields())
+
+// Build the dictionary-encoded field:
+//   type       = Utf8 (the value type of the column, so DH knows the Java column type is String)
+//   dictionary = DictionaryEncoding(id=0, ordered=false, indexType=Int32)
+// The id uniquely identifies this dictionary within the stream. If you encode multiple columns,
+// give each a distinct id (0, 1, 2, ...).
+def originalStatusField = baseSchema.findField("status")
+def dictField = new Field("status",
+    new FieldType(true, originalStatusField.getType(),
+        new DictionaryEncoding(0L, false, new ArrowType.Int(32, true)),
+        originalStatusField.getMetadata()),
+    originalStatusField.getChildren()
+)
+
+def statusIdx = fields.findIndexOf { it.getName() == "status" }
+fields.set(statusIdx, dictField)
+def new_schema = new Schema(fields)
+
+// Apply attributes, creating a new table reference which can be used for export; the original table is unchanged
+table_w_attributes = table.withAttributes(java.util.Map.of(Table.BARRAGE_SCHEMA_ATTRIBUTE, new_schema))
+```

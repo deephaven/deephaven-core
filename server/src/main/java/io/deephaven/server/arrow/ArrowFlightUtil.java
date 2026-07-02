@@ -216,9 +216,14 @@ public class ArrowFlightUtil {
                         "Schema must be processed before record-batch messages");
             }
 
+            if (mi.header.headerType() == MessageHeader.DictionaryBatch) {
+                applyDictionaryBatch(mi);
+                return;
+            }
+
             if (mi.header.headerType() != MessageHeader.RecordBatch) {
                 throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
-                        "Only schema/record-batch messages supported, instead got "
+                        "Only schema/record-batch/dictionary-batch messages supported, instead got "
                                 + MessageHeader.name(mi.header.headerType()));
             }
 

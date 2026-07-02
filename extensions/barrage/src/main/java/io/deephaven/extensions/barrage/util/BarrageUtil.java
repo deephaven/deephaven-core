@@ -535,20 +535,33 @@ public class BarrageUtil {
     private static Map<String, ColumnEncoding> encodingsFromSchema(final Schema schema) {
         final Map<String, ColumnEncoding> encodings = new HashMap<>();
         for (final Field field : schema.getFields()) {
-            if (field.getType().getTypeID() != ArrowType.ArrowTypeID.RunEndEncoded) {
-                continue;
-            }
-            ColumnEncoding encoding = ColumnEncoding.RUN_END_ENCODED_INT32;
-            final List<Field> children = field.getChildren();
-            if (!children.isEmpty() && children.get(0).getType() instanceof ArrowType.Int) {
-                final int bitWidth = ((ArrowType.Int) children.get(0).getType()).getBitWidth();
-                if (bitWidth == 16) {
-                    encoding = ColumnEncoding.RUN_END_ENCODED_INT16;
-                } else if (bitWidth == 64) {
-                    encoding = ColumnEncoding.RUN_END_ENCODED_INT64;
+            if (field.getType().getTypeID() == ArrowType.ArrowTypeID.RunEndEncoded) {
+                ColumnEncoding encoding = ColumnEncoding.RUN_END_ENCODED_INT32;
+                final List<Field> children = field.getChildren();
+                if (!children.isEmpty() && children.get(0).getType() instanceof ArrowType.Int) {
+                    final int bitWidth = ((ArrowType.Int) children.get(0).getType()).getBitWidth();
+                    if (bitWidth == 16) {
+                        encoding = ColumnEncoding.RUN_END_ENCODED_INT16;
+                    } else if (bitWidth == 64) {
+                        encoding = ColumnEncoding.RUN_END_ENCODED_INT64;
+                    }
                 }
+                encodings.put(field.getName(), encoding);
+            } else if (field.getDictionary() != null) {
+                final org.apache.arrow.vector.types.pojo.DictionaryEncoding dict = field.getDictionary();
+                ColumnEncoding encoding = ColumnEncoding.DICTIONARY_ENCODED_INT32;
+                if (dict.getIndexType() instanceof ArrowType.Int) {
+                    final int bitWidth = ((ArrowType.Int) dict.getIndexType()).getBitWidth();
+                    if (bitWidth == 8) {
+                        encoding = ColumnEncoding.DICTIONARY_ENCODED_INT8;
+                    } else if (bitWidth == 16) {
+                        encoding = ColumnEncoding.DICTIONARY_ENCODED_INT16;
+                    } else if (bitWidth == 64) {
+                        encoding = ColumnEncoding.DICTIONARY_ENCODED_INT64;
+                    }
+                }
+                encodings.put(field.getName(), encoding);
             }
-            encodings.put(field.getName(), encoding);
         }
         return encodings;
     }
@@ -607,24 +620,34 @@ public class BarrageUtil {
         final InputTableUpdater inputTableUpdater = (InputTableUpdater) attributes.get(Table.INPUT_TABLE_ATTRIBUTE);
         maybeAddInputTableMetadata(tableDefinition, schemaMetadata, inputTableUpdater);
         final boolean columnsAsList = options.columnsAsList();
+        // Assign sequential dictionary ids to columns that need them. Every dictionary-encoded column
+        // gets its own unique id; shared dictionaries (two columns referencing the same id) are not
+        // currently expressible through this API because ColumnEncoding carries no id.
+        final java.util.concurrent.atomic.AtomicInteger nextDictId = new java.util.concurrent.atomic.AtomicInteger(0);
         final List<Field> fields = columnDefinitionsToFields(
                 descriptions, inputTableUpdater, tableDefinition, tableDefinition.getColumns(),
                 ignored -> new HashMap<>(),
                 attributes, columnsAsList)
                 .map(field -> {
                     final ColumnEncoding encoding = encodings.get(field.getName());
-                    if (encoding == null || !encoding.isRunEndEncoded()) {
+                    if (encoding == null) {
                         return field;
                     }
-                    // When columnsAsList wraps the logical field in an outer List, apply REE to the inner
-                    // child so the encoding order is List<REE<values>> rather than REE<List<values>>.
-                    if (columnsAsList && field.getType().getTypeID() == ArrowType.ArrowTypeID.List) {
-                        final Field inner = toReeField(field.getChildren().get(0), encoding);
-                        return new Field(field.getName(),
-                                new FieldType(false, Types.MinorType.LIST.getType(), null, field.getMetadata()),
-                                Collections.singletonList(inner));
+                    if (encoding.isRunEndEncoded()) {
+                        // When columnsAsList wraps the logical field in an outer List, apply REE to the inner
+                        // child so the encoding order is List<REE<values>> rather than REE<List<values>>.
+                        if (columnsAsList && field.getType().getTypeID() == ArrowType.ArrowTypeID.List) {
+                            final Field inner = toReeField(field.getChildren().get(0), encoding);
+                            return new Field(field.getName(),
+                                    new FieldType(false, Types.MinorType.LIST.getType(), null, field.getMetadata()),
+                                    Collections.singletonList(inner));
+                        }
+                        return toReeField(field, encoding);
                     }
-                    return toReeField(field, encoding);
+                    if (encoding.isDictionaryEncoded()) {
+                        return toDictionaryField(field, encoding, nextDictId.getAndIncrement());
+                    }
+                    return field;
                 })
                 .collect(Collectors.toList());
         return new Schema(fields, schemaMetadata);
@@ -1098,10 +1121,6 @@ public class BarrageUtil {
                 i -> Field.convertField(schema.fields(i)),
                 i -> visitor -> {
                     final org.apache.arrow.flatbuf.Field field = schema.fields(i);
-                    if (field.dictionary() != null) {
-                        throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
-                                "Dictionary encoding is not supported: " + field.name());
-                    }
                     for (int j = 0; j < field.customMetadataLength(); j++) {
                         final KeyValue keyValue = field.customMetadata(j);
                         visitor.accept(keyValue.key(), keyValue.value());
@@ -1316,6 +1335,35 @@ public class BarrageUtil {
                 field.getName(),
                 new FieldType(false, new ArrowType.RunEndEncoded(), null, field.getMetadata()),
                 List.of(runEndsField, valuesField));
+    }
+
+    /**
+     * Wraps {@code field} in an Arrow dictionary-encoded field. The field keeps its logical value type; a
+     * {@link org.apache.arrow.vector.types.pojo.DictionaryEncoding} is set on it that dictates the integer index type
+     * (Int16, Int32, or Int64). The dictionary id is derived from the field's existing dictionary if present, or
+     * synthesised sequentially by the caller (see {@code makeSchema}).
+     */
+    private static Field toDictionaryField(final Field field, final ColumnEncoding encoding, final long dictId) {
+        if (field.getDictionary() != null) {
+            // Already dictionary-encoded — honour the existing id and index type.
+            return field;
+        }
+        final ArrowType indexType;
+        if (encoding == ColumnEncoding.DICTIONARY_ENCODED_INT8) {
+            indexType = Types.MinorType.TINYINT.getType();
+        } else if (encoding == ColumnEncoding.DICTIONARY_ENCODED_INT16) {
+            indexType = Types.MinorType.SMALLINT.getType();
+        } else if (encoding == ColumnEncoding.DICTIONARY_ENCODED_INT64) {
+            indexType = Types.MinorType.BIGINT.getType();
+        } else {
+            indexType = Types.MinorType.INT.getType();
+        }
+        final org.apache.arrow.vector.types.pojo.DictionaryEncoding dictEncoding =
+                new org.apache.arrow.vector.types.pojo.DictionaryEncoding(dictId, false,
+                        (ArrowType.Int) indexType);
+        return new Field(field.getName(),
+                new FieldType(field.isNullable(), field.getType(), dictEncoding, field.getMetadata()),
+                field.getChildren());
     }
 
     /**

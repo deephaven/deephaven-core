@@ -17,11 +17,13 @@ import io.deephaven.extensions.barrage.BarrageTypeInfo;
 import io.deephaven.extensions.barrage.chunk.ChunkWriter;
 import io.deephaven.extensions.barrage.chunk.ChunkReader;
 import io.deephaven.extensions.barrage.chunk.DefaultChunkReaderFactory;
+import io.deephaven.extensions.barrage.chunk.DictionaryReaderRegistry;
 import io.deephaven.extensions.barrage.table.BarrageTable;
 import io.deephaven.io.streams.ByteBufferInputStream;
 import io.deephaven.proto.util.Exceptions;
 import io.deephaven.util.annotations.ScriptApi;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
+import org.apache.arrow.flatbuf.DictionaryBatch;
 import org.apache.arrow.flatbuf.Message;
 import org.apache.arrow.flatbuf.MessageHeader;
 import org.apache.arrow.flatbuf.RecordBatch;
@@ -33,8 +35,10 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.PrimitiveIterator;
 
 import static io.deephaven.extensions.barrage.util.BarrageUtil.DEFAULT_SUBSCRIPTION_OPTIONS;
@@ -50,6 +54,8 @@ public class ArrowToTableConverter {
     private Class<?>[] componentTypes;
     protected BarrageSubscriptionOptions options = DEFAULT_SUBSCRIPTION_OPTIONS;
     private final List<ChunkReader<WritableChunk<Values>>> readers = new ArrayList<>();
+    private final DictionaryReaderRegistry dictionaryRegistry = new DictionaryReaderRegistry();
+    private final Map<Long, ChunkReader<? extends WritableChunk<Values>>> dictValuesReaders = new HashMap<>();
 
     private volatile boolean completed = false;
 
@@ -57,11 +63,13 @@ public class ArrowToTableConverter {
         final BarrageProtoUtil.MessageInfo mi = new BarrageProtoUtil.MessageInfo();
 
         bb.order(ByteOrder.LITTLE_ENDIAN);
+        // noinspection unused
         final int continuation = bb.getInt();
         final int metadata_size = bb.getInt();
         mi.header = Message.getRootAsMessage(bb);
 
-        if (mi.header.headerType() == MessageHeader.RecordBatch) {
+        final byte headerType = mi.header.headerType();
+        if (headerType == MessageHeader.RecordBatch || headerType == MessageHeader.DictionaryBatch) {
             bb.position(metadata_size + 8);
             final ByteBuffer bodyBB = bb.slice();
             final ByteBufferInputStream bbis = new ByteBufferInputStream(bodyBB);
@@ -127,6 +135,36 @@ public class ArrowToTableConverter {
         }
     }
 
+    /**
+     * Updates the per-stream {@link DictionaryReaderRegistry} from a parsed {@code DictionaryBatch} message. Callable
+     * by subclasses that receive {@code DictionaryBatch} messages through a different transport path (e.g. gRPC doPut
+     * streaming).
+     *
+     * @throws IllegalStateException if the dictionary id is not present in the schema
+     */
+    protected void applyDictionaryBatch(@NotNull final BarrageProtoUtil.MessageInfo mi) {
+        final DictionaryBatch dictBatch = (DictionaryBatch) mi.header.header(new DictionaryBatch());
+        final long dictId = dictBatch.id();
+        final boolean dictIsDelta = dictBatch.isDelta();
+        final RecordBatch valuesBatch = dictBatch.data();
+
+        final ChunkReader<? extends WritableChunk<Values>> valuesReader = dictValuesReaders.get(dictId);
+        if (valuesReader == null) {
+            throw new IllegalStateException(
+                    "Unknown dictionary id " + dictId + " (no dict-encoded column in schema)");
+        }
+        final Iterator<ChunkWriter.FieldNodeInfo> fieldNodeIter =
+                new FlatBufferIteratorAdapter<>(valuesBatch.nodesLength(),
+                        i -> new ChunkWriter.FieldNodeInfo(valuesBatch.nodes(i)));
+        final PrimitiveIterator.OfLong bufferInfoIter = extractBufferInfo(valuesBatch);
+        try (final WritableChunk<Values> valuesChunk =
+                valuesReader.readChunk(fieldNodeIter, bufferInfoIter, mi.inputStream, null, 0, 0)) {
+            dictionaryRegistry.update(dictId, valuesChunk, dictIsDelta);
+        } catch (final IOException e) {
+            throw new UncheckedDeephavenException("Failed to decode DictionaryBatch id=" + dictId, e);
+        }
+    }
+
     @ScriptApi
     public synchronized void addRecordBatch(final ByteBuffer ipcMessage) {
         // The input ByteBuffer instance (especially originated from Python) can't be assumed to be valid after the
@@ -140,6 +178,10 @@ public class ArrowToTableConverter {
         }
 
         final BarrageProtoUtil.MessageInfo mi = parseArrowIpcMessage(ipcMessage);
+        if (mi.header.headerType() == MessageHeader.DictionaryBatch) {
+            applyDictionaryBatch(mi);
+            return;
+        }
         if (mi.header.headerType() != MessageHeader.RecordBatch) {
             throw new IllegalArgumentException("The input is not a valid Arrow RecordBatch IPC message");
         }
@@ -181,8 +223,10 @@ public class ArrowToTableConverter {
         columnTypes = result.computeWireTypes();
         componentTypes = result.computeWireComponentTypes();
         for (int i = 0; i < schema.fieldsLength(); i++) {
+            final BarrageTypeInfo<org.apache.arrow.flatbuf.Field> typeInfo =
+                    BarrageTypeInfo.make(columnTypes[i], componentTypes[i], schema.fields(i));
             readers.add(DefaultChunkReaderFactory.INSTANCE.newReader(
-                    BarrageTypeInfo.make(columnTypes[i], componentTypes[i], schema.fields(i)), options));
+                    typeInfo, options, dictionaryRegistry, dictValuesReaders));
         }
 
         // retain reference until the resultTable can be sealed

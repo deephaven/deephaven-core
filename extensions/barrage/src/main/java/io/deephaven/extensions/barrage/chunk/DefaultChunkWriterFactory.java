@@ -188,9 +188,39 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
 
     public <T extends Chunk<Values>> ChunkWriter<T> newWriterPojo(
             @NotNull final BarrageTypeInfo<Field> typeInfo) {
-        // TODO (deephaven/deephaven-core#6034): Dictionary Support
-
         final Field field = typeInfo.arrowField();
+
+        // Dictionary encoding is identified by the presence of a DictionaryEncoding on the field, not by typeId.
+        final org.apache.arrow.vector.types.pojo.DictionaryEncoding dictEncoding = field.getDictionary();
+        if (dictEncoding != null) {
+            final ArrowType.Int indexArrowType = dictEncoding.getIndexType();
+            final int indexBitWidth = indexArrowType.getBitWidth();
+
+            // Build a synthetic field with the index integer type for the index writer factory methods.
+            // The index field is nullable when the column is nullable: null rows produce a null-sentinel
+            // index value and a 0-bit in the validity bitmap (Arrow standard path), or a real sentinel
+            // dictionary entry (useDeephavenNulls path). Either way the index writer must see the field
+            // as nullable so it computes nullCount correctly and emits the validity bitmap when needed.
+            final Field indexField = new Field("",
+                    new org.apache.arrow.vector.types.pojo.FieldType(
+                            field.isNullable(), new ArrowType.Int(indexBitWidth, true), null),
+                    java.util.Collections.emptyList());
+            final ChunkWriter<IntChunk<Values>> indexWriter =
+                    intFromInt(new BarrageTypeInfo<>(int.class, null, indexField));
+            // Recurse on the field stripped of its DictionaryEncoding to get the values writer.
+            final Field valuesField = new Field(field.getName(),
+                    new org.apache.arrow.vector.types.pojo.FieldType(
+                            field.isNullable(), field.getType(), null, field.getMetadata()),
+                    field.getChildren());
+            final BarrageTypeInfo<Field> valuesTypeInfo =
+                    new BarrageTypeInfo<>(typeInfo.type(), typeInfo.componentType(), valuesField);
+            final ChunkWriter<Chunk<Values>> valuesWriter = newWriterPojo(valuesTypeInfo);
+            final ChunkType valuesChunkType = BarrageUtil.getDefaultType(valuesField).chunkType();
+            // noinspection unchecked
+            return (ChunkWriter<T>) new DictionaryChunkWriter(
+                    dictEncoding.getId(), indexWriter, valuesWriter, indexBitWidth, valuesChunkType,
+                    field.isNullable());
+        }
 
         final ArrowType.ArrowTypeID typeId = field.getType().getTypeID();
         final boolean isSpecialType = DefaultChunkReaderFactory.SPECIAL_TYPES.contains(typeId);
