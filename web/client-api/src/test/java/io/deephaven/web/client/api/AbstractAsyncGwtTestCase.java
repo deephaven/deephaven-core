@@ -196,6 +196,7 @@ public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
     public IThenable.ThenOnFulfilledCallbackFn<IdeSession, JsFigure> figure(String figureName) {
         return session -> session.getFigure(figureName);
     }
+
     /**
      * Utility method to report Promise errors to the unit test framework
      */

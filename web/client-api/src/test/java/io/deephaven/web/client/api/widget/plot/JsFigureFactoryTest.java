@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.web.client.api.widget.plot;
 
 import io.deephaven.web.client.api.AbstractAsyncGwtTestCase;
@@ -8,7 +11,7 @@ public class JsFigureFactoryTest extends AbstractAsyncGwtTestCase {
                     from deephaven import empty_table
                     from deephaven.calendar import calendar
                     from deephaven.plot.figure import Figure
-                    
+
                     nyse_cal = calendar("USNYSE_EXAMPLE")""")
             .script("source = empty_table(100).update([\"Timestamp = '2024-01-01T00:00:00 ET' + i * HOUR\", \"Value = i\"])")
             .script("""
