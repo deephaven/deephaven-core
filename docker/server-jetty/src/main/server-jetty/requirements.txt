@@ -6,7 +6,7 @@ docstring_parser==0.18.0
 importlib_resources==7.1.0
 java-utilities==0.3.0
 jedi==0.19.1
-jpy==2.0.0
+jpy==2.1.0
 llvmlite==0.47.0
 numba==0.65.1
 numpy==2.4.4
