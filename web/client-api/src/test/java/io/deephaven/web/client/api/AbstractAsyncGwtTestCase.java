@@ -15,6 +15,7 @@ import io.deephaven.web.client.api.event.Event;
 import io.deephaven.web.client.api.event.HasEventHandling;
 import io.deephaven.web.client.api.subscription.ViewportData;
 import io.deephaven.web.client.api.tree.JsTreeTable;
+import io.deephaven.web.client.api.widget.plot.JsFigure;
 import io.deephaven.web.client.fu.CancellablePromise;
 import io.deephaven.web.client.ide.IdeSession;
 import io.deephaven.web.shared.fu.JsRunnable;
@@ -191,6 +192,10 @@ public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
         return session -> session.getPartitionedTable(tableName);
     }
 
+
+    public IThenable.ThenOnFulfilledCallbackFn<IdeSession, JsFigure> figure(String figureName) {
+        return session -> session.getFigure(figureName);
+    }
     /**
      * Utility method to report Promise errors to the unit test framework
      */
