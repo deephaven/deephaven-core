@@ -1122,6 +1122,10 @@
                     "path": "how-to-guides/install-and-use-java-packages.md"
                   },
                   {
+                    "label": "Local development",
+                    "path": "how-to-guides/local-development.md"
+                  },
+                  {
                     "label": "Production application",
                     "path": "how-to-guides/configuration/configure-production-application.md"
                   },
