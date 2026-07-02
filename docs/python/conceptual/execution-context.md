@@ -263,7 +263,6 @@ execution_context = (
     .setQueryCompiler(
         QueryCompilerImpl.create(
             jpy.get_type("java.io.File")(temp_dir),
-            jpy.get_type("java.lang.ClassLoader").getSystemClassLoader(),
         )
     )
     .build()
@@ -309,7 +308,6 @@ execution_context = (
     .setQueryCompiler(
         QueryCompilerImpl.create(
             jpy.get_type("java.io.File")(temp_dir),
-            jpy.get_type("java.lang.ClassLoader").getSystemClassLoader(),
         )
     )
     .build()

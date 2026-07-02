@@ -235,7 +235,7 @@ executionContext = ExecutionContext.newBuilder()
     .newQueryScope()
     .setOperationInitializer(OperationInitializer.NON_PARALLELIZABLE)
     .setUpdateGraph(PeriodicUpdateGraph.newBuilder("MyCustomGraph").build())
-    .setQueryCompiler(QueryCompilerImpl.create(Files.createTempDirectory("qc_").toFile(), ClassLoader.getSystemClassLoader()))
+    .setQueryCompiler(QueryCompilerImpl.create(Files.createTempDirectory("qc_").toFile()))
     .build()
 ```
 
@@ -262,7 +262,7 @@ executionContext = ExecutionContext.newBuilder()
     .newQueryScope()
     .setOperationInitializer(OperationInitializer.NON_PARALLELIZABLE)
     .setUpdateGraph(eventDrivenGraph)
-    .setQueryCompiler(QueryCompilerImpl.create(Files.createTempDirectory("qc_").toFile(), ClassLoader.getSystemClassLoader()))
+    .setQueryCompiler(QueryCompilerImpl.create(Files.createTempDirectory("qc_").toFile()))
     .build()
 ```
 

@@ -5,10 +5,9 @@ package io.deephaven.engine.updategraph.impl;
 
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.auth.AuthContext;
-import io.deephaven.configuration.DataDir;
 import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.context.QueryCompiler;
 import io.deephaven.engine.context.QueryCompilerImpl;
+import io.deephaven.engine.context.QueryCompiler;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.TrackingRowSet;
@@ -31,7 +30,6 @@ import org.apache.commons.lang3.mutable.MutableLong;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.junit.*;
 
-import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -114,10 +112,7 @@ public class TestEventDrivenUpdateGraph {
     }
 
     private QueryCompiler compilerForUnitTests() {
-        final Path queryCompilerDir = DataDir.get()
-                .resolve("io.deephaven.engine.updategraph.impl.TestEventDrivenUpdateGraph.compilerForUnitTests");
-
-        return QueryCompilerImpl.create(queryCompilerDir.toFile(), getClass().getClassLoader());
+        return QueryCompilerImpl.createForUnitTests();
     }
 
     @Test

@@ -10,6 +10,16 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.concurrent.ExecutionException;
 
+/**
+ * Java compiler api, specifically geared towards query language expressions. Implementations should be constructed with
+ * a path on disk to existing bytecode to use in addition to `java.class.path`. Likewise, callers must ensure that the
+ * context classloader already contains those input classes - the new class will be loaded in a child classloader to
+ * ensure that the class can be GCd when neither it nor the compiler instance are reachable.
+ * <p>
+ * Requests for compilation will never depend on other classes compiled by this or any other QueryCompiler, and are
+ * expected to be unique based on the provided classname. This enables the implementation to cache classes and only
+ * compile and load a class once per name.
+ */
 public interface QueryCompiler {
 
     /**
