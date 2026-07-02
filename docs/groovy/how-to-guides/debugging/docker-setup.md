@@ -171,6 +171,6 @@ IntelliJ IDEA's debugger can step through and inspect variables when breakpoints
 ## Related documentation
 
 - [Install Deephaven with Docker](../../getting-started/docker-install.md)
-- [Attach a JVM debugger](../attach-debugger.md)
+- [Debugging Groovy code](./debugging-landing.md)
 - [Common problems with debugging](./common-problems.md)
 - [Source debugging setup](./source-setup.md)

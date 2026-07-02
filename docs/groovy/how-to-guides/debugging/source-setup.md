@@ -130,6 +130,6 @@ IntelliJ IDEA's debugger can step through Groovy and Java source, inspect variab
 ## Related documentation
 
 - [Build Deephaven from source code](../../getting-started/launch-build.md)
-- [Attach a JVM debugger](../attach-debugger.md)
+- [Debugging Groovy code](./debugging-landing.md)
 - [Common problems with debugging](./common-problems.md)
 - [Docker debugging setup](./docker-setup.md)

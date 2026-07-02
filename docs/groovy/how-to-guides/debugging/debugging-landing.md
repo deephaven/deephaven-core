@@ -57,4 +57,3 @@ Start the source build with the `-Pdebug` Gradle flag and attach IntelliJ IDEA's
 - [Docker debugging setup](./docker-setup.md)
 - [Source debugging setup](./source-setup.md)
 - [Common debugging problems](./common-problems.md)
-- [Attach a JVM debugger](../attach-debugger.md)
