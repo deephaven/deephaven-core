@@ -6,7 +6,7 @@ Deephaven Community Core is a real-time, time-series, column-oriented analytics 
 
 ## Requirements
 
-Java 11+ is required for this module, and the `JAVA_HOME` environment variable must be set appropriately.
+Java 17+ is required for this module, and the `JAVA_HOME` environment variable must be set appropriately.
 
 This module also requires Python version 3.8 or newer.
 
