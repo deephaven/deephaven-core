@@ -5,6 +5,7 @@ package io.deephaven.extensions.barrage.chunk;
 
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ChunkType;
+import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.WritableByteChunk;
 import io.deephaven.chunk.WritableCharChunk;
@@ -20,7 +21,6 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.extensions.barrage.BarrageOptions;
 import io.deephaven.util.QueryConstants;
-import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -47,25 +47,27 @@ public class DictionaryChunkWriter extends BaseChunkWriter<Chunk<Values>> {
     private static final String DEBUG_NAME = "DictionaryChunkWriter";
 
     private final long dictId;
-    /** Writes the Int16/Int32/Int64 index column that goes into RecordBatch. */
-    private final ChunkWriter<Chunk<Values>> indexWriter;
+    /** Writes the Int8/Int16/Int32/Int64 index column that goes into RecordBatch. */
+    private final ChunkWriter<IntChunk<Values>> indexWriter;
     /** Writes the actual column values that go into DictionaryBatch. */
     private final ChunkWriter<Chunk<Values>> valuesWriter;
-    private final ChunkType indexChunkType;
+    private final DictionaryIndexKernel indexKernel;
+    private final int indexBitWidth;
     private final ChunkType valuesChunkType;
 
     public DictionaryChunkWriter(
             final long dictId,
-            @NotNull final ChunkWriter<Chunk<Values>> indexWriter,
+            @NotNull final ChunkWriter<IntChunk<Values>> indexWriter,
             @NotNull final ChunkWriter<Chunk<Values>> valuesWriter,
-            @NotNull final ChunkType indexChunkType,
+            final int indexBitWidth,
             @NotNull final ChunkType valuesChunkType,
             final boolean fieldNullable) {
         super(null, ObjectChunk::getEmptyChunk, 0, false, fieldNullable);
         this.dictId = dictId;
         this.indexWriter = indexWriter;
         this.valuesWriter = valuesWriter;
-        this.indexChunkType = indexChunkType;
+        this.indexKernel = DictionaryIndexKernel.make(valuesChunkType);
+        this.indexBitWidth = indexBitWidth;
         this.valuesChunkType = valuesChunkType;
     }
 
@@ -249,10 +251,13 @@ public class DictionaryChunkWriter extends BaseChunkWriter<Chunk<Values>> {
             final Chunk<Values> sourceChunk = context.getChunk();
             final int logicalSize = subset == null ? sourceChunk.size() : subset.intSize(DEBUG_NAME);
 
-            // Build the index chunk: one entry per logical row. In Arrow standard mode null rows produce
-            // a null-sentinel index with a 0-bit in the validity bitmap; in useDeephavenNulls mode the
-            // null sentinel is a real dictionary entry and all indices are valid.
-            final WritableChunk<Values> indexChunk = buildIndexChunk(sourceChunk, subset, options, state, logicalSize);
+            // Build the index chunk: one int entry per logical row. In Arrow standard mode null rows
+            // produce NULL_INT with a 0-bit in the validity bitmap; in useDeephavenNulls mode the null
+            // sentinel is a real dictionary entry and all indices are valid. The indexWriter narrows
+            // to the wire bit-width (8/16/32/64) via QueryLanguageFunctionUtils cast functions that
+            // preserve the null sentinel through the narrowing.
+            final WritableIntChunk<Values> indexChunk =
+                    buildIndexChunk(sourceChunk, subset, options, state, logicalSize);
             // getInputStream increments the context ref count; close our own reference so the
             // DrainableColumn becomes the sole owner and frees the chunk when it is closed.
             try (final ChunkWriter.Context idxCtx = indexWriter.makeContext(indexChunk, 0)) {
@@ -297,233 +302,38 @@ public class DictionaryChunkWriter extends BaseChunkWriter<Chunk<Values>> {
     // Index chunk construction
     // -------------------------------------------------------------------------
 
-    private WritableChunk<Values> buildIndexChunk(
-            @NotNull final Chunk<Values> source,
-            @Nullable final RowSet subset,
-            @NotNull final BarrageOptions options,
-            @NotNull final DictionaryWriterState state,
-            final int logicalSize) {
-        switch (indexChunkType) {
-            case Byte:
-                return buildByteIndexChunk(source, subset, options, state, logicalSize);
-            case Short:
-                return buildShortIndexChunk(source, subset, options, state, logicalSize);
-            case Int:
-                return buildIntIndexChunk(source, subset, options, state, logicalSize);
-            case Long:
-                return buildLongIndexChunk(source, subset, options, state, logicalSize);
-            default:
-                throw new IllegalStateException("Unexpected indexChunkType: " + indexChunkType);
-        }
-    }
-
-    private WritableByteChunk<Values> buildByteIndexChunk(
-            @NotNull final Chunk<Values> source,
-            @Nullable final RowSet subset,
-            @NotNull final BarrageOptions options,
-            @NotNull final DictionaryWriterState state,
-            final int logicalSize) {
-        final WritableByteChunk<Values> out = WritableByteChunk.makeWritableChunk(logicalSize);
-        boolean success = false;
-        try {
-            out.setSize(logicalSize);
-            int outPos = 0;
-            if (subset == null) {
-                for (int srcPos = 0; srcPos < logicalSize; ++srcPos) {
-                    final Object v = options.useDeephavenNulls()
-                            ? rawBoxValue(source, srcPos)
-                            : nullBoxValue(source, srcPos);
-                    out.set(outPos++, v == null ? QueryConstants.NULL_BYTE : toByteIndex(state.indexFor(v), dictId));
-                }
-            } else {
-                try (final RowSet.Iterator it = subset.iterator()) {
-                    while (it.hasNext()) {
-                        final int srcPos = (int) it.nextLong();
-                        final Object v = options.useDeephavenNulls()
-                                ? rawBoxValue(source, srcPos)
-                                : nullBoxValue(source, srcPos);
-                        out.set(outPos++,
-                                v == null ? QueryConstants.NULL_BYTE : toByteIndex(state.indexFor(v), dictId));
-                    }
-                }
-            }
-            success = true;
-            return out;
-        } finally {
-            if (!success) {
-                out.close();
-            }
-        }
-    }
-
-    private WritableShortChunk<Values> buildShortIndexChunk(
-            @NotNull final Chunk<Values> source,
-            @Nullable final RowSet subset,
-            @NotNull final BarrageOptions options,
-            @NotNull final DictionaryWriterState state,
-            final int logicalSize) {
-        final WritableShortChunk<Values> out = WritableShortChunk.makeWritableChunk(logicalSize);
-        boolean success = false;
-        try {
-            out.setSize(logicalSize);
-            int outPos = 0;
-            if (subset == null) {
-                for (int srcPos = 0; srcPos < logicalSize; ++srcPos) {
-                    final Object v = options.useDeephavenNulls()
-                            ? rawBoxValue(source, srcPos)
-                            : nullBoxValue(source, srcPos);
-                    out.set(outPos++, v == null ? QueryConstants.NULL_SHORT : toShortIndex(state.indexFor(v), dictId));
-                }
-            } else {
-                try (final RowSet.Iterator it = subset.iterator()) {
-                    while (it.hasNext()) {
-                        final int srcPos = (int) it.nextLong();
-                        final Object v = options.useDeephavenNulls()
-                                ? rawBoxValue(source, srcPos)
-                                : nullBoxValue(source, srcPos);
-                        out.set(outPos++,
-                                v == null ? QueryConstants.NULL_SHORT : toShortIndex(state.indexFor(v), dictId));
-                    }
-                }
-            }
-            success = true;
-            return out;
-        } finally {
-            if (!success) {
-                out.close();
-            }
-        }
-    }
-
-    private static byte toByteIndex(final int index, final long dictId) {
-        if (index > Byte.MAX_VALUE) {
-            throw new IllegalStateException(
-                    "Dictionary id=" + dictId + " has exceeded " + (Byte.MAX_VALUE + 1)
-                            + " distinct values, which is the maximum for an Int8 index. "
-                            + "Switch to a larger index type (e.g. DICTIONARY_ENCODED_INT16 or "
-                            + "DICTIONARY_ENCODED_INT32), or reduce the number of distinct values per batch.");
-        }
-        return (byte) index;
-    }
-
-    private static short toShortIndex(final int index, final long dictId) {
-        if (index > Short.MAX_VALUE) {
-            throw new IllegalStateException(
-                    "Dictionary id=" + dictId + " has exceeded " + (Short.MAX_VALUE + 1)
-                            + " distinct values, which is the maximum for an Int16 index. "
-                            + "Switch to a larger index type (e.g. DICTIONARY_ENCODED_INT32), "
-                            + "or reduce the number of distinct values per batch.");
-        }
-        return (short) index;
-    }
-
-    private WritableIntChunk<Values> buildIntIndexChunk(
+    private WritableIntChunk<Values> buildIndexChunk(
             @NotNull final Chunk<Values> source,
             @Nullable final RowSet subset,
             @NotNull final BarrageOptions options,
             @NotNull final DictionaryWriterState state,
             final int logicalSize) {
         final WritableIntChunk<Values> out = WritableIntChunk.makeWritableChunk(logicalSize);
-        out.setSize(logicalSize);
-        int outPos = 0;
-        if (subset == null) {
-            for (int srcPos = 0; srcPos < logicalSize; ++srcPos) {
-                final Object v = options.useDeephavenNulls()
-                        ? rawBoxValue(source, srcPos)
-                        : nullBoxValue(source, srcPos);
-                out.set(outPos++, v == null ? QueryConstants.NULL_INT : state.indexFor(v));
+        boolean success = false;
+        try {
+            out.setSize(logicalSize);
+            indexKernel.fillIndexChunk(source, subset, options, state, out);
+            final int total = state.totalSize();
+            if (indexBitWidth == 8 && total > Byte.MAX_VALUE + 1) {
+                throw new IllegalStateException(
+                        "Dictionary id=" + dictId + " has exceeded " + (Byte.MAX_VALUE + 1)
+                                + " distinct values, which is the maximum for an Int8 index. "
+                                + "Switch to a larger index type (e.g. DICTIONARY_ENCODED_INT16 or "
+                                + "DICTIONARY_ENCODED_INT32), or reduce the number of distinct values per batch.");
             }
-        } else {
-            try (final RowSet.Iterator it = subset.iterator()) {
-                while (it.hasNext()) {
-                    final int srcPos = (int) it.nextLong();
-                    final Object v = options.useDeephavenNulls()
-                            ? rawBoxValue(source, srcPos)
-                            : nullBoxValue(source, srcPos);
-                    out.set(outPos++, v == null ? QueryConstants.NULL_INT : state.indexFor(v));
-                }
+            if (indexBitWidth == 16 && total > Short.MAX_VALUE + 1) {
+                throw new IllegalStateException(
+                        "Dictionary id=" + dictId + " has exceeded " + (Short.MAX_VALUE + 1)
+                                + " distinct values, which is the maximum for an Int16 index. "
+                                + "Switch to a larger index type (e.g. DICTIONARY_ENCODED_INT32), "
+                                + "or reduce the number of distinct values per batch.");
             }
-        }
-        return out;
-    }
-
-    private WritableLongChunk<Values> buildLongIndexChunk(
-            @NotNull final Chunk<Values> source,
-            @Nullable final RowSet subset,
-            @NotNull final BarrageOptions options,
-            @NotNull final DictionaryWriterState state,
-            final int logicalSize) {
-        final WritableLongChunk<Values> out = WritableLongChunk.makeWritableChunk(logicalSize);
-        out.setSize(logicalSize);
-        int outPos = 0;
-        if (subset == null) {
-            for (int srcPos = 0; srcPos < logicalSize; ++srcPos) {
-                final Object v = options.useDeephavenNulls()
-                        ? rawBoxValue(source, srcPos)
-                        : nullBoxValue(source, srcPos);
-                out.set(outPos++, v == null ? QueryConstants.NULL_LONG : (long) state.indexFor(v));
-            }
-        } else {
-            try (final RowSet.Iterator it = subset.iterator()) {
-                while (it.hasNext()) {
-                    final int srcPos = (int) it.nextLong();
-                    final Object v = options.useDeephavenNulls()
-                            ? rawBoxValue(source, srcPos)
-                            : nullBoxValue(source, srcPos);
-                    out.set(outPos++, v == null ? QueryConstants.NULL_LONG : (long) state.indexFor(v));
-                }
+            success = true;
+            return out;
+        } finally {
+            if (!success) {
+                out.close();
             }
         }
-        return out;
-    }
-
-    // -------------------------------------------------------------------------
-    // Value boxing (source chunk → Object for use as Map key)
-    // -------------------------------------------------------------------------
-
-    /** Returns the boxed (nullable) value at {@code position} in {@code chunk}, or {@code null} for DH nulls. */
-    @Nullable
-    static Object nullBoxValue(@NotNull final Chunk<Values> chunk, final int position) {
-        switch (chunk.getChunkType()) {
-            case Byte:
-                return TypeUtils.box(chunk.asByteChunk().get(position));
-            case Char:
-                return TypeUtils.box(chunk.asCharChunk().get(position));
-            case Short:
-                return TypeUtils.box(chunk.asShortChunk().get(position));
-            case Int:
-                return TypeUtils.box(chunk.asIntChunk().get(position));
-            case Long:
-                return TypeUtils.box(chunk.asLongChunk().get(position));
-            case Float: {
-                final float v = chunk.asFloatChunk().get(position);
-                if (v == QueryConstants.NULL_FLOAT) {
-                    return null;
-                }
-                // Canonicalize all NaN bit patterns to a single dictionary entry.
-                return Float.isNaN(v) ? Float.NaN : v;
-            }
-            case Double: {
-                final double v = chunk.asDoubleChunk().get(position);
-                if (v == QueryConstants.NULL_DOUBLE) {
-                    return null;
-                }
-                // Canonicalize all NaN bit patterns to a single dictionary entry.
-                return Double.isNaN(v) ? Double.NaN : v;
-            }
-            case Object:
-                return chunk.asObjectChunk().get(position);
-            default:
-                throw new IllegalArgumentException("Unsupported chunk type: " + chunk.getChunkType());
-        }
-    }
-
-    /**
-     * Delegates to {@link DictionaryReaderRegistry#rawBoxValue} to avoid duplicating the boxing logic. Kept here as a
-     * package-level alias so existing call sites within this file compile without change.
-     */
-    @Nullable
-    static Object rawBoxValue(@NotNull final Chunk<Values> chunk, final int position) {
-        return DictionaryReaderRegistry.rawBoxValue(chunk, position);
     }
 }

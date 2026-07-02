@@ -61,11 +61,11 @@ public class DictionaryWriterRegistryTest {
         first.resetDelta();
         assertThat(manager.hasAnyDelta()).isFalse();
 
-        final DictionaryWriterState second = manager.getOrCreate(2L, writer, ChunkType.Int);
+        final DictionaryWriterState second = manager.getOrCreate(2L, writer, ChunkType.Object);
         second.resetDelta();
         assertThat(manager.hasAnyDelta()).isFalse();
 
-        second.indexFor("new-value");
+        second.indexForObject("new-value");
         assertThat(manager.hasAnyDelta()).isTrue();
     }
 
@@ -74,8 +74,8 @@ public class DictionaryWriterRegistryTest {
         final DictionaryWriterRegistry manager = new DictionaryWriterRegistry();
         final ChunkWriter<Chunk<Values>> writer = intWriter();
 
-        final DictionaryWriterState s1 = manager.getOrCreate(1L, writer, ChunkType.Int);
-        final DictionaryWriterState s2 = manager.getOrCreate(2L, writer, ChunkType.Int);
+        final DictionaryWriterState s1 = manager.getOrCreate(1L, writer, ChunkType.Object);
+        final DictionaryWriterState s2 = manager.getOrCreate(2L, writer, ChunkType.Object);
 
         // Both states start with needsFullBatch=true, so hasDelta is true
         assertThat(manager.hasAnyDelta()).isTrue();
@@ -86,7 +86,7 @@ public class DictionaryWriterRegistryTest {
         assertThat(s2.needsFullBatch()).isFalse();
 
         // Only s1 gets a new value — only s1 should report a delta
-        s1.indexFor(42);
+        s1.indexForObject(42);
         assertThat(manager.hasAnyDelta()).isTrue();
 
         manager.resetDeltas();
@@ -98,15 +98,15 @@ public class DictionaryWriterRegistryTest {
         final DictionaryWriterRegistry manager = new DictionaryWriterRegistry();
         final ChunkWriter<Chunk<Values>> writer = intWriter();
 
-        final DictionaryWriterState s1 = manager.getOrCreate(1L, writer, ChunkType.Int);
-        final DictionaryWriterState s2 = manager.getOrCreate(2L, writer, ChunkType.Int);
+        final DictionaryWriterState s1 = manager.getOrCreate(1L, writer, ChunkType.Object);
+        final DictionaryWriterState s2 = manager.getOrCreate(2L, writer, ChunkType.Object);
 
-        s1.indexFor("a");
-        s1.indexFor("b");
-        s1.indexFor("c");
+        s1.indexForObject("a");
+        s1.indexForObject("b");
+        s1.indexForObject("c");
         s1.resetDelta();
 
-        s2.indexFor("x");
+        s2.indexForObject("x");
         s2.resetDelta();
 
         assertThat(s1.totalSize()).isEqualTo(3);
@@ -131,17 +131,17 @@ public class DictionaryWriterRegistryTest {
         final DictionaryWriterRegistry reg2 =
                 new DictionaryWriterRegistry(sharedStates);
 
-        final DictionaryWriterState sub1 = reg1.getOrCreate(5L, writer, ChunkType.Int);
-        final DictionaryWriterState sub2 = reg2.getOrCreate(5L, writer, ChunkType.Int);
+        final DictionaryWriterState sub1 = reg1.getOrCreate(5L, writer, ChunkType.Object);
+        final DictionaryWriterState sub2 = reg2.getOrCreate(5L, writer, ChunkType.Object);
 
         // Both registries wrap the same SharedDictionaryWriterState for id=5
         assertThat(sharedStates).containsKey(5L);
 
         // Index assignments are shared: sub1 adds "alpha", sub2 sees the same index
-        assertThat(sub1.indexFor("alpha")).isZero();
-        assertThat(sub2.indexFor("alpha")).isZero();
-        assertThat(sub2.indexFor("beta")).isEqualTo(1);
-        assertThat(sub1.indexFor("beta")).isEqualTo(1);
+        assertThat(sub1.indexForObject("alpha")).isZero();
+        assertThat(sub2.indexForObject("alpha")).isZero();
+        assertThat(sub2.indexForObject("beta")).isEqualTo(1);
+        assertThat(sub1.indexForObject("beta")).isEqualTo(1);
     }
 
     @Test
@@ -150,8 +150,8 @@ public class DictionaryWriterRegistryTest {
         final ChunkWriter<Chunk<Values>> writer = intWriter();
 
         // Pre-populate the shared map with one entry
-        final SharedDictionaryWriterState preExisting = new SharedDictionaryWriterState(7L);
-        preExisting.indexFor("pre");
+        final SharedDictionaryWriterState preExisting = new SharedDictionaryWriterState(7L, ChunkType.Object);
+        preExisting.indexForObject("pre");
         sharedStates.put(7L, preExisting);
 
         final DictionaryWriterRegistry reg = new DictionaryWriterRegistry(sharedStates);

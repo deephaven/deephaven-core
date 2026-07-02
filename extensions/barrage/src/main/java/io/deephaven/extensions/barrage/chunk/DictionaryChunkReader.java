@@ -14,8 +14,6 @@ import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.WritableShortChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.chunk.util.hashing.LongToIntegerCast;
-import io.deephaven.chunk.util.hashing.ShortToIntegerCast;
 import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -23,7 +21,6 @@ import org.jetbrains.annotations.Nullable;
 import java.io.DataInput;
 import java.io.IOException;
 import java.util.Iterator;
-import java.util.List;
 import java.util.PrimitiveIterator;
 
 /**
@@ -79,7 +76,7 @@ public class DictionaryChunkReader extends BaseChunkReader<WritableChunk<Values>
                 return out;
             }
 
-            final List<Object> dict = registry.get(dictId);
+            final DictionaryValues dict = registry.get(dictId);
             if (dict == null) {
                 throw new IOException("No DictionaryBatch received for dictionary id " + dictId
                         + " before RecordBatch that references it");
@@ -157,7 +154,7 @@ public class DictionaryChunkReader extends BaseChunkReader<WritableChunk<Values>
     @SuppressWarnings("unchecked")
     private static void expandIndices(
             @NotNull final WritableIntChunk<Values> indices,
-            @NotNull final List<Object> dict,
+            @NotNull final DictionaryValues dict,
             @NotNull final WritableChunk<Values> out,
             final int outOffset,
             @NotNull final ChunkType valuesChunkType) {
@@ -168,7 +165,7 @@ public class DictionaryChunkReader extends BaseChunkReader<WritableChunk<Values>
                 for (int i = 0; i < n; ++i) {
                     final int idx = indices.get(i);
                     typedOut.set(outOffset + i,
-                            idx == QueryConstants.NULL_INT ? QueryConstants.NULL_BYTE : (Byte) dict.get(idx));
+                            idx == QueryConstants.NULL_INT ? QueryConstants.NULL_BYTE : dict.getByte(idx));
                 }
                 typedOut.setSize(outOffset + n);
                 break;
@@ -178,7 +175,7 @@ public class DictionaryChunkReader extends BaseChunkReader<WritableChunk<Values>
                 for (int i = 0; i < n; ++i) {
                     final int idx = indices.get(i);
                     typedOut.set(outOffset + i,
-                            idx == QueryConstants.NULL_INT ? QueryConstants.NULL_CHAR : (Character) dict.get(idx));
+                            idx == QueryConstants.NULL_INT ? QueryConstants.NULL_CHAR : dict.getChar(idx));
                 }
                 typedOut.setSize(outOffset + n);
                 break;
@@ -188,7 +185,7 @@ public class DictionaryChunkReader extends BaseChunkReader<WritableChunk<Values>
                 for (int i = 0; i < n; ++i) {
                     final int idx = indices.get(i);
                     typedOut.set(outOffset + i,
-                            idx == QueryConstants.NULL_INT ? QueryConstants.NULL_SHORT : (Short) dict.get(idx));
+                            idx == QueryConstants.NULL_INT ? QueryConstants.NULL_SHORT : dict.getShort(idx));
                 }
                 typedOut.setSize(outOffset + n);
                 break;
@@ -198,7 +195,7 @@ public class DictionaryChunkReader extends BaseChunkReader<WritableChunk<Values>
                 for (int i = 0; i < n; ++i) {
                     final int idx = indices.get(i);
                     typedOut.set(outOffset + i,
-                            idx == QueryConstants.NULL_INT ? QueryConstants.NULL_INT : (Integer) dict.get(idx));
+                            idx == QueryConstants.NULL_INT ? QueryConstants.NULL_INT : dict.getInt(idx));
                 }
                 typedOut.setSize(outOffset + n);
                 break;
@@ -208,7 +205,7 @@ public class DictionaryChunkReader extends BaseChunkReader<WritableChunk<Values>
                 for (int i = 0; i < n; ++i) {
                     final int idx = indices.get(i);
                     typedOut.set(outOffset + i,
-                            idx == QueryConstants.NULL_INT ? QueryConstants.NULL_LONG : (Long) dict.get(idx));
+                            idx == QueryConstants.NULL_INT ? QueryConstants.NULL_LONG : dict.getLong(idx));
                 }
                 typedOut.setSize(outOffset + n);
                 break;
@@ -218,7 +215,7 @@ public class DictionaryChunkReader extends BaseChunkReader<WritableChunk<Values>
                 for (int i = 0; i < n; ++i) {
                     final int idx = indices.get(i);
                     typedOut.set(outOffset + i,
-                            idx == QueryConstants.NULL_INT ? QueryConstants.NULL_FLOAT : (Float) dict.get(idx));
+                            idx == QueryConstants.NULL_INT ? QueryConstants.NULL_FLOAT : dict.getFloat(idx));
                 }
                 typedOut.setSize(outOffset + n);
                 break;
@@ -228,7 +225,7 @@ public class DictionaryChunkReader extends BaseChunkReader<WritableChunk<Values>
                 for (int i = 0; i < n; ++i) {
                     final int idx = indices.get(i);
                     typedOut.set(outOffset + i,
-                            idx == QueryConstants.NULL_INT ? QueryConstants.NULL_DOUBLE : (Double) dict.get(idx));
+                            idx == QueryConstants.NULL_INT ? QueryConstants.NULL_DOUBLE : dict.getDouble(idx));
                 }
                 typedOut.setSize(outOffset + n);
                 break;
@@ -237,7 +234,7 @@ public class DictionaryChunkReader extends BaseChunkReader<WritableChunk<Values>
                 final WritableObjectChunk<Object, Values> typedOut = out.asWritableObjectChunk();
                 for (int i = 0; i < n; ++i) {
                     final int idx = indices.get(i);
-                    typedOut.set(outOffset + i, idx == QueryConstants.NULL_INT ? null : dict.get(idx));
+                    typedOut.set(outOffset + i, idx == QueryConstants.NULL_INT ? null : dict.getObject(idx));
                 }
                 typedOut.setSize(outOffset + n);
                 break;

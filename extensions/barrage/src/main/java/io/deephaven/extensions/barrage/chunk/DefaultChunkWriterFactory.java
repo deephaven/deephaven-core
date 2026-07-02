@@ -205,34 +205,8 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
                     new org.apache.arrow.vector.types.pojo.FieldType(
                             field.isNullable(), new ArrowType.Int(indexBitWidth, true), null),
                     java.util.Collections.emptyList());
-            final ChunkType indexChunkType;
-            final ChunkWriter<Chunk<Values>> indexWriter;
-            switch (indexBitWidth) {
-                case 8:
-                    indexChunkType = ChunkType.Byte;
-                    // noinspection unchecked
-                    indexWriter = (ChunkWriter<Chunk<Values>>) (ChunkWriter<?>) intFromByte(
-                            new BarrageTypeInfo<>(byte.class, null, indexField));
-                    break;
-                case 16:
-                    indexChunkType = ChunkType.Short;
-                    // noinspection unchecked
-                    indexWriter = (ChunkWriter<Chunk<Values>>) (ChunkWriter<?>) intFromShort(
-                            new BarrageTypeInfo<>(short.class, null, indexField));
-                    break;
-                case 64:
-                    indexChunkType = ChunkType.Long;
-                    // noinspection unchecked
-                    indexWriter = (ChunkWriter<Chunk<Values>>) (ChunkWriter<?>) intFromLong(
-                            new BarrageTypeInfo<>(long.class, null, indexField));
-                    break;
-                default:
-                    indexChunkType = ChunkType.Int;
-                    // noinspection unchecked
-                    indexWriter = (ChunkWriter<Chunk<Values>>) (ChunkWriter<?>) intFromInt(
-                            new BarrageTypeInfo<>(int.class, null, indexField));
-                    break;
-            }
+            final ChunkWriter<IntChunk<Values>> indexWriter =
+                    intFromInt(new BarrageTypeInfo<>(int.class, null, indexField));
             // Recurse on the field stripped of its DictionaryEncoding to get the values writer.
             final Field valuesField = new Field(field.getName(),
                     new org.apache.arrow.vector.types.pojo.FieldType(
@@ -244,7 +218,7 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
             final ChunkType valuesChunkType = BarrageUtil.getDefaultType(valuesField).chunkType();
             // noinspection unchecked
             return (ChunkWriter<T>) new DictionaryChunkWriter(
-                    dictEncoding.getId(), indexWriter, valuesWriter, indexChunkType, valuesChunkType,
+                    dictEncoding.getId(), indexWriter, valuesWriter, indexBitWidth, valuesChunkType,
                     field.isNullable());
         }
 

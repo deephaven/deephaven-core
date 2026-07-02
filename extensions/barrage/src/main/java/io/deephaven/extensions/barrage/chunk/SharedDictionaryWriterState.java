@@ -3,8 +3,7 @@
 //
 package io.deephaven.extensions.barrage.chunk;
 
-import it.unimi.dsi.fastutil.objects.Object2IntMap;
-import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
+import io.deephaven.chunk.ChunkType;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -23,10 +22,9 @@ import java.util.List;
  * <p>
  * Thread-safety: not thread-safe; access is serialized by the barrage propagation thread (the UGP cycle).
  */
-public final class SharedDictionaryWriterState {
+public final class SharedDictionaryWriterState extends AbstractDictionaryWriterState {
 
     private final long dictId;
-    private final Object2IntMap<Object> valueToIndex = new Object2IntOpenHashMap<>();
     /** All distinct values in insertion order, cleared on {@link #reset()}. */
     private final List<Object> allValues = new ArrayList<>();
     /**
@@ -35,27 +33,23 @@ public final class SharedDictionaryWriterState {
      */
     private int generation = 0;
 
-    public SharedDictionaryWriterState(final long dictId) {
+    public SharedDictionaryWriterState(final long dictId, final ChunkType valuesChunkType) {
+        super(valuesChunkType);
         this.dictId = dictId;
-        valueToIndex.defaultReturnValue(-1);
+    }
+
+    @Override
+    protected int nextIndex() {
+        return allValues.size();
+    }
+
+    @Override
+    protected void recordNewValue(@NotNull final Object boxed, final int index) {
+        allValues.add(boxed);
     }
 
     public long getDictId() {
         return dictId;
-    }
-
-    /**
-     * Returns the 0-based dictionary index for {@code value}, adding it to the global mapping if not already present.
-     */
-    public int indexFor(@NotNull final Object value) {
-        final int existing = valueToIndex.getInt(value);
-        if (existing != -1) {
-            return existing;
-        }
-        final int index = allValues.size();
-        allValues.add(value);
-        valueToIndex.put(value, index);
-        return index;
     }
 
     /** Returns an unmodifiable view of all values in insertion order. */
@@ -82,6 +76,6 @@ public final class SharedDictionaryWriterState {
     public void reset() {
         generation++;
         allValues.clear();
-        valueToIndex.clear();
+        clearMaps();
     }
 }

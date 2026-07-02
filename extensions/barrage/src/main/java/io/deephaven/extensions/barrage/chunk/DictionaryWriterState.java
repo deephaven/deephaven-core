@@ -12,7 +12,7 @@ import java.util.List;
  * {@link DictionaryChunkWriter} instances that reference the same id.
  *
  * <p>
- * {@link #indexFor(Object)} is called once per logical row (non-null) while building a batch. After the batch's
+ * {@link #indexForObject(Object)} is called once per logical row (non-null) while building a batch. After the batch's
  * {@link org.apache.arrow.flatbuf.DictionaryBatch} has been emitted, call {@link #resetDelta()} to advance the delta
  * boundary.
  *
@@ -33,14 +33,14 @@ public interface DictionaryWriterState {
 
     long getDictId();
 
-    /**
-     * Returns the 0-based dictionary index for {@code value}, adding it to the dictionary if not already present. Must
-     * not be called with {@code null}. When {@code useDeephavenNulls} is false (Arrow standard), null rows are handled
-     * by the caller via a null-sentinel index with a 0-bit in the validity bitmap. When {@code useDeephavenNulls} is
-     * true, callers pass the boxed null sentinel (e.g. {@code Integer.valueOf(QueryConstants.NULL_INT)}) as a real
-     * dictionary entry instead.
-     */
-    int indexFor(@NotNull Object value);
+    int indexForObject(@NotNull Object value);
+    int indexForByte(byte v);
+    int indexForChar(char v);
+    int indexForShort(short v);
+    int indexForInt(int v);
+    int indexForLong(long v);
+    int indexForFloat(float v);
+    int indexForDouble(double v);
 
     /**
      * Returns {@code true} if a DictionaryBatch message needs to be emitted before the current RecordBatch — either
@@ -65,7 +65,7 @@ public interface DictionaryWriterState {
      */
     void resetDelta();
 
-    /** Total number of distinct values ever added to the dictionary (across all resets). */
+    /** Current number of distinct values in the dictionary (resets to zero after {@link #reset()}). */
     int totalSize();
 
     /**

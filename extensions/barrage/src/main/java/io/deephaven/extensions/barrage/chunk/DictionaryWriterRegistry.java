@@ -94,12 +94,12 @@ public final class DictionaryWriterRegistry {
             if (sharedStates != null) {
                 SharedDictionaryWriterState shared = sharedStates.get(dictId);
                 if (shared == null) {
-                    shared = new SharedDictionaryWriterState(dictId);
+                    shared = new SharedDictionaryWriterState(dictId, valuesChunkType);
                     sharedStates.put(dictId, shared);
                 }
                 state = new FullSubscriptionDictionaryState(shared);
             } else {
-                state = new LocalDictionaryWriterState(dictId);
+                state = new LocalDictionaryWriterState(dictId, valuesChunkType);
             }
             entry = new Entry(state, valuesWriter, valuesChunkType);
             entries.put(dictId, entry);

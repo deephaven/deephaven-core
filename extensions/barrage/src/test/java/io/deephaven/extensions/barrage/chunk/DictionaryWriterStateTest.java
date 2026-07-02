@@ -3,6 +3,7 @@
 //
 package io.deephaven.extensions.barrage.chunk;
 
+import io.deephaven.chunk.ChunkType;
 import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -13,32 +14,32 @@ public class DictionaryWriterStateTest {
 
     @Test
     public void testLocalFirstBatchUsesInsertionOrderAndStableIndexes() {
-        final DictionaryWriterState state = new LocalDictionaryWriterState(17);
+        final DictionaryWriterState state = new LocalDictionaryWriterState(17, ChunkType.Object);
 
         assertThat(state.hasDelta()).isTrue();
         assertThat(state.needsFullBatch()).isTrue();
-        assertThat(state.indexFor("alpha")).isZero();
-        assertThat(state.indexFor("beta")).isEqualTo(1);
-        assertThat(state.indexFor("alpha")).isZero();
+        assertThat(state.indexForObject("alpha")).isZero();
+        assertThat(state.indexForObject("beta")).isEqualTo(1);
+        assertThat(state.indexForObject("alpha")).isZero();
 
         assertThat(state.getDeltaValues()).containsExactly("alpha", "beta");
     }
 
     @Test
     public void testLocalResetDeltaExposesOnlyNewValues() {
-        final DictionaryWriterState state = new LocalDictionaryWriterState(23);
+        final DictionaryWriterState state = new LocalDictionaryWriterState(23, ChunkType.Object);
 
-        state.indexFor("alpha");
-        state.indexFor("beta");
+        state.indexForObject("alpha");
+        state.indexForObject("beta");
         state.resetDelta();
 
         assertThat(state.hasDelta()).isFalse();
         assertThat(state.needsFullBatch()).isFalse();
-        assertThat(state.indexFor("beta")).isEqualTo(1);
+        assertThat(state.indexForObject("beta")).isEqualTo(1);
         assertThat(state.hasDelta()).isFalse();
 
-        assertThat(state.indexFor("gamma")).isEqualTo(2);
-        assertThat(state.indexFor("delta")).isEqualTo(3);
+        assertThat(state.indexForObject("gamma")).isEqualTo(2);
+        assertThat(state.indexForObject("delta")).isEqualTo(3);
         assertThat(state.getDeltaValues()).containsExactly("gamma", "delta");
 
         state.resetDelta();
@@ -49,10 +50,10 @@ public class DictionaryWriterStateTest {
 
     @Test
     public void testFullSubscriptionFirstBatchContainsAllCurrentValues() {
-        final SharedDictionaryWriterState shared = new SharedDictionaryWriterState(5L);
+        final SharedDictionaryWriterState shared = new SharedDictionaryWriterState(5L, ChunkType.Object);
         // Pre-populate the shared state (simulates values added by earlier subscribers)
-        shared.indexFor("alpha");
-        shared.indexFor("beta");
+        shared.indexForObject("alpha");
+        shared.indexForObject("beta");
 
         // New subscriber joins after those values were already added
         final DictionaryWriterState sub = new FullSubscriptionDictionaryState(shared);
@@ -65,18 +66,18 @@ public class DictionaryWriterStateTest {
 
     @Test
     public void testFullSubscriptionResetDeltaRetainsFullList() {
-        final SharedDictionaryWriterState shared = new SharedDictionaryWriterState(6L);
+        final SharedDictionaryWriterState shared = new SharedDictionaryWriterState(6L, ChunkType.Object);
 
         final DictionaryWriterState sub = new FullSubscriptionDictionaryState(shared);
-        sub.indexFor("alpha");
-        sub.indexFor("beta");
+        sub.indexForObject("alpha");
+        sub.indexForObject("beta");
         sub.resetDelta();
 
         assertThat(sub.hasDelta()).isFalse();
         assertThat(sub.needsFullBatch()).isFalse();
 
         // New value added after reset
-        sub.indexFor("gamma");
+        sub.indexForObject("gamma");
         assertThat(sub.hasDelta()).isTrue();
         assertThat(sub.getDeltaValues()).containsExactly("gamma");
 
@@ -86,34 +87,34 @@ public class DictionaryWriterStateTest {
 
     @Test
     public void testFullSubscriptionIndexesAreSharedAcrossSubscribers() {
-        final SharedDictionaryWriterState shared = new SharedDictionaryWriterState(7L);
+        final SharedDictionaryWriterState shared = new SharedDictionaryWriterState(7L, ChunkType.Object);
 
         final DictionaryWriterState sub1 = new FullSubscriptionDictionaryState(shared);
         final DictionaryWriterState sub2 = new FullSubscriptionDictionaryState(shared);
 
         // sub1 adds values
-        assertThat(sub1.indexFor("foo")).isEqualTo(0);
-        assertThat(sub1.indexFor("bar")).isEqualTo(1);
+        assertThat(sub1.indexForObject("foo")).isEqualTo(0);
+        assertThat(sub1.indexForObject("bar")).isEqualTo(1);
 
         // sub2 sees the same indexes because they share the underlying state
-        assertThat(sub2.indexFor("foo")).isEqualTo(0);
-        assertThat(sub2.indexFor("bar")).isEqualTo(1);
-        assertThat(sub2.indexFor("baz")).isEqualTo(2);
+        assertThat(sub2.indexForObject("foo")).isEqualTo(0);
+        assertThat(sub2.indexForObject("bar")).isEqualTo(1);
+        assertThat(sub2.indexForObject("baz")).isEqualTo(2);
 
         // sub1 also sees baz (added by sub2) at the same index
-        assertThat(sub1.indexFor("baz")).isEqualTo(2);
+        assertThat(sub1.indexForObject("baz")).isEqualTo(2);
     }
 
     @Test
     public void testNewSubscriberReceivesAllValuesBeforeJoining() {
-        final SharedDictionaryWriterState shared = new SharedDictionaryWriterState(8L);
+        final SharedDictionaryWriterState shared = new SharedDictionaryWriterState(8L, ChunkType.Object);
 
         // First subscriber pumps some values
         final DictionaryWriterState sub1 = new FullSubscriptionDictionaryState(shared);
-        sub1.indexFor("a");
-        sub1.indexFor("b");
+        sub1.indexForObject("a");
+        sub1.indexForObject("b");
         sub1.resetDelta();
-        sub1.indexFor("c");
+        sub1.indexForObject("c");
         sub1.resetDelta();
 
         // Second subscriber joins after sub1 has already sent a, b, c
@@ -124,7 +125,7 @@ public class DictionaryWriterStateTest {
         sub2.resetDelta();
 
         // Now a new value is added; both sub1 and sub2 only see the delta
-        sub1.indexFor("d");
+        sub1.indexForObject("d");
         assertThat(sub1.getDeltaValues()).containsExactly("d");
         assertThat(sub2.getDeltaValues()).containsExactly("d");
     }
@@ -133,10 +134,10 @@ public class DictionaryWriterStateTest {
 
     @Test
     public void testLocalResetClearsAllStateAndForcesFullBatch() {
-        final DictionaryWriterState state = new LocalDictionaryWriterState(42);
+        final DictionaryWriterState state = new LocalDictionaryWriterState(42, ChunkType.Object);
 
-        state.indexFor("x");
-        state.indexFor("y");
+        state.indexForObject("x");
+        state.indexForObject("y");
         state.resetDelta();
         assertThat(state.hasDelta()).isFalse();
         assertThat(state.totalSize()).isEqualTo(2);
@@ -149,22 +150,22 @@ public class DictionaryWriterStateTest {
         assertThat(state.getDeltaValues()).isEmpty();
 
         // Indexes start over from 0 after reset
-        assertThat(state.indexFor("x")).isZero();
+        assertThat(state.indexForObject("x")).isZero();
         assertThat(state.getDeltaValues()).containsExactly("x");
     }
 
     @Test
     public void testLocalTotalSizeAndDictId() {
-        final DictionaryWriterState state = new LocalDictionaryWriterState(99);
+        final DictionaryWriterState state = new LocalDictionaryWriterState(99, ChunkType.Object);
 
         assertThat(state.getDictId()).isEqualTo(99L);
         assertThat(state.totalSize()).isZero();
 
-        state.indexFor("a");
-        state.indexFor("b");
+        state.indexForObject("a");
+        state.indexForObject("b");
         assertThat(state.totalSize()).isEqualTo(2);
 
-        state.indexFor("a"); // duplicate, no change
+        state.indexForObject("a"); // duplicate, no change
         assertThat(state.totalSize()).isEqualTo(2);
 
         state.resetDelta();
@@ -175,11 +176,11 @@ public class DictionaryWriterStateTest {
 
     @Test
     public void testFullSubscriptionDetectsSharedReset() {
-        final SharedDictionaryWriterState shared = new SharedDictionaryWriterState(9L);
+        final SharedDictionaryWriterState shared = new SharedDictionaryWriterState(9L, ChunkType.Object);
 
         final DictionaryWriterState sub = new FullSubscriptionDictionaryState(shared);
-        sub.indexFor("a");
-        sub.indexFor("b");
+        sub.indexForObject("a");
+        sub.indexForObject("b");
         sub.resetDelta();
         assertThat(sub.hasDelta()).isFalse();
         assertThat(sub.needsFullBatch()).isFalse();
@@ -195,20 +196,20 @@ public class DictionaryWriterStateTest {
         assertThat(sub.getDeltaValues()).isEmpty();
 
         // After re-adding values, subscriber sees them as a fresh full batch
-        shared.indexFor("c");
+        shared.indexForObject("c");
         assertThat(sub.getDeltaValues()).containsExactly("c");
     }
 
     @Test
     public void testFullSubscriptionResetDeltaAfterSharedResetSyncsCorrectly() {
-        final SharedDictionaryWriterState shared = new SharedDictionaryWriterState(10L);
+        final SharedDictionaryWriterState shared = new SharedDictionaryWriterState(10L, ChunkType.Object);
         final DictionaryWriterState sub = new FullSubscriptionDictionaryState(shared);
 
-        sub.indexFor("a");
+        sub.indexForObject("a");
         sub.resetDelta();
 
         shared.reset();
-        shared.indexFor("b");
+        shared.indexForObject("b");
 
         // First call into the sub after a shared reset triggers syncGeneration
         sub.resetDelta();
@@ -221,16 +222,16 @@ public class DictionaryWriterStateTest {
 
     @Test
     public void testFullSubscriptionMultipleResetsTrackGeneration() {
-        final SharedDictionaryWriterState shared = new SharedDictionaryWriterState(11L);
+        final SharedDictionaryWriterState shared = new SharedDictionaryWriterState(11L, ChunkType.Object);
         final DictionaryWriterState sub = new FullSubscriptionDictionaryState(shared);
 
-        sub.indexFor("a");
+        sub.indexForObject("a");
         sub.resetDelta();
 
         // First compaction
         shared.reset();
         assertThat(sub.needsFullBatch()).isTrue();
-        sub.indexFor("b");
+        sub.indexForObject("b");
         sub.resetDelta();
         assertThat(sub.hasDelta()).isFalse();
 
@@ -243,7 +244,7 @@ public class DictionaryWriterStateTest {
 
     @Test
     public void testFullSubscriptionResetThrows() {
-        final SharedDictionaryWriterState shared = new SharedDictionaryWriterState(12L);
+        final SharedDictionaryWriterState shared = new SharedDictionaryWriterState(12L, ChunkType.Object);
         final DictionaryWriterState sub = new FullSubscriptionDictionaryState(shared);
 
         try {
@@ -256,14 +257,14 @@ public class DictionaryWriterStateTest {
 
     @Test
     public void testFullSubscriptionTotalSizeAndDictId() {
-        final SharedDictionaryWriterState shared = new SharedDictionaryWriterState(13L);
+        final SharedDictionaryWriterState shared = new SharedDictionaryWriterState(13L, ChunkType.Object);
         final DictionaryWriterState sub = new FullSubscriptionDictionaryState(shared);
 
         assertThat(sub.getDictId()).isEqualTo(13L);
         assertThat(sub.totalSize()).isZero();
 
-        sub.indexFor("x");
-        sub.indexFor("y");
+        sub.indexForObject("x");
+        sub.indexForObject("y");
         assertThat(sub.totalSize()).isEqualTo(2);
 
         sub.resetDelta();
@@ -272,17 +273,17 @@ public class DictionaryWriterStateTest {
 
     @Test
     public void testSubscriberCreatedAfterSharedResetDoesNotSeeStaleGeneration() {
-        final SharedDictionaryWriterState shared = new SharedDictionaryWriterState(14L);
+        final SharedDictionaryWriterState shared = new SharedDictionaryWriterState(14L, ChunkType.Object);
 
         // Simulate a round of usage + compaction before any subscriber attaches
         final DictionaryWriterState earlySubscriber = new FullSubscriptionDictionaryState(shared);
-        earlySubscriber.indexFor("old");
+        earlySubscriber.indexForObject("old");
         earlySubscriber.resetDelta();
         shared.reset();
 
         // New subscriber joins after the reset; it should not treat this as a post-reset event
         final DictionaryWriterState lateSubscriber = new FullSubscriptionDictionaryState(shared);
-        shared.indexFor("new");
+        shared.indexForObject("new");
 
         // needsFullBatch is true on first use regardless (normal first-batch behavior)
         assertThat(lateSubscriber.needsFullBatch()).isTrue();

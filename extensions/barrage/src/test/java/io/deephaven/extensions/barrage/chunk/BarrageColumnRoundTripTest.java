@@ -1562,7 +1562,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
             // makeContext takes ownership of the work chunk; pass a copy so srcData remains valid
             final WritableIntChunk<Values> work = WritableIntChunk.makeWritableChunk(OVERFLOW_SIZE);
             work.copyFromChunk(srcData, 0, 0, OVERFLOW_SIZE);
-            final DictionaryWriterState state = new LocalDictionaryWriterState(0L);
+            final DictionaryWriterState state = new LocalDictionaryWriterState(0L, ChunkType.Int);
             try (final ChunkWriter.Context ctx = dictWriter.makeContext(work, 0)) {
                 try {
                     try (final ChunkWriter.DrainableColumn col =
@@ -1594,7 +1594,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
             // makeContext takes ownership of the work chunk; pass a copy so srcData remains valid
             final WritableIntChunk<Values> work = WritableIntChunk.makeWritableChunk(OVERFLOW_SIZE);
             work.copyFromChunk(srcData, 0, 0, OVERFLOW_SIZE);
-            final DictionaryWriterState state = new LocalDictionaryWriterState(0L);
+            final DictionaryWriterState state = new LocalDictionaryWriterState(0L, ChunkType.Int);
             try (final ChunkWriter.Context ctx = dictWriter.makeContext(work, 0)) {
                 try {
                     try (final ChunkWriter.DrainableColumn col =
@@ -1629,7 +1629,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
     public void testDictionaryEncodedMultiBatchDelta() throws IOException {
         final int NUM_ROWS = 5;
         final Field writerField = buildDictionaryField(String.class, 32, 0L);
-        final DictionaryWriterState state = new LocalDictionaryWriterState(0L);
+        final DictionaryWriterState state = new LocalDictionaryWriterState(0L, ChunkType.Object);
         final DictionaryReaderRegistry registry = new DictionaryReaderRegistry();
         final DictionaryChunkWriter dictWriter = (DictionaryChunkWriter) DefaultChunkWriterFactory.INSTANCE.newWriter(
                 BarrageTypeInfo.make(String.class, null, writerField));
@@ -1755,7 +1755,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
 
                 final WritableIntChunk<Values> work = WritableIntChunk.makeWritableChunk(NUM_ROWS);
                 work.copyFromChunk(src, 0, 0, NUM_ROWS);
-                final DictionaryWriterState state = new LocalDictionaryWriterState(0L);
+                final DictionaryWriterState state = new LocalDictionaryWriterState(0L, ChunkType.Int);
                 try (final ChunkWriter.Context ctx = dictWriter.makeContext(work, 0);
                         final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream()) {
                     final LongStream.Builder bufBld = LongStream.builder();
@@ -1785,7 +1785,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
 
                 final WritableIntChunk<Values> work = WritableIntChunk.makeWritableChunk(NUM_ROWS);
                 work.copyFromChunk(src, 0, 0, NUM_ROWS);
-                final DictionaryWriterState state = new LocalDictionaryWriterState(0L);
+                final DictionaryWriterState state = new LocalDictionaryWriterState(0L, ChunkType.Int);
                 try (final ChunkWriter.Context ctx = dictWriter.makeContext(work, 0);
                         final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream()) {
                     final LongStream.Builder bufBld = LongStream.builder();
@@ -2251,7 +2251,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
 
             // --- full batch ---
             {
-                final DictionaryWriterState state = new LocalDictionaryWriterState(0L);
+                final DictionaryWriterState state = new LocalDictionaryWriterState(0L, chunkType);
                 final DictionaryReaderRegistry registry = new DictionaryReaderRegistry();
                 final WritableChunk<Values> work = chunkType.makeWritableChunk(NUM_ROWS);
                 work.copyFromChunk(srcData, 0, 0, NUM_ROWS);
@@ -2288,7 +2288,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
 
             // --- empty subset: reader must handle numRows=0 without consulting the registry ---
             {
-                final DictionaryWriterState state = new LocalDictionaryWriterState(0L);
+                final DictionaryWriterState state = new LocalDictionaryWriterState(0L, chunkType);
                 final WritableChunk<Values> work = chunkType.makeWritableChunk(NUM_ROWS);
                 work.copyFromChunk(srcData, 0, 0, NUM_ROWS);
                 try (final ChunkWriter.Context ctx = dictWriter.makeContext(work, 0);
@@ -2320,7 +2320,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
 
             // --- swiss-cheese subset ---
             {
-                final DictionaryWriterState state = new LocalDictionaryWriterState(0L);
+                final DictionaryWriterState state = new LocalDictionaryWriterState(0L, chunkType);
                 final DictionaryReaderRegistry registry = new DictionaryReaderRegistry();
                 final WritableChunk<Values> work = chunkType.makeWritableChunk(NUM_ROWS);
                 work.copyFromChunk(srcData, 0, 0, NUM_ROWS);

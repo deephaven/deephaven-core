@@ -8,8 +8,6 @@ import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import org.junit.Test;
 
-import java.util.List;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class DictionaryReaderRegistryTest {
@@ -33,8 +31,12 @@ public class DictionaryReaderRegistryTest {
             registry.update(0L, chunk, false);
         }
 
-        final List<Object> dict = registry.get(0L);
-        assertThat(dict).containsExactly("cat", "dog", "fish");
+        final DictionaryValues dict = registry.get(0L);
+        assertThat(dict).isNotNull();
+        assertThat(dict.size()).isEqualTo(3);
+        assertThat(dict.<String>getObject(0)).isEqualTo("cat");
+        assertThat(dict.<String>getObject(1)).isEqualTo("dog");
+        assertThat(dict.<String>getObject(2)).isEqualTo("fish");
     }
 
     @Test
@@ -55,8 +57,13 @@ public class DictionaryReaderRegistryTest {
             registry.update(0L, chunk2, true);
         }
 
-        final List<Object> dict = registry.get(0L);
-        assertThat(dict).containsExactly("alpha", "beta", "gamma", "delta");
+        final DictionaryValues dict = registry.get(0L);
+        assertThat(dict).isNotNull();
+        assertThat(dict.size()).isEqualTo(4);
+        assertThat(dict.<String>getObject(0)).isEqualTo("alpha");
+        assertThat(dict.<String>getObject(1)).isEqualTo("beta");
+        assertThat(dict.<String>getObject(2)).isEqualTo("gamma");
+        assertThat(dict.<String>getObject(3)).isEqualTo("delta");
     }
 
     @Test
@@ -77,8 +84,10 @@ public class DictionaryReaderRegistryTest {
             registry.update(5L, chunk2, false);
         }
 
-        final List<Object> dict = registry.get(5L);
-        assertThat(dict).containsExactly("new1");
+        final DictionaryValues dict = registry.get(5L);
+        assertThat(dict).isNotNull();
+        assertThat(dict.size()).isEqualTo(1);
+        assertThat(dict.<String>getObject(0)).isEqualTo("new1");
     }
 
     @Test
@@ -99,8 +108,17 @@ public class DictionaryReaderRegistryTest {
             registry.update(1L, chunkB, false);
         }
 
-        assertThat(registry.get(0L)).containsExactly(10, 20);
-        assertThat(registry.get(1L)).containsExactly(30, 40);
+        final DictionaryValues dictA = registry.get(0L);
+        assertThat(dictA).isNotNull();
+        assertThat(dictA.size()).isEqualTo(2);
+        assertThat(dictA.getInt(0)).isEqualTo(10);
+        assertThat(dictA.getInt(1)).isEqualTo(20);
+
+        final DictionaryValues dictB = registry.get(1L);
+        assertThat(dictB).isNotNull();
+        assertThat(dictB.size()).isEqualTo(2);
+        assertThat(dictB.getInt(0)).isEqualTo(30);
+        assertThat(dictB.getInt(1)).isEqualTo(40);
     }
 
     @Test
@@ -115,7 +133,11 @@ public class DictionaryReaderRegistryTest {
             registry.update(7L, chunk, true);
         }
 
-        assertThat(registry.get(7L)).containsExactly("x", "y");
+        final DictionaryValues dict = registry.get(7L);
+        assertThat(dict).isNotNull();
+        assertThat(dict.size()).isEqualTo(2);
+        assertThat(dict.<String>getObject(0)).isEqualTo("x");
+        assertThat(dict.<String>getObject(1)).isEqualTo("y");
     }
 
     @Test
@@ -130,10 +152,11 @@ public class DictionaryReaderRegistryTest {
             registry.update(0L, chunk, false);
         }
 
-        final List<Object> dict = registry.get(0L);
-        assertThat(dict).hasSize(3);
-        assertThat(dict.get(0)).isEqualTo("a");
-        assertThat(dict.get(1)).isNull();
-        assertThat(dict.get(2)).isEqualTo("b");
+        final DictionaryValues dict = registry.get(0L);
+        assertThat(dict).isNotNull();
+        assertThat(dict.size()).isEqualTo(3);
+        assertThat(dict.<String>getObject(0)).isEqualTo("a");
+        assertThat(dict.<String>getObject(1)).isNull();
+        assertThat(dict.<String>getObject(2)).isEqualTo("b");
     }
 }

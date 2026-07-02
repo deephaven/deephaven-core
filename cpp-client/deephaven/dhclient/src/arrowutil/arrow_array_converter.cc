@@ -13,9 +13,12 @@
 #include <vector>
 #include <arrow/visitor.h>
 #include <arrow/array/array_base.h>
+#include <arrow/array/array_dict.h>
 #include <arrow/array/array_primitive.h>
+#include <arrow/array/array_run_end.h>
 #include <arrow/scalar.h>
 #include <arrow/builder.h>
+#include <arrow/type.h>
 #include "deephaven/client/arrowutil/arrow_column_source.h"
 #include "deephaven/client/utility/arrow_util.h"
 #include "deephaven/dhcore/chunk/chunk.h"
@@ -259,6 +262,90 @@ struct ChunkedArrayToColumnSourceVisitor final : public arrow::TypeVisitor {
     auto arrays = DowncastChunks<arrow::Time64Array>(*chunked_array_);
     result_ = LocalTimeArrowColumnSource::OfArrowArrayVec(ElementType::Of(ElementTypeId::kLocalTime),
         std::move(arrays));
+    return arrow::Status::OK();
+  }
+
+  /**
+   * Expands a dictionary-encoded column (indices + dictionary values) to a plain-value column.
+   * Arrow Flight preserves DictionaryArrays in the RecordBatch; we decode them here so that the
+   * rest of the converter sees only the logical value type.
+   */
+  arrow::Status Visit(const arrow::DictionaryType &type) final {
+    auto dict_arrays = DowncastChunks<arrow::DictionaryArray>(*chunked_array_);
+    std::vector<std::shared_ptr<arrow::Array>> plain_chunks;
+    plain_chunks.reserve(dict_arrays.size());
+    for (const auto &da : dict_arrays) {
+      const auto &indices = static_cast<const arrow::Int32Array &>(*da->indices());
+      auto builder_result = arrow::MakeBuilder(type.value_type());
+      OkOrThrow(DEEPHAVEN_LOCATION_EXPR(builder_result.status()));
+      auto builder = std::move(builder_result).ValueUnsafe();
+      OkOrThrow(DEEPHAVEN_LOCATION_EXPR(builder->Reserve(da->length())));
+      for (int64_t i = 0; i < da->length(); ++i) {
+        if (da->IsNull(i)) {
+          OkOrThrow(DEEPHAVEN_LOCATION_EXPR(builder->AppendNull()));
+        } else {
+          auto scalar = ValueOrThrow(DEEPHAVEN_LOCATION_EXPR(
+              da->dictionary()->GetScalar(indices.Value(i))));
+          OkOrThrow(DEEPHAVEN_LOCATION_EXPR(builder->AppendScalar(*scalar)));
+        }
+      }
+      plain_chunks.push_back(ValueOrThrow(DEEPHAVEN_LOCATION_EXPR(builder->Finish())));
+    }
+    auto plain_ca = ValueOrThrow(DEEPHAVEN_LOCATION_EXPR(
+        arrow::ChunkedArray::Make(std::move(plain_chunks), type.value_type())));
+    result_ = ArrowArrayConverter::ChunkedArrayToColumnSource(std::move(plain_ca));
+    return arrow::Status::OK();
+  }
+
+  /**
+   * Expands a run-end-encoded (REE) column to a plain-value column. REE compresses repeated values
+   * into (run_end, value) pairs; we expand them back to one element per logical row.
+   */
+  arrow::Status Visit(const arrow::RunEndEncodedType &type) final {
+    std::vector<std::shared_ptr<arrow::Array>> plain_chunks;
+    plain_chunks.reserve(chunked_array_->num_chunks());
+    for (const auto &arr : chunked_array_->chunks()) {
+      const auto &ree = static_cast<const arrow::RunEndEncodedArray &>(*arr);
+      const auto &run_ends_arr = *ree.run_ends();
+      auto builder_result = arrow::MakeBuilder(type.value_type());
+      OkOrThrow(DEEPHAVEN_LOCATION_EXPR(builder_result.status()));
+      auto builder = std::move(builder_result).ValueUnsafe();
+      OkOrThrow(DEEPHAVEN_LOCATION_EXPR(builder->Reserve(ree.length())));
+      int64_t logical_pos = 0;
+      int64_t num_runs = run_ends_arr.length();
+      for (int64_t run = 0; run < num_runs; ++run) {
+        int64_t run_end;
+        switch (type.run_end_type()->id()) {
+          case arrow::Type::INT16:
+            run_end = static_cast<const arrow::Int16Array &>(run_ends_arr).Value(run);
+            break;
+          case arrow::Type::INT32:
+            run_end = static_cast<const arrow::Int32Array &>(run_ends_arr).Value(run);
+            break;
+          case arrow::Type::INT64:
+            run_end = static_cast<const arrow::Int64Array &>(run_ends_arr).Value(run);
+            break;
+          default: {
+            auto message = fmt::format("Unexpected REE run_ends type: {}",
+                type.run_end_type()->ToString());
+            throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
+          }
+        }
+        int64_t count = run_end - logical_pos;
+        if (count <= 0) {
+          continue;
+        }
+        auto scalar = ValueOrThrow(DEEPHAVEN_LOCATION_EXPR(ree.values()->GetScalar(run)));
+        for (int64_t j = 0; j < count; ++j) {
+          OkOrThrow(DEEPHAVEN_LOCATION_EXPR(builder->AppendScalar(*scalar)));
+        }
+        logical_pos = run_end;
+      }
+      plain_chunks.push_back(ValueOrThrow(DEEPHAVEN_LOCATION_EXPR(builder->Finish())));
+    }
+    auto plain_ca = ValueOrThrow(DEEPHAVEN_LOCATION_EXPR(
+        arrow::ChunkedArray::Make(std::move(plain_chunks), type.value_type())));
+    result_ = ArrowArrayConverter::ChunkedArrayToColumnSource(std::move(plain_ca));
     return arrow::Status::OK();
   }
 

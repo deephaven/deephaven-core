@@ -79,8 +79,43 @@ public final class FullSubscriptionDictionaryState implements DictionaryWriterSt
     }
 
     @Override
-    public int indexFor(@NotNull final Object value) {
-        return shared.indexFor(value);
+    public int indexForObject(@NotNull final Object value) {
+        return shared.indexForObject(value);
+    }
+
+    @Override
+    public int indexForByte(final byte v) {
+        return shared.indexForByte(v);
+    }
+
+    @Override
+    public int indexForChar(final char v) {
+        return shared.indexForChar(v);
+    }
+
+    @Override
+    public int indexForShort(final short v) {
+        return shared.indexForShort(v);
+    }
+
+    @Override
+    public int indexForInt(final int v) {
+        return shared.indexForInt(v);
+    }
+
+    @Override
+    public int indexForLong(final long v) {
+        return shared.indexForLong(v);
+    }
+
+    @Override
+    public int indexForFloat(final float v) {
+        return shared.indexForFloat(v);
+    }
+
+    @Override
+    public int indexForDouble(final double v) {
+        return shared.indexForDouble(v);
     }
 
     @Override
