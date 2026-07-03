@@ -190,36 +190,9 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
             @NotNull final BarrageTypeInfo<Field> typeInfo) {
         final Field field = typeInfo.arrowField();
 
-        // Dictionary encoding is identified by the presence of a DictionaryEncoding on the field, not by typeId.
-        final org.apache.arrow.vector.types.pojo.DictionaryEncoding dictEncoding = field.getDictionary();
-        if (dictEncoding != null) {
-            final ArrowType.Int indexArrowType = dictEncoding.getIndexType();
-            final int indexBitWidth = indexArrowType.getBitWidth();
-
-            // Build a synthetic field with the index integer type for the index writer factory methods.
-            // The index field is nullable when the column is nullable: null rows produce a null-sentinel
-            // index value and a 0-bit in the validity bitmap (Arrow standard path), or a real sentinel
-            // dictionary entry (useDeephavenNulls path). Either way the index writer must see the field
-            // as nullable so it computes nullCount correctly and emits the validity bitmap when needed.
-            final Field indexField = new Field("",
-                    new org.apache.arrow.vector.types.pojo.FieldType(
-                            field.isNullable(), new ArrowType.Int(indexBitWidth, true), null),
-                    java.util.Collections.emptyList());
-            final ChunkWriter<IntChunk<Values>> indexWriter =
-                    intFromInt(new BarrageTypeInfo<>(int.class, null, indexField));
-            // Recurse on the field stripped of its DictionaryEncoding to get the values writer.
-            final Field valuesField = new Field(field.getName(),
-                    new org.apache.arrow.vector.types.pojo.FieldType(
-                            field.isNullable(), field.getType(), null, field.getMetadata()),
-                    field.getChildren());
-            final BarrageTypeInfo<Field> valuesTypeInfo =
-                    new BarrageTypeInfo<>(typeInfo.type(), typeInfo.componentType(), valuesField);
-            final ChunkWriter<Chunk<Values>> valuesWriter = newWriterPojo(valuesTypeInfo);
-            final ChunkType valuesChunkType = BarrageUtil.getDefaultType(valuesField).chunkType();
+        if (BarrageUtil.isDictionaryEncoded(field)) {
             // noinspection unchecked
-            return (ChunkWriter<T>) new DictionaryChunkWriter(
-                    dictEncoding.getId(), indexWriter, valuesWriter, indexBitWidth, valuesChunkType,
-                    field.isNullable());
+            return (ChunkWriter<T>) makeDictionaryChunkWriter(typeInfo, field);
         }
 
         final ArrowType.ArrowTypeID typeId = field.getType().getTypeID();
@@ -275,84 +248,18 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
         if (typeId == ArrowType.ArrowTypeID.List
                 || typeId == ArrowType.ArrowTypeID.ListView
                 || typeId == ArrowType.ArrowTypeID.FixedSizeList) {
-
-            int fixedSizeLength = 0;
-            final ListChunkReader.Mode mode;
-            if (typeId == ArrowType.ArrowTypeID.List) {
-                mode = ListChunkReader.Mode.VARIABLE;
-            } else if (typeId == ArrowType.ArrowTypeID.ListView) {
-                mode = ListChunkReader.Mode.VIEW;
-            } else {
-                mode = ListChunkReader.Mode.FIXED;
-                fixedSizeLength = ((ArrowType.FixedSizeList) field.getType()).getListSize();
-            }
-
-            final BarrageTypeInfo<Field> componentTypeInfo;
-            final boolean useVectorKernels = Vector.class.isAssignableFrom(typeInfo.type());
-            if (useVectorKernels) {
-                Class<?> componentType =
-                        VectorExpansionKernel.getComponentType(typeInfo.type(), typeInfo.componentType());
-                componentTypeInfo = new BarrageTypeInfo<>(
-                        componentType,
-                        componentType.getComponentType(),
-                        field.getChildren().get(0));
-            } else if (typeInfo.type().isArray()) {
-                final Class<?> componentType = typeInfo.componentType();
-                // noinspection DataFlowIssue
-                componentTypeInfo = new BarrageTypeInfo<>(
-                        componentType,
-                        componentType.getComponentType(),
-                        field.getChildren().get(0));
-            } else {
-                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, String.format(
-                        "No known Barrage ChunkWriter for arrow type %s from %s. Expected destination type to be an array.",
-                        field.getType().toString(),
-                        typeInfo.type().getCanonicalName()));
-            }
-
-            final ChunkType chunkType = ListChunkReader.getChunkTypeFor(componentTypeInfo.type());
-            final ExpansionKernel<?> kernel;
-            if (useVectorKernels) {
-                kernel = VectorExpansionKernel.makeExpansionKernel(chunkType, componentTypeInfo.type());
-            } else {
-                kernel = ArrayExpansionKernel.makeExpansionKernel(chunkType, componentTypeInfo.type());
-            }
-            final ChunkWriter<Chunk<Values>> componentWriter = newWriterPojo(componentTypeInfo);
-
             // noinspection unchecked
-            return (ChunkWriter<T>) new ListChunkWriter<>(
-                    mode, fixedSizeLength, kernel, componentWriter, field.isNullable());
+            return (ChunkWriter<T>) makeListChunkWriter(typeInfo, field, typeId);
         }
 
         if (typeId == ArrowType.ArrowTypeID.Map) {
-            final Field structField = field.getChildren().get(0);
-            final BarrageTypeInfo<Field> keyTypeInfo = BarrageUtil.getDefaultType(structField.getChildren().get(0));
-            final BarrageTypeInfo<Field> valueTypeInfo = BarrageUtil.getDefaultType(structField.getChildren().get(1));
-
-            final ChunkWriter<Chunk<Values>> keyWriter = newWriterPojo(keyTypeInfo);
-            final ChunkWriter<Chunk<Values>> valueWriter = newWriterPojo(valueTypeInfo);
-
             // noinspection unchecked
-            return (ChunkWriter<T>) new MapChunkWriter<>(
-                    keyWriter, valueWriter, keyTypeInfo.chunkType(), valueTypeInfo.chunkType(), field.isNullable());
+            return (ChunkWriter<T>) makeMapChunkWriter(field);
         }
 
         if (typeId == ArrowType.ArrowTypeID.RunEndEncoded) {
-            final BarrageTypeInfo<Field> runEndsTypeInfo =
-                    BarrageUtil.getDefaultType(field.getChildren().get(0));
-            // Use the outer typeInfo's DH type (which may be reinterpreted, e.g. long for Instant/ZonedDateTime,
-            // byte for Boolean) so that the run kernel and values writer match the actual chunk type produced by the
-            // column source. Without this, ObjectBarrageRunKernel is used for reinterpreted types, but the
-            // column source provides LongChunk/ByteChunk — not ObjectChunk.
-            final BarrageTypeInfo<Field> effectiveValuesTypeInfo = new BarrageTypeInfo<>(
-                    typeInfo.type(), typeInfo.componentType(), field.getChildren().get(1));
-            final ChunkWriter<IntChunk<Values>> runEndsWriter = intFromInt(runEndsTypeInfo);
-            final ChunkWriter<Chunk<Values>> valuesWriter = newWriterPojo(effectiveValuesTypeInfo);
             // noinspection unchecked
-            return (ChunkWriter<T>) new RunEndEncodedChunkWriter(
-                    runEndsWriter, valuesWriter,
-                    runEndsTypeInfo.chunkType(), effectiveValuesTypeInfo.chunkType(),
-                    field.isNullable());
+            return (ChunkWriter<T>) makeRunEndEncodedChunkWriter(typeInfo, field);
         }
 
         // TODO (DH-18679): struct support
@@ -360,27 +267,8 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
         // if (typeId == ArrowType.ArrowTypeID.Struct) {
 
         if (typeId == ArrowType.ArrowTypeID.Union) {
-            final ArrowType.Union unionType = (ArrowType.Union) field.getType();
-
-            final List<BarrageTypeInfo<Field>> childTypeInfo = field.getChildren().stream()
-                    .map(BarrageUtil::getDefaultType)
-                    .collect(Collectors.toList());
-            final List<Class<?>> childClassMatcher = childTypeInfo.stream()
-                    .map(BarrageTypeInfo::type)
-                    .map(TypeUtils::getBoxedType)
-                    .collect(Collectors.toList());
-            final List<ChunkWriter<Chunk<Values>>> childWriters = childTypeInfo.stream()
-                    .map(this::newWriterPojo)
-                    .collect(Collectors.toList());
-            final List<ChunkType> childChunkTypes = childTypeInfo.stream()
-                    .map(BarrageTypeInfo::chunkType)
-                    .collect(Collectors.toList());
-
-            UnionChunkReader.Mode mode = unionType.getMode() == UnionMode.Sparse ? UnionChunkReader.Mode.Sparse
-                    : UnionChunkReader.Mode.Dense;
             // noinspection unchecked
-            return (ChunkWriter<T>) new UnionChunkWriter<>(mode, childClassMatcher, childWriters,
-                    childChunkTypes, unionType.getTypeIds());
+            return (ChunkWriter<T>) makeUnionChunkWriter(field);
         }
 
         throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, String.format(
@@ -391,6 +279,146 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
                         : knownWriters.keySet().stream()
                                 .map(Object::toString)
                                 .collect(Collectors.joining(",\n\t"))));
+    }
+
+    private ChunkWriter<? extends Chunk<Values>> makeListChunkWriter(
+            @NotNull final BarrageTypeInfo<Field> typeInfo,
+            @NotNull final Field field,
+            @NotNull final ArrowType.ArrowTypeID typeId) {
+        int fixedSizeLength = 0;
+        final ListChunkReader.Mode mode;
+        if (typeId == ArrowType.ArrowTypeID.List) {
+            mode = ListChunkReader.Mode.VARIABLE;
+        } else if (typeId == ArrowType.ArrowTypeID.ListView) {
+            mode = ListChunkReader.Mode.VIEW;
+        } else {
+            mode = ListChunkReader.Mode.FIXED;
+            fixedSizeLength = ((ArrowType.FixedSizeList) field.getType()).getListSize();
+        }
+
+        final BarrageTypeInfo<Field> componentTypeInfo;
+        final boolean useVectorKernels = Vector.class.isAssignableFrom(typeInfo.type());
+        if (useVectorKernels) {
+            Class<?> componentType =
+                    VectorExpansionKernel.getComponentType(typeInfo.type(), typeInfo.componentType());
+            componentTypeInfo = new BarrageTypeInfo<>(
+                    componentType,
+                    componentType.getComponentType(),
+                    field.getChildren().get(0));
+        } else if (typeInfo.type().isArray()) {
+            final Class<?> componentType = typeInfo.componentType();
+            // noinspection DataFlowIssue
+            componentTypeInfo = new BarrageTypeInfo<>(
+                    componentType,
+                    componentType.getComponentType(),
+                    field.getChildren().get(0));
+        } else {
+            throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, String.format(
+                    "No known Barrage ChunkWriter for arrow type %s from %s. Expected destination type to be an array.",
+                    field.getType().toString(),
+                    typeInfo.type().getCanonicalName()));
+        }
+
+        final ChunkType chunkType = ListChunkReader.getChunkTypeFor(componentTypeInfo.type());
+        final ExpansionKernel<?> kernel;
+        if (useVectorKernels) {
+            kernel = VectorExpansionKernel.makeExpansionKernel(chunkType, componentTypeInfo.type());
+        } else {
+            kernel = ArrayExpansionKernel.makeExpansionKernel(chunkType, componentTypeInfo.type());
+        }
+        final ChunkWriter<Chunk<Values>> componentWriter = newWriterPojo(componentTypeInfo);
+
+        return new ListChunkWriter<>(mode, fixedSizeLength, kernel, componentWriter, field.isNullable());
+    }
+
+    private MapChunkWriter<?> makeMapChunkWriter(
+            @NotNull final Field field) {
+        final Field structField = field.getChildren().get(0);
+        final BarrageTypeInfo<Field> keyTypeInfo = BarrageUtil.getDefaultType(structField.getChildren().get(0));
+        final BarrageTypeInfo<Field> valueTypeInfo = BarrageUtil.getDefaultType(structField.getChildren().get(1));
+
+        final ChunkWriter<Chunk<Values>> keyWriter = newWriterPojo(keyTypeInfo);
+        final ChunkWriter<Chunk<Values>> valueWriter = newWriterPojo(valueTypeInfo);
+
+        return new MapChunkWriter<>(keyWriter, valueWriter, keyTypeInfo.chunkType(), valueTypeInfo.chunkType(),
+                field.isNullable());
+    }
+
+    private RunEndEncodedChunkWriter makeRunEndEncodedChunkWriter(
+            @NotNull final BarrageTypeInfo<Field> typeInfo,
+            @NotNull final Field field) {
+        final BarrageTypeInfo<Field> runEndsTypeInfo = BarrageUtil.getDefaultType(field.getChildren().get(0));
+        // Use the outer typeInfo's DH type (which may be reinterpreted, e.g. long for Instant/ZonedDateTime,
+        // byte for Boolean) so that the run kernel and values writer match the actual chunk type produced by the
+        // column source. Without this, ObjectBarrageRunKernel is used for reinterpreted types, but the
+        // column source provides LongChunk/ByteChunk — not ObjectChunk.
+        final BarrageTypeInfo<Field> effectiveValuesTypeInfo = new BarrageTypeInfo<>(
+                typeInfo.type(), typeInfo.componentType(), field.getChildren().get(1));
+        final ChunkWriter<IntChunk<Values>> runEndsWriter = intFromInt(runEndsTypeInfo);
+        final ChunkWriter<Chunk<Values>> valuesWriter = newWriterPojo(effectiveValuesTypeInfo);
+
+        return new RunEndEncodedChunkWriter(runEndsWriter, valuesWriter,
+                runEndsTypeInfo.chunkType(), effectiveValuesTypeInfo.chunkType(), field.isNullable());
+    }
+
+    private UnionChunkWriter<?> makeUnionChunkWriter(
+            @NotNull final Field field) {
+        final ArrowType.Union unionType = (ArrowType.Union) field.getType();
+
+        final List<BarrageTypeInfo<Field>> childTypeInfo = field.getChildren().stream()
+                .map(BarrageUtil::getDefaultType)
+                .collect(Collectors.toList());
+        final List<Class<?>> childClassMatcher = childTypeInfo.stream()
+                .map(BarrageTypeInfo::type)
+                .map(TypeUtils::getBoxedType)
+                .collect(Collectors.toList());
+        final List<ChunkWriter<Chunk<Values>>> childWriters = childTypeInfo.stream()
+                .map(this::newWriterPojo)
+                .collect(Collectors.toList());
+        final List<ChunkType> childChunkTypes = childTypeInfo.stream()
+                .map(BarrageTypeInfo::chunkType)
+                .collect(Collectors.toList());
+
+        final UnionChunkReader.Mode mode = unionType.getMode() == UnionMode.Sparse
+                ? UnionChunkReader.Mode.Sparse
+                : UnionChunkReader.Mode.Dense;
+
+        return new UnionChunkWriter<>(mode, childClassMatcher, childWriters, childChunkTypes,
+                unionType.getTypeIds());
+    }
+
+    private DictionaryChunkWriter makeDictionaryChunkWriter(
+            @NotNull final BarrageTypeInfo<Field> typeInfo,
+            @NotNull final Field field) {
+        final org.apache.arrow.vector.types.pojo.DictionaryEncoding dictEncoding = field.getDictionary();
+        final ArrowType.Int indexArrowType = dictEncoding.getIndexType();
+        final int indexBitWidth = indexArrowType.getBitWidth();
+
+        // Build a synthetic field with the index integer type for the index writer factory methods.
+        // The index field is nullable when the column is nullable: null rows produce a null-sentinel
+        // index value and a 0-bit in the validity bitmap (Arrow standard path), or a real sentinel
+        // dictionary entry (useDeephavenNulls path). Either way the index writer must see the field
+        // as nullable so it computes nullCount correctly and emits the validity bitmap when needed.
+        final Field indexField = new Field("",
+                new org.apache.arrow.vector.types.pojo.FieldType(
+                        field.isNullable(), new ArrowType.Int(indexBitWidth, true), null),
+                java.util.Collections.emptyList());
+        final ChunkWriter<IntChunk<Values>> indexWriter =
+                intFromInt(new BarrageTypeInfo<>(int.class, null, indexField));
+
+        // Recurse on the field stripped of its DictionaryEncoding to get the values writer.
+        final Field valuesField = new Field(field.getName(),
+                new org.apache.arrow.vector.types.pojo.FieldType(
+                        field.isNullable(), field.getType(), null, field.getMetadata()),
+                field.getChildren());
+        final BarrageTypeInfo<Field> valuesTypeInfo =
+                new BarrageTypeInfo<>(typeInfo.type(), typeInfo.componentType(), valuesField);
+        final ChunkWriter<Chunk<Values>> valuesWriter = newWriterPojo(valuesTypeInfo);
+        final ChunkType valuesChunkType = BarrageUtil.getDefaultType(valuesField).chunkType();
+
+        return new DictionaryChunkWriter(
+                dictEncoding.getId(), indexWriter, valuesWriter, indexBitWidth, valuesChunkType,
+                field.isNullable());
     }
 
     @SuppressWarnings("unchecked")

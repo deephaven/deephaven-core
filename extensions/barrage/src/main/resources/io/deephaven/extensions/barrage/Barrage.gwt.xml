@@ -20,7 +20,6 @@
         <include name="ConsecutiveDrainableStreams.java" />
     </source>
     <source path="util" includes="Float16.java,FlatBufferIteratorAdapter.java,DefensiveDrainable.java,DefensiveCapture.java,ExposedByteArrayOutputStream.java" />
-    <super-source path="super" />
     <source path="chunk">
         <exclude name="vector/*" />
         <exclude name="DefaultChunkReaderFactory.java" />

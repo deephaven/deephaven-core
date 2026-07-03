@@ -29,7 +29,7 @@ final class DictionaryValues {
 
     DictionaryValues(@NotNull final ChunkType chunkType) {
         this.chunkType = chunkType;
-        this.source = newSource(chunkType);
+        this.source = ArrayBackedColumnSource.getMemoryColumnSource(chunkType);
     }
 
     int size() {
@@ -40,7 +40,7 @@ final class DictionaryValues {
      * Replaces all existing values with the contents of {@code chunk}.
      */
     void replace(@NotNull final WritableChunk<Values> chunk) {
-        source = newSource(chunkType);
+        source = ArrayBackedColumnSource.getMemoryColumnSource(chunkType);
         size = 0;
         append(chunk);
     }
@@ -95,24 +95,4 @@ final class DictionaryValues {
         return ((ColumnSource<T>) source).get(idx);
     }
 
-    private static WritableColumnSource<?> newSource(@NotNull final ChunkType chunkType) {
-        switch (chunkType) {
-            case Byte:
-                return ArrayBackedColumnSource.getMemoryColumnSource(byte.class, null);
-            case Char:
-                return ArrayBackedColumnSource.getMemoryColumnSource(char.class, null);
-            case Short:
-                return ArrayBackedColumnSource.getMemoryColumnSource(short.class, null);
-            case Int:
-                return ArrayBackedColumnSource.getMemoryColumnSource(int.class, null);
-            case Long:
-                return ArrayBackedColumnSource.getMemoryColumnSource(long.class, null);
-            case Float:
-                return ArrayBackedColumnSource.getMemoryColumnSource(float.class, null);
-            case Double:
-                return ArrayBackedColumnSource.getMemoryColumnSource(double.class, null);
-            default:
-                return ArrayBackedColumnSource.getMemoryColumnSource(Object.class, null);
-        }
-    }
 }

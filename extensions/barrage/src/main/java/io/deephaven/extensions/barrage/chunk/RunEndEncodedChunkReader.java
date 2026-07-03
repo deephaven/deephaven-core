@@ -4,11 +4,11 @@
 package io.deephaven.extensions.barrage.chunk;
 
 import io.deephaven.chunk.ChunkType;
+import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.chunk.util.hashing.LongToIntegerCast;
-import io.deephaven.chunk.util.hashing.ShortToIntegerCast;
+import io.deephaven.chunk.util.hashing.ToIntegerCast;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -80,14 +80,13 @@ public class RunEndEncodedChunkReader extends BaseChunkReader<WritableChunk<Valu
                         valuesReader.readChunk(fieldNodeIter, bufferInfoIter, is, null, 0, 0)) {
 
             final BarrageRunKernel kernel = BarrageRunKernel.makeBarrageRunKernel(valuesChunkType);
-            final WritableIntChunk<Values> intRunEnds = maybeCastToInt(rawRunEnds);
+            final IntChunk<Values> intRunEnds = maybeCastToInt(rawRunEnds);
             try {
                 kernel.decodeRunEnds(intRunEnds, runValues, chunk, outOffset);
             } finally {
-                if (intRunEnds != rawRunEnds) {
-                    // Cleanup if a new chunk was allocated.
-                    try (intRunEnds) {
-                    }
+                // Close only if a new chunk was allocated (for non-Int types)
+                if (rawRunEnds.getChunkType() != ChunkType.Int) {
+                    ((WritableIntChunk<Values>) intRunEnds).close();
                 }
             }
         }
@@ -96,30 +95,18 @@ public class RunEndEncodedChunkReader extends BaseChunkReader<WritableChunk<Valu
     }
 
     /**
-     * Returns an {@link WritableIntChunk} view of {@code runEnds}. For {@code Int} chunks, returns the chunk itself (no
-     * copy). For {@code Short} and {@code Long} chunks, allocates and returns a new {@link WritableIntChunk}; the
-     * caller is responsible for closing it.
+     * Returns an {@link IntChunk} view of {@code runEnds}. For {@code Int} chunks, returns the chunk itself as an
+     * IntChunk (no copy). For other integral types, allocates and returns a new {@link WritableIntChunk}; the caller is
+     * responsible for closing it. Run-end values are chunk offsets and are never null.
      */
-    private static WritableIntChunk<Values> maybeCastToInt(final WritableChunk<Values> runEnds) {
-        switch (runEnds.getChunkType()) {
-            case Short: {
-                final var src = runEnds.asShortChunk();
-                final WritableIntChunk<Values> dst = WritableIntChunk.makeWritableChunk(src.size());
-                ShortToIntegerCast.castInto(src, dst);
-                return dst;
-            }
-            case Int:
-                return runEnds.asWritableIntChunk();
-            case Long: {
-                // Not worried about overflow. These are chunk offsets, never > Integer.MAX_VALUE
-                final var src = runEnds.asLongChunk();
-                final WritableIntChunk<Values> dst = WritableIntChunk.makeWritableChunk(src.size());
-                LongToIntegerCast.castInto(src, dst);
-                return dst;
-            }
-            default:
-                throw new IllegalStateException(
-                        "run_ends ChunkType must be Short, Int, or Long; got: " + runEnds.getChunkType());
+    private static IntChunk<Values> maybeCastToInt(final WritableChunk<Values> runEnds) {
+        if (runEnds.getChunkType() == ChunkType.Int) {
+            // No need to allocate a new chunk.
+            return runEnds.asWritableIntChunk();
         }
+        // Not worried about overflow. These are chunk offsets, never > Integer.MAX_VALUE
+        final WritableIntChunk<Values> dst = WritableIntChunk.makeWritableChunk(runEnds.size());
+        ToIntegerCast.castInto(runEnds, dst);
+        return dst;
     }
 }

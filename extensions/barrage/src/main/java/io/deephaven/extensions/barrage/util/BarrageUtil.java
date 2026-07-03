@@ -547,7 +547,7 @@ public class BarrageUtil {
                     }
                 }
                 encodings.put(field.getName(), encoding);
-            } else if (field.getDictionary() != null) {
+            } else if (isDictionaryEncoded(field)) {
                 final org.apache.arrow.vector.types.pojo.DictionaryEncoding dict = field.getDictionary();
                 ColumnEncoding encoding = ColumnEncoding.DICTIONARY_ENCODED_INT32;
                 if (dict.getIndexType() instanceof ArrowType.Int) {
@@ -1338,13 +1338,22 @@ public class BarrageUtil {
     }
 
     /**
+     * Returns {@code true} if {@code field} carries a {@link org.apache.arrow.vector.types.pojo.DictionaryEncoding},
+     * i.e. it is dictionary-encoded. Dictionary encoding is identified by the presence of a DictionaryEncoding on the
+     * field, not by its Arrow type ID.
+     */
+    public static boolean isDictionaryEncoded(@NotNull final org.apache.arrow.vector.types.pojo.Field field) {
+        return field.getDictionary() != null;
+    }
+
+    /**
      * Wraps {@code field} in an Arrow dictionary-encoded field. The field keeps its logical value type; a
      * {@link org.apache.arrow.vector.types.pojo.DictionaryEncoding} is set on it that dictates the integer index type
      * (Int16, Int32, or Int64). The dictionary id is derived from the field's existing dictionary if present, or
      * synthesised sequentially by the caller (see {@code makeSchema}).
      */
     private static Field toDictionaryField(final Field field, final ColumnEncoding encoding, final long dictId) {
-        if (field.getDictionary() != null) {
+        if (isDictionaryEncoded(field)) {
             // Already dictionary-encoded — honour the existing id and index type.
             return field;
         }

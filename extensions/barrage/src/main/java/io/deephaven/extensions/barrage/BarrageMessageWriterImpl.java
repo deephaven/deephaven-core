@@ -1221,7 +1221,11 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
                 }
 
                 final ChunkWriter.DrainableColumn drainableColumn;
-                if (chunkListWriter.writer() instanceof DictionaryChunkWriter && dictionaryRegistry != null) {
+                if (chunkListWriter.writer() instanceof DictionaryChunkWriter) {
+                    if (dictionaryRegistry == null) {
+                        throw new IllegalStateException(
+                                "DictionaryChunkWriter requires a DictionaryWriterRegistry but none was provided");
+                    }
                     final DictionaryChunkWriter dictWriter = (DictionaryChunkWriter) chunkListWriter.writer();
                     if (numElements == 0) {
                         drainableColumn = dictWriter.getEmptyIndexStream(view.options());
@@ -1383,7 +1387,11 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
                 }
 
                 final ChunkWriter.DrainableColumn drainableColumn;
-                if (mcd.chunkListWriter.writer() instanceof DictionaryChunkWriter && dictionaryRegistry != null) {
+                if (mcd.chunkListWriter.writer() instanceof DictionaryChunkWriter) {
+                    if (dictionaryRegistry == null) {
+                        throw new IllegalStateException(
+                                "DictionaryChunkWriter requires a DictionaryWriterRegistry but none was provided");
+                    }
                     final DictionaryChunkWriter dictWriter = (DictionaryChunkWriter) mcd.chunkListWriter.writer();
                     if (numElements == 0) {
                         drainableColumn = dictWriter.getEmptyIndexStream(view.options());

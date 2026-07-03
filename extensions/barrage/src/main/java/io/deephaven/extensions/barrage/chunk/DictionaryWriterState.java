@@ -34,12 +34,19 @@ public interface DictionaryWriterState {
     long getDictId();
 
     int indexForObject(@NotNull Object value);
+
     int indexForByte(byte v);
+
     int indexForChar(char v);
+
     int indexForShort(short v);
+
     int indexForInt(int v);
+
     int indexForLong(long v);
+
     int indexForFloat(float v);
+
     int indexForDouble(double v);
 
     /**

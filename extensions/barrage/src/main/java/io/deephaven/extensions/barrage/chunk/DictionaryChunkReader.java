@@ -4,6 +4,7 @@
 package io.deephaven.extensions.barrage.chunk;
 
 import io.deephaven.chunk.ChunkType;
+import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.WritableByteChunk;
 import io.deephaven.chunk.WritableCharChunk;
 import io.deephaven.chunk.WritableChunk;
@@ -14,6 +15,7 @@ import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.WritableShortChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.chunk.util.hashing.ToIntegerCast;
 import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -82,12 +84,13 @@ public class DictionaryChunkReader extends BaseChunkReader<WritableChunk<Values>
                         + " before RecordBatch that references it");
             }
 
-            final WritableIntChunk<Values> intIndices = maybeCastToInt(rawIndices);
+            final IntChunk<Values> intIndices = maybeCastToInt(rawIndices);
             try {
                 expandIndices(intIndices, dict, out, outOffset, valuesChunkType);
             } finally {
-                if (intIndices != rawIndices) {
-                    intIndices.close();
+                // Only close if we allocated a new chunk (non-Int types)
+                if (intIndices != rawIndices && intIndices instanceof WritableIntChunk) {
+                    ((WritableIntChunk<Values>) intIndices).close();
                 }
             }
 
@@ -100,60 +103,26 @@ public class DictionaryChunkReader extends BaseChunkReader<WritableChunk<Values>
     // -------------------------------------------------------------------------
 
     /**
-     * Returns an {@link WritableIntChunk} view of {@code indices}. For {@code Int} chunks, returns the chunk itself (no
-     * copy). For {@code Short} and {@code Long} chunks, allocates a new {@code WritableIntChunk}; the caller must close
-     * it when it differs from the argument.
+     * Returns an {@link IntChunk} view of {@code indices}. For {@code Int} chunks, returns the chunk itself (no copy).
+     * For other integral types, allocates a new {@code WritableIntChunk} with null sentinels preserved; the caller must
+     * close it (via cast to WritableIntChunk) when it differs from the argument.
      */
-    private static WritableIntChunk<Values> maybeCastToInt(final WritableChunk<Values> indices) {
-        switch (indices.getChunkType()) {
-            case Byte: {
-                final var src = indices.asByteChunk();
-                final int n = src.size();
-                final WritableIntChunk<Values> dst = WritableIntChunk.makeWritableChunk(n);
-                dst.setSize(n);
-                for (int i = 0; i < n; ++i) {
-                    final byte b = src.get(i);
-                    dst.set(i, b == QueryConstants.NULL_BYTE ? QueryConstants.NULL_INT : (int) b);
-                }
-                return dst;
-            }
-            case Short: {
-                final var src = indices.asShortChunk();
-                final int n = src.size();
-                final WritableIntChunk<Values> dst = WritableIntChunk.makeWritableChunk(n);
-                dst.setSize(n);
-                for (int i = 0; i < n; ++i) {
-                    final short s = src.get(i);
-                    dst.set(i, s == QueryConstants.NULL_SHORT ? QueryConstants.NULL_INT : (int) s);
-                }
-                return dst;
-            }
-            case Int:
-                return indices.asWritableIntChunk();
-            case Long: {
-                final var src = indices.asLongChunk();
-                final int n = src.size();
-                final WritableIntChunk<Values> dst = WritableIntChunk.makeWritableChunk(n);
-                dst.setSize(n);
-                for (int i = 0; i < n; ++i) {
-                    final long l = src.get(i);
-                    dst.set(i, l == QueryConstants.NULL_LONG ? QueryConstants.NULL_INT : (int) l);
-                }
-                return dst;
-            }
-            default:
-                throw new IllegalStateException(
-                        "Dictionary index ChunkType must be Short, Int, or Long; got: " + indices.getChunkType());
+    private static IntChunk<Values> maybeCastToInt(final WritableChunk<Values> indices) {
+        if (indices.getChunkType() == ChunkType.Int) {
+            // No need to allocate a new chunk.
+            return indices.asWritableIntChunk();
         }
+        final WritableIntChunk<Values> dst = WritableIntChunk.makeWritableChunk(indices.size());
+        ToIntegerCast.castIntoNullAware(indices, dst);
+        return dst;
     }
 
     // -------------------------------------------------------------------------
     // Index expansion to values
     // -------------------------------------------------------------------------
 
-    @SuppressWarnings("unchecked")
     private static void expandIndices(
-            @NotNull final WritableIntChunk<Values> indices,
+            @NotNull final IntChunk<Values> indices,
             @NotNull final DictionaryValues dict,
             @NotNull final WritableChunk<Values> out,
             final int outOffset,

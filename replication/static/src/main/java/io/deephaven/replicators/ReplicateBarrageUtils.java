@@ -39,6 +39,9 @@ public class ReplicateBarrageUtils {
 
         ReplicatePrimitiveCode.charToAllButBoolean("replicateBarrageUtils",
                 CHUNK_PACKAGE + "/CharBarrageRunKernel.java");
+
+        ReplicatePrimitiveCode.charToAllButBoolean("replicateBarrageUtils",
+                CHUNK_PACKAGE + "/CharDictionaryIndexKernel.java");
     }
 
     private static void fixupDoubleChunkReader(final @NotNull String path) throws IOException {

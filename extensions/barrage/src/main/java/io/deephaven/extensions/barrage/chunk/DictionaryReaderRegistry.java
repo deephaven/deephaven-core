@@ -5,7 +5,8 @@ package io.deephaven.extensions.barrage.chunk;
 
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
-import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
+import java.util.HashMap;
+import java.util.Map;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -23,7 +24,8 @@ import org.jetbrains.annotations.Nullable;
  */
 public final class DictionaryReaderRegistry {
 
-    private final Long2ObjectOpenHashMap<DictionaryValues> dictValues = new Long2ObjectOpenHashMap<>();
+    // GWT-friendly maps (vs. Long2ObjectOpenHashMap)
+    private final Map<Long, DictionaryValues> dictValues = new HashMap<>();
 
     /**
      * Installs or updates the dictionary for {@code dictId}.

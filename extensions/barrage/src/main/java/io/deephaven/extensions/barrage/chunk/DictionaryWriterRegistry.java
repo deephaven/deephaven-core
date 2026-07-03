@@ -115,12 +115,7 @@ public final class DictionaryWriterRegistry {
 
     /** Returns {@code true} if any registered dictionary has a pending delta that needs a DictionaryBatch message. */
     public boolean hasAnyDelta() {
-        for (final Entry e : entries.values()) {
-            if (e.state.hasDelta()) {
-                return true;
-            }
-        }
-        return false;
+        return entries.values().stream().anyMatch(e -> e.state.hasDelta());
     }
 
     /** Advances the delta boundary for every registered state that currently has a pending delta. */
