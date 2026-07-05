@@ -25,7 +25,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.net.URI;
 import java.time.LocalDate;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -91,14 +90,8 @@ public final class IcebergUtils {
     private static final Set<Class<?>> SUPPORTED_PARTITIONING_TYPES =
             Set.of(Boolean.class, double.class, float.class, int.class, long.class, String.class, LocalDate.class);
 
-    /**
-     * Check that all the partitioning columns from the partition spec are of supported types and are present in the
-     * Table Definition.
-     */
-    public static void verifyPartitioningColumns(
-            @NotNull final PartitionSpec tablePartitionSpec,
-            @NotNull final TableDefinition tableDefinition) {
-        final List<String> partitioningColumnNamesFromDefinition = tableDefinition.getColumnStream()
+    private static List<String> getPartitioningColumnNames(@NotNull final TableDefinition tableDefinition) {
+        return tableDefinition.getColumnStream()
                 .filter(ColumnDefinition::isPartitioning)
                 .peek(columnDefinition -> {
                     if (!SUPPORTED_PARTITIONING_TYPES.contains(columnDefinition.getDataType())) {
@@ -108,7 +101,10 @@ public final class IcebergUtils {
                 })
                 .map(ColumnDefinition::getName)
                 .collect(Collectors.toList());
-        final List<PartitionField> partitionFieldsFromSpec = tablePartitionSpec.fields();
+    }
+
+    private static List<PartitionField> getPartitionFields(@NotNull final PartitionSpec tablePartitionSpec) {
+        final List<org.apache.iceberg.PartitionField> partitionFieldsFromSpec = tablePartitionSpec.fields();
         partitionFieldsFromSpec.forEach(partitionField -> {
             if (!partitionField.transform().isIdentity()) {
                 // TODO (DH-18160): Improve support for handling non-identity transforms
@@ -118,17 +114,71 @@ public final class IcebergUtils {
             }
         });
 
+        return partitionFieldsFromSpec;
+    }
+
+    private static void verifyPartitionSizes(
+            @NotNull final List<String> partitioningColumnNamesFromDefinition,
+            @NotNull final List<PartitionField> partitionFieldsFromSpec,
+            @NotNull final PartitionSpec tablePartitionSpec,
+            @NotNull final TableDefinition tableDefinition) {
         if (partitionFieldsFromSpec.size() != partitioningColumnNamesFromDefinition.size()) {
             throw new IllegalArgumentException("Partition spec contains " + partitionFieldsFromSpec.size() +
                     " fields, but the table definition contains " + partitioningColumnNamesFromDefinition.size()
                     + " fields, partition spec " + tablePartitionSpec + ", table definition " + tableDefinition);
         }
 
+    }
+
+    /**
+     * Check that all the partitioning columns from the partition spec are of supported types and are present in the
+     * Table Definition.
+     */
+    public static void verifyPartitioningColumns(
+            @NotNull final PartitionSpec tablePartitionSpec,
+            @NotNull final TableDefinition tableDefinition) {
+        final List<String> partitioningColumnNamesFromDefinition = getPartitioningColumnNames(tableDefinition);
+        final List<PartitionField> partitionFieldsFromSpec = getPartitionFields(tablePartitionSpec);
+        verifyPartitionSizes(partitioningColumnNamesFromDefinition, partitionFieldsFromSpec, tablePartitionSpec,
+                tableDefinition);
+
         for (final PartitionField partitionField : partitionFieldsFromSpec) {
             if (!partitioningColumnNamesFromDefinition.contains(partitionField.name())) {
                 throw new IllegalArgumentException("Partitioning column " + partitionField.name() + " is not present " +
                         "in the table definition " + tableDefinition + ", partition spec " + tablePartitionSpec);
             }
+        }
+    }
+
+    /**
+     * Check that all the partitioning columns from the partition spec of rht resolver are of supported types and are
+     * present in the Table Definition.
+     */
+    public static void verifyPartitioningColumns(
+            @NotNull final Resolver resolver,
+            @NotNull final TableDefinition tableDefinition) {
+        final PartitionSpec tablePartitionSpec = resolver.specOrUnpartitioned();
+
+        final List<String> partitioningColumnNamesFromDefinition = getPartitioningColumnNames(tableDefinition);
+        final List<PartitionField> partitionFieldsFromSpec = getPartitionFields(tablePartitionSpec);
+        verifyPartitionSizes(partitioningColumnNamesFromDefinition, partitionFieldsFromSpec, tablePartitionSpec,
+                tableDefinition);
+
+        for (final String colName : partitioningColumnNamesFromDefinition) {
+            // make sure we're able to resolve the column name. if not, `resolver.partitionField(...)` below would NPE
+            final ColumnInstructions ci = resolver.columnInstructions().get(colName);
+            Throwable maybeReason = null;
+            if (ci != null) {
+                try {
+                    resolver.partitionField(tableDefinition.getColumn(colName));
+                    continue;
+                } catch (final RuntimeException reason) {
+                    maybeReason = reason;
+                }
+            }
+
+            throw new IllegalArgumentException("Partitioning column " + colName + " is not resolved " +
+                    "in the partition spec " + tablePartitionSpec, maybeReason);
         }
     }
 }
