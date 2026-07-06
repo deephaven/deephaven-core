@@ -472,10 +472,12 @@ public final class FileHandle implements SeekableByteChannel {
      * A test-only accessor of the total number of bytes read. If {@value THREAD_SAFE_STATS_PROPERTY} is not set to
      * true, then the value is unreliable.
      * 
-     * @return the number of bytes that have been read by any file handler in this process
+     * @return the number of bytes that have been read by any file handle in this process
      */
     @TestUseOnly
     public static long getTotalReadSizeBytes() {
-        return READ_SIZE_BYTES.getSum();
+        synchronized (READ_SIZE_BYTES) {
+            return READ_SIZE_BYTES.getSum();
+        }
     }
 }

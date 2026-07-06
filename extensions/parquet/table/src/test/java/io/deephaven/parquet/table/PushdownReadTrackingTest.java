@@ -4,9 +4,6 @@
 package io.deephaven.parquet.table;
 
 import io.deephaven.base.FileUtils;
-import io.deephaven.base.stats.Stats;
-import io.deephaven.base.stats.ThreadSafeCounter;
-import io.deephaven.base.stats.Value;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.OperationInitializationThreadPool;
@@ -28,7 +25,6 @@ import org.junit.Test;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.function.LongFunction;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -134,10 +130,8 @@ public class PushdownReadTrackingTest {
 
             recorder.startQuery();
             final long globalBefore = FileHandle.getTotalReadSizeBytes();
-            System.out.println("Global before: " + globalBefore);
             final Table result = fromDisk.where("Value >= 150000");
             final long globalAfter = FileHandle.getTotalReadSizeBytes();
-            System.out.println("Global after: " + globalAfter);
             globalDelta = globalAfter - globalBefore;
             assertEquals(50_000, result.size());
             recorder.endQuery();
