@@ -58,7 +58,7 @@ public class OperationInitializerJobScheduler implements JobScheduler {
                 throw e;
             } finally {
                 if (basePerformanceEntry != null) {
-                    Assert.equals(currentBaseEntry.get(), "currentBaseEntry.get()", basePerformanceEntry, "basePerformancEntry");
+                    Assert.equals(currentBaseEntry.get(), "currentBaseEntry.get()", basePerformanceEntry, "basePerformanceEntry");
                     currentBaseEntry.remove();
                     basePerformanceEntry.onBaseEntryEnd();
                     accumulatedBaseEntry.accumulate(basePerformanceEntry);
