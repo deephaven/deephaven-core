@@ -64,6 +64,10 @@
                 "path": "getting-started/crash-course/query-strings.md"
               },
               {
+                "label": "Recipes, not loops!",
+                "path": "getting-started/crash-course/vectorization-vs-loops.md"
+              },
+              {
                 "label": "Python Integrations",
                 "path": "getting-started/crash-course/py-integrations.md"
               },
@@ -933,6 +937,10 @@
                 "path": "conceptual/ninja.md"
               },
               {
+                "label": "Vectorization and the recipe paradigm",
+                "path": "conceptual/vectorization-and-recipes.md"
+              },
+              {
                 "label": "Performance",
                 "items": [
                   {
@@ -1120,6 +1128,10 @@
                   {
                     "label": "Deephaven configuration files",
                     "path": "how-to-guides/configuration/config-file.md"
+                  },
+                  {
+                    "label": "Configuration properties",
+                    "path": "how-to-guides/configuration/configuration-properties.md"
                   },
                   {
                     "label": "Web Defaults",

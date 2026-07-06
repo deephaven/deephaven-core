@@ -5,6 +5,9 @@ sidebar_label: Table iterators
 
 This guide will show you how to iterate over table data in Python queries. Deephaven offers several built-in methods on tables to efficiently iterate over table data via native Python objects. These methods return generators, which are efficient for iterating over large data sets, as they minimize copies of data and only load data into memory when needed. Additionally, these methods handle locking to ensure that all data from an iteration is from a consistent table snapshot.
 
+> [!NOTE]
+> These methods are for **extracting** data from Deephaven to Python, not for **transforming** table data. To create or modify columns, use operations like [`update`](../reference/table-operations/select/update.md), [`where`](../reference/table-operations/filter/where.md), or [`update_by`](../reference/table-operations/update-by-operations/updateBy.md). See [Vectorization](../getting-started/crash-course/vectorization-vs-loops.md) for more details.
+
 ## Native methods
 
 Deephaven offers the following table methods to iterate over table data:
