@@ -10,6 +10,7 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
+import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.engine.table.impl.select.DynamicWhereFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.util.DelayedErrorNotifier;
@@ -24,6 +25,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -323,6 +325,17 @@ class WhereListener extends MergedListener {
         @Override
         int getTargetSegments() {
             return segmentCount;
+        }
+
+        @Override
+        public void scheduleCompletion(@NotNull AbstractFilterExecution.FilterComplete onComplete, @NotNull Consumer<Exception> onError) {
+            super.scheduleCompletion((adds, mods) -> {
+                final BasePerformanceEntry accumulated = jobScheduler.getAccumulatedPerformance();
+                if (accumulated != null) {
+                    basePerformanceEntry.accumulate(accumulated);
+                }
+                onComplete.accept(adds, mods);
+            }, onError);
         }
     }
 }
