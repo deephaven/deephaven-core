@@ -11,7 +11,7 @@ on:
 
 jobs:
   nightly:
-    name: nightly (${{ matrix.gradle-task }}, Java ${{ matrix.test-jvm-version }}
+    name: nightly (${{ matrix.gradle-task }}, Java ${{ matrix.test-jvm-version }})
     strategy:
       fail-fast: false
       matrix:
