@@ -469,7 +469,9 @@ public final class FileHandle implements SeekableByteChannel {
     }
 
     /**
-     * A test-only accessor of the total number of bytes read.  If {@value THREAD_SAFE_STATS_PROPERTY} is not set to true, then the value is unreliable.
+     * A test-only accessor of the total number of bytes read. If {@value THREAD_SAFE_STATS_PROPERTY} is not set to
+     * true, then the value is unreliable.
+     * 
      * @return the number of bytes that have been read by any file handler in this process
      */
     @TestUseOnly

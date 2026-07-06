@@ -328,7 +328,8 @@ class WhereListener extends MergedListener {
         }
 
         @Override
-        public void scheduleCompletion(@NotNull AbstractFilterExecution.FilterComplete onComplete, @NotNull Consumer<Exception> onError) {
+        public void scheduleCompletion(@NotNull AbstractFilterExecution.FilterComplete onComplete,
+                @NotNull Consumer<Exception> onError) {
             super.scheduleCompletion((adds, mods) -> {
                 final BasePerformanceEntry accumulated = jobScheduler.getAccumulatedPerformance();
                 if (accumulated != null) {

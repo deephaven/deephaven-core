@@ -161,7 +161,8 @@ public class PushdownReadTrackingTest {
         // The pushdown must actually have read data through FileHandle for this test to be meaningful.
         assertTrue(message, globalDelta > 0);
 
-        // The where() operation's PerformanceEntry must account for the bytes read by the pushdown on the worker threads.
+        // The where() operation's PerformanceEntry must account for the bytes read by the pushdown on the worker
+        // threads.
         assertEquals(message, globalDelta, whereDataReadBytes);
     }
 }
