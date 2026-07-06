@@ -5,7 +5,7 @@ package io.deephaven.web.client.api.widget.plot;
 
 import io.deephaven.web.client.api.AbstractAsyncGwtTestCase;
 
-public class JsFigureFactoryTest extends AbstractAsyncGwtTestCase {
+public class JsFigureTestGwt extends AbstractAsyncGwtTestCase {
     private static final TableSourceBuilder tables = new TableSourceBuilder()
             .script("""
                     from deephaven import empty_table
