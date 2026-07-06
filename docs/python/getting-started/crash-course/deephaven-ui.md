@@ -16,7 +16,7 @@ Now that you're more familiar with the table API and visualizing data, it's time
 - **Composability**: Combine and re-use components to build complex interfaces.
 - **Wide range of components**: From simple text fields to complex tables and plots, the library has a wide range of components to build your app.
 
-`deephaven.ui` components are built on [React Spectrum](https://react-spectrum.adobe.com/react-spectrum/index.html), Adobe's implementation of the [Spectrum design system](https://spectrum.adobe.com/). If you're already familiar with React Spectrum, the component names and props are nearly identical — Python uses `snake_case` instead of `camelCase` (e.g., `on_press` instead of `onPress`, `default_value` instead of `defaultValue`).
+`deephaven.ui` exposes many [React Spectrum](https://react-spectrum.adobe.com/react-spectrum/index.html) components (Adobe's implementation of the [Spectrum design system](https://spectrum.adobe.com/)) to Python. If you're already familiar with React Spectrum, the component names and props are nearly identical — Python uses `snake_case` instead of `camelCase` (e.g., `on_press` instead of `onPress`, `default_value` instead of `defaultValue`).
 
 ## Components
 
