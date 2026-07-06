@@ -42,6 +42,7 @@ public class OperationInitializerJobScheduler implements JobScheduler {
             operationInitializer.submit(() -> wrapRunnable(executionContext, runnable, description, onError));
         } catch (Exception e) {
             decrementOutstandingJobs();
+            throw e;
         }
     }
 
@@ -54,7 +55,7 @@ public class OperationInitializerJobScheduler implements JobScheduler {
      * @param description a description of the runnable for error messages
      * @param onError a Consumer to call if an Exception occurs
      */
-    public void wrapRunnable(final ExecutionContext executionContext,
+    private void wrapRunnable(final ExecutionContext executionContext,
             final Runnable runnable,
             final LogOutputAppendable description,
             final Consumer<Exception> onError) {
