@@ -103,7 +103,7 @@ The server adaptively adjusts the chunk size between these bounds based on how l
 
 ### Reducing publisher memory usage
 
-For systems serving very large tables to many subscribers, you can reduce publisher-side memory usage by lowering the cell count bounds:
+For systems serving very large tables to many subscribers, you can reduce publisher-side memory usage by lowering `maxSnapshotCellCount`. Setting `minSnapshotCellCount` equal to `maxSnapshotCellCount` fixes the chunk size and disables adaptive sizing:
 
 ```bash
 -DBarrageMessageProducer.subscriptionGrowthEnabled=true
@@ -111,7 +111,7 @@ For systems serving very large tables to many subscribers, you can reduce publis
 -DBarrageUtil.maxSnapshotCellCount=1000000
 ```
 
-This configuration limits each snapshot chunk to approximately 1 million cells. Subscribers receive the full table data incrementally over multiple update cycles rather than all at once.
+This configuration limits each snapshot chunk to exactly 1 million cells — well below the 16 million default maximum. Subscribers receive the full table data incrementally over multiple update cycles rather than all at once.
 
 > [!NOTE]
 > Setting smaller snapshot sizes increases the time required for subscribers to receive the initial table state but reduces peak memory usage on the server.
