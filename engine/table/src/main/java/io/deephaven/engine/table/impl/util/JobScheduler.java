@@ -58,13 +58,15 @@ public interface JobScheduler {
      * The performance statistics of all runnables that have been completed off-thread, or null if all were executed in
      * the current thread.
      *
-     * <p>When initializing an operation, the {@link OperationInitializerJobScheduler} executes the completion callback
-     * as part of another task.  Therefore, you must not read the accumulated performance from the completion callback
-     * when initializing an operation; as it could miss data from some of the tasks.  Furthermore, even though the
-     * completion callback identifies the result as ready does not mean that the completion callback has actually
-     * completed. To guard against this the {@link OperationInitializerJobScheduler} waits for all jobs to be complete
-     * before returning the {@link BasePerformanceEntry}.  Therefore, if you call this from a completion callback, then
-     * the operation will hang.</p>
+     * <p>
+     * When initializing an operation, the {@link OperationInitializerJobScheduler} executes the completion callback as
+     * part of another task. Therefore, you must not read the accumulated performance from the completion callback when
+     * initializing an operation; as it could miss data from some of the tasks. Furthermore, even though the completion
+     * callback identifies the result as ready does not mean that the completion callback has actually completed. To
+     * guard against this the {@link OperationInitializerJobScheduler} waits for all jobs to be complete before
+     * returning the {@link BasePerformanceEntry}. Therefore, if you call this from a completion callback, then the
+     * operation will hang.
+     * </p>
      */
     BasePerformanceEntry getAccumulatedPerformance();
 
