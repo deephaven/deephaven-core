@@ -1,6 +1,6 @@
 ---
-title: Barrage Schema Annotation
-sidebar_label: Barrage Schema Annotation
+title: Barrage schema annotation
+sidebar_label: Barrage schema annotation
 ---
 
 Deephaven tables support Object-typed columns that can hold arbitrary Java objects. When exporting these tables over Flight using the Barrage format, Deephaven uses Apache Arrow schemas to describe the data. By default, if a column is typed as `Object`, the Arrow schema may not capture the intended structure of the data, which can lead to inefficient serialization or loss of type information. Use the `Table.BARRAGE_SCHEMA_ATTRIBUTE` to inject explicit Arrow schema information, which ensures that the Flight export uses the correct wire format.
@@ -82,7 +82,7 @@ union_table_w_attributes = union_table.withAttributes(java.util.Map.of(Table.BAR
 
 ## Example: Annotate `Map<String, String>` Columns
 
-The following example creates a table with a column of `Map<String, Double>`. The Arrow schema annotates the column as an Arrow `Map` with the correct types for key and values. The final table can be exported over Flight / Barrage without error.
+The following example creates a table with a column of `Map<String, String>`. The Arrow schema annotates the column as an Arrow `Map` with the correct types for key and values. The final table can be exported over Flight / Barrage without error.
 
 ```groovy order=map_string_table,map_string_table_w_attributes
 // Table creation
@@ -318,3 +318,9 @@ def new_schema = new Schema(fields)
 // 7. Apply attributes, creating a new table reference which can be used for export
 map_union_table_w_attributes = map_union_table.withAttributes(java.util.Map.of(Table.BARRAGE_SCHEMA_ATTRIBUTE, new_schema))
 ```
+
+## Related documentation
+
+- [What is Barrage?](../../conceptual/what-is-barrage.md)
+- [withAttributes](../../reference/table-operations/select/withAttributes.md)
+- [Arrow Flight integration](./arrow-flight.md)

@@ -153,6 +153,10 @@
               {
                 "label": "Servers & clients",
                 "path": "conceptual/client-server-model.md"
+              },
+              {
+                "label": "What is Barrage?",
+                "path": "conceptual/what-is-barrage.md"
               }
             ]
           },
@@ -226,6 +230,10 @@
               {
                 "label": "Arrow Flight",
                 "path": "how-to-guides/data-import-export/arrow-flight.md"
+              },
+              {
+                "label": "Arrow/Barrage Schema",
+                "path": "how-to-guides/data-import-export/barrage-schema.md"
               },
               {
                 "label": "Iceberg",
