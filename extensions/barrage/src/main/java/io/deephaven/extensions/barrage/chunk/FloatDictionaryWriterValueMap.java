@@ -55,6 +55,8 @@ final class FloatDictionaryWriterValueMap implements DictionaryWriterValueMap {
                     out.set(outPos++, getOrAdd(src.get(i)));
                 }
             } else {
+                // NULL_INT written for null rows becomes a cleared bit in the validity bitmap when the
+                // downstream index writer serializes this chunk; it is never sent as a real dictionary index.
                 for (int i = 0; i < size; ++i) {
                     final float v = src.get(i);
                     out.set(outPos++, v == QueryConstants.NULL_FLOAT ? QueryConstants.NULL_INT : getOrAdd(v));
@@ -68,6 +70,8 @@ final class FloatDictionaryWriterValueMap implements DictionaryWriterValueMap {
                     }
                 }
             } else {
+                // NULL_INT written for null rows becomes a cleared bit in the validity bitmap when the
+                // downstream index writer serializes this chunk; it is never sent as a real dictionary index.
                 try (final RowSet.Iterator it = subset.iterator()) {
                     while (it.hasNext()) {
                         final float v = src.get((int) it.nextLong());

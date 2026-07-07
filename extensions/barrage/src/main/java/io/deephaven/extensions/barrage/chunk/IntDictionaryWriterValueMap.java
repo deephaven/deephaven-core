@@ -52,6 +52,8 @@ final class IntDictionaryWriterValueMap implements DictionaryWriterValueMap {
                     out.set(outPos++, getOrAdd(src.get(i)));
                 }
             } else {
+                // NULL_INT written for null rows becomes a cleared bit in the validity bitmap when the
+                // downstream index writer serializes this chunk; it is never sent as a real dictionary index.
                 for (int i = 0; i < size; ++i) {
                     final int v = src.get(i);
                     out.set(outPos++, v == QueryConstants.NULL_INT ? QueryConstants.NULL_INT : getOrAdd(v));
@@ -65,6 +67,8 @@ final class IntDictionaryWriterValueMap implements DictionaryWriterValueMap {
                     }
                 }
             } else {
+                // NULL_INT written for null rows becomes a cleared bit in the validity bitmap when the
+                // downstream index writer serializes this chunk; it is never sent as a real dictionary index.
                 try (final RowSet.Iterator it = subset.iterator()) {
                     while (it.hasNext()) {
                         final int v = src.get((int) it.nextLong());

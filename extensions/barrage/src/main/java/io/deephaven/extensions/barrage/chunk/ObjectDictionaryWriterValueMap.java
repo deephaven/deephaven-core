@@ -46,6 +46,8 @@ final class ObjectDictionaryWriterValueMap implements DictionaryWriterValueMap {
             @NotNull final WritableIntChunk<Values> out) {
         final ObjectChunk<Object, Values> src = source.asObjectChunk();
         int outPos = 0;
+        // NULL_INT written for null rows (nulls are never dictionary-encoded for Object) is interpreted as null by the
+        // downstream index writer and respresented as a cleared bit in the validity bitmap
         if (subset == null) {
             final int size = src.size();
             for (int i = 0; i < size; ++i) {
