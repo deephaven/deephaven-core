@@ -40,8 +40,10 @@ public class ReplicateBarrageUtils {
         ReplicatePrimitiveCode.charToAllButBoolean("replicateBarrageUtils",
                 CHUNK_PACKAGE + "/CharBarrageRunKernel.java");
 
-        ReplicatePrimitiveCode.charToAllButBoolean("replicateBarrageUtils",
-                CHUNK_PACKAGE + "/CharDictionaryWriterIndexKernel.java");
+        // Float and Double variants are hand-written because of NaN canonicalization in getOrAdd; the Object
+        // variant is hand-written because null handling and generics differ.
+        ReplicatePrimitiveCode.charToIntegers("replicateBarrageUtils",
+                CHUNK_PACKAGE + "/CharDictionaryWriterValueMap.java");
     }
 
     private static void fixupDoubleChunkReader(final @NotNull String path) throws IOException {

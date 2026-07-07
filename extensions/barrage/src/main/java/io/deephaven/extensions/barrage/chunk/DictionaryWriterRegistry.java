@@ -23,8 +23,8 @@ import java.util.Collection;
  * {@link LocalDictionaryWriterState} instances that are fully private to this stream.</li>
  * <li><b>Shared-backed</b> ({@link #DictionaryWriterRegistry(Long2ObjectOpenHashMap)} constructor) — for full
  * subscriptions and growing subscriptions targeting a full subscription. Each registry creates
- * {@link FullSubscriptionDictionaryWriterState} instances that delegate index lookups to the table-level
- * {@link SharedDictionaryWriterState}, so all full subscribers share the same value-to-index mapping.</li>
+ * {@link SharedDictionaryWriterState} instances that delegate index lookups to the table-level
+ * {@link SharedWriterDictionary}, so all full subscribers share the same value-to-index mapping.</li>
  * </ul>
  *
  * <p>
@@ -36,44 +36,41 @@ import java.util.Collection;
  */
 public final class DictionaryWriterRegistry {
 
-    /** Per-id state plus the writer and chunk type needed to serialize dictionary values. */
+    /** Per-id state plus the values writer needed to serialize dictionary values into a DictionaryBatch. */
     public static final class Entry {
         public final DictionaryWriterState state;
         public final ChunkWriter<Chunk<Values>> valuesWriter;
-        public final ChunkType valuesChunkType;
 
         Entry(
                 @NotNull final DictionaryWriterState state,
-                @NotNull final ChunkWriter<Chunk<Values>> valuesWriter,
-                @NotNull final ChunkType valuesChunkType) {
+                @NotNull final ChunkWriter<Chunk<Values>> valuesWriter) {
             this.state = state;
             this.valuesWriter = valuesWriter;
-            this.valuesChunkType = valuesChunkType;
         }
     }
 
     /**
-     * If non-null, this registry creates {@link FullSubscriptionDictionaryWriterState} instances backed by the shared
-     * states in this map. If null, it creates standalone {@link LocalDictionaryWriterState} instances.
+     * If non-null, this registry creates {@link SharedDictionaryWriterState} instances backed by the shared states in
+     * this map. If null, it creates standalone {@link LocalDictionaryWriterState} instances.
      */
     @Nullable
-    private final Long2ObjectOpenHashMap<SharedDictionaryWriterState> sharedStates;
+    private final Long2ObjectOpenHashMap<SharedWriterDictionary> sharedDictionaries;
 
     private final Long2ObjectOpenHashMap<Entry> entries = new Long2ObjectOpenHashMap<>();
 
     /** Creates a local registry for viewport subscriptions and snapshots. */
     public DictionaryWriterRegistry() {
-        this.sharedStates = null;
+        this.sharedDictionaries = null;
     }
 
     /**
      * Creates a shared-backed registry for full subscriptions and growing subscriptions targeting a full subscription.
-     * The {@code sharedStates} map is owned by the {@code io.deephaven.server.barrage.BarrageMessageProducer} and lives
-     * for the lifetime of the table's producer; it is never cleared.
+     * The {@code sharedDictionaries} map is owned by the {@code io.deephaven.server.barrage.BarrageMessageProducer} and
+     * lives for the lifetime of the table's producer; it is never cleared.
      */
     public DictionaryWriterRegistry(
-            @NotNull final Long2ObjectOpenHashMap<SharedDictionaryWriterState> sharedStates) {
-        this.sharedStates = sharedStates;
+            @NotNull final Long2ObjectOpenHashMap<SharedWriterDictionary> sharedDictionaries) {
+        this.sharedDictionaries = sharedDictionaries;
     }
 
     /**
@@ -91,17 +88,17 @@ public final class DictionaryWriterRegistry {
         Entry entry = entries.get(dictId);
         if (entry == null) {
             final DictionaryWriterState state;
-            if (sharedStates != null) {
-                SharedDictionaryWriterState shared = sharedStates.get(dictId);
+            if (sharedDictionaries != null) {
+                SharedWriterDictionary shared = sharedDictionaries.get(dictId);
                 if (shared == null) {
-                    shared = new SharedDictionaryWriterState(dictId, valuesChunkType);
-                    sharedStates.put(dictId, shared);
+                    shared = new SharedWriterDictionary(dictId, valuesChunkType);
+                    sharedDictionaries.put(dictId, shared);
                 }
-                state = new FullSubscriptionDictionaryWriterState(shared);
+                state = new SharedDictionaryWriterState(shared);
             } else {
                 state = new LocalDictionaryWriterState(dictId, valuesChunkType);
             }
-            entry = new Entry(state, valuesWriter, valuesChunkType);
+            entry = new Entry(state, valuesWriter);
             entries.put(dictId, entry);
         }
         return entry.state;
@@ -132,7 +129,7 @@ public final class DictionaryWriterRegistry {
      * {@link DictionaryWriterState#totalSize() totalSize} exceeds {@code liveRowCount}, calls
      * {@link DictionaryWriterState#reset()} so the next DictionaryBatch will be {@code isDelta=false} with a compacted
      * dictionary. Only call this for local (viewport/snapshot) registries; for shared-backed registries the
-     * {@link SharedDictionaryWriterState} is reset externally.
+     * {@link SharedWriterDictionary} is reset externally.
      *
      * @param liveRowCount the current number of live rows visible to this subscription
      */

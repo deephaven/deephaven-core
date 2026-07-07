@@ -7,26 +7,16 @@ import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.ObjectChunk;
-import io.deephaven.chunk.WritableByteChunk;
-import io.deephaven.chunk.WritableCharChunk;
-import io.deephaven.chunk.WritableChunk;
-import io.deephaven.chunk.WritableDoubleChunk;
-import io.deephaven.chunk.WritableFloatChunk;
 import io.deephaven.chunk.WritableIntChunk;
-import io.deephaven.chunk.WritableLongChunk;
-import io.deephaven.chunk.WritableObjectChunk;
-import io.deephaven.chunk.WritableShortChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.extensions.barrage.BarrageOptions;
-import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.List;
 
 /**
  * Serializes a flat column chunk as Arrow Dictionary Encoded on the wire.
@@ -51,7 +41,6 @@ public class DictionaryChunkWriter extends BaseChunkWriter<Chunk<Values>> {
     private final ChunkWriter<IntChunk<Values>> indexWriter;
     /** Writes the actual column values that go into DictionaryBatch. */
     private final ChunkWriter<Chunk<Values>> valuesWriter;
-    private final DictionaryWriterIndexKernel indexKernel;
     private final int indexBitWidth;
     private final ChunkType valuesChunkType;
 
@@ -66,7 +55,6 @@ public class DictionaryChunkWriter extends BaseChunkWriter<Chunk<Values>> {
         this.dictId = dictId;
         this.indexWriter = indexWriter;
         this.valuesWriter = valuesWriter;
-        this.indexKernel = DictionaryWriterIndexKernel.make(valuesChunkType);
         this.indexBitWidth = indexBitWidth;
         this.valuesChunkType = valuesChunkType;
     }
@@ -136,94 +124,6 @@ public class DictionaryChunkWriter extends BaseChunkWriter<Chunk<Values>> {
             @NotNull final BarrageOptions options,
             @NotNull final DictionaryWriterState state) throws IOException {
         return new DictionaryIndexInputStream(context, subset, options, state);
-    }
-
-    /**
-     * Builds a chunk containing the {@code deltaValues} (from {@link DictionaryWriterState#getDeltaValues()}) so the
-     * caller can serialize them via {@link #valuesWriter} into a {@link org.apache.arrow.flatbuf.DictionaryBatch} body.
-     *
-     * <p>
-     * The returned chunk is owned by the caller and must be closed when done.
-     */
-    public static WritableChunk<Values> buildDeltaValuesChunk(
-            @NotNull final ChunkType valuesChunkType,
-            @NotNull final List<Object> deltaValues) {
-        final int n = deltaValues.size();
-        switch (valuesChunkType) {
-            case Byte: {
-                final WritableByteChunk<Values> out = WritableByteChunk.makeWritableChunk(n);
-                for (int i = 0; i < n; ++i) {
-                    final Object v = deltaValues.get(i);
-                    out.set(i, v == null ? QueryConstants.NULL_BYTE : (Byte) v);
-                }
-                out.setSize(n);
-                return out;
-            }
-            case Char: {
-                final WritableCharChunk<Values> out = WritableCharChunk.makeWritableChunk(n);
-                for (int i = 0; i < n; ++i) {
-                    final Object v = deltaValues.get(i);
-                    out.set(i, v == null ? QueryConstants.NULL_CHAR : (Character) v);
-                }
-                out.setSize(n);
-                return out;
-            }
-            case Short: {
-                final WritableShortChunk<Values> out = WritableShortChunk.makeWritableChunk(n);
-                for (int i = 0; i < n; ++i) {
-                    final Object v = deltaValues.get(i);
-                    out.set(i, v == null ? QueryConstants.NULL_SHORT : (Short) v);
-                }
-                out.setSize(n);
-                return out;
-            }
-            case Int: {
-                final WritableIntChunk<Values> out = WritableIntChunk.makeWritableChunk(n);
-                for (int i = 0; i < n; ++i) {
-                    final Object v = deltaValues.get(i);
-                    out.set(i, v == null ? QueryConstants.NULL_INT : (Integer) v);
-                }
-                out.setSize(n);
-                return out;
-            }
-            case Long: {
-                final WritableLongChunk<Values> out = WritableLongChunk.makeWritableChunk(n);
-                for (int i = 0; i < n; ++i) {
-                    final Object v = deltaValues.get(i);
-                    out.set(i, v == null ? QueryConstants.NULL_LONG : (Long) v);
-                }
-                out.setSize(n);
-                return out;
-            }
-            case Float: {
-                final WritableFloatChunk<Values> out = WritableFloatChunk.makeWritableChunk(n);
-                for (int i = 0; i < n; ++i) {
-                    final Object v = deltaValues.get(i);
-                    out.set(i, v == null ? QueryConstants.NULL_FLOAT : (Float) v);
-                }
-                out.setSize(n);
-                return out;
-            }
-            case Double: {
-                final WritableDoubleChunk<Values> out = WritableDoubleChunk.makeWritableChunk(n);
-                for (int i = 0; i < n; ++i) {
-                    final Object v = deltaValues.get(i);
-                    out.set(i, v == null ? QueryConstants.NULL_DOUBLE : (Double) v);
-                }
-                out.setSize(n);
-                return out;
-            }
-            case Object: {
-                final WritableObjectChunk<Object, Values> out = WritableObjectChunk.makeWritableChunk(n);
-                for (int i = 0; i < n; ++i) {
-                    out.set(i, deltaValues.get(i));
-                }
-                out.setSize(n);
-                return out;
-            }
-            default:
-                throw new IllegalStateException("Unexpected valuesChunkType: " + valuesChunkType);
-        }
     }
 
     /**
@@ -312,7 +212,7 @@ public class DictionaryChunkWriter extends BaseChunkWriter<Chunk<Values>> {
         boolean success = false;
         try {
             out.setSize(logicalSize);
-            indexKernel.fillIndexChunk(source, subset, options, state, out);
+            state.fillIndexChunk(source, subset, options, out);
             final int total = state.totalSize();
             if (indexBitWidth == 8 && total > Byte.MAX_VALUE + 1) {
                 throw new IllegalStateException(

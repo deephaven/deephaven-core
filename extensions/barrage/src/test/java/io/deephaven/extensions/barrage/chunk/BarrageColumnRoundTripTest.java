@@ -1676,8 +1676,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
                     b1Buffers = bufBld.build().toArray();
                     b1Bytes = Arrays.copyOf(baos.peekBuffer(), baos.size());
                 }
-                try (final WritableChunk<Values> deltaChunk = DictionaryChunkWriter.buildDeltaValuesChunk(
-                        dictWriter.getValuesChunkType(), state.getDeltaValues())) {
+                try (final WritableChunk<Values> deltaChunk = state.buildDeltaChunk()) {
                     registry.update(0L, deltaChunk, false); // first batch: isDelta=false
                 }
                 state.resetDelta();
@@ -1697,8 +1696,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
                     b2Buffers = bufBld.build().toArray();
                     b2Bytes = Arrays.copyOf(baos.peekBuffer(), baos.size());
                 }
-                try (final WritableChunk<Values> deltaChunk = DictionaryChunkWriter.buildDeltaValuesChunk(
-                        dictWriter.getValuesChunkType(), state.getDeltaValues())) {
+                try (final WritableChunk<Values> deltaChunk = state.buildDeltaChunk()) {
                     registry.update(0L, deltaChunk, true); // second batch: isDelta=true (delta append)
                 }
                 state.resetDelta();
@@ -2266,8 +2264,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
                         col.drainTo(baos);
                     }
                     final long[] buffers = bufBld.build().toArray();
-                    try (final WritableChunk<Values> deltaChunk = DictionaryChunkWriter.buildDeltaValuesChunk(
-                            dictWriter.getValuesChunkType(), state.getDeltaValues())) {
+                    try (final WritableChunk<Values> deltaChunk = state.buildDeltaChunk()) {
                         registry.update(0L, deltaChunk, false);
                     }
                     state.resetDelta();
@@ -2344,8 +2341,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
                         }
                         final long[] buffers = bufBld.build().toArray();
                         if (state.hasDelta()) {
-                            try (final WritableChunk<Values> deltaChunk = DictionaryChunkWriter.buildDeltaValuesChunk(
-                                    dictWriter.getValuesChunkType(), state.getDeltaValues())) {
+                            try (final WritableChunk<Values> deltaChunk = state.buildDeltaChunk()) {
                                 registry.update(0L, deltaChunk, false);
                             }
                             state.resetDelta();

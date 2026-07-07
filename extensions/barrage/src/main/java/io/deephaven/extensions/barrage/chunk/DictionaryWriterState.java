@@ -3,16 +3,21 @@
 //
 package io.deephaven.extensions.barrage.chunk;
 
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.WritableIntChunk;
+import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.extensions.barrage.BarrageOptions;
 import org.jetbrains.annotations.NotNull;
-
-import java.util.List;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Tracks the cumulative dictionary for one Arrow dictionary id within a barrage stream. Shared by all
  * {@link DictionaryChunkWriter} instances that reference the same id.
  *
  * <p>
- * {@link #indexForObject(Object)} is called once per logical row (non-null) while building a batch. After the batch's
+ * {@link #fillIndexChunk} is called once per batch (non-null rows only) while building a batch. After the batch's
  * {@link org.apache.arrow.flatbuf.DictionaryBatch} has been emitted, call {@link #resetDelta()} to advance the delta
  * boundary.
  *
@@ -21,9 +26,9 @@ import java.util.List;
  * <ul>
  * <li>{@link LocalDictionaryWriterState} — for viewport subscriptions and snapshots. {@code resetDelta()} clears the
  * delta list entirely; only newly-seen values since the last reset are tracked.</li>
- * <li>{@link FullSubscriptionDictionaryWriterState} — for full subscriptions and growing subscriptions. The full
- * cumulative value list is retained so that a new subscriber joining mid-stream can receive all current values as an
- * initial {@code isDelta=false} batch.</li>
+ * <li>{@link SharedDictionaryWriterState} — for full subscriptions and growing subscriptions. The full cumulative value
+ * list is retained so that a new subscriber joining mid-stream can receive all current values as an initial
+ * {@code isDelta=false} batch.</li>
  * </ul>
  *
  * <p>
@@ -33,21 +38,21 @@ public interface DictionaryWriterState {
 
     long getDictId();
 
-    int indexForObject(@NotNull Object value);
-
-    int indexForByte(byte v);
-
-    int indexForChar(char v);
-
-    int indexForShort(short v);
-
-    int indexForInt(int v);
-
-    int indexForLong(long v);
-
-    int indexForFloat(float v);
-
-    int indexForDouble(double v);
+    /**
+     * Fills {@code out} with one dictionary index per logical row in {@code source}/{@code subset}. Null rows (in
+     * non-deephaven-nulls mode) produce {@code QueryConstants.NULL_INT}; non-null rows produce a non-negative
+     * dictionary index, registering new values as needed.
+     *
+     * @param source the source chunk containing column values
+     * @param subset row positions within {@code source} to include; {@code null} means all rows
+     * @param options barrage serialization options (e.g. {@code useDeephavenNulls})
+     * @param out pre-sized output chunk to fill with dictionary indices
+     */
+    void fillIndexChunk(
+            @NotNull Chunk<Values> source,
+            @Nullable RowSet subset,
+            @NotNull BarrageOptions options,
+            @NotNull WritableIntChunk<Values> out);
 
     /**
      * Returns {@code true} if a DictionaryBatch message needs to be emitted before the current RecordBatch — either
@@ -59,11 +64,12 @@ public interface DictionaryWriterState {
     boolean needsFullBatch();
 
     /**
-     * Returns the ordered list of values that form the current delta (values added since the last {@link #resetDelta}
-     * call, or all values if this is the first batch for this subscriber).
+     * Builds and returns a typed chunk containing the current delta values (values added since the last
+     * {@link #resetDelta} call, or all values if this is the first batch for this subscriber). The returned chunk is
+     * owned by the caller and must be closed when no longer needed.
      */
     @NotNull
-    List<Object> getDeltaValues();
+    WritableChunk<Values> buildDeltaChunk();
 
     /**
      * Advances the delta boundary after a DictionaryBatch has been successfully emitted. Unlike {@link #reset()}, this

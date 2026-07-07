@@ -937,7 +937,6 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
             @NotNull final DictionaryWriterRegistry.Entry entry,
             @NotNull final BarrageOptions options) throws IOException {
         final DictionaryWriterState state = entry.state;
-        final List<Object> deltaValues = state.getDeltaValues();
         final boolean isDelta = !state.needsFullBatch();
 
         // Serialize the delta values via the values writer into a single-column inner RecordBatch body.
@@ -962,8 +961,7 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
             }
         };
 
-        final WritableChunk<Values> valuesChunk =
-                DictionaryChunkWriter.buildDeltaValuesChunk(entry.valuesChunkType, deltaValues);
+        final WritableChunk<Values> valuesChunk = state.buildDeltaChunk();
         final ChunkWriter.Context valuesCtx = entry.valuesWriter.makeContext(valuesChunk, 0);
         final ChunkWriter.DrainableColumn valuesColumn = entry.valuesWriter.getInputStream(valuesCtx, null, options);
 
@@ -1015,7 +1013,7 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
         RecordBatch.startRecordBatch(dictHeader);
         RecordBatch.addNodes(dictHeader, innerNodesOffset);
         RecordBatch.addBuffers(dictHeader, innerBuffersOffset);
-        RecordBatch.addLength(dictHeader, deltaValues.size());
+        RecordBatch.addLength(dictHeader, valuesChunk.size());
         final int innerRecordBatchOffset = RecordBatch.endRecordBatch(dictHeader);
 
         // Wrap it in a DictionaryBatch flatbuf.

@@ -34,7 +34,7 @@ import io.deephaven.extensions.barrage.chunk.BarrageCopyKernel;
 import io.deephaven.extensions.barrage.chunk.ChunkWriter;
 import io.deephaven.extensions.barrage.chunk.DefaultChunkWriterFactory;
 import io.deephaven.extensions.barrage.chunk.DictionaryWriterRegistry;
-import io.deephaven.extensions.barrage.chunk.SharedDictionaryWriterState;
+import io.deephaven.extensions.barrage.chunk.SharedWriterDictionary;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
@@ -335,7 +335,7 @@ public class BarrageMessageProducer extends LivenessArtifact
      * producer; all full subscribers and growing-toward-full subscribers share these states so their index assignments
      * are consistent and new subscribers can bootstrap the full current dictionary as an isDelta=false batch.
      */
-    private final Long2ObjectOpenHashMap<SharedDictionaryWriterState> sharedDictionaryStates =
+    private final Long2ObjectOpenHashMap<SharedWriterDictionary> sharedDictionaryStates =
             new Long2ObjectOpenHashMap<>();
 
     private Runnable onGetSnapshot;
@@ -1630,9 +1630,9 @@ public class BarrageMessageProducer extends LivenessArtifact
         // Check shared dictionary states for overflow before building any batches. When the cumulative dictionary size
         // exceeds the current live row count, the dictionary has grown larger than the data it encodes; reset it so
         // the next DictionaryBatch is isDelta=false with a compacted set of values. FullSubscriptionDictionaryState
-        // instances detect the reset lazily via the SharedDictionaryWriterState generation counter.
+        // instances detect the reset lazily via the SharedWriterDictionary generation counter.
         final long fullTableRowCount = propRowSetForMessage.size();
-        for (final SharedDictionaryWriterState sharedState : sharedDictionaryStates.values()) {
+        for (final SharedWriterDictionary sharedState : sharedDictionaryStates.values()) {
             if (sharedState.getTotalSize() > fullTableRowCount) {
                 sharedState.reset();
             }
@@ -1666,7 +1666,7 @@ public class BarrageMessageProducer extends LivenessArtifact
                         final RowSet clientView =
                                 vp != null ? propRowSetForMessage.subSetForPositions(vp, isReversed) : null) {
                     // For viewport subscriptions, check their private local dictionary registries for overflow.
-                    // Full subscriptions are handled above via the shared state reset.
+                    // Full subscriptions are handled above via the shared dictionary reset.
                     if (subscription.dictionaryRegistry != null && subscription.targetViewport != null) {
                         final long viewportRowCount = clientView != null ? clientView.size() : 0;
                         subscription.dictionaryRegistry.resetOverflowedEntries(viewportRowCount);
