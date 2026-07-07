@@ -304,24 +304,18 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
 
             // precompute the included rows / offsets and viewport removed rows
             if (isFullSubscription) {
+                // We'll send full subscriptions the full removed set. The client will only free the rows it has
+                // seen previously but must track the overall table rowset through all changes.
+                clientRemovedRows = null;
                 if (keyspaceViewport != null) {
-                    // Growing-to-full subscriptions are still materializing rows on the client side. Restrict
-                    // removals to the previous visible key-space to avoid freeing redirected rows that were never
-                    // allocated on the client.
-                    clientRemovedRows = keyspaceViewportPrev == null
-                            ? RowSetFactory.empty()
-                            : keyspaceViewportPrev.intersect(rowsRemoved.original);
-
                     // growing viewport clients need to know about all rows, including those that were scoped into view
                     clientIncludedRows = keyspaceViewport.intersect(rowsIncluded.original);
                     clientIncludedRowOffsets = rowsIncluded.original.invert(clientIncludedRows);
                 } else if (!rowsAdded.original.equals(rowsIncluded.original)) {
-                    clientRemovedRows = null; // we'll send full subscriptions the full removed set
                     // there are scoped rows that need to be removed from the data sent to the client
                     clientIncludedRows = rowsAdded.original.copy();
                     clientIncludedRowOffsets = rowsIncluded.original.invert(clientIncludedRows);
                 } else {
-                    clientRemovedRows = null; // we'll send full subscriptions the full removed set
                     clientIncludedRows = rowsAdded.original.copy();
                     clientIncludedRowOffsets = RowSetFactory.flat(rowsAdded.original.size());
                 }
@@ -515,11 +509,6 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
             final int rowsRemovedOffset;
             if (!isFullSubscription) {
                 // viewport clients need to also remove rows that were scoped out of view; computed in the constructor
-                try (final RowSetWriter clientRemovedRowsGen = new RowSetWriter(clientRemovedRows)) {
-                    rowsRemovedOffset = clientRemovedRowsGen.addToFlatBuffer(metadata);
-                }
-            } else if (hasViewport) {
-                // Growing-to-full subscriptions only remove keys that were previously visible to the client.
                 try (final RowSetWriter clientRemovedRowsGen = new RowSetWriter(clientRemovedRows)) {
                     rowsRemovedOffset = clientRemovedRowsGen.addToFlatBuffer(metadata);
                 }
