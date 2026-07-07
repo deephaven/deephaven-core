@@ -1593,7 +1593,8 @@ public class ProtobufDescriptorParserTest {
         assertThatThrownBy(() -> ProtobufDescriptorParser.parse(CycleA.getDescriptor(),
                 ProtobufDescriptorParserOptions.defaults()))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("Cyclical protobuf message descriptor detected");
+                .hasMessageContaining("Cyclical protobuf message descriptor detected")
+                .hasMessageContaining(CycleA.getDescriptor().getFullName());
     }
 
     private static Map<List<String>, TypedFunction<Message>> nf(Descriptor descriptor) {
