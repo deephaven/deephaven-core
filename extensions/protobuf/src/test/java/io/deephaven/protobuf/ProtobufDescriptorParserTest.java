@@ -1583,17 +1583,17 @@ public class ProtobufDescriptorParserTest {
     void selfReferentialMessageThrows() {
         assertThatThrownBy(() -> ProtobufDescriptorParser.parse(SelfReferential.getDescriptor(),
                 ProtobufDescriptorParserOptions.defaults()))
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessageContaining("Cyclical protobuf message descriptor detected")
-                        .hasMessageContaining(SelfReferential.getDescriptor().getFullName());
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Cyclical protobuf message descriptor detected")
+                .hasMessageContaining(SelfReferential.getDescriptor().getFullName());
     }
 
     @Test
     void indirectCycleMessageThrows() {
         assertThatThrownBy(() -> ProtobufDescriptorParser.parse(CycleA.getDescriptor(),
                 ProtobufDescriptorParserOptions.defaults()))
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessageContaining("Cyclical protobuf message descriptor detected");
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Cyclical protobuf message descriptor detected");
     }
 
     private static Map<List<String>, TypedFunction<Message>> nf(Descriptor descriptor) {
