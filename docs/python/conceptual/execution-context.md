@@ -301,9 +301,7 @@ execution_context = (
     .newQueryScope()
     .setOperationInitializer(OperationInitializer.NON_PARALLELIZABLE)
     .setUpdateGraph(event_driven_graph)
-    .setQueryCompiler(
-        QueryCompilerImpl.create()
-    )
+    .setQueryCompiler(QueryCompilerImpl.create())
     .build()
 )
 ```
