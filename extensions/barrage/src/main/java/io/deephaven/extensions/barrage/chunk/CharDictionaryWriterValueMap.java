@@ -26,11 +26,14 @@ final class CharDictionaryWriterValueMap implements DictionaryWriterValueMap {
     }
 
     private int getOrAdd(final char value) {
-        final int existing = valueToIndex.putIfAbsent(value, values.size());
+        // region canonicalization
+        final char key = value;
+        // endregion canonicalization
+        final int existing = valueToIndex.putIfAbsent(key, values.size());
         if (existing != -1) {
             return existing;
         }
-        values.add(value);
+        values.add(key);
         return values.size() - 1;
     }
 

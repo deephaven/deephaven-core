@@ -30,11 +30,14 @@ final class ShortDictionaryWriterValueMap implements DictionaryWriterValueMap {
     }
 
     private int getOrAdd(final short value) {
-        final int existing = valueToIndex.putIfAbsent(value, values.size());
+        // region canonicalization
+        final short key = value;
+        // endregion canonicalization
+        final int existing = valueToIndex.putIfAbsent(key, values.size());
         if (existing != -1) {
             return existing;
         }
-        values.add(value);
+        values.add(key);
         return values.size() - 1;
     }
 

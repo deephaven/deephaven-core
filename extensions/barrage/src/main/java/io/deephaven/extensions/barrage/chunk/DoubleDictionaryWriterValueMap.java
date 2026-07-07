@@ -1,12 +1,16 @@
 //
 // Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharDictionaryWriterValueMap and run "./gradlew replicateBarrageUtils" to regenerate
+//
+// @formatter:off
 package io.deephaven.extensions.barrage.chunk;
 
-import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.DoubleChunk;
-import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.WritableDoubleChunk;
+import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
@@ -16,10 +20,6 @@ import it.unimi.dsi.fastutil.doubles.DoubleArrayList;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-/**
- * Hand-written (not replicated from {@link CharDictionaryWriterValueMap}) because of the NaN canonicalization in
- * {@link #getOrAdd}.
- */
 final class DoubleDictionaryWriterValueMap implements DictionaryWriterValueMap {
 
     private final Double2IntOpenHashMap valueToIndex = new Double2IntOpenHashMap();
@@ -30,8 +30,10 @@ final class DoubleDictionaryWriterValueMap implements DictionaryWriterValueMap {
     }
 
     private int getOrAdd(final double value) {
-        // Canonicalize NaN so all bit patterns map to the same entry (fastutil uses doubleToLongBits).
+        // region canonicalization
+        // Canonicalize NaN so all bit patterns map to the same entry (fastutil hashes the raw bits).
         final double key = Double.isNaN(value) ? Double.NaN : value;
+        // endregion canonicalization
         final int existing = valueToIndex.putIfAbsent(key, values.size());
         if (existing != -1) {
             return existing;

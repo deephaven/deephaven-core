@@ -30,11 +30,14 @@ final class LongDictionaryWriterValueMap implements DictionaryWriterValueMap {
     }
 
     private int getOrAdd(final long value) {
-        final int existing = valueToIndex.putIfAbsent(value, values.size());
+        // region canonicalization
+        final long key = value;
+        // endregion canonicalization
+        final int existing = valueToIndex.putIfAbsent(key, values.size());
         if (existing != -1) {
             return existing;
         }
-        values.add(value);
+        values.add(key);
         return values.size() - 1;
     }
 

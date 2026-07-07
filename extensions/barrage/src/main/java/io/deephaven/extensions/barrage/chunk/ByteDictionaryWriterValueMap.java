@@ -30,11 +30,14 @@ final class ByteDictionaryWriterValueMap implements DictionaryWriterValueMap {
     }
 
     private int getOrAdd(final byte value) {
-        final int existing = valueToIndex.putIfAbsent(value, values.size());
+        // region canonicalization
+        final byte key = value;
+        // endregion canonicalization
+        final int existing = valueToIndex.putIfAbsent(key, values.size());
         if (existing != -1) {
             return existing;
         }
-        values.add(value);
+        values.add(key);
         return values.size() - 1;
     }
 
