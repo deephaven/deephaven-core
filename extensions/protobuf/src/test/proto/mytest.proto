@@ -235,3 +235,16 @@ message FieldPathTesting {
   }
   Foo foo = 1;
 }
+
+message SelfReferential {
+  int32 value = 1;
+  SelfReferential child = 2;
+}
+
+message CycleA {
+  CycleB b = 1;
+}
+
+message CycleB {
+  CycleA a = 1;
+}

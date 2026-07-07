@@ -35,10 +35,12 @@ import io.deephaven.function.TypedFunction.Visitor;
 
 import java.lang.reflect.Array;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -79,10 +81,33 @@ class ProtobufDescriptorParserImpl {
     private class DescriptorContext {
         private final FieldPath fieldPath;
         private final Descriptor descriptor;
+        private final Set<String> ancestorFullNames;
 
         public DescriptorContext(FieldPath fieldPath, Descriptor descriptor) {
+            this(fieldPath, descriptor, Set.of());
+        }
+
+        private DescriptorContext(FieldPath fieldPath, Descriptor descriptor, Set<String> ancestorFullNames) {
             this.fieldPath = Objects.requireNonNull(fieldPath);
             this.descriptor = Objects.requireNonNull(descriptor);
+            final String fullName = descriptor.getFullName();
+            if (ancestorFullNames.contains(fullName)) {
+                throw new IllegalArgumentException(String.format(
+                        "Cyclical protobuf message descriptor detected at field path %s: message type '%s' is " +
+                                "self-referential (directly or indirectly). Recursive message schemas are not " +
+                                "supported; use FieldOptions to exclude the field that closes the cycle.",
+                        fieldPath.namePath(), fullName));
+            }
+            final Set<String> next = new HashSet<>(ancestorFullNames);
+            next.add(fullName);
+            this.ancestorFullNames = next;
+        }
+
+        /**
+         * Creates a child descriptor context, inheriting this context's ancestry for cycle detection.
+         */
+        private DescriptorContext child(FieldPath fieldPath, Descriptor descriptor) {
+            return new DescriptorContext(fieldPath, descriptor, ancestorFullNames);
         }
 
         private ProtobufFunctions functions() {
@@ -154,7 +179,7 @@ class ProtobufDescriptorParserImpl {
             if (fd.getJavaType() != JavaType.MESSAGE) {
                 throw new IllegalStateException();
             }
-            return new DescriptorContext(fieldPath, fd.getMessageType());
+            return parent.child(fieldPath, fd.getMessageType());
         }
 
         private class FieldObject implements ToObjectFunction<Message, Object> {
@@ -267,7 +292,7 @@ class ProtobufDescriptorParserImpl {
                 if (valueFd == null) {
                     throw new IllegalStateException("Expected map to have field descriptor number 2 (value)");
                 }
-                final DescriptorContext dc = new DescriptorContext(append(parent.fieldPath, fd), fd.getMessageType());
+                final DescriptorContext dc = parent.child(append(parent.fieldPath, fd), fd.getMessageType());
 
                 // Note: maps are a "special" case, where even though we don't include the key / value FDs as a return
                 // io.deephaven.protobuf.ProtobufFunction#path, it's important that we force their inclusion if we've
