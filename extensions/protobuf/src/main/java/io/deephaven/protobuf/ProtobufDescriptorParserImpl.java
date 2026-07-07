@@ -93,14 +93,22 @@ class ProtobufDescriptorParserImpl {
             final String fullName = descriptor.getFullName();
             if (ancestorFullNames.contains(fullName)) {
                 throw new IllegalArgumentException(String.format(
-                        "Cyclical protobuf message descriptor detected at field path %s: message type '%s' is " +
-                                "self-referential (directly or indirectly). Recursive message schemas are not " +
-                                "supported; use FieldOptions to exclude the field that closes the cycle.",
-                        fieldPath.namePath(), fullName));
+                        "Cyclical protobuf message descriptor detected at [%s]. Recursive message schemas are not supported; use FieldOptions to exclude the field that closes the cycle.",
+                        describeCycle(fieldPath, descriptor)));
             }
             final Set<String> next = new HashSet<>(ancestorFullNames);
             next.add(fullName);
             this.ancestorFullNames = next;
+        }
+
+        private static String describeCycle(FieldPath path, Descriptor descriptor) {
+            final StringBuilder sb = new StringBuilder();
+            for (FieldDescriptor fd : path.path()) {
+                sb.append('`').append(fd.getContainingType().getFullName()).append("` \"").append(fd.getName())
+                        .append("\" -> ");
+            }
+            sb.append('`').append(descriptor.getFullName()).append('`');
+            return sb.toString();
         }
 
         /**

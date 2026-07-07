@@ -45,6 +45,7 @@ import io.deephaven.protobuf.test.ByteWrapper;
 import io.deephaven.protobuf.test.ByteWrapperRepeated;
 import io.deephaven.protobuf.test.CycleA;
 import io.deephaven.protobuf.test.FieldMaskWrapper;
+import io.deephaven.protobuf.test.LollypopCycle;
 import io.deephaven.protobuf.test.MultiRepeated;
 import io.deephaven.protobuf.test.NestedArrays;
 import io.deephaven.protobuf.test.NestedByteWrapper;
@@ -1585,7 +1586,8 @@ public class ProtobufDescriptorParserTest {
                 ProtobufDescriptorParserOptions.defaults()))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Cyclical protobuf message descriptor detected")
-                .hasMessageContaining(SelfReferential.getDescriptor().getFullName());
+                .hasMessageContaining(
+                        "[`io.deephaven.protobuf.test.SelfReferential` \"child\" -> `io.deephaven.protobuf.test.SelfReferential`]");
     }
 
     @Test
@@ -1594,7 +1596,18 @@ public class ProtobufDescriptorParserTest {
                 ProtobufDescriptorParserOptions.defaults()))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Cyclical protobuf message descriptor detected")
-                .hasMessageContaining(CycleA.getDescriptor().getFullName());
+                .hasMessageContaining(
+                        "[`io.deephaven.protobuf.test.CycleA` \"b\" -> `io.deephaven.protobuf.test.CycleB` \"a\" -> `io.deephaven.protobuf.test.CycleA`]");
+    }
+
+    @Test
+    void lollypopCycleMessageThrows() {
+        assertThatThrownBy(() -> ProtobufDescriptorParser.parse(LollypopCycle.getDescriptor(),
+                ProtobufDescriptorParserOptions.defaults()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Cyclical protobuf message descriptor detected")
+                .hasMessageContaining(
+                        "[`io.deephaven.protobuf.test.LollypopCycle` \"child\" -> `io.deephaven.protobuf.test.CycleA` \"b\" -> `io.deephaven.protobuf.test.CycleB` \"a\" -> `io.deephaven.protobuf.test.CycleA`]");
     }
 
     private static Map<List<String>, TypedFunction<Message>> nf(Descriptor descriptor) {
