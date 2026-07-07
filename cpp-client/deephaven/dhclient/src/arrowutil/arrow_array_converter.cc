@@ -275,7 +275,6 @@ struct ChunkedArrayToColumnSourceVisitor final : public arrow::TypeVisitor {
     std::vector<std::shared_ptr<arrow::Array>> plain_chunks;
     plain_chunks.reserve(dict_arrays.size());
     for (const auto &da : dict_arrays) {
-      const auto &indices = static_cast<const arrow::Int32Array &>(*da->indices());
       auto builder_result = arrow::MakeBuilder(type.value_type());
       OkOrThrow(DEEPHAVEN_LOCATION_EXPR(builder_result.status()));
       auto builder = std::move(builder_result).ValueUnsafe();
@@ -284,8 +283,9 @@ struct ChunkedArrayToColumnSourceVisitor final : public arrow::TypeVisitor {
         if (da->IsNull(i)) {
           OkOrThrow(DEEPHAVEN_LOCATION_EXPR(builder->AppendNull()));
         } else {
+          // GetValueIndex handles all index widths (Int8/Int16/Int32/Int64).
           auto scalar = ValueOrThrow(DEEPHAVEN_LOCATION_EXPR(
-              da->dictionary()->GetScalar(indices.Value(i))));
+              da->dictionary()->GetScalar(da->GetValueIndex(i))));
           OkOrThrow(DEEPHAVEN_LOCATION_EXPR(builder->AppendScalar(*scalar)));
         }
       }
