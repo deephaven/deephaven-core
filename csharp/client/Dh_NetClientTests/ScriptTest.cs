@@ -6,18 +6,18 @@ using Deephaven.Dh_NetClient;
 namespace Deephaven.Dh_NetClientTests;
 
 public class ScriptTest {
-  [Fact]
-  public void TestScriptSessionError() {
+  [Test]
+  public async Task TestScriptSessionError() {
     using var ctx = CommonContextForTests.Create(new ClientOptions().SetSessionType(""));
     var m = ctx.Client.Manager;
     const string script = "from deephaven import empty_table";
-    var ex = Record.Exception(() => m.RunScript(script));
-    Assert.NotNull(ex);
-    Assert.Contains("Client was created without specifying a script language", ex.Message);
+    await Assert.That(() => m.RunScript(script))
+      .Throws<Exception>()
+      .WithMessageContaining("Client was created without specifying a script language");
   }
 
-  [Fact]
-  public void TestScriptExecution() {
+  [Test]
+  public async Task TestScriptExecution() {
     var intData = new List<Int32>();
     var longData = new List<Int64>();
 
@@ -42,6 +42,6 @@ public class ScriptTest {
     var expected = new TableMaker();
     expected.AddColumn("intData", intData);
     expected.AddColumn("longData", longData);
-    TableComparer.AssertSame(expected, t);
+    await Assert.That(() => TableComparer.AssertSame(expected, t)).ThrowsNothing();
   }
 }

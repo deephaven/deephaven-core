@@ -6,6 +6,7 @@ package io.deephaven.server.plugin.python;
 import io.deephaven.plugin.type.ObjectCommunicationException;
 import io.deephaven.plugin.type.ObjectTypeBase;
 import io.deephaven.plugin.type.Exporter;
+import io.deephaven.plugin.type.ObjectType.AuthorizationExportBehavior;
 import io.deephaven.util.annotations.ScriptApi;
 import org.jpy.PyObject;
 
@@ -38,6 +39,27 @@ final class ObjectTypeAdapter extends ObjectTypeBase implements AutoCloseable {
             return false;
         }
         return objectTypeAdapter.call(boolean.class, "is_type", PyObject.class, pyObject);
+    }
+
+    @Override
+    public AuthorizationExportBehavior authorizationExportBehavior() {
+        final String behavior = objectTypeAdapter.call("authorization_export_behavior").getStringValue();
+        if (behavior == null || behavior.isEmpty()) {
+            return AuthorizationExportBehavior.UNSET;
+        }
+        switch (behavior) {
+            case "transform":
+                return AuthorizationExportBehavior.TRANSFORM;
+            case "manual":
+                return AuthorizationExportBehavior.MANUAL;
+            case "unset":
+                return AuthorizationExportBehavior.UNSET;
+            default:
+                throw new IllegalArgumentException(String.format(
+                        "Python ObjectType '%s' declared an invalid authorization_export_behavior '%s'; expected one "
+                                + "of 'transform', 'manual', 'unset', or null/empty for unset",
+                        name(), behavior));
+        }
     }
 
     @Override

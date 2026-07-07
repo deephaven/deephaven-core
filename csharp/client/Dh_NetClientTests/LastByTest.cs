@@ -2,15 +2,12 @@
 // Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 using Deephaven.Dh_NetClient;
-using Xunit.Abstractions;
 
 namespace Deephaven.Dh_NetClientTests;
 
-public class LastByTest(ITestOutputHelper output) {
-  private readonly ITestOutputHelper _output = output;
-
-  [Fact]
-  public void TestLastBy() {
+public class LastByTest {
+  [Test]
+  public async Task TestLastBy() {
     using var ctx = CommonContextForTests.Create(new ClientOptions());
     var testTable = ctx.TestTable;
 
@@ -29,6 +26,6 @@ public class LastByTest(ITestOutputHelper output) {
     expected.AddColumn("Open", openData);
     expected.AddColumn("Close", closeData);
 
-    TableComparer.AssertSame(expected, lb);
+    await Assert.That(() => TableComparer.AssertSame(expected, lb)).ThrowsNothing();
   }
 }

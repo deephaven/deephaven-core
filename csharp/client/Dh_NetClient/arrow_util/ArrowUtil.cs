@@ -189,11 +189,15 @@ public static class ArrowUtil {
     private IEnumerable VisitListArrayHelper(ListArray array) {
       // ListArray's elements are IArrowArrays. For each element,
       // we turn the IArrowArray into a List<object>.
-      // To do this, we recursivel invoke the ToEnumerableVisitor (to handle the case
+      // To do this, we recursively invoke the ToEnumerableVisitor (to handle the case
       // where the elements are themselves lists).
       var innerVisitor = new ToEnumerableVisitor();
       for (var i = 0; i != array.Length; ++i) {
         var slice = array.GetSlicedValues(i);
+        if (slice == null) {
+          yield return null;
+          continue;
+        }
         slice.Accept(innerVisitor);
         yield return new List<object>(innerVisitor.Result.Cast<object>());
       }

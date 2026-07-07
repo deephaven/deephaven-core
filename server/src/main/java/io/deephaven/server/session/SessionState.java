@@ -368,6 +368,26 @@ public class SessionState {
     }
 
     /**
+     * Create and export a pre-computed failure element.
+     *
+     * @param failure the result of the export
+     * @return the ExportObject for this item for ease of access to the export
+     */
+    public ExportObject<Void> newFailedServerSideExport(final Exception failure) {
+        if (isExpired()) {
+            throw Exceptions.statusRuntimeException(Code.UNAUTHENTICATED, "session has expired");
+        }
+
+        final int exportId = SERVER_EXPORT_UPDATER.getAndDecrement(this);
+
+        // noinspection unchecked
+        final ExportObject<Void> result =
+                (ExportObject<Void>) exportMap.putIfAbsent(exportId, EXPORT_OBJECT_VALUE_FACTORY);
+        result.setCaughtException(failure);
+        return result;
+    }
+
+    /**
      * Create an ExportBuilder to create the export after dependencies are satisfied.
      *
      * @param ticket the grpc {@link Flight.Ticket} for this export
@@ -1126,6 +1146,36 @@ public class SessionState {
                             manage((LivenessReferent) result);
                         }
                         setState(ExportNotification.State.EXPORTED);
+                    }
+                }
+            } finally {
+                dropReference();
+            }
+        }
+
+        /**
+         * Sets the final result for this export.
+         *
+         * @param exception the exception this export failed with
+         */
+        private void setCaughtException(final Exception exception) {
+            if (this.result != null || this.caughtException != null) {
+                throw new IllegalStateException("cannot set result/exception twice!");
+            }
+
+            // result is cleared on destroy; so don't set if it won't be called
+            if (!tryRetainReference()) {
+                return;
+            }
+
+            try {
+                synchronized (this) {
+                    // client may race a cancel with setCaughtException
+                    if (!isExportStateTerminal(state)) {
+                        // assign an error id (and log the failure) so that consumers of this export report a coherent
+                        // error rather than treating the FAILED state as unexpected; mirrors doExport's failure path
+                        maybeAssignErrorId(exception, null, ExportNotification.State.FAILED);
+                        setState(ExportNotification.State.FAILED);
                     }
                 }
             } finally {

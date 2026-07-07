@@ -5,6 +5,9 @@ sidebar_label: Python Integrations
 
 Deephaven empowers Python developers by providing efficient integrations with popular Python libraries. This section covers some highlights of Deephaven's Python interoperability as well as the inherent limitations of static Python data structures.
 
+> [!NOTE]
+> Coming from pandas or traditional Python? Deephaven uses vectorized operations instead of loops to transform data. Once you convert data to Deephaven tables, use declarative operations like `update()` rather than loops. See [Vectorization](./vectorization-vs-loops.md) to learn more.
+
 ## Pandas
 
 The [`deephaven.pandas`](../../how-to-guides/use-pandas.md) module is the gateway to [Pandas](https://pandas.pydata.org/) interoperability. The module itself is simple, containing only two functions: [`to_pandas`](/core/pydoc/code/deephaven.pandas.html#deephaven.pandas.to_pandas), which converts a Deephaven table into a [Pandas DataFrame](https://pandas.pydata.org/docs/reference/frame.html), and [`to_table`](/core/pydoc/code/deephaven.pandas.html#deephaven.pandas.to_table), which converts a [Pandas DataFrame](https://pandas.pydata.org/docs/reference/frame.html) into a Deephaven table.

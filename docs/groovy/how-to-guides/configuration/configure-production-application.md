@@ -11,9 +11,12 @@ This guide assumes familiarity with installing and running the Deephaven product
 
 ## Prerequisites
 
-Only Java is required to run the Deephaven production application. Deephaven recommends using the latest LTS version of Java. Java 11 or later is required.
+Only Java is required to run the Deephaven production application. Deephaven recommends using the latest LTS version of Java. Java 17 or later is required.
 
 The production application also requires Linux or Mac OS. Running on Windows requires Windows Subsystem for Linux v2 (WSL 2)[<sup>[1]</sup>](#footnotes).
+
+> [!WARNING]
+> WSL 2's default time-sync setup can cause spurious 10–20-second clock jumps that stall Deephaven ticking tables. Before running Deephaven on WSL 2, apply one of the [time-sync workarounds](../../reference/community-questions/wsl2-clock-drift.md).
 
 ## Production application configuration
 

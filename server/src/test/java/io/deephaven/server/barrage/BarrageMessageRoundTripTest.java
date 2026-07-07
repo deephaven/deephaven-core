@@ -193,8 +193,9 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
             if (sourceTable.isFlat()) {
                 attributes.put(BarrageUtil.TABLE_ATTRIBUTE_IS_FLAT, true);
             }
-            final BarrageUtil.ConvertedArrowSchema schema = BarrageUtil.convertArrowSchema(BarrageUtil.toSchema(
-                    barrageMessageProducer.getTableDefinition(), attributes, sourceTable.isFlat()));
+            final BarrageUtil.ConvertedArrowSchema schema = BarrageUtil.convertArrowSchema(BarrageUtil.makeSchema(
+                    BarrageUtil.DEFAULT_SNAPSHOT_OPTIONS, barrageMessageProducer.getTableDefinition(), attributes,
+                    sourceTable.isFlat()));
             this.barrageTable =
                     BarrageTable.make(null, updateSourceCombiner, ExecutionContext.getContext().getUpdateGraph(),
                             null, schema, viewport == null, null);

@@ -37,7 +37,66 @@ In static tables, a formula need not be re-evaluated because the table does not 
 
 Tick amplification occurs any time an operation produces a downstream update that changes a larger number of cells than the upstream update it is processing. There are certain operations in Deephaven where the engine can't know exactly which cells in a table will change. As a result, the engine _must_ check every cell that could possibly change to ensure the results are correct. For instance, a grouping and ungrouping operation may only change a single value, but every single member of the group must be checked to ensure the results are correct.
 
-For an example, see [Tick amplification](../how-to-guides/partitioned-tables.md#tick-amplification).
+The following example demonstrates tick amplification by comparing a group/ungroup operation with a partition/merge operation:
+
+```groovy ticking-table order=null
+import io.deephaven.engine.table.TableUpdate
+import io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter
+
+t1 = timeTable("PT5s").update("A=ii%2", "X=ii")
+
+// Group/ungroup
+t2 = t1.groupBy("A").update("Y=X+1").ungroup()
+
+// Partition/merge
+t3 = t1.partitionBy("A").proxy().update("Y=X+1").target.merge()
+
+h1 = new InstrumentedTableUpdateListenerAdapter(t1, false) {
+    @Override
+    public void onUpdate(TableUpdate upstream) {
+        numChanges1 = len(upstream.added()) + len(upstream.modified())
+        println "TICK PROPAGATION: RAW                    " + numChanges1 + " changes"
+    }
+}
+
+h2 = new InstrumentedTableUpdateListenerAdapter(t2, false) {
+    @Override
+    public void onUpdate(TableUpdate upstream) {
+        numChanges2 = len(upstream.added()) + len(upstream.modified())
+        println "TICK PROPAGATION: GROUP/UNGROUP          " + numChanges2 + " changes"
+    }
+}
+
+h3 = new InstrumentedTableUpdateListenerAdapter(t3, false) {
+    @Override
+    public void onUpdate(TableUpdate upstream) {
+        numChanges3 = len(upstream.added()) + len(upstream.modified())
+        println "TICK PROPAGATION: PARTITION/MERGE        " + numChanges3 + " changes"
+    }
+}
+
+t1.addUpdateListener(h1)
+t2.addUpdateListener(h2)
+t3.addUpdateListener(h3)
+```
+
+Initially, the output shows one change for each approach:
+
+```
+TICK PROPAGATION: RAW             1 changes
+TICK PROPAGATION: GROUP/UNGROUP   1 changes
+TICK PROPAGATION: PARTITION/MERGE 1 changes
+```
+
+After running for a while, the group/ungroup operation reports increasingly more changes while partition/merge stays at one:
+
+```
+TICK PROPAGATION: RAW             1 changes
+TICK PROPAGATION: GROUP/UNGROUP   10 changes
+TICK PROPAGATION: PARTITION/MERGE 1 changes
+```
+
+The group/ungroup operation suffers from tick amplification because the engine must check all members of each group. The partition/merge approach avoids this problem.
 
 ## Troubleshooting steps
 

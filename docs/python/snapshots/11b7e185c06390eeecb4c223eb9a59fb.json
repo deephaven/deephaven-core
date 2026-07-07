@@ -1,0 +1,1 @@
+{"file":"conceptual/vectorization-and-recipes.md","objects":{"result":{"type":"Table","data":{"columns":[{"name":"Group","type":"int"},{"name":"Value","type":"double"}],"rows":[[{"value":"0"},{"value":"55.7622"}],[{"value":"1"},{"value":"47.1945"}],[{"value":"2"},{"value":"38.7964"}],[{"value":"3"},{"value":"52.1824"}],[{"value":"4"},{"value":"52.3955"}]]}}}}

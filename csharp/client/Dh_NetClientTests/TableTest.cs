@@ -6,8 +6,8 @@ using Deephaven.Dh_NetClient;
 namespace Deephaven.Dh_NetClientTests;
 
 public class TableTest {
-  [Fact]
-  public void FetchTheWholeTable() {
+  [Test]
+  public async Task FetchTheWholeTable() {
     const int target = 10;
     using var ctx = CommonContextForTests.Create(new ClientOptions());
     var thm = ctx.Client.Manager;
@@ -76,6 +76,6 @@ public class TableTest {
     expected.AddColumn("Strings", strings);
     expected.AddColumn("DateTimes", dateTimes);
 
-    TableComparer.AssertSame(expected, th);
+    await Assert.That(() => TableComparer.AssertSame(expected, th)).ThrowsNothing();
   }
 }

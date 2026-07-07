@@ -18,6 +18,9 @@ Deephaven is only supported on:
 - MacOS
 - Windows 10 or 11 (requires [WSL 2 (Windows Subsystem for Linux v2)](https://learn.microsoft.com/en-us/windows/wsl/install))
 
+> [!WARNING]
+> WSL 2's default time-sync setup can cause spurious 10–20-second clock jumps that stall Deephaven ticking tables. Before running Deephaven on WSL 2, apply one of the [time-sync workarounds](../reference/community-questions/wsl2-clock-drift.md).
+
 ## Prerequisites
 
 Running Deephaven from Docker requires [`docker`](https://docs.docker.com/reference/cli/docker/) >= 20.10.8.

@@ -15,16 +15,19 @@ import io.deephaven.engine.table.impl.select.ConditionFilter;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.validation.ColumnExpressionValidator;
+import io.deephaven.plugin.options.PluginOptions;
 import io.deephaven.plugin.type.Exporter;
 import io.deephaven.plugin.type.ObjectType;
 import io.deephaven.plugin.type.ObjectTypeBase;
 import org.junit.jupiter.api.Test;
 
 import javax.inject.Inject;
+import javax.inject.Named;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -42,7 +45,7 @@ public class PluginModuleTest {
         Set<ObjectType> objectTypes();
     }
 
-    @Module(includes = {PluginModule.class, ColumnExpressionValidatorModule.class})
+    @Module(includes = {PluginModule.class, ColumnExpressionValidatorModule.class, NoopAuthTransformModule.class})
     interface MyModule {
 
         @Binds
@@ -91,6 +94,26 @@ public class PluginModuleTest {
                     throw new UnsupportedOperationException("Not a real column expression validator");
                 }
             };
+        }
+    }
+
+    @Module
+    static public class NoopAuthTransformModule {
+        @Provides
+        @Named("authTransform")
+        PluginOptions.AuthorizationTransformer authTransform() {
+            return new PluginOptions.AuthorizationTransformer() {
+                @Override
+                public <T> T transform(T object) {
+                    return object;
+                }
+            };
+        }
+
+        @Provides
+        @Named("accessPermittedPredicate")
+        Predicate<Object> accessPermitted() {
+            return x -> true;
         }
     }
 

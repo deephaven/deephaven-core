@@ -18,6 +18,9 @@ Deephaven is only supported on:
 - MacOS
 - Windows 10 or 11 (requires [WSL 2 (Windows Subsystem for Linux v2)](https://learn.microsoft.com/en-us/windows/wsl/install))
 
+> [!WARNING]
+> WSL 2's default time-sync setup can cause spurious 10–20-second clock jumps that stall Deephaven ticking tables. Before running Deephaven on WSL 2, apply one of the [time-sync workarounds](../reference/community-questions/wsl2-clock-drift.md).
+
 ## Prerequisites
 
 Building and running a Deephaven Python server from source code requires a couple of software packages.
@@ -64,6 +67,9 @@ You can download a ZIP file of the repository from GitHub. However, this is not 
 ## Build and run Deephaven
 
 The following instructions are a condensed version of instructions found in the [deephaven-core repository](https://github.com/deephaven/deephaven-core). For the full instructions with explanations of configuration parameters, SSL, and more, see the [README](https://github.com/deephaven/deephaven-core/blob/main/server/jetty-app/README.md).
+
+> [!NOTE]
+> The following steps show how to build and run Deephaven with Python from source. For Groovy, see [here](/core/groovy/docs/getting-started/launch-build).
 
 ### Clone the deephaven-core repository
 

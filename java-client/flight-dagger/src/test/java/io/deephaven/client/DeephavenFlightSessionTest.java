@@ -19,7 +19,9 @@ import org.apache.arrow.flight.FlightStream;
 import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.vector.BigIntVector;
 import org.apache.arrow.vector.FieldVector;
+import org.apache.arrow.vector.IntVector;
 import org.apache.arrow.vector.VectorSchemaRoot;
+import org.apache.arrow.vector.complex.RunEndEncodedVector;
 import org.apache.arrow.vector.types.Types.MinorType;
 import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.arrow.vector.types.pojo.FieldType;
@@ -104,15 +106,15 @@ public class DeephavenFlightSessionTest extends DeephavenFlightSessionTestBase {
             long sum = 0;
             while (stream.next()) {
                 final VectorSchemaRoot root = stream.getRoot();
-                final BigIntVector cumVector = (BigIntVector) root.getVector("IS");
-                final BigIntVector rollingVector = (BigIntVector) root.getVector("RC");
+                final FieldVector cumVector = root.getVector("IS");
+                final FieldVector rollingVector = root.getVector("RC");
                 final int rowCount = root.getRowCount();
                 for (int r = 0; r < rowCount; ++r, ++i) {
                     if (r % 2 == 0) {
                         sum++;
                     }
-                    assertThat(cumVector.get(r)).isEqualTo(sum);
-                    assertThat(rollingVector.get(r)).isEqualTo(1);
+                    assertThat(getLongValue(cumVector, r)).isEqualTo(sum);
+                    assertThat(getLongValue(rollingVector, r)).isEqualTo(1L);
                 }
             }
             assertThat(i).isEqualTo(size);
@@ -303,6 +305,32 @@ public class DeephavenFlightSessionTest extends DeephavenFlightSessionTestBase {
             assertThat(actual).isEqualTo(expected);
             assertThat(stream.next()).isFalse();
         }
+    }
+
+    /**
+     * Reads a long value at logical {@code index} from a vector that may be plain {@link BigIntVector} or
+     * {@link RunEndEncodedVector} wrapping a BigInt values child (auto-REE may kick in for constant columns).
+     */
+    private static long getLongValue(FieldVector vector, int index) {
+        if (vector instanceof BigIntVector) {
+            return ((BigIntVector) vector).get(index);
+        }
+        if (vector instanceof RunEndEncodedVector) {
+            final RunEndEncodedVector ree = (RunEndEncodedVector) vector;
+            final IntVector runEnds = (IntVector) ree.getRunEndsVector();
+            // Binary search for the run that covers logical index (run_ends are 1-based cumulative).
+            int lo = 0, hi = runEnds.getValueCount() - 1;
+            while (lo < hi) {
+                final int mid = (lo + hi) >>> 1;
+                if (runEnds.get(mid) <= index) {
+                    lo = mid + 1;
+                } else {
+                    hi = mid;
+                }
+            }
+            return ((BigIntVector) ree.getValuesVector()).get(lo);
+        }
+        throw new IllegalArgumentException("Unexpected vector type: " + vector.getClass().getSimpleName());
     }
 
     /**
