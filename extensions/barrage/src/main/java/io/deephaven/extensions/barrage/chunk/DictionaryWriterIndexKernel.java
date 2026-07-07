@@ -19,7 +19,7 @@ import io.deephaven.extensions.barrage.BarrageOptions;
  * position corresponds to exactly one logical row: {@code QueryConstants.NULL_INT} for null rows (in
  * non-deephaven-nulls mode) and a non-negative dictionary index for non-null rows.
  */
-interface DictionaryIndexKernel {
+interface DictionaryWriterIndexKernel {
 
     void fillIndexChunk(
             Chunk<Values> source,
@@ -28,24 +28,24 @@ interface DictionaryIndexKernel {
             DictionaryWriterState state,
             WritableIntChunk<Values> out);
 
-    static DictionaryIndexKernel make(final ChunkType valuesChunkType) {
+    static DictionaryWriterIndexKernel make(final ChunkType valuesChunkType) {
         switch (valuesChunkType) {
             case Byte:
-                return ByteDictionaryIndexKernel.INSTANCE;
+                return ByteDictionaryWriterIndexKernel.INSTANCE;
             case Char:
-                return CharDictionaryIndexKernel.INSTANCE;
+                return CharDictionaryWriterIndexKernel.INSTANCE;
             case Short:
-                return ShortDictionaryIndexKernel.INSTANCE;
+                return ShortDictionaryWriterIndexKernel.INSTANCE;
             case Int:
-                return IntDictionaryIndexKernel.INSTANCE;
+                return IntDictionaryWriterIndexKernel.INSTANCE;
             case Long:
-                return LongDictionaryIndexKernel.INSTANCE;
+                return LongDictionaryWriterIndexKernel.INSTANCE;
             case Float:
-                return FloatDictionaryIndexKernel.INSTANCE;
+                return FloatDictionaryWriterIndexKernel.INSTANCE;
             case Double:
-                return DoubleDictionaryIndexKernel.INSTANCE;
+                return DoubleDictionaryWriterIndexKernel.INSTANCE;
             default:
-                return ObjectDictionaryIndexKernel.INSTANCE;
+                return ObjectDictionaryWriterIndexKernel.INSTANCE;
         }
     }
 }

@@ -41,7 +41,7 @@ public class ReplicateBarrageUtils {
                 CHUNK_PACKAGE + "/CharBarrageRunKernel.java");
 
         ReplicatePrimitiveCode.charToAllButBoolean("replicateBarrageUtils",
-                CHUNK_PACKAGE + "/CharDictionaryIndexKernel.java");
+                CHUNK_PACKAGE + "/CharDictionaryWriterIndexKernel.java");
     }
 
     private static void fixupDoubleChunkReader(final @NotNull String path) throws IOException {

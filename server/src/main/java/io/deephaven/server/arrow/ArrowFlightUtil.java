@@ -217,7 +217,7 @@ public class ArrowFlightUtil {
             }
 
             if (mi.header.headerType() == MessageHeader.DictionaryBatch) {
-                applyDictionaryBatch(mi);
+                addDictionaryBatch(mi);
                 return;
             }
 

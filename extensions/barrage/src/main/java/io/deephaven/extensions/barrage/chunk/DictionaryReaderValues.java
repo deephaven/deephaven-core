@@ -21,13 +21,13 @@ import org.jetbrains.annotations.Nullable;
  * loaded in bulk via {@link WritableColumnSource#fillFromChunk}. Read access via {@link #getByte}, {@link #getLong},
  * etc. delegates directly to the underlying column source and is allocation-free for all primitive types.
  */
-final class DictionaryValues {
+final class DictionaryReaderValues {
 
     final ChunkType chunkType;
     private WritableColumnSource<?> source;
     private int size;
 
-    DictionaryValues(@NotNull final ChunkType chunkType) {
+    DictionaryReaderValues(@NotNull final ChunkType chunkType) {
         this.chunkType = chunkType;
         this.source = ArrayBackedColumnSource.getMemoryColumnSource(chunkType);
     }

@@ -20,10 +20,10 @@ import org.jetbrains.annotations.Nullable;
  *
  * <p>
  * Exactly one map is allocated per instance, selected by {@code valuesChunkType}: a typed primitive map for primitive
- * columns, or an {@link Object2IntOpenHashMap} for {@link ChunkType#Object}. Subclasses supply two template methods:
+ * columns, or an {@link Object2IntOpenHashMap} for {@link ChunkType#Object}. Subclasses supply one template method:
  * <ul>
- * <li>{@link #nextIndex()} — returns the 0-based index to assign to the next new value</li>
- * <li>{@link #recordNewValue(Object, int)} — appends the new boxed value to the subclass's ordered list</li>
+ * <li>{@link #recordNewValue(Object)} — appends the new boxed value to the subclass's ordered list and returns the
+ * 0-based index assigned to it</li>
  * </ul>
  */
 abstract class AbstractDictionaryWriterState {
@@ -92,23 +92,19 @@ abstract class AbstractDictionaryWriterState {
         this.doubleToIndex = doubleMap;
     }
 
-    /** Returns the 0-based dictionary index to assign to the next new value. */
-    protected abstract int nextIndex();
-
     /**
-     * Called after a new value has been inserted into the map. Subclasses append it to their own ordered list (e.g.
-     * {@code deltaValues} or {@code allValues}).
+     * Appends a new value to the subclass's ordered list (e.g. {@code deltaValues} or {@code allValues}) and returns
+     * the 0-based index assigned to it.
      */
-    protected abstract void recordNewValue(@NotNull Object boxed, int index);
+    protected abstract int recordNewValue(@NotNull Object boxed);
 
     public int indexForObject(@NotNull final Object value) {
         final int existing = objectToIndex.getInt(value);
         if (existing != -1) {
             return existing;
         }
-        final int index = nextIndex();
+        final int index = recordNewValue(value);
         objectToIndex.put(value, index);
-        recordNewValue(value, index);
         return index;
     }
 
@@ -117,10 +113,8 @@ abstract class AbstractDictionaryWriterState {
         if (existing != -1) {
             return existing;
         }
-        final int index = nextIndex();
-        final Byte boxed = v;
+        final int index = recordNewValue(v);
         byteToIndex.put(v, index);
-        recordNewValue(boxed, index);
         return index;
     }
 
@@ -129,10 +123,8 @@ abstract class AbstractDictionaryWriterState {
         if (existing != -1) {
             return existing;
         }
-        final int index = nextIndex();
-        final Character boxed = v;
+        final int index = recordNewValue(v);
         charToIndex.put(v, index);
-        recordNewValue(boxed, index);
         return index;
     }
 
@@ -141,10 +133,8 @@ abstract class AbstractDictionaryWriterState {
         if (existing != -1) {
             return existing;
         }
-        final int index = nextIndex();
-        final Short boxed = v;
+        final int index = recordNewValue(v);
         shortToIndex.put(v, index);
-        recordNewValue(boxed, index);
         return index;
     }
 
@@ -153,10 +143,8 @@ abstract class AbstractDictionaryWriterState {
         if (existing != -1) {
             return existing;
         }
-        final int index = nextIndex();
-        final Integer boxed = v;
+        final int index = recordNewValue(v);
         intToIndex.put(v, index);
-        recordNewValue(boxed, index);
         return index;
     }
 
@@ -165,10 +153,8 @@ abstract class AbstractDictionaryWriterState {
         if (existing != -1) {
             return existing;
         }
-        final int index = nextIndex();
-        final Long boxed = v;
+        final int index = recordNewValue(v);
         longToIndex.put(v, index);
-        recordNewValue(boxed, index);
         return index;
     }
 
@@ -179,10 +165,8 @@ abstract class AbstractDictionaryWriterState {
         if (existing != -1) {
             return existing;
         }
-        final int index = nextIndex();
-        final Float boxed = key;
+        final int index = recordNewValue(key);
         floatToIndex.put(key, index);
-        recordNewValue(boxed, index);
         return index;
     }
 
@@ -193,10 +177,8 @@ abstract class AbstractDictionaryWriterState {
         if (existing != -1) {
             return existing;
         }
-        final int index = nextIndex();
-        final Double boxed = key;
+        final int index = recordNewValue(key);
         doubleToIndex.put(key, index);
-        recordNewValue(boxed, index);
         return index;
     }
 

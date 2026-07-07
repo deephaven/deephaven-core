@@ -78,7 +78,7 @@ public class DictionaryChunkReader extends BaseChunkReader<WritableChunk<Values>
                 return out;
             }
 
-            final DictionaryValues dict = registry.get(dictId);
+            final DictionaryReaderValues dict = registry.get(dictId);
             if (dict == null) {
                 throw new IOException("No DictionaryBatch received for dictionary id " + dictId
                         + " before RecordBatch that references it");
@@ -123,7 +123,7 @@ public class DictionaryChunkReader extends BaseChunkReader<WritableChunk<Values>
 
     private static void expandIndices(
             @NotNull final IntChunk<Values> indices,
-            @NotNull final DictionaryValues dict,
+            @NotNull final DictionaryReaderValues dict,
             @NotNull final WritableChunk<Values> out,
             final int outOffset,
             @NotNull final ChunkType valuesChunkType) {

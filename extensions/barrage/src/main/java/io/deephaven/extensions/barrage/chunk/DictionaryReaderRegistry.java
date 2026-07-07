@@ -25,7 +25,7 @@ import org.jetbrains.annotations.Nullable;
 public final class DictionaryReaderRegistry {
 
     // GWT-friendly maps (vs. Long2ObjectOpenHashMap)
-    private final Map<Long, DictionaryValues> dictValues = new HashMap<>();
+    private final Map<Long, DictionaryReaderValues> dictValues = new HashMap<>();
 
     /**
      * Installs or updates the dictionary for {@code dictId}.
@@ -36,12 +36,12 @@ public final class DictionaryReaderRegistry {
      */
     public void update(final long dictId, @NotNull final WritableChunk<Values> valuesChunk, final boolean isDelta) {
         if (isDelta) {
-            dictValues.computeIfAbsent(dictId, id -> new DictionaryValues(valuesChunk.getChunkType()))
+            dictValues.computeIfAbsent(dictId, id -> new DictionaryReaderValues(valuesChunk.getChunkType()))
                     .append(valuesChunk);
         } else {
-            DictionaryValues values = dictValues.get(dictId);
+            DictionaryReaderValues values = dictValues.get(dictId);
             if (values == null) {
-                values = new DictionaryValues(valuesChunk.getChunkType());
+                values = new DictionaryReaderValues(valuesChunk.getChunkType());
                 dictValues.put(dictId, values);
             }
             values.replace(valuesChunk);
@@ -53,7 +53,7 @@ public final class DictionaryReaderRegistry {
      * that id yet.
      */
     @Nullable
-    public DictionaryValues get(final long dictId) {
+    public DictionaryReaderValues get(final long dictId) {
         return dictValues.get(dictId);
     }
 }

@@ -11,8 +11,8 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.extensions.barrage.BarrageOptions;
 import io.deephaven.util.QueryConstants;
 
-final class ObjectDictionaryIndexKernel implements DictionaryIndexKernel {
-    static final ObjectDictionaryIndexKernel INSTANCE = new ObjectDictionaryIndexKernel();
+final class ObjectDictionaryWriterIndexKernel implements DictionaryWriterIndexKernel {
+    static final ObjectDictionaryWriterIndexKernel INSTANCE = new ObjectDictionaryWriterIndexKernel();
 
     @Override
     public void fillIndexChunk(final Chunk<Values> source, final RowSet subset, final BarrageOptions options,

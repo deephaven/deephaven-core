@@ -31,7 +31,7 @@ public class DictionaryReaderRegistryTest {
             registry.update(0L, chunk, false);
         }
 
-        final DictionaryValues dict = registry.get(0L);
+        final DictionaryReaderValues dict = registry.get(0L);
         assertThat(dict).isNotNull();
         assertThat(dict.size()).isEqualTo(3);
         assertThat(dict.<String>getObject(0)).isEqualTo("cat");
@@ -57,7 +57,7 @@ public class DictionaryReaderRegistryTest {
             registry.update(0L, chunk2, true);
         }
 
-        final DictionaryValues dict = registry.get(0L);
+        final DictionaryReaderValues dict = registry.get(0L);
         assertThat(dict).isNotNull();
         assertThat(dict.size()).isEqualTo(4);
         assertThat(dict.<String>getObject(0)).isEqualTo("alpha");
@@ -84,7 +84,7 @@ public class DictionaryReaderRegistryTest {
             registry.update(5L, chunk2, false);
         }
 
-        final DictionaryValues dict = registry.get(5L);
+        final DictionaryReaderValues dict = registry.get(5L);
         assertThat(dict).isNotNull();
         assertThat(dict.size()).isEqualTo(1);
         assertThat(dict.<String>getObject(0)).isEqualTo("new1");
@@ -108,13 +108,13 @@ public class DictionaryReaderRegistryTest {
             registry.update(1L, chunkB, false);
         }
 
-        final DictionaryValues dictA = registry.get(0L);
+        final DictionaryReaderValues dictA = registry.get(0L);
         assertThat(dictA).isNotNull();
         assertThat(dictA.size()).isEqualTo(2);
         assertThat(dictA.getInt(0)).isEqualTo(10);
         assertThat(dictA.getInt(1)).isEqualTo(20);
 
-        final DictionaryValues dictB = registry.get(1L);
+        final DictionaryReaderValues dictB = registry.get(1L);
         assertThat(dictB).isNotNull();
         assertThat(dictB.size()).isEqualTo(2);
         assertThat(dictB.getInt(0)).isEqualTo(30);
@@ -133,7 +133,7 @@ public class DictionaryReaderRegistryTest {
             registry.update(7L, chunk, true);
         }
 
-        final DictionaryValues dict = registry.get(7L);
+        final DictionaryReaderValues dict = registry.get(7L);
         assertThat(dict).isNotNull();
         assertThat(dict.size()).isEqualTo(2);
         assertThat(dict.<String>getObject(0)).isEqualTo("x");
@@ -152,7 +152,7 @@ public class DictionaryReaderRegistryTest {
             registry.update(0L, chunk, false);
         }
 
-        final DictionaryValues dict = registry.get(0L);
+        final DictionaryReaderValues dict = registry.get(0L);
         assertThat(dict).isNotNull();
         assertThat(dict.size()).isEqualTo(3);
         assertThat(dict.<String>getObject(0)).isEqualTo("a");

@@ -51,7 +51,7 @@ public class DictionaryChunkWriter extends BaseChunkWriter<Chunk<Values>> {
     private final ChunkWriter<IntChunk<Values>> indexWriter;
     /** Writes the actual column values that go into DictionaryBatch. */
     private final ChunkWriter<Chunk<Values>> valuesWriter;
-    private final DictionaryIndexKernel indexKernel;
+    private final DictionaryWriterIndexKernel indexKernel;
     private final int indexBitWidth;
     private final ChunkType valuesChunkType;
 
@@ -66,7 +66,7 @@ public class DictionaryChunkWriter extends BaseChunkWriter<Chunk<Values>> {
         this.dictId = dictId;
         this.indexWriter = indexWriter;
         this.valuesWriter = valuesWriter;
-        this.indexKernel = DictionaryIndexKernel.make(valuesChunkType);
+        this.indexKernel = DictionaryWriterIndexKernel.make(valuesChunkType);
         this.indexBitWidth = indexBitWidth;
         this.valuesChunkType = valuesChunkType;
     }

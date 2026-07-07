@@ -21,9 +21,9 @@ import java.util.List;
  * <ul>
  * <li>{@link LocalDictionaryWriterState} — for viewport subscriptions and snapshots. {@code resetDelta()} clears the
  * delta list entirely; only newly-seen values since the last reset are tracked.</li>
- * <li>{@link FullSubscriptionDictionaryState} — for full subscriptions and growing subscriptions. The full cumulative
- * value list is retained so that a new subscriber joining mid-stream can receive all current values as an initial
- * {@code isDelta=false} batch.</li>
+ * <li>{@link FullSubscriptionDictionaryWriterState} — for full subscriptions and growing subscriptions. The full
+ * cumulative value list is retained so that a new subscriber joining mid-stream can receive all current values as an
+ * initial {@code isDelta=false} batch.</li>
  * </ul>
  *
  * <p>

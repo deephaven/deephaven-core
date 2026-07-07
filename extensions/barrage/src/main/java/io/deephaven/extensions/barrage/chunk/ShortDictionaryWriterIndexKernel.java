@@ -2,7 +2,7 @@
 // Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
-// ****** Edit CharDictionaryIndexKernel and run "./gradlew replicateBarrageUtils" to regenerate
+// ****** Edit CharDictionaryWriterIndexKernel and run "./gradlew replicateBarrageUtils" to regenerate
 //
 // @formatter:off
 package io.deephaven.extensions.barrage.chunk;
@@ -15,8 +15,8 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.extensions.barrage.BarrageOptions;
 import io.deephaven.util.QueryConstants;
 
-final class ShortDictionaryIndexKernel implements DictionaryIndexKernel {
-    static final ShortDictionaryIndexKernel INSTANCE = new ShortDictionaryIndexKernel();
+final class ShortDictionaryWriterIndexKernel implements DictionaryWriterIndexKernel {
+    static final ShortDictionaryWriterIndexKernel INSTANCE = new ShortDictionaryWriterIndexKernel();
 
     @Override
     public void fillIndexChunk(final Chunk<Values> source, final RowSet subset, final BarrageOptions options,

@@ -118,6 +118,7 @@ import java.util.function.IntFunction;
 import java.util.function.ToIntFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -315,7 +316,7 @@ public class BarrageUtil {
      * @return the subscription request payload
      */
     public static byte[] createSubscriptionRequestMetadataBytes(
-            @NotNull final byte[] ticketId,
+            final byte @NotNull [] ticketId,
             @Nullable final BarrageSubscriptionOptions options) {
         return createSubscriptionRequestMetadataBytes(ticketId, options, null, null, false);
     }
@@ -331,7 +332,7 @@ public class BarrageUtil {
      * @return the subscription request payload
      */
     public static byte[] createSubscriptionRequestMetadataBytes(
-            @NotNull final byte[] ticketId,
+            final byte @NotNull [] ticketId,
             @Nullable final BarrageSubscriptionOptions options,
             @Nullable final RowSet viewport,
             @Nullable final BitSet columns,
@@ -354,10 +355,10 @@ public class BarrageUtil {
      * @return the subscription request payload
      */
     public static byte[] createSubscriptionRequestMetadataBytes(
-            @NotNull final byte[] ticketId,
+            final byte @NotNull [] ticketId,
             @Nullable final BarrageSubscriptionOptions options,
             final @Nullable ByteBuffer viewportBuffer,
-            @Nullable final byte[] columns,
+            final byte @Nullable [] columns,
             final boolean reverseViewport,
             final byte requestType) {
 
@@ -404,7 +405,7 @@ public class BarrageUtil {
      * @return the subscription request payload
      */
     public static byte[] createSnapshotRequestMetadataBytes(
-            @NotNull final byte[] ticketId,
+            final byte @NotNull [] ticketId,
             @Nullable final BarrageSnapshotOptions options) {
         return createSnapshotRequestMetadataBytes(ticketId, options, null, null, false);
     }
@@ -420,7 +421,7 @@ public class BarrageUtil {
      * @return the subscription request payload
      */
     static public byte[] createSnapshotRequestMetadataBytes(
-            @NotNull final byte[] ticketId,
+            final byte @NotNull [] ticketId,
             @Nullable final BarrageSnapshotOptions options,
             @Nullable final RowSet viewport,
             @Nullable final BitSet columns,
@@ -469,7 +470,7 @@ public class BarrageUtil {
      * @return the subscription request payload
      */
     public static byte[] createSerializationOptionsMetadataBytes(
-            @NotNull final byte[] ticketId,
+            final byte @NotNull [] ticketId,
             @Nullable final BarrageSubscriptionOptions options) {
         final FlatBufferBuilder metadata = new FlatBufferBuilder();
 
@@ -536,29 +537,39 @@ public class BarrageUtil {
         final Map<String, ColumnEncoding> encodings = new HashMap<>();
         for (final Field field : schema.getFields()) {
             if (field.getType().getTypeID() == ArrowType.ArrowTypeID.RunEndEncoded) {
-                ColumnEncoding encoding = ColumnEncoding.RUN_END_ENCODED_INT32;
                 final List<Field> children = field.getChildren();
-                if (!children.isEmpty() && children.get(0).getType() instanceof ArrowType.Int) {
-                    final int bitWidth = ((ArrowType.Int) children.get(0).getType()).getBitWidth();
-                    if (bitWidth == 16) {
-                        encoding = ColumnEncoding.RUN_END_ENCODED_INT16;
-                    } else if (bitWidth == 64) {
-                        encoding = ColumnEncoding.RUN_END_ENCODED_INT64;
-                    }
+                final int bitWidth = (!children.isEmpty() && children.get(0).getType() instanceof ArrowType.Int)
+                        ? ((ArrowType.Int) children.get(0).getType()).getBitWidth()
+                        : 32; // 32 bit if not specified
+                final ColumnEncoding encoding;
+                if (bitWidth == 16) {
+                    encoding = ColumnEncoding.RUN_END_ENCODED_INT16;
+                } else if (bitWidth == 32) {
+                    encoding = ColumnEncoding.RUN_END_ENCODED_INT32;
+                } else if (bitWidth == 64) {
+                    encoding = ColumnEncoding.RUN_END_ENCODED_INT64;
+                } else {
+                    throw new IllegalArgumentException(
+                            "Unrecognized run-end encoded bit width: " + bitWidth);
                 }
                 encodings.put(field.getName(), encoding);
             } else if (isDictionaryEncoded(field)) {
                 final org.apache.arrow.vector.types.pojo.DictionaryEncoding dict = field.getDictionary();
-                ColumnEncoding encoding = ColumnEncoding.DICTIONARY_ENCODED_INT32;
-                if (dict.getIndexType() instanceof ArrowType.Int) {
-                    final int bitWidth = ((ArrowType.Int) dict.getIndexType()).getBitWidth();
-                    if (bitWidth == 8) {
-                        encoding = ColumnEncoding.DICTIONARY_ENCODED_INT8;
-                    } else if (bitWidth == 16) {
-                        encoding = ColumnEncoding.DICTIONARY_ENCODED_INT16;
-                    } else if (bitWidth == 64) {
-                        encoding = ColumnEncoding.DICTIONARY_ENCODED_INT64;
-                    }
+                final int bitWidth = (dict.getIndexType() instanceof ArrowType.Int)
+                        ? dict.getIndexType().getBitWidth()
+                        : 32; // 32 bit if not specified
+                final ColumnEncoding encoding;
+                if (bitWidth == 8) {
+                    encoding = ColumnEncoding.DICTIONARY_ENCODED_INT8;
+                } else if (bitWidth == 16) {
+                    encoding = ColumnEncoding.DICTIONARY_ENCODED_INT16;
+                } else if (bitWidth == 32) {
+                    encoding = ColumnEncoding.DICTIONARY_ENCODED_INT32;
+                } else if (bitWidth == 64) {
+                    encoding = ColumnEncoding.DICTIONARY_ENCODED_INT64;
+                } else {
+                    throw new IllegalArgumentException(
+                            "Unrecognized dictionary encoded bit width: " + bitWidth);
                 }
                 encodings.put(field.getName(), encoding);
             }
@@ -623,7 +634,7 @@ public class BarrageUtil {
         // Assign sequential dictionary ids to columns that need them. Every dictionary-encoded column
         // gets its own unique id; shared dictionaries (two columns referencing the same id) are not
         // currently expressible through this API because ColumnEncoding carries no id.
-        final java.util.concurrent.atomic.AtomicInteger nextDictId = new java.util.concurrent.atomic.AtomicInteger(0);
+        final AtomicInteger nextDictId = new AtomicInteger(0);
         final List<Field> fields = columnDefinitionsToFields(
                 descriptions, inputTableUpdater, tableDefinition, tableDefinition.getColumns(),
                 ignored -> new HashMap<>(),
@@ -1190,18 +1201,18 @@ public class BarrageUtil {
             if (options != null && options.columnsAsList()) {
                 field = field.getChildren().get(0);
             }
-            Class<?> defaultType = getDefaultType(field, type.getValue());
+            Class<?> defaultType = getDefaultType(field, type.get());
 
-            if (type.getValue() == null) {
+            if (type.get() == null) {
                 type.setValue(defaultType);
-            } else if (type.getValue() == boolean.class || type.getValue() == Boolean.class) {
+            } else if (type.get() == boolean.class || type.get() == Boolean.class) {
                 // force to boxed boolean to allow nullability in the column sources
                 type.setValue(Boolean.class);
             }
-            if (defaultType == ObjectVector.class && componentType.getValue() == null) {
+            if (defaultType == ObjectVector.class && componentType.get() == null) {
                 componentType.setValue(getDefaultType(field.getChildren().get(0), null));
             }
-            columns[i] = ColumnDefinition.fromGenericType(name, type.getValue(), componentType.getValue());
+            columns[i] = ColumnDefinition.fromGenericType(name, type.get(), componentType.get());
         }
 
         final Schema resultSchema;
@@ -1402,19 +1413,22 @@ public class BarrageUtil {
             ConstructSnapshot.callDataSnapshotFunction("BarrageUtil.inferEncodings",
                     ConstructSnapshot.makeSnapshotControl(false, table.isRefreshing(),
                             (NotificationStepSource) table),
-                    (usePrev, beforeClockValue) -> sampleColumnsForREE(table, encodings, usePrev));
+                    (usePrev, beforeClockValue) -> {
+                        sampleColumnsForREE(table, encodings, usePrev);
+                        return true;
+                    });
         }
 
         return encodings;
     }
 
-    static boolean sampleColumnsForREE(
+    static void sampleColumnsForREE(
             @NotNull final Table table,
             @NotNull final Map<String, ColumnEncoding> encodings,
             final boolean usePrev) {
         final RowSet rowSetToUse = usePrev ? table.getRowSet().prev() : table.getRowSet();
         if (rowSetToUse.size() < REE_MIN_SAMPLE_SIZE) {
-            return true;
+            return;
         }
         // Build a single RowSet of REE_MIN_SAMPLE_SIZE chunks evenly distributed across the rowset.
         final int chunkSize = (int) Math.min(REE_MIN_SAMPLE_SIZE, rowSetToUse.size());
@@ -1456,7 +1470,6 @@ public class BarrageUtil {
                 });
             }
         }
-        return true;
     }
 
     public static Field arrowFieldFor(

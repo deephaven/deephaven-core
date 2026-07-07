@@ -142,7 +142,7 @@ public class ArrowToTableConverter {
      *
      * @throws IllegalStateException if the dictionary id is not present in the schema
      */
-    protected void applyDictionaryBatch(@NotNull final BarrageProtoUtil.MessageInfo mi) {
+    protected void addDictionaryBatch(@NotNull final BarrageProtoUtil.MessageInfo mi) {
         final DictionaryBatch dictBatch = (DictionaryBatch) mi.header.header(new DictionaryBatch());
         final long dictId = dictBatch.id();
         final boolean dictIsDelta = dictBatch.isDelta();
@@ -179,7 +179,7 @@ public class ArrowToTableConverter {
 
         final BarrageProtoUtil.MessageInfo mi = parseArrowIpcMessage(ipcMessage);
         if (mi.header.headerType() == MessageHeader.DictionaryBatch) {
-            applyDictionaryBatch(mi);
+            addDictionaryBatch(mi);
             return;
         }
         if (mi.header.headerType() != MessageHeader.RecordBatch) {

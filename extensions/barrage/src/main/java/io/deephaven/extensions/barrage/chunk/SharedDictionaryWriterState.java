@@ -12,8 +12,9 @@ import java.util.List;
 
 /**
  * Shared per-table dictionary state for full subscriptions. Holds the authoritative value-to-index mapping and the
- * ordered list of all values ever added. Multiple {@link FullSubscriptionDictionaryState} instances (one per active
- * full subscriber) delegate their index lookups here, so all full subscribers observe the same index assignments.
+ * ordered list of all values ever added. Multiple {@link FullSubscriptionDictionaryWriterState} instances (one per
+ * active full subscriber) delegate their index lookups here, so all full subscribers observe the same index
+ * assignments.
  *
  * <p>
  * The value list grows monotonically and is never compacted here. Each per-subscriber wrapper tracks an independent
@@ -28,8 +29,8 @@ public final class SharedDictionaryWriterState extends AbstractDictionaryWriterS
     /** All distinct values in insertion order, cleared on {@link #reset()}. */
     private final List<Object> allValues = new ArrayList<>();
     /**
-     * Incremented each time {@link #reset()} is called. {@link FullSubscriptionDictionaryState} instances detect a
-     * reset by comparing their stored generation against this value.
+     * Incremented each time {@link #reset()} is called. {@link FullSubscriptionDictionaryWriterState} instances detect
+     * a reset by comparing their stored generation against this value.
      */
     private int generation = 0;
 
@@ -39,13 +40,10 @@ public final class SharedDictionaryWriterState extends AbstractDictionaryWriterS
     }
 
     @Override
-    protected int nextIndex() {
-        return allValues.size();
-    }
-
-    @Override
-    protected void recordNewValue(@NotNull final Object boxed, final int index) {
+    protected int recordNewValue(@NotNull final Object boxed) {
+        final int index = allValues.size();
         allValues.add(boxed);
+        return index;
     }
 
     public long getDictId() {
@@ -69,9 +67,9 @@ public final class SharedDictionaryWriterState extends AbstractDictionaryWriterS
     }
 
     /**
-     * Discards all accumulated values and increments the generation counter. {@link FullSubscriptionDictionaryState}
-     * instances that reference this shared state will detect the reset on their next query and re-emit an
-     * {@code isDelta=false} DictionaryBatch.
+     * Discards all accumulated values and increments the generation counter.
+     * {@link FullSubscriptionDictionaryWriterState} instances that reference this shared state will detect the reset on
+     * their next query and re-emit an {@code isDelta=false} DictionaryBatch.
      */
     public void reset() {
         generation++;

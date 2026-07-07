@@ -22,7 +22,7 @@ import java.util.List;
  * <p>
  * Thread-safety: not thread-safe; access is serialized by the barrage propagation thread (the UGP cycle).
  */
-public final class FullSubscriptionDictionaryState implements DictionaryWriterState {
+public final class FullSubscriptionDictionaryWriterState implements DictionaryWriterState {
 
     private final SharedDictionaryWriterState shared;
     /**
@@ -55,7 +55,7 @@ public final class FullSubscriptionDictionaryState implements DictionaryWriterSt
      */
     private int lastSeenGeneration;
 
-    public FullSubscriptionDictionaryState(@NotNull final SharedDictionaryWriterState shared) {
+    public FullSubscriptionDictionaryWriterState(@NotNull final SharedDictionaryWriterState shared) {
         this.shared = shared;
         this.lastSeenGeneration = shared.getGeneration();
     }
@@ -157,6 +157,6 @@ public final class FullSubscriptionDictionaryState implements DictionaryWriterSt
     @Override
     public void reset() {
         throw new UnsupportedOperationException(
-                "FullSubscriptionDictionaryState is reset via SharedDictionaryWriterState.reset()");
+                "FullSubscriptionDictionaryWriterState is reset via SharedDictionaryWriterState.reset()");
     }
 }

@@ -23,7 +23,7 @@ import java.util.Collection;
  * {@link LocalDictionaryWriterState} instances that are fully private to this stream.</li>
  * <li><b>Shared-backed</b> ({@link #DictionaryWriterRegistry(Long2ObjectOpenHashMap)} constructor) — for full
  * subscriptions and growing subscriptions targeting a full subscription. Each registry creates
- * {@link FullSubscriptionDictionaryState} instances that delegate index lookups to the table-level
+ * {@link FullSubscriptionDictionaryWriterState} instances that delegate index lookups to the table-level
  * {@link SharedDictionaryWriterState}, so all full subscribers share the same value-to-index mapping.</li>
  * </ul>
  *
@@ -53,8 +53,8 @@ public final class DictionaryWriterRegistry {
     }
 
     /**
-     * If non-null, this registry creates {@link FullSubscriptionDictionaryState} instances backed by the shared states
-     * in this map. If null, it creates standalone {@link LocalDictionaryWriterState} instances.
+     * If non-null, this registry creates {@link FullSubscriptionDictionaryWriterState} instances backed by the shared
+     * states in this map. If null, it creates standalone {@link LocalDictionaryWriterState} instances.
      */
     @Nullable
     private final Long2ObjectOpenHashMap<SharedDictionaryWriterState> sharedStates;
@@ -97,7 +97,7 @@ public final class DictionaryWriterRegistry {
                     shared = new SharedDictionaryWriterState(dictId, valuesChunkType);
                     sharedStates.put(dictId, shared);
                 }
-                state = new FullSubscriptionDictionaryState(shared);
+                state = new FullSubscriptionDictionaryWriterState(shared);
             } else {
                 state = new LocalDictionaryWriterState(dictId, valuesChunkType);
             }

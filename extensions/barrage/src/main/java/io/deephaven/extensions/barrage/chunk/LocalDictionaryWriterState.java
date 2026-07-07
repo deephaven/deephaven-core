@@ -36,13 +36,9 @@ public final class LocalDictionaryWriterState extends AbstractDictionaryWriterSt
     }
 
     @Override
-    protected int nextIndex() {
-        return totalSize++;
-    }
-
-    @Override
-    protected void recordNewValue(@NotNull final Object boxed, final int index) {
+    protected int recordNewValue(@NotNull final Object boxed) {
         deltaValues.add(boxed);
+        return totalSize++;
     }
 
     @Override
