@@ -20,6 +20,7 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.CompletionStageFuture;
+import io.deephaven.util.annotations.TestUseOnly;
 import io.deephaven.util.mutable.MutableInt;
 import org.apache.commons.text.StringEscapeUtils;
 import org.jetbrains.annotations.NotNull;
@@ -127,7 +128,6 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
         return TRACE_INCLUDE_PREFIXES.stream().anyMatch(className::startsWith);
     }
 
-
     private static JavaCompiler compiler;
     private static final AtomicReference<JavaFileManager> fileManagerCache = new AtomicReference<>();
 
@@ -172,7 +172,7 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
      *
      * @param additionalClassPathDir optional directory to add to the compiler's classpath (e.g., groovy bytecode dir)
      */
-    public static QueryCompiler create(@Nullable final File additionalClassPathDir) {
+    public static QueryCompilerImpl create(@Nullable final File additionalClassPathDir) {
         return create(additionalClassPathDir, null);
     }
 
@@ -182,7 +182,8 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
      *
      * @param additionalClassPathDir optional directory to add to the compiler's classpath (e.g., groovy bytecode dir)
      */
-    public static QueryCompiler create(@Nullable final File additionalClassPathDir, @Nullable ClassLoader classLoader) {
+    public static QueryCompilerImpl create(@Nullable final File additionalClassPathDir,
+            @Nullable ClassLoader classLoader) {
         return new QueryCompilerImpl(additionalClassPathDir, classLoader);
     }
 
@@ -190,7 +191,7 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
      * Creates a new compiler that has no extra directory to read from, suitable for unit tests or cases where the
      * existing classpath is sufficient.
      */
-    public static QueryCompiler create() {
+    public static QueryCompilerImpl create() {
         return create(null, null);
     }
 
@@ -205,13 +206,8 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
     /** Queue that receives cleared weak references, allowing us to remove stale cache entries. */
     private final ReferenceQueue<Class<?>> staleQueue = new ReferenceQueue<>();
 
-    /** Drains the stale queue and removes any cache entries whose weak references have been cleared by GC. */
-    private void evictStaleEntries() {
-        KeyedWeakReference ref;
-        while ((ref = (KeyedWeakReference) staleQueue.poll()) != null) {
-            cache.remove(ref.key);
-        }
-    }
+    // This is for test use only, specifying a non-null list causes an error without a specific source to be generated.
+    private List<String> classNamesForAnnotationProcessing;
 
     /**
      * A WeakReference that remembers its cache key, so we can remove the entry when the referent is GC'd.
@@ -304,6 +300,25 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
             log.trace().append("QueryCompiler Class Path: ").append(getClassPath()).append(File.pathSeparator)
                     .append(getJavaClassPath()).endl();
         }
+    }
+
+    /** Drains the stale queue and removes any cache entries whose weak references have been cleared by GC. */
+    private void evictStaleEntries() {
+        KeyedWeakReference ref;
+        while ((ref = (KeyedWeakReference) staleQueue.poll()) != null) {
+            cache.remove(ref.key);
+        }
+    }
+
+    /**
+     * Currently only intended for testing, this method allows specifying annotation processors to run during this
+     * compile.
+     *
+     * @param classNames the annotation processor classes to allow to run
+     */
+    @TestUseOnly
+    public void setClassNamesForAnnotationProcessing(List<String> classNames) {
+        classNamesForAnnotationProcessing = classNames;
     }
 
     @Override
@@ -610,7 +625,7 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
                     }
                 },
                 compilerOptions,
-                null,
+                classNamesForAnnotationProcessing,
                 requests.subList(startInclusive, endExclusive).stream()
                         .map(CompilationRequestAttempt::makeSource)
                         .collect(Collectors.toList()))
