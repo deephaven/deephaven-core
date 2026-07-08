@@ -5,7 +5,6 @@ services:
       - 10000
     volumes:
       - ../data:/data
-      - api-cache:/cache
     environment:
       - START_OPTS=-Xmx4g -DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler -Ddeephaven.console.type=python
     depends_on:
@@ -17,10 +16,6 @@ services:
     volumes:
       - ../data:/data
     command: download
-
-volumes:
-  web-tmp:
-  api-cache:
 
 networks:
   default:
