@@ -21,6 +21,13 @@ import jsinterop.base.JsPropertyMap;
 
 import java.util.Arrays;
 
+/**
+ * A one-click configuration for a chart series.
+ *
+ * <p>
+ * A {@code OneClick} can be used to select values for one or more columns, and uses those values to select one or more
+ * constituent tables from a {@link JsPartitionedTable}.
+ */
 @TsInterface
 @TsName(namespace = "dh.plot")
 public class OneClick {
@@ -59,6 +66,9 @@ public class OneClick {
         }
     }
 
+    /**
+     * The columns that can be used to select a constituent table.
+     */
     @JsProperty
     public Column[] getColumns() {
         JsPropertyMap<Object>[] fakeColumns = new JsPropertyMap[oneClick.getColumnsCount()];
@@ -75,6 +85,15 @@ public class OneClick {
     // return null;
     // }
 
+    /**
+     * Sets the selected value for {@code columnName}.
+     *
+     * <p>
+     * Passing {@code null} clears the selected value for the column.
+     *
+     * @param columnName the column name to set a value for
+     * @param value the selected value, or {@code null} to clear
+     */
     @JsMethod
     public void setValueForColumn(String columnName, Any value) {
         boolean allWereSet = allRequiredValuesSet();
@@ -248,9 +267,15 @@ public class OneClick {
         return currentTable;
     }
 
+    /**
+     * Gets the currently selected value for {@code columnName}.
+     *
+     * @param columnName the column name
+     * @return the selected value, or {@code null} if no value has been set
+     */
     @JsMethod
-    public Any getValueForColumn(String columName) {
-        return values.get(columName);
+    public Any getValueForColumn(String columnName) {
+        return values.get(columnName);
     }
 
     public boolean allValuesSet() {
@@ -261,6 +286,9 @@ public class OneClick {
         return !isRequireAllFiltersToDisplay() || allValuesSet();
     }
 
+    /**
+     * Whether all column values must be set before a table is selected.
+     */
     @JsProperty
     public boolean isRequireAllFiltersToDisplay() {
         return oneClick.getRequireAllFiltersToDisplay();
