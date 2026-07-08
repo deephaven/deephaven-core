@@ -89,7 +89,7 @@ public class DictionaryChunkReader extends BaseChunkReader<WritableChunk<Values>
                 expandIndices(intIndices, dict, out, outOffset, valuesChunkType);
             } finally {
                 // Only close if we allocated a new chunk (non-Int types)
-                if (intIndices != rawIndices && intIndices instanceof WritableIntChunk) {
+                if (intIndices != rawIndices) {
                     ((WritableIntChunk<Values>) intIndices).close();
                 }
             }

@@ -1676,9 +1676,8 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
                     b1Buffers = bufBld.build().toArray();
                     b1Bytes = Arrays.copyOf(baos.peekBuffer(), baos.size());
                 }
-                try (final WritableChunk<Values> deltaChunk = state.buildDeltaChunk()) {
-                    registry.update(0L, deltaChunk, false); // first batch: isDelta=false
-                }
+                // The registry takes ownership of the delta chunk.
+                registry.update(0L, state.buildDeltaChunk(), false); // first batch: isDelta=false
                 state.resetDelta();
 
                 // Write batch 2.
@@ -1696,9 +1695,8 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
                     b2Buffers = bufBld.build().toArray();
                     b2Bytes = Arrays.copyOf(baos.peekBuffer(), baos.size());
                 }
-                try (final WritableChunk<Values> deltaChunk = state.buildDeltaChunk()) {
-                    registry.update(0L, deltaChunk, true); // second batch: isDelta=true (delta append)
-                }
+                // The registry takes ownership of the delta chunk.
+                registry.update(0L, state.buildDeltaChunk(), true); // second batch: isDelta=true (delta append)
                 state.resetDelta();
 
                 // Registry now holds id=0 → [cat, dog, fish, bird]. Decode both batches and validate.
@@ -1722,6 +1720,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
                     new ObjectIdentityValidator<>().assertExpected(b2Src, rt2, null, 0);
                 }
 
+                registry.close();
             } // end try(b2Src)
         } // end try(b1Src)
     }
@@ -2264,9 +2263,8 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
                         col.drainTo(baos);
                     }
                     final long[] buffers = bufBld.build().toArray();
-                    try (final WritableChunk<Values> deltaChunk = state.buildDeltaChunk()) {
-                        registry.update(0L, deltaChunk, false);
-                    }
+                    // The registry takes ownership of the delta chunk.
+                    registry.update(0L, state.buildDeltaChunk(), false);
                     state.resetDelta();
                     final ChunkReader<WritableChunk<Values>> reader =
                             (ChunkReader<WritableChunk<Values>>) (ChunkReader<?>) DefaultChunkReaderFactory.INSTANCE
@@ -2281,6 +2279,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
                         validator.assertExpected(srcData, rt, null, 0);
                     }
                 }
+                registry.close();
             }
 
             // --- empty subset: reader must handle numRows=0 without consulting the registry ---
@@ -2341,13 +2340,13 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
                         }
                         final long[] buffers = bufBld.build().toArray();
                         if (state.hasDelta()) {
-                            try (final WritableChunk<Values> deltaChunk = state.buildDeltaChunk()) {
-                                registry.update(0L, deltaChunk, false);
-                            }
+                            // The registry takes ownership of the delta chunk.
+                            registry.update(0L, state.buildDeltaChunk(), false);
                             state.resetDelta();
                         }
                         final int subsetSize = subset.intSize();
                         if (subsetSize == 0) {
+                            registry.close();
                             return;
                         }
                         final ChunkReader<WritableChunk<Values>> reader =
@@ -2364,6 +2363,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
                         }
                     }
                 }
+                registry.close();
             }
 
         } // end try(srcData)

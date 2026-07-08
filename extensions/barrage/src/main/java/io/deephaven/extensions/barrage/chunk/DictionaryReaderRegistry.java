@@ -5,6 +5,7 @@ package io.deephaven.extensions.barrage.chunk;
 
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.util.SafeCloseable;
 import java.util.HashMap;
 import java.util.Map;
 import org.jetbrains.annotations.NotNull;
@@ -22,7 +23,7 @@ import org.jetbrains.annotations.Nullable;
  * <p>
  * Thread-safety: not thread-safe; single-threaded stream reading is assumed.
  */
-public final class DictionaryReaderRegistry {
+public final class DictionaryReaderRegistry implements SafeCloseable {
 
     // GWT-friendly maps (vs. Long2ObjectOpenHashMap)
     private final Map<Long, DictionaryReaderValues> dictValues = new HashMap<>();
@@ -31,7 +32,8 @@ public final class DictionaryReaderRegistry {
      * Installs or updates the dictionary for {@code dictId}.
      *
      * @param dictId the Arrow dictionary id
-     * @param valuesChunk the decoded values for this batch; the registry takes logical ownership
+     * @param valuesChunk the decoded values for this batch; the registry takes ownership and retains the chunk without
+     *        copying, so the caller must not close or reuse it
      * @param isDelta {@code false} to replace the whole dictionary; {@code true} to append
      */
     public void update(final long dictId, @NotNull final WritableChunk<Values> valuesChunk, final boolean isDelta) {
@@ -55,5 +57,12 @@ public final class DictionaryReaderRegistry {
     @Nullable
     public DictionaryReaderValues get(final long dictId) {
         return dictValues.get(dictId);
+    }
+
+    /** Releases all retained value chunks. */
+    @Override
+    public void close() {
+        dictValues.values().forEach(DictionaryReaderValues::close);
+        dictValues.clear();
     }
 }

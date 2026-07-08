@@ -198,10 +198,10 @@ public class WebBarrageMessageReader {
             if (valuesReader == null) {
                 throw new IOException("No values reader for dictionary id " + dictId);
             }
-            try (final WritableChunk<Values> valuesChunk =
-                    valuesReader.readChunk(dictFieldNodeIter, dictBufIter, ois, null, 0, 0)) {
-                dictRegistry.update(dictId, valuesChunk, isDelta);
-            }
+            // The registry takes ownership of the decoded chunk; do not close it here.
+            dictRegistry.update(dictId,
+                    valuesReader.readChunk(dictFieldNodeIter, dictBufIter, ois, null, 0, 0),
+                    isDelta);
             return null;
         }
         if (headerType != MessageHeader.RecordBatch) {

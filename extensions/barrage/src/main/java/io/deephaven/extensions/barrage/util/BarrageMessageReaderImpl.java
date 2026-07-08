@@ -67,9 +67,14 @@ public class BarrageMessageReaderImpl implements BarrageMessageReader {
 
     private BarrageMessage msg = null;
 
-    private final ChunkReader.Factory chunkReaderFactory = DefaultChunkReaderFactory.INSTANCE;
     private final List<ChunkReader<?>> readers = new ArrayList<>();
     private final DictionaryReaderRegistry dictionaryRegistry = new DictionaryReaderRegistry();
+
+    @Override
+    public void close() {
+        dictionaryRegistry.close();
+    }
+
     private final Map<Long, ChunkReader<? extends WritableChunk<Values>>> dictValuesReaders = new HashMap<>();
 
     public BarrageMessageReaderImpl() {
@@ -256,10 +261,10 @@ public class BarrageMessageReaderImpl implements BarrageMessageReader {
                         }
                         final PrimitiveIterator.OfLong bufferInfoIter = Arrays.stream(bufferInfo).iterator();
 
-                        try (final WritableChunk<Values> valuesChunk =
-                                valuesReader.readChunk(fieldNodeIter, bufferInfoIter, ois, null, 0, 0)) {
-                            dictionaryRegistry.update(dictId, valuesChunk, dictIsDelta);
-                        }
+                        // The registry takes ownership of the decoded chunk; do not close it here.
+                        dictionaryRegistry.update(dictId,
+                                valuesReader.readChunk(fieldNodeIter, bufferInfoIter, ois, null, 0, 0),
+                                dictIsDelta);
                     }
                     continue;
                 }

@@ -157,9 +157,11 @@ public class ArrowToTableConverter {
                 new FlatBufferIteratorAdapter<>(valuesBatch.nodesLength(),
                         i -> new ChunkWriter.FieldNodeInfo(valuesBatch.nodes(i)));
         final PrimitiveIterator.OfLong bufferInfoIter = extractBufferInfo(valuesBatch);
-        try (final WritableChunk<Values> valuesChunk =
-                valuesReader.readChunk(fieldNodeIter, bufferInfoIter, mi.inputStream, null, 0, 0)) {
-            dictionaryRegistry.update(dictId, valuesChunk, dictIsDelta);
+        try {
+            // The registry takes ownership of the decoded chunk; do not close it here.
+            dictionaryRegistry.update(dictId,
+                    valuesReader.readChunk(fieldNodeIter, bufferInfoIter, mi.inputStream, null, 0, 0),
+                    dictIsDelta);
         } catch (final IOException e) {
             throw new UncheckedDeephavenException("Failed to decode DictionaryBatch id=" + dictId, e);
         }
@@ -208,6 +210,8 @@ public class ArrowToTableConverter {
         if (completed) {
             throw new IllegalStateException("Conversion cannot be completed twice");
         }
+        // All record batches have been decoded; the retained dictionary value chunks are no longer needed.
+        dictionaryRegistry.close();
         completed = true;
     }
 

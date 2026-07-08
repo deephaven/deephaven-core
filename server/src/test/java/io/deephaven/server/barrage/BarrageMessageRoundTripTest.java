@@ -82,6 +82,8 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
     private Deque<Throwable> exceptions;
     private UpdateSourceCombiner updateSourceCombiner;
     private boolean useDeephavenNulls;
+    /** Message readers retain dictionary value chunks; they must be closed before the leak check in tearDown. */
+    private List<BarrageMessageReaderImpl> openMessageReaders;
 
     private TestComponent daggerRoot;
 
@@ -108,6 +110,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
         scheduler = new TestControlledScheduler();
         exceptions = new ArrayDeque<>();
         useDeephavenNulls = true;
+        openMessageReaders = new ArrayList<>();
 
         daggerRoot = DaggerBarrageMessageRoundTripTest_TestComponent
                 .builder()
@@ -117,6 +120,8 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
 
     @Override
     public void tearDown() throws Exception {
+        openMessageReaders.forEach(BarrageMessageReaderImpl::close);
+        openMessageReaders = null;
         updateSourceCombiner = null;
         scheduler = null;
         exceptions = null;
@@ -210,10 +215,12 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
             final BarrageSubscriptionOptions options = BarrageSubscriptionOptions.builder()
                     .useDeephavenNulls(useDeephavenNulls)
                     .build();
+            final BarrageMessageReaderImpl messageReader =
+                    new BarrageMessageReaderImpl(barrageTable.getDeserializationTmConsumer());
+            openMessageReaders.add(messageReader);
             final BarrageDataMarshaller marshaller = new BarrageDataMarshaller(
                     options, schema.computeWireChunkTypes(), schema.computeWireTypes(),
-                    schema.computeWireComponentTypes(),
-                    new BarrageMessageReaderImpl(barrageTable.getDeserializationTmConsumer()));
+                    schema.computeWireComponentTypes(), messageReader);
             this.dummyObserver = new DummyObserver(marshaller, commandQueue);
 
             if (viewport == null) {
@@ -1712,8 +1719,8 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
      * with an Arrow {@link DictionaryEncoding} (Int32 index, dict id 0).
      * <p>
      * Accepts a {@link TableDefinition} rather than a live {@link Table} to avoid calling
-     * {@link Table#getAttributes()}, which would publish the attribute map and prevent subsequent
-     * {@link Table#setAttribute} calls.
+     * {@link Table#getAttributes()}, which would publish the attribute map and prevent subsequent modification of the
+     * attributes.
      */
     private static Schema buildDictEncodedSchema(final TableDefinition def, final String dictColumnName) {
         // Build the natural schema using an empty attributes map so getAttributes() is never called on the live table.
@@ -1734,7 +1741,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
 
     /**
      * Builds a schema where {@code col1Name} and {@code col2Name} both carry {@link DictionaryEncoding} with the same
-     * dictionary id (0). Two columns sharing a single id means a single {@link DictionaryBatch} per update covers both.
+     * dictionary id (0). Two columns sharing a single id means a single {@code DictionaryBatch} per update covers both.
      */
     private static Schema buildSharedDictEncodedSchema(
             final TableDefinition def, final String col1Name, final String col2Name) {
@@ -1840,9 +1847,9 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
 
     /**
      * Verifies that two columns sharing the same Arrow dictionary id (id=0) are correctly encoded and decoded through a
-     * full ticking subscription. The shared {@link DictionaryWriterRegistry} must emit exactly one
-     * {@code DictionaryBatch} per id per update even though two columns reference it, and both columns must decode to
-     * their correct values.
+     * full ticking subscription. The shared {@link io.deephaven.extensions.barrage.chunk.DictionaryWriterRegistry} must
+     * emit exactly one {@code DictionaryBatch} per id per update even though two columns reference it, and both columns
+     * must decode to their correct values.
      */
     public void testDictionaryEncodedSharedIdAcrossColumns() {
         final int steps = 20;
@@ -2019,7 +2026,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
      * that contain previously-unseen dictionary values.
      *
      * <p>
-     * This exercises the code path in {@link BarrageMessageProducer#propagateSnapshotForSubscription} that is reached
+     * This exercises the code path in {@code BarrageMessageProducer#propagateSnapshotForSubscription} that is reached
      * after {@link RemoteClient#setViewport} triggers a new snapshot: the snapshot uses the subscription's private
      * {@link io.deephaven.extensions.barrage.chunk.DictionaryWriterRegistry}, which must emit a fresh
      * {@code isDelta=false} DictionaryBatch for the new window of values.
