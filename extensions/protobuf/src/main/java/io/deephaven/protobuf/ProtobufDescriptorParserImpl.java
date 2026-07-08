@@ -76,6 +76,16 @@ class ProtobufDescriptorParserImpl {
         return new DescriptorContext(FieldPath.empty(), descriptor).functions();
     }
 
+    private static String describeCycle(FieldPath path, Descriptor descriptor) {
+        final StringBuilder sb = new StringBuilder();
+        for (FieldDescriptor fd : path.path()) {
+            sb.append('`').append(fd.getContainingType().getFullName()).append("` \"").append(fd.getName())
+                    .append("\" -> ");
+        }
+        sb.append('`').append(descriptor.getFullName()).append('`');
+        return sb.toString();
+    }
+
     private class DescriptorContext {
         private final FieldPath fieldPath;
         private final Descriptor descriptor;
@@ -92,16 +102,6 @@ class ProtobufDescriptorParserImpl {
                             ProtobufDescriptorParserOptions.class.getName()));
                 }
             }
-        }
-
-        private static String describeCycle(FieldPath path, Descriptor descriptor) {
-            final StringBuilder sb = new StringBuilder();
-            for (FieldDescriptor fd : path.path()) {
-                sb.append('`').append(fd.getContainingType().getFullName()).append("` \"").append(fd.getName())
-                        .append("\" -> ");
-            }
-            sb.append('`').append(descriptor.getFullName()).append('`');
-            return sb.toString();
         }
 
         private ProtobufFunctions functions() {
