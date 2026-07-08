@@ -74,7 +74,8 @@ public class LoginCredentials {
     }
 
     /**
-     * The token type, such as {@code Bearer}.
+     * The token type, such as {@link CoreClient#LOGIN_TYPE_PASSWORD}, {@link CoreClient#LOGIN_TYPE_ANONYMOUS}, or the
+     * name of a custom authentication handler.
      */
     @JsProperty
     @JsNullable

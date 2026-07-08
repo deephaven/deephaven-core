@@ -92,10 +92,9 @@ public class JsFileContents {
 
     /**
      * Reads the contents as an <a href=
-     * "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer">ArrayBuffer</a>.
-     *
-     * @return A promise that resolves to the file contents as an <a href=
      *         "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer">ArrayBuffer</a>.
+     *
+     * @return A promise that resolves to the file contents as an {@code ArrayBuffer}.
      */
     @JsMethod
     public Promise<ArrayBuffer> arrayBuffer() {
