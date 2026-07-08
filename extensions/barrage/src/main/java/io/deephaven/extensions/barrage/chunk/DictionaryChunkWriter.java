@@ -30,8 +30,8 @@ import java.io.OutputStream;
  *
  * <p>
  * Multiple columns may share the same dictionary id; they will all reference the same {@link DictionaryWriterState}
- * instance (managed by a {@code DictionaryWriterStateManager} held on the stream view). A single
- * {@code DictionaryBatch} is emitted per id per update, covering all new values introduced by any sharing column.
+ * instance (managed by a {@link DictionaryWriterRegistry} held on the stream view). A single {@code DictionaryBatch} is
+ * emitted per id per update, covering all new values introduced by any sharing column.
  */
 public class DictionaryChunkWriter extends BaseChunkWriter<Chunk<Values>> {
     private static final String DEBUG_NAME = "DictionaryChunkWriter";
