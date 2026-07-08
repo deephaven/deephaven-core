@@ -157,11 +157,9 @@ public class ArrowToTableConverter {
                 new FlatBufferIteratorAdapter<>(valuesBatch.nodesLength(),
                         i -> new ChunkWriter.FieldNodeInfo(valuesBatch.nodes(i)));
         final PrimitiveIterator.OfLong bufferInfoIter = extractBufferInfo(valuesBatch);
-        try {
-            // The registry takes ownership of the decoded chunk; do not close it here.
-            dictionaryRegistry.update(dictId,
-                    valuesReader.readChunk(fieldNodeIter, bufferInfoIter, mi.inputStream, null, 0, 0),
-                    dictIsDelta);
+        try (final WritableChunk<Values> valuesChunk =
+                valuesReader.readChunk(fieldNodeIter, bufferInfoIter, mi.inputStream, null, 0, 0)) {
+            dictionaryRegistry.update(dictId, valuesChunk, dictIsDelta);
         } catch (final IOException e) {
             throw new UncheckedDeephavenException("Failed to decode DictionaryBatch id=" + dictId, e);
         }

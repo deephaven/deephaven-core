@@ -1676,8 +1676,9 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
                     b1Buffers = bufBld.build().toArray();
                     b1Bytes = Arrays.copyOf(baos.peekBuffer(), baos.size());
                 }
-                // The registry takes ownership of the delta chunk.
-                registry.update(0L, state.buildDeltaChunk(), false); // first batch: isDelta=false
+                try (final WritableChunk<Values> deltaChunk = state.buildDeltaChunk()) {
+                    registry.update(0L, deltaChunk, false); // first batch: isDelta=false
+                }
                 state.resetDelta();
 
                 // Write batch 2.
@@ -1695,8 +1696,9 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
                     b2Buffers = bufBld.build().toArray();
                     b2Bytes = Arrays.copyOf(baos.peekBuffer(), baos.size());
                 }
-                // The registry takes ownership of the delta chunk.
-                registry.update(0L, state.buildDeltaChunk(), true); // second batch: isDelta=true (delta append)
+                try (final WritableChunk<Values> deltaChunk = state.buildDeltaChunk()) {
+                    registry.update(0L, deltaChunk, true); // second batch: isDelta=true (delta append)
+                }
                 state.resetDelta();
 
                 // Registry now holds id=0 → [cat, dog, fish, bird]. Decode both batches and validate.
@@ -2263,8 +2265,9 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
                         col.drainTo(baos);
                     }
                     final long[] buffers = bufBld.build().toArray();
-                    // The registry takes ownership of the delta chunk.
-                    registry.update(0L, state.buildDeltaChunk(), false);
+                    try (final WritableChunk<Values> deltaChunk = state.buildDeltaChunk()) {
+                        registry.update(0L, deltaChunk, false);
+                    }
                     state.resetDelta();
                     final ChunkReader<WritableChunk<Values>> reader =
                             (ChunkReader<WritableChunk<Values>>) (ChunkReader<?>) DefaultChunkReaderFactory.INSTANCE
@@ -2340,8 +2343,9 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
                         }
                         final long[] buffers = bufBld.build().toArray();
                         if (state.hasDelta()) {
-                            // The registry takes ownership of the delta chunk.
-                            registry.update(0L, state.buildDeltaChunk(), false);
+                            try (final WritableChunk<Values> deltaChunk = state.buildDeltaChunk()) {
+                                registry.update(0L, deltaChunk, false);
+                            }
                             state.resetDelta();
                         }
                         final int subsetSize = subset.intSize();

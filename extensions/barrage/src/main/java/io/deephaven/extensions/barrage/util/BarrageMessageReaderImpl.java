@@ -261,10 +261,10 @@ public class BarrageMessageReaderImpl implements BarrageMessageReader {
                         }
                         final PrimitiveIterator.OfLong bufferInfoIter = Arrays.stream(bufferInfo).iterator();
 
-                        // The registry takes ownership of the decoded chunk; do not close it here.
-                        dictionaryRegistry.update(dictId,
-                                valuesReader.readChunk(fieldNodeIter, bufferInfoIter, ois, null, 0, 0),
-                                dictIsDelta);
+                        try (final WritableChunk<Values> valuesChunk =
+                                valuesReader.readChunk(fieldNodeIter, bufferInfoIter, ois, null, 0, 0)) {
+                            dictionaryRegistry.update(dictId, valuesChunk, dictIsDelta);
+                        }
                     }
                     continue;
                 }

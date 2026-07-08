@@ -12,8 +12,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class DictionaryReaderRegistryTest {
 
-    // Note: the registry takes ownership of chunks passed to update(); the caller must not close them. The
-    // registry's close() releases everything it retained.
+    // Note: update() copies values into the registry's internal storage; the caller retains ownership of the chunks
+    // it passes in and remains responsible for closing them.
 
     @Test
     public void testGetUnknownIdReturnsNull() {
@@ -25,8 +25,8 @@ public class DictionaryReaderRegistryTest {
 
     @Test
     public void testUpdateReplaceInstallsNewDictionary() {
-        try (final DictionaryReaderRegistry registry = new DictionaryReaderRegistry()) {
-            final WritableObjectChunk<Object, Values> chunk = WritableObjectChunk.makeWritableChunk(3);
+        try (final DictionaryReaderRegistry registry = new DictionaryReaderRegistry();
+                final WritableObjectChunk<Object, Values> chunk = WritableObjectChunk.makeWritableChunk(3)) {
             chunk.set(0, "cat");
             chunk.set(1, "dog");
             chunk.set(2, "fish");
@@ -44,14 +44,14 @@ public class DictionaryReaderRegistryTest {
 
     @Test
     public void testUpdateDeltaAppendsToExisting() {
-        try (final DictionaryReaderRegistry registry = new DictionaryReaderRegistry()) {
-            final WritableObjectChunk<Object, Values> chunk1 = WritableObjectChunk.makeWritableChunk(2);
+        try (final DictionaryReaderRegistry registry = new DictionaryReaderRegistry();
+                final WritableObjectChunk<Object, Values> chunk1 = WritableObjectChunk.makeWritableChunk(2);
+                final WritableObjectChunk<Object, Values> chunk2 = WritableObjectChunk.makeWritableChunk(2)) {
             chunk1.set(0, "alpha");
             chunk1.set(1, "beta");
             chunk1.setSize(2);
             registry.update(0L, chunk1, false);
 
-            final WritableObjectChunk<Object, Values> chunk2 = WritableObjectChunk.makeWritableChunk(2);
             chunk2.set(0, "gamma");
             chunk2.set(1, "delta");
             chunk2.setSize(2);
@@ -69,15 +69,15 @@ public class DictionaryReaderRegistryTest {
 
     @Test
     public void testUpdateReplaceOverwritesPreviousDictionary() {
-        try (final DictionaryReaderRegistry registry = new DictionaryReaderRegistry()) {
-            final WritableObjectChunk<Object, Values> chunk1 = WritableObjectChunk.makeWritableChunk(2);
+        try (final DictionaryReaderRegistry registry = new DictionaryReaderRegistry();
+                final WritableObjectChunk<Object, Values> chunk1 = WritableObjectChunk.makeWritableChunk(2);
+                final WritableObjectChunk<Object, Values> chunk2 = WritableObjectChunk.makeWritableChunk(1)) {
             chunk1.set(0, "old1");
             chunk1.set(1, "old2");
             chunk1.setSize(2);
             registry.update(5L, chunk1, false);
 
             // Replace (isDelta=false) should discard the old values.
-            final WritableObjectChunk<Object, Values> chunk2 = WritableObjectChunk.makeWritableChunk(1);
             chunk2.set(0, "new1");
             chunk2.setSize(1);
             registry.update(5L, chunk2, false);
@@ -91,14 +91,14 @@ public class DictionaryReaderRegistryTest {
 
     @Test
     public void testMultipleIdsAreIndependent() {
-        try (final DictionaryReaderRegistry registry = new DictionaryReaderRegistry()) {
-            final WritableIntChunk<Values> chunkA = WritableIntChunk.makeWritableChunk(2);
+        try (final DictionaryReaderRegistry registry = new DictionaryReaderRegistry();
+                final WritableIntChunk<Values> chunkA = WritableIntChunk.makeWritableChunk(2);
+                final WritableIntChunk<Values> chunkB = WritableIntChunk.makeWritableChunk(2)) {
             chunkA.set(0, 10);
             chunkA.set(1, 20);
             chunkA.setSize(2);
             registry.update(0L, chunkA, false);
 
-            final WritableIntChunk<Values> chunkB = WritableIntChunk.makeWritableChunk(2);
             chunkB.set(0, 30);
             chunkB.set(1, 40);
             chunkB.setSize(2);
@@ -120,9 +120,9 @@ public class DictionaryReaderRegistryTest {
 
     @Test
     public void testDeltaOnNewIdActsLikeInitialLoad() {
-        try (final DictionaryReaderRegistry registry = new DictionaryReaderRegistry()) {
+        try (final DictionaryReaderRegistry registry = new DictionaryReaderRegistry();
+                final WritableObjectChunk<Object, Values> chunk = WritableObjectChunk.makeWritableChunk(2)) {
             // Sending isDelta=true for a brand-new id should still populate the dict.
-            final WritableObjectChunk<Object, Values> chunk = WritableObjectChunk.makeWritableChunk(2);
             chunk.set(0, "x");
             chunk.set(1, "y");
             chunk.setSize(2);
@@ -138,8 +138,8 @@ public class DictionaryReaderRegistryTest {
 
     @Test
     public void testNullValuesRoundTripAsNull() {
-        try (final DictionaryReaderRegistry registry = new DictionaryReaderRegistry()) {
-            final WritableObjectChunk<Object, Values> chunk = WritableObjectChunk.makeWritableChunk(3);
+        try (final DictionaryReaderRegistry registry = new DictionaryReaderRegistry();
+                final WritableObjectChunk<Object, Values> chunk = WritableObjectChunk.makeWritableChunk(3)) {
             chunk.set(0, "a");
             chunk.set(1, null);
             chunk.set(2, "b");
@@ -152,6 +152,60 @@ public class DictionaryReaderRegistryTest {
             assertThat(dict.<String>getObject(0)).isEqualTo("a");
             assertThat(dict.<String>getObject(1)).isNull();
             assertThat(dict.<String>getObject(2)).isEqualTo("b");
+        }
+    }
+
+    @Test
+    public void testAppendAcrossPageBoundary() {
+        final int pageCapacity = DictionaryReaderValues.PAGE_CAPACITY;
+        final int totalSize = pageCapacity + pageCapacity / 2;
+        try (final DictionaryReaderRegistry registry = new DictionaryReaderRegistry();
+                final WritableIntChunk<Values> chunk1 = WritableIntChunk.makeWritableChunk(pageCapacity - 7);
+                final WritableIntChunk<Values> chunk2 =
+                        WritableIntChunk.makeWritableChunk(totalSize - (pageCapacity - 7))) {
+            // The first chunk stops just short of the page boundary; the second spans it.
+            for (int ii = 0; ii < chunk1.size(); ++ii) {
+                chunk1.set(ii, ii);
+            }
+            registry.update(0L, chunk1, false);
+            for (int ii = 0; ii < chunk2.size(); ++ii) {
+                chunk2.set(ii, chunk1.size() + ii);
+            }
+            registry.update(0L, chunk2, true);
+
+            final DictionaryReaderValues dict = registry.get(0L);
+            assertThat(dict).isNotNull();
+            assertThat(dict.size()).isEqualTo(totalSize);
+            assertThat(dict.getInt(0)).isEqualTo(0);
+            assertThat(dict.getInt(pageCapacity - 1)).isEqualTo(pageCapacity - 1);
+            assertThat(dict.getInt(pageCapacity)).isEqualTo(pageCapacity);
+            assertThat(dict.getInt(totalSize - 1)).isEqualTo(totalSize - 1);
+        }
+    }
+
+    @Test
+    public void testReplaceAfterMultiPageDictionary() {
+        final int pageCapacity = DictionaryReaderValues.PAGE_CAPACITY;
+        try (final DictionaryReaderRegistry registry = new DictionaryReaderRegistry();
+                final WritableIntChunk<Values> bigChunk = WritableIntChunk.makeWritableChunk(pageCapacity + 100);
+                final WritableIntChunk<Values> smallChunk = WritableIntChunk.makeWritableChunk(2)) {
+            for (int ii = 0; ii < bigChunk.size(); ++ii) {
+                bigChunk.set(ii, ii);
+            }
+            registry.update(0L, bigChunk, false);
+            assertThat(registry.get(0L).size()).isEqualTo(pageCapacity + 100);
+
+            // Replace should trim back to a single page and expose only the new values.
+            smallChunk.set(0, -1);
+            smallChunk.set(1, -2);
+            smallChunk.setSize(2);
+            registry.update(0L, smallChunk, false);
+
+            final DictionaryReaderValues dict = registry.get(0L);
+            assertThat(dict).isNotNull();
+            assertThat(dict.size()).isEqualTo(2);
+            assertThat(dict.getInt(0)).isEqualTo(-1);
+            assertThat(dict.getInt(1)).isEqualTo(-2);
         }
     }
 }
