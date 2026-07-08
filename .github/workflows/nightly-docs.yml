@@ -2,6 +2,8 @@ name: Docs nightly checks
 
 # Controls when the action will run.
 on:
+  pull_request:
+    branches: [main]
   schedule:
     #2AM EST == 6AM UTC weekdays (Mon-Fri)
     - cron: '0 6 * * 1-5'
@@ -9,7 +11,7 @@ on:
 jobs:
   snapshots:
     runs-on: ubuntu-24.04
-    if: github.ref == 'refs/heads/main' && github.repository_owner == 'deephaven' # Don't run on forks that haven't disabled actions
+#    if: github.ref == 'refs/heads/main' && github.repository_owner == 'deephaven' # Don't run on forks that haven't disabled actions
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -30,7 +32,7 @@ jobs:
 
   validation:
     runs-on: ubuntu-24.04
-    if: github.ref == 'refs/heads/main' && github.repository_owner == 'deephaven' # Don't run on forks that haven't disabled actions
+#    if: github.ref == 'refs/heads/main' && github.repository_owner == 'deephaven' # Don't run on forks that haven't disabled actions
     steps:
     - name: Checkout
       uses: actions/checkout@v5
@@ -53,19 +55,19 @@ jobs:
         name: validator-error-logs
         path: docs/validator-results/
 
-  slack-notify:
-    runs-on: ubuntu-24.04
-    needs: [snapshots, validation]
-    if: failure() && github.ref == 'refs/heads/main' && github.repository_owner == 'deephaven'
-    steps:
-      - name: Slack Notification
-        uses: slackapi/slack-github-action@v3.0.3
-        with:
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL_DEVREL}}
-          webhook-type: webhook-trigger
-          payload: |
-            {
-              "repository": "${{ github.repository }}",
-              "message": "${{ github.workflow }}/${{ github.job }} nightly check failure",
-              "link": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-            }
+#  slack-notify:
+#    runs-on: ubuntu-24.04
+#    needs: [snapshots, validation]
+#    if: failure() && github.ref == 'refs/heads/main' && github.repository_owner == 'deephaven'
+#    steps:
+#      - name: Slack Notification
+#        uses: slackapi/slack-github-action@v3.0.3
+#        with:
+#          webhook: ${{ secrets.SLACK_WEBHOOK_URL_DEVREL}}
+#          webhook-type: webhook-trigger
+#          payload: |
+#            {
+#              "repository": "${{ github.repository }}",
+#              "message": "${{ github.workflow }}/${{ github.job }} nightly check failure",
+#              "link": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+#            }
