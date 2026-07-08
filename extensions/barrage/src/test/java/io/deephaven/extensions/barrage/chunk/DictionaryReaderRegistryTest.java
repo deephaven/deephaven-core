@@ -156,14 +156,14 @@ public class DictionaryReaderRegistryTest {
     }
 
     @Test
-    public void testAppendAcrossPageBoundary() {
-        final int pageCapacity = DictionaryReaderValues.PAGE_CAPACITY;
-        final int totalSize = pageCapacity + pageCapacity / 2;
+    public void testAppendAcrossChunkBoundary() {
+        final int chunkCapacity = DictionaryReaderValues.CHUNK_CAPACITY;
+        final int totalSize = chunkCapacity + chunkCapacity / 2;
         try (final DictionaryReaderRegistry registry = new DictionaryReaderRegistry();
-                final WritableIntChunk<Values> chunk1 = WritableIntChunk.makeWritableChunk(pageCapacity - 7);
+                final WritableIntChunk<Values> chunk1 = WritableIntChunk.makeWritableChunk(chunkCapacity - 7);
                 final WritableIntChunk<Values> chunk2 =
-                        WritableIntChunk.makeWritableChunk(totalSize - (pageCapacity - 7))) {
-            // The first chunk stops just short of the page boundary; the second spans it.
+                        WritableIntChunk.makeWritableChunk(totalSize - (chunkCapacity - 7))) {
+            // The first chunk stops just short of the chunk boundary; the second spans it.
             for (int ii = 0; ii < chunk1.size(); ++ii) {
                 chunk1.set(ii, ii);
             }
@@ -177,25 +177,25 @@ public class DictionaryReaderRegistryTest {
             assertThat(dict).isNotNull();
             assertThat(dict.size()).isEqualTo(totalSize);
             assertThat(dict.getInt(0)).isEqualTo(0);
-            assertThat(dict.getInt(pageCapacity - 1)).isEqualTo(pageCapacity - 1);
-            assertThat(dict.getInt(pageCapacity)).isEqualTo(pageCapacity);
+            assertThat(dict.getInt(chunkCapacity - 1)).isEqualTo(chunkCapacity - 1);
+            assertThat(dict.getInt(chunkCapacity)).isEqualTo(chunkCapacity);
             assertThat(dict.getInt(totalSize - 1)).isEqualTo(totalSize - 1);
         }
     }
 
     @Test
-    public void testReplaceAfterMultiPageDictionary() {
-        final int pageCapacity = DictionaryReaderValues.PAGE_CAPACITY;
+    public void testReplaceAfterMultiChunkDictionary() {
+        final int chunkCapacity = DictionaryReaderValues.CHUNK_CAPACITY;
         try (final DictionaryReaderRegistry registry = new DictionaryReaderRegistry();
-                final WritableIntChunk<Values> bigChunk = WritableIntChunk.makeWritableChunk(pageCapacity + 100);
+                final WritableIntChunk<Values> bigChunk = WritableIntChunk.makeWritableChunk(chunkCapacity + 100);
                 final WritableIntChunk<Values> smallChunk = WritableIntChunk.makeWritableChunk(2)) {
             for (int ii = 0; ii < bigChunk.size(); ++ii) {
                 bigChunk.set(ii, ii);
             }
             registry.update(0L, bigChunk, false);
-            assertThat(registry.get(0L).size()).isEqualTo(pageCapacity + 100);
+            assertThat(registry.get(0L).size()).isEqualTo(chunkCapacity + 100);
 
-            // Replace should trim back to a single page and expose only the new values.
+            // Replace should release the internal chunks and expose only the new values.
             smallChunk.set(0, -1);
             smallChunk.set(1, -2);
             smallChunk.setSize(2);
