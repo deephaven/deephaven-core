@@ -43,7 +43,9 @@ import io.deephaven.protobuf.test.AnIntIntMap;
 import io.deephaven.protobuf.test.AnyWrapper;
 import io.deephaven.protobuf.test.ByteWrapper;
 import io.deephaven.protobuf.test.ByteWrapperRepeated;
+import io.deephaven.protobuf.test.CycleA;
 import io.deephaven.protobuf.test.FieldMaskWrapper;
+import io.deephaven.protobuf.test.LollypopCycle;
 import io.deephaven.protobuf.test.MultiRepeated;
 import io.deephaven.protobuf.test.NestedArrays;
 import io.deephaven.protobuf.test.NestedByteWrapper;
@@ -56,6 +58,7 @@ import io.deephaven.protobuf.test.RepeatedMessage;
 import io.deephaven.protobuf.test.RepeatedMessage.Person;
 import io.deephaven.protobuf.test.RepeatedTimestamp;
 import io.deephaven.protobuf.test.RepeatedWrappers;
+import io.deephaven.protobuf.test.SelfReferential;
 import io.deephaven.protobuf.test.TheWrappers;
 import io.deephaven.protobuf.test.TwoTs;
 import io.deephaven.protobuf.test.UnionType;
@@ -81,6 +84,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class ProtobufDescriptorParserTest {
 
@@ -1574,6 +1578,36 @@ public class ProtobufDescriptorParserTest {
                                 .build(), new String[][] {new String[0], new String[] {"Foo", "Bar"}});
                     }
                 });
+    }
+
+    @Test
+    void selfReferentialMessageThrows() {
+        assertThatThrownBy(() -> ProtobufDescriptorParser.parse(SelfReferential.getDescriptor(),
+                ProtobufDescriptorParserOptions.defaults()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Cyclical protobuf message descriptor detected")
+                .hasMessageContaining(
+                        "[`io.deephaven.protobuf.test.SelfReferential` \"child\" -> `io.deephaven.protobuf.test.SelfReferential`]");
+    }
+
+    @Test
+    void indirectCycleMessageThrows() {
+        assertThatThrownBy(() -> ProtobufDescriptorParser.parse(CycleA.getDescriptor(),
+                ProtobufDescriptorParserOptions.defaults()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Cyclical protobuf message descriptor detected")
+                .hasMessageContaining(
+                        "[`io.deephaven.protobuf.test.CycleA` \"b\" -> `io.deephaven.protobuf.test.CycleB` \"a\" -> `io.deephaven.protobuf.test.CycleA`]");
+    }
+
+    @Test
+    void lollypopCycleMessageThrows() {
+        assertThatThrownBy(() -> ProtobufDescriptorParser.parse(LollypopCycle.getDescriptor(),
+                ProtobufDescriptorParserOptions.defaults()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Cyclical protobuf message descriptor detected")
+                .hasMessageContaining(
+                        "[`io.deephaven.protobuf.test.LollypopCycle` \"child\" -> `io.deephaven.protobuf.test.CycleA` \"b\" -> `io.deephaven.protobuf.test.CycleB` \"a\" -> `io.deephaven.protobuf.test.CycleA`]");
     }
 
     private static Map<List<String>, TypedFunction<Message>> nf(Descriptor descriptor) {
