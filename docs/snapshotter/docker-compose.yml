@@ -11,7 +11,7 @@ services:
 
   # Read the test sets from the results directory and run them against the test server, taking a snapshot of the results.
   snapshotter:
-    image: ghcr.io/deephaven/salmon-snapshotter:1
+    image: ghcr.io/deephaven/salmon-snapshotter:pre
     pull_policy: always
     depends_on:
       extractor:
