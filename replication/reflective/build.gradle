@@ -33,4 +33,6 @@ task replicateAll {
     dependsOn Tasks.registerMainExecTask(project, 'generateArrowColumnTestSources', 'io.deephaven.replicators.GenerateArrowColumnSourceTests')
 
     dependsOn Tasks.registerMainExecTask(project, 'generateQueryLanguageFunctions', 'io.deephaven.replicators.GenerateQueryLanguageFunctions')
+
+    dependsOn Tasks.registerMainExecTask(project, 'generateTimsortKernels', 'io.deephaven.replicators.GenerateTimsortKernels')
 }

@@ -105,6 +105,7 @@ def createDeephavenTestExecTask = {
 }
 
 createDeephavenTestExecTask('sortKernelBenchmark', 'io.deephaven.benchmark.engine.sort.timsort.SortKernelBenchmark')
+createDeephavenTestExecTask('sortKernelComparisonBenchmark', 'io.deephaven.benchmark.engine.sort.timsort2.SortKernelComparisonBenchmark')
 createDeephavenTestExecTask('partitionKernelBenchmark', 'io.deephaven.benchmark.engine.partition.PartitionKernelBenchmark')
 createDeephavenTestExecTask('columnSourceFillBenchmark', 'io.deephaven.benchmark.engine.sources.ColumnSourceFillBenchmark')
 createDeephavenTestExecTask('naturalJoinBenchmark', 'io.deephaven.benchmark.engine.NaturalJoinBenchmark')
