@@ -195,6 +195,12 @@ public class ShiftedRowSequence extends RowSequenceAsChunkImpl implements RowSeq
 
     @Override
     public long rangesCountUpperBound() {
+        // A constant shift preserves range structure, so the wrapped sequence's count is exactly ours. When it can
+        // report that directly (the common case, all standard impls extend RowSequenceAsChunkImpl), delegate to avoid
+        // an O(ranges) walk plus a per-call lambda and MutableInt allocation.
+        if (wrappedOK instanceof RowSequenceAsChunkImpl) {
+            return ((RowSequenceAsChunkImpl) wrappedOK).rangesCountUpperBound();
+        }
         final MutableInt mi = new MutableInt(0);
         wrappedOK.forAllRowKeyRanges((final long start, final long end) -> mi.increment());
         return mi.get();
