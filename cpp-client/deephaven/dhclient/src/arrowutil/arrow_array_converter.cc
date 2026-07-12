@@ -3,6 +3,7 @@
  */
 #include "deephaven/client/arrowutil/arrow_array_converter.h"
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
@@ -16,7 +17,6 @@
 #include <arrow/array/array_dict.h>
 #include <arrow/array/array_primitive.h>
 #include <arrow/array/array_run_end.h>
-#include <arrow/scalar.h>
 #include <arrow/builder.h>
 #include <arrow/type.h>
 #include "deephaven/client/arrowutil/arrow_column_source.h"
@@ -177,6 +177,218 @@ struct Reconstituter final : public arrow::TypeVisitor {
   std::shared_ptr<ContainerArrayColumnSource> result_;
 };
 
+/**
+ * Common scaffolding for decoding one encoded (dictionary or run-end-encoded) chunk into a plain
+ * array of its value type. The Visit overloads resolve the value type once and construct the
+ * matching typed builder; TDerived::DecodeTyped then resolves the encoding's integer type
+ * (dictionary indices or run ends) once, so the inner copy loops run fully typed, with no
+ * per-element type dispatch or scalar boxing.
+ */
+template<typename TDerived>
+struct EncodedChunkDecoder : public arrow::TypeVisitor {
+
+  arrow::Status Visit(const arrow::UInt16Type &/*type*/) final {
+    arrow::UInt16Builder builder;
+    return Self()->template DecodeTyped<arrow::UInt16Array>(&builder);
+  }
+
+  arrow::Status Visit(const arrow::Int8Type &/*type*/) final {
+    arrow::Int8Builder builder;
+    return Self()->template DecodeTyped<arrow::Int8Array>(&builder);
+  }
+
+  arrow::Status Visit(const arrow::Int16Type &/*type*/) final {
+    arrow::Int16Builder builder;
+    return Self()->template DecodeTyped<arrow::Int16Array>(&builder);
+  }
+
+  arrow::Status Visit(const arrow::Int32Type &/*type*/) final {
+    arrow::Int32Builder builder;
+    return Self()->template DecodeTyped<arrow::Int32Array>(&builder);
+  }
+
+  arrow::Status Visit(const arrow::Int64Type &/*type*/) final {
+    arrow::Int64Builder builder;
+    return Self()->template DecodeTyped<arrow::Int64Array>(&builder);
+  }
+
+  arrow::Status Visit(const arrow::FloatType &/*type*/) final {
+    arrow::FloatBuilder builder;
+    return Self()->template DecodeTyped<arrow::FloatArray>(&builder);
+  }
+
+  arrow::Status Visit(const arrow::DoubleType &/*type*/) final {
+    arrow::DoubleBuilder builder;
+    return Self()->template DecodeTyped<arrow::DoubleArray>(&builder);
+  }
+
+  arrow::Status Visit(const arrow::BooleanType &/*type*/) final {
+    arrow::BooleanBuilder builder;
+    return Self()->template DecodeTyped<arrow::BooleanArray>(&builder);
+  }
+
+  arrow::Status Visit(const arrow::StringType &/*type*/) final {
+    arrow::StringBuilder builder;
+    return Self()->template DecodeTyped<arrow::StringArray>(&builder);
+  }
+
+  arrow::Status Visit(const arrow::TimestampType &/*type*/) final {
+    arrow::TimestampBuilder builder(Self()->ValueType(), arrow::default_memory_pool());
+    return Self()->template DecodeTyped<arrow::TimestampArray>(&builder);
+  }
+
+  arrow::Status Visit(const arrow::Date64Type &/*type*/) final {
+    arrow::Date64Builder builder;
+    return Self()->template DecodeTyped<arrow::Date64Array>(&builder);
+  }
+
+  arrow::Status Visit(const arrow::Time64Type &/*type*/) final {
+    arrow::Time64Builder builder(Self()->ValueType(), arrow::default_memory_pool());
+    return Self()->template DecodeTyped<arrow::Time64Array>(&builder);
+  }
+
+  TDerived *Self() { return static_cast<TDerived *>(this); }
+
+  std::shared_ptr<arrow::Array> result_;
+};
+
+/**
+ * Decodes a single DictionaryArray (indices + dictionary values) into a plain array of the
+ * dictionary's value type.
+ */
+struct DictionaryChunkDecoder final : EncodedChunkDecoder<DictionaryChunkDecoder> {
+  explicit DictionaryChunkDecoder(const arrow::DictionaryArray &dict_array) :
+      dict_array_(dict_array) {}
+
+  std::shared_ptr<arrow::DataType> ValueType() const {
+    return dict_array_.dictionary()->type();
+  }
+
+  template<typename TValueArray, typename TBuilder>
+  arrow::Status DecodeTyped(TBuilder *builder) {
+    switch (dict_array_.indices()->type_id()) {
+      case arrow::Type::INT8:
+        CopyValues<arrow::Int8Array, TValueArray>(builder);
+        break;
+      case arrow::Type::INT16:
+        CopyValues<arrow::Int16Array, TValueArray>(builder);
+        break;
+      case arrow::Type::INT32:
+        CopyValues<arrow::Int32Array, TValueArray>(builder);
+        break;
+      case arrow::Type::INT64:
+        CopyValues<arrow::Int64Array, TValueArray>(builder);
+        break;
+      case arrow::Type::UINT8:
+        CopyValues<arrow::UInt8Array, TValueArray>(builder);
+        break;
+      case arrow::Type::UINT16:
+        CopyValues<arrow::UInt16Array, TValueArray>(builder);
+        break;
+      case arrow::Type::UINT32:
+        CopyValues<arrow::UInt32Array, TValueArray>(builder);
+        break;
+      case arrow::Type::UINT64:
+        CopyValues<arrow::UInt64Array, TValueArray>(builder);
+        break;
+      default: {
+        auto message = fmt::format("Unexpected dictionary index type: {}",
+            dict_array_.indices()->type()->ToString());
+        throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
+      }
+    }
+    return arrow::Status::OK();
+  }
+
+  template<typename TIndexArray, typename TValueArray, typename TBuilder>
+  void CopyValues(TBuilder *builder) {
+    const auto &indices = static_cast<const TIndexArray &>(*dict_array_.indices());
+    const auto &dict = static_cast<const TValueArray &>(*dict_array_.dictionary());
+    auto length = dict_array_.length();
+    OkOrThrow(DEEPHAVEN_LOCATION_EXPR(builder->Reserve(length)));
+    for (int64_t i = 0; i != length; ++i) {
+      if (indices.IsNull(i)) {
+        OkOrThrow(DEEPHAVEN_LOCATION_EXPR(builder->AppendNull()));
+        continue;
+      }
+      auto index = static_cast<int64_t>(indices.Value(i));
+      // The dictionary itself may contain null entries, distinct from null indices.
+      if (dict.IsNull(index)) {
+        OkOrThrow(DEEPHAVEN_LOCATION_EXPR(builder->AppendNull()));
+      } else {
+        OkOrThrow(DEEPHAVEN_LOCATION_EXPR(builder->Append(dict.GetView(index))));
+      }
+    }
+    result_ = ValueOrThrow(DEEPHAVEN_LOCATION_EXPR(builder->Finish()));
+  }
+
+  const arrow::DictionaryArray &dict_array_;
+};
+
+/**
+ * Decodes a single RunEndEncodedArray into a plain array of its value type, expanding each
+ * (run_end, value) pair back to one element per logical row.
+ */
+struct RunEndChunkDecoder final : EncodedChunkDecoder<RunEndChunkDecoder> {
+  explicit RunEndChunkDecoder(const arrow::RunEndEncodedArray &ree_array) :
+      ree_array_(ree_array) {}
+
+  std::shared_ptr<arrow::DataType> ValueType() const {
+    return ree_array_.values()->type();
+  }
+
+  template<typename TValueArray, typename TBuilder>
+  arrow::Status DecodeTyped(TBuilder *builder) {
+    switch (ree_array_.run_ends()->type_id()) {
+      case arrow::Type::INT16:
+        CopyValues<arrow::Int16Array, TValueArray>(builder);
+        break;
+      case arrow::Type::INT32:
+        CopyValues<arrow::Int32Array, TValueArray>(builder);
+        break;
+      case arrow::Type::INT64:
+        CopyValues<arrow::Int64Array, TValueArray>(builder);
+        break;
+      default: {
+        auto message = fmt::format("Unexpected REE run_ends type: {}",
+            ree_array_.run_ends()->type()->ToString());
+        throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
+      }
+    }
+    return arrow::Status::OK();
+  }
+
+  template<typename TRunEndsArray, typename TValueArray, typename TBuilder>
+  void CopyValues(TBuilder *builder) {
+    const auto &run_ends = static_cast<const TRunEndsArray &>(*ree_array_.run_ends());
+    const auto &values = static_cast<const TValueArray &>(*ree_array_.values());
+    // Run ends are logical positions relative to the start of the *unsliced* array, so the rows
+    // of a sliced array are the window [offset, offset + length) of those positions.
+    int64_t logical_pos = ree_array_.offset();
+    const int64_t logical_end = logical_pos + ree_array_.length();
+    OkOrThrow(DEEPHAVEN_LOCATION_EXPR(builder->Reserve(ree_array_.length())));
+    for (int64_t run = 0; run != run_ends.length() && logical_pos < logical_end; ++run) {
+      auto run_end = std::min<int64_t>(run_ends.Value(run), logical_end);
+      auto count = run_end - logical_pos;
+      if (count <= 0) {
+        continue;
+      }
+      if (values.IsNull(run)) {
+        OkOrThrow(DEEPHAVEN_LOCATION_EXPR(builder->AppendNulls(count)));
+      } else {
+        auto value = values.GetView(run);
+        for (int64_t j = 0; j != count; ++j) {
+          OkOrThrow(DEEPHAVEN_LOCATION_EXPR(builder->Append(value)));
+        }
+      }
+      logical_pos = run_end;
+    }
+    result_ = ValueOrThrow(DEEPHAVEN_LOCATION_EXPR(builder->Finish()));
+  }
+
+  const arrow::RunEndEncodedArray &ree_array_;
+};
+
 struct ChunkedArrayToColumnSourceVisitor final : public arrow::TypeVisitor {
   explicit ChunkedArrayToColumnSourceVisitor(std::shared_ptr<arrow::ChunkedArray> chunked_array) :
     chunked_array_(std::move(chunked_array)) {}
@@ -275,21 +487,11 @@ struct ChunkedArrayToColumnSourceVisitor final : public arrow::TypeVisitor {
     std::vector<std::shared_ptr<arrow::Array>> plain_chunks;
     plain_chunks.reserve(dict_arrays.size());
     for (const auto &da : dict_arrays) {
-      auto builder_result = arrow::MakeBuilder(type.value_type());
-      OkOrThrow(DEEPHAVEN_LOCATION_EXPR(builder_result.status()));
-      auto builder = std::move(builder_result).ValueUnsafe();
-      OkOrThrow(DEEPHAVEN_LOCATION_EXPR(builder->Reserve(da->length())));
-      for (int64_t i = 0; i < da->length(); ++i) {
-        if (da->IsNull(i)) {
-          OkOrThrow(DEEPHAVEN_LOCATION_EXPR(builder->AppendNull()));
-        } else {
-          // GetValueIndex handles all index widths (Int8/Int16/Int32/Int64).
-          auto scalar = ValueOrThrow(DEEPHAVEN_LOCATION_EXPR(
-              da->dictionary()->GetScalar(da->GetValueIndex(i))));
-          OkOrThrow(DEEPHAVEN_LOCATION_EXPR(builder->AppendScalar(*scalar)));
-        }
-      }
-      plain_chunks.push_back(ValueOrThrow(DEEPHAVEN_LOCATION_EXPR(builder->Finish())));
+      // The dictionary (and in principle the index type) can differ per chunk, e.g. with
+      // delta dictionaries across Flight batches, so decode each chunk independently.
+      DictionaryChunkDecoder decoder(*da);
+      OkOrThrow(DEEPHAVEN_LOCATION_EXPR(type.value_type()->Accept(&decoder)));
+      plain_chunks.push_back(std::move(decoder.result_));
     }
     auto plain_ca = ValueOrThrow(DEEPHAVEN_LOCATION_EXPR(
         arrow::ChunkedArray::Make(std::move(plain_chunks), type.value_type())));
@@ -302,46 +504,13 @@ struct ChunkedArrayToColumnSourceVisitor final : public arrow::TypeVisitor {
    * into (run_end, value) pairs; we expand them back to one element per logical row.
    */
   arrow::Status Visit(const arrow::RunEndEncodedType &type) final {
+    auto ree_arrays = DowncastChunks<arrow::RunEndEncodedArray>(*chunked_array_);
     std::vector<std::shared_ptr<arrow::Array>> plain_chunks;
-    plain_chunks.reserve(chunked_array_->num_chunks());
-    for (const auto &arr : chunked_array_->chunks()) {
-      const auto &ree = static_cast<const arrow::RunEndEncodedArray &>(*arr);
-      const auto &run_ends_arr = *ree.run_ends();
-      auto builder_result = arrow::MakeBuilder(type.value_type());
-      OkOrThrow(DEEPHAVEN_LOCATION_EXPR(builder_result.status()));
-      auto builder = std::move(builder_result).ValueUnsafe();
-      OkOrThrow(DEEPHAVEN_LOCATION_EXPR(builder->Reserve(ree.length())));
-      int64_t logical_pos = 0;
-      int64_t num_runs = run_ends_arr.length();
-      for (int64_t run = 0; run < num_runs; ++run) {
-        int64_t run_end;
-        switch (type.run_end_type()->id()) {
-          case arrow::Type::INT16:
-            run_end = static_cast<const arrow::Int16Array &>(run_ends_arr).Value(run);
-            break;
-          case arrow::Type::INT32:
-            run_end = static_cast<const arrow::Int32Array &>(run_ends_arr).Value(run);
-            break;
-          case arrow::Type::INT64:
-            run_end = static_cast<const arrow::Int64Array &>(run_ends_arr).Value(run);
-            break;
-          default: {
-            auto message = fmt::format("Unexpected REE run_ends type: {}",
-                type.run_end_type()->ToString());
-            throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
-          }
-        }
-        int64_t count = run_end - logical_pos;
-        if (count <= 0) {
-          continue;
-        }
-        auto scalar = ValueOrThrow(DEEPHAVEN_LOCATION_EXPR(ree.values()->GetScalar(run)));
-        for (int64_t j = 0; j < count; ++j) {
-          OkOrThrow(DEEPHAVEN_LOCATION_EXPR(builder->AppendScalar(*scalar)));
-        }
-        logical_pos = run_end;
-      }
-      plain_chunks.push_back(ValueOrThrow(DEEPHAVEN_LOCATION_EXPR(builder->Finish())));
+    plain_chunks.reserve(ree_arrays.size());
+    for (const auto &ra : ree_arrays) {
+      RunEndChunkDecoder decoder(*ra);
+      OkOrThrow(DEEPHAVEN_LOCATION_EXPR(type.value_type()->Accept(&decoder)));
+      plain_chunks.push_back(std::move(decoder.result_));
     }
     auto plain_ca = ValueOrThrow(DEEPHAVEN_LOCATION_EXPR(
         arrow::ChunkedArray::Make(std::move(plain_chunks), type.value_type())));
