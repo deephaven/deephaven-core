@@ -11,6 +11,8 @@ import org.junit.Assert;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BooleanSupplier;
+import java.util.function.Supplier;
 
 public class ReferenceCounting implements AutoCloseable {
 
@@ -73,53 +75,80 @@ public class ReferenceCounting implements AutoCloseable {
     /**
      * This is a fragile method, whose aspiration is to ensure that garbage collection happens.
      *
-     * Usage:
+     * The strategy is to make three objects: a sentinel object, the caller object under test, and then another sentinel
+     * object. The trick here is to create the caller object under test after the first sentinel but before the second
+     * sentinel. The underlying assumption is that "surely" the garbage collector won't collect both sentinels without
+     * also collecting the caller object.
      *
-     * ReferenceCounting.GarbageSentinel gs = ref.makeGarbageSentinel(); // make your object under test
-     * Assert.assertTrue(gs.tryCollectGarbage()) // now test that your object got gc'ed
+     * Then we try to induce garbage collection.
      *
-     * There are some shortcomings: 1. There is no guarantee that GC will actually be invoked. 2. Even if our sentinel
-     * object is collected, this doesn't guarantee that the object under test has been collected.
+     * Then we ask the caller if it looks like their object was finalized.
      *
-     * That said - this seems to work for at least some VM implementations.
+     * There are three possible outcomes: 1. If the two sentinel objects were not both finalized, return
+     * GC_DIDNT_HAPPEN. 2. If the two sentinel objects were finalized but the caller object under test was not, return
+     * GC_HAPPENED_BUT_CLIENT_OBJECT_WASNT_FINALIZED. 3. Otherwise, if all three objects were finalized, return SUCCESS.
+     *
+     * @param makeObject Create the caller object under test and supply it to us. We will set our reference to null at
+     *        the appropriate time. The caller should not try to hold a reference to it
+     * @param didFinalizationHappen Return true if the caller determines that finalization happened on its object.
+     *        Otherwise, return false.
      */
-    public GarbageSentinel makeGarbageSentinel() {
-        return new GarbageSentinel(gc);
-    }
+    public <T> CleanupResult doesCleanupHappenAtFinalizerTime(
+            Supplier<T> makeObject, BooleanSupplier didFinalizationHappen) throws InterruptedException {
+        final CountDownLatch latch = new CountDownLatch(2);
+        Object beforeSentinel = new Object() {
+            @Override
+            protected void finalize() throws Throwable {
+                super.finalize();
+                latch.countDown();
+            }
+        };
 
-    public static class GarbageSentinel {
-        private final GcModule gc;
-        private final CountDownLatch latch = new CountDownLatch(1);
-        private Object trackedObject;
+        T callerObject = makeObject.get();
 
-        public GarbageSentinel(GcModule gc) {
-            this.gc = gc;
-            trackedObject = new Object() {
-                @Override
-                protected void finalize() throws Throwable {
-                    super.finalize();
-                    latch.countDown();
-                }
-            };
-        }
+        Object afterSentinel = new Object() {
+            @Override
+            protected void finalize() throws Throwable {
+                super.finalize();
+                latch.countDown();
+            }
+        };
 
-        public boolean tryCollectGarbage() throws InterruptedException {
-            trackedObject = null;
+        blackhole(beforeSentinel, callerObject, afterSentinel);
 
-            // Will try 10 times, for a total of 2.5 seconds, to collect the garbage.
-            for (int i = 0; i < 10; i++) {
-                System.gc();
-                System.runFinalization();
+        beforeSentinel = null;
+        callerObject = null;
+        afterSentinel = null;
 
-                if (latch.await(250, TimeUnit.MILLISECONDS)) {
-                    PyObject.cleanup();
-                    gc.collect();
-                    return true;
+        // Will try 20 times, for a total of 5 seconds, to collect the garbage
+        // and wait for both sentinels to be finalized.
+        for (int i = 0; i < 20; i++) {
+            System.gc();
+            System.runFinalization();
+
+            if (latch.await(250, TimeUnit.MILLISECONDS)) {
+                // Both sentinels are finalized. Now see if the caller's
+                // state was finalized.
+                PyObject.cleanup();
+                gc.collect();
+
+                // Wait two more seconds for good luck and to let the above methods
+                // settle and do their thing or whatever
+                TimeUnit.SECONDS.sleep(2);
+
+                if (didFinalizationHappen.getAsBoolean()) {
+                    return CleanupResult.SUCCESS;
+                } else {
+                    return CleanupResult.GC_HAPPENED_BUT_CLIENT_OBJECT_WASNT_FINALIZED;
                 }
             }
-
-            return false;
         }
+
+        return CleanupResult.GC_DIDNT_HAPPEN;
+    }
+
+    public enum CleanupResult {
+        SUCCESS, GC_DIDNT_HAPPEN, GC_HAPPENED_BUT_CLIENT_OBJECT_WASNT_FINALIZED
     }
 
     /**

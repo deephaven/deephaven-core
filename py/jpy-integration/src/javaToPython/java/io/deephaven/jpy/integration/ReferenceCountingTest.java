@@ -7,6 +7,8 @@ import io.deephaven.jpy.BuiltinsModule;
 import io.deephaven.jpy.JpyModule;
 import io.deephaven.jpy.PythonTest;
 import io.deephaven.jpy.integration.DestructorModuleParent.OnDelete;
+
+import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -73,20 +75,29 @@ public class ReferenceCountingTest extends PythonTest {
 
     @Test
     public void viaPython() throws InterruptedException {
-        final ReferenceCounting.GarbageSentinel gs = ref.makeGarbageSentinel();
-        PyObject.executeCode("import sys", PyInputMode.STATEMENT);
-        PyObject.executeCode("x = dict()", PyInputMode.STATEMENT);
-        // the extra ref counts here are due to the reference that getrefcount itself is imposing
-        PyObject.executeCode("assert sys.getrefcount(x) == 2", PyInputMode.STATEMENT);
-        {
-            PyObject javaRef = PyObject.executeCode("x", PyInputMode.EXPRESSION);
-            PyObject.executeCode("assert sys.getrefcount(x) == 3", PyInputMode.STATEMENT);
-            ReferenceCounting.blackhole(javaRef);
-            javaRef = null;
-        }
-        // let's hope GC will kick in...
-        Assert.assertTrue("Could not force garbage collection", gs.tryCollectGarbage());
-        PyObject.executeCode("assert sys.getrefcount(x) == 2", PyInputMode.STATEMENT);
+        final ReferenceCounting.CleanupResult result = ref.doesCleanupHappenAtFinalizerTime(
+                () -> {
+                    PyObject.executeCode("import sys", PyInputMode.STATEMENT);
+                    PyObject.executeCode("x = dict()", PyInputMode.STATEMENT);
+                    // the extra ref counts here are due to the reference that getrefcount itself is imposing
+                    PyObject.executeCode("assert sys.getrefcount(x) == 2", PyInputMode.STATEMENT);
+                    PyObject javaRef = PyObject.executeCode("x", PyInputMode.EXPRESSION);
+                    PyObject.executeCode("assert sys.getrefcount(x) == 3", PyInputMode.STATEMENT);
+                    return javaRef;
+                },
+
+                () -> {
+                    try {
+                        PyObject.executeCode("assert sys.getrefcount(x) == 2", PyInputMode.STATEMENT);
+                        return true;
+                    } catch (Throwable t) {
+                        return false;
+                    }
+                });
+
+        Assert.assertTrue(
+                "Cleanup didn't happen. Reason: " + result,
+                result == ReferenceCounting.CleanupResult.SUCCESS);
     }
 
     @Test
@@ -176,19 +187,22 @@ public class ReferenceCountingTest extends PythonTest {
         // this tests fails in python 2, but I haven't spent time debugging
         assumePython3();
 
-        final ReferenceCounting.GarbageSentinel gs = ref.makeGarbageSentinel();
-
         final CountDownLatch latch = new CountDownLatch(1);
-        {
-            PyObject child = destructor.create_child(new OnDelete(latch));
-            ref.check(1, child);
-            ReferenceCounting.blackhole(child);
-            child = null;
-        }
-        // let's hope GC will kick in...
-        Assert.assertTrue("Could not force garbage collection", gs.tryCollectGarbage());
-        Assert.assertTrue(latch.await(1, TimeUnit.SECONDS));
+        final ReferenceCounting.CleanupResult result = ref.doesCleanupHappenAtFinalizerTime(
+                () -> {
+                    PyObject child = destructor.create_child(new OnDelete(latch));
+                    ref.check(1, child);
+                    return child;
+                },
+
+                () -> latch.getCount() == 0);
+
+        Assert.assertTrue(
+                "Cleanup didn't happen. Reason: " + result,
+                result == ReferenceCounting.CleanupResult.SUCCESS);
     }
+
+
 
     @Test
     public void pythonObjectInJavaWillDestructAfterClosure() throws InterruptedException {
