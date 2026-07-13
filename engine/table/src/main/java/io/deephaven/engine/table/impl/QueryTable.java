@@ -223,6 +223,24 @@ public class QueryTable extends BaseTable<QueryTable> {
             Configuration.getInstance().getBooleanWithDefault("QueryTable.useDataIndexForJoins", true);
 
     /**
+     * If the Configuration property "QueryTable.useMultiColumnSortKernel" is set to true, then sorts on multiple
+     * columns attempt to use a single generated multi-column timsort kernel that compares each column in turn, rather
+     * than sorting one column at a time with run finding in between. Sorts with no suitable multi-column kernel (e.g.,
+     * descending columns or more than two sort columns) fall back to the one-column-at-a-time path.
+     */
+    public static boolean USE_MULTI_COLUMN_SORT_KERNEL =
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.useMultiColumnSortKernel", false);
+
+    /**
+     * If the Configuration property "QueryTable.useIndirectMultiColumnSortKernel" is also set to true, the multi-column
+     * sort kernel permutes a parallel chunk of positions rather than moving the column values (and row keys) during the
+     * sort; the permuted row keys are assembled in a single linear pass at the end. Only consulted when
+     * {@link #USE_MULTI_COLUMN_SORT_KERNEL} is enabled.
+     */
+    public static boolean USE_INDIRECT_MULTI_COLUMN_SORT_KERNEL =
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.useIndirectMultiColumnSortKernel", false);
+
+    /**
      * For a static select(), we would prefer to flatten the table to avoid using memory unnecessarily (because the data
      * may be spread out across many blocks depending on the input RowSet). However, the select() can become slower
      * because it must look things up in a row redirection.

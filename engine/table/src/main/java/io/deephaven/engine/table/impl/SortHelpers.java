@@ -22,10 +22,13 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.sort.LongMegaMergeKernel;
 import io.deephaven.engine.table.impl.sort.LongSortKernel;
+import io.deephaven.engine.table.impl.sort.MultiColumnSortKernel;
 import io.deephaven.engine.table.impl.sort.findruns.FindRunsKernel;
 import io.deephaven.engine.table.impl.sort.permute.PermuteKernel;
 import io.deephaven.engine.table.impl.sort.timsort.ComparatorLongTimsortKernel;
 import io.deephaven.engine.table.impl.sort.timsort.LongIntTimsortKernel;
+import io.deephaven.engine.table.impl.sort.timsort2.multi.IndirectMultiColumnTimsortDispatcher;
+import io.deephaven.engine.table.impl.sort.timsort2.multi.MultiColumnTimsortDispatcher;
 import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.table.impl.sources.regioned.SymbolTableSource;
 import io.deephaven.engine.table.impl.util.ContiguousWritableRowRedirection;
@@ -39,9 +42,12 @@ import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.util.mutable.MutableInt;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.type.ArrayTypeUtils;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Map;
 import java.util.function.LongPredicate;
@@ -657,6 +663,19 @@ public class SortHelpers {
             final WritableLongChunk<RowKeys> rowKeys = WritableLongChunk.writableChunkWrap(rowKeysArray);
             rowSequence.fillRowKeyChunk(rowKeys);
 
+            if (QueryTable.USE_MULTI_COLUMN_SORT_KERNEL && QueryTable.USE_INDIRECT_MULTI_COLUMN_SORT_KERNEL
+                    && comparator == null) {
+                try (final MultiColumnSortKernel<RowKeys> indirectContext =
+                        IndirectMultiColumnTimsortDispatcher.makeContext(
+                                new ChunkType[] {values.getChunkType()}, new SortingOrder[] {order}, chunkSize)) {
+                    if (indirectContext != null) {
+                        // noinspection unchecked
+                        indirectContext.sort(rowKeys, new WritableChunk[] {values});
+                        return rowKeysArray;
+                    }
+                }
+            }
+
             try (final LongSortKernel<Values, RowKeys> sortContext =
                     getSortContext(columnSource, order, chunkSize, comparator, false)) {
                 sortContext.sort(rowKeys, values);
@@ -753,6 +772,14 @@ public class SortHelpers {
 
         final long[] rowKeysArray = new long[sortSize];
         final WritableLongChunk<RowKeys> rowKeys = WritableLongChunk.writableChunkWrap(rowKeysArray);
+
+        if (QueryTable.USE_MULTI_COLUMN_SORT_KERNEL && dataIndex == null) {
+            final SortMapping multiColumnMapping = tryMultiColumnSortMapping(
+                    order, columnSources, comparators, rowSet, usePrev, sortSize, rowKeysArray, rowKeys);
+            if (multiColumnMapping != null) {
+                return multiColumnMapping;
+            }
+        }
 
         WritableIntChunk<ChunkPositions> offsetsOut = WritableIntChunk.makeWritableChunk((sortSize + 1) / 2);
         WritableIntChunk<ChunkLengths> lengthsOut = WritableIntChunk.makeWritableChunk((sortSize + 1) / 2);
@@ -891,6 +918,50 @@ public class SortHelpers {
         indicesToFetch.close();
 
         return new ArraySortMapping(rowKeysArray);
+    }
+
+    /**
+     * Attempt to sort all of the key columns in a single pass with a generated multi-column timsort kernel that
+     * compares each column in turn, rather than sorting one column at a time with run finding in between. Returns null
+     * when no kernel is available for the column types and orders, or when any column sorts with a comparator; the
+     * caller then falls back to the one-column-at-a-time path.
+     */
+    @Nullable
+    private static SortMapping tryMultiColumnSortMapping(
+            final SortingOrder[] order,
+            final ColumnSource<Comparable<?>>[] columnSources,
+            @NotNull final Comparator[] comparators,
+            final RowSet rowSet,
+            final boolean usePrev,
+            final int sortSize,
+            final long[] rowKeysArray,
+            final WritableLongChunk<RowKeys> rowKeys) {
+        for (final Comparator comparator : comparators) {
+            if (comparator != null) {
+                return null;
+            }
+        }
+        final ChunkType[] chunkTypes =
+                Arrays.stream(columnSources).map(ColumnSource::getChunkType).toArray(ChunkType[]::new);
+        try (final MultiColumnSortKernel<RowKeys> sortContext = QueryTable.USE_INDIRECT_MULTI_COLUMN_SORT_KERNEL
+                ? IndirectMultiColumnTimsortDispatcher.makeContext(chunkTypes, order, sortSize)
+                : MultiColumnTimsortDispatcher.makeContext(chunkTypes, order, sortSize)) {
+            if (sortContext == null) {
+                return null;
+            }
+            rowSet.fillRowKeyChunk(rowKeys);
+            // noinspection unchecked
+            final WritableChunk<Values>[] values = new WritableChunk[columnSources.length];
+            try {
+                for (int ci = 0; ci < columnSources.length; ++ci) {
+                    values[ci] = makeAndFillValues(usePrev, rowSet, columnSources[ci]);
+                }
+                sortContext.sort(rowKeys, values);
+            } finally {
+                SafeCloseable.closeAll(values);
+            }
+            return new ArraySortMapping(rowKeysArray);
+        }
     }
 
     private static WritableChunk<Values> fetchSecondaryValues(boolean usePrev, ColumnSource<?> columnSource,
