@@ -71,29 +71,55 @@ public class ReferenceCounting implements AutoCloseable {
     }
 
     /**
-     * This is a fragile method, meant to ensure that GC gets invoked. There are a couple of shortcomings:
+     * This is a fragile method, whose aspiration is to ensure that garbage collection happens.
      *
-     * 1) There is no guarantee that GC will actually be invoked. 2) Even if our dummy object is collected, it doesn't
-     * guarantee that any other objects we care about have been GCd.
+     * Usage:
+     *
+     * ReferenceCounting.GarbageSentinel gs = ref.makeGarbageSentinel(); // make your object under test
+     * Assert.assertTrue(gs.tryCollectGarbage()) // now test that your object got gc'ed
+     *
+     * There are some shortcomings: 1. There is no guarantee that GC will actually be invoked. 2. Even if our sentinel
+     * object is collected, this doesn't guarantee that the object under test has been collected.
      *
      * That said - this seems to work for at least some VM implementations.
      */
-    public void gc() throws InterruptedException {
-        final CountDownLatch latch = new CountDownLatch(1);
-        // noinspection unused
-        Object obj = new Object() {
-            @Override
-            protected void finalize() throws Throwable {
-                super.finalize();
-                latch.countDown();
+    public GarbageSentinel makeGarbageSentinel() {
+        return new GarbageSentinel(gc);
+    }
+
+    public static class GarbageSentinel {
+        private final GcModule gc;
+        private final CountDownLatch latch = new CountDownLatch(1);
+        private Object trackedObject;
+
+        public GarbageSentinel(GcModule gc) {
+            this.gc = gc;
+            trackedObject = new Object() {
+                @Override
+                protected void finalize() throws Throwable {
+                    super.finalize();
+                    latch.countDown();
+                }
+            };
+        }
+
+        public boolean tryCollectGarbage() throws InterruptedException {
+            trackedObject = null;
+
+            // Will try 10 times, for a total of 2.5 seconds, to collect the garbage.
+            for (int i = 0; i < 10; i++) {
+                System.gc();
+                System.runFinalization();
+
+                if (latch.await(250, TimeUnit.MILLISECONDS)) {
+                    PyObject.cleanup();
+                    gc.collect();
+                    return true;
+                }
             }
-        };
-        // noinspection UnusedAssignment
-        obj = null;
-        System.gc();
-        Assert.assertTrue("GC did not happen within 1 second", latch.await(1, TimeUnit.SECONDS));
-        PyObject.cleanup();
-        gc.collect();
+
+            return false;
+        }
     }
 
     /**
