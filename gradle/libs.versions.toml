@@ -20,7 +20,7 @@ commons-text = "1.15.0"
 # confluent and confluent-kafka-clients should be kept in-sync
 confluent = "8.2.1"
 confluent-kafka-clients = "8.2.1-ccs"
-dagger = "2.59.2"
+dagger = "2.60.1"
 deephaven-barrage = "1.0.0"
 deephaven-csv = "0.19.0"
 deephaven-hash = "0.5.0"
@@ -70,8 +70,8 @@ jpy = "2.1.0"
 jsinterop = "2.1.0"
 # google is annoying, and have different versions released for the same groupId
 jsinterop-base = "1.2.0"
-logback = "1.5.37"
-lz4 = "1.11.0"
+logback = "1.5.38"
+lz4 = "1.11.1"
 mindrot = "0.4"
 nidi = "0.18.1"
 oshi = "7.3.2"
@@ -82,11 +82,11 @@ postgresql = "42.7.12"
 protobuf = "4.33.2"
 randelshofer = "2.0.1"
 rdblue = "0.1.1"
-rewrite-java = "8.86.1"
-selenium = "4.45.0"
+rewrite-java = "8.86.5"
+selenium = "4.46.0"
 slf4j = "2.0.18"
 snappy = "1.1.10.8"
-squareup = "1.13.0"
+javapoet = "0.17.0"
 ayza = "10.0.5"
 tdunning = "3.3"
 undercouch = "2.18.0"
@@ -314,7 +314,7 @@ slf4j-simple = { module = "org.slf4j:slf4j-simple", version.ref = "slf4j" }
 
 snappy-java = { module = "org.xerial.snappy:snappy-java", version.ref = "snappy" }
 
-squareup-javapoet = { module = "com.squareup:javapoet", version.ref = "squareup" }
+javapoet = { module = "com.palantir.javapoet:javapoet", version.ref = "javapoet" }
 
 ayza = { module = "io.github.hakky54:ayza", version.ref = "ayza" }
 ayza-jetty = { module = "io.github.hakky54:ayza-for-jetty", version.ref = "ayza" }

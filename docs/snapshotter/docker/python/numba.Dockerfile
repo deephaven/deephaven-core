@@ -1,4 +1,5 @@
-ARG DEEPHAVEN_SERVER_IMAGE=ghcr.io/deephaven/server:latest
+# check InvalidDefaultArgInFrom=skip
+ARG DEEPHAVEN_SERVER_IMAGE
 FROM ${DEEPHAVEN_SERVER_IMAGE}
 
 # Numba does not yet support NumPy 2.5, but the base server image ships NumPy 2.5.

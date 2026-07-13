@@ -944,11 +944,9 @@ public abstract class UpdateBy {
             upstream.release();
 
             // accumulate performance data
-            final BasePerformanceEntry accumulated = jobScheduler.getAccumulatedPerformance();
-            if (accumulated != null) {
-                if (initialStep) {
-                    QueryPerformanceRecorder.getInstance().getEnclosingNugget().accumulate(accumulated);
-                } else {
+            if (!initialStep) {
+                final BasePerformanceEntry accumulated = jobScheduler.getAccumulatedPerformance();
+                if (accumulated != null) {
                     source.getUpdateGraph().addNotification(new TerminalNotification() {
                         @Override
                         public void run() {
@@ -963,6 +961,18 @@ public abstract class UpdateBy {
 
             // continue
             onCleanupComplete.run();
+        }
+
+        /**
+         * Record the performance from an initial operation into the current nugget.
+         */
+        void recordPerformance() {
+            Assert.assertion(initialStep, "Must be on an initial step!");
+            final BasePerformanceEntry accumulated = jobScheduler.getAccumulatedPerformance();
+            if (accumulated == null) {
+                return;
+            }
+            QueryPerformanceRecorder.getInstance().getEnclosingNugget().accumulate(accumulated);
         }
 
         /**

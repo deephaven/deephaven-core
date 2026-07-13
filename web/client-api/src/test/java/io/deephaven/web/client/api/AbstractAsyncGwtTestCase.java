@@ -20,8 +20,8 @@ import io.deephaven.web.client.fu.CancellablePromise;
 import io.deephaven.web.client.ide.IdeSession;
 import io.deephaven.web.shared.fu.JsRunnable;
 import io.deephaven.web.shared.fu.RemoverFn;
-import jsinterop.annotations.JsMethod;
-import jsinterop.annotations.JsPackage;
+import javaemul.internal.annotations.DoNotAutobox;
+import jsinterop.annotations.JsFunction;
 import jsinterop.annotations.JsProperty;
 import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
@@ -37,11 +37,43 @@ import java.util.function.Predicate;
 import static elemental2.dom.DomGlobal.console;
 
 public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
-    @JsMethod(namespace = JsPackage.GLOBAL)
-    private static native Object eval(String code);
+    private boolean errorLogsFailTests = true;
+    private LogMethod originalConsoleError;
+    protected final List<Object[]> errorLogsSeen = new ArrayList<>();
 
-    private static Promise<JsPropertyMap<Object>> importScript(String moduleName) {
-        return (Promise<JsPropertyMap<Object>>) eval("import('" + moduleName + "')");
+    @JsFunction
+    interface LogMethod {
+        void write(@DoNotAutobox Object... msgs);
+    }
+
+    @Override
+    protected void gwtSetUp() throws Exception {
+        super.gwtSetUp();
+        originalConsoleError = ((LogMethod) Js.asPropertyMap(console).get("error"));
+        LogMethod replacementConsoleError = (args) -> {
+            originalConsoleError.write("The following error was captured by test handler:");
+            originalConsoleError.write(args);
+            errorLogsSeen.add(args);
+            if (errorLogsFailTests) {
+                report("console.error called: " + Arrays.toString(args));
+            }
+        };
+        Js.asPropertyMap(console).set("error", replacementConsoleError);
+    }
+
+    @Override
+    protected void gwtTearDown() throws Exception {
+        super.gwtTearDown();
+        errorLogsSeen.clear();
+        Js.asPropertyMap(console).set("error", originalConsoleError);
+    }
+
+    /**
+     * Disarms the test from failing on the first error log it encounters. Either ignore error logs after calling this,
+     * or read the protected {@link #errorLogsSeen} list of messages.
+     */
+    protected void errorLogsDontFail() {
+        errorLogsFailTests = false;
     }
 
     private static Promise<Void> importDhInternal() {

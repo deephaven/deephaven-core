@@ -690,12 +690,6 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
                     notifiedQueryLibrary = true;
                     executionContext.getQueryLibrary().updateVersionString();
                 }
-
-                try {
-                    QueryCompilerImpl.writeClass(classCacheDirectory, entry.getKey(), entry.getValue());
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
             }
         }
     }

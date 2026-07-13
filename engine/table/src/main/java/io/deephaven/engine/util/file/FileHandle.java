@@ -4,12 +4,13 @@
 package io.deephaven.engine.util.file;
 
 import io.deephaven.base.stats.Counter;
-import io.deephaven.base.stats.State;
 import io.deephaven.base.stats.Stats;
+import io.deephaven.base.stats.ThreadSafeCounter;
 import io.deephaven.base.stats.Value;
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.readtracker.impl.QueryPerformanceReadTracker;
+import io.deephaven.util.annotations.TestUseOnly;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -47,27 +48,37 @@ import java.util.function.Supplier;
  * {@link #write(ByteBuffer)} may require external synchronization if used concurrently by more than one thread.
  */
 public final class FileHandle implements SeekableByteChannel {
+    private static final String THREAD_SAFE_STATS_PROPERTY = "FileHandle.threadSafeStats";
+
+    /**
+     * Should we use thread safe statistics?
+     */
+    private static final boolean THREAD_SAFE_STATS =
+            Configuration.getInstance().getBooleanWithDefault(THREAD_SAFE_STATS_PROPERTY, false);
+
+    private static final java.util.function.LongFunction<? extends Value> STATS_FACTORY =
+            THREAD_SAFE_STATS ? ThreadSafeCounter.FACTORY : Counter.FACTORY;
 
     private static final Value OPEN_DURATION_NANOS =
-            Stats.makeItem("FileHandle", "open", Counter.FACTORY).getValue();
+            Stats.makeItem("FileHandle", "open", STATS_FACTORY).getValue();
     private static final Value SIZE_DURATION_NANOS =
-            Stats.makeItem("FileHandle", "sizeDurationNanos", Counter.FACTORY).getValue();
+            Stats.makeItem("FileHandle", "sizeDurationNanos", STATS_FACTORY).getValue();
     private static final Value GET_POSITION_DURATION_NANOS =
-            Stats.makeItem("FileHandle", "getPositionDurationNanos", Counter.FACTORY).getValue();
+            Stats.makeItem("FileHandle", "getPositionDurationNanos", STATS_FACTORY).getValue();
     private static final Value SET_POSITION_DURATION_NANOS =
-            Stats.makeItem("FileHandle", "setPositionDurationNanos", Counter.FACTORY).getValue();
+            Stats.makeItem("FileHandle", "setPositionDurationNanos", STATS_FACTORY).getValue();
     private static final Value READ_DURATION_NANOS =
-            Stats.makeItem("FileHandle", "readDurationNanos", Counter.FACTORY).getValue();
+            Stats.makeItem("FileHandle", "readDurationNanos", STATS_FACTORY).getValue();
     private static final Value READ_SIZE_BYTES =
-            Stats.makeItem("FileHandle", "readSizeBytes", Counter.FACTORY).getValue();
+            Stats.makeItem("FileHandle", "readSizeBytes", STATS_FACTORY).getValue();
     private static final Value WRITE_DURATION_NANOS =
-            Stats.makeItem("FileHandle", "writeDurationNanos", Counter.FACTORY).getValue();
+            Stats.makeItem("FileHandle", "writeDurationNanos", STATS_FACTORY).getValue();
     private static final Value WRITE_SIZE_BYTES =
-            Stats.makeItem("FileHandle", "writeSizeBytes", Counter.FACTORY).getValue();
+            Stats.makeItem("FileHandle", "writeSizeBytes", STATS_FACTORY).getValue();
     private static final Value TRUNCATE_DURATION_NANOS =
-            Stats.makeItem("FileHandle", "truncateDurationNanos", Counter.FACTORY).getValue();
+            Stats.makeItem("FileHandle", "truncateDurationNanos", STATS_FACTORY).getValue();
     private static final Value FORCE_DURATION_NANOS =
-            Stats.makeItem("FileHandle", "forceDurationNanos", Counter.FACTORY).getValue();
+            Stats.makeItem("FileHandle", "forceDurationNanos", STATS_FACTORY).getValue();
 
     static final String SAFETY_CHECK_PROPERTY = "FileHandle.safetyCheckEnabled";
 
@@ -204,7 +215,7 @@ public final class FileHandle implements SeekableByteChannel {
      * @return The current size of the file
      */
     @Override
-    public final long size() throws IOException {
+    public long size() throws IOException {
         try {
             final long startTimeNanos = System.nanoTime();
             try {
@@ -229,7 +240,7 @@ public final class FileHandle implements SeekableByteChannel {
      * @return This file handle's position
      */
     @Override
-    public final long position() throws IOException {
+    public long position() throws IOException {
         try {
             final long startTimeNanos = System.nanoTime();
             try {
@@ -253,7 +264,7 @@ public final class FileHandle implements SeekableByteChannel {
      * @return This file handle
      */
     @Override
-    public final FileHandle position(long newPosition) throws IOException {
+    public FileHandle position(long newPosition) throws IOException {
         try {
             final long startTimeNanos = System.nanoTime();
             try {
@@ -279,7 +290,7 @@ public final class FileHandle implements SeekableByteChannel {
      * @param position The position in the file to start reading from
      * @return The number of bytes read, or -1 if end of file is reached
      */
-    public final int read(@NotNull final ByteBuffer destination, final long position) throws IOException {
+    public int read(@NotNull final ByteBuffer destination, final long position) throws IOException {
         try {
             final long startTimeNanos = System.nanoTime();
             final int readSize = fileChannel.read(destination, position);
@@ -308,7 +319,7 @@ public final class FileHandle implements SeekableByteChannel {
      * @return The number of bytes read, or -1 of end of file is reached
      */
     @Override
-    public final int read(@NotNull final ByteBuffer destination) throws IOException {
+    public int read(@NotNull final ByteBuffer destination) throws IOException {
         try {
             final long startTimeNanos = System.nanoTime();
             final int readSize = fileChannel.read(destination);
@@ -336,7 +347,7 @@ public final class FileHandle implements SeekableByteChannel {
      * @param position The position in the file to start writing at
      * @return The number of bytes written
      */
-    public final int write(@NotNull final ByteBuffer source, final long position) throws IOException {
+    public int write(@NotNull final ByteBuffer source, final long position) throws IOException {
         try {
             final long startTimeNanos = System.nanoTime();
             final int sizeBytes = source.remaining();
@@ -364,7 +375,7 @@ public final class FileHandle implements SeekableByteChannel {
      * @return The number of bytes written
      */
     @Override
-    public final int write(@NotNull final ByteBuffer source) throws IOException {
+    public int write(@NotNull final ByteBuffer source) throws IOException {
         try {
             final long startTimeNanos = System.nanoTime();
             final int sizeBytes = source.remaining();
@@ -390,7 +401,7 @@ public final class FileHandle implements SeekableByteChannel {
      * @return This handle
      */
     @Override
-    public final FileHandle truncate(final long size) throws IOException {
+    public FileHandle truncate(final long size) throws IOException {
         try {
             final long startTimeNanos = System.nanoTime();
             try {
@@ -411,7 +422,7 @@ public final class FileHandle implements SeekableByteChannel {
      * <p>
      * See {@link FileChannel#force(boolean)}.
      */
-    public final void force() throws IOException {
+    public void force() throws IOException {
         try {
             final long startTimeNanos = System.nanoTime();
             try {
@@ -434,7 +445,7 @@ public final class FileHandle implements SeekableByteChannel {
      * @return If the file handle is open
      */
     @Override
-    public final boolean isOpen() {
+    public boolean isOpen() {
         final boolean isOpen = fileChannel.isOpen();
         if (!isOpen) {
             postCloseProcedure.run();
@@ -449,11 +460,24 @@ public final class FileHandle implements SeekableByteChannel {
      * See {@link FileChannel#close()}.
      */
     @Override
-    public final void close() throws IOException {
+    public void close() throws IOException {
         try {
             fileChannel.close();
         } finally {
             postCloseProcedure.run();
+        }
+    }
+
+    /**
+     * A test-only accessor of the total number of bytes read. If {@value THREAD_SAFE_STATS_PROPERTY} is not set to
+     * true, then the value is unreliable.
+     * 
+     * @return the number of bytes that have been read by any file handle in this process
+     */
+    @TestUseOnly
+    public static long getTotalReadSizeBytes() {
+        synchronized (READ_SIZE_BYTES) {
+            return READ_SIZE_BYTES.getSum();
         }
     }
 }
