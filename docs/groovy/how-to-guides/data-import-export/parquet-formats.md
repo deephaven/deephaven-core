@@ -34,6 +34,12 @@ Note that if Deephaven does not know how to parse a value, it becomes a string. 
 
 Deephaven supports optional metadata files that let you specify the types of your partitioning columns, which may not be obvious otherwise. Top-level metadata files can supply the full table schema and information about partitioning columns, while leaf-level files provide additional information to the engine (such as grouping/indexing). Deephaven can discover your Parquet files without looking at the entire file system, and all metadata is loaded at once.
 
+## Logical type support
+
+Deephaven maps Parquet [logical types](https://github.com/apache/parquet-format/blob/master/LogicalTypes.md) to Deephaven column types on read. The following non-obvious mappings are supported:
+
+- **`ENUM`**: Read as `String`. The `ENUM` logical type is physically identical to `STRING` (both are `BINARY` with UTF-8 encoding) and is commonly used by tools such as Apache Spark and PyArrow to annotate columns with a finite set of string values. Deephaven reads `ENUM`-annotated columns transparently as `String`.
+
 ## Related documentation
 
 - [Import Parquet into Deephaven video](https://youtu.be/k4gI6hSZ2Jc)

@@ -267,4 +267,3 @@ public class ObjectReverseChunkSsaStamp implements ChunkSsaStamp {
         return doComparison(lhs, rhs) <= 0;
     }
 }
-

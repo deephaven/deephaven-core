@@ -109,7 +109,7 @@ class Builtin {
         private static final ToObjectFunction<Message, Duration> CANONICAL_FUNCTION =
                 ToObjectFunction.<Message, com.google.protobuf.Duration>identity(
                         Type.ofCustom(com.google.protobuf.Duration.class))
-                        .mapToObj(DurationParser::parseCanonical, Type.ofCustom(Duration.class));
+                        .mapToObj(DurationParser::parseCanonical, Type.durationType());
 
         public static MessageParserSingle of() {
             return INSTANCE;
@@ -462,7 +462,7 @@ class Builtin {
 
     private static final class DurationFunction implements ToObjectFunction<Message, Duration> {
 
-        private static final GenericType<Duration> RETURN_TYPE = Type.ofCustom(Duration.class);
+        private static final GenericType<Duration> RETURN_TYPE = Type.durationType();
 
         public static ToObjectFunction<Message, Duration> of(Descriptor descriptor) {
             final FieldDescriptor secondsField =

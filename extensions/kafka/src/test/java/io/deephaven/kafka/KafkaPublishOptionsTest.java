@@ -9,7 +9,7 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.NoSuchColumnException;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.kafka.KafkaTools.Produce;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Properties;
 

@@ -566,11 +566,21 @@ public class RangeSetTest {
         for (int i = 0; i < rows.length; i++) {
             assertEquals("i=" + i, rows[i], initialRange.get(i));
         }
+        assertEquals(-1, initialRange.get(-1));
         assertEquals(-1, initialRange.get(rows.length));
         assertEquals(-1, initialRange.get(rows.length + 1));
         assertEquals(-1, initialRange.get(rows.length + 100));
 
         initialRange.removeRange(new Range(0, 1));
+
+        for (int i = 2; i < rows.length; i++) {
+            assertEquals("i=" + i, rows[i], initialRange.get(i - 2));
+        }
+        assertEquals(-1, initialRange.get(rows.length - 2));
+        assertEquals(-1, initialRange.get(rows.length - 1));
+
+        assertEquals(-1, RangeSet.empty().get(0));
+        assertEquals(-1, RangeSet.empty().get(-1));
     }
 
     @Test

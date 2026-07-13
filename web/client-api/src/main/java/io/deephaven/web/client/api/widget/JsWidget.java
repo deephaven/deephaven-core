@@ -3,6 +3,9 @@
 //
 package io.deephaven.web.client.api.widget;
 
+import com.google.common.io.BaseEncoding;
+import com.google.protobuf.ByteString;
+import com.google.protobuf.ByteStringAccess;
 import com.vertispan.tsdefs.annotations.TsName;
 import com.vertispan.tsdefs.annotations.TsUnion;
 import com.vertispan.tsdefs.annotations.TsUnionMember;
@@ -12,14 +15,15 @@ import elemental2.core.JsArray;
 import elemental2.core.Uint8Array;
 import elemental2.dom.DomGlobal;
 import elemental2.promise.Promise;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.object_pb.ClientData;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.object_pb.ConnectRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.object_pb.ServerData;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.object_pb.StreamRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.object_pb.StreamResponse;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.session_pb.ExportRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.ticket_pb.Ticket;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.ticket_pb.TypedTicket;
+import io.deephaven.proto.backplane.grpc.BrowserNextResponse;
+import io.deephaven.proto.backplane.grpc.ClientData;
+import io.deephaven.proto.backplane.grpc.ConnectRequest;
+import io.deephaven.proto.backplane.grpc.ExportRequest;
+import io.deephaven.proto.backplane.grpc.ServerData;
+import io.deephaven.proto.backplane.grpc.StreamRequest;
+import io.deephaven.proto.backplane.grpc.StreamResponse;
+import io.deephaven.proto.backplane.grpc.Ticket;
+import io.deephaven.proto.backplane.grpc.TypedTicket;
 import io.deephaven.web.client.api.Callbacks;
 import io.deephaven.web.client.api.ServerObject;
 import io.deephaven.web.client.api.WorkerConnection;
@@ -27,11 +31,13 @@ import io.deephaven.web.client.api.barrage.stream.BiDiStream;
 import io.deephaven.web.client.api.event.HasEventHandling;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsOptional;
+import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsOverlay;
 import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
 import jsinterop.base.Js;
+import org.gwtproject.nio.TypedArrayHelper;
 
 import java.nio.charset.StandardCharsets;
 import java.util.function.Supplier;
@@ -116,11 +122,10 @@ public class JsWidget extends HasEventHandling implements ServerObject, WidgetMe
         this.typedTicket = typedTicket;
         hasFetched = false;
         BiDiStream.Factory<StreamRequest, StreamResponse> factory = connection.streamFactory();
-        streamFactory = () -> factory.create(
+        streamFactory = () -> factory.<BrowserNextResponse>create(
                 connection.objectServiceClient()::messageStream,
                 (first, headers) -> connection.objectServiceClient().openMessageStream(first, headers),
-                (next, headers, c) -> connection.objectServiceClient().nextMessageStream(next, headers, c::apply),
-                new StreamRequest());
+                (next, c) -> connection.objectServiceClient().nextMessageStream(next, c));
         this.exportedObjects = new JsArray<>();
     }
 
@@ -155,8 +160,11 @@ public class JsWidget extends HasEventHandling implements ServerObject, WidgetMe
             messageStream = streamFactory.get();
             messageStream.onData(res -> {
 
-                JsArray<JsWidgetExportedObject> responseObjects = res.getData().getExportedReferencesList()
-                        .map((p0, p1) -> new JsWidgetExportedObject(connection, p0));
+                JsArray<JsWidgetExportedObject> responseObjects = Js.uncheckedCast(res.getData()
+                        .getExportedReferencesList()
+                        .stream()
+                        .map((p0) -> new JsWidgetExportedObject(connection, p0))
+                        .toArray());
                 if (!hasFetched) {
                     response = res;
                     exportedObjects = responseObjects;
@@ -171,7 +179,7 @@ public class JsWidget extends HasEventHandling implements ServerObject, WidgetMe
             });
             messageStream.onStatus(status -> {
                 if (!status.isOk()) {
-                    reject.onInvoke(status.getDetails());
+                    reject.onInvoke(status.getDescription());
                 }
                 DomGlobal.setTimeout(ignore -> {
                     fireEvent(EVENT_CLOSE);
@@ -183,11 +191,11 @@ public class JsWidget extends HasEventHandling implements ServerObject, WidgetMe
             });
 
             // First message establishes a connection w/ the plugin object instance we're talking to
-            StreamRequest req = new StreamRequest();
-            ConnectRequest data = new ConnectRequest();
+            StreamRequest.Builder req = StreamRequest.newBuilder();
+            ConnectRequest.Builder data = ConnectRequest.newBuilder();
             data.setSourceId(typedTicket);
             req.setConnect(data);
-            messageStream.send(req);
+            messageStream.send(req.build());
         });
     }
 
@@ -200,14 +208,16 @@ public class JsWidget extends HasEventHandling implements ServerObject, WidgetMe
         Ticket reexportedTicket = connection.getTickets().newExportTicket();
 
         // Race these calls so we avoid a round trip, server will do the synchronization for us
-        ExportRequest req = new ExportRequest();
-        req.setSourceId(getTicket());
-        req.setResultId(reexportedTicket);
-        connection.sessionServiceClient().exportFromTicket(req, connection.metadata(), null);
+        ExportRequest req = ExportRequest.newBuilder()
+                .setSourceId(getTicket())
+                .setResultId(reexportedTicket)
+                .build();
+        connection.sessionServiceClient().exportFromTicket(req, Callbacks.ignore());
 
-        TypedTicket typedTicket = new TypedTicket();
-        typedTicket.setTicket(reexportedTicket);
-        typedTicket.setType(getType());
+        TypedTicket typedTicket = TypedTicket.newBuilder()
+                .setTicket(reexportedTicket)
+                .setType(getType())
+                .build();
         return new JsWidget(connection, typedTicket).refetch();
     }
 
@@ -225,28 +235,37 @@ public class JsWidget extends HasEventHandling implements ServerObject, WidgetMe
 
     @Override
     public TypedTicket typedTicket() {
-        TypedTicket typedTicket = new TypedTicket();
-        typedTicket.setTicket(getTicket());
-        typedTicket.setType(getType());
-        return typedTicket;
+        return TypedTicket.newBuilder()
+                .setTicket(getTicket())
+                .setType(getType())
+                .build();
     }
 
     @Override
     @JsMethod
     public String getDataAsBase64() {
-        return response.getData().getPayload_asB64();
+        return BaseEncoding.base64().encode(response.getData().getPayload().toByteArray());
     }
 
     @Override
     @JsMethod
     public Uint8Array getDataAsU8() {
-        return response.getData().getPayload_asU8();
+        ByteString bytes = response.getData().getPayload();
+        Uint8Array payload = new Uint8Array(bytes.size());
+        for (int i = 0; i < bytes.size(); i++) {
+            payload.setAt(i, (double) bytes.byteAt(i));
+        }
+        return payload;
     }
 
     @Override
     @JsMethod
     public String getDataAsString() {
-        return new String(Js.uncheckedCast(response.getData().getPayload_asU8()), StandardCharsets.UTF_8);
+        return response.getData().getPayload().toString(StandardCharsets.UTF_8);
+    }
+
+    public ByteString getData() {
+        return response.getData().getPayload();
     }
 
     /**
@@ -304,23 +323,20 @@ public class JsWidget extends HasEventHandling implements ServerObject, WidgetMe
      * @param references an array of objects that can be safely sent to the server
      */
     @JsMethod
-    public void sendMessage(MessageUnion msg, @JsOptional JsArray<ServerObject.Union> references) {
+    public void sendMessage(MessageUnion msg, @JsOptional @JsNullable JsArray<ServerObject.Union> references) {
         if (messageStream == null) {
             return;
         }
-        StreamRequest req = new StreamRequest();
-        ClientData data = new ClientData();
+        StreamRequest.Builder req = StreamRequest.newBuilder();
+        ClientData.Builder data = ClientData.newBuilder();
         if (msg.isString()) {
-            byte[] bytes = msg.asString().getBytes(StandardCharsets.UTF_8);
-            Uint8Array payload = new Uint8Array(bytes.length);
-            payload.set(Js.<double[]>uncheckedCast(bytes));
-            data.setPayload(payload);
+            data.setPayload(ByteString.copyFrom(msg.asString(), StandardCharsets.UTF_8));
         } else if (msg.isArrayBuffer()) {
-            data.setPayload(new Uint8Array(msg.asArrayBuffer()));
+            data.setPayload(ByteStringAccess.wrap(TypedArrayHelper.wrap(msg.asArrayBuffer())));
         } else if (msg.isView()) {
             // can cast (unsafely) to any typed array or to DataView to read offset/length/buffer to make a new view
             ArrayBufferView view = msg.asView();
-            data.setPayload(new Uint8Array(view.buffer, view.byteOffset, view.byteLength));
+            data.setPayload(ByteStringAccess.wrap(TypedArrayHelper.wrap(view)));
         } else {
             throw new IllegalArgumentException("Expected message to be a String or ArrayBuffer");
         }
@@ -331,7 +347,7 @@ public class JsWidget extends HasEventHandling implements ServerObject, WidgetMe
         }
 
         req.setData(data);
-        messageStream.send(req);
+        messageStream.send(req.build());
     }
 
     /**
@@ -349,17 +365,21 @@ public class JsWidget extends HasEventHandling implements ServerObject, WidgetMe
 
         @Override
         public String getDataAsBase64() {
-            return data.getPayload_asB64();
+            return BaseEncoding.base64().encode(data.getPayload().toByteArray());
         }
 
         @Override
         public Uint8Array getDataAsU8() {
-            return data.getPayload_asU8();
+            Uint8Array payload = new Uint8Array(data.getPayload().size());
+            for (int i = 0; i < data.getPayload().size(); i++) {
+                payload.setAt(i, (double) data.getPayload().byteAt(i));
+            }
+            return payload;
         }
 
         @Override
         public String getDataAsString() {
-            return new String(Js.uncheckedCast(data.getPayload_asU8()), StandardCharsets.UTF_8);
+            return data.getPayload().toString(StandardCharsets.UTF_8);
         }
 
         @Override

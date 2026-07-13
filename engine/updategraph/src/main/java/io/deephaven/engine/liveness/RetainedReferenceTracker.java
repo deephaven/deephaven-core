@@ -20,6 +20,8 @@ import java.lang.ref.WeakReference;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 /**
@@ -247,6 +249,23 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
         return outstandingCount.get();
     }
 
+    /**
+     * Find a retained reference that matches the given predicate.
+     *
+     * @param referentPredicate a predicate to test against our references
+     * @return an Optional of a LivenessReferent that matches the given predicate; or empty if no such reference exists
+     */
+    synchronized Optional<? extends LivenessReferent> findAny(Predicate<LivenessReferent> referentPredicate) {
+        return impl.findAny(referentPredicate);
+    }
+
+    /*
+     * Apply consumer to each retained reference.
+     */
+    synchronized void forEach(Consumer<LivenessReferent> consumer) {
+        impl.forEach(consumer);
+    }
+
     private interface Impl {
 
         Impl add(@NotNull final LivenessReferent referent);
@@ -260,6 +279,20 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
         void transferReferencesTo(@NotNull final RetainedReferenceTracker<?> other);
 
         void makePermanent();
+
+        /**
+         * Find a retained reference that matches the given predicate.
+         * 
+         * @param referentPredicate a predicate to test against our references
+         * @return an Optional of a LivenessReferent that matches the given predicate; or empty if no such reference
+         *         exists
+         */
+        Optional<? extends LivenessReferent> findAny(Predicate<LivenessReferent> referentPredicate);
+
+        /**
+         * Apply consumer to LivenessReferents that are currently retained by this Impl.
+         */
+        void forEach(Consumer<LivenessReferent> consumer);
     }
 
     private static final class EmptyWeakImpl implements Impl {
@@ -284,6 +317,14 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
 
         @Override
         public void makePermanent() {}
+
+        @Override
+        public Optional<? extends LivenessReferent> findAny(Predicate<LivenessReferent> referentPredicate) {
+            return Optional.empty();
+        }
+
+        @Override
+        public void forEach(Consumer<LivenessReferent> consumer) {}
     }
 
     private static final class SingleWeakImpl implements Impl {
@@ -379,6 +420,30 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
         @Override
         public void makePermanent() {
             retainedWeakReference = null;
+        }
+
+        @Override
+        public Optional<? extends LivenessReferent> findAny(Predicate<LivenessReferent> referentPredicate) {
+            if (retainedWeakReference == null) {
+                return Optional.empty();
+            }
+            final LivenessReferent localRetained = retainedWeakReference.get();
+            if (localRetained != null && referentPredicate.test(localRetained)) {
+                return Optional.of(localRetained);
+            }
+            return Optional.empty();
+        }
+
+
+        @Override
+        public void forEach(Consumer<LivenessReferent> consumer) {
+            if (retainedWeakReference == null) {
+                return;
+            }
+            final LivenessReferent retained = retainedWeakReference.get();
+            if (retained != null) {
+                consumer.accept(retained);
+            }
         }
     }
 
@@ -490,6 +555,17 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
         public void makePermanent() {
             retainedReferences.clear();
         }
+
+        @Override
+        public Optional<? extends LivenessReferent> findAny(Predicate<LivenessReferent> referentPredicate) {
+            return retainedReferences.stream().map(WeakReference::get)
+                    .filter(Objects::nonNull).filter(referentPredicate).findAny();
+        }
+
+        @Override
+        public void forEach(Consumer<LivenessReferent> consumer) {
+            retainedReferences.stream().map(WeakReference::get).filter(Objects::nonNull).forEach(consumer);
+        }
     }
 
     private static final class EmptyStrongImpl implements Impl {
@@ -514,6 +590,15 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
 
         @Override
         public void makePermanent() {}
+
+        @Override
+        public Optional<? extends LivenessReferent> findAny(Predicate<LivenessReferent> referentPredicate) {
+            return Optional.empty();
+        }
+
+        @Override
+        public void forEach(Consumer<LivenessReferent> consumer) {}
+
     }
 
     private static final RetentionCache<LivenessReferent> STRONG_RETENTION_CACHE = new RetentionCache<>();
@@ -582,6 +667,23 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
             if (retained != null) {
                 STRONG_RETENTION_CACHE.retain(retained);
                 retained = null;
+            }
+        }
+
+        @Override
+        public Optional<? extends LivenessReferent> findAny(Predicate<LivenessReferent> referentPredicate) {
+            final LivenessReferent localRetained = retained;
+            if (localRetained != null && referentPredicate.test(localRetained)) {
+                return Optional.of(localRetained);
+            }
+            return Optional.empty();
+        }
+
+        @Override
+        public void forEach(Consumer<LivenessReferent> consumer) {
+            final LivenessReferent localRetained = retained;
+            if (localRetained != null) {
+                consumer.accept(localRetained);
             }
         }
     }
@@ -662,6 +764,16 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
             // See LivenessScope.transferTo: This is currently unreachable code, but implemented for completeness
             retained.forEach(STRONG_RETENTION_CACHE::retain);
             retained.clear();
+        }
+
+        @Override
+        public Optional<? extends LivenessReferent> findAny(Predicate<LivenessReferent> referentPredicate) {
+            return retained.stream().filter(referentPredicate).findAny();
+        }
+
+        @Override
+        public void forEach(Consumer<LivenessReferent> consumer) {
+            retained.forEach(consumer);
         }
     }
 

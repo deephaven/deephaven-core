@@ -220,10 +220,13 @@ def _map_na(array: Union[np.ndarray, ExtensionArray]) -> np.ndarray:
             np_array[null_mask] = dh_null
         return np_array
 
-    if isinstance(
-        pd_dtype, (pd.StringDtype, pd.BooleanDtype)
-    ) or pd_dtype == pd.ArrowDtype(pa.bool_()):
+    if isinstance(pd_dtype, pd.BooleanDtype) or pd_dtype == pd.ArrowDtype(pa.bool_()):
         array = np.array(list(map(lambda v: dh_null if v is pd.NA else v, array)))
+    elif isinstance(pd_dtype, pd.StringDtype):
+        # in pandas 3.0.0+, for string data, the default inferred type is now StringDtype(na_value=np.nan)
+        array = np.array(
+            list(map(lambda v: dh_null if (v is pd.NA or v is np.nan) else v, array))
+        )
     elif dh_null is not None:
         array = array.fillna(dh_null)
 

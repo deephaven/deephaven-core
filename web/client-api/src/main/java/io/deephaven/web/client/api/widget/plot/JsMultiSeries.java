@@ -6,19 +6,14 @@ package io.deephaven.web.client.api.widget.plot;
 import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
 import com.vertispan.tsdefs.annotations.TsTypeRef;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.figuredescriptor.BoolMapWithDefault;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.figuredescriptor.DoubleMapWithDefault;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.figuredescriptor.MultiSeriesDescriptor;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.figuredescriptor.MultiSeriesSourceDescriptor;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.figuredescriptor.SeriesDescriptor;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.figuredescriptor.SourceDescriptor;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.figuredescriptor.StringMapWithDefault;
+import io.deephaven.proto.backplane.script.grpc.FigureDescriptor;
 import io.deephaven.web.client.api.JsPartitionedTable;
 import io.deephaven.web.client.api.widget.plot.enums.JsSeriesPlotStyle;
 import jsinterop.annotations.JsProperty;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Describes a template that will be used to make new series instances when a new table added to a {@code plotBy}.
@@ -26,12 +21,13 @@ import java.util.Map;
 @TsInterface
 @TsName(name = "MultiSeries", namespace = "dh.plot")
 public class JsMultiSeries {
-    private final MultiSeriesDescriptor descriptor;
+    private final FigureDescriptor.MultiSeriesDescriptor descriptor;
     private final JsFigure figure;
     private final Map<String, JsAxis> axes;
     private final JsChart parent;
 
-    public JsMultiSeries(MultiSeriesDescriptor descriptor, JsFigure figure, Map<String, JsAxis> axes, JsChart parent) {
+    public JsMultiSeries(FigureDescriptor.MultiSeriesDescriptor descriptor, JsFigure figure, Map<String, JsAxis> axes,
+            JsChart parent) {
 
         this.descriptor = descriptor;
         this.figure = figure;
@@ -40,7 +36,8 @@ public class JsMultiSeries {
     }
 
     public void initSources(Map<Integer, JsPartitionedTable> plotHandlesToPartitionedTables) {
-        descriptor.getDataSourcesList().asList().stream().mapToInt(MultiSeriesSourceDescriptor::getPartitionedTableId)
+        descriptor.getDataSourcesList().stream()
+                .mapToInt(FigureDescriptor.MultiSeriesSourceDescriptor::getPartitionedTableId)
                 .distinct()
                 // TODO assert only one at this stage
                 .forEach(plotHandle -> {
@@ -60,10 +57,10 @@ public class JsMultiSeries {
         // TODO ask the server in parallel for the series name
         String seriesName = descriptor.getName() + ": " + key;
         partitionedTable.getTable(key).then(table -> {
-            SeriesDescriptor seriesInstance = new SeriesDescriptor();
+            FigureDescriptor.SeriesDescriptor.Builder seriesInstance = FigureDescriptor.SeriesDescriptor.newBuilder();
 
             seriesInstance.setName(seriesName);
-            seriesInstance.setPlotStyle(getPlotStyle());
+            seriesInstance.setPlotStyle(FigureDescriptor.SeriesPlotStyle.forNumber(getPlotStyle()));
 
             seriesInstance.setLineColor(getOrDefault(seriesName, descriptor.getLineColor()));
             seriesInstance.setShapeColor(getOrDefault(seriesName, descriptor.getPointColor()));
@@ -85,20 +82,22 @@ public class JsMultiSeries {
 
             int tableId = figure.registerTable(table);
 
-            seriesInstance.setDataSourcesList(
+            seriesInstance.addAllDataSources(
                     descriptor.getDataSourcesList()
-                            .map((multiSeriesSource, p1) -> {
-                                SourceDescriptor sourceDescriptor = new SourceDescriptor();
-                                sourceDescriptor.setColumnName(multiSeriesSource.getColumnName());
-                                sourceDescriptor.setAxisId(multiSeriesSource.getAxisId());
-                                sourceDescriptor.setTableId(tableId);
-                                sourceDescriptor.setType(multiSeriesSource.getType());
-                                return sourceDescriptor;
+                            .stream()
+                            .map((multiSeriesSource) -> {
+                                return FigureDescriptor.SourceDescriptor.newBuilder()
+                                        .setColumnName(multiSeriesSource.getColumnName())
+                                        .setAxisId(multiSeriesSource.getAxisId())
+                                        .setTableId(tableId)
+                                        .setType(multiSeriesSource.getType())
+                                        .build();
                             })
+                            .collect(Collectors.toList())
 
             );
 
-            JsSeries series = new JsSeries(seriesInstance, figure, axes);
+            JsSeries series = new JsSeries(seriesInstance.build(), figure, axes);
             series.setMultiSeries(this);
             series.initSources(Collections.singletonMap(tableId, table), Collections.emptyMap());
 
@@ -110,28 +109,28 @@ public class JsMultiSeries {
         });
     }
 
-    private boolean getOrDefault(String name, BoolMapWithDefault map) {
-        int index = map.getKeysList().findIndex((p0, p1, p2) -> name.equals(p0));
+    private boolean getOrDefault(String name, FigureDescriptor.BoolMapWithDefault map) {
+        int index = map.getKeysList().indexOf(name);
         if (index == -1) {
             return map.getDefaultBool();
         }
-        return map.getValuesList().getAt(index);
+        return map.getValuesList().get(index);
     }
 
-    private String getOrDefault(String name, StringMapWithDefault map) {
-        int index = map.getKeysList().findIndex((p0, p1, p2) -> name.equals(p0));
+    private String getOrDefault(String name, FigureDescriptor.StringMapWithDefault map) {
+        int index = map.getKeysList().indexOf(name);
         if (index == -1) {
             return map.getDefaultString();
         }
-        return map.getValuesList().getAt(index);
+        return map.getValuesList().get(index);
     }
 
-    private double getOrDefault(String name, DoubleMapWithDefault map) {
-        int index = map.getKeysList().findIndex((p0, p1, p2) -> name.equals(p0));
+    private double getOrDefault(String name, FigureDescriptor.DoubleMapWithDefault map) {
+        int index = map.getKeysList().indexOf(name);
         if (index == -1) {
             return map.getDefaultDouble();
         }
-        return map.getValuesList().getAt(index);
+        return map.getValuesList().get(index);
     }
 
     /**
@@ -143,7 +142,7 @@ public class JsMultiSeries {
     @JsProperty
     @TsTypeRef(JsSeriesPlotStyle.class)
     public int getPlotStyle() {
-        return descriptor.getPlotStyle();
+        return descriptor.getPlotStyle().getNumber();
     }
 
     /**

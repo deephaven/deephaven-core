@@ -2,8 +2,6 @@
 // Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 using System.Collections;
-using System.Diagnostics;
-using Apache.Arrow;
 
 namespace Deephaven.Dh_NetClient;
 

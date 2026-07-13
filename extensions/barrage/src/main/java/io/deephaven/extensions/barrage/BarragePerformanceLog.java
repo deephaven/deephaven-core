@@ -104,11 +104,7 @@ public class BarragePerformanceLog {
         return snapImpl;
     }
 
-    public interface WriteMetricsConsumer {
-        void onWrite(long bytes, long cpuNanos);
-    }
-
-    public static class SnapshotMetricsHelper implements WriteMetricsConsumer {
+    public static class SnapshotMetricsHelper implements BarrageMessageWriter.WriteMetricsConsumer {
         public final Instant requestTm = DateTimeUtils.now();
 
         public String tableId;

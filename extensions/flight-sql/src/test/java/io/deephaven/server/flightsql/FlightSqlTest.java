@@ -581,13 +581,13 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
     public void testDh18803() throws Exception {
         // https://deephaven.atlassian.net/browse/DH-18803: Sql fails to adapt Vector types
         final TableDefinition td = TableDefinition.of(
-                ColumnDefinition.ofVector("ByteVector", ByteVector.class),
-                ColumnDefinition.ofVector("CharVector", CharVector.class),
-                ColumnDefinition.ofVector("ShortVector", ShortVector.class),
-                ColumnDefinition.ofVector("IntVector", IntVector.class),
-                ColumnDefinition.ofVector("LongVector", LongVector.class),
-                ColumnDefinition.ofVector("FloatVector", FloatVector.class),
-                ColumnDefinition.ofVector("DoubleVector", DoubleVector.class),
+                ColumnDefinition.of("ByteVector", ByteVector.type()),
+                ColumnDefinition.of("CharVector", CharVector.type()),
+                ColumnDefinition.of("ShortVector", ShortVector.type()),
+                ColumnDefinition.of("IntVector", IntVector.type()),
+                ColumnDefinition.of("LongVector", LongVector.type()),
+                ColumnDefinition.of("FloatVector", FloatVector.type()),
+                ColumnDefinition.of("DoubleVector", DoubleVector.type()),
                 ColumnDefinition.of("StringVector", GenericVectorType.of(ObjectVector.class, Type.stringType())));
         final Table emptyTable = TableTools.newTable(td);
         ExecutionContext.getContext().getQueryScope().putParam("MyTable", emptyTable);

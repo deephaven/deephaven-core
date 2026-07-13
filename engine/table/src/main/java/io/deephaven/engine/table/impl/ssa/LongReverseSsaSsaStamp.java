@@ -304,4 +304,3 @@ public class LongReverseSsaSsaStamp implements SsaSsaStamp {
         return doComparison(lhs, rhs) <= 0;
     }
 }
-

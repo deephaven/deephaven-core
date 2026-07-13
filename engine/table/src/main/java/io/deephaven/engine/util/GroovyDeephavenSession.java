@@ -346,7 +346,6 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         try (final SafeCloseable ignored = groovyShell.setScriptPrefix(currentScriptName)) {
 
             updateClassloader(lastCommand);
-
             try {
                 ExecutionContext.getContext().getUpdateGraph().exclusiveLock()
                         .doLockedInterruptibly(() -> groovyShell.evaluate(lastCommand));

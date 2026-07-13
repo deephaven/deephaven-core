@@ -17,7 +17,6 @@ import io.deephaven.util.thread.NamingThreadFactory;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.time.Duration;
 import java.time.ZoneId;
 import java.util.Properties;
 import java.util.concurrent.Executors;
@@ -70,7 +69,7 @@ public class StatsDriver implements Closeable {
     private static final int BUFFER_SIZE = 8192;
     private static final int GUESS_ENTRY_SIZE = 256;
 
-    private final Value statsTiming = Stats.makeItem("Stats", "updateDuration", State.FACTORY,
+    private final Value statsTiming = Stats.makeItem("Stats", "updateDuration", Counter.FACTORY,
             "Microseconds required to update the statistics histories each second").getValue();
 
     private final Clock clock;

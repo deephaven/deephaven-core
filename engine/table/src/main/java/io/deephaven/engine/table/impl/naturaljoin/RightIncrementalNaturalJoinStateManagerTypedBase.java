@@ -3,7 +3,7 @@
 //
 package io.deephaven.engine.table.impl.naturaljoin;
 
-import gnu.trove.list.array.TLongArrayList;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
 import io.deephaven.api.NaturalJoinType;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
@@ -55,7 +55,7 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
     protected ObjectArraySource<WritableRowSet> rightSideDuplicateRowSets =
             new ObjectArraySource<>(WritableRowSet.class);
     protected long nextDuplicateRightSide = 0;
-    protected TLongArrayList freeDuplicateValues = new TLongArrayList();
+    protected LongArrayList freeDuplicateValues = new LongArrayList();
     protected ImmutableLongArraySource modifiedTrackerCookieSource = new ImmutableLongArraySource();
 
     protected RightIncrementalNaturalJoinStateManagerTypedBase(ColumnSource<?>[] tableKeySources,
@@ -212,10 +212,7 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
             rightSideDuplicateRowSets.ensureCapacity(nextDuplicateRightSide + 1);
             return nextDuplicateRightSide++;
         } else {
-            final int offset = freeDuplicateValues.size() - 1;
-            final long value = freeDuplicateValues.get(offset);
-            freeDuplicateValues.remove(offset, 1);
-            return value;
+            return freeDuplicateValues.removeLong(freeDuplicateValues.size() - 1);
         }
     }
 

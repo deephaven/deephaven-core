@@ -44,7 +44,8 @@ columnSource = result.getColumnSource("Integers")
 println columnSource
 ```
 
-> [!IMPORTANT] > `ColumnSource` methods like `get(rowKey)` use **row keys**, not positional indices. Row keys are the internal identifiers for rows and may not match positional indices, especially in filtered or modified tables.
+> [!IMPORTANT]
+> `ColumnSource` methods like `get(rowKey)` use **row keys**, not positional indices. Row keys are the internal identifiers for rows and may not match positional indices, especially in filtered or modified tables.
 
 For primitive columns, use type-specific methods for better performance:
 

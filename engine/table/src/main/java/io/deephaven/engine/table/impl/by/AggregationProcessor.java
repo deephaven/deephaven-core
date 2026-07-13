@@ -607,7 +607,12 @@ public class AggregationProcessor implements AggregationContextFactory {
             addNoInputOperator(operator);
         }
 
-        final void addSortedFirstOrLastOperator(@NotNull final List<SortColumn> sortColumns, final boolean isFirst) {
+        final void addSortedFirstOrLastOperator(@NotNull final List<SortColumn> sortColumns, final boolean isFirst,
+                final String exposeRedirectionAs) {
+            if (exposeRedirectionAs != null) {
+                unsupportedForBlinkTables((isFirst ? "SortedFirst" : "SortedLast") +
+                        " with exposed row redirections (e.g. for rollup())");
+            }
             final String[] sortColumnNames = sortColumns.stream().map(sc -> {
                 descendingSortedFirstOrLastUnsupported(sc, isFirst);
                 return sc.column().name();
@@ -622,7 +627,7 @@ public class AggregationProcessor implements AggregationContextFactory {
             }
             addOperator(
                     makeSortedFirstOrLastOperator(inputSource.getChunkType(), isFirst, aggregations.size() > 1,
-                            MatchPair.fromPairs(resultPairs), table),
+                            MatchPair.fromPairs(resultPairs), table, exposeRedirectionAs),
                     inputSource, sortColumnNames);
         }
 
@@ -1117,12 +1122,12 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final AggSpecSortedFirst sortedFirst) {
-            addSortedFirstOrLastOperator(sortedFirst.columns(), true);
+            addSortedFirstOrLastOperator(sortedFirst.columns(), true, null);
         }
 
         @Override
         public void visit(@NotNull final AggSpecSortedLast sortedLast) {
-            addSortedFirstOrLastOperator(sortedLast.columns(), false);
+            addSortedFirstOrLastOperator(sortedLast.columns(), false, null);
         }
 
         @Override
@@ -1144,7 +1149,7 @@ public class AggregationProcessor implements AggregationContextFactory {
         @Override
         public void visit(@NotNull final AggSpecUnique unique) {
             addBasicOperators((t, n) -> makeUniqueOperator(t, n, unique.includeNulls(), null,
-                    unique.nonUniqueSentinel().orElse(null), false, false));
+                    unique.nonUniqueSentinel().orElse(null), false, false, null));
         }
 
         @Override
@@ -1203,7 +1208,7 @@ public class AggregationProcessor implements AggregationContextFactory {
             if (groupByColumnSet.contains(cd.getName())) {
                 resultDefinition = cd;
             } else {
-                resultDefinition = ColumnDefinition.fromGenericType(
+                resultDefinition = ColumnDefinition.ofVector(
                         cd.getName(),
                         VectorFactory.forElementType(cd.getDataType()).vectorType(),
                         cd.getDataType());
@@ -1492,12 +1497,12 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final AggSpecSortedFirst sortedFirst) {
-            addSortedFirstOrLastOperator(sortedFirst.columns(), true);
+            addSortedFirstOrLastOperator(sortedFirst.columns(), true, makeRedirectionName(nextColumnIdentifier++));
         }
 
         @Override
         public void visit(@NotNull final AggSpecSortedLast sortedLast) {
-            addSortedFirstOrLastOperator(sortedLast.columns(), false);
+            addSortedFirstOrLastOperator(sortedLast.columns(), false, makeRedirectionName(nextColumnIdentifier++));
         }
 
         @Override
@@ -1513,7 +1518,7 @@ public class AggregationProcessor implements AggregationContextFactory {
         @Override
         public void visit(@NotNull final AggSpecUnique unique) {
             addBasicOperators((t, n) -> makeUniqueOperator(t, n, unique.includeNulls(), null,
-                    unique.nonUniqueSentinel().orElse(null), true, false));
+                    unique.nonUniqueSentinel().orElse(null), true, false, null));
         }
 
         @Override
@@ -1788,8 +1793,19 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final AggSpecUnique unique) {
-            reaggregateSsmBackedOperator((ssmSrc, priorResultSrc, n) -> makeUniqueOperator(priorResultSrc.getType(), n,
-                    unique.includeNulls(), null, unique.nonUniqueSentinel().orElse(null), true, true));
+            // The unique reaggregation reads each constituent's value column plus its singletonCount column (which
+            // classifies the constituent as empty, uniquely a single value, or non-unique) rather than its SSM.
+            for (final Pair pair : resultPairs) {
+                final String resultName = pair.output().name();
+                final ColumnSource<?> valueSource = table.getColumnSource(resultName);
+                final String singletonCountName =
+                        resultName + ROLLUP_DISTINCT_SSM_COUNT_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;
+                final ColumnSource<?> singletonCountSource = table.getColumnSource(singletonCountName);
+                final IterativeChunkedAggregationOperator operator = makeUniqueOperator(valueSource.getType(),
+                        resultName, unique.includeNulls(), null, unique.nonUniqueSentinel().orElse(null), true, true,
+                        singletonCountSource);
+                addOperator(operator, valueSource, resultName, singletonCountName);
+            }
         }
 
         @Override
@@ -1836,13 +1852,26 @@ public class AggregationProcessor implements AggregationContextFactory {
                     resultPairs.stream().map(Pair::output),
                     Stream.of(redirectionColumnName))
                     .collect(Collectors.toList());
-            addSortedFirstOrLastOperator(List.of(SortColumn.asc(redirectionColumnName)), isFirst);
+            addSortedFirstOrLastOperator(List.of(SortColumn.asc(redirectionColumnName)), isFirst, null);
         }
 
         private void reaggregateSortedFirstOrLastOperator(
                 @NotNull final List<SortColumn> sortColumns, final boolean isFirst) {
-            resultPairs = resultPairs.stream().map(Pair::output).collect(Collectors.toList());
-            addSortedFirstOrLastOperator(sortColumns, isFirst);
+            // Carry the originating source row key forward, exactly as First/Last does, so this re-aggregation breaks
+            // sort-value ties by the original row key instead of by this level's row keys. The child level exposed its
+            // selected source row key under this same name (the identifier sequence matches across levels); we re-sort
+            // by the sort columns with that carried row key appended as the final, tie-breaking sort column, and add it
+            // to resultPairs so it is re-exposed (redirected from the child) for the next level up.
+            final ColumnName redirectionColumnName = ColumnName.of(makeRedirectionName(nextColumnIdentifier++));
+            resultPairs = Stream.concat(
+                    resultPairs.stream().map(Pair::output),
+                    Stream.of(redirectionColumnName))
+                    .collect(Collectors.toList());
+            final List<SortColumn> reaggregationSortColumns = Stream.concat(
+                    sortColumns.stream(),
+                    Stream.of(SortColumn.asc(redirectionColumnName)))
+                    .collect(Collectors.toList());
+            addSortedFirstOrLastOperator(reaggregationSortColumns, isFirst, null);
         }
 
         private void reaggregateMinOrMaxOperators(final boolean isMin) {
@@ -2243,38 +2272,39 @@ public class AggregationProcessor implements AggregationContextFactory {
             @SuppressWarnings("SameParameterValue") final UnionObject onlyNullsSentinel,
             final UnionObject nonUniqueSentinel,
             final boolean exposeInternal,
-            final boolean reaggregated) {
+            final boolean reaggregated,
+            final ColumnSource<?> constituentSingletonCount) {
         checkType(resultName, "Only Nulls Sentinel", type, onlyNullsSentinel);
         checkType(resultName, "Non Unique Sentinel", type, nonUniqueSentinel);
         if (type == Byte.class || type == byte.class) {
             final byte onsAsType = UnionObjectUtils.byteValue(onlyNullsSentinel);
             final byte nusAsType = UnionObjectUtils.byteValue(nonUniqueSentinel);
             return reaggregated
-                    ? new ByteRollupUniqueOperator(resultName, includeNulls, onsAsType, nusAsType)
+                    ? new ByteRollupUniqueOperator(resultName, onsAsType, nusAsType, constituentSingletonCount)
                     : new ByteChunkedUniqueOperator(resultName, includeNulls, exposeInternal, onsAsType, nusAsType);
         } else if (type == Character.class || type == char.class) {
             final char onsAsType = UnionObjectUtils.charValue(onlyNullsSentinel);
             final char nusAsType = UnionObjectUtils.charValue(nonUniqueSentinel);
             return reaggregated
-                    ? new CharRollupUniqueOperator(resultName, includeNulls, onsAsType, nusAsType)
+                    ? new CharRollupUniqueOperator(resultName, onsAsType, nusAsType, constituentSingletonCount)
                     : new CharChunkedUniqueOperator(resultName, includeNulls, exposeInternal, onsAsType, nusAsType);
         } else if (type == Double.class || type == double.class) {
             final double onsAsType = UnionObjectUtils.doubleValue(onlyNullsSentinel);
             final double nusAsType = UnionObjectUtils.doubleValue(nonUniqueSentinel);
             return reaggregated
-                    ? new DoubleRollupUniqueOperator(resultName, includeNulls, onsAsType, nusAsType)
+                    ? new DoubleRollupUniqueOperator(resultName, onsAsType, nusAsType, constituentSingletonCount)
                     : new DoubleChunkedUniqueOperator(resultName, includeNulls, exposeInternal, onsAsType, nusAsType);
         } else if (type == Float.class || type == float.class) {
             final float onsAsType = UnionObjectUtils.floatValue(onlyNullsSentinel);
             final float nusAsType = UnionObjectUtils.floatValue(nonUniqueSentinel);
             return reaggregated
-                    ? new FloatRollupUniqueOperator(resultName, includeNulls, onsAsType, nusAsType)
+                    ? new FloatRollupUniqueOperator(resultName, onsAsType, nusAsType, constituentSingletonCount)
                     : new FloatChunkedUniqueOperator(resultName, includeNulls, exposeInternal, onsAsType, nusAsType);
         } else if (type == Integer.class || type == int.class) {
             final int onsAsType = UnionObjectUtils.intValue(onlyNullsSentinel);
             final int nusAsType = UnionObjectUtils.intValue(nonUniqueSentinel);
             return reaggregated
-                    ? new IntRollupUniqueOperator(resultName, includeNulls, onsAsType, nusAsType)
+                    ? new IntRollupUniqueOperator(resultName, onsAsType, nusAsType, constituentSingletonCount)
                     : new IntChunkedUniqueOperator(resultName, includeNulls, exposeInternal, onsAsType, nusAsType);
         } else if (type == Long.class || type == long.class || type == Instant.class) {
             final long onsAsType;
@@ -2287,20 +2317,20 @@ public class AggregationProcessor implements AggregationContextFactory {
                 nusAsType = UnionObjectUtils.longValue(nonUniqueSentinel);
             }
             return reaggregated
-                    ? new LongRollupUniqueOperator(type, resultName, includeNulls, onsAsType, nusAsType)
+                    ? new LongRollupUniqueOperator(type, resultName, onsAsType, nusAsType, constituentSingletonCount)
                     : new LongChunkedUniqueOperator(type, resultName, includeNulls, exposeInternal, onsAsType,
                             nusAsType);
         } else if (type == Short.class || type == short.class) {
             final short onsAsType = UnionObjectUtils.shortValue(onlyNullsSentinel);
             final short nusAsType = UnionObjectUtils.shortValue(nonUniqueSentinel);
             return reaggregated
-                    ? new ShortRollupUniqueOperator(resultName, includeNulls, onsAsType, nusAsType)
+                    ? new ShortRollupUniqueOperator(resultName, onsAsType, nusAsType, constituentSingletonCount)
                     : new ShortChunkedUniqueOperator(resultName, includeNulls, exposeInternal, onsAsType, nusAsType);
         }
         final Object onsAsType = maybeConvertType(type, onlyNullsSentinel);
         final Object nusAsType = maybeConvertType(type, nonUniqueSentinel);
         return reaggregated
-                ? new ObjectRollupUniqueOperator(type, resultName, includeNulls, onsAsType, nusAsType)
+                ? new ObjectRollupUniqueOperator(type, resultName, onsAsType, nusAsType, constituentSingletonCount)
                 : new ObjectChunkedUniqueOperator(type, resultName, includeNulls, exposeInternal, onsAsType, nusAsType);
     }
 
@@ -2549,19 +2579,20 @@ public class AggregationProcessor implements AggregationContextFactory {
             final boolean isFirst,
             final boolean multipleAggs,
             @NotNull final MatchPair[] resultPairs,
-            @NotNull final QueryTable sourceTable) {
+            @NotNull final QueryTable sourceTable,
+            final String exposeRedirectionAs) {
         if (sourceTable.isAddOnly()) {
             // @formatter:off
             switch (chunkType) {
                 case Boolean: throw new UnsupportedOperationException("Columns never use boolean chunks");
-                case    Char: return new CharAddOnlySortedFirstOrLastChunkedOperator(  isFirst, resultPairs, sourceTable, null);
-                case    Byte: return new ByteAddOnlySortedFirstOrLastChunkedOperator(  isFirst, resultPairs, sourceTable, null);
-                case   Short: return new ShortAddOnlySortedFirstOrLastChunkedOperator( isFirst, resultPairs, sourceTable, null);
-                case     Int: return new IntAddOnlySortedFirstOrLastChunkedOperator(   isFirst, resultPairs, sourceTable, null);
-                case    Long: return new LongAddOnlySortedFirstOrLastChunkedOperator(  isFirst, resultPairs, sourceTable, null);
-                case   Float: return new FloatAddOnlySortedFirstOrLastChunkedOperator( isFirst, resultPairs, sourceTable, null);
-                case  Double: return new DoubleAddOnlySortedFirstOrLastChunkedOperator(isFirst, resultPairs, sourceTable, null);
-                case  Object: return new ObjectAddOnlySortedFirstOrLastChunkedOperator(isFirst, resultPairs, sourceTable, null);
+                case    Char: return new CharAddOnlySortedFirstOrLastChunkedOperator(  isFirst, resultPairs, sourceTable, exposeRedirectionAs);
+                case    Byte: return new ByteAddOnlySortedFirstOrLastChunkedOperator(  isFirst, resultPairs, sourceTable, exposeRedirectionAs);
+                case   Short: return new ShortAddOnlySortedFirstOrLastChunkedOperator( isFirst, resultPairs, sourceTable, exposeRedirectionAs);
+                case     Int: return new IntAddOnlySortedFirstOrLastChunkedOperator(   isFirst, resultPairs, sourceTable, exposeRedirectionAs);
+                case    Long: return new LongAddOnlySortedFirstOrLastChunkedOperator(  isFirst, resultPairs, sourceTable, exposeRedirectionAs);
+                case   Float: return new FloatAddOnlySortedFirstOrLastChunkedOperator( isFirst, resultPairs, sourceTable, exposeRedirectionAs);
+                case  Double: return new DoubleAddOnlySortedFirstOrLastChunkedOperator(isFirst, resultPairs, sourceTable, exposeRedirectionAs);
+                case  Object: return new ObjectAddOnlySortedFirstOrLastChunkedOperator(isFirst, resultPairs, sourceTable, exposeRedirectionAs);
             }
             // @formatter:on
         }
@@ -2580,7 +2611,8 @@ public class AggregationProcessor implements AggregationContextFactory {
             }
             // @formatter:on
         }
-        return new SortedFirstOrLastChunkedOperator(chunkType, isFirst, resultPairs, sourceTable);
+        return new SortedFirstOrLastChunkedOperator(chunkType, isFirst, resultPairs, sourceTable,
+                exposeRedirectionAs);
     }
 
     // -----------------------------------------------------------------------------------------------------------------

@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.util.reference;
 
+import io.deephaven.base.reference.CleanupReference;
 import io.deephaven.base.verify.Require;
 import io.deephaven.util.annotations.TestUseOnly;
 import io.deephaven.util.reference.CleanupReferenceProcessor;
@@ -34,6 +35,21 @@ public enum CleanupReferenceProcessorInstance {
 
     public final <RT> ReferenceQueue<RT> getReferenceQueue() {
         return cleanupReferenceProcessor.getReferenceQueue();
+    }
+
+    /**
+     * Registers a {@code referent} and a cleaning {@code action} to run when the {@code referent} becomes phantom
+     * reachable. The returned {@link CleanupReference} is retained by this processor, ensuring it will not be
+     * garbage-collected before cleanup occurs.
+     *
+     * @param referent the object to monitor
+     * @param action a {@code Runnable} to invoke when the referent becomes phantom reachable; must <b>not</b> hold a
+     *        strong reference to the referent
+     * @return a cleanup reference instance
+     * @see CleanupReferenceProcessor#registerPhantom(Object, Runnable)
+     */
+    public final <T> CleanupReference<T> registerPhantom(@NotNull final T referent, @NotNull final Runnable action) {
+        return cleanupReferenceProcessor.registerPhantom(referent, action);
     }
 
     @TestUseOnly

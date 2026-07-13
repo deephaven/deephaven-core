@@ -3,7 +3,6 @@
 //
 package io.deephaven.io.log.impl;
 
-import io.deephaven.base.text.Convert;
 import io.deephaven.base.text.TimestampBuffer;
 import io.deephaven.base.text.TimestampBufferMicros;
 import io.deephaven.base.log.LogOutput;

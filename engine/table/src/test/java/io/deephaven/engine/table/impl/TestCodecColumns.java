@@ -12,6 +12,7 @@ import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.parquet.table.ParquetInstructions;
+import io.deephaven.qst.type.Type;
 import io.deephaven.tuple.ArrayTuple;
 import io.deephaven.util.codec.*;
 import junit.framework.TestCase;
@@ -51,13 +52,13 @@ public class TestCodecColumns {
         final ParquetInstructions.Builder readBuilder = new ParquetInstructions.Builder();
         final ParquetInstructions.Builder writeBuilder = new ParquetInstructions.Builder();
         VARIABLE_WIDTH_BYTE_ARRAY_COLUMN_DEFINITION =
-                ColumnDefinition.fromGenericType("VWBA", byte[].class, byte.class);
+                ColumnDefinition.of("VWBA", Type.byteType().arrayType());
         writeBuilder.addColumnCodec("VWBA", SimpleByteArrayCodec.class.getName());
         readBuilder.addColumnCodec("VWBA", SimpleByteArrayCodec.class.getName());
 
         VARIABLE_WIDTH_COLUMN_DEFINITION_2 = ColumnDefinition.fromGenericType("VWCD", ArrayTuple.class);
         readBuilder.addColumnCodec("VWCD", ExternalizableCodec.class.getName(), ArrayTuple.class.getName());
-        FIXED_WIDTH_BYTE_ARRAY_COLUMN_DEFINITION = ColumnDefinition.fromGenericType("FWBA", byte[].class, byte.class);
+        FIXED_WIDTH_BYTE_ARRAY_COLUMN_DEFINITION = ColumnDefinition.of("FWBA", Type.byteType().arrayType());
         writeBuilder.addColumnCodec("FWBA", SimpleByteArrayCodec.class.getName(), "9");
         readBuilder.addColumnCodec("FWBA", SimpleByteArrayCodec.class.getName(), "9");
 

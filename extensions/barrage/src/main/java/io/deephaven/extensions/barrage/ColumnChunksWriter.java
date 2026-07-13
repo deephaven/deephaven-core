@@ -26,8 +26,12 @@ public class ColumnChunksWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>> impleme
         long rowOffset = 0;
         for (int i = 0; i < chunks.size(); ++i) {
             final SOURCE_CHUNK_TYPE valuesChunk = chunks.get(i);
+            // We must latch the size of the chunk here. Making a context may transform the chunk to a new type and
+            // release the original chunk. Releasing resets the size to the chunk capacity and will break the row
+            // offset calculation.
+            final int chunkSize = valuesChunk.size();
             this.contexts[i] = writer.makeContext(valuesChunk, rowOffset);
-            rowOffset += valuesChunk.size();
+            rowOffset += chunkSize;
         }
     }
 

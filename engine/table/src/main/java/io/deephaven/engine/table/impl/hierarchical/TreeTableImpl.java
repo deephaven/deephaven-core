@@ -412,7 +412,7 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
                 result[ci] = getDepthSource(snapshotState.getCurrentDepth());
             } else if (result[ci] == null && ci != ROW_EXPANDED_COLUMN_INDEX) {
                 final ColumnDefinition<?> cd = getNodeDefinition().getColumns().get(ci - EXTRA_COLUMN_COUNT);
-                result[ci] = maybeConvertToPrimitive(nodeSortedTable.getColumnSource(cd.getName(), cd.getDataType()));
+                result[ci] = maybeConvertToPrimitive(nodeSortedTable.getColumnSource(cd));
             }
         }
         return result;

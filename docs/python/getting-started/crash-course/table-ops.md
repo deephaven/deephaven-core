@@ -196,6 +196,9 @@ t_sort_multi = t_updated.sort(
 
 See the [sorting guide](../../how-to-guides/sort.md) for more information.
 
+> [!TIP]
+> You can also filter and sort tables directly in the UI without writing code. Right-click a column header to access filter and sort options, or use the **Filters** panel in the Controls area. See [Navigate the GUI](../../how-to-guides/user-interface/navigating-the-ui.md) to learn more about the table context menus.
+
 ## Group and aggregate data
 
 Grouping data places rows into groups based on zero or more supplied key columns. Aggregation calculates summary statistics over a group of data. Grouping and aggregation are key components of data analysis, especially in Deephaven queries.

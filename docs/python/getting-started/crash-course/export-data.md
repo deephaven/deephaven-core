@@ -7,7 +7,12 @@ Data I/O is mission-critical for any real-time data analysis platform. Deephaven
 
 ## CSV
 
-Deephaven can [read CSV](../../how-to-guides/data-import-export/csv-import.md) files that exist locally or remotely. This example reads a local CSV file.
+Deephaven can [read CSV](../../how-to-guides/data-import-export/csv-import.md) files that exist locally or remotely.
+
+> [!TIP]
+> To import a CSV without writing code, use **Upload Table from File** in the Console Options menu (⋮). See [Upload a table from a file](../../how-to-guides/user-interface/upload-table-from-file.md).
+
+This example reads a local CSV file.
 
 ```python test-set=1 order=iris
 from deephaven import read_csv

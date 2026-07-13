@@ -219,19 +219,18 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
             anyPreviousTableIsRefreshing |= currentTableIsRefreshing;
             constituent = constituents.next();
             currentTableIsRefreshing = constituent.isRefreshing();
-            final Iterator<Map.Entry<String, Object>> candidatesIter = candidates.entrySet().iterator();
-            while (candidatesIter.hasNext()) {
-                final Map.Entry<String, Object> candidate = candidatesIter.next();
-                final String attrKey = candidate.getKey();
-                final Object candidateValue = candidate.getValue();
-                final boolean matches = constituent.hasAttribute(attrKey) &&
-                        Objects.equals(constituent.getAttribute(attrKey), candidateValue);
-                if (!matches) {
-                    candidatesIter.remove();
+            if (!candidates.isEmpty()) {
+                final Iterator<Map.Entry<String, Object>> candidatesIter = candidates.entrySet().iterator();
+                while (candidatesIter.hasNext()) {
+                    final Map.Entry<String, Object> candidate = candidatesIter.next();
+                    final String attrKey = candidate.getKey();
+                    final Object candidateValue = candidate.getValue();
+                    final boolean matches = constituent.hasAttribute(attrKey) &&
+                            Objects.equals(constituent.getAttribute(attrKey), candidateValue);
+                    if (!matches) {
+                        candidatesIter.remove();
+                    }
                 }
-            }
-            if (candidates.isEmpty()) {
-                return Collections.emptyMap();
             }
         }
 

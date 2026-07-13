@@ -43,7 +43,7 @@ public abstract class WebBarrageSubscription {
             final ViewportChangedHandler viewportChangedHandler,
             final DataChangedHandler dataChangedHandler) {
 
-        WebColumnData[] dataSinks = new WebColumnData[cts.columnTypes().length];
+        WebColumnData[] dataSinks = new WebColumnData[cts.getTableDef().getColumns().length];
         for (int i = 0; i < dataSinks.length; i++) {
             dataSinks[i] = new WebColumnData();
         }

@@ -6,8 +6,8 @@ package io.deephaven.web.client.api.subscription;
 import com.vertispan.tsdefs.annotations.TsName;
 import com.vertispan.tsdefs.annotations.TsTypeRef;
 import elemental2.promise.Promise;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.config_pb.ConfigValue;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.FlattenRequest;
+import io.deephaven.proto.backplane.grpc.ConfigValue;
+import io.deephaven.proto.backplane.grpc.FlattenRequest;
 import io.deephaven.web.client.api.Column;
 import io.deephaven.web.client.api.JsRangeSet;
 import io.deephaven.web.client.api.JsTable;
@@ -67,7 +67,6 @@ public class TableViewportSubscription extends AbstractTableSubscription {
     private UpdateEventData viewportData;
 
     public static TableViewportSubscription make(DataOptions.ViewportSubscriptionOptions options, JsTable jsTable) {
-        RangeSet rows = options.rows.asRangeSet().getRange();
         ClientTableState tableState = jsTable.state();
         WorkerConnection connection = jsTable.getConnection();
 
@@ -78,13 +77,14 @@ public class TableViewportSubscription extends AbstractTableSubscription {
         ConfigValue flattenViewport = connection.getServerConfigValue("web.flattenViewports");
         if (flattenViewport != null && flattenViewport.hasStringValue()
                 && "true".equalsIgnoreCase(flattenViewport.getStringValue())) {
-            stateToSubscribe = connection.newState((callback, newState, metadata) -> {
-                FlattenRequest flatten = new FlattenRequest();
-                flatten.setSourceId(previewedState.getHandle().makeTableReference());
-                flatten.setResultId(newState.getHandle().makeTicket());
-                connection.tableServiceClient().flatten(flatten, metadata, callback::apply);
+            stateToSubscribe = connection.newState((callback, newState) -> {
+                FlattenRequest flatten = FlattenRequest.newBuilder()
+                        .setSourceId(previewedState.getHandle().makeTableReference())
+                        .setResultId(newState.getHandle().makeTicket())
+                        .build();
+                connection.tableServiceClient().flatten(flatten, callback);
             }, "flatten");
-            stateToSubscribe.refetch(null, connection.metadata()).then(result -> null, err -> null);
+            stateToSubscribe.refetch().then(result -> null, err -> null);
         } else {
             stateToSubscribe = previewedState;
         }

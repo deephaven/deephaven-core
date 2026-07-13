@@ -13,6 +13,9 @@ Deephaven is only supported on:
 - MacOS
 - Windows 10 or 11 (requires [WSL 2 (Windows Subsystem for Linux v2)](https://learn.microsoft.com/en-us/windows/wsl/install))
 
+> [!WARNING]
+> WSL 2's default time-sync setup can cause spurious 10–20-second clock jumps that stall Deephaven ticking tables. Before running Deephaven on WSL 2, apply one of the [time-sync workarounds](../reference/community-questions/wsl2-clock-drift.md).
+
 ## Prerequisites
 
 [Java](https://www.java.com/en/) is the only required packages to run Deephaven's production application. If you wish to run a Deephaven Python server, you will also need [Python](https://www.python.org/) 3.9 or later.

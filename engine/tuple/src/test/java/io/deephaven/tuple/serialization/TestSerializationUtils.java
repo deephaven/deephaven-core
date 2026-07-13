@@ -7,8 +7,8 @@ import io.deephaven.time.DateTimeUtils;
 import io.deephaven.tuple.ArrayTuple;
 import io.deephaven.tuple.generated.ObjectObjectObjectTuple;
 import io.deephaven.tuple.generated.ObjectObjectTuple;
-import gnu.trove.map.TIntObjectMap;
-import gnu.trove.map.hash.TIntObjectHashMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
@@ -108,7 +108,7 @@ public class TestSerializationUtils {
         final DataOutputStream dataOut = new DataOutputStream(bytesOut);
         final ObjectOutputStream objectOut = new ObjectOutputStream(dataOut);
 
-        final TIntObjectMap<SerializationUtils.Writer> cachedWriters = new TIntObjectHashMap<>();
+        final Int2ObjectMap<SerializationUtils.Writer> cachedWriters = new Int2ObjectOpenHashMap<>();
         nullInput.writeExternalStreaming(objectOut, cachedWriters);
         fullInput.writeExternalStreaming(objectOut, cachedWriters);
         nullInput.writeExternalStreaming(objectOut, cachedWriters);
@@ -123,7 +123,7 @@ public class TestSerializationUtils {
         final DataInputStream dataIn = new DataInputStream(bytesIn);
         final ObjectInputStream objectIn = new ObjectInputStream(dataIn);
 
-        final TIntObjectMap<SerializationUtils.Reader> cachedReaders = new TIntObjectHashMap<>();
+        final Int2ObjectMap<SerializationUtils.Reader> cachedReaders = new Int2ObjectOpenHashMap<>();
         TestCase.assertEquals(nullInput, new ArrayTuple().initializeExternalStreaming(objectIn, cachedReaders));
         TestCase.assertEquals(fullInput, new ArrayTuple().initializeExternalStreaming(objectIn, cachedReaders));
         TestCase.assertEquals(nullInput, new ArrayTuple().initializeExternalStreaming(objectIn, cachedReaders));

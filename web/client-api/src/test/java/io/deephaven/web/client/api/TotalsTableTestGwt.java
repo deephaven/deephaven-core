@@ -29,7 +29,9 @@ public class TotalsTableTestGwt extends AbstractAsyncGwtTestCase {
             .script("hasTotals",
                     "empty_table(5).update_view([(\"I = (double)i\", \"J = (double) i * i\", \"K = (double) i % 2\")])"
                             +
-                            ".with_attributes({'TotalsTable':'false,false,Count;J=Min:Avg,K=Skip,;'})");
+                            ".with_attributes({'TotalsTable':'false,false,Count;J=Min:Avg,K=Skip,;'})")
+            .script("hasCountColumn",
+                    "empty_table(5).update_view([\"Count = (double)i\", \"Value = (double) i * 2\"])");
 
     // This will need to be updated to reflect values from JsTotalsTableConfig.knownAggTypes
     // These are the values calculated for each Agg for column I of the "hasTotals" table
@@ -388,6 +390,80 @@ public class TotalsTableTestGwt extends AbstractAsyncGwtTestCase {
                             table.getTotalsTable(config).then(checkForBothTotalsTables),
                             table.getGrandTotalsTable(config).then(checkForBothTotalsTables)
                     });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    /**
+     * Count aggregation triggers the batch path in fetchTotals: aggregate creates a synthetic "Count" column,
+     * updateView renames it to each target column (e.g. "I = Count"), then drop removes "Count". With incorrect batch
+     * ordering (drop before updateView), the updateView fails because "Count" was already removed.
+     */
+    public void testCountAggBatchOrdering() {
+        connect(tables)
+                .then(table("hasTotals"))
+                .then(table -> {
+                    JsTotalsTableConfig config = new JsTotalsTableConfig();
+                    config.defaultOperation = JsAggregationOperation.COUNT;
+                    // No per-column overrides: all columns (I, J, K) use Count,
+                    // which populates both customColumns and dropColumns, triggering the batch path.
+
+                    return table.getTotalsTable(config)
+                            .then(totals -> {
+                                assertEquals(3, totals.getColumns().length);
+                                assertEquals(1, totals.getSize(), DELTA);
+                                totals.setViewport(0, 100, null, null, null);
+
+                                return waitForEvent(totals, JsTable.EVENT_UPDATED, update -> {
+                                    ViewportData viewportData = (ViewportData) update.getDetail();
+                                    assertEquals(1, viewportData.getRows().length);
+                                    // All three columns should show count = 5
+                                    assertEquals(5,
+                                            viewportData.getRows().getAt(0).get(totals.findColumn("I"))
+                                                    .<LongWrapper>cast().getWrapped());
+                                    assertEquals(5,
+                                            viewportData.getRows().getAt(0).get(totals.findColumn("J"))
+                                                    .<LongWrapper>cast().getWrapped());
+                                    assertEquals(5,
+                                            viewportData.getRows().getAt(0).get(totals.findColumn("K"))
+                                                    .<LongWrapper>cast().getWrapped());
+                                }, 2500);
+                            });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    /**
+     * Tests that a user column literally named "Count" survives Count aggregation, despite being a hardcoded column
+     * name.
+     */
+    public void testColumnNamedCountNotDropped() {
+        connect(tables)
+                .then(table("hasCountColumn"))
+                .then(table -> {
+                    JsTotalsTableConfig config = new JsTotalsTableConfig();
+                    config.defaultOperation = JsAggregationOperation.COUNT;
+
+                    return table.getTotalsTable(config)
+                            .then(totals -> {
+                                // Both "Count" and "Value" columns should be present
+                                assertEquals(2, totals.getColumns().length);
+                                assertNotNull("Count column should exist", totals.findColumn("Count"));
+                                assertNotNull("Value column should exist", totals.findColumn("Value"));
+                                assertEquals(1, totals.getSize(), DELTA);
+                                totals.setViewport(0, 100, null, null, null);
+
+                                return waitForEvent(totals, JsTable.EVENT_UPDATED, update -> {
+                                    ViewportData viewportData = (ViewportData) update.getDetail();
+                                    assertEquals(1, viewportData.getRows().length);
+                                    assertEquals(5,
+                                            viewportData.getRows().getAt(0).get(totals.findColumn("Count"))
+                                                    .<LongWrapper>cast().getWrapped());
+                                    assertEquals(5,
+                                            viewportData.getRows().getAt(0).get(totals.findColumn("Value"))
+                                                    .<LongWrapper>cast().getWrapped());
+                                }, 2500);
+                            });
                 })
                 .then(this::finish).catch_(this::report);
     }

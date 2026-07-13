@@ -15,16 +15,10 @@ import java.lang.ref.WeakReference;
 public class ReferenceCountedLivenessReferent extends ReferenceCounted implements LivenessReferent {
 
     public final boolean tryRetainReference() {
-        if (Liveness.REFERENCE_TRACKING_DISABLED) {
-            return true;
-        }
         return tryIncrementReferenceCount();
     }
 
     public final void dropReference() {
-        if (Liveness.REFERENCE_TRACKING_DISABLED) {
-            return;
-        }
         if (Liveness.DEBUG_MODE_ENABLED) {
             Liveness.log.info().append("LivenessDebug: Releasing ").append(Utils.REFERENT_FORMATTER, this).endl();
         }
@@ -50,10 +44,6 @@ public class ReferenceCountedLivenessReferent extends ReferenceCounted implement
 
     @Override
     protected void onReferenceCountAtZero() {
-        if (Liveness.REFERENCE_TRACKING_DISABLED) {
-            throw new IllegalStateException(
-                    "Reference count on " + this + " reached zero while liveness reference tracking is disabled");
-        }
         try {
             destroy();
         } catch (Exception e) {

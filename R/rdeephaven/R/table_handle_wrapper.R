@@ -210,7 +210,7 @@ TableHandle <- R6Class("TableHandle",
     #' @return A dplyr tibble constructed from the data of this TableHandle.
     as_tibble = function() {
       rbsr <- self$as_record_batch_reader()
-      arrow_tbl <- rbsr$read_table()
+      arrow_tbl <- maybe_decode_ree_columns(rbsr$read_table())
       return(as_tibble(arrow_tbl))
     },
 
@@ -218,7 +218,7 @@ TableHandle <- R6Class("TableHandle",
     #' Converts the table referenced by this TableHandle to an R data frame.
     #' @return An R data frame constructed from the data of this TableHandle.
     as_data_frame = function() {
-      arrow_tbl <- self$as_arrow_table()
+      arrow_tbl <- maybe_decode_ree_columns(self$as_arrow_table())
       return(as.data.frame(as.data.frame(arrow_tbl))) # TODO: for some reason as.data.frame on arrow table returns a tibble, not a data frame
     },
 
@@ -623,6 +623,19 @@ merge_tables <- function(...) {
     return(table_list[[1]])
   }
   return(table_list[[1]]$merge(table_list[2:length(table_list)]))
+}
+
+maybe_decode_ree_columns <- function(arrow_tbl) {
+  for (i in seq_len(arrow_tbl$num_columns)) {
+    col <- arrow_tbl$column(i - 1)
+    if (col$type$name == "run_end_encoded") {
+      col_name <- arrow_tbl$schema$field(i - 1)$name
+      decoded <- arrow::call_function("run_end_decode", col)
+      arrow_tbl <- arrow_tbl$SetColumn(i - 1,
+        arrow::field(col_name, decoded$type), decoded)
+    }
+  }
+  return(arrow_tbl)
 }
 
 #' @export

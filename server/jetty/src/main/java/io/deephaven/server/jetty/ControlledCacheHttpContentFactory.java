@@ -20,11 +20,15 @@ import org.eclipse.jetty.util.resource.Resource;
  * A custom {@link HttpContent.Factory} that creates {@link ControlledCacheHttpContent} instances.
  */
 public class ControlledCacheHttpContentFactory extends ResourceHttpContentFactory {
+    // Copied from ResourceHandler as of Jetty 12.1.5
+    private static final int DEFAULT_BUFFER_SIZE = 32768;
+    private static final boolean DEFAULT_USE_DIRECT_BUFFERS = true;
+
     /**
      * Creates a {@link HttpContent.Factory} using a similar methodology used in
-     * {@link org.eclipse.jetty.server.handler.ResourceHandler#newHttpContentFactory()} except that we use
-     * {@link ControlledCacheHttpContentFactory} instead of {@link ResourceHttpContentFactory} as the innermost factory,
-     * and we don't include the {@link org.eclipse.jetty.http.content.VirtualHttpContentFactory}.
+     * {@link org.eclipse.jetty.server.handler.ResourceHandler#newHttpContentFactory(ByteBufferPool.Sized)} except that
+     * we use {@link ControlledCacheHttpContentFactory} instead of {@link ResourceHttpContentFactory} as the innermost
+     * factory, and we don't include the {@link org.eclipse.jetty.http.content.VirtualHttpContentFactory}.
      *
      * @param baseResource the base Resource
      * @param byteBufferPool the ByteBufferPool for {@link ValidatingCachingHttpContentFactory}
@@ -36,17 +40,20 @@ public class ControlledCacheHttpContentFactory extends ResourceHttpContentFactor
             ByteBufferPool byteBufferPool,
             MimeTypes mimeTypes) {
         // Use ControlledCacheHttpContentFactory instead of ResourceHttpContentFactory
-        HttpContent.Factory contentFactory = new ControlledCacheHttpContentFactory(baseResource, mimeTypes);
+        ByteBufferPool.Sized sizedPool =
+                new ByteBufferPool.Sized(byteBufferPool, DEFAULT_USE_DIRECT_BUFFERS, DEFAULT_BUFFER_SIZE);
+        HttpContent.Factory contentFactory = new ControlledCacheHttpContentFactory(baseResource, mimeTypes, sizedPool);
         contentFactory = new FileMappingHttpContentFactory(contentFactory);
         contentFactory = new PreCompressedHttpContentFactory(contentFactory, new ArrayList<>());
         contentFactory = new ValidatingCachingHttpContentFactory(contentFactory, Duration.ofSeconds(1).toMillis(),
-                byteBufferPool);
+                sizedPool);
 
         return contentFactory;
     }
 
-    private ControlledCacheHttpContentFactory(Resource baseResource, MimeTypes mimeTypes) {
-        super(baseResource, mimeTypes);
+    private ControlledCacheHttpContentFactory(Resource baseResource, MimeTypes mimeTypes,
+            ByteBufferPool.Sized sizedBufferPool) {
+        super(baseResource, mimeTypes, sizedBufferPool);
     }
 
     @Override

@@ -6,10 +6,13 @@ package io.deephaven.client.impl;
 import io.deephaven.qst.array.BooleanArray;
 import org.apache.arrow.vector.BigIntVector;
 import org.apache.arrow.vector.BitVector;
+import org.apache.arrow.vector.DateDayVector;
+import org.apache.arrow.vector.DurationVector;
 import org.apache.arrow.vector.Float4Vector;
 import org.apache.arrow.vector.Float8Vector;
 import org.apache.arrow.vector.IntVector;
 import org.apache.arrow.vector.SmallIntVector;
+import org.apache.arrow.vector.TimeNanoVector;
 import org.apache.arrow.vector.TimeStampNanoTZVector;
 import org.apache.arrow.vector.TinyIntVector;
 import org.apache.arrow.vector.UInt2Vector;
@@ -17,7 +20,10 @@ import org.apache.arrow.vector.VarCharVector;
 import org.apache.arrow.vector.VarBinaryVector;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.Collection;
 
 /**
@@ -239,7 +245,7 @@ public class VectorHelper {
         int i = 0;
         for (Instant value : array) {
             if (value == null) {
-                vector.set(i, Long.MIN_VALUE);
+                vector.setNull(i);
             } else {
                 final long epochSecond = value.getEpochSecond();
                 final int nano = value.getNano();
@@ -249,5 +255,47 @@ public class VectorHelper {
             ++i;
         }
         vector.setValueCount(array.size());
+    }
+
+    public static void fill(TimeNanoVector vector, Collection<LocalTime> values) {
+        vector.allocateNew(values.size());
+        int i = 0;
+        for (LocalTime value : values) {
+            if (value == null) {
+                vector.setNull(i);
+            } else {
+                vector.set(i, value.toNanoOfDay());
+            }
+            ++i;
+        }
+        vector.setValueCount(values.size());
+    }
+
+    public static void fill(DateDayVector vector, Collection<LocalDate> values) {
+        vector.allocateNew(values.size());
+        int i = 0;
+        for (LocalDate value : values) {
+            if (value == null) {
+                vector.setNull(i);
+            } else {
+                vector.set(i, Math.toIntExact(value.toEpochDay()));
+            }
+            ++i;
+        }
+        vector.setValueCount(values.size());
+    }
+
+    public static void fill(DurationVector vector, Collection<Duration> values) {
+        vector.allocateNew(values.size());
+        int i = 0;
+        for (Duration value : values) {
+            if (value == null) {
+                vector.setNull(i);
+            } else {
+                vector.set(i, value.toNanos());
+            }
+            ++i;
+        }
+        vector.setValueCount(values.size());
     }
 }

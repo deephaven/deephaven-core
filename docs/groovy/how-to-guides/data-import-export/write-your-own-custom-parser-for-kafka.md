@@ -35,7 +35,7 @@ In this guide, you will:
 ## Prerequisites
 
 - Kafka is running with a topic you can read from.
-- Deephaven Groovy server is running with access to that Kafka cluster.
+- Deephaven is running with access to that Kafka cluster.
 - You are comfortable with basic Groovy and classes.
 - You understand the basics of [Kafka in Deephaven](../../conceptual/kafka-basic-terms.md).
 
@@ -55,7 +55,13 @@ class Person {
 }
 ```
 
-This example assumes each Kafka value contains an `age` and `name` field.
+This example assumes that each Kafka value is a JSON object of the form:
+
+```json
+{ "age": 42, "name": "Alice" }
+```
+
+You can adjust the `Person` class to match any format your topic uses.
 
 ## Step 2: Describe the payload with column definitions
 
@@ -126,9 +132,13 @@ From here, you can:
 
 ## Alternative: Use an object processor spec
 
-For more advanced custom parsing, you can use [`objectProcessorSpec`](https://deephaven.io/core/javadoc/io/deephaven/kafka/KafkaTools.Consume.html#objectProcessorSpec(org.apache.kafka.common.serialization.Deserializer,io.deephaven.processor.NamedObjectProcessor)) with a JSON provider such as [`JacksonProvider`](https://deephaven.io/core/javadoc/io/deephaven/json/jackson/JacksonProvider.html) to describe how to interpret Kafka values.
+For some advanced use cases, you may want to use [`objectProcessorSpec`](https://deephaven.io/core/javadoc/io/deephaven/kafka/KafkaTools.Consume.html#objectProcessorSpec(org.apache.kafka.common.serialization.Deserializer,io.deephaven.processor.NamedObjectProcessor)) with a JSON provider such as [`JacksonProvider`](https://deephaven.io/core/javadoc/io/deephaven/json/jackson/JacksonProvider.html). This is especially useful when:
 
-The Kafka streaming guide's JSON section shows a pattern like this:
+- You want to encapsulate parsing logic and configuration.
+- Multiple tables or topics will share the same parsing behavior.
+- You need to plug in a provider implementation such as the Jackson JSON provider.
+
+For example:
 
 ```groovy docker-config=kafka order=null
 import io.deephaven.json.jackson.JacksonProvider
@@ -169,26 +179,26 @@ By changing the `fields` description and the provider configuration, you can exp
 - **Validate input early**.
 
   - Check for missing fields, invalid types, or malformed payloads.
-  - Fail fast or route bad messages to a separate table when possible.
+  - Log or handle errors instead of letting them propagate silently.
 
 - **Keep your domain model stable**.
 
-  - Map changing payloads into a stable `Person` or similar class.
-  - Add fields in backward-compatible ways when schemas evolve.
+  - Prefer mapping changing payloads into a stable `Person` or similar class.
+  - Add new fields in a backward-compatible way when possible.
 
-- **Avoid heavy work inside parsing logic**.
+- **Avoid heavy work in the parser**.
 
-  - Do not perform blocking network calls or expensive I/O while parsing.
+  - Do not perform expensive I/O or blocking operations inside the parser.
   - Keep parsing focused on decoding and basic validation.
 
 - **Test with sample payloads**.
 
-  - Produce test messages into Kafka using `docker compose exec redpanda rpk topic produce`.
+  - Produce test messages into Kafka using tools like `rpk topic produce`.
   - Verify that the resulting Deephaven table has the expected rows and types.
 
 ## Related documentation
 
 - [Connect to a Kafka stream](./kafka-stream.md).
-- [Kafka basic terminology](../../conceptual/kafka-basic-terms.md).
+- [Kafka in Deephaven](../../conceptual/kafka-basic-terms.md).
 - [`consumeToTable`](../../reference/data-import-export/Kafka/consumeToTable.md).
 - [Table operations `update`](../../reference/table-operations/select/update.md).

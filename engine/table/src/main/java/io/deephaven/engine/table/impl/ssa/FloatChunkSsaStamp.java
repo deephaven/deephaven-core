@@ -260,4 +260,3 @@ public class FloatChunkSsaStamp implements ChunkSsaStamp {
         return doComparison(lhs, rhs) <= 0;
     }
 }
-

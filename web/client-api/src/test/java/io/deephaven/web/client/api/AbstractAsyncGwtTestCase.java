@@ -15,6 +15,7 @@ import io.deephaven.web.client.api.event.Event;
 import io.deephaven.web.client.api.event.HasEventHandling;
 import io.deephaven.web.client.api.subscription.ViewportData;
 import io.deephaven.web.client.api.tree.JsTreeTable;
+import io.deephaven.web.client.api.widget.plot.JsFigure;
 import io.deephaven.web.client.fu.CancellablePromise;
 import io.deephaven.web.client.ide.IdeSession;
 import io.deephaven.web.shared.fu.JsRunnable;
@@ -44,11 +45,7 @@ public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
     }
 
     private static Promise<Void> importDhInternal() {
-        return importScript(localServer + "/jsapi/dh-internal.js")
-                .then(module -> {
-                    Js.asPropertyMap(DomGlobal.window).set("dhinternal", module.get("dhinternal"));
-                    return Promise.resolve((Void) null);
-                });
+        return Promise.resolve((Void) null);
     }
 
     public static final String localServer = System.getProperty("dh.server", "http://localhost:10000");
@@ -193,6 +190,11 @@ public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
 
     public IThenable.ThenOnFulfilledCallbackFn<IdeSession, JsPartitionedTable> partitionedTable(String tableName) {
         return session -> session.getPartitionedTable(tableName);
+    }
+
+
+    public IThenable.ThenOnFulfilledCallbackFn<IdeSession, JsFigure> figure(String figureName) {
+        return session -> session.getFigure(figureName);
     }
 
     /**

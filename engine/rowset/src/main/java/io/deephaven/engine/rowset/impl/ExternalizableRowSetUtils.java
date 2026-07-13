@@ -3,10 +3,10 @@
 //
 package io.deephaven.engine.rowset.impl;
 
-import gnu.trove.list.array.TShortArrayList;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.util.datastructures.list.ShortArrayList;
 import io.deephaven.util.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 
@@ -45,7 +45,7 @@ public class ExternalizableRowSetUtils {
     public static void writeExternalCompressedDeltas(@NotNull final DataOutput out, @NotNull final RowSet rowSet)
             throws IOException {
         long offset = 0;
-        final TShortArrayList shorts = new TShortArrayList();
+        final ShortArrayList shorts = new ShortArrayList();
 
         for (final RowSet.RangeIterator it = rowSet.rangeIterator(); it.hasNext();) {
             it.next();
@@ -62,7 +62,7 @@ public class ExternalizableRowSetUtils {
         out.writeByte(END);
     }
 
-    private static long appendWithOffsetDelta(@NotNull final DataOutput out, @NotNull final TShortArrayList shorts,
+    private static long appendWithOffsetDelta(@NotNull final DataOutput out, @NotNull final ShortArrayList shorts,
             final long offset, final long value, final boolean negate) throws IOException {
         final long delta = value - offset;
         if (delta >= Short.MAX_VALUE) {
@@ -78,13 +78,13 @@ public class ExternalizableRowSetUtils {
         return value;
     }
 
-    private static void flushShorts(@NotNull final DataOutput out, @NotNull final TShortArrayList shorts)
+    private static void flushShorts(@NotNull final DataOutput out, @NotNull final ShortArrayList shorts)
             throws IOException {
         final int size = shorts.size();
         int writtenCount = 0;
         int consecutiveTrailingBytes = 0;
         for (int nextShortIndex = 0; nextShortIndex < size; ++nextShortIndex) {
-            final short nextShort = shorts.getQuick(nextShortIndex);
+            final short nextShort = shorts.getShort(nextShortIndex);
             if (nextShort <= Byte.MAX_VALUE && nextShort >= Byte.MIN_VALUE) {
                 // nextShort can fit into a byte
                 ++consecutiveTrailingBytes;
@@ -105,7 +105,7 @@ public class ExternalizableRowSetUtils {
         // Write the remaining possibly-empty sequence of shorts, followed by any trailing consecutive bytes
         final int shortCount = size - writtenCount - consecutiveTrailingBytes;
         writeShortsThenBytes(out, shorts, writtenCount, shortCount, consecutiveTrailingBytes);
-        shorts.resetQuick();
+        shorts.clear();
     }
 
     private static boolean shouldWriteBytes(final int byteCount) {
@@ -153,24 +153,24 @@ public class ExternalizableRowSetUtils {
         return byteCount >= 4;
     }
 
-    private static void writeShortsThenBytes(@NotNull final DataOutput out, @NotNull final TShortArrayList shorts,
+    private static void writeShortsThenBytes(@NotNull final DataOutput out, @NotNull final ShortArrayList shorts,
             int index, final int shortCount, final int byteCount) throws IOException {
         if (shortCount == 1) {
-            writeValue(out, OFFSET, shorts.getQuick(index++));
+            writeValue(out, OFFSET, shorts.getShort(index++));
         } else if (shortCount > 1) {
             writeValue(out, SHORT_ARRAY, shortCount);
             final int shortLimit = index + shortCount;
             do {
-                out.writeShort(shorts.getQuick(index++));
+                out.writeShort(shorts.getShort(index++));
             } while (index < shortLimit);
         }
         if (byteCount == 1) {
-            writeValue(out, OFFSET, shorts.getQuick(index)); // Note, no increment, to avoid unused assignment
+            writeValue(out, OFFSET, shorts.getShort(index)); // Note, no increment, to avoid unused assignment
         } else if (byteCount > 1) {
             writeValue(out, BYTE_ARRAY, byteCount);
             final int byteLimit = index + byteCount;
             do {
-                out.writeByte(shorts.getQuick(index++));
+                out.writeByte(shorts.getShort(index++));
             } while (index < byteLimit);
         }
     }

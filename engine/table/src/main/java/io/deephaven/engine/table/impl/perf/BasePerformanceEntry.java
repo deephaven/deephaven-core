@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl.perf;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.readtracker.impl.QueryPerformanceReadTracker;
 import io.deephaven.util.profiling.ThreadProfiler;
 import org.jetbrains.annotations.NotNull;
 
@@ -16,6 +17,7 @@ import static io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtils.plu
  * A smaller entry that simply records usage data, meant for aggregating into the larger entry.
  */
 public class BasePerformanceEntry implements LogOutputAppendable {
+
     private long usageNanos;
 
     private long cpuNanos;
@@ -23,6 +25,12 @@ public class BasePerformanceEntry implements LogOutputAppendable {
 
     private long allocatedBytes;
     private long poolAllocatedBytes;
+
+    private long dataReadNanos;
+    private long dataReadCount;
+    private long dataReadBytes;
+    private long metadataOperationNanos;
+    private long metadataOperationCount;
 
     private long startTimeNanos;
 
@@ -32,9 +40,23 @@ public class BasePerformanceEntry implements LogOutputAppendable {
     private long startAllocatedBytes;
     private long startPoolAllocatedBytes;
 
+    private long startDataReadNanos;
+    private long startDataReadCount;
+    private long startDataReadBytes;
+    private long startMetadataOperationNanos;
+    private long startMetadataOperationCount;
+
     public synchronized void onBaseEntryStart() {
         startAllocatedBytes = ThreadProfiler.DEFAULT.getCurrentThreadAllocatedBytes();
         startPoolAllocatedBytes = QueryPerformanceRecorderState.getPoolAllocatedBytesForCurrentThread();
+
+        final QueryPerformanceReadTracker readTracker = QueryPerformanceReadTracker.forCurrentThread();
+
+        startDataReadNanos = readTracker.getDataReadNanos();
+        startDataReadCount = readTracker.getDataReadCount();
+        startDataReadBytes = readTracker.getDataReadBytes();
+        startMetadataOperationNanos = readTracker.getMetadataOperationNanos();
+        startMetadataOperationCount = readTracker.getMetadataOperationCount();
 
         startUserCpuNanos = ThreadProfiler.DEFAULT.getCurrentThreadUserTime();
         startCpuNanos = ThreadProfiler.DEFAULT.getCurrentThreadCpuTime();
@@ -54,6 +76,14 @@ public class BasePerformanceEntry implements LogOutputAppendable {
         allocatedBytes = plus(allocatedBytes,
                 minus(ThreadProfiler.DEFAULT.getCurrentThreadAllocatedBytes(), startAllocatedBytes));
 
+        final QueryPerformanceReadTracker readTracker = QueryPerformanceReadTracker.forCurrentThread();
+
+        dataReadNanos += readTracker.getDataReadNanos() - startDataReadNanos;
+        dataReadCount += readTracker.getDataReadCount() - startDataReadCount;
+        dataReadBytes += readTracker.getDataReadBytes() - startDataReadBytes;
+        metadataOperationNanos += readTracker.getMetadataOperationNanos() - startMetadataOperationNanos;
+        metadataOperationCount += readTracker.getMetadataOperationCount() - startMetadataOperationCount;
+
         startAllocatedBytes = 0;
         startPoolAllocatedBytes = 0;
 
@@ -72,6 +102,12 @@ public class BasePerformanceEntry implements LogOutputAppendable {
 
         allocatedBytes = 0;
         poolAllocatedBytes = 0;
+
+        dataReadNanos = 0;
+        dataReadCount = 0;
+        dataReadBytes = 0;
+        metadataOperationNanos = 0;
+        metadataOperationCount = 0;
     }
 
     /**
@@ -124,6 +160,58 @@ public class BasePerformanceEntry implements LogOutputAppendable {
         return poolAllocatedBytes;
     }
 
+    /**
+     * Get the aggregate time spent reading data in nanoseconds. This getter should be called by exclusive owners of the
+     * entry, and never concurrently with mutators.
+     *
+     * @return total data read time in nanos
+     */
+    public long getDataReadNanos() {
+        return dataReadNanos;
+    }
+
+    /**
+     * Get the aggregate number of data read operations. This getter should be called by exclusive owners of the entry,
+     * and never concurrently with mutators.
+     *
+     * @return total number of data read operations
+     */
+    public long getDataReadCount() {
+        return dataReadCount;
+    }
+
+    /**
+     * Get the aggregate number of bytes read in data read operations. This getter should be called by exclusive owners
+     * of the entry, and never concurrently with mutators.
+     *
+     * @return total number of bytes read
+     */
+    public long getDataReadBytes() {
+        return dataReadBytes;
+    }
+
+    /**
+     * Get the aggregate time spent on metadata operations (e.g. listing files, checking existence, determining file
+     * sizes) in nanoseconds. This getter should be called by exclusive owners of the entry, and never concurrently with
+     * mutators.
+     *
+     * @return total metadata operation time in nanos
+     */
+    public long getMetadataOperationNanos() {
+        return metadataOperationNanos;
+    }
+
+    /**
+     * Get the aggregate number of metadata operations. This getter should be called by exclusive owners of the entry,
+     * and never concurrently with mutators.
+     *
+     * @return total number of metadata operations
+     */
+    public long getMetadataOperationCount() {
+        return metadataOperationCount;
+    }
+
+
     @Override
     public LogOutput append(@NotNull final LogOutput logOutput) {
         final LogOutput currentValues = logOutput.append("BasePerformanceEntry{")
@@ -131,7 +219,12 @@ public class BasePerformanceEntry implements LogOutputAppendable {
                 .append(", intervalCpuNanos=").append(cpuNanos)
                 .append(", intervalUserCpuNanos=").append(userCpuNanos)
                 .append(", intervalAllocatedBytes=").append(allocatedBytes)
-                .append(", intervalPoolAllocatedBytes=").append(poolAllocatedBytes);
+                .append(", intervalPoolAllocatedBytes=").append(poolAllocatedBytes)
+                .append(", dataReadNanos=").append(dataReadNanos)
+                .append(", dataReadCount=").append(dataReadCount)
+                .append(", dataReadBytes=").append(dataReadBytes)
+                .append(", metadataOperationNanos=").append(metadataOperationNanos)
+                .append(", metadataOperationCount=").append(metadataOperationCount);
         return appendStart(currentValues)
                 .append('}');
     }
@@ -142,7 +235,12 @@ public class BasePerformanceEntry implements LogOutputAppendable {
                 .append(", startUserCpuNanos=").append(startUserCpuNanos)
                 .append(", startTimeNanos=").append(startTimeNanos)
                 .append(", startAllocatedBytes=").append(startAllocatedBytes)
-                .append(", startPoolAllocatedBytes=").append(startPoolAllocatedBytes);
+                .append(", startPoolAllocatedBytes=").append(startPoolAllocatedBytes)
+                .append(", startDataReadNanos=").append(startDataReadNanos)
+                .append(", startDataReadCount=").append(startDataReadCount)
+                .append(", startDataReadBytes=").append(startDataReadBytes)
+                .append(", startMetadataOperationNanos=").append(startMetadataOperationNanos)
+                .append(", startMetadataOperationCount=").append(startMetadataOperationCount);
     }
 
     /**
@@ -157,5 +255,11 @@ public class BasePerformanceEntry implements LogOutputAppendable {
 
         this.allocatedBytes = plus(this.allocatedBytes, entry.allocatedBytes);
         this.poolAllocatedBytes = plus(this.poolAllocatedBytes, entry.poolAllocatedBytes);
+
+        this.dataReadNanos += entry.dataReadNanos;
+        this.dataReadCount += entry.dataReadCount;
+        this.dataReadBytes += entry.dataReadBytes;
+        this.metadataOperationNanos += entry.metadataOperationNanos;
+        this.metadataOperationCount += entry.metadataOperationCount;
     }
 }

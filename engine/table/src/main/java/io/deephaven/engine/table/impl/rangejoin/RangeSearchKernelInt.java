@@ -16,7 +16,6 @@ import io.deephaven.chunk.attributes.Values;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.util.QueryConstants.NULL_INT;
-import static io.deephaven.util.QueryConstants.NULL_INT;
 
 /**
  * {@link RangeSearchKernel} for values of type int.

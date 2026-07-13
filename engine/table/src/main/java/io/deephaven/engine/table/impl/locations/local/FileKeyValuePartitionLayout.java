@@ -3,8 +3,8 @@
 //
 package io.deephaven.engine.table.impl.locations.local;
 
-import gnu.trove.map.TIntObjectMap;
-import gnu.trove.map.hash.TIntObjectHashMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.table.Table;
 import io.deephaven.api.util.NameValidator;
@@ -84,7 +84,7 @@ public class FileKeyValuePartitionLayout<TLK extends TableLocationKey>
                     maxPartitioningLevels + 1, new SimpleFileVisitor<>() {
                         final Set<String> partitionKeys = new LinkedHashSet<>(); // Preserve order of insertion
                         final List<String> partitionValues = new ArrayList<>();
-                        final TIntObjectMap<ColumnNameInfo> partitionColInfo = new TIntObjectHashMap<>();
+                        final Int2ObjectMap<ColumnNameInfo> partitionColInfo = new Int2ObjectOpenHashMap<>();
                         boolean registered;
                         int columnCount = -1;
 

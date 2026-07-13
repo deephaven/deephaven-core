@@ -75,6 +75,11 @@ public class FakeProcessEnvironment implements ProcessEnvironment {
         public boolean maybeInvokeTasks() {
             throw new UnsupportedOperationException();
         }
+
+        @Override
+        public void awaitTasksFinished() {
+            throw new UnsupportedOperationException();
+        }
     }
 
     public static final class FakeFatalException extends RuntimeException {

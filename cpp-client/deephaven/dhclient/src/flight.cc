@@ -5,6 +5,7 @@
 #include "deephaven/client/impl/table_handle_impl.h"
 #include "deephaven/client/impl/table_handle_manager_impl.h"
 #include "deephaven/client/utility/arrow_util.h"
+#include "deephaven/client/client_options.h"
 
 using deephaven::client::utility::OkOrThrow;
 
@@ -30,8 +31,19 @@ std::unique_ptr<arrow::flight::FlightStreamReader> FlightWrapper::GetFlightStrea
 }
 
 void FlightWrapper::AddHeaders(arrow::flight::FlightCallOptions *options) const {
+  // Note: Authorization and envoy-prefix headers are automatically added by BearerMiddleware
+  // This method now only adds OTHER extra headers (if any)
   impl_->Server()->ForEachHeaderNameAndValue(
       [&options](const std::string &name, const std::string &value) {
+        // Skip authorization (handled by middleware)
+        if (name == kAuthorizationHeader) {
+          return;
+        }
+        // Skip envoy-prefix (handled by middleware)
+        if (name == kEnvoyPrefixHeader) {
+          return;
+        }
+        // Add any other extra headers
         options->headers.emplace_back(name, value);
       }
   );

@@ -22,9 +22,11 @@ public abstract class BaseGridAttributes<IFACE_TYPE extends GridAttributes<IFACE
 
     /**
      * @param initialAttributes The attributes map to use until mutated, or else {@code null} to allocate a new one
+     * @param enforceStrongReachability Should we enforce strong reachability for objects we manage?
      */
-    protected BaseGridAttributes(@Nullable final Map<String, Object> initialAttributes) {
-        super(initialAttributes);
+    protected BaseGridAttributes(@Nullable final Map<String, Object> initialAttributes,
+            boolean enforceStrongReachability) {
+        super(initialAttributes, enforceStrongReachability);
     }
 
     @Override

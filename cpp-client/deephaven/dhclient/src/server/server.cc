@@ -15,6 +15,7 @@
 #include <arrow/array/array_primitive.h>
 
 #include "deephaven/client/impl/util.h"
+#include "deephaven/client/server/bearer_middleware.h"
 #include "deephaven/dhcore/utility/utility.h"
 #include "deephaven/third_party/fmt/format.h"
 
@@ -30,7 +31,7 @@ using UpdateByOperation = io::deephaven::proto::backplane::grpc::UpdateByRequest
 
 namespace deephaven::client::server {
 
-const char *const Server::kAuthorizationKey = "authorization";
+using deephaven::client::kAuthorizationHeader;
 
 namespace {
 std::optional<std::chrono::milliseconds> ExtractExpirationInterval(
@@ -124,14 +125,6 @@ std::shared_ptr<Server> Server::CreateFromTarget(
     options.private_key = client_options.ClientPrivateKey();
   }
 
-  auto client_res = arrow::flight::FlightClient::Connect(*location_res, options);
-  if (!client_res.ok()) {
-    auto message = fmt::format("FlightClient::Connect() failed, error = {}", client_res.status().ToString());
-    throw std::runtime_error(message);
-  }
-  VLOG(2) << "Server::CreateFromTarget: FlightClient(" << static_cast<void*>(client_res->get())
-          << ") created, target=" << target;
-
   std::string session_token;
   std::chrono::milliseconds expiration_interval;
   auto send_time = std::chrono::system_clock::now();
@@ -139,7 +132,7 @@ std::shared_ptr<Server> Server::CreateFromTarget(
     ConfigurationConstantsRequest cc_req;
     ConfigurationConstantsResponse cc_resp;
     grpc::ClientContext ctx;
-    ctx.AddMetadata(kAuthorizationKey, client_options.AuthorizationValue());
+    ctx.AddMetadata(kAuthorizationHeader, client_options.AuthorizationValue());
     for (const auto &header : client_options.ExtraHeaders()) {
       ctx.AddMetadata(header.first, header.second);
     }
@@ -153,7 +146,7 @@ std::shared_ptr<Server> Server::CreateFromTarget(
     }
 
     const auto &md = ctx.GetServerInitialMetadata();
-    auto ip = md.find(kAuthorizationKey);
+    auto ip = md.find(kAuthorizationHeader);
     if (ip == md.end()) {
       throw std::runtime_error(
           DEEPHAVEN_LOCATION_STR("Configuration response didn't contain authorization token"));
@@ -171,10 +164,26 @@ std::shared_ptr<Server> Server::CreateFromTarget(
 
   auto next_handshake_time = send_time + expiration_interval;
 
+  auto shared_state = std::make_shared<ServerSharedState>(client_options.ExtraHeaders(),
+      std::move(session_token), expiration_interval, next_handshake_time);
+
+  // Now add bearer middleware factory to FlightClient options
+  options.middleware.push_back(std::make_shared<BearerMiddlewareFactory>(shared_state));
+
+  auto client_res = arrow::flight::FlightClient::Connect(*location_res, options);
+  if (!client_res.ok()) {
+    auto message = fmt::format("FlightClient::Connect() failed, error = {}", client_res.status().ToString());
+    throw std::runtime_error(message);
+  }
+  VLOG(2) << "Server::CreateFromTarget: FlightClient(" << static_cast<void*>(client_res->get())
+          << ") created with BearerMiddleware, target=" << target;
+
   auto result = std::make_shared<Server>(Private(), std::move(as), std::move(cs),
-      std::move(ss), std::move(ts), std::move(cfs), std::move(its), std::move(*client_res),
-      client_options.ExtraHeaders(), std::move(session_token), expiration_interval, next_handshake_time);
-  result->keepAliveThread_ = std::thread(&SendKeepaliveMessages, result);
+    std::move(ss), std::move(ts), std::move(cfs), std::move(its), std::move(*client_res),
+    shared_state);
+
+  // Start the keepalive thread
+  shared_state->keepAliveThread_ = std::thread(&SendKeepaliveMessages, result);
   VLOG(2) << "Server::CreateFromTarget: Server(" << static_cast<void*>(result.get())
           << ") created, target=" << target;
   return result;
@@ -188,9 +197,7 @@ Server::Server(Private,
     std::unique_ptr<ConfigService::Stub> config_stub,
     std::unique_ptr<InputTableService::Stub> input_table_stub,
     std::unique_ptr<arrow::flight::FlightClient> flight_client,
-    ClientOptions::extra_headers_t extra_headers,
-    std::string session_token, std::chrono::milliseconds expiration_interval,
-    std::chrono::system_clock::time_point next_handshake_time) :
+    std::shared_ptr<ServerSharedState> shared_state) :
     me_(deephaven::dhcore::utility::ObjectId(
         "client::server::Server", this)),
     applicationStub_(std::move(application_stub)),
@@ -200,11 +207,7 @@ Server::Server(Private,
     configStub_(std::move(config_stub)),
     input_table_stub_(std::move(input_table_stub)),
     flightClient_(std::move(flight_client)),
-    extraHeaders_(std::move(extra_headers)),
-    nextFreeTicketId_(1),
-    sessionToken_(std::move(session_token)),
-    expirationInterval_(expiration_interval),
-    nextHandshakeTime_(next_handshake_time) {
+    shared_state_(std::move(shared_state)) {
 }
 
 Server::~Server() {
@@ -214,15 +217,15 @@ Server::~Server() {
 void Server::Shutdown() {
   VLOG(2) << me_ << ": Server Shutdown requested.";
 
-  std::unique_lock<std::mutex> guard(mutex_);
-  if (cancelled_) {
+  std::unique_lock<std::mutex> guard(shared_state_->mutex_);
+  if (shared_state_->cancelled_) {
     guard.unlock(); // to be nice
     LOG(ERROR) << me_ << ": Already cancelled.";
     return;
   }
-  cancelled_ = true;
-  auto tickets_to_release = std::move(outstanding_tickets_);
-  outstanding_tickets_.clear();
+  shared_state_->cancelled_ = true;
+  auto tickets_to_release = std::move(shared_state_->outstanding_tickets_);
+  shared_state_->outstanding_tickets_.clear();
   guard.unlock();
 
   for (const auto &ticket : tickets_to_release) {
@@ -235,9 +238,8 @@ void Server::Shutdown() {
   }
 
   // This will cause the handshake thread to shut down (because cancelled_ is true).
-  condVar_.notify_all();
-
-  keepAliveThread_.join();
+  shared_state_->condVar_.notify_all();
+  shared_state_->keepAliveThread_.join();
 }
 
 namespace {
@@ -254,10 +256,10 @@ Ticket MakeNewTicket(int32_t ticket_id) {
 }  // namespace
 
 Ticket Server::NewTicket() {
-  std::unique_lock guard(mutex_);
-  auto ticket_id = nextFreeTicketId_++;
+  std::unique_lock guard(shared_state_->mutex_);
+  auto ticket_id = shared_state_->nextFreeTicketId_++;
   auto ticket = MakeNewTicket(ticket_id);
-  outstanding_tickets_.insert(ticket);
+  shared_state_->outstanding_tickets_.insert(ticket);
   return ticket;
 }
 
@@ -265,11 +267,11 @@ void Server::Release(Ticket ticket) {
   // TODO(kosak): In a future version we might queue up these released tickets and release
   // them asynchronously, in order to give clients a little performance bump without
   // adding too much unexpected asynchronicity to their programs.
-  std::unique_lock guard(mutex_);
-  if (cancelled_) {
+  std::unique_lock guard(shared_state_->mutex_);
+  if (shared_state_->cancelled_) {
     return;
   }
-  if (outstanding_tickets_.erase(ticket) == 0) {
+  if (shared_state_->outstanding_tickets_.erase(ticket) == 0) {
     const char *message = "Server was asked to release a ticket that it is not managing.";
     throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
   }
@@ -301,8 +303,8 @@ void Server::SendRpc(const std::function<grpc::Status(grpc::ClientContext *)> &c
   });
 
   if (!disregard_cancellation_state) {
-    std::unique_lock guard(mutex_);
-    if (cancelled_) {
+    std::unique_lock guard(shared_state_->mutex_);
+    if (shared_state_->cancelled_) {
       const char *message = "Server cancelled. All further RPCs are being rejected";
       throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
     }
@@ -318,13 +320,13 @@ void Server::SendRpc(const std::function<grpc::Status(grpc::ClientContext *)> &c
   // Authorization token and timeout housekeeping
   const auto &metadata = ctx.GetServerInitialMetadata();
 
-  auto ip = metadata.find(kAuthorizationKey);
-  std::unique_lock lock(mutex_);
+  auto ip = metadata.find(kAuthorizationHeader);
+  std::unique_lock lock(shared_state_->mutex_);
   if (ip != metadata.end()) {
     const auto &val = ip->second;
-    sessionToken_.assign(val.begin(), val.end());
+    shared_state_->sessionToken_.assign(val.begin(), val.end());
   }
-  nextHandshakeTime_ = now + expirationInterval_;
+  shared_state_->nextHandshakeTime_ = now + shared_state_->expirationInterval_;
 }
 
 void Server::SendKeepaliveMessages(const std::shared_ptr<Server> &self) {
@@ -340,22 +342,22 @@ void Server::SendKeepaliveMessages(const std::shared_ptr<Server> &self) {
 bool Server::KeepaliveHelper() {
   // Wait for timeout or cancellation
   {
-    std::unique_lock guard(mutex_);
+    std::unique_lock guard(shared_state_->mutex_);
     std::chrono::system_clock::time_point now;
     while (true) {
-      (void) condVar_.wait_until(guard, nextHandshakeTime_);
-      if (cancelled_) {
+      (void) shared_state_->condVar_.wait_until(guard, shared_state_->nextHandshakeTime_);
+      if (shared_state_->cancelled_) {
         return false;
       }
       now = std::chrono::system_clock::now();
       // We can have spurious wakeups and also nextHandshakeTime_ can change while we are waiting.
       // So don't leave the while loop until wall clock time has moved past nextHandshakeTime_.
-      if (now >= nextHandshakeTime_) {
+      if (now >= shared_state_->nextHandshakeTime_) {
         break;
       }
     }
     // Set a default nextHandshakeTime_. This will likely be overwritten by SendRpc, if it succeeds.
-    nextHandshakeTime_ = now + kHandshakeResendInterval;
+    shared_state_->nextHandshakeTime_ = now + kHandshakeResendInterval;
   }
 
   // Send a 'GetConfigurationConstants' as a handshake. On the way out, we note our local time.
@@ -380,25 +382,26 @@ bool Server::KeepaliveHelper() {
 }
 
 void Server::SetExpirationInterval(std::chrono::milliseconds interval) {
-  std::unique_lock guard(mutex_);
-  expirationInterval_ = interval;
+  std::unique_lock guard(shared_state_->mutex_);
+  shared_state_->expirationInterval_ = interval;
 
   // In the unlikely event that the server reduces the expirationInterval_ (probably never happens),
   // we might need to update the nextHandshakeTime_.
-  auto expiration_time_estimate = std::chrono::system_clock::now() + expirationInterval_;
-  if (expiration_time_estimate < nextHandshakeTime_) {
-    nextHandshakeTime_ = expiration_time_estimate;
-    condVar_.notify_all();
+  auto expiration_time_estimate = std::chrono::system_clock::now() +
+    shared_state_->expirationInterval_;
+  if (expiration_time_estimate < shared_state_->nextHandshakeTime_) {
+    shared_state_->nextHandshakeTime_ = expiration_time_estimate;
+    shared_state_->condVar_.notify_all();
   }
 }
 
 void Server::ForEachHeaderNameAndValue(
     const std::function<void(const std::string &, const std::string &)> &fun) {
-  mutex_.lock();
-  auto token_copy = sessionToken_;
-  mutex_.unlock();
-  fun(kAuthorizationKey, token_copy);
-  for (const auto &header : extraHeaders_) {
+  shared_state_->mutex_.lock();
+  auto token_copy = shared_state_->sessionToken_;
+  shared_state_->mutex_.unlock();
+  fun(kAuthorizationHeader, token_copy);
+  for (const auto &header : shared_state_->extraHeaders_) {
     fun(header.first, header.second);
   }
 }

@@ -18,6 +18,9 @@ We will show you how to construct a simple system that: monitors weather data (s
 - [Build and run Deephaven](../getting-started/docker-install.md).
 - Create a valid [Google Geolocation API key](https://developers.google.com/maps/documentation/geolocation/overview).
 
+> [!NOTE]
+> This guide demonstrates connecting a Java client to a Deephaven Python server. Server-side Python code is provided throughout if you want to follow along.
+
 ## The application
 
 The application is broken up into three major parts:
@@ -32,10 +35,45 @@ At this point, you should have a running Deephaven IDE. You first need to config
 
 1. Import the libraries needed into the worker.
 
-> [!NOTE]
-> Note that the 'requests' library, which is used to do simple GET calls, is not part of the default Deephaven Python image, so it is imported directly into the running session. See [How to install Python packages](../how-to-guides/install-packages.md) for more details.
+```python skip-test
+import random
+import time
+import json
+import os
 
-2. Create the [DynamicTableWriter](../how-to-guides/table-publisher.md) that will be used to ingest ticking data.
+from dataclasses import dataclass
+from datetime import datetime
+from math import cos, asin, sqrt, pi
+from threading import Lock
+from threading import Thread
+
+from deephaven import *
+from deephaven import DynamicTableWriter, dtypes as dht
+from deephaven import agg
+from deephaven.time import epoch_millis_to_instant
+
+os.system("pip install requests")
+import requests
+```
+
+> [!NOTE]
+> Note that the 'requests' library, which is used to do simple GET calls, is not part of the default Deephaven Python image, so it is imported directly into the running session. See [How to install Python packages](/core/docs/how-to-guides/install-and-use-python-packages) for more details.
+
+2. Create the [DynamicTableWriter](../how-to-guides/table-publisher.md#dynamictablewriter) that will be used to ingest ticking data.
+
+```python skip-test
+# First, let's create a table to manage the relevant cities to monitor
+dynamic_table_writer_columns = {
+    "Timestamp": dht.DateTime,
+    "State": dht.string,
+    "City": dht.string,
+    "Temp": dht.float64,
+    "Humidity": dht.float64,
+}
+table_writer = DynamicTableWriter(dynamic_table_writer_columns)
+
+current_data = table_writer.table
+```
 
 This simply creates a table with five columns to which the application will record weather measurements.
 
@@ -49,15 +87,236 @@ This simply creates a table with five columns to which the application will reco
 
 3. Perform some simple data analysis.
 
+```python skip-test
+from deephaven import agg
+
+# Bin the data by 30 minute and 1 hour intervals using the "lowerBin" feature
+binned_data = current_data.update_view(formulas=["bin30M=lowerBin(Timestamp, 30 * MINUTE)", "bin1Hr=lowerBin(Timestamp, 1 *HOUR)"])
+
+# Compute Min/Max/Average for Temperature and Humidity,
+# grouping the data first, by the State, City, and 30 minute time bin of each measurement
+# This also pulls forward the 1 hour time bin value column using the "First" aggregation
+agg_list30 = [
+    agg.min_(cols=["Min30Temp=Temp", "Min30Humid=Humidity"]),
+    agg.max_(cols=["Max30Temp=Temp", "Max30Humid=Humidity"]),
+    agg.avg(cols=["Avg30Temp=Temp", "Avg30Humid=Humidity"]),
+    agg.first(cols=["bin1Hr"])
+]
+
+binned_stats30 = binned_data.agg_by(agg_list30, by=["State", "City", "bin30M"])
+
+# Next, Compute Min/Max/Average, grouping, instead, by the State, City, and hourly time bins
+agg_list60 = [
+    agg.min_(cols=["Min60Temp=Temp", "Min60Humid=Humidity"]),
+    agg.max_(cols=["Max60Temp=Temp", "Max60Humid=Humidity"]),
+    agg.avg(cols=["Avg60Temp=Temp", "Avg60Humid=Humidity"])
+]
+
+binned_stats60 = binned_data.agg_by(agg_list60, by=["State", "City", "bin1Hr"])
+
+# Ideally,  these would be viewed in a single aggregated table
+# this will join the two tables together using the State, City, and Hourly time bin
+combined_stats = binned_stats30.natural_join(binned_stats60, "State,City,bin1Hr");
+
+# Finally, create a table of the last relevant value of each location, by City and State,
+# discarding the time bin columns
+# For bonus points, it also joins back on the current weather measurement
+# for each location to produce a table that contains
+# the min/max/average temperature and humidity for the most recent 30 minutes, and 1 hour,
+# as well as the current values.
+last_city_by_state = combined_stats.last_by(by=["State", "City"])\
+    .drop_columns(cols=["bin30M", "bin1Hr"])\
+    .natural_join(table=current_data.last_by(by=["State", on=["City"])], joins=["State,City"])\
+    .move_columns_up(cols=["Timestamp", "State", "City", "Temp", "Humidity"])
+```
+
 4. Create a data structure for collecting information on each location to use to fetch weather data.
 
    > [!NOTE]
    > In the code below, be sure to insert your Google Geolocation API key into the `API_KEY` variable.
 
+```python skip-test
+@dataclass
+class Location:
+    city: str = None
+    state: str = None
+    lat: float = -999
+    lon: float = -999
+
+    last_obs_time: datetime = None
+
+    observationStation: str = None
+    forecastStation: str = None
+
+    def __hash__(self):
+        return hash((self.city, self.state))
+
+
+API_KEY = "YOUR_API_KEY"
+CITY_LOCK = Lock()
+trackedCities = set()
+```
+
 5. Add the code that fetches weather data.
 
 <details>
     <summary>`FetchWeatherData.py`</summary>
+
+```python skip-test
+# Borrowed from https://stackoverflow.com/questions/27928/calculate-distance-between-two-latitude-longitude-points-haversine-formula
+def distance(lat1, lon1, lat2, lon2):
+    p = pi / 180
+    a = (
+        0.5
+        - cos((lat2 - lat1) * p) / 2
+        + cos(lat1 * p) * cos(lat2 * p) * (1 - cos((lon2 - lon1) * p)) / 2
+    )
+    return 12742 * asin(sqrt(a))  # 2*R*asin...
+
+
+# Locate the Lat/Lon of a particular city state
+def geoLocate(cityName) -> Location:
+    if len(cityName) <= 0:
+        raise ValueError("Place name must be present")
+
+    # First go figure out Lat/Lon so we can pass that to NOAA and locate a station
+    geoResp = requests.get(
+        "https://maps.googleapis.com/maps/api/geocode/json",
+        params={"address": cityName, "key": API_KEY},
+    )
+    if geoResp.status_code != 200:
+        raise ValueError(
+            cityName + " is not a valid place -> " + geoJson["error_message"]
+        )
+    geoJson = geoResp.json()
+
+    # Process the response JSON and look for the City and State (typically locality and administrative_area_level_1)
+    localCity = localState = ""
+    resultsEl = geoJson["results"][0]
+    if resultsEl is None:
+        raise ValueError(
+            "Cannot determine location of " + cityName + " no valid results"
+        )
+
+    comps = resultsEl["address_components"]
+    if comps is None:
+        raise ValueError("Cannot determine location of " + cityName + " no components")
+
+    for val in comps:
+        if "locality" in val["types"]:
+            localCity = val["long_name"]
+        if "administrative_area_level_1" in val["types"]:
+            localState = val["long_name"]
+
+    if localCity is None or localState is None:
+        raise ValueError("Unable to determine city and state for " + cityName)
+
+    geom = resultsEl["geometry"]
+    if geom is None:
+        raise ValueError("Unable to determine lat/lon for " + cityName)
+
+    loc = geom["location"]
+    if loc is None:
+        raise ValueError("Unable to determine lat/lon for " + cityName)
+
+    print(
+        "Located "
+        + localState
+        + ", "
+        + localCity
+        + " at ["
+        + str(loc["lat"])
+        + ", "
+        + str(loc["lng"])
+        + "]"
+    )
+    return Location(city=localCity, state=localState, lat=loc["lat"], lon=loc["lng"])
+
+
+# We have to poke NOAA's APIs so that we can find
+# 1) the "Point" 2) the Observation station and 3) the Forecast station.
+# Once we collect this data, we can construct an appropriate API call
+# to fetch current / forecasted weather data.
+def discoverWeather(loc):
+    # First, convert the Lat/lon into a point
+    pointJson = requests.get(
+        "https://api.weather.gov/points/" + str(loc.lat) + "%2C" + str(loc.lon)
+    ).json()
+
+    # Next, use that point to locate the Grid location, which tells us the station URLs
+    loc.forecastStation = pointJson["properties"]["forecast"]
+    observationUrl = pointJson["properties"]["observationStations"]
+
+    # Finally, locate the station to use for observations and build a URL we can just call
+    stationJson = requests.get(observationUrl).json()
+
+    # Sift through the set of features and locate the closest one as the crow flies
+    # and use that as the observation station.
+    closestFeature = None
+    closestDistance = 99999999999
+    for feature in stationJson["features"]:
+        featurePoint = feature["geometry"]["coordinates"]
+        # Note that NOAA's coordinates are lon,lat -NOT- lat,lon :(
+        dist = distance(loc.lat, loc.lon, featurePoint[1], featurePoint[0])
+        # print("Station " + feature['properties']['name'] + " at distance " + str(dist))
+        if closestFeature is None or dist < closestDistance:
+            closestFeature = feature
+            closestDistance = dist
+
+    loc.observationStation = (
+        "https://api.weather.gov/stations/"
+        + closestFeature["properties"]["stationIdentifier"]
+        + "/observations/latest"
+    )
+
+
+def updateObservation(lc):
+    obs_json = requests.get(lc.observationStation).json()
+
+    # TODO:  Actual error checking
+    time = datetime.fromisoformat(obs_json["properties"]["timestamp"])
+
+    if lc.last_obs_time is None or lc.last_obs_time < time:
+        lc.last_obs_time = time
+        temp = obs_json["properties"]["temperature"]["value"]
+        humid = obs_json["properties"]["relativeHumidity"]["value"]
+        print("Updated " + str(lc) + " at " + str(time))
+        table_writer.write_row(
+            epoch_millis_to_instant((int)(time.timestamp() * 1000)),
+            lc.state,
+            lc.city,
+            temp,
+            humid,
+        )
+
+
+# A simple method to add a city to the set of cities to watch
+def beginWatch(cityName):
+    loc = geoLocate(cityName)
+
+    # Don't do anything further if we're already watching this location
+    if loc in trackedCities:
+        return
+
+    discoverWeather(loc)
+    if loc.observationStation is None:
+        raise ValueError("Could not locate observation URL for " + cityName)
+
+    with CITY_LOCK:
+        trackedCities.add(loc)
+        updateObservation(loc)
+
+
+def periodicFetchRealData():
+    while True:
+        for lc in trackedCities:
+            updateObservation(lc)
+        time.sleep(60)
+
+
+monitorThread = Thread(target=periodicFetchRealData)
+monitorThread.start()
+```
 
 </details>
 

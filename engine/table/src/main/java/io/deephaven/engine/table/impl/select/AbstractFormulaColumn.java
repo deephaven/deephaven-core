@@ -347,6 +347,9 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
 
     @Override
     public boolean hasVirtualRowVariables() {
+        if (usedColumns == null) {
+            throw new IllegalStateException("Cannot call hasVirtualRowVariables before calling initDef!");
+        }
         return usesI || usesII || usesK;
     }
 

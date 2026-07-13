@@ -4,7 +4,6 @@
 package io.deephaven.engine.rowset.impl;
 
 import io.deephaven.base.log.LogOutput;
-import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
@@ -12,7 +11,6 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.util.datastructures.LongRangeConsumer;
 import io.deephaven.util.mutable.MutableLong;
-import gnu.trove.list.array.TLongArrayList;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 
 public class RowSetUtils {
@@ -53,34 +51,6 @@ public class RowSetUtils {
             chunkToFill.add(start);
             chunkToFill.add(end);
         });
-    }
-
-    static TLongArrayList[] findMissing(final RowSet base, final RowSet keys) {
-        final TLongArrayList indices = new TLongArrayList();
-        final TLongArrayList counts = new TLongArrayList();
-
-        int countIndex = -1;
-        long currentCount = 0;
-        long lastPos = -2;
-
-        for (final RowSet.RangeIterator iterator = keys.rangeIterator(); iterator.hasNext();) {
-            iterator.next();
-            final long currentRangeStart = iterator.currentRangeStart();
-
-            final long key = base.find(currentRangeStart);
-            Assert.ltZero(key, "key");
-            if (-key - 1 == lastPos) {
-                currentCount += iterator.currentRangeEnd() - currentRangeStart + 1;
-                counts.set(countIndex, currentCount);
-            } else {
-                lastPos = -key - 1;
-                indices.add(lastPos);
-                currentCount = iterator.currentRangeEnd() - currentRangeStart + 1;
-                counts.add(currentCount);
-                countIndex++;
-            }
-        }
-        return new TLongArrayList[] {indices, counts};
     }
 
     public static LogOutput append(final LogOutput logOutput, final RowSet.RangeIterator it) {
@@ -265,7 +235,6 @@ public class RowSetUtils {
         private RangeMembership currMembership = null;
 
         /***
-         *
          * Provide the means to iterate over the combined ranges of two provided iterators. The resulting ranges in this
          * object are tagged with first, second, or both, to indicate if the current range was from the first iterator,
          * second iterator, or both respectively.

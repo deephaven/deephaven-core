@@ -929,12 +929,12 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
                         aggregatedNodeDefinition.getColumns().get(ci - FIRST_AGGREGATED_COLUMN_INDEX);
                 result[ci] = isBaseLevel
                         ? NullValueColumnSource.getInstance(cd.getDataType(), cd.getComponentType())
-                        : maybeConvertToPrimitive(nodeSortedTable.getColumnSource(cd.getName(), cd.getDataType()));
+                        : maybeConvertToPrimitive(nodeSortedTable.getColumnSource(cd));
             } else {
                 final ColumnDefinition<?> cd =
                         constituentNodeDefinition.getColumns().get(ci - firstConstituentColumnIndex);
                 result[ci] = isBaseLevel
-                        ? maybeConvertToPrimitive(nodeSortedTable.getColumnSource(cd.getName(), cd.getDataType()))
+                        ? maybeConvertToPrimitive(nodeSortedTable.getColumnSource(cd))
                         : NullValueColumnSource.getInstance(cd.getDataType(), cd.getComponentType());
             }
         }

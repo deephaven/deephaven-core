@@ -160,6 +160,33 @@ public interface Type<T> {
     }
 
     /**
+     * Creates the local time type.
+     *
+     * @return the local time type
+     */
+    static LocalTimeType localTimeType() {
+        return LocalTimeType.of();
+    }
+
+    /**
+     * Creates the local date type.
+     *
+     * @return the local date type
+     */
+    static LocalDateType localDateType() {
+        return LocalDateType.of();
+    }
+
+    /**
+     * Creates the duration type.
+     *
+     * @return the duration type
+     */
+    static DurationType durationType() {
+        return DurationType.of();
+    }
+
+    /**
      * Creates a custom type. Equivalent to {@code CustomType.of(clazz)}.
      *
      * @param clazz the class

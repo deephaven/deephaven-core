@@ -12,8 +12,11 @@ import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
+import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
+import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.engine.table.impl.util.RuntimeMemory;
+import io.deephaven.engine.table.impl.util.WritableRowRedirectionLockFree;
 import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.*;
@@ -2184,6 +2187,122 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
             final int[] rightSide = intColumn(result, "RightSentinel");
             assertEquals(new int[] {101, 102, 103, NULL_INT, 101, 103, 102, 102, 103}, rightSide);
         });
+    }
+
+    /**
+     * The "DragonFruit" row on the left has no match on the right, so the row redirection backing the right-side
+     * columns must map that left row to {@link RowSequence#NULL_ROW_KEY} (-1). A regression caused the symbol-table
+     * path to store {@link QueryConstants#NULL_LONG} (Long.MIN_VALUE) instead, which sent downstream readers (e.g.
+     * Parquet) off to garbage offsets.
+     */
+    public void testSymbolTableJoinUnmatchedRowRedirection() throws IOException {
+        diskBackedTestHarness((left, right) -> {
+            // Flatten the left so JoinControl picks the Contiguous redirection. The Sparse path's
+            // LongColumnSourceRowRedirection.get() normalizes NULL_LONG to NULL_ROW_KEY on read, hiding the bug;
+            // ContiguousWritableRowRedirection.get() returns the raw stored value, so a buggy NULL_LONG surfaces.
+            final Table flatLeft = left.flatten();
+            final Table result = flatLeft.naturalJoin(right, "Symbol");
+
+            final Table expected = newTable(
+                    stringCol("Symbol", "Apple", "Banana", "Cantaloupe", "DragonFruit",
+                            "Apple", "Cantaloupe", "Banana", "Banana", "Cantaloupe"),
+                    intCol("LeftSentinel", 0, 1, 2, 3, 4, 5, 6, 7, 8),
+                    intCol("RightSentinel", 101, 102, 103, NULL_INT, 101, 103, 102, 102, 103));
+            assertTableEquals(expected, result);
+
+            final ColumnSource<?> rightSentinelSource = result.getColumnSource("RightSentinel");
+            assertTrue("RightSentinel must be a RedirectedColumnSource",
+                    rightSentinelSource instanceof RedirectedColumnSource);
+            final RowRedirection rowRedirection =
+                    ((RedirectedColumnSource<?>) rightSentinelSource).getRowRedirection();
+
+            // The 4th left row (index 3, "DragonFruit") has no match on the right.
+            final long unmatchedLeftRowKey = result.getRowSet().get(3);
+            final long innerRowKey = rowRedirection.get(unmatchedLeftRowKey);
+
+            assertEquals("Unmatched left row must redirect to NULL_ROW_KEY, not NULL_LONG",
+                    RowSequence.NULL_ROW_KEY, innerRowKey);
+        });
+    }
+
+    /**
+     * Same bug as {@link #testSymbolTableJoinUnmatchedRowRedirection()}, but exercises the Hash redirection path.
+     * <p>
+     * We write a large Parquet file (so the join sees a symbol-table-aware source), then read it back and filter to a
+     * small number of widely-scattered rows. The resulting row set has many sparse-array blocks containing a single
+     * row, so {@code JoinControl.getRedirectionType} picks {@code Hash} (sparse overhead exceeded). Unmatched left rows
+     * must redirect to {@link RowSequence#NULL_ROW_KEY}, not {@link QueryConstants#NULL_LONG}.
+     */
+    public void testSymbolTableJoinUnmatchedRowRedirectionHash() throws IOException {
+        final File leftDirectory = Files.createTempDirectory("QueryTableJoinTest-Left").toFile();
+        final File rightDirectory = Files.createTempDirectory("QueryTableJoinTest-Right").toFile();
+        try {
+            final File leftFile = new File(leftDirectory, "Left.parquet");
+            final TableDefinition leftDefinition = TableDefinition.of(
+                    ColumnDefinition.ofString("Symbol"),
+                    ColumnDefinition.ofInt("LeftSentinel"));
+            final int leftSize = 100_000;
+            // Alternate Apple/DragonFruit per 5000-row band so the stride filter keeps both.
+            final Table leftSource = emptyTable(leftSize)
+                    .updateView(
+                            "Symbol = ((ii / 5000) % 2 == 0) ? `Apple` : `DragonFruit`",
+                            "LeftSentinel = i");
+            ParquetTools.writeTable(leftSource, leftFile.getPath(),
+                    ParquetInstructions.EMPTY.withTableDefinition(leftDefinition));
+
+            // Keep ~20 rows widely scattered. Each falls in its own 1024-row sparse block, which
+            // makes the sparse overhead exceed the 4x threshold and forces the Hash redirection.
+            final Table left = ParquetTools.readTable(leftFile.getPath())
+                    .where("ii % 5000 == 0");
+
+            final File rightFile = new File(rightDirectory, "Right.parquet");
+            final TableDefinition rightDefinition = TableDefinition.of(
+                    ColumnDefinition.ofString("Symbol"),
+                    ColumnDefinition.ofInt("RightSentinel"));
+            final Table rightSource =
+                    newTable(stringCol("Symbol", "Apple", "Banana")).update("RightSentinel=100+i");
+            ParquetTools.writeTable(rightSource, rightFile.getPath(),
+                    ParquetInstructions.EMPTY.withTableDefinition(rightDefinition));
+            final Table right = ParquetTools.readTable(rightFile.getPath());
+
+            final Table result = left.naturalJoin(right, "Symbol");
+
+            final Table expected = emptyTable(20).update(
+                    "Symbol = (ii % 2 == 0) ? `Apple` : `DragonFruit`",
+                    "LeftSentinel = (int) (ii * 5000)",
+                    "RightSentinel = (ii % 2 == 0) ? 100 : NULL_INT");
+            assertTableEquals(expected, result);
+
+            final ColumnSource<?> rightSentinelSource = result.getColumnSource("RightSentinel");
+            assertTrue("RightSentinel must be a RedirectedColumnSource",
+                    rightSentinelSource instanceof RedirectedColumnSource);
+            final RowRedirection rowRedirection =
+                    ((RedirectedColumnSource<?>) rightSentinelSource).getRowRedirection();
+
+            assertTrue("Expected hash row redirection, got " + rowRedirection.getClass().getName(),
+                    rowRedirection instanceof WritableRowRedirectionLockFree);
+
+            // Find an unmatched ("DragonFruit") left row in the filtered result.
+            final ColumnSource<String> symbolSource = result.getColumnSource("Symbol", String.class);
+            long unmatchedLeftRowKey = -1;
+            for (final RowSet.Iterator it = result.getRowSet().iterator(); it.hasNext();) {
+                final long key = it.nextLong();
+                if ("DragonFruit".equals(symbolSource.get(key))) {
+                    unmatchedLeftRowKey = key;
+                    break;
+                }
+            }
+            assertTrue("Did not find an unmatched DragonFruit row in the filtered left",
+                    unmatchedLeftRowKey != -1L);
+
+            final long innerRowKey = rowRedirection.get(unmatchedLeftRowKey);
+
+            assertEquals("Unmatched left row must redirect to NULL_ROW_KEY, not NULL_LONG",
+                    RowSequence.NULL_ROW_KEY, innerRowKey);
+        } finally {
+            FileUtils.deleteRecursively(leftDirectory);
+            FileUtils.deleteRecursively(rightDirectory);
+        }
     }
 
     /** Test #1 for DHC issue #3202 */

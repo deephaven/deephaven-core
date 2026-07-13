@@ -7,6 +7,7 @@ import com.github.f4b6a3.uuid.UuidCreator;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.stream.Collectors;
 
 public class QueryLibrary {
     private static final QueryLibraryImports IMPORTS_INSTANCE = QueryLibraryImports.copyFromServiceLoader();
@@ -52,14 +53,27 @@ public class QueryLibrary {
         updateVersionString();
     }
 
+    @Deprecated
     public Collection<Class<?>> getClassImports() {
-        return Collections.unmodifiableCollection(classImports.values());
+        return classImports
+                .values()
+                .stream()
+                .map(this::tryLoad)
+                .flatMap(Optional::stream)
+                .collect(Collectors.toUnmodifiableList());
     }
 
+    @Deprecated
     public Collection<Class<?>> getStaticImports() {
-        return Collections.unmodifiableCollection(staticImports.values());
+        return staticImports
+                .values()
+                .stream()
+                .map(this::tryLoad)
+                .flatMap(Optional::stream)
+                .collect(Collectors.toUnmodifiableList());
     }
 
+    @Deprecated
     public Collection<Package> getPackageImports() {
         return Collections.unmodifiableCollection(packageImports.values());
     }
@@ -85,6 +99,24 @@ public class QueryLibrary {
         }
     }
 
+    /**
+     * Tries to load the class by name from the current classloader, or else returns empty if it can't be loaded.
+     */
+    private Optional<Class<?>> tryLoad(Class<?> clazz) {
+        try {
+            return Optional.of(Class.forName(clazz.getName(), false, Thread.currentThread().getContextClassLoader()));
+        } catch (ClassNotFoundException e) {
+            return Optional.empty();
+        }
+    }
+
+    /**
+     * Returns true if the class is available by name from the current classloader.
+     */
+    private boolean canLoad(Class<?> clazz) {
+        return tryLoad(clazz).isPresent();
+    }
+
     public Collection<String> getImportStrings() {
         final List<String> imports = new ArrayList<>();
 
@@ -93,14 +125,16 @@ public class QueryLibrary {
             imports.add("import " + packageImport.getName() + ".*;");
         }
         for (final Class<?> classImport : classImports.values()) {
-            if (classImport.getDeclaringClass() != null) {
+            if (classImport.getDeclaringClass() != null && canLoad(classImport)) {
                 imports.add("import static " + classImport.getCanonicalName() + ";");
-            } else if (!packageImports.containsKey(classImport.getPackage().getName())) {
-                imports.add("import " + classImport.getName() + ";");
+            } else if (!packageImports.containsKey(classImport.getPackage().getName()) && canLoad(classImport)) {
+                imports.add("import " + classImport.getCanonicalName() + ";");
             }
         }
         for (final Class<?> staticImport : staticImports.values()) {
-            imports.add("import static " + staticImport.getCanonicalName() + ".*;");
+            if (canLoad(staticImport)) {
+                imports.add("import static " + staticImport.getCanonicalName() + ".*;");
+            }
         }
         return imports;
     }

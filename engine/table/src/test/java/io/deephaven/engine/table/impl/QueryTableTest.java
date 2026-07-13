@@ -3761,7 +3761,7 @@ public class QueryTableTest extends QueryTableTestBase {
         validatorTable.addUpdateListener(validatorTableListener);
     }
 
-    private static class MockUncoalescedTable extends UncoalescedTable<MockUncoalescedTable> {
+    private static class MockUncoalescedTable extends UncoalescedTableImpl<MockUncoalescedTable> {
 
         private final Supplier<QueryTable> supplier;
 
@@ -4065,6 +4065,16 @@ public class QueryTableTest extends QueryTableTestBase {
         @Override
         public LogicalClock clock() {
             return () -> 1;
+        }
+
+        @Override
+        public long cycleStartNanoTime() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Instant cycleStartTime() {
+            throw new UnsupportedOperationException();
         }
 
         @Override

@@ -7,37 +7,37 @@ using Deephaven.Dh_NetClient;
 namespace Deephaven.Dh_NetClientTests;
 
 public class SharableDictTest {
-  [Fact]
-  public void Simple() {
+  [Test]
+  public async Task Simple() {
     var d = SharableDict<string>.Empty;
     var dict = d.With(10, "hello")
       .With(11, "world")
       .With(1000, "Deephaven");
 
-    Assert.True(ContainsEntry(dict, 10, "hello"));
-    Assert.True(ContainsEntry(dict, 11, "world"));
-    Assert.True(ContainsEntry(dict, 1000, "Deephaven"));
-    Assert.False(dict.TryGetValue(1001, out _));
-    Assert.Equal(3, dict.Count);
+    await Assert.That(ContainsEntry(dict, 10, "hello")).IsTrue();
+    await Assert.That(ContainsEntry(dict, 11, "world")).IsTrue();
+    await Assert.That(ContainsEntry(dict, 1000, "Deephaven")).IsTrue();
+    await Assert.That(dict.TryGetValue(1001, out _)).IsFalse();
+    await Assert.That(dict.Count).IsEqualTo(3);
 
     var dict2 = dict.With(11, "world v2")
       .With(1000, "Deephaven v2");
 
     // dict2 has some new values
-    Assert.True(ContainsEntry(dict2, 10, "hello"));
-    Assert.True(ContainsEntry(dict2, 11, "world v2"));
-    Assert.True(ContainsEntry(dict2, 1000, "Deephaven v2"));
-    Assert.Equal(3, dict2.Count);
+    await Assert.That(ContainsEntry(dict2, 10, "hello")).IsTrue();
+    await Assert.That(ContainsEntry(dict2, 11, "world v2")).IsTrue();
+    await Assert.That(ContainsEntry(dict2, 1000, "Deephaven v2")).IsTrue();
+    await Assert.That(dict2.Count).IsEqualTo(3);
 
     // Initial dict unchanged
-    Assert.True(ContainsEntry(dict, 10, "hello"));
-    Assert.True(ContainsEntry(dict, 11, "world"));
-    Assert.True(ContainsEntry(dict, 1000, "Deephaven"));
-    Assert.Equal(3, dict.Count);
+    await Assert.That(ContainsEntry(dict, 10, "hello")).IsTrue();
+    await Assert.That(ContainsEntry(dict, 11, "world")).IsTrue();
+    await Assert.That(ContainsEntry(dict, 1000, "Deephaven")).IsTrue();
+    await Assert.That(dict.Count).IsEqualTo(3);
   }
 
-  [Fact]
-  public void Ordering() {
+  [Test]
+  public async Task Ordering() {
     var dict = SharableDict<int>.Empty;
     dict = dict.With(3, 1000)
       .With(10, 2000)
@@ -52,30 +52,30 @@ public class SharableDictTest {
       new(10, 2000)
     };
 
-    Assert.Equal(expected, list);
+    await Assert.That(list.SequenceEqual(expected)).IsTrue();
   }
 
-  [Fact]
-  public void Canonicalizes() {
+  [Test]
+  public async Task Canonicalizes() {
     var d0 = SharableDict<string>.Empty;
     var d1 = d0.With(1_000, "hello");
     var d2 = d1.With(1_000_000, "there");
     var d3 = d2.With(1_000_000_000, "Deephaven");
 
-    Assert.Equal(0, d0.Count);
-    Assert.Equal(1, d1.Count);
-    Assert.Equal(2, d2.Count);
-    Assert.Equal(3, d3.Count);
+    await Assert.That(d0.Count).IsEqualTo(0);
+    await Assert.That(d1.Count).IsEqualTo(1);
+    await Assert.That(d2.Count).IsEqualTo(2);
+    await Assert.That(d3.Count).IsEqualTo(3);
 
     var newd2 = d3.Without(1_000);
     var newd1 = newd2.Without(1_000_000);
     var newd0 = newd1.Without(1_000_000_000);
 
-    Assert.True(ReferenceEquals(newd0.RootForUnitTests, d0.RootForUnitTests));
+    await Assert.That(ReferenceEquals(newd0.RootForUnitTests, d0.RootForUnitTests)).IsTrue();
   }
 
-  [Fact]
-  public void NonexistentRemoveIsNoop() {
+  [Test]
+  public async Task NonexistentRemoveIsNoop() {
     var dict = SharableDict<string>.Empty
       .With(10, "hello")
       .With(11, "world")
@@ -83,11 +83,11 @@ public class SharableDictTest {
 
     var d2 = dict.Without(999); // nonexistent key
 
-    Assert.True(ReferenceEquals(dict, d2));
+    await Assert.That(ReferenceEquals(dict, d2)).IsTrue();
   }
 
-  [Fact]
-  public void Iterates() {
+  [Test]
+  public async Task Iterates() {
     var dict = SharableDict<string>.Empty;
     for (var i = 0; i != 10000; ++i) {
       dict = dict.With(i * 37, "hello" + i);
@@ -95,26 +95,26 @@ public class SharableDictTest {
 
     var nextIndex = 0;
     foreach (var (k, v) in dict) {
-      Assert.Equal(nextIndex * 37, k);
-      Assert.Equal("hello" + nextIndex, v);
+      await Assert.That(k).IsEqualTo(nextIndex * 37);
+      await Assert.That(v).IsEqualTo("hello" + nextIndex);
       ++nextIndex;
     }
   }
 
-  [Fact]
-  public void Difference() {
+  [Test]
+  public async Task Difference() {
     var dict1 = SharableDict<int>.Empty;
     for (var i = 0; i != 10; ++i) {
       dict1 = dict1.With(i, i * 37);
     }
 
     var dict2 = dict1
-      .With(100, 999)  // add
-      .With(1000, 9999)  // add
-      .Without(3)  // remove
-      .Without(5)  // remove
-      .With(7, 12345)  // modify
-      .With(-1, 999);  // add
+      .With(100, 999) // add
+      .With(1000, 9999) // add
+      .Without(3) // remove
+      .Without(5) // remove
+      .With(7, 12345) // modify
+      .With(-1, 999); // add
 
     var (a, r, m) = dict1.CalcDifference(dict2);
 
@@ -133,50 +133,50 @@ public class SharableDictTest {
       new(7, 12345)
     };
 
-    Assert.Equal(aExpected, a);
-    Assert.Equal(rExpected, r);
-    Assert.Equal(mExpected, m);
+    await Assert.That(a).IsEquivalentTo(aExpected);
+    await Assert.That(r).IsEquivalentTo(rExpected);
+    await Assert.That(m).IsEquivalentTo(mExpected);
 
-    Assert.Equal(32, a.CountNodesForUnitTesting());
-    Assert.Equal(21, r.CountNodesForUnitTesting());
-    Assert.Equal(21, m.CountNodesForUnitTesting());
+    await Assert.That(a.CountNodesForUnitTesting()).IsEqualTo(32);
+    await Assert.That(r.CountNodesForUnitTesting()).IsEqualTo(21);
+    await Assert.That(m.CountNodesForUnitTesting()).IsEqualTo(21);
   }
 
-  [Fact]
-  public void DictIsEfficientForLargeDenseSets() {
+  [Test]
+  public async Task DictIsEfficientForLargeDenseSets() {
     // These should asymptote towards 64 elements per node.
 
     // An empty dict costs 11 nodes
-    TestDenseEfficiency(0, 11);
+    await TestDenseEfficiency(0, 11);
 
     // A dict densely packed with the first 64 integers costs 21 nodes
     // Efficency: 21 nodes per 64 elements
     // 0.328 nodes per element, 3.048 elements per node
-    TestDenseEfficiency(64, 21);
+    await TestDenseEfficiency(64, 21);
 
     // A dict densely packed with the first 4096 integers costs 84 nodes
     // Efficency: 84 nodes per 4096 elements
     // 0.021 nodes per element, 48.76 elements per node
-    TestDenseEfficiency(4096, 84);
+    await TestDenseEfficiency(4096, 84);
 
     // A dict densely packed with the first 65536 integers costs 1059 nodes
     // Efficency: 84 nodes per 4096 elements
     // 0.016 nodes per element, 61.88 elements per node
-    TestDenseEfficiency(65536, 1059);
+    await TestDenseEfficiency(65536, 1059);
   }
 
-  private static void TestDenseEfficiency(int count, int expectedNodeCount) {
+  private static async Task TestDenseEfficiency(int count, int expectedNodeCount) {
     var dict = SharableDict<int>.Empty;
     for (var i = 0; i != count; ++i) {
       dict = dict.With(i, i * 1111);
     }
     for (var i = 0; i != count; ++i) {
-      Assert.True(dict.TryGetValue(i, out var value));
-      Assert.Equal(i * 1111, value);
+      await Assert.That(dict.TryGetValue(i, out var value)).IsTrue();
+      await Assert.That(value).IsEqualTo(i * 1111);
     }
 
-    Assert.Equal(count, dict.Count);
-    Assert.Equal(expectedNodeCount, dict.CountNodesForUnitTesting());
+    await Assert.That(dict.Count).IsEqualTo(count);
+    await Assert.That(dict.CountNodesForUnitTesting()).IsEqualTo(expectedNodeCount);
   }
 
   private static bool ContainsEntry<T>(SharableDict<T> dict, Int64 key, T expected) {

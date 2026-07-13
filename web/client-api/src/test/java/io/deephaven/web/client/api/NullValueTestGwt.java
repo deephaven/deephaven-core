@@ -10,6 +10,7 @@ import elemental2.promise.Promise;
 import io.deephaven.web.client.api.subscription.DataOptions;
 import io.deephaven.web.client.api.subscription.TableSubscription;
 import io.deephaven.web.client.api.subscription.TableViewportSubscription;
+import io.deephaven.web.client.api.subscription.ViewportData;
 import jsinterop.base.Js;
 
 import java.math.BigDecimal;
@@ -33,7 +34,9 @@ public class NullValueTestGwt extends AbstractAsyncGwtTestCase {
                     "   \"MyDate=i==0?null:epochNanosToInstant(i)\",\n" +
                     "   \"MyBigInteger=i==0?null:java.math.BigInteger.valueOf(i)\",\n" +
                     "   \"MyBigDecimal=i==0?null:java.math.BigDecimal.valueOf(i, 4)\",\n" +
-                    "   \"MyStringArray1=i==0?null:new String[] {`A`, `B`, `C`}\"\n" +
+                    "   \"MyStringArray1=i==0?null:new String[] {`A`, `B`, `C`}\",\n" +
+                    "   \"MyLocalDate=i==0?null:java.time.LocalDate.ofEpochDay(i)\",\n" +
+                    "   \"MyLocalTime=i==0?null:java.time.LocalTime.ofSecondOfDay(i)\",\n" +
                     "])")
             .script("all_null_table", "empty_table(20).update([\n" +
                     "   \"MyInt=(Integer)null\",\n" +
@@ -48,7 +51,9 @@ public class NullValueTestGwt extends AbstractAsyncGwtTestCase {
                     "   \"MyDate=(java.time.Instant) null\",\n" +
                     "   \"MyBigInteger=(java.math.BigInteger)null\",\n" +
                     "   \"MyBigDecimal=(java.math.BigDecimal)null\",\n" +
-                    "   \"MyStringArray1=(String[])null\"\n" +
+                    "   \"MyStringArray1=(String[])null\",\n" +
+                    "   \"MyLocalDate=(java.time.LocalDate)null\",\n" +
+                    "   \"MyLocalTime=(java.time.LocalTime)null\",\n" +
                     "])");
 
     public void testTableWithSomeNulls() {
@@ -69,19 +74,7 @@ public class NullValueTestGwt extends AbstractAsyncGwtTestCase {
                     return Promise.resolve(table);
                 })
                 .then(table -> {
-                    assertEquals("int", table.findColumn("MyInt").getType());
-                    assertEquals("long", table.findColumn("MyLong").getType());
-                    assertEquals("double", table.findColumn("MyDouble").getType());
-                    assertEquals("short", table.findColumn("MyShort").getType());
-                    assertEquals("float", table.findColumn("MyFloat").getType());
-                    assertEquals("char", table.findColumn("MyChar").getType());
-                    assertEquals("byte", table.findColumn("MyByte").getType());
-                    assertEquals("java.lang.Boolean", table.findColumn("MyBoolean").getType());
-                    assertEquals("java.lang.String", table.findColumn("MyString").getType());
-                    assertEquals("java.time.Instant", table.findColumn("MyDate").getType());
-                    assertEquals("java.math.BigInteger", table.findColumn("MyBigInteger").getType());
-                    assertEquals("java.math.BigDecimal", table.findColumn("MyBigDecimal").getType());
-                    assertEquals("java.lang.String[]", table.findColumn("MyStringArray1").getType());
+                    validateTypes(table);
 
                     return Promise.resolve(table);
                 })
@@ -91,33 +84,7 @@ public class NullValueTestGwt extends AbstractAsyncGwtTestCase {
                     options.columns = table.getColumns();
                     TableSubscription sub = table.createSubscription(options);
                     return assertUpdateReceived(sub, data -> {
-                        JsArray<? extends TableData.Row> rows = data.getRows();
-                        TableData.Row nullRow = rows.getAt(0);
-
-                        JsArray<Column> columns = table.getColumns();
-                        for (int i = 0; i < columns.length; i++) {
-                            assertFalse(Js.isTripleEqual(Js.undefined(), nullRow.get(columns.getAt(i))));
-                            assertNull(nullRow.get(columns.getAt(i)));
-                        }
-
-                        TableData.Row valueRow = rows.getAt(1);
-                        assertEquals(1, valueRow.get(table.findColumn("MyInt")).asInt());
-                        assertEquals((long) 1,
-                                valueRow.get(table.findColumn("MyLong")).<LongWrapper>cast().getWrapped());
-                        assertEquals((double) 1, valueRow.get(table.findColumn("MyDouble")).asDouble());
-                        assertEquals((short) 1, valueRow.get(table.findColumn("MyShort")).asShort());
-                        assertEquals((float) 1., valueRow.get(table.findColumn("MyFloat")).asFloat());
-                        assertEquals((char) 1, valueRow.get(table.findColumn("MyChar")).asChar());
-                        assertEquals((byte) 1, valueRow.get(table.findColumn("MyByte")).asByte());
-                        assertEquals(true, valueRow.get(table.findColumn("MyBoolean")).asBoolean());
-                        assertEquals("1", valueRow.get(table.findColumn("MyString")).asString());
-                        assertEquals(1, valueRow.get(table.findColumn("MyDate")).<DateWrapper>cast().getWrapped());
-                        assertEquals(BigInteger.ONE,
-                                valueRow.get(table.findColumn("MyBigInteger")).<BigIntegerWrapper>cast().getWrapped());
-                        assertEquals(BigDecimal.valueOf(1, 4),
-                                valueRow.get(table.findColumn("MyBigDecimal")).<BigDecimalWrapper>cast().getWrapped());
-                        assertArrayEquals(new String[] {"A", "B", "C"},
-                                valueRow.get(table.findColumn("MyStringArray1")).<String[]>cast());
+                        validateSomeNulls(table, data);
                     }, 1000).then(ignore -> Promise.resolve(table));
                 })
 
@@ -155,6 +122,19 @@ public class NullValueTestGwt extends AbstractAsyncGwtTestCase {
                         assertArrayEquals(new String[] {"A", "B", "C"},
                                 valueRow.get(table.findColumn("MyStringArray1")).<String[]>cast());
 
+                        LocalDateWrapper localDate =
+                                valueRow.get(table.findColumn("MyLocalDate")).<LocalDateWrapper>cast();
+                        assertEquals(1970, localDate.getYear());
+                        assertEquals(1, localDate.getMonthValue());
+                        assertEquals(2, localDate.getDayOfMonth());
+
+                        LocalTimeWrapper localTime =
+                                valueRow.get(table.findColumn("MyLocalTime")).<LocalTimeWrapper>cast();
+                        assertEquals(0, localTime.getHour());
+                        assertEquals(0, localTime.getMinute());
+                        assertEquals(1, localTime.getSecond());
+                        assertEquals(0, localTime.getNano());
+
                         return Promise.resolve(table);
                     });
                 })
@@ -188,6 +168,19 @@ public class NullValueTestGwt extends AbstractAsyncGwtTestCase {
                         assertEquals(BigDecimal.valueOf(1, 4),
                                 valueRow.get(table.findColumn("MyBigDecimal")).<BigDecimalWrapper>cast().getWrapped());
                         assertEquals("[A,B,C]", valueRow.get(table.findColumn("MyStringArray1")).<String[]>cast());
+
+                        LocalDateWrapper localDate =
+                                valueRow.get(table.findColumn("MyLocalDate")).<LocalDateWrapper>cast();
+                        assertEquals(1970, localDate.getYear());
+                        assertEquals(1, localDate.getMonthValue());
+                        assertEquals(2, localDate.getDayOfMonth());
+
+                        LocalTimeWrapper localTime =
+                                valueRow.get(table.findColumn("MyLocalTime")).<LocalTimeWrapper>cast();
+                        assertEquals(0, localTime.getHour());
+                        assertEquals(0, localTime.getMinute());
+                        assertEquals(1, localTime.getSecond());
+                        assertEquals(0, localTime.getNano());
                     }, 1000).then(ignore -> Promise.resolve(table));
                 })
                 // Test previews with new viewport subscription
@@ -224,9 +217,83 @@ public class NullValueTestGwt extends AbstractAsyncGwtTestCase {
                                 valueRow.get(table.findColumn("MyBigDecimal")).<BigDecimalWrapper>cast().getWrapped());
                         assertArrayEquals(new String[] {"A", "B", "C"},
                                 valueRow.get(table.findColumn("MyStringArray1")).<String[]>cast());
+
+                        LocalDateWrapper localDate =
+                                valueRow.get(table.findColumn("MyLocalDate")).<LocalDateWrapper>cast();
+                        assertEquals(1970, localDate.getYear());
+                        assertEquals(1, localDate.getMonthValue());
+                        assertEquals(2, localDate.getDayOfMonth());
+
+                        LocalTimeWrapper localTime =
+                                valueRow.get(table.findColumn("MyLocalTime")).<LocalTimeWrapper>cast();
+                        assertEquals(0, localTime.getHour());
+                        assertEquals(0, localTime.getMinute());
+                        assertEquals(1, localTime.getSecond());
+                        assertEquals(0, localTime.getNano());
                     }, 1000);
                 })
                 .then(this::finish).catch_(this::report);
+    }
+
+    private static void validateSomeNulls(JsTable table, ViewportData data) {
+        JsArray<? extends TableData.Row> rows = data.getRows();
+        TableData.Row nullRow = rows.getAt(0);
+
+        JsArray<Column> columns = table.getColumns();
+        for (int i = 0; i < columns.length; i++) {
+            assertFalse(Js.isTripleEqual(Js.undefined(), nullRow.get(columns.getAt(i))));
+            assertNull(nullRow.get(columns.getAt(i)));
+        }
+
+        TableData.Row valueRow = rows.getAt(1);
+        assertEquals(1, valueRow.get(table.findColumn("MyInt")).asInt());
+        assertEquals((long) 1,
+                valueRow.get(table.findColumn("MyLong")).<LongWrapper>cast().getWrapped());
+        assertEquals((double) 1, valueRow.get(table.findColumn("MyDouble")).asDouble());
+        assertEquals((short) 1, valueRow.get(table.findColumn("MyShort")).asShort());
+        assertEquals((float) 1., valueRow.get(table.findColumn("MyFloat")).asFloat());
+        assertEquals((char) 1, valueRow.get(table.findColumn("MyChar")).asChar());
+        assertEquals((byte) 1, valueRow.get(table.findColumn("MyByte")).asByte());
+        assertEquals(true, valueRow.get(table.findColumn("MyBoolean")).asBoolean());
+        assertEquals("1", valueRow.get(table.findColumn("MyString")).asString());
+        assertEquals(1, valueRow.get(table.findColumn("MyDate")).<DateWrapper>cast().getWrapped());
+        assertEquals(BigInteger.ONE,
+                valueRow.get(table.findColumn("MyBigInteger")).<BigIntegerWrapper>cast().getWrapped());
+        assertEquals(BigDecimal.valueOf(1, 4),
+                valueRow.get(table.findColumn("MyBigDecimal")).<BigDecimalWrapper>cast().getWrapped());
+        assertArrayEquals(new String[] {"A", "B", "C"},
+                valueRow.get(table.findColumn("MyStringArray1")).<String[]>cast());
+
+        LocalDateWrapper localDate =
+                valueRow.get(table.findColumn("MyLocalDate")).<LocalDateWrapper>cast();
+        assertEquals(1970, localDate.getYear());
+        assertEquals(1, localDate.getMonthValue());
+        assertEquals(2, localDate.getDayOfMonth());
+
+        LocalTimeWrapper localTime =
+                valueRow.get(table.findColumn("MyLocalTime")).<LocalTimeWrapper>cast();
+        assertEquals(0, localTime.getHour());
+        assertEquals(0, localTime.getMinute());
+        assertEquals(1, localTime.getSecond());
+        assertEquals(0, localTime.getNano());
+    }
+
+    private static void validateTypes(JsTable table) {
+        assertEquals("int", table.findColumn("MyInt").getType());
+        assertEquals("long", table.findColumn("MyLong").getType());
+        assertEquals("double", table.findColumn("MyDouble").getType());
+        assertEquals("short", table.findColumn("MyShort").getType());
+        assertEquals("float", table.findColumn("MyFloat").getType());
+        assertEquals("char", table.findColumn("MyChar").getType());
+        assertEquals("byte", table.findColumn("MyByte").getType());
+        assertEquals("java.lang.Boolean", table.findColumn("MyBoolean").getType());
+        assertEquals("java.lang.String", table.findColumn("MyString").getType());
+        assertEquals("java.time.Instant", table.findColumn("MyDate").getType());
+        assertEquals("java.math.BigInteger", table.findColumn("MyBigInteger").getType());
+        assertEquals("java.math.BigDecimal", table.findColumn("MyBigDecimal").getType());
+        assertEquals("java.lang.String[]", table.findColumn("MyStringArray1").getType());
+        assertEquals("java.time.LocalDate", table.findColumn("MyLocalDate").getType());
+        assertEquals("java.time.LocalTime", table.findColumn("MyLocalTime").getType());
     }
 
     private static void assertArrayEquals(Object[] expected, Object[] actual) {
@@ -262,19 +329,7 @@ public class NullValueTestGwt extends AbstractAsyncGwtTestCase {
                     return Promise.resolve(table);
                 })
                 .then(table -> {
-                    assertEquals("int", table.findColumn("MyInt").getType());
-                    assertEquals("long", table.findColumn("MyLong").getType());
-                    assertEquals("double", table.findColumn("MyDouble").getType());
-                    assertEquals("short", table.findColumn("MyShort").getType());
-                    assertEquals("float", table.findColumn("MyFloat").getType());
-                    assertEquals("char", table.findColumn("MyChar").getType());
-                    assertEquals("byte", table.findColumn("MyByte").getType());
-                    assertEquals("java.lang.Boolean", table.findColumn("MyBoolean").getType());
-                    assertEquals("java.lang.String", table.findColumn("MyString").getType());
-                    assertEquals("java.time.Instant", table.findColumn("MyDate").getType());
-                    assertEquals("java.math.BigInteger", table.findColumn("MyBigInteger").getType());
-                    assertEquals("java.math.BigDecimal", table.findColumn("MyBigDecimal").getType());
-                    assertEquals("java.lang.String[]", table.findColumn("MyStringArray1").getType());
+                    validateTypes(table);
 
                     return Promise.resolve(table);
                 })
@@ -292,6 +347,47 @@ public class NullValueTestGwt extends AbstractAsyncGwtTestCase {
                             }
                         }
                     }, 1000);
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    public void testUploadNulls() {
+        connect(tables)
+                .then(table("some_null_table"))
+                .then(table -> {
+                    delayTestFinish(5000);
+
+                    // Get a full table subscription, wait for data to load
+                    DataOptions.SnapshotOptions snapshotOptions = new DataOptions.SnapshotOptions();
+                    snapshotOptions.columns = table.getColumns();
+                    snapshotOptions.rows = Js.uncheckedCast(JsRangeSet.ofRange(0, 1));
+                    return table.createSnapshot(snapshotOptions)
+                            .then(s -> {
+                                // Copy all data, send it back to the server using WorkerConnection.newTable
+                                String[] columnNames = table.getColumns().asList().stream()
+                                        .map(Column::getName).toArray(String[]::new);
+                                String[] types = table.getColumns().asList().stream()
+                                        .map(Column::getType).toArray(String[]::new);
+                                Object[][] data = new Object[columnNames.length][];
+                                for (int i = 0; i < data.length; i++) {
+                                    Column column = table.findColumn(columnNames[i]);
+                                    data[i] = new Object[(int) table.getSize()];
+                                    for (int j = 0; j < data[i].length; j++) {
+                                        data[i][j] = s.getData(j, column);
+                                    }
+                                }
+                                return table.getConnection().newTable(columnNames, types, data, null);
+                            })
+                            .then(newTable -> {
+                                // subscribe to the new table, verify it matches the existing one
+                                validateTypes(newTable);
+                                DataOptions.SubscriptionOptions options2 = new DataOptions.SubscriptionOptions();
+                                options2.columns = newTable.getColumns();
+                                TableSubscription sub = newTable.createSubscription(options2);
+                                return assertUpdateReceived(sub, data -> {
+                                    validateSomeNulls(newTable, data);
+                                }, 1000).then(ignore -> Promise.resolve(table));
+                            });
                 })
                 .then(this::finish).catch_(this::report);
     }

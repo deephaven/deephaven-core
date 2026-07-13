@@ -34,7 +34,7 @@ The `QueryTable` has the following user-configurable properties:
 | [Ungroup operations](#ungroup-operations)                           | `QueryTable.minimumUngroupBase`                          | 10         |
 | [SoftRecycler configuration](#softrecycler-configuration)           | `array.recycler.capacity.*`                              | 1024       |
 | [SoftRecycler configuration](#softrecycler-configuration)           | `sparsearray.recycler.capacity.*`                        | 1024       |
-| [Stateless filters by default](#stateless-by-default-experimental)  | `QueryTable.statelessFiltersByDefault`                   | false      |
+| [Stateless filters by default](#stateless-by-default)               | `QueryTable.statelessFiltersByDefault`                   | false      |
 
 Each property is described below, roughly categorized by similarity.
 
@@ -204,15 +204,13 @@ The recycler capacity determines how many array blocks are kept in memory for po
 - **High throughput environments**: Consider increasing capacities to reduce allocation/deallocation overhead.
 - **Type-specific tuning**: If certain types are used more frequently, you can increase their capacity while reducing others.
 
-## Stateless by default (experimental)
+## Stateless by default
 
-In a future release of Deephaven, the flags in this category will change from a default of false to a default of true. These flags enable the engine to assume more often that a given Filter or Selectable can be executed in parallel (unless the Filter or Selectable is [marked serial or has barriers](./query-engine/parallelization.md#controlling-concurrency-for-select-update-and-where) interface).
-
-This is experimental; more details can be learned by reading the Javadoc on io.deephaven.api.ConcurrencyControl.
+These flags enable the engine to assume more often that a given Filter or Selectable can be executed in parallel (unless the Filter or Selectable is [marked serial or has barriers](./query-engine/parallelization.md#controlling-concurrency-for-select-update-and-where) interface).
 
 | Property Name                          | Default Value | Description                                                                                         |
 | -------------------------------------- | ------------- | --------------------------------------------------------------------------------------------------- |
-| `QueryTable.statelessFiltersByDefault` | false         | Enables the engine to assume that filters are stateless by default, allowing for more optimizations |
+| `QueryTable.statelessFiltersByDefault` | true          | Enables the engine to assume that filters are stateless by default, allowing for more optimizations |
 
 ## Related documentation
 

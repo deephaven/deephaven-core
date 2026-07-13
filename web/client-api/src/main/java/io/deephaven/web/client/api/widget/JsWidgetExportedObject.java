@@ -7,10 +7,11 @@ import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
 import elemental2.core.JsArray;
 import elemental2.promise.Promise;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.session_pb.ExportRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.ExportedTableCreationResponse;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.ticket_pb.Ticket;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.ticket_pb.TypedTicket;
+import io.deephaven.proto.backplane.grpc.ExportRequest;
+import io.deephaven.proto.backplane.grpc.ExportResponse;
+import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
+import io.deephaven.proto.backplane.grpc.Ticket;
+import io.deephaven.proto.backplane.grpc.TypedTicket;
 import io.deephaven.web.client.api.Callbacks;
 import io.deephaven.web.client.api.JsLazy;
 import io.deephaven.web.client.api.JsTable;
@@ -45,10 +46,9 @@ public class JsWidgetExportedObject implements ServerObject {
                 return Promise.reject("Exported object has no type, can't be fetched");
             }
             if (getType().equals(JsVariableType.TABLE)) {
-                return Callbacks.<ExportedTableCreationResponse, Object>grpcUnaryPromise(c -> {
+                return Callbacks.<ExportedTableCreationResponse>grpcUnaryPromise(c -> {
                     connection.tableServiceClient().getExportedTableCreationResponse(ticket.getTicket(),
-                            connection.metadata(),
-                            c::apply);
+                            c);
                 }).then(etcr -> {
                     ClientTableState cts = connection.newStateFromUnsolicitedTable(etcr, "table for widget");
                     JsTable table = new JsTable(connection, cts);
@@ -85,10 +85,7 @@ public class JsWidgetExportedObject implements ServerObject {
 
     @Override
     public TypedTicket typedTicket() {
-        TypedTicket typedTicket = new TypedTicket();
-        typedTicket.setTicket(ticket.getTicket());
-        typedTicket.setType(getType());
-        return typedTicket;
+        return ticket;
     }
 
     /**
@@ -103,15 +100,18 @@ public class JsWidgetExportedObject implements ServerObject {
 
         // Future optimization - we could "race" these by running the export in the background, to avoid
         // an extra round trip.
-        return Callbacks.grpcUnaryPromise(c -> {
-            ExportRequest req = new ExportRequest();
-            req.setSourceId(ticket.getTicket());
-            req.setResultId(reexportedTicket);
-            connection.sessionServiceClient().exportFromTicket(req, connection.metadata(), c::apply);
+        return Callbacks.<ExportResponse>grpcUnaryPromise(c -> {
+            ExportRequest req = ExportRequest.newBuilder()
+                    .setSourceId(ticket.getTicket())
+                    .setResultId(reexportedTicket)
+                    .build();
+            connection.sessionServiceClient().exportFromTicket(req, c);
         }).then(success -> {
-            TypedTicket typedTicket = new TypedTicket();
-            typedTicket.setTicket(reexportedTicket);
-            typedTicket.setType(ticket.getType());
+            TypedTicket typedTicket = TypedTicket.newBuilder()
+                    .setTicket(reexportedTicket)
+                    .setType(ticket.getType())
+                    .build();
+
             return Promise.resolve(new JsWidgetExportedObject(connection, typedTicket));
         });
     }

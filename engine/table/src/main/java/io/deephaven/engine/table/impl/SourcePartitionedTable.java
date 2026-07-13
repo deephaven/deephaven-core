@@ -209,6 +209,7 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                 // will eventually manage the TLs, and we need the key suppliers to keep them from being fully removed
                 // until then.
                 retainReference();
+                ensureCleanupOnGC();
                 final Collection<LocationState> locationStates = new ArrayList<>();
                 tableLocationProvider.getTableLocationKeys(
                         lstlk -> locationStates.add(new LocationState(lstlk)),

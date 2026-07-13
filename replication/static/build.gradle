@@ -9,7 +9,6 @@ dependencies {
     implementation project(':Util')
     implementation project(':Base')
     implementation project(':replication-util')
-    implementation libs.trove
     implementation libs.commons.io
 }
 
@@ -81,6 +80,8 @@ task replicateAllSafe {
     dependsOn Tasks.registerMainExecTask(project, 'replicateUpdateBy', 'io.deephaven.replicators.ReplicateUpdateBy')
 
     dependsOn Tasks.registerMainExecTask(project, 'replicateRingBuffers', 'io.deephaven.replicators.ReplicateRingBuffers')
+
+    dependsOn Tasks.registerMainExecTask(project, 'replicatePrimitiveArrayLists', 'io.deephaven.replicators.ReplicatePrimitiveArrayLists')
 
     dependsOn Tasks.registerMainExecTask(project, 'replicatePrimitiveInterfaces', 'io.deephaven.replicators.ReplicatePrimitiveInterfaces')
 

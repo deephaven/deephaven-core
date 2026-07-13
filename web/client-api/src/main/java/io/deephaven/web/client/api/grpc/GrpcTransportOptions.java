@@ -3,14 +3,10 @@
 //
 package io.deephaven.web.client.api.grpc;
 
-import com.vertispan.tsdefs.annotations.TsInterface;
 import elemental2.core.JsError;
 import elemental2.core.Uint8Array;
 import elemental2.dom.URL;
-import io.deephaven.javascript.proto.dhinternal.browserheaders.BrowserHeaders;
-import io.deephaven.javascript.proto.dhinternal.grpcweb.transports.transport.TransportOptions;
 import jsinterop.annotations.JsFunction;
-import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsOptional;
 import jsinterop.annotations.JsType;
@@ -19,7 +15,6 @@ import jsinterop.base.JsPropertyMap;
 /**
  * Options for creating a gRPC stream transport instance.
  */
-@TsInterface
 @JsType(namespace = "dh.grpc")
 public class GrpcTransportOptions {
     @JsFunction
@@ -66,27 +61,4 @@ public class GrpcTransportOptions {
      * implementation does not consume errors, even if provided.
      */
     public OnEndCallback onEnd;
-
-    /**
-     * Internal copy of options, to be used for fallback.
-     */
-    @JsIgnore
-    public TransportOptions originalOptions;
-
-    /**
-     * Convert a {@link TransportOptions} instance to a {@link GrpcTransportOptions} instance.
-     */
-    @JsIgnore
-    public static GrpcTransportOptions from(TransportOptions options) {
-        GrpcTransportOptions impl = new GrpcTransportOptions();
-        impl.url = new URL(options.getUrl());
-        impl.debug = options.isDebug();
-        impl.onHeaders = (headers, status) -> options.getOnHeaders().onInvoke(new BrowserHeaders(headers), status);
-        impl.onChunk = p0 -> {
-            // "false" because the underlying implementation doesn't rely on this anyway.
-            options.getOnChunk().onInvoke(p0, false);
-        };
-        impl.onEnd = options.getOnEnd()::onInvoke;
-        return impl;
-    }
 }

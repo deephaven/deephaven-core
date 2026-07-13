@@ -3,9 +3,9 @@
 //
 package io.deephaven.parquet.table.transfer;
 
-import gnu.trove.impl.Constants;
-import gnu.trove.map.hash.TObjectIntHashMap;
 import io.deephaven.parquet.table.DictionarySizeExceededException;
+import it.unimi.dsi.fastutil.objects.Object2IntMap;
+import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import org.apache.parquet.column.statistics.Statistics;
 import org.apache.parquet.io.api.Binary;
 
@@ -27,7 +27,7 @@ final public class StringDictionary {
      */
     private final int nullPos;
 
-    private final TObjectIntHashMap<String> keyToPos;
+    private final Object2IntMap<String> keyToPos;
 
     private Binary[] encodedKeys;
     private int keyCount;
@@ -42,8 +42,10 @@ final public class StringDictionary {
 
         // Kept as a negative value since 0 is a valid position in the dictionary.
         final int NO_ENTRY_VALUE = -1;
-        this.keyToPos =
-                new TObjectIntHashMap<>(Constants.DEFAULT_CAPACITY, Constants.DEFAULT_LOAD_FACTOR, NO_ENTRY_VALUE);
+        // Preserve the Trove default capacity (10) and load factor (0.5f) rather than fastutil's 16/0.75f.
+        final Object2IntMap<String> tmpKeyToPos = new Object2IntOpenHashMap<>(10, 0.5f);
+        tmpKeyToPos.defaultReturnValue(NO_ENTRY_VALUE);
+        this.keyToPos = tmpKeyToPos;
 
         this.encodedKeys = new Binary[Math.min(INITIAL_DICTIONARY_SIZE, maxKeys)];
         this.dictSize = this.keyCount = 0;
@@ -68,8 +70,8 @@ final public class StringDictionary {
         if (key == null) {
             return nullPos;
         }
-        int posInDictionary = keyToPos.get(key);
-        if (posInDictionary == keyToPos.getNoEntryValue()) {
+        int posInDictionary = keyToPos.getInt(key);
+        if (posInDictionary == keyToPos.defaultReturnValue()) {
             if (keyCount == encodedKeys.length) {
                 // Copy into an array of double the size with upper limit at maxKeys
                 if (keyCount == maxKeys) {

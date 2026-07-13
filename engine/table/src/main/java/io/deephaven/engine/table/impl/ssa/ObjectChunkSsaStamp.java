@@ -262,4 +262,3 @@ public class ObjectChunkSsaStamp implements ChunkSsaStamp {
         return doComparison(lhs, rhs) <= 0;
     }
 }
-

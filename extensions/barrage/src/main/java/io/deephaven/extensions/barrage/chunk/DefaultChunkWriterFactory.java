@@ -188,7 +188,6 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
 
     public <T extends Chunk<Values>> ChunkWriter<T> newWriterPojo(
             @NotNull final BarrageTypeInfo<Field> typeInfo) {
-        // TODO (deephaven/deephaven-core#6033): Run-End Support
         // TODO (deephaven/deephaven-core#6034): Dictionary Support
 
         final Field field = typeInfo.arrowField();
@@ -306,6 +305,24 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
             // noinspection unchecked
             return (ChunkWriter<T>) new MapChunkWriter<>(
                     keyWriter, valueWriter, keyTypeInfo.chunkType(), valueTypeInfo.chunkType(), field.isNullable());
+        }
+
+        if (typeId == ArrowType.ArrowTypeID.RunEndEncoded) {
+            final BarrageTypeInfo<Field> runEndsTypeInfo =
+                    BarrageUtil.getDefaultType(field.getChildren().get(0));
+            // Use the outer typeInfo's DH type (which may be reinterpreted, e.g. long for Instant/ZonedDateTime,
+            // byte for Boolean) so that the run kernel and values writer match the actual chunk type produced by the
+            // column source. Without this, ObjectBarrageRunKernel is used for reinterpreted types, but the
+            // column source provides LongChunk/ByteChunk — not ObjectChunk.
+            final BarrageTypeInfo<Field> effectiveValuesTypeInfo = new BarrageTypeInfo<>(
+                    typeInfo.type(), typeInfo.componentType(), field.getChildren().get(1));
+            final ChunkWriter<IntChunk<Values>> runEndsWriter = intFromInt(runEndsTypeInfo);
+            final ChunkWriter<Chunk<Values>> valuesWriter = newWriterPojo(effectiveValuesTypeInfo);
+            // noinspection unchecked
+            return (ChunkWriter<T>) new RunEndEncodedChunkWriter(
+                    runEndsWriter, valuesWriter,
+                    runEndsTypeInfo.chunkType(), effectiveValuesTypeInfo.chunkType(),
+                    field.isNullable());
         }
 
         // TODO (DH-18679): struct support

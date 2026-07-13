@@ -82,7 +82,7 @@ Non-root nodes where the parent is `null` _are not considered orphans_. They can
 
 Note that these rows appear on the same level as the root node, outside of the tree structure.
 
-Orphan nodes appear outside of the tree table's tree structure by default. In order to include orphans in a tree table as children of the root node, the optional argument `promote_orphans` can be switched to `True`.
+Orphan nodes appear outside of the tree table's tree structure by default. To include orphans in a tree table as children of the root node, switch the optional argument `promote_orphans` to `True`.
 
 The following example shows how the resulting tree table changes if orphans are promoted.
 

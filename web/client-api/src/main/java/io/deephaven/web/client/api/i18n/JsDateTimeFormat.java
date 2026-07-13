@@ -12,6 +12,7 @@ import io.deephaven.web.client.fu.JsLog;
 import jsinterop.annotations.JsConstructor;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsOptional;
+import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsType;
 import jsinterop.base.Any;
 
@@ -74,7 +75,7 @@ public class JsDateTimeFormat {
      * @param timeZone
      * @return
      */
-    public static String format(String pattern, Any date, @JsOptional JsTimeZone timeZone) {
+    public static String format(String pattern, Any date, @JsOptional @JsNullable JsTimeZone timeZone) {
         return getFormat(pattern).format(date, timeZone);
     }
 
@@ -98,7 +99,7 @@ public class JsDateTimeFormat {
      * @param tz
      * @return
      */
-    public static DateWrapper parse(String pattern, String text, @JsOptional JsTimeZone tz) {
+    public static DateWrapper parse(String pattern, String text, @JsOptional @JsNullable JsTimeZone tz) {
         return getFormat(pattern).parse(text, tz);
     }
 
@@ -185,7 +186,7 @@ public class JsDateTimeFormat {
     // It may be possible to compute the offset of a given date/time from DateTimeFormat and
     // synthesize a gwt TimeZone with the correct offset data to get nice output in some tz
     // other than the browser's current or UTC+/-OFFSET
-    public String format(Any date, @JsOptional JsTimeZone timeZone) {
+    public String format(Any date, @JsOptional @JsNullable JsTimeZone timeZone) {
         return format((Object) date, timeZone);
     }
 
@@ -259,7 +260,7 @@ public class JsDateTimeFormat {
      * @param tz
      * @return
      */
-    public DateWrapper parse(String text, @JsOptional JsTimeZone tz) {
+    public DateWrapper parse(String text, @JsOptional @JsNullable JsTimeZone tz) {
         if (tz != null) {
             return DateWrapper.of(parseWithTimezoneAsLong(text, tz.unwrap(), true));
         }

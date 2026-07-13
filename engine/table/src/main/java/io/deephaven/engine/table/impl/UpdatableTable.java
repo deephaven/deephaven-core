@@ -8,9 +8,8 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.ColumnSource;
-import gnu.trove.impl.Constants;
-import gnu.trove.set.TLongSet;
-import gnu.trove.set.hash.TLongHashSet;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
+import it.unimi.dsi.fastutil.longs.LongSet;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.OverridingMethodsMustInvokeSuper;
@@ -63,12 +62,9 @@ public class UpdatableTable extends QueryTable implements Runnable {
 
     private final RowSetChangeRecorder rowSetChangeRecorder = new RowSetChangeRecorderImpl();
 
-    private final TLongSet addedSet =
-            new TLongHashSet(Constants.DEFAULT_CAPACITY, Constants.DEFAULT_LOAD_FACTOR, NULL_LONG);
-    private final TLongSet removedSet =
-            new TLongHashSet(Constants.DEFAULT_CAPACITY, Constants.DEFAULT_LOAD_FACTOR, NULL_LONG);
-    private final TLongSet modifiedSet =
-            new TLongHashSet(Constants.DEFAULT_CAPACITY, Constants.DEFAULT_LOAD_FACTOR, NULL_LONG);
+    private final LongSet addedSet = new LongOpenHashSet(10, 0.5f);
+    private final LongSet removedSet = new LongOpenHashSet(10, 0.5f);
+    private final LongSet modifiedSet = new LongOpenHashSet(10, 0.5f);
 
     public UpdatableTable(@NotNull final TrackingRowSet rowSet,
             @NotNull final Map<String, ? extends ColumnSource<?>> nameToColumnSource,
@@ -108,12 +104,9 @@ public class UpdatableTable extends QueryTable implements Runnable {
         }
     }
 
-    private static RowSet setToRowSet(@NotNull final TLongSet set) {
+    private static RowSet setToRowSet(@NotNull final LongSet set) {
         final RowSetBuilderRandom builder = RowSetFactory.builderRandom();
-        set.forEach(key -> {
-            builder.addKey(key);
-            return true;
-        });
+        set.forEach(builder::addKey);
         set.clear();
         return builder.build();
     }

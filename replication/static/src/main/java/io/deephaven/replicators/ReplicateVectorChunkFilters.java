@@ -17,7 +17,7 @@ public class ReplicateVectorChunkFilters {
     private static final String TASK = "replicateVectorChunkFilters";
 
     private static final String CHUNK_FILTER_PATH =
-            "engine/table/src/main/java/io/deephaven/engine/table/impl/select/vectorchunkFilter/";
+            "engine/table/src/main/java/io/deephaven/engine/table/impl/select/vectorchunkfilter/";
     private static final String CHAR_VECTOR_CHUNK_FILTER = CHUNK_FILTER_PATH + "CharVectorChunkFilter.java";
     private static final String CHAR_ARRAY_CHUNK_FILTER = CHUNK_FILTER_PATH + "CharArrayChunkFilter.java";
 

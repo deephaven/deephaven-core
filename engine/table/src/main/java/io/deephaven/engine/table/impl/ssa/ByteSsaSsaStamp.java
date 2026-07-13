@@ -301,4 +301,3 @@ public class ByteSsaSsaStamp implements SsaSsaStamp {
         return doComparison(lhs, rhs) <= 0;
     }
 }
-

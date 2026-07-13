@@ -406,7 +406,7 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
     }
 
     @Override
-    protected Table redefine(TableDefinition newDefinition) {
+    protected DeferredViewTable redefineImpl(TableDefinition newDefinition) {
         final List<ColumnDefinition<?>> cDefs = newDefinition.getColumns();
         SelectColumn[] newView = new SelectColumn[cDefs.size()];
         for (int cdi = 0; cdi < newView.length; ++cdi) {

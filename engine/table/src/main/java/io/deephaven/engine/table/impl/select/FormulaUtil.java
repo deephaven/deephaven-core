@@ -33,6 +33,9 @@ public class FormulaUtil {
     }
 
     public static String replaceFormulaTokens(String formula, String sourceToken, String destToken) {
+        if (sourceToken == null || sourceToken.isEmpty()) {
+            throw new IllegalArgumentException("sourceToken cannot be empty");
+        }
         int lastIndex = 0;
         while (lastIndex < formula.length() && (lastIndex = formula.indexOf(sourceToken, lastIndex)) != -1) {
             if (lastIndex > 0

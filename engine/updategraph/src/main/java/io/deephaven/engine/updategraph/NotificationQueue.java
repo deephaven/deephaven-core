@@ -78,6 +78,20 @@ public interface NotificationQueue {
         }
 
         /**
+         * Is this dependency satisfied?
+         *
+         * @param dependency a possible dependency
+         * @param step the current step
+         * @return true if the dependency is satisfied (or not actually a Dependency), false otherwise
+         */
+        static boolean satisfied(@NotNull final Object dependency, final long step) {
+            if (!(dependency instanceof Dependency)) {
+                return true;
+            }
+            return ((Dependency) dependency).satisfied(step);
+        }
+
+        /**
          * Examine all {@code dependencies} excluding non-refreshing {@link DynamicNode dynamic nodes}, and verify that
          * they are using the same {@link UpdateGraph}.
          * <p>

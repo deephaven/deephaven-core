@@ -14,8 +14,8 @@ import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.*;
 import io.deephaven.util.annotations.VisibleForTesting;
-import gnu.trove.list.TIntList;
-import gnu.trove.list.array.TIntArrayList;
+import it.unimi.dsi.fastutil.ints.IntList;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
@@ -275,7 +275,7 @@ public final class ByteSegmentedSortedArray implements SegmentedSortedArray {
         return (values + leafCount - 1) / leafCount;
     }
 
-    private void mergeLeaves(int leaf, TIntList leavesToRemove) {
+    private void mergeLeaves(int leaf, IntList leavesToRemove) {
         Assert.lt(leaf, "leaf", leafCount - 1, "leafCount - 1");
 
         final int destinationSize = leafSizes[leaf];
@@ -300,7 +300,7 @@ public final class ByteSegmentedSortedArray implements SegmentedSortedArray {
         leavesToRemove.add(leaf);
     }
 
-    private void mergeThreeLeaves(int leaf, TIntList leavesToRemove) {
+    private void mergeThreeLeaves(int leaf, IntList leavesToRemove) {
         Assert.lt(leaf, "leaf", leafCount - 2, "leafCount - 2");
 
         final int destinationSize = leafSizes[leaf];
@@ -919,7 +919,7 @@ public final class ByteSegmentedSortedArray implements SegmentedSortedArray {
                 int firstValuesPosition = 0;
                 int totalCount = 0;
 
-                final TIntList leavesToRemove = new TIntArrayList();
+                final IntList leavesToRemove = new IntArrayList();
 
                 while (firstValuesPosition < removeSize) {
                     // we need to find out where our valuesToRemove should go using a binary search of the directory
@@ -964,7 +964,7 @@ public final class ByteSegmentedSortedArray implements SegmentedSortedArray {
                         leafSizes[firstLeaf] -= count;
 
                         final boolean hasLeft = firstLeaf > 0 && (leavesToRemove.isEmpty()
-                                || (leavesToRemove.get(leavesToRemove.size() - 1) != (firstLeaf - 1)));
+                                || (leavesToRemove.getInt(leavesToRemove.size() - 1) != (firstLeaf - 1)));
                         final boolean hasRight = firstLeaf < leafCount - 1;
 
                         // in cases where we do not have a left or right, we just set the size to leafSize so we will
@@ -1017,12 +1017,12 @@ public final class ByteSegmentedSortedArray implements SegmentedSortedArray {
 
                 if (!leavesToRemove.isEmpty()) {
 
-                    int destIdx = leavesToRemove.get(0);
+                    int destIdx = leavesToRemove.getInt(0);
                     int srcIdx = destIdx + 1;
                     int removeIdx = 1;
 
                     while (removeIdx < leavesToRemove.size()) {
-                        final int nextRemoval = leavesToRemove.get(removeIdx);
+                        final int nextRemoval = leavesToRemove.getInt(removeIdx);
                         final int keepLeaves = nextRemoval - srcIdx;
                         copyLeavesAndDirectory(srcIdx, destIdx, keepLeaves);
                         srcIdx += keepLeaves + 1;

@@ -64,4 +64,3 @@ public abstract class LongChunkFilter implements ChunkFilter {
         return count;
     }
 }
-

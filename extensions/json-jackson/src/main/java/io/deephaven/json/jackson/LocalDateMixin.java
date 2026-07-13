@@ -15,7 +15,7 @@ import java.time.temporal.TemporalAccessor;
 final class LocalDateMixin extends GenericObjectMixin<LocalDateValue, LocalDate> {
 
     public LocalDateMixin(LocalDateValue options, JsonFactory factory) {
-        super(factory, options, Type.ofCustom(LocalDate.class));
+        super(factory, options, Type.localDateType());
     }
 
     @Override

@@ -18,16 +18,21 @@ import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.engine.table.impl.sources.LongSingleValueSource;
 import io.deephaven.engine.testutil.TstUtils;
+import io.deephaven.engine.updategraph.AbstractNotification;
 import io.deephaven.engine.updategraph.TerminalNotification;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.ReflexiveUse;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableInt;
+import org.apache.commons.lang3.mutable.MutableLong;
+import org.apache.commons.lang3.mutable.MutableObject;
 import org.junit.*;
 
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -36,6 +41,8 @@ import java.util.concurrent.*;
 import static io.deephaven.engine.context.TestExecutionContext.OPERATION_INITIALIZATION;
 import static io.deephaven.engine.util.TableTools.*;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 public class TestEventDrivenUpdateGraph {
     EventDrivenUpdateGraph defaultUpdateGraph;
@@ -59,6 +66,7 @@ public class TestEventDrivenUpdateGraph {
         BaseUpdateGraph.removeInstance("TestEDUG");
         BaseUpdateGraph.removeInstance("TestEDUG1");
         BaseUpdateGraph.removeInstance("TestEDUG2");
+        BaseUpdateGraph.removeInstance("TestCycleStartTime");
     }
 
     /**
@@ -284,6 +292,80 @@ public class TestEventDrivenUpdateGraph {
                 longCol("InvocationCount", count1, count2),
                 longCol("RowsModified", count1, count2), booleanCol("InRange", true, true));
         TstUtils.assertTableEquals(expect, compare);
+    }
+
+    @Test
+    public void testCycleStartTime() throws InterruptedException {
+        final EventDrivenUpdateGraph eventDrivenUpdateGraph =
+                EventDrivenUpdateGraph.newBuilder("TestCycleStartTime").build();
+
+        // Before any cycle has been executed, the sentinel values should be returned
+        assertEquals(QueryConstants.NULL_LONG, eventDrivenUpdateGraph.cycleStartNanoTime());
+        assertNull(eventDrivenUpdateGraph.cycleStartTime());
+
+        // We will capture the cycle start times observed from a regular notification, a terminal notification,
+        // and the main thread after the cycle completes.
+        final MutableLong normalNotificationNanos = new MutableLong();
+        final MutableObject<Instant> normalNotificationInstant = new MutableObject<>();
+        final MutableLong terminalNotificationNanos = new MutableLong();
+        final MutableObject<Instant> terminalNotificationInstant = new MutableObject<>();
+
+        // Add an update source that enqueues a regular (non-terminal) notification
+        final Runnable source = () -> eventDrivenUpdateGraph.addNotification(new AbstractNotification(false) {
+            @Override
+            public boolean canExecute(final long step) {
+                return true;
+            }
+
+            @Override
+            public void run() {
+                normalNotificationNanos.setValue(eventDrivenUpdateGraph.cycleStartNanoTime());
+                normalNotificationInstant.setValue(eventDrivenUpdateGraph.cycleStartTime());
+            }
+        });
+        eventDrivenUpdateGraph.addSource(source);
+
+        // Add a terminal notification that captures the cycle start times
+        eventDrivenUpdateGraph.addNotification(new TerminalNotification() {
+            @Override
+            public void run() {
+                terminalNotificationNanos.setValue(eventDrivenUpdateGraph.cycleStartNanoTime());
+                terminalNotificationInstant.setValue(eventDrivenUpdateGraph.cycleStartTime());
+            }
+        });
+
+        // Capture bounds around the cycle
+        final long beforeNanos = System.nanoTime();
+        final Instant beforeInstant = Instant.now();
+
+        // Sleep briefly so that the cycle start times are distinguishable from the bounds
+        Thread.sleep(1);
+
+        eventDrivenUpdateGraph.requestRefresh();
+
+        Thread.sleep(1);
+
+        final long afterNanos = System.nanoTime();
+        final Instant afterInstant = Instant.now();
+
+        // Verify from the main thread after the cycle that values are within bounds
+        final long mainThreadNanos = eventDrivenUpdateGraph.cycleStartNanoTime();
+        final Instant mainThreadInstant = eventDrivenUpdateGraph.cycleStartTime();
+
+        assertTrue("main thread nanoTime should be >= beforeNanos",
+                mainThreadNanos >= beforeNanos);
+        assertTrue("main thread nanoTime should be <= afterNanos",
+                mainThreadNanos <= afterNanos);
+        assertTrue("main thread instant should not be before beforeInstant",
+                !mainThreadInstant.isBefore(beforeInstant));
+        assertTrue("main thread instant should not be after afterInstant",
+                !mainThreadInstant.isAfter(afterInstant));
+
+        // All three observers should see the same values (set once per cycle)
+        assertEquals(mainThreadNanos, normalNotificationNanos.longValue());
+        assertEquals(mainThreadNanos, terminalNotificationNanos.longValue());
+        assertEquals(mainThreadInstant, normalNotificationInstant.get());
+        assertEquals(mainThreadInstant, terminalNotificationInstant.get());
     }
 
     @ReflexiveUse(referrers = "TestEventDrivenUpdateGraph")

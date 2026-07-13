@@ -4,22 +4,32 @@
 package io.deephaven.web.client.api.barrage;
 
 import com.google.flatbuffers.FlatBufferBuilder;
-import elemental2.core.*;
+import com.google.common.io.BaseEncoding;
 import io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
+import io.deephaven.proto.backplane.grpc.DeephavenTableMetadata;
+import io.deephaven.proto.backplane.grpc.InputTableColumnInfo;
+import io.deephaven.web.client.api.ColumnRestriction;
 import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
 import io.deephaven.web.client.api.barrage.def.InitialTableDefinition;
+import io.deephaven.web.client.api.barrage.def.InputTableMetadata;
 import io.deephaven.web.client.api.barrage.def.TableAttributesDefinition;
+import io.deephaven.web.client.api.barrage.util.ColumnRestrictionRegistry;
+import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.shared.data.*;
 import org.apache.arrow.flatbuf.KeyValue;
 import org.apache.arrow.flatbuf.Message;
 import org.apache.arrow.flatbuf.MessageHeader;
 import org.apache.arrow.flatbuf.Schema;
-import org.gwtproject.nio.TypedArrayHelper;
+import com.google.protobuf.Any;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.IntFunction;
 
@@ -29,31 +39,25 @@ import java.util.function.IntFunction;
 public class WebBarrageUtils {
     public static final int FLATBUFFER_MAGIC = 0x6E687064;
 
-    public static Uint8Array wrapMessage(FlatBufferBuilder innerBuilder, byte messageType) {
+    public static ByteBuffer wrapMessage(FlatBufferBuilder innerBuilder, byte messageType) {
         FlatBufferBuilder outerBuilder = new FlatBufferBuilder(1024);
         int messageOffset = BarrageMessageWrapper.createMsgPayloadVector(outerBuilder, innerBuilder.dataBuffer());
         int offset =
                 BarrageMessageWrapper.createBarrageMessageWrapper(outerBuilder, FLATBUFFER_MAGIC, messageType,
                         messageOffset);
         outerBuilder.finish(offset);
-        ByteBuffer byteBuffer = outerBuilder.dataBuffer();
-        return bbToUint8ArrayView(byteBuffer);
+        return outerBuilder.dataBuffer();
     }
 
-    public static Uint8Array bbToUint8ArrayView(ByteBuffer byteBuffer) {
-        ArrayBufferView view = TypedArrayHelper.unwrap(byteBuffer);
-        return new Uint8Array(view.buffer, byteBuffer.position() + view.byteOffset, byteBuffer.remaining());
-    }
-
-    public static Uint8Array emptyMessage() {
+    public static ByteBuffer emptyMessage() {
         FlatBufferBuilder builder = new FlatBufferBuilder(1024);
         int offset = BarrageMessageWrapper.createBarrageMessageWrapper(builder, FLATBUFFER_MAGIC,
                 BarrageMessageType.None, 0);
         builder.finish(offset);
-        return bbToUint8ArrayView(builder.dataBuffer());
+        return builder.dataBuffer();
     }
 
-    public static InitialTableDefinition readTableDefinition(Uint8Array flightSchemaMessage) {
+    public static InitialTableDefinition readTableDefinition(ByteBuffer flightSchemaMessage) {
         return readTableDefinition(readSchemaMessage(flightSchemaMessage));
     }
 
@@ -65,9 +69,87 @@ public class WebBarrageUtils {
                 keyValuePairs("deephaven:attribute_type.", schema.customMetadataLength(), schema::customMetadata),
                 keyValuePairs("deephaven:unsent.attribute.", schema.customMetadataLength(), schema::customMetadata)
                         .keySet());
+
+        // Parse input table metadata if present
+        InputTableMetadata inputTableMetadata = parseInputTableMetadata(schema, cols);
+
         return new InitialTableDefinition()
                 .setAttributes(attributes)
-                .setColumns(cols);
+                .setColumns(cols)
+                .setInputTableMetadata(inputTableMetadata);
+    }
+
+    /**
+     * Parses input table metadata from the schema's custom metadata and column definitions.
+     *
+     * @param schema the schema containing the custom metadata with the base64-encoded table metadata
+     * @param cols the column definitions to match against the column info in the table metadata
+     * @return an InputTableMetadata object containing the column restrictions, or null if no valid metadata is found
+     */
+    private static InputTableMetadata parseInputTableMetadata(Schema schema, ColumnDefinition[] cols) {
+        // Extract the tableMetadata from schema custom metadata
+        String tableMetadataBase64 = null;
+        for (int i = 0; i < schema.customMetadataLength(); i++) {
+            KeyValue pair = schema.customMetadata(i);
+            String key = pair.key();
+            if (key.equals("deephaven:tableMetadata")) {
+                // Found the table metadata, we can stop looking
+                tableMetadataBase64 = pair.value();
+                break;
+            }
+        }
+
+        if (tableMetadataBase64 == null || tableMetadataBase64.isEmpty()) {
+            return null;
+        }
+
+        final InputTableMetadata metadata = new InputTableMetadata();
+        try {
+            // Decode the base64 string to bytes and parse the DeephavenTableMetadata
+            final byte[] bytes = BaseEncoding.base64().decode(tableMetadataBase64);
+            final DeephavenTableMetadata tableMetadata = DeephavenTableMetadata.parseFrom(bytes);
+
+            if (!tableMetadata.hasInputTableMetadata()) {
+                return null;
+            }
+
+            // Get the column info map
+            final Map<String, InputTableColumnInfo> columnInfoMap =
+                    tableMetadata.getInputTableMetadata().getColumnInfoMap();
+
+            // Extract column restrictions from the column info map
+            for (ColumnDefinition col : cols) {
+                final String columnName = col.getName();
+                final InputTableColumnInfo columnInfo = columnInfoMap.get(columnName);
+
+                if (columnInfo == null) {
+                    continue;
+                }
+
+                final List<Any> restrictionsList = columnInfo.getRestrictionsList();
+                final List<ColumnRestriction> colRestrictions = new ArrayList<>();
+
+                for (Any restrictionAny : restrictionsList) {
+                    // Look up the converter by the full type URL
+                    String typeUrl = restrictionAny.getTypeUrl();
+                    Optional<ColumnRestriction> restriction = ColumnRestrictionRegistry.convert(restrictionAny);
+                    if (restriction.isPresent()) {
+                        colRestrictions.add(restriction.get());
+                    } else {
+                        JsLog.warn("No converter registered for restriction type: " + typeUrl);
+                    }
+                }
+
+                if (!colRestrictions.isEmpty()) {
+                    metadata.addColumnRestrictions(columnName, colRestrictions);
+                }
+            }
+        } catch (Exception e) {
+            JsLog.error("Failed to parse input table metadata:", e);
+            return null;
+        }
+
+        return metadata;
     }
 
     private static ColumnDefinition[] readColumnDefinitions(Schema schema) {
@@ -78,20 +160,38 @@ public class WebBarrageUtils {
         return cols;
     }
 
-    public static Schema readSchemaMessage(Uint8Array flightSchemaMessage) {
-        // we conform to flight's schema representation of:
-        // - IPC_CONTINUATION_TOKEN (4-byte int of -1)
-        // - message size (4-byte int)
-        // - a Message wrapping the schema
-        ByteBuffer bb = TypedArrayHelper.wrap(flightSchemaMessage);
-        bb.position(bb.position() + 8);
-        Message headerMessage = Message.getRootAsMessage(bb);
+    /**
+     * Reads the buffer into a Message and unwraps the Schema within. The buffer's contents are consumed. We expect this
+     * payload to consist of
+     * <ul>
+     * <li>IPC_CONTINUATION_TOKEN (4-byte int of -1)</li>
+     * <li>message size (4-byte int)</li>
+     * <li>a Message wrapping the schema</li>
+     * </ul>
+     */
+    public static Schema readSchemaMessage(ByteBuffer flightSchemaMessage) {
+        flightSchemaMessage.order(ByteOrder.LITTLE_ENDIAN);
+        int contToken = flightSchemaMessage.getInt();
+        if (contToken != -1) {
+            throw new IllegalStateException("Expected -1 for first four bytes of schema payload");
+        }
+        int size = flightSchemaMessage.getInt();
+        if (size > flightSchemaMessage.remaining()) {
+            throw new IllegalStateException("Schema message size " + size + " is larger than remaining buffer "
+                    + flightSchemaMessage.remaining());
+        }
+        Message headerMessage = Message.getRootAsMessage(flightSchemaMessage);
 
-        assert headerMessage.headerType() == MessageHeader.Schema;
-        return (Schema) headerMessage.header(new Schema());
+        if (headerMessage.headerType() != MessageHeader.Schema) {
+            throw new IllegalStateException(
+                    "Expected a schema payload, got " + MessageHeader.name(headerMessage.headerType()));
+        }
+        Schema schema = new Schema();
+        headerMessage.header(schema);
+        return schema;
     }
 
-    public static Map<String, String> keyValuePairs(String filterPrefix, double count,
+    public static Map<String, String> keyValuePairs(String filterPrefix, int count,
             IntFunction<KeyValue> accessor) {
         Map<String, String> map = new HashMap<>();
         for (int i = 0; i < count; i++) {

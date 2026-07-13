@@ -252,10 +252,11 @@ public interface Table extends
     <T> ColumnSource<T> getColumnSource(String sourceName);
 
     /**
-     * Retrieves a {@code ColumnSource} and {@link ColumnSource#cast(Class) casts} it to the target class {@code clazz}.
+     * Retrieves a {@code ColumnSource} and {@link ColumnSource#cast(Class, String) casts} it to the target class
+     * {@code clazz}.
      *
      * <p>
-     * The success of this call is equivalent to {@code getDefinition().checkColumn(sourceName, clazz)}, which is the
+     * The success of this call is equivalent to {@code getDefinition().checkHasColumn(sourceName, clazz)}, which is the
      * preferred way to check for compatibility in scenarios where the caller does not want to the implementation to
      * potentially invoke {@link #coalesce()}.
      *
@@ -263,29 +264,47 @@ public interface Table extends
      * @param clazz The target type
      * @param <T> The target type, as a type parameter. Intended to be inferred from {@code clazz}.
      * @return The column source for {@code sourceName}, parameterized by {@code T}
-     * @see ColumnSource#cast(Class)
+     * @see ColumnSource#cast(Class, String)
      * @see TableDefinition#checkHasColumn(String, Class)
      */
     <T> ColumnSource<T> getColumnSource(String sourceName, Class<? extends T> clazz);
 
     /**
-     * Retrieves a {@code ColumnSource} and {@link ColumnSource#cast(Class, Class)} casts} it to the target class
+     * Retrieves a {@code ColumnSource} and {@link ColumnSource#cast(Class, Class, String) casts} it to the target class
      * {@code clazz} and {@code componentType}.
      *
      * <p>
-     * The success of this call is equivalent to {@code getDefinition().checkColumn(sourceName, clazz, componentType)},
-     * which is the preferred way to check for compatibility in scenarios where the caller does not want the
-     * implementation to potentially invoke {@link #coalesce()}.
+     * The success of this call is equivalent to
+     * {@code getDefinition().checkHasColumn(sourceName, clazz, componentType)}, which is the preferred way to check for
+     * compatibility in scenarios where the caller does not want the implementation to potentially invoke
+     * {@link #coalesce()}.
      *
      * @param sourceName The name of the column
      * @param clazz The target type
      * @param componentType The target component type, may be null
      * @param <T> The target type, as a type parameter. Intended to be inferred from {@code clazz}.
      * @return The column source for {@code sourceName}, parameterized by {@code T}
-     * @see ColumnSource#cast(Class, Class)
+     * @see ColumnSource#cast(Class, Class, String)
      * @see TableDefinition#checkHasColumn(String, Class, Class)
      */
     <T> ColumnSource<T> getColumnSource(String sourceName, Class<? extends T> clazz, @Nullable Class<?> componentType);
+
+    /**
+     * Retrieves a {@code ColumnSource} and {@link ColumnSource#cast(Class, Class, String) casts} it to the target
+     * {@link ColumnDefinition#getDataType() dataType} and {@link ColumnDefinition#getComponentType() componentType}.
+     *
+     * <p>
+     * The success of this call is equivalent to {@code getDefinition().checkHasColumn(columnDefinition)}, which is the
+     * preferred way to check for compatibility in scenarios where the caller does not want the implementation to
+     * potentially invoke {@link #coalesce()}.
+     *
+     * @param columnDefinition the column definition
+     * @param <T> The target type, as a type parameter.
+     * @return The column source for {@code columnDefinition.getName()}, parameterized by {@code T}
+     * @see ColumnSource#cast(Class, Class, String)
+     * @see TableDefinition#checkHasColumn(ColumnDefinition)
+     */
+    <T> ColumnSource<T> getColumnSource(ColumnDefinition<? extends T> columnDefinition);
 
     Map<String, ? extends ColumnSource<?>> getColumnSourceMap();
 

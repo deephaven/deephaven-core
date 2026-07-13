@@ -4,6 +4,7 @@
 package io.deephaven.extensions.barrage.chunk;
 
 import io.deephaven.chunk.ByteChunk;
+import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
@@ -17,18 +18,29 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.function.Supplier;
 
-public class BooleanChunkWriter extends BaseChunkWriter<ByteChunk<Values>> {
+public class BooleanChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>> extends BaseChunkWriter<SOURCE_CHUNK_TYPE> {
     private static final String DEBUG_NAME = "BooleanChunkWriter";
-    private static final BooleanChunkWriter NULLABLE_IDENTITY_INSTANCE = new BooleanChunkWriter(true);
-    private static final BooleanChunkWriter NON_NULLABLE_IDENTITY_INSTANCE = new BooleanChunkWriter(false);
+    private static final BooleanChunkWriter<ByteChunk<Values>> NULLABLE_IDENTITY_INSTANCE =
+            new BooleanChunkWriter<>(true);
+    private static final BooleanChunkWriter<ByteChunk<Values>> NON_NULLABLE_IDENTITY_INSTANCE =
+            new BooleanChunkWriter<>(false);
 
-    public static BooleanChunkWriter getIdentity(boolean isNullable) {
+    public static BooleanChunkWriter<ByteChunk<Values>> getIdentity(boolean isNullable) {
         return isNullable ? NULLABLE_IDENTITY_INSTANCE : NON_NULLABLE_IDENTITY_INSTANCE;
     }
 
+    @SuppressWarnings("unchecked")
     private BooleanChunkWriter(final boolean isNullable) {
-        super(null, ByteChunk::getEmptyChunk, 0, false, isNullable);
+        super(null, (Supplier<SOURCE_CHUNK_TYPE>) (Supplier<?>) ByteChunk::getEmptyChunk, 0, false, isNullable);
+    }
+
+    public BooleanChunkWriter(
+            @Nullable final ChunkTransformer<SOURCE_CHUNK_TYPE> transformer,
+            @NotNull final Supplier<SOURCE_CHUNK_TYPE> emptyChunkSupplier,
+            final boolean fieldNullable) {
+        super(transformer, emptyChunkSupplier, 0, false, fieldNullable);
     }
 
     @Override

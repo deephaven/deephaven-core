@@ -1617,7 +1617,7 @@ public class UpdateByOperatorFactory {
                         ColumnDefinition::getName,
                         (final ColumnDefinition<?> cd) -> groupByColumnSet.contains(cd.getName())
                                 ? cd
-                                : ColumnDefinition.fromGenericType(
+                                : ColumnDefinition.ofVector(
                                         cd.getName(),
                                         VectorFactory.forElementType(cd.getDataType()).vectorType(),
                                         cd.getDataType())));

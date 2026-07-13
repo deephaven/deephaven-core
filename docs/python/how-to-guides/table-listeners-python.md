@@ -112,11 +112,15 @@ handle = merged_listen([t1, t2], listener_function)
 ### With a listener class
 
 The merged listener class gives more control when listening to multiple table changes. It requires defining an `on_update` function that takes the same arguments as a [listener function](#with-a-listener-function), `update` and `is_replay`. The `on_update` function is called every time the associated tables are updated.
+
 Listener classes are useful in cases where the listener must keep track of state. In this example, the listener will keep track of how many times it has been called.
 
 ```python ticking-table order=null
 from deephaven.table_listener import merged_listen, MergedListener
 from deephaven import time_table
+
+source1 = time_table("PT1S").update(formulas=["X=i"]).tail(5)
+source2 = time_table("PT2S").update(formulas=["Y=ii"]).tail(5)
 
 
 class ExampleListener(MergedListener):
@@ -134,9 +138,6 @@ class ExampleListener(MergedListener):
 
 
 listener_class = ExampleListener()
-
-source1 = time_table("PT1S").update(formulas=["X=i"]).tail(5)
-source2 = time_table("PT2S").update(formulas=["Y=ii"]).tail(5)
 handle = merged_listen([source1, source2], listener_class)
 ```
 
@@ -151,7 +152,7 @@ The following methods return a dict with column names as keys and [NumPy arrays]
 - [`added`](/core/pydoc/code/deephaven.table_listener.html#deephaven.table_listener.TableUpdate.added) - rows added during the current update cycle.
 - [`modified`](/core/pydoc/code/deephaven.table_listener.html#deephaven.table_listener.TableUpdate.modified) - rows modified during the current update cycle.
 - [`removed`](/core/pydoc/code/deephaven.table_listener.html#deephaven.table_listener.TableUpdate.removed) - rows removed during the current update cycle.
-- [`modified_prev`](/core/pydoc/code/deephaven.table_listener.html#deephaven.table_listener.TableUpdate.modified_prev) - rows modified during the previous update cycle.
+- [`modified_prev`](/core/pydoc/code/deephaven.table_listener.html#deephaven.table_listener.TableUpdate.modified_prev) - previous values of rows modified during the current update cycle (what the values were before they were modified).
 
 The following example listens to added rows during each update cycle. It prints the data as the listener receives it.
 
@@ -177,7 +178,7 @@ The following methods are chunked accessors and return a generator. Each call to
 - [`added_chunks`](/core/pydoc/code/deephaven.table_listener.html#deephaven.table_listener.TableUpdate.added_chunks) - rows added during the current update cycle.
 - [`modified_chunks`](/core/pydoc/code/deephaven.table_listener.html#deephaven.table_listener.TableUpdate.modified_chunks) - rows modified during the current update cycle.
 - [`removed_chunks`](/core/pydoc/code/deephaven.table_listener.html#deephaven.table_listener.TableUpdate.removed_chunks) - rows removed during the current update cycle.
-- [`modified_prev_chunks`](/core/pydoc/code/deephaven.table_listener.html#deephaven.table_listener.TableUpdate.modified_prev_chunks) - rows modified during the previous update cycle.
+- [`modified_prev_chunks`](/core/pydoc/code/deephaven.table_listener.html#deephaven.table_listener.TableUpdate.modified_prev_chunks) - previous values of rows modified during the current update cycle, returned in chunks.
 
 Chunked accessors are typically used when updates are large. While normal accessors load an entire update into memory all at once, chunked accessors load the update in smaller pieces, thus limiting memory usage. The following example splits added data into chunks of 100 rows at a time and prints the size of each chunk.
 
@@ -350,7 +351,7 @@ handle_no_replay.stop()
 handle_replay.stop()
 ```
 
-![`handle_replay` recieves all the data the table started with, while `handle_no_replay` only receives the updates after it was registered](../assets/how-to/listener-replay.gif)
+![`handle_replay` receives all the data the table started with, while `handle_no_replay` only receives the updates after it was registered](../assets/how-to/listener-replay.gif)
 
 ## Dependent tables
 
@@ -430,6 +431,6 @@ handle = listen(source, listener_function, do_replay=False)
 - [NumPy and Deephaven](./use-numpy.md)
 - [`to_numpy`](../reference/numpy/to-numpy.md)
 - [`time_table`](../reference/table-operations/create/timeTable.md)
-- [TableUpdate](/core/pydoc/code/deephaven.table_listener.html?#deephaven.table_listener.TableUpdate)
-- [Table](/core/javadoc/io/deephaven/engine/table/Table.html)
+- [`TableUpdate`](/core/pydoc/code/deephaven.table_listener.html?#deephaven.table_listener.TableUpdate)
+- [`Table`](/core/javadoc/io/deephaven/engine/table/Table.html)
 - [`listen`](/core/pydoc/code/deephaven.table_listener.html?#deephaven.table_listener.listen)

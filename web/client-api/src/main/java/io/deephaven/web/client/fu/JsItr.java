@@ -30,7 +30,7 @@ public class JsItr {
         }
     };
 
-    public static <T> MappedIterable<T> iterate(JsIteratorIterable<T> values) {
+    public static <T> MappedIterable<T> iterate(JsIteratorIterable<T, Object, Object> values) {
         final Iterator<T> itr = new Iterator<T>() {
 
             public JsIIterableResult<T> next;

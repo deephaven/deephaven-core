@@ -262,4 +262,3 @@ public class FloatReverseChunkSsaStamp implements ChunkSsaStamp {
         return doComparison(lhs, rhs) <= 0;
     }
 }
-

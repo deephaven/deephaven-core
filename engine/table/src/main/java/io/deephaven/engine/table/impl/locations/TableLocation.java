@@ -9,7 +9,7 @@ import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.table.BasicDataIndex;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.PushdownFilterMatcher;
+import io.deephaven.engine.table.impl.sources.regioned.RegionedPushdownFilterMatcher;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.util.annotations.FinalDefault;
 import io.deephaven.util.type.NamedImplementation;
@@ -24,7 +24,8 @@ import java.util.List;
  * source table.
  */
 public interface TableLocation
-        extends NamedImplementation, LogOutputAppendable, TableLocationState, LivenessReferent, PushdownFilterMatcher {
+        extends NamedImplementation, LogOutputAppendable, TableLocationState, LivenessReferent,
+        RegionedPushdownFilterMatcher {
 
     /**
      * Listener interface for anything that wants to know about changes to a location.

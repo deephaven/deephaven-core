@@ -11,6 +11,7 @@ import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.extensions.barrage.chunk.ChunkWriter;
 import io.deephaven.extensions.barrage.util.DefensiveDrainable;
 import io.deephaven.util.SafeCloseable;
+import org.apache.arrow.flight.impl.Flight;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -43,7 +44,7 @@ public interface BarrageMessageWriter extends SafeCloseable {
         BarrageMessageWriter newMessageWriter(
                 @NotNull BarrageMessage message,
                 @NotNull ChunkWriter<Chunk<Values>>[] chunkWriters,
-                @NotNull BarragePerformanceLog.WriteMetricsConsumer metricsConsumer);
+                @NotNull BarrageMessageWriter.WriteMetricsConsumer metricsConsumer);
 
         /**
          * Create a {@link MessageView} of the Schema to send as the initial message to a new subscriber.
@@ -52,7 +53,21 @@ public interface BarrageMessageWriter extends SafeCloseable {
          *        schema offset
          * @return a MessageView that can be sent to a subscriber
          */
-        MessageView getSchemaView(@NotNull ToIntFunction<FlatBufferBuilder> schemaPayloadWriter);
+        default MessageView getSchemaView(@NotNull ToIntFunction<FlatBufferBuilder> schemaPayloadWriter) {
+            return getSchemaView(schemaPayloadWriter, null);
+        }
+
+        /**
+         * Create a {@link MessageView} of the Schema to send as the initial message, with a flight descriptor for the
+         * table.
+         *
+         * @param schemaPayloadWriter a function that writes schema data to a {@link FlatBufferBuilder} and returns the
+         *        schema offset
+         * @param flightDescriptor the flight descriptor for the table, null if it need not be set
+         * @return a MessageView that can be sent to a subscriber
+         */
+        MessageView getSchemaView(@NotNull ToIntFunction<FlatBufferBuilder> schemaPayloadWriter,
+                @Nullable Flight.FlightDescriptor flightDescriptor);
     }
 
     /**
@@ -121,4 +136,20 @@ public interface BarrageMessageWriter extends SafeCloseable {
             boolean reverseViewport,
             @Nullable RowSet keyspaceViewport, BitSet snapshotColumns);
 
+    /**
+     * Optional metrics API to track how many bytes a barrage message consumed, and how many nanoseconds it took to
+     * write it.
+     */
+    interface WriteMetricsConsumer {
+        WriteMetricsConsumer NO_OP = (bytes, cpuNanos) -> {
+        };
+
+        /**
+         * Called after the entire message has been sent, with the total byte count and nanos of CPU time to send it.
+         *
+         * @param bytes number of bytes in the record batch message
+         * @param cpuNanos nanoseconds it took to serialize and send the message
+         */
+        void onWrite(long bytes, long cpuNanos);
+    }
 }

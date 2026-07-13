@@ -261,4 +261,3 @@ public class ByteReverseChunkSsaStamp implements ChunkSsaStamp {
         return doComparison(lhs, rhs) <= 0;
     }
 }
-

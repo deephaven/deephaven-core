@@ -3,7 +3,7 @@
 //
 package io.deephaven.engine.table.impl.sources;
 
-import gnu.trove.list.array.TLongArrayList;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.context.ExecutionContext;
@@ -793,7 +793,7 @@ public class UnionSourceManager implements PushdownPredicateManager {
 
         final UnionSourcePushdownFilterContext ctx = (UnionSourcePushdownFilterContext) context;
         ctx.initialize(selection, usePrev);
-        final MutableLong minCost = new MutableLong(Long.MAX_VALUE);
+        final MutableLong minCost = new MutableLong(PushdownResult.UNSUPPORTED_ACTION_COST);
 
         jobScheduler.iterateParallel(
                 ExecutionContext.getContext(),
@@ -803,8 +803,8 @@ public class UnionSourceManager implements PushdownPredicateManager {
                 ctx.matchers.size(),
                 (localContext, idx, nec, resume) -> {
                     final PushdownFilterMatcher matcher = ctx.matchers.get(idx);
-                    final long firstRowKey = ctx.firstRowKeys.get(idx);
-                    final long lastRowKey = ctx.lastRowKeys.get(idx);
+                    final long firstRowKey = ctx.firstRowKeys.getLong(idx);
+                    final long lastRowKey = ctx.lastRowKeys.getLong(idx);
                     try (final WritableRowSet localSelection = selection.subSetByKeyRange(firstRowKey, lastRowKey)) {
                         if (localSelection.isEmpty()) {
                             // No rows remain for this constituent, so we can skip it.
@@ -856,8 +856,8 @@ public class UnionSourceManager implements PushdownPredicateManager {
                 ctx.matchers.size(),
                 (localContext, idx, nec, resume) -> {
                     final PushdownFilterMatcher matcher = ctx.matchers.get(idx);
-                    final long firstRowKey = ctx.firstRowKeys.get(idx);
-                    final long lastRowKey = ctx.lastRowKeys.get(idx);
+                    final long firstRowKey = ctx.firstRowKeys.getLong(idx);
+                    final long lastRowKey = ctx.lastRowKeys.getLong(idx);
                     try (final WritableRowSet localSelection = selection.subSetByKeyRange(firstRowKey, lastRowKey)) {
                         if (localSelection.isEmpty()) {
                             matches[idx] = RowSetFactory.empty();
@@ -900,15 +900,15 @@ public class UnionSourceManager implements PushdownPredicateManager {
                 onError);
     }
 
-    public static class UnionSourcePushdownFilterContext extends BasePushdownFilterContext {
+    public static class UnionSourcePushdownFilterContext extends BasePushdownFilterContextImpl {
         final UnionSourceManager manager;
         final WritableRowSet maybeMatch;
         final Map<String, String> renameMap;
 
         boolean initialized = false;
         List<PushdownFilterMatcher> matchers;
-        TLongArrayList firstRowKeys;
-        TLongArrayList lastRowKeys;
+        LongArrayList firstRowKeys;
+        LongArrayList lastRowKeys;
         List<io.deephaven.engine.table.impl.PushdownFilterContext> contexts;
 
         public UnionSourcePushdownFilterContext(
@@ -948,8 +948,8 @@ public class UnionSourceManager implements PushdownPredicateManager {
 
             matchers = new ArrayList<>(constituentCount);
             contexts = new ArrayList<>(constituentCount);
-            firstRowKeys = new TLongArrayList(constituentCount);
-            lastRowKeys = new TLongArrayList(constituentCount);
+            firstRowKeys = new LongArrayList(constituentCount);
+            lastRowKeys = new LongArrayList(constituentCount);
 
             // Use a 0-based slot counter for unionRedirection lookups (which are position-indexed, not
             // row-key-indexed). Slot positions diverge from constituentRows row keys when
@@ -969,16 +969,16 @@ public class UnionSourceManager implements PushdownPredicateManager {
 
                     // If there is no overlap, we can ignore this table completely.
                     if (selection.overlapsRange(firstKey, lastKey)) {
-                        final List<ColumnSource<?>> filterSources = filter.getColumns().stream()
+                        final List<ColumnSource<?>> filterSources = filter().getColumns().stream()
                                 .map(cn -> renameMap.getOrDefault(cn, cn))
                                 .map(constituent::getColumnSource).collect(Collectors.toList());
 
                         final PushdownFilterMatcher matcher =
-                                PushdownFilterMatcher.getPushdownFilterMatcher(filter, filterSources);
+                                PushdownFilterMatcher.getPushdownFilterMatcher(filter(), filterSources);
 
                         if (matcher != null) {
                             matchers.add(matcher);
-                            contexts.add(matcher.makePushdownFilterContext(filter, filterSources));
+                            contexts.add(matcher.makePushdownFilterContext(filter(), filterSources));
                             firstRowKeys.add(firstKey);
                             lastRowKeys.add(lastKey);
                         } else {

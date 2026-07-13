@@ -17,7 +17,7 @@ dependencies {
     api project(':engine-rowset')
 
     implementation project(':DataStructures')
-    implementation libs.trove
+    implementation libs.dsi.fastutil
 
     compileOnly project(':util-immutables')
     annotationProcessor libs.immutables.value
@@ -32,6 +32,7 @@ dependencies {
     testImplementation libs.commons.lang3
 
     testImplementation libs.junit4
+    testImplementation libs.jmock
 
     testRuntimeOnly project(':log-to-slf4j')
     testRuntimeOnly project(':configs')

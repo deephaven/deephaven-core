@@ -5,7 +5,8 @@ package io.deephaven.engine.util;
 
 import io.deephaven.gui.color.Color;
 import io.deephaven.gui.color.Colors;
-import gnu.trove.map.hash.TObjectIntHashMap;
+import it.unimi.dsi.fastutil.objects.Object2IntMap;
+import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import io.deephaven.util.annotations.UserInvocationPermitted;
 
 import static io.deephaven.util.QueryConstants.NULL_LONG;
@@ -774,15 +775,19 @@ public class ColorUtilImpl {
      * Creates distinct and unique coloration for each unique input value.
      */
     public static class DistinctFormatter {
-        private final TObjectIntHashMap<Object> valueToCount = new TObjectIntHashMap<>();
-        private final int noEntryValue = valueToCount.getNoEntryValue();
+        private final Object2IntMap<Object> valueToCount;
+
+        DistinctFormatter() {
+            valueToCount = new Object2IntOpenHashMap<>();
+            valueToCount.defaultReturnValue(-1);
+        }
 
         public Long getColor(Object value) {
             int count;
             synchronized (valueToCount) {
-                count = valueToCount.get(value);
+                count = valueToCount.getInt(value);
 
-                if (count == noEntryValue) {
+                if (count == valueToCount.defaultReturnValue()) {
                     count = valueToCount.size() + 1;
 
                     valueToCount.put(value, count);

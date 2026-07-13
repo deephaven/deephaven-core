@@ -78,7 +78,9 @@ abstract class RegionedColumnSourceShort<ATTR extends Values>
                         "Unexpected partitioning column value type for " + columnDefinition.getName()
                                 + ": " + partitioningColumnValue + " is not a Short at location " + locationKey);
             }
-            return new ColumnRegionShort.Constant<>(regionMask(), unbox((Short) partitioningColumnValue));
+            return partitioningColumnValue == null
+                    ? ColumnRegionShort.createNull(regionMask())
+                    : new ColumnRegionShort.Constant<>(regionMask(), unbox((Short) partitioningColumnValue));
         }
     }
 }

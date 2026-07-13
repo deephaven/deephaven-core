@@ -16,7 +16,6 @@ import io.deephaven.engine.table.impl.sources.SwitchColumnSource;
 import io.deephaven.engine.table.impl.sources.chunkcolumnsource.LongChunkColumnSource;
 import io.deephaven.engine.table.impl.util.LongColumnSourceRowRedirection;
 import io.deephaven.engine.table.impl.util.RowRedirection;
-import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import io.deephaven.engine.table.iterators.ChunkedLongColumnIterator;
 import io.deephaven.engine.table.iterators.LongColumnIterator;
 import io.deephaven.util.SafeCloseableList;
@@ -153,6 +152,9 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
         if (sortedKeys.size() == 0) {
             return true;
         }
+        if (sortedKeys instanceof SortHelpers.IdentitySortMapping) {
+            return true;
+        }
         try (RowSet.Iterator it = parent.getRowSet().iterator()) {
             return sortedKeys.forEachLong(currentKey -> currentKey == it.nextLong());
         }
@@ -164,7 +166,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
             return withSorted(parent);
         }
 
-        final WritableRowRedirection sortMapping = sortedKeys.makeHistoricalRowRedirection();
+        final RowRedirection sortMapping = sortedKeys.makeHistoricalRowRedirection();
         final TrackingRowSet resultRowSet = RowSetFactory.flat(sortedKeys.size()).toTracking();
 
         final Map<String, ColumnSource<?>> resultMap = new LinkedHashMap<>();
@@ -335,7 +337,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
             resultTable.setAttribute(SORT_ROW_REDIRECTION_ATTRIBUTE, sortMappingColumnName);
             setReverseLookup(resultTable, (final long innerRowKey) -> {
                 final long outerRowKey = reverseLookup.get(innerRowKey);
-                return outerRowKey == reverseLookup.getNoEntryValue() ? RowSequence.NULL_ROW_KEY : outerRowKey;
+                return outerRowKey == reverseLookup.defaultReturnValue() ? RowSequence.NULL_ROW_KEY : outerRowKey;
             });
 
             final SortListener listener = new SortListener(parent, resultTable, reverseLookup,

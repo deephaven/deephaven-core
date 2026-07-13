@@ -1,1 +1,0 @@
-// example2/dist/index.js

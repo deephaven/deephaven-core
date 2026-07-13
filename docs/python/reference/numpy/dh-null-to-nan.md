@@ -63,4 +63,4 @@ print(np_nan)
 ## Related documentation
 
 - [to_numpy](./to-numpy.md)
-- [Pydoc](https://docs.deephaven.io/core/pydoc/code/deephaven.numpy.html#deephaven.numpy.dh_null_to_nan)
+- [Pydoc](https://docs.deephaven.io/core/pydoc/code/deephaven.jcompat.html#deephaven.jcompat.dh_null_to_nan)

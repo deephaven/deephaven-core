@@ -2,7 +2,7 @@
 title: proxy
 ---
 
-The `proxy` method creates a new `PartitionedTableProxy` from the provided `PartitionedTable`.
+The [`proxy`](https://docs.deephaven.io/core/pydoc/code/deephaven.table.html#deephaven.table.PartitionedTable.proxy) method creates a new [`PartitionedTableProxy`](https://docs.deephaven.io/core/pydoc/code/deephaven.table.html#deephaven.table.PartitionedTableProxy) from the provided `PartitionedTable`.
 
 A `PartitionedTableProxy` is a table operation proxy object for the underlying `PartitionedTable`. The `PartitionedTableProxy` gives users access to a variety of Deephaven table operations that are not available to a `PartitionedTable`. When a user has made all the desired changes to the `PartitionedTableProxy`, they can use the `target` attribute to return the underlying `PartitionedTable` with the changes applied.
 
@@ -13,7 +13,7 @@ A query can achieve the same results by using either [`transform`](./transform.m
 ```python syntax
 PartitionedTable.proxy(
   require_matching_keys: bool = True,
-  sanity_check_joins: bool = True
+  sanity_check_joins: bool = False
 ) -> PartitionedTableProxy
 ```
 
@@ -31,6 +31,11 @@ Whether to check that for proxied join operations, a given join key only occurs 
 
 </Param>
 </ParamTable>
+
+> [!CAUTION]
+> `PartitionedTable` transforms and proxies produce different results than on a single-table join (e.g., `natural_join`), `where_in`, or `where_not_in` when the filter or join keys span partitions. You must ensure that your data's keys map to appropriate partitions to enable correct answers.
+>
+> When the argument `sanityCheckJoins` to the `proxy` method is true, the engine validates that join keys exist only in a single partition, but it does not validate that a key exists in the same partition in both the left and right table.
 
 ## Returns
 

@@ -3,15 +3,36 @@ title: Configure username/password authentication
 sidebar_label: Username/password
 ---
 
-This guide will show you how to configure username/password authentication (sometimes referred to as 'basic authentication') for Deephaven. SQL is used to store the username/password combinations. This guide will set up one `admin` user.
+This guide will show you how to configure username/password authentication for Deephaven.
 
-## Setup
+Username/password is a common authentication method in which an application can be used by a certain number of users, each with their own username and password. It verifies the identity of a user through the username, and that the user is who they say they are, with the secret password.
 
-Setting up username/password authentication requires the configuration of a SQL database, which will be run by Docker alongside Deephaven. Additionally, a JAR to manage the authentication will be added to the Deephaven classpath, and an extra configuration parameter will be specified in the `docker-compose` YAML file.
+> [!WARNING]
+> The [example configuration](#example) given in this guide is _not_ recommended for use in a production environment. It is only meant to show a basic implementation that can be used as a template.
+
+## Configuration
+
+Username/password authentication requires some extra configuration on top of Deephaven's basic setup. First and foremost, username/password combinations will be stored in a SQL DB that will be run from Docker alongside the Deephaven application. Additionally, a JAR file that manages the authentication itself will be added to the Deephaven classpath as an extra configuration parameter.
+
+For a basic setup, there are three required files:
+
+- A SQL file to create a database of username/password combinations.
+- A Dockerfile that will build the Deephaven image and add the required JAR to the Deephaven classpath.
+- A Docker Compose file that builds the SQL and Deephaven services.
+
+More advanced setups will build off this basic configuration.
+
+## Example
+
+> [!WARNING]
+> This example setup is not recommended for use in a production environment. It is only meant to show a simple configuration with a single user.
 
 ### SQL
 
 The following SQL file will create a database with a single table (`users`), in the `deephaven_username_password_auth` schema. It has a single entry for a user named `admin` with the password `p@ssw0rd`.
+
+> [!WARNING]
+> The password `p@ssw0rd` does not meet minimum security requirements. It is hashed in the SQL file for protection, but that is not sufficient in the case of an adversarial attack.
 
 ```sql
 CREATE SCHEMA deephaven_username_password_auth;
@@ -30,6 +51,9 @@ VALUES ('admin', '$2a$10$kjbt1Fq4k4W6EB67GDhAauuIWeI8ppx2gsi6.zLL2R5UYokek8nqO',
 
 The Dockerfile will add a required JAR file to the Deephaven classpath. This JAR file contains all the nuts and bolts necessary for username/password authentication through SQL.
 
+> [!NOTE]
+> Make sure that the Deephaven version (0.36.0 below) is the same as the version given in your `docker-compose.yml` file.
+
 ```Dockerfile
 FROM ghcr.io/deephaven/server-slim:0.36.0
 ADD https://repo1.maven.org/maven2/io/deephaven/deephaven-sql-username-password-authentication-provider/0.36.0/deephaven-sql-username-password-authentication-provider-0.36.0.jar /apps/libs
@@ -40,7 +64,7 @@ ADD https://repo1.maven.org/maven2/io/deephaven/deephaven-sql-username-password-
 Lastly, create the `docker-compose.yml`. It will create two services: `postgres` and `deephaven`.
 
 > [!WARNING]
-> The file below sets the admin password for the SQL database containing login information to `password` for example purposes. We recommend storing passwords more securely. See [Manage sensitive data with Docker secrets](https://docs.docker.com/engine/swarm/secrets/) for more information.
+> The file below turns [fsync](https://man7.org/linux/man-pages/man2/fsync.2.html) off, which is not recommended. It also sets the SQL container admin password to `password` in plaintext, which does not meet minimum security requirements. See [How to use secrets in Docker Compose](https://docs.docker.com/compose/use-secrets/) to learn more about security best practices with Docker.
 
 ```yaml
 services:

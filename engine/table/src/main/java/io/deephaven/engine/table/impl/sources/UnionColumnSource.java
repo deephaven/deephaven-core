@@ -794,7 +794,7 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
             final LongConsumer onComplete,
             final Consumer<Exception> onError) {
         if (QueryTable.DISABLE_WHERE_PUSHDOWN_MERGED_TABLES) {
-            onComplete.accept(Long.MAX_VALUE);
+            onComplete.accept(PushdownResult.UNSUPPORTED_ACTION_COST);
             return;
         }
         // Delegate to the manager.

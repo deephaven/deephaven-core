@@ -74,7 +74,9 @@ abstract class RegionedColumnSourceChar<ATTR extends Values>
                         "Unexpected partitioning column value type for " + columnDefinition.getName()
                                 + ": " + partitioningColumnValue + " is not a Character at location " + locationKey);
             }
-            return new ColumnRegionChar.Constant<>(regionMask(), unbox((Character) partitioningColumnValue));
+            return partitioningColumnValue == null
+                    ? ColumnRegionChar.createNull(regionMask())
+                    : new ColumnRegionChar.Constant<>(regionMask(), unbox((Character) partitioningColumnValue));
         }
     }
 }

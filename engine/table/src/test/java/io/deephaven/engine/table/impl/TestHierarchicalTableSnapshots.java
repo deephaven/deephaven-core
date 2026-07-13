@@ -518,6 +518,222 @@ public class TestHierarchicalTableSnapshots {
         }
     }
 
+    @Test
+    public void testExpandAllRollup() {
+        // A rollup with 3 group-by levels: A, B, C
+        final Table source = newTable(
+                stringCol("A", "X", "X", "X", "Y", "Y"),
+                stringCol("B", "P", "P", "Q", "P", "Q"),
+                stringCol("C", "m", "n", "m", "m", "m"),
+                intCol("V", 1, 2, 3, 4, 5));
+
+        final RollupTable rollupTable = source.rollup(List.of(AggMax("MaxV=V")), "A", "B", "C");
+        final SnapshotState ss = rollupTable.makeSnapshotState();
+
+        final String[] arrayWithNull = new String[1];
+        final Table expandAllKeys = newTable(
+                intCol(rollupTable.getRowDepthColumn().name(), 0),
+                stringCol("A", arrayWithNull),
+                stringCol("B", arrayWithNull),
+                stringCol("C", arrayWithNull),
+                byteCol("Action", HierarchicalTable.KEY_TABLE_ACTION_EXPAND_ALL));
+
+        final Table snapshot = snapshotToTable(rollupTable, ss, expandAllKeys,
+                ColumnName.of("Action"), null, RowSetFactory.flat(30));
+
+        // DFS expand-all: root, X, X-P, X-P-m, X-P-n, X-Q, X-Q-m, Y, Y-P, Y-P-m, Y-Q, Y-Q-m
+        final Table expected = newTable(
+                intCol(rollupTable.getRowDepthColumn().name(),
+                        1, 2, 3, 4, 4, 3, 4, 2, 3, 4, 3, 4),
+                booleanCol(rollupTable.getRowExpandedColumn().name(),
+                        true, true, true, null, null, true, null, true, true, null, true, null),
+                stringCol("A",
+                        null, "X", "X", "X", "X", "X", "X", "Y", "Y", "Y", "Y", "Y"),
+                stringCol("B",
+                        null, null, "P", "P", "P", "Q", "Q", null, "P", "P", "Q", "Q"),
+                stringCol("C",
+                        null, null, null, "m", "n", null, "m", null, null, "m", null, "m"),
+                intCol("MaxV",
+                        5, 3, 2, 1, 2, 3, 3, 5, 4, 4, 5, 5));
+        assertTableEquals(expected, snapshot);
+
+        freeSnapshotTableChunks(snapshot);
+    }
+
+    @Test
+    public void testExpandToDepthRollup() {
+        // A rollup with 3 group-by levels: A, B, C
+        final Table source = newTable(
+                stringCol("A", "X", "X", "X", "Y", "Y"),
+                stringCol("B", "P", "P", "Q", "P", "Q"),
+                stringCol("C", "m", "n", "m", "m", "m"),
+                intCol("V", 1, 2, 3, 4, 5));
+
+        final RollupTable rollupTable = source.rollup(List.of(AggMax("MaxV=V")), "A", "B", "C");
+        final SnapshotState ss = rollupTable.makeSnapshotState();
+
+        // ExpandToDepth(2) at root: should expand root + one more level (A groups), but NOT B or C.
+        final String[] arrayWithNull = new String[1];
+        final Table depthKeys = newTable(
+                intCol(rollupTable.getRowDepthColumn().name(), 0),
+                stringCol("A", arrayWithNull),
+                stringCol("B", arrayWithNull),
+                stringCol("C", arrayWithNull),
+                byteCol("Action", HierarchicalTable.expandToDepthAction(2)));
+
+        final Table depthSnapshot = snapshotToTable(rollupTable, ss, depthKeys,
+                ColumnName.of("Action"), null, RowSetFactory.flat(30));
+
+        // ExpandToDepth(2): root expanded (depth remaining=1), EMPTY_KEY visited with default Expand
+        // (resets depth remaining=0), A-level visible but NOT expanded
+        final Table expected = newTable(
+                intCol(rollupTable.getRowDepthColumn().name(),
+                        1, 2, 2),
+                booleanCol(rollupTable.getRowExpandedColumn().name(),
+                        true, false, false),
+                stringCol("A",
+                        null, "X", "Y"),
+                stringCol("B",
+                        null, null, null),
+                stringCol("C",
+                        null, null, null),
+                intCol("MaxV",
+                        5, 3, 5));
+        assertTableEquals(expected, depthSnapshot);
+
+        freeSnapshotTableChunks(depthSnapshot);
+    }
+
+    @Test
+    public void testExpandToDepthDeepRollup() {
+        // ExpandToDepth deeper than the tree should match ExpandAll
+        final Table source = newTable(
+                stringCol("A", "X", "Y"),
+                intCol("V", 1, 2));
+
+        final RollupTable rollupTable = source.rollup(List.of(AggMax("MaxV=V")), "A");
+        final SnapshotState ss = rollupTable.makeSnapshotState();
+
+        final String[] arrayWithNull = new String[1];
+
+        // ExpandAll
+        final Table expandAllKeys = newTable(
+                intCol(rollupTable.getRowDepthColumn().name(), 0),
+                stringCol("A", arrayWithNull),
+                byteCol("Action", HierarchicalTable.KEY_TABLE_ACTION_EXPAND_ALL));
+        final Table expandAllSnapshot = snapshotToTable(rollupTable, ss, expandAllKeys,
+                ColumnName.of("Action"), null, RowSetFactory.flat(30));
+
+        // ExpandToDepth(10) — much deeper than actual tree
+        final Table depthKeys = newTable(
+                intCol(rollupTable.getRowDepthColumn().name(), 0),
+                stringCol("A", arrayWithNull),
+                byteCol("Action", HierarchicalTable.expandToDepthAction(10)));
+        final Table depthSnapshot = snapshotToTable(rollupTable, ss, depthKeys,
+                ColumnName.of("Action"), null, RowSetFactory.flat(30));
+
+        // Both should produce the same fully-expanded result
+        final Table expected = newTable(
+                intCol(rollupTable.getRowDepthColumn().name(), 1, 2, 2),
+                booleanCol(rollupTable.getRowExpandedColumn().name(), true, null, null),
+                stringCol("A", null, "X", "Y"),
+                intCol("MaxV", 2, 1, 2));
+        assertTableEquals(expected, expandAllSnapshot);
+        assertTableEquals(expected, depthSnapshot);
+
+        freeSnapshotTableChunks(expandAllSnapshot);
+        freeSnapshotTableChunks(depthSnapshot);
+    }
+
+    @Test
+    public void testExpandToDepthWithContraction() {
+        // ExpandToDepth(3) at root, but Contract on a specific depth-2 child
+        final Table source = newTable(
+                stringCol("A", "X", "X", "Y", "Y"),
+                stringCol("B", "P", "Q", "P", "Q"),
+                intCol("V", 1, 2, 3, 4));
+
+        final RollupTable rollupTable = source.rollup(List.of(AggMax("MaxV=V")), "A", "B");
+        final SnapshotState ss = rollupTable.makeSnapshotState();
+
+        // ExpandToDepth(3) on root: expands all 3 levels (root, A, B leaf)
+        // Contract on A=X: prevents X's children from appearing
+        final String[] arrayWithNull = new String[1];
+        final Table keys = newTable(
+                intCol(rollupTable.getRowDepthColumn().name(), 0, 2),
+                stringCol("A", arrayWithNull[0], "X"),
+                stringCol("B", arrayWithNull[0], null),
+                byteCol("Action",
+                        HierarchicalTable.expandToDepthAction(3),
+                        HierarchicalTable.KEY_TABLE_ACTION_CONTRACT));
+
+        final Table snapshot = snapshotToTable(rollupTable, ss, keys,
+                ColumnName.of("Action"), null, RowSetFactory.flat(30));
+
+        // ExpandToDepth(3) shows all levels, but Contract on X hides X's children (X-P, X-Q)
+        final Table expected = newTable(
+                intCol(rollupTable.getRowDepthColumn().name(), 1, 2, 2, 3, 3),
+                booleanCol(rollupTable.getRowExpandedColumn().name(), true, false, true, null, null),
+                stringCol("A", null, "X", "Y", "Y", "Y"),
+                stringCol("B", null, null, null, "P", "Q"),
+                intCol("MaxV", 4, 2, 4, 3, 4));
+        assertTableEquals(expected, snapshot);
+
+        freeSnapshotTableChunks(snapshot);
+    }
+
+    @Test
+    public void testExpandToDepthWithNestedExpand() {
+        // ExpandToDepth(3) at root, but Expand (depth-1) on a specific depth-2 child
+        // The Expand stops further auto-expansion in that subtree
+        final Table source = newTable(
+                stringCol("A", "X", "X", "Y", "Y"),
+                stringCol("B", "P", "Q", "P", "Q"),
+                stringCol("C", "m", "m", "m", "m"),
+                intCol("V", 1, 2, 3, 4));
+
+        final RollupTable rollupTable = source.rollup(List.of(AggMax("MaxV=V")), "A", "B", "C");
+        final SnapshotState ss = rollupTable.makeSnapshotState();
+
+        // ExpandToDepth(3) at root
+        // Expand (plain) on X at depth 2 — stops further auto-expansion in the X subtree
+        final String[] arrayWithNull = new String[1];
+        final Table keys = newTable(
+                intCol(rollupTable.getRowDepthColumn().name(), 0, 2),
+                stringCol("A", arrayWithNull[0], "X"),
+                stringCol("B", arrayWithNull[0], null),
+                stringCol("C", arrayWithNull[0], null),
+                byteCol("Action",
+                        HierarchicalTable.expandToDepthAction(3),
+                        HierarchicalTable.KEY_TABLE_ACTION_EXPAND));
+
+        final Table snapshot = snapshotToTable(rollupTable, ss, keys,
+                ColumnName.of("Action"), null, RowSetFactory.flat(30));
+
+        // ExpandToDepth(3) at root: expandingDepthRemaining = 2 (after fix)
+        // EMPTY_KEY visited with default Expand (resets expandingDepthRemaining=0):
+        // Expand on A=X overrides depth expansion for that subtree (expandingDepthRemaining=0):
+        // X's children (X-P, X-Q) shown but not expanded further
+        // Y via Linkage would require depth remaining > 0, but Expand reset it to 0,
+        // so Y's children (Y-P, Y-Q) are visible but not expanded
+        final Table expected = newTable(
+                intCol(rollupTable.getRowDepthColumn().name(),
+                        1, 2, 3, 3, 2, 3, 3),
+                booleanCol(rollupTable.getRowExpandedColumn().name(),
+                        true, true, false, false, true, false, false),
+                stringCol("A",
+                        null, "X", "X", "X", "Y", "Y", "Y"),
+                stringCol("B",
+                        null, null, "P", "Q", null, "P", "Q"),
+                stringCol("C",
+                        null, null, null, null, null, null, null),
+                intCol("MaxV",
+                        4, 2, 1, 2, 4, 3, 4));
+        assertTableEquals(expected, snapshot);
+
+        freeSnapshotTableChunks(snapshot);
+    }
+
     @SuppressWarnings("SameParameterValue")
     static Table snapshotToTable(
             @NotNull final HierarchicalTable<?> hierarchicalTable,

@@ -45,4 +45,8 @@ public final class DelayedErrorNotifier implements Runnable {
         table.notifyListenersOnError(error, entry);
         table.forceReferenceCountToZero();
     }
+
+    public Throwable getError() {
+        return error;
+    }
 }

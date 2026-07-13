@@ -3,14 +3,11 @@
 //
 package io.deephaven.web.client.state;
 
-import elemental2.core.JsArray;
 import elemental2.core.JsMap;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.ticket_pb.Ticket;
-import io.deephaven.javascript.proto.dhinternal.browserheaders.BrowserHeaders;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.BatchTableRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.ExportedTableCreationResponse;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.TableReference;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.batchtablerequest.Operation;
+import io.deephaven.proto.backplane.grpc.BatchTableRequest;
+import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
+import io.deephaven.proto.backplane.grpc.TableReference;
+import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.web.client.api.*;
 import io.deephaven.web.client.api.barrage.stream.ResponseStreamWrapper;
 import io.deephaven.web.client.api.batch.BatchBuilder;
@@ -21,6 +18,8 @@ import io.deephaven.web.client.fu.LazyPromise;
 import io.deephaven.web.shared.fu.IdentityHashSet;
 
 import java.util.*;
+
+import static io.deephaven.proto.backplane.grpc.BatchTableRequest.*;
 
 /**
  * Instances of this class are responsible for bringing CTS back to life.
@@ -41,7 +40,7 @@ public class TableReviver implements HasTableBinding {
         this.connection = connection;
     }
 
-    public void revive(BrowserHeaders metadata, ClientTableState... states) {
+    public void revive(ClientTableState... states) {
         if (enqueued == null) {
             enqueued = new IdentityHashSet<>();
             LazyPromise.runLater(() -> {
@@ -49,13 +48,13 @@ public class TableReviver implements HasTableBinding {
                         .filter(ClientTableState::shouldResuscitate)
                         .toArray(ClientTableState[]::new);
                 enqueued = null;
-                doRevive(toRevive, metadata);
+                doRevive(toRevive);
             });
         }
         enqueued.addAll(Arrays.asList(states));
     }
 
-    private void doRevive(ClientTableState[] states, BrowserHeaders metadata) {
+    private void doRevive(ClientTableState[] states) {
 
         // We want the server to start as soon as possible,
         // so we'll separate "root table fetches" and send them first.
@@ -76,7 +75,7 @@ public class TableReviver implements HasTableBinding {
 
         for (ClientTableState state : reviveFirst) {
             JsLog.debug("Attempting revive on ", state);
-            state.maybeRevive(metadata).then(
+            state.maybeRevive().then(
                     success -> {
                         state.forActiveLifecycles(t -> ((JsTable) t).revive(state));
                         return null;
@@ -110,18 +109,19 @@ public class TableReviver implements HasTableBinding {
     }
 
     private void sendRequest(BatchBuilder requester, Map<TableTicket, ClientTableState> all) {
-        final JsArray<Operation> ops = requester.serializable();
-        if (ops.length == 0) {
+        final List<Operation> ops = requester.serializable();
+        if (ops.isEmpty()) {
             return;
         }
-        final BatchTableRequest req = new BatchTableRequest();
-        req.setOpsList(ops);
+        final BatchTableRequest req = BatchTableRequest.newBuilder()
+                .addAllOps(ops)
+                .build();
         requester.clear();
         JsLog.debug("Sending revivification request", LazyString.of(req));
 
         // TODO core#242 - this isn't tested at all, and mostly doesn't make sense
         ResponseStreamWrapper<ExportedTableCreationResponse> stream =
-                ResponseStreamWrapper.of(connection.tableServiceClient().batch(req, connection.metadata()));
+                ResponseStreamWrapper.of(observer -> connection.tableServiceClient().batch(req, observer));
         stream.onData(response -> {
             TableReference resultid = response.getResultId();
             if (!resultid.hasTicket()) {
@@ -131,18 +131,18 @@ public class TableReviver implements HasTableBinding {
             Ticket ticket = resultid.getTicket();
 
             if (!response.getSuccess()) {
-                ClientTableState dead = all.remove(new TableTicket(ticket.getTicket_asU8()));
+                ClientTableState dead = all.remove(new TableTicket(ticket));
                 dead.forActiveLifecycles(t -> t.die(response.getErrorInfo()));
             } else {
-                ClientTableState succeeded = all.remove(new TableTicket(ticket.getTicket_asU8()));
+                ClientTableState succeeded = all.remove(new TableTicket(ticket));
                 succeeded.setResolution(ClientTableState.ResolutionState.RUNNING);
                 succeeded.forActiveLifecycles(t -> ((JsTable) t).revive(succeeded));
             }
         });
         stream.onEnd(status -> {
-            if (status.isOk()) {
+            if (!status.isOk()) {
                 for (ClientTableState failed : all.values()) {
-                    failed.forActiveLifecycles(t -> t.die(status.getDetails()));
+                    failed.forActiveLifecycles(t -> t.die(status.getDescription()));
                 }
             }
         });

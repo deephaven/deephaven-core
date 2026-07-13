@@ -18,6 +18,9 @@ Deephaven is only supported on:
 - MacOS
 - Windows 10 or 11 (requires [WSL 2 (Windows Subsystem for Linux v2)](https://learn.microsoft.com/en-us/windows/wsl/install))
 
+> [!WARNING]
+> WSL 2's default time-sync setup can cause spurious 10–20-second clock jumps that stall Deephaven ticking tables. Before running Deephaven on WSL 2, apply one of the [time-sync workarounds](../reference/community-questions/wsl2-clock-drift.md).
+
 ## Prerequisites
 
 ### Java
@@ -34,6 +37,16 @@ java --version
 
 > [!NOTE]
 > The Java build process uses [Gradle Auto Provisioning](https://docs.gradle.org/current/userguide/toolchains.html#sec:provisioning) to download and use the appropriate Java version for building and testing.
+
+### Gradle
+
+Deephaven uses [Gradle](https://gradle.org/) as its build tool. You do not need to install Gradle manually — the repository includes the [Gradle Wrapper](https://docs.gradle.org/current/userguide/gradle_wrapper.html) (`gradlew` / `gradlew.bat`), which downloads and runs the correct version of Gradle automatically.
+
+You can verify the wrapper is present after cloning:
+
+```bash
+ls gradlew
+```
 
 ### Version control
 

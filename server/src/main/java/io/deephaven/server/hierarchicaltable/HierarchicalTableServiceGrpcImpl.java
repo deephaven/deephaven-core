@@ -422,7 +422,7 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
         }
 
         final Table source = inputHierarchicalTable.getSource();
-        final Selectable[] selectables = request.getUpdateViewsList().stream()
+        final Selectable[] selectables = request.getFormatViewsList().stream()
                 .map(uvr -> AggregationAdapter.adapt(uvr.getColumnSpec()))
                 .toArray(Selectable[]::new);
         final String[] columnSpecs = Arrays.asList(selectables).stream()

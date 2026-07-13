@@ -4,6 +4,7 @@
   <inherits name="elemental2.dom.Dom"/>
   <inherits name="com.google.flatbuffers.FlatBuffers"/>
   <inherits name="org.apache.arrow.flatbuf.FlightFlatbufFormat"/>
+  <inherits name="org.apache.arrow.flight.impl.FlightProto"/>
   <inherits name="io.deephaven.barrage.flatbuf.BarrageFlatbufFormat"/>
 
   <inherits name="io.deephaven.base.Base" />
@@ -11,14 +12,18 @@
   <inherits name="io.deephaven.io.IO" />
   <inherits name="io.deephaven.chunk.Chunk" />
   <inherits name="io.deephaven.extensions.barrage.Barrage" />
+  <inherits name="io.deephaven.flightjs.protocol.BrowserFlight" />
+  <inherits name="io.deephaven.proto.backplane.DeephavenCoreProto" />
+
+  <inherits name="com.vertispan.grpc.fetch.Fetch" />
+
+  <inherits name="com.google.gwt.logging.Logging"/>
 
   <define-property name="dh.dev" values="true, false" />
   <source path="client" />
   <source path="shared" />
   <super-source path="super" />
   <set-property name="dh.dev" value="false" />
-
-  <inherits name="io.deephaven.javascript.proto.dhinternal.DeephavenInternal" />
 
   <inherits name="com.google.gwt.i18n.I18N" />
   <inherits name="io.deephaven.web.DeephavenSharedApi" />
@@ -29,6 +34,13 @@
   <add-linker name="dh_linker" />
 
   <set-configuration-property name="user.agent.runtimeWarning" value="false"/>
+  <set-configuration-property name="document.compatMode.severity" value="IGNORE"/>
+  <set-property name="gwt.uncaughtexceptionhandler.windowonerror" value="IGNORE"/>
 
   <set-property name="jsinterop.checks" value="ENABLED"/>
+
+  <!-- Limit to one permutation, which we'll assume to be "safari" - this is what chromium registers as as well,
+       and for our purposes firefox will be compatible too.
+   -->
+  <set-property name="user.agent" value="safari" />
 </module>
