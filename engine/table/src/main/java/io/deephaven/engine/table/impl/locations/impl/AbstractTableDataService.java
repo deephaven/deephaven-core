@@ -66,6 +66,15 @@ public abstract class AbstractTableDataService implements TableDataService, Name
 
     @Override
     public void shutdown() {
+        // Notify subscribers of each cached provider (and its locations) that the service is going away, then drop the
+        // cached providers. Wrapper services (Filtered/Composite) cache delegating providers that are not
+        // AbstractTableLocationProviders and hold no subscribers of their own; their leaves are notified via the
+        // shutdown cascade.
+        tableLocationProviders.values().forEach(tableLocationProvider -> {
+            if (tableLocationProvider instanceof AbstractTableLocationProvider) {
+                ((AbstractTableLocationProvider) tableLocationProvider).handleShutdown();
+            }
+        });
         reset();
     }
 

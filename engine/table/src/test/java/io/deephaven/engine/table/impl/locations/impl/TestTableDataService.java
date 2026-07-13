@@ -3,8 +3,10 @@
 //
 package io.deephaven.engine.table.impl.locations.impl;
 
+import io.deephaven.engine.liveness.LiveSupplier;
 import io.deephaven.engine.table.impl.DummyTableLocation;
 import io.deephaven.engine.table.impl.TableUpdateMode;
+import io.deephaven.engine.table.impl.locations.ImmutableTableLocationKey;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.TableDataService;
 import io.deephaven.engine.table.impl.locations.TableKey;
@@ -44,6 +46,104 @@ public class TestTableDataService {
         Assert.assertThrows(TableDataException.class,
                 () -> ctds2.getRawTableLocationProvider(StandaloneTableKey.getInstance(), tlk1));
         Assert.assertNull(ctds2.getRawTableLocationProvider(StandaloneTableKey.getInstance(), tlk3));
+    }
+
+    /**
+     * Verify that {@link TableDataService#shutdown()} delivers a terminal exception to an existing provider subscriber
+     * and clears the cached provider.
+     */
+    @Test
+    public void testShutdownNotifiesSubscribers() {
+        final SubscribableTableDataService tds = new SubscribableTableDataService();
+        final TableLocationProvider provider = tds.getTableLocationProvider(StandaloneTableKey.getInstance());
+        final RecordingListener listener = new RecordingListener();
+        provider.subscribe(listener);
+        Assert.assertNull(listener.exception);
+
+        tds.shutdown();
+
+        Assert.assertNotNull("subscriber notified of error on shutdown", listener.exception);
+        // The cached provider is cleared: a subsequent request yields a fresh instance.
+        Assert.assertNotSame(provider, tds.getTableLocationProvider(StandaloneTableKey.getInstance()));
+    }
+
+    /**
+     * A {@link TableLocationProvider.Listener} that records the exception delivered to it.
+     */
+    private static final class RecordingListener implements TableLocationProvider.Listener {
+
+        private TableDataException exception;
+
+        /** Ignore added keys. */
+        @Override
+        public void handleTableLocationKeyAdded(
+                @NotNull final LiveSupplier<ImmutableTableLocationKey> tableLocationKey) {}
+
+        /** Ignore removed keys. */
+        @Override
+        public void handleTableLocationKeyRemoved(
+                @NotNull final LiveSupplier<ImmutableTableLocationKey> tableLocationKey) {}
+
+        /** Record the delivered exception. */
+        @Override
+        public void handleException(@NotNull final TableDataException exception) {
+            this.exception = exception;
+        }
+    }
+
+    /**
+     * A subscription-supporting provider that activates synchronously, so a subscribe call completes without a backing
+     * data source.
+     */
+    private static final class SubscribableProvider extends AbstractTableLocationProvider {
+
+        private SubscribableProvider() {
+            super(StandaloneTableKey.getInstance(), true, TableUpdateMode.ADD_REMOVE, TableUpdateMode.ADD_REMOVE);
+        }
+
+        /** Mark activation successful immediately so {@code subscribe} does not block. */
+        @Override
+        protected void activateUnderlyingDataSource() {
+            activationSuccessful(this);
+        }
+
+        /** No underlying data source to deactivate. */
+        @Override
+        protected void deactivateUnderlyingDataSource() {}
+
+        /** No locations to discover. */
+        @Override
+        public void refresh() {}
+
+        /** This provider has a single implicit subscription, keyed by itself. */
+        @Override
+        protected <T> boolean matchSubscriptionToken(final T token) {
+            return token == this;
+        }
+
+        /** This provider serves no locations. */
+        @Override
+        @NotNull
+        protected TableLocation makeTableLocation(@NotNull final TableLocationKey locationKey) {
+            throw new UnsupportedOperationException("test provider has no locations");
+        }
+    }
+
+    /**
+     * A minimal {@link AbstractTableDataService} whose providers support subscriptions.
+     */
+    private static final class SubscribableTableDataService extends AbstractTableDataService {
+
+        private SubscribableTableDataService() {
+            super("subscribableTds");
+        }
+
+        /** Create a subscription-supporting provider. */
+        @Override
+        @NotNull
+        protected TableLocationProvider makeTableLocationProvider(@NotNull final TableKey tableKey) {
+            return new SubscribableProvider();
+        }
     }
 
     private static class DummyTableDataService extends AbstractTableDataService {
