@@ -27,8 +27,7 @@ import io.deephaven.engine.table.impl.sort.findruns.FindRunsKernel;
 import io.deephaven.engine.table.impl.sort.permute.PermuteKernel;
 import io.deephaven.engine.table.impl.sort.timsort.ComparatorLongTimsortKernel;
 import io.deephaven.engine.table.impl.sort.timsort.LongIntTimsortKernel;
-import io.deephaven.engine.table.impl.sort.timsort2.multi.IndirectMultiColumnTimsortDispatcher;
-import io.deephaven.engine.table.impl.sort.timsort2.multi.MultiColumnTimsortDispatcher;
+import io.deephaven.engine.table.impl.sort.timsort2.multi.MultiColumnTimsortKernelFactory;
 import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.table.impl.sources.regioned.SymbolTableSource;
 import io.deephaven.engine.table.impl.util.ContiguousWritableRowRedirection;
@@ -663,10 +662,11 @@ public class SortHelpers {
             final WritableLongChunk<RowKeys> rowKeys = WritableLongChunk.writableChunkWrap(rowKeysArray);
             rowSequence.fillRowKeyChunk(rowKeys);
 
-            if (QueryTable.USE_MULTI_COLUMN_SORT_KERNEL && QueryTable.USE_INDIRECT_MULTI_COLUMN_SORT_KERNEL
-                    && comparator == null) {
+            if (QueryTable.USE_GENERATED_SORT_KERNELS && comparator == null) {
+                // the factory provides indirect kernels for Object columns; primitive columns return null and use
+                // the direct kernels below
                 try (final MultiColumnSortKernel<RowKeys> indirectContext =
-                        IndirectMultiColumnTimsortDispatcher.makeContext(
+                        MultiColumnTimsortKernelFactory.makeContext(
                                 new ChunkType[] {values.getChunkType()}, new SortingOrder[] {order}, chunkSize)) {
                     if (indirectContext != null) {
                         // noinspection unchecked
@@ -773,7 +773,7 @@ public class SortHelpers {
         final long[] rowKeysArray = new long[sortSize];
         final WritableLongChunk<RowKeys> rowKeys = WritableLongChunk.writableChunkWrap(rowKeysArray);
 
-        if (QueryTable.USE_MULTI_COLUMN_SORT_KERNEL && dataIndex == null) {
+        if (QueryTable.USE_GENERATED_SORT_KERNELS && dataIndex == null) {
             final SortMapping multiColumnMapping = tryMultiColumnSortMapping(
                     order, columnSources, comparators, rowSet, usePrev, sortSize, rowKeysArray, rowKeys);
             if (multiColumnMapping != null) {
@@ -943,9 +943,8 @@ public class SortHelpers {
         }
         final ChunkType[] chunkTypes =
                 Arrays.stream(columnSources).map(ColumnSource::getChunkType).toArray(ChunkType[]::new);
-        try (final MultiColumnSortKernel<RowKeys> sortContext = QueryTable.USE_INDIRECT_MULTI_COLUMN_SORT_KERNEL
-                ? IndirectMultiColumnTimsortDispatcher.makeContext(chunkTypes, order, sortSize)
-                : MultiColumnTimsortDispatcher.makeContext(chunkTypes, order, sortSize)) {
+        try (final MultiColumnSortKernel<RowKeys> sortContext =
+                MultiColumnTimsortKernelFactory.makeContext(chunkTypes, order, sortSize)) {
             if (sortContext == null) {
                 return null;
             }

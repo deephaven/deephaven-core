@@ -223,22 +223,16 @@ public class QueryTable extends BaseTable<QueryTable> {
             Configuration.getInstance().getBooleanWithDefault("QueryTable.useDataIndexForJoins", true);
 
     /**
-     * If the Configuration property "QueryTable.useMultiColumnSortKernel" is set to true, then sorts on multiple
-     * columns attempt to use a single generated multi-column timsort kernel that compares each column in turn, rather
-     * than sorting one column at a time with run finding in between. Sorts with no suitable multi-column kernel (e.g.,
-     * descending columns or more than two sort columns) fall back to the one-column-at-a-time path.
+     * If the Configuration property "QueryTable.useGeneratedSortKernels" is set to true (default), then sorts of Object
+     * columns and sorts of multiple columns use generated indirect timsort kernels that compare each column in turn
+     * while permuting only a parallel chunk of positions (the permuted row keys are assembled in a single linear pass
+     * at the end). Kernels for shapes without a pregenerated class — three or more sort columns, or descending
+     * multi-column components — are compiled on demand. Single-column sorts of primitive types always use the existing
+     * direct kernels, which are faster for them. If false, sorting always uses the existing one-column-at-a-time
+     * kernels with run finding in between.
      */
-    public static boolean USE_MULTI_COLUMN_SORT_KERNEL =
-            Configuration.getInstance().getBooleanWithDefault("QueryTable.useMultiColumnSortKernel", false);
-
-    /**
-     * If the Configuration property "QueryTable.useIndirectMultiColumnSortKernel" is also set to true, the multi-column
-     * sort kernel permutes a parallel chunk of positions rather than moving the column values (and row keys) during the
-     * sort; the permuted row keys are assembled in a single linear pass at the end. Only consulted when
-     * {@link #USE_MULTI_COLUMN_SORT_KERNEL} is enabled.
-     */
-    public static boolean USE_INDIRECT_MULTI_COLUMN_SORT_KERNEL =
-            Configuration.getInstance().getBooleanWithDefault("QueryTable.useIndirectMultiColumnSortKernel", false);
+    public static boolean USE_GENERATED_SORT_KERNELS =
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.useGeneratedSortKernels", true);
 
     /**
      * For a static select(), we would prefer to flatten the table to avoid using memory unnecessarily (because the data

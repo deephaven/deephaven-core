@@ -9,8 +9,9 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.SortingOrder;
 import io.deephaven.engine.table.impl.sort.MultiColumnSortKernel;
-import io.deephaven.engine.table.impl.sort.timsort2.multi.IndirectMultiColumnTimsortDispatcher;
-import io.deephaven.engine.table.impl.sort.timsort2.multi.MultiColumnTimsortDispatcher;
+import io.deephaven.api.ColumnName;
+import io.deephaven.api.SortColumn;
+import io.deephaven.engine.table.impl.sort.timsort2.multi.MultiColumnTimsortKernelFactory;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.QueryConstants;
@@ -18,6 +19,7 @@ import junit.framework.TestCase;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.List;
 import java.util.Random;
 
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
@@ -111,25 +113,18 @@ public class TestMultiColumnSort {
     }
 
     private static void checkSame(final Table table, final SortInvoker invoker) {
-        final boolean oldFlag = QueryTable.USE_MULTI_COLUMN_SORT_KERNEL;
-        final boolean oldIndirect = QueryTable.USE_INDIRECT_MULTI_COLUMN_SORT_KERNEL;
+        final boolean oldFlag = QueryTable.USE_GENERATED_SORT_KERNELS;
         final Table expected;
-        final Table direct;
-        final Table indirect;
+        final Table actual;
         try {
-            QueryTable.USE_MULTI_COLUMN_SORT_KERNEL = false;
+            QueryTable.USE_GENERATED_SORT_KERNELS = false;
             expected = invoker.sort(table);
-            QueryTable.USE_MULTI_COLUMN_SORT_KERNEL = true;
-            QueryTable.USE_INDIRECT_MULTI_COLUMN_SORT_KERNEL = false;
-            direct = invoker.sort(table);
-            QueryTable.USE_INDIRECT_MULTI_COLUMN_SORT_KERNEL = true;
-            indirect = invoker.sort(table);
+            QueryTable.USE_GENERATED_SORT_KERNELS = true;
+            actual = invoker.sort(table);
         } finally {
-            QueryTable.USE_MULTI_COLUMN_SORT_KERNEL = oldFlag;
-            QueryTable.USE_INDIRECT_MULTI_COLUMN_SORT_KERNEL = oldIndirect;
+            QueryTable.USE_GENERATED_SORT_KERNELS = oldFlag;
         }
-        assertTableEquals(expected, direct);
-        assertTableEquals(expected, indirect);
+        assertTableEquals(expected, actual);
     }
 
     @Test
@@ -157,41 +152,39 @@ public class TestMultiColumnSort {
 
     @Test
     public void testDispatch() {
-        // the type-pair test is only meaningful if the dispatcher actually supplies kernels for these shapes
+        // the type-pair test is only meaningful if the factory actually supplies kernels for these shapes
         for (final ChunkType first : new ChunkType[] {ChunkType.Char, ChunkType.Byte, ChunkType.Short, ChunkType.Int,
                 ChunkType.Long, ChunkType.Float, ChunkType.Double, ChunkType.Object}) {
             for (final ChunkType second : new ChunkType[] {ChunkType.Int, ChunkType.Object}) {
-                try (final MultiColumnSortKernel<Any> kernel = MultiColumnTimsortDispatcher.makeContext(
-                        new ChunkType[] {first, second},
-                        new SortingOrder[] {SortingOrder.Ascending, SortingOrder.Ascending}, 16)) {
-                    TestCase.assertNotNull(kernel);
-                }
-                try (final MultiColumnSortKernel<Any> kernel = IndirectMultiColumnTimsortDispatcher.makeContext(
+                try (final MultiColumnSortKernel<Any> kernel = MultiColumnTimsortKernelFactory.makeContext(
                         new ChunkType[] {first, second},
                         new SortingOrder[] {SortingOrder.Ascending, SortingOrder.Ascending}, 16)) {
                     TestCase.assertNotNull(kernel);
                 }
             }
         }
-        // single-column ascending sorts dispatch to the indirect kernels (but not the direct, value-moving ones)
-        for (final ChunkType single : new ChunkType[] {ChunkType.Int, ChunkType.Object}) {
-            try (final MultiColumnSortKernel<Any> kernel = IndirectMultiColumnTimsortDispatcher.makeContext(
-                    new ChunkType[] {single}, new SortingOrder[] {SortingOrder.Ascending}, 16)) {
+        // single-column Object sorts use indirect kernels in either direction; primitives use the direct kernels
+        for (final SortingOrder order : SortingOrder.values()) {
+            try (final MultiColumnSortKernel<Any> kernel = MultiColumnTimsortKernelFactory.makeContext(
+                    new ChunkType[] {ChunkType.Object}, new SortingOrder[] {order}, 16)) {
                 TestCase.assertNotNull(kernel);
             }
-            TestCase.assertNull(MultiColumnTimsortDispatcher.makeContext(
-                    new ChunkType[] {single}, new SortingOrder[] {SortingOrder.Ascending}, 16));
-            TestCase.assertNull(IndirectMultiColumnTimsortDispatcher.makeContext(
-                    new ChunkType[] {single}, new SortingOrder[] {SortingOrder.Descending}, 16));
+            TestCase.assertNull(MultiColumnTimsortKernelFactory.makeContext(
+                    new ChunkType[] {ChunkType.Int}, new SortingOrder[] {order}, 16));
         }
-        // unsupported shapes must return null so the caller falls back
-        TestCase.assertNull(MultiColumnTimsortDispatcher.makeContext(
+        // shapes without a pregenerated kernel are compiled on demand
+        try (final MultiColumnSortKernel<Any> kernel = MultiColumnTimsortKernelFactory.makeContext(
                 new ChunkType[] {ChunkType.Int, ChunkType.Long},
-                new SortingOrder[] {SortingOrder.Ascending, SortingOrder.Descending}, 16));
-        TestCase.assertNull(MultiColumnTimsortDispatcher.makeContext(
+                new SortingOrder[] {SortingOrder.Ascending, SortingOrder.Descending}, 16)) {
+            TestCase.assertNotNull(kernel);
+        }
+        try (final MultiColumnSortKernel<Any> kernel = MultiColumnTimsortKernelFactory.makeContext(
                 new ChunkType[] {ChunkType.Int, ChunkType.Long, ChunkType.Object},
-                new SortingOrder[] {SortingOrder.Ascending, SortingOrder.Ascending, SortingOrder.Ascending}, 16));
-        TestCase.assertNull(MultiColumnTimsortDispatcher.makeContext(
+                new SortingOrder[] {SortingOrder.Ascending, SortingOrder.Ascending, SortingOrder.Ascending}, 16)) {
+            TestCase.assertNotNull(kernel);
+        }
+        // boolean chunks have no kernel; the caller falls back
+        TestCase.assertNull(MultiColumnTimsortKernelFactory.makeContext(
                 new ChunkType[] {ChunkType.Boolean, ChunkType.Int},
                 new SortingOrder[] {SortingOrder.Ascending, SortingOrder.Ascending}, 16));
     }
@@ -202,19 +195,23 @@ public class TestMultiColumnSort {
             final Table table = makeTable(new Random(42), size);
             for (final String column : FIRST_COLUMNS) {
                 checkSame(table, t -> t.sort(column));
-                // descending single-column sorts have no indirect kernel; both flag settings use the fallback
                 checkSame(table, t -> t.sortDescending(column));
             }
         }
     }
 
     @Test
-    public void testFallbackPaths() {
+    public void testCompiledKernelPaths() {
         final Table table = makeTable(new Random(31337), 10000);
-        // descending columns have no multi-column kernel; both flag settings must agree via the fallback
+        // these shapes have no pregenerated kernel and exercise the on-demand compiled kernels
         checkSame(table, t -> t.sortDescending("IntA", "LongB"));
-        // three sort columns fall back to the one-column-at-a-time pipeline
         checkSame(table, t -> t.sort("IntA", "LongB", "ObjB"));
         checkSame(table, t -> t.sort("ObjA", "IntB", "DoubleB"));
+        checkSame(table, t -> t.sortDescending("ObjA", "DoubleB"));
+        checkSame(table, t -> t.sort(List.of(
+                SortColumn.asc(ColumnName.of("CharA")),
+                SortColumn.desc(ColumnName.of("IntB")),
+                SortColumn.asc(ColumnName.of("ObjB")),
+                SortColumn.desc(ColumnName.of("FloatB")))));
     }
 }

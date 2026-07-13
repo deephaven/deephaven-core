@@ -13,9 +13,9 @@ import io.deephaven.engine.table.impl.SortingOrder;
 import io.deephaven.engine.table.impl.sort.MultiColumnSortKernel;
 
 /**
- * Selects a generated indirect (position-permuting) multi-column timsort kernel for the given column chunk types and sort directions,
- * returning null when no specialized kernel exists so callers can fall back to sorting one column at a
- * time.
+ * Selects a pregenerated indirect timsort kernel for the given column chunk types and sort directions,
+ * returning null when no pregenerated kernel exists so that MultiColumnTimsortKernelFactory can compile
+ * one on demand (or fall back to the single-column kernels).
  */
 public final class IndirectMultiColumnTimsortDispatcher {
     private IndirectMultiColumnTimsortDispatcher() {
@@ -23,26 +23,22 @@ public final class IndirectMultiColumnTimsortDispatcher {
 
     public static <PERMUTE_VALUES_ATTR extends Any> MultiColumnSortKernel<PERMUTE_VALUES_ATTR> makeContext(
             ChunkType[] chunkTypes, SortingOrder[] order, int size) {
+        if (chunkTypes.length == 1) {
+            if (chunkTypes[0] != ChunkType.Object) {
+                return null;
+            }
+            if (order[0] == SortingOrder.Ascending) {
+                return ObjectIndirectTimsortKernel.createContext(size);
+            }
+            return ObjectDescIndirectTimsortKernel.createContext(size);
+        }
+        if (chunkTypes.length != 2) {
+            return null;
+        }
         for (final SortingOrder columnOrder : order) {
             if (columnOrder != SortingOrder.Ascending) {
                 return null;
             }
-        }
-        if (chunkTypes.length == 1) {
-            switch (chunkTypes[0]) {
-                case Char: return NullAwareCharIndirectTimsortKernel.createContext(size);
-                case Byte: return ByteIndirectTimsortKernel.createContext(size);
-                case Short: return ShortIndirectTimsortKernel.createContext(size);
-                case Int: return IntIndirectTimsortKernel.createContext(size);
-                case Long: return LongIndirectTimsortKernel.createContext(size);
-                case Float: return FloatIndirectTimsortKernel.createContext(size);
-                case Double: return DoubleIndirectTimsortKernel.createContext(size);
-                case Object: return ObjectIndirectTimsortKernel.createContext(size);
-                default: return null;
-            }
-        }
-        if (chunkTypes.length != 2) {
-            return null;
         }
         switch (chunkTypes[0]) {
             case Char:

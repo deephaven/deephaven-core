@@ -22,7 +22,7 @@ import java.lang.Override;
 import java.lang.UnsupportedOperationException;
 
 /**
- * This implements a timsort kernel for a multi-column key (Long, Int) that never moves the column values:
+ * This implements a timsort kernel for a sort key (Long, Int) that never moves the column values:
  * it permutes a parallel chunk of int positions, reading values through the positions for each
  * comparison (comparing each column in turn, only reading later columns on ties). The row keys are
  * not permuted during the sort either; they are assembled in a single linear pass at the end.
@@ -41,8 +41,8 @@ public final class LongIntIndirectMultiColumnTimsortKernel {
     }
 
     /**
-     * Sort the positions chunk such that the values it points to are lexicographically ordered, comparing
-     * each column in turn; the value chunks themselves are not modified.
+     * Sort the positions chunk such that the values it points to are ordered by this kernel's sort key,
+     * comparing each column in turn; the value chunks themselves are not modified.
      */
     public static void sort(LongIntIndirectMultiColumnSortKernelContext<?> context,
             WritableIntChunk<ChunkPositions> positions, LongChunk<?> valuesToSort0,

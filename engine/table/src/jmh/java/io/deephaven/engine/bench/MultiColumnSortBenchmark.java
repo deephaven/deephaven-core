@@ -50,7 +50,7 @@ public class MultiColumnSortBenchmark {
         System.setProperty("workspace", "build/workspace");
     }
 
-    @Param({"Sym,I1", "Sym,L1", "Sym,D1", "I1,Sym", "Sym,Sym2", "I1,L1"})
+    @Param({"Sym,I1", "Sym,L1", "Sym,D1", "I1,Sym", "Sym,Sym2", "I1,L1", "Sym,I1,L1", "I1,L1,D1"})
     private String sortCols;
 
     @Param({"4000000"})
@@ -59,7 +59,7 @@ public class MultiColumnSortBenchmark {
     @Param({"100", "100000", "4000000"})
     private int cardinality;
 
-    @Param({"pipeline", "direct", "indirect"})
+    @Param({"pipeline", "kernel"})
     private String kernelMode;
 
     private EngineCleanup engine;
@@ -70,8 +70,7 @@ public class MultiColumnSortBenchmark {
     public void setup() throws Exception {
         engine = new EngineCleanup();
         engine.setUp();
-        QueryTable.USE_MULTI_COLUMN_SORT_KERNEL = !"pipeline".equals(kernelMode);
-        QueryTable.USE_INDIRECT_MULTI_COLUMN_SORT_KERNEL = "indirect".equals(kernelMode);
+        QueryTable.USE_GENERATED_SORT_KERNELS = "kernel".equals(kernelMode);
         sortColumns = sortCols.split(",");
 
         final Random random = new Random(0xDEADBEEF);
