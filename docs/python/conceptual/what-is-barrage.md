@@ -16,7 +16,6 @@ Barrage solves these problems by:
 - Streaming only the rows that have been added, removed, or modified.
 - Supporting viewports so clients can subscribe to just the visible portion of a table.
 - Batching updates to balance latency against network efficiency.
-- Maintaining zero-copy data transport where possible.
 
 ## When to use Barrage
 
@@ -85,32 +84,14 @@ A shorter interval reduces latency but increases network traffic. A longer inter
 
 ## Architecture overview
 
-```text
-┌─────────────────────────────────────────────────────────────────┐
-│                         Remote Server                           │
-│                                                                 │
-│   ┌───────────┐     publishes to      ┌──────────────────┐     │
-│   │   Table   │ ─────────────────────►│  Shared Ticket   │     │
-│   └───────────┘                       └──────────────────┘     │
-│                                               │                 │
-└───────────────────────────────────────────────┼─────────────────┘
-                                                │
-                                    Barrage (Arrow Flight + metadata)
-                                                │
-                                                ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                         Local Server                            │
-│                                                                 │
-│   ┌─────────────────┐         ┌───────────────────────────────┐ │
-│   │ BarrageSession  │ ──────► │  Local Table (real DH table)  │ │
-│   └─────────────────┘         └───────────────────────────────┘ │
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
-```
+![Barrage architecture](../assets/conceptual/remote_and_local_server.png)
 
-1. **Remote server** hosts a table and publishes it to a shared ticket
-2. **Barrage protocol** transports the data using Arrow Flight with incremental update metadata
-3. **Local server** subscribes via `BarrageSession` and receives a true Deephaven table that can participate in queries
+1. **Remote server** hosts a table referenced by a ticket — the ticket is just a reference, not the data itself. Tickets can be scope tickets (variables in the global scope), export tickets, or shared tickets for cross-session access
+2. **Barrage protocol** transports the actual data using Arrow Flight with incremental update metadata
+3. **Local server** subscribes via `BarrageSession` and receives a full local copy of the data that stays synchronized with the source. This local table can participate in downstream queries (joins, filters, aggregations) that execute on the local server
+
+> [!NOTE]
+> Java and Groovy clients are unique among Deephaven clients — they can perform downstream computation locally because they run the full Deephaven engine. Other clients (Python via pydeephaven, JavaScript, C++) receive data but rely on the server for query execution.
 
 ## Barrage vs. Arrow Flight
 

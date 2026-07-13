@@ -114,7 +114,7 @@ For systems serving very large tables to many subscribers, you can reduce publis
 This configuration limits each snapshot chunk to exactly 1 million cells — well below the 16 million default maximum. Subscribers receive the full table data incrementally over multiple update cycles rather than all at once.
 
 > [!NOTE]
-> Setting smaller snapshot sizes increases the time required for subscribers to receive the initial table state but reduces peak memory usage on the server.
+> Setting smaller snapshot sizes increases the time required for subscribers to receive the initial table state but reduces peak memory usage on the server. These settings only affect initial snapshots — incremental updates are unaffected and must still be maintained in memory.
 
 ## Additional Barrage configuration
 

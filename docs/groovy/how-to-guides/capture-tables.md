@@ -179,7 +179,7 @@ When subscribing to large ticking tables:
 
 - **Incremental updates**: After the initial snapshot, only changed rows are transmitted. This is typically much smaller than the full table.
 
-- **Viewport filtering**: If you only need a subset of the data, consider filtering the table on the remote server before publishing it to the shared ticket. This reduces both network and memory usage.
+- **Server-side filtering**: If you only need a subset of the data, consider filtering the table on the remote server before subscribing. This reduces both network and memory usage. (Note: this is distinct from viewports, which define a scrollable window over row positions.)
 
 ```python skip-test
 # On the remote server: filter before publishing
