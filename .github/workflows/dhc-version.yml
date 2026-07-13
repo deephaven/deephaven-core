@@ -27,13 +27,5 @@ jobs:
       - name: Output Deephaven Version
         id: get-dhc-version
         run: |
-          DHC_VERSION=$(awk -F= '
-            /^[^#]/ { props[$1] = $2 }
-            END {
-              v = props["deephavenMajorVersion"] "." props["deephavenMinorVersion"]
-              if (props["deephavenBaseQualifier"] != "") v = v "-" props["deephavenBaseQualifier"]
-              print v
-            }
-          ' gradle.properties)
-          echo "dhc_version=$DHC_VERSION" >> $GITHUB_OUTPUT
-          echo FYI dhc_version is $DHC_VERSION
+          ./gradlew outputVersion
+          echo "dhc_version=$(cat build/version)" >> $GITHUB_OUTPUT

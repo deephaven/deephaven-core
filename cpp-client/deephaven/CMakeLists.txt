@@ -54,7 +54,7 @@ if(NOT DHCORE_ONLY)
 
     if(VCPKG_TOOLCHAIN AND NOT WIN32)
         install(DIRECTORY ${CMAKE_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/lib/
-            DESTINATION lib
+            DESTINATION ${CMAKE_INSTALL_LIBDIR}
             FILES_MATCHING
                 PATTERN "*.so"
                 PATTERN "*.so.*"

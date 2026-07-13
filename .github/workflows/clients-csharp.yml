@@ -5,7 +5,7 @@ on:
   push:
     branches: [ 'main', 'check/**', 'release/v*' ]
 permissions:
-  packages: write
+  contents: read
 
 env:
   GH_PACKAGES_USERNAME: ${{ github.repository_owner }}

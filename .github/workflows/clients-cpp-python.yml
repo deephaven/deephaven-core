@@ -17,7 +17,7 @@ permissions:
 # Background: in this workflow there are three different kinds of caching going
 # on:
 #
-# 1. The outputs are Github Build artifacts, attached to every action run.
+# 1. The outputs are GitHub Build artifacts, attached to every action run.
 #    These artifacts can be downloaded from e.g.
 #    https://github.com/deephaven/deephaven-core/actions/runs/17416308139
 #    but the specific URL depends on the build.
@@ -26,7 +26,7 @@ permissions:
 #    - The .whl file for the static Python client
 #    - The .whl file for the ticking Python client
 #
-# 2. Github Packages, which is a NuGet-compatible repo accessible from
+# 2. GitHub Packages, which is a NuGet-compatible repo accessible from
 #    https://github.com/orgs/deephaven/packages?repo_name=deephaven-core
 #    and controlled via the NuGet API. We use this package repository to hold
 #    the binaries for the C++ dependencies we build (grpc, arrow, etc.). It is
@@ -35,7 +35,7 @@ permissions:
 #    (a couple of hours for the Windows build)
 #
 # 3. caching of our {{ env.DHINSTALL }} directory. If the source files are
-#    unchanged (cpp_client/** and proto/**), then we reuse the prior results
+#    unchanged (cpp-client/** and proto/**), then we reuse the prior results
 #    rather than rebuilding them.
 #===============================================================================
 
@@ -206,6 +206,7 @@ jobs:
         run: |
           cmake -S cpp-client/deephaven -B cpp-client/deephaven/build \
           --toolchain "$GITHUB_WORKSPACE/vcpkg/scripts/buildsystems/vcpkg.cmake" \
+          -DCMAKE_BUILD_TYPE=RelWithDebInfo \
           -DVCPKG_INSTALL_OPTIONS="--x-abi-tools-use-exact-versions" \
           -DCMAKE_INSTALL_PREFIX="$DHINSTALL" \
           -DVCPKG_TARGET_TRIPLET="${{ matrix.target_triplet }}" \
@@ -352,6 +353,7 @@ jobs:
       # Pinned to a specific SHA to avoid future surprises
       - name: set up PATH for cl.exe
         if: runner.os == 'Windows'
+        # ilammy/msvc-dev-cmd@v1.13.0
         uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756
 
       - name: Build our Cython code (Linux)
