@@ -136,19 +136,17 @@ public class ReferenceCounting implements AutoCloseable {
                 // settle and do their thing or whatever
                 TimeUnit.SECONDS.sleep(2);
 
-                if (didFinalizationHappen.getAsBoolean()) {
-                    return CleanupResult.SUCCESS;
-                } else {
-                    return CleanupResult.GC_HAPPENED_BUT_CLIENT_OBJECT_WASNT_FINALIZED;
-                }
+                return didFinalizationHappen.getAsBoolean() ? CleanupResult.SUCCESS
+                        : CleanupResult.SENTINELS_WERE_FINALIZED_BUT_CLIENT_OBJECT_WAS_NOT;
             }
         }
 
-        return CleanupResult.GC_DIDNT_HAPPEN;
+        return didFinalizationHappen.getAsBoolean() ? CleanupResult.CLIENT_OBJECT_WAS_FINALIZED_BUT_SENTINELS_WERE_NOT
+                : CleanupResult.FINALIZATION_DIDNT_HAPPEN;
     }
 
     public enum CleanupResult {
-        SUCCESS, GC_DIDNT_HAPPEN, GC_HAPPENED_BUT_CLIENT_OBJECT_WASNT_FINALIZED
+        SUCCESS, SENTINELS_WERE_FINALIZED_BUT_CLIENT_OBJECT_WAS_NOT, CLIENT_OBJECT_WAS_FINALIZED_BUT_SENTINELS_WERE_NOT, FINALIZATION_DIDNT_HAPPEN
     }
 
     /**
