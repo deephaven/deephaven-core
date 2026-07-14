@@ -11,6 +11,8 @@ import org.junit.Assert;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BooleanSupplier;
+import java.util.function.Supplier;
 
 public class ReferenceCounting implements AutoCloseable {
 
@@ -71,29 +73,80 @@ public class ReferenceCounting implements AutoCloseable {
     }
 
     /**
-     * This is a fragile method, meant to ensure that GC gets invoked. There are a couple of shortcomings:
+     * This is a fragile method, whose aspiration is to ensure that garbage collection happens.
      *
-     * 1) There is no guarantee that GC will actually be invoked. 2) Even if our dummy object is collected, it doesn't
-     * guarantee that any other objects we care about have been GCd.
+     * The strategy is to make three objects: a sentinel object, the caller object under test, and then another sentinel
+     * object. The trick here is to create the caller object under test after the first sentinel but before the second
+     * sentinel. The underlying assumption is that "surely" the garbage collector won't collect both sentinels without
+     * also collecting the caller object.
      *
-     * That said - this seems to work for at least some VM implementations.
+     * Then we try to induce garbage collection.
+     *
+     * Then we ask the caller if it looks like their object was finalized.
+     *
+     * There are three possible outcomes: 1. If the two sentinel objects were not both finalized, return
+     * GC_DIDNT_HAPPEN. 2. If the two sentinel objects were finalized but the caller object under test was not, return
+     * GC_HAPPENED_BUT_CLIENT_OBJECT_WASNT_FINALIZED. 3. Otherwise, if all three objects were finalized, return SUCCESS.
+     *
+     * @param makeObject Create the caller object under test and supply it to us. We will set our reference to null at
+     *        the appropriate time. The caller should not try to hold a reference to it
+     * @param didFinalizationHappen Return true if the caller determines that finalization happened on its object.
+     *        Otherwise, return false.
      */
-    public void gc() throws InterruptedException {
-        final CountDownLatch latch = new CountDownLatch(1);
-        // noinspection unused
-        Object obj = new Object() {
+    public <T> CleanupResult doesCleanupHappenAtFinalizerTime(
+            Supplier<T> makeObject, BooleanSupplier didFinalizationHappen) throws InterruptedException {
+        final CountDownLatch latch = new CountDownLatch(2);
+        Object beforeSentinel = new Object() {
             @Override
             protected void finalize() throws Throwable {
                 super.finalize();
                 latch.countDown();
             }
         };
-        // noinspection UnusedAssignment
-        obj = null;
-        System.gc();
-        Assert.assertTrue("GC did not happen within 1 second", latch.await(1, TimeUnit.SECONDS));
-        PyObject.cleanup();
-        gc.collect();
+
+        T callerObject = makeObject.get();
+
+        Object afterSentinel = new Object() {
+            @Override
+            protected void finalize() throws Throwable {
+                super.finalize();
+                latch.countDown();
+            }
+        };
+
+        blackhole(beforeSentinel, callerObject, afterSentinel);
+
+        beforeSentinel = null;
+        callerObject = null;
+        afterSentinel = null;
+
+        // Will try 20 times, for a total of 5 seconds, to collect the garbage
+        // and wait for both sentinels to be finalized.
+        for (int i = 0; i < 20; i++) {
+            System.gc();
+            System.runFinalization();
+
+            if (latch.await(250, TimeUnit.MILLISECONDS)) {
+                // Both sentinels are finalized. Now see if the caller's
+                // state was finalized.
+                PyObject.cleanup();
+                gc.collect();
+
+                // Wait two more seconds for good luck and to let the above methods
+                // settle and do their thing or whatever
+                TimeUnit.SECONDS.sleep(2);
+
+                return didFinalizationHappen.getAsBoolean() ? CleanupResult.SUCCESS
+                        : CleanupResult.SENTINELS_WERE_FINALIZED_BUT_CLIENT_OBJECT_WAS_NOT;
+            }
+        }
+
+        return didFinalizationHappen.getAsBoolean() ? CleanupResult.CLIENT_OBJECT_WAS_FINALIZED_BUT_SENTINELS_WERE_NOT
+                : CleanupResult.FINALIZATION_DIDNT_HAPPEN;
+    }
+
+    public enum CleanupResult {
+        SUCCESS, SENTINELS_WERE_FINALIZED_BUT_CLIENT_OBJECT_WAS_NOT, CLIENT_OBJECT_WAS_FINALIZED_BUT_SENTINELS_WERE_NOT, FINALIZATION_DIDNT_HAPPEN
     }
 
     /**
