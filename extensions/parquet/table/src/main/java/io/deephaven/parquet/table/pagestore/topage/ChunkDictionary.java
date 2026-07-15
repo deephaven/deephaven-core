@@ -73,7 +73,7 @@ public class ChunkDictionary<T, ATTR extends Any> implements LongBitmapStringSet
     @Override
     public final T get(final long index) {
         final ObjectChunk<T, ATTR> values = getChunk();
-        return index < 0 || index >= values.size() ? null : values.get((int) index);
+        if (index < 0 || index >= values.size()) { return null; } return values.get((int) index);
     }
 
     @Override
