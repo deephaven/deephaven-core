@@ -92,7 +92,7 @@ A shorter interval reduces latency but increases network traffic. A longer inter
 3. **Local server** subscribes via `BarrageSession` and receives a full local copy of the data that stays synchronized with the source. This local table can participate in downstream queries (joins, filters, aggregations) that execute on the local server.
 
 > [!NOTE]
-> Java and Groovy clients are unique among Deephaven clients — they can perform downstream computation locally because they run the full Deephaven engine. Other clients (JavaScript, C++, Python) receive data but rely on the server for query execution.
+> Java and Groovy clients are unique among Deephaven clients — they can perform downstream computation locally because they run the full Deephaven engine. Other clients (e.g., JavaScript, C++, and Python) receive data but rely on the server for query execution.
 
 ## Barrage vs. Arrow Flight
 

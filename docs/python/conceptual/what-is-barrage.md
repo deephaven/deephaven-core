@@ -66,7 +66,7 @@ See [Capture Python client tables](../how-to-guides/capture-tables.md) for compl
 
 ### Viewports
 
-A viewport defines a window over a table —a range of row positions and a subset of columns. Viewports are essential for interactive applications where users scroll through large tables. Rather than streaming millions of rows, the server sends only the data visible in the current view.
+A viewport defines a window over a table — a range of row positions and a subset of columns. Viewports are essential for interactive applications where users scroll through large tables. Rather than streaming millions of rows, the server sends only the data visible in the current view.
 
 Viewports are automatically managed by Deephaven's web UI and JavaScript client. When a user scrolls or resizes a table view, the client updates its viewport subscription accordingly.
 
