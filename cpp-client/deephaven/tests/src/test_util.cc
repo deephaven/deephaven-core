@@ -180,7 +180,7 @@ TableMakerForTests::~TableMakerForTests() = default;
 
 void TableComparerForTests::Compare(const TableMaker &expected, const TableHandle &actual) {
   auto exp_as_arrow_table = expected.MakeArrowTable();
-  auto act_as_arrow_table = actual.ToArrowTable();
+  auto act_as_arrow_table = actual.ToArrowTable(true);
   Compare(*exp_as_arrow_table, *act_as_arrow_table);
 }
 
