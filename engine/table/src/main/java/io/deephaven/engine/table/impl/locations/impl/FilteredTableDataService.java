@@ -148,7 +148,9 @@ public class FilteredTableDataService extends AbstractTableDataService {
         public void getTableLocationKeys(
                 final Consumer<LiveSupplier<ImmutableTableLocationKey>> consumer,
                 final Predicate<ImmutableTableLocationKey> filter) {
-            inputProvider.getTableLocationKeys(consumer, filter);
+            // Apply this service's locationKeyFilter alongside the caller's, so enumeration exposes the same filtered
+            // set as subscription delivery, hasTableLocationKey, and getTableLocationIfPresent.
+            inputProvider.getTableLocationKeys(consumer, filter.and(locationKeyFilter::accept));
         }
 
         @Override
