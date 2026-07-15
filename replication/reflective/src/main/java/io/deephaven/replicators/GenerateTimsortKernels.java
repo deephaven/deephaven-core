@@ -18,7 +18,7 @@ import com.palantir.javapoet.TypeVariableName;
 import com.palantir.javapoet.WildcardTypeName;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.engine.table.impl.SortingOrder;
-import io.deephaven.engine.table.impl.sort.timsort2.multi.MultiColumnTimsortKernelFactory;
+import io.deephaven.engine.table.impl.sort.timsort.multi.MultiColumnTimsortKernelFactory;
 
 import javax.lang.model.element.Modifier;
 import java.io.File;
@@ -38,7 +38,7 @@ import java.util.List;
  * kernels that simultaneously sort multiple key columns of any type.
  */
 public class GenerateTimsortKernels {
-    private static final String PACKAGE = "io.deephaven.engine.table.impl.sort.timsort2";
+    private static final String PACKAGE = "io.deephaven.engine.table.impl.sort.timsort";
     private static final String MULTI_PACKAGE = PACKAGE + ".multi";
     private static final File SOURCE_ROOT = new File("engine/table/src/main/java/");
 
