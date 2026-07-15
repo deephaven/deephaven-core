@@ -132,6 +132,10 @@
               {
                 "label": "Servers & clients",
                 "path": "conceptual/client-server-model.md"
+              },
+              {
+                "label": "What is Barrage?",
+                "path": "conceptual/what-is-barrage.md"
               }
             ]
           },
