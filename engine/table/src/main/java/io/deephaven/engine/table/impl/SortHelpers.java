@@ -13,6 +13,7 @@ import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.context.PoisonedOperationInitializer;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSequenceFactory;
@@ -1100,11 +1101,24 @@ public class SortHelpers {
         if (minimumSize <= 0 || sortSize < minimumSize) {
             return 1;
         }
-        final OperationInitializer operationInitializer = ExecutionContext.getContext().getOperationInitializer();
-        if (!operationInitializer.canParallelize()) {
+        final OperationInitializer operationInitializer = parallelizableOperationInitializer();
+        if (operationInitializer == null) {
             return 1;
         }
         return Math.min(sortSize, Math.max(1, operationInitializer.parallelismFactor()));
+    }
+
+    /**
+     * The current context's operation initializer if it may be used to parallelize a sort, otherwise null. Update graph
+     * refresh threads have the poisoned ExecutionContext, whose operation initializer throws rather than answering
+     * {@link OperationInitializer#canParallelize()}; a sort listener running there sorts serially.
+     */
+    private static OperationInitializer parallelizableOperationInitializer() {
+        final OperationInitializer operationInitializer = ExecutionContext.getContext().getOperationInitializer();
+        if (operationInitializer instanceof PoisonedOperationInitializer || !operationInitializer.canParallelize()) {
+            return null;
+        }
+        return operationInitializer;
     }
 
     /**
@@ -1118,8 +1132,8 @@ public class SortHelpers {
         if (minimumSize <= 0 || sortSize < minimumSize) {
             return 1;
         }
-        final OperationInitializer operationInitializer = ExecutionContext.getContext().getOperationInitializer();
-        if (!operationInitializer.canParallelize()) {
+        final OperationInitializer operationInitializer = parallelizableOperationInitializer();
+        if (operationInitializer == null) {
             return 1;
         }
         final long segmentSize = Math.max(1, parallelSortSegmentSize);

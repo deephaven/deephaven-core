@@ -197,8 +197,54 @@ public class MultiColumnTimsortKernelFactory {
         return true;
     }
 
+    /**
+     * Resolve — compiling on demand if necessary — the kernel that {@link #makeContext} would use for the given shape,
+     * without creating a context. Sort operations call this when they are constructed, on a thread whose
+     * ExecutionContext has a QueryCompiler, so that later sorts on update graph threads (whose contexts cannot compile)
+     * find the kernel already cached.
+     */
+    public static void prepareKernel(final ChunkType[] chunkTypes, final SortingOrder[] order,
+            final Comparator[] comparators) {
+        if (!hasKernel(chunkTypes, comparators) || chunkTypes.length == 1) {
+            // unsupported shapes use the single-column kernels, and the single-column indirect kernels are
+            // pregenerated
+            return;
+        }
+        ensureCompiled(chunkTypes, order, comparators);
+    }
+
     private static <PERMUTE_VALUES_ATTR extends Any> MultiColumnSortKernel<PERMUTE_VALUES_ATTR> makeCompiledContext(
             final ChunkType[] chunkTypes, final SortingOrder[] order, final Comparator[] comparators, final int size) {
+        final Method createContext = ensureCompiled(chunkTypes, order, comparators);
+        boolean anyComparator = false;
+        for (int ii = 0; ii < comparators.length; ++ii) {
+            anyComparator |= comparators[ii] != null;
+        }
+        try {
+            if (!anyComparator) {
+                // noinspection unchecked
+                return (MultiColumnSortKernel<PERMUTE_VALUES_ATTR>) createContext.invoke(null, size);
+            }
+            // the generated comparison is always in the ascending sense for comparator columns; descending
+            // comparator columns are handled by reversing the comparator
+            final Comparator[] adjustedComparators = new Comparator[comparators.length];
+            for (int ii = 0; ii < comparators.length; ++ii) {
+                if (comparators[ii] != null) {
+                    adjustedComparators[ii] =
+                            order[ii] == SortingOrder.Ascending ? comparators[ii] : comparators[ii].reversed();
+                }
+            }
+            // noinspection unchecked
+            return (MultiColumnSortKernel<PERMUTE_VALUES_ATTR>) createContext.invoke(null, size,
+                    (Object) adjustedComparators);
+        } catch (IllegalAccessException | InvocationTargetException e) {
+            throw new UncheckedDeephavenException(
+                    "Could not create compiled sort kernel context " + createContext.getDeclaringClass().getName(), e);
+        }
+    }
+
+    private static Method ensureCompiled(
+            final ChunkType[] chunkTypes, final SortingOrder[] order, final Comparator[] comparators) {
         final boolean[] hasComparator = new boolean[comparators.length];
         boolean foundComparator = false;
         for (int ii = 0; ii < comparators.length; ++ii) {
@@ -208,7 +254,7 @@ public class MultiColumnTimsortKernelFactory {
         final boolean anyComparator = foundComparator;
 
         final String className = kernelName(chunkTypes, order, hasComparator);
-        final Method createContext = COMPILED_KERNELS.computeIfAbsent(className, name -> {
+        return COMPILED_KERNELS.computeIfAbsent(className, name -> {
             final JavaFile javaFile = JavaFile
                     .builder(PACKAGE, generateKernelType(chunkTypes, order, hasComparator, PACKAGE)).indent("    ")
                     .build();
@@ -230,26 +276,6 @@ public class MultiColumnTimsortKernelFactory {
                 throw new UncheckedDeephavenException("Compiled kernel " + name + " has no createContext method", e);
             }
         });
-        try {
-            if (!anyComparator) {
-                // noinspection unchecked
-                return (MultiColumnSortKernel<PERMUTE_VALUES_ATTR>) createContext.invoke(null, size);
-            }
-            // the generated comparison is always in the ascending sense for comparator columns; descending
-            // comparator columns are handled by reversing the comparator
-            final Comparator[] adjustedComparators = new Comparator[comparators.length];
-            for (int ii = 0; ii < comparators.length; ++ii) {
-                if (comparators[ii] != null) {
-                    adjustedComparators[ii] =
-                            order[ii] == SortingOrder.Ascending ? comparators[ii] : comparators[ii].reversed();
-                }
-            }
-            // noinspection unchecked
-            return (MultiColumnSortKernel<PERMUTE_VALUES_ATTR>) createContext.invoke(null, size,
-                    (Object) adjustedComparators);
-        } catch (IllegalAccessException | InvocationTargetException e) {
-            throw new UncheckedDeephavenException("Could not create compiled sort kernel context " + className, e);
-        }
     }
 
     /**
