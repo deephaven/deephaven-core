@@ -3,8 +3,12 @@
 //
 package io.deephaven.engine.bench;
 
+import io.deephaven.base.FileUtils;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.SortHelpers;
+import io.deephaven.parquet.table.ParquetInstructions;
+import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -21,6 +25,8 @@ import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.annotations.Warmup;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
@@ -62,15 +68,30 @@ public class MultiColumnSortBenchmark {
     @Param({"pipeline", "kernel"})
     private String kernelMode;
 
+    /** The minimum sort size for parallelization; zero disables parallel sorting. */
+    @Param({"0", "1048576"})
+    private long parallelMinSize;
+
+    /**
+     * Where the sorted table lives: in memory, read back from parquet (steady state, so the region caches are warm
+     * after warmup), or read back from parquet with the table reopened every iteration so that the Java-side page
+     * caches are cold and the fills perform real page decodes.
+     */
+    @Param({"memory", "parquet", "parquet-cold"})
+    private String storage;
+
     private EngineCleanup engine;
     private Table input;
     private String[] sortColumns;
+    private Path parquetDirectory;
+    private String parquetFile;
 
     @Setup(Level.Trial)
     public void setup() throws Exception {
         engine = new EngineCleanup();
         engine.setUp();
         QueryTable.USE_GENERATED_SORT_KERNELS = "kernel".equals(kernelMode);
+        SortHelpers.parallelSortMinimumSize = parallelMinSize;
         sortColumns = sortCols.split(",");
 
         final Random random = new Random(0xDEADBEEF);
@@ -105,6 +126,21 @@ public class MultiColumnSortBenchmark {
                 intCol("I1", i1),
                 longCol("L1", l1),
                 doubleCol("D1", d1));
+
+        if (storage.startsWith("parquet")) {
+            parquetDirectory = Files.createTempDirectory("MultiColumnSortBenchmark");
+            parquetFile = parquetDirectory.resolve("input.parquet").toString();
+            ParquetTools.writeTable(input, parquetFile, ParquetInstructions.EMPTY);
+            input = ParquetTools.readTable(parquetFile);
+        }
+    }
+
+    @Setup(Level.Iteration)
+    public void setupIteration() {
+        if ("parquet-cold".equals(storage)) {
+            // a fresh table instance makes fresh column regions, so the page caches start cold
+            input = ParquetTools.readTable(parquetFile);
+        }
     }
 
     @TearDown(Level.Trial)
@@ -112,6 +148,10 @@ public class MultiColumnSortBenchmark {
         input = null;
         engine.tearDown();
         engine = null;
+        if (parquetDirectory != null) {
+            FileUtils.deleteRecursively(parquetDirectory.toFile());
+            parquetDirectory = null;
+        }
     }
 
     @Benchmark

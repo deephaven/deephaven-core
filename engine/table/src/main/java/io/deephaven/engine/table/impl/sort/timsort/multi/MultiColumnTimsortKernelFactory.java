@@ -166,22 +166,35 @@ public class MultiColumnTimsortKernelFactory {
      */
     public static <PERMUTE_VALUES_ATTR extends Any> MultiColumnSortKernel<PERMUTE_VALUES_ATTR> makeContext(
             final ChunkType[] chunkTypes, final SortingOrder[] order, final Comparator[] comparators, final int size) {
+        if (!hasKernel(chunkTypes, comparators)) {
+            return null;
+        }
+        if (chunkTypes.length == 1) {
+            return IndirectTimsortDispatcher.makeContext(chunkTypes, order, size);
+        }
+        return makeCompiledContext(chunkTypes, order, comparators, size);
+    }
+
+    /**
+     * Whether {@link #makeContext} provides a kernel for the given column chunk types and comparators; callers use the
+     * existing single-column kernels when it does not. This is the same policy makeContext applies, without creating a
+     * context: single-column sorts of primitive types and single-column comparator sorts are declined, as are boolean
+     * chunks.
+     */
+    public static boolean hasKernel(final ChunkType[] chunkTypes, final Comparator[] comparators) {
         for (int ii = 0; ii < chunkTypes.length; ++ii) {
             if (ColumnType.forChunkType(chunkTypes[ii]) == null) {
-                return null;
+                return false;
             }
             Assert.assertion(comparators[ii] == null || chunkTypes[ii] == ChunkType.Object,
                     "comparators[ii] == null || chunkTypes[ii] == ChunkType.Object");
         }
         if (chunkTypes.length == 1) {
-            if (chunkTypes[0] != ChunkType.Object || comparators[0] != null) {
-                // the direct single-column kernels beat indirection for primitive columns, and single-column
-                // comparator sorts use ComparatorLongTimsortKernel
-                return null;
-            }
-            return IndirectTimsortDispatcher.makeContext(chunkTypes, order, size);
+            // the direct single-column kernels beat indirection for primitive columns, and single-column
+            // comparator sorts use ComparatorLongTimsortKernel
+            return chunkTypes[0] == ChunkType.Object && comparators[0] == null;
         }
-        return makeCompiledContext(chunkTypes, order, comparators, size);
+        return true;
     }
 
     private static <PERMUTE_VALUES_ATTR extends Any> MultiColumnSortKernel<PERMUTE_VALUES_ATTR> makeCompiledContext(
@@ -419,6 +432,28 @@ public class MultiColumnTimsortKernelFactory {
             return builder.build();
         }
 
+        /** The arguments that unpack the values array into the kernel's typed chunk parameters. */
+        private String valuesArrayArgs(final List<Object> formatArgs) {
+            final StringBuilder builder = new StringBuilder();
+            for (int k = 0; k < n; ++k) {
+                if (k > 0) {
+                    builder.append(", ");
+                }
+                if (column(k).isObject) {
+                    builder.append("valuesToSort[").append(k).append("].<$T>").append(column(k).asChunkMethod())
+                            .append("()");
+                    formatArgs.add(ClassName.OBJECT);
+                } else {
+                    builder.append("valuesToSort[").append(k).append("].").append(column(k).asChunkMethod())
+                            .append("()");
+                }
+            }
+            return builder.toString();
+        }
+
+        private static final TypeName VALUES_ARRAY =
+                ArrayTypeName.of(ParameterizedTypeName.get(WRITABLE_CHUNK, WildcardTypeName.subtypeOf(ANY)));
+
         private TypeSpec emitContext() {
             final TypeSpec.Builder context = TypeSpec.classBuilder(contextClass.simpleName())
                     .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
@@ -427,16 +462,18 @@ public class MultiColumnTimsortKernelFactory {
 
             context.addField(int.class, "minGallop");
             context.addField(FieldSpec.builder(int.class, "runCount").initializer("0").build());
+            context.addField(FieldSpec.builder(int.class, "size", Modifier.PRIVATE, Modifier.FINAL).build());
             context.addField(int[].class, "runStarts", Modifier.PRIVATE, Modifier.FINAL);
             context.addField(int[].class, "runLengths", Modifier.PRIVATE, Modifier.FINAL);
-            context.addField(FieldSpec.builder(writablePositions, "positions", Modifier.PRIVATE, Modifier.FINAL)
-                    .build());
             context.addField(
                     FieldSpec.builder(writablePositions, "temporaryPositions", Modifier.PRIVATE, Modifier.FINAL)
                             .build());
+            // the identity positions and the row-key gather buffer are only used by the whole-chunk sort bridge;
+            // contexts used as scratch by the parallel sort driver never allocate them
+            context.addField(FieldSpec.builder(writablePositions, "positions", Modifier.PRIVATE).build());
             context.addField(FieldSpec
                     .builder(ParameterizedTypeName.get(WRITABLE_LONG_CHUNK, permuteAttr), "temporaryKeys",
-                            Modifier.PRIVATE, Modifier.FINAL)
+                            Modifier.PRIVATE)
                     .build());
 
             for (int k = 0; k < n; ++k) {
@@ -459,57 +496,77 @@ public class MultiColumnTimsortKernelFactory {
                 }
             }
             constructor
-                    .addStatement("positions = $T.makeWritableChunk(size)", WRITABLE_INT_CHUNK)
+                    .addStatement("this.size = size")
                     .addStatement("temporaryPositions = $T.makeWritableChunk((size + 2) / 2)", WRITABLE_INT_CHUNK)
-                    .addStatement("temporaryKeys = $T.makeWritableChunk(size)", WRITABLE_LONG_CHUNK)
                     .addStatement("runStarts = new int[(size + 31) / 32]")
                     .addStatement("runLengths = new int[(size + 31) / 32]")
                     .addStatement("minGallop = $T.INITIAL_GALLOP", TIMSORT_UTILS);
             context.addMethod(constructor.build());
 
-            final StringBuilder sortFormat = new StringBuilder("$T.sort(this, positions");
             final List<Object> sortArgs = new ArrayList<>();
             sortArgs.add(kernelClass);
-            for (int k = 0; k < n; ++k) {
-                if (column(k).isObject) {
-                    sortFormat.append(", valuesToSort[").append(k).append("].<$T>").append(column(k).asChunkMethod())
-                            .append("()");
-                    sortArgs.add(ClassName.OBJECT);
-                } else {
-                    sortFormat.append(", valuesToSort[").append(k).append("].").append(column(k).asChunkMethod())
-                            .append("()");
-                }
-            }
-            sortFormat.append(")");
+            final String sortFormat = "$T.sort(this, positions, " + valuesArrayArgs(sortArgs) + ")";
             context.addMethod(MethodSpec.methodBuilder("sort")
                     .addAnnotation(Override.class)
                     .addModifiers(Modifier.PUBLIC)
                     .addParameter(ParameterizedTypeName.get(WRITABLE_LONG_CHUNK, permuteAttr), "valuesToPermute")
-                    .addParameter(
-                            ArrayTypeName.of(
-                                    ParameterizedTypeName.get(WRITABLE_CHUNK, WildcardTypeName.subtypeOf(ANY))),
-                            "valuesToSort")
-                    .addStatement("final int size = valuesToPermute.size()")
-                    .addStatement("positions.setSize(size)")
-                    .beginControlFlow("for (int ii = 0; ii < size; ++ii)")
+                    .addParameter(VALUES_ARRAY, "valuesToSort")
+                    .addStatement("final int sortSize = valuesToPermute.size()")
+                    .beginControlFlow("if (positions == null)")
+                    .addStatement("positions = $T.makeWritableChunk(size)", WRITABLE_INT_CHUNK)
+                    .addStatement("temporaryKeys = $T.makeWritableChunk(size)", WRITABLE_LONG_CHUNK)
+                    .endControlFlow()
+                    .addStatement("positions.setSize(sortSize)")
+                    .beginControlFlow("for (int ii = 0; ii < sortSize; ++ii)")
                     .addStatement("positions.set(ii, ii)")
                     .endControlFlow()
-                    .addStatement(sortFormat.toString(), sortArgs.toArray())
+                    .addStatement(sortFormat, sortArgs.toArray())
                     .addComment(
                             "assemble the permuted row keys in a single linear pass rather than permuting them during the sort")
-                    .addStatement("temporaryKeys.copyFromChunk(valuesToPermute, 0, 0, size)")
-                    .beginControlFlow("for (int ii = 0; ii < size; ++ii)")
+                    .addStatement("temporaryKeys.copyFromChunk(valuesToPermute, 0, 0, sortSize)")
+                    .beginControlFlow("for (int ii = 0; ii < sortSize; ++ii)")
                     .addStatement("valuesToPermute.set(ii, temporaryKeys.get(positions.get(ii)))")
                     .endControlFlow()
                     .build());
 
-            context.addMethod(MethodSpec.methodBuilder("close")
+            final List<Object> sortPositionsArgs = new ArrayList<>();
+            sortPositionsArgs.add(kernelClass);
+            final String sortPositionsFormat =
+                    "$T.timSort(this, positions, " + valuesArrayArgs(sortPositionsArgs) + ", offset, length)";
+            context.addMethod(MethodSpec.methodBuilder("sortPositions")
                     .addAnnotation(Override.class)
                     .addModifiers(Modifier.PUBLIC)
-                    .addStatement("positions.close()")
-                    .addStatement("temporaryPositions.close()")
-                    .addStatement("temporaryKeys.close()")
+                    .addParameter(writablePositions, "positions")
+                    .addParameter(VALUES_ARRAY, "valuesToSort")
+                    .addParameter(int.class, "offset")
+                    .addParameter(int.class, "length")
+                    .addStatement(sortPositionsFormat, sortPositionsArgs.toArray())
                     .build());
+
+            final List<Object> mergePositionsArgs = new ArrayList<>();
+            mergePositionsArgs.add(kernelClass);
+            final String mergePositionsFormat =
+                    "$T.merge(this, positions, " + valuesArrayArgs(mergePositionsArgs) + ", start1, length1, length2)";
+            context.addMethod(MethodSpec.methodBuilder("mergePositions")
+                    .addAnnotation(Override.class)
+                    .addModifiers(Modifier.PUBLIC)
+                    .addParameter(writablePositions, "positions")
+                    .addParameter(VALUES_ARRAY, "valuesToSort")
+                    .addParameter(int.class, "start1")
+                    .addParameter(int.class, "length1")
+                    .addParameter(int.class, "length2")
+                    .addStatement(mergePositionsFormat, mergePositionsArgs.toArray())
+                    .build());
+
+            final MethodSpec.Builder close = MethodSpec.methodBuilder("close")
+                    .addAnnotation(Override.class)
+                    .addModifiers(Modifier.PUBLIC)
+                    .addStatement("temporaryPositions.close()")
+                    .beginControlFlow("if (positions != null)")
+                    .addStatement("positions.close()")
+                    .addStatement("temporaryKeys.close()")
+                    .endControlFlow();
+            context.addMethod(close.build());
             return context.build();
         }
 

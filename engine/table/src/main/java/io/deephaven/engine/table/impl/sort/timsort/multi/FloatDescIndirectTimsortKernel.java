@@ -462,20 +462,21 @@ public final class FloatDescIndirectTimsortKernel {
 
         int runCount = 0;
 
+        private final int size;
+
         private final int[] runStarts;
 
         private final int[] runLengths;
 
-        private final WritableIntChunk<ChunkPositions> positions;
-
         private final WritableIntChunk<ChunkPositions> temporaryPositions;
 
-        private final WritableLongChunk<PERMUTE_VALUES_ATTR> temporaryKeys;
+        private WritableIntChunk<ChunkPositions> positions;
+
+        private WritableLongChunk<PERMUTE_VALUES_ATTR> temporaryKeys;
 
         private FloatDescIndirectSortKernelContext(int size) {
-            positions = WritableIntChunk.makeWritableChunk(size);
+            this.size = size;
             temporaryPositions = WritableIntChunk.makeWritableChunk((size + 2) / 2);
-            temporaryKeys = WritableLongChunk.makeWritableChunk(size);
             runStarts = new int[(size + 31) / 32];
             runLengths = new int[(size + 31) / 32];
             minGallop = TimsortUtils.INITIAL_GALLOP;
@@ -484,24 +485,42 @@ public final class FloatDescIndirectTimsortKernel {
         @Override
         public void sort(WritableLongChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
                 WritableChunk<? extends Any>[] valuesToSort) {
-            final int size = valuesToPermute.size();
-            positions.setSize(size);
-            for (int ii = 0; ii < size; ++ii) {
+            final int sortSize = valuesToPermute.size();
+            if (positions == null) {
+                positions = WritableIntChunk.makeWritableChunk(size);
+                temporaryKeys = WritableLongChunk.makeWritableChunk(size);
+            }
+            positions.setSize(sortSize);
+            for (int ii = 0; ii < sortSize; ++ii) {
                 positions.set(ii, ii);
             }
             FloatDescIndirectTimsortKernel.sort(this, positions, valuesToSort[0].asFloatChunk());
             // assemble the permuted row keys in a single linear pass rather than permuting them during the sort
-            temporaryKeys.copyFromChunk(valuesToPermute, 0, 0, size);
-            for (int ii = 0; ii < size; ++ii) {
+            temporaryKeys.copyFromChunk(valuesToPermute, 0, 0, sortSize);
+            for (int ii = 0; ii < sortSize; ++ii) {
                 valuesToPermute.set(ii, temporaryKeys.get(positions.get(ii)));
             }
         }
 
         @Override
+        public void sortPositions(WritableIntChunk<ChunkPositions> positions,
+                WritableChunk<? extends Any>[] valuesToSort, int offset, int length) {
+            FloatDescIndirectTimsortKernel.timSort(this, positions, valuesToSort[0].asFloatChunk(), offset, length);
+        }
+
+        @Override
+        public void mergePositions(WritableIntChunk<ChunkPositions> positions,
+                WritableChunk<? extends Any>[] valuesToSort, int start1, int length1, int length2) {
+            FloatDescIndirectTimsortKernel.merge(this, positions, valuesToSort[0].asFloatChunk(), start1, length1, length2);
+        }
+
+        @Override
         public void close() {
-            positions.close();
             temporaryPositions.close();
-            temporaryKeys.close();
+            if (positions != null) {
+                positions.close();
+                temporaryKeys.close();
+            }
         }
     }
 }

@@ -6,8 +6,10 @@ package io.deephaven.engine.table.impl.sort.timsort;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.impl.ComparatorSortColumn;
 import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.SortHelpers;
 import io.deephaven.engine.table.impl.SortingOrder;
 import io.deephaven.engine.table.impl.sort.MultiColumnSortKernel;
 import io.deephaven.api.ColumnName;
@@ -227,6 +229,71 @@ public class TestMultiColumnSort {
                 checkSame(table, t -> t.sort(column));
                 checkSame(table, t -> t.sortDescending(column));
             }
+        }
+    }
+
+    private static void checkParallelSame(final Table table, final SortInvoker invoker) {
+        final long oldMinimum = SortHelpers.parallelSortMinimumSize;
+        final long oldSegment = SortHelpers.parallelSortSegmentSize;
+        final Table serial;
+        final Table parallel;
+        try {
+            SortHelpers.parallelSortMinimumSize = 0;
+            serial = invoker.sort(table);
+            SortHelpers.parallelSortMinimumSize = 1;
+            SortHelpers.parallelSortSegmentSize = 1;
+            parallel = invoker.sort(table);
+        } finally {
+            SortHelpers.parallelSortMinimumSize = oldMinimum;
+            SortHelpers.parallelSortSegmentSize = oldSegment;
+        }
+        assertTableEquals(serial, parallel);
+    }
+
+    @Test
+    public void testParallelSort() {
+        // the comparisons below are only meaningful if this environment can actually parallelize
+        TestCase.assertTrue(ExecutionContext.getContext().getOperationInitializer().canParallelize());
+
+        // a minimum size of one splits into parallelismFactor segments, exercising the full merge tree; the small
+        // sizes stress the single-element-segment and odd-segment-count edges of the tree
+        for (final int size : new int[] {2, 3, 23, 1000, 10000, 100_000}) {
+            final Table table = makeTable(new Random(8675309 + size), size);
+            checkParallelSame(table, t -> t.sort("ObjA"));
+            checkParallelSame(table, t -> t.sort("IntA"));
+            checkParallelSame(table, t -> t.sort("ObjA", "IntB"));
+            checkParallelSame(table, t -> t.sort("IntA", "LongB", "ObjB"));
+            checkParallelSame(table, t -> t.sortDescending("ObjA", "DoubleB"));
+            checkParallelSame(table, t -> ((QueryTable) t.coalesce()).sort(
+                    ComparatorSortColumn.asc("ObjA", Comparator.nullsFirst(Comparator.naturalOrder()), true),
+                    SortColumn.asc(ColumnName.of("IntB"))));
+        }
+
+        // exactly two segments: a 10,000 row table with 5,000 row segments
+        final long oldMinimum = SortHelpers.parallelSortMinimumSize;
+        final long oldSegment = SortHelpers.parallelSortSegmentSize;
+        try {
+            final Table table = makeTable(new Random(31415), 10000);
+            SortHelpers.parallelSortMinimumSize = 0;
+            final Table serial = table.sort("ObjA", "IntB");
+            SortHelpers.parallelSortMinimumSize = 1;
+            SortHelpers.parallelSortSegmentSize = 5000;
+            final Table twoSegments = table.sort("ObjA", "IntB");
+            assertTableEquals(serial, twoSegments);
+        } finally {
+            SortHelpers.parallelSortMinimumSize = oldMinimum;
+            SortHelpers.parallelSortSegmentSize = oldSegment;
+        }
+
+        // the one-column-at-a-time pipeline fills values through the same helper
+        final boolean oldFlag = QueryTable.USE_GENERATED_SORT_KERNELS;
+        try {
+            QueryTable.USE_GENERATED_SORT_KERNELS = false;
+            final Table table = makeTable(new Random(8675309), 10000);
+            checkParallelSame(table, t -> t.sort("ObjA", "IntB"));
+            checkParallelSame(table, t -> t.sort("IntA", "LongB", "ObjB"));
+        } finally {
+            QueryTable.USE_GENERATED_SORT_KERNELS = oldFlag;
         }
     }
 
