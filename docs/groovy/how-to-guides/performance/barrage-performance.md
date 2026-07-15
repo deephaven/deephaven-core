@@ -130,7 +130,7 @@ The following properties control other aspects of Barrage behavior:
 
 Use the metrics tables described above to diagnose common Barrage issues.
 
-### High SnapshotMillis
+### High `SnapshotMillis`
 
 If `SnapshotMillis` is consistently high:
 
@@ -138,7 +138,7 @@ If `SnapshotMillis` is consistently high:
 - The update graph may be holding a lock. Check for long-running operations blocking the cycle.
 - Consider enabling subscription growth with smaller chunk sizes (see [Control subscription snapshot size](#control-subscription-snapshot-size)).
 
-### High WriteMillis or WriteMegabits
+### High `WriteMillis` or `WriteMegabits`
 
 If `WriteMillis` is high or `WriteMegabits` is large:
 
@@ -146,7 +146,7 @@ If `WriteMillis` is high or `WriteMegabits` is large:
 - Consider subscribing to fewer columns or using viewports to reduce data volume.
 - Increase `barrage.minUpdateInterval` to batch more updates together.
 
-### High PropagateMillis
+### High `PropagateMillis`
 
 If `PropagateMillis` is consistently high:
 

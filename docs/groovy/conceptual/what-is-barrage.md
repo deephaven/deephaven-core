@@ -66,7 +66,7 @@ See [Capture Python client tables](../how-to-guides/capture-tables.md) for compl
 
 ### Viewports
 
-A viewport defines a window over a table—a range of row positions and a subset of columns. Viewports are essential for interactive applications where users scroll through large tables. Rather than streaming millions of rows, the server sends only the data visible in the current view.
+A viewport defines a window over a table — a range of row positions and a subset of columns. Viewports are essential for interactive applications where users scroll through large tables. Rather than streaming millions of rows, the server sends only the data visible in the current view.
 
 Viewports are automatically managed by Deephaven's web UI and JavaScript client. When a user scrolls or resizes a table view, the client updates its viewport subscription accordingly.
 
@@ -87,12 +87,12 @@ A shorter interval reduces latency but increases network traffic. A longer inter
 
 ![Barrage architecture](../assets/conceptual/remote_and_local_server.png)
 
-1. **Remote server** hosts a table referenced by a ticket — the ticket is just a reference, not the data itself. Tickets can be scope tickets (variables in the global scope), export tickets, or shared tickets for cross-session access
-2. **Barrage protocol** transports the actual data using Arrow Flight with incremental update metadata
-3. **Local server** subscribes via `BarrageSession` and receives a full local copy of the data that stays synchronized with the source. This local table can participate in downstream queries (joins, filters, aggregations) that execute on the local server
+1. **Remote server** hosts a table referenced by a ticket — the ticket is just a reference, not the data itself. Tickets can be scope tickets (variables in the global scope), export tickets, or shared tickets for cross-session access.
+2. **Barrage protocol** transports the actual data using Arrow Flight with incremental update metadata.
+3. **Local server** subscribes via `BarrageSession` and receives a full local copy of the data that stays synchronized with the source. This local table can participate in downstream queries (joins, filters, aggregations) that execute on the local server.
 
 > [!NOTE]
-> Java and Groovy clients are unique among Deephaven clients — they can perform downstream computation locally because they run the full Deephaven engine. Other clients (Python via pydeephaven, JavaScript, C++) receive data but rely on the server for query execution.
+> Java and Groovy clients are unique among Deephaven clients — they can perform downstream computation locally because they run the full Deephaven engine. Other clients (JavaScript, C++, Python) receive data but rely on the server for query execution.
 
 ## Barrage vs. Arrow Flight
 
@@ -105,7 +105,7 @@ A shorter interval reduces latency but increases network traffic. A longer inter
 | Update batching          | ❌ N/A                | ✅ Configurable       |
 | Row shifts/modifications | ❌ N/A                | ✅ Efficient encoding |
 
-Barrage is fully compatible with Arrow Flight—you can use a standard Flight client to fetch static snapshots via `DoGet`. The incremental update features require a Barrage-aware client.
+Barrage is fully compatible with Arrow Flight — you can use a standard Flight client to fetch static snapshots via `DoGet`. The incremental update features require a Barrage-aware client.
 
 ## Performance considerations
 
