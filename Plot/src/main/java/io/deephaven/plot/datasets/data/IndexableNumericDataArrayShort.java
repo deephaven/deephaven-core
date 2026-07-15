@@ -37,7 +37,7 @@ public class IndexableNumericDataArrayShort extends IndexableNumericData {
 
     @Override
     public double get(int i) {
-        if (i >= data.length) {
+        if (data.length <= i) {
             return Double.NaN;
         }
         return data[i] == NULL_SHORT ? Double.NaN : data[i];
