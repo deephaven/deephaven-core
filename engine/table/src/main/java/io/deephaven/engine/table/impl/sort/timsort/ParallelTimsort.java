@@ -1,7 +1,7 @@
 //
 // Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
-package io.deephaven.engine.table.impl.sort.timsort.multi;
+package io.deephaven.engine.table.impl.sort.timsort;
 
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.chunk.WritableChunk;
@@ -11,6 +11,7 @@ import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.impl.SortHelpers;
+import io.deephaven.engine.table.impl.sort.LongSortKernel;
 import io.deephaven.engine.table.impl.sort.MultiColumnSortKernel;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.table.impl.util.OperationInitializerJobScheduler;
@@ -21,22 +22,34 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
 import java.util.function.IntFunction;
 
 /**
- * Sorts the positions of a set of parallel value chunks using several tasks: the positions chunk is split into segments
- * that are sorted independently, and adjacent sorted runs are merged pairwise (each merge submitted as soon as both of
- * its inputs are complete) until a single sorted run remains. The permuted row keys are then assembled in a parallel
- * linear pass, one segment per task.
+ * Sorts chunks with several tasks: the data is split into segments that are sorted independently, and adjacent sorted
+ * runs are merged pairwise (each merge submitted as soon as both of its inputs are complete) until a single sorted run
+ * remains.
  *
  * <p>
- * Each task creates its own {@link MultiColumnSortKernel} context, sized to the range it sorts or merges; the contexts
- * only allocate scratch space (the whole-chunk buffers of a context are lazily allocated by the serial entry point,
- * which the driver never calls). The calling thread blocks until the sort is complete.
+ * {@link #sortDirect} sorts a values chunk and its parallel permutation chunk in place with the direct
+ * {@link LongSortKernel} kernels. {@link #sortIndirect} sorts with a {@link MultiColumnSortKernel}, permuting only a
+ * positions chunk and assembling the permuted row keys in a parallel linear pass at the end.
+ *
+ * <p>
+ * Each task creates its own kernel context, sized to the range it sorts or merges. The calling thread blocks until the
+ * sort is complete.
  */
-public class ParallelIndirectSort {
-    private ParallelIndirectSort() {}
+public class ParallelTimsort {
+    private ParallelTimsort() {}
+
+    /** Sorts a segment of the data on a task thread, creating (and closing) its own kernel context. */
+    private interface SegmentSorter {
+        void sortSegment(int start, int length);
+    }
+
+    /** Merges two adjacent sorted runs on a task thread, creating (and closing) its own kernel context. */
+    private interface RunMerger {
+        void mergeRuns(int start1, int length1, int length2);
+    }
 
     /** A node of the merge tree: a leaf sorts its range; an internal node merges its children's sorted runs. */
     private static final class MergeNode {
@@ -59,66 +72,109 @@ public class ParallelIndirectSort {
     }
 
     /**
+     * Sort the values chunk in place with the direct sort kernels, permuting the valuesToPermute chunk in the same way,
+     * using the given number of parallel segments.
+     *
+     * @param contextFactory creates a sort kernel context for a task, given the size of the range it operates on
+     * @param valuesToPermute the values (typically row keys) permuted alongside the sorted values
+     * @param valuesToSort the values to sort
+     * @param segments the number of segments to sort independently; must be at least two
+     */
+    public static <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void sortDirect(
+            final IntFunction<LongSortKernel<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR>> contextFactory,
+            final WritableLongChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
+            final WritableChunk<SORT_VALUES_ATTR> valuesToSort,
+            final int segments) {
+        sortTree(valuesToPermute.size(), segments,
+                (start, length) -> {
+                    try (final LongSortKernel<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context =
+                            contextFactory.apply(length)) {
+                        context.sort(valuesToPermute, valuesToSort, start, length);
+                    }
+                },
+                (start1, length1, length2) -> {
+                    try (final LongSortKernel<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context =
+                            contextFactory.apply(length1 + length2)) {
+                        context.merge(valuesToPermute, valuesToSort, start1, length1, length2);
+                    }
+                });
+    }
+
+    /**
      * Sort the values in the valuesToSort chunks (comparing each column in turn), permuting the valuesToPermute chunk
-     * in the same way, using the given number of parallel segments.
+     * in the same way, using the given number of parallel segments. Only a positions chunk moves during the sort; the
+     * permuted row keys are assembled in a parallel linear pass at the end.
      *
      * @param contextFactory creates a sort kernel context for a task, given the size of the range it operates on
      * @param valuesToPermute the row keys permuted alongside the sort key columns
      * @param valuesToSort one chunk per sort key column
      * @param segments the number of segments to sort independently; must be at least two
      */
-    public static <PERMUTE_VALUES_ATTR extends Any> void sort(
+    public static <PERMUTE_VALUES_ATTR extends Any> void sortIndirect(
             final IntFunction<MultiColumnSortKernel<PERMUTE_VALUES_ATTR>> contextFactory,
             final WritableLongChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
             final WritableChunk<? extends Any>[] valuesToSort,
             final int segments) {
         final int size = valuesToPermute.size();
+        try (final WritableIntChunk<ChunkPositions> positions = WritableIntChunk.makeWritableChunk(size)) {
+            positions.setSize(size);
+            sortTree(size, segments,
+                    (start, length) -> {
+                        try (final MultiColumnSortKernel<PERMUTE_VALUES_ATTR> context =
+                                contextFactory.apply(length)) {
+                            for (int ii = start; ii < start + length; ++ii) {
+                                positions.set(ii, ii);
+                            }
+                            context.sortPositions(positions, valuesToSort, start, length);
+                        }
+                    },
+                    (start1, length1, length2) -> {
+                        try (final MultiColumnSortKernel<PERMUTE_VALUES_ATTR> context =
+                                contextFactory.apply(length1 + length2)) {
+                            context.mergePositions(positions, valuesToSort, start1, length1, length2);
+                        }
+                    });
+            gatherRowKeysParallel(valuesToPermute, positions, size, segments);
+        }
+    }
+
+    /**
+     * Run the segment sorts and the pairwise merge tree over them, blocking until the root merge is complete.
+     */
+    private static void sortTree(final int size, final int segments, final SegmentSorter segmentSorter,
+            final RunMerger runMerger) {
         final int segmentSize = (size + segments - 1) / segments;
 
         final ExecutionContext executionContext = ExecutionContext.getContext();
         final JobScheduler jobScheduler = new OperationInitializerJobScheduler();
         final CompletableFuture<Void> waitForSort = new CompletableFuture<>();
-        final Consumer<Exception> onError = waitForSort::completeExceptionally;
 
-        try (final WritableIntChunk<ChunkPositions> positions = WritableIntChunk.makeWritableChunk(size)) {
-            positions.setSize(size);
+        // build the merge tree over the leaf segments, pairing adjacent runs level by level; an odd node is carried
+        // up to the next level unmerged
+        final List<MergeNode> leaves = buildMergeTree(size, segments, segmentSize);
 
-            // build the merge tree over the leaf segments, pairing adjacent runs level by level; an odd node is
-            // carried up to the next level unmerged
-            final List<MergeNode> leaves = buildMergeTree(size, segments, segmentSize);
+        for (final MergeNode leaf : leaves) {
+            jobScheduler.submit(
+                    executionContext,
+                    () -> {
+                        if (waitForSort.isDone()) {
+                            return; // a sibling task already failed
+                        }
+                        segmentSorter.sortSegment(leaf.start, leaf.totalLength);
+                        completeNode(leaf, runMerger, jobScheduler, executionContext, waitForSort);
+                    },
+                    logOutput -> logOutput.append("ParallelTimsort.segmentSort"),
+                    waitForSort::completeExceptionally);
+        }
 
-            for (final MergeNode leaf : leaves) {
-                jobScheduler.submit(
-                        executionContext,
-                        () -> {
-                            if (waitForSort.isDone()) {
-                                return; // a sibling task already failed
-                            }
-                            try (final MultiColumnSortKernel<PERMUTE_VALUES_ATTR> context =
-                                    contextFactory.apply(leaf.totalLength)) {
-                                for (int ii = leaf.start; ii < leaf.start + leaf.totalLength; ++ii) {
-                                    positions.set(ii, ii);
-                                }
-                                context.sortPositions(positions, valuesToSort, leaf.start, leaf.totalLength);
-                            }
-                            completeNode(leaf, positions, valuesToSort, contextFactory, jobScheduler,
-                                    executionContext, waitForSort, onError);
-                        },
-                        logOutput -> logOutput.append("ParallelIndirectSort.segmentSort"),
-                        onError);
-            }
-
-            try {
-                waitForSort.get();
-            } catch (final InterruptedException e) {
-                throw new CancellationException("Interrupted during parallel sort");
-            } catch (final ExecutionException e) {
-                throw new UncheckedDeephavenException("Exception during parallel sort", e.getCause());
-            } finally {
-                SortHelpers.accumulateSchedulerPerformance(jobScheduler);
-            }
-
-            gatherRowKeysParallel(valuesToPermute, positions, size, segments, executionContext);
+        try {
+            waitForSort.get();
+        } catch (final InterruptedException e) {
+            throw new CancellationException("Interrupted during parallel sort");
+        } catch (final ExecutionException e) {
+            throw new UncheckedDeephavenException("Exception during parallel sort", e.getCause());
+        } finally {
+            SortHelpers.accumulateSchedulerPerformance(jobScheduler);
         }
     }
 
@@ -149,15 +205,12 @@ public class ParallelIndirectSort {
         return leaves;
     }
 
-    private static <PERMUTE_VALUES_ATTR extends Any> void completeNode(
+    private static void completeNode(
             final MergeNode node,
-            final WritableIntChunk<ChunkPositions> positions,
-            final WritableChunk<? extends Any>[] valuesToSort,
-            final IntFunction<MultiColumnSortKernel<PERMUTE_VALUES_ATTR>> contextFactory,
+            final RunMerger runMerger,
             final JobScheduler jobScheduler,
             final ExecutionContext executionContext,
-            final CompletableFuture<Void> waitForSort,
-            final Consumer<Exception> onError) {
+            final CompletableFuture<Void> waitForSort) {
         final MergeNode parent = node.parent;
         if (parent == null) {
             waitForSort.complete(null);
@@ -172,16 +225,11 @@ public class ParallelIndirectSort {
                     if (waitForSort.isDone()) {
                         return; // a sibling task already failed
                     }
-                    try (final MultiColumnSortKernel<PERMUTE_VALUES_ATTR> context =
-                            contextFactory.apply(parent.totalLength)) {
-                        context.mergePositions(positions, valuesToSort, parent.start, parent.leftLength,
-                                parent.totalLength - parent.leftLength);
-                    }
-                    completeNode(parent, positions, valuesToSort, contextFactory, jobScheduler, executionContext,
-                            waitForSort, onError);
+                    runMerger.mergeRuns(parent.start, parent.leftLength, parent.totalLength - parent.leftLength);
+                    completeNode(parent, runMerger, jobScheduler, executionContext, waitForSort);
                 },
-                logOutput -> logOutput.append("ParallelIndirectSort.merge"),
-                onError);
+                logOutput -> logOutput.append("ParallelTimsort.merge"),
+                waitForSort::completeExceptionally);
     }
 
     /** Assemble the permuted row keys in a single linear pass, one segment per task. */
@@ -189,8 +237,7 @@ public class ParallelIndirectSort {
             final WritableLongChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
             final WritableIntChunk<ChunkPositions> positions,
             final int size,
-            final int segments,
-            final ExecutionContext executionContext) {
+            final int segments) {
         // the gather must not reuse the sorting scheduler: reading its accumulated performance waits for its jobs,
         // so it is consumed once, after the sort completes
         final JobScheduler jobScheduler = new OperationInitializerJobScheduler();
@@ -199,8 +246,8 @@ public class ParallelIndirectSort {
             originalKeys.copyFromChunk(valuesToPermute, 0, 0, size);
             final CompletableFuture<Void> waitForGather = new CompletableFuture<>();
             jobScheduler.iterateParallel(
-                    executionContext,
-                    logOutput -> logOutput.append("ParallelIndirectSort.gatherRowKeys"),
+                    ExecutionContext.getContext(),
+                    logOutput -> logOutput.append("ParallelTimsort.gatherRowKeys"),
                     JobScheduler.DEFAULT_CONTEXT_FACTORY,
                     0, segments,
                     (context, segment, nestedErrorConsumer) -> {

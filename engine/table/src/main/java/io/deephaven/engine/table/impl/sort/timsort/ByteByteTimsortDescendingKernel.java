@@ -568,6 +568,19 @@ public final class ByteByteTimsortDescendingKernel {
         }
 
         @Override
+        public void sort(WritableByteChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
+                WritableChunk<SORT_VALUES_ATTR> valuesToSort, int offset, int length) {
+            ByteByteTimsortDescendingKernel.this.timSort(this, valuesToPermute, valuesToSort.asWritableByteChunk(), offset, length);
+        }
+
+        @Override
+        public void merge(WritableByteChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
+                WritableChunk<SORT_VALUES_ATTR> valuesToSort, int start1, int length1,
+                int length2) {
+            ByteByteTimsortDescendingKernel.this.merge(this, valuesToPermute, valuesToSort.asWritableByteChunk(), start1, length1, length2);
+        }
+
+        @Override
         public void close() {
             temporaryKeys.close();
             temporaryValues.close();

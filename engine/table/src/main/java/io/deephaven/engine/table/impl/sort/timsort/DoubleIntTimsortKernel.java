@@ -568,6 +568,19 @@ public final class DoubleIntTimsortKernel {
         }
 
         @Override
+        public void sort(WritableIntChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
+                WritableChunk<SORT_VALUES_ATTR> valuesToSort, int offset, int length) {
+            DoubleIntTimsortKernel.this.timSort(this, valuesToPermute, valuesToSort.asWritableDoubleChunk(), offset, length);
+        }
+
+        @Override
+        public void merge(WritableIntChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
+                WritableChunk<SORT_VALUES_ATTR> valuesToSort, int start1, int length1,
+                int length2) {
+            DoubleIntTimsortKernel.this.merge(this, valuesToPermute, valuesToSort.asWritableDoubleChunk(), start1, length1, length2);
+        }
+
+        @Override
         public void close() {
             temporaryKeys.close();
             temporaryValues.close();

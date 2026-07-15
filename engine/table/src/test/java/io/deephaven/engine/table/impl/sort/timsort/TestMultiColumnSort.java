@@ -260,7 +260,13 @@ public class TestMultiColumnSort {
         for (final int size : new int[] {2, 3, 23, 1000, 10000, 100_000}) {
             final Table table = makeTable(new Random(8675309 + size), size);
             checkParallelSame(table, t -> t.sort("ObjA"));
+            // single-column sorts of every stripe run the direct kernels' segment sorts and merges
             checkParallelSame(table, t -> t.sort("IntA"));
+            checkParallelSame(table, t -> t.sortDescending("IntA"));
+            checkParallelSame(table, t -> t.sort("DoubleA"));
+            checkParallelSame(table, t -> t.sort("CharA"));
+            checkParallelSame(table, t -> ((QueryTable) t.coalesce()).sort(
+                    ComparatorSortColumn.asc("ObjA", Comparator.nullsFirst(Comparator.naturalOrder()), true)));
             checkParallelSame(table, t -> t.sort("ObjA", "IntB"));
             checkParallelSame(table, t -> t.sort("IntA", "LongB", "ObjB"));
             checkParallelSame(table, t -> t.sortDescending("ObjA", "DoubleB"));
@@ -290,6 +296,7 @@ public class TestMultiColumnSort {
         try {
             QueryTable.USE_GENERATED_SORT_KERNELS = false;
             final Table table = makeTable(new Random(8675309), 10000);
+            checkParallelSame(table, t -> t.sort("ObjA"));
             checkParallelSame(table, t -> t.sort("ObjA", "IntB"));
             checkParallelSame(table, t -> t.sort("IntA", "LongB", "ObjB"));
         } finally {

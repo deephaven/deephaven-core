@@ -31,8 +31,8 @@ import io.deephaven.engine.table.impl.sort.timsort.ComparatorLongTimsortKernel;
 import io.deephaven.engine.table.impl.sort.timsort.LongIntTimsortKernel;
 import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
+import io.deephaven.engine.table.impl.sort.timsort.ParallelTimsort;
 import io.deephaven.engine.table.impl.sort.timsort.multi.MultiColumnTimsortKernelFactory;
-import io.deephaven.engine.table.impl.sort.timsort.multi.ParallelIndirectSort;
 import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.table.impl.sources.regioned.SymbolTableSource;
 import io.deephaven.engine.table.impl.util.ContiguousWritableRowRedirection;
@@ -703,6 +703,16 @@ public class SortHelpers {
                 }
             }
 
+            final int sortSegments = parallelSortSegments(chunkSize);
+            if (sortSegments > 1 && values.getChunkType() != ChunkType.Boolean) {
+                // the direct kernels sort segments of the values and row keys in place, merging pairwise; the
+                // boolean radix kernel has no segment primitives (and radix sorts of three-valued data are cheap)
+                ParallelTimsort.sortDirect(
+                        taskSize -> getSortContext(columnSource, order, taskSize, comparator, false),
+                        rowKeys, values, sortSegments);
+                return rowKeysArray;
+            }
+
             try (final LongSortKernel<Values, RowKeys> sortContext =
                     getSortContext(columnSource, order, chunkSize, comparator, false)) {
                 sortContext.sort(rowKeys, values);
@@ -996,7 +1006,7 @@ public class SortHelpers {
             final int sortSize) {
         final int sortSegments = parallelSortSegments(sortSize);
         if (sortSegments > 1) {
-            ParallelIndirectSort.sort(
+            ParallelTimsort.sortIndirect(
                     taskSize -> MultiColumnTimsortKernelFactory.makeContext(chunkTypes, order, comparators, taskSize),
                     rowKeys, values, sortSegments);
             return;

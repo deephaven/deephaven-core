@@ -577,6 +577,28 @@ public class GenerateTimsortKernels {
                         .addStatement("$T.this.sort(this, valuesToPermute, valuesToSort.$L(), offsetsIn, lengthsIn)",
                                 kernelClass, keyChunks.asWritableChunkMethod())
                         .build());
+                context.addMethod(MethodSpec.methodBuilder("sort")
+                        .addAnnotation(Override.class)
+                        .addModifiers(Modifier.PUBLIC)
+                        .addParameter(writablePermuteChunkParam())
+                        .addParameter(ParameterizedTypeName.get(WRITABLE_CHUNK, sortAttr), "valuesToSort")
+                        .addParameter(int.class, "offset")
+                        .addParameter(int.class, "length")
+                        .addStatement("$T.this.timSort(this, valuesToPermute, valuesToSort.$L(), offset, length)",
+                                kernelClass, keyChunks.asWritableChunkMethod())
+                        .build());
+                context.addMethod(MethodSpec.methodBuilder("merge")
+                        .addAnnotation(Override.class)
+                        .addModifiers(Modifier.PUBLIC)
+                        .addParameter(writablePermuteChunkParam())
+                        .addParameter(ParameterizedTypeName.get(WRITABLE_CHUNK, sortAttr), "valuesToSort")
+                        .addParameter(int.class, "start1")
+                        .addParameter(int.class, "length1")
+                        .addParameter(int.class, "length2")
+                        .addStatement(
+                                "$T.this.merge(this, valuesToPermute, valuesToSort.$L(), start1, length1, length2)",
+                                kernelClass, keyChunks.asWritableChunkMethod())
+                        .build());
             } else {
                 context.addMethod(MethodSpec.methodBuilder("sort")
                         .addModifiers(Modifier.PUBLIC)
