@@ -8,8 +8,6 @@
 package io.deephaven.engine.table.impl.sort.timsort2.multi;
 
 import io.deephaven.chunk.IntChunk;
-import io.deephaven.chunk.LongChunk;
-import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.WritableLongChunk;
@@ -17,14 +15,12 @@ import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.engine.table.impl.sort.MultiColumnSortKernel;
 import io.deephaven.engine.table.impl.sort.timsort.TimsortUtils;
-import io.deephaven.util.compare.ObjectComparisons;
-import java.lang.Long;
-import java.lang.Object;
+import java.lang.Integer;
 import java.lang.Override;
 import java.lang.UnsupportedOperationException;
 
 /**
- * This implements a timsort kernel for a sort key (Long, Object) that never moves the column values:
+ * This implements a timsort kernel for a sort key (Int descending) that never moves the column values:
  * it permutes a parallel chunk of int positions, reading values through the positions for each
  * comparison (comparing each column in turn, only reading later columns on ties). The row keys are
  * not permuted during the sort either; they are assembled in a single linear pass at the end.
@@ -32,65 +28,54 @@ import java.lang.UnsupportedOperationException;
  * <a href="https://bugs.python.org/file4451/timsort.txt">bugs.python.org</a> and
  * <a href="https://en.wikipedia.org/wiki/Timsort">Wikipedia</a> do a decent job of describing the algorithm.
  */
-public final class LongObjectIndirectMultiColumnTimsortKernel {
-    private LongObjectIndirectMultiColumnTimsortKernel() {
+public final class IntDescIndirectTimsortKernel {
+    private IntDescIndirectTimsortKernel() {
         throw new UnsupportedOperationException();
     }
 
-    public static <PERMUTE_VALUES_ATTR extends Any> LongObjectIndirectMultiColumnSortKernelContext<PERMUTE_VALUES_ATTR> createContext(
+    public static <PERMUTE_VALUES_ATTR extends Any> IntDescIndirectSortKernelContext<PERMUTE_VALUES_ATTR> createContext(
             final int size) {
-        return new LongObjectIndirectMultiColumnSortKernelContext<>(size);
+        return new IntDescIndirectSortKernelContext<>(size);
     }
 
     /**
      * Sort the positions chunk such that the values it points to are ordered by this kernel's sort key,
      * comparing each column in turn; the value chunks themselves are not modified.
      */
-    public static void sort(LongObjectIndirectMultiColumnSortKernelContext<?> context,
-            WritableIntChunk<ChunkPositions> positions, LongChunk<?> valuesToSort0,
-            ObjectChunk<Object, ?> valuesToSort1) {
-        timSort(context, positions, valuesToSort0, valuesToSort1, 0, positions.size());
+    public static void sort(IntDescIndirectSortKernelContext<?> context,
+            WritableIntChunk<ChunkPositions> positions, IntChunk<?> valuesToSort0) {
+        timSort(context, positions, valuesToSort0, 0, positions.size());
     }
 
-    private static void timSort(LongObjectIndirectMultiColumnSortKernelContext<?> context,
-            WritableIntChunk<ChunkPositions> positions, LongChunk<?> valuesToSort0,
-            ObjectChunk<Object, ?> valuesToSort1, int offset, int length) {
+    private static void timSort(IntDescIndirectSortKernelContext<?> context,
+            WritableIntChunk<ChunkPositions> positions, IntChunk<?> valuesToSort0, int offset,
+            int length) {
         if (length <= 1) {
             return;
         }
-
         final int minRun = TimsortUtils.getRunLength(length);
-
         if (length <= minRun) {
-            insertionSort(positions, valuesToSort0, valuesToSort1, offset, length);
+            insertionSort(positions, valuesToSort0, offset, length);
             return;
         }
-
         context.runCount = 0;
-
         int startRun = offset;
         while (startRun < offset + length) {
             int currentPos = positions.get(startRun);
-
-            int endRun; // note that endrun is exclusive
+            // note that endrun is exclusive
+            int endRun;
             final boolean descending;
-
             if (startRun + 1 == offset + length) {
                 endRun = offset + length;
                 descending = false;
             } else {
                 int nextPos = positions.get(startRun + 1);
                 endRun = startRun + 2;
-                descending = compareColumns(valuesToSort0, valuesToSort1, currentPos, nextPos) > 0;
-
+                descending = gt(valuesToSort0, currentPos, nextPos);
                 if (!descending) {
                     // search for a non-descending run
                     currentPos = nextPos;
-                    while (endRun < length) {
-                        nextPos = positions.get(endRun);
-                        if (compareColumns(valuesToSort0, valuesToSort1, nextPos, currentPos) < 0) {
-                            break;
-                        }
+                    while (endRun < length && geq(valuesToSort0, nextPos = positions.get(endRun), currentPos)) {
                         currentPos = nextPos;
                         endRun++;
                     }
@@ -98,23 +83,18 @@ public final class LongObjectIndirectMultiColumnTimsortKernel {
                     // search for a strictly descending run; we can not have any equal values, or we will break the
                     // sort's stability guarantee
                     currentPos = nextPos;
-                    while (endRun < length) {
-                        nextPos = positions.get(endRun);
-                        if (compareColumns(valuesToSort0, valuesToSort1, nextPos, currentPos) >= 0) {
-                            break;
-                        }
+                    while (endRun < length && lt(valuesToSort0, nextPos = positions.get(endRun), currentPos)) {
                         currentPos = nextPos;
                         endRun++;
                     }
                 }
             }
-
             final int foundLength = endRun - startRun;
             context.runStarts[context.runCount] = startRun;
             if (foundLength < minRun) {
                 // increase the size of the run to the minimum run
                 final int actualLength = Math.min(minRun, length - (startRun - offset));
-                insertionSort(positions, valuesToSort0, valuesToSort1, startRun, actualLength);
+                insertionSort(positions, valuesToSort0, startRun, actualLength);
                 context.runLengths[context.runCount] = actualLength;
                 startRun += actualLength;
             } else {
@@ -128,60 +108,60 @@ public final class LongObjectIndirectMultiColumnTimsortKernel {
                 context.runLengths[context.runCount] = foundLength;
                 startRun = endRun;
             }
-
             context.runCount++;
-
             // check the invariants at the top of the stack
-            ensureMergeInvariants(context, positions, valuesToSort0, valuesToSort1);
+            ensureMergeInvariants(context, positions, valuesToSort0);
         }
-
         while (context.runCount > 1) {
             final int length2 = context.runLengths[context.runCount - 1];
             final int start1 = context.runStarts[context.runCount - 2];
             final int length1 = context.runLengths[context.runCount - 2];
-            merge(context, positions, valuesToSort0, valuesToSort1, start1, length1, length2);
+            merge(context, positions, valuesToSort0, start1, length1, length2);
             context.runStarts[context.runCount - 2] = start1;
             context.runLengths[context.runCount - 2] = length1 + length2;
             context.runCount--;
         }
     }
 
-    private static int doComparison0(long lhs, long rhs) {
-        return Long.compare(lhs, rhs);
-    }
-
-    private static int doComparison1(Object lhs, Object rhs) {
-        return ObjectComparisons.compare(lhs, rhs);
+    private static int doComparison0(int lhs, int rhs) {
+        return -1 * Integer.compare(lhs, rhs);
     }
 
     /**
      * Compares the elements at two positions, column by column; later columns are only read when all
      * earlier columns compare equal.
      */
-    private static int compareColumns(LongChunk<?> valuesToSort0,
-            ObjectChunk<Object, ?> valuesToSort1, int lhsPos, int rhsPos) {
+    private static int compareColumns(IntChunk<?> valuesToSort0, int lhsPos, int rhsPos) {
         final int cmp0 = doComparison0(valuesToSort0.get(lhsPos), valuesToSort0.get(rhsPos));
-        if (cmp0 != 0) {
-            return cmp0;
-        }
-        return doComparison1(valuesToSort1.get(lhsPos), valuesToSort1.get(rhsPos));
+        return cmp0;
     }
 
-    private static void ensureMergeInvariants(
-            LongObjectIndirectMultiColumnSortKernelContext<?> context,
-            WritableIntChunk<ChunkPositions> positions, LongChunk<?> valuesToSort0,
-            ObjectChunk<Object, ?> valuesToSort1) {
+    private static boolean gt(IntChunk<?> valuesToSort0, int lhsPos, int rhsPos) {
+        return compareColumns(valuesToSort0, lhsPos, rhsPos) > 0;
+    }
+
+    private static boolean lt(IntChunk<?> valuesToSort0, int lhsPos, int rhsPos) {
+        return compareColumns(valuesToSort0, lhsPos, rhsPos) < 0;
+    }
+
+    private static boolean geq(IntChunk<?> valuesToSort0, int lhsPos, int rhsPos) {
+        return compareColumns(valuesToSort0, lhsPos, rhsPos) >= 0;
+    }
+
+    private static boolean leq(IntChunk<?> valuesToSort0, int lhsPos, int rhsPos) {
+        return compareColumns(valuesToSort0, lhsPos, rhsPos) <= 0;
+    }
+
+    private static void ensureMergeInvariants(IntDescIndirectSortKernelContext<?> context,
+            WritableIntChunk<ChunkPositions> positions, IntChunk<?> valuesToSort0) {
         while (context.runCount > 1) {
             final int xIndex = context.runCount - 1;
             final int yIndex = context.runCount - 2;
             final int zIndex = context.runCount - 3;
-
             final int xLen = context.runLengths[xIndex];
             final int yLen = context.runLengths[yIndex];
             final int zLen = zIndex >= 0 ? context.runLengths[zIndex] : -1;
-
             final boolean xMerge;
-
             if (zLen >= 0 && (zLen <= yLen + xLen)) {
                 // we must merge the smaller of the two
                 xMerge = xLen < zLen;
@@ -191,20 +171,17 @@ public final class LongObjectIndirectMultiColumnTimsortKernel {
             } else {
                 break;
             }
-
             final int yStart = context.runStarts[yIndex];
             final int xStart = context.runStarts[xIndex];
             if (xMerge) {
                 // merge y and x
-                merge(context, positions, valuesToSort0, valuesToSort1, yStart, yLen, xLen);
-
+                merge(context, positions, valuesToSort0, yStart, yLen, xLen);
                 // unchanged: context.runStarts[yStart];
                 context.runLengths[yIndex] += xLen;
             } else {
                 // merge y and z
                 final int zStart = context.runStarts[zIndex];
-                merge(context, positions, valuesToSort0, valuesToSort1, zStart, zLen, yLen);
-
+                merge(context, positions, valuesToSort0, zStart, zLen, yLen);
                 // unchanged: context.runStarts[zIndex];
                 context.runLengths[zIndex] += yLen;
                 context.runStarts[yIndex] = xStart;
@@ -214,41 +191,36 @@ public final class LongObjectIndirectMultiColumnTimsortKernel {
         }
     }
 
-    private static void merge(LongObjectIndirectMultiColumnSortKernelContext<?> context,
-            WritableIntChunk<ChunkPositions> positions, LongChunk<?> valuesToSort0,
-            ObjectChunk<Object, ?> valuesToSort1, int start1, int length1, int length2) {
+    private static void merge(IntDescIndirectSortKernelContext<?> context,
+            WritableIntChunk<ChunkPositions> positions, IntChunk<?> valuesToSort0, int start1,
+            int length1, int length2) {
         // we know that we can never have zero length runs, because there is a minimum run size enforced; and at the
         // end of an input, we won't create a zero-length run. When we merge runs, they only become bigger, thus
         // they'll never be empty. I'm being cheap about function calls and control flow here.
-
         final int start2 = start1 + length1;
         // find the location of run2[0] in run1
         final int run2loPos = positions.get(start2);
-        final int mergeStartPosition = upperBound(positions, valuesToSort0, valuesToSort1, start1, start1 + length1, run2loPos);
-
+        final int mergeStartPosition = upperBound(positions, valuesToSort0, start1, start1 + length1, run2loPos);
         if (mergeStartPosition == start1 + length1) {
             // these two runs are sorted already
             return;
         }
-
         // find the location of run1[length1 - 1] in run2
         final int run1hiPos = positions.get(start1 + length1 - 1);
-        final int mergeEndPosition = lowerBound(positions, valuesToSort0, valuesToSort1, start2, start2 + length2, run1hiPos);
-
+        final int mergeEndPosition = lowerBound(positions, valuesToSort0, start2, start2 + length2, run1hiPos);
         // figure out which of the two runs is now shorter
         final int remaining1 = start1 + length1 - mergeStartPosition;
         final int remaining2 = mergeEndPosition - start2;
-
         if (remaining1 < remaining2) {
             copyToTemporary(context, positions, mergeStartPosition, remaining1);
             // now we need to do the merge from temporary and remaining2 into remaining1 (so start at the front,
             // because we've preserved all the values of run1
-            frontMerge(context, positions, valuesToSort0, valuesToSort1, mergeStartPosition, start2, remaining2);
+            frontMerge(context, positions, valuesToSort0, mergeStartPosition, start2, remaining2);
         } else {
             copyToTemporary(context, positions, start2, remaining2);
             // now we need to do the merge from temporary and remaining1 into the remaining two area (so start at the
             // back, because we've preserved all the values of run2)
-            backMerge(context, positions, valuesToSort0, valuesToSort1, mergeStartPosition, remaining1);
+            backMerge(context, positions, valuesToSort0, mergeStartPosition, remaining1);
         }
     }
 
@@ -258,96 +230,78 @@ public final class LongObjectIndirectMultiColumnTimsortKernel {
      * <p>
      * We eventually need to do galloping here, but are skipping that for now
      */
-    private static void frontMerge(LongObjectIndirectMultiColumnSortKernelContext<?> context,
-            WritableIntChunk<ChunkPositions> positions, LongChunk<?> valuesToSort0,
-            ObjectChunk<Object, ?> valuesToSort1, final int mergeStartPosition, final int start2,
-            final int length2) {
+    private static void frontMerge(IntDescIndirectSortKernelContext<?> context,
+            WritableIntChunk<ChunkPositions> positions, IntChunk<?> valuesToSort0,
+            final int mergeStartPosition, final int start2, final int length2) {
         int tempCursor = 0;
         int run2Cursor = start2;
-
         final int run1size = context.temporaryPositions.size();
         int ii;
         final int mergeEndExclusive = start2 + length2;
-
         int val1Pos = context.temporaryPositions.get(tempCursor);
         int val2Pos = positions.get(run2Cursor);
-
         ii = mergeStartPosition;
-
         nodataleft: while (ii < mergeEndExclusive) {
             int run1wins = 0;
             int run2wins = 0;
-
             if (context.minGallop < 2) {
                 context.minGallop = 2;
             }
-
             while (run1wins < context.minGallop && run2wins < context.minGallop) {
-                if (compareColumns(valuesToSort0, valuesToSort1, val1Pos, val2Pos) <= 0) {
+                if (leq(valuesToSort0, val1Pos, val2Pos)) {
                     positions.set(ii++, val1Pos);
-
                     if (++tempCursor == run1size) {
                         break nodataleft;
                     }
-
                     val1Pos = context.temporaryPositions.get(tempCursor);
                     run1wins++;
                     run2wins = 0;
                 } else {
                     positions.set(ii++, val2Pos);
-
                     if (++run2Cursor == mergeEndExclusive) {
                         break nodataleft;
                     }
                     val2Pos = positions.get(run2Cursor);
-
                     run2wins++;
                     run1wins = 0;
                 }
             }
-
             // we are in galloping mode now, if we had run out of data then we should have already bailed out to
             // nodataleft
             while (ii < mergeEndExclusive) {
                 // if we had a lot of things from run1, we take the next thing from run2 then find it in run1
-                final int copyUntil1 = upperBound(context.temporaryPositions, valuesToSort0, valuesToSort1, tempCursor, run1size, val2Pos);
+                final int copyUntil1 = upperBound(context.temporaryPositions, valuesToSort0, tempCursor, run1size, val2Pos);
                 final int gallopLength1 = copyUntil1 - tempCursor;
                 if (gallopLength1 > 0) {
                     copyToChunk(context.temporaryPositions, positions, tempCursor, ii, gallopLength1);
                     tempCursor += gallopLength1;
                     ii += gallopLength1;
-
                     if (tempCursor == run1size) {
                         break nodataleft;
                     }
                     val1Pos = context.temporaryPositions.get(tempCursor);
-
                     context.minGallop--;
                 }
-
                 // if we had a lot of things from run2, we take the next thing from run1 and then find it in run2
-                final int copyUntil2 = lowerBound(positions, valuesToSort0, valuesToSort1, run2Cursor, mergeEndExclusive, val1Pos);
+                final int copyUntil2 = lowerBound(positions, valuesToSort0, run2Cursor, mergeEndExclusive, val1Pos);
                 final int gallopLength2 = copyUntil2 - run2Cursor;
                 if (gallopLength2 > 0) {
                     copyToChunk(positions, positions, run2Cursor, ii, gallopLength2);
                     run2Cursor += gallopLength2;
                     ii += gallopLength2;
-
                     if (run2Cursor == mergeEndExclusive) {
                         break nodataleft;
                     }
                     val2Pos = positions.get(run2Cursor);
-
                     context.minGallop--;
                 }
-
                 if (gallopLength1 < TimsortUtils.INITIAL_GALLOP && gallopLength2 < TimsortUtils.INITIAL_GALLOP) {
-                    context.minGallop += 2; // undo the possible subtraction from above
+                    // undo the possible subtraction from above
+                    context.minGallop += 2;
                     break;
                 }
             }
         }
-
         while (tempCursor < run1size) {
             positions.set(ii, context.temporaryPositions.get(tempCursor));
             tempCursor++;
@@ -360,98 +314,79 @@ public final class LongObjectIndirectMultiColumnTimsortKernel {
      * <p>
      * We eventually need to do galloping here, but are skipping that for now
      */
-    private static void backMerge(LongObjectIndirectMultiColumnSortKernelContext<?> context,
-            WritableIntChunk<ChunkPositions> positions, LongChunk<?> valuesToSort0,
-            ObjectChunk<Object, ?> valuesToSort1, final int mergeStartPosition, final int length1) {
+    private static void backMerge(IntDescIndirectSortKernelContext<?> context,
+            WritableIntChunk<ChunkPositions> positions, IntChunk<?> valuesToSort0,
+            final int mergeStartPosition, final int length1) {
         final int run1End = mergeStartPosition + length1;
         int run1Cursor = run1End - 1;
         int tempCursor = context.temporaryPositions.size() - 1;
-
         final int mergeLength = context.temporaryPositions.size() + length1;
         int ii;
-
         int val1Pos = positions.get(run1Cursor);
         int val2Pos = context.temporaryPositions.get(tempCursor);
-
         final int mergeEnd = mergeStartPosition + mergeLength;
         ii = mergeEnd - 1;
-
         nodataleft: while (ii >= mergeStartPosition) {
             int run1wins = 0;
             int run2wins = 0;
-
             if (context.minGallop < 2) {
                 context.minGallop = 2;
             }
-
             while (run1wins < context.minGallop && run2wins < context.minGallop) {
-                if (compareColumns(valuesToSort0, valuesToSort1, val2Pos, val1Pos) >= 0) {
+                if (geq(valuesToSort0, val2Pos, val1Pos)) {
                     positions.set(ii--, val2Pos);
-
                     if (--tempCursor < 0) {
                         break nodataleft;
                     }
                     val2Pos = context.temporaryPositions.get(tempCursor);
-
                     run2wins++;
                     run1wins = 0;
                 } else {
                     positions.set(ii--, val1Pos);
-
                     if (--run1Cursor < mergeStartPosition) {
                         break nodataleft;
                     }
                     val1Pos = positions.get(run1Cursor);
-
                     run1wins++;
                     run2wins = 0;
                 }
             }
-
             // we are in galloping mode now, if we had run out of data then we should have already bailed out to
             // nodataleft
             while (ii >= mergeStartPosition) {
                 // if we had a lot of things from run2, we take the next thing from run1 then find it in run2
-                final int copyUntil2 = lowerBound(context.temporaryPositions, valuesToSort0, valuesToSort1, 0, tempCursor, val1Pos) + 1;
-
+                final int copyUntil2 = lowerBound(context.temporaryPositions, valuesToSort0, 0, tempCursor, val1Pos) + 1;
                 final int gallopLength2 = tempCursor - copyUntil2 + 1;
                 if (gallopLength2 > 0) {
                     copyToChunk(context.temporaryPositions, positions, copyUntil2, ii - gallopLength2 + 1, gallopLength2);
                     tempCursor -= gallopLength2;
                     ii -= gallopLength2;
-
                     if (tempCursor < 0) {
                         break nodataleft;
                     }
                     val2Pos = context.temporaryPositions.get(tempCursor);
-
                     context.minGallop--;
                 }
-
                 // if we had a lot of things from run1, we take the next thing from run2 and then find it in run1
-                final int copyUntil1 = upperBound(positions, valuesToSort0, valuesToSort1, mergeStartPosition, run1Cursor, val2Pos);
-
+                final int copyUntil1 = upperBound(positions, valuesToSort0, mergeStartPosition, run1Cursor, val2Pos);
                 final int gallopLength1 = run1Cursor - copyUntil1;
                 if (gallopLength1 > 0) {
                     copyToChunk(positions, positions, copyUntil1, ii - gallopLength1, gallopLength1 + 1);
                     run1Cursor -= gallopLength1;
                     ii -= gallopLength1;
-
                     if (run1Cursor < mergeStartPosition) {
                         break nodataleft;
                     }
                     val1Pos = positions.get(run1Cursor);
-
                     context.minGallop--;
                 }
-
                 if (gallopLength1 < TimsortUtils.INITIAL_GALLOP && gallopLength2 < TimsortUtils.INITIAL_GALLOP) {
-                    context.minGallop += 2; // undo the possible subtraction from above
+                    // undo the possible subtraction from above
+                    context.minGallop += 2;
                     break;
                 }
             }
         }
-
         while (tempCursor >= 0) {
             positions.set(ii, context.temporaryPositions.get(tempCursor));
             tempCursor--;
@@ -459,7 +394,7 @@ public final class LongObjectIndirectMultiColumnTimsortKernel {
         }
     }
 
-    private static void copyToTemporary(LongObjectIndirectMultiColumnSortKernelContext<?> context,
+    private static void copyToTemporary(IntDescIndirectSortKernelContext<?> context,
             IntChunk<ChunkPositions> positions, int mergeStartPosition, int remaining1) {
         context.temporaryPositions.setSize(remaining1);
         context.temporaryPositions.copyFromChunk(positions, mergeStartPosition, 0, remaining1);
@@ -471,32 +406,31 @@ public final class LongObjectIndirectMultiColumnTimsortKernel {
         positionsDest.copyFromChunk(positionsSource, sourceStart, destStart, length);
     }
 
-    private static int upperBound(IntChunk<ChunkPositions> positions, LongChunk<?> valuesToSort0,
-            ObjectChunk<Object, ?> valuesToSort1, int lo, int hi, int searchPos) {
+    private static int upperBound(IntChunk<ChunkPositions> positions, IntChunk<?> valuesToSort0,
+            int lo, int hi, int searchPos) {
         // when we binary search in 1, we must identify a position for search value that is *after* our test values;
         // because the values from run 2 may never be inserted before an equal value from run 1
         // 
         // lo is inclusive, hi is exclusive
         // 
         // returns the position of the first element that is > searchValue or hi if there is no such element
-        return bound(positions, valuesToSort0, valuesToSort1, lo, hi, searchPos, false);
+        return bound(positions, valuesToSort0, lo, hi, searchPos, false);
     }
 
-    private static int lowerBound(IntChunk<ChunkPositions> positions, LongChunk<?> valuesToSort0,
-            ObjectChunk<Object, ?> valuesToSort1, int lo, int hi, int searchPos) {
+    private static int lowerBound(IntChunk<ChunkPositions> positions, IntChunk<?> valuesToSort0,
+            int lo, int hi, int searchPos) {
         // when we binary search in 2, we must identify a position for search value that is *before* our test values;
         // because the values from run 1 may never be inserted after an equal value from run 2
-        return bound(positions, valuesToSort0, valuesToSort1, lo, hi, searchPos, true);
+        return bound(positions, valuesToSort0, lo, hi, searchPos, true);
     }
 
-    private static int bound(IntChunk<ChunkPositions> positions, LongChunk<?> valuesToSort0,
-            ObjectChunk<Object, ?> valuesToSort1, int lo, int hi, int searchPos,
-            final boolean lower) {
-        final int compareLimit = lower ? -1 : 0; // lt or leq
-
+    private static int bound(IntChunk<ChunkPositions> positions, IntChunk<?> valuesToSort0, int lo,
+            int hi, int searchPos, final boolean lower) {
+        // lt or leq
+        final int compareLimit = lower ? -1 : 0;
         while (lo < hi) {
             final int mid = (lo + hi) >>> 1;
-            final boolean moveLo = compareColumns(valuesToSort0, valuesToSort1, positions.get(mid), searchPos) <= compareLimit;
+            final boolean moveLo = compareColumns(valuesToSort0, positions.get(mid), searchPos) <= compareLimit;
             if (moveLo) {
                 // For bound, (testValue OP searchValue) means that the result somewhere later than 'mid' [OP=lt or leq]
                 lo = mid + 1;
@@ -504,15 +438,13 @@ public final class LongObjectIndirectMultiColumnTimsortKernel {
                 hi = mid;
             }
         }
-
         return lo;
     }
 
     private static void insertionSort(WritableIntChunk<ChunkPositions> positions,
-            LongChunk<?> valuesToSort0, ObjectChunk<Object, ?> valuesToSort1, int offset,
-            int length) {
+            IntChunk<?> valuesToSort0, int offset, int length) {
         for (int ii = offset + 1; ii < offset + length; ++ii) {
-            for (int jj = ii; jj > offset && compareColumns(valuesToSort0, valuesToSort1, positions.get(jj - 1), positions.get(jj)) > 0; jj--) {
+            for (int jj = ii; jj > offset && gt(valuesToSort0, positions.get(jj - 1), positions.get(jj)); jj--) {
                 swap(positions, jj, jj - 1);
             }
         }
@@ -524,7 +456,7 @@ public final class LongObjectIndirectMultiColumnTimsortKernel {
         positions.set(b, tempPos);
     }
 
-    public static class LongObjectIndirectMultiColumnSortKernelContext<PERMUTE_VALUES_ATTR extends Any> implements MultiColumnSortKernel<PERMUTE_VALUES_ATTR> {
+    public static class IntDescIndirectSortKernelContext<PERMUTE_VALUES_ATTR extends Any> implements MultiColumnSortKernel<PERMUTE_VALUES_ATTR> {
         int minGallop;
 
         int runCount = 0;
@@ -539,7 +471,7 @@ public final class LongObjectIndirectMultiColumnTimsortKernel {
 
         private final WritableLongChunk<PERMUTE_VALUES_ATTR> temporaryKeys;
 
-        private LongObjectIndirectMultiColumnSortKernelContext(int size) {
+        private IntDescIndirectSortKernelContext(int size) {
             positions = WritableIntChunk.makeWritableChunk(size);
             temporaryPositions = WritableIntChunk.makeWritableChunk((size + 2) / 2);
             temporaryKeys = WritableLongChunk.makeWritableChunk(size);
@@ -556,7 +488,7 @@ public final class LongObjectIndirectMultiColumnTimsortKernel {
             for (int ii = 0; ii < size; ++ii) {
                 positions.set(ii, ii);
             }
-            LongObjectIndirectMultiColumnTimsortKernel.sort(this, positions, valuesToSort[0].asLongChunk(), valuesToSort[1].<Object>asObjectChunk());
+            IntDescIndirectTimsortKernel.sort(this, positions, valuesToSort[0].asIntChunk());
             // assemble the permuted row keys in a single linear pass rather than permuting them during the sort
             temporaryKeys.copyFromChunk(valuesToPermute, 0, 0, size);
             for (int ii = 0; ii < size; ++ii) {

@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl.sort.timsort2;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.ComparatorSortColumn;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.SortingOrder;
 import io.deephaven.engine.table.impl.sort.MultiColumnSortKernel;
@@ -19,6 +20,7 @@ import junit.framework.TestCase;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
 
@@ -152,41 +154,69 @@ public class TestMultiColumnSort {
 
     @Test
     public void testDispatch() {
-        // the type-pair test is only meaningful if the factory actually supplies kernels for these shapes
+        // every multi-column shape is compiled on demand, so the type-pair test exercises real kernels
         for (final ChunkType first : new ChunkType[] {ChunkType.Char, ChunkType.Byte, ChunkType.Short, ChunkType.Int,
                 ChunkType.Long, ChunkType.Float, ChunkType.Double, ChunkType.Object}) {
             for (final ChunkType second : new ChunkType[] {ChunkType.Int, ChunkType.Object}) {
                 try (final MultiColumnSortKernel<Any> kernel = MultiColumnTimsortKernelFactory.makeContext(
                         new ChunkType[] {first, second},
-                        new SortingOrder[] {SortingOrder.Ascending, SortingOrder.Ascending}, 16)) {
+                        new SortingOrder[] {SortingOrder.Ascending, SortingOrder.Ascending}, new Comparator[2], 16)) {
                     TestCase.assertNotNull(kernel);
                 }
             }
         }
-        // single-column Object sorts use indirect kernels in either direction; primitives use the direct kernels
+        // single-column Object sorts use indirect kernels in either direction; primitives use the direct kernels,
+        // and single-column comparator sorts use ComparatorLongTimsortKernel
         for (final SortingOrder order : SortingOrder.values()) {
             try (final MultiColumnSortKernel<Any> kernel = MultiColumnTimsortKernelFactory.makeContext(
-                    new ChunkType[] {ChunkType.Object}, new SortingOrder[] {order}, 16)) {
+                    new ChunkType[] {ChunkType.Object}, new SortingOrder[] {order}, new Comparator[1], 16)) {
                 TestCase.assertNotNull(kernel);
             }
             TestCase.assertNull(MultiColumnTimsortKernelFactory.makeContext(
-                    new ChunkType[] {ChunkType.Int}, new SortingOrder[] {order}, 16));
+                    new ChunkType[] {ChunkType.Int}, new SortingOrder[] {order}, new Comparator[1], 16));
+            TestCase.assertNull(MultiColumnTimsortKernelFactory.makeContext(
+                    new ChunkType[] {ChunkType.Object}, new SortingOrder[] {order},
+                    new Comparator[] {Comparator.naturalOrder()}, 16));
         }
-        // shapes without a pregenerated kernel are compiled on demand
+        // descending, three-column, and comparator shapes compile on demand
         try (final MultiColumnSortKernel<Any> kernel = MultiColumnTimsortKernelFactory.makeContext(
                 new ChunkType[] {ChunkType.Int, ChunkType.Long},
-                new SortingOrder[] {SortingOrder.Ascending, SortingOrder.Descending}, 16)) {
+                new SortingOrder[] {SortingOrder.Ascending, SortingOrder.Descending}, new Comparator[2], 16)) {
             TestCase.assertNotNull(kernel);
         }
         try (final MultiColumnSortKernel<Any> kernel = MultiColumnTimsortKernelFactory.makeContext(
                 new ChunkType[] {ChunkType.Int, ChunkType.Long, ChunkType.Object},
-                new SortingOrder[] {SortingOrder.Ascending, SortingOrder.Ascending, SortingOrder.Ascending}, 16)) {
+                new SortingOrder[] {SortingOrder.Ascending, SortingOrder.Ascending, SortingOrder.Ascending},
+                new Comparator[3], 16)) {
+            TestCase.assertNotNull(kernel);
+        }
+        try (final MultiColumnSortKernel<Any> kernel = MultiColumnTimsortKernelFactory.makeContext(
+                new ChunkType[] {ChunkType.Object, ChunkType.Int},
+                new SortingOrder[] {SortingOrder.Descending, SortingOrder.Ascending},
+                new Comparator[] {Comparator.nullsFirst(Comparator.naturalOrder()), null}, 16)) {
             TestCase.assertNotNull(kernel);
         }
         // boolean chunks have no kernel; the caller falls back
         TestCase.assertNull(MultiColumnTimsortKernelFactory.makeContext(
                 new ChunkType[] {ChunkType.Boolean, ChunkType.Int},
-                new SortingOrder[] {SortingOrder.Ascending, SortingOrder.Ascending}, 16));
+                new SortingOrder[] {SortingOrder.Ascending, SortingOrder.Ascending}, new Comparator[2], 16));
+    }
+
+    @Test
+    public void testComparators() {
+        final Table table = makeTable(new Random(271828), 10000);
+        // an equality-respecting comparator produces the same result on the kernel and pipeline paths
+        final Comparator<String> nullsFirstNatural = Comparator.nullsFirst(Comparator.naturalOrder());
+        checkSame(table, t -> ((QueryTable) t.coalesce()).sort(
+                ComparatorSortColumn.asc("ObjA", nullsFirstNatural, true),
+                SortColumn.asc(ColumnName.of("IntB"))));
+        checkSame(table, t -> ((QueryTable) t.coalesce()).sort(
+                SortColumn.asc(ColumnName.of("IntA")),
+                ComparatorSortColumn.desc("ObjB", nullsFirstNatural, true)));
+        checkSame(table, t -> ((QueryTable) t.coalesce()).sort(
+                ComparatorSortColumn.desc("ObjA", nullsFirstNatural, true),
+                SortColumn.desc(ColumnName.of("LongB")),
+                ComparatorSortColumn.asc("ObjB", nullsFirstNatural, true)));
     }
 
     @Test

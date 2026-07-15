@@ -25,9 +25,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Generates the timsort kernels for each sort value type, permutation value type, and sort direction using JavaPoet.
@@ -292,34 +290,25 @@ public class GenerateTimsortKernels {
             ChunkType.Int, ChunkType.Long, ChunkType.Float, ChunkType.Double, ChunkType.Object);
 
     /**
-     * Pregenerates the indirect kernels for the common sort shapes, delegating to the same
-     * MultiColumnTimsortKernelFactory emitter that compiles the remaining shapes on demand at runtime: every ascending
-     * pair of engine column types, and a single Object column in either direction (single-column primitive sorts use
-     * the existing direct kernels).
+     * Pregenerates the single-column indirect kernels for every engine column type in both directions, delegating to
+     * the same MultiColumnTimsortKernelFactory emitter that compiles the multi-column kernels on demand at runtime.
      */
     private static void generateIndirectKernels() throws IOException {
-        final SortingOrder[] ascendingPair = {SortingOrder.Ascending, SortingOrder.Ascending};
-        for (final ChunkType chunkType0 : ENGINE_CHUNK_TYPES) {
-            for (final ChunkType chunkType1 : ENGINE_CHUNK_TYPES) {
-                final ChunkType[] chunkTypes = {chunkType0, chunkType1};
+        for (final ChunkType chunkType : ENGINE_CHUNK_TYPES) {
+            for (final SortingOrder order : SortingOrder.values()) {
+                final ChunkType[] chunkTypes = {chunkType};
+                final SortingOrder[] orders = {order};
                 writeFile(MULTI_PACKAGE,
-                        MultiColumnTimsortKernelFactory.generateKernelType(chunkTypes, ascendingPair, MULTI_PACKAGE),
-                        MultiColumnTimsortKernelFactory.kernelName(chunkTypes, ascendingPair));
+                        MultiColumnTimsortKernelFactory.generateKernelType(chunkTypes, orders, new boolean[1],
+                                MULTI_PACKAGE),
+                        MultiColumnTimsortKernelFactory.kernelName(chunkTypes, orders, new boolean[1]));
             }
-        }
-        for (final SortingOrder order : SortingOrder.values()) {
-            final ChunkType[] chunkTypes = {ChunkType.Object};
-            final SortingOrder[] orders = {order};
-            writeFile(MULTI_PACKAGE,
-                    MultiColumnTimsortKernelFactory.generateKernelType(chunkTypes, orders, MULTI_PACKAGE),
-                    MultiColumnTimsortKernelFactory.kernelName(chunkTypes, orders));
         }
     }
 
     /**
-     * Emits the dispatcher that selects a pregenerated indirect kernel: a single Object column in either direction, or
-     * any all-ascending pair of engine column types. Other shapes return null; MultiColumnTimsortKernelFactory then
-     * compiles a kernel on demand.
+     * Emits the dispatcher that selects a pregenerated single-column indirect kernel by chunk type and sort direction.
+     * Multi-column shapes are not pregenerated; MultiColumnTimsortKernelFactory compiles them on demand.
      */
     private static void generateIndirectDispatcher() throws IOException {
         final TypeVariableName permuteAttr = TypeVariableName.get("PERMUTE_VALUES_ATTR", ANY);
@@ -332,59 +321,37 @@ public class GenerateTimsortKernels {
                 .addParameter(ArrayTypeName.of(SORTING_ORDER), "order")
                 .addParameter(int.class, "size");
 
-        final SortingOrder[] ascendingPair = {SortingOrder.Ascending, SortingOrder.Ascending};
-
-        makeContext.beginControlFlow("if (chunkTypes.length == 1)");
-        makeContext.beginControlFlow("if (chunkTypes[0] != $T.Object)", CHUNK_TYPE);
+        makeContext.beginControlFlow("if (chunkTypes.length != 1)");
         makeContext.addStatement("return null");
-        makeContext.endControlFlow();
-        makeContext.beginControlFlow("if (order[0] == $T.Ascending)", SORTING_ORDER);
-        makeContext.addStatement("return $T.createContext(size)",
-                ClassName.get(MULTI_PACKAGE, MultiColumnTimsortKernelFactory.kernelName(
-                        new ChunkType[] {ChunkType.Object}, new SortingOrder[] {SortingOrder.Ascending})));
-        makeContext.endControlFlow();
-        makeContext.addStatement("return $T.createContext(size)",
-                ClassName.get(MULTI_PACKAGE, MultiColumnTimsortKernelFactory.kernelName(
-                        new ChunkType[] {ChunkType.Object}, new SortingOrder[] {SortingOrder.Descending})));
-        makeContext.endControlFlow();
-
-        makeContext.beginControlFlow("if (chunkTypes.length != 2)");
-        makeContext.addStatement("return null");
-        makeContext.endControlFlow();
-        makeContext.beginControlFlow("for (final $T columnOrder : order)", SORTING_ORDER);
-        makeContext.beginControlFlow("if (columnOrder != $T.Ascending)", SORTING_ORDER);
-        makeContext.addStatement("return null");
-        makeContext.endControlFlow();
         makeContext.endControlFlow();
 
         makeContext.beginControlFlow("switch (chunkTypes[0])");
-        for (final ChunkType chunkType0 : ENGINE_CHUNK_TYPES) {
-            makeContext.addCode("case " + chunkType0.name() + ":\n");
-            makeContext.beginControlFlow("switch (chunkTypes[1])");
-            for (final ChunkType chunkType1 : ENGINE_CHUNK_TYPES) {
-                makeContext.addCode("case " + chunkType1.name() + ": ");
-                makeContext.addStatement("return $T.createContext(size)",
-                        ClassName.get(MULTI_PACKAGE, MultiColumnTimsortKernelFactory
-                                .kernelName(new ChunkType[] {chunkType0, chunkType1}, ascendingPair)));
-            }
-            makeContext.addCode("default: ");
-            makeContext.addStatement("return null");
+        for (final ChunkType chunkType : ENGINE_CHUNK_TYPES) {
+            makeContext.addCode("case " + chunkType.name() + ":\n");
+            makeContext.beginControlFlow("if (order[0] == $T.Ascending)", SORTING_ORDER);
+            makeContext.addStatement("return $T.createContext(size)",
+                    ClassName.get(MULTI_PACKAGE, MultiColumnTimsortKernelFactory.kernelName(
+                            new ChunkType[] {chunkType}, new SortingOrder[] {SortingOrder.Ascending},
+                            new boolean[1])));
             makeContext.endControlFlow();
+            makeContext.addStatement("return $T.createContext(size)",
+                    ClassName.get(MULTI_PACKAGE, MultiColumnTimsortKernelFactory.kernelName(
+                            new ChunkType[] {chunkType}, new SortingOrder[] {SortingOrder.Descending},
+                            new boolean[1])));
         }
         makeContext.addCode("default: ");
         makeContext.addStatement("return null");
         makeContext.endControlFlow();
 
-        final TypeSpec dispatcher = TypeSpec.classBuilder("IndirectMultiColumnTimsortDispatcher")
+        final TypeSpec dispatcher = TypeSpec.classBuilder("IndirectTimsortDispatcher")
                 .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
-                .addJavadoc("Selects a pregenerated indirect timsort kernel for the given column chunk types and "
-                        + "sort directions,\nreturning null when no pregenerated kernel exists so that "
-                        + "MultiColumnTimsortKernelFactory can compile\none on demand (or fall back to the "
-                        + "single-column kernels).\n")
+                .addJavadoc("Selects a pregenerated single-column indirect timsort kernel by chunk type and sort "
+                        + "direction, returning\nnull for multi-column shapes, which "
+                        + "MultiColumnTimsortKernelFactory compiles on demand.\n")
                 .addMethod(MethodSpec.constructorBuilder().addModifiers(Modifier.PRIVATE).build())
                 .addMethod(makeContext.build())
                 .build();
-        writeFile(MULTI_PACKAGE, dispatcher, "IndirectMultiColumnTimsortDispatcher");
+        writeFile(MULTI_PACKAGE, dispatcher, "IndirectTimsortDispatcher");
     }
 
 
@@ -489,23 +456,6 @@ public class GenerateTimsortKernels {
 
         private TypeName keyType() {
             return keyChunks.elementType;
-        }
-
-        /** Named arguments shared by every method body template. */
-        private Map<String, Object> namedArgs() {
-            final Map<String, Object> args = new HashMap<>();
-            args.put("kernel", kernelClass);
-            args.put("context", contextClass);
-            args.put("kt", keyType());
-            args.put("wkchunk", keyChunks.writableChunkName);
-            args.put("utils", TIMSORT_UTILS);
-            args.put("asWritable", keyChunks.asWritableChunkMethod());
-            args.put("tempName", "temp" + keyChunks.name);
-            if (hasPermute) {
-                args.put("pt", spec.permute.elementType);
-                args.put("wpchunk", spec.permute.writableChunkName);
-            }
-            return args;
         }
 
         TypeSpec emit() {
@@ -719,14 +669,12 @@ public class GenerateTimsortKernels {
                     .addParameter(ParameterSpec.builder(writableKeyChunk(), "valuesToSort").build())
                     .addParameter(offsetsParam())
                     .addParameter(lengthsParam())
-                    .addCode(CodeBlock.builder().addNamed(""
-                            + "final int numberRuns = offsetsIn.size();\n"
-                            + "for (int run = 0; run < numberRuns; ++run) {\n"
-                            + "    final int offset = offsetsIn.get(run);\n"
-                            + "    final int length = lengthsIn.get(run);\n"
-                            + "\n"
-                            + "    context.kernel().timSort(context, valuesToPermute, valuesToSort, offset, length);\n"
-                            + "}\n", namedArgs()).build())
+                    .addStatement("final int numberRuns = offsetsIn.size()")
+                    .beginControlFlow("for (int run = 0; run < numberRuns; ++run)")
+                    .addStatement("final int offset = offsetsIn.get(run)")
+                    .addStatement("final int length = lengthsIn.get(run)")
+                    .addStatement("context.kernel().timSort(context, valuesToPermute, valuesToSort, offset, length)")
+                    .endControlFlow()
                     .build();
         }
 
@@ -776,94 +724,82 @@ public class GenerateTimsortKernels {
         }
 
         private MethodSpec emitTimSort() {
-            final Map<String, Object> args = namedArgs();
-            args.put("permutePrefix", permutePrefix());
-            args.put("contextPermutePrefix", hasPermute ? "valuesToPermute, " : "");
+            final String permute = hasPermute ? "valuesToPermute, " : "";
             return kernelMethod("timSort")
                     .addParameter(int.class, "offset")
                     .addParameter(int.class, "length")
-                    .addCode(CodeBlock.builder().addNamed(""
-                            + "if (length <= 1) {\n"
-                            + "    return;\n"
-                            + "}\n"
-                            + "\n"
-                            + "final int minRun = $utils:T.getRunLength(length);\n"
-                            + "\n"
-                            + "if (length <= minRun) {\n"
-                            + "    insertionSort($permutePrefix:LvaluesToSort, offset, length);\n"
-                            + "    return;\n"
-                            + "}\n"
-                            + "\n"
-                            + "context.runCount = 0;\n"
-                            + "\n"
-                            + "int startRun = offset;\n"
-                            + "while (startRun < offset + length) {\n"
-                            + "    $kt:T current = valuesToSort.get(startRun);\n"
-                            + "\n"
-                            + "    int endRun; // note that endrun is exclusive\n"
-                            + "    final boolean descending;\n"
-                            + "\n"
-                            + "    if (startRun + 1 == offset + length) {\n"
-                            + "        endRun = offset + length;\n"
-                            + "        descending = false;\n"
-                            + "    } else {\n"
-                            + "        $kt:T next = valuesToSort.get(startRun + 1);\n"
-                            + "        endRun = startRun + 2;\n"
-                            + "        descending = gt(current, next);\n"
-                            + "\n"
-                            + "        if (!descending) {\n"
-                            + "            // search for a non-descending run\n"
-                            + "            current = next;\n"
-                            + "            while (endRun < length && geq(next = valuesToSort.get(endRun), current)) {\n"
-                            + "                current = next;\n"
-                            + "                endRun++;\n"
-                            + "            }\n"
-                            + "        } else {\n"
-                            + "            // search for a strictly descending run; we can not have any equal values, or we will break the\n"
-                            + "            // sort's stability guarantee\n"
-                            + "            current = next;\n"
-                            + "            while (endRun < length && lt(next = valuesToSort.get(endRun), current)) {\n"
-                            + "                current = next;\n"
-                            + "                endRun++;\n"
-                            + "            }\n"
-                            + "        }\n"
-                            + "    }\n"
-                            + "\n"
-                            + "    final int foundLength = endRun - startRun;\n"
-                            + "    context.runStarts[context.runCount] = startRun;\n"
-                            + "    if (foundLength < minRun) {\n"
-                            + "        // increase the size of the run to the minimum run\n"
-                            + "        final int actualLength = Math.min(minRun, length - (startRun - offset));\n"
-                            + "        insertionSort($permutePrefix:LvaluesToSort, startRun, actualLength);\n"
-                            + "        context.runLengths[context.runCount] = actualLength;\n"
-                            + "        startRun += actualLength;\n"
-                            + "    } else {\n"
-                            + "        if (descending) {\n"
-                            + "            // reverse the current run\n"
-                            + "            for (int ii = 0; ii < foundLength / 2; ++ii) {\n"
-                            + "                swap($permutePrefix:LvaluesToSort, ii + startRun, endRun - ii - 1);\n"
-                            + "            }\n"
-                            + "        }\n"
-                            + "        // now an ascending run\n"
-                            + "        context.runLengths[context.runCount] = foundLength;\n"
-                            + "        startRun = endRun;\n"
-                            + "    }\n"
-                            + "\n"
-                            + "    context.runCount++;\n"
-                            + "\n"
-                            + "    // check the invariants at the top of the stack\n"
-                            + "    ensureMergeInvariants(context, $contextPermutePrefix:LvaluesToSort);\n"
-                            + "}\n"
-                            + "\n"
-                            + "while (context.runCount > 1) {\n"
-                            + "    final int length2 = context.runLengths[context.runCount - 1];\n"
-                            + "    final int start1 = context.runStarts[context.runCount - 2];\n"
-                            + "    final int length1 = context.runLengths[context.runCount - 2];\n"
-                            + "    merge(context, $contextPermutePrefix:LvaluesToSort, start1, length1, length2);\n"
-                            + "    context.runStarts[context.runCount - 2] = start1;\n"
-                            + "    context.runLengths[context.runCount - 2] = length1 + length2;\n"
-                            + "    context.runCount--;\n"
-                            + "}\n", args).build())
+                    .beginControlFlow("if (length <= 1)")
+                    .addStatement("return")
+                    .endControlFlow()
+                    .addStatement("final int minRun = $T.getRunLength(length)", TIMSORT_UTILS)
+                    .beginControlFlow("if (length <= minRun)")
+                    .addStatement("insertionSort(" + permute + "valuesToSort, offset, length)")
+                    .addStatement("return")
+                    .endControlFlow()
+                    .addStatement("context.runCount = 0")
+                    .addStatement("int startRun = offset")
+                    .beginControlFlow("while (startRun < offset + length)")
+                    .addStatement("$T current = valuesToSort.get(startRun)", keyType())
+                    .addComment("note that endrun is exclusive")
+                    .addStatement("int endRun")
+                    .addStatement("final boolean descending")
+                    .beginControlFlow("if (startRun + 1 == offset + length)")
+                    .addStatement("endRun = offset + length")
+                    .addStatement("descending = false")
+                    .nextControlFlow("else")
+                    .addStatement("$T next = valuesToSort.get(startRun + 1)", keyType())
+                    .addStatement("endRun = startRun + 2")
+                    .addStatement("descending = gt(current, next)")
+                    .beginControlFlow("if (!descending)")
+                    .addComment("search for a non-descending run")
+                    .addStatement("current = next")
+                    .beginControlFlow("while (endRun < length && geq(next = valuesToSort.get(endRun), current))")
+                    .addStatement("current = next")
+                    .addStatement("endRun++")
+                    .endControlFlow()
+                    .nextControlFlow("else")
+                    .addComment(
+                            "search for a strictly descending run; we can not have any equal values, or we will break the")
+                    .addComment("sort's stability guarantee")
+                    .addStatement("current = next")
+                    .beginControlFlow("while (endRun < length && lt(next = valuesToSort.get(endRun), current))")
+                    .addStatement("current = next")
+                    .addStatement("endRun++")
+                    .endControlFlow()
+                    .endControlFlow()
+                    .endControlFlow()
+                    .addStatement("final int foundLength = endRun - startRun")
+                    .addStatement("context.runStarts[context.runCount] = startRun")
+                    .beginControlFlow("if (foundLength < minRun)")
+                    .addComment("increase the size of the run to the minimum run")
+                    .addStatement("final int actualLength = Math.min(minRun, length - (startRun - offset))")
+                    .addStatement("insertionSort(" + permute + "valuesToSort, startRun, actualLength)")
+                    .addStatement("context.runLengths[context.runCount] = actualLength")
+                    .addStatement("startRun += actualLength")
+                    .nextControlFlow("else")
+                    .beginControlFlow("if (descending)")
+                    .addComment("reverse the current run")
+                    .beginControlFlow("for (int ii = 0; ii < foundLength / 2; ++ii)")
+                    .addStatement("swap(" + permute + "valuesToSort, ii + startRun, endRun - ii - 1)")
+                    .endControlFlow()
+                    .endControlFlow()
+                    .addComment("now an ascending run")
+                    .addStatement("context.runLengths[context.runCount] = foundLength")
+                    .addStatement("startRun = endRun")
+                    .endControlFlow()
+                    .addStatement("context.runCount++")
+                    .addComment("check the invariants at the top of the stack")
+                    .addStatement("ensureMergeInvariants(context, " + permute + "valuesToSort)")
+                    .endControlFlow()
+                    .beginControlFlow("while (context.runCount > 1)")
+                    .addStatement("final int length2 = context.runLengths[context.runCount - 1]")
+                    .addStatement("final int start1 = context.runStarts[context.runCount - 2]")
+                    .addStatement("final int length1 = context.runLengths[context.runCount - 2]")
+                    .addStatement("merge(context, " + permute + "valuesToSort, start1, length1, length2)")
+                    .addStatement("context.runStarts[context.runCount - 2] = start1")
+                    .addStatement("context.runLengths[context.runCount - 2] = length1 + length2")
+                    .addStatement("context.runCount--")
+                    .endControlFlow()
                     .build();
         }
 
@@ -903,8 +839,7 @@ public class GenerateTimsortKernels {
         }
 
         private MethodSpec emitEnsureMergeInvariants() {
-            final Map<String, Object> args = namedArgs();
-            args.put("contextPermutePrefix", hasPermute ? "valuesToPermute, " : "");
+            final String permute = hasPermute ? "valuesToPermute, " : "";
             return kernelMethod("ensureMergeInvariants")
                     .addJavadoc("<p>\n"
                             + "There are two merge invariants that we must preserve, quoting from Wikipedia:\n"
@@ -934,94 +869,88 @@ public class GenerateTimsortKernels {
                             + "as being approximately balanced while maintaining a compromise between delaying merging "
                             + "for balance, exploiting\n"
                             + "fresh occurrence of runs in cache memory and making merge decisions relatively simple.\n")
-                    .addCode(CodeBlock.builder().addNamed(""
-                            + "while (context.runCount > 1) {\n"
-                            + "    final int xIndex = context.runCount - 1;\n"
-                            + "    final int yIndex = context.runCount - 2;\n"
-                            + "    final int zIndex = context.runCount - 3;\n"
-                            + "\n"
-                            + "    final int xLen = context.runLengths[xIndex];\n"
-                            + "    final int yLen = context.runLengths[yIndex];\n"
-                            + "    final int zLen = zIndex >= 0 ? context.runLengths[zIndex] : -1;\n"
-                            + "\n"
-                            + "    final boolean xMerge;\n"
-                            + "\n"
-                            + "    if (zLen >= 0 && (zLen <= yLen + xLen)) {\n"
-                            + "        // we must merge the smaller of the two\n"
-                            + "        xMerge = xLen < zLen;\n"
-                            + "    } else if (yLen < xLen) {\n"
-                            + "        // we must merge Y into X\n"
-                            + "        xMerge = true;\n"
-                            + "    } else {\n"
-                            + "        break;\n"
-                            + "    }\n"
-                            + "\n"
-                            + "    final int yStart = context.runStarts[yIndex];\n"
-                            + "    final int xStart = context.runStarts[xIndex];\n"
-                            + "    if (xMerge) {\n"
-                            + "        // merge y and x\n"
-                            + "        merge(context, $contextPermutePrefix:LvaluesToSort, yStart, yLen, xLen);\n"
-                            + "\n"
-                            + "        // unchanged: context.runStarts[yStart];\n"
-                            + "        context.runLengths[yIndex] += xLen;\n"
-                            + "    } else {\n"
-                            + "        // merge y and z\n"
-                            + "        final int zStart = context.runStarts[zIndex];\n"
-                            + "        merge(context, $contextPermutePrefix:LvaluesToSort, zStart, zLen, yLen);\n"
-                            + "\n"
-                            + "        // unchanged: context.runStarts[zIndex];\n"
-                            + "        context.runLengths[zIndex] += yLen;\n"
-                            + "        context.runStarts[yIndex] = xStart;\n"
-                            + "        context.runLengths[yIndex] = xLen;\n"
-                            + "    }\n"
-                            + "    context.runCount--;\n"
-                            + "}\n", args).build())
+                    .beginControlFlow("while (context.runCount > 1)")
+                    .addStatement("final int xIndex = context.runCount - 1")
+                    .addStatement("final int yIndex = context.runCount - 2")
+                    .addStatement("final int zIndex = context.runCount - 3")
+                    .addStatement("final int xLen = context.runLengths[xIndex]")
+                    .addStatement("final int yLen = context.runLengths[yIndex]")
+                    .addStatement("final int zLen = zIndex >= 0 ? context.runLengths[zIndex] : -1")
+                    .addStatement("final boolean xMerge")
+                    .beginControlFlow("if (zLen >= 0 && (zLen <= yLen + xLen))")
+                    .addComment("we must merge the smaller of the two")
+                    .addStatement("xMerge = xLen < zLen")
+                    .nextControlFlow("else if (yLen < xLen)")
+                    .addComment("we must merge Y into X")
+                    .addStatement("xMerge = true")
+                    .nextControlFlow("else")
+                    .addStatement("break")
+                    .endControlFlow()
+                    .addStatement("final int yStart = context.runStarts[yIndex]")
+                    .addStatement("final int xStart = context.runStarts[xIndex]")
+                    .beginControlFlow("if (xMerge)")
+                    .addComment("merge y and x")
+                    .addStatement("merge(context, " + permute + "valuesToSort, yStart, yLen, xLen)")
+                    .addComment("unchanged: context.runStarts[yStart];")
+                    .addStatement("context.runLengths[yIndex] += xLen")
+                    .nextControlFlow("else")
+                    .addComment("merge y and z")
+                    .addStatement("final int zStart = context.runStarts[zIndex]")
+                    .addStatement("merge(context, " + permute + "valuesToSort, zStart, zLen, yLen)")
+                    .addComment("unchanged: context.runStarts[zIndex];")
+                    .addStatement("context.runLengths[zIndex] += yLen")
+                    .addStatement("context.runStarts[yIndex] = xStart")
+                    .addStatement("context.runLengths[yIndex] = xLen")
+                    .endControlFlow()
+                    .addStatement("context.runCount--")
+                    .endControlFlow()
                     .build();
         }
 
         private MethodSpec emitMerge() {
-            final Map<String, Object> args = namedArgs();
-            args.put("contextPermutePrefix", hasPermute ? "valuesToPermute, " : "");
+            final String permute = hasPermute ? "valuesToPermute, " : "";
             return kernelMethod("merge")
                     .addParameter(int.class, "start1")
                     .addParameter(int.class, "length1")
                     .addParameter(int.class, "length2")
-                    .addCode(CodeBlock.builder().addNamed(""
-                            + "// we know that we can never have zero length runs, because there is a minimum run size enforced; and at the\n"
-                            + "// end of an input, we won't create a zero-length run. When we merge runs, they only become bigger, thus\n"
-                            + "// they'll never be empty. I'm being cheap about function calls and control flow here.\n"
-                            + "// Assert.gtZero(length1, \"length1\");\n"
-                            + "// Assert.gtZero(length2, \"length2\");\n"
-                            + "\n"
-                            + "final int start2 = start1 + length1;\n"
-                            + "// find the location of run2[0] in run1\n"
-                            + "final $kt:T run2lo = valuesToSort.get(start2);\n"
-                            + "final int mergeStartPosition = upperBound(valuesToSort, start1, start1 + length1, run2lo);\n"
-                            + "\n"
-                            + "if (mergeStartPosition == start1 + length1) {\n"
-                            + "    // these two runs are sorted already\n"
-                            + "    return;\n"
-                            + "}\n"
-                            + "\n"
-                            + "// find the location of run1[length1 - 1] in run2\n"
-                            + "final $kt:T run1hi = valuesToSort.get(start1 + length1 - 1);\n"
-                            + "final int mergeEndPosition = lowerBound(valuesToSort, start2, start2 + length2, run1hi);\n"
-                            + "\n"
-                            + "// figure out which of the two runs is now shorter\n"
-                            + "final int remaining1 = start1 + length1 - mergeStartPosition;\n"
-                            + "final int remaining2 = mergeEndPosition - start2;\n"
-                            + "\n"
-                            + "if (remaining1 < remaining2) {\n"
-                            + "    copyToTemporary(context, $contextPermutePrefix:LvaluesToSort, mergeStartPosition, remaining1);\n"
-                            + "    // now we need to do the merge from temporary and remaining2 into remaining1 (so start at the front,\n"
-                            + "    // because we've preserved all the values of run1\n"
-                            + "    frontMerge(context, $contextPermutePrefix:LvaluesToSort, mergeStartPosition, start2, remaining2);\n"
-                            + "} else {\n"
-                            + "    copyToTemporary(context, $contextPermutePrefix:LvaluesToSort, start2, remaining2);\n"
-                            + "    // now we need to do the merge from temporary and remaining1 into the remaining two area (so start at the\n"
-                            + "    // back, because we've preserved all the values of run2)\n"
-                            + "    backMerge(context, $contextPermutePrefix:LvaluesToSort, mergeStartPosition, remaining1);\n"
-                            + "}\n", args).build())
+                    .addComment(
+                            "we know that we can never have zero length runs, because there is a minimum run size enforced; and at the")
+                    .addComment(
+                            "end of an input, we won't create a zero-length run. When we merge runs, they only become bigger, thus")
+                    .addComment("they'll never be empty. I'm being cheap about function calls and control flow here.")
+                    .addComment("Assert.gtZero(length1, \"length1\");")
+                    .addComment("Assert.gtZero(length2, \"length2\");")
+                    .addStatement("final int start2 = start1 + length1")
+                    .addComment("find the location of run2[0] in run1")
+                    .addStatement("final $T run2lo = valuesToSort.get(start2)", keyType())
+                    .addStatement(
+                            "final int mergeStartPosition = upperBound(valuesToSort, start1, start1 + length1, run2lo)")
+                    .beginControlFlow("if (mergeStartPosition == start1 + length1)")
+                    .addComment("these two runs are sorted already")
+                    .addStatement("return")
+                    .endControlFlow()
+                    .addComment("find the location of run1[length1 - 1] in run2")
+                    .addStatement("final $T run1hi = valuesToSort.get(start1 + length1 - 1)", keyType())
+                    .addStatement(
+                            "final int mergeEndPosition = lowerBound(valuesToSort, start2, start2 + length2, run1hi)")
+                    .addComment("figure out which of the two runs is now shorter")
+                    .addStatement("final int remaining1 = start1 + length1 - mergeStartPosition")
+                    .addStatement("final int remaining2 = mergeEndPosition - start2")
+                    .beginControlFlow("if (remaining1 < remaining2)")
+                    .addStatement(
+                            "copyToTemporary(context, " + permute + "valuesToSort, mergeStartPosition, remaining1)")
+                    .addComment(
+                            "now we need to do the merge from temporary and remaining2 into remaining1 (so start at the front,")
+                    .addComment("because we've preserved all the values of run1")
+                    .addStatement(
+                            "frontMerge(context, " + permute + "valuesToSort, mergeStartPosition, start2, remaining2)")
+                    .nextControlFlow("else")
+                    .addStatement("copyToTemporary(context, " + permute + "valuesToSort, start2, remaining2)")
+                    .addComment(
+                            "now we need to do the merge from temporary and remaining1 into the remaining two area (so start at the")
+                    .addComment("back, because we've preserved all the values of run2)")
+                    .addStatement("backMerge(context, " + permute + "valuesToSort, mergeStartPosition, remaining1)")
+                    .endControlFlow()
                     .build();
         }
 
@@ -1031,125 +960,111 @@ public class GenerateTimsortKernels {
                         + "<p>\nWe eventually need to do galloping here, but are skipping that for now\n";
 
         private MethodSpec emitFrontMerge() {
-            final Map<String, Object> args = namedArgs();
-            args.put("setPermute", hasPermute
-                    ? "\n            valuesToPermute.set(ii++, context.temporaryKeys.get(tempCursor));"
-                    : "");
-            final String setValues1 = hasPermute
-                    ? "valuesToSort.set(ii, val1);$setPermute:L"
-                    : "valuesToSort.set(ii++, val1);";
-            args.put("setPermute2", hasPermute
-                    ? "\n            valuesToPermute.set(ii++, valuesToPermute.get(run2Cursor));"
-                    : "");
-            final String setValues2 = hasPermute
-                    ? "valuesToSort.set(ii, val2);$setPermute2:L"
-                    : "valuesToSort.set(ii++, val2);";
-            args.put("copyChunkArgs1", hasPermute
+            final String copyChunkArgs1 = hasPermute
                     ? "context.temporaryKeys, context.temporaryValues, valuesToPermute, valuesToSort"
-                    : "context.temporaryValues, valuesToSort");
-            args.put("copyChunkArgs2", hasPermute
+                    : "context.temporaryValues, valuesToSort";
+            final String copyChunkArgs2 = hasPermute
                     ? "valuesToPermute, valuesToSort, valuesToPermute, valuesToSort"
-                    : "valuesToSort, valuesToSort");
-            args.put("finalCopyPermute", hasPermute
-                    ? "\n    valuesToPermute.set(ii, context.temporaryKeys.get(tempCursor));"
-                    : "");
-            return kernelMethod("frontMerge")
+                    : "valuesToSort, valuesToSort";
+            final MethodSpec.Builder builder = kernelMethod("frontMerge")
                     .addJavadoc(MERGE_JAVADOC_FRONT)
                     .addParameter(ParameterSpec.builder(int.class, "mergeStartPosition", Modifier.FINAL).build())
                     .addParameter(ParameterSpec.builder(int.class, "start2", Modifier.FINAL).build())
                     .addParameter(ParameterSpec.builder(int.class, "length2", Modifier.FINAL).build())
-                    .addCode(CodeBlock.builder().addNamed(""
-                            + "int tempCursor = 0;\n"
-                            + "int run2Cursor = start2;\n"
-                            + "\n"
-                            + "final int run1size = context.temporaryValues.size();\n"
-                            + "int ii;\n"
-                            + "final int mergeEndExclusive = start2 + length2;\n"
-                            + "\n"
-                            + "$kt:T val1 = context.temporaryValues.get(tempCursor);\n"
-                            + "$kt:T val2 = valuesToSort.get(run2Cursor);\n"
-                            + "\n"
-                            + "ii = mergeStartPosition;\n"
-                            + "\n"
-                            + "nodataleft: while (ii < mergeEndExclusive) {\n"
-                            + "    int run1wins = 0;\n"
-                            + "    int run2wins = 0;\n"
-                            + "\n"
-                            + "    if (context.minGallop < 2) {\n"
-                            + "        context.minGallop = 2;\n"
-                            + "    }\n"
-                            + "\n"
-                            + "    while (run1wins < context.minGallop && run2wins < context.minGallop) {\n"
-                            + "        if (leq(val1, val2)) {\n"
-                            + "            " + setValues1 + "\n"
-                            + "\n"
-                            + "            if (++tempCursor == run1size) {\n"
-                            + "                break nodataleft;\n"
-                            + "            }\n"
-                            + "\n"
-                            + "            val1 = context.temporaryValues.get(tempCursor);\n"
-                            + "            run1wins++;\n"
-                            + "            run2wins = 0;\n"
-                            + "        } else {\n"
-                            + "            " + setValues2 + "\n"
-                            + "\n"
-                            + "            if (++run2Cursor == mergeEndExclusive) {\n"
-                            + "                break nodataleft;\n"
-                            + "            }\n"
-                            + "            val2 = valuesToSort.get(run2Cursor);\n"
-                            + "\n"
-                            + "            run2wins++;\n"
-                            + "            run1wins = 0;\n"
-                            + "        }\n"
-                            + "    }\n"
-                            + "\n"
-                            + "    // we are in galloping mode now, if we had run out of data then we should have already bailed out to\n"
-                            + "    // nodataleft\n"
-                            + "    while (ii < mergeEndExclusive) {\n"
-                            + "        // if we had a lot of things from run1, we take the next thing from run2 then find it in run1\n"
-                            + "        final int copyUntil1 = upperBound(context.temporaryValues, tempCursor, run1size, val2);\n"
-                            + "        final int gallopLength1 = copyUntil1 - tempCursor;\n"
-                            + "        if (gallopLength1 > 0) {\n"
-                            + "            copyToChunk($copyChunkArgs1:L, tempCursor, ii, gallopLength1);\n"
-                            + "            tempCursor += gallopLength1;\n"
-                            + "            ii += gallopLength1;\n"
-                            + "\n"
-                            + "            if (tempCursor == run1size) {\n"
-                            + "                break nodataleft;\n"
-                            + "            }\n"
-                            + "            val1 = context.temporaryValues.get(tempCursor);\n"
-                            + "\n"
-                            + "            context.minGallop--;\n"
-                            + "        }\n"
-                            + "\n"
-                            + "        // if we had a lot of things from run2, we take the next thing from run1 and then find it in run2\n"
-                            + "        final int copyUntil2 = lowerBound(valuesToSort, run2Cursor, mergeEndExclusive, val1);\n"
-                            + "        final int gallopLength2 = copyUntil2 - run2Cursor;\n"
-                            + "        if (gallopLength2 > 0) {\n"
-                            + "            copyToChunk($copyChunkArgs2:L, run2Cursor, ii, gallopLength2);\n"
-                            + "            run2Cursor += gallopLength2;\n"
-                            + "            ii += gallopLength2;\n"
-                            + "\n"
-                            + "            if (run2Cursor == mergeEndExclusive) {\n"
-                            + "                break nodataleft;\n"
-                            + "            }\n"
-                            + "            val2 = valuesToSort.get(run2Cursor);\n"
-                            + "\n"
-                            + "            context.minGallop--;\n"
-                            + "        }\n"
-                            + "\n"
-                            + "        if (gallopLength1 < $utils:T.INITIAL_GALLOP && gallopLength2 < $utils:T.INITIAL_GALLOP) {\n"
-                            + "            context.minGallop += 2; // undo the possible subtraction from above\n"
-                            + "            break;\n"
-                            + "        }\n"
-                            + "    }\n"
-                            + "}\n"
-                            + "\n"
-                            + "while (tempCursor < run1size) {\n"
-                            + "    valuesToSort.set(ii, context.temporaryValues.get(tempCursor));$finalCopyPermute:L\n"
-                            + "    tempCursor++;\n"
-                            + "    ii++;\n"
-                            + "}\n", args).build())
+                    .addStatement("int tempCursor = 0")
+                    .addStatement("int run2Cursor = start2")
+                    .addStatement("final int run1size = context.temporaryValues.size()")
+                    .addStatement("int ii")
+                    .addStatement("final int mergeEndExclusive = start2 + length2")
+                    .addStatement("$T val1 = context.temporaryValues.get(tempCursor)", keyType())
+                    .addStatement("$T val2 = valuesToSort.get(run2Cursor)", keyType())
+                    .addStatement("ii = mergeStartPosition")
+                    .beginControlFlow("nodataleft: while (ii < mergeEndExclusive)")
+                    .addStatement("int run1wins = 0")
+                    .addStatement("int run2wins = 0")
+                    .beginControlFlow("if (context.minGallop < 2)")
+                    .addStatement("context.minGallop = 2")
+                    .endControlFlow()
+                    .beginControlFlow("while (run1wins < context.minGallop && run2wins < context.minGallop)")
+                    .beginControlFlow("if (leq(val1, val2))");
+            if (hasPermute) {
+                builder.addStatement("valuesToSort.set(ii, val1)")
+                        .addStatement("valuesToPermute.set(ii++, context.temporaryKeys.get(tempCursor))");
+            } else {
+                builder.addStatement("valuesToSort.set(ii++, val1)");
+            }
+            builder.beginControlFlow("if (++tempCursor == run1size)")
+                    .addStatement("break nodataleft")
+                    .endControlFlow()
+                    .addStatement("val1 = context.temporaryValues.get(tempCursor)")
+                    .addStatement("run1wins++")
+                    .addStatement("run2wins = 0")
+                    .nextControlFlow("else");
+            if (hasPermute) {
+                builder.addStatement("valuesToSort.set(ii, val2)")
+                        .addStatement("valuesToPermute.set(ii++, valuesToPermute.get(run2Cursor))");
+            } else {
+                builder.addStatement("valuesToSort.set(ii++, val2)");
+            }
+            builder.beginControlFlow("if (++run2Cursor == mergeEndExclusive)")
+                    .addStatement("break nodataleft")
+                    .endControlFlow()
+                    .addStatement("val2 = valuesToSort.get(run2Cursor)")
+                    .addStatement("run2wins++")
+                    .addStatement("run1wins = 0")
+                    .endControlFlow()
+                    .endControlFlow()
+                    .addComment(
+                            "we are in galloping mode now, if we had run out of data then we should have already bailed out to")
+                    .addComment("nodataleft")
+                    .beginControlFlow("while (ii < mergeEndExclusive)")
+                    .addComment(
+                            "if we had a lot of things from run1, we take the next thing from run2 then find it in run1")
+                    .addStatement(
+                            "final int copyUntil1 = upperBound(context.temporaryValues, tempCursor, run1size, val2)")
+                    .addStatement("final int gallopLength1 = copyUntil1 - tempCursor")
+                    .beginControlFlow("if (gallopLength1 > 0)")
+                    .addStatement("copyToChunk(" + copyChunkArgs1 + ", tempCursor, ii, gallopLength1)")
+                    .addStatement("tempCursor += gallopLength1")
+                    .addStatement("ii += gallopLength1")
+                    .beginControlFlow("if (tempCursor == run1size)")
+                    .addStatement("break nodataleft")
+                    .endControlFlow()
+                    .addStatement("val1 = context.temporaryValues.get(tempCursor)")
+                    .addStatement("context.minGallop--")
+                    .endControlFlow()
+                    .addComment(
+                            "if we had a lot of things from run2, we take the next thing from run1 and then find it in run2")
+                    .addStatement(
+                            "final int copyUntil2 = lowerBound(valuesToSort, run2Cursor, mergeEndExclusive, val1)")
+                    .addStatement("final int gallopLength2 = copyUntil2 - run2Cursor")
+                    .beginControlFlow("if (gallopLength2 > 0)")
+                    .addStatement("copyToChunk(" + copyChunkArgs2 + ", run2Cursor, ii, gallopLength2)")
+                    .addStatement("run2Cursor += gallopLength2")
+                    .addStatement("ii += gallopLength2")
+                    .beginControlFlow("if (run2Cursor == mergeEndExclusive)")
+                    .addStatement("break nodataleft")
+                    .endControlFlow()
+                    .addStatement("val2 = valuesToSort.get(run2Cursor)")
+                    .addStatement("context.minGallop--")
+                    .endControlFlow()
+                    .beginControlFlow("if (gallopLength1 < $T.INITIAL_GALLOP && gallopLength2 < $T.INITIAL_GALLOP)",
+                            TIMSORT_UTILS, TIMSORT_UTILS)
+                    .addComment("undo the possible subtraction from above")
+                    .addStatement("context.minGallop += 2")
+                    .addStatement("break")
+                    .endControlFlow()
+                    .endControlFlow()
+                    .endControlFlow()
+                    .beginControlFlow("while (tempCursor < run1size)")
+                    .addStatement("valuesToSort.set(ii, context.temporaryValues.get(tempCursor))");
+            if (hasPermute) {
+                builder.addStatement("valuesToPermute.set(ii, context.temporaryKeys.get(tempCursor))");
+            }
+            return builder
+                    .addStatement("tempCursor++")
+                    .addStatement("ii++")
+                    .endControlFlow()
                     .build();
         }
 
@@ -1158,127 +1073,112 @@ public class GenerateTimsortKernels {
                         + "<p>\nWe eventually need to do galloping here, but are skipping that for now\n";
 
         private MethodSpec emitBackMerge() {
-            final Map<String, Object> args = namedArgs();
-            args.put("setPermute", hasPermute
-                    ? "\n            valuesToPermute.set(ii--, context.temporaryKeys.get(tempCursor));"
-                    : "");
-            final String setValues2 = hasPermute
-                    ? "valuesToSort.set(ii, val2);$setPermute:L"
-                    : "valuesToSort.set(ii--, val2);";
-            args.put("setPermute1", hasPermute
-                    ? "\n            valuesToPermute.set(ii--, valuesToPermute.get(run1Cursor));"
-                    : "");
-            final String setValues1 = hasPermute
-                    ? "valuesToSort.set(ii, val1);$setPermute1:L"
-                    : "valuesToSort.set(ii--, val1);";
-            args.put("copyChunkArgs1", hasPermute
+            final String copyChunkArgs1 = hasPermute
                     ? "context.temporaryKeys, context.temporaryValues, valuesToPermute, valuesToSort"
-                    : "context.temporaryValues, valuesToSort");
-            args.put("copyChunkArgs2", hasPermute
+                    : "context.temporaryValues, valuesToSort";
+            final String copyChunkArgs2 = hasPermute
                     ? "valuesToPermute, valuesToSort, valuesToPermute, valuesToSort"
-                    : "valuesToSort, valuesToSort");
-            args.put("finalCopyPermute", hasPermute
-                    ? "\n    valuesToPermute.set(ii, context.temporaryKeys.get(tempCursor));"
-                    : "");
-            return kernelMethod("backMerge")
+                    : "valuesToSort, valuesToSort";
+            final MethodSpec.Builder builder = kernelMethod("backMerge")
                     .addJavadoc(MERGE_JAVADOC_BACK)
                     .addParameter(ParameterSpec.builder(int.class, "mergeStartPosition", Modifier.FINAL).build())
                     .addParameter(ParameterSpec.builder(int.class, "length1", Modifier.FINAL).build())
-                    .addCode(CodeBlock.builder().addNamed(""
-                            + "final int run1End = mergeStartPosition + length1;\n"
-                            + "int run1Cursor = run1End - 1;\n"
-                            + "int tempCursor = context.temporaryValues.size() - 1;\n"
-                            + "\n"
-                            + "final int mergeLength = context.temporaryValues.size() + length1;\n"
-                            + "int ii;\n"
-                            + "\n"
-                            + "$kt:T val1 = valuesToSort.get(run1Cursor);\n"
-                            + "$kt:T val2 = context.temporaryValues.get(tempCursor);\n"
-                            + "\n"
-                            + "final int mergeEnd = mergeStartPosition + mergeLength;\n"
-                            + "ii = mergeEnd - 1;\n"
-                            + "\n"
-                            + "nodataleft: while (ii >= mergeStartPosition) {\n"
-                            + "    int run1wins = 0;\n"
-                            + "    int run2wins = 0;\n"
-                            + "\n"
-                            + "    if (context.minGallop < 2) {\n"
-                            + "        context.minGallop = 2;\n"
-                            + "    }\n"
-                            + "\n"
-                            + "    while (run1wins < context.minGallop && run2wins < context.minGallop) {\n"
-                            + "        if (geq(val2, val1)) {\n"
-                            + "            " + setValues2 + "\n"
-                            + "\n"
-                            + "            if (--tempCursor < 0) {\n"
-                            + "                break nodataleft;\n"
-                            + "            }\n"
-                            + "            val2 = context.temporaryValues.get(tempCursor);\n"
-                            + "\n"
-                            + "            run2wins++;\n"
-                            + "            run1wins = 0;\n"
-                            + "        } else {\n"
-                            + "            " + setValues1 + "\n"
-                            + "\n"
-                            + "            if (--run1Cursor < mergeStartPosition) {\n"
-                            + "                break nodataleft;\n"
-                            + "            }\n"
-                            + "            val1 = valuesToSort.get(run1Cursor);\n"
-                            + "\n"
-                            + "            run1wins++;\n"
-                            + "            run2wins = 0;\n"
-                            + "        }\n"
-                            + "    }\n"
-                            + "\n"
-                            + "    // we are in galloping mode now, if we had run out of data then we should have already bailed out to\n"
-                            + "    // nodataleft\n"
-                            + "    while (ii >= mergeStartPosition) {\n"
-                            + "        // if we had a lot of things from run2, we take the next thing from run1 then find it in run2\n"
-                            + "        final int copyUntil2 = lowerBound(context.temporaryValues, 0, tempCursor, val1) + 1;\n"
-                            + "\n"
-                            + "        final int gallopLength2 = tempCursor - copyUntil2 + 1;\n"
-                            + "        if (gallopLength2 > 0) {\n"
-                            + "            copyToChunk($copyChunkArgs1:L, copyUntil2, ii - gallopLength2 + 1, gallopLength2);\n"
-                            + "            tempCursor -= gallopLength2;\n"
-                            + "            ii -= gallopLength2;\n"
-                            + "\n"
-                            + "            if (tempCursor < 0) {\n"
-                            + "                break nodataleft;\n"
-                            + "            }\n"
-                            + "            val2 = context.temporaryValues.get(tempCursor);\n"
-                            + "\n"
-                            + "            context.minGallop--;\n"
-                            + "        }\n"
-                            + "\n"
-                            + "        // if we had a lot of things from run1, we take the next thing from run2 and then find it in run1\n"
-                            + "        final int copyUntil1 = upperBound(valuesToSort, mergeStartPosition, run1Cursor, val2);\n"
-                            + "\n"
-                            + "        final int gallopLength1 = run1Cursor - copyUntil1;\n"
-                            + "        if (gallopLength1 > 0) {\n"
-                            + "            copyToChunk($copyChunkArgs2:L, copyUntil1, ii - gallopLength1, gallopLength1 + 1);\n"
-                            + "            run1Cursor -= gallopLength1;\n"
-                            + "            ii -= gallopLength1;\n"
-                            + "\n"
-                            + "            if (run1Cursor < mergeStartPosition) {\n"
-                            + "                break nodataleft;\n"
-                            + "            }\n"
-                            + "            val1 = valuesToSort.get(run1Cursor);\n"
-                            + "\n"
-                            + "            context.minGallop--;\n"
-                            + "        }\n"
-                            + "\n"
-                            + "        if (gallopLength1 < $utils:T.INITIAL_GALLOP && gallopLength2 < $utils:T.INITIAL_GALLOP) {\n"
-                            + "            context.minGallop += 2; // undo the possible subtraction from above\n"
-                            + "            break;\n"
-                            + "        }\n"
-                            + "    }\n"
-                            + "}\n"
-                            + "\n"
-                            + "while (tempCursor >= 0) {\n"
-                            + "    valuesToSort.set(ii, context.temporaryValues.get(tempCursor));$finalCopyPermute:L\n"
-                            + "    tempCursor--;\n"
-                            + "    ii--;\n"
-                            + "}\n", args).build())
+                    .addStatement("final int run1End = mergeStartPosition + length1")
+                    .addStatement("int run1Cursor = run1End - 1")
+                    .addStatement("int tempCursor = context.temporaryValues.size() - 1")
+                    .addStatement("final int mergeLength = context.temporaryValues.size() + length1")
+                    .addStatement("int ii")
+                    .addStatement("$T val1 = valuesToSort.get(run1Cursor)", keyType())
+                    .addStatement("$T val2 = context.temporaryValues.get(tempCursor)", keyType())
+                    .addStatement("final int mergeEnd = mergeStartPosition + mergeLength")
+                    .addStatement("ii = mergeEnd - 1")
+                    .beginControlFlow("nodataleft: while (ii >= mergeStartPosition)")
+                    .addStatement("int run1wins = 0")
+                    .addStatement("int run2wins = 0")
+                    .beginControlFlow("if (context.minGallop < 2)")
+                    .addStatement("context.minGallop = 2")
+                    .endControlFlow()
+                    .beginControlFlow("while (run1wins < context.minGallop && run2wins < context.minGallop)")
+                    .beginControlFlow("if (geq(val2, val1))");
+            if (hasPermute) {
+                builder.addStatement("valuesToSort.set(ii, val2)")
+                        .addStatement("valuesToPermute.set(ii--, context.temporaryKeys.get(tempCursor))");
+            } else {
+                builder.addStatement("valuesToSort.set(ii--, val2)");
+            }
+            builder.beginControlFlow("if (--tempCursor < 0)")
+                    .addStatement("break nodataleft")
+                    .endControlFlow()
+                    .addStatement("val2 = context.temporaryValues.get(tempCursor)")
+                    .addStatement("run2wins++")
+                    .addStatement("run1wins = 0")
+                    .nextControlFlow("else");
+            if (hasPermute) {
+                builder.addStatement("valuesToSort.set(ii, val1)")
+                        .addStatement("valuesToPermute.set(ii--, valuesToPermute.get(run1Cursor))");
+            } else {
+                builder.addStatement("valuesToSort.set(ii--, val1)");
+            }
+            builder.beginControlFlow("if (--run1Cursor < mergeStartPosition)")
+                    .addStatement("break nodataleft")
+                    .endControlFlow()
+                    .addStatement("val1 = valuesToSort.get(run1Cursor)")
+                    .addStatement("run1wins++")
+                    .addStatement("run2wins = 0")
+                    .endControlFlow()
+                    .endControlFlow()
+                    .addComment(
+                            "we are in galloping mode now, if we had run out of data then we should have already bailed out to")
+                    .addComment("nodataleft")
+                    .beginControlFlow("while (ii >= mergeStartPosition)")
+                    .addComment(
+                            "if we had a lot of things from run2, we take the next thing from run1 then find it in run2")
+                    .addStatement("final int copyUntil2 = lowerBound(context.temporaryValues, 0, tempCursor, val1) + 1")
+                    .addStatement("final int gallopLength2 = tempCursor - copyUntil2 + 1")
+                    .beginControlFlow("if (gallopLength2 > 0)")
+                    .addStatement("copyToChunk(" + copyChunkArgs1
+                            + ", copyUntil2, ii - gallopLength2 + 1, gallopLength2)")
+                    .addStatement("tempCursor -= gallopLength2")
+                    .addStatement("ii -= gallopLength2")
+                    .beginControlFlow("if (tempCursor < 0)")
+                    .addStatement("break nodataleft")
+                    .endControlFlow()
+                    .addStatement("val2 = context.temporaryValues.get(tempCursor)")
+                    .addStatement("context.minGallop--")
+                    .endControlFlow()
+                    .addComment(
+                            "if we had a lot of things from run1, we take the next thing from run2 and then find it in run1")
+                    .addStatement(
+                            "final int copyUntil1 = upperBound(valuesToSort, mergeStartPosition, run1Cursor, val2)")
+                    .addStatement("final int gallopLength1 = run1Cursor - copyUntil1")
+                    .beginControlFlow("if (gallopLength1 > 0)")
+                    .addStatement("copyToChunk(" + copyChunkArgs2
+                            + ", copyUntil1, ii - gallopLength1, gallopLength1 + 1)")
+                    .addStatement("run1Cursor -= gallopLength1")
+                    .addStatement("ii -= gallopLength1")
+                    .beginControlFlow("if (run1Cursor < mergeStartPosition)")
+                    .addStatement("break nodataleft")
+                    .endControlFlow()
+                    .addStatement("val1 = valuesToSort.get(run1Cursor)")
+                    .addStatement("context.minGallop--")
+                    .endControlFlow()
+                    .beginControlFlow("if (gallopLength1 < $T.INITIAL_GALLOP && gallopLength2 < $T.INITIAL_GALLOP)",
+                            TIMSORT_UTILS, TIMSORT_UTILS)
+                    .addComment("undo the possible subtraction from above")
+                    .addStatement("context.minGallop += 2")
+                    .addStatement("break")
+                    .endControlFlow()
+                    .endControlFlow()
+                    .endControlFlow()
+                    .beginControlFlow("while (tempCursor >= 0)")
+                    .addStatement("valuesToSort.set(ii, context.temporaryValues.get(tempCursor))");
+            if (hasPermute) {
+                builder.addStatement("valuesToPermute.set(ii, context.temporaryKeys.get(tempCursor))");
+            }
+            return builder
+                    .addStatement("tempCursor--")
+                    .addStatement("ii--")
+                    .endControlFlow()
                     .build();
         }
 
@@ -1375,35 +1275,32 @@ public class GenerateTimsortKernels {
         }
 
         private MethodSpec emitBound() {
-            final Map<String, Object> args = namedArgs();
             return boundMethod("bound")
                     .addParameter(ParameterSpec.builder(keyChunks.chunkOfWildcard(), "valuesToSort").build())
                     .addParameter(int.class, "lo")
                     .addParameter(int.class, "hi")
                     .addParameter(keyType(), "searchValue")
                     .addParameter(ParameterSpec.builder(boolean.class, "lower", Modifier.FINAL).build())
-                    .addCode(CodeBlock.builder().addNamed(""
-                            + "final int compareLimit = lower ? -1 : 0; // lt or leq\n"
-                            + "\n"
-                            + "while (lo < hi) {\n"
-                            + "    final int mid = (lo + hi) >>> 1;\n"
-                            + "    final $kt:T testValue = valuesToSort.get(mid);\n"
-                            + "    final boolean moveLo = doComparison(testValue, searchValue) <= compareLimit;\n"
-                            + "    if (moveLo) {\n"
-                            + "        // For bound, (testValue OP searchValue) means that the result somewhere later than 'mid' [OP=lt or leq]\n"
-                            + "        lo = mid + 1;\n"
-                            + "    } else {\n"
-                            + "        hi = mid;\n"
-                            + "    }\n"
-                            + "}\n"
-                            + "\n"
-                            + "return lo;\n", args).build())
+                    .addComment("lt or leq")
+                    .addStatement("final int compareLimit = lower ? -1 : 0")
+                    .beginControlFlow("while (lo < hi)")
+                    .addStatement("final int mid = (lo + hi) >>> 1")
+                    .addStatement("final $T testValue = valuesToSort.get(mid)", keyType())
+                    .addStatement("final boolean moveLo = doComparison(testValue, searchValue) <= compareLimit")
+                    .beginControlFlow("if (moveLo)")
+                    .addComment(
+                            "For bound, (testValue OP searchValue) means that the result somewhere later than 'mid' [OP=lt or leq]")
+                    .addStatement("lo = mid + 1")
+                    .nextControlFlow("else")
+                    .addStatement("hi = mid")
+                    .endControlFlow()
+                    .endControlFlow()
+                    .addStatement("return lo")
                     .build();
         }
 
         private MethodSpec emitInsertionSort() {
-            final Map<String, Object> args = namedArgs();
-            args.put("permutePrefix", permutePrefix());
+            final String permute = hasPermute ? "valuesToPermute, " : "";
             final MethodSpec.Builder builder = MethodSpec.methodBuilder("insertionSort")
                     .addModifiers(Modifier.PRIVATE);
             if (!instanceKernel) {
@@ -1417,19 +1314,19 @@ public class GenerateTimsortKernels {
                     .addParameter(ParameterSpec.builder(keyChunks.writableChunkOfWildcard(), "valuesToSort").build())
                     .addParameter(int.class, "offset")
                     .addParameter(int.class, "length")
-                    .addCode(CodeBlock.builder().addNamed(""
-                            + "// this could eventually be done with intrinsics (AVX 512/64 bits for long keys == 16 elements, and can be\n"
-                            + "// combined up to 256)\n"
-                            + "for (int ii = offset + 1; ii < offset + length; ++ii) {\n"
-                            + "    for (int jj = ii; jj > offset && gt(valuesToSort.get(jj - 1), valuesToSort.get(jj)); jj--) {\n"
-                            + "        swap($permutePrefix:LvaluesToSort, jj, jj - 1);\n"
-                            + "    }\n"
-                            + "}\n", args).build())
+                    .addComment(
+                            "this could eventually be done with intrinsics (AVX 512/64 bits for long keys == 16 elements, and can be")
+                    .addComment("combined up to 256)")
+                    .beginControlFlow("for (int ii = offset + 1; ii < offset + length; ++ii)")
+                    .beginControlFlow(
+                            "for (int jj = ii; jj > offset && gt(valuesToSort.get(jj - 1), valuesToSort.get(jj)); jj--)")
+                    .addStatement("swap(" + permute + "valuesToSort, jj, jj - 1)")
+                    .endControlFlow()
+                    .endControlFlow()
                     .build();
         }
 
         private MethodSpec emitSwap() {
-            final Map<String, Object> args = namedArgs();
             final MethodSpec.Builder builder = MethodSpec.methodBuilder("swap")
                     .addModifiers(Modifier.STATIC, Modifier.PRIVATE);
             if (hasPermute) {
@@ -1439,21 +1336,18 @@ public class GenerateTimsortKernels {
             builder.addParameter(ParameterSpec.builder(keyChunks.writableChunkOfWildcard(), "valuesToSort").build())
                     .addParameter(int.class, "a")
                     .addParameter(int.class, "b");
+            final String tempName = "temp" + keyChunks.name;
             if (hasPermute) {
-                builder.addCode(CodeBlock.builder().addNamed(""
-                        + "final $pt:T tempPermuteValue = valuesToPermute.get(a);\n"
-                        + "final $kt:T $tempName:L = valuesToSort.get(a);\n"
-                        + "\n"
-                        + "valuesToPermute.set(a, valuesToPermute.get(b));\n"
-                        + "valuesToSort.set(a, valuesToSort.get(b));\n"
-                        + "\n"
-                        + "valuesToPermute.set(b, tempPermuteValue);\n"
-                        + "valuesToSort.set(b, $tempName:L);\n", args).build());
+                builder.addStatement("final $T tempPermuteValue = valuesToPermute.get(a)", spec.permute.elementType)
+                        .addStatement("final $T $L = valuesToSort.get(a)", keyType(), tempName)
+                        .addStatement("valuesToPermute.set(a, valuesToPermute.get(b))")
+                        .addStatement("valuesToSort.set(a, valuesToSort.get(b))")
+                        .addStatement("valuesToPermute.set(b, tempPermuteValue)")
+                        .addStatement("valuesToSort.set(b, $L)", tempName);
             } else {
-                builder.addCode(CodeBlock.builder().addNamed(""
-                        + "final $kt:T $tempName:L = valuesToSort.get(a);\n"
-                        + "valuesToSort.set(a, valuesToSort.get(b));\n"
-                        + "valuesToSort.set(b, $tempName:L);\n", args).build());
+                builder.addStatement("final $T $L = valuesToSort.get(a)", keyType(), tempName)
+                        .addStatement("valuesToSort.set(a, valuesToSort.get(b))")
+                        .addStatement("valuesToSort.set(b, $L)", tempName);
             }
             return builder.build();
         }

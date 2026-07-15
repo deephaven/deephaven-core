@@ -58,7 +58,6 @@ public final class ByteIntTimsortDescendingKernel {
         for (int run = 0; run < numberRuns; ++run) {
             final int offset = offsetsIn.get(run);
             final int length = lengthsIn.get(run);
-
             context.kernel().timSort(context, valuesToPermute, valuesToSort, offset, length);
         }
     }
@@ -84,23 +83,18 @@ public final class ByteIntTimsortDescendingKernel {
         if (length <= 1) {
             return;
         }
-
         final int minRun = TimsortUtils.getRunLength(length);
-
         if (length <= minRun) {
             insertionSort(valuesToPermute, valuesToSort, offset, length);
             return;
         }
-
         context.runCount = 0;
-
         int startRun = offset;
         while (startRun < offset + length) {
             byte current = valuesToSort.get(startRun);
-
-            int endRun; // note that endrun is exclusive
+            // note that endrun is exclusive
+            int endRun;
             final boolean descending;
-
             if (startRun + 1 == offset + length) {
                 endRun = offset + length;
                 descending = false;
@@ -108,7 +102,6 @@ public final class ByteIntTimsortDescendingKernel {
                 byte next = valuesToSort.get(startRun + 1);
                 endRun = startRun + 2;
                 descending = gt(current, next);
-
                 if (!descending) {
                     // search for a non-descending run
                     current = next;
@@ -126,7 +119,6 @@ public final class ByteIntTimsortDescendingKernel {
                     }
                 }
             }
-
             final int foundLength = endRun - startRun;
             context.runStarts[context.runCount] = startRun;
             if (foundLength < minRun) {
@@ -146,13 +138,10 @@ public final class ByteIntTimsortDescendingKernel {
                 context.runLengths[context.runCount] = foundLength;
                 startRun = endRun;
             }
-
             context.runCount++;
-
             // check the invariants at the top of the stack
             ensureMergeInvariants(context, valuesToPermute, valuesToSort);
         }
-
         while (context.runCount > 1) {
             final int length2 = context.runLengths[context.runCount - 1];
             final int start1 = context.runStarts[context.runCount - 2];
@@ -220,13 +209,10 @@ public final class ByteIntTimsortDescendingKernel {
             final int xIndex = context.runCount - 1;
             final int yIndex = context.runCount - 2;
             final int zIndex = context.runCount - 3;
-
             final int xLen = context.runLengths[xIndex];
             final int yLen = context.runLengths[yIndex];
             final int zLen = zIndex >= 0 ? context.runLengths[zIndex] : -1;
-
             final boolean xMerge;
-
             if (zLen >= 0 && (zLen <= yLen + xLen)) {
                 // we must merge the smaller of the two
                 xMerge = xLen < zLen;
@@ -236,20 +222,17 @@ public final class ByteIntTimsortDescendingKernel {
             } else {
                 break;
             }
-
             final int yStart = context.runStarts[yIndex];
             final int xStart = context.runStarts[xIndex];
             if (xMerge) {
                 // merge y and x
                 merge(context, valuesToPermute, valuesToSort, yStart, yLen, xLen);
-
                 // unchanged: context.runStarts[yStart];
                 context.runLengths[yIndex] += xLen;
             } else {
                 // merge y and z
                 final int zStart = context.runStarts[zIndex];
                 merge(context, valuesToPermute, valuesToSort, zStart, zLen, yLen);
-
                 // unchanged: context.runStarts[zIndex];
                 context.runLengths[zIndex] += yLen;
                 context.runStarts[yIndex] = xStart;
@@ -269,25 +252,20 @@ public final class ByteIntTimsortDescendingKernel {
         // they'll never be empty. I'm being cheap about function calls and control flow here.
         // Assert.gtZero(length1, "length1");
         // Assert.gtZero(length2, "length2");
-
         final int start2 = start1 + length1;
         // find the location of run2[0] in run1
         final byte run2lo = valuesToSort.get(start2);
         final int mergeStartPosition = upperBound(valuesToSort, start1, start1 + length1, run2lo);
-
         if (mergeStartPosition == start1 + length1) {
             // these two runs are sorted already
             return;
         }
-
         // find the location of run1[length1 - 1] in run2
         final byte run1hi = valuesToSort.get(start1 + length1 - 1);
         final int mergeEndPosition = lowerBound(valuesToSort, start2, start2 + length2, run1hi);
-
         // figure out which of the two runs is now shorter
         final int remaining1 = start1 + length1 - mergeStartPosition;
         final int remaining2 = mergeEndPosition - start2;
-
         if (remaining1 < remaining2) {
             copyToTemporary(context, valuesToPermute, valuesToSort, mergeStartPosition, remaining1);
             // now we need to do the merge from temporary and remaining2 into remaining1 (so start at the front,
@@ -314,50 +292,39 @@ public final class ByteIntTimsortDescendingKernel {
             final int start2, final int length2) {
         int tempCursor = 0;
         int run2Cursor = start2;
-
         final int run1size = context.temporaryValues.size();
         int ii;
         final int mergeEndExclusive = start2 + length2;
-
         byte val1 = context.temporaryValues.get(tempCursor);
         byte val2 = valuesToSort.get(run2Cursor);
-
         ii = mergeStartPosition;
-
         nodataleft: while (ii < mergeEndExclusive) {
             int run1wins = 0;
             int run2wins = 0;
-
             if (context.minGallop < 2) {
                 context.minGallop = 2;
             }
-
             while (run1wins < context.minGallop && run2wins < context.minGallop) {
                 if (leq(val1, val2)) {
                     valuesToSort.set(ii, val1);
                     valuesToPermute.set(ii++, context.temporaryKeys.get(tempCursor));
-
                     if (++tempCursor == run1size) {
                         break nodataleft;
                     }
-
                     val1 = context.temporaryValues.get(tempCursor);
                     run1wins++;
                     run2wins = 0;
                 } else {
                     valuesToSort.set(ii, val2);
                     valuesToPermute.set(ii++, valuesToPermute.get(run2Cursor));
-
                     if (++run2Cursor == mergeEndExclusive) {
                         break nodataleft;
                     }
                     val2 = valuesToSort.get(run2Cursor);
-
                     run2wins++;
                     run1wins = 0;
                 }
             }
-
             // we are in galloping mode now, if we had run out of data then we should have already bailed out to
             // nodataleft
             while (ii < mergeEndExclusive) {
@@ -368,15 +335,12 @@ public final class ByteIntTimsortDescendingKernel {
                     copyToChunk(context.temporaryKeys, context.temporaryValues, valuesToPermute, valuesToSort, tempCursor, ii, gallopLength1);
                     tempCursor += gallopLength1;
                     ii += gallopLength1;
-
                     if (tempCursor == run1size) {
                         break nodataleft;
                     }
                     val1 = context.temporaryValues.get(tempCursor);
-
                     context.minGallop--;
                 }
-
                 // if we had a lot of things from run2, we take the next thing from run1 and then find it in run2
                 final int copyUntil2 = lowerBound(valuesToSort, run2Cursor, mergeEndExclusive, val1);
                 final int gallopLength2 = copyUntil2 - run2Cursor;
@@ -384,22 +348,19 @@ public final class ByteIntTimsortDescendingKernel {
                     copyToChunk(valuesToPermute, valuesToSort, valuesToPermute, valuesToSort, run2Cursor, ii, gallopLength2);
                     run2Cursor += gallopLength2;
                     ii += gallopLength2;
-
                     if (run2Cursor == mergeEndExclusive) {
                         break nodataleft;
                     }
                     val2 = valuesToSort.get(run2Cursor);
-
                     context.minGallop--;
                 }
-
                 if (gallopLength1 < TimsortUtils.INITIAL_GALLOP && gallopLength2 < TimsortUtils.INITIAL_GALLOP) {
-                    context.minGallop += 2; // undo the possible subtraction from above
+                    // undo the possible subtraction from above
+                    context.minGallop += 2;
                     break;
                 }
             }
         }
-
         while (tempCursor < run1size) {
             valuesToSort.set(ii, context.temporaryValues.get(tempCursor));
             valuesToPermute.set(ii, context.temporaryKeys.get(tempCursor));
@@ -421,94 +382,75 @@ public final class ByteIntTimsortDescendingKernel {
         final int run1End = mergeStartPosition + length1;
         int run1Cursor = run1End - 1;
         int tempCursor = context.temporaryValues.size() - 1;
-
         final int mergeLength = context.temporaryValues.size() + length1;
         int ii;
-
         byte val1 = valuesToSort.get(run1Cursor);
         byte val2 = context.temporaryValues.get(tempCursor);
-
         final int mergeEnd = mergeStartPosition + mergeLength;
         ii = mergeEnd - 1;
-
         nodataleft: while (ii >= mergeStartPosition) {
             int run1wins = 0;
             int run2wins = 0;
-
             if (context.minGallop < 2) {
                 context.minGallop = 2;
             }
-
             while (run1wins < context.minGallop && run2wins < context.minGallop) {
                 if (geq(val2, val1)) {
                     valuesToSort.set(ii, val2);
                     valuesToPermute.set(ii--, context.temporaryKeys.get(tempCursor));
-
                     if (--tempCursor < 0) {
                         break nodataleft;
                     }
                     val2 = context.temporaryValues.get(tempCursor);
-
                     run2wins++;
                     run1wins = 0;
                 } else {
                     valuesToSort.set(ii, val1);
                     valuesToPermute.set(ii--, valuesToPermute.get(run1Cursor));
-
                     if (--run1Cursor < mergeStartPosition) {
                         break nodataleft;
                     }
                     val1 = valuesToSort.get(run1Cursor);
-
                     run1wins++;
                     run2wins = 0;
                 }
             }
-
             // we are in galloping mode now, if we had run out of data then we should have already bailed out to
             // nodataleft
             while (ii >= mergeStartPosition) {
                 // if we had a lot of things from run2, we take the next thing from run1 then find it in run2
                 final int copyUntil2 = lowerBound(context.temporaryValues, 0, tempCursor, val1) + 1;
-
                 final int gallopLength2 = tempCursor - copyUntil2 + 1;
                 if (gallopLength2 > 0) {
                     copyToChunk(context.temporaryKeys, context.temporaryValues, valuesToPermute, valuesToSort, copyUntil2, ii - gallopLength2 + 1, gallopLength2);
                     tempCursor -= gallopLength2;
                     ii -= gallopLength2;
-
                     if (tempCursor < 0) {
                         break nodataleft;
                     }
                     val2 = context.temporaryValues.get(tempCursor);
-
                     context.minGallop--;
                 }
-
                 // if we had a lot of things from run1, we take the next thing from run2 and then find it in run1
                 final int copyUntil1 = upperBound(valuesToSort, mergeStartPosition, run1Cursor, val2);
-
                 final int gallopLength1 = run1Cursor - copyUntil1;
                 if (gallopLength1 > 0) {
                     copyToChunk(valuesToPermute, valuesToSort, valuesToPermute, valuesToSort, copyUntil1, ii - gallopLength1, gallopLength1 + 1);
                     run1Cursor -= gallopLength1;
                     ii -= gallopLength1;
-
                     if (run1Cursor < mergeStartPosition) {
                         break nodataleft;
                     }
                     val1 = valuesToSort.get(run1Cursor);
-
                     context.minGallop--;
                 }
-
                 if (gallopLength1 < TimsortUtils.INITIAL_GALLOP && gallopLength2 < TimsortUtils.INITIAL_GALLOP) {
-                    context.minGallop += 2; // undo the possible subtraction from above
+                    // undo the possible subtraction from above
+                    context.minGallop += 2;
                     break;
                 }
             }
         }
-
         while (tempCursor >= 0) {
             valuesToSort.set(ii, context.temporaryValues.get(tempCursor));
             valuesToPermute.set(ii, context.temporaryKeys.get(tempCursor));
@@ -555,8 +497,8 @@ public final class ByteIntTimsortDescendingKernel {
 
     private int bound(ByteChunk<?> valuesToSort, int lo, int hi, byte searchValue,
             final boolean lower) {
-        final int compareLimit = lower ? -1 : 0; // lt or leq
-
+        // lt or leq
+        final int compareLimit = lower ? -1 : 0;
         while (lo < hi) {
             final int mid = (lo + hi) >>> 1;
             final byte testValue = valuesToSort.get(mid);
@@ -568,7 +510,6 @@ public final class ByteIntTimsortDescendingKernel {
                 hi = mid;
             }
         }
-
         return lo;
     }
 
@@ -587,10 +528,8 @@ public final class ByteIntTimsortDescendingKernel {
             int a, int b) {
         final int tempPermuteValue = valuesToPermute.get(a);
         final byte tempByte = valuesToSort.get(a);
-
         valuesToPermute.set(a, valuesToPermute.get(b));
         valuesToSort.set(a, valuesToSort.get(b));
-
         valuesToPermute.set(b, tempPermuteValue);
         valuesToSort.set(b, tempByte);
     }

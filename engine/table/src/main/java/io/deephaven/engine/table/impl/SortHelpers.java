@@ -667,7 +667,8 @@ public class SortHelpers {
                 // the direct kernels below
                 try (final MultiColumnSortKernel<RowKeys> indirectContext =
                         MultiColumnTimsortKernelFactory.makeContext(
-                                new ChunkType[] {values.getChunkType()}, new SortingOrder[] {order}, chunkSize)) {
+                                new ChunkType[] {values.getChunkType()}, new SortingOrder[] {order},
+                                new Comparator[1], chunkSize)) {
                     if (indirectContext != null) {
                         // noinspection unchecked
                         indirectContext.sort(rowKeys, new WritableChunk[] {values});
@@ -922,9 +923,10 @@ public class SortHelpers {
 
     /**
      * Attempt to sort all of the key columns in a single pass with a generated multi-column timsort kernel that
-     * compares each column in turn, rather than sorting one column at a time with run finding in between. Returns null
-     * when no kernel is available for the column types and orders, or when any column sorts with a comparator; the
-     * caller then falls back to the one-column-at-a-time path.
+     * compares each column in turn (using each column's comparator, when present, in place of the natural ordering),
+     * rather than sorting one column at a time with run finding in between. Returns null only when no kernel is
+     * available for the column types (e.g., a boolean chunk); the caller then falls back to the one-column-at-a-time
+     * path.
      */
     @Nullable
     private static SortMapping tryMultiColumnSortMapping(
@@ -936,15 +938,10 @@ public class SortHelpers {
             final int sortSize,
             final long[] rowKeysArray,
             final WritableLongChunk<RowKeys> rowKeys) {
-        for (final Comparator comparator : comparators) {
-            if (comparator != null) {
-                return null;
-            }
-        }
         final ChunkType[] chunkTypes =
                 Arrays.stream(columnSources).map(ColumnSource::getChunkType).toArray(ChunkType[]::new);
         try (final MultiColumnSortKernel<RowKeys> sortContext =
-                MultiColumnTimsortKernelFactory.makeContext(chunkTypes, order, sortSize)) {
+                MultiColumnTimsortKernelFactory.makeContext(chunkTypes, order, comparators, sortSize)) {
             if (sortContext == null) {
                 return null;
             }

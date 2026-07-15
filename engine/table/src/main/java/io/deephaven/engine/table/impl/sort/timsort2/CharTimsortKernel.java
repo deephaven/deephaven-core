@@ -45,23 +45,18 @@ public final class CharTimsortKernel {
         if (length <= 1) {
             return;
         }
-
         final int minRun = TimsortUtils.getRunLength(length);
-
         if (length <= minRun) {
             insertionSort(valuesToSort, offset, length);
             return;
         }
-
         context.runCount = 0;
-
         int startRun = offset;
         while (startRun < offset + length) {
             char current = valuesToSort.get(startRun);
-
-            int endRun; // note that endrun is exclusive
+            // note that endrun is exclusive
+            int endRun;
             final boolean descending;
-
             if (startRun + 1 == offset + length) {
                 endRun = offset + length;
                 descending = false;
@@ -69,7 +64,6 @@ public final class CharTimsortKernel {
                 char next = valuesToSort.get(startRun + 1);
                 endRun = startRun + 2;
                 descending = gt(current, next);
-
                 if (!descending) {
                     // search for a non-descending run
                     current = next;
@@ -87,7 +81,6 @@ public final class CharTimsortKernel {
                     }
                 }
             }
-
             final int foundLength = endRun - startRun;
             context.runStarts[context.runCount] = startRun;
             if (foundLength < minRun) {
@@ -107,13 +100,10 @@ public final class CharTimsortKernel {
                 context.runLengths[context.runCount] = foundLength;
                 startRun = endRun;
             }
-
             context.runCount++;
-
             // check the invariants at the top of the stack
             ensureMergeInvariants(context, valuesToSort);
         }
-
         while (context.runCount > 1) {
             final int length2 = context.runLengths[context.runCount - 1];
             final int start1 = context.runStarts[context.runCount - 2];
@@ -178,13 +168,10 @@ public final class CharTimsortKernel {
             final int xIndex = context.runCount - 1;
             final int yIndex = context.runCount - 2;
             final int zIndex = context.runCount - 3;
-
             final int xLen = context.runLengths[xIndex];
             final int yLen = context.runLengths[yIndex];
             final int zLen = zIndex >= 0 ? context.runLengths[zIndex] : -1;
-
             final boolean xMerge;
-
             if (zLen >= 0 && (zLen <= yLen + xLen)) {
                 // we must merge the smaller of the two
                 xMerge = xLen < zLen;
@@ -194,20 +181,17 @@ public final class CharTimsortKernel {
             } else {
                 break;
             }
-
             final int yStart = context.runStarts[yIndex];
             final int xStart = context.runStarts[xIndex];
             if (xMerge) {
                 // merge y and x
                 merge(context, valuesToSort, yStart, yLen, xLen);
-
                 // unchanged: context.runStarts[yStart];
                 context.runLengths[yIndex] += xLen;
             } else {
                 // merge y and z
                 final int zStart = context.runStarts[zIndex];
                 merge(context, valuesToSort, zStart, zLen, yLen);
-
                 // unchanged: context.runStarts[zIndex];
                 context.runLengths[zIndex] += yLen;
                 context.runStarts[yIndex] = xStart;
@@ -224,25 +208,20 @@ public final class CharTimsortKernel {
         // they'll never be empty. I'm being cheap about function calls and control flow here.
         // Assert.gtZero(length1, "length1");
         // Assert.gtZero(length2, "length2");
-
         final int start2 = start1 + length1;
         // find the location of run2[0] in run1
         final char run2lo = valuesToSort.get(start2);
         final int mergeStartPosition = upperBound(valuesToSort, start1, start1 + length1, run2lo);
-
         if (mergeStartPosition == start1 + length1) {
             // these two runs are sorted already
             return;
         }
-
         // find the location of run1[length1 - 1] in run2
         final char run1hi = valuesToSort.get(start1 + length1 - 1);
         final int mergeEndPosition = lowerBound(valuesToSort, start2, start2 + length2, run1hi);
-
         // figure out which of the two runs is now shorter
         final int remaining1 = start1 + length1 - mergeStartPosition;
         final int remaining2 = mergeEndPosition - start2;
-
         if (remaining1 < remaining2) {
             copyToTemporary(context, valuesToSort, mergeStartPosition, remaining1);
             // now we need to do the merge from temporary and remaining2 into remaining1 (so start at the front,
@@ -267,48 +246,37 @@ public final class CharTimsortKernel {
             final int length2) {
         int tempCursor = 0;
         int run2Cursor = start2;
-
         final int run1size = context.temporaryValues.size();
         int ii;
         final int mergeEndExclusive = start2 + length2;
-
         char val1 = context.temporaryValues.get(tempCursor);
         char val2 = valuesToSort.get(run2Cursor);
-
         ii = mergeStartPosition;
-
         nodataleft: while (ii < mergeEndExclusive) {
             int run1wins = 0;
             int run2wins = 0;
-
             if (context.minGallop < 2) {
                 context.minGallop = 2;
             }
-
             while (run1wins < context.minGallop && run2wins < context.minGallop) {
                 if (leq(val1, val2)) {
                     valuesToSort.set(ii++, val1);
-
                     if (++tempCursor == run1size) {
                         break nodataleft;
                     }
-
                     val1 = context.temporaryValues.get(tempCursor);
                     run1wins++;
                     run2wins = 0;
                 } else {
                     valuesToSort.set(ii++, val2);
-
                     if (++run2Cursor == mergeEndExclusive) {
                         break nodataleft;
                     }
                     val2 = valuesToSort.get(run2Cursor);
-
                     run2wins++;
                     run1wins = 0;
                 }
             }
-
             // we are in galloping mode now, if we had run out of data then we should have already bailed out to
             // nodataleft
             while (ii < mergeEndExclusive) {
@@ -319,15 +287,12 @@ public final class CharTimsortKernel {
                     copyToChunk(context.temporaryValues, valuesToSort, tempCursor, ii, gallopLength1);
                     tempCursor += gallopLength1;
                     ii += gallopLength1;
-
                     if (tempCursor == run1size) {
                         break nodataleft;
                     }
                     val1 = context.temporaryValues.get(tempCursor);
-
                     context.minGallop--;
                 }
-
                 // if we had a lot of things from run2, we take the next thing from run1 and then find it in run2
                 final int copyUntil2 = lowerBound(valuesToSort, run2Cursor, mergeEndExclusive, val1);
                 final int gallopLength2 = copyUntil2 - run2Cursor;
@@ -335,22 +300,19 @@ public final class CharTimsortKernel {
                     copyToChunk(valuesToSort, valuesToSort, run2Cursor, ii, gallopLength2);
                     run2Cursor += gallopLength2;
                     ii += gallopLength2;
-
                     if (run2Cursor == mergeEndExclusive) {
                         break nodataleft;
                     }
                     val2 = valuesToSort.get(run2Cursor);
-
                     context.minGallop--;
                 }
-
                 if (gallopLength1 < TimsortUtils.INITIAL_GALLOP && gallopLength2 < TimsortUtils.INITIAL_GALLOP) {
-                    context.minGallop += 2; // undo the possible subtraction from above
+                    // undo the possible subtraction from above
+                    context.minGallop += 2;
                     break;
                 }
             }
         }
-
         while (tempCursor < run1size) {
             valuesToSort.set(ii, context.temporaryValues.get(tempCursor));
             tempCursor++;
@@ -368,92 +330,73 @@ public final class CharTimsortKernel {
         final int run1End = mergeStartPosition + length1;
         int run1Cursor = run1End - 1;
         int tempCursor = context.temporaryValues.size() - 1;
-
         final int mergeLength = context.temporaryValues.size() + length1;
         int ii;
-
         char val1 = valuesToSort.get(run1Cursor);
         char val2 = context.temporaryValues.get(tempCursor);
-
         final int mergeEnd = mergeStartPosition + mergeLength;
         ii = mergeEnd - 1;
-
         nodataleft: while (ii >= mergeStartPosition) {
             int run1wins = 0;
             int run2wins = 0;
-
             if (context.minGallop < 2) {
                 context.minGallop = 2;
             }
-
             while (run1wins < context.minGallop && run2wins < context.minGallop) {
                 if (geq(val2, val1)) {
                     valuesToSort.set(ii--, val2);
-
                     if (--tempCursor < 0) {
                         break nodataleft;
                     }
                     val2 = context.temporaryValues.get(tempCursor);
-
                     run2wins++;
                     run1wins = 0;
                 } else {
                     valuesToSort.set(ii--, val1);
-
                     if (--run1Cursor < mergeStartPosition) {
                         break nodataleft;
                     }
                     val1 = valuesToSort.get(run1Cursor);
-
                     run1wins++;
                     run2wins = 0;
                 }
             }
-
             // we are in galloping mode now, if we had run out of data then we should have already bailed out to
             // nodataleft
             while (ii >= mergeStartPosition) {
                 // if we had a lot of things from run2, we take the next thing from run1 then find it in run2
                 final int copyUntil2 = lowerBound(context.temporaryValues, 0, tempCursor, val1) + 1;
-
                 final int gallopLength2 = tempCursor - copyUntil2 + 1;
                 if (gallopLength2 > 0) {
                     copyToChunk(context.temporaryValues, valuesToSort, copyUntil2, ii - gallopLength2 + 1, gallopLength2);
                     tempCursor -= gallopLength2;
                     ii -= gallopLength2;
-
                     if (tempCursor < 0) {
                         break nodataleft;
                     }
                     val2 = context.temporaryValues.get(tempCursor);
-
                     context.minGallop--;
                 }
-
                 // if we had a lot of things from run1, we take the next thing from run2 and then find it in run1
                 final int copyUntil1 = upperBound(valuesToSort, mergeStartPosition, run1Cursor, val2);
-
                 final int gallopLength1 = run1Cursor - copyUntil1;
                 if (gallopLength1 > 0) {
                     copyToChunk(valuesToSort, valuesToSort, copyUntil1, ii - gallopLength1, gallopLength1 + 1);
                     run1Cursor -= gallopLength1;
                     ii -= gallopLength1;
-
                     if (run1Cursor < mergeStartPosition) {
                         break nodataleft;
                     }
                     val1 = valuesToSort.get(run1Cursor);
-
                     context.minGallop--;
                 }
-
                 if (gallopLength1 < TimsortUtils.INITIAL_GALLOP && gallopLength2 < TimsortUtils.INITIAL_GALLOP) {
-                    context.minGallop += 2; // undo the possible subtraction from above
+                    // undo the possible subtraction from above
+                    context.minGallop += 2;
                     break;
                 }
             }
         }
-
         while (tempCursor >= 0) {
             valuesToSort.set(ii, context.temporaryValues.get(tempCursor));
             tempCursor--;
@@ -490,8 +433,8 @@ public final class CharTimsortKernel {
 
     private static int bound(CharChunk<?> valuesToSort, int lo, int hi, char searchValue,
             final boolean lower) {
-        final int compareLimit = lower ? -1 : 0; // lt or leq
-
+        // lt or leq
+        final int compareLimit = lower ? -1 : 0;
         while (lo < hi) {
             final int mid = (lo + hi) >>> 1;
             final char testValue = valuesToSort.get(mid);
@@ -503,7 +446,6 @@ public final class CharTimsortKernel {
                 hi = mid;
             }
         }
-
         return lo;
     }
 

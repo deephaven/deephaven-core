@@ -226,10 +226,11 @@ public class QueryTable extends BaseTable<QueryTable> {
      * If the Configuration property "QueryTable.useGeneratedSortKernels" is set to true (default), then sorts of Object
      * columns and sorts of multiple columns use generated indirect timsort kernels that compare each column in turn
      * while permuting only a parallel chunk of positions (the permuted row keys are assembled in a single linear pass
-     * at the end). Kernels for shapes without a pregenerated class — three or more sort columns, or descending
-     * multi-column components — are compiled on demand. Single-column sorts of primitive types always use the existing
-     * direct kernels, which are faster for them. If false, sorting always uses the existing one-column-at-a-time
-     * kernels with run finding in between.
+     * at the end). The single-column kernels are pregenerated; every multi-column shape — any mix of column types, sort
+     * directions, and per-column comparators — is compiled on demand and cached, so multi-column sorts never fall back
+     * to sorting one column at a time. Single-column sorts of primitive types always use the existing direct kernels,
+     * which are faster for them. If false, sorting always uses the existing one-column-at-a-time kernels with run
+     * finding in between.
      */
     public static boolean USE_GENERATED_SORT_KERNELS =
             Configuration.getInstance().getBooleanWithDefault("QueryTable.useGeneratedSortKernels", true);
