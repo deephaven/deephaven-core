@@ -410,12 +410,14 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
 
             final BarrageTable localResultTable = resultTable;
             // @formatter:off
+            final int numColumns = localResultTable.numColumns();
+            final boolean allColumnsExpected = expectedColumns == null || expectedColumns.cardinality() == numColumns;
             final boolean correctColumns =
-                    // all columns are expected
-                    (expectedColumns == null
-                        && (serverColumns == null || serverColumns.cardinality() == localResultTable.numColumns()))
-                    // only specific set of columns are expected
-                    || (expectedColumns != null && expectedColumns.equals(serverColumns));
+                    // all columns are expected (null or explicit full set)
+                    (allColumnsExpected
+                            && (serverColumns == null || serverColumns.cardinality() == numColumns))
+                            // only a specific subset of columns is expected
+                            || (!allColumnsExpected && expectedColumns.equals(serverColumns));
 
             final boolean isComplete =
                     // Full subscription is completed

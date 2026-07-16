@@ -51,6 +51,10 @@
                 "path": "getting-started/crash-course/query-strings.md"
               },
               {
+                "label": "Recipes, not loops!",
+                "path": "getting-started/crash-course/vectorization-vs-loops.md"
+              },
+              {
                 "label": "Real-time Plots",
                 "path": "getting-started/crash-course/plots.md"
               },
@@ -128,6 +132,10 @@
               {
                 "label": "Servers & clients",
                 "path": "conceptual/client-server-model.md"
+              },
+              {
+                "label": "What is Barrage?",
+                "path": "conceptual/what-is-barrage.md"
               }
             ]
           },
@@ -268,6 +276,10 @@
               {
                 "label": "URI",
                 "path": "how-to-guides/use-uris.md"
+              },
+              {
+                "label": "Table data service",
+                "path": "how-to-guides/data-import-export/table-data-service.md"
               },
               {
                 "label": "Table listeners",
@@ -814,6 +826,10 @@
                 "path": "conceptual/ninja.md"
               },
               {
+                "label": "Vectorization and the recipe paradigm",
+                "path": "conceptual/vectorization-and-recipes.md"
+              },
+              {
                 "label": "Performance",
                 "items": [
                   {
@@ -879,16 +895,33 @@
                     "path": "how-to-guides/groovy-errors.md"
                   },
                   {
-                    "label": "Attach a JVM debugger",
-                    "path": "how-to-guides/attach-debugger.md"
-                  },
-                  {
                     "label": "Get version information",
                     "path": "how-to-guides/get-version.md"
                   },
                   {
                     "label": "Retrieve logs",
                     "path": "how-to-guides/logs.md"
+                  },
+                  {
+                    "label": "Debugging",
+                    "items": [
+                      {
+                        "label": "Overview",
+                        "path": "how-to-guides/debugging/debugging-landing.md"
+                      },
+                      {
+                        "label": "Docker setup",
+                        "path": "how-to-guides/debugging/docker-setup.md"
+                      },
+                      {
+                        "label": "Source setup",
+                        "path": "how-to-guides/debugging/source-setup.md"
+                      },
+                      {
+                        "label": "Common problems",
+                        "path": "how-to-guides/debugging/common-problems.md"
+                      }
+                    ]
                   }
                 ]
               },
@@ -997,6 +1030,10 @@
                   {
                     "label": "Deephaven configuration files",
                     "path": "how-to-guides/configuration/config-file.md"
+                  },
+                  {
+                    "label": "Configuration properties",
+                    "path": "how-to-guides/configuration/configuration-properties.md"
                   },
                   {
                     "label": "Web Defaults",

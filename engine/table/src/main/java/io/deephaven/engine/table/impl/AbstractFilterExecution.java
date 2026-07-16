@@ -666,12 +666,6 @@ abstract class AbstractFilterExecution {
                 }, () -> {
                     // Return empty RowSets instead of null.
                     final WritableRowSet result = localInput.get();
-                    final BasePerformanceEntry baseEntry = jobScheduler().getAccumulatedPerformance();
-                    if (baseEntry != null) {
-                        basePerformanceEntry.accumulate(baseEntry);
-                    }
-
-                    // Separate the added and modified result if necessary.
                     if (runModifiedFilters) {
                         final WritableRowSet addedResult = result.extract(addedInput);
                         onComplete.accept(addedResult, result);

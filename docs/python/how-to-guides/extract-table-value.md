@@ -4,6 +4,9 @@ title: Extract table values
 
 Deephaven tables have methods to extract values from tables into Python. Generally, this isn't necessary for Deephaven queries but may be useful for debugging and logging purposes, and other specific use cases such as using listeners.
 
+> [!NOTE]
+> These methods are for **extracting** values from Deephaven to Python, not for **transforming** table data. To create or modify columns, use operations like [`update`](../reference/table-operations/select/update.md). See [Vectorization](../getting-started/crash-course/vectorization-vs-loops.md) for more details.
+
 ## to_numpy() (positional index access)
 
 The recommended way to extract values from a table by positional index is using [`to_numpy`](../reference/numpy/to-numpy.md). This converts table columns to NumPy arrays, which provide positional index access.

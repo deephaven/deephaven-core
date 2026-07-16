@@ -431,60 +431,9 @@ Partitioned tables are faster in this case because, as mentioned earlier, the jo
 
 If you are unsure if parallelization through partitioned tables could improve your query performance, reach out to us on [Slack](/slack) for more specific guidance.
 
-#### Tick amplification
+#### Avoid tick amplification
 
-In grouping and ungrouping operations, the Deephaven query engine does not know which cells change. Even if only a single cell changes, an entire array is marked as modified, and large sections of the output table change. In a real-time query, this can potentially cause many unnecessary calculations to be performed. Take, for instance, the following query.
-
-```python ticking-table order=null
-from deephaven import time_table
-from deephaven.table_listener import listen
-
-
-def print_changes(label, update, is_replay):
-    added = update.added()
-    modified = update.modified()
-    n_added = len(added["X"]) if "X" in added else 0
-    n_modified = len(modified["X"]) if "X" in modified else 0
-    changes = n_added + n_modified
-    print(f"TICK PROPAGATION: {label} {changes} changes")
-
-
-t1 = time_table("PT5s").update(["A=ii%2", "X=ii"])
-
-# Group/ungroup
-t2 = t1.group_by("A").update("Y=X+1").ungroup()
-
-# Partition/merge
-t3 = t1.partition_by("A").proxy().update("Y=X+1").target.merge()
-
-h1 = listen(
-    t1, lambda update, is_replay: print_changes("RAW            ", update, is_replay)
-)
-h2 = listen(
-    t2, lambda update, is_replay: print_changes("GROUP/UNGROUP  ", update, is_replay)
-)
-h3 = listen(
-    t3, lambda update, is_replay: print_changes("PARTITION/MERGE", update, is_replay)
-)
-```
-
-At first, this is the output of the query:
-
-```
-TICK PROPAGATION: RAW             1 changes
-TICK PROPAGATION: GROUP/UNGROUP   1 changes
-TICK PROPAGATION: PARTITION/MERGE 1 changes
-```
-
-After letting the code run for a little while, this is the output:
-
-```
-TICK PROPAGATION: RAW             1 changes
-TICK PROPAGATION: GROUP/UNGROUP   10 changes
-TICK PROPAGATION: PARTITION/MERGE 1 changes
-```
-
-As the code runs longer, the grouping/ungrouping operation on its own continues to make more and more changes, whereas the partition/merge stays at one. Every change reported in the group/ungroup is an unnecessary calculation that performs extra work for no benefit. This is tick amplification in action. Where a group and ungroup suffers from this problem, a partition and merge does not.
+Partitioned tables also help avoid [tick amplification](../conceptual/troubleshooting-steps.md#tick-amplification) — a performance issue where group/ungroup operations cause unnecessary recalculations. When using partition/merge instead of group/ungroup, the engine processes smaller sets of data independently, avoiding the overhead of checking entire groups for changes.
 
 ## Related documentation
 

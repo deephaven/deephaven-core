@@ -11,7 +11,7 @@ This guide assumes familiarity with installing and running the Deephaven product
 
 ## Prerequisites
 
-Only Java is required to run the Deephaven production application. Deephaven recommends using the latest LTS version of Java. Java 11 or later is required.
+Only Java is required to run the Deephaven production application. Deephaven recommends using the latest LTS version of Java. Java 17 or later is required.
 
 The production application also requires Linux or Mac OS. Running on Windows requires Windows Subsystem for Linux v2 (WSL 2)[<sup>[1]</sup>](#footnotes).
 

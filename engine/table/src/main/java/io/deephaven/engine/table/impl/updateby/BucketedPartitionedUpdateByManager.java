@@ -157,6 +157,8 @@ class BucketedPartitionedUpdateByManager extends UpdateBy {
                     "an exception occurred while initializing bucketed updateBy",
                     e.getCause());
         }
+
+        sm.recordPerformance();
     }
 
     @Override
