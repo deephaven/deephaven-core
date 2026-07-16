@@ -47,7 +47,10 @@ A `ColumnSource` for the requested column, parameterized by the target type when
 
 ## Examples
 
-The following example retrieves a `ColumnSource` by name and reads a value by row key:
+> [!CAUTION]
+> Row keys are internal identifiers, not positional indices, and cannot be assumed or made up (for example, a row key of `2` does not necessarily mean "the third row"). Always obtain row keys from the table's own [`RowSet`](https://deephaven.io/core/javadoc/io/deephaven/engine/rowset/RowSet.html) via `getRowSet()`, as shown below. For simple bulk or positional access to column data, prefer [`columnIterator`](../../../how-to-guides/extract-table-value.md) or [`ColumnVectors`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/vectors/ColumnVectors.html) rather than calling single-value `ColumnSource` accessors like `getInt` directly.
+
+The following example retrieves a `ColumnSource` by name, then uses the table's `RowSet` to visit every valid row key:
 
 ```groovy order=:log
 source = newTable(
@@ -55,7 +58,10 @@ source = newTable(
 )
 
 columnSource = source.getColumnSource("Integers")
-println columnSource.getInt(2)
+
+source.getRowSet().forAllRowKeys { rowKey ->
+    println rowKey
+}
 ```
 
 The following example casts the `ColumnSource` to a target type using a `Class` and using a `ColumnDefinition` from the table's definition:
@@ -67,12 +73,12 @@ source = newTable(
 
 // Cast to a target type by class
 intSource = source.getColumnSource("Integers", int.class)
-println intSource.getInt(2)
+println intSource
 
 // Cast using a ColumnDefinition from the table's definition
 intDef = source.getDefinition().getColumn("Integers")
 defSource = source.getColumnSource(intDef)
-println defSource.getInt(2)
+println defSource
 ```
 
 ## Related documentation
