@@ -12,6 +12,7 @@ import io.deephaven.api.literal.Literal;
 import io.deephaven.base.Factory;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.NoSuchColumnException;
 import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.filters.RowSetCapturingFilter;
@@ -779,6 +780,35 @@ public class TestClockFilters {
             assertEquals(0, filter2.numRowsProcessed());
             assertEquals(0, filter3.numRowsProcessed());
             assertEquals(6, filter4.numRowsProcessed());
+        }
+    }
+
+    @Test
+    public void testMissingColumn() {
+        final Table input = testInput1.dropColumns("Timestamp");
+        for (final ClockFilter filter : new ClockFilter[] {
+                new UnsortedClockFilter("Timestamp", clock, true),
+                new SortedClockFilter("Timestamp", clock, true)}) {
+            try {
+                input.where(filter);
+                fail("Expected NoSuchColumnException for clock filter on missing column");
+            } catch (NoSuchColumnException expected) {
+                assertTrue(expected.getMessage().contains("Timestamp"));
+            }
+        }
+    }
+
+    @Test
+    public void testWrongColumnType() {
+        for (final ClockFilter filter : new ClockFilter[] {
+                new UnsortedClockFilter("Int", clock, true),
+                new SortedClockFilter("Int", clock, true)}) {
+            try {
+                testInput1.where(filter);
+                fail("Expected ClassCastException for clock filter on non-Instant column");
+            } catch (ClassCastException expected) {
+                assertTrue(expected.getMessage().contains("Int"));
+            }
         }
     }
 
