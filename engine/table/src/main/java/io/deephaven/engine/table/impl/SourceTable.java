@@ -307,18 +307,6 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
     protected final QueryTable doCoalesce() {
         initialize();
 
-        if (!isRefreshing()) {
-            final Collection<TableLocation> includedLocations = columnSourceManager.includedLocations();
-            if (includedLocations.size() == 1) {
-                for (final SortColumn sc : includedLocations.iterator().next().getSortedColumns()) {
-                    final SortingOrder order = sc.order() == SortColumn.Order.ASCENDING
-                            ? SortingOrder.Ascending
-                            : SortingOrder.Descending;
-                    SortedColumnsAttribute.setOrderForColumn(this, sc.column().name(), order);
-                }
-            }
-        }
-
         final OperationSnapshotControl snapshotControl =
                 createSnapshotControlIfRefreshing((final BaseTable<?> parent) -> new OperationSnapshotControl(parent) {
 
@@ -336,6 +324,19 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
             copyAttributes(resultTable, CopyAttributeOperation.Coalesce);
             if (rowSet.isEmpty()) {
                 resultTable.setAttribute(INITIALLY_EMPTY_COALESCED_SOURCE_TABLE_ATTRIBUTE, true);
+            }
+            if (!isRefreshing()) {
+                // (Maybe) set the sorted attribute on the result table (not on the uncoalesced table).
+                // Its attributes may already have been published and frozen.
+                final Collection<TableLocation> includedLocations = columnSourceManager.includedLocations();
+                if (includedLocations.size() == 1) {
+                    for (final SortColumn sc : includedLocations.iterator().next().getSortedColumns()) {
+                        final SortingOrder order = sc.order() == SortColumn.Order.ASCENDING
+                                ? SortingOrder.Ascending
+                                : SortingOrder.Descending;
+                        SortedColumnsAttribute.setOrderForColumn(resultTable, sc.column().name(), order);
+                    }
+                }
             }
 
             if (snapshotControl != null) {

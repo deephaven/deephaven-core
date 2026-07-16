@@ -16,6 +16,8 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.InMemoryTable;
 import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.SortedColumnsAttribute;
+import io.deephaven.engine.table.impl.SortingOrder;
 import io.deephaven.engine.table.impl.UncoalescedTable;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.locations.TableDataException;
@@ -1446,6 +1448,26 @@ public class TestParquetTools {
             }
             return Optional.empty();
         }
+    }
+
+    /**
+     * Regression test for publishing a source table's attributes before its first coalesce. Reading a parquet file with
+     * sorting metadata, publishing the uncoalesced table's attributes (as the server's export path does when sending
+     * table metadata to clients), and then coalescing must not throw, and the coalesced result must still carry the
+     * sorted-columns attribute.
+     */
+    @Test
+    public void testPublishAttributesBeforeCoalesce() {
+        final Path parquetFile = Path.of(testRoot, "testPublishAttributesBeforeCoalesce.parquet");
+        final Table sorted = emptyTable(100).update("A = ii % 10").sort("A");
+        ParquetTools.writeTable(sorted, parquetFile.toString());
+
+        final Table fromDisk = ParquetTools.readTable(parquetFile.toString());
+        // Publish the (uncoalesced) table's attributes before the first coalesce
+        fromDisk.getAttributes();
+        final Table coalesced = fromDisk.coalesce();
+        assertEquals(Optional.of(SortingOrder.Ascending), SortedColumnsAttribute.getOrderForColumn(coalesced, "A"));
+        assertTableEquals(sorted, coalesced);
     }
 
     /**
