@@ -494,13 +494,14 @@ abstract class AbstractFilterExecution {
         // declares the barrier to any filter that respects it.
         final Map<Object, Collection<Object>> barrierDependencies = new HashMap<>();
 
+        final Map<String, ColumnSource<?>> columnSourceMap = sourceTable.getColumnSourceMap();
+
         try {
             for (int ii = 0; ii < filters.size(); ii++) {
                 final WhereFilter filter = filters.get(ii);
                 // Pushdown requires a column source for every filter column; a filter may reference a column that is
                 // not present in the source table (e.g. a ClockFilter after the column was narrowed away), in which
                 // case we skip pushdown and let regular filter execution handle (and report) the missing column.
-                final Map<String, ColumnSource<?>> columnSourceMap = sourceTable.getColumnSourceMap();
                 if (!PushdownFilterMatcher.canPushdownFilter(filter)
                         || !columnSourceMap.keySet().containsAll(filter.getColumns())) {
                     statelessFilters[ii] = new StatelessFilter(ii, filter, null, null, barrierDependencies);
