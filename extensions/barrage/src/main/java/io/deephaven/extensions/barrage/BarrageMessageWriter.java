@@ -169,6 +169,29 @@ public interface BarrageMessageWriter extends SafeCloseable {
             @Nullable RowSet keyspaceViewport, BitSet snapshotColumns);
 
     /**
+     * Obtain a {@link MessageView} of this {@code BarrageMessageWriter} that can be sent to a single requestor, with a
+     * {@link DictionaryWriterRegistry} for any dictionary-encoded columns in the snapshot.
+     * <p>
+     * Note that all passed in arguments are owned by the caller and may be modified external to this method.
+     *
+     * @param options serialization options for this specific view
+     * @param viewport is the position-space viewport
+     * @param reverseViewport is the viewport reversed (relative to end of table instead of beginning)
+     * @param snapshotColumns are the columns included for this view
+     * @param dictionaryRegistry the dictionary registry for this snapshot, or {@code null} if unused
+     * @return a MessageView filtered by the snapshot properties that can be sent to that requestor
+     */
+    default MessageView getSnapshotView(
+            BarrageSnapshotOptions options,
+            @Nullable RowSet viewport,
+            boolean reverseViewport,
+            @Nullable RowSet keyspaceViewport,
+            BitSet snapshotColumns,
+            @Nullable DictionaryWriterRegistry dictionaryRegistry) {
+        return getSnapshotView(options, viewport, reverseViewport, keyspaceViewport, snapshotColumns);
+    }
+
+    /**
      * Optional metrics API to track how many bytes a barrage message consumed, and how many nanoseconds it took to
      * write it.
      */

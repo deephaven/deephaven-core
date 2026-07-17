@@ -26,6 +26,7 @@
         <exclude name="DefaultChunkWriterFactory.java" />
         <exclude name="ByteDictionaryWriterValueMap.java" />
         <exclude name="CharDictionaryWriterValueMap.java" />
+        <exclude name="DictionaryWriterRegistryImpl.java" />
         <exclude name="DictionaryWriterValueMap.java" />
         <exclude name="DoubleDictionaryWriterValueMap.java" />
         <exclude name="FloatDictionaryWriterValueMap.java" />

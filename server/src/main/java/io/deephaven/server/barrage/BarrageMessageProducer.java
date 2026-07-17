@@ -34,6 +34,7 @@ import io.deephaven.extensions.barrage.chunk.BarrageCopyKernel;
 import io.deephaven.extensions.barrage.chunk.ChunkWriter;
 import io.deephaven.extensions.barrage.chunk.DefaultChunkWriterFactory;
 import io.deephaven.extensions.barrage.chunk.DictionaryWriterRegistry;
+import io.deephaven.extensions.barrage.chunk.DictionaryWriterRegistryImpl;
 import io.deephaven.extensions.barrage.chunk.SharedWriterDictionary;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
@@ -1279,9 +1280,9 @@ public class BarrageMessageProducer extends LivenessArtifact
                     // private local registry. A new registry is always created on each subscription change so that the
                     // per-subscriber flushed offset resets and the client receives a fresh isDelta=false batch.
                     if (subscription.targetViewport == null) {
-                        subscription.dictionaryRegistry = new DictionaryWriterRegistry(sharedDictionaryStates);
+                        subscription.dictionaryRegistry = new DictionaryWriterRegistryImpl(sharedDictionaryStates);
                     } else {
-                        subscription.dictionaryRegistry = new DictionaryWriterRegistry();
+                        subscription.dictionaryRegistry = new DictionaryWriterRegistryImpl();
                     }
 
                     subscription.isFirstSnapshot = true;

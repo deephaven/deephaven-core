@@ -54,6 +54,7 @@ import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.BarrageTypeInfo;
 import io.deephaven.extensions.barrage.chunk.ChunkWriter;
 import io.deephaven.extensions.barrage.chunk.DefaultChunkWriterFactory;
+import io.deephaven.extensions.barrage.chunk.DictionaryWriterRegistryImpl;
 import io.deephaven.extensions.barrage.chunk.ChunkReader;
 import io.deephaven.extensions.barrage.chunk.vector.VectorExpansionKernel;
 import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
@@ -1733,11 +1734,13 @@ public class BarrageUtil {
                         if (rsIt.hasMore()) {
                             listener.onNext(bmw.getSnapshotView(snapshotRequestOptions,
                                     snapshotViewport, false,
-                                    msg.rowsIncluded, columns));
+                                    msg.rowsIncluded, columns,
+                                    new DictionaryWriterRegistryImpl()));
                         } else {
                             listener.onNext(bmw.getSnapshotView(snapshotRequestOptions,
                                     viewport, reverseViewport,
-                                    msg.rowsIncluded, columns));
+                                    msg.rowsIncluded, columns,
+                                    new DictionaryWriterRegistryImpl()));
                         }
                     }
 
@@ -1829,7 +1832,8 @@ public class BarrageUtil {
                 final RowSet keySpaceViewport = viewport != null
                         ? msg.rowsAdded.subSetForPositions(viewport, reverseViewport)
                         : null) {
-            listener.onNext(bmw.getSnapshotView(options, viewport, reverseViewport, keySpaceViewport, columns));
+            listener.onNext(bmw.getSnapshotView(options, viewport, reverseViewport, keySpaceViewport, columns,
+                    new DictionaryWriterRegistryImpl()));
         }
     }
 }

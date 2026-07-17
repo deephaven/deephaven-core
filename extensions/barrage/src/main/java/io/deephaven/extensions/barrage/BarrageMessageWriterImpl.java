@@ -585,12 +585,23 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
             final boolean reverseViewport,
             @Nullable final RowSet keyspaceViewport,
             @Nullable final BitSet snapshotColumns) {
-        return new SnapshotView(options, viewport, reverseViewport, keyspaceViewport, snapshotColumns);
+        return new SnapshotView(options, viewport, reverseViewport, keyspaceViewport, snapshotColumns, null);
+    }
+
+    @Override
+    public MessageView getSnapshotView(final BarrageSnapshotOptions options,
+            @Nullable final RowSet viewport,
+            final boolean reverseViewport,
+            @Nullable final RowSet keyspaceViewport,
+            @Nullable final BitSet snapshotColumns,
+            @Nullable final DictionaryWriterRegistry dictionaryRegistry) {
+        return new SnapshotView(options, viewport, reverseViewport, keyspaceViewport, snapshotColumns,
+                dictionaryRegistry);
     }
 
     @Override
     public MessageView getSnapshotView(final BarrageSnapshotOptions options) {
-        return getSnapshotView(options, null, false, null, null);
+        return getSnapshotView(options, null, false, null, null, null);
     }
 
     protected class SnapshotView implements RecordBatchMessageView {
@@ -603,18 +614,21 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
         private final WritableRowSet clientAddedRows;
         private final WritableRowSet clientAddedRowOffsets;
 
-        private DictionaryWriterRegistry dictionaryRegistry;
+        @Nullable
+        private final DictionaryWriterRegistry dictionaryRegistry;
 
         protected SnapshotView(final BarrageSnapshotOptions options,
                 @Nullable final RowSet viewport,
                 final boolean reverseViewport,
                 @Nullable final RowSet keyspaceViewport,
-                @Nullable final BitSet subscribedColumns) {
+                @Nullable final BitSet subscribedColumns,
+                @Nullable final DictionaryWriterRegistry dictionaryRegistry) {
             this.options = options;
             this.clientViewport = viewport == null ? null : viewport.copy();
             this.reverseViewport = reverseViewport;
 
             this.subscribedColumns = subscribedColumns;
+            this.dictionaryRegistry = dictionaryRegistry;
 
             // precompute add row offsets
             if (keyspaceViewport != null) {
@@ -631,9 +645,6 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
         @Override
         @Nullable
         public DictionaryWriterRegistry dictionaryRegistry() {
-            if (dictionaryRegistry == null) {
-                dictionaryRegistry = new DictionaryWriterRegistry();
-            }
             return dictionaryRegistry;
         }
 

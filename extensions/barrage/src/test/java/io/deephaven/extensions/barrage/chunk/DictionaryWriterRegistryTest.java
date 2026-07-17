@@ -80,7 +80,7 @@ public class DictionaryWriterRegistryTest {
 
     @Test
     public void testGetOrCreateReusesStateForSameId() {
-        final DictionaryWriterRegistry manager = new DictionaryWriterRegistry();
+        final DictionaryWriterRegistry manager = new DictionaryWriterRegistryImpl();
         final ChunkWriter<Chunk<Values>> writer = intWriter();
 
         final DictionaryWriterState first = manager.getOrCreate(7L, writer, ChunkType.Int);
@@ -93,7 +93,7 @@ public class DictionaryWriterRegistryTest {
 
     @Test
     public void testHasAnyDeltaReflectsManagedStates() {
-        final DictionaryWriterRegistry manager = new DictionaryWriterRegistry();
+        final DictionaryWriterRegistry manager = new DictionaryWriterRegistryImpl();
         final ChunkWriter<Chunk<Values>> writer = intWriter();
 
         assertThat(manager.hasAnyDelta()).isFalse();
@@ -114,7 +114,7 @@ public class DictionaryWriterRegistryTest {
 
     @Test
     public void testResetDeltasAdvancesBoundaryForAllEntries() {
-        final DictionaryWriterRegistry manager = new DictionaryWriterRegistry();
+        final DictionaryWriterRegistry manager = new DictionaryWriterRegistryImpl();
         final ChunkWriter<Chunk<Values>> writer = intWriter();
 
         final DictionaryWriterState s1 = manager.getOrCreate(1L, writer, ChunkType.Object);
@@ -138,7 +138,7 @@ public class DictionaryWriterRegistryTest {
 
     @Test
     public void testResetOverflowedEntriesCompactsOverLimitStates() {
-        final DictionaryWriterRegistry manager = new DictionaryWriterRegistry();
+        final DictionaryWriterRegistry manager = new DictionaryWriterRegistryImpl();
         final ChunkWriter<Chunk<Values>> writer = intWriter();
 
         final DictionaryWriterState s1 = manager.getOrCreate(1L, writer, ChunkType.Object);
@@ -169,8 +169,8 @@ public class DictionaryWriterRegistryTest {
         final Long2ObjectOpenHashMap<SharedWriterDictionary> sharedDictionaries = new Long2ObjectOpenHashMap<>();
         final ChunkWriter<Chunk<Values>> writer = intWriter();
 
-        final DictionaryWriterRegistry reg1 = new DictionaryWriterRegistry(sharedDictionaries);
-        final DictionaryWriterRegistry reg2 = new DictionaryWriterRegistry(sharedDictionaries);
+        final DictionaryWriterRegistry reg1 = new DictionaryWriterRegistryImpl(sharedDictionaries);
+        final DictionaryWriterRegistry reg2 = new DictionaryWriterRegistryImpl(sharedDictionaries);
 
         final DictionaryWriterState sub1 = reg1.getOrCreate(5L, writer, ChunkType.Object);
         final DictionaryWriterState sub2 = reg2.getOrCreate(5L, writer, ChunkType.Object);
@@ -195,7 +195,7 @@ public class DictionaryWriterRegistryTest {
         indexForObject(preExisting, "pre");
         sharedDictionaries.put(7L, preExisting);
 
-        final DictionaryWriterRegistry reg = new DictionaryWriterRegistry(sharedDictionaries);
+        final DictionaryWriterRegistry reg = new DictionaryWriterRegistryImpl(sharedDictionaries);
         final DictionaryWriterState sub = reg.getOrCreate(7L, writer, ChunkType.Int);
 
         // The registry must have re-used the pre-existing shared dictionary
