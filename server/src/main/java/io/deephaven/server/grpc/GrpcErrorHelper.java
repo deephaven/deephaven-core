@@ -102,17 +102,16 @@ public class GrpcErrorHelper {
             {
                 final StringBuilder sb = new StringBuilder();
                 final Iterator<FieldDescriptor> it = path.descendingIterator();
-                sb.append('[').append(it.next());
+                sb.append(it.next());
                 while (it.hasNext()) {
                     sb.append(',').append(it.next());
                 }
-                sb.append(']');
                 pathString = sb.toString();
             }
             throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
-                    String.format("%s has unknown field(s), topLevel=%s, path=%s",
-                            message.getDefaultInstanceForType().getDescriptorForType().getFullName(),
-                            topLevel.getDescriptorForType().getFullName(), pathString));
+                    String.format("%s has unknown field(s), topLevel=%s, path=[%s]",
+                            message.getDescriptorForType().getFullName(), topLevel.getDescriptorForType().getFullName(),
+                            pathString));
         }
     }
 
