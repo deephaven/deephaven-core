@@ -134,6 +134,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -559,7 +560,6 @@ public class WorkerConnection {
 
     public void connectionLost() {
         // notify all active tables and widgets that the connection is closed
-        // TODO(deephaven-core#3604) when a new session is created, refetch all widgets and use that to drive reconnect
         simpleReconnectableInstances.forEach((item, index, array) -> {
             try {
                 item.disconnected();
@@ -730,7 +730,12 @@ public class WorkerConnection {
             return getHierarchicalTable(definition);
         } else {
             warnLegacyTicketTypes(definition.getType());
-            return getWidget(definition).then(JsWidget::refetch);
+            return getWidget(definition, () -> reexportScopeTicket(definition))
+                    .then(JsWidget::refetch)
+                    .then(widget -> {
+                        registerSimpleReconnectable(widget);
+                        return Promise.resolve(widget);
+                    });
         }
     }
 
@@ -781,7 +786,12 @@ public class WorkerConnection {
             return new JsWidget(this, typedTicket).refetch().then(w -> Promise.resolve(new JsTreeTable(this, w)));
         } else {
             warnLegacyTicketTypes(typedTicket.getType());
-            return getWidget(typedTicket).then(JsWidget::refetch);
+            return getWidget(typedTicket)
+                    .then(JsWidget::refetch)
+                    .then(widget -> {
+                        registerSimpleReconnectable(widget);
+                        return Promise.resolve(widget);
+                    });
         }
     }
 
@@ -1008,14 +1018,31 @@ public class WorkerConnection {
     }
 
     public Promise<JsWidget> getWidget(JsVariableDefinition varDef) {
+        return getWidget(varDef, null);
+    }
+
+    private Promise<JsWidget> getWidget(JsVariableDefinition varDef,
+            Supplier<Promise<TypedTicket>> reexportTicket) {
         return exportScopeTicket(varDef)
                 .race(ticket -> {
                     TypedTicket typedTicket = TypedTicket.newBuilder()
                             .setType(varDef.getType())
                             .setTicket(ticket)
                             .build();
-                    return getWidget(typedTicket);
+                    return whenServerReady("get a widget")
+                            .then(response -> Promise.resolve(new JsWidget(this, typedTicket, reexportTicket)));
                 }).promise();
+    }
+
+    /**
+     * Exports the variable again with a fresh ticket, to revive a widget after a new session was created.
+     */
+    private Promise<TypedTicket> reexportScopeTicket(JsVariableDefinition varDef) {
+        TicketAndPromise<?> exported = exportScopeTicket(varDef);
+        return exported.promise().then(ignore -> Promise.resolve(TypedTicket.newBuilder()
+                .setType(varDef.getType())
+                .setTicket(exported.ticket())
+                .build()));
     }
 
     public Promise<JsWidget> getWidget(TypedTicket typedTicket) {
@@ -1029,6 +1056,10 @@ public class WorkerConnection {
 
     public void unregisterSimpleReconnectable(HasLifecycle figure) {
         this.simpleReconnectableInstances.delete(figure);
+    }
+
+    public boolean isConnected() {
+        return state == State.Connected;
     }
 
 
