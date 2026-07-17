@@ -36,10 +36,30 @@ env:
 
 jobs:
   #=============================================================================
-  # Identify version of Deephaven Core
+  # Identify version of Deephaven Core by running the outputVersion Gradle task
   #=============================================================================
   version_job:
-    uses: ./.github/workflows/dhc-version.yml
+    name: "Get DHC version"
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        shell: bash
+
+    outputs:
+      dhc_version: ${{ steps.get-dhc-version.outputs.dhc_version }}
+
+    steps:
+      - name: Check out this repo
+        uses: actions/checkout@v6
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Output Deephaven Version
+        id: get-dhc-version
+        run: |
+          ./gradlew outputVersion
+          echo "dhc_version=$(cat build/version)" >> $GITHUB_OUTPUT
 
   #=============================================================================
   # Build the C++ Client
