@@ -161,6 +161,16 @@ public class JsWidget extends HasLifecycle implements ServerObject, WidgetMessag
         return Promise.resolve(this);
     }
 
+    /**
+     * A failed revive means this widget will never reconnect, so stop tracking it as reconnectable (mirroring
+     * {@link #close()}); otherwise it keeps receiving disconnect/refetch calls on every future reconnect.
+     */
+    @Override
+    public void die(Object error) {
+        connection.unregisterSimpleReconnectable(this);
+        super.die(error);
+    }
+
     private void closeStream() {
         if (messageStream != null) {
             messageStream.end();

@@ -1018,8 +1018,7 @@ public class WorkerConnection {
                             .setType(varDef.getType())
                             .setTicket(ticket)
                             .build();
-                    return whenServerReady("get a widget")
-                            .then(response -> Promise.resolve(new JsWidget(this, typedTicket)));
+                    return getWidget(typedTicket);
                 }).promise();
     }
 
