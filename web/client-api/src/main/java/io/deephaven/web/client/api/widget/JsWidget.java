@@ -117,20 +117,13 @@ public class JsWidget extends HasLifecycle implements ServerObject, WidgetMessag
     public static final String EVENT_CLOSE = "close";
 
     private final WorkerConnection connection;
-    private TypedTicket typedTicket;
-
-    /**
-     * If non-null, allows the widget to be re-exported from its underlying server-side object after a new session was
-     * created, so that the widget can be revived. Widgets fetched from a raw ticket cannot be re-exported, and can only
-     * be revived while the session that exported them is still alive.
-     */
-    private final Supplier<Promise<TypedTicket>> reexportTicket;
+    private final TypedTicket typedTicket;
 
     private boolean hasFetched;
 
     /**
-     * Set when the connection reports this widget as disconnected, cleared when a revive (via {@link #reconnect()} or
-     * {@link #refetch()}) succeeds. While set, {@link #refetch()} re-announces the widget to consumers on success.
+     * Set when the connection reports this widget as disconnected, cleared when a same-session revive (via
+     * {@link #reconnect()}) succeeds. While set, the next initial response re-announces the widget to consumers.
      */
     private boolean awaitingRevive;
 
@@ -142,14 +135,8 @@ public class JsWidget extends HasLifecycle implements ServerObject, WidgetMessag
     private JsArray<JsWidgetExportedObject> exportedObjects;
 
     public JsWidget(WorkerConnection connection, TypedTicket typedTicket) {
-        this(connection, typedTicket, null);
-    }
-
-    public JsWidget(WorkerConnection connection, TypedTicket typedTicket,
-            Supplier<Promise<TypedTicket>> reexportTicket) {
         this.connection = connection;
         this.typedTicket = typedTicket;
-        this.reexportTicket = reexportTicket;
         hasFetched = false;
         BiDiStream.Factory<StreamRequest, StreamResponse> factory = connection.streamFactory();
         streamFactory = () -> factory.<BrowserNextResponse>create(
@@ -162,6 +149,16 @@ public class JsWidget extends HasLifecycle implements ServerObject, WidgetMessag
     @Override
     public WorkerConnection getConnection() {
         return connection;
+    }
+
+    /**
+     * Marks this as a standalone, independently-reconnectable widget and registers it with the connection so it is
+     * revived on reconnect. Called only for widgets handed directly to the caller - widgets wrapped by a figure / tree
+     * / partitioned-table are revived by their owner and must not be registered here (that would double-revive them).
+     */
+    public Promise<JsWidget> markReconnectable() {
+        connection.registerSimpleReconnectable(this);
+        return Promise.resolve(this);
     }
 
     private void closeStream() {
@@ -184,9 +181,9 @@ public class JsWidget extends HasLifecycle implements ServerObject, WidgetMessag
     }
 
     /**
-     * Opens (or reopens) the message stream to the server using the widget's current ticket. If the widget was
-     * disconnected and a new session was created on the server, the old export is gone - when possible, the underlying
-     * object is re-exported with a fresh ticket before the stream is reopened.
+     * Opens (or reopens) the message stream using the widget's current ticket. Used for the initial fetch. When invoked
+     * as the connection's new-session revive hook, the export ticket is no longer valid and the server-side object may
+     * differ, so we cannot safely reconnect - the revive fails.
      */
     @Override
     public Promise<JsWidget> refetch() {
@@ -194,21 +191,16 @@ public class JsWidget extends HasLifecycle implements ServerObject, WidgetMessag
             // initial fetch, or an internal caller deliberately rebinding the stream
             return openStream();
         }
-        if (reexportTicket == null) {
-            // No way to re-export the underlying object - attempt to reattach to the existing export, which only
-            // works if the server kept it alive.
-            return announceAfter(openStream());
-        }
-        return announceAfter(reexportTicket.get()
-                .then(freshTicket -> {
-                    typedTicket = freshTicket;
-                    return openStream();
-                }));
+        // A new session was created: the old export ticket is invalid and the object may differ. Fail the revive
+        // rather than silently reconnect to a different object.
+        IllegalStateException failure = new IllegalStateException("Cannot revive widget: a new session was created");
+        die(failure);
+        return (Promise<JsWidget>) (Promise) Promise.reject(failure);
     }
 
     /**
-     * The session survived the disconnect, so the export should still be alive - reopen the message stream with the
-     * same ticket. If that fails, fall back to a full refetch when possible.
+     * Same-session reconnect: the export ticket is still valid, so reopen the message stream with the same ticket and
+     * re-announce to consumers on success. If the stream cannot be reopened, fail the revive.
      */
     @Override
     public void reconnect() {
@@ -216,10 +208,6 @@ public class JsWidget extends HasLifecycle implements ServerObject, WidgetMessag
             announceReconnect();
             return Promise.resolve(widget);
         }, failure -> {
-            if (reexportTicket != null) {
-                // the export may have expired after all - retry with a fresh export
-                return refetch();
-            }
             die(failure);
             return (Promise<JsWidget>) (Promise) Promise.reject(failure);
         }).catch_(ignore -> {
@@ -233,16 +221,6 @@ public class JsWidget extends HasLifecycle implements ServerObject, WidgetMessag
         awaitingRevive = true;
         closeStream();
         super.disconnected();
-    }
-
-    private Promise<JsWidget> announceAfter(Promise<JsWidget> reviveAttempt) {
-        return reviveAttempt.then(widget -> {
-            announceReconnect();
-            return Promise.resolve(widget);
-        }, failure -> {
-            die(failure);
-            return (Promise<JsWidget>) (Promise) Promise.reject(failure);
-        });
     }
 
     private void announceReconnect() {

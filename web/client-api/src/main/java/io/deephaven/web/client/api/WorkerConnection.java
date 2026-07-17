@@ -730,12 +730,9 @@ public class WorkerConnection {
             return getHierarchicalTable(definition);
         } else {
             warnLegacyTicketTypes(definition.getType());
-            return getWidget(definition, () -> reexportScopeTicket(definition))
+            return getWidget(definition)
                     .then(JsWidget::refetch)
-                    .then(widget -> {
-                        registerSimpleReconnectable(widget);
-                        return Promise.resolve(widget);
-                    });
+                    .then(JsWidget::markReconnectable);
         }
     }
 
@@ -788,10 +785,7 @@ public class WorkerConnection {
             warnLegacyTicketTypes(typedTicket.getType());
             return getWidget(typedTicket)
                     .then(JsWidget::refetch)
-                    .then(widget -> {
-                        registerSimpleReconnectable(widget);
-                        return Promise.resolve(widget);
-                    });
+                    .then(JsWidget::markReconnectable);
         }
     }
 
@@ -1018,11 +1012,6 @@ public class WorkerConnection {
     }
 
     public Promise<JsWidget> getWidget(JsVariableDefinition varDef) {
-        return getWidget(varDef, null);
-    }
-
-    private Promise<JsWidget> getWidget(JsVariableDefinition varDef,
-            Supplier<Promise<TypedTicket>> reexportTicket) {
         return exportScopeTicket(varDef)
                 .race(ticket -> {
                     TypedTicket typedTicket = TypedTicket.newBuilder()
@@ -1030,19 +1019,8 @@ public class WorkerConnection {
                             .setTicket(ticket)
                             .build();
                     return whenServerReady("get a widget")
-                            .then(response -> Promise.resolve(new JsWidget(this, typedTicket, reexportTicket)));
+                            .then(response -> Promise.resolve(new JsWidget(this, typedTicket)));
                 }).promise();
-    }
-
-    /**
-     * Exports the variable again with a fresh ticket, to revive a widget after a new session was created.
-     */
-    private Promise<TypedTicket> reexportScopeTicket(JsVariableDefinition varDef) {
-        TicketAndPromise<?> exported = exportScopeTicket(varDef);
-        return exported.promise().then(ignore -> Promise.resolve(TypedTicket.newBuilder()
-                .setType(varDef.getType())
-                .setTicket(exported.ticket())
-                .build()));
     }
 
     public Promise<JsWidget> getWidget(TypedTicket typedTicket) {
