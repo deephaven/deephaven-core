@@ -7,9 +7,7 @@ avro = "1.12.1"
 awssdk = "2.29.52"
 aws-s3-tables-catalog-for-iceberg = "0.1.8"
 
-# Note: when bumping Calcite version, see if we still need the version constraint for json-smart
-calcite = "1.41.0"
-json-smart = "2.5.2"
+calcite = "1.42.0"
 
 classgraph = "4.8.184"
 commons-compress = "1.28.0"
@@ -139,7 +137,6 @@ awssdk-netty-nio = { module = "software.amazon.awssdk:netty-nio-client" }
 s3-tables-catalog-for-iceberg = { module = "software.amazon.s3tables:s3-tables-catalog-for-iceberg", version.ref = "aws-s3-tables-catalog-for-iceberg" }
 
 calcite-core = { module = "org.apache.calcite:calcite-core", version.ref = "calcite" }
-json-smart = { module = "net.minidev:json-smart", version.ref = "json-smart" }
 
 classgraph = { module = "io.github.classgraph:classgraph", version.ref = "classgraph" }
 
