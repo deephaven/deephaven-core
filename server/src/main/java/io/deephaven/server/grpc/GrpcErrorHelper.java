@@ -13,6 +13,9 @@ import io.grpc.StatusRuntimeException;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.Iterator;
 import java.util.Map.Entry;
 import java.util.Objects;
 
@@ -63,18 +66,53 @@ public class GrpcErrorHelper {
     }
 
     public static void checkHasNoUnknownFields(Message message) {
-        if (!message.getUnknownFields().asMap().isEmpty()) {
+        if (!message.getUnknownFields().isEmpty()) {
             throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
                     String.format("%s has unknown field(s)", message.getDescriptorForType().getFullName()));
         }
     }
 
     public static void checkHasNoUnknownFieldsRecursive(Message message) {
-        checkHasNoUnknownFields(message);
+        checkHasNoUnknownFieldsRecursiveImpl(message, new ArrayDeque<>(), message);
+    }
+
+    private static void checkHasNoUnknownFieldsRecursiveImpl(Message topLevel, Deque<FieldDescriptor> fds,
+            Message message) {
+        checkHasNoUnknownFieldsAtPath(topLevel, fds, message);
         for (Entry<FieldDescriptor, Object> e : message.getAllFields().entrySet()) {
-            if (e instanceof Message) {
-                checkHasNoUnknownFieldsRecursive((Message) e);
+            final FieldDescriptor fd = e.getKey();
+            if (fd.getJavaType() != FieldDescriptor.JavaType.MESSAGE) {
+                continue;
             }
+            fds.push(fd);
+            checkHasNoUnknownFieldsRecursiveImpl(topLevel, fds, (Message) e.getValue());
+            if (fds.pop() != fd) {
+                throw new IllegalStateException("pop did not produce the expected result");
+            }
+        }
+    }
+
+    private static void checkHasNoUnknownFieldsAtPath(Message topLevel, Deque<FieldDescriptor> path, Message message) {
+        if (path.isEmpty()) {
+            checkHasNoUnknownFields(message);
+        } else if (!message.getUnknownFields().isEmpty()) {
+            // In Java 21+, we can simplify pathString construction.
+            // final String pathString = path.reversed().toString()
+            final String pathString;
+            {
+                final StringBuilder sb = new StringBuilder();
+                final Iterator<FieldDescriptor> it = path.descendingIterator();
+                sb.append('[').append(it.next());
+                while (it.hasNext()) {
+                    sb.append(',').append(it.next());
+                }
+                sb.append(']');
+                pathString = sb.toString();
+            }
+            throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                    String.format("%s has unknown field(s), topLevel=%s, path=%s",
+                            message.getDefaultInstanceForType().getDescriptorForType().getFullName(),
+                            topLevel.getDescriptorForType().getFullName(), pathString));
         }
     }
 

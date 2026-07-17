@@ -1,0 +1,43 @@
+/*
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
+syntax = "proto3";
+
+
+package io.deephaven.protobuf.test;
+
+option java_multiple_files = true;
+option optimize_for = SPEED;
+
+message Message1v1 {
+  int32 id = 1;
+}
+
+// Note: for ease of testing purposes, this is meant to be an evolution of Message1v1 (ie, it must be an "extension"
+// of Message1v1, with the same initial fields).
+message Message1v2 {
+  int32 id = 1;
+  string name = 2;
+}
+
+message Message2v1 {
+  int64 id = 1;
+  Message1v1 message = 2;
+}
+
+// Note: for ease of testing purposes, this is meant to be an evolution of Message2v1 (ie, it must be an "extension"
+// of Message2v1, with the same initial fields).
+message Message2v2 {
+  int64 id = 1;
+  Message1v2 message = 2;
+}
+
+// one more layer of nested
+
+message OuterV1 {
+  Message2v1 inner = 1;
+}
+
+message OuterV2 {
+  Message2v2 inner = 1;
+}

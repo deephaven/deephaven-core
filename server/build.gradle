@@ -1,6 +1,7 @@
 plugins {
     id 'java-library'
     id 'io.deephaven.project.register'
+    alias(libs.plugins.protobuf)
 }
 
 dependencies {
@@ -127,4 +128,10 @@ TestTools.addEngineOutOfBandTest(project)
 
 test {
     systemProperty 'ApplicationConfigs.testAppDir', layout.projectDirectory.dir('src/test/app.d/').toString()
+}
+
+protobuf {
+    protoc {
+        artifact = libs.protoc.get().toString()
+    }
 }
