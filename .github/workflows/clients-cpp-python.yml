@@ -4,17 +4,11 @@ on:
     branches: [ 'main', 'rc/v*' ]
   push:
     branches: [ 'main', 'check/**', 'release/v*' ]
-  workflow_dispatch:
-    inputs:
-      force_build:
-        description: "Force a full C++ rebuild even if cpp-client/ and proto/ are unchanged"
-        type: boolean
-        default: false
 permissions:
   contents: read
 
 #===============================================================================
-# Background: in this workflow there are three different kinds of caching going
+# Background: in this workflow there are two different kinds of caching going
 # on:
 #
 # 1. The outputs are GitHub Build artifacts, attached to every action run.
@@ -33,10 +27,6 @@ permissions:
 #    managed automatically for us by cmake/vcpkg/nuget. This optimization is
 #    important because building the C++ dependencies takes significant time
 #    (a couple of hours for the Windows build)
-#
-# 3. caching of our {{ env.DHINSTALL }} directory. If the source files are
-#    unchanged (cpp-client/** and proto/**), then we reuse the prior results
-#    rather than rebuilding them.
 #===============================================================================
 
 env:
@@ -85,47 +75,12 @@ jobs:
       - name: Check out this repo
         uses: actions/checkout@v6
 
-      # If the C++ sources (cpp-client/) and proto definitions (proto/) are
-      # unchanged since a prior run, restore the previously built install
-      # directory instead of doing the expensive (~2 hour on Windows)
-      # dependency + client build.
-      #
-      # The cache key is content-based (hashFiles) and deliberately does NOT
-      # include the compiler/toolchain. The hosted-runner compiler drifts
-      # constantly -- GitHub re-patches cl.exe in place under a fixed toolset
-      # version on roughly every image refresh -- which made vcpkg's ABI-keyed
-      # binary cache miss repeatedly. Since MSVC v14.x is ABI-compatible, reusing
-      # an install built by a slightly different compiler patch is safe, so we
-      # key on what we actually care about (our source) and ignore the compiler.
-      - name: Restore/cache C++ install directory
-        id: cpp-cache
-        uses: actions/cache@v5
-        with:
-          path: ${{ env.DHINSTALL }}
-          key: cpp-install-${{ matrix.os }}-${{ hashFiles('cpp-client/**', 'proto/**') }}
-
-      # Build on a cache miss, or when a run is manually forced via
-      # workflow_dispatch. Otherwise reuse the restored install dir and skip the
-      # build. (Touching any file under cpp-client/ or proto/ changes the cache
-      # key above, so an ordinary source change forces a rebuild naturally.)
-      - name: Decide whether to build C++
-        id: decide
-        run: |
-          if [ "${{ github.event.inputs.force_build }}" = "true" ] || [ "${{ steps.cpp-cache.outputs.cache-hit }}" != "true" ]; then
-            echo "Will build C++ (forced run or cache miss)."
-            echo "build=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "C++ sources unchanged and install dir restored from cache; skipping build."
-            echo "build=false" >> "$GITHUB_OUTPUT"
-          fi
-
       # Make sure we check out the same version of the vcpkg tool that we
       # have configured as our registry baseline. This (we suppose) will help
       # improve the problem we have with our package hash drift.
 
       - name: Extract vcpkg baseline
         id: vcpkg-baseline
-        if: steps.decide.outputs.build == 'true'
         run: |
           baseline=$(jq -r '.["default-registry"].baseline' ./cpp-client/deephaven/vcpkg-configuration.json)
           echo "baseline=$baseline"
@@ -135,7 +90,6 @@ jobs:
 
       - name: Check out vcpkg
         id: checkout-vcpkg
-        if: steps.decide.outputs.build == 'true'
         uses: actions/checkout@v6
         with:
           repository: microsoft/vcpkg
@@ -145,7 +99,6 @@ jobs:
       # Bootstrap vcpkg
 
       - name: Bootstrap vcpkg
-        if: steps.decide.outputs.build == 'true'
         run: "$GITHUB_WORKSPACE/vcpkg/bootstrap-vcpkg.sh"
 
       # [Note: Linux only]
@@ -155,7 +108,7 @@ jobs:
       # maintainers will fix this so it runs with the cross-platform "dotnet".
 
       - name: Install mono (Linux)
-        if: steps.decide.outputs.build == 'true' && runner.os == 'Linux'
+        if: runner.os == 'Linux'
         run: sudo apt install -y mono-complete
 
       # Adapted from
@@ -164,7 +117,7 @@ jobs:
       # package that we need (or create)
 
       - name: "Configure nuget (Linux)"
-        if: steps.decide.outputs.build == 'true' && runner.os == 'Linux'
+        if: runner.os == 'Linux'
         run: |
           vcpkg_exe=${{ github.workspace }}/vcpkg/vcpkg
           nuget_dotnet=$($vcpkg_exe fetch nuget | tail -n 1)
@@ -180,7 +133,7 @@ jobs:
             -Source "${{ env.GH_PACKAGES_FEED }}"
 
       - name: "Configure nuget (Windows)"
-        if: steps.decide.outputs.build == 'true' && runner.os == 'Windows'
+        if: runner.os == 'Windows'
         shell: pwsh
         run: |
           $nuget_exe = & ./vcpkg/vcpkg.exe fetch nuget
@@ -200,7 +153,6 @@ jobs:
       # 2. Configure cmake to prepare for the build/install step, which comes next
 
       - name: "Build/cache dependencies"
-        if: steps.decide.outputs.build == 'true'
         env:
           VCPKG_BINARY_SOURCES: "clear;nuget,${{ env.GH_PACKAGES_FEED }},readwrite"
         run: |
@@ -216,7 +168,7 @@ jobs:
       # Diagnostic: Upload the configure.log to help debug caching issues.
       # Only meaningful when we actually built, so gate on the build decision.
       - name: Upload vcpkg debug log
-        if: always() && steps.decide.outputs.build == 'true'
+        if: always()
         uses: actions/upload-artifact@v7
         with:
           name: vcpkg-debug-${{ matrix.os }}-${{ github.run_id }}
@@ -225,7 +177,7 @@ jobs:
       # Diagnostic: collect the ABI info, in case we need to debug
       # cache issues.
       - name: Collect ABI info
-        if: always() && steps.decide.outputs.build == 'true'
+        if: always()
         run: |
           mkdir -p abi-dump
           find cpp-client/deephaven/build/vcpkg_installed \
@@ -234,7 +186,7 @@ jobs:
 
       # Diagnostic: upload the ABI info we collected in the previous step.
       - name: Upload ABI info
-        if: always() && steps.decide.outputs.build == 'true'
+        if: always()
         uses: actions/upload-artifact@v7
         with:
           name: abi-info-${{ matrix.os }}-${{ github.run_id }}
@@ -244,7 +196,6 @@ jobs:
       # directory {{ env.DHINSTALL }}
 
       - name: Build and install
-        if: steps.decide.outputs.build == 'true'
         run: cmake --build cpp-client/deephaven/build --config RelWithDebInfo --target install --parallel
 
       # Upload results as build artifact.
