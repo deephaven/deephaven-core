@@ -24,6 +24,9 @@ jobs:
       - name: Check out this repo
         uses: actions/checkout@v6
 
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6
+
       - name: Output Deephaven Version
         id: get-dhc-version
         run: |
