@@ -86,6 +86,93 @@ Here are server-side flags that change the behavior of Barrage metrics.
 - `-DBarragePerformanceLog.enableAll`: record metrics for tables that do not have an explicit `TableKey` (default: `true`).
 - `-DBarragePerformanceLog.cycleDurationMillis`: the interval to flush aggregated statistics (default: `60000` - once per minute).
 
+## Control subscription snapshot size
+
+When a client subscribes to a ticking table, the server sends an initial snapshot of the table data. For large tables, constructing this snapshot requires holding the data in memory on the server side, which can lead to out-of-memory (OOM) errors.
+
+To address this, Deephaven can break the initial snapshot into smaller chunks spread across multiple update cycles. This behavior is controlled by the following properties:
+
+- `-DBarrageMessageProducer.subscriptionGrowthEnabled`: When `true` (the default), the server limits the size of each snapshot chunk. When `false`, the server sends the entire snapshot at once (unlimited size).
+
+When subscription growth is enabled, these additional properties control the chunk size:
+
+- `-DBarrageUtil.minSnapshotCellCount`: The minimum number of cells (rows × columns) per snapshot chunk. Default: `8192`.
+- `-DBarrageUtil.maxSnapshotCellCount`: The maximum number of cells per snapshot chunk. Default: `16777216` (approximately 16 million).
+
+The server adaptively adjusts the chunk size between these bounds based on how long each snapshot takes to generate, targeting a percentage of the update graph cycle time.
+
+### Reducing publisher memory usage
+
+For systems serving very large tables to many subscribers, you can reduce publisher-side memory usage by lowering `maxSnapshotCellCount`. Setting `minSnapshotCellCount` equal to `maxSnapshotCellCount` fixes the chunk size and disables adaptive sizing:
+
+```bash
+-DBarrageMessageProducer.subscriptionGrowthEnabled=true
+-DBarrageUtil.minSnapshotCellCount=1000000
+-DBarrageUtil.maxSnapshotCellCount=1000000
+```
+
+This configuration limits each snapshot chunk to exactly 1 million cells — well below the 16 million default maximum. Subscribers receive the full table data incrementally over multiple update cycles rather than all at once.
+
+> [!NOTE]
+> Setting smaller snapshot sizes increases the time required for subscribers to receive the initial table state but reduces peak memory usage on the server. These settings only affect initial snapshots — incremental updates are unaffected and must still be maintained in memory.
+
+## Additional Barrage configuration
+
+The following properties control other aspects of Barrage behavior:
+
+### Update interval
+
+- `-Dbarrage.minUpdateInterval`: The minimum interval (in milliseconds) between update batches sent to subscribers. Default: `1000` (1 second). Lower values reduce latency but increase CPU and network usage.
+
+### Message batching
+
+- `-DBarrageMessageWriterImpl.batchSize`: Maximum rows per Arrow record batch. Default: `Integer.MAX_VALUE`. Reduce this if clients have trouble processing very large batches.
+- `-DBarrageMessageWriterImpl.initialBatchSize`: Initial batch size for the first message. Default: `4096`. A smaller initial batch ensures clients receive data quickly while the server calibrates optimal batch sizes.
+- `-DBarrageMessageWriterImpl.maxOutboundMessageSize`: Maximum size (in bytes) for outbound messages. Default: `104857600` (100 MB). This matches the default incoming message limit for Java clients.
+
+## Troubleshooting
+
+Use the metrics tables described above to diagnose common Barrage issues.
+
+### High `SnapshotMillis`
+
+If `SnapshotMillis` is consistently high:
+
+- The source table may be very large. Consider using viewports or filtering data before subscription.
+- The update graph may be holding a lock. Check for long-running operations blocking the cycle.
+- Consider enabling subscription growth with smaller chunk sizes (see [Control subscription snapshot size](#control-subscription-snapshot-size)).
+
+### High `WriteMillis` or `WriteMegabits`
+
+If `WriteMillis` is high or `WriteMegabits` is large:
+
+- Network bandwidth may be saturated. Check network utilization.
+- Consider subscribing to fewer columns or using viewports to reduce data volume.
+- Increase `barrage.minUpdateInterval` to batch more updates together.
+
+### High `PropagateMillis`
+
+If `PropagateMillis` is consistently high:
+
+- Many subscribers may be connected to the same table. Consider load balancing across multiple server instances.
+- The server may be under memory pressure. Check JVM heap usage and garbage collection metrics.
+
+### Subscription errors
+
+Common subscription issues:
+
+- **"Ticket not found"**: The table was released or the session that published it closed. Ensure the publishing session remains active.
+- **Authentication failures**: Verify that the `auth_type` and `auth_token` match the server configuration.
+- **Connection refused**: Ensure the server is running and the host/port are correct. Check firewall rules.
+
+### Memory issues
+
+If the server experiences out-of-memory errors during subscriptions:
+
+- Enable subscription growth: `-DBarrageMessageProducer.subscriptionGrowthEnabled=true`
+- Lower snapshot cell counts to reduce peak memory usage.
+- Monitor the metrics tables to identify which tables consume the most resources.
+
 ## Related documentation
 
 - [Interpret Barrage metrics](../../conceptual/barrage-metrics.md)

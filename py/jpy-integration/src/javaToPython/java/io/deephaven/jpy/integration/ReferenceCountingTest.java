@@ -8,7 +8,7 @@ import io.deephaven.jpy.JpyModule;
 import io.deephaven.jpy.PythonTest;
 import io.deephaven.jpy.integration.DestructorModuleParent.OnDelete;
 
-import java.time.Duration;
+import java.lang.ref.Reference;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -75,7 +75,7 @@ public class ReferenceCountingTest extends PythonTest {
 
     @Test
     public void viaPython() throws InterruptedException {
-        final ReferenceCounting.CleanupResult result = ref.doesCleanupHappenAtFinalizerTime(
+        final boolean cleanedUp = ref.doesCleanupHappenEventually(
                 () -> {
                     PyObject.executeCode("import sys", PyInputMode.STATEMENT);
                     PyObject.executeCode("x = dict()", PyInputMode.STATEMENT);
@@ -95,9 +95,7 @@ public class ReferenceCountingTest extends PythonTest {
                     }
                 });
 
-        Assert.assertTrue(
-                "Cleanup didn't happen. Reason: " + result,
-                result == ReferenceCounting.CleanupResult.SUCCESS);
+        Assert.assertTrue("Cleanup didn't happen within the deadline", cleanedUp);
     }
 
     @Test
@@ -123,7 +121,7 @@ public class ReferenceCountingTest extends PythonTest {
         scope.asDict().delItem("copy2");
         ref.check(1, pyObject);
 
-        ReferenceCounting.blackhole(scope);
+        Reference.reachabilityFence(scope);
     }
 
     @Test
@@ -142,7 +140,9 @@ public class ReferenceCountingTest extends PythonTest {
         final PyObject javaCopy2 = scope.asDict().get("copy1");
         ref.check(4, pyObject);
 
-        ReferenceCounting.blackhole(scope, javaCopy1, javaCopy2);
+        Reference.reachabilityFence(scope);
+        Reference.reachabilityFence(javaCopy1);
+        Reference.reachabilityFence(javaCopy2);
     }
 
 
@@ -169,7 +169,8 @@ public class ReferenceCountingTest extends PythonTest {
 
         final PyObject copy2 = pyOut.identity((Object) pyObject);
         ref.check(3, pyObject);
-        ReferenceCounting.blackhole(copy1, copy2);
+        Reference.reachabilityFence(copy1);
+        Reference.reachabilityFence(copy2);
     }
 
     @Test
@@ -187,8 +188,9 @@ public class ReferenceCountingTest extends PythonTest {
         // this tests fails in python 2, but I haven't spent time debugging
         assumePython3();
 
+        // Eventually-consistent by design; see the comment on viaPython.
         final CountDownLatch latch = new CountDownLatch(1);
-        final ReferenceCounting.CleanupResult result = ref.doesCleanupHappenAtFinalizerTime(
+        final boolean cleanedUp = ref.doesCleanupHappenEventually(
                 () -> {
                     PyObject child = destructor.create_child(new OnDelete(latch));
                     ref.check(1, child);
@@ -197,12 +199,8 @@ public class ReferenceCountingTest extends PythonTest {
 
                 () -> latch.getCount() == 0);
 
-        Assert.assertTrue(
-                "Cleanup didn't happen. Reason: " + result,
-                result == ReferenceCounting.CleanupResult.SUCCESS);
+        Assert.assertTrue("Cleanup didn't happen within the deadline", cleanedUp);
     }
-
-
 
     @Test
     public void pythonObjectInJavaWillDestructAfterClosure() throws InterruptedException {
