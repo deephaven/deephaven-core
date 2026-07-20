@@ -17,12 +17,29 @@ import com.palantir.javapoet.TypeVariableName;
 import com.palantir.javapoet.WildcardTypeName;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.ByteChunk;
+import io.deephaven.chunk.CharChunk;
 import io.deephaven.chunk.ChunkType;
+import io.deephaven.chunk.DoubleChunk;
+import io.deephaven.chunk.FloatChunk;
+import io.deephaven.chunk.IntChunk;
+import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.ObjectChunk;
+import io.deephaven.chunk.ShortChunk;
+import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.WritableIntChunk;
+import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Any;
+import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryCompilerRequest;
 import io.deephaven.engine.table.impl.SortingOrder;
 import io.deephaven.engine.table.impl.sort.MultiColumnSortKernel;
+import io.deephaven.engine.table.impl.sort.timsort.TimsortUtils;
+import io.deephaven.util.compare.CharComparisons;
+import io.deephaven.util.compare.DoubleComparisons;
+import io.deephaven.util.compare.FloatComparisons;
+import io.deephaven.util.compare.ObjectComparisons;
 import org.jetbrains.annotations.Nullable;
 
 import javax.lang.model.element.Modifier;
@@ -55,36 +72,31 @@ public class IndirectTimsortKernelFactory {
     private static final String PACKAGE = "io.deephaven.engine.table.impl.sort.timsort.indirect";
     private static final String RUNTIME_PACKAGE_ROOT = PACKAGE + ".gen";
 
-    private static final ClassName ANY = ClassName.get("io.deephaven.chunk.attributes", "Any");
-    private static final ClassName CHUNK_POSITIONS = ClassName.get("io.deephaven.chunk.attributes", "ChunkPositions");
-    private static final ClassName INT_CHUNK = ClassName.get("io.deephaven.chunk", "IntChunk");
-    private static final ClassName WRITABLE_INT_CHUNK = ClassName.get("io.deephaven.chunk", "WritableIntChunk");
-    private static final ClassName WRITABLE_LONG_CHUNK = ClassName.get("io.deephaven.chunk", "WritableLongChunk");
-    private static final ClassName WRITABLE_CHUNK = ClassName.get("io.deephaven.chunk", "WritableChunk");
-    private static final ClassName MULTI_COLUMN_SORT_KERNEL =
-            ClassName.get("io.deephaven.engine.table.impl.sort", "MultiColumnSortKernel");
-    private static final ClassName TIMSORT_UTILS =
-            ClassName.get("io.deephaven.engine.table.impl.sort.timsort", "TimsortUtils");
+    private static final ClassName ANY = ClassName.get(Any.class);
+    private static final ClassName CHUNK_POSITIONS = ClassName.get(ChunkPositions.class);
+    private static final ClassName INT_CHUNK = ClassName.get(IntChunk.class);
+    private static final ClassName WRITABLE_INT_CHUNK = ClassName.get(WritableIntChunk.class);
+    private static final ClassName WRITABLE_LONG_CHUNK = ClassName.get(WritableLongChunk.class);
+    private static final ClassName WRITABLE_CHUNK = ClassName.get(WritableChunk.class);
+    private static final ClassName MULTI_COLUMN_SORT_KERNEL = ClassName.get(MultiColumnSortKernel.class);
+    private static final ClassName TIMSORT_UTILS = ClassName.get(TimsortUtils.class);
 
     /** Cached createContext methods of runtime-compiled kernels, keyed by kernel class name. */
     private static final Map<String, Method> COMPILED_KERNELS = new ConcurrentHashMap<>();
 
     /** The element type, chunk classes, and comparison for one sort key column of a given chunk type. */
     enum ColumnType {
+        // @formatter:off
         // chars sort with Deephaven null-aware semantics, matching LongSortKernel.makeContext
-        NULL_AWARE_CHAR("NullAwareChar", "Char", TypeName.CHAR,
-                ClassName.get("io.deephaven.util.compare", "CharComparisons")), BYTE("Byte", "Byte", TypeName.BYTE,
-                        ClassName.get(Byte.class)), SHORT("Short", "Short", TypeName.SHORT, ClassName
-                                .get(Short.class)), INT("Int", "Int", TypeName.INT, ClassName.get(Integer.class)), LONG(
-                                        "Long", "Long", TypeName.LONG, ClassName.get(Long.class)), FLOAT("Float",
-                                                "Float", TypeName.FLOAT,
-                                                ClassName.get("io.deephaven.util.compare", "FloatComparisons")), DOUBLE(
-                                                        "Double", "Double", TypeName.DOUBLE,
-                                                        ClassName.get("io.deephaven.util.compare",
-                                                                "DoubleComparisons")), OBJECT("Object", "Object",
-                                                                        ClassName.OBJECT,
-                                                                        ClassName.get("io.deephaven.util.compare",
-                                                                                "ObjectComparisons"));
+        NULL_AWARE_CHAR("NullAwareChar", CharChunk.class, TypeName.CHAR, CharComparisons.class),
+        BYTE("Byte", ByteChunk.class, TypeName.BYTE, Byte.class),
+        SHORT("Short", ShortChunk.class, TypeName.SHORT, Short.class),
+        INT("Int", IntChunk.class, TypeName.INT, Integer.class),
+        LONG("Long", LongChunk.class, TypeName.LONG, Long.class),
+        FLOAT("Float", FloatChunk.class, TypeName.FLOAT, FloatComparisons.class),
+        DOUBLE("Double", DoubleChunk.class, TypeName.DOUBLE, DoubleComparisons.class),
+        OBJECT("Object", ObjectChunk.class, ClassName.OBJECT, ObjectComparisons.class);
+        // @formatter:on
 
         final String namePart;
         final ClassName chunkName;
@@ -92,12 +104,12 @@ public class IndirectTimsortKernelFactory {
         final ClassName compareClass;
         final boolean isObject;
 
-        ColumnType(final String namePart, final String chunkFamily, final TypeName elementType,
-                final ClassName compareClass) {
+        ColumnType(final String namePart, final Class<?> chunkClass, final TypeName elementType,
+                final Class<?> compareClass) {
             this.namePart = namePart;
-            this.chunkName = ClassName.get("io.deephaven.chunk", chunkFamily + "Chunk");
+            this.chunkName = ClassName.get(chunkClass);
             this.elementType = elementType;
-            this.compareClass = compareClass;
+            this.compareClass = ClassName.get(compareClass);
             this.isObject = !elementType.isPrimitive();
         }
 

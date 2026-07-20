@@ -23,6 +23,7 @@ dependencies {
 
     // needed at compile + runtime due to our use of code-generation at runtime
     implementation libs.jetbrains.annotations
+    implementation project(':util-annotations')
 }
 
 task replicateAll {

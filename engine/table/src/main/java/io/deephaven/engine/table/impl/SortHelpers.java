@@ -122,6 +122,13 @@ public class SortHelpers {
     static int sortChunkSize = Configuration.getInstance().getIntegerWithDefault("QueryTable.sortChunkSize", 1 << 30);
 
     /**
+     * Whether the engine may parallelize sorts at all; when false every sort is processed entirely on the calling
+     * thread, regardless of {@link #parallelSortMinimumSize}.
+     */
+    public static boolean parallelSort = Configuration.getInstance()
+            .getBooleanWithDefault("QueryTable.parallelSort", true);
+
+    /**
      * The minimum number of rows in a sort for which the engine may parallelize work: filling the values chunks that
      * feed the sort kernels, sorting segments of the positions with pairwise merges, and gathering the permuted row
      * keys. Sorts of fewer rows — and all sorts when the value is zero or negative — are processed entirely on the
@@ -1093,12 +1100,13 @@ public class SortHelpers {
 
     /**
      * The number of segments to split a values fill of the given size into: one (i.e., no parallelism) when
-     * {@link #parallelSortMinimumSize} is non-positive, the fill is smaller than it, or the current thread may not
-     * parallelize; otherwise the parallelism factor of the current context's operation initializer.
+     * {@link #parallelSort} is off, {@link #parallelSortMinimumSize} is non-positive, the fill is smaller than it, or
+     * the current thread may not parallelize; otherwise the parallelism factor of the current context's operation
+     * initializer.
      */
     private static int parallelFillSegments(final int sortSize) {
         final long minimumSize = parallelSortMinimumSize;
-        if (minimumSize <= 0 || sortSize < minimumSize) {
+        if (!parallelSort || minimumSize <= 0 || sortSize < minimumSize) {
             return 1;
         }
         final OperationInitializer operationInitializer = parallelizableOperationInitializer();
@@ -1124,12 +1132,12 @@ public class SortHelpers {
     /**
      * The number of segments to split a sort of the given size into: the operation initializer's parallelism factor,
      * limited so that every segment is at least {@link #parallelSortSegmentSize} rows (i.e., biased towards fewer
-     * segments); one (no parallelism) when {@link #parallelSortMinimumSize} is non-positive, the sort is smaller than
-     * it, or the current thread may not parallelize.
+     * segments); one (no parallelism) when {@link #parallelSort} is off, {@link #parallelSortMinimumSize} is
+     * non-positive, the sort is smaller than it, or the current thread may not parallelize.
      */
     private static int parallelSortSegments(final int sortSize) {
         final long minimumSize = parallelSortMinimumSize;
-        if (minimumSize <= 0 || sortSize < minimumSize) {
+        if (!parallelSort || minimumSize <= 0 || sortSize < minimumSize) {
             return 1;
         }
         final OperationInitializer operationInitializer = parallelizableOperationInitializer();

@@ -19,6 +19,8 @@ import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.QueryConstants;
 import junit.framework.TestCase;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -44,6 +46,20 @@ import static io.deephaven.engine.util.TableTools.shortCol;
 public class TestMultiColumnSort {
     @Rule
     public final EngineCleanup framework = new EngineCleanup();
+
+    private boolean oldMemoize;
+
+    @Before
+    public void disableMemoization() {
+        // every check here sorts the same table with the same columns twice, once per arm of an A/B comparison;
+        // with memoization on, the second sort would return the first result and the comparison would be vacuous
+        oldMemoize = QueryTable.setMemoizeResults(false);
+    }
+
+    @After
+    public void restoreMemoization() {
+        QueryTable.setMemoizeResults(oldMemoize);
+    }
 
     private static final String[] FIRST_COLUMNS =
             {"CharA", "ByteA", "ShortA", "IntA", "LongA", "FloatA", "DoubleA", "ObjA"};
@@ -303,6 +319,23 @@ public class TestMultiColumnSort {
             checkParallelSame(table, t -> t.sort("IntA", "LongB", "ObjB"));
         } finally {
             QueryTable.USE_INDIRECT_SORT_KERNELS = oldFlag;
+        }
+
+        // the parallelSort switch forces the serial path even when the size thresholds would parallelize
+        final boolean oldParallelSort = SortHelpers.parallelSort;
+        final long oldMinimumSize = SortHelpers.parallelSortMinimumSize;
+        final long oldSegmentSize = SortHelpers.parallelSortSegmentSize;
+        try {
+            final Table table = makeTable(new Random(8675309), 10000);
+            final Table expected = table.sort("ObjA", "IntB");
+            SortHelpers.parallelSort = false;
+            SortHelpers.parallelSortMinimumSize = 1;
+            SortHelpers.parallelSortSegmentSize = 1;
+            assertTableEquals(expected, table.sort("ObjA", "IntB"));
+        } finally {
+            SortHelpers.parallelSort = oldParallelSort;
+            SortHelpers.parallelSortMinimumSize = oldMinimumSize;
+            SortHelpers.parallelSortSegmentSize = oldSegmentSize;
         }
     }
 

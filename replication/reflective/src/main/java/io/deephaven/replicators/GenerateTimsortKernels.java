@@ -3,7 +3,6 @@
 //
 package io.deephaven.replicators;
 
-import com.palantir.javapoet.AnnotationSpec;
 import com.palantir.javapoet.ArrayTypeName;
 import com.palantir.javapoet.ClassName;
 import com.palantir.javapoet.CodeBlock;
@@ -16,15 +15,47 @@ import com.palantir.javapoet.TypeName;
 import com.palantir.javapoet.TypeSpec;
 import com.palantir.javapoet.TypeVariableName;
 import com.palantir.javapoet.WildcardTypeName;
+import io.deephaven.chunk.ByteChunk;
+import io.deephaven.chunk.CharChunk;
 import io.deephaven.chunk.ChunkType;
+import io.deephaven.chunk.DoubleChunk;
+import io.deephaven.chunk.FloatChunk;
+import io.deephaven.chunk.IntChunk;
+import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.ObjectChunk;
+import io.deephaven.chunk.ShortChunk;
+import io.deephaven.chunk.WritableByteChunk;
+import io.deephaven.chunk.WritableCharChunk;
+import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.WritableDoubleChunk;
+import io.deephaven.chunk.WritableFloatChunk;
+import io.deephaven.chunk.WritableIntChunk;
+import io.deephaven.chunk.WritableLongChunk;
+import io.deephaven.chunk.WritableObjectChunk;
+import io.deephaven.chunk.WritableShortChunk;
+import io.deephaven.chunk.attributes.Any;
+import io.deephaven.chunk.attributes.ChunkLengths;
+import io.deephaven.chunk.attributes.ChunkPositions;
+import io.deephaven.engine.table.Context;
 import io.deephaven.engine.table.impl.SortingOrder;
+import io.deephaven.engine.table.impl.sort.ByteSortKernel;
+import io.deephaven.engine.table.impl.sort.IntSortKernel;
+import io.deephaven.engine.table.impl.sort.LongSortKernel;
+import io.deephaven.engine.table.impl.sort.MultiColumnSortKernel;
+import io.deephaven.engine.table.impl.sort.timsort.TimsortUtils;
 import io.deephaven.engine.table.impl.sort.timsort.indirect.IndirectTimsortKernelFactory;
+import io.deephaven.util.annotations.VisibleForTesting;
+import io.deephaven.util.compare.CharComparisons;
+import io.deephaven.util.compare.DoubleComparisons;
+import io.deephaven.util.compare.FloatComparisons;
+import io.deephaven.util.compare.ObjectComparisons;
 
 import javax.lang.model.element.Modifier;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -42,22 +73,19 @@ public class GenerateTimsortKernels {
     private static final String INDIRECT_PACKAGE = PACKAGE + ".indirect";
     private static final File SOURCE_ROOT = new File("engine/table/src/main/java/");
 
-    private static final ClassName MULTI_COLUMN_SORT_KERNEL =
-            ClassName.get("io.deephaven.engine.table.impl.sort", "MultiColumnSortKernel");
-    private static final ClassName CHUNK_TYPE = ClassName.get("io.deephaven.chunk", "ChunkType");
-    private static final ClassName SORTING_ORDER = ClassName.get("io.deephaven.engine.table.impl", "SortingOrder");
+    private static final ClassName MULTI_COLUMN_SORT_KERNEL = ClassName.get(MultiColumnSortKernel.class);
+    private static final ClassName CHUNK_TYPE = ClassName.get(ChunkType.class);
+    private static final ClassName SORTING_ORDER = ClassName.get(SortingOrder.class);
 
-    private static final ClassName ANY = ClassName.get("io.deephaven.chunk.attributes", "Any");
-    private static final ClassName CHUNK_POSITIONS = ClassName.get("io.deephaven.chunk.attributes", "ChunkPositions");
-    private static final ClassName CHUNK_LENGTHS = ClassName.get("io.deephaven.chunk.attributes", "ChunkLengths");
-    private static final ClassName INT_CHUNK = ClassName.get("io.deephaven.chunk", "IntChunk");
-    private static final ClassName WRITABLE_CHUNK = ClassName.get("io.deephaven.chunk", "WritableChunk");
-    private static final ClassName ENGINE_CONTEXT = ClassName.get("io.deephaven.engine.table", "Context");
-    private static final ClassName TIMSORT_UTILS =
-            ClassName.get("io.deephaven.engine.table.impl.sort.timsort", "TimsortUtils");
-    private static final ClassName VISIBLE_FOR_TESTING =
-            ClassName.get("io.deephaven.util.annotations", "VisibleForTesting");
-    private static final ClassName COMPARATOR = ClassName.get("java.util", "Comparator");
+    private static final ClassName ANY = ClassName.get(Any.class);
+    private static final ClassName CHUNK_POSITIONS = ClassName.get(ChunkPositions.class);
+    private static final ClassName CHUNK_LENGTHS = ClassName.get(ChunkLengths.class);
+    private static final ClassName INT_CHUNK = ClassName.get(IntChunk.class);
+    private static final ClassName WRITABLE_CHUNK = ClassName.get(WritableChunk.class);
+    private static final ClassName ENGINE_CONTEXT = ClassName.get(Context.class);
+    private static final ClassName TIMSORT_UTILS = ClassName.get(TimsortUtils.class);
+    private static final ClassName VISIBLE_FOR_TESTING = ClassName.get(VisibleForTesting.class);
+    private static final ClassName COMPARATOR = ClassName.get(Comparator.class);
 
     /**
      * The type of chunk that holds a column's data; provides the chunk types for a given attribute and element type.
@@ -70,12 +98,13 @@ public class GenerateTimsortKernels {
         final ClassName writableChunkName;
         final boolean isObject;
 
-        ChunkFamily(final String name, final String plural, final TypeName elementType) {
+        ChunkFamily(final String name, final String plural, final TypeName elementType,
+                final Class<?> chunkClass, final Class<?> writableChunkClass) {
             this.name = name;
             this.plural = plural;
             this.elementType = elementType;
-            this.chunkName = ClassName.get("io.deephaven.chunk", name + "Chunk");
-            this.writableChunkName = ClassName.get("io.deephaven.chunk", "Writable" + name + "Chunk");
+            this.chunkName = ClassName.get(chunkClass);
+            this.writableChunkName = ClassName.get(writableChunkClass);
             this.isObject = !elementType.isPrimitive();
         }
 
@@ -104,14 +133,22 @@ public class GenerateTimsortKernels {
         }
     }
 
-    private static final ChunkFamily CHAR_CHUNKS = new ChunkFamily("Char", "Characters", TypeName.CHAR);
-    private static final ChunkFamily BYTE_CHUNKS = new ChunkFamily("Byte", "Bytes", TypeName.BYTE);
-    private static final ChunkFamily SHORT_CHUNKS = new ChunkFamily("Short", "Shorts", TypeName.SHORT);
-    private static final ChunkFamily INT_CHUNKS = new ChunkFamily("Int", "Integers", TypeName.INT);
-    private static final ChunkFamily LONG_CHUNKS = new ChunkFamily("Long", "Longs", TypeName.LONG);
-    private static final ChunkFamily FLOAT_CHUNKS = new ChunkFamily("Float", "Floats", TypeName.FLOAT);
-    private static final ChunkFamily DOUBLE_CHUNKS = new ChunkFamily("Double", "Doubles", TypeName.DOUBLE);
-    private static final ChunkFamily OBJECT_CHUNKS = new ChunkFamily("Object", "Objects", ClassName.OBJECT);
+    private static final ChunkFamily CHAR_CHUNKS =
+            new ChunkFamily("Char", "Characters", TypeName.CHAR, CharChunk.class, WritableCharChunk.class);
+    private static final ChunkFamily BYTE_CHUNKS =
+            new ChunkFamily("Byte", "Bytes", TypeName.BYTE, ByteChunk.class, WritableByteChunk.class);
+    private static final ChunkFamily SHORT_CHUNKS =
+            new ChunkFamily("Short", "Shorts", TypeName.SHORT, ShortChunk.class, WritableShortChunk.class);
+    private static final ChunkFamily INT_CHUNKS =
+            new ChunkFamily("Int", "Integers", TypeName.INT, IntChunk.class, WritableIntChunk.class);
+    private static final ChunkFamily LONG_CHUNKS =
+            new ChunkFamily("Long", "Longs", TypeName.LONG, LongChunk.class, WritableLongChunk.class);
+    private static final ChunkFamily FLOAT_CHUNKS =
+            new ChunkFamily("Float", "Floats", TypeName.FLOAT, FloatChunk.class, WritableFloatChunk.class);
+    private static final ChunkFamily DOUBLE_CHUNKS =
+            new ChunkFamily("Double", "Doubles", TypeName.DOUBLE, DoubleChunk.class, WritableDoubleChunk.class);
+    private static final ChunkFamily OBJECT_CHUNKS =
+            new ChunkFamily("Object", "Objects", ClassName.OBJECT, ObjectChunk.class, WritableObjectChunk.class);
 
     enum Direction {
         ASCENDING, DESCENDING
@@ -148,8 +185,7 @@ public class GenerateTimsortKernels {
 
     /** Object comparison; descending swaps the arguments rather than negating, exactly as the replicated kernels. */
     static final class ObjectCompare implements Comparison {
-        private final ClassName compareClass =
-                ClassName.get("io.deephaven.util.compare", "ObjectComparisons");
+        private final ClassName compareClass = ClassName.get(ObjectComparisons.class);
 
         @Override
         public CodeBlock comparisonExpression(final Direction direction) {
@@ -191,13 +227,27 @@ public class GenerateTimsortKernels {
         }
     }
 
+    /** The direct sort kernel interface implemented by kernels that permute the given family's values. */
+    private static ClassName sortKernelInterface(final ChunkFamily permute) {
+        if (permute == LONG_CHUNKS) {
+            return ClassName.get(LongSortKernel.class);
+        }
+        if (permute == INT_CHUNKS) {
+            return ClassName.get(IntSortKernel.class);
+        }
+        if (permute == BYTE_CHUNKS) {
+            return ClassName.get(ByteSortKernel.class);
+        }
+        throw new IllegalArgumentException("no direct sort kernel interface permutes " + permute.name + " values");
+    }
+
     private static KeyKind boxedKind(final ChunkFamily chunks, final Class<?> boxed) {
         return new KeyKind(chunks.name, chunks, new StaticCompare(ClassName.get(boxed)));
     }
 
-    private static KeyKind comparisonsKind(final String namePart, final ChunkFamily chunks) {
-        return new KeyKind(namePart, chunks,
-                new StaticCompare(ClassName.get("io.deephaven.util.compare", chunks.name + "Comparisons")));
+    private static KeyKind comparisonsKind(final String namePart, final ChunkFamily chunks,
+            final Class<?> comparisonsClass) {
+        return new KeyKind(namePart, chunks, new StaticCompare(ClassName.get(comparisonsClass)));
     }
 
     private static final KeyKind CHAR_KIND = boxedKind(CHAR_CHUNKS, Character.class);
@@ -205,11 +255,10 @@ public class GenerateTimsortKernels {
     private static final KeyKind SHORT_KIND = boxedKind(SHORT_CHUNKS, Short.class);
     private static final KeyKind INT_KIND = boxedKind(INT_CHUNKS, Integer.class);
     private static final KeyKind LONG_KIND = boxedKind(LONG_CHUNKS, Long.class);
-    private static final KeyKind FLOAT_KIND = comparisonsKind("Float", FLOAT_CHUNKS);
-    private static final KeyKind DOUBLE_KIND = comparisonsKind("Double", DOUBLE_CHUNKS);
+    private static final KeyKind FLOAT_KIND = comparisonsKind("Float", FLOAT_CHUNKS, FloatComparisons.class);
+    private static final KeyKind DOUBLE_KIND = comparisonsKind("Double", DOUBLE_CHUNKS, DoubleComparisons.class);
     private static final KeyKind NULL_AWARE_CHAR_KIND =
-            new KeyKind("NullAwareChar", CHAR_CHUNKS,
-                    new StaticCompare(ClassName.get("io.deephaven.util.compare", "CharComparisons")));
+            new KeyKind("NullAwareChar", CHAR_CHUNKS, new StaticCompare(ClassName.get(CharComparisons.class)));
     private static final KeyKind OBJECT_KIND = new KeyKind("Object", OBJECT_CHUNKS, new ObjectCompare());
     private static final KeyKind COMPARATOR_KIND = new KeyKind("Comparator", OBJECT_CHUNKS, new ComparatorCompare());
 
@@ -291,8 +340,8 @@ public class GenerateTimsortKernels {
 
     /**
      * Pregenerates the single-column indirect kernels for every engine column type in both directions, plus the
-     * single-column comparator kernel, delegating to the same IndirectTimsortKernelFactory emitter that compiles
-     * the multi-column kernels on demand at runtime.
+     * single-column comparator kernel, delegating to the same IndirectTimsortKernelFactory emitter that compiles the
+     * multi-column kernels on demand at runtime.
      */
     private static void generateIndirectKernels() throws IOException {
         for (final ChunkType chunkType : ENGINE_CHUNK_TYPES) {
@@ -317,9 +366,8 @@ public class GenerateTimsortKernels {
     }
 
     /**
-     * Emits the dispatcher that selects a pregenerated single-column indirect kernel by chunk type, sort direction,
-     * and comparator. Multi-column shapes are not pregenerated; IndirectTimsortKernelFactory compiles them on
-     * demand.
+     * Emits the dispatcher that selects a pregenerated single-column indirect kernel by chunk type, sort direction, and
+     * comparator. Multi-column shapes are not pregenerated; IndirectTimsortKernelFactory compiles them on demand.
      */
     private static void generateIndirectDispatcher() throws IOException {
         final TypeVariableName permuteAttr = TypeVariableName.get("PERMUTE_VALUES_ATTR", ANY);
@@ -467,10 +515,6 @@ public class GenerateTimsortKernels {
             return hasPermute ? List.of(sortAttr, permuteAttr) : List.of(sortAttr);
         }
 
-        private TypeName keyChunk() {
-            return keyChunks.chunkOf(sortAttr);
-        }
-
         private TypeName writableKeyChunk() {
             return keyChunks.writableChunkOf(sortAttr);
         }
@@ -550,9 +594,8 @@ public class GenerateTimsortKernels {
                 context.addModifiers(Modifier.STATIC);
             }
             if (hasPermute) {
-                final ClassName sortKernelInterface =
-                        ClassName.get("io.deephaven.engine.table.impl.sort", spec.permute.name + "SortKernel");
-                context.addSuperinterface(ParameterizedTypeName.get(sortKernelInterface, sortAttr, permuteAttr));
+                context.addSuperinterface(
+                        ParameterizedTypeName.get(sortKernelInterface(spec.permute), sortAttr, permuteAttr));
             } else {
                 context.addSuperinterface(ENGINE_CONTEXT);
             }
@@ -763,11 +806,6 @@ public class GenerateTimsortKernels {
             }
             builder.addParameter(ParameterSpec.builder(writableKeyChunk(), "valuesToSort").build());
             return builder;
-        }
-
-        // The insertion sort / swap calls carry the permute chunk as their leading argument when present.
-        private String permutePrefix() {
-            return hasPermute ? "valuesToPermute, " : "";
         }
 
         private MethodSpec emitTimSort() {
