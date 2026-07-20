@@ -5,9 +5,10 @@
 // ****** Run GenerateTimsortKernels or ./gradlew generateTimsortKernels to regenerate
 //
 // @formatter:off
-package io.deephaven.engine.table.impl.sort.timsort.multi;
+package io.deephaven.engine.table.impl.sort.timsort.indirect;
 
 import io.deephaven.chunk.IntChunk;
+import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.WritableLongChunk;
@@ -15,12 +16,12 @@ import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.engine.table.impl.sort.MultiColumnSortKernel;
 import io.deephaven.engine.table.impl.sort.timsort.TimsortUtils;
-import java.lang.Integer;
+import java.lang.Long;
 import java.lang.Override;
 import java.lang.UnsupportedOperationException;
 
 /**
- * This implements a timsort kernel for a sort key (Int) that never moves the column values:
+ * This implements a timsort kernel for a sort key (Long) that never moves the column values:
  * it permutes a parallel chunk of int positions, reading values through the positions for each
  * comparison (comparing each column in turn, only reading later columns on ties). The row keys are
  * not permuted during the sort either; they are assembled in a single linear pass at the end.
@@ -28,27 +29,27 @@ import java.lang.UnsupportedOperationException;
  * <a href="https://bugs.python.org/file4451/timsort.txt">bugs.python.org</a> and
  * <a href="https://en.wikipedia.org/wiki/Timsort">Wikipedia</a> do a decent job of describing the algorithm.
  */
-public final class IntIndirectTimsortKernel {
-    private IntIndirectTimsortKernel() {
+public final class LongIndirectTimsortKernel {
+    private LongIndirectTimsortKernel() {
         throw new UnsupportedOperationException();
     }
 
-    public static <PERMUTE_VALUES_ATTR extends Any> IntIndirectSortKernelContext<PERMUTE_VALUES_ATTR> createContext(
+    public static <PERMUTE_VALUES_ATTR extends Any> LongIndirectSortKernelContext<PERMUTE_VALUES_ATTR> createContext(
             final int size) {
-        return new IntIndirectSortKernelContext<>(size);
+        return new LongIndirectSortKernelContext<>(size);
     }
 
     /**
      * Sort the positions chunk such that the values it points to are ordered by this kernel's sort key,
      * comparing each column in turn; the value chunks themselves are not modified.
      */
-    public static void sort(IntIndirectSortKernelContext<?> context,
-            WritableIntChunk<ChunkPositions> positions, IntChunk<?> valuesToSort0) {
+    public static void sort(LongIndirectSortKernelContext<?> context,
+            WritableIntChunk<ChunkPositions> positions, LongChunk<?> valuesToSort0) {
         timSort(context, positions, valuesToSort0, 0, positions.size());
     }
 
-    private static void timSort(IntIndirectSortKernelContext<?> context,
-            WritableIntChunk<ChunkPositions> positions, IntChunk<?> valuesToSort0, int offset,
+    private static void timSort(LongIndirectSortKernelContext<?> context,
+            WritableIntChunk<ChunkPositions> positions, LongChunk<?> valuesToSort0, int offset,
             int length) {
         if (length <= 1) {
             return;
@@ -123,37 +124,37 @@ public final class IntIndirectTimsortKernel {
         }
     }
 
-    private static int doComparison0(int lhs, int rhs) {
-        return Integer.compare(lhs, rhs);
+    private static int doComparison0(long lhs, long rhs) {
+        return Long.compare(lhs, rhs);
     }
 
     /**
      * Compares the elements at two positions, column by column; later columns are only read when all
      * earlier columns compare equal.
      */
-    private static int compareColumns(IntChunk<?> valuesToSort0, int lhsPos, int rhsPos) {
+    private static int compareColumns(LongChunk<?> valuesToSort0, int lhsPos, int rhsPos) {
         final int cmp0 = doComparison0(valuesToSort0.get(lhsPos), valuesToSort0.get(rhsPos));
         return cmp0;
     }
 
-    private static boolean gt(IntChunk<?> valuesToSort0, int lhsPos, int rhsPos) {
+    private static boolean gt(LongChunk<?> valuesToSort0, int lhsPos, int rhsPos) {
         return compareColumns(valuesToSort0, lhsPos, rhsPos) > 0;
     }
 
-    private static boolean lt(IntChunk<?> valuesToSort0, int lhsPos, int rhsPos) {
+    private static boolean lt(LongChunk<?> valuesToSort0, int lhsPos, int rhsPos) {
         return compareColumns(valuesToSort0, lhsPos, rhsPos) < 0;
     }
 
-    private static boolean geq(IntChunk<?> valuesToSort0, int lhsPos, int rhsPos) {
+    private static boolean geq(LongChunk<?> valuesToSort0, int lhsPos, int rhsPos) {
         return compareColumns(valuesToSort0, lhsPos, rhsPos) >= 0;
     }
 
-    private static boolean leq(IntChunk<?> valuesToSort0, int lhsPos, int rhsPos) {
+    private static boolean leq(LongChunk<?> valuesToSort0, int lhsPos, int rhsPos) {
         return compareColumns(valuesToSort0, lhsPos, rhsPos) <= 0;
     }
 
-    private static void ensureMergeInvariants(IntIndirectSortKernelContext<?> context,
-            WritableIntChunk<ChunkPositions> positions, IntChunk<?> valuesToSort0) {
+    private static void ensureMergeInvariants(LongIndirectSortKernelContext<?> context,
+            WritableIntChunk<ChunkPositions> positions, LongChunk<?> valuesToSort0) {
         while (context.runCount > 1) {
             final int xIndex = context.runCount - 1;
             final int yIndex = context.runCount - 2;
@@ -191,8 +192,8 @@ public final class IntIndirectTimsortKernel {
         }
     }
 
-    private static void merge(IntIndirectSortKernelContext<?> context,
-            WritableIntChunk<ChunkPositions> positions, IntChunk<?> valuesToSort0, int start1,
+    private static void merge(LongIndirectSortKernelContext<?> context,
+            WritableIntChunk<ChunkPositions> positions, LongChunk<?> valuesToSort0, int start1,
             int length1, int length2) {
         // we know that we can never have zero length runs, because there is a minimum run size enforced; and at the
         // end of an input, we won't create a zero-length run. When we merge runs, they only become bigger, thus
@@ -230,8 +231,8 @@ public final class IntIndirectTimsortKernel {
      * <p>
      * We eventually need to do galloping here, but are skipping that for now
      */
-    private static void frontMerge(IntIndirectSortKernelContext<?> context,
-            WritableIntChunk<ChunkPositions> positions, IntChunk<?> valuesToSort0,
+    private static void frontMerge(LongIndirectSortKernelContext<?> context,
+            WritableIntChunk<ChunkPositions> positions, LongChunk<?> valuesToSort0,
             final int mergeStartPosition, final int start2, final int length2) {
         int tempCursor = 0;
         int run2Cursor = start2;
@@ -314,8 +315,8 @@ public final class IntIndirectTimsortKernel {
      * <p>
      * We eventually need to do galloping here, but are skipping that for now
      */
-    private static void backMerge(IntIndirectSortKernelContext<?> context,
-            WritableIntChunk<ChunkPositions> positions, IntChunk<?> valuesToSort0,
+    private static void backMerge(LongIndirectSortKernelContext<?> context,
+            WritableIntChunk<ChunkPositions> positions, LongChunk<?> valuesToSort0,
             final int mergeStartPosition, final int length1) {
         final int run1End = mergeStartPosition + length1;
         int run1Cursor = run1End - 1;
@@ -394,7 +395,7 @@ public final class IntIndirectTimsortKernel {
         }
     }
 
-    private static void copyToTemporary(IntIndirectSortKernelContext<?> context,
+    private static void copyToTemporary(LongIndirectSortKernelContext<?> context,
             IntChunk<ChunkPositions> positions, int mergeStartPosition, int remaining1) {
         context.temporaryPositions.setSize(remaining1);
         context.temporaryPositions.copyFromChunk(positions, mergeStartPosition, 0, remaining1);
@@ -406,7 +407,7 @@ public final class IntIndirectTimsortKernel {
         positionsDest.copyFromChunk(positionsSource, sourceStart, destStart, length);
     }
 
-    private static int upperBound(IntChunk<ChunkPositions> positions, IntChunk<?> valuesToSort0,
+    private static int upperBound(IntChunk<ChunkPositions> positions, LongChunk<?> valuesToSort0,
             int lo, int hi, int searchPos) {
         // when we binary search in 1, we must identify a position for search value that is *after* our test values;
         // because the values from run 2 may never be inserted before an equal value from run 1
@@ -417,14 +418,14 @@ public final class IntIndirectTimsortKernel {
         return bound(positions, valuesToSort0, lo, hi, searchPos, false);
     }
 
-    private static int lowerBound(IntChunk<ChunkPositions> positions, IntChunk<?> valuesToSort0,
+    private static int lowerBound(IntChunk<ChunkPositions> positions, LongChunk<?> valuesToSort0,
             int lo, int hi, int searchPos) {
         // when we binary search in 2, we must identify a position for search value that is *before* our test values;
         // because the values from run 1 may never be inserted after an equal value from run 2
         return bound(positions, valuesToSort0, lo, hi, searchPos, true);
     }
 
-    private static int bound(IntChunk<ChunkPositions> positions, IntChunk<?> valuesToSort0, int lo,
+    private static int bound(IntChunk<ChunkPositions> positions, LongChunk<?> valuesToSort0, int lo,
             int hi, int searchPos, final boolean lower) {
         // lt or leq
         final int compareLimit = lower ? -1 : 0;
@@ -442,7 +443,7 @@ public final class IntIndirectTimsortKernel {
     }
 
     private static void insertionSort(WritableIntChunk<ChunkPositions> positions,
-            IntChunk<?> valuesToSort0, int offset, int length) {
+            LongChunk<?> valuesToSort0, int offset, int length) {
         for (int ii = offset + 1; ii < offset + length; ++ii) {
             for (int jj = ii; jj > offset && gt(valuesToSort0, positions.get(jj - 1), positions.get(jj)); jj--) {
                 swap(positions, jj, jj - 1);
@@ -456,7 +457,7 @@ public final class IntIndirectTimsortKernel {
         positions.set(b, tempPos);
     }
 
-    public static class IntIndirectSortKernelContext<PERMUTE_VALUES_ATTR extends Any> implements MultiColumnSortKernel<PERMUTE_VALUES_ATTR> {
+    public static class LongIndirectSortKernelContext<PERMUTE_VALUES_ATTR extends Any> implements MultiColumnSortKernel<PERMUTE_VALUES_ATTR> {
         int minGallop;
 
         int runCount = 0;
@@ -473,7 +474,7 @@ public final class IntIndirectTimsortKernel {
 
         private WritableLongChunk<PERMUTE_VALUES_ATTR> temporaryKeys;
 
-        private IntIndirectSortKernelContext(int size) {
+        private LongIndirectSortKernelContext(int size) {
             this.size = size;
             temporaryPositions = WritableIntChunk.makeWritableChunk((size + 2) / 2);
             runStarts = new int[(size + 31) / 32];
@@ -493,7 +494,7 @@ public final class IntIndirectTimsortKernel {
             for (int ii = 0; ii < sortSize; ++ii) {
                 positions.set(ii, ii);
             }
-            IntIndirectTimsortKernel.sort(this, positions, valuesToSort[0].asIntChunk());
+            LongIndirectTimsortKernel.sort(this, positions, valuesToSort[0].asLongChunk());
             // assemble the permuted row keys in a single linear pass rather than permuting them during the sort
             temporaryKeys.copyFromChunk(valuesToPermute, 0, 0, sortSize);
             for (int ii = 0; ii < sortSize; ++ii) {
@@ -504,13 +505,13 @@ public final class IntIndirectTimsortKernel {
         @Override
         public void sortPositions(WritableIntChunk<ChunkPositions> positions,
                 WritableChunk<? extends Any>[] valuesToSort, int offset, int length) {
-            IntIndirectTimsortKernel.timSort(this, positions, valuesToSort[0].asIntChunk(), offset, length);
+            LongIndirectTimsortKernel.timSort(this, positions, valuesToSort[0].asLongChunk(), offset, length);
         }
 
         @Override
         public void mergePositions(WritableIntChunk<ChunkPositions> positions,
                 WritableChunk<? extends Any>[] valuesToSort, int start1, int length1, int length2) {
-            IntIndirectTimsortKernel.merge(this, positions, valuesToSort[0].asIntChunk(), start1, length1, length2);
+            LongIndirectTimsortKernel.merge(this, positions, valuesToSort[0].asLongChunk(), start1, length1, length2);
         }
 
         @Override

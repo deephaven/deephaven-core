@@ -5,25 +5,31 @@
 // ****** Run GenerateTimsortKernels or ./gradlew generateTimsortKernels to regenerate
 //
 // @formatter:off
-package io.deephaven.engine.table.impl.sort.timsort.multi;
+package io.deephaven.engine.table.impl.sort.timsort.indirect;
 
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.table.impl.SortingOrder;
 import io.deephaven.engine.table.impl.sort.MultiColumnSortKernel;
+import java.util.Comparator;
 
 /**
- * Selects a pregenerated single-column indirect timsort kernel by chunk type and sort direction, returning
- * null for multi-column shapes, which MultiColumnTimsortKernelFactory compiles on demand.
+ * Selects a pregenerated single-column indirect timsort kernel by chunk type, sort direction, and comparator,
+ * returning null for multi-column shapes, which IndirectTimsortKernelFactory compiles on demand.
  */
 public final class IndirectTimsortDispatcher {
     private IndirectTimsortDispatcher() {
     }
 
     public static <PERMUTE_VALUES_ATTR extends Any> MultiColumnSortKernel<PERMUTE_VALUES_ATTR> makeContext(
-            ChunkType[] chunkTypes, SortingOrder[] order, int size) {
+            ChunkType[] chunkTypes, SortingOrder[] order, Comparator[] comparators, int size) {
         if (chunkTypes.length != 1) {
             return null;
+        }
+        if (comparators[0] != null) {
+            // the comparator kernel compares in the ascending sense; descending reverses the comparator
+            final Comparator comparator = order[0] == SortingOrder.Ascending ? comparators[0] : comparators[0].reversed();
+            return ComparatorIndirectTimsortKernel.createContext(size, new Comparator[] {comparator});
         }
         switch (chunkTypes[0]) {
             case Char:

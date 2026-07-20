@@ -18,7 +18,7 @@ import com.palantir.javapoet.TypeVariableName;
 import com.palantir.javapoet.WildcardTypeName;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.engine.table.impl.SortingOrder;
-import io.deephaven.engine.table.impl.sort.timsort.multi.MultiColumnTimsortKernelFactory;
+import io.deephaven.engine.table.impl.sort.timsort.indirect.IndirectTimsortKernelFactory;
 
 import javax.lang.model.element.Modifier;
 import java.io.File;
@@ -39,7 +39,7 @@ import java.util.List;
  */
 public class GenerateTimsortKernels {
     private static final String PACKAGE = "io.deephaven.engine.table.impl.sort.timsort";
-    private static final String MULTI_PACKAGE = PACKAGE + ".multi";
+    private static final String INDIRECT_PACKAGE = PACKAGE + ".indirect";
     private static final File SOURCE_ROOT = new File("engine/table/src/main/java/");
 
     private static final ClassName MULTI_COLUMN_SORT_KERNEL =
@@ -290,25 +290,36 @@ public class GenerateTimsortKernels {
             ChunkType.Int, ChunkType.Long, ChunkType.Float, ChunkType.Double, ChunkType.Object);
 
     /**
-     * Pregenerates the single-column indirect kernels for every engine column type in both directions, delegating to
-     * the same MultiColumnTimsortKernelFactory emitter that compiles the multi-column kernels on demand at runtime.
+     * Pregenerates the single-column indirect kernels for every engine column type in both directions, plus the
+     * single-column comparator kernel, delegating to the same IndirectTimsortKernelFactory emitter that compiles
+     * the multi-column kernels on demand at runtime.
      */
     private static void generateIndirectKernels() throws IOException {
         for (final ChunkType chunkType : ENGINE_CHUNK_TYPES) {
             for (final SortingOrder order : SortingOrder.values()) {
                 final ChunkType[] chunkTypes = {chunkType};
                 final SortingOrder[] orders = {order};
-                writeFile(MULTI_PACKAGE,
-                        MultiColumnTimsortKernelFactory.generateKernelType(chunkTypes, orders, new boolean[1],
-                                MULTI_PACKAGE),
-                        MultiColumnTimsortKernelFactory.kernelName(chunkTypes, orders, new boolean[1]));
+                writeFile(INDIRECT_PACKAGE,
+                        IndirectTimsortKernelFactory.generateKernelType(chunkTypes, orders, new boolean[1],
+                                INDIRECT_PACKAGE),
+                        IndirectTimsortKernelFactory.kernelName(chunkTypes, orders, new boolean[1]));
             }
         }
+        // the comparator kernel always compares in the ascending sense; descending comparator sorts reverse the
+        // comparator when the context is created, so only one kernel is needed
+        final ChunkType[] objectChunkTypes = {ChunkType.Object};
+        final SortingOrder[] ascending = {SortingOrder.Ascending};
+        final boolean[] hasComparator = {true};
+        writeFile(INDIRECT_PACKAGE,
+                IndirectTimsortKernelFactory.generateKernelType(objectChunkTypes, ascending, hasComparator,
+                        INDIRECT_PACKAGE),
+                IndirectTimsortKernelFactory.kernelName(objectChunkTypes, ascending, hasComparator));
     }
 
     /**
-     * Emits the dispatcher that selects a pregenerated single-column indirect kernel by chunk type and sort direction.
-     * Multi-column shapes are not pregenerated; MultiColumnTimsortKernelFactory compiles them on demand.
+     * Emits the dispatcher that selects a pregenerated single-column indirect kernel by chunk type, sort direction,
+     * and comparator. Multi-column shapes are not pregenerated; IndirectTimsortKernelFactory compiles them on
+     * demand.
      */
     private static void generateIndirectDispatcher() throws IOException {
         final TypeVariableName permuteAttr = TypeVariableName.get("PERMUTE_VALUES_ATTR", ANY);
@@ -319,10 +330,24 @@ public class GenerateTimsortKernels {
                 .returns(ParameterizedTypeName.get(MULTI_COLUMN_SORT_KERNEL, permuteAttr))
                 .addParameter(ArrayTypeName.of(CHUNK_TYPE), "chunkTypes")
                 .addParameter(ArrayTypeName.of(SORTING_ORDER), "order")
+                .addParameter(ArrayTypeName.of(COMPARATOR), "comparators")
                 .addParameter(int.class, "size");
 
         makeContext.beginControlFlow("if (chunkTypes.length != 1)");
         makeContext.addStatement("return null");
+        makeContext.endControlFlow();
+
+        makeContext.beginControlFlow("if (comparators[0] != null)");
+        makeContext.addComment(
+                "the comparator kernel compares in the ascending sense; descending reverses the comparator");
+        makeContext.addStatement(
+                "final $T comparator = order[0] == $T.Ascending ? comparators[0] : comparators[0].reversed()",
+                COMPARATOR, SORTING_ORDER);
+        makeContext.addStatement("return $T.createContext(size, new $T[] {comparator})",
+                ClassName.get(INDIRECT_PACKAGE, IndirectTimsortKernelFactory.kernelName(
+                        new ChunkType[] {ChunkType.Object}, new SortingOrder[] {SortingOrder.Ascending},
+                        new boolean[] {true})),
+                COMPARATOR);
         makeContext.endControlFlow();
 
         makeContext.beginControlFlow("switch (chunkTypes[0])");
@@ -330,12 +355,12 @@ public class GenerateTimsortKernels {
             makeContext.addCode("case " + chunkType.name() + ":\n");
             makeContext.beginControlFlow("if (order[0] == $T.Ascending)", SORTING_ORDER);
             makeContext.addStatement("return $T.createContext(size)",
-                    ClassName.get(MULTI_PACKAGE, MultiColumnTimsortKernelFactory.kernelName(
+                    ClassName.get(INDIRECT_PACKAGE, IndirectTimsortKernelFactory.kernelName(
                             new ChunkType[] {chunkType}, new SortingOrder[] {SortingOrder.Ascending},
                             new boolean[1])));
             makeContext.endControlFlow();
             makeContext.addStatement("return $T.createContext(size)",
-                    ClassName.get(MULTI_PACKAGE, MultiColumnTimsortKernelFactory.kernelName(
+                    ClassName.get(INDIRECT_PACKAGE, IndirectTimsortKernelFactory.kernelName(
                             new ChunkType[] {chunkType}, new SortingOrder[] {SortingOrder.Descending},
                             new boolean[1])));
         }
@@ -345,13 +370,13 @@ public class GenerateTimsortKernels {
 
         final TypeSpec dispatcher = TypeSpec.classBuilder("IndirectTimsortDispatcher")
                 .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
-                .addJavadoc("Selects a pregenerated single-column indirect timsort kernel by chunk type and sort "
-                        + "direction, returning\nnull for multi-column shapes, which "
-                        + "MultiColumnTimsortKernelFactory compiles on demand.\n")
+                .addJavadoc("Selects a pregenerated single-column indirect timsort kernel by chunk type, sort "
+                        + "direction, and comparator,\nreturning null for multi-column shapes, which "
+                        + "IndirectTimsortKernelFactory compiles on demand.\n")
                 .addMethod(MethodSpec.constructorBuilder().addModifiers(Modifier.PRIVATE).build())
                 .addMethod(makeContext.build())
                 .build();
-        writeFile(MULTI_PACKAGE, dispatcher, "IndirectTimsortDispatcher");
+        writeFile(INDIRECT_PACKAGE, dispatcher, "IndirectTimsortDispatcher");
     }
 
 

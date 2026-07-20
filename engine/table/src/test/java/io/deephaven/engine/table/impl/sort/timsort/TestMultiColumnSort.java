@@ -14,7 +14,7 @@ import io.deephaven.engine.table.impl.SortingOrder;
 import io.deephaven.engine.table.impl.sort.MultiColumnSortKernel;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.SortColumn;
-import io.deephaven.engine.table.impl.sort.timsort.multi.MultiColumnTimsortKernelFactory;
+import io.deephaven.engine.table.impl.sort.timsort.indirect.IndirectTimsortKernelFactory;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.QueryConstants;
@@ -160,46 +160,48 @@ public class TestMultiColumnSort {
         for (final ChunkType first : new ChunkType[] {ChunkType.Char, ChunkType.Byte, ChunkType.Short, ChunkType.Int,
                 ChunkType.Long, ChunkType.Float, ChunkType.Double, ChunkType.Object}) {
             for (final ChunkType second : new ChunkType[] {ChunkType.Int, ChunkType.Object}) {
-                try (final MultiColumnSortKernel<Any> kernel = MultiColumnTimsortKernelFactory.makeContext(
+                try (final MultiColumnSortKernel<Any> kernel = IndirectTimsortKernelFactory.makeContext(
                         new ChunkType[] {first, second},
                         new SortingOrder[] {SortingOrder.Ascending, SortingOrder.Ascending}, new Comparator[2], 16)) {
                     TestCase.assertNotNull(kernel);
                 }
             }
         }
-        // single-column Object sorts use indirect kernels in either direction; primitives use the direct kernels,
-        // and single-column comparator sorts use ComparatorLongTimsortKernel
+        // single-column Object sorts use indirect kernels in either direction, with or without a comparator;
+        // primitives use the direct kernels
         for (final SortingOrder order : SortingOrder.values()) {
-            try (final MultiColumnSortKernel<Any> kernel = MultiColumnTimsortKernelFactory.makeContext(
+            try (final MultiColumnSortKernel<Any> kernel = IndirectTimsortKernelFactory.makeContext(
                     new ChunkType[] {ChunkType.Object}, new SortingOrder[] {order}, new Comparator[1], 16)) {
                 TestCase.assertNotNull(kernel);
             }
-            TestCase.assertNull(MultiColumnTimsortKernelFactory.makeContext(
+            TestCase.assertNull(IndirectTimsortKernelFactory.makeContext(
                     new ChunkType[] {ChunkType.Int}, new SortingOrder[] {order}, new Comparator[1], 16));
-            TestCase.assertNull(MultiColumnTimsortKernelFactory.makeContext(
+            try (final MultiColumnSortKernel<Any> kernel = IndirectTimsortKernelFactory.makeContext(
                     new ChunkType[] {ChunkType.Object}, new SortingOrder[] {order},
-                    new Comparator[] {Comparator.naturalOrder()}, 16));
+                    new Comparator[] {Comparator.naturalOrder()}, 16)) {
+                TestCase.assertNotNull(kernel);
+            }
         }
         // descending, three-column, and comparator shapes compile on demand
-        try (final MultiColumnSortKernel<Any> kernel = MultiColumnTimsortKernelFactory.makeContext(
+        try (final MultiColumnSortKernel<Any> kernel = IndirectTimsortKernelFactory.makeContext(
                 new ChunkType[] {ChunkType.Int, ChunkType.Long},
                 new SortingOrder[] {SortingOrder.Ascending, SortingOrder.Descending}, new Comparator[2], 16)) {
             TestCase.assertNotNull(kernel);
         }
-        try (final MultiColumnSortKernel<Any> kernel = MultiColumnTimsortKernelFactory.makeContext(
+        try (final MultiColumnSortKernel<Any> kernel = IndirectTimsortKernelFactory.makeContext(
                 new ChunkType[] {ChunkType.Int, ChunkType.Long, ChunkType.Object},
                 new SortingOrder[] {SortingOrder.Ascending, SortingOrder.Ascending, SortingOrder.Ascending},
                 new Comparator[3], 16)) {
             TestCase.assertNotNull(kernel);
         }
-        try (final MultiColumnSortKernel<Any> kernel = MultiColumnTimsortKernelFactory.makeContext(
+        try (final MultiColumnSortKernel<Any> kernel = IndirectTimsortKernelFactory.makeContext(
                 new ChunkType[] {ChunkType.Object, ChunkType.Int},
                 new SortingOrder[] {SortingOrder.Descending, SortingOrder.Ascending},
                 new Comparator[] {Comparator.nullsFirst(Comparator.naturalOrder()), null}, 16)) {
             TestCase.assertNotNull(kernel);
         }
         // boolean chunks have no kernel; the caller falls back
-        TestCase.assertNull(MultiColumnTimsortKernelFactory.makeContext(
+        TestCase.assertNull(IndirectTimsortKernelFactory.makeContext(
                 new ChunkType[] {ChunkType.Boolean, ChunkType.Int},
                 new SortingOrder[] {SortingOrder.Ascending, SortingOrder.Ascending}, new Comparator[2], 16));
     }

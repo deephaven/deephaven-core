@@ -11,7 +11,7 @@ import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
-import io.deephaven.engine.table.impl.sort.timsort.multi.MultiColumnTimsortKernelFactory;
+import io.deephaven.engine.table.impl.sort.timsort.indirect.IndirectTimsortKernelFactory;
 import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.sources.SwitchColumnSource;
@@ -114,7 +114,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
             // are on a thread whose ExecutionContext has a QueryCompiler; the sort listener may otherwise be the
             // first to need it, on an update graph thread that cannot compile. For a refreshing blink table the
             // initial sort is empty, so the listener is always first.
-            MultiColumnTimsortKernelFactory.prepareKernel(
+            IndirectTimsortKernelFactory.prepareKernel(
                     Arrays.stream(sortColumns).map(ColumnSource::getChunkType).toArray(ChunkType[]::new),
                     sortOrder, comparators);
         }

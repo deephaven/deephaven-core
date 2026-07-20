@@ -1,7 +1,7 @@
 //
 // Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
-package io.deephaven.engine.table.impl.sort.timsort.multi;
+package io.deephaven.engine.table.impl.sort.timsort.indirect;
 
 import com.palantir.javapoet.ArrayTypeName;
 import com.palantir.javapoet.ClassName;
@@ -42,18 +42,17 @@ import java.util.stream.Collectors;
  * and assemble the permuted row keys in a single linear pass at the end.
  *
  * <p>
- * The single-column kernels are pregenerated into this package (via {@code GenerateTimsortKernels}) and selected by
- * {@code IndirectTimsortDispatcher}. Every multi-column shape — any mix of column types, sort directions, and
- * per-column comparators — is generated with JavaPoet and compiled on demand, as the typed aggregation hashers are; the
- * compiled kernels are cached by class name.
+ * The single-column kernels — including the comparator kernel — are pregenerated into this package (via
+ * {@code GenerateTimsortKernels}) and selected by {@code IndirectTimsortDispatcher}. Every multi-column shape — any mix
+ * of column types, sort directions, and per-column comparators — is generated with JavaPoet and compiled on demand, as
+ * the typed aggregation hashers are; the compiled kernels are cached by class name.
  *
  * <p>
  * {@link #makeContext} is also the policy authority: single-column sorts of primitive types return null, as the
- * existing direct (value-moving) kernels are faster for them, and single-column comparator sorts return null in favor
- * of ComparatorLongTimsortKernel; callers fall back to those kernels.
+ * existing direct (value-moving) kernels are faster for them; callers fall back to those kernels.
  */
-public class MultiColumnTimsortKernelFactory {
-    private static final String PACKAGE = "io.deephaven.engine.table.impl.sort.timsort.multi";
+public class IndirectTimsortKernelFactory {
+    private static final String PACKAGE = "io.deephaven.engine.table.impl.sort.timsort.indirect";
     private static final String RUNTIME_PACKAGE_ROOT = PACKAGE + ".gen";
 
     private static final ClassName ANY = ClassName.get("io.deephaven.chunk.attributes", "Any");
@@ -155,8 +154,7 @@ public class MultiColumnTimsortKernelFactory {
      * Returns an indirect sort kernel context for the given column chunk types, sort directions, and per-column
      * comparators (each entry null for a column ordered by its natural Deephaven ordering), or null when the existing
      * single-column kernels should be used instead: single-column sorts of primitive types (where the direct,
-     * value-moving kernels are faster), single-column comparator sorts (handled by ComparatorLongTimsortKernel), and
-     * any sort involving a boolean chunk.
+     * value-moving kernels are faster) and any sort involving a boolean chunk.
      *
      * <p>
      * Multi-column sorts are always handled: the single-column indirect kernels are pregenerated, and every
@@ -170,7 +168,7 @@ public class MultiColumnTimsortKernelFactory {
             return null;
         }
         if (chunkTypes.length == 1) {
-            return IndirectTimsortDispatcher.makeContext(chunkTypes, order, size);
+            return IndirectTimsortDispatcher.makeContext(chunkTypes, order, comparators, size);
         }
         return makeCompiledContext(chunkTypes, order, comparators, size);
     }
@@ -178,8 +176,7 @@ public class MultiColumnTimsortKernelFactory {
     /**
      * Whether {@link #makeContext} provides a kernel for the given column chunk types and comparators; callers use the
      * existing single-column kernels when it does not. This is the same policy makeContext applies, without creating a
-     * context: single-column sorts of primitive types and single-column comparator sorts are declined, as are boolean
-     * chunks.
+     * context: single-column sorts of primitive types are declined, as are boolean chunks.
      */
     public static boolean hasKernel(final ChunkType[] chunkTypes, final Comparator[] comparators) {
         for (int ii = 0; ii < chunkTypes.length; ++ii) {
@@ -190,9 +187,8 @@ public class MultiColumnTimsortKernelFactory {
                     "comparators[ii] == null || chunkTypes[ii] == ChunkType.Object");
         }
         if (chunkTypes.length == 1) {
-            // the direct single-column kernels beat indirection for primitive columns, and single-column
-            // comparator sorts use ComparatorLongTimsortKernel
-            return chunkTypes[0] == ChunkType.Object && comparators[0] == null;
+            // the direct single-column kernels beat indirection for primitive columns
+            return chunkTypes[0] == ChunkType.Object;
         }
         return true;
     }
@@ -206,8 +202,8 @@ public class MultiColumnTimsortKernelFactory {
     public static void prepareKernel(final ChunkType[] chunkTypes, final SortingOrder[] order,
             final Comparator[] comparators) {
         if (!hasKernel(chunkTypes, comparators) || chunkTypes.length == 1) {
-            // unsupported shapes use the single-column kernels, and the single-column indirect kernels are
-            // pregenerated
+            // unsupported shapes use the single-column kernels, and the single-column indirect kernels — including
+            // the comparator kernel — are pregenerated
             return;
         }
         ensureCompiled(chunkTypes, order, comparators);
@@ -263,7 +259,7 @@ public class MultiColumnTimsortKernelFactory {
                     .collect(Collectors.joining("\n"));
             final Class<?> clazz = ExecutionContext.getContext().getQueryCompiler()
                     .compile(QueryCompilerRequest.builder()
-                            .description("MultiColumnTimsortKernelFactory: " + name)
+                            .description("IndirectTimsortKernelFactory: " + name)
                             .className(name)
                             .classBody(classBody)
                             .packageNameRoot(RUNTIME_PACKAGE_ROOT)

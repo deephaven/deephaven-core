@@ -33,7 +33,7 @@ import io.deephaven.engine.table.impl.sort.timsort.LongIntTimsortKernel;
 import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.sort.timsort.ParallelTimsort;
-import io.deephaven.engine.table.impl.sort.timsort.multi.MultiColumnTimsortKernelFactory;
+import io.deephaven.engine.table.impl.sort.timsort.indirect.IndirectTimsortKernelFactory;
 import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.table.impl.sources.regioned.SymbolTableSource;
 import io.deephaven.engine.table.impl.util.ContiguousWritableRowRedirection;
@@ -691,12 +691,12 @@ public class SortHelpers {
             final WritableLongChunk<RowKeys> rowKeys = WritableLongChunk.writableChunkWrap(rowKeysArray);
             rowSequence.fillRowKeyChunk(rowKeys);
 
-            if (QueryTable.USE_INDIRECT_SORT_KERNELS && comparator == null) {
-                // the factory provides indirect kernels for Object columns; primitive columns are declined and use
-                // the direct kernels below
+            if (QueryTable.USE_INDIRECT_SORT_KERNELS) {
+                // the factory provides indirect kernels for Object columns, with or without a comparator; primitive
+                // columns are declined and use the direct kernels below
                 final ChunkType[] chunkTypes = {values.getChunkType()};
-                final Comparator[] comparators = new Comparator[1];
-                if (MultiColumnTimsortKernelFactory.hasKernel(chunkTypes, comparators)) {
+                final Comparator[] comparators = {comparator};
+                if (IndirectTimsortKernelFactory.hasKernel(chunkTypes, comparators)) {
                     // noinspection unchecked
                     multiColumnSort(chunkTypes, new SortingOrder[] {order}, comparators, rowKeys,
                             new WritableChunk[] {values}, chunkSize);
@@ -977,7 +977,7 @@ public class SortHelpers {
             final WritableLongChunk<RowKeys> rowKeys) {
         final ChunkType[] chunkTypes =
                 Arrays.stream(columnSources).map(ColumnSource::getChunkType).toArray(ChunkType[]::new);
-        if (!MultiColumnTimsortKernelFactory.hasKernel(chunkTypes, comparators)) {
+        if (!IndirectTimsortKernelFactory.hasKernel(chunkTypes, comparators)) {
             return null;
         }
         rowSet.fillRowKeyChunk(rowKeys);
@@ -995,8 +995,8 @@ public class SortHelpers {
     }
 
     /**
-     * Sort the row keys by the filled value chunks with a kernel from MultiColumnTimsortKernelFactory, splitting the
-     * sort into parallel segments with pairwise merges when the sort is large enough.
+     * Sort the row keys by the filled value chunks with a kernel from IndirectTimsortKernelFactory, splitting the sort
+     * into parallel segments with pairwise merges when the sort is large enough.
      */
     private static void multiColumnSort(
             final ChunkType[] chunkTypes,
@@ -1008,12 +1008,12 @@ public class SortHelpers {
         final int sortSegments = parallelSortSegments(sortSize);
         if (sortSegments > 1) {
             ParallelTimsort.sortIndirect(
-                    taskSize -> MultiColumnTimsortKernelFactory.makeContext(chunkTypes, order, comparators, taskSize),
+                    taskSize -> IndirectTimsortKernelFactory.makeContext(chunkTypes, order, comparators, taskSize),
                     rowKeys, values, sortSegments);
             return;
         }
         try (final MultiColumnSortKernel<RowKeys> sortContext =
-                MultiColumnTimsortKernelFactory.makeContext(chunkTypes, order, comparators, sortSize)) {
+                IndirectTimsortKernelFactory.makeContext(chunkTypes, order, comparators, sortSize)) {
             sortContext.sort(rowKeys, values);
         }
     }
