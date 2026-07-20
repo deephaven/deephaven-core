@@ -223,7 +223,7 @@ public class QueryTable extends BaseTable<QueryTable> {
             Configuration.getInstance().getBooleanWithDefault("QueryTable.useDataIndexForJoins", true);
 
     /**
-     * If the Configuration property "QueryTable.useGeneratedSortKernels" is set to true (default), then sorts of Object
+     * If the Configuration property "QueryTable.useIndirectSortKernels" is set to true (default), then sorts of Object
      * columns and sorts of multiple columns use generated indirect timsort kernels that compare each column in turn
      * while permuting only a parallel chunk of positions (the permuted row keys are assembled in a single linear pass
      * at the end). The single-column kernels are pregenerated; every multi-column shape — any mix of column types, sort
@@ -232,8 +232,8 @@ public class QueryTable extends BaseTable<QueryTable> {
      * which are faster for them. If false, sorting always uses the existing one-column-at-a-time kernels with run
      * finding in between.
      */
-    public static boolean USE_GENERATED_SORT_KERNELS =
-            Configuration.getInstance().getBooleanWithDefault("QueryTable.useGeneratedSortKernels", true);
+    public static boolean USE_INDIRECT_SORT_KERNELS =
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.useIndirectSortKernels", true);
 
     /**
      * For a static select(), we would prefer to flatten the table to avoid using memory unnecessarily (because the data

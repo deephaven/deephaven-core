@@ -117,16 +117,16 @@ public class TestMultiColumnSort {
     }
 
     private static void checkSame(final Table table, final SortInvoker invoker) {
-        final boolean oldFlag = QueryTable.USE_GENERATED_SORT_KERNELS;
+        final boolean oldFlag = QueryTable.USE_INDIRECT_SORT_KERNELS;
         final Table expected;
         final Table actual;
         try {
-            QueryTable.USE_GENERATED_SORT_KERNELS = false;
+            QueryTable.USE_INDIRECT_SORT_KERNELS = false;
             expected = invoker.sort(table);
-            QueryTable.USE_GENERATED_SORT_KERNELS = true;
+            QueryTable.USE_INDIRECT_SORT_KERNELS = true;
             actual = invoker.sort(table);
         } finally {
-            QueryTable.USE_GENERATED_SORT_KERNELS = oldFlag;
+            QueryTable.USE_INDIRECT_SORT_KERNELS = oldFlag;
         }
         assertTableEquals(expected, actual);
     }
@@ -292,15 +292,15 @@ public class TestMultiColumnSort {
         }
 
         // the one-column-at-a-time pipeline fills values through the same helper
-        final boolean oldFlag = QueryTable.USE_GENERATED_SORT_KERNELS;
+        final boolean oldFlag = QueryTable.USE_INDIRECT_SORT_KERNELS;
         try {
-            QueryTable.USE_GENERATED_SORT_KERNELS = false;
+            QueryTable.USE_INDIRECT_SORT_KERNELS = false;
             final Table table = makeTable(new Random(8675309), 10000);
             checkParallelSame(table, t -> t.sort("ObjA"));
             checkParallelSame(table, t -> t.sort("ObjA", "IntB"));
             checkParallelSame(table, t -> t.sort("IntA", "LongB", "ObjB"));
         } finally {
-            QueryTable.USE_GENERATED_SORT_KERNELS = oldFlag;
+            QueryTable.USE_INDIRECT_SORT_KERNELS = oldFlag;
         }
     }
 

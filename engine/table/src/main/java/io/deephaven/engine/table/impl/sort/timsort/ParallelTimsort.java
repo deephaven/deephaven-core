@@ -53,13 +53,21 @@ public class ParallelTimsort {
 
     /** A node of the merge tree: a leaf sorts its range; an internal node merges its children's sorted runs. */
     private static final class MergeNode {
+        /** The first chunk position of the range this node sorts or merges. */
         final int start;
+        /**
+         * The length of the left child's sorted run; the right child's run begins at start + leftLength. For a leaf,
+         * the whole range.
+         */
         final int leftLength;
+        /** The total length of this node's range, spanning both children's runs for an internal node. */
         final int totalLength;
+        /** The number of children not yet sorted; the task that decrements it to zero submits this node's merge. */
         final AtomicInteger pendingChildren;
         /**
-         * Assigned while the tree is built, strictly before any task is submitted; task submission publishes the
-         * completed tree to the sorting threads.
+         * The node that merges this node's sorted run with its sibling's; null for the root. Assigned while the tree is
+         * built, strictly before any task is submitted; task submission publishes the completed tree to the sorting
+         * threads.
          */
         MergeNode parent;
 
@@ -232,6 +240,11 @@ public class ParallelTimsort {
                 waitForSort::completeExceptionally);
     }
 
+    /** A task's share of a parallel phase over the chunk, given as a [start, end) range of chunk positions. */
+    private interface SegmentTask {
+        void run(int start, int end);
+    }
+
     /** Assemble the permuted row keys in a single linear pass, one segment per task. */
     private static <PERMUTE_VALUES_ATTR extends Any> void gatherRowKeysParallel(
             final WritableLongChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
@@ -243,33 +256,47 @@ public class ParallelTimsort {
         final JobScheduler jobScheduler = new OperationInitializerJobScheduler();
         final int segmentSize = (size + segments - 1) / segments;
         try (final WritableLongChunk<PERMUTE_VALUES_ATTR> originalKeys = WritableLongChunk.makeWritableChunk(size)) {
-            originalKeys.copyFromChunk(valuesToPermute, 0, 0, size);
-            final CompletableFuture<Void> waitForGather = new CompletableFuture<>();
-            jobScheduler.iterateParallel(
-                    ExecutionContext.getContext(),
-                    logOutput -> logOutput.append("ParallelTimsort.gatherRowKeys"),
-                    JobScheduler.DEFAULT_CONTEXT_FACTORY,
-                    0, segments,
-                    (context, segment, nestedErrorConsumer) -> {
-                        final int start = segment * segmentSize;
-                        final int end = Math.min(start + segmentSize, size);
-                        for (int ii = start; ii < end; ++ii) {
-                            valuesToPermute.set(ii, originalKeys.get(positions.get(ii)));
-                        }
-                    },
-                    () -> waitForGather.complete(null),
-                    () -> {
-                    },
-                    waitForGather::completeExceptionally);
             try {
-                waitForGather.get();
-            } catch (final InterruptedException e) {
-                throw new CancellationException("Interrupted during parallel sort row key gather");
-            } catch (final ExecutionException e) {
-                throw new UncheckedDeephavenException("Exception during parallel sort row key gather", e.getCause());
+                // the gather reads the copied keys at arbitrary positions, so the copy phase must be complete
+                // before any gather segment begins
+                runPhase(jobScheduler, "ParallelTimsort.copyRowKeys", size, segments, segmentSize,
+                        (start, end) -> originalKeys.copyFromChunk(valuesToPermute, start, start, end - start));
+                runPhase(jobScheduler, "ParallelTimsort.gatherRowKeys", size, segments, segmentSize,
+                        (start, end) -> {
+                            for (int ii = start; ii < end; ++ii) {
+                                valuesToPermute.set(ii, originalKeys.get(positions.get(ii)));
+                            }
+                        });
             } finally {
                 SortHelpers.accumulateSchedulerPerformance(jobScheduler);
             }
+        }
+    }
+
+    /** Run one phase of segment tasks over the chunk, blocking until every segment is complete. */
+    private static void runPhase(final JobScheduler jobScheduler, final String description, final int size,
+            final int segments, final int segmentSize, final SegmentTask task) {
+        final CompletableFuture<Void> waitForPhase = new CompletableFuture<>();
+        jobScheduler.iterateParallel(
+                ExecutionContext.getContext(),
+                logOutput -> logOutput.append(description),
+                JobScheduler.DEFAULT_CONTEXT_FACTORY,
+                0, segments,
+                (context, segment, nestedErrorConsumer) -> {
+                    final int start = segment * segmentSize;
+                    final int end = Math.min(start + segmentSize, size);
+                    task.run(start, end);
+                },
+                () -> waitForPhase.complete(null),
+                () -> {
+                },
+                waitForPhase::completeExceptionally);
+        try {
+            waitForPhase.get();
+        } catch (final InterruptedException e) {
+            throw new CancellationException("Interrupted during " + description);
+        } catch (final ExecutionException e) {
+            throw new UncheckedDeephavenException("Exception during " + description, e.getCause());
         }
     }
 }

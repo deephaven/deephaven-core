@@ -109,7 +109,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
 
         parent.assertSortable(sortColumnNames);
 
-        if (QueryTable.USE_GENERATED_SORT_KERNELS) {
+        if (QueryTable.USE_INDIRECT_SORT_KERNELS) {
             // Resolve (compiling on demand if necessary) the multi-column sort kernel for this shape now, while we
             // are on a thread whose ExecutionContext has a QueryCompiler; the sort listener may otherwise be the
             // first to need it, on an update graph thread that cannot compile. For a refreshing blink table the

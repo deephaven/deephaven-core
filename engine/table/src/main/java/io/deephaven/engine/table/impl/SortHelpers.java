@@ -691,7 +691,7 @@ public class SortHelpers {
             final WritableLongChunk<RowKeys> rowKeys = WritableLongChunk.writableChunkWrap(rowKeysArray);
             rowSequence.fillRowKeyChunk(rowKeys);
 
-            if (QueryTable.USE_GENERATED_SORT_KERNELS && comparator == null) {
+            if (QueryTable.USE_INDIRECT_SORT_KERNELS && comparator == null) {
                 // the factory provides indirect kernels for Object columns; primitive columns are declined and use
                 // the direct kernels below
                 final ChunkType[] chunkTypes = {values.getChunkType()};
@@ -811,7 +811,7 @@ public class SortHelpers {
         final long[] rowKeysArray = new long[sortSize];
         final WritableLongChunk<RowKeys> rowKeys = WritableLongChunk.writableChunkWrap(rowKeysArray);
 
-        if (QueryTable.USE_GENERATED_SORT_KERNELS && dataIndex == null) {
+        if (QueryTable.USE_INDIRECT_SORT_KERNELS && dataIndex == null) {
             final SortMapping multiColumnMapping = tryMultiColumnSortMapping(
                     order, columnSources, comparators, rowSet, usePrev, sortSize, rowKeysArray, rowKeys);
             if (multiColumnMapping != null) {

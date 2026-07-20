@@ -36,10 +36,8 @@ public interface MultiColumnSortKernel<PERMUTE_VALUES_ATTR extends Any> extends 
      * @param offset the first position index to sort
      * @param length the number of position entries to sort; must not exceed the size this context was created with
      */
-    default void sortPositions(WritableIntChunk<ChunkPositions> positions,
-            WritableChunk<? extends Any>[] valuesToSort, int offset, int length) {
-        throw new UnsupportedOperationException("parallel sorting is not supported by " + getClass());
-    }
+    void sortPositions(WritableIntChunk<ChunkPositions> positions,
+            WritableChunk<? extends Any>[] valuesToSort, int offset, int length);
 
     /**
      * Merge two adjacent sorted runs of the caller's positions chunk, [start1, start1 + length1) and [start1 + length1,
@@ -52,8 +50,6 @@ public interface MultiColumnSortKernel<PERMUTE_VALUES_ATTR extends Any> extends 
      * @param length2 the length of the second run; length1 + length2 must not exceed the size this context was created
      *        with
      */
-    default void mergePositions(WritableIntChunk<ChunkPositions> positions,
-            WritableChunk<? extends Any>[] valuesToSort, int start1, int length1, int length2) {
-        throw new UnsupportedOperationException("parallel sorting is not supported by " + getClass());
-    }
+    void mergePositions(WritableIntChunk<ChunkPositions> positions,
+            WritableChunk<? extends Any>[] valuesToSort, int start1, int length1, int length2);
 }

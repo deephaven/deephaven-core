@@ -90,7 +90,7 @@ public class MultiColumnSortBenchmark {
     public void setup() throws Exception {
         engine = new EngineCleanup();
         engine.setUp();
-        QueryTable.USE_GENERATED_SORT_KERNELS = "kernel".equals(kernelMode);
+        QueryTable.USE_INDIRECT_SORT_KERNELS = "kernel".equals(kernelMode);
         SortHelpers.parallelSortMinimumSize = parallelMinSize;
         sortColumns = sortCols.split(",");
 
