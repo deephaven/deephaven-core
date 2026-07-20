@@ -154,6 +154,15 @@ public class ParallelTimsort {
         final int segmentSize = (size + segments - 1) / segments;
 
         final ExecutionContext executionContext = ExecutionContext.getContext();
+        // The tasks must run on the operation initializer thread pool, even when the sort is initiated from a
+        // listener on an update graph thread. Because we block the initiating thread on a future, running the tasks
+        // on the update graph's own threads would deadlock: concurrent sorts could block every update thread, and
+        // the tasks that would complete their futures could then never be scheduled. That never happens with the
+        // operation initializer pool: its workers report canParallelize() == false, so a sort initiated on a worker
+        // runs serially rather than submitting and waiting, and the merge tree's tasks never block (the last child
+        // to finish submits the parent merge). Restructuring the sort listener to continue from a completion routine
+        // instead of blocking would let cycle-time sorts use the update graph's scheduler, and would be better in
+        // the long term.
         final JobScheduler jobScheduler = new OperationInitializerJobScheduler();
         final CompletableFuture<Void> waitForSort = new CompletableFuture<>();
 
@@ -252,7 +261,8 @@ public class ParallelTimsort {
             final int size,
             final int segments) {
         // the gather must not reuse the sorting scheduler: reading its accumulated performance waits for its jobs,
-        // so it is consumed once, after the sort completes
+        // so it is consumed once, after the sort completes. It must be an operation initializer scheduler, not the
+        // update graph's; see sortTree.
         final JobScheduler jobScheduler = new OperationInitializerJobScheduler();
         final int segmentSize = (size + segments - 1) / segments;
         try (final WritableLongChunk<PERMUTE_VALUES_ATTR> originalKeys = WritableLongChunk.makeWritableChunk(size)) {

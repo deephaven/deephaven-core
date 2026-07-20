@@ -1167,6 +1167,8 @@ public class SortHelpers {
                         ok.getRowSequenceByPosition(startPosition, Math.min(segmentSize, sortSize - startPosition));
             }
 
+            // must be an operation initializer scheduler, not the update graph's: we block on the future, so tasks
+            // may not run on the threads a listener-initiated sort blocks; see ParallelTimsort.sortTree
             final JobScheduler jobScheduler = new OperationInitializerJobScheduler();
             final CompletableFuture<Void> waitForFill = new CompletableFuture<>();
             jobScheduler.iterateParallel(
