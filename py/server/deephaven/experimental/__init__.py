@@ -48,11 +48,11 @@ def time_window(table: Table, ts_col: str, window: int, bool_col: str) -> Table:
 
 
 class TailInitializationFilter:
-    """Filters an add-only source table down to only its most recent rows, keeping either a fixed time window or a
-    fixed number of rows from each partition of the source. A partition is a region of the source's on-disk storage
-    (e.g. a Parquet fragment) when the timestamp column is region-backed, otherwise each contiguous range of row keys,
-    so a plain in-memory table is a single partition. Rows added to the source after filtering are passed through
-    unchanged.
+    """Filters an add-only source table to retain only its most recent rows, using either
+    a timestamp window or a row count. Intended for queries that restart against a large
+    append-only dataset and need to skip rows that are too old to be relevant.
+
+    Rows appended to the source after the initial filter are passed through unchanged.
     """
 
     @staticmethod
