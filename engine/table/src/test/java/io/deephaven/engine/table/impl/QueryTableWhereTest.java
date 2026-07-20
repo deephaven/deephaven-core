@@ -50,6 +50,7 @@ import io.deephaven.util.datastructures.CachingSupplier;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableObject;
+import org.jetbrains.annotations.NotNull;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -3048,5 +3049,70 @@ public abstract class QueryTableWhereTest {
         }
         final VectorComponentFilterWrapper vectorComponentFilterWrapper = (VectorComponentFilterWrapper) filters[0];
         return new WhereFilter[] {vectorComponentFilterWrapper.breakChunkType()};
+    }
+
+    /**
+     * A filter that declares columns that need not exist in the table being filtered, accepting all rows regardless.
+     * Models filters (like ClockFilter) whose {@code init} does not validate column presence.
+     */
+    private static final class DeclaredColumnsFilter extends WhereFilterImpl {
+        private final List<String> declaredColumns;
+
+        private DeclaredColumnsFilter(final String... declaredColumns) {
+            this.declaredColumns = List.of(declaredColumns);
+        }
+
+        @Override
+        public List<String> getColumns() {
+            return declaredColumns;
+        }
+
+        @Override
+        public List<String> getColumnArrays() {
+            return Collections.emptyList();
+        }
+
+        @Override
+        public void init(@NotNull final TableDefinition tableDefinition) {}
+
+        @NotNull
+        @Override
+        public WritableRowSet filter(
+                @NotNull final RowSet selection, @NotNull final RowSet fullSet, @NotNull final Table table,
+                final boolean usePrev) {
+            return selection.copy();
+        }
+
+        @Override
+        public boolean isSimpleFilter() {
+            return true;
+        }
+
+        @Override
+        public void setRecomputeListener(final RecomputeListener result) {}
+
+        @Override
+        public WhereFilter copy() {
+            return this;
+        }
+    }
+
+    @Test
+    public void testPushdownFilterColumnMissingFromTable() {
+        // Regression test for DH-23106: a pushdown-eligible filter whose declared column is not present in the
+        // source table must not crash pushdown matcher selection (previously IndexOutOfBoundsException from
+        // PushdownFilterMatcher.getPushdownFilterMatcher indexing an empty source list).
+        final Table source = emptyTable(100).update("X = ii");
+        final Table result = source.where(new DeclaredColumnsFilter("Phantom"));
+        assertTableEquals(source, result);
+    }
+
+    @Test
+    public void testPushdownFilterSomeColumnsMissingFromTable() {
+        // Regression test for DH-23106: a multi-column filter with only some columns present must skip pushdown
+        // entirely rather than hand a partial source list to PushdownPredicateManager.getSharedPPM.
+        final Table source = emptyTable(100).update("X = ii");
+        final Table result = source.where(new DeclaredColumnsFilter("X", "Phantom"));
+        assertTableEquals(source, result);
     }
 }

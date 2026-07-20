@@ -12,6 +12,7 @@ import io.deephaven.api.literal.Literal;
 import io.deephaven.base.Factory;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.NoSuchColumnException;
 import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.filters.RowSetCapturingFilter;
@@ -881,5 +882,27 @@ public class TestClockFilters {
             expected = expected.sort("Timestamp");
         }
         assertTableEquals(expected, result);
+    }
+
+    @Test
+    public void testUnsortedNarrowedTable() {
+        // Regression test for DH-23106: ClockFilter.init does not validate column presence, so an UnsortedClockFilter
+        // on a column that was narrowed away used to crash pushdown matcher selection with IndexOutOfBoundsException.
+        // The correct failure is a clear NoSuchColumnException from the filter's execution.
+        clock.reset();
+        final UnsortedClockFilter filter = new UnsortedClockFilter("Timestamp", clock, true);
+        final Table narrowed = testInput1.view("Int");
+        try {
+            narrowed.where(filter);
+            fail("expected NoSuchColumnException");
+        } catch (Exception expected) {
+            final StringBuilder chain = new StringBuilder();
+            Throwable cause = expected;
+            while (cause != null && !(cause instanceof NoSuchColumnException)) {
+                chain.append(cause).append("; caused by ");
+                cause = cause.getCause();
+            }
+            assertNotNull("expected NoSuchColumnException in failure chain, but was: " + chain + "null", cause);
+        }
     }
 }
