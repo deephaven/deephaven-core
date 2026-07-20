@@ -224,13 +224,18 @@ jobs:
         run: cmake --build cpp-client/deephaven/build --config RelWithDebInfo --target install --parallel
 
       # Upload results as build artifact.
+      # We tar the install tree to preserve Unix file modes (upload-artifact
+      # restores files as 0644, which makes executables non-executable).
+
+      - name: Tar install dir
+        run: tar -czf cpp-client-install.tar.gz -C "${{ github.workspace }}" dhinstall
 
       - name: Upload install dir
         id: upload-install-directory
         uses: actions/upload-artifact@v7
         with:
           name: cpp-client-install-${{ matrix.os }}
-          path: ${{ env.DHINSTALL }}
+          path: cpp-client-install.tar.gz
 
   #=============================================================================
   # Build the Python Static Client (not OS dependent)
@@ -301,7 +306,10 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           name: cpp-client-install-${{ matrix.os }}
-          path: ${{ env.DHINSTALL }}
+          path: .
+
+      - name: Extract C++ installation
+        run: tar -xzf cpp-client-install.tar.gz -C "${{ github.workspace }}"
 
       # Get the Python static installation as a build artifact
       - name: Fetch Python static installation
