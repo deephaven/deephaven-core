@@ -782,6 +782,35 @@ public class TestClockFilters {
         }
     }
 
+    @Test
+    public void testMissingColumn() {
+        final Table input = testInput1.dropColumns("Timestamp");
+        for (final ClockFilter filter : new ClockFilter[] {
+                new UnsortedClockFilter("Timestamp", clock, true),
+                new SortedClockFilter("Timestamp", clock, true)}) {
+            try {
+                input.where(filter);
+                fail("Expected NoSuchColumnException for clock filter on missing column");
+            } catch (NoSuchColumnException expected) {
+                assertTrue(expected.getMessage().contains("Timestamp"));
+            }
+        }
+    }
+
+    @Test
+    public void testWrongColumnType() {
+        for (final ClockFilter filter : new ClockFilter[] {
+                new UnsortedClockFilter("Int", clock, true),
+                new SortedClockFilter("Int", clock, true)}) {
+            try {
+                testInput1.where(filter);
+                fail("Expected ClassCastException for clock filter on non-Instant column");
+            } catch (ClassCastException expected) {
+                assertTrue(expected.getMessage().contains("Int"));
+            }
+        }
+    }
+
     /**
      * Reindexing filters will throw {@link UnsupportedOperationException} when added to composed filters or when
      * inverted. This test codifies that behavior to signal additional changes will bve required if this changes.
