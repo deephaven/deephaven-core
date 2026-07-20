@@ -52,15 +52,22 @@ if(NOT DHCORE_ONLY)
         INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
         )
 
-    if(VCPKG_TOOLCHAIN AND NOT WIN32)
-        install(DIRECTORY ${CMAKE_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/lib/
-            DESTINATION ${CMAKE_INSTALL_LIBDIR}
-            FILES_MATCHING
-                PATTERN "*.so"
-                PATTERN "*.so.*"
-                PATTERN "pkgconfig" EXCLUDE
-                PATTERN "cmake" EXCLUDE
-        )
+    if(VCPKG_TOOLCHAIN)
+        if(WIN32)
+            install(DIRECTORY ${CMAKE_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/bin/
+                DESTINATION ${CMAKE_INSTALL_BINDIR}
+                FILES_MATCHING PATTERN "*.dll"
+            )
+        else()
+            install(DIRECTORY ${CMAKE_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/lib/
+                DESTINATION ${CMAKE_INSTALL_LIBDIR}
+                FILES_MATCHING
+                    PATTERN "*.so"
+                    PATTERN "*.so.*"
+                    PATTERN "pkgconfig" EXCLUDE
+                    PATTERN "cmake" EXCLUDE
+            )
+        endif()
     endif()
 
       include(CMakePackageConfigHelpers)
