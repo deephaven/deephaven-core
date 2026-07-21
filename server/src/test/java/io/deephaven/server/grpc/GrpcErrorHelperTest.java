@@ -10,6 +10,8 @@ import io.deephaven.protobuf.test.Message2v1;
 import io.deephaven.protobuf.test.Message2v2;
 import io.deephaven.protobuf.test.OuterV1;
 import io.deephaven.protobuf.test.OuterV2;
+import io.deephaven.protobuf.test.RepeatedFieldv1;
+import io.deephaven.protobuf.test.RepeatedFieldv2;
 import io.grpc.StatusRuntimeException;
 import org.junit.Test;
 
@@ -151,6 +153,50 @@ public class GrpcErrorHelperTest {
             } catch (final StatusRuntimeException e) {
                 assertThat(e).hasMessageContaining(
                         "io.deephaven.protobuf.test.Message1v1 has unknown field(s), topLevel=io.deephaven.protobuf.test.OuterV1, path=[io.deephaven.protobuf.test.OuterV1.inner,io.deephaven.protobuf.test.Message2v1.message]");
+            }
+        }
+    }
+
+    @Test
+    public void unknownFieldsRepeatedMessage() throws InvalidProtocolBufferException {
+        {
+            // establishing a precondition that we can decode just an id
+            final RepeatedFieldv2 v2OnlyId = RepeatedFieldv2.newBuilder()
+                    .addMessage(Message1v2.newBuilder().setId(42).build())
+                    .build();
+            final RepeatedFieldv1 expected = RepeatedFieldv1.newBuilder()
+                    .addMessage(Message1v1.newBuilder().setId(42).build())
+                    .build();
+            assertThat(RepeatedFieldv1.parseFrom(v2OnlyId.toByteString())).isEqualTo(expected);
+        }
+
+        {
+            final RepeatedFieldv2 v2 = RepeatedFieldv2.newBuilder()
+                    .addMessage(Message1v2.newBuilder()
+                            .setId(42)
+                            .setName("Foo Bar")
+                            .build())
+                    .build();
+
+            final RepeatedFieldv1 v1 = RepeatedFieldv1.parseFrom(v2.toByteString());
+            assertThat(v1.getUnknownFields().isEmpty()).isTrue();
+            for (Message1v1 message1v1 : v1.getMessageList()) {
+                assertThat(message1v1.getUnknownFields().isEmpty()).isFalse();
+                assertThat(message1v1.getUnknownFields().hasField(Message1v2.NAME_FIELD_NUMBER)).isTrue();
+            }
+            // v2 is fine
+            GrpcErrorHelper.checkHasNoUnknownFields(v2);
+            GrpcErrorHelper.checkHasNoUnknownFieldsRecursive(v2);
+
+            // v1 no has unknown fields _itself_
+            GrpcErrorHelper.checkHasNoUnknownFields(v1);
+            // but, recursively, it does have known fields
+            try {
+                GrpcErrorHelper.checkHasNoUnknownFieldsRecursive(v1);
+                failBecauseExceptionWasNotThrown(StatusRuntimeException.class);
+            } catch (final StatusRuntimeException e) {
+                assertThat(e).hasMessageContaining(
+                        "io.deephaven.protobuf.test.Message1v1 has unknown field(s), topLevel=io.deephaven.protobuf.test.RepeatedFieldv1, path=[io.deephaven.protobuf.test.RepeatedFieldv1.message]");
             }
         }
     }

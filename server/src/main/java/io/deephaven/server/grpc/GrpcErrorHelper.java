@@ -16,6 +16,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map.Entry;
 import java.util.Objects;
 
@@ -85,7 +86,14 @@ public class GrpcErrorHelper {
                 continue;
             }
             fds.push(fd);
-            checkHasNoUnknownFieldsRecursiveImpl(topLevel, fds, (Message) e.getValue());
+            if (!fd.isRepeated()) {
+                checkHasNoUnknownFieldsRecursiveImpl(topLevel, fds, (Message) e.getValue());
+            } else {
+                final List<?> values = (List<?>) e.getValue();
+                for (Object value : values) {
+                    checkHasNoUnknownFieldsRecursiveImpl(topLevel, fds, (Message) value);
+                }
+            }
             if (fds.pop() != fd) {
                 throw new IllegalStateException("pop did not produce the expected result");
             }

@@ -41,3 +41,13 @@ message OuterV1 {
 message OuterV2 {
   Message2v2 inner = 1;
 }
+
+message RepeatedFieldv1 {
+  repeated Message1v1 message = 1;
+}
+
+// Note: for ease of testing purposes, this is meant to be an evolution of RepeatedFieldv1 (ie, it must be an "extension"
+// of RepeatedFieldv1, with the same initial fields).
+message RepeatedFieldv2 {
+  repeated Message1v2 message = 1;
+}
