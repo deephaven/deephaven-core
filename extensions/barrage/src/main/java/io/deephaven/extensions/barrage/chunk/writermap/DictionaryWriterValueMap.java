@@ -1,7 +1,7 @@
 //
 // Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
-package io.deephaven.extensions.barrage.chunk;
+package io.deephaven.extensions.barrage.chunk.writermap;
 
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ChunkType;
@@ -20,7 +20,7 @@ import org.jetbrains.annotations.Nullable;
  * <p>
  * Thread-safety: not thread-safe; single-threaded barrage stream serialization is assumed.
  */
-interface DictionaryWriterValueMap {
+public interface DictionaryWriterValueMap {
 
     /**
      * Fills {@code out} with one dictionary index per logical row in {@code source}/{@code subset}, registering new

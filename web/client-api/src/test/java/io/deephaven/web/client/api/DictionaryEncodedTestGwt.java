@@ -11,7 +11,6 @@ import io.deephaven.web.client.api.subscription.DataOptions;
 import io.deephaven.web.client.api.subscription.TableSubscription;
 import jsinterop.base.Js;
 
-@DoNotRunWith(Platform.HtmlUnitBug)
 public class DictionaryEncodedTestGwt extends AbstractAsyncGwtTestCase {
 
     // JPY scripts that build two Arrow-dictionary-encoded tables and attach them via BarrageSchema.

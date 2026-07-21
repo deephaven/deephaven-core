@@ -1,7 +1,7 @@
 //
 // Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
-package io.deephaven.extensions.barrage.chunk;
+package io.deephaven.extensions.barrage.chunk.writermap;
 
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ObjectChunk;

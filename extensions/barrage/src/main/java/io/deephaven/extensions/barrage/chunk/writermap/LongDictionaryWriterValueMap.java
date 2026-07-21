@@ -5,7 +5,7 @@
 // ****** Edit CharDictionaryWriterValueMap and run "./gradlew replicateBarrageUtils" to regenerate
 //
 // @formatter:off
-package io.deephaven.extensions.barrage.chunk;
+package io.deephaven.extensions.barrage.chunk.writermap;
 
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.Chunk;

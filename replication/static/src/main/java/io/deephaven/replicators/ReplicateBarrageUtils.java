@@ -43,9 +43,11 @@ public class ReplicateBarrageUtils {
         // The Object variant is hand-written because null handling and generics differ; the Float and Double
         // variants need NaN canonicalization in getOrAdd, handled by the region fixup below.
         ReplicatePrimitiveCode.charToAllButBoolean("replicateBarrageUtils",
-                CHUNK_PACKAGE + "/CharDictionaryWriterValueMap.java");
-        fixupDictionaryWriterValueMap(CHUNK_PACKAGE + "/FloatDictionaryWriterValueMap.java", "float", "Float");
-        fixupDictionaryWriterValueMap(CHUNK_PACKAGE + "/DoubleDictionaryWriterValueMap.java", "double", "Double");
+                CHUNK_PACKAGE + "/writermap/CharDictionaryWriterValueMap.java");
+        fixupDictionaryWriterValueMap(CHUNK_PACKAGE + "/writermap/FloatDictionaryWriterValueMap.java", "float",
+                "Float");
+        fixupDictionaryWriterValueMap(CHUNK_PACKAGE + "/writermap/DoubleDictionaryWriterValueMap.java", "double",
+                "Double");
     }
 
     private static void fixupDictionaryWriterValueMap(

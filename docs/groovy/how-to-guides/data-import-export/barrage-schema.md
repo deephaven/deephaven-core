@@ -388,7 +388,6 @@ Dictionary updates are sent as deltas, so entries accumulate as new unique value
 :::
 
 ```groovy order=table,table_w_attributes
-import io.deephaven.engine.table.Table
 import io.deephaven.extensions.barrage.util.BarrageUtil
 import org.apache.arrow.vector.types.pojo.ArrowType
 import org.apache.arrow.vector.types.pojo.DictionaryEncoding
@@ -403,7 +402,7 @@ table = emptyTable(100).update(
 
 // Extract the default schema to borrow existing field metadata (e.g. deephaven:type tags)
 def baseSchema = BarrageUtil.schemaFromTable(table)
-def fields = new java.util.ArrayList<>(baseSchema.getFields())
+def fields = new ArrayList<>(baseSchema.getFields())
 
 // Build the dictionary-encoded field:
 //   type       = Utf8 (the value type of the column, so DH knows the Java column type is String)
@@ -423,7 +422,7 @@ fields.set(statusIdx, dictField)
 def new_schema = new Schema(fields)
 
 // Apply attributes, creating a new table reference which can be used for export; the original table is unchanged
-table_w_attributes = table.withAttributes(java.util.Map.of(Table.BARRAGE_SCHEMA_ATTRIBUTE, new_schema))
+table_w_attributes = table.withAttributes(Map.of(Table.BARRAGE_SCHEMA_ATTRIBUTE, new_schema))
 ```
 
 ## Related documentation

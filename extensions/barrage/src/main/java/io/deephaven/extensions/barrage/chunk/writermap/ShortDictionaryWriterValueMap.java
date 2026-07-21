@@ -5,34 +5,33 @@
 // ****** Edit CharDictionaryWriterValueMap and run "./gradlew replicateBarrageUtils" to regenerate
 //
 // @formatter:off
-package io.deephaven.extensions.barrage.chunk;
+package io.deephaven.extensions.barrage.chunk.writermap;
 
-import io.deephaven.chunk.FloatChunk;
+import io.deephaven.chunk.ShortChunk;
 import io.deephaven.chunk.Chunk;
-import io.deephaven.chunk.WritableFloatChunk;
+import io.deephaven.chunk.WritableShortChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.util.QueryConstants;
-import it.unimi.dsi.fastutil.floats.Float2IntOpenHashMap;
-import it.unimi.dsi.fastutil.floats.FloatArrayList;
+import it.unimi.dsi.fastutil.shorts.Short2IntOpenHashMap;
+import it.unimi.dsi.fastutil.shorts.ShortArrayList;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-final class FloatDictionaryWriterValueMap implements DictionaryWriterValueMap {
+final class ShortDictionaryWriterValueMap implements DictionaryWriterValueMap {
 
-    private final Float2IntOpenHashMap valueToIndex = new Float2IntOpenHashMap();
-    private final FloatArrayList values = new FloatArrayList();
+    private final Short2IntOpenHashMap valueToIndex = new Short2IntOpenHashMap();
+    private final ShortArrayList values = new ShortArrayList();
 
-    FloatDictionaryWriterValueMap() {
+    ShortDictionaryWriterValueMap() {
         valueToIndex.defaultReturnValue(-1);
     }
 
-    private int getOrAdd(final float value) {
+    private int getOrAdd(final short value) {
         // region canonicalization
-        // Canonicalize NaN so all bit patterns map to the same entry (fastutil hashes the raw bits).
-        final float key = Float.isNaN(value) ? Float.NaN : value;
+        final short key = value;
         // endregion canonicalization
         final int existing = valueToIndex.putIfAbsent(key, values.size());
         if (existing != -1) {
@@ -48,7 +47,7 @@ final class FloatDictionaryWriterValueMap implements DictionaryWriterValueMap {
             @Nullable final RowSet subset,
             final boolean useDeephavenNulls,
             @NotNull final WritableIntChunk<Values> out) {
-        final FloatChunk<Values> src = source.asFloatChunk();
+        final ShortChunk<Values> src = source.asShortChunk();
         int outPos = 0;
         if (subset == null) {
             final int size = src.size();
@@ -60,8 +59,8 @@ final class FloatDictionaryWriterValueMap implements DictionaryWriterValueMap {
                 // NULL_INT written for null rows becomes a cleared bit in the validity bitmap when the
                 // downstream index writer serializes this chunk; it is never sent as a real dictionary index.
                 for (int i = 0; i < size; ++i) {
-                    final float v = src.get(i);
-                    out.set(outPos++, v == QueryConstants.NULL_FLOAT ? QueryConstants.NULL_INT : getOrAdd(v));
+                    final short v = src.get(i);
+                    out.set(outPos++, v == QueryConstants.NULL_SHORT ? QueryConstants.NULL_INT : getOrAdd(v));
                 }
             }
         } else {
@@ -76,8 +75,8 @@ final class FloatDictionaryWriterValueMap implements DictionaryWriterValueMap {
                 // downstream index writer serializes this chunk; it is never sent as a real dictionary index.
                 try (final RowSet.Iterator it = subset.iterator()) {
                     while (it.hasNext()) {
-                        final float v = src.get((int) it.nextLong());
-                        out.set(outPos++, v == QueryConstants.NULL_FLOAT ? QueryConstants.NULL_INT : getOrAdd(v));
+                        final short v = src.get((int) it.nextLong());
+                        out.set(outPos++, v == QueryConstants.NULL_SHORT ? QueryConstants.NULL_INT : getOrAdd(v));
                     }
                 }
             }
@@ -88,7 +87,7 @@ final class FloatDictionaryWriterValueMap implements DictionaryWriterValueMap {
     @NotNull
     public WritableChunk<Values> buildChunk(final int fromInclusive, final int toExclusive) {
         final int numValues = toExclusive - fromInclusive;
-        final WritableFloatChunk<Values> out = WritableFloatChunk.makeWritableChunk(numValues);
+        final WritableShortChunk<Values> out = WritableShortChunk.makeWritableChunk(numValues);
         out.copyFromTypedArray(values.elements(), fromInclusive, 0, numValues);
         out.setSize(numValues);
         return out;
