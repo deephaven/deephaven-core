@@ -47,43 +47,50 @@ A `ColumnSource` for the requested column, parameterized by the target type when
 
 ## Examples
 
+A `ColumnSource` is most useful in code that works with row keys directly, such as a [table listener](../../../how-to-guides/table-listeners-groovy.md). A listener's `onUpdate` method receives a [`TableUpdate`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/TableUpdate.html) that describes changed rows by row key, and a `ColumnSource` is how you resolve those row keys to values.
+
 > [!CAUTION]
-> Row keys are internal identifiers, not positional indices, and cannot be assumed or made up (for example, a row key of `2` does not necessarily mean "the third row"). Always obtain row keys from the table's own [`RowSet`](https://deephaven.io/core/javadoc/io/deephaven/engine/rowset/RowSet.html) via `getRowSet()`, as shown below. For simple bulk or positional access to column data, prefer [`columnIterator`](../../../how-to-guides/extract-table-value.md) or [`ColumnVectors`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/vectors/ColumnVectors.html) rather than calling single-value `ColumnSource` accessors like `getInt` directly.
+> Row keys are internal identifiers, not positional indices, and cannot be assumed or made up (for example, a row key of `2` does not necessarily mean "the third row"). Always obtain row keys from a [`TableUpdate`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/TableUpdate.html) or the table's own [`RowSet`](https://deephaven.io/core/javadoc/io/deephaven/engine/rowset/RowSet.html) via `getRowSet()`. For simple bulk or positional access to column data, prefer [`columnIterator`](../../../how-to-guides/extract-table-value.md) or [`ColumnVectors`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/vectors/ColumnVectors.html) rather than calling single-value `ColumnSource` accessors like `getInt` directly.
 
-The following example retrieves a `ColumnSource` by name, then uses the table's `RowSet` to visit every valid row key:
+The following example listens for rows added to a ticking table. Each update cycle, the listener reads the new rows' values through two column sources: one retrieved with the `clazz` overload and one with the `columnDefinition` overload. Both overloads return a typed `ColumnSource`, so reads don't require a cast:
 
-```groovy order=:log
-source = newTable(
-    intCol("Integers", 1, 2, 3, 4, 5)
-)
+```groovy ticking-table order=null reset
+import io.deephaven.engine.table.TableUpdate
+import io.deephaven.engine.table.ColumnSource
+import io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter
+import io.deephaven.engine.rowset.RowSet
+import java.time.Instant
 
-columnSource = source.getColumnSource("Integers")
+t1 = timeTable("PT1S").update("X = 100 + i").tail(5)
 
-source.getRowSet().forAllRowKeys { rowKey ->
-    println rowKey
+h1 = new InstrumentedTableUpdateListenerAdapter(t1, false) {
+    @Override
+    public void onUpdate(TableUpdate upstream) {
+        // Cast to a target type by class
+        ColumnSource<Instant> tsSource = t1.getColumnSource("Timestamp", Instant.class)
+
+        // Cast using a ColumnDefinition from the table's definition
+        xDef = t1.getDefinition().getColumn("X")
+        ColumnSource<Integer> xSource = t1.getColumnSource(xDef)
+
+        // The TableUpdate provides the row keys of the added rows
+        RowSet.Iterator iter = upstream.added().iterator()
+        while (iter.hasNext()) {
+            long rowKey = iter.next()
+            Instant ts = DateTimeUtils.epochNanosToInstant(tsSource.getLong(rowKey))
+            int x = xSource.getInt(rowKey)
+            println "Added row: Timestamp=${ts}, X=${x}"
+        }
+    }
 }
-```
 
-The following example casts the `ColumnSource` to a target type using a `Class` and using a `ColumnDefinition` from the table's definition:
-
-```groovy order=:log
-source = newTable(
-    intCol("Integers", 1, 2, 3, 4, 5)
-)
-
-// Cast to a target type by class
-intSource = source.getColumnSource("Integers", int.class)
-println intSource
-
-// Cast using a ColumnDefinition from the table's definition
-intDef = source.getDefinition().getColumn("Integers")
-defSource = source.getColumnSource(intDef)
-println defSource
+t1.addUpdateListener(h1)
 ```
 
 ## Related documentation
 
 - [Extract table values](../../../how-to-guides/extract-table-value.md)
+- [Table listeners](../../../how-to-guides/table-listeners-groovy.md)
 - [getDefinition](./getDefinition.md)
 - [`ColumnSource`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/ColumnSource.html)
 - [`ColumnDefinition`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/ColumnDefinition.html)
