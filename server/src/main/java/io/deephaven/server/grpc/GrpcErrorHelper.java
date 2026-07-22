@@ -7,6 +7,7 @@ import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Descriptors.OneofDescriptor;
 import com.google.protobuf.Message;
+import com.google.protobuf.UnknownFieldSet;
 import com.google.rpc.Code;
 import io.deephaven.proto.util.Exceptions;
 import io.grpc.StatusRuntimeException;
@@ -67,9 +68,12 @@ public class GrpcErrorHelper {
     }
 
     public static void checkHasNoUnknownFields(Message message) {
-        if (!message.getUnknownFields().isEmpty()) {
-            throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
-                    String.format("%s has unknown field(s)", message.getDescriptorForType().getFullName()));
+        final UnknownFieldSet unknownFields = message.getUnknownFields();
+        if (!unknownFields.isEmpty()) {
+            throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, String.format(
+                    "%s has unknown field(s) with id %s",
+                    message.getDescriptorForType().getFullName(),
+                    unknownFields.asMap().keySet()));
         }
     }
 
@@ -103,7 +107,10 @@ public class GrpcErrorHelper {
     private static void checkHasNoUnknownFieldsAtPath(Message topLevel, Deque<FieldDescriptor> path, Message message) {
         if (path.isEmpty()) {
             checkHasNoUnknownFields(message);
-        } else if (!message.getUnknownFields().isEmpty()) {
+            return;
+        }
+        final UnknownFieldSet unknownFields = message.getUnknownFields();
+        if (!unknownFields.isEmpty()) {
             // In Java 21+, we can simplify pathString construction.
             // final String pathString = path.reversed().toString()
             final String pathString;
@@ -117,8 +124,10 @@ public class GrpcErrorHelper {
                 pathString = sb.toString();
             }
             throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
-                    String.format("%s has unknown field(s), topLevel=%s, path=[%s]",
-                            message.getDescriptorForType().getFullName(), topLevel.getDescriptorForType().getFullName(),
+                    String.format("%s has unknown field(s) with id %s, topLevel=%s, path=[%s]",
+                            message.getDescriptorForType().getFullName(),
+                            unknownFields.asMap().keySet(),
+                            topLevel.getDescriptorForType().getFullName(),
                             pathString));
         }
     }

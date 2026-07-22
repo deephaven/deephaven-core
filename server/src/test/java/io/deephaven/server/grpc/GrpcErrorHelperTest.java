@@ -44,13 +44,15 @@ public class GrpcErrorHelperTest {
                 GrpcErrorHelper.checkHasNoUnknownFields(v1);
                 failBecauseExceptionWasNotThrown(StatusRuntimeException.class);
             } catch (final StatusRuntimeException e) {
-                assertThat(e).hasMessageContaining("io.deephaven.protobuf.test.Message1v1 has unknown field(s)");
+                assertThat(e)
+                        .hasMessageContaining("io.deephaven.protobuf.test.Message1v1 has unknown field(s) with id [2]");
             }
             try {
                 GrpcErrorHelper.checkHasNoUnknownFieldsRecursive(v1);
                 failBecauseExceptionWasNotThrown(StatusRuntimeException.class);
             } catch (final StatusRuntimeException e) {
-                assertThat(e).hasMessageContaining("io.deephaven.protobuf.test.Message1v1 has unknown field(s)");
+                assertThat(e)
+                        .hasMessageContaining("io.deephaven.protobuf.test.Message1v1 has unknown field(s) with id [2]");
             }
         }
     }
@@ -98,7 +100,7 @@ public class GrpcErrorHelperTest {
                 failBecauseExceptionWasNotThrown(StatusRuntimeException.class);
             } catch (final StatusRuntimeException e) {
                 assertThat(e).hasMessageContaining(
-                        "io.deephaven.protobuf.test.Message1v1 has unknown field(s), topLevel=io.deephaven.protobuf.test.Message2v1, path=[io.deephaven.protobuf.test.Message2v1.message]");
+                        "io.deephaven.protobuf.test.Message1v1 has unknown field(s) with id [2], topLevel=io.deephaven.protobuf.test.Message2v1, path=[io.deephaven.protobuf.test.Message2v1.message]");
             }
         }
     }
@@ -152,7 +154,7 @@ public class GrpcErrorHelperTest {
                 failBecauseExceptionWasNotThrown(StatusRuntimeException.class);
             } catch (final StatusRuntimeException e) {
                 assertThat(e).hasMessageContaining(
-                        "io.deephaven.protobuf.test.Message1v1 has unknown field(s), topLevel=io.deephaven.protobuf.test.OuterV1, path=[io.deephaven.protobuf.test.OuterV1.inner,io.deephaven.protobuf.test.Message2v1.message]");
+                        "io.deephaven.protobuf.test.Message1v1 has unknown field(s) with id [2], topLevel=io.deephaven.protobuf.test.OuterV1, path=[io.deephaven.protobuf.test.OuterV1.inner,io.deephaven.protobuf.test.Message2v1.message]");
             }
         }
     }
@@ -196,7 +198,7 @@ public class GrpcErrorHelperTest {
                 failBecauseExceptionWasNotThrown(StatusRuntimeException.class);
             } catch (final StatusRuntimeException e) {
                 assertThat(e).hasMessageContaining(
-                        "io.deephaven.protobuf.test.Message1v1 has unknown field(s), topLevel=io.deephaven.protobuf.test.RepeatedFieldv1, path=[io.deephaven.protobuf.test.RepeatedFieldv1.message]");
+                        "io.deephaven.protobuf.test.Message1v1 has unknown field(s) with id [2], topLevel=io.deephaven.protobuf.test.RepeatedFieldv1, path=[io.deephaven.protobuf.test.RepeatedFieldv1.message]");
             }
         }
     }
