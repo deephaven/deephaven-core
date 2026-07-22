@@ -508,6 +508,25 @@ class TableTestCase(BaseTestCase):
             result_table = left_table.join(right_table, joins="e")
             self.assertTrue(result_table.size > left_table.size)
 
+        with self.subTest("with some join keys and reserve_bits set"):
+            result_table = left_table.join(
+                right_table, on=["a"], joins=["e"], reserve_bits=1
+            )
+            self.assertTrue(result_table.size < left_table.size)
+        with self.subTest("with some join keys and reserve_bits set"):
+            result_table = left_table.join(
+                right_table, on="a", joins="e", reserve_bits=2
+            )
+            self.assertTrue(result_table.size < left_table.size)
+        with self.subTest("with no join keys and reserve_bits set"):
+            result_table = left_table.join(
+                right_table, on=[], joins=["e"], reserve_bits=1
+            )
+            self.assertTrue(result_table.size > left_table.size)
+        with self.subTest("with no join keys and reserve_bits set"):
+            result_table = left_table.join(right_table, joins="e", reserve_bits=2)
+            self.assertTrue(result_table.size > left_table.size)
+
     def test_as_of_join(self):
         left_table = self.test_table.drop_columns(["d", "e"])
         right_table = self.test_table.where(["a % 2 > 0"]).drop_columns(

@@ -1896,11 +1896,17 @@ class Table(JObjectWrapper):
         table: Table,
         on: Optional[Union[str, Sequence[str]]] = None,
         joins: Optional[Union[str, Sequence[str]]] = None,
+        reserve_bits: Optional[int] = None,
     ) -> Table:
         """The join method creates a new table containing rows that have matching values in both tables. Rows that
         do not have matching criteria will not be included in the result. If there are multiple matches between a row
         from the left table and rows from the right table, all matching combinations will be included. If no columns
         to match (on) are specified, every combination of left and right table rows is included.
+
+        To efficiently produce updates, the bits that represent a key for a given row are split into two. Unless
+        specified, join reserves 10 bits to represent a right row. When there are too few bits to represent all the
+        right rows, the table will shift a bit from the left side to the right side. The default of 10 bits was
+        carefully chosen because it results in an efficient implementation to process live updates.
 
         Args:
             table (Table): the right-table of the join
@@ -1909,6 +1915,8 @@ class Table(JObjectWrapper):
                 i.e. "col_a = col_b" for different column names; default is None
             joins (Optional[Union[str, Sequence[str]]]): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
+            reserve_bits (Optional[int]): the number of bits to reserve for the right row; default is None,
+                meaning the configured value is used, which is 10 bits by default.
 
         Returns:
             a new table
@@ -1919,15 +1927,31 @@ class Table(JObjectWrapper):
         try:
             on = to_sequence(on)
             joins = to_sequence(joins)
+            table_op = jpy.cast(self.j_object, _JTableOperations)
             with auto_locking_ctx(self, table):
                 if joins:
-                    return Table(
-                        j_table=self.j_table.join(
-                            table.j_table, ",".join(on), ",".join(joins)
+                    if reserve_bits is not None:
+                        return Table(
+                            j_table=table_op.join(
+                                table.j_table, ",".join(on), ",".join(joins), reserve_bits
+                            )
                         )
-                    )
+                    else:
+                        return Table(
+                            j_table=table_op.join(
+                                table.j_table, ",".join(on), ",".join(joins)
+                            )
+                        )
                 else:
-                    return Table(j_table=self.j_table.join(table.j_table, ",".join(on)))
+                    if reserve_bits is not None:
+                        return Table(
+                            j_table=table_op.join(
+                                table.j_table, ",".join(on), reserve_bits
+                            )
+                        )
+                    return Table(
+                        j_table=table_op.join(table.j_table, ",".join(on))
+                    )
         except Exception as e:
             raise DHError(e, "table join operation failed.") from e
 

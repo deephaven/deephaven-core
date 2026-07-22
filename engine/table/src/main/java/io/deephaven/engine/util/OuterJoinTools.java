@@ -163,13 +163,45 @@ public class OuterJoinTools {
             @NotNull final Table rightTable,
             @NotNull final MatchPair[] columnsToMatch,
             @NotNull final MatchPair[] columnsToAdd) {
+        return leftOuterJoin(leftTable, rightTable, columnsToMatch, columnsToAdd,
+                CrossJoinHelper.DEFAULT_NUM_RIGHT_BITS_TO_RESERVE);
+    }
+
+    /**
+     * Returns a table that has one column for each of the left table columns, and one column corresponding to each of
+     * the right table columns listed in the columns to add (or all the columns whose names don't overlap with the name
+     * of a column from the source table if the columnsToAdd is length zero). The returned table will have one row for
+     * each matching set of keys between the left table and right table plus one row for any left table key set that
+     * doesn't match the right table. Columns from the right table for which there was no match will have null values.
+     * Note that this method will cause tick expansion with ticking tables.
+     * <p>
+     *
+     * @param leftTable input table
+     * @param rightTable input table
+     * @param columnsToMatch match criteria
+     * @param columnsToAdd columns to add
+     * @param numRightBitsToReserve The number of bits to reserve for rightTable groups.
+     * @return a table that has one column for each of the left table columns, and one column corresponding to each
+     *         column listed in columnsToAdd. If columnsToAdd.length==0 one column corresponding to each column of the
+     *         right table columns whose names don't overlap with the name of a column from the left table is added. The
+     *         returned table will have one row for each matching set of keys between the left table and right table
+     *         plus one row for any left table key set that doesn't match the right table. Columns from the right table
+     *         for which there was no match will have null values.
+     */
+    @ScriptApi
+    public static Table leftOuterJoin(
+            @NotNull final Table leftTable,
+            @NotNull final Table rightTable,
+            @NotNull final MatchPair[] columnsToMatch,
+            @NotNull final MatchPair[] columnsToAdd,
+            final int numRightBitsToReserve) {
         final MatchPair[] useColumnsToAdd = createColumnsToAdd(rightTable, columnsToMatch, columnsToAdd);
         return CrossJoinHelper.leftOuterJoin(
                 (QueryTable) leftTable.coalesce(),
                 (QueryTable) rightTable.coalesce(),
                 columnsToMatch,
                 useColumnsToAdd,
-                CrossJoinHelper.DEFAULT_NUM_RIGHT_BITS_TO_RESERVE);
+                numRightBitsToReserve);
     }
 
     /**

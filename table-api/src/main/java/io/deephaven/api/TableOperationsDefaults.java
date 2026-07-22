@@ -179,6 +179,12 @@ public interface TableOperationsDefaults<TOPS extends TableOperations<TOPS, TABL
                 JoinAddition.from(TableOperationsDefaults.splitToCollection(columnsToAdd)));
     }
 
+    @Override
+    default TOPS join(TABLE rightTable, String columnsToMatch, String columnsToAdd, int reserveBits) {
+        return join(rightTable, JoinMatch.from(splitToCollection(columnsToMatch)),
+                JoinAddition.from(TableOperationsDefaults.splitToCollection(columnsToAdd)), reserveBits);
+    }
+
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
