@@ -164,10 +164,10 @@ public class WebBarrageMessageReader {
                 BarrageColumnType barrageColumnType = BarrageColumnType.fromArrowField(field);
                 final BarrageTypeInfo<Field> typeInfo = barrageColumnType.typeInfo();
                 readers.add(chunkReaderFactory.newReader(typeInfo, options));
-                if (barrageColumnType instanceof BarrageColumnType.DictionaryEncoded) {
-                    final long dictId = ((BarrageColumnType.DictionaryEncoded) barrageColumnType).dictId();
-                    dictValuesReaders.put(dictId, chunkReaderFactory.newValueTypeReader(typeInfo, options));
-                }
+                // Register a values reader for every dictionary-encoded field, including ones nested inside a
+                // run-end-encoded (REE<Dictionary<...>>) or list column, so the preceding DictionaryBatch can be
+                // decoded regardless of nesting depth.
+                registerDictionaryValuesReaders(field, options);
             }
             return null;
         }
@@ -315,6 +315,25 @@ public class WebBarrageMessageReader {
 
         // otherwise, must wait for more data
         return null;
+    }
+
+    /**
+     * Recursively walks {@code field} and its descendants, registering a dictionary values reader for every
+     * dictionary-encoded field encountered (keyed by its Arrow dictionary id). This handles dictionaries nested inside
+     * run-end-encoded (REE&lt;Dictionary&lt;...&gt;&gt;), list, or map columns, whose ids would otherwise be missing
+     * when the corresponding {@link DictionaryBatch} arrives.
+     */
+    private void registerDictionaryValuesReaders(final Field field, final BarrageOptions options) {
+        final BarrageColumnType columnType = BarrageColumnType.fromArrowField(field);
+        if (columnType instanceof BarrageColumnType.DictionaryEncoded) {
+            final long dictId = ((BarrageColumnType.DictionaryEncoded) columnType).dictId();
+            if (!dictValuesReaders.containsKey(dictId)) {
+                dictValuesReaders.put(dictId, chunkReaderFactory.newValueTypeReader(columnType.typeInfo(), options));
+            }
+        }
+        for (int c = 0; c < field.childrenLength(); c++) {
+            registerDictionaryValuesReaders(field.children(c), options);
+        }
     }
 
     private static RangeSet extractIndex(final ByteBuffer bb) {

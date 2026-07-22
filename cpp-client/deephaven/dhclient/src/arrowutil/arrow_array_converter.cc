@@ -389,6 +389,115 @@ struct RunEndChunkDecoder final : EncodedChunkDecoder<RunEndChunkDecoder> {
   const arrow::RunEndEncodedArray &ree_array_;
 };
 
+/**
+ * Decodes a single doubly-encoded RunEndEncoded<Dictionary<...>> array into a plain array of the
+ * dictionary's value type. Each run carries a dictionary index; we run-expand the runs and resolve
+ * each run's index against the dictionary in one pass. This composes the run-end and dictionary
+ * decoders (rather than materializing an intermediate array), dispatching once each on the run-ends
+ * integer type and the dictionary index integer type.
+ */
+struct RunEndDictionaryChunkDecoder final : EncodedChunkDecoder<RunEndDictionaryChunkDecoder> {
+  explicit RunEndDictionaryChunkDecoder(const arrow::RunEndEncodedArray &ree_array) :
+      ree_array_(ree_array),
+      dict_array_(static_cast<const arrow::DictionaryArray &>(*ree_array.values())) {}
+
+  std::shared_ptr<arrow::DataType> ValueType() const {
+    return dict_array_.dictionary()->type();
+  }
+
+  template<typename TValueArray, typename TBuilder>
+  arrow::Status DecodeTyped(TBuilder *builder) {
+    switch (ree_array_.run_ends()->type_id()) {
+      case arrow::Type::INT16:
+        return DecodeByIndex<arrow::Int16Array, TValueArray>(builder);
+      case arrow::Type::INT32:
+        return DecodeByIndex<arrow::Int32Array, TValueArray>(builder);
+      case arrow::Type::INT64:
+        return DecodeByIndex<arrow::Int64Array, TValueArray>(builder);
+      default: {
+        auto message = fmt::format("Unexpected REE run_ends type: {}",
+            ree_array_.run_ends()->type()->ToString());
+        throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
+      }
+    }
+  }
+
+  template<typename TRunEndsArray, typename TValueArray, typename TBuilder>
+  arrow::Status DecodeByIndex(TBuilder *builder) {
+    switch (dict_array_.indices()->type_id()) {
+      case arrow::Type::INT8:
+        CopyValues<TRunEndsArray, arrow::Int8Array, TValueArray>(builder);
+        break;
+      case arrow::Type::INT16:
+        CopyValues<TRunEndsArray, arrow::Int16Array, TValueArray>(builder);
+        break;
+      case arrow::Type::INT32:
+        CopyValues<TRunEndsArray, arrow::Int32Array, TValueArray>(builder);
+        break;
+      case arrow::Type::INT64:
+        CopyValues<TRunEndsArray, arrow::Int64Array, TValueArray>(builder);
+        break;
+      case arrow::Type::UINT8:
+        CopyValues<TRunEndsArray, arrow::UInt8Array, TValueArray>(builder);
+        break;
+      case arrow::Type::UINT16:
+        CopyValues<TRunEndsArray, arrow::UInt16Array, TValueArray>(builder);
+        break;
+      case arrow::Type::UINT32:
+        CopyValues<TRunEndsArray, arrow::UInt32Array, TValueArray>(builder);
+        break;
+      case arrow::Type::UINT64:
+        CopyValues<TRunEndsArray, arrow::UInt64Array, TValueArray>(builder);
+        break;
+      default: {
+        auto message = fmt::format("Unexpected dictionary index type: {}",
+            dict_array_.indices()->type()->ToString());
+        throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
+      }
+    }
+    return arrow::Status::OK();
+  }
+
+  template<typename TRunEndsArray, typename TIndexArray, typename TValueArray, typename TBuilder>
+  void CopyValues(TBuilder *builder) {
+    const auto &run_ends = static_cast<const TRunEndsArray &>(*ree_array_.run_ends());
+    const auto &indices = static_cast<const TIndexArray &>(*dict_array_.indices());
+    const auto &dict = static_cast<const TValueArray &>(*dict_array_.dictionary());
+    // Run ends are logical positions relative to the start of the *unsliced* array, so the rows
+    // of a sliced array are the window [offset, offset + length) of those positions.
+    int64_t logical_pos = ree_array_.offset();
+    const int64_t logical_end = logical_pos + ree_array_.length();
+    OkOrThrow(DEEPHAVEN_LOCATION_EXPR(builder->Reserve(ree_array_.length())));
+    for (int64_t run = 0; run != run_ends.length() && logical_pos < logical_end; ++run) {
+      auto run_end = std::min<int64_t>(run_ends.Value(run), logical_end);
+      auto count = run_end - logical_pos;
+      if (count <= 0) {
+        continue;
+      }
+      // A run is null if its dictionary index is null; otherwise the dictionary entry it points at
+      // may itself be null. Either way the whole run expands to nulls.
+      if (indices.IsNull(run)) {
+        OkOrThrow(DEEPHAVEN_LOCATION_EXPR(builder->AppendNulls(count)));
+      } else {
+        auto index = static_cast<int64_t>(indices.Value(run));
+        if (dict.IsNull(index)) {
+          OkOrThrow(DEEPHAVEN_LOCATION_EXPR(builder->AppendNulls(count)));
+        } else {
+          auto value = dict.GetView(index);
+          for (int64_t j = 0; j != count; ++j) {
+            OkOrThrow(DEEPHAVEN_LOCATION_EXPR(builder->Append(value)));
+          }
+        }
+      }
+      logical_pos = run_end;
+    }
+    result_ = ValueOrThrow(DEEPHAVEN_LOCATION_EXPR(builder->Finish()));
+  }
+
+  const arrow::RunEndEncodedArray &ree_array_;
+  const arrow::DictionaryArray &dict_array_;
+};
+
 struct ChunkedArrayToColumnSourceVisitor final : public arrow::TypeVisitor {
   explicit ChunkedArrayToColumnSourceVisitor(std::shared_ptr<arrow::ChunkedArray> chunked_array) :
     chunked_array_(std::move(chunked_array)) {}
@@ -504,16 +613,30 @@ struct ChunkedArrayToColumnSourceVisitor final : public arrow::TypeVisitor {
    * into (run_end, value) pairs; we expand them back to one element per logical row.
    */
   arrow::Status Visit(const arrow::RunEndEncodedType &type) final {
+    // The REE values child may itself be dictionary-encoded (a doubly-encoded
+    // RunEndEncoded<Dictionary<...>> column). In that case the plain (decoded) value type is the
+    // dictionary's value type, and each run is expanded through the dictionary.
+    const bool values_are_dictionary = type.value_type()->id() == arrow::Type::DICTIONARY;
+    auto plain_value_type = values_are_dictionary
+        ? static_cast<const arrow::DictionaryType &>(*type.value_type()).value_type()
+        : type.value_type();
+
     auto ree_arrays = DowncastChunks<arrow::RunEndEncodedArray>(*chunked_array_);
     std::vector<std::shared_ptr<arrow::Array>> plain_chunks;
     plain_chunks.reserve(ree_arrays.size());
     for (const auto &ra : ree_arrays) {
-      RunEndChunkDecoder decoder(*ra);
-      OkOrThrow(DEEPHAVEN_LOCATION_EXPR(type.value_type()->Accept(&decoder)));
-      plain_chunks.push_back(std::move(decoder.result_));
+      if (values_are_dictionary) {
+        RunEndDictionaryChunkDecoder decoder(*ra);
+        OkOrThrow(DEEPHAVEN_LOCATION_EXPR(plain_value_type->Accept(&decoder)));
+        plain_chunks.push_back(std::move(decoder.result_));
+      } else {
+        RunEndChunkDecoder decoder(*ra);
+        OkOrThrow(DEEPHAVEN_LOCATION_EXPR(plain_value_type->Accept(&decoder)));
+        plain_chunks.push_back(std::move(decoder.result_));
+      }
     }
     auto plain_ca = ValueOrThrow(DEEPHAVEN_LOCATION_EXPR(
-        arrow::ChunkedArray::Make(std::move(plain_chunks), type.value_type())));
+        arrow::ChunkedArray::Make(std::move(plain_chunks), plain_value_type)));
     result_ = ArrowArrayConverter::ChunkedArrayToColumnSource(std::move(plain_ca));
     return arrow::Status::OK();
   }

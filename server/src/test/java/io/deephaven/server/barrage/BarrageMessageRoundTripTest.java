@@ -1740,6 +1740,108 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
     }
 
     /**
+     * Builds a pojo {@link Schema} based on the natural schema of {@code def} except that the named column is doubly
+     * encoded as {@code RunEndEncoded<Dictionary<...>>}: the parent is run-end encoded (Int32 run_ends) and its
+     * {@code values} child carries an Arrow {@link DictionaryEncoding} (Int32 index, dict id 0).
+     */
+    private static Schema buildReeDictEncodedSchema(final TableDefinition def, final String colName) {
+        final Schema natural = BarrageUtil.makeSchema(
+                BarrageUtil.DEFAULT_SNAPSHOT_OPTIONS, def, Map.of(), false);
+        final List<Field> fields = natural.getFields().stream().map(f -> {
+            if (!colName.equals(f.getName())) {
+                return f;
+            }
+            // values child: the original value field annotated with a dictionary encoding
+            final Field values = new Field("values",
+                    new FieldType(f.isNullable(), f.getType(),
+                            new DictionaryEncoding(0L, false, new ArrowType.Int(32, true)), f.getMetadata()),
+                    f.getChildren());
+            final Field runEnds = new Field("run_ends",
+                    new FieldType(false, new ArrowType.Int(32, true), null), Collections.emptyList());
+            return new Field(f.getName(),
+                    new FieldType(false, new ArrowType.RunEndEncoded(), null, f.getMetadata()),
+                    List.of(runEnds, values));
+        }).collect(Collectors.toList());
+        return new Schema(fields, natural.getCustomMetadata());
+    }
+
+    /**
+     * Creates a two-column refreshing QueryTable ({@code Sym} String + {@code intCol} int) and annotates {@code Sym} as
+     * a doubly-encoded {@code RunEndEncoded<Dictionary<...>>} column via {@link Table#BARRAGE_SCHEMA_ATTRIBUTE}. The
+     * low-cardinality {@code Sym} generator produces both runs (favoring REE) and few distinct values (favoring the
+     * dictionary), exercising the combined encoding.
+     */
+    private QueryTable makeReeDictTable(final int initialSize, final Random random,
+            final ColumnInfo<?, ?>[] columnInfoOut) {
+        final ColumnInfo<?, ?>[] columnInfo = initColumnInfos(
+                new String[] {"Sym", "intCol"},
+                new SetGenerator<>("a", "b", "c"),
+                new IntGenerator(0, 100));
+        System.arraycopy(columnInfo, 0, columnInfoOut, 0, columnInfo.length);
+        final QueryTable table = getTable(initialSize, random, columnInfo);
+        table.setAttribute(Table.BARRAGE_SCHEMA_ATTRIBUTE, buildReeDictEncodedSchema(table.getDefinition(), "Sym"));
+        return table;
+    }
+
+    /**
+     * Full ticking subscription over a doubly-encoded {@code RunEndEncoded<Dictionary<...>>} column. Across many steps
+     * this exercises the nested dictionary's delta batches (new distinct values shipped as append-only DictionaryBatch
+     * messages preceding each RecordBatch) and the reader's run-expansion of dictionary indices.
+     */
+    public void testReeDictionaryEncodedFullSubscriptionTicking() {
+        final int steps = 20;
+        final int size = 100;
+        final Random random = new Random(0);
+        final ColumnInfo<?, ?>[] columnInfo = new ColumnInfo<?, ?>[2];
+        final QueryTable sourceTable = makeReeDictTable(size / 4, random, columnInfo);
+
+        final BitSet allCols = new BitSet();
+        allCols.set(0, sourceTable.numColumns());
+
+        final RemoteNugget nugget = new RemoteNugget(() -> sourceTable);
+        nugget.newClient(null, allCols, "full-ree-dict");
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        for (int step = 0; step < steps; step++) {
+            updateGraph.runWithinUnitTestCycle(() -> GenerateTableUpdates.generateShiftAwareTableUpdates(
+                    GenerateTableUpdates.DEFAULT_PROFILE, size, random, sourceTable, columnInfo));
+            flushProducerTable();
+            nugget.flushClientEvents();
+            updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
+            nugget.validate("step " + step);
+        }
+    }
+
+    /**
+     * Two full subscribers on the same producer share a single {@code DictionaryWriterRegistry}; the nested dictionary
+     * of a {@code RunEndEncoded<Dictionary<...>>} column must still round-trip for both.
+     */
+    public void testReeDictionaryEncodedSharedProducer() {
+        final int steps = 20;
+        final int size = 100;
+        final Random random = new Random(1);
+        final ColumnInfo<?, ?>[] columnInfo = new ColumnInfo<?, ?>[2];
+        final QueryTable sourceTable = makeReeDictTable(size / 4, random, columnInfo);
+
+        final BitSet allCols = new BitSet();
+        allCols.set(0, sourceTable.numColumns());
+
+        final RemoteNugget nugget = new RemoteNugget(() -> sourceTable);
+        nugget.newClient(null, allCols, "full-ree-dict-1");
+        nugget.newClient(null, allCols, "full-ree-dict-2");
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        for (int step = 0; step < steps; step++) {
+            updateGraph.runWithinUnitTestCycle(() -> GenerateTableUpdates.generateShiftAwareTableUpdates(
+                    GenerateTableUpdates.DEFAULT_PROFILE, size, random, sourceTable, columnInfo));
+            flushProducerTable();
+            nugget.flushClientEvents();
+            updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
+            nugget.validate("step " + step);
+        }
+    }
+
+    /**
      * Builds a schema where {@code col1Name} and {@code col2Name} both carry {@link DictionaryEncoding} with the same
      * dictionary id (0). Two columns sharing a single id means a single {@code DictionaryBatch} per update covers both.
      */

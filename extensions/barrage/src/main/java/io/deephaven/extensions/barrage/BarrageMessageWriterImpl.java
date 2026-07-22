@@ -1225,14 +1225,18 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
                                 "DictionaryChunkWriter requires a DictionaryWriterRegistry but none was provided");
                     }
                     final DictionaryChunkWriter dictWriter = (DictionaryChunkWriter) chunkListWriter.writer();
+                    // Register (or look up) the dictionary state even for an empty batch. This ensures a
+                    // dictionary-encoded column whose first batch carries no rows still emits an initial
+                    // isDelta=false DictionaryBatch: strict Arrow consumers require the dictionary for a field's id
+                    // to be defined before the RecordBatch that references it.
+                    final DictionaryWriterState state =
+                            dictionaryRegistry.getOrCreate(dictWriter.getDictId(), dictWriter.getValuesWriter(),
+                                    dictWriter.getValuesChunkType());
                     if (numElements == 0) {
                         drainableColumn = dictWriter.getEmptyIndexStream(view.options());
                         drainableColumn.visitFieldNodes(fieldNodeListener);
                         drainableColumn.visitBuffers(bufferListener);
                     } else {
-                        final DictionaryWriterState state =
-                                dictionaryRegistry.getOrCreate(dictWriter.getDictId(), dictWriter.getValuesWriter(),
-                                        dictWriter.getValuesChunkType());
                         drainableColumn = addDict(view, fieldNodeListener, bufferListener, chunkListWriter,
                                 chunkIdx, shift, myAddedOffsets, adjustedOffsets, dictWriter, state);
                     }
@@ -1279,10 +1283,13 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
             final WritableRowSet myAddedOffsets,
             final RowSet adjustedOffsets) throws IOException {
         final ChunkWriter.Context context = chunkListWriter.chunks()[chunkIdx];
+        // Forward the registry so a dictionary-encoded writer nested inside a composite writer (e.g. the values child
+        // of a run-end-encoded column) can resolve and register its dictionary state during the drain.
         final ChunkWriter.DrainableColumn drainableColumn = chunkListWriter.writer().getInputStream(
                 context,
                 shift == 0 ? myAddedOffsets : adjustedOffsets,
-                view.options());
+                view.options(),
+                view.dictionaryRegistry());
         drainableColumn.visitFieldNodes(fieldNodeListener);
         drainableColumn.visitBuffers(bufferListener);
         return drainableColumn;
@@ -1391,13 +1398,15 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
                                 "DictionaryChunkWriter requires a DictionaryWriterRegistry but none was provided");
                     }
                     final DictionaryChunkWriter dictWriter = (DictionaryChunkWriter) mcd.chunkListWriter.writer();
+                    // Register (or look up) the dictionary state even for an empty batch, mirroring the add path, so
+                    // the dictionary for this field's id is always defined before any referencing RecordBatch.
+                    final DictionaryWriterState state = dictionaryRegistry.getOrCreate(
+                            dictWriter.getDictId(), dictWriter.getValuesWriter(), dictWriter.getValuesChunkType());
                     if (numElements == 0) {
                         drainableColumn = dictWriter.getEmptyIndexStream(view.options());
                         drainableColumn.visitFieldNodes(fieldNodeListener);
                         drainableColumn.visitBuffers(bufferListener);
                     } else {
-                        final DictionaryWriterState state = dictionaryRegistry.getOrCreate(
-                                dictWriter.getDictId(), dictWriter.getValuesWriter(), dictWriter.getValuesChunkType());
                         drainableColumn = modDict(view, fieldNodeListener, bufferListener, context, myModOffsets,
                                 dictWriter, state);
                     }
@@ -1423,8 +1432,10 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
         final long shift = -context.getRowOffset();
         // normalize to the chunk offsets
         try (final WritableRowSet adjustedOffsets = shift == 0 ? null : myModOffsets.shift(shift)) {
+            // Forward the registry so a dictionary-encoded writer nested inside a composite writer (e.g. the values
+            // child of a run-end-encoded column) can resolve and register its dictionary state during the drain.
             drainableColumn = mcd.chunkListWriter.writer().getInputStream(
-                    context, shift == 0 ? myModOffsets : adjustedOffsets, view.options());
+                    context, shift == 0 ? myModOffsets : adjustedOffsets, view.options(), view.dictionaryRegistry());
             drainableColumn.visitFieldNodes(fieldNodeListener);
             drainableColumn.visitBuffers(bufferListener);
         }

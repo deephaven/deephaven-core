@@ -186,12 +186,12 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
             @NotNull final BarrageTypeInfo<org.apache.arrow.flatbuf.Field> typeInfo,
             @NotNull final BarrageOptions options,
             @Nullable final DictionaryReaderRegistry registry,
-            @Nullable final Map<Long, ChunkReader<? extends WritableChunk<Values>>> dictValuesReadersOut) {
+            @Nullable final Map<Long, ChunkReader<? extends WritableChunk<Values>>> dictValuesReaders) {
         final BarrageTypeInfo<Field> fieldTypeInfo = new BarrageTypeInfo<>(
                 typeInfo.type(),
                 typeInfo.componentType(),
                 Field.convertField(typeInfo.arrowField()));
-        return newReaderPojo(fieldTypeInfo, options, true, registry, dictValuesReadersOut);
+        return newReaderPojo(fieldTypeInfo, options, true, registry, dictValuesReaders);
     }
 
 
@@ -211,7 +211,7 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
      * @param isTopLevel whether this is a top-level column (as opposed to a nested child)
      * @param registry per-stream dictionary registry; {@code null} means dictionary encoding is not supported and a
      *        dict-encoded field will throw
-     * @param dictValuesReadersOut if non-null, populated with {@code (dictId → valuesReader)} entries for each
+     * @param dictValuesReaders if non-null, populated with {@code (dictId → valuesReader)} entries for each
      *        dictionary-encoded field encountered; callers use these to decode DictionaryBatch bodies
      */
     public <T extends WritableChunk<Values>> ChunkReader<T> newReaderPojo(
@@ -219,7 +219,7 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
             @NotNull final BarrageOptions options,
             final boolean isTopLevel,
             @Nullable final DictionaryReaderRegistry registry,
-            @Nullable final java.util.Map<Long, ChunkReader<? extends WritableChunk<Values>>> dictValuesReadersOut) {
+            @Nullable final java.util.Map<Long, ChunkReader<? extends WritableChunk<Values>>> dictValuesReaders) {
         final Field field = typeInfo.arrowField();
 
         if (BarrageUtil.isDictionaryEncoded(field)) {
@@ -231,7 +231,7 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
             }
             // noinspection unchecked
             return (ChunkReader<T>) makeDictionaryChunkReader(
-                    typeInfo, field, dictEncoding, options, registry, dictValuesReadersOut);
+                    typeInfo, field, dictEncoding, options, registry, dictValuesReaders);
         }
 
         // TODO (deephaven/deephaven-core#): Utf8View Support
@@ -290,17 +290,18 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
                 || typeId == ArrowType.ArrowTypeID.ListView
                 || typeId == ArrowType.ArrowTypeID.FixedSizeList) {
             // noinspection unchecked
-            return (ChunkReader<T>) makeListChunkReader(typeInfo, field, typeId, options, isTopLevel);
+            return (ChunkReader<T>) makeListChunkReader(typeInfo, field, typeId, options, isTopLevel, registry,
+                    dictValuesReaders);
         }
 
         if (typeId == ArrowType.ArrowTypeID.Map) {
             // noinspection unchecked
-            return (ChunkReader<T>) makeMapChunkReader(field, options);
+            return (ChunkReader<T>) makeMapChunkReader(field, options, registry, dictValuesReaders);
         }
 
         if (typeId == ArrowType.ArrowTypeID.RunEndEncoded) {
             // noinspection unchecked
-            return (ChunkReader<T>) makeRunEndEncodedChunkReader(field, options);
+            return (ChunkReader<T>) makeRunEndEncodedChunkReader(field, options, registry, dictValuesReaders);
         }
 
         // TODO (DH-18679): struct support
@@ -310,7 +311,7 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
 
         if (typeId == ArrowType.ArrowTypeID.Union) {
             // noinspection unchecked
-            return (ChunkReader<T>) makeUnionChunkReader(field, options);
+            return (ChunkReader<T>) makeUnionChunkReader(field, options, registry, dictValuesReaders);
         }
 
         throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, String.format(
@@ -328,7 +329,9 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
             @NotNull final Field field,
             @NotNull final ArrowType.ArrowTypeID typeId,
             @NotNull final BarrageOptions options,
-            final boolean isTopLevel) {
+            final boolean isTopLevel,
+            @Nullable final DictionaryReaderRegistry registry,
+            @Nullable final Map<Long, ChunkReader<? extends WritableChunk<Values>>> dictValuesReaders) {
         int fixedSizeLength = 0;
         final ListChunkReader.Mode mode;
         if (typeId == ArrowType.ArrowTypeID.List) {
@@ -348,7 +351,8 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
                     typeInfo.type(),
                     typeInfo.componentType(),
                     typeInfo.arrowField().getChildren().get(0));
-            final ChunkReader<WritableChunk<Values>> componentReader = newReaderPojo(realTypeInfo, options, false);
+            final ChunkReader<WritableChunk<Values>> componentReader =
+                    newReaderPojo(realTypeInfo, options, false, registry, dictValuesReaders);
             // noinspection unchecked,rawtypes
             return new SingleElementListHeaderReader(componentReader);
         } else if (useVectorKernels) {
@@ -379,40 +383,52 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
         } else {
             kernel = ArrayExpansionKernel.makeExpansionKernel(chunkType, componentTypeInfo.type());
         }
-        final ChunkReader<WritableChunk<Values>> componentReader = newReaderPojo(componentTypeInfo, options, false);
+        final ChunkReader<WritableChunk<Values>> componentReader =
+                newReaderPojo(componentTypeInfo, options, false, registry, dictValuesReaders);
 
         return new ListChunkReader<>(mode, fixedSizeLength, kernel, componentReader);
     }
 
     private MapChunkReader<?> makeMapChunkReader(
             @NotNull final Field field,
-            @NotNull final BarrageOptions options) {
+            @NotNull final BarrageOptions options,
+            @Nullable final DictionaryReaderRegistry registry,
+            @Nullable final Map<Long, ChunkReader<? extends WritableChunk<Values>>> dictValuesReaders) {
         // TODO (DH-18680): user controlled destination map type (such as immutable map)
         final Field structField = field.getChildren().get(0);
         final BarrageTypeInfo<Field> keyTypeInfo = BarrageUtil.getDefaultType(structField.getChildren().get(0));
         final BarrageTypeInfo<Field> valueTypeInfo = BarrageUtil.getDefaultType(structField.getChildren().get(1));
 
-        final ChunkReader<WritableChunk<Values>> keyReader = newReaderPojo(keyTypeInfo, options, false);
-        final ChunkReader<WritableChunk<Values>> valueReader = newReaderPojo(valueTypeInfo, options, false);
+        final ChunkReader<WritableChunk<Values>> keyReader =
+                newReaderPojo(keyTypeInfo, options, false, registry, dictValuesReaders);
+        final ChunkReader<WritableChunk<Values>> valueReader =
+                newReaderPojo(valueTypeInfo, options, false, registry, dictValuesReaders);
 
         return new MapChunkReader<>(keyReader, valueReader);
     }
 
     private RunEndEncodedChunkReader makeRunEndEncodedChunkReader(
             @NotNull final Field field,
-            @NotNull final BarrageOptions options) {
+            @NotNull final BarrageOptions options,
+            @Nullable final DictionaryReaderRegistry registry,
+            @Nullable final Map<Long, ChunkReader<? extends WritableChunk<Values>>> dictValuesReaders) {
         final BarrageTypeInfo<Field> runEndsTypeInfo = BarrageUtil.getDefaultType(field.getChildren().get(0));
         final BarrageTypeInfo<Field> valuesTypeInfo = BarrageUtil.getDefaultType(field.getChildren().get(1));
 
+        // run_ends is a plain integer child; the values child may be dictionary-encoded (REE<Dictionary<...>>), so it
+        // must receive the registry and values-reader collector.
         final ChunkReader<WritableChunk<Values>> runEndsReader = newReaderPojo(runEndsTypeInfo, options, false);
-        final ChunkReader<WritableChunk<Values>> valuesReader = newReaderPojo(valuesTypeInfo, options, false);
+        final ChunkReader<WritableChunk<Values>> valuesReader =
+                newReaderPojo(valuesTypeInfo, options, false, registry, dictValuesReaders);
 
         return new RunEndEncodedChunkReader(runEndsReader, valuesReader, valuesTypeInfo.chunkType());
     }
 
     private UnionChunkReader<?> makeUnionChunkReader(
             @NotNull final Field field,
-            @NotNull final BarrageOptions options) {
+            @NotNull final BarrageOptions options,
+            @Nullable final DictionaryReaderRegistry registry,
+            @Nullable final Map<Long, ChunkReader<? extends WritableChunk<Values>>> dictValuesReaders) {
         final ArrowType.Union unionType = (ArrowType.Union) field.getType();
         final List<ChunkReader<? extends WritableChunk<Values>>> innerReaders = new ArrayList<>();
         final Map<Byte, Integer> typeToIndex = new HashMap<>();
@@ -425,7 +441,8 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
         for (int ii = 0; ii < field.getChildren().size(); ++ii) {
             final Field childField = field.getChildren().get(ii);
             final BarrageTypeInfo<Field> childTypeInfo = BarrageUtil.getDefaultType(childField);
-            ChunkReader<? extends WritableChunk<Values>> childReader = newReaderPojo(childTypeInfo, options, false);
+            ChunkReader<? extends WritableChunk<Values>> childReader =
+                    newReaderPojo(childTypeInfo, options, false, registry, dictValuesReaders);
             if ((childTypeInfo.type() == boolean.class || childTypeInfo.type() == Boolean.class)
                     && childField.getType().getTypeID() == ArrowType.ArrowTypeID.Bool) {
                 childReader = ((BooleanChunkReader) childReader).transform(BooleanUtils::byteAsBoolean);
@@ -442,7 +459,7 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
             @NotNull final org.apache.arrow.vector.types.pojo.DictionaryEncoding dictEncoding,
             @NotNull final BarrageOptions options,
             @NotNull final DictionaryReaderRegistry registry,
-            @Nullable final java.util.Map<Long, ChunkReader<? extends WritableChunk<Values>>> dictValuesReadersOut) {
+            @Nullable final java.util.Map<Long, ChunkReader<? extends WritableChunk<Values>>> dictValuesReaders) {
         final long dictId = dictEncoding.getId();
         final ArrowType.Int indexArrowType = dictEncoding.getIndexType();
         final int indexBitWidth = indexArrowType.getBitWidth();
@@ -476,8 +493,8 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
         final BarrageTypeInfo<Field> valuesTypeInfo =
                 new BarrageTypeInfo<>(typeInfo.type(), typeInfo.componentType(), valuesField);
         final ChunkType valuesChunkType = BarrageUtil.getDefaultType(valuesField).chunkType();
-        if (dictValuesReadersOut != null) {
-            dictValuesReadersOut.computeIfAbsent(dictId,
+        if (dictValuesReaders != null) {
+            dictValuesReaders.computeIfAbsent(dictId,
                     id -> newReaderPojo(valuesTypeInfo, options, false, null, null));
         }
 

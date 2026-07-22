@@ -97,8 +97,24 @@ public class UnionChunkWriter<T> extends BaseChunkWriter<ObjectChunk<T, Values>>
             @NotNull final ChunkWriter.Context context,
             @Nullable final RowSet subset,
             @NotNull final BarrageOptions options) throws IOException {
+        return getInputStream(context, subset, options, null);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>
+     * Forwards {@code dictionaryRegistry} to each child writer so that a dictionary-encoded member (a
+     * {@code Union<..., Dictionary<...>, ...>} column) can resolve and register its dictionary state.
+     */
+    @Override
+    public DrainableColumn getInputStream(
+            @NotNull final ChunkWriter.Context context,
+            @Nullable final RowSet subset,
+            @NotNull final BarrageOptions options,
+            @Nullable final DictionaryWriterRegistry dictionaryRegistry) throws IOException {
         // noinspection unchecked
-        return new UnionChunkInputStream((Context) context, subset, options);
+        return new UnionChunkInputStream((Context) context, subset, options, dictionaryRegistry);
     }
 
     private class UnionChunkInputStream extends BaseChunkInputStream<Context> {
@@ -111,7 +127,8 @@ public class UnionChunkWriter<T> extends BaseChunkWriter<ObjectChunk<T, Values>>
         private UnionChunkInputStream(
                 @NotNull final Context context,
                 @Nullable final RowSet mySubset,
-                @NotNull final BarrageOptions options) throws IOException {
+                @NotNull final BarrageOptions options,
+                @Nullable final DictionaryWriterRegistry dictionaryRegistry) throws IOException {
             super(context, mySubset, options);
             final int numColumns = classMatchers.size();
             final ObjectChunk<T, Values> chunk = context.getChunk().asObjectChunk();
@@ -209,7 +226,7 @@ public class UnionChunkWriter<T> extends BaseChunkWriter<ObjectChunk<T, Values>>
                     chunkToWrite = innerChunk;
                 }
                 try (ChunkWriter.Context innerContext = writer.makeContext(chunkToWrite, 0)) {
-                    innerColumns[ii] = writer.getInputStream(innerContext, null, options);
+                    innerColumns[ii] = writer.getInputStream(innerContext, null, options, dictionaryRegistry);
                 }
             }
         }

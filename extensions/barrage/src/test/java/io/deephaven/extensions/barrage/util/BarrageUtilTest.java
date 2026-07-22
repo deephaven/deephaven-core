@@ -3,14 +3,19 @@
 //
 package io.deephaven.extensions.barrage.util;
 
+import io.deephaven.base.FileUtils;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
+import io.deephaven.engine.table.impl.sources.regioned.SymbolTableSource;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
+import io.deephaven.engine.util.file.TrackedFileHandleFactory;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.ColumnEncoding;
+import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.proto.flight.util.SchemaHelper;
 import org.apache.arrow.vector.types.Types;
 import org.apache.arrow.vector.types.pojo.ArrowType;
@@ -19,6 +24,8 @@ import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.arrow.vector.types.pojo.FieldType;
 import org.apache.arrow.vector.types.pojo.Schema;
 
+import java.io.File;
+import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -31,8 +38,22 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class BarrageUtilTest extends RefreshingTableTestCase {
 
+    /**
+     * Builds the encoding sample row set over {@code table} (current values) and runs
+     * {@link BarrageUtil#sampleColumnsForEncoding} against it, mirroring how {@code inferEncodings} drives sampling. A
+     * table too small to sample yields a {@code null} sample and no detection, exactly as in production.
+     */
+    private static void sampleColumnsForEncoding(final Table table, final Map<String, ColumnEncoding> detected,
+            final boolean detectRee, final boolean detectDict) {
+        try (final WritableRowSet sample = BarrageUtil.buildEncodingSampleRowSet(table.getRowSet())) {
+            if (sample != null) {
+                BarrageUtil.sampleColumnsForEncoding(table, detected, false, sample, detectRee, detectDict);
+            }
+        }
+    }
+
     public void testMergedTableKeyColumnsGetREE() {
-        // Tests inferEncodings directly: merged key columns always get REE
+        // Tests detectStructuralRunEndEncoding directly: merged key columns always get REE
         final Table table = newTable(
                 stringCol("Symbol", "AAPL", "AAPL", "MSFT"),
                 intCol("Exchange", 1, 1, 2),
@@ -42,7 +63,8 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
                         Table.MERGED_TABLE_ATTRIBUTE, Boolean.TRUE,
                         Table.KEY_COLUMNS_ATTRIBUTE, "Symbol,Exchange"));
 
-        final Map<String, ColumnEncoding> encodings = BarrageUtil.inferEncodings(table);
+        final Map<String, ColumnEncoding> encodings = new java.util.HashMap<>();
+        BarrageUtil.detectStructuralRunEndEncoding(table, encodings);
 
         assertThat(encodings.get("Symbol")).isEqualTo(ColumnEncoding.RUN_END_ENCODED_INT32);
         assertThat(encodings.get("Exchange")).isEqualTo(ColumnEncoding.RUN_END_ENCODED_INT32);
@@ -74,6 +96,33 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
         assertFieldIsNotREE(schema, "Exchange");
     }
 
+    public void testSymbolTableColumnGetsStructuralDictionary() throws Exception {
+        // A low-cardinality String column round-tripped through Parquet is read back as a symbol-table-backed
+        // (regioned) source. detectStructuralDictionaryEncoding must mark it for dictionary encoding, while a
+        // high-cardinality non-symbol column (the long Id) is left alone.
+        final File dataDir = Files.createTempDirectory(BarrageUtilTest.class.getName()).toFile();
+        try {
+            final Table source = emptyTable(100).update("Sym = `S` + (k % 5)", "Id = k");
+            final File parquetFile = new File(dataDir, "table.parquet");
+            ParquetTools.writeTable(source, parquetFile.getPath());
+            final Table readBack = ParquetTools.readTable(parquetFile.getPath());
+
+            // Sanity: the String column really is symbol-table backed (the branch detectStructuralDictionaryEncoding
+            // keys off).
+            assertThat(SymbolTableSource.hasSymbolTable(readBack.getColumnSource("Sym"), readBack.getRowSet()))
+                    .isTrue();
+
+            final Map<String, ColumnEncoding> detected = new java.util.HashMap<>();
+            BarrageUtil.detectStructuralDictionaryEncoding(readBack, readBack.getRowSet(), detected);
+
+            assertThat(detected.get("Sym")).isEqualTo(ColumnEncoding.DICTIONARY_ENCODED_INT32);
+            assertThat(detected).doesNotContainKey("Id");
+        } finally {
+            TrackedFileHandleFactory.getInstance().closeAll();
+            FileUtils.deleteRecursively(dataDir);
+        }
+    }
+
     public void testExplicitBarrageSchemaAttributeSuppressesAutoREE() {
         final Table base = newTable(
                 stringCol("Symbol", "AAPL", "MSFT"),
@@ -95,7 +144,8 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
         // update() with a constant expression produces SingleValueColumnSource for each column
         final Table table = emptyTable(100).update("X = 42", "Y = `hello`", "Z = 1.5");
 
-        final Map<String, ColumnEncoding> detected = BarrageUtil.inferEncodings(table);
+        final Map<String, ColumnEncoding> detected = new java.util.HashMap<>();
+        BarrageUtil.detectStructuralRunEndEncoding(table, detected);
 
         assertThat(detected.get("X")).isEqualTo(ColumnEncoding.RUN_END_ENCODED_INT32);
         assertThat(detected.get("Y")).isEqualTo(ColumnEncoding.RUN_END_ENCODED_INT32);
@@ -108,7 +158,8 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
         final ColumnSource<?> nullSource = NullValueColumnSource.getInstance(int.class, null);
         final Table table = newTable(5, Map.of("X", nullSource));
 
-        final Map<String, ColumnEncoding> detected = BarrageUtil.inferEncodings(table);
+        final Map<String, ColumnEncoding> detected = new java.util.HashMap<>();
+        BarrageUtil.detectStructuralRunEndEncoding(table, detected);
 
         assertThat(detected.get("X")).isEqualTo(ColumnEncoding.RUN_END_ENCODED_INT32);
     }
@@ -207,7 +258,7 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
     }
 
     public void testSamplingDetectsRepetitiveColumn() {
-        // Calls sampleColumnsForREE directly to validate sampling logic regardless of the enable flag.
+        // Calls sampleColumnsForEncoding directly (REE detection on, dictionary off) to validate sampling logic.
         final int N = 100;
         final String[] symbols = new String[N];
         Arrays.fill(symbols, "AAPL");
@@ -216,7 +267,7 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
         final Table table = newTable(stringCol("Symbol", symbols), intCol("Price", prices));
 
         final Map<String, ColumnEncoding> detected = new java.util.HashMap<>();
-        BarrageUtil.sampleColumnsForREE(table, detected, false);
+        sampleColumnsForEncoding(table, detected, true, false);
 
         assertThat(detected.get("Symbol")).isEqualTo(ColumnEncoding.RUN_END_ENCODED_INT32);
         assertThat(detected.get("Price")).isEqualTo(ColumnEncoding.RUN_END_ENCODED_INT32);
@@ -232,7 +283,7 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
         final Table table = newTable(intCol("X", x));
 
         final Map<String, ColumnEncoding> detected = new java.util.HashMap<>();
-        BarrageUtil.sampleColumnsForREE(table, detected, false);
+        sampleColumnsForEncoding(table, detected, true, false);
 
         assertThat(detected).doesNotContainKey("X");
     }
@@ -249,7 +300,7 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
         final Table table = newTable(intCol("Y", y), intCol("X", x));
 
         final Map<String, ColumnEncoding> detected = new java.util.HashMap<>();
-        BarrageUtil.sampleColumnsForREE(table, detected, false);
+        sampleColumnsForEncoding(table, detected, true, false);
 
         assertThat(detected.get("Y")).isEqualTo(ColumnEncoding.RUN_END_ENCODED_INT32);
         assertThat(detected).doesNotContainKey("X");
@@ -265,9 +316,74 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
         final Table table = newTable(intCol("Y", y));
 
         final Map<String, ColumnEncoding> detected = new java.util.HashMap<>();
-        BarrageUtil.sampleColumnsForREE(table, detected, false);
+        sampleColumnsForEncoding(table, detected, true, false);
 
         assertThat(detected).doesNotContainKey("Y");
+    }
+
+    public void testSamplingDetectsLowCardinalityStringColumn() {
+        // A String column with few distinct values, but not clustered (values alternate every row so run-end
+        // encoding would not help). Dictionary detection on, REE off.
+        final int N = 100;
+        final String[] symbols = new String[N];
+        final String[] pool = {"AAPL", "MSFT", "GOOG", "AMZN"};
+        for (int i = 0; i < N; i++) {
+            symbols[i] = pool[i % pool.length];
+        }
+        final Table table = newTable(stringCol("Symbol", symbols));
+
+        final Map<String, ColumnEncoding> detected = new java.util.HashMap<>();
+        sampleColumnsForEncoding(table, detected, false, true);
+
+        assertThat(detected.get("Symbol")).isEqualTo(ColumnEncoding.DICTIONARY_ENCODED_INT32);
+    }
+
+    public void testSamplingSkipsHighCardinalityStringColumn() {
+        // All-distinct String values produce a cardinality ratio of 1.0, above the threshold — no dictionary.
+        final int N = 100;
+        final String[] symbols = new String[N];
+        for (int i = 0; i < N; i++) {
+            symbols[i] = "SYM" + i;
+        }
+        final Table table = newTable(stringCol("Symbol", symbols));
+
+        final Map<String, ColumnEncoding> detected = new java.util.HashMap<>();
+        sampleColumnsForEncoding(table, detected, false, true);
+
+        assertThat(detected).doesNotContainKey("Symbol");
+    }
+
+    public void testSamplingDictOnlyForObjectColumns() {
+        // Primitive columns are never dictionary-encoded even when highly repetitive; REE is the better fit.
+        final int N = 100;
+        final int[] x = new int[N];
+        for (int i = 0; i < N; i++) {
+            x[i] = i % 4;
+        }
+        final Table table = newTable(intCol("X", x));
+
+        final Map<String, ColumnEncoding> detected = new java.util.HashMap<>();
+        sampleColumnsForEncoding(table, detected, false, true);
+
+        assertThat(detected).doesNotContainKey("X");
+    }
+
+    public void testSamplingComposesReeAndDictForClusteredStrings() {
+        // A clustered low-cardinality String column shows an advantage for both facets, so sampling composes them
+        // into a doubly-encoded RunEndEncoded<Dictionary<...>>.
+        final int N = 100;
+        final String[] symbols = new String[N];
+        final String[] pool = {"AAPL", "MSFT", "GOOG", "AMZN"};
+        for (int i = 0; i < N; i++) {
+            symbols[i] = pool[i / 25]; // 4 long runs
+        }
+        final Table table = newTable(stringCol("Symbol", symbols));
+
+        final Map<String, ColumnEncoding> detected = new java.util.HashMap<>();
+        sampleColumnsForEncoding(table, detected, true, true);
+
+        assertThat(detected.get("Symbol")).isEqualTo(
+                ColumnEncoding.of(ColumnEncoding.RunEndWidth.INT32, ColumnEncoding.DictWidth.INT32));
     }
 
     public void testExplicitReeSchemaHonoredWhenGlobalDisabled() {
@@ -468,6 +584,101 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
         assertThat(enc.getIndexType()).as("field %s index type", columnName).isInstanceOf(ArrowType.Int.class);
         assertThat(((ArrowType.Int) enc.getIndexType()).getBitWidth())
                 .as("field %s index bit width", columnName)
+                .isEqualTo(expectedIndexBitWidth);
+    }
+
+    // -------------------------------------------------------------------------
+    // Combined REE + dictionary (doubly-encoded) schema tests
+    // -------------------------------------------------------------------------
+
+    public void testMakeSchemaComposesReeOverDictionary() {
+        final TableDefinition tableDef = TableDefinition.of(ColumnDefinition.ofString("Symbol"));
+        final Schema schema = BarrageUtil.makeSchema(
+                BarrageSubscriptionOptions.builder().build(),
+                tableDef,
+                Collections.emptyMap(),
+                false,
+                Map.of("Symbol", ColumnEncoding.RUN_END_ENCODED_INT32.withDictionary(ColumnEncoding.DictWidth.INT32)));
+
+        // The parent is RunEndEncoded; its values child carries the DictionaryEncoding.
+        assertFieldIsReeOverDictionary(schema, "Symbol", 32, 32);
+    }
+
+    public void testMakeSchemaComposesReeOverDictionaryNonDefaultWidths() {
+        final TableDefinition tableDef = TableDefinition.of(ColumnDefinition.ofString("Symbol"));
+        final Schema schema = BarrageUtil.makeSchema(
+                BarrageSubscriptionOptions.builder().build(),
+                tableDef,
+                Collections.emptyMap(),
+                false,
+                Map.of("Symbol", ColumnEncoding.RUN_END_ENCODED_INT16.withDictionary(ColumnEncoding.DictWidth.INT8)));
+
+        assertFieldIsReeOverDictionary(schema, "Symbol", 16, 8);
+    }
+
+    public void testEncodingsFromSchemaRoundTripsReeDictionary() {
+        final TableDefinition tableDef = TableDefinition.of(ColumnDefinition.ofString("Symbol"));
+        final Schema composed = BarrageUtil.makeSchema(
+                BarrageSubscriptionOptions.builder().build(),
+                tableDef,
+                Collections.emptyMap(),
+                false,
+                Map.of("Symbol", ColumnEncoding.RUN_END_ENCODED_INT32.withDictionary(ColumnEncoding.DictWidth.INT16)));
+
+        final Table base = newTable(stringCol("Symbol", "AAPL"));
+        final Table annotated = base.withAttributes(Map.of(Table.BARRAGE_SCHEMA_ATTRIBUTE, composed));
+        final Schema result = BarrageUtil.schemaFromTable(annotated);
+
+        // The explicit schema's combined encoding must survive the schema -> encodings -> schema round trip.
+        assertFieldIsReeOverDictionary(result, "Symbol", 32, 16);
+    }
+
+    public void testMakeSchemaComposesReeOverDictionaryColumnsAsList() {
+        final TableDefinition tableDef = TableDefinition.of(ColumnDefinition.ofString("Symbol"));
+        final Schema schema = BarrageUtil.makeSchema(
+                BarrageSubscriptionOptions.builder().columnsAsList(true).build(),
+                tableDef,
+                Collections.emptyMap(),
+                false,
+                Map.of("Symbol", ColumnEncoding.RUN_END_ENCODED_INT32.withDictionary(ColumnEncoding.DictWidth.INT32)));
+
+        // columnsAsList wraps each column in an outer List; the encoding must apply to the inner field, giving
+        // List<RunEndEncoded<Dictionary<...>>>.
+        final Field listField = schema.findField("Symbol");
+        assertThat(listField.getType().getTypeID()).isEqualTo(ArrowType.ArrowTypeID.List);
+        assertThat(listField.getChildren()).hasSize(1);
+        final Field inner = listField.getChildren().get(0);
+        assertThat(inner.getType().getTypeID()).isEqualTo(ArrowType.ArrowTypeID.RunEndEncoded);
+        assertThat(inner.getDictionary()).as("REE parent under List must not carry a dictionary").isNull();
+        final Field values = inner.getChildren().get(1);
+        assertThat(values.getDictionary()).as("values child under List<REE<...>> must be dictionary encoded")
+                .isNotNull();
+    }
+
+    private static void assertFieldIsReeOverDictionary(final Schema schema, final String columnName,
+            final int expectedRunEndsBitWidth, final int expectedIndexBitWidth) {
+        final Field parent = schema.findField(columnName);
+        assertThat(parent).as("field %s", columnName).isNotNull();
+        assertThat(parent.getType().getTypeID())
+                .as("field %s should be RunEndEncoded", columnName)
+                .isEqualTo(ArrowType.ArrowTypeID.RunEndEncoded);
+        assertThat(parent.getDictionary())
+                .as("field %s REE parent must NOT carry a dictionary (dictionary belongs on the values child)",
+                        columnName)
+                .isNull();
+        assertThat(parent.getChildren()).as("field %s children", columnName).hasSize(2);
+
+        final Field runEnds = parent.getChildren().get(0);
+        assertThat(runEnds.getType()).as("field %s run_ends type", columnName).isInstanceOf(ArrowType.Int.class);
+        assertThat(((ArrowType.Int) runEnds.getType()).getBitWidth())
+                .as("field %s run_ends bit width", columnName)
+                .isEqualTo(expectedRunEndsBitWidth);
+
+        final Field values = parent.getChildren().get(1);
+        final DictionaryEncoding enc = values.getDictionary();
+        assertThat(enc).as("field %s values child should be dictionary encoded", columnName).isNotNull();
+        assertThat(((ArrowType.Int) enc.getIndexType()).getBitWidth())
+                .as("field %s dictionary index bit width", columnName)
                 .isEqualTo(expectedIndexBitWidth);
     }
 }

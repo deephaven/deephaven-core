@@ -127,9 +127,49 @@ public class DictionaryChunkWriter extends BaseChunkWriter<Chunk<Values>> {
     }
 
     /**
+     * {@inheritDoc}
+     *
+     * <p>
+     * Resolves this writer's {@link DictionaryWriterState} from {@code dictionaryRegistry} (registering it on first
+     * use) and builds the index stream. This is the entry point used when a dictionary-encoded column is nested inside
+     * another writer (e.g. the {@code values} child of a run-end-encoded column), where the enclosing writer forwards
+     * the registry rather than pre-resolving the state.
+     *
+     * <p>
+     * The state is registered even for an empty batch (as long as a registry is supplied), so that the enclosing
+     * message writer emits an initial {@code isDelta=false} DictionaryBatch defining this field's id before the
+     * referencing RecordBatch, as strict Arrow consumers require. An empty batch adds no dictionary values, so that
+     * initial batch is empty. A {@code null} registry is only tolerated for an empty batch, which then produces the
+     * empty index stream directly.
+     */
+    @Override
+    public DrainableColumn getInputStream(
+            @NotNull final ChunkWriter.Context context,
+            @Nullable final RowSet subset,
+            @NotNull final BarrageOptions options,
+            @Nullable final DictionaryWriterRegistry dictionaryRegistry) throws IOException {
+        final int logicalSize = subset == null ? context.getChunk().size() : subset.intSize(DEBUG_NAME);
+        if (dictionaryRegistry == null) {
+            if (logicalSize == 0) {
+                // Tolerated only for an empty batch, which introduces no dictionary values and needs no state.
+                return getEmptyIndexStream(options);
+            }
+            throw new IllegalStateException(
+                    "DictionaryChunkWriter requires a DictionaryWriterRegistry but none was provided");
+        }
+        // Register (or look up) the state even when empty so an initial empty DictionaryBatch is emitted for this id.
+        final DictionaryWriterState state = dictionaryRegistry.getOrCreate(dictId, valuesWriter, valuesChunkType);
+        if (logicalSize == 0) {
+            return getEmptyIndexStream(options);
+        }
+        return new DictionaryIndexInputStream(context, subset, options, state);
+    }
+
+    /**
      * Returns the {@link DrainableColumn} for an empty (0-row) dictionary-encoded column batch. The column's validity
-     * and index buffers are both empty; the {@link DictionaryWriterState} is registered in the state manager but no new
-     * values are added.
+     * and index buffers are both empty. This does not touch the {@link DictionaryWriterState}; callers register the
+     * state separately (see {@link #getInputStream(Context, RowSet, BarrageOptions, DictionaryWriterRegistry)}) when an
+     * initial empty {@link org.apache.arrow.flatbuf.DictionaryBatch} is required for this id.
      */
     public DrainableColumn getEmptyIndexStream(
             @NotNull final BarrageOptions options) throws IOException {
