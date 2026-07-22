@@ -508,22 +508,27 @@ class TableTestCase(BaseTestCase):
             result_table = left_table.join(right_table, joins="e")
             self.assertTrue(result_table.size > left_table.size)
 
-        with self.subTest("with some join keys and reserve_bits set"):
+    def test_cross_join_with_reserve_bits(self):
+        left_table = self.test_table.drop_columns(cols=["e"])
+        right_table = self.test_table.where(["a % 2 > 0 && b % 3 == 1"]).drop_columns(
+            cols=["b", "c", "d"]
+        )
+        with self.subTest("with some join keys"):
             result_table = left_table.join(
-                right_table, on=["a"], joins=["e"], reserve_bits=1
+                right_table, on=["a"], joins=["e"], reserve_bits=2
             )
             self.assertTrue(result_table.size < left_table.size)
-        with self.subTest("with some join keys and reserve_bits set"):
+        with self.subTest("with some join keys"):
             result_table = left_table.join(
                 right_table, on="a", joins="e", reserve_bits=2
             )
             self.assertTrue(result_table.size < left_table.size)
-        with self.subTest("with no join keys and reserve_bits set"):
+        with self.subTest("with no join keys"):
             result_table = left_table.join(
-                right_table, on=[], joins=["e"], reserve_bits=1
+                right_table, on=[], joins=["e"], reserve_bits=2
             )
             self.assertTrue(result_table.size > left_table.size)
-        with self.subTest("with no join keys and reserve_bits set"):
+        with self.subTest("with no join keys"):
             result_table = left_table.join(right_table, joins="e", reserve_bits=2)
             self.assertTrue(result_table.size > left_table.size)
 

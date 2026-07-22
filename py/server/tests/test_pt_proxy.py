@@ -333,6 +333,54 @@ class PartitionedTableProxyTestCase(BaseTestCase):
                 [ct for ct in joined_pt_proxy.target.constituent_tables if ct.size < 5]
             )
 
+    def test_cross_join_with_rserve_bits(self):
+        with self.subTest("Join with a Table"):
+            pt_proxy = (
+                self.test_table.drop_columns(cols=["d", "e"]).partition_by("c").proxy()
+            )
+            right_table = (
+                self.test_table.where(["a % 2 > 0 && b % 3 == 1"])
+                .drop_columns(cols=["b", "c"])
+                .head(5)
+            )
+            with self.subTest("with some join keys"):
+                joined_pt_proxy = pt_proxy.join(
+                    right_table, on="a", joins=["d", "e"], reserve_bits=2
+                )
+                self.assertTrue(
+                    [
+                        ct
+                        for ct in joined_pt_proxy.target.constituent_tables
+                        if ct.size < 5
+                    ]
+                )
+
+            with self.subTest("with no join keys"):
+                joined_pt_proxy = pt_proxy.join(right_table, joins="e", reserve_bits=2)
+                self.assertTrue(
+                    [
+                        ct
+                        for ct in joined_pt_proxy.target.constituent_tables
+                        if ct.size > 5
+                    ]
+                )
+
+        with self.subTest("Join with another Proxy"):
+            pt_proxy = (
+                self.test_table.drop_columns(cols=["d", "e"])
+                .partition_by("c")
+                .proxy(sanity_check_joins=False)
+            )
+            right_proxy = (
+                self.test_table.drop_columns(cols="b").partition_by("c").proxy()
+            )
+            joined_pt_proxy = pt_proxy.join(
+                right_proxy, on="a", joins=["d", "e"], reserve_bits=2
+            )
+            self.assertTrue(
+                [ct for ct in joined_pt_proxy.target.constituent_tables if ct.size < 5]
+            )
+
     def test_as_of_join(self):
         with self.subTest("Join with a Table"):
             pt_proxy = (

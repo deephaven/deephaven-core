@@ -11,7 +11,7 @@ import contextlib
 import sys
 from collections.abc import Generator, Iterable, Mapping, Sequence
 from enum import Enum, auto
-from functools import cached_property
+from functools import cache, cached_property
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -128,6 +128,13 @@ _JSortingOrder = jpy.get_type("io.deephaven.engine.table.impl.SortingOrder")
 _JTableAssertions = jpy.get_type(
     "io.deephaven.engine.table.impl.verify.TableAssertions"
 )
+
+
+@cache
+def _default_cross_join_reserve_bits() -> int:
+    return jpy.get_type(
+        "io.deephaven.engine.table.impl.CrossJoinHelper"
+    ).DEFAULT_NUM_RIGHT_BITS_TO_RESERVE
 
 
 class Selectable(ConcurrencyControl["Selectable"], JObjectWrapper):
@@ -1929,28 +1936,21 @@ class Table(JObjectWrapper):
             joins = to_sequence(joins)
             table_op = jpy.cast(self.j_object, _JTableOperations)
             with auto_locking_ctx(self, table):
+                reserve_bits = (
+                    reserve_bits if reserve_bits else _default_cross_join_reserve_bits()
+                )
                 if joins:
-                    if reserve_bits is not None:
-                        return Table(
-                            j_table=table_op.join(
-                                table.j_table, ",".join(on), ",".join(joins), reserve_bits
-                            )
-                        )
-                    else:
-                        return Table(
-                            j_table=table_op.join(
-                                table.j_table, ",".join(on), ",".join(joins)
-                            )
-                        )
-                else:
-                    if reserve_bits is not None:
-                        return Table(
-                            j_table=table_op.join(
-                                table.j_table, ",".join(on), reserve_bits
-                            )
-                        )
                     return Table(
-                        j_table=table_op.join(table.j_table, ",".join(on))
+                        j_table=table_op.join(
+                            table.j_table,
+                            ",".join(on),
+                            ",".join(joins),
+                            reserve_bits,
+                        )
+                    )
+                else:
+                    return Table(
+                        j_table=table_op.join(table.j_table, ",".join(on), reserve_bits)
                     )
         except Exception as e:
             raise DHError(e, "table join operation failed.") from e
@@ -4064,6 +4064,7 @@ class PartitionedTableProxy(JObjectWrapper):
         table: Union[Table, PartitionedTableProxy],
         on: Optional[Union[str, Sequence[str]]] = None,
         joins: Optional[Union[str, Sequence[str]]] = None,
+        reserve_bits: Optional[int] = None,
     ) -> PartitionedTableProxy:
         """Applies the :meth:`~Table.join` table operation to all constituent tables of the underlying partitioned
         table with the provided right table or PartitionedTableProxy, and produces a new PartitionedTableProxy with
@@ -4079,6 +4080,8 @@ class PartitionedTableProxy(JObjectWrapper):
                 i.e. "col_a = col_b" for different column names; default is None
             joins (Optional[Union[str, Sequence[str]]]): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
+            reserve_bits (Optional[int]): the number of bits to reserve for the join; default is None, meaning the
+                configured value is used, which is 10 by default
 
         Returns:
             a new PartitionedTableProxy
@@ -4090,16 +4093,22 @@ class PartitionedTableProxy(JObjectWrapper):
             on = to_sequence(on)
             joins = to_sequence(joins)
             table_op = jpy.cast(table.j_object, _JTableOperations)
+            reserve_bits = (
+                reserve_bits if reserve_bits else _default_cross_join_reserve_bits()
+            )
+
             with auto_locking_ctx(self, table):
                 if joins:
                     return PartitionedTableProxy(
                         j_pt_proxy=self.j_pt_proxy.join(
-                            table_op, ",".join(on), ",".join(joins)
+                            table_op, ",".join(on), ",".join(joins), reserve_bits
                         )
                     )
                 else:
                     return PartitionedTableProxy(
-                        j_pt_proxy=self.j_pt_proxy.join(table_op, ",".join(on))
+                        j_pt_proxy=self.j_pt_proxy.join(
+                            table_op, ",".join(on), reserve_bits
+                        )
                     )
         except Exception as e:
             raise DHError(
