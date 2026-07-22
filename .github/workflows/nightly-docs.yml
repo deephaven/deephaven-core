@@ -59,7 +59,7 @@ jobs:
     if: failure() && github.ref == 'refs/heads/main' && github.repository_owner == 'deephaven'
     steps:
       - name: Slack Notification
-        uses: slackapi/slack-github-action@v3.0.3
+        uses: slackapi/slack-github-action@v4.0.0
         with:
           webhook: ${{ secrets.SLACK_WEBHOOK_URL_DEVREL}}
           webhook-type: webhook-trigger
