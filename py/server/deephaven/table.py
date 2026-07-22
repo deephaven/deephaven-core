@@ -1829,7 +1829,7 @@ class Table(JObjectWrapper):
                 i.e. "col_a = col_b" for different column names
             joins (Optional[Union[str, Sequence[str]]]): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
-            joinType (NaturalJoinType): the action to be taken when duplicate right hand rows are
+            type (NaturalJoinType): the action to be taken when duplicate right hand rows are
                 encountered; default is ERROR_ON_DUPLICATE
 
         Returns:
@@ -1839,21 +1839,14 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            on = to_sequence(on)
-            joins = to_sequence(joins)
+            on = ",".join(to_sequence(on))
+            joins = ",".join(to_sequence(joins))
             with auto_locking_ctx(self, table):
-                if joins:
-                    return Table(
-                        j_table=self.j_table.naturalJoin(
-                            table.j_table, ",".join(on), ",".join(joins), type.value
-                        )
+                return Table(
+                    j_table=self.j_table.naturalJoin(
+                        table.j_table, on, joins, type.value
                     )
-                else:
-                    return Table(
-                        j_table=self.j_table.naturalJoin(
-                            table.j_table, ",".join(on), type.value
-                        )
-                    )
+                )
         except Exception as e:
             raise DHError(e, "table natural_join operation failed.") from e
 
@@ -1882,19 +1875,10 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            on = to_sequence(on)
-            joins = to_sequence(joins)
+            on = ",".join(to_sequence(on))
+            joins = ",".join(to_sequence(joins))
             with auto_locking_ctx(self, table):
-                if joins:
-                    return Table(
-                        j_table=self.j_table.exactJoin(
-                            table.j_table, ",".join(on), ",".join(joins)
-                        )
-                    )
-                else:
-                    return Table(
-                        j_table=self.j_table.exactJoin(table.j_table, ",".join(on))
-                    )
+                return Table(j_table=self.j_table.exactJoin(table.j_table, on, joins))
         except Exception as e:
             raise DHError(e, "table exact_join operation failed.") from e
 
@@ -1932,26 +1916,21 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            on = to_sequence(on)
-            joins = to_sequence(joins)
+            on = ",".join(to_sequence(on))
+            joins = ",".join(to_sequence(joins))
             table_op = jpy.cast(self.j_object, _JTableOperations)
+            reserve_bits = (
+                reserve_bits if reserve_bits else _default_cross_join_reserve_bits()
+            )
             with auto_locking_ctx(self, table):
-                reserve_bits = (
-                    reserve_bits if reserve_bits else _default_cross_join_reserve_bits()
+                return Table(
+                    j_table=table_op.join(
+                        table.j_table,
+                        on,
+                        joins,
+                        reserve_bits,
+                    )
                 )
-                if joins:
-                    return Table(
-                        j_table=table_op.join(
-                            table.j_table,
-                            ",".join(on),
-                            ",".join(joins),
-                            reserve_bits,
-                        )
-                    )
-                else:
-                    return Table(
-                        j_table=table_op.join(table.j_table, ",".join(on), reserve_bits)
-                    )
         except Exception as e:
             raise DHError(e, "table join operation failed.") from e
 
@@ -3994,20 +3973,13 @@ class PartitionedTableProxy(JObjectWrapper):
             DHError
         """
         try:
-            on = to_sequence(on)
-            joins = to_sequence(joins)
+            on = ",".join(to_sequence(on))
+            joins = ",".join(to_sequence(joins))
             table_op = jpy.cast(table.j_object, _JTableOperations)
             with auto_locking_ctx(self, table):
-                if joins:
-                    return PartitionedTableProxy(
-                        j_pt_proxy=self.j_pt_proxy.naturalJoin(
-                            table_op, ",".join(on), ",".join(joins)
-                        )
-                    )
-                else:
-                    return PartitionedTableProxy(
-                        j_pt_proxy=self.j_pt_proxy.naturalJoin(table_op, ",".join(on))
-                    )
+                return PartitionedTableProxy(
+                    j_pt_proxy=self.j_pt_proxy.naturalJoin(table_op, on, joins)
+                )
         except Exception as e:
             raise DHError(
                 e, "natural_join operation on the PartitionedTableProxy failed."
@@ -4040,20 +4012,13 @@ class PartitionedTableProxy(JObjectWrapper):
             DHError
         """
         try:
-            on = to_sequence(on)
-            joins = to_sequence(joins)
+            on = ",".join(to_sequence(on))
+            joins = ",".join(to_sequence(joins))
             table_op = jpy.cast(table.j_object, _JTableOperations)
             with auto_locking_ctx(self, table):
-                if joins:
-                    return PartitionedTableProxy(
-                        j_pt_proxy=self.j_pt_proxy.exactJoin(
-                            table_op, ",".join(on), ",".join(joins)
-                        )
-                    )
-                else:
-                    return PartitionedTableProxy(
-                        j_pt_proxy=self.j_pt_proxy.exactJoin(table_op, ",".join(on))
-                    )
+                return PartitionedTableProxy(
+                    j_pt_proxy=self.j_pt_proxy.exactJoin(table_op, on, joins)
+                )
         except Exception as e:
             raise DHError(
                 e, "exact_join operation on the PartitionedTableProxy failed."
@@ -4090,26 +4055,17 @@ class PartitionedTableProxy(JObjectWrapper):
             DHError
         """
         try:
-            on = to_sequence(on)
-            joins = to_sequence(joins)
+            on = ",".join(to_sequence(on))
+            joins = ",".join(to_sequence(joins))
             table_op = jpy.cast(table.j_object, _JTableOperations)
             reserve_bits = (
                 reserve_bits if reserve_bits else _default_cross_join_reserve_bits()
             )
 
             with auto_locking_ctx(self, table):
-                if joins:
-                    return PartitionedTableProxy(
-                        j_pt_proxy=self.j_pt_proxy.join(
-                            table_op, ",".join(on), ",".join(joins), reserve_bits
-                        )
-                    )
-                else:
-                    return PartitionedTableProxy(
-                        j_pt_proxy=self.j_pt_proxy.join(
-                            table_op, ",".join(on), reserve_bits
-                        )
-                    )
+                return PartitionedTableProxy(
+                    j_pt_proxy=self.j_pt_proxy.join(table_op, on, joins, reserve_bits)
+                )
         except Exception as e:
             raise DHError(
                 e, "join operation on the PartitionedTableProxy failed."
