@@ -135,3 +135,11 @@ protobuf {
         artifact = libs.protoc.get().toString()
     }
 }
+
+spotless {
+    java {
+        targetExclude(
+                'build/generated/sources/proto/test/java/**',
+        )
+    }
+}
