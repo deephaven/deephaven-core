@@ -361,3 +361,6 @@ testcontainers-localstack = { module = "org.testcontainers:localstack", version.
 testcontainers-minio = { module = "org.testcontainers:minio", version.ref = "testcontainers" }
 testcontainers-kafka = { module = "org.testcontainers:kafka", version.ref = "testcontainers" }
 testcontainers-redpanda = { module = "org.testcontainers:redpanda", version.ref = "testcontainers" }
+
+[plugins]
+protobuf = { id = "com.google.protobuf", version = "0.9.6" }
