@@ -1,0 +1,21 @@
+plugins {
+    id 'java-library'
+    id 'io.deephaven.project.register'
+}
+
+description 'Window: Integrating a time bucketing partitioned table'
+
+dependencies {
+    implementation project(':engine-table')
+
+    Classpaths.inheritImmutables(project)
+
+    testImplementation TestTools.projectDependency(project, 'engine-table')
+    Classpaths.inheritJUnitClassic(project, 'testImplementation')
+    Classpaths.inheritAssertJ(project)
+
+    testRuntimeOnly project(':log-to-slf4j'),
+            project(path: ':configs'),
+            project(path: ':test-configs')
+    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
+}
