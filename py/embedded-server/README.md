@@ -22,9 +22,11 @@ $ pip install py/embedded-server/build/wheel/deephaven_server-0.12.0-py3-none-an
 
 ```python
 from deephaven_server import Server
+
 server = Server()
 server.start()
 
 from deephaven import time_table
-ticking_table = time_table('PT1s').update_view(formulas=["Col1 = i % 2"])
+
+ticking_table = time_table("PT1s").update_view(formulas=["Col1 = i % 2"])
 ```
