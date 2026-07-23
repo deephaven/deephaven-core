@@ -494,11 +494,6 @@ include ':web-client-api:types'
 project(':web-client-api:types').projectDir = file('web/client-api/types')
 
 
-buildCache {
-    local {
-        removeUnusedEntriesAfterDays = 4
-    }
-}
 
 develocity {
     buildScan {
