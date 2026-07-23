@@ -13,6 +13,7 @@ global using DoubleArrayColumnSource = Deephaven.Dh_NetClient.ArrayColumnSource<
 global using DateTimeOffsetColumnSource = Deephaven.Dh_NetClient.ArrayColumnSource<System.DateTimeOffset>;
 global using DateOnlyArrayColumnSource = Deephaven.Dh_NetClient.ArrayColumnSource<System.DateOnly>;
 global using TimeOnlyArrayColumnSource = Deephaven.Dh_NetClient.ArrayColumnSource<System.TimeOnly>;
+global using IListArrayColumnSource = Deephaven.Dh_NetClient.ArrayColumnSource<System.Collections.IList>;
 
 using Apache.Arrow.Types;
 
@@ -46,7 +47,8 @@ public abstract class ArrayColumnSource(int size) : IMutableColumnSource {
     IArrowTypeVisitor<StringType>,
     IArrowTypeVisitor<TimestampType>,
     IArrowTypeVisitor<Date64Type>,
-    IArrowTypeVisitor<Time64Type> {
+    IArrowTypeVisitor<Time64Type>,
+    IArrowTypeVisitor<ListType> {
     public ArrayColumnSource? Result { get; private set; }
 
     public void Visit(UInt16Type type) {
@@ -97,8 +99,12 @@ public abstract class ArrayColumnSource(int size) : IMutableColumnSource {
       Result = new TimeOnlyArrayColumnSource(size);
     }
 
+    public void Visit(ListType type) {
+      Result = new IListArrayColumnSource(size);
+    }
+
     public void Visit(IArrowType type) {
-      throw new Exception($"type {type.Name} is not supported");
+      throw new Exception($"ArrayColumnSource: type {type.Name} is not supported");
     }
   }
 }
