@@ -134,6 +134,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -559,7 +560,6 @@ public class WorkerConnection {
 
     public void connectionLost() {
         // notify all active tables and widgets that the connection is closed
-        // TODO(deephaven-core#3604) when a new session is created, refetch all widgets and use that to drive reconnect
         simpleReconnectableInstances.forEach((item, index, array) -> {
             try {
                 item.disconnected();
@@ -730,7 +730,9 @@ public class WorkerConnection {
             return getHierarchicalTable(definition);
         } else {
             warnLegacyTicketTypes(definition.getType());
-            return getWidget(definition).then(JsWidget::refetch);
+            return getWidget(definition)
+                    .then(JsWidget::refetch)
+                    .then(JsWidget::markReconnectable);
         }
     }
 
@@ -781,7 +783,9 @@ public class WorkerConnection {
             return new JsWidget(this, typedTicket).refetch().then(w -> Promise.resolve(new JsTreeTable(this, w)));
         } else {
             warnLegacyTicketTypes(typedTicket.getType());
-            return getWidget(typedTicket).then(JsWidget::refetch);
+            return getWidget(typedTicket)
+                    .then(JsWidget::refetch)
+                    .then(JsWidget::markReconnectable);
         }
     }
 
@@ -1029,6 +1033,10 @@ public class WorkerConnection {
 
     public void unregisterSimpleReconnectable(HasLifecycle figure) {
         this.simpleReconnectableInstances.delete(figure);
+    }
+
+    public boolean isConnected() {
+        return state == State.Connected;
     }
 
 
