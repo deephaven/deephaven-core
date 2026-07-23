@@ -108,8 +108,9 @@ def tsDefs = tasks.register('typescriptDefinitions', Javadoc) {
     dependsOn 'compileJava'
     source = sourceSets.main.allJava
     doFirst {
-        options.classpath = sourceSets.main.compileClasspath.files as List
-        options.docletpath = (configurations.typescriptDoclet.files as List) + (sourceSets.main.compileClasspath.files as List)
+        def cp = sourceSets.main.compileClasspath.files + sourceSets.main.output.classesDirs.files
+        options.classpath = cp as List
+        options.docletpath = (configurations.typescriptDoclet.files as List) + (cp as List)
     }
     destinationDir = dtsOutput.get().asFile
     options.doclet = 'com.vertispan.tsdefs.doclet.TsDoclet'
