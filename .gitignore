@@ -32,7 +32,6 @@ docker-compose.override.yml
 /Test*
 /logs/*
 .vscode
-.devin
 sphinx/build/
 
 # Python
