@@ -40,6 +40,7 @@ from deephaven.jcompat import (
     j_unary_operator,
     to_sequence,
 )
+from deephaven.time import DurationLike, to_j_duration
 from deephaven.update_graph import UpdateGraph, auto_locking_ctx
 from deephaven.updateby import UpdateByOperation
 
@@ -109,6 +110,11 @@ _JMultiJoinFactory = jpy.get_type("io.deephaven.engine.table.MultiJoinFactory")
 _JKeyedTranspose = jpy.get_type("io.deephaven.engine.table.impl.util.KeyedTranspose")
 _JNewColumnBehaviorType = jpy.get_type(
     "io.deephaven.engine.table.impl.util.KeyedTranspose$NewColumnBehavior"
+)
+
+# TailInitializationFilter
+_JTailInitializationFilter = jpy.get_type(
+    "io.deephaven.engine.table.impl.util.TailInitializationFilter"
 )
 
 # Selectable
@@ -4981,3 +4987,69 @@ def keyed_transpose(
             )
     except Exception as e:
         raise DHError(e, "keyed_transpose operation failed.") from e
+
+
+class TailInitializationFilter:
+    """Filters an add-only source table to retain only its most recent rows, using either
+    a timestamp window or a row count. Intended for queries that restart against a large
+    append-only dataset and need to skip rows that are too old to be relevant.
+
+    Rows appended to the source after the initial filter are passed through unchanged.
+    """
+
+    @staticmethod
+    def most_recent(table: Table, ts_col: str, period: DurationLike) -> Table:
+        """Filters an add-only table down to the most recent rows in each partition of its source.
+
+        For each partition, the newest (last) timestamp is found, and rows whose timestamp falls within ``period`` before
+        that newest timestamp are retained.
+
+        Args:
+            table (Table): the add-only source table to filter
+            ts_col (str): the name of the timestamp column; each partition must be sorted ascending by this column with
+                no null values
+            period (DurationLike): the look-behind window measured from the newest timestamp in each partition
+
+        Returns:
+            a new Table
+
+        Raises:
+            DHError
+        """
+        try:
+            j_duration = to_j_duration(period)
+            if j_duration is None:
+                raise ValueError("period must not be None")
+            nanos = j_duration.toNanos()
+            with auto_locking_ctx(table):
+                return Table(
+                    j_table=_JTailInitializationFilter.mostRecent(
+                        table.j_table, ts_col, nanos
+                    )
+                )
+        except Exception as e:
+            raise DHError(e, "failed to apply tail initialization filter.") from e
+
+    @staticmethod
+    def most_recent_rows(table: Table, row_count: int) -> Table:
+        """Filters an add-only table down to the last ``row_count`` rows in each partition of the source table.
+
+        Args:
+            table (Table): the add-only source table to filter
+            row_count (int): the number of most-recent rows to keep per partition
+
+        Returns:
+            a new Table
+
+        Raises:
+            DHError
+        """
+        try:
+            with auto_locking_ctx(table):
+                return Table(
+                    j_table=_JTailInitializationFilter.mostRecentRows(
+                        table.j_table, row_count
+                    )
+                )
+        except Exception as e:
+            raise DHError(e, "failed to apply tail initialization filter.") from e

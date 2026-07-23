@@ -196,12 +196,7 @@ public class CoreClient extends HasEventHandling {
         return login;
     }
 
-    /**
-     * Logs in using a refresh token.
-     *
-     * @param token the refresh token
-     * @return a promise which resolves once the client has connected using the updated credentials
-     */
+    @Deprecated
     public Promise<Void> relogin(@TsTypeRef(JsRefreshToken.class) Object token) {
         return login(Js.cast(LoginCredentials.reconnect(JsRefreshToken.fromObject(token).getBytes())));
     }
