@@ -333,7 +333,7 @@ class PartitionedTableProxyTestCase(BaseTestCase):
                 [ct for ct in joined_pt_proxy.target.constituent_tables if ct.size < 5]
             )
 
-    def test_cross_join_with_rserve_bits(self):
+    def test_cross_join_with_reserve_bits(self):
         with self.subTest("Join with a Table"):
             pt_proxy = (
                 self.test_table.drop_columns(cols=["d", "e"]).partition_by("c").proxy()
