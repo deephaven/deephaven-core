@@ -62,8 +62,42 @@ public class OuterJoinTools {
             @NotNull final Table table2,
             @NotNull final MatchPair[] columnsToMatch,
             @NotNull final MatchPair[] columnsToAdd) {
+        return fullOuterJoin(table1, table2, columnsToMatch, columnsToAdd,
+                CrossJoinHelper.DEFAULT_NUM_RIGHT_BITS_TO_RESERVE);
+    }
+
+    /**
+     * Returns a table that has one column for each of table1 columns, and one column corresponding to each of table2
+     * columns listed in the columns to add (or all the columns whose names don't overlap with the name of a column from
+     * table1 if the columnsToAdd is length zero). The returned table will have one row for each matching set of keys
+     * between the first and second tables, plus one row for any first table key set that doesn't match the second table
+     * and one row for each key set from the second table that doesn't match the first table. Columns from either table
+     * for which there was no match in the other table will have null values. Note that this method will cause tick
+     * expansion with ticking tables.
+     * <p>
+     *
+     * @param table1 input table
+     * @param table2 input table
+     * @param columnsToMatch match criteria
+     * @param columnsToAdd columns to add
+     * @param numRightBitsToReserve The number of bits to reserve for table2 groups.
+     * @return a table that has one column for each of table1's columns, and one column corresponding to each of
+     *         table2's columns listed in the columns to add (or all the columns whose names don't overlap with the name
+     *         of a column from table1 if the columnsToAdd is length zero). The returned table will have one row for
+     *         each matching set of keys between the first and second tables, plus one row for any first table key set
+     *         that doesn't match the second table and one row for each key set from the second table that doesn't match
+     *         the first table. Columns from either table for which there was no match in the other table will have null
+     *         values.
+     */
+    @ScriptApi
+    public static Table fullOuterJoin(
+            @NotNull final Table table1,
+            @NotNull final Table table2,
+            @NotNull final MatchPair[] columnsToMatch,
+            @NotNull final MatchPair[] columnsToAdd,
+            final int numRightBitsToReserve) {
         // perform the leftOuterJoin; it's missing right-side only rows
-        final Table leftTable = leftOuterJoin(table1, table2, columnsToMatch, columnsToAdd);
+        final Table leftTable = leftOuterJoin(table1, table2, columnsToMatch, columnsToAdd, numRightBitsToReserve);
 
         // find a sentinel column name to use to identify right-side only rows
         int numAttempts = 0;
@@ -292,6 +326,37 @@ public class OuterJoinTools {
     }
 
     /**
+     * Returns a table that has one column for each of the left table columns, and one column corresponding to each of
+     * the right table columns listed in the columns to add (or all the columns whose names don't overlap with the name
+     * of a column from the source table if the columnsToAdd is length zero). The returned table will have one row for
+     * each matching set of keys between the left table and right table plus one row for any left table key set that
+     * doesn't match the right table. Columns from the right table for which there was no match will have null values.
+     * Note that this method will cause tick expansion with ticking tables.
+     * <p>
+     *
+     * @param leftTable input table
+     * @param rightTable input table
+     * @param columnsToMatch match criteria
+     * @param columnsToAdd columns to add
+     * @param numRightBitsToReserve The number of bits to reserve for rightTable groups.
+     * @return a table that has one column for each of the left table columns, and one column corresponding to each
+     *         column listed in columnsToAdd. If columnsToAdd.length==0 one column corresponding to each column of the
+     *         right table columns whose names don't overlap with the name of a column from the left table is added. The
+     *         returned table will have one row for each matching set of keys between the left table and right table
+     *         plus one row for any left table key set that doesn't match the right table. Columns from the right table
+     *         for which there was no match will have null values.
+     */
+    @ScriptApi
+    public static Table leftOuterJoin(@NotNull final Table leftTable, @NotNull final Table rightTable,
+            @NotNull final String columnsToMatch, @NotNull final String columnsToAdd,
+            final int numRightBitsToReserve) {
+        return leftOuterJoin(leftTable, rightTable,
+                MatchPairFactory.getExpressions(TableOperationsDefaults.splitToCollection(columnsToMatch)),
+                MatchPairFactory.getExpressions(TableOperationsDefaults.splitToCollection(columnsToAdd)),
+                numRightBitsToReserve);
+    }
+
+    /**
      * Returns a table that has one column for each of leftTable columns, and all the columns from rightTable whose
      * names don't overlap with the name of a column from leftTable. The returned table will have one row for each
      * matching set of keys between the left table and right table plus one row for any left table key set that doesn't
@@ -408,6 +473,42 @@ public class OuterJoinTools {
             @NotNull final String columnsToAdd) {
         return fullOuterJoin(table1, table2, TableOperationsDefaults.splitToCollection(columnsToMatch),
                 TableOperationsDefaults.splitToCollection(columnsToAdd));
+    }
+
+    /**
+     * Returns a table that has one column for each of table1 columns, and one column corresponding to each of table2
+     * columns listed in the columns to add (or all the columns whose names don't overlap with the name of a column from
+     * table1 if the columnsToAdd is length zero). The returned table will have one row for each matching set of keys
+     * between the first and second tables, plus one row for any first table key set that doesn't match the second table
+     * and one row for each key set from the second table that doesn't match the first table. Columns from either table
+     * for which there was no match in the other table will have null values. Note that this method will cause tick
+     * expansion with ticking tables.
+     * <p>
+     *
+     * @param table1 input table
+     * @param table2 input table
+     * @param columnsToMatch match criteria
+     * @param columnsToAdd columns to add
+     * @param numRightBitsToReserve The number of bits to reserve for table2 groups.
+     * @return a table that has one column for each of table1's columns, and one column corresponding to each of
+     *         table2's columns listed in the columns to add (or all the columns whose names don't overlap with the name
+     *         of a column from table1 if the columnsToAdd is length zero). The returned table will have one row for
+     *         each matching set of keys between the first and second tables, plus one row for any first table key set
+     *         that doesn't match the second table and one row for each key set from the second table that doesn't match
+     *         the first table. Columns from either table for which there was no match in the other table will have null
+     *         values.
+     */
+    @ScriptApi
+    public static Table fullOuterJoin(
+            @NotNull final Table table1,
+            @NotNull final Table table2,
+            @NotNull final String columnsToMatch,
+            @NotNull final String columnsToAdd,
+            final int numRightBitsToReserve) {
+        return fullOuterJoin(table1, table2,
+                MatchPairFactory.getExpressions(TableOperationsDefaults.splitToCollection(columnsToMatch)),
+                MatchPairFactory.getExpressions(TableOperationsDefaults.splitToCollection(columnsToAdd)),
+                numRightBitsToReserve);
     }
 
     /**

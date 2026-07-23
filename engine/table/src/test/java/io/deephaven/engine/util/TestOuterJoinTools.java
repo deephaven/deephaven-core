@@ -473,4 +473,24 @@ public class TestOuterJoinTools {
         assertArrayEquals(new int[] {NULL_INT, NULL_INT}, ColumnVectors.ofInt(result, "J").toArray());
         assertArrayEquals(new String[] {null, null}, ColumnVectors.ofObject(result, "K", String.class).toArray());
     }
+
+    @Test
+    public void testLeftOuterJoinReserveBits() {
+        final Table lTable = testRefreshingTable(col("X", "a", "b", "c"));
+        final Table rTable = testRefreshingTable(col("Y", "a", "b", "b"), intCol("Z", 1, 2, 3));
+
+        final Table expected = OuterJoinTools.leftOuterJoin(lTable, rTable, "X=Y");
+        final Table result = OuterJoinTools.leftOuterJoin(lTable, rTable, "X=Y", "", 2);
+        assertTableEquals(expected, result);
+    }
+
+    @Test
+    public void testFullOuterJoinReserveBits() {
+        final Table lTable = testRefreshingTable(col("X", "a", "b", "c"));
+        final Table rTable = testRefreshingTable(col("Y", "a", "b", "b"), intCol("Z", 1, 2, 3));
+
+        final Table expected = OuterJoinTools.fullOuterJoin(lTable, rTable, "X=Y");
+        final Table result = OuterJoinTools.fullOuterJoin(lTable, rTable, "X=Y", "", 2);
+        assertTableEquals(expected, result);
+    }
 }

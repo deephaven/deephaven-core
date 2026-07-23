@@ -50,7 +50,7 @@ def start_jvm_for_tests(jvm_props: Optional[dict[str, str]] = None):
         jvm_classpath = os.environ.get("DEEPHAVEN_CLASSPATH", "")
 
         # Intentionally small by default - callers should set as appropriate
-        jvm_maxmem = os.environ.get("DEEPHAVEN_MAXMEM", "256m")
+        jvm_maxmem = os.environ.get("DEEPHAVEN_MAXMEM", "4g")
 
         # Start up the JVM
         jpy.VerboseExceptions.enabled = True
