@@ -15,6 +15,7 @@ import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.util.file.TrackedFileHandleFactory;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.ColumnEncoding;
+import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.proto.flight.util.SchemaHelper;
 import org.apache.arrow.vector.types.Types;
@@ -97,20 +98,29 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
     }
 
     public void testSymbolTableColumnGetsStructuralDictionary() throws Exception {
-        // A low-cardinality String column round-tripped through Parquet is read back as a symbol-table-backed
-        // (regioned) source. detectStructuralDictionaryEncoding must mark it for dictionary encoding, while a
-        // high-cardinality non-symbol column (the long Id) is left alone.
+        // detectStructuralDictionaryEncoding keys off whether a source is symbol-table backed, NOT off whether it is a
+        // String. To make the negative meaningful both columns are Strings; they differ only in cardinality:
+        // Sym -- 5 distinct values, stays under the dictionary-key cap -> Parquet dictionary-encodes it -> read back
+        // symbol-table backed -> must be marked DICTIONARY_ENCODED_INT32.
+        // Id -- 100k distinct values (Long.toString(k)), busts the cap below -> Parquet falls back to plain
+        // encoding -> read back NOT symbol-table backed -> must be left alone.
+        // A low maximumDictionaryKeys forces that fallback for Id while leaving low-cardinality Sym dictionary-encoded.
         final File dataDir = Files.createTempDirectory(BarrageUtilTest.class.getName()).toFile();
         try {
-            final Table source = emptyTable(100).update("Sym = `S` + (k % 5)", "Id = k");
+            final Table source = emptyTable(100_000).update("Sym = `S` + (k % 5)", "Id = Long.toString(k)");
             final File parquetFile = new File(dataDir, "table.parquet");
-            ParquetTools.writeTable(source, parquetFile.getPath());
+            final ParquetInstructions instructions = ParquetInstructions.builder()
+                    .setMaximumDictionaryKeys(100)
+                    .build();
+            ParquetTools.writeTable(source, parquetFile.getPath(), instructions);
             final Table readBack = ParquetTools.readTable(parquetFile.getPath());
 
-            // Sanity: the String column really is symbol-table backed (the branch detectStructuralDictionaryEncoding
-            // keys off).
+            // Sanity: the low-cardinality String column really is symbol-table backed (the branch
+            // detectStructuralDictionaryEncoding keys off), while the high-cardinality String column is not.
             assertThat(SymbolTableSource.hasSymbolTable(readBack.getColumnSource("Sym"), readBack.getRowSet()))
                     .isTrue();
+            assertThat(SymbolTableSource.hasSymbolTable(readBack.getColumnSource("Id"), readBack.getRowSet()))
+                    .isFalse();
 
             final Map<String, ColumnEncoding> detected = new java.util.HashMap<>();
             BarrageUtil.detectStructuralDictionaryEncoding(readBack, readBack.getRowSet(), detected);
@@ -121,6 +131,171 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
             TrackedFileHandleFactory.getInstance().closeAll();
             FileUtils.deleteRecursively(dataDir);
         }
+    }
+
+    public void testClusteredSymbolColumnGetsBothDictionaryAndRee() throws Exception {
+        // A clustered low-cardinality String column read back from Parquet is the canonical doubly-encoded candidate:
+        // it is symbol-table backed (structural dictionary fires) AND laid out in long adjacent runs (REE sampling
+        // fires). Sym2 = `U` + (((int)(k / 100)) % 3) over 10k rows is exactly that: 3 distinct values, each in runs
+        // of 100 consecutive rows. inferEncodings must mark it as combined RunEndEncoded<Dictionary<...>>.
+        final File dataDir = Files.createTempDirectory(BarrageUtilTest.class.getName()).toFile();
+        try {
+            final Table source = emptyTable(10_000).update("Sym2 = `U` + (((int) (k / 100)) % 3)");
+            final File parquetFile = new File(dataDir, "table.parquet");
+            ParquetTools.writeTable(source, parquetFile.getPath());
+            final Table readBack = ParquetTools.readTable(parquetFile.getPath());
+
+            // Precondition: the column really is symbol-table backed (the branch structural detection keys off).
+            assertThat(SymbolTableSource.hasSymbolTable(readBack.getColumnSource("Sym2"), readBack.getRowSet()))
+                    .isTrue();
+
+            final ColumnEncoding reeAndDict =
+                    ColumnEncoding.of(ColumnEncoding.RunEndWidth.INT32, ColumnEncoding.DictWidth.INT32);
+
+            // Full inferEncodings order: structural dictionary detection marks the dictionary facet, then the sampling
+            // pass augments it with the REE facet on the same map.
+            final Map<String, ColumnEncoding> detected = new java.util.HashMap<>();
+            try (final WritableRowSet sample = BarrageUtil.buildEncodingSampleRowSet(readBack.getRowSet())) {
+                assertThat(sample).as("table should be large enough to sample").isNotNull();
+                BarrageUtil.detectStructuralDictionaryEncoding(readBack, sample, detected);
+                assertThat(detected.get("Sym2"))
+                        .as("structural detection marks the dictionary facet first")
+                        .isEqualTo(ColumnEncoding.DICTIONARY_ENCODED_INT32);
+                BarrageUtil.sampleColumnsForEncoding(readBack, detected, false, sample, true, true);
+            }
+
+            assertThat(detected.get("Sym2"))
+                    .as("a clustered symbol column should be doubly encoded as REE+Dict")
+                    .isEqualTo(reeAndDict);
+        } finally {
+            TrackedFileHandleFactory.getInstance().closeAll();
+            FileUtils.deleteRecursively(dataDir);
+        }
+    }
+
+    public void testStructuralDictionaryComposesWithSampledReeForClusteredSymbolColumn() throws Exception {
+        // Regression anchor for the structural-dictionary / REE-sampling interaction.
+        //
+        // A grouped (clustered) low-cardinality String column is the ideal candidate for the doubly-encoded
+        // RunEndEncoded<Dictionary<...>> form: few distinct values (dictionary wins) AND long adjacent runs (REE
+        // wins). When such a column is symbol-table backed (read back from Parquet), inferEncodings runs
+        // detectStructuralDictionaryEncoding first, marking the dictionary facet; the subsequent sampling pass must
+        // then AUGMENT that marking with the REE facet rather than short-circuiting on encodings.containsKey(name).
+        final File dataDir = Files.createTempDirectory(BarrageUtilTest.class.getName()).toFile();
+        try {
+            // 4 distinct symbols in 4 contiguous runs of 25 -> low cardinality and long runs. Cast the quotient to
+            // int so the query does integer (not floating-point) division and the symbols actually cluster.
+            final Table source = emptyTable(100).update("Sym = `S` + (int) (ii / 25)", "Id = ii");
+            final File parquetFile = new File(dataDir, "table.parquet");
+            ParquetTools.writeTable(source, parquetFile.getPath());
+            final Table readBack = ParquetTools.readTable(parquetFile.getPath());
+
+            // Precondition: the column really is symbol-table backed (the branch structural detection keys off).
+            assertThat(SymbolTableSource.hasSymbolTable(readBack.getColumnSource("Sym"), readBack.getRowSet()))
+                    .isTrue();
+
+            final ColumnEncoding reeAndDict =
+                    ColumnEncoding.of(ColumnEncoding.RunEndWidth.INT32, ColumnEncoding.DictWidth.INT32);
+
+            // Control: sampling alone (no prior structural detection) sees both facets and composes REE+Dict.
+            final Map<String, ColumnEncoding> samplingOnly = new java.util.HashMap<>();
+            sampleColumnsForEncoding(readBack, samplingOnly, true, true);
+            assertThat(samplingOnly.get("Sym"))
+                    .as("sampling on the clustered symbol column should compose REE+Dict")
+                    .isEqualTo(reeAndDict);
+
+            // Full inferEncodings order: structural dictionary detection first, then sampling on the same map. The
+            // structural dictionary marking is augmented -- not overwritten -- with the sampled REE facet.
+            final Map<String, ColumnEncoding> pipeline = new java.util.HashMap<>();
+            try (final WritableRowSet sample = BarrageUtil.buildEncodingSampleRowSet(readBack.getRowSet())) {
+                assertThat(sample).as("table should be large enough to sample").isNotNull();
+                BarrageUtil.detectStructuralDictionaryEncoding(readBack, sample, pipeline);
+                assertThat(pipeline.get("Sym"))
+                        .as("structural detection marks the dictionary facet first")
+                        .isEqualTo(ColumnEncoding.DICTIONARY_ENCODED_INT32);
+                BarrageUtil.sampleColumnsForEncoding(readBack, pipeline, false, sample, true, true);
+            }
+
+            // Sampling augments the structural dictionary marking with the REE facet: doubly-encoded REE+Dict.
+            assertThat(pipeline.get("Sym"))
+                    .as("sampling should augment the structural dictionary marking with the REE facet")
+                    .isEqualTo(reeAndDict);
+        } finally {
+            TrackedFileHandleFactory.getInstance().closeAll();
+            FileUtils.deleteRecursively(dataDir);
+        }
+    }
+
+    public void testStructuralReeComposesWithSampledDictForMergedKeyColumn() {
+        // Mirror-image regression anchor to testStructuralDictionaryComposesWithSampledReeForClusteredSymbolColumn.
+        //
+        // A merged-partitioned-table key column is constant per region, so detectStructuralRunEndEncoding marks it
+        // REE. But across regions it repeats a small set of String values, so it is also an ideal dictionary
+        // candidate -- the doubly-encoded RunEndEncoded<Dictionary<...>> form. Structural REE runs first and writes
+        // the column, so the later sampling pass must AUGMENT that marking with the dictionary facet rather than
+        // short-circuiting on encodings.containsKey(name).
+        //
+        // 4 distinct symbols in 4 contiguous runs of 25: low cardinality (dictionary wins) and long runs (REE wins).
+        final int N = 100;
+        final String[] symbols = new String[N];
+        final String[] pool = {"AAPL", "MSFT", "GOOG", "AMZN"};
+        for (int i = 0; i < N; i++) {
+            symbols[i] = pool[i / 25];
+        }
+        final Table base = newTable(stringCol("Symbol", symbols));
+
+        final ColumnEncoding reeAndDict =
+                ColumnEncoding.of(ColumnEncoding.RunEndWidth.INT32, ColumnEncoding.DictWidth.INT32);
+
+        // Control: sampling alone (no prior structural detection) sees both facets and composes REE+Dict.
+        final Map<String, ColumnEncoding> samplingOnly = new java.util.HashMap<>();
+        sampleColumnsForEncoding(base, samplingOnly, true, true);
+        assertThat(samplingOnly.get("Symbol"))
+                .as("sampling on the clustered symbol column should compose REE+Dict")
+                .isEqualTo(reeAndDict);
+
+        // Mark Symbol as a merged-table key column so structural REE fires on it.
+        final Table table = base.withAttributes(Map.of(
+                Table.MERGED_TABLE_ATTRIBUTE, Boolean.TRUE,
+                Table.KEY_COLUMNS_ATTRIBUTE, "Symbol"));
+
+        // Full inferEncodings order: structural REE first, then structural dictionary, then sampling on the same map.
+        final Map<String, ColumnEncoding> pipeline = new java.util.HashMap<>();
+        BarrageUtil.detectStructuralRunEndEncoding(table, pipeline);
+        assertThat(pipeline.get("Symbol"))
+                .as("structural REE marks the run-end facet first")
+                .isEqualTo(ColumnEncoding.RUN_END_ENCODED_INT32);
+        try (final WritableRowSet sample = BarrageUtil.buildEncodingSampleRowSet(table.getRowSet())) {
+            assertThat(sample).as("table should be large enough to sample").isNotNull();
+            // The in-memory column is not symbol-table backed, so the dictionary facet comes from sampling.
+            BarrageUtil.detectStructuralDictionaryEncoding(table, sample, pipeline);
+            BarrageUtil.sampleColumnsForEncoding(table, pipeline, false, sample, true, true);
+        }
+
+        // Sampling augments the structural REE marking with the dictionary facet: doubly-encoded REE+Dict.
+        assertThat(pipeline.get("Symbol"))
+                .as("sampling should augment the structural REE marking with the dictionary facet")
+                .isEqualTo(reeAndDict);
+    }
+
+    public void testSamplingDoesNotAddDictionaryToSingleValueColumn() {
+        // A SingleValueColumnSource is a single run of one distinct value: REE is the whole story and a dictionary
+        // would be pure overhead. Structural REE marks it, and the augmenting sampling pass must NOT add a dictionary
+        // facet even though the sampled cardinality (1 distinct value) is trivially below the threshold.
+        final Table base = emptyTable(100).update("Y = `hello`");
+
+        final Map<String, ColumnEncoding> pipeline = new java.util.HashMap<>();
+        BarrageUtil.detectStructuralRunEndEncoding(base, pipeline);
+        assertThat(pipeline.get("Y")).isEqualTo(ColumnEncoding.RUN_END_ENCODED_INT32);
+        try (final WritableRowSet sample = BarrageUtil.buildEncodingSampleRowSet(base.getRowSet())) {
+            assertThat(sample).as("table should be large enough to sample").isNotNull();
+            BarrageUtil.sampleColumnsForEncoding(base, pipeline, false, sample, true, true);
+        }
+
+        // Stays REE-only: the single-value guard suppresses the otherwise-eligible dictionary facet.
+        assertThat(pipeline.get("Y"))
+                .as("a single-value column must not gain a dictionary facet from sampling")
+                .isEqualTo(ColumnEncoding.RUN_END_ENCODED_INT32);
     }
 
     public void testExplicitBarrageSchemaAttributeSuppressesAutoREE() {

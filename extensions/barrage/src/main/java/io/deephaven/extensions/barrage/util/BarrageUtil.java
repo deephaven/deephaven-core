@@ -172,11 +172,11 @@ public class BarrageUtil {
 
     /**
      * Maximum ratio of (estimated distinct values / sampled rows) that triggers dictionary auto-encoding for a String
-     * or Object column. At the default of 0.5, at least half of the sampled rows must be repeats of an already-seen
+     * or Object column. At the default of 0.1, at least 90% of the sampled rows must be repeats of an already-seen
      * value.
      */
     private static final double DICT_CARDINALITY_RATIO_THRESHOLD =
-            Configuration.getInstance().getDoubleWithDefault("BarrageUtil.dictionary.cardinalityRatioThreshold", 0.5);
+            Configuration.getInstance().getDoubleWithDefault("BarrageUtil.dictionary.cardinalityRatioThreshold", 0.1);
 
     /** Whether to sample columns at schema-inference time to detect run patterns for REE auto-encoding. */
     static final boolean REE_SAMPLING_ENABLED =
@@ -1531,12 +1531,13 @@ public class BarrageUtil {
             @NotNull final RowSet sampleRowSet,
             @NotNull final Map<String, ColumnEncoding> encodings) {
         table.getColumnSourceMap().forEach((name, source) -> {
-            if (encodings.containsKey(name)) {
+            if (!SymbolTableSource.hasSymbolTable(source, sampleRowSet)) {
                 return;
             }
-            if (SymbolTableSource.hasSymbolTable(source, sampleRowSet)) {
-                encodings.put(name, ColumnEncoding.DICTIONARY_ENCODED_INT32);
-            }
+            // Augment rather than replace.
+            encodings.compute(name, (k, existing) -> existing == null
+                    ? ColumnEncoding.DICTIONARY_ENCODED_INT32
+                    : existing.withDictionary(ColumnEncoding.DictWidth.INT32));
         });
     }
 
@@ -1552,9 +1553,10 @@ public class BarrageUtil {
                 ? WritableBooleanChunk.makeWritableChunk(actualSampleSize - 1)
                 : null) {
             table.getColumnSourceMap().forEach((name, source) -> {
-                if (encodings.containsKey(name)) {
-                    return;
-                }
+                // Augment rather than replace.
+                final ColumnEncoding existing = encodings.get(name);
+                boolean useRee = existing != null && existing.isRunEndEncoded();
+                boolean useDict = existing != null && existing.isDictionaryEncoded();
                 try (final ColumnSource.GetContext context = source.makeGetContext(actualSampleSize)) {
                     final Chunk<? extends Values> chunk = usePrev
                             ? source.getPrevChunk(context, sampleRowSet)
@@ -1581,15 +1583,11 @@ public class BarrageUtil {
                         }
                         // REE and dictionary are independent facets: when sampling shows an advantage for both,
                         // the column is doubly-encoded as RunEndEncoded<Dictionary<...>>.
-                        final boolean useRee =
-                                detectRee && (double) numRuns / chunk.size() < REE_RUN_RATIO_THRESHOLD;
-                        final boolean useDict = detectDict
+                        useRee |= detectRee && (double) numRuns / chunk.size() < REE_RUN_RATIO_THRESHOLD;
+                        // A dictionary only makes sense with at least two distinct values, otherwise REE-only is better
+                        // (and will have been detected).
+                        useDict |= detectDict && distinct.size() > 1
                                 && (double) distinct.size() / chunk.size() < DICT_CARDINALITY_RATIO_THRESHOLD;
-                        if (useRee || useDict) {
-                            encodings.put(name, ColumnEncoding.of(
-                                    useRee ? ColumnEncoding.RunEndWidth.INT32 : null,
-                                    useDict ? ColumnEncoding.DictWidth.INT32 : null));
-                        }
                     } else if (detectRee) {
                         ChunkEquals.makeEqual(source.getChunkType()).equalNext(chunk, isEqualNext);
                         int numRuns = 1;
@@ -1598,10 +1596,13 @@ public class BarrageUtil {
                                 ++numRuns;
                             }
                         }
-                        if ((double) numRuns / chunk.size() < REE_RUN_RATIO_THRESHOLD) {
-                            encodings.put(name, ColumnEncoding.RUN_END_ENCODED_INT32);
-                        }
+                        useRee |= (double) numRuns / chunk.size() < REE_RUN_RATIO_THRESHOLD;
                     }
+                }
+                if (useRee || useDict) {
+                    encodings.put(name, ColumnEncoding.of(
+                            useRee ? ColumnEncoding.RunEndWidth.INT32 : null,
+                            useDict ? ColumnEncoding.DictWidth.INT32 : null));
                 }
             });
         }

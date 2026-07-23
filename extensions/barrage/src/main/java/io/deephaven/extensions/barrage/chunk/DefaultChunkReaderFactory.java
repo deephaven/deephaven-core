@@ -211,7 +211,7 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
      * @param isTopLevel whether this is a top-level column (as opposed to a nested child)
      * @param registry per-stream dictionary registry; {@code null} means dictionary encoding is not supported and a
      *        dict-encoded field will throw
-     * @param dictValuesReaders if non-null, populated with {@code (dictId → valuesReader)} entries for each
+     * @param dictValuesReaders if non-null, populated with {@code (dictId -> valuesReader)} entries for each
      *        dictionary-encoded field encountered; callers use these to decode DictionaryBatch bodies
      */
     public <T extends WritableChunk<Values>> ChunkReader<T> newReaderPojo(
@@ -463,21 +463,12 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
         final long dictId = dictEncoding.getId();
         final ArrowType.Int indexArrowType = dictEncoding.getIndexType();
         final int indexBitWidth = indexArrowType.getBitWidth();
-        final Class<?> indexJavaType;
-        switch (indexBitWidth) {
-            case 8:
-                indexJavaType = byte.class;
-                break;
-            case 16:
-                indexJavaType = short.class;
-                break;
-            case 64:
-                indexJavaType = long.class;
-                break;
-            default:
-                indexJavaType = int.class;
-                break;
-        }
+        final Class<?> indexJavaType = switch (indexBitWidth) {
+            case 8 -> byte.class;
+            case 16 -> short.class;
+            case 64 -> long.class;
+            default -> int.class;
+        };
         final Field indexField = new Field("",
                 new org.apache.arrow.vector.types.pojo.FieldType(
                         true, new ArrowType.Int(indexBitWidth, true), null),
