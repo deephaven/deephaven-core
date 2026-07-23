@@ -2,97 +2,60 @@
 // Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
-// ****** Edit IntTimsortDescendingKernel and run "./gradlew replicateSortKernel" to regenerate
+// ****** Run GenerateTimsortKernels or ./gradlew generateTimsortKernels to regenerate
 //
 // @formatter:off
-
 package io.deephaven.engine.table.impl.sort.timsort;
 
 import io.deephaven.chunk.IntChunk;
-import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.table.Context;
 import io.deephaven.util.annotations.VisibleForTesting;
+import java.lang.Integer;
+import java.lang.UnsupportedOperationException;
 
 /**
  * This implements a timsort kernel for Integers.
  * <p>
- * <a href="https://bugs.python.org/file4451/timsort.txt">Python</a> and
+ * <a href="https://bugs.python.org/file4451/timsort.txt">bugs.python.org</a> and
  * <a href="https://en.wikipedia.org/wiki/Timsort">Wikipedia</a> do a decent job of describing the algorithm.
  */
-public class IntTimsortDescendingKernel {
+public final class IntTimsortDescendingKernel {
     private IntTimsortDescendingKernel() {
         throw new UnsupportedOperationException();
     }
 
-    // region Context
-    public static class IntSortKernelContext<ATTR extends Any> implements Context {
-        int minGallop;
-        int runCount = 0;
-        private final int[] runStarts;
-        private final int[] runLengths;
-        private final WritableIntChunk<ATTR> temporaryValues;
-
-        private IntSortKernelContext(int size) {
-            temporaryValues = WritableIntChunk.makeWritableChunk((size + 2) / 2);
-            runStarts = new int[(size + 31) / 32];
-            runLengths = new int[(size + 31) / 32];
-            minGallop = TimsortUtils.INITIAL_GALLOP;
-        }
-
-        public void sort(WritableChunk<ATTR> valuesToSort) {
-            IntTimsortDescendingKernel.sort(this, valuesToSort.asWritableIntChunk());
-        }
-
-        public void close() {
-            temporaryValues.close();
-        }
-    }
-    // endregion Context
-
-    public static <ATTR extends Any> IntSortKernelContext<ATTR> createContext(int size) {
+    public static <ATTR extends Any> IntSortKernelContext<ATTR> createContext(final int size) {
         return new IntSortKernelContext<>(size);
     }
 
     /**
-     * Sort the values in valuesToSort permuting the indexKeys chunk in the same way.
-     * <p>
-     * The offsetsIn chunk is contains the offset of runs to sort in indexKeys; and the lengthsIn contains the length of
-     * the runs. This allows the kernel to be used for a secondary column sort, chaining it together with fewer runs
-     * sorted on each pass.
+     * Sort the values in valuesToSort.
      */
-    public static <ATTR extends Any> void sort(
-            final IntSortKernelContext<ATTR> context,
+    public static <ATTR extends Any> void sort(IntSortKernelContext<ATTR> context,
             final WritableIntChunk<ATTR> valuesToSort) {
         timSort(context, valuesToSort, 0, valuesToSort.size());
     }
 
-    static private <ATTR extends Any> void timSort(
-            final IntSortKernelContext<ATTR> context,
-            final WritableIntChunk<ATTR> valuesToSort,
-            final int offset,
-            final int length) {
+    private static <ATTR extends Any> void timSort(IntSortKernelContext<ATTR> context,
+            WritableIntChunk<ATTR> valuesToSort, int offset, int length) {
         if (length <= 1) {
             return;
         }
-
         final int minRun = TimsortUtils.getRunLength(length);
-
         if (length <= minRun) {
             insertionSort(valuesToSort, offset, length);
             return;
         }
-
         context.runCount = 0;
-
         int startRun = offset;
         while (startRun < offset + length) {
             int current = valuesToSort.get(startRun);
-
-            int endRun; // note that endrun is exclusive
+            // note that endrun is exclusive
+            int endRun;
             final boolean descending;
-
             if (startRun + 1 == offset + length) {
                 endRun = offset + length;
                 descending = false;
@@ -100,7 +63,6 @@ public class IntTimsortDescendingKernel {
                 int next = valuesToSort.get(startRun + 1);
                 endRun = startRun + 2;
                 descending = gt(current, next);
-
                 if (!descending) {
                     // search for a non-descending run
                     current = next;
@@ -118,7 +80,6 @@ public class IntTimsortDescendingKernel {
                     }
                 }
             }
-
             final int foundLength = endRun - startRun;
             context.runStarts[context.runCount] = startRun;
             if (foundLength < minRun) {
@@ -138,13 +99,10 @@ public class IntTimsortDescendingKernel {
                 context.runLengths[context.runCount] = foundLength;
                 startRun = endRun;
             }
-
             context.runCount++;
-
             // check the invariants at the top of the stack
             ensureMergeInvariants(context, valuesToSort);
         }
-
         while (context.runCount > 1) {
             final int length2 = context.runLengths[context.runCount - 1];
             final int start1 = context.runStarts[context.runCount - 2];
@@ -156,12 +114,10 @@ public class IntTimsortDescendingKernel {
         }
     }
 
-    // region comparison functions
-    // note that this is a descending kernel, thus the comparisons here are backwards (e.g., the lt function is in terms of the sort direction, so is implemented by gt)
     private static int doComparison(int lhs, int rhs) {
+        // note that this is a descending kernel, thus the comparisons here are backwards (e.g., the lt function is in terms of the sort direction, so is implemented by gt)
         return -1 * Integer.compare(lhs, rhs);
     }
-    // endregion comparison functions
 
     @VisibleForTesting
     static boolean gt(int lhs, int rhs) {
@@ -186,58 +142,36 @@ public class IntTimsortDescendingKernel {
     /**
      * <p>
      * There are two merge invariants that we must preserve, quoting from Wikipedia:
-     * </p>
-     *
      * <p>
-     * Concurrently with the search for runs, the runs are merged with mergesort. Except where Timsort tries to optimise
-     * for merging disjoint runs in galloping mode, runs are repeatedly merged two at a time, with the only concerns
-     * being to maintain stability and merge balance.
-     * </p>
-     *
+     * Timsort is a stable sorting algorithm (order of elements with same key is kept) and strives to perform balanced
+     * merges (a merge thus merges runs of similar sizes).
      * <p>
-     * Stability requires non-consecutive runs are not merged, as elements could be transferred across equal elements in
-     * the intervening run, violating stability. Further, it would be impossible to recover the order of the equal
-     * elements at a later point.
-     * </p>
-     *
+     * In order to achieve sorting stability, only consecutive runs are merged. Between two non-consecutive runs, there
+     * can be an element with the same key inside the runs. Merging those two runs would change the order of equal keys.
+     * Example of this situation ([] are ordered runs): [1 2 2] 1 4 2 [0 1 2]
      * <p>
      * In pursuit of balanced merges, Timsort considers three runs on the top of the stack, X, Y, Z, and maintains the
      * invariants:
-     *
      * <ul>
-     * <li>|Z| > |Y| + |X|</li>
-     * <li>|Y| > |X|</li>
+     * <li>|Z| &gt; |Y| + |X|</li>
+     * <li>|Y| &gt; |X|</li>
      * </ul>
-     *
-     * If the invariants are violated, Y is merged with the smaller of X or Z and the invariants are checked again. Once
-     * the invariants hold, the next run is formed.
-     * </p>
-     *
      * <p>
-     * Somewhat inappreciably, the invariants maintain merges as being approximately balanced while maintaining a
-     * compromise between delaying merging for balance, and exploiting fresh occurrence of runs in cache memory, and
-     * also making merge decisions relatively simple.
-     * </p>
-     *
-     * <p>
-     * On reaching the end of the data, Timsort repeatedly merges the two runs on the top of the stack, until only one
-     * run of the entire data remains.
-     * </p>
+     * If any of these invariants is violated, Y is merged with the smaller of X or Z and the invariants are checked
+     * again. Once the invariants hold, the search for a new run in the data can start. These invariants maintain merges
+     * as being approximately balanced while maintaining a compromise between delaying merging for balance, exploiting
+     * fresh occurrence of runs in cache memory and making merge decisions relatively simple.
      */
-    private static <ATTR extends Any> void ensureMergeInvariants(
-            final IntSortKernelContext<ATTR> context,
-            final WritableIntChunk<ATTR> valuesToSort) {
+    private static <ATTR extends Any> void ensureMergeInvariants(IntSortKernelContext<ATTR> context,
+            WritableIntChunk<ATTR> valuesToSort) {
         while (context.runCount > 1) {
             final int xIndex = context.runCount - 1;
             final int yIndex = context.runCount - 2;
             final int zIndex = context.runCount - 3;
-
             final int xLen = context.runLengths[xIndex];
             final int yLen = context.runLengths[yIndex];
             final int zLen = zIndex >= 0 ? context.runLengths[zIndex] : -1;
-
             final boolean xMerge;
-
             if (zLen >= 0 && (zLen <= yLen + xLen)) {
                 // we must merge the smaller of the two
                 xMerge = xLen < zLen;
@@ -247,64 +181,51 @@ public class IntTimsortDescendingKernel {
             } else {
                 break;
             }
-
             final int yStart = context.runStarts[yIndex];
             final int xStart = context.runStarts[xIndex];
             if (xMerge) {
                 // merge y and x
                 merge(context, valuesToSort, yStart, yLen, xLen);
-
                 // unchanged: context.runStarts[yStart];
                 context.runLengths[yIndex] += xLen;
             } else {
                 // merge y and z
                 final int zStart = context.runStarts[zIndex];
                 merge(context, valuesToSort, zStart, zLen, yLen);
-
                 // unchanged: context.runStarts[zIndex];
                 context.runLengths[zIndex] += yLen;
                 context.runStarts[yIndex] = xStart;
                 context.runLengths[yIndex] = xLen;
             }
             context.runCount--;
-
         }
     }
 
-    private static <ATTR extends Any> void merge(
-            final IntSortKernelContext<ATTR> context,
-            final WritableIntChunk<ATTR> valuesToSort,
-            final int start1,
-            final int length1,
-            final int length2) {
+    private static <ATTR extends Any> void merge(IntSortKernelContext<ATTR> context,
+            WritableIntChunk<ATTR> valuesToSort, int start1, int length1, int length2) {
         // we know that we can never have zero length runs, because there is a minimum run size enforced; and at the
         // end of an input, we won't create a zero-length run. When we merge runs, they only become bigger, thus
         // they'll never be empty. I'm being cheap about function calls and control flow here.
         // Assert.gtZero(length1, "length1");
         // Assert.gtZero(length2, "length2");
-
         final int start2 = start1 + length1;
         // find the location of run2[0] in run1
         final int run2lo = valuesToSort.get(start2);
         final int mergeStartPosition = upperBound(valuesToSort, start1, start1 + length1, run2lo);
-
         if (mergeStartPosition == start1 + length1) {
             // these two runs are sorted already
             return;
         }
-
         // find the location of run1[length1 - 1] in run2
         final int run1hi = valuesToSort.get(start1 + length1 - 1);
         final int mergeEndPosition = lowerBound(valuesToSort, start2, start2 + length2, run1hi);
-
         // figure out which of the two runs is now shorter
         final int remaining1 = start1 + length1 - mergeStartPosition;
         final int remaining2 = mergeEndPosition - start2;
-
         if (remaining1 < remaining2) {
             copyToTemporary(context, valuesToSort, mergeStartPosition, remaining1);
-            // now we need to do the merge from temporary and remaining2 into remaining1 (so start at the front, because
-            // we've preserved all the values of run1
+            // now we need to do the merge from temporary and remaining2 into remaining1 (so start at the front,
+            // because we've preserved all the values of run1
             frontMerge(context, valuesToSort, mergeStartPosition, start2, remaining2);
         } else {
             copyToTemporary(context, valuesToSort, start2, remaining2);
@@ -320,56 +241,42 @@ public class IntTimsortDescendingKernel {
      * <p>
      * We eventually need to do galloping here, but are skipping that for now
      */
-    private static <ATTR extends Any> void frontMerge(
-            final IntSortKernelContext<ATTR> context,
-            final WritableIntChunk<ATTR> valuesToSort,
-            final int mergeStartPosition,
-            final int start2,
+    private static <ATTR extends Any> void frontMerge(IntSortKernelContext<ATTR> context,
+            WritableIntChunk<ATTR> valuesToSort, final int mergeStartPosition, final int start2,
             final int length2) {
         int tempCursor = 0;
         int run2Cursor = start2;
-
         final int run1size = context.temporaryValues.size();
         int ii;
         final int mergeEndExclusive = start2 + length2;
-
         int val1 = context.temporaryValues.get(tempCursor);
         int val2 = valuesToSort.get(run2Cursor);
-
         ii = mergeStartPosition;
-
         nodataleft: while (ii < mergeEndExclusive) {
             int run1wins = 0;
             int run2wins = 0;
-
             if (context.minGallop < 2) {
                 context.minGallop = 2;
             }
-
             while (run1wins < context.minGallop && run2wins < context.minGallop) {
                 if (leq(val1, val2)) {
                     valuesToSort.set(ii++, val1);
-
                     if (++tempCursor == run1size) {
                         break nodataleft;
                     }
-
                     val1 = context.temporaryValues.get(tempCursor);
                     run1wins++;
                     run2wins = 0;
                 } else {
                     valuesToSort.set(ii++, val2);
-
                     if (++run2Cursor == mergeEndExclusive) {
                         break nodataleft;
                     }
                     val2 = valuesToSort.get(run2Cursor);
-
                     run2wins++;
                     run1wins = 0;
                 }
             }
-
             // we are in galloping mode now, if we had run out of data then we should have already bailed out to
             // nodataleft
             while (ii < mergeEndExclusive) {
@@ -380,15 +287,12 @@ public class IntTimsortDescendingKernel {
                     copyToChunk(context.temporaryValues, valuesToSort, tempCursor, ii, gallopLength1);
                     tempCursor += gallopLength1;
                     ii += gallopLength1;
-
                     if (tempCursor == run1size) {
                         break nodataleft;
                     }
                     val1 = context.temporaryValues.get(tempCursor);
-
                     context.minGallop--;
                 }
-
                 // if we had a lot of things from run2, we take the next thing from run1 and then find it in run2
                 final int copyUntil2 = lowerBound(valuesToSort, run2Cursor, mergeEndExclusive, val1);
                 final int gallopLength2 = copyUntil2 - run2Cursor;
@@ -396,22 +300,19 @@ public class IntTimsortDescendingKernel {
                     copyToChunk(valuesToSort, valuesToSort, run2Cursor, ii, gallopLength2);
                     run2Cursor += gallopLength2;
                     ii += gallopLength2;
-
                     if (run2Cursor == mergeEndExclusive) {
                         break nodataleft;
                     }
                     val2 = valuesToSort.get(run2Cursor);
-
                     context.minGallop--;
                 }
-
                 if (gallopLength1 < TimsortUtils.INITIAL_GALLOP && gallopLength2 < TimsortUtils.INITIAL_GALLOP) {
-                    context.minGallop += 2; // undo the possible subtraction from above
+                    // undo the possible subtraction from above
+                    context.minGallop += 2;
                     break;
                 }
             }
         }
-
         while (tempCursor < run1size) {
             valuesToSort.set(ii, context.temporaryValues.get(tempCursor));
             tempCursor++;
@@ -424,102 +325,78 @@ public class IntTimsortDescendingKernel {
      * <p>
      * We eventually need to do galloping here, but are skipping that for now
      */
-    private static <ATTR extends Any> void backMerge(
-            final IntSortKernelContext<ATTR> context,
-            final WritableIntChunk<ATTR> valuesToSort,
-            final int mergeStartPosition,
-            final int length1) {
+    private static <ATTR extends Any> void backMerge(IntSortKernelContext<ATTR> context,
+            WritableIntChunk<ATTR> valuesToSort, final int mergeStartPosition, final int length1) {
         final int run1End = mergeStartPosition + length1;
         int run1Cursor = run1End - 1;
         int tempCursor = context.temporaryValues.size() - 1;
-
         final int mergeLength = context.temporaryValues.size() + length1;
         int ii;
-
-
         int val1 = valuesToSort.get(run1Cursor);
         int val2 = context.temporaryValues.get(tempCursor);
-
         final int mergeEnd = mergeStartPosition + mergeLength;
         ii = mergeEnd - 1;
-
         nodataleft: while (ii >= mergeStartPosition) {
             int run1wins = 0;
             int run2wins = 0;
-
             if (context.minGallop < 2) {
                 context.minGallop = 2;
             }
-
             while (run1wins < context.minGallop && run2wins < context.minGallop) {
                 if (geq(val2, val1)) {
                     valuesToSort.set(ii--, val2);
-
                     if (--tempCursor < 0) {
                         break nodataleft;
                     }
                     val2 = context.temporaryValues.get(tempCursor);
-
                     run2wins++;
                     run1wins = 0;
                 } else {
                     valuesToSort.set(ii--, val1);
-
                     if (--run1Cursor < mergeStartPosition) {
                         break nodataleft;
                     }
                     val1 = valuesToSort.get(run1Cursor);
-
                     run1wins++;
                     run2wins = 0;
                 }
             }
-
             // we are in galloping mode now, if we had run out of data then we should have already bailed out to
             // nodataleft
             while (ii >= mergeStartPosition) {
                 // if we had a lot of things from run2, we take the next thing from run1 then find it in run2
                 final int copyUntil2 = lowerBound(context.temporaryValues, 0, tempCursor, val1) + 1;
-
                 final int gallopLength2 = tempCursor - copyUntil2 + 1;
                 if (gallopLength2 > 0) {
-                    copyToChunk(context.temporaryValues, valuesToSort, copyUntil2, ii - gallopLength2 + 1,
-                            gallopLength2);
+                    copyToChunk(context.temporaryValues, valuesToSort, copyUntil2, ii - gallopLength2 + 1, gallopLength2);
                     tempCursor -= gallopLength2;
                     ii -= gallopLength2;
-
                     if (tempCursor < 0) {
                         break nodataleft;
                     }
                     val2 = context.temporaryValues.get(tempCursor);
-
                     context.minGallop--;
                 }
-
                 // if we had a lot of things from run1, we take the next thing from run2 and then find it in run1
                 final int copyUntil1 = upperBound(valuesToSort, mergeStartPosition, run1Cursor, val2);
-
                 final int gallopLength1 = run1Cursor - copyUntil1;
                 if (gallopLength1 > 0) {
                     copyToChunk(valuesToSort, valuesToSort, copyUntil1, ii - gallopLength1, gallopLength1 + 1);
                     run1Cursor -= gallopLength1;
                     ii -= gallopLength1;
-
                     if (run1Cursor < mergeStartPosition) {
                         break nodataleft;
                     }
                     val1 = valuesToSort.get(run1Cursor);
-
                     context.minGallop--;
                 }
-
                 if (gallopLength1 < TimsortUtils.INITIAL_GALLOP && gallopLength2 < TimsortUtils.INITIAL_GALLOP) {
-                    context.minGallop += 2; // undo the possible subtraction from above
+                    // undo the possible subtraction from above
+                    context.minGallop += 2;
                     break;
                 }
             }
         }
-
         while (tempCursor >= 0) {
             valuesToSort.set(ii, context.temporaryValues.get(tempCursor));
             tempCursor--;
@@ -527,56 +404,37 @@ public class IntTimsortDescendingKernel {
         }
     }
 
-    private static <ATTR extends Any> void copyToTemporary(
-            final IntSortKernelContext<ATTR> context,
-            final WritableIntChunk<ATTR> valuesToSort,
-            final int mergeStartPosition,
-            final int remaining1) {
+    private static <ATTR extends Any> void copyToTemporary(IntSortKernelContext<ATTR> context,
+            WritableIntChunk<ATTR> valuesToSort, int mergeStartPosition, int remaining1) {
         context.temporaryValues.setSize(remaining1);
         context.temporaryValues.copyFromChunk(valuesToSort, mergeStartPosition, 0, remaining1);
     }
 
-    private static <ATTR extends Any> void copyToChunk(
-            final IntChunk<ATTR> valuesSource,
-            final WritableIntChunk<ATTR> valuesDest,
-            final int sourceStart,
-            final int destStart,
-            final int length) {
+    private static <ATTR extends Any> void copyToChunk(IntChunk<ATTR> valuesSource,
+            WritableIntChunk<ATTR> valuesDest, int sourceStart, int destStart, int length) {
         valuesDest.copyFromChunk(valuesSource, sourceStart, destStart, length);
     }
 
-    // when we binary search in 1, we must identify a position for search value that is *after* our test values;
-    // because the values from run 2 may never be inserted before an equal value from run 1
-    //
-    // lo is inclusive, hi is exclusive
-    //
-    // returns the position of the first element that is > searchValue or hi if there is no such element
-    private static int upperBound(
-            final IntChunk<?> valuesToSort,
-            final int lo,
-            final int hi,
-            final int searchValue) {
+    private static int upperBound(IntChunk<?> valuesToSort, int lo, int hi, int searchValue) {
+        // when we binary search in 1, we must identify a position for search value that is *after* our test values;
+        // because the values from run 2 may never be inserted before an equal value from run 1
+        // 
+        // lo is inclusive, hi is exclusive
+        // 
+        // returns the position of the first element that is > searchValue or hi if there is no such element
         return bound(valuesToSort, lo, hi, searchValue, false);
     }
 
-    // when we binary search in 2, we must identify a position for search value that is *before* our test values;
-    // because the values from run 1 may never be inserted after an equal value from run 2
-    private static int lowerBound(
-            final IntChunk<?> valuesToSort,
-            final int lo,
-            final int hi,
-            final int searchValue) {
+    private static int lowerBound(IntChunk<?> valuesToSort, int lo, int hi, int searchValue) {
+        // when we binary search in 2, we must identify a position for search value that is *before* our test values;
+        // because the values from run 1 may never be inserted after an equal value from run 2
         return bound(valuesToSort, lo, hi, searchValue, true);
     }
 
-    private static int bound(
-            final IntChunk<?> valuesToSort,
-            int lo,
-            int hi,
-            final int searchValue,
+    private static int bound(IntChunk<?> valuesToSort, int lo, int hi, int searchValue,
             final boolean lower) {
-        final int compareLimit = lower ? -1 : 0; // lt or leq
-
+        // lt or leq
+        final int compareLimit = lower ? -1 : 0;
         while (lo < hi) {
             final int mid = (lo + hi) >>> 1;
             final int testValue = valuesToSort.get(mid);
@@ -588,15 +446,11 @@ public class IntTimsortDescendingKernel {
                 hi = mid;
             }
         }
-
         return lo;
     }
 
-    private static void insertionSort(
-            final WritableIntChunk<?> valuesToSort,
-            final int offset,
-            final int length) {
-        // this could eventually be done with intrinsics (AVX 512/64 bits for byte keys == 16 elements, and can be
+    private static void insertionSort(WritableIntChunk<?> valuesToSort, int offset, int length) {
+        // this could eventually be done with intrinsics (AVX 512/64 bits for long keys == 16 elements, and can be
         // combined up to 256)
         for (int ii = offset + 1; ii < offset + length; ++ii) {
             for (int jj = ii; jj > offset && gt(valuesToSort.get(jj - 1), valuesToSort.get(jj)); jj--) {
@@ -605,12 +459,36 @@ public class IntTimsortDescendingKernel {
         }
     }
 
-    static private void swap(
-            final WritableIntChunk<?> valuesToSort,
-            final int a,
-            final int b) {
+    private static void swap(WritableIntChunk<?> valuesToSort, int a, int b) {
         final int tempInt = valuesToSort.get(a);
         valuesToSort.set(a, valuesToSort.get(b));
         valuesToSort.set(b, tempInt);
+    }
+
+    public static class IntSortKernelContext<ATTR extends Any> implements Context {
+        int minGallop;
+
+        int runCount = 0;
+
+        private final int[] runStarts;
+
+        private final int[] runLengths;
+
+        private final WritableIntChunk<ATTR> temporaryValues;
+
+        private IntSortKernelContext(int size) {
+            temporaryValues = WritableIntChunk.makeWritableChunk((size + 2) / 2);
+            runStarts = new int[(size + 31) / 32];
+            runLengths = new int[(size + 31) / 32];
+            minGallop = TimsortUtils.INITIAL_GALLOP;
+        }
+
+        public void sort(WritableChunk<ATTR> valuesToSort) {
+            IntTimsortDescendingKernel.sort(this, valuesToSort.asWritableIntChunk());
+        }
+
+        public void close() {
+            temporaryValues.close();
+        }
     }
 }
