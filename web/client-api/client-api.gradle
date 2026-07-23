@@ -108,12 +108,15 @@ def tsDefs = tasks.register('typescriptDefinitions', Javadoc) {
     dependsOn 'compileJava'
     source = sourceSets.main.allJava
     doFirst {
-        def cp = sourceSets.main.compileClasspath.files + sourceSets.main.output.classesDirs.files
-        options.classpath = cp as List
-        options.docletpath = (configurations.typescriptDoclet.files as List) + (cp as List)
+        options.classpath = sourceSets.main.compileClasspath.files as List
+        options.docletpath = (configurations.typescriptDoclet.files as List) + (sourceSets.main.compileClasspath.files as List)
     }
     destinationDir = dtsOutput.get().asFile
     options.doclet = 'com.vertispan.tsdefs.doclet.TsDoclet'
+    // TsDoclet doesn't recognize -notimestamp; its presence before -sourcepath causes the
+    // doclet's option parser to misinterpret the sourcepath value as a package name.
+    options.noTimestamp = false
+    options.addStringOption('sourcepath', sourceSets.main.allJava.getSourceDirectories().getAsPath())
 }
 
 artifacts {
