@@ -269,6 +269,67 @@ public class TestFunctionGeneratedTableFactory extends RefreshingTableTestCase {
         assertTableEquals(newTable(longCol("Size", 2L, 3L)), functionBacked);
     }
 
+    public void testBlinkRetainingLastClears() throws Exception {
+        final AppendOnlyArrayBackedInputTable source = AppendOnlyArrayBackedInputTable.make(TableDefinition.of(
+                ColumnDefinition.of("IntCol", Type.intType())));
+        final BaseArrayBackedInputTable.ArrayBackedInputTableUpdater updater = source.makeUpdater();
+
+        // A retaining-last supplier that declines to produce a table must still clear a blink result, which retains
+        // only the current cycle's rows.
+        final MutableObject<Optional<Table>> nextResult =
+                new MutableObject<>(Optional.of(newTable(longCol("Size", 1L))));
+
+        final Table functionBacked = FunctionGeneratedTableFactory.create(FunctionGeneratedTableSpec.builder()
+                .retainingLastTableSupplier(nextResult::getValue)
+                .tableDefinition(TableDefinition.of(ColumnDefinition.of("Size", Type.longType())))
+                .addDependencies(source)
+                .blinkTable(true)
+                .build());
+
+        assertTableEquals(newTable(longCol("Size", 1L)), functionBacked);
+
+        // The supplier declines this cycle; the blink result must be cleared rather than retaining the prior rows.
+        nextResult.setValue(Optional.empty());
+        handleDelayedRefresh(() -> updater.addAsync(newTable(intCol("IntCol", 1)), t -> {
+        }), source);
+        assertEquals(0, functionBacked.size());
+
+        // A subsequent producing cycle repopulates it.
+        nextResult.setValue(Optional.of(newTable(longCol("Size", 2L, 3L))));
+        handleDelayedRefresh(() -> updater.addAsync(newTable(intCol("IntCol", 2)), t -> {
+        }), source);
+        assertTableEquals(newTable(longCol("Size", 2L, 3L)), functionBacked);
+    }
+
+    public void testCopyShrinkAndGrow() throws Exception {
+        final AppendOnlyArrayBackedInputTable source = AppendOnlyArrayBackedInputTable.make(TableDefinition.of(
+                ColumnDefinition.of("IntCol", Type.intType())));
+        final BaseArrayBackedInputTable.ArrayBackedInputTableUpdater updater = source.makeUpdater();
+
+        // An object (String) column exercises the shrink path that clears stale references from the writable sources.
+        final MutableObject<Table> nextResult = new MutableObject<>(newTable(stringCol("Key", "a", "b", "c")));
+
+        final Table functionBacked = FunctionGeneratedTableFactory.create(FunctionGeneratedTableSpec.builder()
+                .tableSupplier(nextResult::getValue)
+                .addDependencies(source)
+                .build());
+
+        assertTableEquals(newTable(stringCol("Key", "a", "b", "c")), functionBacked);
+
+        // Shrink: the result should reflect only the smaller set of rows.
+        nextResult.setValue(newTable(stringCol("Key", "x")));
+        handleDelayedRefresh(() -> updater.addAsync(newTable(intCol("IntCol", 1)), t -> {
+        }), source);
+        assertEquals(1, functionBacked.size());
+        assertTableEquals(newTable(stringCol("Key", "x")), functionBacked);
+
+        // Grow again: the result should reflect the larger set of rows.
+        nextResult.setValue(newTable(stringCol("Key", "p", "q")));
+        handleDelayedRefresh(() -> updater.addAsync(newTable(intCol("IntCol", 2)), t -> {
+        }), source);
+        assertTableEquals(newTable(stringCol("Key", "p", "q")), functionBacked);
+    }
+
     public void testBlinkRequiresTrigger() {
         try {
             FunctionGeneratedTableSpec.builder()

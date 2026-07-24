@@ -22,6 +22,7 @@ import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -32,11 +33,11 @@ import java.util.stream.Collectors;
  * The table will run by regenerating the full values (using the tableGenerator Function passed in). The resultant
  * table's values are copied into the result table and appropriate listener notifications are fired.
  * <p>
- * When copying data (the default), all the rows in the output table are modified on every tick, even if no actual
- * changes occurred, and the output table has a contiguous RowSet. When copying is disabled (see
- * {@link FunctionGeneratedTableSpec#copyData()}), the output instead delegates to the generated table's column sources
- * via {@link SwitchColumnSource}, adopting the generated table's RowSet and firing a full-replacement update (all
- * previous rows removed, all new rows added) each cycle.
+ * When copying data (the default), the generated rows are copied into a contiguous RowSet and each cycle fires a
+ * full-replacement update (all previous rows removed, all new rows added, with no modifications or shifts). When
+ * copying is disabled (see {@link FunctionGeneratedTableSpec#copyData()}), the output instead delegates to the
+ * generated table's column sources via {@link SwitchColumnSource}, adopting the generated table's RowSet and firing the
+ * same full-replacement update each cycle.
  * <p>
  * When {@link FunctionGeneratedTableSpec#blinkTable()} is set, the result is presented as a
  * {@link Table#BLINK_TABLE_ATTRIBUTE blink table}: each cycle removes the previous rows and adds the newly generated
@@ -66,6 +67,9 @@ public class FunctionGeneratedTableFactory {
     private final Map<String, ColumnSource<?>> columns = new LinkedHashMap<>();
     private final TrackingWritableRowSet rowSet;
     private final ExecutionContext executionContextForUpdates;
+
+    /** The result definition; every generated table must remain compatible with it. */
+    private final TableDefinition definition;
 
     private long nextRefresh;
 
@@ -213,7 +217,6 @@ public class FunctionGeneratedTableFactory {
         // Determine the result definition. When a definition is specified, it is authoritative: the initial table (if
         // any) must be compatible with it. When no definition is specified, the initial table's definition is used, and
         // an initial table is required to describe the columns.
-        final TableDefinition definition;
         if (specDefinition != null) {
             if (initialTable != null) {
                 specDefinition.checkMutualCompatibility(initialTable.getDefinition(), "specified", "generated");
@@ -302,6 +305,8 @@ public class FunctionGeneratedTableFactory {
             generated = tableGenerator.get();
         }
         generated.ifPresent(newTable -> {
+            // The generated table must remain compatible with the result definition on every invocation.
+            definition.checkMutualCompatibility(newTable.getDefinition(), "result", "generated");
             if (newTable.isRefreshing()) {
                 if (ExecutionContext.getContext().getUpdateGraph() != newTable.getUpdateGraph()) {
                     throw new IllegalStateException(
@@ -400,7 +405,11 @@ public class FunctionGeneratedTableFactory {
             try {
                 final Optional<Table> generated = generate();
                 if (generated.isEmpty()) {
-                    // A retaining-last supplier declined to produce a new table; preserve the current result.
+                    // The retaining-last supplier declined to produce a new table. A blink result retains only the
+                    // current cycle's rows, so it must be cleared; any other result preserves what it already has.
+                    if (blink) {
+                        clearForBlink();
+                    }
                     return;
                 }
                 if (copyData) {
@@ -428,47 +437,60 @@ public class FunctionGeneratedTableFactory {
         }
 
         /**
-         * Copy the generated table into our flat, contiguous writable column sources and fire the resulting
-         * notification. For a blink result the change is a full replacement (all previous rows removed, all new rows
-         * added); otherwise surviving rows are reported as modified.
+         * Copy the generated table into our flat, contiguous writable column sources and fire a full-replacement
+         * notification: all previous rows are removed and all new rows are added, with no modifications or shifts. When
+         * the result shrinks, stale object references in the now-unused tail are cleared.
          */
         private void doRefreshCopy(@NotNull final Table newTable) {
             final long size = rowSet.size();
             copyTable(newTable);
             final long newSize = newTable.size();
 
-            if (blink) {
-                final WritableRowSet removed = RowSetFactory.flat(size);
-                final WritableRowSet added = RowSetFactory.flat(newSize);
-                rowSet.resetTo(added);
-                if (added.isEmpty() && removed.isEmpty()) {
-                    added.close();
-                    removed.close();
-                    return;
+            // When the result shrinks, clear the now-unused tail of any object column sources so we do not retain
+            // references to removed data indefinitely.
+            if (newSize < size) {
+                try (final RowSet staleKeys = RowSetFactory.fromRange(newSize, size - 1)) {
+                    clearRemovedObjectData(staleKeys);
                 }
-                notifyListeners(new TableUpdateImpl(added, removed, RowSetFactory.empty(), RowSetShiftData.EMPTY,
-                        ModifiedColumnSet.EMPTY));
-                return;
             }
 
-            if (newSize < size) {
-                final RowSet removed = RowSetFactory.fromRange(newSize, size - 1);
-                rowSet.remove(removed);
-                final RowSet modified = rowSet.copy();
-                notifyListeners(RowSetFactory.empty(), removed, modified);
+            final WritableRowSet removed = RowSetFactory.flat(size);
+            final WritableRowSet added = RowSetFactory.flat(newSize);
+            rowSet.resetTo(added);
+            if (added.isEmpty() && removed.isEmpty()) {
+                added.close();
+                removed.close();
                 return;
             }
-            if (newSize > size) {
-                final RowSet added = RowSetFactory.fromRange(size, newSize - 1);
-                final RowSet modified = rowSet.copy();
-                rowSet.insert(added);
-                notifyListeners(added, RowSetFactory.empty(), modified);
+            notifyListeners(new TableUpdateImpl(added, removed, RowSetFactory.empty(), RowSetShiftData.EMPTY,
+                    ModifiedColumnSet.EMPTY));
+        }
+
+        /**
+         * Clear the result, firing a full removal of the current rows. Used to empty a blink result on a cycle that
+         * produced no new table.
+         */
+        private void clearForBlink() {
+            if (rowSet.isEmpty()) {
                 return;
             }
-            if (size > 0) {
-                // no size change, just modified
-                final RowSet modified = rowSet.copy();
-                notifyListeners(RowSetFactory.empty(), RowSetFactory.empty(), modified);
+            final WritableRowSet removed = rowSet.copy();
+            clearRemovedObjectData(removed);
+            rowSet.clear();
+            notifyListeners(new TableUpdateImpl(RowSetFactory.empty(), removed, RowSetFactory.empty(),
+                    RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
+        }
+
+        /**
+         * Null out the given keys in any object-typed writable column sources so removed data is not retained.
+         * Primitive (and {@link Instant}) sources cannot leak references and are skipped; the switch sources hold no
+         * data of their own, so this is a no-op when not copying data.
+         */
+        private void clearRemovedObjectData(@NotNull final RowSet removedKeys) {
+            for (final WritableColumnSource<?> source : writableSources.values()) {
+                if (!source.getType().isPrimitive() && source.getType() != Instant.class) {
+                    ChunkUtils.fillWithNullValue(source, removedKeys);
+                }
             }
         }
 
@@ -476,8 +498,9 @@ public class FunctionGeneratedTableFactory {
          * Swap our {@link SwitchColumnSource}s onto the newly generated table's column sources, adopt its RowSet, and
          * fire the resulting update. Since the generator regenerates the full table every cycle, the change is modeled
          * as a full replacement: the previous rows are removed and the new rows are added, with no modifications. The
-         * generated table is static, so retaining its column sources through the switch sources is sufficient; no
-         * liveness management of the table itself is required.
+         * generated table is either static or has immutable column sources (enforced by
+         * {@link #checkImmutableSwitchSources}), so retaining its column sources through the switch sources is safe
+         * even across cycles; no liveness management of the table itself is required.
          */
         private void doRefreshSwitch(@NotNull final Table newTable) {
             checkImmutableSwitchSources(newTable);
