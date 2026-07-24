@@ -592,7 +592,9 @@ def function_generated_table(
         builder.copyData(copy_data)
         builder.blinkTable(blink_table)
         if table_definition is not None:
-            builder.tableDefinition(TableDefinition(table_definition).j_table_definition)
+            builder.tableDefinition(
+                TableDefinition(table_definition).j_table_definition
+            )
         if source_tables is not None:
             builder.addDependencies([tbl.j_table for tbl in source_tables])
         elif refresh_interval_ms is not None and refresh_interval_ms > 0:
@@ -602,7 +604,9 @@ def function_generated_table(
         if source_tables is not None:
             # Create the function-generated table under a lock covering the source tables:
             with auto_locking_ctx(*source_tables):
-                j_function_generated_table = _JFunctionGeneratedTableFactory.create(spec)
+                j_function_generated_table = _JFunctionGeneratedTableFactory.create(
+                    spec
+                )
         else:
             j_function_generated_table = _JFunctionGeneratedTableFactory.create(spec)
 
