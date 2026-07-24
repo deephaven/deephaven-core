@@ -7,6 +7,7 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.CrossJoinHelper;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
@@ -479,9 +480,15 @@ public class TestOuterJoinTools {
         final Table lTable = testRefreshingTable(col("X", "a", "b", "c"));
         final Table rTable = testRefreshingTable(col("Y", "a", "b", "b"), intCol("Z", 1, 2, 3));
 
+        final int reserveBits = 2;
         final Table expected = OuterJoinTools.leftOuterJoin(lTable, rTable, "X=Y");
-        final Table result = OuterJoinTools.leftOuterJoin(lTable, rTable, "X=Y", "", 2);
+        final Table result = OuterJoinTools.leftOuterJoin(lTable, rTable, "X=Y", "", reserveBits);
         assertTableEquals(expected, result);
+
+        // Reserving fewer right bits shrinks the key space: each left row key is shifted left by reserveBits rather
+        // than the default, so the result's last key is smaller by a factor of 2^(default - reserveBits).
+        final int shift = CrossJoinHelper.DEFAULT_NUM_RIGHT_BITS_TO_RESERVE - reserveBits;
+        assertEquals(expected.getRowSet().lastRowKey() >> shift, result.getRowSet().lastRowKey());
     }
 
     @Test
@@ -489,8 +496,14 @@ public class TestOuterJoinTools {
         final Table lTable = testRefreshingTable(col("X", "a", "b", "c"));
         final Table rTable = testRefreshingTable(col("Y", "a", "b", "b"), intCol("Z", 1, 2, 3));
 
+        final int reserveBits = 2;
         final Table expected = OuterJoinTools.fullOuterJoin(lTable, rTable, "X=Y");
-        final Table result = OuterJoinTools.fullOuterJoin(lTable, rTable, "X=Y", "", 2);
+        final Table result = OuterJoinTools.fullOuterJoin(lTable, rTable, "X=Y", "", reserveBits);
         assertTableEquals(expected, result);
+
+        // Reserving fewer right bits shrinks the key space: each left row key is shifted left by reserveBits rather
+        // than the default, so the result's last key is smaller by a factor of 2^(default - reserveBits).
+        final int shift = CrossJoinHelper.DEFAULT_NUM_RIGHT_BITS_TO_RESERVE - reserveBits;
+        assertEquals(expected.getRowSet().lastRowKey() >> shift, result.getRowSet().lastRowKey());
     }
 }
