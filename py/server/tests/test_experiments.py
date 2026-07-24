@@ -45,6 +45,12 @@ class ExperimentalTestCase(BaseTestCase):
                 rt = full_outer_join(self.test_table, t1)
             self.assertRegex(str(cm.exception), r"Conflicting column names")
 
+        with self.subTest("full outer join with reserve_bits"):
+            t1 = empty_table(2).update(["X = i", "a = i"])
+            rt = full_outer_join(self.test_table, t1, joins=["Y = a"], reserve_bits=2)
+            self.assertEqual(rt.size, t1.size * self.test_table.size)
+            self.assertEqual(len(rt.definition), 1 + len(self.test_table.definition))
+
     def test_left_outer_join(self):
         with self.subTest("left outer join with matching keys"):
             t1 = time_table("PT00:00:00.001").update(["a = i", "b = i * 2"])
@@ -67,6 +73,12 @@ class ExperimentalTestCase(BaseTestCase):
             with self.assertRaises(DHError) as cm:
                 rt = left_outer_join(self.test_table, t1)
             self.assertRegex(str(cm.exception), r"Conflicting column names")
+
+        with self.subTest("left outer join with reserve_bits"):
+            t1 = empty_table(2).update(["X = i", "a = i"])
+            rt = left_outer_join(self.test_table, t1, joins=["Y = a"], reserve_bits=2)
+            self.assertEqual(rt.size, t1.size * self.test_table.size)
+            self.assertEqual(len(rt.definition), 1 + len(self.test_table.definition))
 
     def test_time_window(self):
         with self.subTest("user-explicit lock"):
