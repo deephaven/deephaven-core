@@ -252,13 +252,15 @@ public class FunctionGeneratedTableFactory {
         } else {
             if (initialTable != null) {
                 checkImmutableSwitchSources(initialTable);
-                for (final Map.Entry<String, ? extends ColumnSource<?>> entry : initialTable.getColumnSourceMap()
-                        .entrySet()) {
+                // Build columns in the result definition's order (which is the initial table's order unless a
+                // definition was supplied), pulling each generated column source by name.
+                final Map<String, ? extends ColumnSource<?>> initialColumns = initialTable.getColumnSourceMap();
+                for (final ColumnDefinition<?> columnDefinition : definition.getColumns()) {
                     // noinspection unchecked
-                    final SwitchColumnSource<?> switchSource =
-                            new SwitchColumnSource<>((ColumnSource<Object>) entry.getValue());
-                    columns.put(entry.getKey(), switchSource);
-                    switchSources.put(entry.getKey(), switchSource);
+                    final SwitchColumnSource<?> switchSource = new SwitchColumnSource<>(
+                            (ColumnSource<Object>) initialColumns.get(columnDefinition.getName()));
+                    columns.put(columnDefinition.getName(), switchSource);
+                    switchSources.put(columnDefinition.getName(), switchSource);
                 }
                 rowSet = initialTable.getRowSet().copy().toTracking();
             } else {

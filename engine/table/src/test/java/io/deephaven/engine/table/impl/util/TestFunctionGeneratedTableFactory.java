@@ -203,6 +203,24 @@ public class TestFunctionGeneratedTableFactory extends RefreshingTableTestCase {
         }
     }
 
+    public void testDefinitionDefinesColumnOrder() {
+        // The supplied definition orders the columns (B, A); the generator produces them in the opposite order (A, B).
+        final TableDefinition definition = TableDefinition.of(
+                ColumnDefinition.ofInt("B"),
+                ColumnDefinition.ofString("A"));
+
+        for (final boolean copyData : new boolean[] {true, false}) {
+            final Table functionBacked = FunctionGeneratedTableFactory.create(FunctionGeneratedTableSpec.builder()
+                    .tableSupplier(() -> newTable(stringCol("A", "x"), intCol("B", 1)))
+                    .tableDefinition(definition)
+                    .copyData(copyData)
+                    .build());
+
+            // The result adopts the supplied definition's column order, not the generated table's.
+            assertEquals(definition, functionBacked.getDefinition());
+        }
+    }
+
     public void testRetainingLast() throws Exception {
         final AppendOnlyArrayBackedInputTable source = AppendOnlyArrayBackedInputTable.make(TableDefinition.of(
                 ColumnDefinition.of("IntCol", Type.intType())));

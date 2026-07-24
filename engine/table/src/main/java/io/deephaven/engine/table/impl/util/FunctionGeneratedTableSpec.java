@@ -95,9 +95,12 @@ public abstract class FunctionGeneratedTableSpec {
     }
 
     /**
-     * The table definition to use for the result. This is required only when a {@link #retainingLastTableSupplier()}
-     * does not produce a table at construction time; if no definition is provided and the initial supplier invocation
-     * yields no table, construction fails. When the supplier does produce an initial table, its definition is used.
+     * The table definition to use for the result. When provided, it is authoritative: it defines the result's columns,
+     * and every table the supplier produces (including the initial one) must be
+     * {@link TableDefinition#checkMutualCompatibility(TableDefinition) mutually compatible} with it, or construction
+     * (or a subsequent refresh) fails. When not provided, the supplier's table defines the result's columns, so a
+     * definition is required only when a {@link #retainingLastTableSupplier()} produces no table at construction time;
+     * if no definition is provided and the initial supplier invocation yields no table, construction fails.
      *
      * @return the optional table definition
      */
