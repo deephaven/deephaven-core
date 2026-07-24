@@ -1,0 +1,1 @@
+{"file":"conceptual/deephaven-mental-model.md","objects":{"my_table":{"type":"Table","data":{"columns":[{"name":"ID","type":"int"},{"name":"Name","type":"java.lang.String"}],"rows":[[{"value":"1"},{"value":"A"}],[{"value":"2"},{"value":"B"}],[{"value":"3"},{"value":"C"}]]}}}}
