@@ -6,6 +6,35 @@ plugins {
 
 configurations {
     combinedJavadoc
+    // Gradle 9 forbids resolving another project's configuration. Use two local configurations:
+    //   javadocApi -> apiElements (api + compileOnlyApi)
+    //   javadocRuntime -> runtimeElements (api + implementation + runtimeOnly)
+    // compileOnly deps are collected automatically in projectsEvaluated below.
+    javadocApi {
+        canBeResolved = true
+        canBeConsumed = false
+        attributes {
+            attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage, Usage.JAVA_API))
+        }
+        // GWT substitution (mirrors GwtTools)
+        resolutionStrategy.dependencySubstitution {
+            substitute module('com.google.gwt:gwt-dev') using module("org.gwtproject:gwt-dev:${libs.versions.gwt.get()}")
+            substitute module('com.google.gwt:gwt-user') using module("org.gwtproject:gwt-user:${libs.versions.gwt.get()}")
+            substitute module('com.google.gwt:gwt-codeserver') using module("org.gwtproject:gwt-codeserver:${libs.versions.gwt.get()}")
+        }
+    }
+    javadocRuntime {
+        canBeResolved = true
+        canBeConsumed = false
+        attributes {
+            attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage, Usage.JAVA_RUNTIME))
+        }
+        resolutionStrategy.dependencySubstitution {
+            substitute module('com.google.gwt:gwt-dev') using module("org.gwtproject:gwt-dev:${libs.versions.gwt.get()}")
+            substitute module('com.google.gwt:gwt-user') using module("org.gwtproject:gwt-user:${libs.versions.gwt.get()}")
+            substitute module('com.google.gwt:gwt-codeserver') using module("org.gwtproject:gwt-codeserver:${libs.versions.gwt.get()}")
+        }
+    }
 }
 
 String javaDocOverviewLocation = 'build/docs/overview.html'
@@ -25,6 +54,22 @@ def writeJavadocVersion = tasks.register 'writeJavadocVersion', {
         }
 }
 
+// After all projects are evaluated, add javadoc-worthy projects and their compileOnly deps.
+gradle.projectsEvaluated {
+    def isForJavadocs = { Project p -> return io.deephaven.project.util.CombinedJavadoc.includeProject(p) }
+    rootProject.subprojects.findAll { p -> isForJavadocs(p) }.each { p ->
+        dependencies {
+            javadocApi project(p.path)
+            javadocRuntime project(p.path)
+        }
+        p.configurations.findByName('compileOnly')?.dependencies?.each { dep ->
+            dependencies {
+                javadocRuntime dep
+            }
+        }
+    }
+}
+
 def allJavadoc = tasks.register 'allJavadoc', Javadoc, {
     Javadoc jdoc ->
         jdoc.inputs.file javaDocOverviewLocation
@@ -39,9 +84,7 @@ def allJavadoc = tasks.register 'allJavadoc', Javadoc, {
                 .findAll {  it -> isForJavadocs(it) }
                 .collect { it.sourceSets.main.allJava }
 
-        jdoc.classpath = files(rootProject.subprojects
-                .findAll {  it -> isForJavadocs(it) }
-                .collect { it.sourceSets.main.compileClasspath })
+        jdoc.classpath = configurations.javadocApi + configurations.javadocRuntime
 
         // https://github.com/gradle/gradle/issues/19869
         def sourcepath = files()

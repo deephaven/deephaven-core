@@ -76,10 +76,10 @@ idea {
   module {
     sourceDirs = []
     resourceDirs = []
-    testSourceDirs += project.sourceSets.javaToPython.java.srcDirs
-    testSourceDirs += project.sourceSets.pythonToJava.java.srcDirs
-    testResourceDirs += project.sourceSets.javaToPython.resources.srcDirs
-    testResourceDirs += project.sourceSets.pythonToJava.resources.srcDirs
+    testSources.from(project.sourceSets.javaToPython.java.srcDirs)
+    testSources.from(project.sourceSets.pythonToJava.java.srcDirs)
+    testResources.from(project.sourceSets.javaToPython.resources.srcDirs)
+    testResources.from(project.sourceSets.pythonToJava.resources.srcDirs)
   }
 }
 
