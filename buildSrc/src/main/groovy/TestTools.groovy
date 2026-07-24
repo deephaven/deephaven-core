@@ -106,6 +106,7 @@ By default only runs in CI; to run locally:
             // (it's usually assumed you will do a custom sourceSet for integration tests,
             // but we already use custom layouts which make "use separate sourcesets per module" in IntelliJ...troublesome).
             SourceSetContainer sources = project.getExtensions().findByType(JavaPluginExtension).sourceSets
+            setTestClassesDirs sources.getByName('test').output.classesDirs
             setClasspath project.files(sources.getByName('test').output, sources.getByName('main').output, project.configurations.getByName(TEST_RUNTIME_CLASSPATH_CONFIGURATION_NAME))
 
             // we also need to adjust the reporting output directory of the alt task,
