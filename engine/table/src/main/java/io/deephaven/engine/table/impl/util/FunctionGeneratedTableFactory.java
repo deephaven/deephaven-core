@@ -12,6 +12,7 @@ import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
+import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import io.deephaven.engine.table.impl.sources.SwitchColumnSource;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.updategraph.UpdateGraph;
@@ -22,7 +23,6 @@ import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.*;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -484,13 +484,13 @@ public class FunctionGeneratedTableFactory {
         }
 
         /**
-         * Null out the given keys in any object-typed writable column sources so removed data is not retained.
-         * Primitive (and {@link Instant}) sources cannot leak references and are skipped; the switch sources hold no
-         * data of their own, so this is a no-op when not copying data.
+         * Null out the given keys in our {@link ObjectArraySource}s so removed data is not retained. Only the writable
+         * object array sources of the copy path can leak references; primitive sources cannot, and the switch sources
+         * hold no data of their own, so this is a no-op when not copying data.
          */
         private void clearRemovedObjectData(@NotNull final RowSet removedKeys) {
             for (final WritableColumnSource<?> source : writableSources.values()) {
-                if (!source.getType().isPrimitive() && source.getType() != Instant.class) {
+                if (source instanceof ObjectArraySource) {
                     ChunkUtils.fillWithNullValue(source, removedKeys);
                 }
             }

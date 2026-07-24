@@ -6,12 +6,17 @@ package io.deephaven.engine.table.impl.util;
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.context.TestExecutionContext;
+import io.deephaven.engine.liveness.LivenessScope;
+import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.BlinkTableTools;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.QueryTableTest;
+import io.deephaven.engine.table.impl.ShiftObliviousInstrumentedListenerAdapter;
 import io.deephaven.engine.testutil.ColumnInfo;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.EvalNugget;
@@ -20,8 +25,10 @@ import io.deephaven.engine.testutil.generator.IntGenerator;
 import io.deephaven.engine.testutil.generator.SetGenerator;
 import io.deephaven.engine.testutil.sources.ImmutableColumnHolder;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.TableDiff;
 import io.deephaven.qst.type.Type;
+import io.deephaven.util.SafeCloseable;
 import org.apache.commons.lang3.mutable.MutableObject;
 
 import java.util.Optional;
@@ -407,6 +414,168 @@ public class TestFunctionGeneratedTableFactory extends RefreshingTableTestCase {
             fail("Expected an IllegalArgumentException");
         } catch (IllegalArgumentException expected) {
             assertTrue(expected.getMessage().contains("at least one millisecond"));
+        }
+    }
+
+    public void testIntervalRefresh() throws Exception {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
+        // A refresh far in the future: driving the periodic source before its interval elapses does nothing.
+        final Table slow = FunctionGeneratedTableFactory.create(() -> newTable(intCol("V", 9)), 3_600_000);
+        assertTableEquals(newTable(intCol("V", 9)), slow);
+        updateGraph.runWithinUnitTestCycle(
+                () -> updateGraph.refreshUpdateSourceForUnitTests((Runnable) slow));
+        assertTableEquals(newTable(intCol("V", 9)), slow);
+
+        // A short interval: once it elapses, driving the periodic source regenerates the result.
+        final MutableObject<Table> nextResult = new MutableObject<>(newTable(intCol("V", 1)));
+        final Table functionBacked = FunctionGeneratedTableFactory.create(nextResult::getValue, 1);
+        assertTableEquals(newTable(intCol("V", 1)), functionBacked);
+
+        Thread.sleep(10);
+        nextResult.setValue(newTable(intCol("V", 2, 3)));
+        updateGraph.runWithinUnitTestCycle(
+                () -> updateGraph.refreshUpdateSourceForUnitTests((Runnable) functionBacked));
+        assertTableEquals(newTable(intCol("V", 2, 3)), functionBacked);
+    }
+
+    public void testIntervalSourceDestroyed() {
+        // Releasing the only reference to an interval-driven result destroys it and removes it as a periodic source.
+        final LivenessScope scope = new LivenessScope();
+        final Table functionBacked;
+        try (final SafeCloseable ignored = LivenessScopeStack.open(scope, false)) {
+            functionBacked = FunctionGeneratedTableFactory.create(() -> newTable(intCol("V", 1)), 3_600_000);
+        }
+        assertTableEquals(newTable(intCol("V", 1)), functionBacked);
+        scope.release();
+        assertFalse(functionBacked.tryRetainReference());
+    }
+
+    public void testDependenciesMustBeRefreshing() {
+        // A static dependency is rejected: the factory can only be driven by refreshing sources.
+        try {
+            FunctionGeneratedTableFactory.create(() -> emptyTable(1), emptyTable(1));
+            fail("Expected an IllegalArgumentException");
+        } catch (IllegalArgumentException expected) {
+            assertTrue(expected.getMessage().contains("must be refreshing"));
+        }
+    }
+
+    public void testSwitchNoInitialTable() throws Exception {
+        final AppendOnlyArrayBackedInputTable source = AppendOnlyArrayBackedInputTable.make(TableDefinition.of(
+                ColumnDefinition.of("IntCol", Type.intType())));
+        final BaseArrayBackedInputTable.ArrayBackedInputTableUpdater updater = source.makeUpdater();
+
+        // copyData == false with a retaining-last supplier that produces nothing at construction: the switch sources
+        // are backed by null sources and the supplied definition provides the columns.
+        final Table functionBacked = FunctionGeneratedTableFactory.create(FunctionGeneratedTableSpec.builder()
+                .retainingLastTableSupplier(() -> source.size() == 0
+                        ? Optional.empty()
+                        : Optional.of(newTable(intCol("Sum", (int) source.size()))))
+                .tableDefinition(TableDefinition.of(ColumnDefinition.of("Sum", Type.intType())))
+                .addDependencies(source)
+                .copyData(false)
+                .build());
+
+        assertEquals(0, functionBacked.size());
+        assertEquals(TableDefinition.of(ColumnDefinition.of("Sum", Type.intType())), functionBacked.getDefinition());
+
+        handleDelayedRefresh(() -> updater.addAsync(newTable(intCol("IntCol", 1)), t -> {
+        }), source);
+        assertTableEquals(newTable(intCol("Sum", 1)), functionBacked);
+    }
+
+    public void testGeneratedTableWrongUpdateGraph() {
+        // A generated refreshing table belonging to a different UpdateGraph than the factory's must be rejected.
+        final UpdateGraph otherUpdateGraph = new ControlledUpdateGraph(TestExecutionContext.OPERATION_INITIALIZATION);
+        final QueryTable foreign;
+        try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(otherUpdateGraph).open()) {
+            foreign = testRefreshingTable(i(0).toTracking(), intCol("V", 1));
+        }
+        final QueryTable localDependency = testRefreshingTable(i(0).toTracking(), intCol("D", 1));
+        try {
+            FunctionGeneratedTableFactory.create(() -> foreign, localDependency);
+            fail("Expected an IllegalStateException");
+        } catch (IllegalStateException expected) {
+            assertTrue(expected.getMessage().contains("same UpdateGraph"));
+        }
+    }
+
+    public void testRefreshWrongUpdateGraphNotifies() {
+        final UpdateGraph otherUpdateGraph = new ControlledUpdateGraph(TestExecutionContext.OPERATION_INITIALIZATION);
+        final QueryTable foreign;
+        try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(otherUpdateGraph).open()) {
+            foreign = testRefreshingTable(i(0).toTracking(), intCol("V", 1));
+        }
+
+        // Construct successfully with a local static table; a later refresh returns a refreshing table belonging to a
+        // different UpdateGraph, which must be detected during generation and drive the error path.
+        final QueryTable source = testRefreshingTable(i(0).toTracking(), intCol("IntCol", 1));
+        final MutableObject<Table> nextResult = new MutableObject<>(newTable(intCol("V", 1)));
+        final Table functionBacked = FunctionGeneratedTableFactory.create(FunctionGeneratedTableSpec.builder()
+                .tableSupplier(nextResult::getValue)
+                .addDependencies(source)
+                .build());
+        final ErrorListener errorListener = new ErrorListener(functionBacked);
+
+        nextResult.setValue(foreign);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.startCycleForUnitTests();
+        allowingError(() -> {
+            addToTable(source, i(1), intCol("IntCol", 2));
+            source.notifyListeners(i(1), i(), i());
+            updateGraph.completeCycleForUnitTests();
+        }, throwables -> throwables.size() == 1 && throwables.get(0) instanceof IllegalStateException
+                && throwables.get(0).getMessage().contains("same UpdateGraph"));
+
+        assertNotNull(errorListener.originalException);
+    }
+
+    public void testRefreshErrorNotifies() {
+        final QueryTable source = testRefreshingTable(i(0).toTracking(), intCol("IntCol", 1));
+        final MutableObject<Table> nextResult = new MutableObject<>(newTable(intCol("V", 1)));
+        final Table functionBacked = FunctionGeneratedTableFactory.create(FunctionGeneratedTableSpec.builder()
+                .tableSupplier(nextResult::getValue)
+                .addDependencies(source)
+                .build());
+        assertTableEquals(newTable(intCol("V", 1)), functionBacked);
+
+        final ErrorListener errorListener = new ErrorListener(functionBacked);
+
+        // The next generation is definition-incompatible, failing the per-cycle compatibility check during refresh and
+        // driving the error-notification path.
+        nextResult.setValue(newTable(stringCol("V", "boom")));
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.startCycleForUnitTests();
+        allowingError(() -> {
+            addToTable(source, i(1), intCol("IntCol", 2));
+            source.notifyListeners(i(1), i(), i());
+            updateGraph.completeCycleForUnitTests();
+        }, throwables -> throwables.size() == 1
+                && throwables.get(0) instanceof TableDefinition.IncompatibleTableDefinitionException);
+
+        assertNotNull(errorListener.originalException);
+        assertTrue(errorListener.originalException instanceof TableDefinition.IncompatibleTableDefinitionException);
+    }
+
+    private static class ErrorListener extends ShiftObliviousInstrumentedListenerAdapter {
+        Throwable originalException;
+
+        ErrorListener(final Table table) {
+            super("FunctionGeneratedTable error checker", table, false);
+            table.addUpdateListener(this, false);
+        }
+
+        @Override
+        public void onUpdate(final RowSet added, final RowSet removed, final RowSet modified) {
+            fail("Should not have received a normal update!");
+        }
+
+        @Override
+        public void onFailureInternal(final Throwable originalException, final Entry sourceEntry) {
+            this.originalException = originalException;
         }
     }
 }
