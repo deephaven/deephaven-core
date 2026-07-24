@@ -8,6 +8,8 @@ name: Docs PR Preview
 on:
   # This should be safe since the action doesn't do any build with the PR code
   # It would not be safe to run scripts from the PR code, so we use docker directly in this action
+  # We need pull_request_target so that we can use id-token: write from the main repo (to use OIDC w/ AWS),
+  # but need to publish the docs preview from forks. GitHub does not allow id-token: write on pull_request for forks.
   pull_request_target:
     branches: [main, 'rc/**']
 
