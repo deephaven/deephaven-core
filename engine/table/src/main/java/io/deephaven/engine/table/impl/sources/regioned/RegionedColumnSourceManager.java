@@ -762,34 +762,45 @@ public class RegionedColumnSourceManager
             return Integer.compare(regionIndex, other.regionIndex);
         }
 
-        private WritableRowSet subsetAndShiftIntoLocationSpace(final RowSet selection) {
-            final long locationStartKey = firstRowKey();
-            // Extract the portion of selection that overlaps this region.
-            final WritableRowSet overlappingRows = selection.subSetByKeyRange(locationStartKey, lastRowKey());
-            // Shift to the region's key space
-            overlappingRows.shiftInPlace(-locationStartKey);
-            return overlappingRows;
-        }
-
-        private void unshiftIntoRegionSpace(final WritableRowSet rowSet) {
-            rowSet.shiftInPlace(firstRowKey());
-        }
-
-        void unshiftIntoRegionSpace(final PushdownResult result) {
-            if (result.match().isNonempty()) {
-                unshiftIntoRegionSpace(result.match());
-            }
-            if (result.maybeMatch().isNonempty()) {
-                unshiftIntoRegionSpace(result.maybeMatch());
-            }
-        }
-
         private long firstRowKey() {
             return getFirstRowKey(regionIndex);
         }
 
         private long lastRowKey() {
             return getLastRowKey(regionIndex);
+        }
+    }
+
+    /**
+     * Extract the portion of {@code selection} that overlaps the region with the given {@code regionIndex}, and shift
+     * it into that region's own key space. Pure region-id arithmetic; does not require an
+     * {@link IncludedTableLocationEntry} instance, so it may be applied to any currently-included region index
+     * (notably, by the pushdown helpers below, which must not assume that {@code regionIndex} is a valid position in
+     * {@link #orderedIncludedTableLocations}, since that list is compacted on removal while region indices are not
+     * reused).
+     * <p>
+     * Declared {@code static} on the enclosing manager rather than on {@link IncludedTableLocationEntry} because that
+     * inner class is non-static, and this project's Java 11 language level does not permit static methods in non-static
+     * inner classes.
+     */
+    private static WritableRowSet subsetAndShiftIntoLocationSpace(final int regionIndex, final RowSet selection) {
+        final long locationStartKey = getFirstRowKey(regionIndex);
+        final WritableRowSet overlappingRows =
+                selection.subSetByKeyRange(locationStartKey, getLastRowKey(regionIndex));
+        overlappingRows.shiftInPlace(-locationStartKey);
+        return overlappingRows;
+    }
+
+    private static void unshiftIntoRegionSpace(final int regionIndex, final WritableRowSet rowSet) {
+        rowSet.shiftInPlace(getFirstRowKey(regionIndex));
+    }
+
+    private static void unshiftIntoRegionSpace(final int regionIndex, final PushdownResult result) {
+        if (result.match().isNonempty()) {
+            unshiftIntoRegionSpace(regionIndex, result.match());
+        }
+        if (result.maybeMatch().isNonempty()) {
+            unshiftIntoRegionSpace(regionIndex, result.maybeMatch());
         }
     }
 
@@ -870,10 +881,12 @@ public class RegionedColumnSourceManager
                     ctx.reset();
                     final int regionIndex = regionIndices[idx];
 
-                    final IncludedTableLocationEntry tle = orderedIncludedTableLocations.get(regionIndex);
-                    ctx.shiftedRowSet = tle.subsetAndShiftIntoLocationSpace(selection);
+                    // NB: Resolve the location via locationSource, which is keyed by the stable regionIndex and is
+                    // never compacted on removal, rather than orderedIncludedTableLocations, which is compacted on
+                    // removal and so cannot be indexed by regionIndex.
+                    ctx.shiftedRowSet = subsetAndShiftIntoLocationSpace(regionIndex, selection);
 
-                    estimator.estimate(regionIndex, tle.location, ctx.shiftedRowSet,
+                    estimator.estimate(regionIndex, locationSource.get(regionIndex), ctx.shiftedRowSet,
                             cost -> {
                                 AtomicUtil.setIfGreaterThan(minCost, cost, cost);
                                 resume.run();
@@ -947,12 +960,14 @@ public class RegionedColumnSourceManager
                     ctx.reset();
                     final int regionIndex = regionIndices[idx];
 
-                    final IncludedTableLocationEntry tle = orderedIncludedTableLocations.get(regionIndex);
-                    ctx.shiftedRowSet = tle.subsetAndShiftIntoLocationSpace(selection);
+                    // NB: Resolve the location via locationSource, which is keyed by the stable regionIndex and is
+                    // never compacted on removal, rather than orderedIncludedTableLocations, which is compacted on
+                    // removal and so cannot be indexed by regionIndex.
+                    ctx.shiftedRowSet = subsetAndShiftIntoLocationSpace(regionIndex, selection);
 
-                    action.pushdown(regionIndex, tle.location, ctx.shiftedRowSet,
+                    action.pushdown(regionIndex, locationSource.get(regionIndex), ctx.shiftedRowSet,
                             result -> {
-                                tle.unshiftIntoRegionSpace(result);
+                                unshiftIntoRegionSpace(regionIndex, result);
                                 matches[idx] = result.match();
                                 maybeMatches[idx] = result.maybeMatch();
                                 resume.run();
