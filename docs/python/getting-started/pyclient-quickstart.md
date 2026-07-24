@@ -200,6 +200,34 @@ ticking_table_avg_ref = client_session.open_table("ticking_table_avg")
 
 The client-side table operations discussed above may be a more convenient way to perform such table operations.
 
-## 6. What to do next
+## 6. Stream data with input tables
+
+The Python client can create input tables on the server and stream data to them. This is useful when your data source runs outside the Deephaven server.
+
+```python test-set=1
+import pyarrow as pa
+
+# Define schema
+schema = pa.schema(
+    [
+        pa.field("Symbol", pa.string()),
+        pa.field("Price", pa.float64()),
+    ]
+)
+
+# Create input table on server
+input_table = client_session.input_table(schema=schema)
+client_session.bind_table("prices", input_table)
+
+# Stream data: create Arrow table, upload, add, release
+data = pa.table({"Symbol": ["AAPL", "GOOG"], "Price": [150.0, 140.0]})
+uploaded = client_session.import_table(data)
+input_table.add(uploaded)
+client_session.release(uploaded.ticket)  # Prevent memory leak
+```
+
+For a complete guide on streaming patterns, memory management, and input table types, see [Client input tables](../how-to-guides/client-input-tables.md).
+
+## 7. What to do next
 
 Now that you've gotten a brief introduction to the Deephaven Python client, we suggest heading to the [Crash Course in Deephaven](../getting-started/crash-course/get-started.md) to learn more about Deephaven's real-time data platform.

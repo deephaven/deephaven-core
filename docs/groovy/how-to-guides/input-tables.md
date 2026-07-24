@@ -3,6 +3,9 @@ title: Create and use input tables
 sidebar_label: Input tables
 ---
 
+> [!TIP]
+> This guide covers input tables created and used directly on the Deephaven server. To stream data from an external Java application, see [Java client input tables](./java-client-input-tables.md).
+
 Input tables allow users to enter new data into tables in two ways: programmatically, and manually through the UI.
 
 In the first case, data is added to a table with `add`, an input table-specific method similar to [`merge`](../reference/table-operations/merge/merge.md). In the second case, data is added to a table through the UI by clicking on cells and typing in the contents, similar to a spreadsheet program like [MS Excel](https://www.microsoft.com/en-us/microsoft-365/excel).
