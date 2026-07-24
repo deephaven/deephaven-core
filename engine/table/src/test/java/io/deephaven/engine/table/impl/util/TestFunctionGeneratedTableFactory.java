@@ -3,6 +3,8 @@
 //
 package io.deephaven.engine.table.impl.util;
 
+import io.deephaven.chunk.WritableIntChunk;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
@@ -11,10 +13,12 @@ import io.deephaven.engine.table.impl.BlinkTableTools;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.QueryTableTest;
 import io.deephaven.engine.testutil.ColumnInfo;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.testutil.EvalNuggetInterface;
 import io.deephaven.engine.testutil.generator.IntGenerator;
 import io.deephaven.engine.testutil.generator.SetGenerator;
+import io.deephaven.engine.testutil.sources.ImmutableColumnHolder;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.util.TableDiff;
 import io.deephaven.qst.type.Type;
@@ -124,30 +128,78 @@ public class TestFunctionGeneratedTableFactory extends RefreshingTableTestCase {
     }
 
     public void testSpecSwitchColumnSources() {
-        Random random = new Random(0);
-        ColumnInfo<?, ?>[] columnInfo;
-        int size = 50;
-        final QueryTable queryTable = getTable(size, random,
-                columnInfo = initColumnInfos(new String[] {"Sym", "intCol", "doubleCol"},
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
+        // copyData == false wires the result directly to the generated table's column sources via SwitchColumnSource.
+        // A refreshing generated table is valid only when its column sources are immutable, so that previous values
+        // remain available after the switch. Here the source has an immutable column source; we update it by adding and
+        // removing rows (never changing any value) and verify both current and previous values through the cycle.
+        final QueryTable source = testRefreshingTable(i(0, 1).toTracking(), immutableIntCol("Value", 10, 20));
+        assertTrue(source.getColumnSource("Value").isImmutable());
+
+        final Table functionBacked = FunctionGeneratedTableFactory.create(FunctionGeneratedTableSpec.builder()
+                .tableSupplier(() -> source)
+                .addDependencies(source)
+                .copyData(false)
+                .build());
+
+        assertTableEquals(newTable(intCol("Value", 10, 20)), functionBacked);
+
+        // Add row 2 (value 30) and remove row 0 (value 10); no existing value is modified.
+        updateGraph.startCycleForUnitTests();
+        try {
+            addToTable(source, i(2), immutableIntCol("Value", 30));
+            removeRows(source, i(0));
+            source.notifyListeners(i(2), i(0), i());
+            updateGraph.flushAllNormalNotificationsForUnitTests();
+
+            // Within the cycle: current reflects rows {1,2} -> 20, 30; previous reflects rows {0,1} -> 10, 20.
+            assertTableEquals(newTable(intCol("Value", 20, 30)), functionBacked);
+            assertTableEquals(newTable(intCol("Value", 10, 20)), prevTable(functionBacked));
+        } finally {
+            updateGraph.completeCycleForUnitTests();
+        }
+
+        assertTableEquals(newTable(intCol("Value", 20, 30)), functionBacked);
+    }
+
+    private static ImmutableColumnHolder<Integer> immutableIntCol(final String name, final int... data) {
+        final WritableIntChunk<Values> chunk = WritableIntChunk.writableChunkWrap(data);
+        return new ImmutableColumnHolder<>(name, int.class, null, false, chunk);
+    }
+
+    public void testSwitchRejectsMutableSources() {
+        final Random random = new Random(0);
+        final QueryTable queryTable = getTable(50, random,
+                initColumnInfos(new String[] {"Sym", "intCol", "doubleCol"},
                         new SetGenerator<>("a", "b", "c", "d", "e"),
                         new IntGenerator(10, 100),
                         new SetGenerator<>(10.1, 20.1, 30.1)));
 
-        // copyData == false wires the result directly to the generated table's column sources via SwitchColumnSource.
-        final Table functionBacked = FunctionGeneratedTableFactory.create(FunctionGeneratedTableSpec.builder()
-                .tableSupplier(() -> queryTable)
-                .addDependencies(queryTable)
-                .copyData(false)
-                .build());
+        // Without copying, a refreshing generated table whose column sources mutate in place would corrupt our
+        // previous-value tracking. queryTable's array-backed sources are not immutable, so this must be rejected.
+        try {
+            FunctionGeneratedTableFactory.create(FunctionGeneratedTableSpec.builder()
+                    .tableSupplier(() -> queryTable)
+                    .addDependencies(queryTable)
+                    .copyData(false)
+                    .build());
+            fail("Expected an IllegalArgumentException");
+        } catch (IllegalArgumentException expected) {
+            assertTrue(expected.getMessage().contains("immutable column sources"));
+        }
+    }
 
-        assertTableEquals(queryTable, functionBacked, TableDiff.DiffItems.DoublesExact);
-
-        EvalNuggetInterface[] en = new EvalNuggetInterface[] {
-                new QueryTableTest.TableComparator(functionBacked, queryTable),
-        };
-
-        for (int i = 0; i < 25; i++) {
-            simulateShiftAwareStep(size, random, queryTable, columnInfo, en);
+    public void testSpecDefinitionMismatchFails() {
+        // A specified definition is authoritative; the generated table must be compatible with it.
+        try {
+            FunctionGeneratedTableFactory.create(FunctionGeneratedTableSpec.builder()
+                    .tableSupplier(() -> newTable(intCol("IntCol", 1)))
+                    .tableDefinition(TableDefinition.of(ColumnDefinition.of("IntCol", Type.stringType())))
+                    .build());
+            fail("Expected an IncompatibleTableDefinitionException");
+        } catch (TableDefinition.IncompatibleTableDefinitionException expected) {
+            assertTrue(expected.getMessage().contains("incompatibilities"));
         }
     }
 
