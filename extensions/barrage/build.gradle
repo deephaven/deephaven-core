@@ -30,6 +30,8 @@ dependencies {
     annotationProcessor libs.immutables.value
 
     testImplementation project(':engine-test-utils')
+    // BarrageUtilTest needs parquet for symbol table testing.
+    testImplementation project(':extensions-parquet-table')
 
     implementation libs.slf4j.api
     testRuntimeOnly libs.slf4j.simple

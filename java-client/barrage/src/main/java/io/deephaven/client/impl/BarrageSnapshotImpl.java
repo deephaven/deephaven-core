@@ -275,6 +275,7 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
     }
 
     private void cleanup() {
+        barrageMessageReader.close();
         tableHandle.close();
     }
 

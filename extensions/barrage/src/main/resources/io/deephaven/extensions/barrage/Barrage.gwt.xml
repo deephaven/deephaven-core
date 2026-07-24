@@ -22,8 +22,13 @@
     <source path="util" includes="Float16.java,FlatBufferIteratorAdapter.java,DefensiveDrainable.java,DefensiveCapture.java,ExposedByteArrayOutputStream.java" />
     <source path="chunk">
         <exclude name="vector/*" />
+        <exclude name="writermap/*" />
         <exclude name="DefaultChunkReaderFactory.java" />
         <exclude name="DefaultChunkWriterFactory.java" />
+        <exclude name="DictionaryWriterRegistryImpl.java" />
+        <exclude name="LocalDictionaryWriterState.java" />
+        <exclude name="SharedDictionaryWriterState.java" />
+        <exclude name="SharedWriterDictionary.java" />
         <exclude name="MapChunkReader.java" />
         <exclude name="MapChunkWriter.java" />
         <exclude name="RunEndEncodedChunkWriter.java" />
