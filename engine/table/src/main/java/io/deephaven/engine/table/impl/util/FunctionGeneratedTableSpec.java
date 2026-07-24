@@ -117,8 +117,9 @@ public abstract class FunctionGeneratedTableSpec {
             throw new IllegalArgumentException("refreshInterval and dependencies are mutually exclusive");
         }
         refreshInterval().ifPresent(interval -> {
-            if (interval.isNegative() || interval.isZero()) {
-                throw new IllegalArgumentException("refreshInterval must be positive");
+            // The interval is truncated to whole milliseconds later, so anything shorter would silently become zero.
+            if (interval.toMillis() < 1) {
+                throw new IllegalArgumentException("refreshInterval must be at least one millisecond");
             }
         });
     }

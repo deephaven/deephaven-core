@@ -317,4 +317,17 @@ public class TestFunctionGeneratedTableFactory extends RefreshingTableTestCase {
             assertTrue(expected.getMessage().contains("mutually exclusive"));
         }
     }
+
+    public void testSubMillisecondIntervalFails() {
+        // A sub-millisecond interval would truncate to zero milliseconds later, so it must be rejected.
+        try {
+            FunctionGeneratedTableSpec.builder()
+                    .tableSupplier(() -> emptyTable(0))
+                    .refreshInterval(java.time.Duration.ofNanos(500_000))
+                    .build();
+            fail("Expected an IllegalArgumentException");
+        } catch (IllegalArgumentException expected) {
+            assertTrue(expected.getMessage().contains("at least one millisecond"));
+        }
+    }
 }
