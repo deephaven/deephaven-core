@@ -62,7 +62,7 @@ def typedocAndTarball = Docker.registerDockerTask(project, 'typedoc') {
     parentContainers = [ Docker.registryTask(project, 'node') ] // deephaven/node
     containerOutPath = '/out'
     copyOut {
-        into "$buildDir/"
+        into layout.buildDirectory
     }
 }
 
