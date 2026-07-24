@@ -64,6 +64,11 @@ public abstract class AbstractTableDataService implements TableDataService, Name
         tableLocationProviders.remove(tableKey);
     }
 
+    @Override
+    public void shutdown() {
+        reset();
+    }
+
     @NotNull
     protected abstract TableLocationProvider makeTableLocationProvider(@NotNull TableKey tableKey);
 
