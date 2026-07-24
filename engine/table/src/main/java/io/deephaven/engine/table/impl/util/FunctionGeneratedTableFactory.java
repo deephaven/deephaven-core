@@ -194,7 +194,7 @@ public class FunctionGeneratedTableFactory {
         this.refreshIntervalMs = spec.refreshInterval()
                 .map(interval -> Math.toIntExact(interval.toMillis()))
                 .orElseGet(() -> spec.dependencies().isEmpty() ? -1 : 0);
-        final TableDefinition definitionOverride = spec.tableDefinition().orElse(null);
+        final TableDefinition specDefinition = spec.tableDefinition().orElse(null);
         this.executionContextForUpdates = makeExecutionContextForUpdates();
         nextRefresh = System.currentTimeMillis() + this.refreshIntervalMs;
 
@@ -210,13 +210,17 @@ public class FunctionGeneratedTableFactory {
             initialTable.getUpdateGraph().checkInitiateSerialTableOperation();
         }
 
-        // Determine the result definition; when the (retaining-last) supplier produced nothing, we need an explicit
-        // definition to describe the columns.
+        // Determine the result definition. When a definition is specified, it is authoritative: the initial table (if
+        // any) must be compatible with it. When no definition is specified, the initial table's definition is used, and
+        // an initial table is required to describe the columns.
         final TableDefinition definition;
-        if (initialTable != null) {
+        if (specDefinition != null) {
+            if (initialTable != null) {
+                specDefinition.checkMutualCompatibility(initialTable.getDefinition(), "specified", "generated");
+            }
+            definition = specDefinition;
+        } else if (initialTable != null) {
             definition = initialTable.getDefinition();
-        } else if (definitionOverride != null) {
-            definition = definitionOverride;
         } else {
             throw new IllegalStateException(
                     "The function-generated table's supplier produced no initial table and no table definition was provided.");
@@ -244,6 +248,7 @@ public class FunctionGeneratedTableFactory {
             rowSet = RowSetFactory.flat(initialSize).toTracking();
         } else {
             if (initialTable != null) {
+                checkImmutableSwitchSources(initialTable);
                 for (final Map.Entry<String, ? extends ColumnSource<?>> entry : initialTable.getColumnSourceMap()
                         .entrySet()) {
                     // noinspection unchecked
@@ -309,6 +314,24 @@ public class FunctionGeneratedTableFactory {
             }
         });
         return generated;
+    }
+
+    /**
+     * When we are not copying data, we retain the generated table's column sources directly through our
+     * {@link SwitchColumnSource}s. A refreshing generated table whose column sources mutate in place would corrupt our
+     * previous-value tracking, so every column source of a refreshing generated table must be immutable.
+     */
+    private static void checkImmutableSwitchSources(@NotNull final Table generated) {
+        if (!generated.isRefreshing()) {
+            return;
+        }
+        for (final Map.Entry<String, ? extends ColumnSource<?>> entry : generated.getColumnSourceMap().entrySet()) {
+            if (!entry.getValue().isImmutable()) {
+                throw new IllegalArgumentException(
+                        "Function-generated tables without copyData require immutable column sources when the "
+                                + "generated table is refreshing; column '" + entry.getKey() + "' is not immutable.");
+            }
+        }
     }
 
     private void copyTable(Table source) {
@@ -457,6 +480,7 @@ public class FunctionGeneratedTableFactory {
          * liveness management of the table itself is required.
          */
         private void doRefreshSwitch(@NotNull final Table newTable) {
+            checkImmutableSwitchSources(newTable);
             for (final Map.Entry<String, ? extends ColumnSource<?>> entry : newTable.getColumnSourceMap().entrySet()) {
                 // noinspection unchecked,rawtypes
                 ((SwitchColumnSource) switchSources.get(entry.getKey())).setNewCurrent(entry.getValue());
