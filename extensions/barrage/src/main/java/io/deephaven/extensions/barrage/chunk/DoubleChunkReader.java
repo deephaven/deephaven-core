@@ -13,17 +13,28 @@ import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.extensions.barrage.BarrageOptions;
+import io.deephaven.extensions.barrage.util.BarrageProtoUtil;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.DataInput;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
+import java.nio.ByteOrder;
 import java.util.Iterator;
 import java.util.PrimitiveIterator;
 
 public class DoubleChunkReader extends BaseChunkReader<WritableDoubleChunk<Values>> {
     private static final String DEBUG_NAME = "DoubleChunkReader";
+
+    // Reads a little-endian long from a byte[] at a byte offset in a single (possibly unaligned) load.
+    private static final VarHandle LITTLE_ENDIAN_LONG =
+            MethodHandles.byteArrayViewVarHandle(long[].class, ByteOrder.LITTLE_ENDIAN);
+
+    // Number of elements decoded per bounded bulk-read window (see BaseChunkReader#BULK_READ_BUFFER_BYTES).
+    private static final int BULK_READ_ELEMENTS = Math.max(1, BULK_READ_BUFFER_BYTES / Double.BYTES);
 
     public static <WIRE_CHUNK_TYPE extends WritableChunk<Values>, T extends ChunkReader<WIRE_CHUNK_TYPE>> ChunkReader<WritableDoubleChunk<Values>> transformFrom(
             final T wireReader,
@@ -92,8 +103,24 @@ public class DoubleChunkReader extends BaseChunkReader<WritableDoubleChunk<Value
             final ChunkWriter.FieldNodeInfo nodeInfo,
             final WritableDoubleChunk<Values> chunk,
             final int offset) throws IOException {
-        for (int ii = 0; ii < nodeInfo.numElements; ++ii) {
-            chunk.set(offset + ii, is.readDouble());
+        final int numElements = nodeInfo.numElements;
+        if (is instanceof BarrageProtoUtil.BarrageDataInputStream) {
+            // Read the payload in bounded windows, decoding each double from the little-endian bytes as we go, so a
+            // wide column never materializes an entire byte buffer at once.
+            final BarrageProtoUtil.BarrageDataInputStream lis = (BarrageProtoUtil.BarrageDataInputStream) is;
+            for (int ei = 0; ei < numElements;) {
+                final int n = Math.min(BULK_READ_ELEMENTS, numElements - ei);
+                final byte[] payload = lis.readRawBytes(n * Double.BYTES);
+                for (int jj = 0; jj < n; ++jj) {
+                    chunk.set(offset + ei + jj,
+                            Double.longBitsToDouble((long) LITTLE_ENDIAN_LONG.get(payload, jj * Double.BYTES)));
+                }
+                ei += n;
+            }
+        } else {
+            for (int ii = 0; ii < numElements; ++ii) {
+                chunk.set(offset + ii, is.readDouble());
+            }
         }
     }
 
@@ -105,6 +132,44 @@ public class DoubleChunkReader extends BaseChunkReader<WritableDoubleChunk<Value
             final WritableLongChunk<Values> isValid) throws IOException {
         final int numElements = nodeInfo.numElements;
         final int numValidityWords = (numElements + 63) / 64;
+
+        if (is instanceof BarrageProtoUtil.BarrageDataInputStream) {
+            // Walk the validity buffer and the payload together in a single pass, decoding only the valid slots from
+            // each bounded window of little-endian bytes and filling runs of nulls in place. Null slots still occupy a
+            // slot in the payload, so the window position advances past them, but they are never decoded.
+            final BarrageProtoUtil.BarrageDataInputStream lis = (BarrageProtoUtil.BarrageDataInputStream) is;
+            for (int ei = 0; ei < numElements;) {
+                final int n = Math.min(BULK_READ_ELEMENTS, numElements - ei);
+                final byte[] payload = lis.readRawBytes(n * Double.BYTES);
+                for (int jj = 0; jj < n; ++jj) {
+                    chunk.set(offset + ei + jj,
+                            Double.longBitsToDouble((long) LITTLE_ENDIAN_LONG.get(payload, jj * Double.BYTES)));
+                }
+                ei += n;
+            }
+
+            int ei = 0;
+            for (int vi = 0; vi < numValidityWords; ++vi) {
+                int bitsLeftInThisWord = Math.min(64, numElements - vi * 64);
+                long validityWord = isValid.get(vi);
+                do {
+                    if ((validityWord & 1) == 1) {
+                        // Skip the run of valid slots (already decoded) to the next null.
+                        final int valids = Math.min(Long.numberOfTrailingZeros(~validityWord), bitsLeftInThisWord);
+                        ei += valids;
+                        validityWord >>= valids;
+                        bitsLeftInThisWord -= valids;
+                    } else {
+                        final int nulls = Math.min(Long.numberOfTrailingZeros(validityWord), bitsLeftInThisWord);
+                        chunk.fillWithNullValue(offset + ei, nulls);
+                        ei += nulls;
+                        validityWord >>= nulls;
+                        bitsLeftInThisWord -= nulls;
+                    }
+                } while (bitsLeftInThisWord > 0);
+            }
+            return;
+        }
 
         int ei = 0;
         int pendingSkips = 0;

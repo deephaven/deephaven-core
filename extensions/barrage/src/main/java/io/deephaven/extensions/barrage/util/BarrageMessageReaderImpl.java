@@ -228,8 +228,9 @@ public class BarrageMessageReaderImpl implements BarrageMessageReader {
                 final RecordBatch batch = (RecordBatch) header.header(new RecordBatch());
                 msg.length = batch.length();
 
-                try (final LittleEndianDataInputStream ois =
-                        new LittleEndianDataInputStream(new BarrageProtoUtil.ObjectInputStreamAdapter(decoder, size))) {
+                try (final BarrageProtoUtil.BarrageDataInputStream ois =
+                        new BarrageProtoUtil.BarrageDataInputStream(
+                                new BarrageProtoUtil.ObjectInputStreamAdapter(decoder, size))) {
                     final Iterator<ChunkWriter.FieldNodeInfo> fieldNodeIter =
                             new FlatBufferIteratorAdapter<>(batch.nodesLength(),
                                     i -> new ChunkWriter.FieldNodeInfo(batch.nodes(i)));
