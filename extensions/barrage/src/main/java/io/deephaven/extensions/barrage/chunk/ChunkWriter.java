@@ -71,6 +71,32 @@ public interface ChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>> {
             @NotNull BarrageOptions options) throws IOException;
 
     /**
+     * Get an input stream, threading a {@link DictionaryWriterRegistry} down to any dictionary-encoded writers nested
+     * within this writer (e.g. the {@code values} child of a run-end-encoded column). Writers that contain no
+     * dictionary encoding ignore the registry and behave identically to
+     * {@link #getInputStream(Context, RowSet, BarrageOptions)}.
+     *
+     * <p>
+     * A {@link DictionaryChunkWriter} uses the registry to obtain (and register) its per-id
+     * {@link DictionaryWriterState}, so that the enclosing message writer emits the corresponding
+     * {@link org.apache.arrow.flatbuf.DictionaryBatch}. Composite writers forward the registry to their children.
+     *
+     * @param context the chunk writer context holding the data to be drained to the client
+     * @param subset if provided, is a position-space filter of source data
+     * @param options options for writing to the stream
+     * @param dictionaryRegistry the per-stream dictionary registry; may be {@code null} when the caller does not
+     *        support dictionary encoding (a nested dictionary-encoded writer will then throw)
+     * @return a single-use DrainableColumn ready to be drained via grpc
+     */
+    default DrainableColumn getInputStream(
+            @NotNull Context context,
+            @Nullable RowSet subset,
+            @NotNull BarrageOptions options,
+            @Nullable DictionaryWriterRegistry dictionaryRegistry) throws IOException {
+        return getInputStream(context, subset, options);
+    }
+
+    /**
      * Get an input stream representing the empty wire payload for this writer.
      *
      * @param options options for writing to the stream

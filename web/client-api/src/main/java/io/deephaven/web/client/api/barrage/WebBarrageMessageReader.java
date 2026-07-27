@@ -12,8 +12,10 @@ import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.extensions.barrage.BarrageOptions;
+import io.deephaven.extensions.barrage.BarrageTypeInfo;
 import io.deephaven.extensions.barrage.chunk.ChunkWriter;
 import io.deephaven.extensions.barrage.chunk.ChunkReader;
+import io.deephaven.extensions.barrage.chunk.DictionaryReaderRegistry;
 import io.deephaven.extensions.barrage.util.FlatBufferIteratorAdapter;
 import io.deephaven.io.streams.ByteBufferInputStream;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
@@ -21,6 +23,7 @@ import io.deephaven.web.client.api.barrage.data.BarrageColumnType;
 import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.shared.data.RangeSet;
 import io.deephaven.web.shared.data.ShiftedRange;
+import org.apache.arrow.flatbuf.DictionaryBatch;
 import org.apache.arrow.flatbuf.Field;
 import org.apache.arrow.flatbuf.Message;
 import org.apache.arrow.flatbuf.MessageHeader;
@@ -33,8 +36,10 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.PrimitiveIterator;
 
 /**
@@ -53,7 +58,9 @@ public class WebBarrageMessageReader {
     // hold in-progress messages that aren't finished being built
     private WebBarrageMessage msg;
 
-    private final WebChunkReaderFactory chunkReaderFactory = new WebChunkReaderFactory();
+    private final DictionaryReaderRegistry dictRegistry = new DictionaryReaderRegistry();
+    private final WebChunkReaderFactory chunkReaderFactory = new WebChunkReaderFactory(dictRegistry);
+    private final Map<Long, ChunkReader<WritableChunk<Values>>> dictValuesReaders = new HashMap<>();
     private final List<ChunkReader<WritableChunk<Values>>> readers = new ArrayList<>();
 
     public WebBarrageMessage parseFrom(
@@ -155,12 +162,50 @@ public class WebBarrageMessageReader {
             for (int i = 0; i < schema.fieldsLength(); i++) {
                 Field field = schema.fields(i);
                 BarrageColumnType barrageColumnType = BarrageColumnType.fromArrowField(field);
-                readers.add(chunkReaderFactory.newReader(barrageColumnType.typeInfo(), options));
+                final BarrageTypeInfo<Field> typeInfo = barrageColumnType.typeInfo();
+                readers.add(chunkReaderFactory.newReader(typeInfo, options));
+                // Register a values reader for every dictionary-encoded field, including ones nested inside a
+                // run-end-encoded (REE<Dictionary<...>>) or list column, so the preceding DictionaryBatch can be
+                // decoded regardless of nesting depth.
+                registerDictionaryValuesReaders(field, options);
+            }
+            return null;
+        }
+        if (headerType == MessageHeader.DictionaryBatch) {
+            final DictionaryBatch dictBatch = (DictionaryBatch) header.header(new DictionaryBatch());
+            final long dictId = dictBatch.id();
+            final boolean isDelta = dictBatch.isDelta();
+            final RecordBatch innerBatch = dictBatch.data();
+            final Iterator<ChunkWriter.FieldNodeInfo> dictFieldNodeIter =
+                    new FlatBufferIteratorAdapter<>(innerBatch.nodesLength(),
+                            i -> new ChunkWriter.FieldNodeInfo(innerBatch.nodes(i)));
+            final long[] dictBufferInfo = new long[innerBatch.buffersLength()];
+            for (int bi = 0; bi < innerBatch.buffersLength(); ++bi) {
+                int offset = LongSizedDataStructure.intSize("BufferInfo", innerBatch.buffers(bi).offset());
+                int length = LongSizedDataStructure.intSize("BufferInfo", innerBatch.buffers(bi).length());
+                if (bi < innerBatch.buffersLength() - 1) {
+                    final int nextOffset =
+                            LongSizedDataStructure.intSize("BufferInfo", innerBatch.buffers(bi + 1).offset());
+                    length += Math.max(0, nextOffset - offset - length);
+                }
+                dictBufferInfo[bi] = length;
+            }
+            final PrimitiveIterator.OfLong dictBufIter = Arrays.stream(dictBufferInfo).iterator();
+            final ByteBuffer body = flightData.getDataBody().asReadOnlyByteBuffer();
+            final LittleEndianDataInputStream ois =
+                    new LittleEndianDataInputStream(new ByteBufferInputStream(body));
+            final ChunkReader<WritableChunk<Values>> valuesReader = dictValuesReaders.get(dictId);
+            if (valuesReader == null) {
+                throw new IOException("No values reader for dictionary id " + dictId);
+            }
+            try (final WritableChunk<Values> valuesChunk =
+                    valuesReader.readChunk(dictFieldNodeIter, dictBufIter, ois, null, 0, 0)) {
+                dictRegistry.update(dictId, valuesChunk, isDelta);
             }
             return null;
         }
         if (headerType != MessageHeader.RecordBatch) {
-            throw new IllegalStateException("Only know how to decode Schema/RecordBatch messages");
+            throw new IllegalStateException("Only know how to decode Schema/DictionaryBatch/RecordBatch messages");
         }
 
         // throw an error when no app metadata (snapshots now provide by default)
@@ -270,6 +315,25 @@ public class WebBarrageMessageReader {
 
         // otherwise, must wait for more data
         return null;
+    }
+
+    /**
+     * Recursively walks {@code field} and its descendants, registering a dictionary values reader for every
+     * dictionary-encoded field encountered (keyed by its Arrow dictionary id). This handles dictionaries nested inside
+     * run-end-encoded (REE&lt;Dictionary&lt;...&gt;&gt;), list, or map columns, whose ids would otherwise be missing
+     * when the corresponding {@link DictionaryBatch} arrives.
+     */
+    private void registerDictionaryValuesReaders(final Field field, final BarrageOptions options) {
+        final BarrageColumnType columnType = BarrageColumnType.fromArrowField(field);
+        if (columnType instanceof BarrageColumnType.DictionaryEncoded) {
+            final long dictId = ((BarrageColumnType.DictionaryEncoded) columnType).dictId();
+            if (!dictValuesReaders.containsKey(dictId)) {
+                dictValuesReaders.put(dictId, chunkReaderFactory.newValueTypeReader(columnType.typeInfo(), options));
+            }
+        }
+        for (int c = 0; c < field.childrenLength(); c++) {
+            registerDictionaryValuesReaders(field.children(c), options);
+        }
     }
 
     private static RangeSet extractIndex(final ByteBuffer bb) {
