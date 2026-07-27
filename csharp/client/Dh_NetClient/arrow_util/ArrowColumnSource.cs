@@ -387,7 +387,7 @@ class ArrowColumnSourceMaker(ChunkedArray chunkedArray) :
   }
 
   public void Visit(IArrowType type) {
-    throw new Exception($"Arrow type {type.Name} is not supported");
+    throw new Exception($"ArrowColumnSourceMaker: Arrow type {type.Name} is not supported");
   }
 }
 
@@ -445,7 +445,7 @@ internal class ElementTypeVisitor :
   }
 
   public void Visit(IArrowType type) {
-    throw new Exception($"Arrow type {type.Name} is not supported");
+    throw new Exception($"ElementTypeVisitor: type {type.Name} is not supported");
   }
 }
 
