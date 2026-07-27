@@ -100,7 +100,7 @@ public abstract class ArrayColumnSource(int size) : IMutableColumnSource {
     }
 
     public void Visit(ListType type) {
-      Result = new IListArrayColumnSource(size);
+      Result = new ListArrayColumnSource(type.ValueDataType, size);
     }
 
     public void Visit(IArrowType type) {
@@ -146,5 +146,59 @@ public sealed class ArrayColumnSource<T>(int size) : ArrayColumnSource(size), IM
 
   public override ArrayColumnSource CreateOfSameType(int size) {
     return new ArrayColumnSource<T>(size);
+  }
+}
+
+public sealed class ListArrayColumnSource : ArrayColumnSource, IMutableColumnSource<System.Collections.IList>, IHasElementType {
+  private readonly System.Collections.IList?[] _data;
+  public Type ElementType { get; }
+
+  public ListArrayColumnSource(IArrowType valueDataType, int size) : this(GetElementType(valueDataType), size) {}
+
+  private ListArrayColumnSource(Type elementType, int size) : base(size) {
+    _data = new System.Collections.IList?[size];
+    ElementType = elementType;
+  }
+
+  public override void FillChunk(RowSequence rows, Chunk dest, BooleanChunk? nullFlags) {
+    var typedChunk = (ListChunk)dest;
+    var nextIndex = 0;
+    foreach (var (begin, end) in rows.Intervals) {
+      for (var i = begin; i < end; ++i) {
+        typedChunk.Data[nextIndex] = _data[i];
+        if (nullFlags != null) {
+          nullFlags.Data[nextIndex] = Nulls[i];
+        }
+        ++nextIndex;
+      }
+    }
+  }
+
+  public override void FillFromChunk(RowSequence rows, Chunk src, BooleanChunk? nullFlags) {
+    var typedChunk = (ListChunk)src;
+    var nextIndex = 0;
+    foreach (var (begin, end) in rows.Intervals) {
+      for (var i = begin; i < end; ++i) {
+        _data[i] = typedChunk.Data[nextIndex];
+        if (nullFlags != null) {
+          Nulls[i] = nullFlags.Data[nextIndex];
+        }
+        ++nextIndex;
+      }
+    }
+  }
+
+  public override void Accept(IColumnSourceVisitor visitor) {
+    IColumnSource.Accept(this, visitor);
+  }
+
+  public override ArrayColumnSource CreateOfSameType(int size) {
+    return new ListArrayColumnSource(ElementType, size);
+  }
+
+  private static Type GetElementType(IArrowType valueDataType) {
+    var visitor = new ElementTypeVisitor();
+    valueDataType.Accept(visitor);
+    return visitor.Result ?? throw new Exception($"type {valueDataType.Name} is not supported");
   }
 }
