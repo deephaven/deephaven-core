@@ -46,7 +46,8 @@ public abstract class ArrayColumnSource(int size) : IMutableColumnSource {
     IArrowTypeVisitor<StringType>,
     IArrowTypeVisitor<TimestampType>,
     IArrowTypeVisitor<Date64Type>,
-    IArrowTypeVisitor<Time64Type> {
+    IArrowTypeVisitor<Time64Type>,
+    IArrowTypeVisitor<ListType> {
     public ArrayColumnSource? Result { get; private set; }
 
     public void Visit(UInt16Type type) {
@@ -97,13 +98,17 @@ public abstract class ArrayColumnSource(int size) : IMutableColumnSource {
       Result = new TimeOnlyArrayColumnSource(size);
     }
 
+    public void Visit(ListType type) {
+      Result = new ListArrayColumnSource(type.ValueDataType, size);
+    }
+
     public void Visit(IArrowType type) {
       throw new Exception($"type {type.Name} is not supported");
     }
   }
 }
 
-public sealed class ArrayColumnSource<T>(int size) : ArrayColumnSource(size), IMutableColumnSource<T> {
+public class ArrayColumnSource<T>(int size) : ArrayColumnSource(size), IMutableColumnSource<T> {
   private readonly T?[] _data = new T?[size];
 
   public override void FillChunk(RowSequence rows, Chunk dest, BooleanChunk? nullFlags) {
@@ -140,5 +145,25 @@ public sealed class ArrayColumnSource<T>(int size) : ArrayColumnSource(size), IM
 
   public override ArrayColumnSource CreateOfSameType(int size) {
     return new ArrayColumnSource<T>(size);
+  }
+}
+
+public sealed class ListArrayColumnSource : ArrayColumnSource<System.Collections.IList>, IHasElementType {
+  public Type ElementType { get; }
+
+  public ListArrayColumnSource(IArrowType valueDataType, int size) : this(GetElementType(valueDataType), size) {}
+
+  private ListArrayColumnSource(Type elementType, int size) : base(size) {
+    ElementType = elementType;
+  }
+
+  public override ArrayColumnSource CreateOfSameType(int size) {
+    return new ListArrayColumnSource(ElementType, size);
+  }
+
+  private static Type GetElementType(IArrowType valueDataType) {
+    var visitor = new ElementTypeVisitor();
+    valueDataType.Accept(visitor);
+    return visitor.Result!;
   }
 }
