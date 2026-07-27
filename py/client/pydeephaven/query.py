@@ -245,7 +245,7 @@ class Query(TableInterface["Query"]):
         Returns:
             self
         """
-        return super().join(table, on, joins)
+        return super().join(table, on, joins, reserve_bits)
 
     def aj(
         self,

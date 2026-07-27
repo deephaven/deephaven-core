@@ -11,7 +11,7 @@ import contextlib
 import sys
 from collections.abc import Generator, Iterable, Mapping, Sequence
 from enum import Enum, auto
-from functools import cached_property
+from functools import cache, cached_property
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -128,6 +128,13 @@ _JSortingOrder = jpy.get_type("io.deephaven.engine.table.impl.SortingOrder")
 _JTableAssertions = jpy.get_type(
     "io.deephaven.engine.table.impl.verify.TableAssertions"
 )
+
+
+@cache
+def _default_cross_join_reserve_bits() -> int:
+    return jpy.get_type(
+        "io.deephaven.engine.table.impl.CrossJoinHelper"
+    ).DEFAULT_NUM_RIGHT_BITS_TO_RESERVE
 
 
 class Selectable(ConcurrencyControl["Selectable"], JObjectWrapper):
@@ -1822,7 +1829,7 @@ class Table(JObjectWrapper):
                 i.e. "col_a = col_b" for different column names
             joins (Optional[Union[str, Sequence[str]]]): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
-            joinType (NaturalJoinType): the action to be taken when duplicate right hand rows are
+            type (NaturalJoinType): the action to be taken when duplicate right hand rows are
                 encountered; default is ERROR_ON_DUPLICATE
 
         Returns:
@@ -1832,21 +1839,14 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            on = to_sequence(on)
-            joins = to_sequence(joins)
+            on = ",".join(to_sequence(on))
+            joins = ",".join(to_sequence(joins))
             with auto_locking_ctx(self, table):
-                if joins:
-                    return Table(
-                        j_table=self.j_table.naturalJoin(
-                            table.j_table, ",".join(on), ",".join(joins), type.value
-                        )
+                return Table(
+                    j_table=self.j_table.naturalJoin(
+                        table.j_table, on, joins, type.value
                     )
-                else:
-                    return Table(
-                        j_table=self.j_table.naturalJoin(
-                            table.j_table, ",".join(on), type.value
-                        )
-                    )
+                )
         except Exception as e:
             raise DHError(e, "table natural_join operation failed.") from e
 
@@ -1875,19 +1875,10 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            on = to_sequence(on)
-            joins = to_sequence(joins)
+            on = ",".join(to_sequence(on))
+            joins = ",".join(to_sequence(joins))
             with auto_locking_ctx(self, table):
-                if joins:
-                    return Table(
-                        j_table=self.j_table.exactJoin(
-                            table.j_table, ",".join(on), ",".join(joins)
-                        )
-                    )
-                else:
-                    return Table(
-                        j_table=self.j_table.exactJoin(table.j_table, ",".join(on))
-                    )
+                return Table(j_table=self.j_table.exactJoin(table.j_table, on, joins))
         except Exception as e:
             raise DHError(e, "table exact_join operation failed.") from e
 
@@ -1896,11 +1887,17 @@ class Table(JObjectWrapper):
         table: Table,
         on: Optional[Union[str, Sequence[str]]] = None,
         joins: Optional[Union[str, Sequence[str]]] = None,
+        reserve_bits: Optional[int] = None,
     ) -> Table:
         """The join method creates a new table containing rows that have matching values in both tables. Rows that
         do not have matching criteria will not be included in the result. If there are multiple matches between a row
         from the left table and rows from the right table, all matching combinations will be included. If no columns
         to match (on) are specified, every combination of left and right table rows is included.
+
+        To efficiently produce updates, the bits that represent a key for a given row are split into two. Unless
+        specified, join reserves 10 bits to represent a right row. When there are too few bits to represent all the
+        right rows, the table will shift a bit from the left side to the right side. The default of 10 bits was
+        carefully chosen because it results in an efficient implementation to process live updates.
 
         Args:
             table (Table): the right-table of the join
@@ -1909,6 +1906,8 @@ class Table(JObjectWrapper):
                 i.e. "col_a = col_b" for different column names; default is None
             joins (Optional[Union[str, Sequence[str]]]): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
+            reserve_bits (Optional[int]): the number of bits to reserve for the right row; default is None,
+                meaning the configured value is used, which is 10 bits by default.
 
         Returns:
             a new table
@@ -1917,17 +1916,21 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            on = to_sequence(on)
-            joins = to_sequence(joins)
+            on = ",".join(to_sequence(on))
+            joins = ",".join(to_sequence(joins))
+            table_op = jpy.cast(self.j_object, _JTableOperations)
+            reserve_bits = (
+                reserve_bits if reserve_bits else _default_cross_join_reserve_bits()
+            )
             with auto_locking_ctx(self, table):
-                if joins:
-                    return Table(
-                        j_table=self.j_table.join(
-                            table.j_table, ",".join(on), ",".join(joins)
-                        )
+                return Table(
+                    j_table=table_op.join(
+                        table.j_table,
+                        on,
+                        joins,
+                        reserve_bits,
                     )
-                else:
-                    return Table(j_table=self.j_table.join(table.j_table, ",".join(on)))
+                )
         except Exception as e:
             raise DHError(e, "table join operation failed.") from e
 
@@ -3970,20 +3973,13 @@ class PartitionedTableProxy(JObjectWrapper):
             DHError
         """
         try:
-            on = to_sequence(on)
-            joins = to_sequence(joins)
+            on = ",".join(to_sequence(on))
+            joins = ",".join(to_sequence(joins))
             table_op = jpy.cast(table.j_object, _JTableOperations)
             with auto_locking_ctx(self, table):
-                if joins:
-                    return PartitionedTableProxy(
-                        j_pt_proxy=self.j_pt_proxy.naturalJoin(
-                            table_op, ",".join(on), ",".join(joins)
-                        )
-                    )
-                else:
-                    return PartitionedTableProxy(
-                        j_pt_proxy=self.j_pt_proxy.naturalJoin(table_op, ",".join(on))
-                    )
+                return PartitionedTableProxy(
+                    j_pt_proxy=self.j_pt_proxy.naturalJoin(table_op, on, joins)
+                )
         except Exception as e:
             raise DHError(
                 e, "natural_join operation on the PartitionedTableProxy failed."
@@ -4016,20 +4012,13 @@ class PartitionedTableProxy(JObjectWrapper):
             DHError
         """
         try:
-            on = to_sequence(on)
-            joins = to_sequence(joins)
+            on = ",".join(to_sequence(on))
+            joins = ",".join(to_sequence(joins))
             table_op = jpy.cast(table.j_object, _JTableOperations)
             with auto_locking_ctx(self, table):
-                if joins:
-                    return PartitionedTableProxy(
-                        j_pt_proxy=self.j_pt_proxy.exactJoin(
-                            table_op, ",".join(on), ",".join(joins)
-                        )
-                    )
-                else:
-                    return PartitionedTableProxy(
-                        j_pt_proxy=self.j_pt_proxy.exactJoin(table_op, ",".join(on))
-                    )
+                return PartitionedTableProxy(
+                    j_pt_proxy=self.j_pt_proxy.exactJoin(table_op, on, joins)
+                )
         except Exception as e:
             raise DHError(
                 e, "exact_join operation on the PartitionedTableProxy failed."
@@ -4040,6 +4029,7 @@ class PartitionedTableProxy(JObjectWrapper):
         table: Union[Table, PartitionedTableProxy],
         on: Optional[Union[str, Sequence[str]]] = None,
         joins: Optional[Union[str, Sequence[str]]] = None,
+        reserve_bits: Optional[int] = None,
     ) -> PartitionedTableProxy:
         """Applies the :meth:`~Table.join` table operation to all constituent tables of the underlying partitioned
         table with the provided right table or PartitionedTableProxy, and produces a new PartitionedTableProxy with
@@ -4055,6 +4045,8 @@ class PartitionedTableProxy(JObjectWrapper):
                 i.e. "col_a = col_b" for different column names; default is None
             joins (Optional[Union[str, Sequence[str]]]): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
+            reserve_bits (Optional[int]): the number of bits to reserve for the join; default is None, meaning the
+                configured value is used, which is 10 by default
 
         Returns:
             a new PartitionedTableProxy
@@ -4063,20 +4055,17 @@ class PartitionedTableProxy(JObjectWrapper):
             DHError
         """
         try:
-            on = to_sequence(on)
-            joins = to_sequence(joins)
+            on = ",".join(to_sequence(on))
+            joins = ",".join(to_sequence(joins))
             table_op = jpy.cast(table.j_object, _JTableOperations)
+            reserve_bits = (
+                reserve_bits if reserve_bits else _default_cross_join_reserve_bits()
+            )
+
             with auto_locking_ctx(self, table):
-                if joins:
-                    return PartitionedTableProxy(
-                        j_pt_proxy=self.j_pt_proxy.join(
-                            table_op, ",".join(on), ",".join(joins)
-                        )
-                    )
-                else:
-                    return PartitionedTableProxy(
-                        j_pt_proxy=self.j_pt_proxy.join(table_op, ",".join(on))
-                    )
+                return PartitionedTableProxy(
+                    j_pt_proxy=self.j_pt_proxy.join(table_op, on, joins, reserve_bits)
+                )
         except Exception as e:
             raise DHError(
                 e, "join operation on the PartitionedTableProxy failed."
