@@ -10,6 +10,7 @@ import com.vertispan.tsdefs.annotations.TsTypeRef;
 import com.vertispan.tsdefs.annotations.TsUnion;
 import com.vertispan.tsdefs.annotations.TsUnionMember;
 import elemental2.core.JsArray;
+import elemental2.core.ReadonlyArray;
 import elemental2.promise.IThenable.ThenOnFulfilledCallbackFn;
 import elemental2.promise.Promise;
 import io.deephaven.barrage.flatbuf.BarrageMessageType;
@@ -439,18 +440,11 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                 .then(cts -> Promise.resolve(new JsTable(workerConnection, cts)));
     }
 
-    // TODO: make these use Promise, so that if the tables list is only partially resolved,
-    // we can force the calling client to wait appropriately (that or we throw errors / log warnings
-    // when attempting to read columns / size / etc before the tables list is fully resolved)
-
     /**
      * The columns that are present on this table. This is always all possible columns. If you specify fewer columns in
-     * {@code .setViewport()}, you will get only those columns in your {@code ViewportData}. {@code size} is the total
-     * count of rows in the table. The size can and will change; see the {@code sizechanged} event for details. Size
-     * will be negative in exceptional cases (eg. the table is uncoalesced, see the {@code isUncoalesced} property for
-     * details).
+     * {@code .setViewport()}, you will get only those columns in your {@code ViewportData}.
      * 
-     * @return {@link Column} array
+     * @return the columns in this table
      */
     @JsProperty
     public JsArray<Column> getColumns() {
@@ -639,6 +633,16 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
         default CustomColumn asCustomColumn() {
             return Js.cast(this);
         }
+
+        @JsOverlay
+        default String makeColumnSpec() {
+            if (isString()) {
+                return asString();
+            } else if (isCustomColumn()) {
+                return asCustomColumn().toString();
+            }
+            throw new IllegalStateException("Unexpected type for CustomColumnArgUnionType");
+        }
     }
 
     /**
@@ -806,7 +810,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
         DataOptions.SubscriptionOptions options = new DataOptions.SubscriptionOptions();
         options.previewOptions = new DataOptions.PreviewOptions();
         options.previewOptions.convertArrayToString = true;
-        options.columns = columns;
+        options.columns = Js.cast(columns);
         options.updateIntervalMs = updateIntervalMs;
         return TableSubscription.createTableSubscription(options, this);
     }
@@ -865,7 +869,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     @JsMethod
     public Promise<TableData> createSnapshot(@TsTypeRef(DataOptions.SnapshotOptions.class) Object options) {
         DataOptions.SnapshotOptions snapshotOptions = DataOptions.SnapshotOptions.of(options);
-        JsArray<Column> columns = snapshotOptions.columns;
+        ReadonlyArray<JsTableOperations.ColumnOrName> columns = snapshotOptions.columns;
         RangeSet rows = snapshotOptions.rows.asRangeSet().getRange();
 
         // TODO #1039 slice rows and drop columns
@@ -1555,7 +1559,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                     toRelease.add(table::close);
                     DataOptions.SnapshotOptions options = new DataOptions.SnapshotOptions();
                     options.rows = Js.uncheckedCast(JsRangeSet.ofRange(0, 0));
-                    options.columns = table.getColumns();
+                    options.columns = Js.cast(table.getColumns());
                     return table.createSnapshot(options);
                 })
                 .then(tableData -> Promise.resolve(new JsColumnStatistics(tableData)))

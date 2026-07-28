@@ -7,6 +7,7 @@ import com.google.flatbuffers.FlatBufferBuilder;
 import com.google.protobuf.ByteStringAccess;
 import com.vertispan.tsdefs.annotations.TsIgnore;
 import elemental2.core.JsArray;
+import elemental2.core.ReadonlyArray;
 import io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
@@ -15,6 +16,7 @@ import io.deephaven.proto.backplane.grpc.ApplyPreviewColumnsRequest;
 import io.deephaven.web.client.api.Column;
 import io.deephaven.web.client.api.Format;
 import io.deephaven.web.client.api.JsRangeSet;
+import io.deephaven.web.client.api.JsTableOperations;
 import io.deephaven.web.client.api.LongWrapper;
 import io.deephaven.web.client.api.TableData;
 import io.deephaven.web.client.api.WorkerConnection;
@@ -224,8 +226,9 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
 
     protected abstract void sendFirstSubscriptionRequest();
 
-    protected void sendBarrageSubscriptionRequest(@Nullable RangeSet viewport, JsArray<Column> columns,
-            Double updateIntervalMs, boolean isReverseViewport, int previewListLengthLimit) {
+    protected void sendBarrageSubscriptionRequest(@Nullable RangeSet viewport,
+            ReadonlyArray<JsTableOperations.ColumnOrName> columns, Double updateIntervalMs, boolean isReverseViewport,
+            int previewListLengthLimit) {
         if (isClosed()) {
             if (failMsg == null) {
                 throw new IllegalStateException("Can't change subscription, already closed");
@@ -236,9 +239,9 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
         if (status == Status.ACTIVE) {
             status = Status.PENDING_UPDATE;
         }
-        this.columns = columns;
+        this.columns = state.mapToColumns(columns);
         this.viewportRowSet = viewport;
-        this.columnBitSet = makeColumnBitset(columns);
+        this.columnBitSet = makeColumnBitset(this.columns);
         this.isReverseViewport = isReverseViewport;
         this.options = BarrageSubscriptionOptions.builder()
                 .batchSize(WebBarrageSubscription.BATCH_SIZE)

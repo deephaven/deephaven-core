@@ -5,8 +5,10 @@ package io.deephaven.web.client.api.subscription;
 
 import com.vertispan.tsdefs.annotations.TsTypeRef;
 import elemental2.core.JsArray;
+import elemental2.core.ReadonlyArray;
 import io.deephaven.web.client.api.Column;
 import io.deephaven.web.client.api.JsTable;
+import io.deephaven.web.client.api.JsTableOperations;
 import io.deephaven.web.client.api.WorkerConnection;
 import io.deephaven.web.client.state.ClientTableState;
 import jsinterop.annotations.JsIgnore;
@@ -15,6 +17,7 @@ import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsOptional;
 import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
+import jsinterop.base.Js;
 
 /**
  * Represents a non-viewport subscription to a table, and all data currently known to be present in the subscribed
@@ -39,7 +42,7 @@ public final class TableSubscription extends AbstractTableSubscription {
     private TableSubscription(ClientTableState state, WorkerConnection connection,
             DataOptions.SubscriptionOptions options) {
         super(SubscriptionType.FULL_SUBSCRIPTION, state, connection);
-        this.columns = options.columns;
+        this.columns = state.mapToColumns(options.columns);
         this.updateIntervalMs = options.updateIntervalMs;
         this.previewListLengthLimit = getPreviewListLengthLimit(options);
     }
@@ -55,7 +58,7 @@ public final class TableSubscription extends AbstractTableSubscription {
 
     @Override
     protected void sendFirstSubscriptionRequest() {
-        changeSubscription(columns, updateIntervalMs);
+        changeSubscription(Js.cast(columns), updateIntervalMs);
     }
 
     /**
@@ -64,7 +67,8 @@ public final class TableSubscription extends AbstractTableSubscription {
      * @param columns the new columns to subscribe to.
      * @param updateIntervalMs the new update interval, or {@code null}/omit to use the default of one second.
      */
-    public void changeSubscription(JsArray<Column> columns, @JsOptional @JsNullable Double updateIntervalMs) {
+    public void changeSubscription(ReadonlyArray<JsTableOperations.ColumnOrName> columns,
+            @JsOptional @JsNullable Double updateIntervalMs) {
         if (updateIntervalMs != null && !updateIntervalMs.equals(this.updateIntervalMs)) {
             throw new IllegalArgumentException(
                     "Can't change refreshIntervalMs on a later call to setViewport, it must be consistent or omitted");

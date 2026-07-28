@@ -3,9 +3,11 @@
 //
 package io.deephaven.web.client.state;
 
+import elemental2.core.JsArray;
 import elemental2.core.JsMap;
 import elemental2.core.JsObject;
 import elemental2.core.JsSet;
+import elemental2.core.ReadonlyArray;
 import elemental2.promise.Promise;
 import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
 import io.deephaven.web.client.api.*;
@@ -18,6 +20,7 @@ import io.deephaven.web.client.api.event.HasEventHandling;
 import io.deephaven.web.client.api.filter.FilterCondition;
 import io.deephaven.web.client.api.lifecycle.HasLifecycle;
 import io.deephaven.web.client.api.state.HasTableState;
+import io.deephaven.web.client.api.subscription.AbstractTableSubscription;
 import io.deephaven.web.client.fu.JsItr;
 import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.client.fu.LazyPromise;
@@ -632,6 +635,15 @@ public final class ClientTableState extends TableConfig {
             throw new NoSuchElementException(key);
         }
         return c;
+    }
+
+    public JsArray<Column> mapToColumns(ReadonlyArray<JsTableOperations.ColumnOrName> columns) {
+        return columns.map((c, i) -> {
+            if (c.isString()) {
+                return findColumn(c.asString());
+            }
+            return c.asColumn();
+        });
     }
 
     /**
