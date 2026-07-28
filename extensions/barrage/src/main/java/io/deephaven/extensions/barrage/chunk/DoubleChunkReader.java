@@ -96,9 +96,8 @@ public class DoubleChunkReader extends BaseChunkReader<WritableDoubleChunk<Value
             final WritableDoubleChunk<Values> chunk,
             final int offset) throws IOException {
         final int numElements = nodeInfo.numElements;
-        // Read the payload in bounded windows into a reused buffer and decode each value from its little-endian bytes.
-        // ByteBuffer#getDouble is JIT-intrinsified on the JVM and GWT-emulated (nio) for the web client, so no
-        // java.lang.invoke is required.
+        // Read the payload in bounded windows into a reused buffer and decode each value from its little-endian bytes
+        // via LittleEndianCodec (VarHandle on the JVM, GWT-safe arithmetic in the web client's super-source).
         final byte[] buffer = new byte[Math.min(numElements, BULK_READ_ELEMENTS) * Double.BYTES];
         for (int ei = 0; ei < numElements;) {
             final int n = Math.min(BULK_READ_ELEMENTS, numElements - ei);

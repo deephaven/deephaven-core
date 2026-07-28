@@ -16,7 +16,7 @@ import java.nio.ByteOrder;
  * a GWT super-source replacement of this class (see {@code web/client-api/.../super}) provides an equivalent
  * implementation using only GWT-safe arithmetic. The two must be kept in sync.
  */
-public final class LittleEndianCodec {
+final class LittleEndianCodec {
     private LittleEndianCodec() {}
 
     private static final VarHandle LONG =
@@ -30,43 +30,43 @@ public final class LittleEndianCodec {
     private static final VarHandle FLOAT =
             MethodHandles.byteArrayViewVarHandle(float[].class, ByteOrder.LITTLE_ENDIAN);
 
-    public static long getLong(final byte[] b, final int o) {
+    static long getLong(final byte[] b, final int o) {
         return (long) LONG.get(b, o);
     }
 
-    public static int getInt(final byte[] b, final int o) {
+    static int getInt(final byte[] b, final int o) {
         return (int) INT.get(b, o);
     }
 
-    public static short getShort(final byte[] b, final int o) {
+    static short getShort(final byte[] b, final int o) {
         return (short) SHORT.get(b, o);
     }
 
-    public static double getDouble(final byte[] b, final int o) {
+    static double getDouble(final byte[] b, final int o) {
         return (double) DOUBLE.get(b, o);
     }
 
-    public static float getFloat(final byte[] b, final int o) {
+    static float getFloat(final byte[] b, final int o) {
         return (float) FLOAT.get(b, o);
     }
 
-    public static void putLong(final byte[] b, final int o, final long v) {
+    static void putLong(final byte[] b, final int o, final long v) {
         LONG.set(b, o, v);
     }
 
-    public static void putInt(final byte[] b, final int o, final int v) {
+    static void putInt(final byte[] b, final int o, final int v) {
         INT.set(b, o, v);
     }
 
-    public static void putShort(final byte[] b, final int o, final short v) {
+    static void putShort(final byte[] b, final int o, final short v) {
         SHORT.set(b, o, v);
     }
 
-    public static void putDouble(final byte[] b, final int o, final double v) {
+    static void putDouble(final byte[] b, final int o, final double v) {
         DOUBLE.set(b, o, v);
     }
 
-    public static void putFloat(final byte[] b, final int o, final float v) {
+    static void putFloat(final byte[] b, final int o, final float v) {
         FLOAT.set(b, o, v);
     }
 }

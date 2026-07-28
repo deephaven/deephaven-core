@@ -148,9 +148,9 @@ public class DoubleChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>> extends 
             // write the validity buffer
             bytesWritten += writeValidityBuffer(dos);
 
-            // write the payload buffer in bounded windows, encoding each value into little-endian bytes and flushing a
-            // full window with a single bulk write rather than one DataOutput value (eight bytes) at a time.
-            // ByteBuffer#putDouble is JIT-intrinsified on the JVM and GWT-emulated (nio) for the web client.
+            // write the payload buffer in bounded windows, encoding each value into little-endian bytes (via
+            // LittleEndianCodec) and flushing a full window with a single bulk write rather than one DataOutput value
+            // (eight bytes) at a time.
             final DoubleChunk<Values> doubleChunk = context.getChunk().asDoubleChunk();
             final byte[] buffer = new byte[BULK_WRITE_ELEMENTS * Double.BYTES];
             final MutableInt bufferPos = new MutableInt(0);

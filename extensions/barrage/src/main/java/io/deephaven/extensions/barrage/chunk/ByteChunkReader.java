@@ -124,9 +124,11 @@ public class ByteChunkReader extends BaseChunkReader<WritableByteChunk<Values>> 
             long validityWord = isValid.get(vi);
             do {
                 if ((validityWord & 1) == 1) {
-                    ++ei;
-                    validityWord >>= 1;
-                    bitsLeftInThisWord--;
+                    // Skip the run of valid slots (already read) to the next null.
+                    final int valids = Math.min(Long.numberOfTrailingZeros(~validityWord), bitsLeftInThisWord);
+                    ei += valids;
+                    validityWord >>= valids;
+                    bitsLeftInThisWord -= valids;
                 } else {
                     final int nulls = Math.min(Long.numberOfTrailingZeros(validityWord), bitsLeftInThisWord);
                     chunk.fillWithNullValue(offset + ei, nulls);
