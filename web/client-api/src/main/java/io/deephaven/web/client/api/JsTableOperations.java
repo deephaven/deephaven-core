@@ -28,7 +28,6 @@ import io.deephaven.web.client.api.filter.FilterCondition;
 import io.deephaven.web.client.api.subscription.DataOptions;
 import io.deephaven.web.client.api.subscription.TableSubscription;
 import io.deephaven.web.client.api.subscription.TableViewportSubscription;
-import io.deephaven.web.client.fu.PromiseLike;
 import javaemul.internal.annotations.DoNotAutobox;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsNullable;
@@ -48,15 +47,6 @@ import java.util.stream.Collectors;
  * Describes operations that can be performed on a table without retrieving data or metadata, allowing these operations
  * to potentially be chained with no direct interaction with a promise.
  * <p>
- * This interface is "Thenable" or "PromiseLike", it can be awaited or have methods chained to it like a promise to
- * resolve into an object with metadata that can have data fetched from it, and will result in a
- * {@link JsResolvedTable}. If it is awaited, the resulting table must be closed to indicate that it will no longer be
- * used and server resources can be freed. A future version of this API could provide "liveness scopes" to claim/release
- * batches of tables at a time automatically.
- * <p>
- * Any instance not {@code await}ed will only last long enough for methods to be synchronously called on it, then freed
- * at the end of the event loop. Any instance that is {@code await}ed will be retained until {@code close()} is called
- * on it to free it. To optionally chain more calls to an instance, it must be retained first.
  *
  * <pre>
  * async function process(table: dh.TableOperations) {
@@ -94,7 +84,7 @@ import java.util.stream.Collectors;
  *         }
  *         this.filters = filters;
  *         // Note that this can be a surprise - returning a Thenable or PromiseLike as the result
- *         // of a resolved callback will invoke {@code then()} on it, which will retain the table.
+ *         // of a resolved callback will invoke `then()` on it, which will retain the table.
  *         // In this case, this is what we want, but it could still be a surprise in some cases.
  *         this.filteredTable = this.table.then(t => t.where(filters));
  *     }
@@ -115,92 +105,6 @@ import java.util.stream.Collectors;
 @TsInterface
 public interface JsTableOperations extends ServerObject {
 
-
-    @TsName(namespace = "dh", name = "PendingTable")
-    @TsInterface
-    public interface JsPendingTable extends JsTableOperations, PromiseLike<JsResolvedTable> {
-        @JsMethod
-        void foo();
-    }
-    /**
-     * A server-side table instance that the JS client has retained a reference to, and must be closed when no longer
-     * needed. Provides access to the table's data and metadata. Supports all the methods of {@link JsTableOperations},
-     * but any returned table must again be awaited, closed when finished being used.
-     */
-    @TsName(namespace = "dh", name = "ResolvedTable")
-    @TsInterface
-    public interface JsResolvedTable extends JsTableOperations {
-        /**
-         * The total count of rows in the table. If there is a viewport subscription active, this size will be updated
-         * when the subscription updates. If not, and {@link #isUncoalesced()} is true, the size will be
-         * {@link #SIZE_UNCOALESCED}. Otherwise, the size will be updated when the server's update graph processes
-         * changes.
-         * <p>
-         * When the size changes, the {@link #EVENT_SIZECHANGED} event will be fired.
-         *
-         * @return the size of the table, or {@link #SIZE_UNCOALESCED} if there is no subscription and the table is
-         *         uncoalesced.
-         */
-        @JsProperty
-        double getSize();
-
-        /**
-         * The columns that are present on this table.
-         *
-         * @return the columns present in this table
-         */
-        @JsProperty
-        ReadonlyArray<Column> getColumns();
-
-        @JsMethod
-        Column findColumn(String columnName);
-
-        /**
-         * The names of all attributes defined on this table.
-         * 
-         * @return an array of attributes defined on this table
-         */
-        @JsMethod
-        ReadonlyArray<String> getAttributes();
-
-        /**
-         * {@code null} if no property exists, a string if it is an easily serializable property, or a {@code Promise
-         * &lt;ResolvedTable&gt;} that will either resolve with a table or error out if the object can't be passed to
-         * JS.
-         *
-         * @param attributeName the name of the attribute to read
-         * @return the value of the attribute or null if none with that name exists
-         */
-        @JsMethod
-        Object getAttribute(String attributeName);
-
-        @JsMethod
-        Promise<TableData> createSnapshot(@TsTypeRef(DataOptions.SnapshotOptions.class) Object options);
-
-        @JsMethod
-        TableViewportSubscription createViewportSubscription(
-                @TsTypeRef(DataOptions.ViewportSubscriptionOptions.class) Object options);
-
-        @JsMethod
-        TableSubscription createSubscription(@TsTypeRef(DataOptions.SubscriptionOptions.class) Object options);
-
-        /**
-         * Signals that the table will no longer be used and server resources should be cleaned up. Logs a warning if
-         * called more than once.
-         */
-        // TODO support Symbol.dispose, if present
-        @JsMethod
-        void close();
-
-        /**
-         * Returns another instance of this table, allowing either instance to be closed without affecting the other.
-         *
-         * @return a copy of this table, sharing resources on the server
-         */
-        @JsMethod
-        Promise<JsResolvedTable> copy();
-    }
-
     /**
      * Internal method to make the async call to the server.
      *
@@ -209,10 +113,6 @@ public interface JsTableOperations extends ServerObject {
      * @return a table operations instance that more calls can be chained on, or can be awaited
      */
     JsPendingTable call(Ticket resultId, BatchTableRequest.Operation.Builder operation);
-
-    // @Override
-    // <V> PromiseLike<V> then(@Nullable ThenOnFulfilledCallbackFn<? super JsResolvedTable, ? extends V> onFulfilled,
-    // @Nullable ThenOnRejectedCallbackFn<? extends V> onRejected);
 
     TableReference tableReference();
 

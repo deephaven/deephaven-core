@@ -5,7 +5,6 @@ package io.deephaven.web.client.api;
 
 import elemental2.core.JsArray;
 import elemental2.core.ReadonlyArray;
-import elemental2.promise.IThenable;
 import elemental2.promise.Promise;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
@@ -44,7 +43,7 @@ public class MicrotaskBatchImpl implements JsTableOperations {
 
         @Override
         public void foo() {
-
+            // workaround for a javadoc -> ts issue
         }
     }
     private static class Resolved extends MicrotaskBatchImpl implements JsResolvedTable {
