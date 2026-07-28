@@ -142,6 +142,13 @@ class S3SeekableChannelProvider implements SeekableChannelsProvider {
     }
 
     @Override
+    public SeekableByteChannel getReadChannel(@NotNull SeekableChannelContext channelContext, @NotNull URI uri,
+            long knownFileSize) {
+        final S3Uri s3Uri = s3AsyncClient.utilities().parseUri(uri);
+        return new S3SeekableByteChannel(s3Uri, knownFileSize);
+    }
+
+    @Override
     public InputStream getInputStream(final SeekableByteChannel channel, final int sizeHint) {
         // S3SeekableByteChannel is internally buffered, no need to re-buffer
         return Channels.newInputStreamNoClose(channel);

@@ -71,6 +71,12 @@ final class UniversalS3Provider extends SeekableChannelsProviderDelegate {
     }
 
     @Override
+    public SeekableByteChannel getReadChannel(@NotNull SeekableChannelContext channelContext, @NotNull URI uri,
+            long knownFileSize) throws IOException {
+        return of(uri.getScheme()).getReadChannel(channelContext, uri, knownFileSize);
+    }
+
+    @Override
     public CompletableOutputStream getOutputStream(
             @NotNull final WriteContext channelContext,
             @NotNull URI uri,

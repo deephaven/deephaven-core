@@ -73,6 +73,13 @@ final class TrackedSeekableChannelsProvider implements SeekableChannelsProvider 
     }
 
     @Override
+    public SeekableByteChannel getReadChannel(@NotNull SeekableChannelContext channelContext, @NotNull URI uri,
+            long knownFileSize) throws IOException {
+        // Note: we _could_ push through knownFileSize to save a size call to FS
+        return getReadChannel(channelContext, uri);
+    }
+
+    @Override
     public InputStream getInputStream(SeekableByteChannel channel, int sizeHint) {
         // The following stream will read from the channel in chunks of bufferSize bytes
         final int bufferSize = Math.min(sizeHint, MAX_READ_BUFFER_SIZE);

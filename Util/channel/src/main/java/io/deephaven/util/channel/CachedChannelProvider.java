@@ -110,6 +110,20 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
     }
 
     @Override
+    public SeekableByteChannel getReadChannel(@NotNull SeekableChannelContext channelContext, @NotNull URI uri,
+            long knownFileSize) throws IOException {
+        final String uriString = uri.toString();
+        final KeyedObjectHashMap<String, PerPathPool> channelPool = channelPools.get(ChannelType.Read);
+        final CachedChannel result = tryGetPooledChannel(uriString, channelPool);
+        final CachedChannel channel = result == null
+                ? new CachedChannel(wrappedProvider.getReadChannel(channelContext, uri, knownFileSize),
+                        ChannelType.Read, uriString)
+                : result.position(0);
+        channel.setContext(channelContext);
+        return channel;
+    }
+
+    @Override
     public InputStream getInputStream(final SeekableByteChannel channel, final int sizeHint) throws IOException {
         return wrappedProvider.getInputStream(channel, sizeHint);
     }

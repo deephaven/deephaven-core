@@ -6,6 +6,7 @@ package io.deephaven.iceberg.location;
 import io.deephaven.api.SortColumn;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.table.impl.locations.TableLocationKey;
+import io.deephaven.parquet.base.ParquetFileReader;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
 import io.deephaven.util.annotations.InternalUseOnly;
@@ -60,6 +61,8 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
      * The {@link DataFile#pos()} of data file backing this keyed location.
      */
     private final long dataFilePos;
+
+    private final long dataFileSize;
 
     private final PartitionSpec manifestPartitionSpec;
 
@@ -122,11 +125,21 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
         // This should never be null because we are discovering this data file through a non-null manifest file
         dataFilePos = Require.neqNull(dataFile.pos(), "dataFile.pos()");
 
+        dataFileSize = dataFile.fileSizeInBytes();
+
         this.manifestPartitionSpec = Objects.requireNonNull(manifestPartitionSpec);
         manifestSequenceNumber = manifestFile.sequenceNumber();
 
         this.readInstructions = readInstructions;
         this.sortedColumns = Require.neqNull(sortedColumns, "sortedColumns");
+    }
+
+    @Override
+    public synchronized ParquetFileReader getFileReader() {
+        if (fileReader != null) {
+            return fileReader;
+        }
+        return ParquetFileReader.create(uri, channelsProvider, dataFileSize);
     }
 
     public PartitionSpec manifestPartitionSpec() {
