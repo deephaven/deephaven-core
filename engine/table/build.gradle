@@ -126,6 +126,16 @@ tasks.testSerial.maxHeapSize = maxHeapSize
 tasks.testOutOfBand.maxHeapSize = maxHeapSize
 tasks.test.maxHeapSize = maxHeapSize
 
+// Forward NaturalJoinIncrementalModifyBenchmark tuning properties (-Dnjbench.*) from the Gradle invocation to the
+// test JVMs, so the benchmark's size/cycle/fraction parameters can be set from the command line.
+tasks.withType(Test).configureEach {
+    System.properties.each { k, v ->
+        if (k.toString().startsWith('njbench.')) {
+            systemProperty(k.toString(), v.toString())
+        }
+    }
+}
+
 jmh {
     jmhVersion = libs.versions.jmh.get()
 }
