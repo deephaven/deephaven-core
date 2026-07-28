@@ -22,6 +22,11 @@ import jsinterop.annotations.JsProperty;
 @TsName(namespace = "dh", name = "ResolvedTable")
 @TsInterface
 public interface JsResolvedTable extends JsTableOperations {
+    @Override
+    default Promise<JsResolvedTable> resolve() {
+        return Promise.resolve(this);
+    }
+
     /**
      * The total count of rows in the table. If there is a viewport subscription active, this size will be updated when
      * the subscription updates. If not, and {@link #isUncoalesced()} is true, the size will be

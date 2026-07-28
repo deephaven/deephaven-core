@@ -106,6 +106,16 @@ import java.util.stream.Collectors;
 public interface JsTableOperations extends ServerObject {
 
     /**
+     * When unsure if this is a {@link JsPendingTable} or a {@link JsResolvedTable}, this will unambiguously provide a
+     * promise that results in a {@link JsResolvedTable}. Alternatively, one could simply await this instance and assume
+     * the result is a ResolvedTable, but this is a type-safe alternative to that.
+     *
+     * @return a promise that resolves to a retained ResolvedTable instance
+     */
+    @JsMethod
+    Promise<JsResolvedTable> resolve();
+
+    /**
      * Internal method to make the async call to the server.
      *
      * @param resultId the ticket that the server will populate with this result

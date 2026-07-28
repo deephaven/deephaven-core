@@ -5,6 +5,8 @@ package io.deephaven.web.client.api;
 
 import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
+import elemental2.promise.IThenable;
+import elemental2.promise.Promise;
 import io.deephaven.web.client.fu.PromiseLike;
 import jsinterop.annotations.JsMethod;
 
@@ -26,6 +28,11 @@ import jsinterop.annotations.JsMethod;
 @TsName(namespace = "dh", name = "PendingTable")
 @TsInterface
 public interface JsPendingTable extends JsTableOperations, PromiseLike<JsResolvedTable> {
+    @Override
+    default Promise<JsResolvedTable> resolve() {
+        return Promise.resolve((IThenable<JsResolvedTable>) this);
+    }
+
     // workaround for a javadoc -> ts issue
     @JsMethod
     void foo();

@@ -25,7 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class MicrotaskBatchImpl implements JsTableOperations {
+public abstract class MicrotaskBatchImpl implements JsTableOperations {
     private static class Pending extends MicrotaskBatchImpl implements JsPendingTable {
         public Pending(WorkerConnection connection, Ticket ticket, BatchTableRequest.Operation.Builder operation) {
             super(connection, ticket, operation);
