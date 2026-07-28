@@ -1864,10 +1864,12 @@ public:
 
   /**
    * Read in the entire table as an Arrow table.
+   * @param cooked If false, return the raw Arrow table. If true, run an interpretation pass
+   * that eliminates RunEndEncoded and Dictionary arrow types, if any.
    * @return the Arrow table
    */
   [[nodiscard]]
-  std::shared_ptr<arrow::Table> ToArrowTable() const;
+  std::shared_ptr<arrow::Table> ToArrowTable(bool cooked = true) const;
 
   /**
    * Read in the entire table as a ClientTable.
