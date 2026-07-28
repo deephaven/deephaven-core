@@ -875,10 +875,40 @@ class NaturalJoinHelper {
                 final boolean leftAdditions = leftAdded.isNonempty();
                 final boolean leftKeyModifications =
                         leftModified.isNonempty() && leftModifiedColumns.containsAny(leftKeyColumns);
-                final boolean newLeftRedirections = leftAdditions || leftKeyModifications;
-                final long buildSize = Math.max(leftAdded.size(), leftKeyModifications ? leftModified.size() : 0);
-                final long probeSize = UpdateSizeCalculator.chunkSize(
-                        Math.max(leftRemoved.size(), leftKeyModifications ? leftModified.size() : 0), leftShifted,
+
+                // When the key columns are (coarsely) flagged as modified, only a subset of the modified rows may carry
+                // an actually different key value. In a single pass, compare the current key values to the previous key
+                // values, collapse away the rows whose key is unchanged, and remove the rows whose key did change from
+                // their previous-key hash slots (reusing the previous key values we just read). This avoids the hash
+                // lookups and per-key row set churn of removing and re-adding rows whose key did not really change, and
+                // avoids reading the previous keys a second time. The reported rows are the post-shift keys that must
+                // be
+                // re-added and the aligned pre-shift keys whose redirections must be removed.
+                final WritableRowSet changedKeysPostShift;
+                final WritableRowSet changedKeysPreShift;
+                if (leftKeyModifications) {
+                    final RowSet leftModifiedPreShift =
+                            leftShifted.nonempty() ? leftShifted.unapply(leftModified.copy()) : leftModified;
+                    final RowSetBuilderSequential postShiftBuilder = RowSetFactory.builderSequential();
+                    final RowSetBuilderSequential preShiftBuilder = RowSetFactory.builderSequential();
+                    jsm.removeLeftModifications(leftSources, leftModified, leftModifiedPreShift, postShiftBuilder,
+                            preShiftBuilder);
+                    changedKeysPostShift = postShiftBuilder.build();
+                    changedKeysPreShift = preShiftBuilder.build();
+                    if (leftModifiedPreShift != leftModified) {
+                        leftModifiedPreShift.close();
+                    }
+                } else {
+                    changedKeysPostShift = null;
+                    changedKeysPreShift = null;
+                }
+                final boolean leftKeyChanges = changedKeysPostShift != null && changedKeysPostShift.isNonempty();
+
+                final boolean newLeftRedirections = leftAdditions || leftKeyChanges;
+                final long buildSize = Math.max(leftAdded.size(), leftKeyChanges ? changedKeysPostShift.size() : 0);
+                // The changed-key removal is already done above (with its own contexts); the probe context here only
+                // needs to cover the left removals and shifts.
+                final long probeSize = UpdateSizeCalculator.chunkSize(leftRemoved.size(), leftShifted,
                         JoinControl.CHUNK_SIZE);
 
                 final LongArraySource leftRedirections = newLeftRedirections ? new LongArraySource() : null;
@@ -893,28 +923,20 @@ class NaturalJoinHelper {
                     rowRedirection.removeAll(leftRemoved);
                     jsm.removeLeft(pc, leftRemoved, leftSources);
 
-                    final RowSet leftModifiedPreShift;
-                    if (leftKeyModifications) {
-                        if (leftShifted.nonempty()) {
-                            leftModifiedPreShift = leftShifted.unapply(leftModified.copy());
-                        } else {
-                            leftModifiedPreShift = leftModified;
-                        }
-
-                        // remove pre-shift modified
-                        jsm.removeLeft(pc, leftModifiedPreShift, leftSources);
-                        rowRedirection.removeAll(leftModifiedPreShift);
-                    } else {
-                        leftModifiedPreShift = null;
+                    if (leftKeyChanges) {
+                        // the changed rows were already removed from the hash slots by removeLeftModifications above;
+                        // here we only need to drop their redirections
+                        rowRedirection.removeAll(changedKeysPreShift);
                     }
 
                     if (leftShifted.nonempty()) {
                         try (final WritableRowSet prevRowSet = leftRecorder.getParent().getRowSet().copyPrev()) {
                             prevRowSet.remove(leftRemoved);
 
-                            if (leftKeyModifications) {
-                                prevRowSet.remove(leftModifiedPreShift);
-                                leftModifiedPreShift.close();
+                            // Rows whose key actually changed are handled by the remove/add above; every other
+                            // (unchanged-key) row that shifted must have its state row key shifted here.
+                            if (leftKeyChanges) {
+                                prevRowSet.remove(changedKeysPreShift);
                             }
 
                             final RowSetShiftData.Iterator sit = leftShifted.applyIterator();
@@ -930,10 +952,10 @@ class NaturalJoinHelper {
                         }
                     }
 
-                    if (leftKeyModifications) {
-                        // add post-shift modified
-                        jsm.addLeftSide(bc, leftModified, leftSources, leftRedirections, modifiedSlotTracker);
-                        copyRedirections(leftModified, leftRedirections);
+                    if (leftKeyChanges) {
+                        // add the post-shift rows whose key value actually changed
+                        jsm.addLeftSide(bc, changedKeysPostShift, leftSources, leftRedirections, modifiedSlotTracker);
+                        copyRedirections(changedKeysPostShift, leftRedirections);
 
                         // TODO: This column mask could be made better if we were to keep more careful track of the
                         // original left hash slots during removal.
@@ -953,6 +975,13 @@ class NaturalJoinHelper {
                     if (leftAdditions) {
                         jsm.addLeftSide(bc, leftAdded, leftSources, leftRedirections, modifiedSlotTracker);
                         copyRedirections(leftAdded, leftRedirections);
+                    }
+                } finally {
+                    if (changedKeysPostShift != null) {
+                        changedKeysPostShift.close();
+                    }
+                    if (changedKeysPreShift != null) {
+                        changedKeysPreShift.close();
                     }
                 }
 

@@ -10,12 +10,21 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ChunkType;
+import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.WritableBooleanChunk;
+import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.chunk.util.hashing.ChunkEquals;
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.WritableRowSet;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.*;
+import io.deephaven.util.SafeCloseableArray;
 import io.deephaven.engine.table.impl.by.alternatingcolumnsource.AlternatingColumnSource;
 import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableLongArraySource;
@@ -63,6 +72,9 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
     protected final WritableColumnSource[] mainKeySources;
     protected final WritableColumnSource[] alternateKeySources;
 
+    // per key-column equality kernels, used to detect which modified left rows actually changed key value
+    private final ChunkEquals[] keyChunkEquals;
+
     /**
      * <p>
      * We use a RowSet.NULL_ROW_KEY for a state that exists, but has no right hand side; the column sources are
@@ -109,9 +121,11 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
         mainKeySources = new WritableColumnSource[tableKeySources.length];
         alternateKeySources = new WritableColumnSource[tableKeySources.length];
         chunkTypes = new ChunkType[tableKeySources.length];
+        keyChunkEquals = new ChunkEquals[tableKeySources.length];
 
         for (int ii = 0; ii < tableKeySources.length; ++ii) {
             chunkTypes[ii] = tableKeySources[ii].getChunkType();
+            keyChunkEquals[ii] = ChunkEquals.makeEqual(chunkTypes[ii]);
             mainKeySources[ii] = InMemoryColumnSource.getImmutableMemoryColumnSource(tableSize,
                     tableKeySources[ii].getType(), tableKeySources[ii].getComponentType());
         }
@@ -734,6 +748,104 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
             return;
         }
         probeTable((ProbeContext) pc, leftIndex, true, leftSources, this::removeLeft);
+    }
+
+    @Override
+    public void removeLeftModifications(
+            final ColumnSource<?>[] leftSources,
+            final RowSet modifiedPostShift,
+            final RowSet modifiedPreShift,
+            final RowSetBuilderSequential changedPostShift,
+            final RowSetBuilderSequential changedPreShift) {
+        if (modifiedPostShift.isEmpty()) {
+            return;
+        }
+        final int numColumns = leftSources.length;
+        final int chunkSize = (int) Math.min(CHUNK_SIZE, modifiedPostShift.size());
+
+        final ChunkSource.GetContext[] currentContexts = new ChunkSource.GetContext[numColumns];
+        final ChunkSource.GetContext[] prevContexts = new ChunkSource.GetContext[numColumns];
+        // The current chunk's previous key values, kept per column so we can compact them after the equality test.
+        // noinspection unchecked
+        final Chunk<? extends Values>[] prevKeyChunks = new Chunk[numColumns];
+        // Reusable buffers used to compact the previous key values (and their pre-shift row keys) down to only the rows
+        // whose key actually changed, so we can drive the generated removeLeft() without re-reading the previous keys.
+        // noinspection unchecked
+        final WritableChunk<Values>[] compactedPrevKeys = new WritableChunk[numColumns];
+        final Chunk[] compactedPrevKeysAsChunks = new Chunk[numColumns];
+
+        try (final SafeCloseableArray<ChunkSource.GetContext> ignored = new SafeCloseableArray<>(currentContexts);
+                final SafeCloseableArray<ChunkSource.GetContext> ignored2 = new SafeCloseableArray<>(prevContexts);
+                final SafeCloseableArray<WritableChunk<Values>> ignored3 = new SafeCloseableArray<>(compactedPrevKeys);
+                final WritableBooleanChunk<Values> allEqual = WritableBooleanChunk.makeWritableChunk(chunkSize);
+                final WritableLongChunk<OrderedRowKeys> compactedPreRowKeys =
+                        WritableLongChunk.makeWritableChunk(chunkSize);
+                final SharedContext currentShared = SharedContext.makeSharedContext();
+                final SharedContext prevShared = SharedContext.makeSharedContext();
+                final RowSequence.Iterator postIt = modifiedPostShift.getRowSequenceIterator();
+                final RowSequence.Iterator preIt = modifiedPreShift.getRowSequenceIterator()) {
+            for (int cc = 0; cc < numColumns; ++cc) {
+                currentContexts[cc] = leftSources[cc].makeGetContext(chunkSize, currentShared);
+                prevContexts[cc] = leftSources[cc].makeGetContext(chunkSize, prevShared);
+                compactedPrevKeys[cc] = chunkTypes[cc].makeWritableChunk(chunkSize);
+                compactedPrevKeysAsChunks[cc] = compactedPrevKeys[cc];
+            }
+
+            while (postIt.hasMore()) {
+                final RowSequence postChunkOk = postIt.getNextRowSequenceWithLength(chunkSize);
+                final RowSequence preChunkOk = preIt.getNextRowSequenceWithLength(chunkSize);
+                currentShared.reset();
+                prevShared.reset();
+
+                final int chunkOkSize = postChunkOk.intSize();
+
+                // Read the current key values (at the post-shift row keys) and the previous key values (at the
+                // pre-shift
+                // row keys) exactly once. allEqual[ii] is true only if every key column matches its previous value; a
+                // row whose key actually changed is exactly one where allEqual[ii] is false.
+                for (int cc = 0; cc < numColumns; ++cc) {
+                    final Chunk<? extends Values> currentValues =
+                            leftSources[cc].getChunk(currentContexts[cc], postChunkOk);
+                    prevKeyChunks[cc] = leftSources[cc].getPrevChunk(prevContexts[cc], preChunkOk);
+                    if (cc == 0) {
+                        keyChunkEquals[cc].equal(currentValues, prevKeyChunks[cc], allEqual);
+                    } else {
+                        keyChunkEquals[cc].andEqual(currentValues, prevKeyChunks[cc], allEqual);
+                    }
+                }
+
+                final LongChunk<OrderedRowKeys> postKeys = postChunkOk.asRowKeyChunk();
+                final LongChunk<OrderedRowKeys> preKeys = preChunkOk.asRowKeyChunk();
+
+                // Emit the changed keys and compact the previous key values / pre-shift row keys for the changed rows.
+                int changedInChunk = 0;
+                for (int ii = 0; ii < chunkOkSize; ++ii) {
+                    if (allEqual.get(ii)) {
+                        continue;
+                    }
+                    changedPostShift.appendKey(postKeys.get(ii));
+                    changedPreShift.appendKey(preKeys.get(ii));
+                    for (int cc = 0; cc < numColumns; ++cc) {
+                        compactedPrevKeys[cc].copyFromChunk(prevKeyChunks[cc], ii, changedInChunk, 1);
+                    }
+                    compactedPreRowKeys.set(changedInChunk, preKeys.get(ii));
+                    ++changedInChunk;
+                }
+
+                if (changedInChunk > 0) {
+                    for (int cc = 0; cc < numColumns; ++cc) {
+                        compactedPrevKeys[cc].setSize(changedInChunk);
+                    }
+                    compactedPreRowKeys.setSize(changedInChunk);
+                    // Remove the changed rows from their (previous-key) hash slots using the previous key values we
+                    // already read; this reuses the generated per-type removeLeft handler with no additional reads.
+                    try (final RowSequence removeRows =
+                            RowSequenceFactory.wrapRowKeysChunkAsRowSequence(compactedPreRowKeys)) {
+                        removeLeft(removeRows, compactedPrevKeysAsChunks);
+                    }
+                }
+            }
+        }
     }
 
     protected abstract void removeLeft(RowSequence rowSequence, Chunk[] sourceKeyChunks);
