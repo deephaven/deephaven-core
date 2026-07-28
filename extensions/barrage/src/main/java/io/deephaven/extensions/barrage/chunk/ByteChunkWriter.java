@@ -29,6 +29,9 @@ import java.util.function.Supplier;
 
 public class ByteChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>> extends BaseChunkWriter<SOURCE_CHUNK_TYPE> {
     private static final String DEBUG_NAME = "ByteChunkWriter";
+
+    // Number of elements encoded per bounded bulk-write window (see BaseChunkWriter#BULK_WRITE_BUFFER_BYTES).
+    private static final int BULK_WRITE_ELEMENTS = Math.max(1, BULK_WRITE_BUFFER_BYTES / Byte.BYTES);
     private static final ByteChunkWriter<ByteChunk<Values>> NULLABLE_IDENTITY_INSTANCE = new ByteChunkWriter<>(
             null, ByteChunk::getEmptyChunk, true);
     private static final ByteChunkWriter<ByteChunk<Values>> NON_NULLABLE_IDENTITY_INSTANCE = new ByteChunkWriter<>(
@@ -145,16 +148,27 @@ public class ByteChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>> extends Ba
             // write the validity buffer
             bytesWritten += writeValidityBuffer(dos);
 
-            // write the payload buffer
+            // write the payload buffer in bounded windows, gathering values into a byte[] and flushing a full window
+            // with a single bulk write rather than one DataOutput value at a time
             final ByteChunk<Values> byteChunk = context.getChunk().asByteChunk();
+            final byte[] buffer = new byte[BULK_WRITE_ELEMENTS * Byte.BYTES];
+            final MutableInt bufferPos = new MutableInt(0);
             subset.forAllRowKeys(row -> {
-                try {
-                    dos.writeByte(byteChunk.get((int) row));
-                } catch (final IOException e) {
-                    throw new UncheckedDeephavenException(
-                            "Unexpected exception while draining data to OutputStream: ", e);
+                buffer[bufferPos.get()] = byteChunk.get((int) row);
+                bufferPos.add(Byte.BYTES);
+                if (bufferPos.get() == buffer.length) {
+                    try {
+                        outputStream.write(buffer, 0, buffer.length);
+                    } catch (final IOException e) {
+                        throw new UncheckedDeephavenException(
+                                "Unexpected exception while draining data to OutputStream: ", e);
+                    }
+                    bufferPos.set(0);
                 }
             });
+            if (bufferPos.get() > 0) {
+                outputStream.write(buffer, 0, bufferPos.get());
+            }
 
             bytesWritten += elementSize * subset.size();
             bytesWritten += writePadBuffer(dos, bytesWritten);

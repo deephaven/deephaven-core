@@ -25,10 +25,20 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
+import java.nio.ByteOrder;
 import java.util.function.Supplier;
 
 public class LongChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>> extends BaseChunkWriter<SOURCE_CHUNK_TYPE> {
     private static final String DEBUG_NAME = "LongChunkWriter";
+
+    // Writes a little-endian long into a byte[] at a byte offset in a single (possibly unaligned) store.
+    private static final VarHandle LITTLE_ENDIAN_LONG =
+            MethodHandles.byteArrayViewVarHandle(long[].class, ByteOrder.LITTLE_ENDIAN);
+
+    // Number of elements encoded per bounded bulk-write window (see BaseChunkWriter#BULK_WRITE_BUFFER_BYTES).
+    private static final int BULK_WRITE_ELEMENTS = Math.max(1, BULK_WRITE_BUFFER_BYTES / Long.BYTES);
     private static final LongChunkWriter<LongChunk<Values>> NULLABLE_IDENTITY_INSTANCE = new LongChunkWriter<>(
             null, LongChunk::getEmptyChunk, true);
     private static final LongChunkWriter<LongChunk<Values>> NON_NULLABLE_IDENTITY_INSTANCE = new LongChunkWriter<>(
@@ -145,16 +155,27 @@ public class LongChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>> extends Ba
             // write the validity buffer
             bytesWritten += writeValidityBuffer(dos);
 
-            // write the payload buffer
+            // write the payload buffer in bounded windows, encoding each value into little-endian bytes and flushing a
+            // full window with a single bulk write rather than one DataOutput value (eight bytes) at a time
             final LongChunk<Values> longChunk = context.getChunk().asLongChunk();
+            final byte[] buffer = new byte[BULK_WRITE_ELEMENTS * Long.BYTES];
+            final MutableInt bufferPos = new MutableInt(0);
             subset.forAllRowKeys(row -> {
-                try {
-                    dos.writeLong(longChunk.get((int) row));
-                } catch (final IOException e) {
-                    throw new UncheckedDeephavenException(
-                            "Unexpected exception while draining data to OutputStream: ", e);
+                LITTLE_ENDIAN_LONG.set(buffer, bufferPos.get(), longChunk.get((int) row));
+                bufferPos.add(Long.BYTES);
+                if (bufferPos.get() == buffer.length) {
+                    try {
+                        outputStream.write(buffer, 0, buffer.length);
+                    } catch (final IOException e) {
+                        throw new UncheckedDeephavenException(
+                                "Unexpected exception while draining data to OutputStream: ", e);
+                    }
+                    bufferPos.set(0);
                 }
             });
+            if (bufferPos.get() > 0) {
+                outputStream.write(buffer, 0, bufferPos.get());
+            }
 
             bytesWritten += elementSize * subset.size();
             bytesWritten += writePadBuffer(dos, bytesWritten);
