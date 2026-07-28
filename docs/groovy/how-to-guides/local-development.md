@@ -77,7 +77,7 @@ The dependencies you need depend on what your project does. Here are common patt
 
 | Use case                               | Dependencies                                     |
 | -------------------------------------- | ------------------------------------------------ |
-| Table operations (select, where, join) | `deephaven-engine-api`, `deephaven-engine-table` |
+| Table operations (`select`, `where`, `join`) | `deephaven-engine-api`, `deephaven-engine-table` |
 | Read/write CSV files                   | `deephaven-extensions-csv`                       |
 | Read/write Parquet files               | `deephaven-extensions-parquet-table`             |
 | Configuration utilities                | `deephaven-Configuration`                        |
