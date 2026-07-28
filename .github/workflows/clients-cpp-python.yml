@@ -133,7 +133,9 @@ jobs:
 
       - name: Install mono (Linux)
         if: runner.os == 'Linux'
-        run: sudo apt install -y mono-complete
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mono-complete
 
       # Adapted from
       # https://learn.microsoft.com/en-us/vcpkg/consume/binary-caching-github-packages?pivots=linux-runner
@@ -191,7 +193,7 @@ jobs:
           2>&1 | tee configure.log
 
       # Diagnostic: Upload the configure.log to help debug caching issues.
-      # Only meaningful when we actually built, so gate on the build decision.
+      # Uploaded even on failure, since that's when it's most useful.
       - name: Upload vcpkg debug log
         if: always()
         uses: actions/upload-artifact@v7
@@ -218,17 +220,21 @@ jobs:
           path: abi-dump/
 
       # Build our executables and install them in the configured install
-      # directory {{ env.DHINSTALL }}
+      # directory ${{ env.DHINSTALL }}
 
       - name: Build and install
         run: cmake --build cpp-client/deephaven/build --config RelWithDebInfo --target install --parallel
 
       # Upload results as build artifact.
-      # We tar the install tree to preserve Unix file modes (upload-artifact
-      # restores files as 0644, which makes executables non-executable).
+      # We tar the install tree to preserve Unix file modes and symlinks
+      # (upload-artifact restores files as 0644 and dereferences symlinks).
+      # Note: run steps start in the workspace directory, which contains
+      # dhinstall, so relative paths are fine here. Avoid passing the
+      # workspace path to tar: on Windows it is backslashed, which Git
+      # Bash's tar cannot parse.
 
       - name: Tar install dir
-        run: tar -czf cpp-client-install.tar.gz -C "${{ github.workspace }}" dhinstall
+        run: tar -czf cpp-client-install.tar.gz dhinstall
 
       - name: Upload install dir
         id: upload-install-directory
@@ -308,8 +314,10 @@ jobs:
           name: cpp-client-install-${{ matrix.os }}
           path: .
 
+      # Extracts into the workspace directory (the cwd), where DHINSTALL
+      # expects it.
       - name: Extract C++ installation
-        run: tar -xzf cpp-client-install.tar.gz -C "${{ github.workspace }}"
+        run: tar -xzf cpp-client-install.tar.gz
 
       # Get the Python static installation as a build artifact
       - name: Fetch Python static installation
