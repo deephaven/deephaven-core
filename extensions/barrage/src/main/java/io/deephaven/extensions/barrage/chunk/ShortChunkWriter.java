@@ -25,17 +25,10 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.VarHandle;
-import java.nio.ByteOrder;
 import java.util.function.Supplier;
 
 public class ShortChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>> extends BaseChunkWriter<SOURCE_CHUNK_TYPE> {
     private static final String DEBUG_NAME = "ShortChunkWriter";
-
-    // Writes a little-endian short into a byte[] at a byte offset in a single (possibly unaligned) store.
-    private static final VarHandle LITTLE_ENDIAN_SHORT =
-            MethodHandles.byteArrayViewVarHandle(short[].class, ByteOrder.LITTLE_ENDIAN);
 
     // Number of elements encoded per bounded bulk-write window (see BaseChunkWriter#BULK_WRITE_BUFFER_BYTES).
     private static final int BULK_WRITE_ELEMENTS = Math.max(1, BULK_WRITE_BUFFER_BYTES / Short.BYTES);
@@ -161,7 +154,7 @@ public class ShortChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>> extends B
             final byte[] buffer = new byte[BULK_WRITE_ELEMENTS * Short.BYTES];
             final MutableInt bufferPos = new MutableInt(0);
             subset.forAllRowKeys(row -> {
-                LITTLE_ENDIAN_SHORT.set(buffer, bufferPos.get(), shortChunk.get((int) row));
+                LittleEndianCodec.putShort(buffer, bufferPos.get(), shortChunk.get((int) row));
                 bufferPos.add(Short.BYTES);
                 if (bufferPos.get() == buffer.length) {
                     try {

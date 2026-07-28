@@ -21,9 +21,6 @@ import org.apache.arrow.flight.impl.Flight;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.ByteArrayInputStream;
-import java.io.Closeable;
-import java.io.DataInput;
-import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
@@ -110,24 +107,6 @@ public class BarrageProtoUtil {
             return len;
         }
 
-        /**
-         * Reads {@code len} bytes from the underlying {@link CodedInputStream} and returns them directly, avoiding the
-         * intermediate copy that {@link #read(byte[], int, int)} performs. The consumed bytes are counted against the
-         * remaining body size so that {@link #close()} still skips the correct number of trailing bytes. The returned
-         * array is owned by the caller.
-         */
-        public byte[] readRawBytes(final int len) throws IOException {
-            if (len < 0) {
-                throw new IllegalArgumentException("len should not be less than zero");
-            }
-            if (sizeRemaining < len) {
-                throw new EOFException();
-            }
-            final byte[] result = stream.readRawBytes(len);
-            sizeRemaining -= len;
-            return result;
-        }
-
         @Override
         public long skip(long n) throws IOException {
             n = Math.min(sizeRemaining, n);
@@ -149,110 +128,6 @@ public class BarrageProtoUtil {
         public void close() throws IOException {
             stream.skipRawBytes(sizeRemaining);
             sizeRemaining = 0;
-        }
-    }
-
-    /**
-     * A little-endian {@link DataInput} over an Arrow record-batch body. Every {@link DataInput} operation is delegated
-     * to a Guava {@link LittleEndianDataInputStream}, preserving existing behavior for all chunk readers. In addition,
-     * {@link #readRawBytes(int)} returns a run of payload bytes directly from the underlying {@link CodedInputStream},
-     * letting readers of fixed-width types bulk-read a window of values and decode them in place rather than reading
-     * one value at a time.
-     */
-    public static final class BarrageDataInputStream implements DataInput, Closeable {
-        private final ObjectInputStreamAdapter adapter;
-        private final LittleEndianDataInputStream delegate;
-
-        public BarrageDataInputStream(final ObjectInputStreamAdapter adapter) {
-            this.adapter = adapter;
-            this.delegate = new LittleEndianDataInputStream(adapter);
-        }
-
-        /**
-         * @return the next {@code len} bytes, returned directly without an intermediate copy
-         */
-        public byte[] readRawBytes(final int len) throws IOException {
-            return adapter.readRawBytes(len);
-        }
-
-        @Override
-        public void readFully(final byte[] b) throws IOException {
-            delegate.readFully(b);
-        }
-
-        @Override
-        public void readFully(final byte[] b, final int off, final int len) throws IOException {
-            delegate.readFully(b, off, len);
-        }
-
-        @Override
-        public int skipBytes(final int n) throws IOException {
-            return delegate.skipBytes(n);
-        }
-
-        @Override
-        public boolean readBoolean() throws IOException {
-            return delegate.readBoolean();
-        }
-
-        @Override
-        public byte readByte() throws IOException {
-            return delegate.readByte();
-        }
-
-        @Override
-        public int readUnsignedByte() throws IOException {
-            return delegate.readUnsignedByte();
-        }
-
-        @Override
-        public short readShort() throws IOException {
-            return delegate.readShort();
-        }
-
-        @Override
-        public int readUnsignedShort() throws IOException {
-            return delegate.readUnsignedShort();
-        }
-
-        @Override
-        public char readChar() throws IOException {
-            return delegate.readChar();
-        }
-
-        @Override
-        public int readInt() throws IOException {
-            return delegate.readInt();
-        }
-
-        @Override
-        public long readLong() throws IOException {
-            return delegate.readLong();
-        }
-
-        @Override
-        public float readFloat() throws IOException {
-            return delegate.readFloat();
-        }
-
-        @Override
-        public double readDouble() throws IOException {
-            return delegate.readDouble();
-        }
-
-        @Override
-        public String readLine() throws IOException {
-            return delegate.readLine();
-        }
-
-        @Override
-        public String readUTF() throws IOException {
-            return delegate.readUTF();
-        }
-
-        @Override
-        public void close() throws IOException {
-            delegate.close();
         }
     }
 
