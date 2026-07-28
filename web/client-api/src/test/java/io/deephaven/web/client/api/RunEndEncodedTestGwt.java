@@ -65,6 +65,26 @@ public class RunEndEncodedTestGwt extends AbstractAsyncGwtTestCase {
             // annotated tables: attach BARRAGE_SCHEMA_ATTRIBUTE so server encodes as REE
             .script("ree_table_annotated = _flat_ree.with_attributes({'BarrageSchema': _ree_schema})")
             .script("ree_null_table_annotated = _flat_null.with_attributes({'BarrageSchema': _null_schema})")
+            // doubly-encoded RunEndEncoded<Dictionary<...>>: REE parent whose values child also carries a
+            // DictionaryEncoding. Exercises the reader's nested dictionary registration for a REE<Dict> column.
+            .script("_JDictEncCls = jpy.get_type('org.apache.arrow.vector.types.pojo.DictionaryEncoding')")
+            .script("def _make_ree_dict_field(col_name, val_type, dh_type_str, dict_id):\n"
+                    + "    run_ends = _JField.notNullable('run_ends', _JInt32)\n"
+                    + "    attrs = _JHashMap()\n"
+                    + "    attrs.put('deephaven:type', dh_type_str)\n"
+                    + "    dict_enc = _JDictEncCls(dict_id, False, _JInt32)\n"
+                    + "    val_children = _JArrayList()\n"
+                    + "    val_f = _JField('values', _JFieldType(True, val_type, dict_enc, attrs), val_children)\n"
+                    + "    children = _JArrayList()\n"
+                    + "    children.add(run_ends)\n"
+                    + "    children.add(val_f)\n"
+                    + "    return _JField(col_name, _JFieldType(True, _JREE, None, None), children)")
+            .script("_flat_reedict",
+                    "empty_table(6).update([\"RepStr=(String)(i<3?`hello`:`world`)\"])")
+            .script("_reedict_fields = _JArrayList()\n"
+                    + "_reedict_fields.add(_make_ree_dict_field('RepStr', _JUtf8, 'java.lang.String', 0))\n"
+                    + "_reedict_schema = _JSchema(_reedict_fields)")
+            .script("reedict_table_annotated = _flat_reedict.with_attributes({'BarrageSchema': _reedict_schema})")
             // tree table source: 11 rows, all children share Parent=0, Category has two runs
             .script("_flat_tree_ree",
                     "empty_table(11).update(["
@@ -150,6 +170,30 @@ public class RunEndEncodedTestGwt extends AbstractAsyncGwtTestCase {
                                     rows.getAt(i).get(repNullInt).asInt());
                         }
                     }, 5000);
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    // Reads a doubly-encoded RunEndEncoded<Dictionary<...>> column: the client must run-expand the outer REE and
+    // resolve the inner dictionary indices back to the logical String values.
+    public void testReeDictSubscription() {
+        connect(tables)
+                .then(table("reedict_table_annotated"))
+                .then(table -> {
+                    delayTestFinish(7000);
+                    assertEquals("java.lang.String", table.findColumn("RepStr").getType());
+                    DataOptions.SubscriptionOptions options = new DataOptions.SubscriptionOptions();
+                    options.columns = table.getColumns();
+                    TableSubscription sub = table.createSubscription(options);
+                    return assertUpdateReceived(sub, data -> {
+                        JsArray<? extends TableData.Row> rows = data.getRows();
+                        assertEquals(6, rows.length);
+                        Column repStr = table.findColumn("RepStr");
+                        String[] expected = {"hello", "hello", "hello", "world", "world", "world"};
+                        for (int i = 0; i < 6; i++) {
+                            assertEquals("RepStr[" + i + "]", expected[i], rows.getAt(i).get(repStr).asString());
+                        }
+                    }, 5000).then(ignore -> Promise.resolve(table));
                 })
                 .then(this::finish).catch_(this::report);
     }
