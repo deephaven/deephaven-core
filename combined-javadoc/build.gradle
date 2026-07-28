@@ -93,7 +93,7 @@ def allJavadoc = tasks.register 'allJavadoc', Javadoc, {
         }
         options.addStringOption('sourcepath', sourcepath.getAsPath())
 
-        jdoc.destinationDir = file("${buildDir}/docs/javadoc")
+        jdoc.destinationDir = layout.buildDirectory.dir('docs/javadoc').get().asFile
         jdoc.dependsOn(writeJavadocVersion)
 }
 
