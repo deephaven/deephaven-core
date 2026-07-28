@@ -32,6 +32,8 @@ public class ReplicateHashing {
                 "engine/chunk/src/main/java/io/deephaven/chunk/util/hashing/CharToIntegerCastWithOffset.java");
         charToIntegers(TASK,
                 "engine/chunk/src/main/java/io/deephaven/chunk/util/hashing/CharToLongCastWithOffset.java");
+        charToIntegers(TASK,
+                "engine/chunk/src/main/java/io/deephaven/chunk/util/hashing/CharToIntegerCastNullAware.java");
 
         charToAll(TASK,
                 "engine/chunk/src/main/java/io/deephaven/chunk/util/hashing/CharChunkEquals.java");

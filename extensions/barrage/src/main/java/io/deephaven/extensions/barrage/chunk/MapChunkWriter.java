@@ -160,8 +160,24 @@ public class MapChunkWriter<T>
             @NotNull final ChunkWriter.Context context,
             @Nullable final RowSet subset,
             @NotNull final BarrageOptions options) throws IOException {
+        return getInputStream(context, subset, options, null);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>
+     * Forwards {@code dictionaryRegistry} to the key and value writers so that a dictionary-encoded key or value (a
+     * {@code Map<Dictionary<...>, ...>} column) can resolve and register its dictionary state.
+     */
+    @Override
+    public DrainableColumn getInputStream(
+            @NotNull final ChunkWriter.Context context,
+            @Nullable final RowSet subset,
+            @NotNull final BarrageOptions options,
+            @Nullable final DictionaryWriterRegistry dictionaryRegistry) throws IOException {
         // noinspection unchecked
-        return new MapChunkInputStream((Context) context, subset, options);
+        return new MapChunkInputStream((Context) context, subset, options, dictionaryRegistry);
     }
 
     private class MapChunkInputStream extends BaseChunkInputStream<Context> {
@@ -174,14 +190,15 @@ public class MapChunkWriter<T>
         private MapChunkInputStream(
                 @NotNull final Context context,
                 @Nullable final RowSet mySubset,
-                @NotNull final BarrageOptions options) throws IOException {
+                @NotNull final BarrageOptions options,
+                @Nullable final DictionaryWriterRegistry dictionaryRegistry) throws IOException {
             super(context, mySubset, options);
 
             if (subset == null || subset.size() == context.size()) {
                 // we are writing everything
                 myOffsets = null;
-                keyColumn = keyWriter.getInputStream(context.keyContext, null, options);
-                valueColumn = valueWriter.getInputStream(context.valueContext, null, options);
+                keyColumn = keyWriter.getInputStream(context.keyContext, null, options, dictionaryRegistry);
+                valueColumn = valueWriter.getInputStream(context.valueContext, null, options, dictionaryRegistry);
             } else {
                 // note that we maintain dense offsets within the writer, but write per the wire format
                 myOffsets = WritableIntChunk.makeWritableChunk(subset.intSize() + 1);
@@ -198,8 +215,9 @@ public class MapChunkWriter<T>
                     }
                 });
                 try (final RowSet innerSubset = innerSubsetBuilder.build()) {
-                    keyColumn = keyWriter.getInputStream(context.keyContext, innerSubset, options);
-                    valueColumn = valueWriter.getInputStream(context.valueContext, innerSubset, options);
+                    keyColumn = keyWriter.getInputStream(context.keyContext, innerSubset, options, dictionaryRegistry);
+                    valueColumn =
+                            valueWriter.getInputStream(context.valueContext, innerSubset, options, dictionaryRegistry);
                 }
             }
         }

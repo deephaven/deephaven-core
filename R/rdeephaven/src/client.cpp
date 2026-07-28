@@ -19,6 +19,7 @@
 
 #include <arrow/c/abi.h>
 #include <arrow/c/bridge.h>
+#include <arrow/table.h>
 
 #include <Rcpp.h>
 
@@ -538,9 +539,14 @@ public:
     */
     SEXP GetArrowArrayStreamPtr() {
 
-        std::shared_ptr<arrow::flight::FlightStreamReader> fsr = internal_tbl_hdl.GetFlightStreamReader();
+        // Fetch the table fully decoded ("cooked"): the C++ client expands any RunEndEncoded and
+        // Dictionary columns to their plain value types, so R always receives decoded columns
+        // (including doubly-encoded RunEndEncoded<Dictionary<...>>). The record batches share the
+        // decoded table's column data, so they remain valid after arrow_table goes out of scope.
+        std::shared_ptr<arrow::Table> arrow_table = internal_tbl_hdl.ToArrowTable(true);
 
-        arrow::Result<arrow::RecordBatchVector> record_batches = fsr->ToRecordBatches();
+        arrow::TableBatchReader table_batch_reader(*arrow_table);
+        arrow::Result<arrow::RecordBatchVector> record_batches = table_batch_reader.ToRecordBatches();
 
         std::shared_ptr<arrow::RecordBatchReader> record_batch_reader = arrow::RecordBatchReader::Make(std::move(*record_batches)).ValueOrDie();
         ArrowArrayStream* stream_ptr = new ArrowArrayStream();
