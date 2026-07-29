@@ -158,7 +158,7 @@ result = function_generated_table(
 
 ### Copy data or delegate to the generated table
 
-By default (`copy_data=True`), the generated rows are copied into the result's own columns, and each refresh replaces the result entirely. With `copy_data=False`, the result delegates directly to the generated table's column sources instead of copying, which avoids the copy and adopts the generated table's row set. Because the result holds the generated column sources across cycles, a refreshing generated table must expose immutable column sources; a static table produced fresh on each refresh — for example, via [`snapshot`](../reference/table-operations/snapshot/snapshot.md) — always satisfies this requirement.
+By default (`copy_data=True`), so the generated rows are copied into the result's own columns, and each refresh replaces the result entirely. With `copy_data=False`, the result delegates directly to the generated table's column sources instead of copying, which avoids the copy and adopts the generated table's row set. Because the result holds the generated column sources across cycles, a refreshing generated table must expose immutable column sources; a static table produced fresh on each refresh — for example, via [`snapshot`](../reference/table-operations/snapshot/snapshot.md) — always satisfies this requirement.
 
 ### Present the result as a blink table
 

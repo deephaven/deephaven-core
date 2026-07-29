@@ -16,7 +16,7 @@ create(tableGenerator, refreshIntervalMs)
 create(spec)
 ```
 
-The workflow for this method is to first define a function that returns a table, then pass it to `create`, which will re-run the with that function at pre-defined intervals based on either one or more source tables or a refresh interval. The third form accepts a `FunctionGeneratedTableSpec`, which unlocks additional options described in [Control the result with `FunctionGeneratedTableSpec`](#control-the-result-with-functiongeneratedtablespec).
+The workflow for this method is to first define a function that returns a table, then pass it to `create`, which will re-run that function at pre-defined intervals based on either one or more source tables or a refresh interval. The third form accepts a `FunctionGeneratedTableSpec`, which unlocks additional options described in [Control the result with `FunctionGeneratedTableSpec`](#control-the-result-with-functiongeneratedtablespec).
 
 If one or more source tables are used, the function will be re-run any time any of the tables tick. If a refresh interval is used, the function is re-run once per interval in milliseconds. You must only use one or the other as the trigger.
 
@@ -126,7 +126,7 @@ If you provide neither, the supplier runs exactly once at construction and the r
 
 ### Copy data or delegate to the generated table
 
-By default (`copyData(true)`), the generated rows are copied into the result's own contiguous columns. Each refresh replaces the result entirely — all previous rows are removed and all new rows are added.
+By default (`copyData(true)`), so the generated rows are copied into the result's own contiguous columns. Each refresh replaces the result entirely — all previous rows are removed, and all new rows are added.
 
 With `copyData(false)`, the result delegates directly to the generated table's column sources instead of copying, which avoids the copy and adopts the generated table's row set. Because the result holds the generated column sources across cycles, a refreshing generated table must expose immutable column sources; a generated table that changes values in place would corrupt the result's previous values and is rejected. A static table produced fresh on each refresh — for example, via [`snapshot`](../reference/table-operations/snapshot/snapshot.md) — always satisfies this requirement.
 
