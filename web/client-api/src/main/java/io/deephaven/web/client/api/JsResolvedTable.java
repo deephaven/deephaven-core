@@ -93,5 +93,5 @@ public interface JsResolvedTable extends JsTableOperations {
      * @return a copy of this table, sharing resources on the server
      */
     @JsMethod
-    Promise<io.deephaven.web.client.api.JsResolvedTable> copy();
+    Promise<JsResolvedTable> copy();
 }

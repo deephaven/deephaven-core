@@ -46,6 +46,9 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
             // workaround for a javadoc -> ts issue
         }
     }
+
+    // TODO this all needs to be done, either by wrapping JsTable or otherwise sharing details about how
+    // to interact with a CTS
     private static class Resolved extends MicrotaskBatchImpl implements JsResolvedTable {
         public Resolved(WorkerConnection connection, Ticket ticket, BatchTableRequest.Operation.Builder operation) {
             super(connection, ticket, operation);
@@ -159,7 +162,8 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
                         } else {
                             impl.state = State.RELEASED;
                             impl.promise.fail("Resolved, but was never retained, cannot be retained now");
-                            // TODO this is probably too early
+                            // TODO this is probably too early, other operations could still be using it. CTS has
+                            // some tooling to handle this for us, probably defer to that
                             impl.connection.releaseTicket(impl.ticket);
                         }
                     } else {
