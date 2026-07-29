@@ -581,12 +581,25 @@ public class TypedNaturalJoinFactory {
             CodeBlock.Builder builder) {
         final String sourceType = getSourceType(alternate);
         final String tableLocation = getTableLocation(alternate);
-        // Rather than removing the key from the slot's row set (and possibly tombstoning) one row at a time -- which
-        // churns the RSP row set for every removed key -- we accumulate the removed key into the slot's sequential
-        // builder in the modified slot tracker. The caller performs one bulk remove per slot afterward.
+        // If this key has a single left row, removing it empties the slot; handle that directly (tombstoning if there
+        // is
+        // no right match) rather than paying for a tracker cookie and a builder. Otherwise, rather than removing from
+        // the slot's row set one key at a time -- which churns the RSP row set for every removed key -- accumulate the
+        // removed key into the slot's sequential builder so the caller can remove all of this slot's keys in one bulk
+        // pass.
+        builder.addStatement("final $T left = $LLeftRowSet.getUnsafe($L)", WritableRowSet.class, sourceType,
+                tableLocation);
+        builder.beginControlFlow("if (left.size() == 1)");
+        builder.addStatement("left.remove(rowKeyChunk.get(chunkPosition))");
+        builder.beginControlFlow("if (rightState == $T.NULL_ROW_KEY)", RowSet.class);
+        builder.addStatement("$LRightRowKey.set($L, TOMBSTONE_RIGHT_STATE)", sourceType, tableLocation);
+        builder.addStatement("liveEntries--");
+        builder.endControlFlow();
+        builder.nextControlFlow("else");
         builder.addStatement(
                 "$LModifiedTrackerCookieSource.set($L, modifiedSlotTracker.addLeftRemoval($LModifiedTrackerCookieSource.getUnsafe($L), $LInsertMask | $L, rowKeyChunk.get(chunkPosition), rightState))",
                 sourceType, tableLocation, sourceType, tableLocation, sourceType, tableLocation);
+        builder.endControlFlow();
     }
 
     public static void incrementalRemoveLeftMissing(CodeBlock.Builder builder) {

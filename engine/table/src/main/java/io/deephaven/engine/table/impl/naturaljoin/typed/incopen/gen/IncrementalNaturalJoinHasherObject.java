@@ -642,7 +642,16 @@ final class IncrementalNaturalJoinHasherObject extends IncrementalNaturalJoinSta
                         searchAlternate = false;
                         break;
                     }
-                    mainModifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addLeftRemoval(mainModifiedTrackerCookieSource.getUnsafe(tableLocation), mainInsertMask | tableLocation, rowKeyChunk.get(chunkPosition), rightState));
+                    final WritableRowSet left = mainLeftRowSet.getUnsafe(tableLocation);
+                    if (left.size() == 1) {
+                        left.remove(rowKeyChunk.get(chunkPosition));
+                        if (rightState == RowSet.NULL_ROW_KEY) {
+                            mainRightRowKey.set(tableLocation, TOMBSTONE_RIGHT_STATE);
+                            liveEntries--;
+                        }
+                    } else {
+                        mainModifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addLeftRemoval(mainModifiedTrackerCookieSource.getUnsafe(tableLocation), mainInsertMask | tableLocation, rowKeyChunk.get(chunkPosition), rightState));
+                    }
                     found = true;
                     break;
                 }
@@ -662,7 +671,16 @@ final class IncrementalNaturalJoinHasherObject extends IncrementalNaturalJoinSta
                                 if (isStateDeleted(rightState)) {
                                     break;
                                 }
-                                alternateModifiedTrackerCookieSource.set(alternateTableLocation, modifiedSlotTracker.addLeftRemoval(alternateModifiedTrackerCookieSource.getUnsafe(alternateTableLocation), alternateInsertMask | alternateTableLocation, rowKeyChunk.get(chunkPosition), rightState));
+                                final WritableRowSet left = alternateLeftRowSet.getUnsafe(alternateTableLocation);
+                                if (left.size() == 1) {
+                                    left.remove(rowKeyChunk.get(chunkPosition));
+                                    if (rightState == RowSet.NULL_ROW_KEY) {
+                                        alternateRightRowKey.set(alternateTableLocation, TOMBSTONE_RIGHT_STATE);
+                                        liveEntries--;
+                                    }
+                                } else {
+                                    alternateModifiedTrackerCookieSource.set(alternateTableLocation, modifiedSlotTracker.addLeftRemoval(alternateModifiedTrackerCookieSource.getUnsafe(alternateTableLocation), alternateInsertMask | alternateTableLocation, rowKeyChunk.get(chunkPosition), rightState));
+                                }
                                 alternateFound = true;
                                 break;
                             }
