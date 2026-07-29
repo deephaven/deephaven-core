@@ -16,23 +16,16 @@ TMP_PACKAGE_DIR=${TMP_DIR}/package
 # Make a output folder
 mkdir "${OUTPUT_DIR}"
 
-# Start the manifest.json file. It will add all the dependencies automatically
-echo "{\"plugins\":[" > "${MANIFEST_FILE}"
-
-# Keep track of the count so we add a comma when necessary
-PLUGIN_COUNT=0
+# Keep track of the directories of all the packed plugins so we can build the manifest.json once everything has
+# been downloaded and extracted
+PACKAGE_DIRS=()
 
 echo "Packing plugins $@..."
 
-# Iterate through each plugin defined in the plugin list, download the package and adding info to the manifest
+# Iterate through each plugin defined in the plugin list, download the package and move it into place
 # Can/should include the version number in the plugin line item
 for PACKAGE in "$@"
 do
-  # Add a comma to the manifest.json if this is not the first plugin
-  if [ $PLUGIN_COUNT -gt 0 ]; then
-    echo "," >> "${MANIFEST_FILE}"
-  fi
-
   # Make a temporary directory for downloading/extracting the package into
   mkdir -p "${TMP_DIR}"
   cd "${TMP_DIR}"
@@ -53,30 +46,39 @@ do
 
   echo "In working dir $(pwd)"
 
-  # It always unzips to the folder "package". Get the name and version info from the package so we can move it to
-  # the correct location and add the info to the manifest
+  # It always unzips to the folder "package". Get the name from the package so we can move it to the correct
+  # location
   PACKAGE_NAME=$(npm pkg get name --prefix="${TMP_PACKAGE_DIR}")
-  PACKAGE_INFO=$(npm pkg get name version main --prefix="${TMP_PACKAGE_DIR}")
   # Need to remove quotes from the package name
   PACKAGE_NAME="${PACKAGE_NAME%\"}"
   PACKAGE_NAME="${PACKAGE_NAME#\"}"
 
   echo "Got package name ${PACKAGE_NAME}"
 
-  # Add the info to the manifest file
-  echo "${PACKAGE_INFO}" >> "${MANIFEST_FILE}"
-
   # Move the plugin to the correct directory
   # Need to make the directory based on the name first
-  mkdir -p "${OUTPUT_DIR}/${PACKAGE_NAME}"
-  mv "${TMP_PACKAGE_DIR}/"* "${OUTPUT_DIR}/${PACKAGE_NAME}"
+  PACKAGE_DIR=${OUTPUT_DIR}/${PACKAGE_NAME}
+  mkdir -p "${PACKAGE_DIR}"
+  mv "${TMP_PACKAGE_DIR}/"* "${PACKAGE_DIR}"
   rm --recursive "${TMP_DIR}"
-
-  # Increment the plugin count
-  PLUGIN_COUNT=$((PLUGIN_COUNT + 1))
+  PACKAGE_DIRS+=("${PACKAGE_DIR}")
 done
 
-echo "Done!"
+# Assemble the full manifest in one shot by reading each plugin's package.json. The optional "loader" field is
+# preserved as-is so plugin authors cannot shadow core fields like name/version/main.
+"${NODE_EXE:-node}" -e '
+  const fs = require("fs");
+  const path = require("path");
+  const plugins = process.argv.slice(1).map((dir) => {
+    const pkg = JSON.parse(fs.readFileSync(path.join(dir, "package.json"), "utf8"));
+    const entry = { name: pkg.name, version: pkg.version, main: pkg.main };
+    if (pkg.loader && typeof pkg.loader === "object" && !Array.isArray(pkg.loader)
+        && Object.keys(pkg.loader).length > 0) {
+      entry.loader = pkg.loader;
+    }
+    return entry;
+  });
+  process.stdout.write(JSON.stringify({ plugins }, null, 2));
+' ${PACKAGE_DIRS[@]+"${PACKAGE_DIRS[@]}"} > "${MANIFEST_FILE}"
 
-# Close out the manifest file
-echo "]}" >> "${MANIFEST_FILE}"
+echo "Done!"
