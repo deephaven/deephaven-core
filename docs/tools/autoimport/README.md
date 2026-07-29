@@ -162,8 +162,8 @@ Run this from the repository root (requires Java 17+, no Docker or running serve
 Sample output when everything is in sync:
 
 ```
-python: in sync
-groovy: in sync
+=== python: in sync ===
+=== groovy: in sync ===
 ```
 
 Sample output when docs are stale:
