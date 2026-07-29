@@ -51,7 +51,9 @@ public class CheckAutoImportDocSync {
             "io.deephaven.function.Sort",
             "io.deephaven.time.",
             "io.deephaven.gui.",
-            "io.deephaven.engine.util.ColorUtilImpl");
+            "io.deephaven.engine.util.ColorUtilImpl",
+            "io.deephaven.base.string.cache.CompressedString",
+            "io.deephaven.engine.table.impl.verify.TableAssertions");
 
     /**
      * Standard Java/enum boilerplate methods that are never documented even when their declaring
@@ -141,13 +143,13 @@ public class CheckAutoImportDocSync {
             if (filteredOnly && !isDocumented(cls)) {
                 continue;
             }
-            for (Method m : cls.getDeclaredMethods()) {
+            for (Method m : cls.getMethods()) {
                 if (Modifier.isPublic(m.getModifiers()) && Modifier.isStatic(m.getModifiers())
                         && !EXCLUDED_METHOD_NAMES.contains(m.getName())) {
                     names.add(m.getName());
                 }
             }
-            for (Field f : cls.getDeclaredFields()) {
+            for (Field f : cls.getFields()) {
                 if (Modifier.isPublic(f.getModifiers()) && Modifier.isStatic(f.getModifiers())
                         && !EXCLUDED_METHOD_NAMES.contains(f.getName())) {
                     names.add(f.getName());
