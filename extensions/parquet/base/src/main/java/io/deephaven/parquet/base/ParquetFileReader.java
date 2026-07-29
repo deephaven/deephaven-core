@@ -52,75 +52,78 @@ public class ParquetFileReader {
     public static ParquetFileReader create(
             @NotNull final URI parquetFileURI,
             @NotNull final SeekableChannelsProvider channelsProvider) {
-        return impl(parquetFileURI, CachedChannelProvider.create(channelsProvider, 1 << 7), -1);
+        try {
+            return new ParquetFileReader(parquetFileURI, channelsProvider, 0);
+        } catch (final IOException e) {
+            throw new UncheckedIOException("Failed to create Parquet file reader: %s".formatted(parquetFileURI), e);
+        }
     }
 
+    /**
+     * Make a {@link ParquetFileReader} for the supplied {@link URI}.
+     *
+     * @param parquetFileURI The URI for the parquet file or the parquet metadata file
+     * @param channelsProvider The {@link SeekableChannelsProvider} to use for reading the file
+     * @param fileSize The file size, must be positive
+     * @return The new {@link ParquetFileReader}
+     * @throws IOException if an IO error occurs
+     */
     public static ParquetFileReader create(
             @NotNull final URI parquetFileURI,
             @NotNull final SeekableChannelsProvider channelsProvider,
-            long fileSize) {
-        return impl(parquetFileURI, CachedChannelProvider.create(channelsProvider, 1 << 7), fileSize);
-    }
-
-    private static URI rootUri(final URI parquetFileURI) {
-        return !parquetFileURI.getRawPath().endsWith(".parquet") && FILE_URI_SCHEME.equals(parquetFileURI.getScheme())
-                // Construct a new file URI for the parent directory
-                ? convertToURI(new File(parquetFileURI).getParentFile(), true)
-                : parquetFileURI;
-    }
-
-    private static ParquetFileReader impl(final URI parquetFileURI, final SeekableChannelsProvider provider,
-            final long fileSize) {
-        final FileMetaData fileMetaData;
-        final ParquetMetadata metadata;
-        try {
-            try (
-                    final SeekableChannelContext context = provider.makeSingleUseReadContext();
-                    final SeekableByteChannel ch = fileSize > 0
-                            ? provider.getReadChannel(context, parquetFileURI, fileSize)
-                            : provider.getReadChannel(context, parquetFileURI)) {
-                fileMetaData = footer(parquetFileURI, ch).readFrom(provider, ch);
-            }
-            metadata = PARQUET_METADATA_CONVERTER.fromParquetMetadata(fileMetaData);
-        } catch (final IOException e) {
-            throw new UncheckedIOException("Failed to create Parquet file reader: " + parquetFileURI, e);
+            final long fileSize) throws IOException {
+        if (fileSize <= 0) {
+            throw new IllegalArgumentException("fileSize must be positive");
         }
-        return new ParquetFileReader(fileMetaData, metadata, provider, rootUri(parquetFileURI));
+        return new ParquetFileReader(parquetFileURI, channelsProvider, fileSize);
     }
 
-    private record FooterOffset(long offset, int len) {
-
-        public FileMetaData readFrom(final SeekableChannelsProvider provider, final SeekableByteChannel ch)
-                throws IOException {
-            ch.position(offset);
-            final int sizeHint = len;
-            final FileMetaData fileMetaData;
-            try (final InputStream in = SeekableChannelsProvider.channelPositionInputStream(provider, ch, sizeHint)) {
+    private ParquetFileReader(
+            @NotNull final URI parquetFileURI,
+            @NotNull final SeekableChannelsProvider provider,
+            final long fileSize) throws IOException {
+        this.channelsProvider = CachedChannelProvider.create(provider, 1 << 7);
+        if (!parquetFileURI.getRawPath().endsWith(".parquet") && FILE_URI_SCHEME.equals(parquetFileURI.getScheme())) {
+            // Construct a new file URI for the parent directory
+            rootURI = convertToURI(new File(parquetFileURI).getParentFile(), true);
+        } else {
+            rootURI = parquetFileURI;
+        }
+        try (
+                final SeekableChannelContext context = channelsProvider.makeSingleUseReadContext();
+                final SeekableByteChannel ch = fileSize > 0
+                        ? channelsProvider.getReadChannel(context, parquetFileURI, fileSize)
+                        : channelsProvider.getReadChannel(context, parquetFileURI)) {
+            final FooterInfo footerInfo = readAndComputeFooterInfo(parquetFileURI, ch);
+            ch.position(footerInfo.pos);
+            final int sizeHint = footerInfo.len;
+            try (final InputStream in =
+                    SeekableChannelsProvider.channelPositionInputStream(channelsProvider, ch, sizeHint)) {
                 // Ideally, we would be able to get rid of our dependency on the underlying thrift structures, but there
                 // is a non-trivial chain of usages stemming from fileMetaData. For now, we will create ParquetMetadata
                 // in a two-step process that preserves the thrift structure.
                 // metadata = PARQUET_METADATA_CONVERTER.readParquetMetadata(in, ParquetMetadataConverter.NO_FILTER);
                 fileMetaData = Util.readFileMetaData(in);
             }
-            if (ch.position() != offset + len) {
-                throw new InvalidParquetFileException("FileMetaData size incorrect");
+            {
+                final long finalPos = ch.position();
+                if (finalPos != footerInfo.pos + footerInfo.len) {
+                    throw new InvalidParquetFileException(
+                            "Footer parsing resulted in unexpected channel position: ch.position()=%d, footerInfo=%s"
+                                    .formatted(finalPos, footerInfo));
+                }
             }
-            return fileMetaData;
         }
+        metadata = PARQUET_METADATA_CONVERTER.fromParquetMetadata(fileMetaData);
     }
 
-    private ParquetFileReader(
-            FileMetaData fileMetaData,
-            ParquetMetadata metadata,
-            SeekableChannelsProvider channelsProvider,
-            URI rootURI) {
-        this.fileMetaData = Objects.requireNonNull(fileMetaData);
-        this.metadata = Objects.requireNonNull(metadata);
-        this.channelsProvider = Objects.requireNonNull(channelsProvider);
-        this.rootURI = Objects.requireNonNull(rootURI);
-    }
-
-    private static FooterOffset footer(final URI parquetFileURI, final SeekableByteChannel readChannel)
+    /**
+     * Read the footer length and back out the footer position based on the channel {@link SeekableByteChannel#size()
+     * size}.
+     *
+     * @return The footer info
+     */
+    private static FooterInfo readAndComputeFooterInfo(URI parquetFileURI, SeekableByteChannel readChannel)
             throws IOException {
         final long fileLen = readChannel.size();
         if (fileLen < MAGIC.length + FOOTER_LENGTH_SIZE + MAGIC.length) { // MAGIC + data + footer +
@@ -144,7 +147,10 @@ public class ParquetFileReader {
             throw new InvalidParquetFileException(
                     "corrupted file: the footer index is not within the file: " + footerIndex);
         }
-        return new FooterOffset(footerIndex, footerLength);
+        return new FooterInfo(footerIndex, footerLength);
+    }
+
+    private record FooterInfo(long pos, int len) {
     }
 
     private static int makeLittleEndianInt(byte b0, byte b1, byte b2, byte b3) {

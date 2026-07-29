@@ -1671,9 +1671,6 @@ public abstract class SqliteCatalogBase {
     }
 
     private void verifySchema(String path, MessageType expectedSchema) throws URISyntaxException {
-        if (true) {
-            return;
-        }
         final ParquetMetadata metadata =
                 new ParquetTableLocationKey(new URI(path), 0, null, ParquetInstructions.builder()
                         .setSpecialInstructions(dataInstructions())

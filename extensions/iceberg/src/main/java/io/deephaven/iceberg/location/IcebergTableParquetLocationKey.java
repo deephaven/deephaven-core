@@ -18,6 +18,8 @@ import org.apache.iceberg.catalog.TableIdentifier;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.URI;
 import java.util.Comparator;
 import java.util.List;
@@ -62,6 +64,9 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
      */
     private final long dataFilePos;
 
+    /**
+     * The {@link DataFile#fileSizeInBytes()} of the data file backing this keyed location.
+     */
     private final long dataFileSize;
 
     private final PartitionSpec manifestPartitionSpec;
@@ -85,6 +90,8 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
      * @param catalogName The name of the catalog using which the table is accessed
      * @param tableUuid The UUID of the table, or {@code null} if not available
      * @param tableIdentifier The table identifier used to access the table
+     * @param manifestPartitionSpec The {@link PartitionSpec} that applies to the manifest file from which the data file
+     *        was discovered
      * @param manifestFile The manifest file from which the data file was discovered
      * @param dataFile The data file that backs the keyed location
      * @param fileUri The {@link URI} for the file that backs the keyed location
@@ -125,6 +132,7 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
         // This should never be null because we are discovering this data file through a non-null manifest file
         dataFilePos = Require.neqNull(dataFile.pos(), "dataFile.pos()");
 
+        // TODO: compareTo, equals, hashCode
         dataFileSize = dataFile.fileSizeInBytes();
 
         this.manifestPartitionSpec = Objects.requireNonNull(manifestPartitionSpec);
@@ -139,7 +147,11 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
         if (fileReader != null) {
             return fileReader;
         }
-        return ParquetFileReader.create(uri, channelsProvider, dataFileSize);
+        try {
+            return fileReader = ParquetFileReader.create(uri, channelsProvider, dataFileSize);
+        } catch (IOException e) {
+            throw new UncheckedIOException("Failed to create Parquet file reader: %s".formatted(uri), e);
+        }
     }
 
     public PartitionSpec manifestPartitionSpec() {

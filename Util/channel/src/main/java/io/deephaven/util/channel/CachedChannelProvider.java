@@ -99,25 +99,30 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
     @Override
     public SeekableByteChannel getReadChannel(@NotNull final SeekableChannelContext channelContext,
             @NotNull final URI uri) throws IOException {
-        final String uriString = uri.toString();
-        final KeyedObjectHashMap<String, PerPathPool> channelPool = channelPools.get(ChannelType.Read);
-        final CachedChannel result = tryGetPooledChannel(uriString, channelPool);
-        final CachedChannel channel = result == null
-                ? new CachedChannel(wrappedProvider.getReadChannel(channelContext, uri), ChannelType.Read, uriString)
-                : result.position(0);
-        channel.setContext(channelContext);
-        return channel;
+        return getReadChannelImpl(channelContext, uri, 0);
     }
 
     @Override
     public SeekableByteChannel getReadChannel(@NotNull SeekableChannelContext channelContext, @NotNull URI uri,
             long knownFileSize) throws IOException {
+        if (knownFileSize <= 0) {
+            throw new IllegalArgumentException("fileSize should be positive");
+        }
+        return getReadChannelImpl(channelContext, uri, knownFileSize);
+    }
+
+    private SeekableByteChannel getReadChannelImpl(final SeekableChannelContext channelContext, final URI uri,
+            final long fileSize) throws IOException {
         final String uriString = uri.toString();
         final KeyedObjectHashMap<String, PerPathPool> channelPool = channelPools.get(ChannelType.Read);
         final CachedChannel result = tryGetPooledChannel(uriString, channelPool);
         final CachedChannel channel = result == null
-                ? new CachedChannel(wrappedProvider.getReadChannel(channelContext, uri, knownFileSize),
-                        ChannelType.Read, uriString)
+                ? new CachedChannel(
+                        fileSize > 0
+                                ? wrappedProvider.getReadChannel(channelContext, uri, fileSize)
+                                : wrappedProvider.getReadChannel(channelContext, uri),
+                        ChannelType.Read,
+                        uriString)
                 : result.position(0);
         channel.setContext(channelContext);
         return channel;
