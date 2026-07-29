@@ -49,8 +49,20 @@ import java.util.Random;
  * </p>
  *
  * <p>
- * All parameters are read from system properties so they can be overridden from the Gradle command line without editing
- * the source, e.g.:
+ * All parameters are read from {@code njbench.*} system properties, falling back to the defaults above. Gradle does not
+ * forward {@code -D} system properties from the command line to the test JVM by default, so to override a parameter you
+ * must either edit the defaults in this class or temporarily forward the properties by adding a block like the
+ * following to this module's {@code build.gradle}:
+ *
+ * <pre>
+ * tasks.withType(Test).configureEach {
+ *     System.properties.each { k, v -&gt;
+ *         if (k.toString().startsWith('njbench.')) systemProperty(k.toString(), v.toString())
+ *     }
+ * }
+ * </pre>
+ *
+ * With that forwarding in place, parameters can be set on the command line:
  *
  * <pre>
  * ./gradlew :engine-table:testOutOfBand \
@@ -61,8 +73,7 @@ import java.util.Random;
  *
  * <p>
  * {@code -PshowStandardStreams=true} is required to see the per-cycle timing printed to stdout;
- * {@code -PforceTest=true} re-runs the benchmark even when nothing changed. The {@code -Dnjbench.*} properties are
- * forwarded to the test JVM by this module's {@code build.gradle}. Larger sizes may require more heap, e.g.
+ * {@code -PforceTest=true} re-runs the benchmark even when nothing changed. Larger sizes may require more heap, e.g.
  * {@code -PmaxHeapSize=12g}.
  * </p>
  */
