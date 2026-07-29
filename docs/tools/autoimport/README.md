@@ -122,6 +122,78 @@ The script requires:
 - `requests` - For HTTP requests (installed automatically)
 - Deephaven Python client libraries (available in Deephaven session)
 
+## CI Integration
+
+A GitHub Action (`.github/workflows/autoimport-docs-check.yml`) monitors the auto-import documentation for sync issues.
+
+### What the sync check does
+
+`CheckAutoImportDocSync` (in `engine/table/src/test/java/…`) compares two things:
+
+1. **The live code** — it uses Java reflection to list every `public static` method and field from the classes in `QueryLibraryImportsDefaults.statics()` that are covered by the generator (those matching `DOCUMENTED_CLASS_PREFIXES`).
+2. **The committed docs** — it scans every `.md` file in `docs/{python,groovy}/reference/query-language/query-library/auto-imported/` and collects every name that appears in a `FUNCTION` or `CONSTANT` table row.
+
+If the two sets don't match, the check reports:
+
+- **"In code but missing from docs"** — a method or constant exists in the Java source but has no row in the markdown tables. This means the docs are stale and need regenerating.
+- **"In docs but absent from all statics()"** — a name appears in the markdown tables but no longer exists in the Java source. This usually means a method was renamed or removed without updating the docs.
+
+Both Python and Groovy doc directories are checked independently.
+
+### When it runs
+
+- **Weekly schedule** — every Sunday at 3 AM UTC, to catch silent drift between releases.
+- **PR trigger** — prints an informational reminder (but does not fail the build) whenever `QueryLibraryImportsDefaults.java` is modified in a pull request.
+- **Manual trigger** — run on demand from the GitHub Actions tab.
+
+### How to trigger manually
+
+1. Go to **Actions → "Auto-Import Docs Sync Check"**
+2. Click **"Run workflow"**
+
+### How to check locally
+
+Run this from the repository root (requires Java 17+, no Docker or running server needed):
+
+```bash
+./gradlew :engine-table:checkAutoImportSync
+```
+
+Sample output when everything is in sync:
+
+```
+python: in sync
+groovy: in sync
+```
+
+Sample output when docs are stale:
+
+```
+=== python: OUT OF SYNC ===
+  In code but missing from docs (2): [newMethod, anotherMethod]
+=== groovy: OUT OF SYNC ===
+  In code but missing from docs (2): [newMethod, anotherMethod]
+```
+
+### What to do when it fails
+
+**Case 1 — "In code but missing from docs"**
+
+One or more auto-imported functions or constants exist in the Java source but are not documented. Follow the [Quick Start](#quick-start-step-by-step) steps above to regenerate the docs, then commit the updated markdown files.
+
+**Case 2 — "In docs but absent from all statics()"**
+
+One or more names in the markdown tables no longer exist in `QueryLibraryImportsDefaults.statics()`. Either:
+
+- A method was renamed or removed — delete or correct the row in the relevant `.md` file(s), or
+- The class itself was removed from `statics()` — remove all rows for that class from the docs.
+
+After fixing either case, re-run `./gradlew :engine-table:checkAutoImportSync` locally to confirm the check passes before pushing.
+
+### Failure notifications
+
+On a scheduled or manual run, if the check fails and the workflow is running in the `deephaven` organization, a Slack message is posted to the `#ddl-devrel` channel with a link to the failed run.
+
 ## Notes
 
 - The script must run inside a Deephaven session because it uses `jpy` to introspect Java classes.

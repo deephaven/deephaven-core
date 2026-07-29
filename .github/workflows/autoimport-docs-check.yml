@@ -1,0 +1,60 @@
+name: Auto-Import Docs Sync Check
+
+on:
+  schedule:
+    # Run weekly on Sundays at 3AM UTC
+    - cron: "0 3 * * 0"
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "engine/table/src/main/java/io/deephaven/engine/table/lang/impl/QueryLibraryImportsDefaults.java"
+      - "docs/tools/autoimport/**"
+
+jobs:
+  check-autoimport-docs:
+    if: ${{ github.repository_owner == 'deephaven' || github.event_name != 'schedule' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          lfs: false
+
+      - name: Check if QueryLibraryImportsDefaults changed (PR only)
+        if: ${{ github.event_name == 'pull_request' }}
+        id: check-changed
+        run: |
+          echo "QueryLibraryImportsDefaults.java was modified in this PR."
+          echo "This may require updating the auto-imported function documentation."
+          echo ""
+          echo "If you've added, removed, or modified auto-imported functions, please:"
+          echo "  1. Follow the instructions in docs/tools/autoimport/README.md"
+          echo "  2. Run the generator script in a Deephaven session"
+          echo "  3. Copy the output to docs/python/reference/query-language/query-library/auto-imported/"
+          echo "  4. Copy the output to docs/groovy/reference/query-language/query-library/auto-imported/"
+          echo "  5. Run ./docs/format && ./docs/updateSnapshots"
+
+      - name: Set up Java
+        if: ${{ github.event_name != 'pull_request' }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Run sync check (scheduled/manual only)
+        if: ${{ github.event_name != 'pull_request' }}
+        run: ./gradlew :engine-table:checkAutoImportSync
+
+      - name: Notify on drift
+        if: ${{ failure() && github.repository_owner == 'deephaven' }}
+        uses: slackapi/slack-github-action@v2.1.0
+        with:
+          webhook-type: webhook-trigger
+          payload: |
+            {
+              "slack_message": "Auto-import documentation is out of sync with QueryLibraryImportsDefaults. See: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_DDL_DEVREL }}
