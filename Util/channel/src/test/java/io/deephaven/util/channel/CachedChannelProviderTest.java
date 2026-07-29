@@ -177,7 +177,7 @@ public class CachedChannelProviderTest {
 
         @Override
         public SeekableByteChannel getReadChannel(@NotNull SeekableChannelContext channelContext, @NotNull URI uri,
-                long knownFileSize) throws IOException {
+                long fileSize) throws IOException {
             return getReadChannel(channelContext, uri);
         }
 

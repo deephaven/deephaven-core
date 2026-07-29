@@ -42,8 +42,8 @@ final class S3DelegateProvider extends SeekableChannelsProviderDelegate {
 
     @Override
     public SeekableByteChannel getReadChannel(@NotNull SeekableChannelContext channelContext, @NotNull URI uri,
-            long knownFileSize) throws IOException {
-        return delegate.getReadChannel(channelContext, toS3Uri(uri), knownFileSize);
+            long fileSize) throws IOException {
+        return delegate.getReadChannel(channelContext, toS3Uri(uri), fileSize);
     }
 
     @Override

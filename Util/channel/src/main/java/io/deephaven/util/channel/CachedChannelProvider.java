@@ -104,11 +104,11 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
 
     @Override
     public SeekableByteChannel getReadChannel(@NotNull SeekableChannelContext channelContext, @NotNull URI uri,
-            long knownFileSize) throws IOException {
-        if (knownFileSize <= 0) {
+            long fileSize) throws IOException {
+        if (fileSize <= 0) {
             throw new IllegalArgumentException("fileSize should be positive");
         }
-        return getReadChannelImpl(channelContext, uri, knownFileSize);
+        return getReadChannelImpl(channelContext, uri, fileSize);
     }
 
     private SeekableByteChannel getReadChannelImpl(final SeekableChannelContext channelContext, final URI uri,

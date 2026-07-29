@@ -47,8 +47,8 @@ public class SeekableChannelsProviderDelegate implements SeekableChannelsProvide
 
     @Override
     public SeekableByteChannel getReadChannel(@NotNull SeekableChannelContext channelContext, @NotNull URI uri,
-            long knownFileSize) throws IOException {
-        return delegate.getReadChannel(channelContext, uri, knownFileSize);
+            long fileSize) throws IOException {
+        return delegate.getReadChannel(channelContext, uri, fileSize);
     }
 
     @Override

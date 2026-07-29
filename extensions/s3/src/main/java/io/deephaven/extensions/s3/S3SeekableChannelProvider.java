@@ -143,10 +143,10 @@ class S3SeekableChannelProvider implements SeekableChannelsProvider {
 
     @Override
     public SeekableByteChannel getReadChannel(@NotNull SeekableChannelContext channelContext, @NotNull URI uri,
-            long knownFileSize) {
+            long fileSize) {
         final S3Uri s3Uri = s3AsyncClient.utilities().parseUri(uri);
-        updateFileSizeCache(uri, knownFileSize);
-        return new S3SeekableByteChannel(s3Uri, knownFileSize);
+        updateFileSizeCache(uri, fileSize);
+        return new S3SeekableByteChannel(s3Uri, fileSize);
     }
 
     @Override

@@ -74,7 +74,7 @@ final class TrackedSeekableChannelsProvider implements SeekableChannelsProvider 
 
     @Override
     public SeekableByteChannel getReadChannel(@NotNull SeekableChannelContext channelContext, @NotNull URI uri,
-            long knownFileSize) throws IOException {
+            long fileSize) throws IOException {
         // Note: we _could_ push through knownFileSize to save a size call to FS
         return getReadChannel(channelContext, uri);
     }
