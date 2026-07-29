@@ -734,20 +734,74 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
         }
         final MutableLong redirectionOffset = new MutableLong(0);
         buildTable(false, (BuildContext) bc, leftRowSet, leftSources, (chunkOk, sourceKeyChunks) -> {
-            addLeftSide(chunkOk, sourceKeyChunks, leftRedirections, redirectionOffset.get());
+            addLeftSide(chunkOk, sourceKeyChunks, leftRedirections, redirectionOffset.get(), modifiedSlotTracker);
             redirectionOffset.add(chunkOk.size());
         }, modifiedSlotTracker);
+        // Perform the accumulated additions to each slot's left row set in a single bulk insert per slot.
+        applyLeftAdditions(modifiedSlotTracker);
+    }
+
+    /**
+     * Apply the left additions that were accumulated into the modified slot tracker by the generated
+     * {@code addLeftSide} handler. Each slot's added keys are inserted into its left row set in a single bulk
+     * {@link WritableRowSet#insert} call (rather than one key at a time). The tracker discards each slot's builder as
+     * it is processed.
+     */
+    private void applyLeftAdditions(final NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
+        modifiedSlotTracker.forAllLeftAdditions((slot, addedKeys) -> {
+            final boolean main = (slot & AlternatingColumnSource.ALTERNATE_SWITCH_MASK) == mainInsertMask;
+            final long location = slot & AlternatingColumnSource.ALTERNATE_INNER_MASK;
+            final WritableRowSet leftRowSet = main
+                    ? mainLeftRowSet.getUnsafe(location)
+                    : alternateLeftRowSet.getUnsafe(location);
+            leftRowSet.insert(addedKeys);
+        });
     }
 
     protected abstract void addLeftSide(RowSequence rowSequence, Chunk[] sourceKeyChunks,
-            LongArraySource leftRedirections, long redirectionOffset);
+            LongArraySource leftRedirections, long redirectionOffset,
+            NaturalJoinModifiedSlotTracker modifiedSlotTracker);
 
     @Override
-    public void removeLeft(Context pc, RowSequence leftIndex, ColumnSource<?>[] leftSources) {
+    public void removeLeft(Context pc, RowSequence leftIndex, ColumnSource<?>[] leftSources,
+            NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
         if (leftIndex.isEmpty()) {
             return;
         }
-        probeTable((ProbeContext) pc, leftIndex, true, leftSources, this::removeLeft);
+        probeTable((ProbeContext) pc, leftIndex, true, leftSources,
+                (chunkOk, sourceKeyChunks) -> removeLeft(chunkOk, sourceKeyChunks, modifiedSlotTracker));
+        applyLeftRemovals(modifiedSlotTracker);
+    }
+
+    /**
+     * Apply the left removals that were accumulated into the modified slot tracker by the generated {@code removeLeft}
+     * handler. Each slot's removed keys are removed from its left row set in a single bulk
+     * {@link WritableRowSet#remove} call (rather than one key at a time), and a slot that becomes empty with no right
+     * match is tombstoned. The tracker discards each slot's builder as it is processed.
+     */
+    private void applyLeftRemovals(final NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
+        modifiedSlotTracker.forAllLeftRemovals((slot, removedKeys) -> {
+            final boolean main = (slot & AlternatingColumnSource.ALTERNATE_SWITCH_MASK) == mainInsertMask;
+            final long location = slot & AlternatingColumnSource.ALTERNATE_INNER_MASK;
+            final WritableRowSet leftRowSet = main
+                    ? mainLeftRowSet.getUnsafe(location)
+                    : alternateLeftRowSet.getUnsafe(location);
+            leftRowSet.remove(removedKeys);
+            if (leftRowSet.isEmpty()) {
+                final long rightState = main
+                        ? mainRightRowKey.getUnsafe(location)
+                        : alternateRightRowKey.getUnsafe(location);
+                if (rightState == RowSet.NULL_ROW_KEY) {
+                    // the slot only existed because of left rows, and they are all gone now
+                    if (main) {
+                        mainRightRowKey.set(location, TOMBSTONE_RIGHT_STATE);
+                    } else {
+                        alternateRightRowKey.set(location, TOMBSTONE_RIGHT_STATE);
+                    }
+                    liveEntries--;
+                }
+            }
+        });
     }
 
     @Override
@@ -756,7 +810,8 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
             final RowSet modifiedPostShift,
             final RowSet modifiedPreShift,
             final RowSetBuilderSequential changedPostShift,
-            final RowSetBuilderSequential changedPreShift) {
+            final RowSetBuilderSequential changedPreShift,
+            final NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
         if (modifiedPostShift.isEmpty()) {
             return;
         }
@@ -837,18 +892,22 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
                         compactedPrevKeys[cc].setSize(changedInChunk);
                     }
                     compactedPreRowKeys.setSize(changedInChunk);
-                    // Remove the changed rows from their (previous-key) hash slots using the previous key values we
-                    // already read; this reuses the generated per-type removeLeft handler with no additional reads.
+                    // Accumulate the changed rows' removals into the per-slot builders in the tracker, keyed by their
+                    // (previous-key) hash slots, using the previous key values we already read; this reuses the
+                    // generated per-type removeLeft handler with no additional reads.
                     try (final RowSequence removeRows =
                             RowSequenceFactory.wrapRowKeysChunkAsRowSequence(compactedPreRowKeys)) {
-                        removeLeft(removeRows, compactedPrevKeysAsChunks);
+                        removeLeft(removeRows, compactedPrevKeysAsChunks, modifiedSlotTracker);
                     }
                 }
             }
         }
+        // Perform the accumulated removals from each slot's left row set in a single bulk remove per slot.
+        applyLeftRemovals(modifiedSlotTracker);
     }
 
-    protected abstract void removeLeft(RowSequence rowSequence, Chunk[] sourceKeyChunks);
+    protected abstract void removeLeft(RowSequence rowSequence, Chunk[] sourceKeyChunks,
+            NaturalJoinModifiedSlotTracker modifiedSlotTracker);
 
     @Override
     public void applyLeftShift(Context pc, ColumnSource<?>[] leftSources, RowSet shiftedRowSet, long shiftDelta) {

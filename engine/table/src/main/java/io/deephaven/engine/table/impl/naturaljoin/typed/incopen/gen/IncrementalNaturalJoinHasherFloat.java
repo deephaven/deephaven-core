@@ -270,7 +270,8 @@ final class IncrementalNaturalJoinHasherFloat extends IncrementalNaturalJoinStat
     }
 
     protected void addLeftSide(RowSequence rowSequence, Chunk[] sourceKeyChunks,
-            LongArraySource leftRedirections, long leftRedirectionOffset) {
+            LongArraySource leftRedirections, long leftRedirectionOffset,
+            NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
         final FloatChunk<Values> keyChunk0 = sourceKeyChunks[0].asFloatChunk();
         final int chunkSize = keyChunk0.size();
         final LongChunk<OrderedRowKeys> rowKeyChunk = rowSequence.asRowKeyChunk();
@@ -307,7 +308,7 @@ final class IncrementalNaturalJoinHasherFloat extends IncrementalNaturalJoinStat
                             } else {
                                 rightRowKey = rightRowKeyForState;
                             }
-                            alternateLeftRowSet.getUnsafe(alternateTableLocation).insert(rowKeyChunk.get(chunkPosition));
+                            alternateModifiedTrackerCookieSource.set(alternateTableLocation, modifiedSlotTracker.addLeftAddition(alternateModifiedTrackerCookieSource.getUnsafe(alternateTableLocation), alternateInsertMask | alternateTableLocation, rowKeyChunk.get(chunkPosition), rightRowKeyForState));
                             leftRedirections.set(leftRedirectionOffset++, rightRowKey);
                             break MAIN_SEARCH;
                         } else {
@@ -322,9 +323,10 @@ final class IncrementalNaturalJoinHasherFloat extends IncrementalNaturalJoinStat
                     }
                     liveEntries++;
                     mainKeySource0.set(tableLocation, k0);
-                    mainLeftRowSet.set(tableLocation, RowSetFactory.fromKeys(rowKeyChunk.get(chunkPosition)));
+                    mainLeftRowSet.set(tableLocation, RowSetFactory.empty());
                     mainRightRowKey.set(tableLocation, RowSet.NULL_ROW_KEY);
                     mainModifiedTrackerCookieSource.set(tableLocation, -1L);
+                    mainModifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addLeftAddition(mainModifiedTrackerCookieSource.getUnsafe(tableLocation), mainInsertMask | tableLocation, rowKeyChunk.get(chunkPosition), RowSet.NULL_ROW_KEY));
                     leftRedirections.set(leftRedirectionOffset++, RowSet.NULL_ROW_KEY);
                     break;
                 } else if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
@@ -332,9 +334,10 @@ final class IncrementalNaturalJoinHasherFloat extends IncrementalNaturalJoinStat
                         tableLocation = firstDeletedLocation;
                         liveEntries++;
                         mainKeySource0.set(tableLocation, k0);
-                        mainLeftRowSet.set(tableLocation, RowSetFactory.fromKeys(rowKeyChunk.get(chunkPosition)));
+                        mainLeftRowSet.set(tableLocation, RowSetFactory.empty());
                         mainRightRowKey.set(tableLocation, RowSet.NULL_ROW_KEY);
                         mainModifiedTrackerCookieSource.set(tableLocation, -1L);
+                        mainModifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addLeftAddition(mainModifiedTrackerCookieSource.getUnsafe(tableLocation), mainInsertMask | tableLocation, rowKeyChunk.get(chunkPosition), RowSet.NULL_ROW_KEY));
                         leftRedirections.set(leftRedirectionOffset++, RowSet.NULL_ROW_KEY);
                         break;
                     }
@@ -349,7 +352,7 @@ final class IncrementalNaturalJoinHasherFloat extends IncrementalNaturalJoinStat
                     } else {
                         rightRowKey = rightRowKeyForState;
                     }
-                    mainLeftRowSet.getUnsafe(tableLocation).insert(rowKeyChunk.get(chunkPosition));
+                    mainModifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addLeftAddition(mainModifiedTrackerCookieSource.getUnsafe(tableLocation), mainInsertMask | tableLocation, rowKeyChunk.get(chunkPosition), rightRowKeyForState));
                     leftRedirections.set(leftRedirectionOffset++, rightRowKey);
                     break;
                 } else {
@@ -621,7 +624,8 @@ final class IncrementalNaturalJoinHasherFloat extends IncrementalNaturalJoinStat
         }
     }
 
-    protected void removeLeft(RowSequence rowSequence, Chunk[] sourceKeyChunks) {
+    protected void removeLeft(RowSequence rowSequence, Chunk[] sourceKeyChunks,
+            NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
         final FloatChunk<Values> keyChunk0 = sourceKeyChunks[0].asFloatChunk();
         final LongChunk<OrderedRowKeys> rowKeyChunk = rowSequence.asRowKeyChunk();
         final int chunkSize = keyChunk0.size();
@@ -639,12 +643,7 @@ final class IncrementalNaturalJoinHasherFloat extends IncrementalNaturalJoinStat
                         searchAlternate = false;
                         break;
                     }
-                    final WritableRowSet left = mainLeftRowSet.getUnsafe(tableLocation);
-                    left.remove(rowKeyChunk.get(chunkPosition));
-                    if (left.isEmpty() && rightState == RowSet.NULL_ROW_KEY) {
-                        mainRightRowKey.set(tableLocation, TOMBSTONE_RIGHT_STATE);
-                        liveEntries--;
-                    }
+                    mainModifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addLeftRemoval(mainModifiedTrackerCookieSource.getUnsafe(tableLocation), mainInsertMask | tableLocation, rowKeyChunk.get(chunkPosition), rightState));
                     found = true;
                     break;
                 }
@@ -664,12 +663,7 @@ final class IncrementalNaturalJoinHasherFloat extends IncrementalNaturalJoinStat
                                 if (isStateDeleted(rightState)) {
                                     break;
                                 }
-                                final WritableRowSet left = alternateLeftRowSet.getUnsafe(alternateTableLocation);
-                                left.remove(rowKeyChunk.get(chunkPosition));
-                                if (left.isEmpty() && rightState == RowSet.NULL_ROW_KEY) {
-                                    alternateRightRowKey.set(alternateTableLocation, TOMBSTONE_RIGHT_STATE);
-                                    liveEntries--;
-                                }
+                                alternateModifiedTrackerCookieSource.set(alternateTableLocation, modifiedSlotTracker.addLeftRemoval(alternateModifiedTrackerCookieSource.getUnsafe(alternateTableLocation), alternateInsertMask | alternateTableLocation, rowKeyChunk.get(chunkPosition), rightState));
                                 alternateFound = true;
                                 break;
                             }

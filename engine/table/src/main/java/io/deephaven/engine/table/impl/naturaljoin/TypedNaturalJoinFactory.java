@@ -560,13 +560,25 @@ public class TypedNaturalJoinFactory {
         builder.nextControlFlow("else");
         builder.addStatement("rightRowKey = rightRowKeyForState");
         builder.endControlFlow();
+        // Rather than inserting the key into the slot's row set one at a time -- which churns the RSP row set for every
+        // added key -- we accumulate the added key into the slot's sequential builder in the modified slot tracker. The
+        // caller performs one bulk insert per slot afterward.
         builder.addStatement(
-                "$LLeftRowSet.getUnsafe($L).insert(rowKeyChunk.get(chunkPosition))", sourceType, tableLocation);
+                "$LModifiedTrackerCookieSource.set($L, modifiedSlotTracker.addLeftAddition($LModifiedTrackerCookieSource.getUnsafe($L), $LInsertMask | $L, rowKeyChunk.get(chunkPosition), rightRowKeyForState))",
+                sourceType, tableLocation, sourceType, tableLocation, sourceType, tableLocation);
         builder.addStatement("leftRedirections.set(leftRedirectionOffset++, rightRowKey)");
     }
 
     public static void incrementalLeftInsertUpdate(HasherConfig<?> hasherConfig, CodeBlock.Builder builder) {
-        incrementalBuildLeftInsert(hasherConfig, builder);
+        // A new (or reused-tombstoned) slot: create an empty row set now and accumulate the added key into the slot's
+        // sequential builder in the tracker; the caller performs one bulk insert per slot afterward. (This differs from
+        // the initial-build incrementalBuildLeftInsert, which inserts directly since there is no tracker or churn.)
+        builder.addStatement("mainLeftRowSet.set(tableLocation, $T.empty())", RowSetFactory.class);
+        builder.addStatement("mainRightRowKey.set(tableLocation, $T.NULL_ROW_KEY)", RowSet.class);
+        builder.addStatement("mainModifiedTrackerCookieSource.set(tableLocation, -1L)");
+        builder.addStatement(
+                "mainModifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addLeftAddition(mainModifiedTrackerCookieSource.getUnsafe(tableLocation), mainInsertMask | tableLocation, rowKeyChunk.get(chunkPosition), $T.NULL_ROW_KEY))",
+                RowSet.class);
         builder.addStatement("leftRedirections.set(leftRedirectionOffset++, $T.NULL_ROW_KEY)", RowSet.class);
     }
 
@@ -574,14 +586,12 @@ public class TypedNaturalJoinFactory {
             CodeBlock.Builder builder) {
         final String sourceType = getSourceType(alternate);
         final String tableLocation = getTableLocation(alternate);
-        builder.addStatement("final WritableRowSet left = $LLeftRowSet.getUnsafe($L)",
-                sourceType, tableLocation);
-        builder.addStatement("left.remove(rowKeyChunk.get(chunkPosition))");
-        builder.beginControlFlow("if (left.isEmpty() && rightState == $T.NULL_ROW_KEY)", RowSet.class);
-        // it is actually deleted
-        builder.addStatement("$LRightRowKey.set($L, TOMBSTONE_RIGHT_STATE)", sourceType, tableLocation);
-        builder.addStatement("liveEntries--");
-        builder.endControlFlow();
+        // Rather than removing the key from the slot's row set (and possibly tombstoning) one row at a time -- which
+        // churns the RSP row set for every removed key -- we accumulate the removed key into the slot's sequential
+        // builder in the modified slot tracker. The caller performs one bulk remove per slot afterward.
+        builder.addStatement(
+                "$LModifiedTrackerCookieSource.set($L, modifiedSlotTracker.addLeftRemoval($LModifiedTrackerCookieSource.getUnsafe($L), $LInsertMask | $L, rowKeyChunk.get(chunkPosition), rightState))",
+                sourceType, tableLocation, sourceType, tableLocation, sourceType, tableLocation);
     }
 
     public static void incrementalRemoveLeftMissing(CodeBlock.Builder builder) {

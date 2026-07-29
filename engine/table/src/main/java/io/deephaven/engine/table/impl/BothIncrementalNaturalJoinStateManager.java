@@ -47,7 +47,8 @@ public interface BothIncrementalNaturalJoinStateManager extends IncrementalNatur
     void addLeftSide(final Context bc, RowSequence leftIndex, ColumnSource<?>[] leftSources,
             LongArraySource leftRedirections, NaturalJoinModifiedSlotTracker modifiedSlotTracker);
 
-    void removeLeft(Context pc, RowSequence leftIndex, ColumnSource<?>[] leftSources);
+    void removeLeft(Context pc, RowSequence leftIndex, ColumnSource<?>[] leftSources,
+            NaturalJoinModifiedSlotTracker modifiedSlotTracker);
 
     void applyLeftShift(Context pc, ColumnSource<?>[] leftSources, RowSet shiftedRowSet, long shiftDelta);
 
@@ -69,7 +70,8 @@ public interface BothIncrementalNaturalJoinStateManager extends IncrementalNatur
      *        {@code changedPostShift} (for the caller's redirection removal)
      */
     void removeLeftModifications(ColumnSource<?>[] leftSources, RowSet modifiedPostShift, RowSet modifiedPreShift,
-            RowSetBuilderSequential changedPostShift, RowSetBuilderSequential changedPreShift);
+            RowSetBuilderSequential changedPostShift, RowSetBuilderSequential changedPreShift,
+            NaturalJoinModifiedSlotTracker modifiedSlotTracker);
 
     interface InitialBuildContext extends Context {
     }

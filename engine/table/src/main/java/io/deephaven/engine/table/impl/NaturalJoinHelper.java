@@ -892,7 +892,7 @@ class NaturalJoinHelper {
                     final RowSetBuilderSequential postShiftBuilder = RowSetFactory.builderSequential();
                     final RowSetBuilderSequential preShiftBuilder = RowSetFactory.builderSequential();
                     jsm.removeLeftModifications(leftSources, leftModified, leftModifiedPreShift, postShiftBuilder,
-                            preShiftBuilder);
+                            preShiftBuilder, modifiedSlotTracker);
                     changedKeysPostShift = postShiftBuilder.build();
                     changedKeysPreShift = preShiftBuilder.build();
                     if (leftModifiedPreShift != leftModified) {
@@ -921,7 +921,7 @@ class NaturalJoinHelper {
                         final Context bc =
                                 buildSize == 0 ? null : jsm.makeBuildContext(leftSources, buildSize)) {
                     rowRedirection.removeAll(leftRemoved);
-                    jsm.removeLeft(pc, leftRemoved, leftSources);
+                    jsm.removeLeft(pc, leftRemoved, leftSources, modifiedSlotTracker);
 
                     if (leftKeyChanges) {
                         // the changed rows were already removed from the hash slots by removeLeftModifications above;
