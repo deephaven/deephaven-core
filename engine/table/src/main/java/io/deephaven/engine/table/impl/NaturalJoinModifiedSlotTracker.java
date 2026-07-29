@@ -23,17 +23,12 @@ public class NaturalJoinModifiedSlotTracker {
     /** the original right values, parallel to modifiedSlots. */
     private final LongArraySource originalRightValues = new LongArraySource();
     /**
-     * Sequential builders of left row keys to remove from each slot, parallel to modifiedSlots. Only populated for
-     * entries with the {@link #FLAG_LEFT_REMOVE} flag; consumed and discarded by
-     * {@link #forAllLeftRemovals(LeftRowSetConsumer)}.
+     * Sequential builders of left row keys to add to or remove from each slot, parallel to modifiedSlots. Only
+     * populated for entries carrying the {@link #FLAG_LEFT_REMOVE} or {@link #FLAG_LEFT_ADD} flag. All left removals
+     * are processed and cleared (via {@link #forAllLeftRemovals(LeftRowSetConsumer)}) before any left additions are
+     * accumulated, so a single source safely serves both purposes.
      */
-    private final ObjectArraySource<RowSetBuilderSequential> slotRemovalBuilders =
-            new ObjectArraySource<>(RowSetBuilderSequential.class);
-    /**
-     * Sequential builders of left row keys to add to each slot, parallel to modifiedSlots. Only populated for entries
-     * with the {@link #FLAG_LEFT_ADD} flag; consumed and discarded by {@link #forAllLeftAdditions(LeftRowSetConsumer)}.
-     */
-    private final ObjectArraySource<RowSetBuilderSequential> slotAdditionBuilders =
+    private final ObjectArraySource<RowSetBuilderSequential> slotLeftRowSetBuilders =
             new ObjectArraySource<>(RowSetBuilderSequential.class);
     /**
      * the location that we must write to in modified slots; also if we have a pointer that falls outside the range [0,
@@ -51,9 +46,9 @@ public class NaturalJoinModifiedSlotTracker {
     public static final byte FLAG_RIGHT_MODIFY_PROBE = 0x2;
     public static final byte FLAG_RIGHT_CHANGE = 0x4;
     public static final byte FLAG_RIGHT_ADD = 0x8;
-    /** the slot has accumulated left row keys to remove (in {@link #slotRemovalBuilders}) */
+    /** the slot has accumulated left row keys to remove (in {@link #slotLeftRowSetBuilders}) */
     public static final byte FLAG_LEFT_REMOVE = 0x10;
-    /** the slot has accumulated left row keys to add (in {@link #slotAdditionBuilders}) */
+    /** the slot has accumulated left row keys to add (in {@link #slotLeftRowSetBuilders}) */
     public static final byte FLAG_LEFT_ADD = 0x20;
 
     /**
@@ -126,8 +121,7 @@ public class NaturalJoinModifiedSlotTracker {
             allocated += CHUNK_SIZE;
             modifiedSlots.ensureCapacity(allocated);
             originalRightValues.ensureCapacity(allocated);
-            slotRemovalBuilders.ensureCapacity(allocated);
-            slotAdditionBuilders.ensureCapacity(allocated);
+            slotLeftRowSetBuilders.ensureCapacity(allocated);
         }
         modifiedSlots.set(pointer, ((long) slot << FLAG_SHIFT) | flags);
         originalRightValues.set(pointer, originalRightValue);
@@ -147,19 +141,23 @@ public class NaturalJoinModifiedSlotTracker {
      */
     public long addLeftRemoval(final long cookie, final int slot, final long removedRowKey, final long rightValue) {
         final long resultCookie;
-        final long entryPointer;
+        final RowSetBuilderSequential builder;
         if (!isValidCookie(cookie)) {
             resultCookie = doAddition(slot, rightValue, FLAG_LEFT_REMOVE);
-            entryPointer = getPointerFromCookie(resultCookie);
-            slotRemovalBuilders.set(entryPointer, RowSetFactory.builderSequential());
+            builder = RowSetFactory.builderSequential();
+            slotLeftRowSetBuilders.set(getPointerFromCookie(resultCookie), builder);
         } else {
             resultCookie = updateFlags(cookie, FLAG_LEFT_REMOVE);
-            entryPointer = getPointerFromCookie(cookie);
-            if (slotRemovalBuilders.getUnsafe(entryPointer) == null) {
-                slotRemovalBuilders.set(entryPointer, RowSetFactory.builderSequential());
+            final long entryPointer = getPointerFromCookie(cookie);
+            final RowSetBuilderSequential existing = slotLeftRowSetBuilders.getUnsafe(entryPointer);
+            if (existing == null) {
+                builder = RowSetFactory.builderSequential();
+                slotLeftRowSetBuilders.set(entryPointer, builder);
+            } else {
+                builder = existing;
             }
         }
-        slotRemovalBuilders.getUnsafe(entryPointer).appendKey(removedRowKey);
+        builder.appendKey(removedRowKey);
         return resultCookie;
     }
 
@@ -176,19 +174,23 @@ public class NaturalJoinModifiedSlotTracker {
      */
     public long addLeftAddition(final long cookie, final int slot, final long addedRowKey, final long rightValue) {
         final long resultCookie;
-        final long entryPointer;
+        final RowSetBuilderSequential builder;
         if (!isValidCookie(cookie)) {
             resultCookie = doAddition(slot, rightValue, FLAG_LEFT_ADD);
-            entryPointer = getPointerFromCookie(resultCookie);
-            slotAdditionBuilders.set(entryPointer, RowSetFactory.builderSequential());
+            builder = RowSetFactory.builderSequential();
+            slotLeftRowSetBuilders.set(getPointerFromCookie(resultCookie), builder);
         } else {
             resultCookie = updateFlags(cookie, FLAG_LEFT_ADD);
-            entryPointer = getPointerFromCookie(cookie);
-            if (slotAdditionBuilders.getUnsafe(entryPointer) == null) {
-                slotAdditionBuilders.set(entryPointer, RowSetFactory.builderSequential());
+            final long entryPointer = getPointerFromCookie(cookie);
+            final RowSetBuilderSequential existing = slotLeftRowSetBuilders.getUnsafe(entryPointer);
+            if (existing == null) {
+                builder = RowSetFactory.builderSequential();
+                slotLeftRowSetBuilders.set(entryPointer, builder);
+            } else {
+                builder = existing;
             }
         }
-        slotAdditionBuilders.getUnsafe(entryPointer).appendKey(addedRowKey);
+        builder.appendKey(addedRowKey);
         return resultCookie;
     }
 
@@ -207,8 +209,16 @@ public class NaturalJoinModifiedSlotTracker {
     void forAllModifiedSlots(ModifiedSlotConsumer slotConsumer) {
         for (int ii = 0; ii < pointer; ++ii) {
             final long slotAndFlag = modifiedSlots.getLong(ii);
-            final int slot = (int) (slotAndFlag >> FLAG_SHIFT);
             final byte flag = (byte) (slotAndFlag & FLAG_MASK);
+            if (flag == 0) {
+                // A pure left add/remove entry whose FLAG_LEFT_ADD/FLAG_LEFT_REMOVE has already been consumed and
+                // cleared has no right-side change to propagate. Skipping it is required for correctness (not just
+                // efficiency): its saved originalRightValue is the raw slot state, which for a duplicate RHS key is the
+                // internal duplicate-location token rather than the resolved RHS row key, so processing it would
+                // spuriously report the right columns as modified for every remaining left row on that key.
+                continue;
+            }
+            final int slot = (int) (slotAndFlag >> FLAG_SHIFT);
             slotConsumer.accept(slot, originalRightValues.getLong(ii), flag);
         }
     }
@@ -245,11 +255,11 @@ public class NaturalJoinModifiedSlotTracker {
                 continue;
             }
             final int slot = (int) (slotAndFlag >> FLAG_SHIFT);
-            final RowSetBuilderSequential builder = slotRemovalBuilders.getUnsafe(ii);
+            final RowSetBuilderSequential builder = slotLeftRowSetBuilders.getUnsafe(ii);
             try (final WritableRowSet removed = builder.build()) {
                 consumer.accept(slot, removed);
             }
-            slotRemovalBuilders.set(ii, null);
+            slotLeftRowSetBuilders.set(ii, null);
             modifiedSlots.set(ii, slotAndFlag & ~(long) FLAG_LEFT_REMOVE);
         }
     }
@@ -269,11 +279,11 @@ public class NaturalJoinModifiedSlotTracker {
                 continue;
             }
             final int slot = (int) (slotAndFlag >> FLAG_SHIFT);
-            final RowSetBuilderSequential builder = slotAdditionBuilders.getUnsafe(ii);
+            final RowSetBuilderSequential builder = slotLeftRowSetBuilders.getUnsafe(ii);
             try (final WritableRowSet added = builder.build()) {
                 consumer.accept(slot, added);
             }
-            slotAdditionBuilders.set(ii, null);
+            slotLeftRowSetBuilders.set(ii, null);
             modifiedSlots.set(ii, slotAndFlag & ~(long) FLAG_LEFT_ADD);
         }
     }
