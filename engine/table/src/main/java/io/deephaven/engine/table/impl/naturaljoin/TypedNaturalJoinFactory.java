@@ -570,15 +570,10 @@ public class TypedNaturalJoinFactory {
     }
 
     public static void incrementalLeftInsertUpdate(HasherConfig<?> hasherConfig, CodeBlock.Builder builder) {
-        // A new (or reused-tombstoned) slot: create an empty row set now and accumulate the added key into the slot's
-        // sequential builder in the tracker; the caller performs one bulk insert per slot afterward. (This differs from
-        // the initial-build incrementalBuildLeftInsert, which inserts directly since there is no tracker or churn.)
-        builder.addStatement("mainLeftRowSet.set(tableLocation, $T.empty())", RowSetFactory.class);
-        builder.addStatement("mainRightRowKey.set(tableLocation, $T.NULL_ROW_KEY)", RowSet.class);
-        builder.addStatement("mainModifiedTrackerCookieSource.set(tableLocation, -1L)");
-        builder.addStatement(
-                "mainModifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addLeftAddition(mainModifiedTrackerCookieSource.getUnsafe(tableLocation), mainInsertMask | tableLocation, rowKeyChunk.get(chunkPosition), $T.NULL_ROW_KEY))",
-                RowSet.class);
+        // A new (or reused-tombstoned) slot has no existing left rows, so create the row set directly from the single
+        // added key rather than allocating an empty row set plus a tracker builder. Any additional left rows for this
+        // key in the same pass take the found path and accumulate into the tracker for a later bulk insert.
+        incrementalBuildLeftInsert(hasherConfig, builder);
         builder.addStatement("leftRedirections.set(leftRedirectionOffset++, $T.NULL_ROW_KEY)", RowSet.class);
     }
 

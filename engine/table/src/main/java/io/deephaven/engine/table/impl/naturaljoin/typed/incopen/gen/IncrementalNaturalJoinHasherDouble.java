@@ -323,10 +323,9 @@ final class IncrementalNaturalJoinHasherDouble extends IncrementalNaturalJoinSta
                     }
                     liveEntries++;
                     mainKeySource0.set(tableLocation, k0);
-                    mainLeftRowSet.set(tableLocation, RowSetFactory.empty());
+                    mainLeftRowSet.set(tableLocation, RowSetFactory.fromKeys(rowKeyChunk.get(chunkPosition)));
                     mainRightRowKey.set(tableLocation, RowSet.NULL_ROW_KEY);
                     mainModifiedTrackerCookieSource.set(tableLocation, -1L);
-                    mainModifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addLeftAddition(mainModifiedTrackerCookieSource.getUnsafe(tableLocation), mainInsertMask | tableLocation, rowKeyChunk.get(chunkPosition), RowSet.NULL_ROW_KEY));
                     leftRedirections.set(leftRedirectionOffset++, RowSet.NULL_ROW_KEY);
                     break;
                 } else if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
@@ -334,10 +333,9 @@ final class IncrementalNaturalJoinHasherDouble extends IncrementalNaturalJoinSta
                         tableLocation = firstDeletedLocation;
                         liveEntries++;
                         mainKeySource0.set(tableLocation, k0);
-                        mainLeftRowSet.set(tableLocation, RowSetFactory.empty());
+                        mainLeftRowSet.set(tableLocation, RowSetFactory.fromKeys(rowKeyChunk.get(chunkPosition)));
                         mainRightRowKey.set(tableLocation, RowSet.NULL_ROW_KEY);
                         mainModifiedTrackerCookieSource.set(tableLocation, -1L);
-                        mainModifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addLeftAddition(mainModifiedTrackerCookieSource.getUnsafe(tableLocation), mainInsertMask | tableLocation, rowKeyChunk.get(chunkPosition), RowSet.NULL_ROW_KEY));
                         leftRedirections.set(leftRedirectionOffset++, RowSet.NULL_ROW_KEY);
                         break;
                     }

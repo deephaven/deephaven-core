@@ -140,25 +140,7 @@ public class NaturalJoinModifiedSlotTracker {
      * @return the cookie for future access
      */
     public long addLeftRemoval(final long cookie, final int slot, final long removedRowKey, final long rightValue) {
-        final long resultCookie;
-        final RowSetBuilderSequential builder;
-        if (!isValidCookie(cookie)) {
-            resultCookie = doAddition(slot, rightValue, FLAG_LEFT_REMOVE);
-            builder = RowSetFactory.builderSequential();
-            slotLeftRowSetBuilders.set(getPointerFromCookie(resultCookie), builder);
-        } else {
-            resultCookie = updateFlags(cookie, FLAG_LEFT_REMOVE);
-            final long entryPointer = getPointerFromCookie(cookie);
-            final RowSetBuilderSequential existing = slotLeftRowSetBuilders.getUnsafe(entryPointer);
-            if (existing == null) {
-                builder = RowSetFactory.builderSequential();
-                slotLeftRowSetBuilders.set(entryPointer, builder);
-            } else {
-                builder = existing;
-            }
-        }
-        builder.appendKey(removedRowKey);
-        return resultCookie;
+        return accumulateLeftRowKey(cookie, slot, removedRowKey, rightValue, FLAG_LEFT_REMOVE);
     }
 
     /**
@@ -173,14 +155,23 @@ public class NaturalJoinModifiedSlotTracker {
      * @return the cookie for future access
      */
     public long addLeftAddition(final long cookie, final int slot, final long addedRowKey, final long rightValue) {
+        return accumulateLeftRowKey(cookie, slot, addedRowKey, rightValue, FLAG_LEFT_ADD);
+    }
+
+    /**
+     * Append {@code rowKey} to the sequential builder for {@code slot} and set {@code flag}, allocating the tracker
+     * entry and/or the builder if necessary. Shared by {@link #addLeftRemoval} and {@link #addLeftAddition}.
+     */
+    private long accumulateLeftRowKey(final long cookie, final int slot, final long rowKey, final long rightValue,
+            final byte flag) {
         final long resultCookie;
         final RowSetBuilderSequential builder;
         if (!isValidCookie(cookie)) {
-            resultCookie = doAddition(slot, rightValue, FLAG_LEFT_ADD);
+            resultCookie = doAddition(slot, rightValue, flag);
             builder = RowSetFactory.builderSequential();
             slotLeftRowSetBuilders.set(getPointerFromCookie(resultCookie), builder);
         } else {
-            resultCookie = updateFlags(cookie, FLAG_LEFT_ADD);
+            resultCookie = updateFlags(cookie, flag);
             final long entryPointer = getPointerFromCookie(cookie);
             final RowSetBuilderSequential existing = slotLeftRowSetBuilders.getUnsafe(entryPointer);
             if (existing == null) {
@@ -190,7 +181,7 @@ public class NaturalJoinModifiedSlotTracker {
                 builder = existing;
             }
         }
-        builder.appendKey(addedRowKey);
+        builder.appendKey(rowKey);
         return resultCookie;
     }
 
@@ -249,19 +240,7 @@ public class NaturalJoinModifiedSlotTracker {
      * @param consumer the consumer of each slot's removed left row keys
      */
     public void forAllLeftRemovals(LeftRowSetConsumer consumer) {
-        for (int ii = 0; ii < pointer; ++ii) {
-            final long slotAndFlag = modifiedSlots.getLong(ii);
-            if ((slotAndFlag & FLAG_LEFT_REMOVE) == 0) {
-                continue;
-            }
-            final int slot = (int) (slotAndFlag >> FLAG_SHIFT);
-            final RowSetBuilderSequential builder = slotLeftRowSetBuilders.getUnsafe(ii);
-            try (final WritableRowSet removed = builder.build()) {
-                consumer.accept(slot, removed);
-            }
-            slotLeftRowSetBuilders.set(ii, null);
-            modifiedSlots.set(ii, slotAndFlag & ~(long) FLAG_LEFT_REMOVE);
-        }
+        forAllLeftSlots(FLAG_LEFT_REMOVE, consumer);
     }
 
     /**
@@ -273,18 +252,28 @@ public class NaturalJoinModifiedSlotTracker {
      * @param consumer the consumer of each slot's added left row keys
      */
     public void forAllLeftAdditions(LeftRowSetConsumer consumer) {
+        forAllLeftSlots(FLAG_LEFT_ADD, consumer);
+    }
+
+    /**
+     * For each slot carrying {@code flag}, build its accumulated left row keys and pass them to the consumer, then
+     * discard the slot's builder and clear {@code flag}. Shared by {@link #forAllLeftRemovals} and
+     * {@link #forAllLeftAdditions}. The row set handed to the consumer is owned by this method and closed after the
+     * consumer returns.
+     */
+    private void forAllLeftSlots(final byte flag, final LeftRowSetConsumer consumer) {
         for (int ii = 0; ii < pointer; ++ii) {
             final long slotAndFlag = modifiedSlots.getLong(ii);
-            if ((slotAndFlag & FLAG_LEFT_ADD) == 0) {
+            if ((slotAndFlag & flag) == 0) {
                 continue;
             }
             final int slot = (int) (slotAndFlag >> FLAG_SHIFT);
             final RowSetBuilderSequential builder = slotLeftRowSetBuilders.getUnsafe(ii);
-            try (final WritableRowSet added = builder.build()) {
-                consumer.accept(slot, added);
+            try (final WritableRowSet rowKeys = builder.build()) {
+                consumer.accept(slot, rowKeys);
             }
             slotLeftRowSetBuilders.set(ii, null);
-            modifiedSlots.set(ii, slotAndFlag & ~(long) FLAG_LEFT_ADD);
+            modifiedSlots.set(ii, slotAndFlag & ~(long) flag);
         }
     }
 
