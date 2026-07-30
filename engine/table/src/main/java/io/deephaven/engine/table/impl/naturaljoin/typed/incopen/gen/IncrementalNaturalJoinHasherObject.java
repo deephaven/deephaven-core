@@ -271,7 +271,8 @@ final class IncrementalNaturalJoinHasherObject extends IncrementalNaturalJoinSta
     }
 
     protected void addLeftSide(RowSequence rowSequence, Chunk[] sourceKeyChunks,
-            LongArraySource leftRedirections, long leftRedirectionOffset) {
+            LongArraySource leftRedirections, long leftRedirectionOffset,
+            NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
         final ObjectChunk<Object, Values> keyChunk0 = sourceKeyChunks[0].asObjectChunk();
         final int chunkSize = keyChunk0.size();
         final LongChunk<OrderedRowKeys> rowKeyChunk = rowSequence.asRowKeyChunk();
@@ -308,7 +309,8 @@ final class IncrementalNaturalJoinHasherObject extends IncrementalNaturalJoinSta
                             } else {
                                 rightRowKey = rightRowKeyForState;
                             }
-                            alternateLeftRowSet.getUnsafe(alternateTableLocation).insert(rowKeyChunk.get(chunkPosition));
+                            // accumulate the added key for one bulk insert per slot, rather than inserting one at a time
+                            alternateModifiedTrackerCookieSource.set(alternateTableLocation, modifiedSlotTracker.addLeftAddition(alternateModifiedTrackerCookieSource.getUnsafe(alternateTableLocation), alternateInsertMask | alternateTableLocation, rowKeyChunk.get(chunkPosition), rightRowKeyForState));
                             leftRedirections.set(leftRedirectionOffset++, rightRowKey);
                             break MAIN_SEARCH;
                         } else {
@@ -323,6 +325,7 @@ final class IncrementalNaturalJoinHasherObject extends IncrementalNaturalJoinSta
                     }
                     liveEntries++;
                     mainKeySource0.set(tableLocation, k0);
+                    // new (or reused-tombstoned) slot has no existing left rows: build the row set from this key directly
                     mainLeftRowSet.set(tableLocation, RowSetFactory.fromKeys(rowKeyChunk.get(chunkPosition)));
                     mainRightRowKey.set(tableLocation, RowSet.NULL_ROW_KEY);
                     mainModifiedTrackerCookieSource.set(tableLocation, -1L);
@@ -333,6 +336,7 @@ final class IncrementalNaturalJoinHasherObject extends IncrementalNaturalJoinSta
                         tableLocation = firstDeletedLocation;
                         liveEntries++;
                         mainKeySource0.set(tableLocation, k0);
+                        // new (or reused-tombstoned) slot has no existing left rows: build the row set from this key directly
                         mainLeftRowSet.set(tableLocation, RowSetFactory.fromKeys(rowKeyChunk.get(chunkPosition)));
                         mainRightRowKey.set(tableLocation, RowSet.NULL_ROW_KEY);
                         mainModifiedTrackerCookieSource.set(tableLocation, -1L);
@@ -350,7 +354,8 @@ final class IncrementalNaturalJoinHasherObject extends IncrementalNaturalJoinSta
                     } else {
                         rightRowKey = rightRowKeyForState;
                     }
-                    mainLeftRowSet.getUnsafe(tableLocation).insert(rowKeyChunk.get(chunkPosition));
+                    // accumulate the added key for one bulk insert per slot, rather than inserting one at a time
+                    mainModifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addLeftAddition(mainModifiedTrackerCookieSource.getUnsafe(tableLocation), mainInsertMask | tableLocation, rowKeyChunk.get(chunkPosition), rightRowKeyForState));
                     leftRedirections.set(leftRedirectionOffset++, rightRowKey);
                     break;
                 } else {
@@ -622,7 +627,8 @@ final class IncrementalNaturalJoinHasherObject extends IncrementalNaturalJoinSta
         }
     }
 
-    protected void removeLeft(RowSequence rowSequence, Chunk[] sourceKeyChunks) {
+    protected void removeLeft(RowSequence rowSequence, Chunk[] sourceKeyChunks,
+            NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
         final ObjectChunk<Object, Values> keyChunk0 = sourceKeyChunks[0].asObjectChunk();
         final LongChunk<OrderedRowKeys> rowKeyChunk = rowSequence.asRowKeyChunk();
         final int chunkSize = keyChunk0.size();
@@ -640,11 +646,18 @@ final class IncrementalNaturalJoinHasherObject extends IncrementalNaturalJoinSta
                         searchAlternate = false;
                         break;
                     }
+                    // single-row slot: removing empties it, so remove directly and skip the tracker
                     final WritableRowSet left = mainLeftRowSet.getUnsafe(tableLocation);
-                    left.remove(rowKeyChunk.get(chunkPosition));
-                    if (left.isEmpty() && rightState == RowSet.NULL_ROW_KEY) {
-                        mainRightRowKey.set(tableLocation, TOMBSTONE_RIGHT_STATE);
-                        liveEntries--;
+                    if (left.size() == 1) {
+                        left.remove(rowKeyChunk.get(chunkPosition));
+                        if (rightState == RowSet.NULL_ROW_KEY) {
+                            // no right match remains, so the slot is now dead
+                            mainRightRowKey.set(tableLocation, TOMBSTONE_RIGHT_STATE);
+                            liveEntries--;
+                        }
+                    } else {
+                        // multi-row slot: accumulate for one bulk remove per slot
+                        mainModifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addLeftRemoval(mainModifiedTrackerCookieSource.getUnsafe(tableLocation), mainInsertMask | tableLocation, rowKeyChunk.get(chunkPosition), rightState));
                     }
                     found = true;
                     break;
@@ -665,11 +678,18 @@ final class IncrementalNaturalJoinHasherObject extends IncrementalNaturalJoinSta
                                 if (isStateDeleted(rightState)) {
                                     break;
                                 }
+                                // single-row slot: removing empties it, so remove directly and skip the tracker
                                 final WritableRowSet left = alternateLeftRowSet.getUnsafe(alternateTableLocation);
-                                left.remove(rowKeyChunk.get(chunkPosition));
-                                if (left.isEmpty() && rightState == RowSet.NULL_ROW_KEY) {
-                                    alternateRightRowKey.set(alternateTableLocation, TOMBSTONE_RIGHT_STATE);
-                                    liveEntries--;
+                                if (left.size() == 1) {
+                                    left.remove(rowKeyChunk.get(chunkPosition));
+                                    if (rightState == RowSet.NULL_ROW_KEY) {
+                                        // no right match remains, so the slot is now dead
+                                        alternateRightRowKey.set(alternateTableLocation, TOMBSTONE_RIGHT_STATE);
+                                        liveEntries--;
+                                    }
+                                } else {
+                                    // multi-row slot: accumulate for one bulk remove per slot
+                                    alternateModifiedTrackerCookieSource.set(alternateTableLocation, modifiedSlotTracker.addLeftRemoval(alternateModifiedTrackerCookieSource.getUnsafe(alternateTableLocation), alternateInsertMask | alternateTableLocation, rowKeyChunk.get(chunkPosition), rightState));
                                 }
                                 alternateFound = true;
                                 break;
