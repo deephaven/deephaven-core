@@ -825,7 +825,6 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
         // whose key actually changed, so we can drive the generated removeLeft() without re-reading the previous keys.
         // noinspection unchecked
         final WritableChunk<Values>[] compactedPrevKeys = new WritableChunk[numColumns];
-        final Chunk[] compactedPrevKeysAsChunks = new Chunk[numColumns];
 
         try (final SafeCloseableArray<ChunkSource.GetContext> ignored = new SafeCloseableArray<>(currentContexts);
                 final SafeCloseableArray<ChunkSource.GetContext> ignored2 = new SafeCloseableArray<>(prevContexts);
@@ -841,44 +840,41 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
                 currentContexts[cc] = leftSources[cc].makeGetContext(chunkSize, currentShared);
                 prevContexts[cc] = leftSources[cc].makeGetContext(chunkSize, prevShared);
                 compactedPrevKeys[cc] = chunkTypes[cc].makeWritableChunk(chunkSize);
-                compactedPrevKeysAsChunks[cc] = compactedPrevKeys[cc];
             }
 
             while (postIt.hasMore()) {
-                final RowSequence postChunkOk = postIt.getNextRowSequenceWithLength(chunkSize);
-                final RowSequence preChunkOk = preIt.getNextRowSequenceWithLength(chunkSize);
-                currentShared.reset();
-                prevShared.reset();
+                final RowSequence preChunkRows = preIt.getNextRowSequenceWithLength(chunkSize);
+                final RowSequence postChunkRows = postIt.getNextRowSequenceWithLength(chunkSize);
 
-                final int chunkOkSize = postChunkOk.intSize();
+                final int chunkRsSize = postChunkRows.intSize();
 
                 // Read the current key values (at the post-shift row keys) and the previous key values (at the
-                // pre-shift
-                // row keys) exactly once. allEqual[ii] is true only if every key column matches its previous value; a
-                // row whose key actually changed is exactly one where allEqual[ii] is false.
+                // pre-shift row keys) exactly once. allEqual[ii] is true only if every key column matches its previous
+                // value; a row whose key actually changed is exactly one where allEqual[ii] is false.
                 for (int cc = 0; cc < numColumns; ++cc) {
+                    prevKeyChunks[cc] = leftSources[cc].getPrevChunk(prevContexts[cc], preChunkRows);
                     final Chunk<? extends Values> currentValues =
-                            leftSources[cc].getChunk(currentContexts[cc], postChunkOk);
-                    prevKeyChunks[cc] = leftSources[cc].getPrevChunk(prevContexts[cc], preChunkOk);
+                            leftSources[cc].getChunk(currentContexts[cc], postChunkRows);
                     if (cc == 0) {
-                        keyChunkEquals[cc].equal(currentValues, prevKeyChunks[cc], allEqual);
+                        keyChunkEquals[cc].equal(prevKeyChunks[cc], currentValues, allEqual);
                     } else {
-                        keyChunkEquals[cc].andEqual(currentValues, prevKeyChunks[cc], allEqual);
+                        keyChunkEquals[cc].andEqual(prevKeyChunks[cc], currentValues, allEqual);
                     }
                 }
 
-                final LongChunk<OrderedRowKeys> postKeys = postChunkOk.asRowKeyChunk();
-                final LongChunk<OrderedRowKeys> preKeys = preChunkOk.asRowKeyChunk();
+                final LongChunk<OrderedRowKeys> preKeys = preChunkRows.asRowKeyChunk();
+                final LongChunk<OrderedRowKeys> postKeys = postChunkRows.asRowKeyChunk();
 
                 // Emit the changed keys and compact the previous key values / pre-shift row keys for the changed rows.
                 int changedInChunk = 0;
-                for (int ii = 0; ii < chunkOkSize; ++ii) {
+                for (int ii = 0; ii < chunkRsSize; ++ii) {
                     if (allEqual.get(ii)) {
                         continue;
                     }
-                    changedPostShift.appendKey(postKeys.get(ii));
                     changedPreShift.appendKey(preKeys.get(ii));
+                    changedPostShift.appendKey(postKeys.get(ii));
                     for (int cc = 0; cc < numColumns; ++cc) {
+                        // TODO: virtual call per-cell
                         compactedPrevKeys[cc].copyFromChunk(prevKeyChunks[cc], ii, changedInChunk, 1);
                     }
                     compactedPreRowKeys.set(changedInChunk, preKeys.get(ii));
@@ -895,9 +891,12 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
                     // generated per-type removeLeft handler with no additional reads.
                     try (final RowSequence removeRows =
                             RowSequenceFactory.wrapRowKeysChunkAsRowSequence(compactedPreRowKeys)) {
-                        removeLeft(removeRows, compactedPrevKeysAsChunks, modifiedSlotTracker);
+                        removeLeft(removeRows, compactedPrevKeys, modifiedSlotTracker);
                     }
                 }
+
+                prevShared.reset();
+                currentShared.reset();
             }
         }
         // Perform the accumulated removals from each slot's left row set in a single bulk remove per slot.

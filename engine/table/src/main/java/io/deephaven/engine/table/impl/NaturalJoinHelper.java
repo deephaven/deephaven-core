@@ -876,39 +876,29 @@ class NaturalJoinHelper {
                 final boolean leftKeyModifications =
                         leftModified.isNonempty() && leftModifiedColumns.containsAny(leftKeyColumns);
 
-                // When the key columns are (coarsely) flagged as modified, only a subset of the modified rows may carry
-                // an actually different key value. In a single pass, compare the current key values to the previous key
-                // values, collapse away the rows whose key is unchanged, and remove the rows whose key did change from
-                // their previous-key hash slots (reusing the previous key values we just read). This avoids the hash
-                // lookups and per-key row set churn of removing and re-adding rows whose key did not really change, and
-                // avoids reading the previous keys a second time. The reported rows are the post-shift keys that must
-                // be
-                // re-added and the aligned pre-shift keys whose redirections must be removed.
-                final WritableRowSet changedKeysPostShift;
                 final WritableRowSet changedKeysPreShift;
+                final WritableRowSet changedKeysPostShift;
                 if (leftKeyModifications) {
                     final RowSet leftModifiedPreShift =
                             leftShifted.nonempty() ? leftShifted.unapply(leftModified.copy()) : leftModified;
-                    final RowSetBuilderSequential postShiftBuilder = RowSetFactory.builderSequential();
                     final RowSetBuilderSequential preShiftBuilder = RowSetFactory.builderSequential();
+                    final RowSetBuilderSequential postShiftBuilder = RowSetFactory.builderSequential();
                     jsm.removeLeftModifications(leftSources, leftModifiedPreShift, leftModified, preShiftBuilder,
                             postShiftBuilder,
                             modifiedSlotTracker);
-                    changedKeysPostShift = postShiftBuilder.build();
                     changedKeysPreShift = preShiftBuilder.build();
+                    changedKeysPostShift = postShiftBuilder.build();
                     if (leftModifiedPreShift != leftModified) {
                         leftModifiedPreShift.close();
                     }
                 } else {
-                    changedKeysPostShift = null;
                     changedKeysPreShift = null;
+                    changedKeysPostShift = null;
                 }
                 final boolean leftKeyChanges = changedKeysPostShift != null && changedKeysPostShift.isNonempty();
 
                 final boolean newLeftRedirections = leftAdditions || leftKeyChanges;
                 final long buildSize = Math.max(leftAdded.size(), leftKeyChanges ? changedKeysPostShift.size() : 0);
-                // The changed-key removal is already done above (with its own contexts); the probe context here only
-                // needs to cover the left removals and shifts.
                 final long probeSize = UpdateSizeCalculator.chunkSize(leftRemoved.size(), leftShifted,
                         JoinControl.CHUNK_SIZE);
 
@@ -934,8 +924,6 @@ class NaturalJoinHelper {
                         try (final WritableRowSet prevRowSet = leftRecorder.getParent().getRowSet().copyPrev()) {
                             prevRowSet.remove(leftRemoved);
 
-                            // Rows whose key actually changed are handled by the remove/add above; every other
-                            // (unchanged-key) row that shifted must have its state row key shifted here.
                             if (leftKeyChanges) {
                                 prevRowSet.remove(changedKeysPreShift);
                             }
