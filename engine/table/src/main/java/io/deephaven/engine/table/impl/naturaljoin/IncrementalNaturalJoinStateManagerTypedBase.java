@@ -825,8 +825,7 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
         final ChunkSource.GetContext[] currentContexts = new ChunkSource.GetContext[numColumns];
         final ChunkSource.FillContext[] prevContexts = new ChunkSource.FillContext[numColumns];
         // Per-column previous key values: filled from the previous chunk, then compacted in place to just the rows
-        // whose
-        // key actually changed, so we can drive the generated removeLeft() without re-reading the previous keys.
+        // whose key actually changed, so we can drive the generated removeLeft() without re-reading the previous keys.
         // noinspection unchecked
         final WritableChunk<Values>[] prevKeys = new WritableChunk[numColumns];
 
