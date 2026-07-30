@@ -72,7 +72,8 @@ import java.util.stream.Collectors;
  * 
  * The caller here might be passing in an existing ResolvedTable so later operations are safe, but it isn't declared
  * that way, so we can't be sure, and the method shouldn't rely on it. Here's an example instead of retaining a table
- * for later reuse - both the initial table is retained upon creation, then each
+ * for later reuse - both the initial table is retained upon creation, then each change in filter is retained as well.
+ * Each retained table must be released when being replaced, or when the entire instance will no longer be used.
  * 
  * <pre>
  * class SwapFilters() {
@@ -103,6 +104,9 @@ import java.util.stream.Collectors;
  *     }
  *     close() {
  *         this.table.then(t => t.close());
+ *         if (this.filteredTable) {
+ *             this.filteredTable.then(t => t.close());
+ *         }
  *     }
  * }
  * </pre>
