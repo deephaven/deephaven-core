@@ -113,50 +113,91 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
      * The table size has updated, so live scrollbars and the like can be updated accordingly.
      */
     @JsProperty(namespace = "dh.Table")
-    public static final String EVENT_SIZECHANGED = "sizechanged",
-            /**
-             * {@code event.detail} is the currently visible window, the same as if {@code getViewportData} was called
-             * and resolved. Listening to this event removes the need to listen to the finer grained events below for
-             * data changes. In contrast, using the finer grained events may enable only updating the specific rows
-             * which saw a change.
-             */
-            EVENT_UPDATED = "updated",
-            /**
-             * Finer grained visibility into data being added, rather than just seeing the currently visible viewport.
-             * Provides the row being added, and the offset it will exist at.
-             */
-            EVENT_ROWADDED = "rowadded",
-            /**
-             * Finer grained visibility into data being removed, rather than just seeing the currently visible viewport.
-             * Provides the row being removed, and the offset it used to exist at.
-             */
-            EVENT_ROWREMOVED = "rowremoved",
-            /**
-             * Finer grained visibility into data being updated, rather than just seeing the currently visible viewport.
-             * Provides the row being updated and the offset it exists at.
-             */
-            EVENT_ROWUPDATED = "rowupdated",
-            /**
-             * Indicates that a sort has occurred, and that the UI should be replaced with the current viewport.
-             */
-            EVENT_SORTCHANGED = "sortchanged",
-            /**
-             * Indicates that a filter has occurred, and that the UI should be replaced with the current viewport.
-             */
-            EVENT_FILTERCHANGED = "filterchanged",
-            /**
-             * Indicates that columns for this table have changed, and column headers should be updated.
-             */
-            EVENT_CUSTOMCOLUMNSCHANGED = "customcolumnschanged",
-            EVENT_DISCONNECT = "disconnect",
-            EVENT_RECONNECT = "reconnect",
-            EVENT_RECONNECTFAILED = "reconnectfailed",
-            /**
-             * Indicates that an error occurred on this table on the server or while communicating with it. The message
-             * will provide more insight, but recent operations were likely unsuccessful and may need to be reapplied.
-             */
-            EVENT_REQUEST_FAILED = "requestfailed",
-            EVENT_REQUEST_SUCCEEDED = "requestsucceeded";
+    public static final String EVENT_SIZECHANGED = "sizechanged";
+
+    /**
+     * {@code event.detail} is the currently visible window, the same as if {@code getViewportData} was called and
+     * resolved. Listening to this event removes the need to listen to the finer grained events below for data changes.
+     * In contrast, using the finer grained events may enable only updating the specific rows which saw a change.
+     */
+    @JsProperty(namespace = "dh.Table")
+    public static final String EVENT_UPDATED = "updated";
+
+    /**
+     * Finer grained visibility into data being added, rather than just seeing the currently visible viewport. Provides
+     * the row being added, and the offset it will exist at.
+     */
+    @JsProperty(namespace = "dh.Table")
+    public static final String EVENT_ROWADDED = "rowadded";
+
+    /**
+     * Finer grained visibility into data being removed, rather than just seeing the currently visible viewport.
+     * Provides the row being removed, and the offset it used to exist at.
+     */
+    @JsProperty(namespace = "dh.Table")
+    public static final String EVENT_ROWREMOVED = "rowremoved";
+
+    /**
+     * Finer grained visibility into data being updated, rather than just seeing the currently visible viewport.
+     * Provides the row being updated and the offset it exists at.
+     */
+    @JsProperty(namespace = "dh.Table")
+    public static final String EVENT_ROWUPDATED = "rowupdated";
+
+    /**
+     * Indicates that a sort has occurred, and that the UI should be replaced with the current viewport.
+     */
+    @JsProperty(namespace = "dh.Table")
+    public static final String EVENT_SORTCHANGED = "sortchanged";
+
+    /**
+     * Indicates that a filter has occurred, and that the UI should be replaced with the current viewport.
+     */
+    @JsProperty(namespace = "dh.Table")
+    public static final String EVENT_FILTERCHANGED = "filterchanged";
+
+    /**
+     * Indicates that columns for this table have changed, and column headers should be updated.
+     */
+    @JsProperty(namespace = "dh.Table")
+    public static final String EVENT_CUSTOMCOLUMNSCHANGED = "customcolumnschanged";
+
+    /**
+     * This table has lost its connection to the server. Events will not fire and data will not update until the
+     * connection is reestablished, at which point {@link #EVENT_RECONNECT} will fire. A reconnect will be attempted
+     * automatically.
+     */
+    @JsProperty(namespace = "dh.Table")
+    public static final String EVENT_DISCONNECT = "disconnect";
+
+    /**
+     * This table has reconnected to the server, and data will update again. Any viewport or subscription that was
+     * active before the disconnect is restored.
+     */
+    @JsProperty(namespace = "dh.Table")
+    public static final String EVENT_RECONNECT = "reconnect";
+
+    /**
+     * This table failed to reconnect to the server, and is no longer usable. The {@code event.detail} value describes
+     * the error that prevented the reconnect.
+     */
+    @JsProperty(namespace = "dh.Table")
+    public static final String EVENT_RECONNECTFAILED = "reconnectfailed";
+
+    /**
+     * Indicates that an error occurred on this table on the server or while communicating with it. The message will
+     * provide more insight, but recent operations were likely unsuccessful and may need to be reapplied.
+     */
+    @JsProperty(namespace = "dh.Table")
+    public static final String EVENT_REQUEST_FAILED = "requestfailed";
+
+    /**
+     * Indicates that a pending change to this table, such as a new sort, filter, or custom column, was successfully
+     * applied on the server. Any of {@link #EVENT_SORTCHANGED}, {@link #EVENT_FILTERCHANGED}, or
+     * {@link #EVENT_CUSTOMCOLUMNSCHANGED} that resulted from the change will fire after this event.
+     */
+    @JsProperty(namespace = "dh.Table")
+    public static final String EVENT_REQUEST_SUCCEEDED = "requestsucceeded";
 
     /**
      * The size the table will have if it is uncoalesced.
