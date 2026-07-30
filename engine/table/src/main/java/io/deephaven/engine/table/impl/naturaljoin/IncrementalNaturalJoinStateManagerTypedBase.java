@@ -822,24 +822,25 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
         final int numColumns = leftSources.length;
         final int chunkSize = (int) Math.min(CHUNK_SIZE, modifiedPostShift.size());
 
-        final ChunkSource.GetContext[] currentContexts = new ChunkSource.GetContext[numColumns];
         final ChunkSource.FillContext[] prevContexts = new ChunkSource.FillContext[numColumns];
+        final ChunkSource.GetContext[] currentContexts = new ChunkSource.GetContext[numColumns];
         // noinspection unchecked
         final WritableChunk<Values>[] prevKeys = new WritableChunk[numColumns];
 
-        try (final SafeCloseableArray<ChunkSource.GetContext> ignored = new SafeCloseableArray<>(currentContexts);
-                final SafeCloseableArray<ChunkSource.FillContext> ignored2 = new SafeCloseableArray<>(prevContexts);
+        try (
+                final SafeCloseableArray<ChunkSource.FillContext> ignored = new SafeCloseableArray<>(prevContexts);
+                final SafeCloseableArray<ChunkSource.GetContext> ignored2 = new SafeCloseableArray<>(currentContexts);
                 final SafeCloseableArray<WritableChunk<Values>> ignored3 = new SafeCloseableArray<>(prevKeys);
-                final WritableBooleanChunk<Any> allEqual = WritableBooleanChunk.makeWritableChunk(chunkSize);
+                final WritableBooleanChunk<Any> comparisonResults = WritableBooleanChunk.makeWritableChunk(chunkSize);
                 final WritableLongChunk<OrderedRowKeys> compactedPreRowKeys =
                         WritableLongChunk.makeWritableChunk(chunkSize);
-                final SharedContext currentShared = SharedContext.makeSharedContext();
                 final SharedContext prevShared = SharedContext.makeSharedContext();
-                final RowSequence.Iterator postIt = modifiedPostShift.getRowSequenceIterator();
-                final RowSequence.Iterator preIt = modifiedPreShift.getRowSequenceIterator()) {
+                final SharedContext currentShared = SharedContext.makeSharedContext();
+                final RowSequence.Iterator preIt = modifiedPreShift.getRowSequenceIterator();
+                final RowSequence.Iterator postIt = modifiedPostShift.getRowSequenceIterator()) {
             for (int cc = 0; cc < numColumns; ++cc) {
-                currentContexts[cc] = leftSources[cc].makeGetContext(chunkSize, currentShared);
                 prevContexts[cc] = leftSources[cc].makeFillContext(chunkSize, prevShared);
+                currentContexts[cc] = leftSources[cc].makeGetContext(chunkSize, currentShared);
                 prevKeys[cc] = chunkTypes[cc].makeWritableChunk(chunkSize);
             }
 
@@ -847,15 +848,16 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
                 final RowSequence preChunkRows = preIt.getNextRowSequenceWithLength(chunkSize);
                 final RowSequence postChunkRows = postIt.getNextRowSequenceWithLength(chunkSize);
 
+                // Initialize comparisonResults to true if previous and current are equal (the sense inverts later)
                 final int chunkRsSize = postChunkRows.intSize();
                 for (int cc = 0; cc < numColumns; ++cc) {
                     leftSources[cc].fillPrevChunk(prevContexts[cc], prevKeys[cc], preChunkRows);
                     final Chunk<? extends Values> currentValues =
                             leftSources[cc].getChunk(currentContexts[cc], postChunkRows);
                     if (cc == 0) {
-                        keyChunkEquals[cc].equal(prevKeys[cc], currentValues, allEqual);
+                        keyChunkEquals[cc].equal(prevKeys[cc], currentValues, comparisonResults);
                     } else {
-                        keyChunkEquals[cc].andEqual(prevKeys[cc], currentValues, allEqual);
+                        keyChunkEquals[cc].andEqual(prevKeys[cc], currentValues, comparisonResults);
                     }
                 }
 
@@ -863,20 +865,20 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
                 final LongChunk<OrderedRowKeys> postKeys = postChunkRows.asRowKeyChunk();
                 int changedInChunk = 0;
                 for (int ii = 0; ii < chunkRsSize; ++ii) {
-                    final boolean changed = !allEqual.get(ii);
-                    // Note that allEqual inverts meaning for the chunk compaction.
-                    allEqual.set(ii, changed);
+                    final boolean changed = !comparisonResults.get(ii);
+                    // Note that comparisonResults inverts meaning for the chunk compaction.
+                    comparisonResults.set(ii, changed);
                     if (changed) {
                         changedPreShift.appendKey(preKeys.get(ii));
                         changedPostShift.appendKey(postKeys.get(ii));
                         compactedPreRowKeys.set(changedInChunk++, preKeys.get(ii));
                     }
                 }
-                allEqual.setSize(chunkRsSize);
+                comparisonResults.setSize(chunkRsSize);
 
                 if (changedInChunk > 0) {
                     for (int cc = 0; cc < numColumns; ++cc) {
-                        keyCompactKernels[cc].compact(prevKeys[cc], allEqual);
+                        keyCompactKernels[cc].compact(prevKeys[cc], comparisonResults);
                     }
                     compactedPreRowKeys.setSize(changedInChunk);
                     // Accumulate the changed rows' removals into the per-slot builders in the tracker, keyed by their
