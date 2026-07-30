@@ -58,8 +58,11 @@ import java.util.stream.Collectors;
  *   // Any use of methods on table after this point would be potentially invalid, we didn't retain it ourselves,
  *   // and don't know if the caller did either.
  *   try {
- *       const a = data.findColumn('A');
- *       const data = await result.createSnapshot({rows:{first:0, last:10}, columns:[a, 'B']});
+ *       const a = result.findColumn('A');
+ *       const data = await result.createSnapshot({
+ *           rows:{first:0, last:10},
+ *           columns:[a, 'B']
+ *       });
  *       return data.get(0, a);
  *   } finally {
  *       result.close();
@@ -75,7 +78,7 @@ import java.util.stream.Collectors;
  * class SwapFilters() {
  *     constructor(table: dh.TableOperations) {
  *         this.filters: ReadonlyArray&lt;dh.FilterCondition> = [];
- *         this.table: Promise&lt;dh.ResolvedTable> = Promise.resolve(table);
+ *         this.table: Promise&lt;dh.ResolvedTable> = table.resolve();
  *         this.filteredTable: null|Promise&lt;dh.ResolvedTable> = null;
  *     }
  *     changeFilters(filters: ReadonlyArray&lt;dh.FilterCondition>) {
@@ -89,17 +92,20 @@ import java.util.stream.Collectors;
  *         this.filteredTable = this.table.then(t => t.where(filters));
  *     }
  *     async loadData():dh.TableData {
- *         (await this.filteredTable).createSnapshot()
+ *         if (!this.filteredTable) {
+ *             throw new Error("no filters set");
+ *         }
+ *         const t = await this.filteredTable!;
+ *         return t.createSnapshot({
+ *             rows: {first:0, last:1_000_000},
+ *             columns: t.columns
+ *         })
  *     }
  *     close() {
  *         this.table.then(t => t.close());
  *     }
  * }
- * async function process(table: dh.TableOperations) {
- *   var table.where(this.filters);
- * }
  * </pre>
- *
  */
 @TsName(namespace = "dh", name = "TableOperations")
 @TsInterface
