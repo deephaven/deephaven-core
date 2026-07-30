@@ -6,19 +6,16 @@ package io.deephaven.server.plugin.js;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.deephaven.annotations.SimpleStyle;
+import io.deephaven.annotations.BuildableStyle;
 import io.deephaven.plugin.js.JsPlugin;
 import org.immutables.value.Value.Immutable;
-import org.immutables.value.Value.Parameter;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.Map;
 
 /**
  * @see <a href="https://github.com/deephaven/js-plugin-template">js-plugin-template</a>
  */
 @Immutable
-@SimpleStyle
+@BuildableStyle
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public abstract class JsPluginManifestEntry {
 
@@ -27,38 +24,50 @@ public abstract class JsPluginManifestEntry {
     public static final String MAIN = "main";
     public static final String LOADER = "loader";
 
+    public static Builder builder() {
+        return ImmutableJsPluginManifestEntry.builder();
+    }
+
     @JsonCreator
     public static JsPluginManifestEntry of(
             @JsonProperty(value = NAME, required = true) String name,
             @JsonProperty(value = VERSION, required = true) String version,
             @JsonProperty(value = MAIN, required = true) String main,
-            @JsonProperty(value = LOADER) Map<String, Object> loader) {
-        return ImmutableJsPluginManifestEntry.of(name, version, main, loader);
+            @JsonProperty(value = LOADER) Object loader) {
+        final Builder builder = builder()
+                .name(name)
+                .version(version)
+                .main(main);
+        if (loader != null) {
+            builder.loader(loader);
+        }
+        return builder.build();
     }
 
     public static JsPluginManifestEntry from(JsPlugin plugin) {
-        return ImmutableJsPluginManifestEntry.of(plugin.name(), plugin.version(), plugin.main().toString(),
-                plugin.loader().orElse(null));
+        final Builder builder = builder()
+                .name(plugin.name())
+                .version(plugin.version())
+                .main(plugin.main().toString());
+        plugin.loader().ifPresent(builder::loader);
+        return builder.build();
     }
 
     /**
      * The name of the plugin.
      */
-    @Parameter
     @JsonProperty(NAME)
     public abstract String name();
 
     /**
      * The version of the plugin.
      */
-    @Parameter
     @JsonProperty(VERSION)
     public abstract String version();
 
     /**
      * The main js file.
      */
-    @Parameter
     @JsonProperty(MAIN)
     public abstract String main();
 
@@ -66,7 +75,18 @@ public abstract class JsPluginManifestEntry {
      * The optional loader configuration, sourced from the plugin's "loader" package.json field (if present).
      */
     @Nullable
-    @Parameter
     @JsonProperty(LOADER)
-    public abstract Map<String, Object> loader();
+    public abstract Object loader();
+
+    public interface Builder {
+        Builder name(String name);
+
+        Builder version(String version);
+
+        Builder main(String main);
+
+        Builder loader(Object loader);
+
+        JsPluginManifestEntry build();
+    }
 }

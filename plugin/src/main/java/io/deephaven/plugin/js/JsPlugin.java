@@ -109,7 +109,7 @@ public abstract class JsPlugin extends PluginBase {
      *
      * @return the loader configuration
      */
-    public abstract Optional<Map<String, Object>> loader();
+    public abstract Optional<Object> loader();
 
     @Override
     public final <T, V extends Plugin.Visitor<T>> T walk(V visitor) {
@@ -153,7 +153,7 @@ public abstract class JsPlugin extends PluginBase {
 
         Builder paths(Paths paths);
 
-        Builder loader(Map<String, Object> loader);
+        Builder loader(Object loader);
 
         JsPlugin build();
     }
