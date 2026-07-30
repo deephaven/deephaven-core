@@ -106,7 +106,7 @@ Select **Add New Rule**, then choose **Conditional** to format individual cells 
 
 - Choose a left-hand column from the dropdown list provided.
 - Select the desired condition, such as "is exactly", "contains", "starts with", etc..
-  - You can choose conditions that apply to Value or Column
+  - You can choose conditions that apply to Value or Column.
   - Value conditions mean that the right-hand side of the condition is a specific value, while Column conditions mean that the right-hand side of the condition is another column in the table.
 
 ![Conditional formatting condition selection](../../assets/how-to/ui/cond_formatting3.png)
