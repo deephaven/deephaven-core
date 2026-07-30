@@ -7,7 +7,7 @@ This guide explains how to build Java or Groovy projects that depend on Deephave
 
 ## Set up your project
 
-Deephaven artifacts are published to Maven Central, so no credentials are required.
+Deephaven publishes artifacts to Maven Central, so no credentials are required.
 
 ### Gradle
 
@@ -75,14 +75,14 @@ Add dependencies to your `pom.xml`:
 
 The dependencies you need depend on what your project does. Here are common patterns:
 
-| Use case                               | Dependencies                                     |
-| -------------------------------------- | ------------------------------------------------ |
+| Use case                                     | Dependencies                                     |
+| -------------------------------------------- | ------------------------------------------------ |
 | Table operations (`select`, `where`, `join`) | `deephaven-engine-api`, `deephaven-engine-table` |
-| Read/write CSV files                   | `deephaven-extensions-csv`                       |
-| Read/write Parquet files               | `deephaven-extensions-parquet-table`             |
-| Configuration utilities                | `deephaven-Configuration`                        |
-| Date/time utilities                    | `deephaven-engine-time`                          |
-| Logging                                | `deephaven-log-factory`                          |
+| Read/write CSV files                         | `deephaven-extensions-csv`                       |
+| Read/write Parquet files                     | `deephaven-extensions-parquet-table`             |
+| Configuration utilities                      | `deephaven-Configuration`                        |
+| Date/time utilities                          | `deephaven-engine-time`                          |
+| Logging                                      | `deephaven-log-factory`                          |
 
 Browse all available modules on [Maven Central](https://central.sonatype.com/namespace/io.deephaven).
 
@@ -118,12 +118,39 @@ Or in Maven:
 </plugin>
 ```
 
+> **Note:** Advanced use cases like the Barrage Java client may require additional JVM arguments: `--add-opens=java.base/java.lang=ALL-UNNAMED`, `--add-opens=java.management/sun.management=ALL-UNNAMED`, and `--add-opens=java.base/java.nio=ALL-UNNAMED`.
+
 ### Example test setup
 
-Add `deephaven-engine-test-utils` as a test dependency to use `TestExecutionContext`:
+Add `deephaven-engine-test-utils` as a test dependency to use `TestExecutionContext`. You also need a logging implementation at runtime:
 
 ```groovy skip-test
 testImplementation "io.deephaven:deephaven-engine-test-utils:$dhcVersion"
+testRuntimeOnly "io.deephaven:deephaven-log-to-slf4j:$dhcVersion"
+testRuntimeOnly 'org.slf4j:slf4j-simple:2.0.9'
+```
+
+Or in Maven:
+
+```xml
+<dependency>
+    <groupId>io.deephaven</groupId>
+    <artifactId>deephaven-engine-test-utils</artifactId>
+    <version>${dhc.version}</version>
+    <scope>test</scope>
+</dependency>
+<dependency>
+    <groupId>io.deephaven</groupId>
+    <artifactId>deephaven-log-to-slf4j</artifactId>
+    <version>${dhc.version}</version>
+    <scope>test</scope>
+</dependency>
+<dependency>
+    <groupId>org.slf4j</groupId>
+    <artifactId>slf4j-simple</artifactId>
+    <version>2.0.9</version>
+    <scope>test</scope>
+</dependency>
 ```
 
 Use JUnit with an `ExecutionContext` to test table operations:
@@ -186,6 +213,8 @@ Table csvTable = CsvTools.readCsv(getClass().getResourceAsStream("/test-data.csv
 String parquetPath = Paths.get(getClass().getResource("/test-data.parquet").toURI()).toString();
 Table parquetTable = ParquetTools.readTable(parquetPath);
 ```
+
+See [`CsvTools.readCsv`](../reference/data-import-export/CSV/readCsv.md) and [`ParquetTools.readTable`](../reference/data-import-export/Parquet/readTable.md) for more options.
 
 ## Related documentation
 
