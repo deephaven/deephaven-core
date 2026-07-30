@@ -67,7 +67,7 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
     /**
      * The {@link DataFile#fileSizeInBytes()} of the data file backing this keyed location.
      */
-    private final long dataFileSize;
+    private final long dataFileSizeInBytes;
 
     private final PartitionSpec manifestPartitionSpec;
 
@@ -133,7 +133,7 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
         dataFilePos = Require.neqNull(dataFile.pos(), "dataFile.pos()");
 
         // TODO: compareTo, equals, hashCode
-        dataFileSize = dataFile.fileSizeInBytes();
+        dataFileSizeInBytes = dataFile.fileSizeInBytes();
 
         this.manifestPartitionSpec = Objects.requireNonNull(manifestPartitionSpec);
         manifestSequenceNumber = manifestFile.sequenceNumber();
@@ -148,7 +148,7 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
             return fileReader;
         }
         try {
-            return fileReader = ParquetFileReader.create(uri, channelsProvider, dataFileSize);
+            return fileReader = ParquetFileReader.create(uri, channelsProvider, dataFileSizeInBytes);
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to create Parquet file reader: %s".formatted(uri), e);
         }
