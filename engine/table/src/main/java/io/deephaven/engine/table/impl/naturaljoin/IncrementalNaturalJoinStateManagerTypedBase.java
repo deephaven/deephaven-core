@@ -807,10 +807,8 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
     @Override
     public void removeLeftModifications(
             final ColumnSource<?>[] leftSources,
-            final RowSet modifiedPostShift,
-            final RowSet modifiedPreShift,
-            final RowSetBuilderSequential changedPostShift,
-            final RowSetBuilderSequential changedPreShift,
+            final RowSet modifiedPreShift, final RowSet modifiedPostShift,
+            final RowSetBuilderSequential changedPreShift, final RowSetBuilderSequential changedPostShift,
             final NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
         if (modifiedPostShift.isEmpty()) {
             return;

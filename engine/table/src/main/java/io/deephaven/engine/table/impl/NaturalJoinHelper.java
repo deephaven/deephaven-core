@@ -891,8 +891,9 @@ class NaturalJoinHelper {
                             leftShifted.nonempty() ? leftShifted.unapply(leftModified.copy()) : leftModified;
                     final RowSetBuilderSequential postShiftBuilder = RowSetFactory.builderSequential();
                     final RowSetBuilderSequential preShiftBuilder = RowSetFactory.builderSequential();
-                    jsm.removeLeftModifications(leftSources, leftModified, leftModifiedPreShift, postShiftBuilder,
-                            preShiftBuilder, modifiedSlotTracker);
+                    jsm.removeLeftModifications(leftSources, leftModifiedPreShift, leftModified, preShiftBuilder,
+                            postShiftBuilder,
+                            modifiedSlotTracker);
                     changedKeysPostShift = postShiftBuilder.build();
                     changedKeysPreShift = preShiftBuilder.build();
                     if (leftModifiedPreShift != leftModified) {

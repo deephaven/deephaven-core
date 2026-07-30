@@ -268,11 +268,10 @@ public class NaturalJoinModifiedSlotTracker {
                 continue;
             }
             final int slot = (int) (slotAndFlag >> FLAG_SHIFT);
-            final RowSetBuilderSequential builder = slotLeftRowSetBuilders.getUnsafe(ii);
+            final RowSetBuilderSequential builder = slotLeftRowSetBuilders.getAndSetUnsafe(ii, null);
             try (final WritableRowSet rowKeys = builder.build()) {
                 consumer.accept(slot, rowKeys);
             }
-            slotLeftRowSetBuilders.set(ii, null);
             modifiedSlots.set(ii, slotAndFlag & ~(long) flag);
         }
     }

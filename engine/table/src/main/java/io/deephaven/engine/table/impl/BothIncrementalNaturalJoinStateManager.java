@@ -61,16 +61,16 @@ public interface BothIncrementalNaturalJoinStateManager extends IncrementalNatur
      * test are reused to drive the removal.
      *
      * @param leftSources the left key sources
-     * @param modifiedPostShift the modified rows, in post-shift key space
      * @param modifiedPreShift the modified rows, in pre-shift key space, aligned positionally with
      *        {@code modifiedPostShift}
-     * @param changedPostShift output, ascending, receives the post-shift keys whose key value changed (to be re-added
-     *        by the caller)
+     * @param modifiedPostShift the modified rows, in post-shift key space
      * @param changedPreShift output, ascending, receives the pre-shift keys whose key value changed, aligned with
      *        {@code changedPostShift} (for the caller's redirection removal)
+     * @param changedPostShift output, ascending, receives the post-shift keys whose key value changed (to be re-added
+     *        by the caller)
      */
-    void removeLeftModifications(ColumnSource<?>[] leftSources, RowSet modifiedPostShift, RowSet modifiedPreShift,
-            RowSetBuilderSequential changedPostShift, RowSetBuilderSequential changedPreShift,
+    void removeLeftModifications(ColumnSource<?>[] leftSources, RowSet modifiedPreShift, RowSet modifiedPostShift,
+            RowSetBuilderSequential changedPreShift, RowSetBuilderSequential changedPostShift,
             NaturalJoinModifiedSlotTracker modifiedSlotTracker);
 
     interface InitialBuildContext extends Context {
