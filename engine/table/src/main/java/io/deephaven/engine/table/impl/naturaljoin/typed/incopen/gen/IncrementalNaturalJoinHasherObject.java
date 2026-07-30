@@ -309,6 +309,7 @@ final class IncrementalNaturalJoinHasherObject extends IncrementalNaturalJoinSta
                             } else {
                                 rightRowKey = rightRowKeyForState;
                             }
+                            // accumulate the added key for one bulk insert per slot, rather than inserting one at a time
                             alternateModifiedTrackerCookieSource.set(alternateTableLocation, modifiedSlotTracker.addLeftAddition(alternateModifiedTrackerCookieSource.getUnsafe(alternateTableLocation), alternateInsertMask | alternateTableLocation, rowKeyChunk.get(chunkPosition), rightRowKeyForState));
                             leftRedirections.set(leftRedirectionOffset++, rightRowKey);
                             break MAIN_SEARCH;
@@ -324,6 +325,7 @@ final class IncrementalNaturalJoinHasherObject extends IncrementalNaturalJoinSta
                     }
                     liveEntries++;
                     mainKeySource0.set(tableLocation, k0);
+                    // new (or reused-tombstoned) slot has no existing left rows: build the row set from this key directly
                     mainLeftRowSet.set(tableLocation, RowSetFactory.fromKeys(rowKeyChunk.get(chunkPosition)));
                     mainRightRowKey.set(tableLocation, RowSet.NULL_ROW_KEY);
                     mainModifiedTrackerCookieSource.set(tableLocation, -1L);
@@ -334,6 +336,7 @@ final class IncrementalNaturalJoinHasherObject extends IncrementalNaturalJoinSta
                         tableLocation = firstDeletedLocation;
                         liveEntries++;
                         mainKeySource0.set(tableLocation, k0);
+                        // new (or reused-tombstoned) slot has no existing left rows: build the row set from this key directly
                         mainLeftRowSet.set(tableLocation, RowSetFactory.fromKeys(rowKeyChunk.get(chunkPosition)));
                         mainRightRowKey.set(tableLocation, RowSet.NULL_ROW_KEY);
                         mainModifiedTrackerCookieSource.set(tableLocation, -1L);
@@ -351,6 +354,7 @@ final class IncrementalNaturalJoinHasherObject extends IncrementalNaturalJoinSta
                     } else {
                         rightRowKey = rightRowKeyForState;
                     }
+                    // accumulate the added key for one bulk insert per slot, rather than inserting one at a time
                     mainModifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addLeftAddition(mainModifiedTrackerCookieSource.getUnsafe(tableLocation), mainInsertMask | tableLocation, rowKeyChunk.get(chunkPosition), rightRowKeyForState));
                     leftRedirections.set(leftRedirectionOffset++, rightRowKey);
                     break;
@@ -642,14 +646,17 @@ final class IncrementalNaturalJoinHasherObject extends IncrementalNaturalJoinSta
                         searchAlternate = false;
                         break;
                     }
+                    // single-row slot: removing empties it, so remove directly and skip the tracker
                     final WritableRowSet left = mainLeftRowSet.getUnsafe(tableLocation);
                     if (left.size() == 1) {
                         left.remove(rowKeyChunk.get(chunkPosition));
                         if (rightState == RowSet.NULL_ROW_KEY) {
+                            // no right match remains, so the slot is now dead
                             mainRightRowKey.set(tableLocation, TOMBSTONE_RIGHT_STATE);
                             liveEntries--;
                         }
                     } else {
+                        // multi-row slot: accumulate for one bulk remove per slot
                         mainModifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addLeftRemoval(mainModifiedTrackerCookieSource.getUnsafe(tableLocation), mainInsertMask | tableLocation, rowKeyChunk.get(chunkPosition), rightState));
                     }
                     found = true;
@@ -671,14 +678,17 @@ final class IncrementalNaturalJoinHasherObject extends IncrementalNaturalJoinSta
                                 if (isStateDeleted(rightState)) {
                                     break;
                                 }
+                                // single-row slot: removing empties it, so remove directly and skip the tracker
                                 final WritableRowSet left = alternateLeftRowSet.getUnsafe(alternateTableLocation);
                                 if (left.size() == 1) {
                                     left.remove(rowKeyChunk.get(chunkPosition));
                                     if (rightState == RowSet.NULL_ROW_KEY) {
+                                        // no right match remains, so the slot is now dead
                                         alternateRightRowKey.set(alternateTableLocation, TOMBSTONE_RIGHT_STATE);
                                         liveEntries--;
                                     }
                                 } else {
+                                    // multi-row slot: accumulate for one bulk remove per slot
                                     alternateModifiedTrackerCookieSource.set(alternateTableLocation, modifiedSlotTracker.addLeftRemoval(alternateModifiedTrackerCookieSource.getUnsafe(alternateTableLocation), alternateInsertMask | alternateTableLocation, rowKeyChunk.get(chunkPosition), rightState));
                                 }
                                 alternateFound = true;
