@@ -32,12 +32,47 @@ public class FilteredTableDataService extends AbstractTableDataService {
     public interface LocationKeyFilter {
 
         /**
+         * Accepts every location of every table.
+         */
+        LocationKeyFilter ALL = locationKey -> true;
+
+        /**
+         * Accepts no location of any table. Returning this from {@link #forTable(TableKey)} lets the caller skip the
+         * filtered service entirely for that table.
+         */
+        LocationKeyFilter NONE = locationKey -> false;
+
+        /**
          * Determine whether a {@link TableLocationKey} should be visible via this service.
+         *
+         * <p>
+         * A {@link TableLocationKey} holds partition values and no table identity, so it identifies a location only
+         * relative to its table. This method must therefore be asked only of a filter that has already been bound to a
+         * table with {@link #forTable(TableKey)}. A table-blind filter is its own binding, so for such a filter the
+         * distinction does not arise.
          *
          * @param locationKey The location key
          * @return True if the location key should be visible, false otherwise
          */
         boolean accept(@NotNull TableLocationKey locationKey);
+
+        /**
+         * Bind this filter to a table, returning the filter that applies to that table's locations.
+         *
+         * <p>
+         * {@link FilteredTableDataService} binds once, when it builds the {@link TableLocationProvider} for a table,
+         * and asks only the bound filter about locations. A filter whose decision depends on both the table and the
+         * location - one that does not factor into an independent table test and location test - overrides this to
+         * capture the table. A filter that does not discriminate on the table inherits the default and binds to itself.
+         *
+         * @param tableKey The table to bind to
+         * @return The filter for locations of {@code tableKey}; {@link #NONE} if no location of that table can be
+         *         accepted, which lets the caller avoid consulting the filtered service at all
+         */
+        @NotNull
+        default LocationKeyFilter forTable(@NotNull TableKey tableKey) {
+            return this;
+        }
     }
 
     /**
@@ -55,7 +90,7 @@ public class FilteredTableDataService extends AbstractTableDataService {
     @Nullable
     public TableLocationProvider getRawTableLocationProvider(@NotNull final TableKey tableKey,
             @NotNull final TableLocationKey tableLocationKey) {
-        if (!locationKeyFilter.accept(tableLocationKey)) {
+        if (!locationKeyFilter.forTable(tableKey).accept(tableLocationKey)) {
             return null;
         }
 
@@ -77,18 +112,29 @@ public class FilteredTableDataService extends AbstractTableDataService {
     @Override
     @NotNull
     protected TableLocationProvider makeTableLocationProvider(@NotNull final TableKey tableKey) {
-        return new TableLocationProviderImpl(serviceToFilter.getTableLocationProvider(tableKey));
+        final LocationKeyFilter filterForTable = locationKeyFilter.forTable(tableKey);
+        if (filterForTable == LocationKeyFilter.NONE) {
+            // No location of this table can be accepted, so don't consult the filtered service at all. That service is
+            // frequently remote, and consulting it would open a subscription whose every result would be discarded.
+            return new NullTableLocationProvider(tableKey);
+        }
+        return new TableLocationProviderImpl(serviceToFilter.getTableLocationProvider(tableKey), filterForTable);
     }
 
     private class TableLocationProviderImpl implements TableLocationProvider {
 
         private final TableLocationProvider inputProvider;
 
+        /** The service's filter, bound to this provider's table. */
+        private final LocationKeyFilter filterForTable;
+
         private final String implementationName;
         private final Map<Listener, FilteringListener> listeners = new WeakHashMap<>();
 
-        private TableLocationProviderImpl(@NotNull final TableLocationProvider inputProvider) {
+        private TableLocationProviderImpl(@NotNull final TableLocationProvider inputProvider,
+                @NotNull final LocationKeyFilter filterForTable) {
             this.inputProvider = inputProvider;
+            this.filterForTable = filterForTable;
             implementationName = "Filtered-" + inputProvider.getImplementationName();
         }
 
@@ -109,7 +155,7 @@ public class FilteredTableDataService extends AbstractTableDataService {
 
         @Override
         public void subscribe(@NotNull final Listener listener) {
-            final FilteringListener filteringListener = new FilteringListener(listener);
+            final FilteringListener filteringListener = new FilteringListener(filterForTable, listener);
             synchronized (listeners) {
                 listeners.put(listener, filteringListener);
             }
@@ -144,18 +190,18 @@ public class FilteredTableDataService extends AbstractTableDataService {
                 final Predicate<ImmutableTableLocationKey> filter) {
             // Apply this service's locationKeyFilter alongside the caller's, so that enumeration exposes the same
             // set as hasTableLocationKey, getTableLocationIfPresent, and subscription delivery.
-            inputProvider.getTableLocationKeys(consumer, filter.and(locationKeyFilter::accept));
+            inputProvider.getTableLocationKeys(consumer, filter.and(filterForTable::accept));
         }
 
         @Override
         public boolean hasTableLocationKey(@NotNull final TableLocationKey tableLocationKey) {
-            return locationKeyFilter.accept(tableLocationKey) && inputProvider.hasTableLocationKey(tableLocationKey);
+            return filterForTable.accept(tableLocationKey) && inputProvider.hasTableLocationKey(tableLocationKey);
         }
 
         @Nullable
         @Override
         public TableLocation getTableLocationIfPresent(@NotNull final TableLocationKey tableLocationKey) {
-            if (!locationKeyFilter.accept(tableLocationKey)) {
+            if (!filterForTable.accept(tableLocationKey)) {
                 return null;
             }
             return inputProvider.getTableLocationIfPresent(tableLocationKey);
@@ -182,8 +228,13 @@ public class FilteredTableDataService extends AbstractTableDataService {
     private class FilteringListener extends WeakReferenceWrapper<TableLocationProvider.Listener>
             implements TableLocationProvider.Listener {
 
-        private FilteringListener(@NotNull final TableLocationProvider.Listener outputListener) {
+        /** The service's filter, bound to the table of the provider this listener was subscribed to. */
+        private final LocationKeyFilter filterForTable;
+
+        private FilteringListener(@NotNull final LocationKeyFilter filterForTable,
+                @NotNull final TableLocationProvider.Listener outputListener) {
             super(outputListener);
+            this.filterForTable = filterForTable;
         }
 
         @Override
@@ -192,7 +243,7 @@ public class FilteredTableDataService extends AbstractTableDataService {
             final TableLocationProvider.Listener outputListener = getWrapped();
             // We can't try to clean up null listeners here, the underlying implementation may not allow concurrent
             // unsubscribe operations.
-            if (outputListener != null && locationKeyFilter.accept(tableLocationKey.get())) {
+            if (outputListener != null && filterForTable.accept(tableLocationKey.get())) {
                 outputListener.handleTableLocationKeyAdded(tableLocationKey);
             }
         }
@@ -201,7 +252,7 @@ public class FilteredTableDataService extends AbstractTableDataService {
         public void handleTableLocationKeyRemoved(
                 @NotNull final LiveSupplier<ImmutableTableLocationKey> tableLocationKey) {
             final TableLocationProvider.Listener outputListener = getWrapped();
-            if (outputListener != null && locationKeyFilter.accept(tableLocationKey.get())) {
+            if (outputListener != null && filterForTable.accept(tableLocationKey.get())) {
                 outputListener.handleTableLocationKeyRemoved(tableLocationKey);
             }
         }
@@ -216,9 +267,9 @@ public class FilteredTableDataService extends AbstractTableDataService {
             if (outputListener != null) {
                 // Produce filtered lists of added and removed keys.
                 final Collection<LiveSupplier<ImmutableTableLocationKey>> filteredAddedKeys = addedKeys.stream()
-                        .filter(key -> locationKeyFilter.accept(key.get())).collect(Collectors.toList());
+                        .filter(key -> filterForTable.accept(key.get())).collect(Collectors.toList());
                 final Collection<LiveSupplier<ImmutableTableLocationKey>> filteredRemovedKeys = removedKeys.stream()
-                        .filter(key -> locationKeyFilter.accept(key.get())).collect(Collectors.toList());
+                        .filter(key -> filterForTable.accept(key.get())).collect(Collectors.toList());
 
                 if (filteredAddedKeys.isEmpty() && filteredRemovedKeys.isEmpty()) {
                     return;

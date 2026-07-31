@@ -11,6 +11,7 @@ import io.deephaven.engine.table.impl.locations.TableKey;
 import io.deephaven.engine.table.impl.locations.TableLocation;
 import io.deephaven.engine.table.impl.locations.TableLocationKey;
 import io.deephaven.engine.table.impl.locations.TableLocationProvider;
+import io.deephaven.engine.table.impl.locations.impl.FilteredTableDataService.LocationKeyFilter;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Assert;
@@ -102,6 +103,138 @@ public class TestFilteredTableDataService extends RefreshingTableTestCase {
                 .getTableLocationKeys(trackedKey -> visible.add(trackedKey.get()), key -> !key.equals(b));
 
         Assert.assertEquals(Set.of(a), visible);
+    }
+
+    /**
+     * The filter is bound to a table exactly once per table, when the provider is built, and not again per location or
+     * per discovery call.
+     */
+    @Test
+    public void testFilterIsBoundOncePerTable() {
+        final PopulatedProvider underlying = new PopulatedProvider(TABLE);
+        underlying.addKey(keyFor("A"));
+        underlying.addKey(keyFor("B"));
+        underlying.addKey(keyFor("C"));
+
+        final CountingFilter counting = new CountingFilter(LocationKeyFilter.ALL);
+        final FilteredTableDataService filtered =
+                new FilteredTableDataService(new FixedProviderService(underlying), counting);
+
+        final TableLocationProvider provider = filtered.getTableLocationProvider(TABLE);
+        Assert.assertEquals(3, provider.getTableLocationKeys().size());
+        Assert.assertTrue(provider.hasTableLocationKey(keyFor("A")));
+        Assert.assertEquals(3, filtered.getTableLocationProvider(TABLE).getTableLocationKeys().size());
+
+        Assert.assertEquals("forTable calls", 1, counting.bindCount);
+    }
+
+    /**
+     * The bound filter, not the unbound one, decides each location, so a filter that discriminates on the table takes
+     * effect per table rather than per service.
+     */
+    @Test
+    public void testBoundFilterDecidesLocations() {
+        final TableLocationKey a = keyFor("A");
+        final TableLocationKey b = keyFor("B");
+
+        final PopulatedProvider underlying = new PopulatedProvider(TABLE);
+        underlying.addKey(a);
+        underlying.addKey(b);
+
+        // Unbound accept() is never consulted; binding to TABLE yields a filter that keeps only A.
+        final LocationKeyFilter perTable = new LocationKeyFilter() {
+            @Override
+            public boolean accept(@NotNull final TableLocationKey locationKey) {
+                throw new UnsupportedOperationException("must be bound to a table first");
+            }
+
+            @Override
+            @NotNull
+            public LocationKeyFilter forTable(@NotNull final TableKey tableKey) {
+                return TABLE.equals(tableKey) ? key -> key.equals(a) : LocationKeyFilter.NONE;
+            }
+        };
+
+        final TableLocationProvider provider =
+                new FilteredTableDataService(new FixedProviderService(underlying), perTable)
+                        .getTableLocationProvider(TABLE);
+
+        Assert.assertEquals(Set.of(a), new HashSet<>(provider.getTableLocationKeys()));
+        Assert.assertTrue(provider.hasTableLocationKey(a));
+        Assert.assertFalse(provider.hasTableLocationKey(b));
+    }
+
+    /**
+     * Binding to {@link LocationKeyFilter#NONE} yields an empty provider without the filtered service being consulted
+     * at all. That service is frequently remote, so avoiding it is the point of the {@code NONE} answer.
+     */
+    @Test
+    public void testNoneAvoidsTheFilteredService() {
+        final PopulatedProvider underlying = new PopulatedProvider(TABLE);
+        underlying.addKey(keyFor("A"));
+
+        final RecordingProviderService service = new RecordingProviderService(underlying);
+        final FilteredTableDataService filtered = new FilteredTableDataService(service, LocationKeyFilter.NONE);
+
+        final TableLocationProvider provider = filtered.getTableLocationProvider(TABLE);
+
+        Assert.assertTrue(provider.getTableLocationKeys().isEmpty());
+        Assert.assertFalse(provider.hasTableLocationKey(keyFor("A")));
+        Assert.assertEquals(TABLE, provider.getKey());
+        Assert.assertFalse("the filtered service was consulted", service.consulted);
+    }
+
+    /**
+     * A table-blind filter binds to itself, so an existing single-method filter keeps working unchanged.
+     */
+    @Test
+    public void testTableBlindFilterBindsToItself() {
+        final LocationKeyFilter blind = key -> true;
+        Assert.assertSame(blind, blind.forTable(TABLE));
+        Assert.assertSame(LocationKeyFilter.ALL, LocationKeyFilter.ALL.forTable(TABLE));
+        Assert.assertSame(LocationKeyFilter.NONE, LocationKeyFilter.NONE.forTable(TABLE));
+    }
+
+    /**
+     * A {@link LocationKeyFilter} that counts how often it is bound to a table, delegating the location decision.
+     */
+    private static final class CountingFilter implements LocationKeyFilter {
+
+        private final LocationKeyFilter delegate;
+        private int bindCount;
+
+        /**
+         * Creates a counting filter over the given delegate.
+         *
+         * @param delegate the filter that decides locations once bound
+         */
+        private CountingFilter(@NotNull final LocationKeyFilter delegate) {
+            this.delegate = delegate;
+        }
+
+        /**
+         * Delegates the location decision.
+         *
+         * @param locationKey the location key
+         * @return the delegate's answer
+         */
+        @Override
+        public boolean accept(@NotNull final TableLocationKey locationKey) {
+            return delegate.accept(locationKey);
+        }
+
+        /**
+         * Records the binding and returns the delegate.
+         *
+         * @param tableKey the table being bound to
+         * @return the delegate
+         */
+        @Override
+        @NotNull
+        public LocationKeyFilter forTable(@NotNull final TableKey tableKey) {
+            ++bindCount;
+            return delegate;
+        }
     }
 
     /**
@@ -252,6 +385,38 @@ public class TestFilteredTableDataService extends RefreshingTableTestCase {
         @Override
         @NotNull
         protected TableLocationProvider makeTableLocationProvider(@NotNull final TableKey tableKey) {
+            return provider;
+        }
+    }
+
+    /**
+     * A {@link FixedProviderService} that records whether it was ever asked for a provider.
+     */
+    private static final class RecordingProviderService extends AbstractTableDataService {
+
+        private final TableLocationProvider provider;
+        private boolean consulted;
+
+        /**
+         * Creates a service backed by a single provider.
+         *
+         * @param provider the provider to return for every table
+         */
+        private RecordingProviderService(@NotNull final TableLocationProvider provider) {
+            super("recordingProviderService");
+            this.provider = provider;
+        }
+
+        /**
+         * Records the request and returns the fixed provider.
+         *
+         * @param tableKey ignored
+         * @return the fixed provider
+         */
+        @Override
+        @NotNull
+        protected TableLocationProvider makeTableLocationProvider(@NotNull final TableKey tableKey) {
+            consulted = true;
             return provider;
         }
     }
