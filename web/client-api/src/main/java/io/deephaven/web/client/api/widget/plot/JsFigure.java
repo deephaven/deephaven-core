@@ -143,8 +143,7 @@ public class JsFigure extends HasLifecycle {
     /**
      * There are too many points to be drawn in the table which backs these series, and downsampling should be enabled.
      * As an alternative, downsampling can be explicitly disabled, provided there are less than 200,000 rows in the
-     * table. The {@code event.detail} object has the same {@code message}, {@code size}, and {@code series} properties
-     * as {@link #EVENT_DOWNSAMPLEFAILED}.
+     * table. The {@code event.detail} object has the same properties as {@link #EVENT_DOWNSAMPLEFAILED}.
      */
     @JsProperty(namespace = "dh.plot.Figure")
     public static final String EVENT_DOWNSAMPLENEEDED = "downsampleneeded";
@@ -184,8 +183,7 @@ public class JsFigure extends HasLifecycle {
     }
 
     /**
-     * Error details for a failed figure fetch. Provided as the {@code event.detail} value when
-     * {@link JsFigure#EVENT_RECONNECTFAILED} is fired, and as the rejection value when fetching a figure fails.
+     * Error details for a failed figure fetch.
      */
     public class FigureFetchError {
         /**
@@ -363,7 +361,7 @@ public class JsFigure extends HasLifecycle {
     }
 
     /**
-     * The interval, in milliseconds, at which the server will send updated data for this figure while it is subscribed.
+     * The update interval of this figure, in milliseconds.
      */
     @JsProperty
     public double getUpdateInterval() {
@@ -371,7 +369,7 @@ public class JsFigure extends HasLifecycle {
     }
 
     /**
-     * The number of columns in the grid that the figure's charts are arranged in.
+     * The number of columns in this figure's chart layout.
      */
     @JsProperty
     public int getCols() {
@@ -379,7 +377,7 @@ public class JsFigure extends HasLifecycle {
     }
 
     /**
-     * The number of rows in the grid that the figure's charts are arranged in.
+     * The number of rows in this figure's chart layout.
      */
     @JsProperty
     public int getRows() {
@@ -387,7 +385,7 @@ public class JsFigure extends HasLifecycle {
     }
 
     /**
-     * The charts to draw. Each chart occupies a cell in the grid described by {@link #getRows} and {@link #getCols}.
+     * The charts to draw.
      */
     @JsProperty
     public JsChart[] getCharts() {
@@ -395,8 +393,7 @@ public class JsFigure extends HasLifecycle {
     }
 
     /**
-     * Any errors that the server reported while building this figure. The figure may still be usable even if this is
-     * non-empty, but some series may be missing data.
+     * Any errors that the server reported while building this figure.
      */
     @JsProperty
     public JsArray<String> getErrors() {

@@ -178,8 +178,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     public static final String EVENT_RECONNECT = "reconnect";
 
     /**
-     * This table failed to reconnect to the server, and is no longer usable. The {@code event.detail} value describes
-     * the error that prevented the reconnect.
+     * This table failed to reconnect to the server. The {@code event.detail} value describes the failure.
      */
     @JsProperty(namespace = "dh.Table")
     public static final String EVENT_RECONNECTFAILED = "reconnectfailed";
@@ -192,9 +191,9 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     public static final String EVENT_REQUEST_FAILED = "requestfailed";
 
     /**
-     * Indicates that a pending change to this table, such as a new sort, filter, or custom column, was successfully
-     * applied on the server. Any of {@link #EVENT_SORTCHANGED}, {@link #EVENT_FILTERCHANGED}, or
-     * {@link #EVENT_CUSTOMCOLUMNSCHANGED} that resulted from the change will fire after this event.
+     * Indicates that a pending change to this table, such as a new sort or filter, was applied on the server. Any
+     * {@link #EVENT_SORTCHANGED}, {@link #EVENT_FILTERCHANGED}, or {@link #EVENT_CUSTOMCOLUMNSCHANGED} resulting from
+     * that change fires after this event.
      */
     @JsProperty(namespace = "dh.Table")
     public static final String EVENT_REQUEST_SUCCEEDED = "requestsucceeded";
