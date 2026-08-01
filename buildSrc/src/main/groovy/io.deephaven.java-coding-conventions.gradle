@@ -6,6 +6,7 @@ plugins {
 
 spotless {
     java {
+        removeUnusedImports()
         eclipse().configFile("${rootDir}/style/eclipse-java-google-style.xml")
 
         licenseHeader '''//
