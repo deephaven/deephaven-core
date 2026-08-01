@@ -7,7 +7,6 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.updateby.fill;
 
-import io.deephaven.engine.table.impl.util.ChunkUtils;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.ObjectChunk;

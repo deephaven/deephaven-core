@@ -4,7 +4,6 @@
 package io.deephaven.parquet.table.layout;
 
 import io.deephaven.base.stats.Counter;
-import io.deephaven.base.stats.State;
 import io.deephaven.base.stats.Stats;
 import io.deephaven.base.stats.Value;
 import io.deephaven.engine.table.impl.locations.TableDataException;

@@ -16,7 +16,6 @@ import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseLongUpdateByOperator;
 import org.jetbrains.annotations.NotNull;
 
-import static io.deephaven.util.QueryConstants.NULL_BYTE;
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 public class ByteCumSumOperator extends BaseLongUpdateByOperator {

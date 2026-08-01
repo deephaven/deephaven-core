@@ -23,10 +23,6 @@ import io.deephaven.engine.table.impl.by.IncrementalChunkedOperatorAggregationSt
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableDoubleArraySource;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableIntArraySource;
 import io.deephaven.util.type.TypeUtils;
-import java.lang.Double;
-import java.lang.Integer;
-import java.lang.Object;
-import java.lang.Override;
 import java.util.Arrays;
 
 final class IncrementalAggOpenHasherDoubleInt extends IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase {

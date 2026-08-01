@@ -3,7 +3,6 @@
 //
 package io.deephaven.engine.util;
 
-import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;

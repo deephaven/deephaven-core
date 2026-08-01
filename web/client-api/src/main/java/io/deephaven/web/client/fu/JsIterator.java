@@ -4,9 +4,7 @@
 package io.deephaven.web.client.fu;
 
 import com.vertispan.tsdefs.annotations.TsInterface;
-import com.vertispan.tsdefs.annotations.TsName;
 import jsinterop.annotations.JsIgnore;
-import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsOverlay;
 import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsProperty;

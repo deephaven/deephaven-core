@@ -28,7 +28,6 @@ import io.deephaven.server.table.TableModule;
 import io.deephaven.server.test.TestAuthModule;
 import io.deephaven.server.test.TestAuthorizationProvider;
 import io.deephaven.server.util.Scheduler;
-import org.jetbrains.annotations.Nullable;
 
 import javax.inject.Named;
 import javax.inject.Singleton;

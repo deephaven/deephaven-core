@@ -11,7 +11,6 @@
 //
 package io.deephaven.engine.table.impl.join.dupcompact;
 
-import io.deephaven.util.QueryConstants;
 import io.deephaven.util.compare.CharComparisons;
 
 import io.deephaven.chunk.*;

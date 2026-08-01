@@ -6,7 +6,6 @@ package io.deephaven.client.impl;
 import io.deephaven.client.impl.TableHandle.TableHandleException;
 import io.deephaven.qst.table.TableSpec;
 
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;

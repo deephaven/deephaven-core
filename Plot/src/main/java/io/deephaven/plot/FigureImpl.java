@@ -7,45 +7,19 @@
 // @formatter:off
 package io.deephaven.plot;
 
-import groovy.lang.Closure;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.table.Table;
-import io.deephaven.gui.color.Paint;
-import io.deephaven.plot.Axes;
-import io.deephaven.plot.Axis;
-import io.deephaven.plot.BaseFigure;
-import io.deephaven.plot.Chart;
-import io.deephaven.plot.Font;
-import io.deephaven.plot.PlotStyle;
-import io.deephaven.plot.Series;
-import io.deephaven.plot.axisformatters.AxisFormat;
-import io.deephaven.plot.axistransformations.AxisTransform;
 import io.deephaven.plot.datasets.DataSeries;
 import io.deephaven.plot.datasets.DataSeriesInternal;
 import io.deephaven.plot.datasets.category.CategoryDataSeries;
-import io.deephaven.plot.datasets.data.IndexableData;
-import io.deephaven.plot.datasets.data.IndexableNumericData;
-import io.deephaven.plot.datasets.interval.IntervalXYDataSeries;
 import io.deephaven.plot.datasets.multiseries.MultiSeries;
-import io.deephaven.plot.datasets.multiseries.MultiSeriesInternal;
-import io.deephaven.plot.datasets.ohlc.OHLCDataSeries;
 import io.deephaven.plot.datasets.xy.XYDataSeries;
 import io.deephaven.plot.datasets.xy.XYDataSeriesFunction;
-import io.deephaven.plot.datasets.xyerrorbar.XYErrorBarDataSeries;
 import io.deephaven.plot.errors.PlotRuntimeException;
 import io.deephaven.plot.errors.PlotUnsupportedOperationException;
-import io.deephaven.plot.filters.SelectableDataSet;
-import io.deephaven.plot.util.PlotUtils;
-import io.deephaven.time.calendar.BusinessCalendar;
-import java.lang.Comparable;
-import java.lang.String;
-import java.time.Instant;
-import java.util.Arrays;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.DoubleUnaryOperator;
 
 /** An interface for constructing plots.  A Figure is immutable, and all function calls return a new immutable Figure instance.*/
 @SuppressWarnings({"unused", "RedundantCast", "SameParameterValue", "rawtypes"})

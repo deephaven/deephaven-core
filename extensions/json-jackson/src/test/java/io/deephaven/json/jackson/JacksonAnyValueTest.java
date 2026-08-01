@@ -16,7 +16,6 @@ import io.deephaven.chunk.DoubleChunk;
 import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.json.AnyValue;
-import io.deephaven.json.CharValue;
 import io.deephaven.json.DoubleValue;
 import io.deephaven.json.IntValue;
 import io.deephaven.json.ObjectValue;

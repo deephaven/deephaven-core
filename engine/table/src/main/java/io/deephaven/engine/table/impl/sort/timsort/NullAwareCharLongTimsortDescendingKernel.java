@@ -12,7 +12,6 @@
 //
 package io.deephaven.engine.table.impl.sort.timsort;
 
-import io.deephaven.util.QueryConstants;
 import io.deephaven.util.compare.CharComparisons;
 
 import io.deephaven.chunk.attributes.Any;

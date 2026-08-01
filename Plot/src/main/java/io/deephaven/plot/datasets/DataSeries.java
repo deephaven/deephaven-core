@@ -8,10 +8,8 @@ import io.deephaven.plot.Series;
 import io.deephaven.gui.color.Color;
 import io.deephaven.gui.color.Paint;
 import io.deephaven.gui.shape.Shape;
-import groovy.lang.Closure;
 
 import java.io.Serializable;
-import java.util.function.Function;
 
 /**
  * A generic data series.

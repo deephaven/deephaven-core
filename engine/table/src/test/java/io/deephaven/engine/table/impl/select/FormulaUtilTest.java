@@ -3,7 +3,6 @@
 //
 package io.deephaven.engine.table.impl.select;
 
-import io.deephaven.engine.table.impl.select.FormulaUtil;
 import junit.framework.TestCase;
 
 public class FormulaUtilTest extends TestCase {

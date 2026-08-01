@@ -7,7 +7,6 @@
 // @formatter:off
 package io.deephaven.chunk.util.hashing;
 
-import java.util.Objects;
 
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Any;

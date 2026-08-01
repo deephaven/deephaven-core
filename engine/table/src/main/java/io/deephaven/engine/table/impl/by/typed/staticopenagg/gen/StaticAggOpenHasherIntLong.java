@@ -23,10 +23,6 @@ import io.deephaven.engine.table.impl.by.StaticChunkedOperatorAggregationStateMa
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableIntArraySource;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableLongArraySource;
 import io.deephaven.util.type.TypeUtils;
-import java.lang.Integer;
-import java.lang.Long;
-import java.lang.Object;
-import java.lang.Override;
 import java.util.Arrays;
 
 final class StaticAggOpenHasherIntLong extends StaticChunkedOperatorAggregationStateManagerOpenAddressedBase {

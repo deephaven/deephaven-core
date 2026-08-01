@@ -17,7 +17,6 @@ import io.deephaven.engine.table.impl.updateby.internal.BaseLongUpdateByOperator
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.util.QueryConstants.NULL_LONG;
-import static io.deephaven.util.QueryConstants.NULL_BYTE;
 
 public class ByteCumProdOperator extends BaseLongUpdateByOperator {
     // region extra-fields

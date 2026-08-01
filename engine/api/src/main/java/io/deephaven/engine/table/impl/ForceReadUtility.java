@@ -16,7 +16,6 @@ import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableArray;
 import org.immutables.value.Value;
 
-import java.util.Optional;
 import java.util.Set;
 
 /**

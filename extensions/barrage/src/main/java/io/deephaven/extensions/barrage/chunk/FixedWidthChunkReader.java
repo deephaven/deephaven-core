@@ -3,7 +3,6 @@
 //
 package io.deephaven.extensions.barrage.chunk;
 
-import io.deephaven.chunk.WritableCharChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.WritableObjectChunk;

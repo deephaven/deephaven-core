@@ -5,7 +5,6 @@ package io.deephaven.function;
 
 import io.deephaven.qst.type.Type;
 
-import java.util.function.Function;
 
 /**
  * A common function interface that allows for differentiation based on the return type.

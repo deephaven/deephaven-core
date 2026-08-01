@@ -3,7 +3,6 @@
 //
 package io.deephaven.engine.testutil.generator;
 
-import io.deephaven.util.QueryConstants;
 
 import java.util.Random;
 

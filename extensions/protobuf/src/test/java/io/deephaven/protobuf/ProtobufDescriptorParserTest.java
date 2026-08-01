@@ -10,6 +10,7 @@ import com.google.protobuf.BytesValue;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.EnumValueDescriptor;
 import com.google.protobuf.DoubleValue;
+import com.google.protobuf.DynamicMessage;
 import com.google.protobuf.FieldMask;
 import com.google.protobuf.FloatValue;
 import com.google.protobuf.Int32Value;
@@ -1648,6 +1649,13 @@ public class ProtobufDescriptorParserTest {
             assertThat(map)
                     .extractingByKey(expectedPath)
                     .extracting(t -> Box.apply(t, e.getKey()))
+                    .isEqualTo(e.getValue());
+
+
+            DynamicMessage dynamicKey = DynamicMessage.newBuilder(e.getKey()).build();
+            assertThat(map)
+                    .extractingByKey(expectedPath)
+                    .extracting(t -> Box.apply(t, dynamicKey))
                     .isEqualTo(e.getValue());
         }
     }

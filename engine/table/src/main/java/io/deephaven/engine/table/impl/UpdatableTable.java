@@ -16,7 +16,6 @@ import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.util.Map;
 import java.util.function.Consumer;
 
-import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 /**
  * A live table that allows add, remove, and modify.

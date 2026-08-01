@@ -22,8 +22,6 @@ import io.deephaven.engine.table.impl.asofjoin.RightIncrementalAsOfJoinStateMana
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableObjectArraySource;
 import io.deephaven.util.QueryConstants;
-import java.lang.Object;
-import java.lang.Override;
 import java.util.Arrays;
 
 final class RightIncrementalAsOfJoinHasherObject extends RightIncrementalAsOfJoinStateManagerTypedBase {

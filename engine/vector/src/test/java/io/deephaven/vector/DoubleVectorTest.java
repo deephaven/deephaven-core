@@ -10,17 +10,14 @@ package io.deephaven.vector;
 // region IteratorTypeImport
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfDouble;
 // endregion IteratorTypeImport
-import io.deephaven.util.QueryConstants;
 import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
 // region NullConstantImport
-import java.util.stream.IntStream;
 
 import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 // endregion NullConstantImport
-import static io.deephaven.util.QueryConstants.NULL_INT;
 import static junit.framework.TestCase.*;
 
 /**

@@ -26,7 +26,6 @@ import io.deephaven.engine.table.impl.NaturalJoinModifiedSlotTracker;
 import io.deephaven.engine.table.impl.naturaljoin.RightIncrementalNaturalJoinStateManagerTypedBase;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableIntArraySource;
 import io.deephaven.util.QueryConstants;
-import java.lang.Override;
 import java.util.Arrays;
 
 final class RightIncrementalNaturalJoinHasherInt extends RightIncrementalNaturalJoinStateManagerTypedBase {

@@ -7,9 +7,7 @@ import io.deephaven.annotations.BuildableStyle;
 import io.deephaven.engine.table.ColumnDefinition;
 import org.immutables.value.Value;
 
-import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 
 /**
  * {@link RollupAggregation} that allows columns to be nulled-out at higher aggregation levels.

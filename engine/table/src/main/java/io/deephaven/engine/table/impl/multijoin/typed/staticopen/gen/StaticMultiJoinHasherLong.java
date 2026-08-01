@@ -20,7 +20,6 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.multijoin.StaticMultiJoinStateManagerTypedBase;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableLongArraySource;
-import java.lang.Override;
 import java.util.Arrays;
 
 final class StaticMultiJoinHasherLong extends StaticMultiJoinStateManagerTypedBase {

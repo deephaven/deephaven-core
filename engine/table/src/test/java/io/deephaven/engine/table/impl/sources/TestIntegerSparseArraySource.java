@@ -13,7 +13,6 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.engine.table.ChunkSource;
-import io.deephaven.engine.table.WritableColumnSource;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 

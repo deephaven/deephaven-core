@@ -21,7 +21,6 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.multijoin.StaticMultiJoinStateManagerTypedBase;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableCharArraySource;
-import java.lang.Override;
 import java.util.Arrays;
 
 final class StaticMultiJoinHasherChar extends StaticMultiJoinStateManagerTypedBase {

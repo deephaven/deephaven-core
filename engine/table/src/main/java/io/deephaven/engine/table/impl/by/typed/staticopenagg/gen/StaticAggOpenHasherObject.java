@@ -18,8 +18,6 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.by.StaticChunkedOperatorAggregationStateManagerOpenAddressedBase;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableObjectArraySource;
-import java.lang.Object;
-import java.lang.Override;
 import java.util.Arrays;
 
 final class StaticAggOpenHasherObject extends StaticChunkedOperatorAggregationStateManagerOpenAddressedBase {
