@@ -762,7 +762,6 @@ public class TypedHasherFactory {
         fileBuilder
                 .addFileComment("****** Run ReplicateTypedHashers or ./gradlew replicateTypedHashers to regenerate\n");
         fileBuilder.addFileComment("\n");
-        fileBuilder.addFileComment("@formatter:off");
 
         for (ChunkType chunkType : chunkTypes) {
             fileBuilder.addStaticImport(

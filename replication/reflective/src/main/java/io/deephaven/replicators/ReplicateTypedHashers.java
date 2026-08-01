@@ -106,7 +106,6 @@ public class ReplicateTypedHashers {
         fileBuilder.addFileComment("****** Run " + ReplicateTypedHashers.class.getSimpleName()
                 + " or ./gradlew replicateTypedHashers to regenerate\n");
         fileBuilder.addFileComment("\n");
-        fileBuilder.addFileComment("@formatter:off");
 
         final JavaFile dispatcherFile = fileBuilder.build();
         dispatcherFile.writeTo(sourceRoot);

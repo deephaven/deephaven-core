@@ -24,3 +24,9 @@ dependencies {
             project(':test-configs')
     testRuntimeOnly libs.slf4j.simple
 }
+
+spotless {
+    java {
+        targetExclude('src/main/java/io/deephaven/time/calendar/StaticCalendarMethods.java')
+    }
+}

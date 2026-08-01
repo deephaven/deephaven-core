@@ -465,7 +465,6 @@ public class GenerateTimsortKernels {
         fileBuilder.addFileComment(
                 "****** Run GenerateTimsortKernels or ./gradlew generateTimsortKernels to regenerate\n");
         fileBuilder.addFileComment("\n");
-        fileBuilder.addFileComment("@formatter:off");
         System.out.println("Generating " + className + " to " + SOURCE_ROOT);
         fileBuilder.build().writeTo(SOURCE_ROOT);
     }

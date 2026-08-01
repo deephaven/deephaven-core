@@ -315,7 +315,6 @@ public class TupleSetKernelFactory {
                 .addFileComment(
                         "****** Run ReplicateTupleSetKernels or ./gradlew replicateTupleSetKernels to regenerate\n")
                 .addFileComment("\n")
-                .addFileComment("@formatter:off")
                 .build();
     }
 
