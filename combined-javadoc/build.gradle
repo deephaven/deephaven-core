@@ -16,14 +16,11 @@ configurations {
         attributes {
             attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage, Usage.JAVA_RUNTIME))
         }
-        // GWT substitution (mirrors GwtTools)
-        resolutionStrategy.dependencySubstitution {
-            substitute module('com.google.gwt:gwt-dev') using module("org.gwtproject:gwt-dev:${libs.versions.gwt.get()}")
-            substitute module('com.google.gwt:gwt-user') using module("org.gwtproject:gwt-user:${libs.versions.gwt.get()}")
-            substitute module('com.google.gwt:gwt-codeserver') using module("org.gwtproject:gwt-codeserver:${libs.versions.gwt.get()}")
-        }
     }
 }
+
+// web-client-api depends on com.google.gwt:* which must be substituted with org.gwtproject:* equivalents
+GwtTools.applyGwtSubstitutions(project, configurations.javadocClasspath)
 
 String javaDocOverviewLocation = 'build/docs/overview.html'
 
