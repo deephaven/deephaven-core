@@ -1032,6 +1032,10 @@
                         "path": "how-to-guides/debugging/source-setup.md"
                       },
                       {
+                        "label": "Embedded server setup",
+                        "path": "how-to-guides/debugging/embedded-setup.md"
+                      },
+                      {
                         "label": "Common problems",
                         "path": "how-to-guides/debugging/common-problems.md"
                       }
