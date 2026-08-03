@@ -16,7 +16,7 @@ tasks.register("jacoco-merge", JacocoReport) {
     }
     additionalSourceDirs = files(jprojects.sourceSets.main.allSource.srcDirs)
     sourceDirectories = files(jprojects.sourceSets.main.allSource.srcDirs)
-    classDirectories = files(jprojects.sourceSets.main.output)
+    classDirectories = files(jprojects.findAll { it.name != 'web-client-api' }.sourceSets.main.output)
     reports {
         html.required = true
         html.outputLocation = layout.buildDirectory.dir('./reports/java/java-coverage.html')
