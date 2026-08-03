@@ -98,7 +98,9 @@ public class JsFigure extends HasLifecycle {
 
     /**
      * This figure has lost its connection to the server. No further events will be fired, and no data will update,
-     * until either the connection is reestablished and {@link #EVENT_RECONNECT} is fired, or {@link #EVENT_RECONNECTFAILED} fires, indicating that it wasn't possible to reconnect and the figure should be recreated/refetched.
+     * until either the connection is reestablished and {@link #EVENT_RECONNECT} is fired, or
+     * {@link #EVENT_RECONNECTFAILED} fires, indicating that it wasn't possible to reconnect and the figure should be
+     * recreated/refetched.
      */
     @JsProperty(namespace = "dh.plot.Figure")
     public static final String EVENT_DISCONNECT = JsTable.EVENT_DISCONNECT;
@@ -409,7 +411,7 @@ public class JsFigure extends HasLifecycle {
     }
 
     /**
-     * Subscribe to the underlying tables to receive updates for all series in this figure.  
+     * Subscribe to the underlying tables to receive updates for all series in this figure.
      *
      * @param forceDisableDownsample the downsampling behavior to use for every series in this figure. Pass
      *        {@link DownsampleOptions#DISABLE} to load all data without downsampling, or omit the argument to use
