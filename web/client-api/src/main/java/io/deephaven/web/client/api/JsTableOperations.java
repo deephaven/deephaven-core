@@ -5,7 +5,6 @@ package io.deephaven.web.client.api;
 
 import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
-import com.vertispan.tsdefs.annotations.TsTypeRef;
 import com.vertispan.tsdefs.annotations.TsUnion;
 import com.vertispan.tsdefs.annotations.TsUnionMember;
 import elemental2.core.ReadonlyArray;
@@ -25,9 +24,6 @@ import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.backplane.grpc.UngroupRequest;
 import io.deephaven.proto.backplane.grpc.WhereInRequest;
 import io.deephaven.web.client.api.filter.FilterCondition;
-import io.deephaven.web.client.api.subscription.DataOptions;
-import io.deephaven.web.client.api.subscription.TableSubscription;
-import io.deephaven.web.client.api.subscription.TableViewportSubscription;
 import javaemul.internal.annotations.DoNotAutobox;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsNullable;
