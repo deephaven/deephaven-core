@@ -131,8 +131,6 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
 
         // This should never be null because we are discovering this data file through a non-null manifest file
         dataFilePos = Require.neqNull(dataFile.pos(), "dataFile.pos()");
-
-        // TODO: compareTo, equals, hashCode
         dataFileSizeInBytes = dataFile.fileSizeInBytes();
 
         this.manifestPartitionSpec = Objects.requireNonNull(manifestPartitionSpec);
@@ -147,11 +145,7 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
         if (fileReader != null) {
             return fileReader;
         }
-        try {
-            return fileReader = ParquetFileReader.create(uri, channelsProvider, dataFileSizeInBytes);
-        } catch (IOException e) {
-            throw new UncheckedIOException("Failed to create Parquet file reader: %s".formatted(uri), e);
-        }
+        return fileReader = ParquetFileReader.create(uri, channelsProvider, dataFileSizeInBytes);
     }
 
     public PartitionSpec manifestPartitionSpec() {
@@ -224,6 +218,9 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
             if ((comparisonResult = Long.compare(dataFilePos, otherTyped.dataFilePos)) != 0) {
                 return comparisonResult;
             }
+            if ((comparisonResult = Long.compare(dataFileSizeInBytes, otherTyped.dataFileSizeInBytes)) != 0) {
+                return comparisonResult;
+            }
             return uri.compareTo(otherTyped.uri);
         }
         // When comparing with non-iceberg location key, we want to compare both partitions and URI
@@ -248,6 +245,7 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
                 && dataSequenceNumber == otherTyped.dataSequenceNumber
                 && fileSequenceNumber == otherTyped.fileSequenceNumber
                 && dataFilePos == otherTyped.dataFilePos
+                && dataFileSizeInBytes == otherTyped.dataFileSizeInBytes
                 && manifestSequenceNumber == otherTyped.manifestSequenceNumber
                 && sortedColumns.equals(otherTyped.sortedColumns)
                 && uri.equals(otherTyped.uri);
@@ -264,6 +262,7 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
             result = prime * result + Long.hashCode(dataSequenceNumber);
             result = prime * result + Long.hashCode(fileSequenceNumber);
             result = prime * result + Long.hashCode(dataFilePos);
+            result = prime * result + Long.hashCode(dataFileSizeInBytes);
             result = prime * result + Long.hashCode(manifestSequenceNumber);
             result = prime * result + Objects.hashCode(sortedColumns);
             result = prime * result + uri.hashCode();

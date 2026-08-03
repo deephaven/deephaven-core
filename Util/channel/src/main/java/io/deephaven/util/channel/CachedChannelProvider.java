@@ -99,14 +99,14 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
     @Override
     public SeekableByteChannel getReadChannel(@NotNull final SeekableChannelContext channelContext,
             @NotNull final URI uri) throws IOException {
-        return getReadChannelImpl(channelContext, uri, 0);
+        return getReadChannelImpl(channelContext, uri, -1);
     }
 
     @Override
     public SeekableByteChannel getReadChannel(@NotNull SeekableChannelContext channelContext, @NotNull URI uri,
             long fileSize) throws IOException {
-        if (fileSize <= 0) {
-            throw new IllegalArgumentException("fileSize should be positive");
+        if (fileSize < 0) {
+            throw new IllegalArgumentException("fileSize should be non-negative");
         }
         return getReadChannelImpl(channelContext, uri, fileSize);
     }
@@ -118,7 +118,7 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
         final CachedChannel result = tryGetPooledChannel(uriString, channelPool);
         final CachedChannel channel = result == null
                 ? new CachedChannel(
-                        fileSize > 0
+                        fileSize >= 0
                                 ? wrappedProvider.getReadChannel(channelContext, uri, fileSize)
                                 : wrappedProvider.getReadChannel(channelContext, uri),
                         ChannelType.Read,

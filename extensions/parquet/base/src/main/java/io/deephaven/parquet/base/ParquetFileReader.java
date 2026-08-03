@@ -52,11 +52,7 @@ public class ParquetFileReader {
     public static ParquetFileReader create(
             @NotNull final URI parquetFileURI,
             @NotNull final SeekableChannelsProvider channelsProvider) {
-        try {
-            return new ParquetFileReader(parquetFileURI, channelsProvider, 0);
-        } catch (final IOException e) {
-            throw new UncheckedIOException("Failed to create Parquet file reader: %s".formatted(parquetFileURI), e);
-        }
+        return createImpl(parquetFileURI, channelsProvider, -1);
     }
 
     /**
@@ -66,16 +62,28 @@ public class ParquetFileReader {
      * @param channelsProvider The {@link SeekableChannelsProvider} to use for reading the file
      * @param fileSize The file size, must be positive
      * @return The new {@link ParquetFileReader}
-     * @throws IOException if an IO error occurs
      */
     public static ParquetFileReader create(
             @NotNull final URI parquetFileURI,
             @NotNull final SeekableChannelsProvider channelsProvider,
-            final long fileSize) throws IOException {
+            final long fileSize) {
         if (fileSize <= 0) {
+            // empty file is not legitimate for parquet files; possibly, we could have stricter min file size here in
+            // the future.
             throw new IllegalArgumentException("fileSize must be positive");
         }
-        return new ParquetFileReader(parquetFileURI, channelsProvider, fileSize);
+        return createImpl(parquetFileURI, channelsProvider, fileSize);
+    }
+
+    private static ParquetFileReader createImpl(
+            @NotNull final URI parquetFileURI,
+            @NotNull final SeekableChannelsProvider provider,
+            final long fileSize) {
+        try {
+            return new ParquetFileReader(parquetFileURI, provider, fileSize);
+        } catch (final IOException e) {
+            throw new UncheckedIOException("Failed to create Parquet file reader: %s".formatted(parquetFileURI), e);
+        }
     }
 
     private ParquetFileReader(
@@ -91,7 +99,7 @@ public class ParquetFileReader {
         }
         try (
                 final SeekableChannelContext context = channelsProvider.makeSingleUseReadContext();
-                final SeekableByteChannel ch = fileSize > 0
+                final SeekableByteChannel ch = fileSize >= 0
                         ? channelsProvider.getReadChannel(context, parquetFileURI, fileSize)
                         : channelsProvider.getReadChannel(context, parquetFileURI)) {
             final FooterInfo footerInfo = readAndComputeFooterInfo(parquetFileURI, ch);
@@ -109,8 +117,8 @@ public class ParquetFileReader {
                 final long finalPos = ch.position();
                 if (finalPos != footerInfo.pos + footerInfo.len) {
                     throw new InvalidParquetFileException(
-                            "Footer parsing resulted in unexpected channel position: ch.position()=%d, footerInfo=%s"
-                                    .formatted(finalPos, footerInfo));
+                            "Footer parsing of '%s' resulted in unexpected channel position: ch.position()=%d, footerInfo=%s"
+                                    .formatted(parquetFileURI, finalPos, footerInfo));
                 }
             }
         }
