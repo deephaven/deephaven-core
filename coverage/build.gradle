@@ -16,7 +16,12 @@ tasks.register("jacoco-merge", JacocoReport) {
     }
     additionalSourceDirs = files(jprojects.sourceSets.main.allSource.srcDirs)
     sourceDirectories = files(jprojects.sourceSets.main.allSource.srcDirs)
-    classDirectories = files(jprojects.findAll { it.name != 'web-client-api' }.sourceSets.main.output)
+    classDirectories = files(jprojects.sourceSets.main.output).asFileTree.matching {
+        // DH-23193 added a GWT supersource LittleEndianCodec that compiles into web-client-api
+        // under the same package as the real class in extensions-barrage, causing a JaCoCo
+        // "Can't add different class with same name" error. Exclude only the supersource copy.
+        exclude 'io/deephaven/extensions/barrage/chunk/LittleEndianCodec.class'
+    }
     reports {
         html.required = true
         html.outputLocation = layout.buildDirectory.dir('./reports/java/java-coverage.html')
