@@ -70,7 +70,7 @@ public class ParquetFileReader {
         if (fileSize <= 0) {
             // empty file is not legitimate for parquet files; possibly, we could have stricter min file size here in
             // the future.
-            throw new IllegalArgumentException("fileSize must be positive");
+            throw new IllegalArgumentException("fileSize must be positive: %s".formatted(parquetFileURI));
         }
         return createImpl(parquetFileURI, channelsProvider, fileSize);
     }

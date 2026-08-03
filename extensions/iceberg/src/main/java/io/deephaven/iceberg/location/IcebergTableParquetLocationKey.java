@@ -218,9 +218,6 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
             if ((comparisonResult = Long.compare(dataFilePos, otherTyped.dataFilePos)) != 0) {
                 return comparisonResult;
             }
-            if ((comparisonResult = Long.compare(dataFileSizeInBytes, otherTyped.dataFileSizeInBytes)) != 0) {
-                return comparisonResult;
-            }
             return uri.compareTo(otherTyped.uri);
         }
         // When comparing with non-iceberg location key, we want to compare both partitions and URI
@@ -245,7 +242,6 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
                 && dataSequenceNumber == otherTyped.dataSequenceNumber
                 && fileSequenceNumber == otherTyped.fileSequenceNumber
                 && dataFilePos == otherTyped.dataFilePos
-                && dataFileSizeInBytes == otherTyped.dataFileSizeInBytes
                 && manifestSequenceNumber == otherTyped.manifestSequenceNumber
                 && sortedColumns.equals(otherTyped.sortedColumns)
                 && uri.equals(otherTyped.uri);
@@ -262,7 +258,6 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
             result = prime * result + Long.hashCode(dataSequenceNumber);
             result = prime * result + Long.hashCode(fileSequenceNumber);
             result = prime * result + Long.hashCode(dataFilePos);
-            result = prime * result + Long.hashCode(dataFileSizeInBytes);
             result = prime * result + Long.hashCode(manifestSequenceNumber);
             result = prime * result + Objects.hashCode(sortedColumns);
             result = prime * result + uri.hashCode();
