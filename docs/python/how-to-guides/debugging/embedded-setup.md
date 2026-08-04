@@ -13,7 +13,7 @@ The [Deephaven Python embedded server](../../getting-started/pip-install.md) (th
 
 With [Docker](./docker-setup.md) and a [Gradle source build](./source-setup.md), the Deephaven server is its own process (in a container, or started with `./gradlew server-jetty-app:run`). The JVM in that process embeds a Python interpreter to run your scripts and queries. Because your IDE and the server are separate processes, debugging requires PyCharm Professional's remote debugging server and a `pydevd.settrace()` call from the Deephaven console.
 
-The embedded server works the other way around: your Python process embeds the JVM. There is only one process, and it's the same one your IDE already runs when you launch a script. This means the embedded server can be debugged locally, the same way you'd debug the [pip installation](./pip-setup.md) — no remote debugging server or `pydevd.settrace()` is required to debug your own launch script.
+The embedded server works the other way around: your Python process embeds the JVM. There is only one process, and it's the same one your IDE already runs when you launch a script. This means you can debug the embedded server locally, the same way you'd debug the [pip installation](./pip-setup.md) — no remote debugging server or `pydevd.settrace()` is required to debug your own launch script.
 
 The build and project setup, however, are the same as the [source build guide](./source-setup.md): you need a local `deephaven-core` clone, a matching virtual environment built from that source, and a PyCharm project opened on the clone so that breakpoints resolve against the real source.
 
@@ -69,6 +69,7 @@ Create a script, such as `script.py`, that starts the embedded server:
 from deephaven_server import Server
 
 s = Server(
+    host="localhost",
     port=10000,
     jvm_args=[
         "-Xmx16g",
