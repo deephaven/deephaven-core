@@ -6,6 +6,7 @@ package io.deephaven.iceberg.location;
 import io.deephaven.api.SortColumn;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.table.impl.locations.TableLocationKey;
+import io.deephaven.parquet.base.ParquetFileReader;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
 import io.deephaven.util.annotations.InternalUseOnly;
@@ -17,6 +18,8 @@ import org.apache.iceberg.catalog.TableIdentifier;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.URI;
 import java.util.Comparator;
 import java.util.List;
@@ -61,6 +64,11 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
      */
     private final long dataFilePos;
 
+    /**
+     * The {@link DataFile#fileSizeInBytes()} of the data file backing this keyed location.
+     */
+    private final long dataFileSizeInBytes;
+
     private final PartitionSpec manifestPartitionSpec;
 
     /**
@@ -82,6 +90,8 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
      * @param catalogName The name of the catalog using which the table is accessed
      * @param tableUuid The UUID of the table, or {@code null} if not available
      * @param tableIdentifier The table identifier used to access the table
+     * @param manifestPartitionSpec The {@link PartitionSpec} that applies to the manifest file from which the data file
+     *        was discovered
      * @param manifestFile The manifest file from which the data file was discovered
      * @param dataFile The data file that backs the keyed location
      * @param fileUri The {@link URI} for the file that backs the keyed location
@@ -121,12 +131,21 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
 
         // This should never be null because we are discovering this data file through a non-null manifest file
         dataFilePos = Require.neqNull(dataFile.pos(), "dataFile.pos()");
+        dataFileSizeInBytes = dataFile.fileSizeInBytes();
 
         this.manifestPartitionSpec = Objects.requireNonNull(manifestPartitionSpec);
         manifestSequenceNumber = manifestFile.sequenceNumber();
 
         this.readInstructions = readInstructions;
         this.sortedColumns = Require.neqNull(sortedColumns, "sortedColumns");
+    }
+
+    @Override
+    public synchronized ParquetFileReader getFileReader() {
+        if (fileReader != null) {
+            return fileReader;
+        }
+        return fileReader = ParquetFileReader.create(uri, channelsProvider, dataFileSizeInBytes);
     }
 
     public PartitionSpec manifestPartitionSpec() {
