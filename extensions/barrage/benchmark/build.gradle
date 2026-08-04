@@ -13,6 +13,10 @@ sourceSets {
     }
 }
 
+test {
+    failOnNoDiscoveredTests = false
+}
+
 dependencies {
     testImplementation project(':extensions-barrage')
     testImplementation project(':engine-table')

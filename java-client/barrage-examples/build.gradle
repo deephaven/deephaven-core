@@ -38,7 +38,9 @@ def createApplication = { String name, String mainClass ->
 application.applicationDistribution.into('bin') {
     from(createApplication('subscribe-table', 'io.deephaven.client.examples.SubscribeTable'))
     from(createApplication('snapshot-table', 'io.deephaven.client.examples.SnapshotTable'))
-    fileMode = 0755
+    filePermissions {
+        unix('0755')
+    }
 }
 
 apply plugin: 'io.deephaven.java-open-nio'
