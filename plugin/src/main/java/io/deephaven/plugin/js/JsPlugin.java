@@ -103,9 +103,9 @@ public abstract class JsPlugin extends PluginBase {
     }
 
     /**
-     * The JS plugin loader configuration, as sourced from the "loader" field of the plugin's package.json (if
-     * present). This is an arbitrary, plugin-specific JSON object that is opaque to the server and is simply passed
-     * through as the "loader" field for the manifest entry in "js-plugins/manifest.json".
+     * The JS plugin loader configuration, as sourced from the "loader" field of the plugin's package.json (if present).
+     * This is an arbitrary, plugin-specific JSON object that is opaque to the server and is simply passed through as
+     * the "loader" field for the manifest entry in "js-plugins/manifest.json".
      *
      * @return the loader configuration
      */
