@@ -794,8 +794,8 @@ public class RangeSet {
 
     /**
      * Returns a new {@code RangeSet} representing the intersection of this set with the provided set. The result
-     * contains only keys that are present in both {@code this} and {@code other}. Neither this set nor the argument
-     * is modified.
+     * contains only keys that are present in both {@code this} and {@code other}. Neither this set nor the argument is
+     * modified.
      *
      * @param other the set to intersect with
      * @return a new {@code RangeSet} containing only keys present in both sets; empty if there is no overlap
