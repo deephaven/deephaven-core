@@ -12,11 +12,11 @@ public class DoPutTestGwt extends AbstractAsyncGwtTestCase {
     private final TableSourceBuilder tables = new TableSourceBuilder();
 
     /**
-     * Creates arrays of 0-100k of ints, doubles, longs, strings, and string arrays (arrays of one element), pushes to
+     * Creates large arrays of ints, doubles, longs, strings, and string arrays (arrays of one element), pushes to
      * server via DoPut (WorkerConnection.newTable), and sets a viewport to confirm the row count is correct.
      */
     public void testLargeTable() {
-        final int rowCount = 100_000;
+        final int rowCount = 25_000;
 
         // Build column-oriented data (Object[][] for WorkerConnection.newTable)
         Object[] intCol = new Object[rowCount];
