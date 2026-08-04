@@ -805,6 +805,10 @@ public class RangeSet {
             return empty();
         }
 
+        if (this == other) {
+            return this;
+        }
+
         List<Range> result = new ArrayList<>();
         Iterator<Range> thisIter = sortedRanges.iterator();
         Iterator<Range> otherIter = other.sortedRanges.iterator();
