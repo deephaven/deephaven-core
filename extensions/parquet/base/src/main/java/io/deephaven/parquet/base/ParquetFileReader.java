@@ -70,7 +70,7 @@ public class ParquetFileReader {
         if (fileSize <= 0) {
             // empty file is not legitimate for parquet files; possibly, we could have stricter min file size here in
             // the future.
-            throw new IllegalArgumentException("fileSize must be positive: %s".formatted(parquetFileURI));
+            throw new IllegalArgumentException(String.format("fileSize must be positive: %s", parquetFileURI));
         }
         return createImpl(parquetFileURI, channelsProvider, fileSize);
     }
@@ -82,7 +82,8 @@ public class ParquetFileReader {
         try {
             return new ParquetFileReader(parquetFileURI, provider, fileSize);
         } catch (final IOException e) {
-            throw new UncheckedIOException("Failed to create Parquet file reader: %s".formatted(parquetFileURI), e);
+            throw new UncheckedIOException(String.format("Failed to create Parquet file reader: %s", parquetFileURI),
+                    e);
         }
     }
 
@@ -158,7 +159,14 @@ public class ParquetFileReader {
         return new FooterInfo(footerIndex, footerLength);
     }
 
-    private record FooterInfo(long pos, int len) {
+    private static class FooterInfo {
+        private final long pos;
+        private final int len;
+
+        FooterInfo(long pos, int len) {
+            this.pos = pos;
+            this.len = len;
+        }
     }
 
     private static int makeLittleEndianInt(byte b0, byte b1, byte b2, byte b3) {

@@ -106,7 +106,7 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
     public SeekableByteChannel getReadChannel(@NotNull SeekableChannelContext channelContext, @NotNull URI uri,
             long fileSize) throws IOException {
         if (fileSize < 0) {
-            throw new IllegalArgumentException("fileSize should be non-negative: %s".formatted(uri));
+            throw new IllegalArgumentException(String.format("fileSize should be non-negative: %s", uri));
         }
         return getReadChannelImpl(channelContext, uri, fileSize);
     }
