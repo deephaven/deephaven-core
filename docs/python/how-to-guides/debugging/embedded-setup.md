@@ -11,9 +11,9 @@ The [Deephaven Python embedded server](../../getting-started/pip-install.md) (th
 
 ## How this differs from other debugging setups
 
-With [Docker](./docker-setup.md) and a [Gradle source build](./source-setup.md), the Deephaven server is its own process (in a container, or started with `./gradlew server-jetty-app:run`). The JVM in that process embeds a Python interpreter to run your scripts and queries. Because your IDE and the server are separate processes, debugging requires PyCharm Professional's remote debugging server and a `pydevd.settrace()` call from the Deephaven console.
+With [Docker](./docker-setup.md) and a [Gradle source build](./source-setup.md), the Deephaven server is its own process (in a container, or started with `./gradlew server-jetty-app:run`). The JVM in that process embeds a Python interpreter to run your scripts and queries. Because your IDE and the server are separate processes, debugging requires PyCharm Professional's remote debugging server and a `pydevd.settrace` call from the Deephaven console.
 
-The embedded server works the other way around: your Python process embeds the JVM. There is only one process, and it's the same one your IDE already runs when you launch a script. This means you can debug the embedded server locally, the same way you'd debug the [pip installation](./pip-setup.md) — no remote debugging server or `pydevd.settrace()` is required to debug your own launch script.
+The embedded server works the other way around: your Python process embeds the JVM. There is only one process, and it's the same one your IDE already runs when you launch a script. This means you can debug the embedded server locally, the same way you'd debug the [pip installation](./pip-setup.md) — no remote debugging server or `pydevd.settrace` is required to debug your own launch script.
 
 The build and project setup, however, are the same as the [source build guide](./source-setup.md): you need a local `deephaven-core` clone, a matching virtual environment built from that source, and a PyCharm project opened on the clone so that breakpoints resolve against the real source.
 
@@ -61,7 +61,26 @@ Confirm the project interpreter is set to `embedded-dh-venv` by going to **PyCha
 > [!WARNING]
 > Debugging Deephaven with PyCharm has only been shown to work for PyCharm major version **2024** or higher. Some issues have been discovered with using PyCharm 2023, and there is no plan to fix these issues.
 
-## 3. Write and debug a launch script
+## 3. Configure path mappings
+
+When you install the wheels, pip copies the Python modules into the virtual environment's `site-packages` directory. By default, PyCharm sets breakpoints against the checkout source files, but Python executes the installed copies. To make breakpoints in `py/server/deephaven` bind correctly, configure path mappings to tell PyCharm where the runtime code lives.
+
+1. Go to **Run** > **Edit Configurations**.
+2. Click the **+** button and select **Python**.
+3. Name the configuration (e.g., "Embedded Server Debug").
+4. Set **Script path** to your launch script (e.g., `script.py`).
+5. Expand **Path mappings** and click the **+** button.
+6. Add a mapping:
+   - **Local path**: `<deephaven-core>/py/server/deephaven` (the checkout source)
+   - **Remote path**: `<deephaven-core>/embedded-dh-venv/lib/python<version>/site-packages/deephaven` (the installed package)
+
+   Replace `<deephaven-core>` with the absolute path to your clone and `<version>` with your Python version (e.g., `3.11`).
+
+7. Click **OK** to save the configuration.
+
+Now when you set breakpoints in files under `py/server/deephaven`, PyCharm maps them to the corresponding installed files at runtime.
+
+## 4. Write and debug a launch script
 
 Create a script, such as `script.py`, that starts the embedded server:
 
@@ -85,17 +104,17 @@ t = empty_table(10).update("X = ii")
 ```
 
 > [!NOTE]
-> The `AuthHandlers` argument enables anonymous authentication, which makes it easier to open the Deephaven web IDE without dealing with a pre-shared key. It is not required to debug your own launch script, but it's recommended if you also plan to debug code executed from the web console in step 4.
+> The `AuthHandlers` argument enables anonymous authentication, which makes it easier to open the Deephaven web IDE without dealing with a pre-shared key. It is not required to debug your own launch script, but it's recommended if you also plan to debug code executed from the web console in step 5.
 
 Right-click in the editor and select **Debug 'script'**. PyCharm attaches its debugger directly to this process before any Deephaven or JVM code runs. Set breakpoints in your own code or in Deephaven's Python source under `py/server`, and they'll be hit normally, since it's all running in the same interpreter PyCharm is already debugging.
 
-## 4. Debug code from the Deephaven web console
+## 5. Debug code from the Deephaven web console
 
 Once the server starts, you can also interact with it through the web IDE at `http://localhost:10000/ide/`. Because the embedded server runs in the same process as your launch script, code executed in the web console runs in that same interpreter, and breakpoints you've already set should still be hit.
 
 There are two things to keep in mind:
 
-- **Keep the main thread alive.** As described in [Common problems](./common-problems.md#ticking-tables-and-the-main-thread), Deephaven only reliably notifies Python debuggers of activity on the main thread. If your script exits immediately after `s.start()`, the process — and the debugger session — will shut down before you can interact with the console. Add a blocking call, such as `time.sleep`, at the end of your script to keep it alive:
+- **Keep the main thread alive.** As described in [Common problems](./common-problems.md#ticking-tables-and-the-main-thread), Deephaven only reliably notifies Python debuggers of activity on the main thread. If your script exits immediately after `s.start`, the process — and the debugger session — will shut down before you can interact with the console. Add a blocking call, such as `time.sleep`, at the end of your script to keep it alive:
 
   ```python skip-test
   import time
@@ -104,7 +123,7 @@ There are two things to keep in mind:
       time.sleep(1)
   ```
 
-- **Use `pydevd.settrace()` as a programmatic breakpoint.** This is especially useful for pausing execution inside a query string or user-defined function, where clicking in the margin isn't practical:
+- **Use `pydevd.settrace` as a programmatic breakpoint.** This is especially useful for pausing execution inside a query string or user-defined function, where clicking in the margin isn't practical:
 
   ```python skip-test
   import pydevd
@@ -122,7 +141,7 @@ There are two things to keep in mind:
   t_new = t.update("Y = udf(X)")
   ```
 
-  Because the console and your launch script share the same debugged process, `pydevd.settrace()` doesn't need a host or port — PyCharm's debugger is already attached.
+  Because the console and your launch script share the same debugged process, `pydevd.settrace` doesn't need a host or port — PyCharm's debugger is already attached.
 
 **There are some Deephaven-specific things to consider when debugging.** Check out [Common problems](./common-problems.md) for issues specific to debugging Deephaven's table operations and ticking tables.
 
@@ -147,6 +166,15 @@ There are two things to keep in mind:
 - Install the locally-built `deephaven_core` wheel from `py/server/build/wheel/` _before_ installing the `deephaven_server` wheel.
 - Use `pip install --force` to make sure the local wheels take precedence over anything already installed.
 
+### Breakpoints in Deephaven source don't bind
+
+**Problem**: Breakpoints set in files under `py/server/deephaven` appear grayed out or never hit.
+
+**Solutions**:
+
+- Verify path mappings are configured correctly (see step 3). Python executes the installed wheel from `site-packages`, not the checkout source.
+- Double-check that the **Remote path** in the mapping points to the actual `site-packages/deephaven` directory in your virtual environment.
+
 ### PyCharm can't find Deephaven source files
 
 **Problem**: When debugging, PyCharm shows "Source code not available" or can't find files.
@@ -155,6 +183,7 @@ There are two things to keep in mind:
 
 - Verify the PyCharm project was created from the same `deephaven-core` directory used to build the wheels.
 - Check that the Python interpreter is set to `embedded-dh-venv`.
+- Ensure path mappings are configured (see step 3).
 
 ### Console code isn't hitting breakpoints
 
@@ -163,7 +192,7 @@ There are two things to keep in mind:
 **Solutions**:
 
 - Make sure the launch script is still running (see the note on keeping the main thread alive above).
-- Use `pydevd.settrace()` directly in the code you want to debug, as shown in step 4.
+- Use `pydevd.settrace` directly in the code you want to debug, as shown in step 5.
 
 ## Related documentation
 

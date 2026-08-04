@@ -12,7 +12,8 @@ Debugging is a critical part of software development. Deephaven supports debuggi
 
 Setting up a debugger in Deephaven depends on how Deephaven is running and which IDE you're using:
 
-- **Pip installation and the embedded server**: Debug locally using standard IDE debuggers (PyCharm Community/Professional or VS Code). Your code runs in the same Python process as your IDE.
+- **Pip installation**: Debug locally using standard IDE debuggers (PyCharm Community/Professional or VS Code). Your code runs in the same Python process as your IDE.
+- **Embedded server**: Debug locally using PyCharm Community or Professional. Your code runs in the same Python process as your IDE.
 - **Docker and source installations**: Debug remotely using PyCharm Professional's remote debugging server. Code runs in a container or separate process, requiring a remote connection.
 
 The Deephaven web IDE does not have a built-in debugger. You must use an external IDE to debug Python scripts and user-defined functions.
@@ -51,7 +52,7 @@ The following table shows current debugging support for different Deephaven inst
       <td>❌</td>
       <td>✅</td>
       <td>❌</td>
-      <td>✅</td>
+      <td>❌</td>
     </tr>
   </tbody>
 </table>
@@ -98,7 +99,7 @@ Use PyCharm Professional's remote debugging server to debug versions of Deephave
 
 ## Deephaven embedded server
 
-Use PyCharm Community, PyCharm Professional, or VS Code to debug an embedded server built from source, with local debugging.
+Use PyCharm Community or PyCharm Professional to debug an embedded server built from source, with local debugging.
 
 </CoreTutorialCard>
 
