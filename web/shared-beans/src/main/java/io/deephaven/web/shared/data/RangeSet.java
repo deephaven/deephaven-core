@@ -793,6 +793,60 @@ public class RangeSet {
     }
 
     /**
+     * Returns a new {@code RangeSet} representing the intersection of this set with the provided set. The result
+     * contains only keys that are present in both {@code this} and {@code other}. Neither this set nor the argument
+     * is modified.
+     *
+     * @param other the set to intersect with
+     * @return a new {@code RangeSet} containing only keys present in both sets; empty if there is no overlap
+     */
+    public RangeSet intersect(RangeSet other) {
+        if (isEmpty() || other.isEmpty()) {
+            return empty();
+        }
+
+        List<Range> result = new ArrayList<>();
+        Iterator<Range> thisIter = sortedRanges.iterator();
+        Iterator<Range> otherIter = other.sortedRanges.iterator();
+
+        Range a = thisIter.next();
+        Range b = otherIter.next();
+        while (true) {
+            // Compute the intersection of the two current ranges
+            long start = Math.max(a.getFirst(), b.getFirst());
+            long end = Math.min(a.getLast(), b.getLast());
+            if (start <= end) {
+                result.add(new Range(start, end));
+            }
+
+            // Advance the iterator whose current range ends first
+            if (a.getLast() < b.getLast()) {
+                if (!thisIter.hasNext()) {
+                    break;
+                }
+                a = thisIter.next();
+            } else if (b.getLast() < a.getLast()) {
+                if (!otherIter.hasNext()) {
+                    break;
+                }
+                b = otherIter.next();
+            } else {
+                // Both end at the same point, advance both
+                if (!thisIter.hasNext() || !otherIter.hasNext()) {
+                    break;
+                }
+                a = thisIter.next();
+                b = otherIter.next();
+            }
+        }
+
+        if (result.isEmpty()) {
+            return empty();
+        }
+        return fromSortedRanges(result);
+    }
+
+    /**
      * Removes all keys in the provided rangeset that are present in this.
      *
      * @param other the rows to remove
