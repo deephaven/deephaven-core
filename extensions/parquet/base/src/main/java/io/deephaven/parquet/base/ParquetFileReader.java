@@ -117,9 +117,9 @@ public class ParquetFileReader {
             {
                 final long finalPos = ch.position();
                 if (finalPos != footerInfo.pos + footerInfo.len) {
-                    throw new InvalidParquetFileException(
-                            "Footer parsing of '%s' resulted in unexpected channel position: ch.position()=%d, footerInfo=%s"
-                                    .formatted(parquetFileURI, finalPos, footerInfo));
+                    throw new InvalidParquetFileException(String.format(
+                            "Footer parsing of '%s' resulted in unexpected channel position: ch.position()=%d, footerInfo=%s",
+                            parquetFileURI, finalPos, footerInfo));
                 }
             }
         }
