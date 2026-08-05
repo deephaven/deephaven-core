@@ -13,7 +13,6 @@ import io.deephaven.engine.table.impl.ssms.LongSegmentedSortedMultiset;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.Instant;
-import java.util.Objects;
 
 import static io.deephaven.time.DateTimeUtils.epochNanosToInstant;
 
@@ -140,15 +139,17 @@ public class InstantSsmSourceWrapper extends AbstractColumnSource<ObjectVector>
         public boolean equals(Object o) {
             if (this == o)
                 return true;
-            if (o == null || getClass() != o.getClass())
-                return false;
-            ValueWrapper that = (ValueWrapper) o;
-            return underlying.equals(that.underlying);
+            if (o instanceof ValueWrapper) {
+                return underlying.equals(((ValueWrapper) o).underlying);
+            }
+            // Equal to any ObjectVector with the same Instants, notably our own getDirect() result.
+            return ObjectVector.equals(this, o);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(underlying);
+            // Must hash like any equal ObjectVector: ObjectVectorDirect uses this helper; the SSM hashes raw longs.
+            return ObjectVector.hashCode(this);
         }
     }
 }
