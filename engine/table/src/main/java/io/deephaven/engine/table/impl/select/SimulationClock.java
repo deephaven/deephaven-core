@@ -32,7 +32,7 @@ public class SimulationClock implements Clock {
     }
 
     private final AtomicReference<State> state = new AtomicReference<>(State.NOT_STARTED);
-    private final UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+    private final UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
 
     private final Condition ugpCondition = updateGraph.exclusiveLock().newCondition();
 
