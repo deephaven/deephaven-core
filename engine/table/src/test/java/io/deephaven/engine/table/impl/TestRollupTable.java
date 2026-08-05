@@ -144,11 +144,11 @@ public class TestRollupTable extends RefreshingTableTestCase {
             "grp"
     };
 
-    // The single-key incremental tests hold the table at this size regardless of their per-cycle update size, and
-    // sweep that update size from a small fraction of the table up to a full replacement, so the table always spans
-    // several aggregation chunks (4096 rows each) and the cycles cover both tiny deltas and multi-chunk ones. The
-    // multi-key tests still size their table from the update size; they fail when scaled up this way, materializing
-    // an AggGroup vector over source rows the update already removed.
+    // The incremental tests hold the table at this size regardless of their per-cycle update size, and sweep that
+    // update size from a small fraction of the table up to a full replacement, so the table always spans several
+    // aggregation chunks (4096 rows each) and the cycles cover both tiny deltas and multi-chunk ones. A table this
+    // size also gets the update generator to emit shifts, which smaller ones rarely do; see
+    // testRollupGroupWithUpstreamShift for what that used to break.
     private static final int INCREMENTAL_TABLE_SIZE = 10_000;
 
     /**
@@ -245,7 +245,7 @@ public class TestRollupTable extends RefreshingTableTestCase {
      */
     @Test
     public void testRollupMultiKeyVsZeroKeyIncremental() {
-        for (int size = 10; size <= 1000; size *= 10) {
+        for (int size = 10; size <= INCREMENTAL_TABLE_SIZE; size *= 10) {
             testRollupMultiKeyIncrementalInternal("size-" + size, size);
         }
     }
@@ -259,7 +259,7 @@ public class TestRollupTable extends RefreshingTableTestCase {
                 new SetGenerator<>("u", "v", "w"),
                 new IntGenerator(10, 1_000));
 
-        final QueryTable testTable = getTable(true, size, random, columnInfo);
+        final QueryTable testTable = getTable(true, INCREMENTAL_TABLE_SIZE, random, columnInfo);
 
         final Table agged = testTable.aggBy(aggs);
 
@@ -369,7 +369,7 @@ public class TestRollupTable extends RefreshingTableTestCase {
      */
     @Test
     public void testRollupInstantMultiKeyVsZeroKeyIncremental() {
-        for (int size = 10; size <= 1000; size *= 10) {
+        for (int size = 10; size <= INCREMENTAL_TABLE_SIZE; size *= 10) {
             testRollupInstantMultiKeyIncrementalInternal("size-" + size, size);
         }
     }
@@ -383,7 +383,7 @@ public class TestRollupTable extends RefreshingTableTestCase {
                 new SetGenerator<>("u", "v", "w"),
                 new SetGenerator<>(INSTANT_SET));
 
-        final QueryTable testTable = getTable(true, size, random, columnInfo);
+        final QueryTable testTable = getTable(true, INCREMENTAL_TABLE_SIZE, random, columnInfo);
 
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
                 new RollupCompareNugget(
@@ -1067,6 +1067,58 @@ public class TestRollupTable extends RefreshingTableTestCase {
         assertTableEquals(
                 source.aggBy(uniqueAggs),
                 source.rollup(uniqueAggs, "Sym").getRoot().select(valueColumns));
+    }
+
+    /**
+     * A rollup {@code AggGroup} must survive an upstream shift of the rows it groups.
+     *
+     * <p>
+     * The group result for a level is a vector over the <em>source</em> table's rows, backed by the RowSet that level
+     * accumulated. {@link io.deephaven.engine.table.impl.by.GroupByChunkedOperator GroupByChunkedOperator} keeps the
+     * base level's RowSets in the post-shift keyspace (it applies a shift as a remove of the pre-shift keys plus an add
+     * of the post-shift ones), but reports no modified destinations for a shift, since a shift leaves the grouped
+     * <em>values</em> unchanged. The levels above hold their own RowSet per destination -- the union of their
+     * children's, still in the source keyspace -- and
+     * {@link io.deephaven.engine.table.impl.by.GroupByReaggregateOperator GroupByReaggregateOperator} neither shifts
+     * that union nor is told to rebuild it, so it keeps pre-shift keys. Materializing the group vector then reads
+     * source rows that have moved: against these test sources that throws, and against a production column source it
+     * would silently return whatever value now occupies the vacated slot.
+     *
+     * <p>
+     * The cycle below shifts two rows and simultaneously adds one, because a shift alone leaves the root unmodified and
+     * so never re-materializes the vector that exposes the stale keys.
+     */
+    @Test
+    public void testRollupGroupWithUpstreamShift() {
+        final QueryTable source = TstUtils.testRefreshingTable(
+                i(0, 1, 2, 3).toTracking(),
+                stringCol("Sym", "a", "a", "b", "b"),
+                intCol("Value", 10, 11, 20, 21));
+
+        final RollupTable rollup = source.rollup(List.of(AggGroup("grp=Value")), "Sym");
+        // select() materializes the group vector via getDirect(), which is where the stale keys are read
+        final Table rootGroup = rollup.getRoot().select("grp");
+
+        assertTableEquals(
+                newTable(col("grp", (IntVector) new IntVectorDirect(10, 11, 20, 21))),
+                rootGroup);
+
+        final ControlledUpdateGraph cug = source.getUpdateGraph().cast();
+        cug.runWithinUnitTestCycle(() -> {
+            // Move keys 2 and 3 up by 100, reported purely as a shift, and add a row so the root is modified.
+            addToTable(source, i(102, 103), stringCol("Sym", "b", "b"), intCol("Value", 20, 21));
+            removeRows(source, i(2, 3));
+            addToTable(source, i(200), stringCol("Sym", "a"), intCol("Value", 12));
+            final RowSetShiftData.Builder shiftBuilder = new RowSetShiftData.Builder();
+            shiftBuilder.shiftRange(2, 3, 100);
+            source.notifyListeners(
+                    new TableUpdateImpl(i(200), i(), i(), shiftBuilder.build(), ModifiedColumnSet.EMPTY));
+        });
+
+        // The group vector is in source row key order: 0, 1, 102, 103, 200.
+        assertTableEquals(
+                newTable(col("grp", (IntVector) new IntVectorDirect(10, 11, 20, 21, 12))),
+                rootGroup);
     }
 
     /**

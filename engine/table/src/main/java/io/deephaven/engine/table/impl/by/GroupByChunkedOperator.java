@@ -172,6 +172,10 @@ public final class GroupByChunkedOperator implements GroupByOperator {
             @NotNull final IntChunk<ChunkLengths> length, @NotNull final WritableBooleanChunk<Values> stateModified) {
         Assert.eqNull(previousValues, "previousValues");
         Assert.eqNull(newValues, "newValues");
+        // A shift changes RowSet keys, not grouped values, so only an exposed RowSet column makes it observable.
+        // Rollups above this cache an unshifted union of these, so report doShift's add-and-remove.
+        final boolean reportRowSetChanges = exposeRowSetsAs != null;
+        someKeyHasAddsOrRemoves |= reportRowSetChanges && startPositions.size() > 0;
         // noinspection unchecked
         final LongChunk<OrderedRowKeys> preShiftRowKeysAsOrdered = (LongChunk<OrderedRowKeys>) preShiftRowKeys;
         // noinspection unchecked
@@ -183,6 +187,9 @@ public final class GroupByChunkedOperator implements GroupByOperator {
             final long destination = destinations.get(startPosition);
 
             doShift(preShiftRowKeysAsOrdered, postShiftRowKeysAsOrdered, startPosition, runLength, destination);
+        }
+        if (reportRowSetChanges) {
+            stateModified.fillWithValue(0, startPositions.size(), true);
         }
     }
 
@@ -244,10 +251,13 @@ public final class GroupByChunkedOperator implements GroupByOperator {
             final long destination) {
         Assert.eqNull(previousValues, "previousValues");
         Assert.eqNull(newValues, "newValues");
+        // See the bucketed shiftChunk: only an exposed RowSet column makes a shift observable downstream.
+        final boolean reportRowSetChanges = exposeRowSetsAs != null;
+        someKeyHasAddsOrRemoves |= reportRowSetChanges && preShiftRowKeys.size() > 0;
         // noinspection unchecked
         doShift((LongChunk<OrderedRowKeys>) preShiftRowKeys, (LongChunk<OrderedRowKeys>) postShiftRowKeys, 0,
                 preShiftRowKeys.size(), destination);
-        return false;
+        return reportRowSetChanges;
     }
 
     @Override
