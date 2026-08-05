@@ -18,6 +18,7 @@ import io.deephaven.api.filter.Filter;
 import io.deephaven.api.snapshot.SnapshotWhenOptions;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.api.updateby.UpdateByControl;
+import io.deephaven.engine.liveness.Liveness;
 import io.deephaven.engine.primitive.iterator.*;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.*;
@@ -27,9 +28,11 @@ import io.deephaven.engine.table.impl.updateby.UpdateBy;
 import io.deephaven.api.util.ConcurrentMethod;
 import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 
 /**
@@ -46,6 +49,49 @@ public abstract class UncoalescedTable<IMPL_TYPE extends UncoalescedTable<IMPL_T
 
     @Override
     public abstract Table coalesce();
+
+    /**
+     * Get the memoized result of a previous {@link #coalesce()}, if one exists and is still usable, without forcing
+     * coalescing. This allows callers to take advantage of work that has already been done, while leaving the table
+     * uncoalesced (and thus able to benefit from deferred-operation optimizations, e.g.
+     * {@code PartitionAwareSourceTable}'s location filtering) when it has not.
+     *
+     * <p>
+     * A present result is managed by the {@link io.deephaven.engine.liveness.LivenessScopeStack#peek() enclosing
+     * liveness scope} if it requires management.
+     * </p>
+     *
+     * The default implementation never offers a result for reuse; subclasses that memoize their coalesced result should
+     * override.
+     *
+     * @return The existing coalesced result, or {@link Optional#empty()} if there is none available for reuse
+     */
+    public Optional<Table> coalescedIfAvailable() {
+        return Optional.empty();
+    }
+
+    /**
+     * Helper for {@link #coalescedIfAvailable()} implementations. Interprets a memoized coalesce input or result:
+     * <ul>
+     * <li>If {@code candidate} is itself an {@link UncoalescedTable}, recursively delegate to its
+     * {@link #coalescedIfAvailable()}, since coalescing this table means coalescing that one.</li>
+     * <li>Otherwise, {@link Liveness#verifyCachedObjectForReuse(Object) verify} it for reuse, which manages it with the
+     * enclosing liveness scope if necessary.</li>
+     * </ul>
+     * A {@code null} candidate, or one that is no longer live, yields {@link Optional#empty()}.
+     *
+     * @param candidate The memoized {@link Table}, possibly {@code null} if nothing has been memoized
+     * @return The coalesced result available for reuse, or {@link Optional#empty()}
+     */
+    protected static Optional<Table> verifyCoalescedForReuse(@Nullable final Table candidate) {
+        if (candidate instanceof UncoalescedTable) {
+            return ((UncoalescedTable<?>) candidate).coalescedIfAvailable();
+        }
+        if (Liveness.verifyCachedObjectForReuse(candidate)) {
+            return Optional.of(candidate);
+        }
+        return Optional.empty();
+    }
 
     // endregion coalesce support
 
